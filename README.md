@@ -45,9 +45,10 @@ If BugSigDB's export URLs are down or returning errors, you can unpack this asse
 into `data/raw/` and skip `just download`:
 
 ```bash
+mkdir -p release-assets
 gh release download v0.4.0 --repo turbomam/bsdbng \
-  --pattern 'bsdbng-raw-data-*.tar.gz' -D /tmp
-tar xzf /tmp/bsdbng-raw-data-v0.4.0.tar.gz -C data/raw/
+  --pattern 'bsdbng-raw-data-*.tar.gz' --dir release-assets
+tar xzf release-assets/bsdbng-raw-data-v0.4.0.tar.gz -C data/raw/
 just ingest   # skip `just download`
 ```
 
