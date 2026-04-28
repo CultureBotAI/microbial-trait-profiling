@@ -112,6 +112,9 @@ All work starts from a [GitHub issue](https://github.com/turbomam/bsdbng/issues)
 Don't start work without one. If you want to do something that doesn't have an
 issue, open one first.
 
+If BugSigDB is unreachable while reproducing pipeline steps, see the README section
+"If `just download` is unreachable" for using the release raw-data tarball instead.
+
 ### 2. Create a branch
 
 ```bash

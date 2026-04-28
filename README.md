@@ -35,6 +35,26 @@ just ingest      # parse into per-study YAML (~22s, 1900+ studies)
 
 That's it. After `just ingest`, look at `data/studies/` for the output.
 
+### If `just download` is unreachable: use the release raw-data tarball
+
+Each tagged release attaches a `bsdbng-raw-data-v<tag>.tar.gz` asset containing:
+`studies.csv`, `experiments.csv`, `signatures.csv`, `full_dump.csv`, and
+`download_provenance.json`.
+
+If BugSigDB's export URLs are down or returning errors, you can unpack this asset
+into `data/raw/` and skip `just download`:
+
+```bash
+gh release download v0.4.0 --repo turbomam/bsdbng \
+  --pattern 'bsdbng-raw-data-*.tar.gz' -D /tmp
+tar xzf /tmp/bsdbng-raw-data-v0.4.0.tar.gz -C data/raw/
+just ingest   # skip `just download`
+```
+
+Motivation: BugSigDB's CSV export URLs returned 404s for several hours on
+2026-04-20 due to a `/w/` -> `/W/` redirect that went nowhere. The release
+tarball was the fastest recovery path.
+
 ### Explore the data
 
 Install [yq](https://github.com/mikefarah/yq) (Mike Farah's Go version,
