@@ -66,6 +66,9 @@ download-kg:
 download-kg-force:
 	uv run --extra kg python scripts/download_kg_microbe.py --force
 
+taxa-trait-matrix:
+	uv run python scripts/create_taxa_trait_matrix.py
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
