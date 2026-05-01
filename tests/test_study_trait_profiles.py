@@ -218,7 +218,7 @@ def test_create_study_trait_profiles_includes_all_mapped_kgmicrobe_traits(
         encoding="utf-8",
     )
 
-    taxa_path = tmp_path / "taxa.tsv"
+    taxa_path = tmp_path / "bugsigdb_taxa.tsv"
     taxa_path.write_text(
         "\n".join(
             [

@@ -217,7 +217,7 @@ def generate_tables(
         studies=output_dir / "studies.tsv",
         experiments=output_dir / "experiments.tsv",
         signatures=output_dir / "signatures.tsv",
-        taxa=output_dir / "taxa.tsv",
+        taxa=output_dir / "bugsigdb_taxa.tsv",
         taxon_profiles_wide=output_dir / "taxon_profiles_wide.tsv",
         taxon_profiles_long=output_dir / "taxon_profiles_long.tsv",
     )
