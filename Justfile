@@ -66,6 +66,12 @@ download-kg:
 download-kg-force:
 	uv run --extra kg python scripts/download_kg_microbe.py --force
 
+# Build data/derived/taxa_trait_matrix.tsv from BugSigDB-reported taxa and
+# KG-Microbe traits. Prerequisites:
+#   - data/derived/taxa.tsv (columns: direction, taxon_id, taxon_name,
+#     taxonomic_rank). This file is not currently produced by `just ingest`
+#     and must be supplied separately or via --taxa.
+#   - data/kg-microbe/merged-kg_{edges,nodes}.tsv (run `just download-kg`).
 taxa-trait-matrix:
 	uv run python scripts/create_taxa_trait_matrix.py
 

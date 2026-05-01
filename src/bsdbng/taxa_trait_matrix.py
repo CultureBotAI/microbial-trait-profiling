@@ -13,12 +13,11 @@ from bsdbng.paths import REPO_ROOT
 TAXON_PREFIX = "NCBITaxon:"
 TRAIT_PREFIX = "METPO:"
 SUBCLASS_OF = "biolink:subclass_of"
-TRAIT_KEY_SEPARATOR = "\x1f"
+TRAIT_KEY_SEPARATOR = "|"
 
 DEFAULT_TAXA_PATH = REPO_ROOT / "data" / "derived" / "taxa.tsv"
 DEFAULT_KG_DIR = REPO_ROOT / "data" / "kg-microbe"
 DEFAULT_OUTPUT_PATH = REPO_ROOT / "data" / "derived" / "taxa_trait_matrix.tsv"
-DEFAULT_COLUMN_METADATA_PATH = REPO_ROOT / "data" / "derived" / "taxa_trait_matrix_columns.tsv"
 EDGES_FILENAME = "merged-kg_edges.tsv"
 NODES_FILENAME = "merged-kg_nodes.tsv"
 
@@ -65,19 +64,20 @@ def _clean_label(value: str) -> str:
 
 
 def resolve_kg_file(filename: str, kg_dir: Path, explicit_path: Path | None = None) -> Path:
-    """Resolve a KG file from an explicit path, kg_dir, or ~/Downloads fallback."""
+    """Resolve a KG file from an explicit path or from kg_dir, failing clearly if missing."""
     if explicit_path is not None:
-        return explicit_path
+        if explicit_path.exists():
+            return explicit_path
+        raise FileNotFoundError(f"KG file not found at explicit path: {explicit_path}")
 
     kg_candidate = kg_dir / filename
     if kg_candidate.exists():
         return kg_candidate
 
-    downloads_candidate = Path.home() / "Downloads" / filename
-    if downloads_candidate.exists():
-        return downloads_candidate
-
-    return kg_candidate
+    raise FileNotFoundError(
+        f"KG file not found: expected {filename} in kg_dir {kg_dir}. "
+        f"Pass an explicit path or ensure the file exists in that directory."
+    )
 
 
 def read_reported_taxa(taxa_path: Path) -> list[ReportedTaxon]:
@@ -157,7 +157,13 @@ def node_ids_for_trait_keys(trait_keys: set[str]) -> set[str]:
 
 
 def read_kg_edges(edges_path: Path) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
-    """Read taxonomy parent links and direct taxon-trait assertions from KG edges."""
+    """Read taxonomy parent links and direct taxon-trait assertions from KG edges.
+
+    Memory: materializes the full taxonomy graph plus per-taxon trait sets in
+    Python dicts. On the current ~1 GB merged-kg_edges.tsv this peaks around
+    2-3 GB of resident memory; switch to a streaming / two-pass implementation
+    if that becomes a constraint.
+    """
     child_to_parents: defaultdict[str, set[str]] = defaultdict(set)
     taxon_traits: defaultdict[str, set[str]] = defaultdict(set)
 
@@ -371,16 +377,6 @@ def create_taxa_trait_matrix(
 
     if not taxa_path.exists():
         raise FileNotFoundError(f"BugSigDB taxa TSV not found: {taxa_path}")
-    if not resolved_edges_path.exists():
-        raise FileNotFoundError(
-            f"KG-Microbe edges TSV not found: {resolved_edges_path}. "
-            "Run `just download-kg` or pass --edges."
-        )
-    if not resolved_nodes_path.exists():
-        raise FileNotFoundError(
-            f"KG-Microbe nodes TSV not found: {resolved_nodes_path}. "
-            "Run `just download-kg` or pass --nodes."
-        )
 
     reported_taxa = read_reported_taxa(taxa_path)
     child_to_parents, taxon_traits = read_kg_edges(resolved_edges_path)
@@ -446,8 +442,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--column-metadata-output",
         type=Path,
-        default=DEFAULT_COLUMN_METADATA_PATH,
-        help="Output TSV path describing compact trait matrix columns.",
+        default=None,
+        help=(
+            "Output TSV path describing compact trait matrix columns. "
+            "Defaults to a path derived from --output."
+        ),
     )
     return parser
 
