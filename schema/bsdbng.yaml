@@ -13,8 +13,12 @@ prefixes:
   bsdbng: https://w3id.org/bsdbng/
   bsdb: https://bugsigdb.org/Study_
   NCBITaxon: http://purl.obolibrary.org/obo/NCBITaxon_
+  METPO: http://purl.obolibrary.org/obo/METPO_
+  CHEBI: http://purl.obolibrary.org/obo/CHEBI_
+  ENVO: http://purl.obolibrary.org/obo/ENVO_
   UBERON: http://purl.obolibrary.org/obo/UBERON_
   EFO: http://identifiers.org/efo/
+  biolink: https://w3id.org/biolink/vocab/
 
 imports:
   - linkml:types
@@ -164,6 +168,105 @@ classes:
       taxonomic_rank:
         recommended: true
         required: false
+
+  # --- KG-Microbe phenotype and trait entities ---
+
+  Node:
+    title: KG-Microbe Node
+    description: >-
+      A node in the KG-Microbe knowledge graph. Nodes can represent taxa,
+      phenotypes, traits, chemicals, environments, or other entities.
+    slots:
+      - id
+      - category
+      - name
+      - xref
+      - provided_by
+      - synonym
+    slot_usage:
+      id:
+        identifier: true
+        required: true
+      category:
+        required: true
+
+  Edge:
+    title: KG-Microbe Edge
+    description: >-
+      An edge or relationship in the KG-Microbe knowledge graph connecting
+      two nodes.
+    slots:
+      - edge_id
+      - subject
+      - predicate
+      - object
+      - relation
+      - provided_by
+    slot_usage:
+      subject:
+        required: true
+      predicate:
+        required: true
+      object:
+        required: true
+
+  Phenotype:
+    title: KG-Microbe Phenotype
+    description: >-
+      A microbial phenotype or trait from the microbial phenotypes ontology
+      associated with a taxon in KG-Microbe.
+    slots:
+      - phenotype_id
+      - phenotype_name
+      - count
+      - from_descendants
+    slot_usage:
+      phenotype_id:
+        required: true
+
+  KgTraitAssertion:
+    title: KG-Microbe Trait Assertion
+    description: >-
+      Normalized representation of one dynamic trait column in the taxa-by-traits
+      matrix. Direct phenotype columns use a METPO object such as
+      METPO:1000615. Relation-value columns combine a METPO predicate with a
+      specific KG object, such as METPO:2000006 plus a CHEBI carbon source or
+      METPO:2000517 plus a MediaDive growth medium.
+    slots:
+      - trait_assertion_id
+      - trait_label
+      - predicate_id
+      - predicate_name
+      - object_id
+      - object_name
+      - object_category
+      - count
+      - from_descendants
+    slot_usage:
+      trait_assertion_id:
+        required: true
+      object_id:
+        required: true
+      count:
+        required: true
+
+  TaxonTraitMatrixRow:
+    title: Taxon Trait Matrix Row
+    description: >-
+      One BugSigDB-reported taxon row in a taxa-by-traits matrix. Trait
+      columns in the generated TSV are dynamic KG-Microbe phenotype or trait
+      assertion labels; the trait_counts slot provides the normalized
+      representation of the same counts.
+    slots:
+      - taxon_id
+      - taxon_name
+      - taxonomic_rank
+      - trait_counts
+    slot_usage:
+      taxon_id:
+        required: true
+      taxon_name:
+        required: true
 
 slots:
   id:
@@ -418,6 +521,140 @@ slots:
     description: Taxonomic rank of the reported taxon.
     range: TaxonomicRankEnum
 
+  # --- KG-Microbe phenotype and trait slots ---
+
+  category:
+    title: Category
+    description: Biolink category of a KG-Microbe node.
+    range: string
+
+  name:
+    title: Name
+    description: Human-readable node label.
+    range: string
+
+  xref:
+    title: Cross Reference
+    description: Cross-reference to another database.
+    range: string
+    multivalued: true
+
+  provided_by:
+    title: Provided By
+    description: Data source or provenance for a node or edge.
+    range: string
+    multivalued: true
+
+  synonym:
+    title: Synonym
+    description: Alternative node label.
+    range: string
+    multivalued: true
+
+  edge_id:
+    title: Edge ID
+    description: Stable identifier for a KG-Microbe edge.
+    range: string
+
+  subject:
+    title: Subject
+    description: Subject node of a KG-Microbe relationship.
+    range: string
+
+  predicate:
+    title: Predicate
+    description: Relationship predicate.
+    range: string
+
+  object:
+    title: Object
+    description: Object node of a KG-Microbe relationship.
+    range: string
+
+  relation:
+    title: Relation
+    description: Ontology relation term supporting the predicate.
+    range: string
+
+  taxon_id:
+    title: Taxon ID
+    description: NCBITaxon identifier for a matrix row.
+    range: string
+    pattern: "^NCBITaxon:[0-9]+$"
+
+  phenotype_id:
+    title: Phenotype ID
+    description: METPO phenotype or trait identifier.
+    range: string
+    pattern: "^METPO:[0-9]+$"
+
+  phenotype_name:
+    title: Phenotype Name
+    description: Human-readable phenotype or trait label.
+    range: string
+
+  trait_assertion_id:
+    title: Trait Assertion ID
+    description: >-
+      Stable key for a generated trait matrix column. Direct METPO phenotype
+      columns use the METPO object CURIE; relation-value columns combine the
+      predicate and object identifiers.
+    range: string
+
+  trait_label:
+    title: Trait Label
+    description: Human-readable label for a generated trait matrix column.
+    range: string
+
+  predicate_id:
+    title: Predicate ID
+    description: >-
+      Predicate used by the KG-Microbe assertion. Direct phenotype assertions
+      may use biolink:has_phenotype, while relation-value assertions use METPO
+      predicates such as METPO:2000006, METPO:2000103, or METPO:2000517.
+    range: string
+
+  predicate_name:
+    title: Predicate Name
+    description: Human-readable predicate label.
+    range: string
+
+  object_id:
+    title: Object ID
+    description: >-
+      KG object identifier for a trait assertion. This may be a METPO phenotype,
+      CHEBI chemical, GO process, pathway identifier, MediaDive medium, or other
+      KG-Microbe object.
+    range: string
+
+  object_name:
+    title: Object Name
+    description: Human-readable object label.
+    range: string
+
+  object_category:
+    title: Object Category
+    description: Biolink category of the KG object.
+    range: string
+
+  count:
+    title: Count
+    description: Number of taxa at or below a row taxon that have the trait assertion.
+    range: integer
+    minimum_value: 0
+
+  from_descendants:
+    title: From Descendants
+    description: Whether the trait assertion count includes descendant taxa.
+    range: boolean
+
+  trait_counts:
+    title: Trait Counts
+    description: Normalized KG-Microbe trait assertion counts for a matrix row.
+    range: KgTraitAssertion
+    multivalued: true
+    inlined_as_list: true
+
 enums:
   DirectionEnum:
     title: Direction values
@@ -450,3 +687,55 @@ enums:
       class:
       phylum:
       superkingdom:
+
+  BiolinkCategoryEnum:
+    title: Biolink category values
+    description: Common Biolink categories used by KG-Microbe nodes.
+    permissible_values:
+      biolink:OrganismTaxon:
+        description: A taxonomic grouping of organisms.
+      biolink:Phenotype:
+        description: An observable characteristic or trait.
+      biolink:PhenotypicQuality:
+        description: A phenotype quality term.
+      biolink:OntologyClass:
+        description: A general ontology class.
+      biolink:ChemicalEntity:
+        description: A chemical substance.
+      biolink:SmallMolecule:
+        description: A small molecule.
+      biolink:Environment:
+        description: An environment or habitat.
+      biolink:BiologicalProcess:
+        description: A biological process.
+      biolink:MolecularActivity:
+        description: A molecular function or activity.
+      biolink:MacromolecularComplex:
+        description: A macromolecular complex.
+      biolink:Attribute:
+        description: An attribute or quality.
+      biolink:NamedThing:
+        description: A generic named entity.
+
+  BiolinkPredicateEnum:
+    title: Biolink predicate values
+    description: Common relationship predicates used by KG-Microbe edges.
+    permissible_values:
+      biolink:subclass_of:
+        description: Taxonomic hierarchy relationship.
+      biolink:has_phenotype:
+        description: Taxon has a phenotype or trait.
+      biolink:capable_of:
+        description: Taxon is capable of an activity.
+      biolink:interacts_with:
+        description: Taxon interacts with an entity.
+      biolink:produces:
+        description: Taxon produces a substance.
+      biolink:location_of:
+        description: Environment is location of taxon.
+      biolink:located_in:
+        description: Taxon is located in an environment.
+      biolink:affects:
+        description: Taxon affects another entity.
+      biolink:participates_in:
+        description: Taxon participates in a process.

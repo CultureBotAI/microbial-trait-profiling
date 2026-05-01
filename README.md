@@ -81,6 +81,8 @@ All commands go through the Justfile. Run `just --list` to see them all.
 | `just check` | Run all checks (ruff, mypy, pytest, linkml, bandit, deptry, pip-audit) |
 | `just download` | Download BugSigDB CSVs (with caching and retry) |
 | `just ingest` | Parse CSVs into per-study YAML |
+| `just taxa-trait-matrix` | Build the taxon x trait matrix from BugSigDB taxa and KG-Microbe |
+| `just study-trait-profiles` | Sum taxon trait vectors by study, experiment, and increased/decreased direction |
 | `just pipeline` | Run download + ingest |
 | `just clean-all` | Remove all generated artifacts |
 | `just format` | Auto-fix lint and formatting |
