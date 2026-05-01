@@ -75,6 +75,9 @@ download-kg-force:
 taxa-trait-matrix:
 	uv run python scripts/create_taxa_trait_matrix.py
 
+study-trait-profiles:
+	uv run python scripts/create_study_trait_profiles.py
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
