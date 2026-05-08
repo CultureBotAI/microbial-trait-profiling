@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+OUTPUT_DIR = REPO_ROOT / "trait-visualization/bsdb-taxa-only"
+
 
 def build_binary_matrix(
     taxa_path: Path,
@@ -22,12 +25,10 @@ def build_binary_matrix(
         usecols=["study_id", "experiment_id", "direction", "taxon_name", "taxonomic_rank"],
     )
     taxa = taxa[taxa["taxonomic_rank"] == "genus"].copy()
-    taxa["inc_dec"] = taxa["direction"].map({"increased": "inc", "decreased": "dec"}).fillna(
-        taxa["direction"]
+    taxa["inc_dec"] = (
+        taxa["direction"].map({"increased": "inc", "decreased": "dec"}).fillna(taxa["direction"])
     )
-    taxa["profile_id"] = (
-        taxa["study_id"] + "|" + taxa["experiment_id"] + "|" + taxa["inc_dec"]
-    )
+    taxa["profile_id"] = taxa["study_id"] + "|" + taxa["experiment_id"] + "|" + taxa["inc_dec"]
 
     # Binary presence/absence: one genus counts once per profile.
     taxa = taxa[["profile_id", "inc_dec", "taxon_name"]].drop_duplicates()
@@ -52,10 +53,7 @@ def build_binary_matrix(
     if len(matrix) > max_profiles:
         profile_richness = matrix.sum(axis=1)
         selected_profiles = (
-            profile_richness.sort_values(ascending=False)
-            .head(max_profiles)
-            .sort_index()
-            .index
+            profile_richness.sort_values(ascending=False).head(max_profiles).sort_index().index
         )
         matrix = matrix.loc[selected_profiles]
 
@@ -122,19 +120,19 @@ def main() -> None:
     parser.add_argument(
         "--input",
         type=Path,
-        default=Path("data/derived/taxa.tsv"),
+        default=REPO_ROOT / "data/derived/taxa.tsv",
         help="Input taxa TSV path.",
     )
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("data/derived/clustered_heatmap_genus_top100.png"),
+        default=OUTPUT_DIR / "clustered_heatmap_genus_top100.png",
         help="Output heatmap image path.",
     )
     parser.add_argument(
         "--matrix-output",
         type=Path,
-        default=Path("data/derived/clustered_heatmap_genus_top100_matrix.tsv"),
+        default=OUTPUT_DIR / "clustered_heatmap_genus_top100_matrix.tsv",
         help="Output path for the filtered binary matrix used to plot the heatmap.",
     )
     parser.add_argument(

@@ -1,0 +1,121 @@
+	trait_id	study_support	total_signal	composition_variance	display_label	column_label	object_name	object_category	display_category	selection_score
+METPO:2000006|CHEBI:25115	METPO:2000006|CHEBI:25115	74	80224.0	9.842213288470758e-07	"malate
+CHEBI:25115"	uses as carbon source: malate CHEBI:25115 [METPO:2000006]	malate	biolink:SmallMolecule	SmallMolecule	1.1114408394550744e-05
+METPO:2000103|GO:0009399	METPO:2000103|GO:0009399	76	48983.0	6.343446950352598e-07	"nitrogen fixation
+GO:0009399"	capable of: nitrogen fixation GO:0009399 [METPO:2000103]	nitrogen fixation	biolink:BiologicalProcess	BiologicalProcess	6.850446309174516e-06
+METPO:2000006|CHEBI:24266	METPO:2000006|CHEBI:24266	76	76654.0	5.832229656002883e-07	"gluconic acid
+CHEBI:24266"	uses as carbon source: gluconic acid CHEBI:24266 [METPO:2000006]	gluconic acid	biolink:SmallMolecule	SmallMolecule	6.559549586052471e-06
+METPO:2000006|CHEBI:132943	METPO:2000006|CHEBI:132943	73	47766.0	4.406938857584225e-07	"aspartate
+CHEBI:132943"	uses as carbon source: aspartate CHEBI:132943 [METPO:2000006]	aspartate	biolink:SmallMolecule	SmallMolecule	4.7480757213575324e-06
+METPO:1000706	METPO:1000706	64	19925.0	4.7200681066134673e-07	"gliding
+METPO:1000706"	gliding METPO:1000706	gliding	biolink:OntologyClass	OntologyClass	4.672763910019157e-06
+METPO:1000443	METPO:1000443	75	59782.0	3.854353863717601e-07	"temperature optimum mid1
+METPO:1000443"	temperature optimum mid1 METPO:1000443	temperature optimum mid1	biolink:PhenotypicQuality	PhenotypicQuality	4.239202084985766e-06
+METPO:1000447	METPO:1000447	76	42220.0	3.078765924782735e-07	"temperature optimum high
+METPO:1000447"	temperature optimum high METPO:1000447	temperature optimum high	biolink:PhenotypicQuality	PhenotypicQuality	3.279092912865854e-06
+METPO:1000844	METPO:1000844	9	4079.0	3.3067103544927335e-07	"Methanogenesis
+METPO:1000844"	Methanogenesis METPO:1000844	Methanogenesis	biolink:OntologyClass	OntologyClass	2.749150137832854e-06
+METPO:2000006|CHEBI:22653	METPO:2000006|CHEBI:22653	72	40388.0	2.445544191391995e-07	"asparagine
+CHEBI:22653"	uses as carbon source: asparagine CHEBI:22653 [METPO:2000006]	asparagine	biolink:SmallMolecule	SmallMolecule	2.593820653698692e-06
+METPO:2000103|pathways:sulfate_reduction	METPO:2000103|pathways:sulfate_reduction	68	18667.0	2.1418190888020788e-07	"sulfate reduction
+sulfate_reduction"	capable of: sulfate_reduction pathways:sulfate_reduction [METPO:2000103]	sulfate_reduction	biolink:BiologicalProcess	BiologicalProcess	2.1063861418207845e-06
+METPO:2000103|pathways:arsenate_reduction	METPO:2000103|pathways:arsenate_reduction	73	8970.0	1.6489969071537786e-07	"arsenate reduction
+arsenate_reduction"	capable of: arsenate_reduction pathways:arsenate_reduction [METPO:2000103]	arsenate_reduction	biolink:BiologicalProcess	BiologicalProcess	1.5008761609320643e-06
+METPO:2000006|CHEBI:18257	METPO:2000006|CHEBI:18257	73	24826.0	1.4362967458112583e-07	"ornithine
+CHEBI:18257"	uses as carbon source: ornithine CHEBI:18257 [METPO:2000006]	ornithine	biolink:SmallMolecule	SmallMolecule	1.453487357799166e-06
+METPO:2000103|pathways:thiosulfate_reduction	METPO:2000103|pathways:thiosulfate_reduction	66	15383.0	1.2549437063899294e-07	"thiosulfate reduction
+thiosulfate_reduction"	capable of: thiosulfate_reduction pathways:thiosulfate_reduction [METPO:2000103]	thiosulfate_reduction	biolink:BiologicalProcess	BiologicalProcess	1.2099016794138881e-06
+METPO:1000845	METPO:1000845	74	12412.0	1.2664921588008555e-07	"Acetogenesis
+METPO:1000845"	Acetogenesis METPO:1000845	Acetogenesis	biolink:OntologyClass	OntologyClass	1.1938587815061433e-06
+METPO:2000006|CHEBI:30751	METPO:2000006|CHEBI:30751	74	21958.0	1.0522084718177469e-07	"formic acid
+CHEBI:30751"	uses as carbon source: formic acid CHEBI:30751 [METPO:2000006]	formic acid	biolink:SmallMolecule	SmallMolecule	1.051885691848319e-06
+METPO:2000006|CHEBI:17268	METPO:2000006|CHEBI:17268	70	29552.0	1.0046517292333739e-07	"myo-inositol
+CHEBI:17268"	uses as carbon source: myo-inositol CHEBI:17268 [METPO:2000006]	myo-inositol	biolink:SmallMolecule	SmallMolecule	1.0341825164662756e-06
+METPO:2000006|CHEBI:37054	METPO:2000006|CHEBI:37054	70	20545.0	8.185467338779277e-08	"3-hydroxybutyrate
+CHEBI:37054"	uses as carbon source: 3-hydroxybutyrate CHEBI:37054 [METPO:2000006]	3-hydroxybutyrate	biolink:SmallMolecule	SmallMolecule	8.128514128874492e-07
+METPO:1000468	METPO:1000468	68	23505.0	7.854882231692201e-08	"NaCl optimum high
+METPO:1000468"	NaCl optimum high METPO:1000468	NaCl optimum high	biolink:PhenotypicQuality	PhenotypicQuality	7.905947596116006e-07
+METPO:1000442	METPO:1000442	74	25173.0	7.014158523410319e-08	"temperature optimum low
+METPO:1000442"	temperature optimum low METPO:1000442	temperature optimum low	biolink:PhenotypicQuality	PhenotypicQuality	7.10784453094868e-07
+METPO:2000006|CHEBI:17151	METPO:2000006|CHEBI:17151	73	25601.0	6.915866144799307e-08	"xylitol
+CHEBI:17151"	uses as carbon source: xylitol CHEBI:17151 [METPO:2000006]	xylitol	biolink:SmallMolecule	SmallMolecule	7.019898581643323e-07
+METPO:2000103|pathways:aromatic_compound_degradation	METPO:2000103|pathways:aromatic_compound_degradation	74	17413.0	6.918626510616615e-08	"aromatic compound degradation
+aromatic_compound_d..."	capable of: aromatic_compound_degradation pathways:aromatic_compound_degradation [METPO:2000103]	aromatic_compound_degradation	biolink:BiologicalProcess	BiologicalProcess	6.756059377026588e-07
+METPO:1000455	METPO:1000455	75	25098.0	6.208151277991186e-08	"pH optimum low
+METPO:1000455"	pH optimum low METPO:1000455	pH optimum low	biolink:PhenotypicQuality	PhenotypicQuality	6.289219355942856e-07
+METPO:2000006|CHEBI:16704	METPO:2000006|CHEBI:16704	74	18759.0	5.859159053321353e-08	"uridine
+CHEBI:16704"	uses as carbon source: uridine CHEBI:16704 [METPO:2000006]	uridine	biolink:SmallMolecule	SmallMolecule	5.76510913443082e-07
+METPO:2000103|GO:0120253	METPO:2000103|GO:0120253	69	16345.0	5.139180785943384e-08	"hydrocarbon catabolic process
+GO:0120253"	capable of: hydrocarbon catabolic process GO:0120253 [METPO:2000103]	hydrocarbon catabolic process	biolink:BiologicalProcess	BiologicalProcess	4.985898807955979e-07
+METPO:2000006|CHEBI:16236	METPO:2000006|CHEBI:16236	73	18145.0	5.058912443644369e-08	"ethanol
+CHEBI:16236"	uses as carbon source: ethanol CHEBI:16236 [METPO:2000006]	ethanol	biolink:SmallMolecule	SmallMolecule	4.960873467339193e-07
+METPO:2000006|CHEBI:17596	METPO:2000006|CHEBI:17596	74	19456.0	4.669058197764707e-08	"inosine
+CHEBI:17596"	uses as carbon source: inosine CHEBI:17596 [METPO:2000006]	inosine	biolink:SmallMolecule	SmallMolecule	4.6111442184213146e-07
+METPO:2000006|CHEBI:17748	METPO:2000006|CHEBI:17748	71	14748.0	4.357636392389673e-08	"thymidine
+CHEBI:17748"	uses as carbon source: thymidine CHEBI:17748 [METPO:2000006]	thymidine	biolink:SmallMolecule	SmallMolecule	4.182864914873806e-07
+METPO:2000006|CHEBI:40585	METPO:2000006|CHEBI:40585	62	12646.0	4.422121538715557e-08	"alpha-cyclodextrin
+CHEBI:40585"	uses as carbon source: alpha-cyclodextrin CHEBI:40585 [METPO:2000006]	alpha-cyclodextrin	biolink:MacromolecularComplex	MacromolecularComplex	4.1767713183608874e-07
+METPO:1000657	METPO:1000657	46	8528.0	4.142850994287243e-08	"photoheterotrophic
+METPO:1000657"	photoheterotrophic METPO:1000657	photoheterotrophic	biolink:PhenotypicQuality	PhenotypicQuality	3.749788643493196e-07
+METPO:2000006|CHEBI:18401	METPO:2000006|CHEBI:18401	67	13057.0	3.513896576916479e-08	"phenylacetate
+CHEBI:18401"	uses as carbon source: phenylacetate CHEBI:18401 [METPO:2000006]	phenylacetate	biolink:SmallMolecule	SmallMolecule	3.330174691191491e-07
+METPO:2000006|CHEBI:31011	METPO:2000006|CHEBI:31011	66	13763.0	3.414423866069979e-08	"valerate
+CHEBI:31011"	uses as carbon source: valerate CHEBI:31011 [METPO:2000006]	valerate	biolink:SmallMolecule	SmallMolecule	3.253881673611719e-07
+METPO:2000006|CHEBI:51850	METPO:2000006|CHEBI:51850	71	12931.0	3.324008133586502e-08	"methyl pyruvate
+CHEBI:51850"	uses as carbon source: methyl pyruvate CHEBI:51850 [METPO:2000006]	methyl pyruvate	biolink:SmallMolecule	SmallMolecule	3.146991450592785e-07
+METPO:1000473	METPO:1000473	76	20589.0	2.981517409367826e-08	"pH delta very low
+METPO:1000473"	pH delta very low METPO:1000473	pH delta very low	biolink:PhenotypicQuality	PhenotypicQuality	2.9614102944869525e-07
+METPO:2000103|pathways:sulfite_reduction	METPO:2000103|pathways:sulfite_reduction	69	8947.0	3.149992423663786e-08	"sulfite reduction
+sulfite_reduction"	capable of: sulfite_reduction pathways:sulfite_reduction [METPO:2000103]	sulfite_reduction	biolink:BiologicalProcess	BiologicalProcess	2.8662364827734284e-07
+METPO:2000006|CHEBI:15428	METPO:2000006|CHEBI:15428	75	16459.0	2.803496145991863e-08	"glycine
+CHEBI:15428"	uses as carbon source: glycine CHEBI:15428 [METPO:2000006]	glycine	biolink:SmallMolecule	SmallMolecule	2.72182707201424e-07
+METPO:2000103|pathways:sulfur_reduction	METPO:2000103|pathways:sulfur_reduction	65	7870.0	2.774825575752395e-08	"sulfur reduction
+sulfur_reduction"	capable of: sulfur_reduction pathways:sulfur_reduction [METPO:2000103]	sulfur_reduction	biolink:BiologicalProcess	BiologicalProcess	2.4892794855316044e-07
+METPO:2000103|pathways:iron_reduction	METPO:2000103|pathways:iron_reduction	68	11942.0	2.6091526876589104e-08	"iron reduction
+iron_reduction"	capable of: iron_reduction pathways:iron_reduction [METPO:2000103]	iron_reduction	biolink:BiologicalProcess	BiologicalProcess	2.44944661124094e-07
+METPO:2000103|GO:0019412	METPO:2000103|GO:0019412	43	1340.0	3.3371643324848615e-08	"aerobic respiration, using hydr...
+GO:0019412"	capable of: aerobic respiration, using hydrogen as electron donor GO:0019412 [METPO:2000103]	aerobic respiration, using hydrogen as electron donor	biolink:BiologicalProcess	BiologicalProcess	2.4031490623816123e-07
+METPO:2000103|pathways:nitrous_oxide_reduction	METPO:2000103|pathways:nitrous_oxide_reduction	75	9799.0	2.5596851904254344e-08	"nitrous oxide reduction
+nitrous_oxide_reduc..."	capable of: nitrous_oxide_reduction pathways:nitrous_oxide_reduction [METPO:2000103]	nitrous_oxide_reduction	biolink:BiologicalProcess	BiologicalProcess	2.352385927819777e-07
+METPO:1000660	METPO:1000660	46	6422.0	2.6675540957578525e-08	"phototrophic
+METPO:1000660"	phototrophic METPO:1000660	phototrophic	biolink:PhenotypicQuality	PhenotypicQuality	2.3388155531996765e-07
+METPO:2000006|CHEBI:26493	METPO:2000006|CHEBI:26493	69	8956.0	1.878726874186274e-08	"quinic acid
+CHEBI:26493"	uses as carbon source: quinic acid CHEBI:26493 [METPO:2000006]	quinic acid	biolink:SmallMolecule	SmallMolecule	1.7096772693934428e-07
+METPO:2000103|GO:0043419	METPO:2000103|GO:0043419	73	7996.0	1.6103609925863092e-08	"urea catabolic process
+GO:0043419"	capable of: urea catabolic process GO:0043419 [METPO:2000103]	urea catabolic process	biolink:BiologicalProcess	BiologicalProcess	1.4472027194060695e-07
+METPO:2000006|CHEBI:17148	METPO:2000006|CHEBI:17148	70	11382.0	1.5203617735513753e-08	"putrescine
+CHEBI:17148"	uses as carbon source: putrescine CHEBI:17148 [METPO:2000006]	putrescine	biolink:SmallMolecule	SmallMolecule	1.4199990886070373e-07
+METPO:2000103|pathways:thiosulfate_oxidation_dark	METPO:2000103|pathways:thiosulfate_oxidation_dark	67	7466.0	1.586840621643323e-08	"thiosulfate oxidation dark
+thiosulfate_oxidati..."	capable of: thiosulfate_oxidation_dark pathways:thiosulfate_oxidation_dark [METPO:2000103]	thiosulfate_oxidation_dark	biolink:BiologicalProcess	BiologicalProcess	1.4151839138168784e-07
+METPO:2000006|CHEBI:5417	METPO:2000006|CHEBI:5417	74	13450.0	1.4049857365516165e-08	"glucosamine
+CHEBI:5417"	uses as carbon source: glucosamine CHEBI:5417 [METPO:2000006]	glucosamine	biolink:SmallMolecule	SmallMolecule	1.335693066817492e-07
+METPO:2000006|CHEBI:27248	METPO:2000006|CHEBI:27248	71	7156.0	1.4971402109767484e-08	"urocanic acid
+CHEBI:27248"	uses as carbon source: urocanic acid CHEBI:27248 [METPO:2000006]	urocanic acid	biolink:SmallMolecule	SmallMolecule	1.328838621913673e-07
+METPO:2000006|CHEBI:16199	METPO:2000006|CHEBI:16199	69	10778.0	1.214022519792577e-08	"urea
+CHEBI:16199"	uses as carbon source: urea CHEBI:16199 [METPO:2000006]	urea	biolink:SmallMolecule	SmallMolecule	1.1272630166269209e-07
+METPO:1000690	METPO:1000690	67	2106.0	1.3905611096957298e-08	"fusiform shaped
+METPO:1000690"	fusiform shaped METPO:1000690	fusiform shaped	biolink:PhenotypicQuality	PhenotypicQuality	1.0641992559143626e-07
+METPO:1000656	METPO:1000656	43	4856.0	1.1839203410320841e-08	"photoautotrophic
+METPO:1000656"	photoautotrophic METPO:1000656	photoautotrophic	biolink:PhenotypicQuality	PhenotypicQuality	1.0049324511578408e-07
+METPO:1000651	METPO:1000651	66	7714.0	9.97852019414329e-09	"methylotrophic
+METPO:1000651"	methylotrophic METPO:1000651	methylotrophic	biolink:PhenotypicQuality	PhenotypicQuality	8.931695358622618e-08
+METPO:2000006|CHEBI:27897	METPO:2000006|CHEBI:27897	68	8324.0	8.18071369137937e-09	"tryptophan
+CHEBI:27897"	uses as carbon source: tryptophan CHEBI:27897 [METPO:2000006]	tryptophan	biolink:SmallMolecule	SmallMolecule	7.384745232061465e-08
+METPO:2000006|CHEBI:16526	METPO:2000006|CHEBI:16526	8	1682.0	9.526328773647822e-09	"carbon dioxide
+CHEBI:16526"	uses as carbon source: carbon dioxide CHEBI:16526 [METPO:2000006]	carbon dioxide	biolink:SmallMolecule	SmallMolecule	7.076474424806311e-08
+METPO:2000006|CHEBI:18276	METPO:2000006|CHEBI:18276	8	1682.0	9.526328773647822e-09	"diydrogen
+CHEBI:18276"	uses as carbon source: diydrogen CHEBI:18276 [METPO:2000006]	diydrogen	biolink:SmallMolecule	SmallMolecule	7.076474424806311e-08
+METPO:1000632	METPO:1000632	58	5219.0	7.595272052075885e-09	"autotrophic
+METPO:1000632"	autotrophic METPO:1000632	autotrophic	biolink:PhenotypicQuality	PhenotypicQuality	6.501744794577036e-08
+METPO:2000103|GO:0006032	METPO:2000103|GO:0006032	72	8747.0	6.858384883961417e-09	"chitin catabolic process
+GO:0006032"	capable of: chitin catabolic process GO:0006032 [METPO:2000103]	chitin catabolic process	biolink:BiologicalProcess	BiologicalProcess	6.225068168857495e-08
+METPO:2000103|pathways:aromatic_hydrocarbon_degradation	METPO:2000103|pathways:aromatic_hydrocarbon_degradation	64	5670.0	6.944932321515404e-09	"aromatic hydrocarbon degradation
+aromatic_hydrocarbo..."	capable of: aromatic_hydrocarbon_degradation pathways:aromatic_hydrocarbon_degradation [METPO:2000103]	aromatic_hydrocarbon_degradation	biolink:BiologicalProcess	BiologicalProcess	6.002588864164301e-08
+METPO:2000006|CHEBI:16193	METPO:2000006|CHEBI:16193	63	6094.0	6.35213583179176e-09	"3-hydroxybenzoate
+CHEBI:16193"	uses as carbon source: 3-hydroxybenzoate CHEBI:16193 [METPO:2000006]	3-hydroxybenzoate	biolink:SmallMolecule	SmallMolecule	5.536028691874365e-08
+METPO:1000649	METPO:1000649	57	4526.0	6.5056676255148935e-09	"lithotrophic
+METPO:1000649"	lithotrophic METPO:1000649	lithotrophic	biolink:PhenotypicQuality	PhenotypicQuality	5.4763504879975945e-08
+METPO:2000103|GO:0015946	METPO:2000103|GO:0015946	66	5995.0	5.9523058492345296e-09	"methanol oxidation
+GO:0015946"	capable of: methanol oxidation GO:0015946 [METPO:2000103]	methanol oxidation	biolink:BiologicalProcess	BiologicalProcess	5.177820299405128e-08
+METPO:2000006|CHEBI:17126	METPO:2000006|CHEBI:17126	62	4161.0	5.852041000204499e-09	"carnitine
+CHEBI:17126"	uses as carbon source: carnitine CHEBI:17126 [METPO:2000006]	carnitine	biolink:SmallMolecule	SmallMolecule	4.8769452578187876e-08

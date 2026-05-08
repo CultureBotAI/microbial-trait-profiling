@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+OUTPUT_DIR = REPO_ROOT / "trait-visualization/bsdb-taxa-only"
+
 
 def load_study_condition_pairs(full_dump_path: Path) -> pd.DataFrame:
     """Extract unique study-condition pairs from full_dump.csv."""
@@ -61,7 +64,9 @@ def build_condition_genus_matrix(
         .head(top_conditions)
         .index
     )
-    study_conditions = study_conditions[study_conditions["condition"].isin(top_condition_names)].copy()
+    study_conditions = study_conditions[
+        study_conditions["condition"].isin(top_condition_names)
+    ].copy()
 
     merged = study_conditions.merge(taxa, on="study_id", how="inner")
     if merged.empty:
@@ -78,7 +83,9 @@ def build_condition_genus_matrix(
     merged = merged[merged["taxon_name"].isin(top_taxon_names)].copy()
 
     unique_condition_taxa = merged[["condition", "study_id", "taxon_name"]].drop_duplicates()
-    condition_sizes = study_conditions.groupby("condition")["study_id"].nunique().sort_values(ascending=False)
+    condition_sizes = (
+        study_conditions.groupby("condition")["study_id"].nunique().sort_values(ascending=False)
+    )
 
     counts = (
         unique_condition_taxa.groupby(["condition", "taxon_name"])["study_id"]
@@ -100,10 +107,14 @@ def build_condition_genus_matrix(
     return matrix, row_annotation
 
 
-def save_condition_heatmap(matrix: pd.DataFrame, study_counts: pd.Series, output_path: Path) -> None:
+def save_condition_heatmap(
+    matrix: pd.DataFrame, study_counts: pd.Series, output_path: Path
+) -> None:
     """Render and save the clustered heatmap."""
     sns.set_theme(style="white")
-    display_index = [f"{condition} (n={int(study_counts.loc[condition])})" for condition in matrix.index]
+    display_index = [
+        f"{condition} (n={int(study_counts.loc[condition])})" for condition in matrix.index
+    ]
     plot_matrix = matrix.copy()
     plot_matrix.index = display_index
 
@@ -150,25 +161,25 @@ def main() -> None:
     parser.add_argument(
         "--taxa-input",
         type=Path,
-        default=Path("data/derived/taxa.tsv"),
+        default=REPO_ROOT / "data/derived/taxa.tsv",
         help="Input taxa TSV path.",
     )
     parser.add_argument(
         "--full-dump-input",
         type=Path,
-        default=Path("data/raw/full_dump.csv"),
+        default=REPO_ROOT / "data/raw/full_dump.csv",
         help="Input full_dump.csv path.",
     )
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("data/derived/condition_taxon_clustered_heatmap_top40x100.png"),
+        default=OUTPUT_DIR / "condition_taxon_clustered_heatmap_top40x100.png",
         help="Output heatmap image path.",
     )
     parser.add_argument(
         "--matrix-output",
         type=Path,
-        default=Path("data/derived/condition_taxon_clustered_heatmap_top40x100_matrix.tsv"),
+        default=OUTPUT_DIR / "condition_taxon_clustered_heatmap_top40x100_matrix.tsv",
         help="Output matrix TSV path.",
     )
     parser.add_argument(
