@@ -1,8 +1,9 @@
-"""Create a taxa guild discovery clustered heatmap from BugSigDB trait data."""
+"""Create a leaf-rank taxa guild discovery heatmap from BugSigDB trait data."""
 
 from __future__ import annotations
 
 import argparse
+import csv
 import math
 from pathlib import Path
 
@@ -14,16 +15,140 @@ from matplotlib.patches import Patch
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 MATRIX_METADATA_COLUMNS = ["taxon_id", "taxon_name", "taxonomic_rank"]
+METAPHLAN_RANK_MAP = {
+    "k__": "superkingdom",
+    "p__": "phylum",
+    "c__": "class",
+    "o__": "order",
+    "f__": "family",
+    "g__": "genus",
+    "s__": "species",
+    "t__": "strain",
+}
 
 
-def load_bugsigdb_taxa_summary(bugsigdb_taxa_path: Path, rank: str) -> pd.DataFrame:
-    """Summarize BugSigDB occurrence and direction counts by taxon."""
-    taxa = pd.read_csv(
+def clean_value(value: object) -> str:
+    """Normalize empty BugSigDB metadata values."""
+    text = str(value or "").strip()
+    if not text or text.upper() == "NA" or text.lower() == "nan":
+        return ""
+    return text
+
+
+def study_id_from_bsdb_id(bsdb_id: str) -> str:
+    """Convert a full BugSigDB signature ID into the derived study ID format."""
+    compact_id = bsdb_id.strip().removeprefix("bsdb:").split("/", 1)[0]
+    return f"bsdb:{compact_id}"
+
+
+def experiment_id_from_bsdb_id(bsdb_id: str) -> str:
+    """Convert a full BugSigDB signature ID into the derived experiment ID format."""
+    parts = bsdb_id.strip().removeprefix("bsdb:").split("/")
+    if len(parts) >= 2:
+        return f"bsdb:{parts[0]}-{parts[1]}"
+    return bsdb_id
+
+
+def signature_id_from_bsdb_id(bsdb_id: str) -> str:
+    """Convert a full BugSigDB signature ID into the derived signature ID format."""
+    return bsdb_id.strip().replace("/", "-")
+
+
+def parse_metaphlan_name(raw: str) -> tuple[str, str | None]:
+    """Parse a MetaPhlAn leaf name such as ``s__Gardnerella vaginalis``."""
+    for prefix, rank in METAPHLAN_RANK_MAP.items():
+        if raw.startswith(prefix):
+            return raw[len(prefix) :], rank
+    return raw, None
+
+
+def infer_taxon_rank(name: str) -> str:
+    """Infer a coarse rank when MetaPhlAn rank prefixes are unavailable."""
+    parts = name.strip().split()
+    if len(parts) >= 3:
+        return "strain"
+    if len(parts) == 2:
+        return "species"
+    return "genus"
+
+
+def parse_taxa_from_raw_row(row: dict[str, str]) -> list[dict[str, str]]:
+    """Parse most-specific taxon IDs and names from one BugSigDB full-dump row."""
+    tax_ids = clean_value(row.get("NCBI Taxonomy IDs"))
+    if not tax_ids:
+        return []
+
+    id_chains = [chain.strip() for chain in tax_ids.split(";") if chain.strip()]
+    names = clean_value(row.get("MetaPhlAn taxon names")) or clean_value(row.get("Taxon"))
+    name_chains = [chain.strip() for chain in names.split(",") if chain.strip()] if names else []
+
+    taxa: list[dict[str, str]] = []
+    for index, id_chain in enumerate(id_chains):
+        lineage_ids = [value.strip() for value in id_chain.split("|") if value.strip()]
+        if not lineage_ids:
+            continue
+
+        leaf_id = lineage_ids[-1]
+        if leaf_id.isdigit():
+            taxon_id = f"NCBITaxon:{leaf_id}"
+        elif leaf_id.startswith("NCBITaxon:"):
+            taxon_id = leaf_id
+        else:
+            continue
+
+        taxon_name = f"taxon_{leaf_id.removeprefix('NCBITaxon:')}"
+        rank: str | None = None
+        if index < len(name_chains):
+            name_parts = [part.strip() for part in name_chains[index].split("|") if part.strip()]
+            if name_parts:
+                taxon_name, rank = parse_metaphlan_name(name_parts[-1])
+
+        taxa.append(
+            {
+                "taxon_id": taxon_id,
+                "taxon_name": taxon_name,
+                "taxonomic_rank": rank or infer_taxon_rank(taxon_name),
+            }
+        )
+    return taxa
+
+
+def load_bugsigdb_taxa_records(
+    bugsigdb_taxa_path: Path,
+    full_dump_path: Path | None,
+) -> pd.DataFrame:
+    """Load BugSigDB taxa, preferring raw full-dump names/ranks when available."""
+    if full_dump_path is not None and full_dump_path.exists():
+        records: list[dict[str, str]] = []
+        with full_dump_path.open(encoding="utf-8", newline="") as handle:
+            rows = (line for line in handle if not line.startswith("#"))
+            reader = csv.DictReader(rows)
+            for row in reader:
+                bsdb_id = clean_value(row.get("BSDB ID"))
+                direction = clean_value(row.get("Abundance in Group 1")).lower()
+                if not bsdb_id or direction not in {"increased", "decreased"}:
+                    continue
+
+                for taxon in parse_taxa_from_raw_row(row):
+                    records.append(
+                        {
+                            "study_id": study_id_from_bsdb_id(bsdb_id),
+                            "experiment_id": experiment_id_from_bsdb_id(bsdb_id),
+                            "signature_id": signature_id_from_bsdb_id(bsdb_id),
+                            "direction": direction,
+                            **taxon,
+                        }
+                    )
+        if records:
+            return pd.DataFrame.from_records(records)
+
+    return pd.read_csv(
         bugsigdb_taxa_path,
         sep="\t",
         usecols=[
             "study_id",
             "experiment_id",
+            "signature_id",
             "direction",
             "taxon_id",
             "taxon_name",
@@ -31,7 +156,39 @@ def load_bugsigdb_taxa_summary(bugsigdb_taxa_path: Path, rank: str) -> pd.DataFr
         ],
         dtype=str,
     )
-    taxa = taxa[taxa["taxonomic_rank"] == rank].copy()
+
+
+def choose_taxonomic_rank(
+    taxa: pd.DataFrame,
+    requested_rank: str,
+    fallback_ranks: list[str],
+) -> str:
+    """Select the requested rank, or the first fallback rank present in the data."""
+    available_ranks = set(taxa["taxonomic_rank"].dropna().astype(str))
+    for candidate in [requested_rank, *fallback_ranks]:
+        if candidate in available_ranks:
+            return candidate
+
+    available_display = ", ".join(sorted(available_ranks)) or "none"
+    requested_display = ", ".join([requested_rank, *fallback_ranks])
+    raise ValueError(
+        "None of the requested taxonomic ranks are present. "
+        f"Requested: {requested_display}. Available: {available_display}."
+    )
+
+
+def load_bugsigdb_taxa_summary(
+    bugsigdb_taxa_path: Path,
+    rank: str,
+    fallback_ranks: list[str],
+    full_dump_path: Path | None,
+) -> tuple[pd.DataFrame, str, int, int]:
+    """Summarize BugSigDB occurrence and direction counts by taxon."""
+    taxa = load_bugsigdb_taxa_records(bugsigdb_taxa_path, full_dump_path)
+    studies_analyzed = taxa["study_id"].nunique()
+    profiles_analyzed = taxa[["study_id", "experiment_id", "direction"]].drop_duplicates().shape[0]
+    selected_rank = choose_taxonomic_rank(taxa, rank, fallback_ranks)
+    taxa = taxa[taxa["taxonomic_rank"] == selected_rank].copy()
     taxa["profile_id"] = (
         taxa["study_id"].fillna("")
         + "|"
@@ -64,7 +221,7 @@ def load_bugsigdb_taxa_summary(bugsigdb_taxa_path: Path, rank: str) -> pd.DataFr
             summary[column] = 0
         summary[column] = summary[column].astype(int)
     summary["dominant_direction"] = summary.apply(classify_direction, axis=1)
-    return summary
+    return summary, selected_rank, studies_analyzed, profiles_analyzed
 
 
 def classify_direction(row: pd.Series) -> str:
@@ -126,14 +283,13 @@ def select_taxa(
     trait_matrix: pd.DataFrame,
     taxa_summary: pd.DataFrame,
     trait_columns: list[str],
-    rank: str,
     max_taxa: int,
     min_profiles: int,
     min_traits: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Select BugSigDB taxa with enough profile and trait support."""
-    matrix = trait_matrix[trait_matrix["taxonomic_rank"] == rank].copy()
-    matrix = matrix[matrix["taxon_id"].isin(taxa_summary.index)].copy()
+    matrix = trait_matrix[trait_matrix["taxon_id"].isin(taxa_summary.index)].copy()
+    matrix = matrix.drop_duplicates(subset=["taxon_id"], keep="first")
     matrix = matrix.set_index("taxon_id", drop=False)
     values = matrix[trait_columns].apply(pd.to_numeric, errors="coerce").fillna(0)
     binary = values.gt(0).astype(int)
@@ -246,6 +402,10 @@ def save_heatmap(
     taxa_metadata: pd.DataFrame,
     trait_metadata: pd.DataFrame,
     output_path: Path,
+    selected_rank: str,
+    requested_rank: str,
+    studies_analyzed: int,
+    profiles_analyzed: int,
 ) -> None:
     """Render and save the clustered heatmap."""
     sns.set_theme(style="white")
@@ -289,12 +449,20 @@ def save_heatmap(
     )
 
     cluster.ax_heatmap.set_xlabel("Trait")
-    cluster.ax_heatmap.set_ylabel("BugSigDB genus taxon")
+    cluster.ax_heatmap.set_ylabel(f"BugSigDB {selected_rank} taxon")
+    rank_note = (
+        f"requested {requested_rank}; using {selected_rank}"
+        if selected_rank != requested_rank
+        else f"{selected_rank} rank"
+    )
     cluster.ax_heatmap.set_title(
         "Taxa Guild Discovery: BugSigDB Taxa Clustered by Trait Vectors\n"
-        "Rows are high-support BugSigDB genera; columns are profile-supported biological traits",
+        f"Rows are high-support taxa ({rank_note}); columns are binary KG-Microbe traits; "
+        f"{studies_analyzed} studies and {profiles_analyzed} study/experiment/direction "
+        "profiles analyzed",
         pad=18,
     )
+    cluster.ax_cbar.set_ylabel("Trait present")
     for label in cluster.ax_heatmap.get_xticklabels():
         label.set_rotation(90)
         label.set_fontsize(7)
@@ -344,6 +512,10 @@ def write_outputs(
     matrix_output_path: Path,
     taxa_metadata_output_path: Path,
     trait_metadata_output_path: Path,
+    selected_rank: str,
+    requested_rank: str,
+    studies_analyzed: int,
+    profiles_analyzed: int,
 ) -> None:
     """Write the selected matrix and metadata tables."""
     matrix_output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -354,6 +526,10 @@ def write_outputs(
     print(f"Wrote matrix: {matrix_output_path}")
     print(f"Wrote taxa metadata: {taxa_metadata_output_path}")
     print(f"Wrote trait metadata: {trait_metadata_output_path}")
+    print(f"Requested rank: {requested_rank}")
+    print(f"Taxonomic rank plotted: {selected_rank}")
+    print(f"BugSigDB studies analyzed: {studies_analyzed}")
+    print(f"BugSigDB profiles analyzed: {profiles_analyzed}")
     print(f"Taxa plotted: {len(selected_matrix)}")
     print(f"Traits plotted: {len(selected_matrix.columns)}")
 
@@ -382,6 +558,15 @@ def main() -> None:
         type=Path,
         default=REPO_ROOT / "data/derived/taxa_trait_matrix_columns.tsv",
         help="Input taxa trait matrix column metadata TSV path.",
+    )
+    parser.add_argument(
+        "--full-dump-input",
+        type=Path,
+        default=REPO_ROOT / "data/raw/full_dump.csv",
+        help=(
+            "Input BugSigDB full_dump.csv path. When present, taxon names/ranks are parsed "
+            "from this raw export instead of the derived taxa TSV metadata."
+        ),
     )
     parser.add_argument(
         "--study-trait-profiles-input",
@@ -415,8 +600,14 @@ def main() -> None:
     )
     parser.add_argument(
         "--rank",
-        default="genus",
+        default="strain",
         help="Taxonomic rank to cluster.",
+    )
+    parser.add_argument(
+        "--fallback-ranks",
+        nargs="*",
+        default=["species"],
+        help="Fallback ranks to use when --rank is absent from the BugSigDB export.",
     )
     parser.add_argument(
         "--max-taxa",
@@ -461,7 +652,12 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    taxa_summary = load_bugsigdb_taxa_summary(args.bugsigdb_taxa_input, args.rank)
+    taxa_summary, selected_rank, studies_analyzed, profiles_analyzed = load_bugsigdb_taxa_summary(
+        args.bugsigdb_taxa_input,
+        args.rank,
+        args.fallback_ranks,
+        args.full_dump_input,
+    )
     trait_matrix = pd.read_csv(args.taxa_trait_matrix_input, sep="\t")
     trait_columns = [
         column for column in trait_matrix.columns if column not in MATRIX_METADATA_COLUMNS
@@ -473,7 +669,6 @@ def main() -> None:
         trait_matrix,
         taxa_summary,
         trait_columns,
-        args.rank,
         args.max_taxa,
         args.min_profiles,
         args.min_traits,
@@ -488,7 +683,16 @@ def main() -> None:
         args.include_media_traits,
     )
     display_matrix = build_display_matrix(selected_matrix, taxa_metadata, trait_metadata)
-    save_heatmap(display_matrix, taxa_metadata, trait_metadata, args.output)
+    save_heatmap(
+        display_matrix,
+        taxa_metadata,
+        trait_metadata,
+        args.output,
+        selected_rank,
+        args.rank,
+        studies_analyzed,
+        profiles_analyzed,
+    )
     write_outputs(
         selected_matrix,
         display_matrix,
@@ -498,6 +702,10 @@ def main() -> None:
         args.matrix_output,
         args.taxa_metadata_output,
         args.trait_metadata_output,
+        selected_rank,
+        args.rank,
+        studies_analyzed,
+        profiles_analyzed,
     )
 
 

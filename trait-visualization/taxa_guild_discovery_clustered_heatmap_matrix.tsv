@@ -5,137 +5,118 @@ METPO:1000615"	"non motile
 METPO:1000703"	"bacillus shaped
 METPO:1000667"	"gram positive
 METPO:1000698"	"gram negative
-METPO:1000699"	"GC low
-METPO:1000429"	"temperature range mid4
-METPO:1000453"	"temperature optimum mid4
-METPO:1000446"	"temperature range mid3
-METPO:1000452"	"temperature range mid2
-METPO:1000451"	"GC high
-METPO:1000432"	"D-glucose
-CHEBI:17234"	"motile
+METPO:1000699"	"GC high
+METPO:1000432"	"microaerophilic
+METPO:1000604"	"GC low
+METPO:1000429"	"coccus shaped
+METPO:1000668"	"obligately anaerobic
+METPO:1000607"	"facultatively aerobic
+METPO:1000608"	"non halophilic
+METPO:1000624"	"Fermentation
+METPO:1002005"	"aerobic
+METPO:1000602"	"motile
 METPO:1000702"	"rod shaped
-METPO:1000681"	"Fermentation
-METPO:1002005"	"pH optimum mid1
-METPO:1000456"	"temperature range mid1
-METPO:1000450"	"pH range mid1
-METPO:1000461"	"temperature range low
-METPO:1000449"	"coccus shaped
-METPO:1000668"	"mannose
+METPO:1000681"	"GC mid2
+METPO:1000431"	"nitrate reduction
+nitrate_reduction"	"temperature optimum mid4
+METPO:1000446"	"raffinose
+CHEBI:16634"	"D-glucose
+CHEBI:17234"	"lactose
+CHEBI:17716"	"arabinose
+CHEBI:22599"	"xylose
+CHEBI:18222"	"spore forming
+METPO:1000871"	"xylan catabolic process
+GO:0045493"	"moderately halophilic
+METPO:1000623"	"pH optimum mid1
+METPO:1000456"	"mannose
 CHEBI:37684"	"maltose
-CHEBI:17306"	"pH range low
-METPO:1000460"	"pH range mid2
-METPO:1000462"	"facultatively aerobic
-METPO:1000608"	"sucrose
-CHEBI:17992"	"cell width large
-METPO:1000890"	"cell length very small
-METPO:1000883"	"microaerophilic
-METPO:1000604"	"aerobic
-METPO:1000602"	"non halophilic
-METPO:1000624"	"cellobiose
-CHEBI:17057"	"cell width medium
-METPO:1000889"	"lactose
-CHEBI:17716"	"cell length small
-METPO:1000884"	"temperature delta mid1
-METPO:1000485"	"trehalose
-CHEBI:27082"	"temperature range high
-METPO:1000454"	"cell width very small
-METPO:1000887"	"temperature delta low
-METPO:1000484"	"obligately anaerobic
-METPO:1000607"	"D-salicin
-CHEBI:17814"	"cell width small
-METPO:1000888"	"cell length large
-METPO:1000886"	"fructose
-CHEBI:28757"	"coccobacillus shaped
-METPO:1000688"	"mannitol
-CHEBI:29864"	"temperature delta mid2
-METPO:1000486"	"pH range mid3
-METPO:1000463"	"temperature optimum mid2
-METPO:1000444"	"arabinose
-CHEBI:22599"	"NaCl range low
-METPO:1000469"	"NaCl range mid1
-METPO:1000470"	"xylose
-CHEBI:18222"	"GC mid2
-METPO:1000431"	"spore forming
-METPO:1000871"	"raffinose
-CHEBI:16634"	"ribose
-CHEBI:33942"
-taxon_816 (NCBITaxon:816)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	0	1	1	0	1	1	1	1	1	0	0	1	1
-taxon_1301 (NCBITaxon:1301)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	0	1	1	1	1	1	1	0	1	1	1	0	1	1	1
-taxon_838 (NCBITaxon:838)	1	1	1	1	1	1	1	1	0	1	0	0	1	1	0	1	1	1	0	1	0	0	1	1	1	1	0	1	1	1	0	0	0	1	1	1	1	0	0	0	0	0	1	1	1	1	1	1	0	0	0	0	1	0	0	0	1	0	1	0
-taxon_186803 (NCBITaxon:186803)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1
-taxon_1578 (NCBITaxon:1578)	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	0	1	1	1	0	0	1	1	0	0	0	1	1
-taxon_1239 (NCBITaxon:1239)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_1678 (NCBITaxon:1678)	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	0	0	1	1	1	1	1
-taxon_216572 (NCBITaxon:216572)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_216851 (NCBITaxon:216851)	1	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_572511 (NCBITaxon:572511)	1	1	1	1	0	1	0	1	0	1	0	0	1	1	0	0	1	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1	0	0	0	0	0	1	0	1	0	0	1	0	0	0	0	1	0	0	0	0	0	0	1
-taxon_201174 (NCBITaxon:201174)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_1224 (NCBITaxon:1224)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_976 (NCBITaxon:976)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_1485 (NCBITaxon:1485)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	0	1	1	0	1	0	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	0	1	1	1	0	1	1	1
-taxon_29465 (NCBITaxon:29465)	1	1	1	1	0	1	1	0	1	1	1	1	1	0	1	0	0	1	1	1	1	1	0	0	1	1	0	0	0	1	0	0	0	0	1	0	0	0	0	1	1	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0
-taxon_1263 (NCBITaxon:1263)	1	1	1	1	0	1	0	1	1	1	1	0	0	0	1	0	1	1	0	1	0	1	0	0	0	0	0	0	1	0	0	0	1	1	1	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_841 (NCBITaxon:841)	1	1	1	0	1	1	1	1	0	0	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_186802 (NCBITaxon:186802)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_375288 (NCBITaxon:375288)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	0	0	1	1	1	0	1	1	1	1	0	1	1	0	0	0	0	1	1	1	1	0	1	0	0	0	1	1	0	1	0	0	1	1	1	0	1	1	1	1	0	0	1	0
-taxon_543 (NCBITaxon:543)	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_724 (NCBITaxon:724)	1	1	1	1	1	0	1	1	0	0	0	0	1	0	0	0	0	0	0	0	0	1	0	0	0	0	1	0	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_848 (NCBITaxon:848)	1	1	1	1	1	1	1	0	0	0	0	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_239759 (NCBITaxon:239759)	1	1	1	1	1	0	1	1	0	1	0	0	0	1	0	1	1	1	0	0	0	0	1	1	0	0	0	1	0	0	0	0	0	1	0	1	1	0	1	0	1	0	0	1	1	0	0	1	1	0	0	0	1	0	0	1	1	0	1	0
-taxon_171552 (NCBITaxon:171552)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	0	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	0	1	1	0	1	1
-taxon_239934 (NCBITaxon:239934)	1	1	1	1	1	1	1	1	1	0	1	1	0	0	1	0	0	0	1	1	1	0	0	0	1	1	0	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	1	0	1	0	0	0	0	1	0	0	0
-taxon_1350 (NCBITaxon:1350)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	0	0	1	1	1	1	1	0	1	1	1	1	0	1	1	1
-taxon_39948 (NCBITaxon:39948)	1	1	1	1	1	1	1	1	0	1	0	0	1	0	0	0	0	1	0	0	0	1	0	0	0	0	0	0	0	1	0	1	0	0	0	1	1	0	0	0	1	0	0	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_171549 (NCBITaxon:171549)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1
-taxon_186801 (NCBITaxon:186801)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_1279 (NCBITaxon:1279)	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	0	0	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	0	1	1	0	1	1	1	0	1	0	0	1	1	1	0	1	1	1	1	1	1	1	1	0	0	0	1
-taxon_1654 (NCBITaxon:1654)	1	1	1	1	1	1	0	1	1	1	1	1	0	1	0	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	0	1	1	1	1	1	1	1	1	1	1	1	1	0	1	0	1	1	0	1	1	1	1	0	1	1
-taxon_33958 (NCBITaxon:33958)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_128827 (NCBITaxon:128827)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	0	1	0	0	0	0	0	1	0	0	0	1	1	0	1	0	0	0	1	1	0	1	0	0	1	0	0	1	0	0	0	0	1	0	0	0	0	0	1	0	0
-taxon_815 (NCBITaxon:815)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	0	1	1	0	1	1	1	1	1	0	0	1	1
-taxon_189330 (NCBITaxon:189330)	1	1	1	1	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_1716 (NCBITaxon:1716)	1	1	1	1	1	1	1	1	1	1	1	1	0	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	0	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1
-taxon_91061 (NCBITaxon:91061)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_33042 (NCBITaxon:33042)	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-taxon_31977 (NCBITaxon:31977)	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	0	1	1	1	1	1	1	0	0	1	1	0	0	1	1	0	1	0	0	1	1	1	0	0	1	1	0	1	0	1	0	0	1	0	1	1	1	0	0	0	0	1	1	0	0
-taxon_482 (NCBITaxon:482)	1	0	1	1	1	0	1	1	1	0	1	1	0	1	1	1	0	1	1	0	1	1	0	1	0	0	1	1	1	1	1	1	0	0	0	0	1	1	0	1	1	1	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_200643 (NCBITaxon:200643)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1
-taxon_186826 (NCBITaxon:186826)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_836 (NCBITaxon:836)	1	1	1	1	1	0	1	1	0	0	0	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	1	1	0	1	1	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
-taxon_1236 (NCBITaxon:1236)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_906 (NCBITaxon:906)	1	1	1	1	0	1	1	1	1	0	1	1	1	0	0	0	1	1	1	0	1	1	0	0	0	0	0	0	1	1	0	0	0	0	0	0	1	0	0	0	0	0	1	0	0	0	0	0	0	1	0	1	0	0	0	0	1	1	0	0
-taxon_286 (NCBITaxon:286)	1	0	1	1	1	1	1	1	1	1	1	1	0	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	0	1	1	1	0	1	1	1	1	1	1	1	1	1	1	0	1
-taxon_40544 (NCBITaxon:40544)	1	1	1	1	1	0	1	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	1	1	0	0
-taxon_102106 (NCBITaxon:102106)	1	1	1	1	1	1	0	0	0	1	0	0	0	1	0	1	0	1	0	0	0	0	1	1	0	0	0	1	0	0	0	0	0	1	1	1	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
-taxon_207244 (NCBITaxon:207244)	1	1	1	1	1	1	0	1	1	1	0	0	1	1	0	1	0	0	0	1	0	1	1	1	1	1	0	1	0	0	0	0	0	1	0	0	0	1	1	1	0	0	0	1	0	1	0	0	1	0	0	0	0	0	0	0	0	1	1	0
-taxon_186804 (NCBITaxon:186804)	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	0	1	1	1	0	0	1	1	1	0	0	1	0	0	1	1	0	0	1	1	1	0	1	1	1	0	1	0	1
-taxon_31953 (NCBITaxon:31953)	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	0	1	1	1	1	1
-taxon_1283313 (NCBITaxon:1283313)	1	1	1	1	1	0	1	1	1	1	1	1	0	1	0	0	0	1	0	1	0	0	1	1	1	0	0	0	0	0	0	1	0	0	0	1	0	1	0	1	0	0	0	0	1	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_1300 (NCBITaxon:1300)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	0	1	1	1	1	1	1	1	1	1	1	0	1	1	1
-taxon_31979 (NCBITaxon:31979)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	0	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	0	1	1	1
-taxon_459786 (NCBITaxon:459786)	1	1	1	1	1	0	1	1	1	0	1	1	0	1	1	1	1	1	1	1	1	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0	1	0	0	0	0	1	0	0	0	0	1	1	1	1	1	1	0	1	0	1
-taxon_171550 (NCBITaxon:171550)	1	1	1	1	1	0	1	1	0	1	0	0	1	1	0	1	1	1	0	0	0	0	1	1	0	0	0	1	0	0	0	0	0	1	0	1	1	0	1	0	1	0	1	1	1	0	0	1	1	0	0	0	1	0	0	1	1	0	1	0
-taxon_853 (NCBITaxon:853)	1	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_84107 (NCBITaxon:84107)	1	1	1	1	1	1	0	0	1	1	1	1	0	1	1	1	0	1	1	0	0	0	1	1	0	0	0	1	0	0	0	0	0	1	1	1	1	1	0	0	1	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
-taxon_1378 (NCBITaxon:1378)	1	1	1	1	0	1	0	0	0	0	0	0	1	0	1	0	0	0	0	0	0	1	0	0	0	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_872 (NCBITaxon:872)	1	1	1	0	1	0	1	1	1	0	1	1	1	0	1	0	1	0	1	0	1	0	0	0	0	0	1	0	0	1	1	0	1	0	0	0	0	1	0	1	0	0	1	0	1	0	0	0	0	0	0	0	0	0	1	0	1	1	0	0
-taxon_1506553 (NCBITaxon:1506553)	1	1	1	1	1	1	1	1	0	1	0	0	1	0	1	1	1	0	0	1	0	0	0	0	1	1	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0	1	0	0	0	0	0	0	1	0	0
-taxon_28050 (NCBITaxon:28050)	1	1	1	0	1	1	1	0	0	0	0	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-taxon_283168 (NCBITaxon:283168)	1	1	0	1	1	0	1	1	0	0	0	0	1	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_191303 (NCBITaxon:191303)	1	1	0	0	1	1	0	0	0	0	0	0	1	0	1	0	0	0	0	0	0	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_570 (NCBITaxon:570)	1	1	1	1	1	1	1	1	1	0	1	1	0	1	1	0	1	0	0	0	0	0	0	0	0	0	1	0	0	0	1	1	1	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0
-taxon_171551 (NCBITaxon:171551)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	0	0	0	1	1	0	0	1	1	0	1	1	0	1	0	0	0	0	1	0	0	1	0	0	0	0	0	0	1	1	0	0	1	1	0	1	0	0	0
-taxon_562 (NCBITaxon:562)	1	1	1	1	1	1	1	1	1	0	1	1	0	0	1	1	1	0	1	1	1	1	0	0	1	1	1	0	0	0	1	1	1	0	0	0	0	0	0	0	0	1	0	0	1	0	0	1	0	0	1	1	0	1	1	0	1	1	0	0
-taxon_33024 (NCBITaxon:33024)	1	1	1	0	1	0	1	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_32067 (NCBITaxon:32067)	1	1	1	1	1	0	1	0	1	1	1	1	0	0	0	1	0	0	1	0	0	0	1	0	0	0	1	0	0	0	1	1	0	0	1	0	0	1	0	0	1	0	0	0	0	1	0	0	0	0	0	0	1	0	0	0	0	0	0	0
-taxon_91347 (NCBITaxon:91347)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_74201 (NCBITaxon:74201)	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	0	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-taxon_712 (NCBITaxon:712)	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	0	1	1	1	1	0	0	1	1	0	0	1	1	1	1	0	0	0	1	1	0	1	1	1	0	0	0	1	1	1	0	0	0	1	0	0	1	0	1	1	1
-taxon_1730 (NCBITaxon:1730)	1	1	1	1	1	1	0	1	1	0	1	1	1	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_32207 (NCBITaxon:32207)	1	0	1	1	1	1	0	1	1	1	1	1	0	1	0	1	0	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	0	1	0	0	0	1	1	0	1	0	1	0	0	1	1	1	1	1	1	1	1	1	0	1	0	0	1
-taxon_194 (NCBITaxon:194)	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	0	0	0	0	1	1	0	0	0	0	1	0	0	1	1	1	1	0	0	0	1	0	0	1	1	1	1	0	1	1	0	1	0	0	0	0	0	1	1	0	0	0	0	0
-taxon_580596 (NCBITaxon:580596)	1	1	0	1	0	1	0	1	0	0	0	0	0	1	0	0	0	0	0	0	0	1	1	1	0	0	0	1	0	0	0	0	0	1	0	0	1	0	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_158846 (NCBITaxon:158846)	1	1	1	1	1	1	1	0	0	1	0	0	1	1	0	1	0	1	0	1	0	0	1	1	1	1	0	1	1	0	0	0	0	1	0	1	0	0	1	0	0	0	1	1	0	1	0	0	1	0	1	0	1	0	0	1	0	0	1	0
-taxon_561 (NCBITaxon:561)	1	1	1	1	1	1	1	1	1	0	1	1	0	0	1	1	1	0	1	1	1	1	0	0	1	1	1	0	0	0	1	1	1	0	0	0	0	0	0	0	0	1	0	0	1	0	0	1	0	0	1	1	0	1	1	0	1	1	0	0
-taxon_292632 (NCBITaxon:292632)	1	1	1	1	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-taxon_1501226 (NCBITaxon:1501226)	0	1	0	0	1	1	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+CHEBI:17306"	"sucrose
+CHEBI:17992"	"cellobiose
+CHEBI:17057"	"cell length medium
+METPO:1000885"	"rhamnose
+CHEBI:26546"	"cell width medium
+METPO:1000889"	"cell width very small
+METPO:1000887"	"D-salicin
+CHEBI:17814"	"heterotrophic
+METPO:1000644"	"cellulose catabolic process
+GO:0030245"
+Faecalibacterium prausnitzii (NCBITaxon:853)	1	1	1	1	1	1	1	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Escherichia coli (NCBITaxon:562)	1	1	1	1	1	1	1	0	1	1	1	0	1	1	1	1	1	1	1	1	0	0	0	0	0	0	1	0	1	0	0	0	0	0	1	0	0	0	0	1	0
+Akkermansia muciniphila (NCBITaxon:239935)	1	1	1	1	0	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Mediterraneibacter gnavus (NCBITaxon:33038)	1	1	1	1	0	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Mediterraneibacter torques (NCBITaxon:33039)	1	1	1	1	0	1	0	0	0	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
+Bacteroides uniformis (NCBITaxon:820)	1	1	1	1	1	1	1	0	1	1	0	1	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Bacteroides fragilis (NCBITaxon:817)	1	1	1	1	1	1	1	1	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
+Haemophilus parainfluenzae (NCBITaxon:729)	1	0	0	1	1	0	1	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Parabacteroides distasonis (NCBITaxon:823)	1	1	1	1	1	1	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Phocaeicola vulgatus (NCBITaxon:821)	1	1	1	1	1	1	1	1	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
+Anaerobutyricum hallii (NCBITaxon:39488)	1	1	1	0	1	1	0	1	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Bifidobacterium longum (NCBITaxon:216816)	1	1	1	1	1	1	1	0	1	0	0	0	1	1	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Lachnospira eligens (NCBITaxon:39485)	1	1	1	0	1	1	1	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Rothia mucilaginosa (NCBITaxon:43675)	1	0	1	1	0	1	0	0	1	0	1	0	1	0	0	1	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Collinsella aerofaciens (NCBITaxon:74426)	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Segatella copri (NCBITaxon:165179)	1	1	1	1	1	0	1	0	0	1	0	0	0	0	0	0	0	1	0	0	1	1	1	1	1	1	0	0	0	0	0	1	1	1	0	1	1	0	1	0	0
+Bacteroides ovatus (NCBITaxon:28116)	1	1	1	1	1	0	1	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
+Streptococcus salivarius (NCBITaxon:1304)	1	1	1	1	0	1	0	1	1	0	1	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Agathobacter rectalis (NCBITaxon:39491)	1	1	1	1	1	1	0	1	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Veillonella parvula (NCBITaxon:29466)	1	1	1	1	0	0	1	1	0	0	1	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Prevotella melaninogenica (NCBITaxon:28132)	1	1	1	1	1	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Bacteroides thetaiotaomicron (NCBITaxon:818)	1	1	1	1	1	0	1	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
+Roseburia intestinalis (NCBITaxon:166486)	1	1	1	0	1	1	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Fusobacterium nucleatum (NCBITaxon:851)	1	1	1	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Bifidobacterium adolescentis (NCBITaxon:1680)	1	1	1	1	1	1	0	0	0	0	0	1	0	1	0	0	0	1	1	0	1	1	1	1	1	1	0	0	0	1	0	1	0	1	0	0	0	0	1	0	0
+Bacteroides caccae (NCBITaxon:47678)	1	1	1	1	1	0	1	1	0	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Veillonella dispar (NCBITaxon:39778)	1	1	1	0	0	0	1	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Dorea longicatena (NCBITaxon:88431)	1	1	1	0	1	1	0	0	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Flavonifractor plautii (NCBITaxon:292800)	0	1	1	0	1	1	1	0	0	1	0	1	0	0	0	0	1	0	1	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+Dorea formicigenerans (NCBITaxon:39486)	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Streptococcus thermophilus (NCBITaxon:1308)	1	1	1	1	0	1	0	1	1	0	1	0	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Eubacterium ventriosum (NCBITaxon:39496)	0	1	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Ruminococcus bromii (NCBITaxon:40518)	1	1	1	1	0	1	0	0	0	0	1	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
+Alistipes shahii (NCBITaxon:328814)	1	1	1	1	1	0	1	0	0	1	0	0	0	0	1	0	0	1	0	0	1	1	0	0	0	0	0	0	0	1	1	0	0	0	1	0	0	1	0	0	0
+Blautia obeum (NCBITaxon:40520)	1	1	1	1	0	1	0	0	0	0	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
+Alistipes putredinis (NCBITaxon:28117)	1	1	1	1	1	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Bifidobacterium bifidum (NCBITaxon:1681)	1	1	1	1	1	1	1	0	0	0	0	0	0	0	1	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Roseburia inulinivorans (NCBITaxon:360807)	1	1	1	0	1	1	0	1	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Phocaeicola plebeius (NCBITaxon:310297)	1	1	1	1	1	0	1	0	0	1	0	0	0	0	0	0	0	1	0	0	1	1	1	1	1	1	0	0	0	0	1	1	1	1	1	1	1	0	0	0	0
+Anaerostipes hadrus (NCBITaxon:649756)	1	1	1	1	1	1	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
+Streptococcus parasanguinis (NCBITaxon:1318)	1	1	1	1	0	1	0	1	1	0	1	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Parabacteroides merdae (NCBITaxon:46503)	1	1	1	1	1	1	1	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Klebsiella pneumoniae (NCBITaxon:573)	1	1	1	1	1	0	1	0	1	0	0	0	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
+Bifidobacterium pseudocatenulatum (NCBITaxon:28026)	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Phocaeicola dorei (NCBITaxon:357276)	1	1	1	1	1	0	1	0	0	1	0	0	0	0	0	0	0	1	0	1	1	0	0	0	1	1	0	0	0	1	0	0	1	0	1	1	0	0	0	0	0
+Odoribacter splanchnicus (NCBITaxon:28118)	1	1	0	1	1	0	1	0	0	1	0	1	0	0	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Dialister invisus (NCBITaxon:218538)	1	1	1	0	1	1	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Enterocloster bolteae (NCBITaxon:208479)	0	1	1	0	1	1	0	0	0	1	0	1	0	1	0	0	1	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+Porphyromonas gingivalis (NCBITaxon:837)	1	1	1	1	1	0	1	0	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Streptococcus sanguinis (NCBITaxon:1305)	1	1	1	1	0	1	0	0	1	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Streptococcus anginosus (NCBITaxon:1328)	1	1	1	1	0	1	0	1	1	0	1	0	1	0	0	1	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
+Parvimonas micra (NCBITaxon:33033)	1	1	1	1	0	1	0	1	1	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Veillonella atypica (NCBITaxon:39777)	1	1	1	1	0	0	1	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Blautia wexlerae (NCBITaxon:418240)	1	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Prevotella intermedia (NCBITaxon:28131)	1	1	1	1	1	0	1	0	0	1	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Eggerthella lenta (NCBITaxon:84112)	1	1	1	1	1	1	0	0	1	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Lactobacillus gasseri (NCBITaxon:1596)	1	1	1	1	1	1	0	1	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
+Bacteroides xylanisolvens (NCBITaxon:371601)	1	1	1	1	1	0	1	0	0	1	0	1	0	0	0	0	0	1	0	0	1	1	1	1	1	1	0	1	0	1	1	1	1	1	1	1	0	1	1	0	0
+Enterococcus faecalis (NCBITaxon:1351)	1	1	1	1	1	1	1	1	1	0	1	1	1	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
+Rothia dentocariosa (NCBITaxon:2047)	1	0	1	0	0	1	0	0	1	0	1	0	0	0	0	1	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Lactobacillus johnsonii (NCBITaxon:33959)	1	1	1	1	1	1	0	1	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Bacteroides stercoris (NCBITaxon:46506)	1	1	1	1	1	1	1	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Bifidobacterium breve (NCBITaxon:1685)	1	1	1	1	1	1	1	0	1	0	0	1	0	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Prevotella sp. (NCBITaxon:59823)	1	1	0	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Solobacterium moorei (NCBITaxon:102148)	1	1	1	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Streptococcus mitis (NCBITaxon:28037)	1	1	1	1	0	1	0	1	1	0	1	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Bilophila wadsworthia (NCBITaxon:35833)	1	1	1	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Bacteroides eggerthii (NCBITaxon:28111)	1	1	1	1	1	0	1	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
+Schaalia odontolytica (NCBITaxon:1660)	1	0	1	1	1	1	0	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Fusicatenibacter saccharivorans (NCBITaxon:1150298)	1	1	0	1	1	1	0	0	0	1	0	0	0	0	0	0	0	1	0	0	0	1	1	1	1	1	0	0	0	0	1	1	1	1	0	1	1	0	1	0	0
+Alistipes onderdonkii (NCBITaxon:328813)	1	1	0	1	1	0	1	0	0	0	0	0	0	0	1	0	0	1	1	0	1	1	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	1	0	0	0
+Cutibacterium acnes (NCBITaxon:1747)	1	1	1	1	1	1	0	0	1	0	1	0	0	1	0	0	0	1	1	1	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	1	0	0	0
+Staphylococcus epidermidis (NCBITaxon:1282)	1	1	1	1	0	1	1	1	1	0	1	0	1	1	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Streptococcus infantis (NCBITaxon:68892)	1	1	1	1	0	1	0	1	1	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Ruminococcus callidus (NCBITaxon:40519)	1	1	1	1	0	1	0	0	0	0	1	0	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+[Clostridium] leptum (NCBITaxon:1535)	1	1	1	0	1	1	0	0	0	1	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Pseudocoprococcus catus (NCBITaxon:116085)	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Actinomyces graevenitzii (NCBITaxon:55565)	1	1	0	1	1	1	0	0	1	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Clostridium perfringens (NCBITaxon:1502)	0	1	1	1	1	1	0	1	0	0	0	1	0	1	1	0	1	0	0	1	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+Staphylococcus aureus (NCBITaxon:1280)	1	1	1	1	1	1	0	1	1	0	1	0	1	1	0	1	1	0	0	1	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0

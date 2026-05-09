@@ -1,4 +1,4 @@
-"""Create a clustered heatmap of BugSigDB studies by aggregate trait profiles."""
+"""Create a clustered heatmap of BugSigDB study/experiment/direction trait profiles."""
 
 from __future__ import annotations
 
@@ -9,13 +9,16 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib.patches import Patch
+from scipy.cluster.hierarchy import leaves_list, linkage
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
+DIRECTION_LABELS = {"inc": "increased", "dec": "decreased"}
 
 
 def clean_value(value: object) -> str:
@@ -140,78 +143,84 @@ def group_top_categories(series: pd.Series, max_categories: int) -> pd.Series:
     return grouped
 
 
-def load_aggregated_profiles(profile_path: Path) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
-    """Aggregate inc/dec experiment-level trait profiles to study-level profiles."""
+def profile_id_from_parts(study_id: str, experiment_id: str, inc_dec: str) -> str:
+    """Build a stable row ID for one study/experiment/direction profile."""
+    return f"{study_id}|{experiment_id}|{inc_dec}"
+
+
+def load_profile_matrix(profile_path: Path) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
+    """Load one row per study, experiment, and inc/dec trait profile."""
     profiles = pd.read_csv(profile_path, sep="\t")
     trait_columns = [
         column for column in profiles.columns if column not in PROFILE_METADATA_COLUMNS
     ]
     values = profiles[trait_columns].apply(pd.to_numeric, errors="coerce").fillna(0)
-    study_matrix = values.groupby(profiles["study_id"], sort=False).sum()
+    profile_ids = [
+        profile_id_from_parts(str(study_id), str(experiment_id), str(inc_dec))
+        for study_id, experiment_id, inc_dec in profiles[PROFILE_METADATA_COLUMNS].itertuples(
+            index=False,
+            name=None,
+        )
+    ]
+    values.index = profile_ids
+    profile_matrix = values.groupby(level=0, sort=False).sum()
 
-    profile_counts = profiles.groupby("study_id", sort=False).agg(
-        profile_count=("experiment_id", "size"),
-        experiment_count=("experiment_id", "nunique"),
+    metadata = profiles[PROFILE_METADATA_COLUMNS].copy()
+    metadata["profile_id"] = profile_ids
+    metadata = metadata.drop_duplicates(subset=["profile_id"], keep="first").set_index("profile_id")
+    metadata["direction_label"] = (
+        metadata["inc_dec"].map(DIRECTION_LABELS).fillna(metadata["inc_dec"])
     )
-    direction_counts = pd.crosstab(profiles["study_id"], profiles["inc_dec"])
-    for direction in ["inc", "dec"]:
-        if direction not in direction_counts.columns:
-            direction_counts[direction] = 0
-    metadata = profile_counts.join(direction_counts[["inc", "dec"]], how="left").fillna(0)
-    metadata = metadata.rename(
-        columns={"inc": "increased_profile_count", "dec": "decreased_profile_count"}
-    )
-    metadata["increased_profile_count"] = metadata["increased_profile_count"].astype(int)
-    metadata["decreased_profile_count"] = metadata["decreased_profile_count"].astype(int)
-    metadata["total_trait_signal"] = study_matrix.sum(axis=1)
-    metadata["trait_count"] = study_matrix.gt(0).sum(axis=1)
-    return study_matrix, metadata, trait_columns
+    metadata["total_trait_signal"] = profile_matrix.sum(axis=1)
+    metadata["trait_count"] = profile_matrix.gt(0).sum(axis=1)
+    return profile_matrix, metadata, trait_columns
 
 
-def select_studies(
-    study_matrix: pd.DataFrame,
-    study_metadata: pd.DataFrame,
-    max_studies: int,
-    min_profiles: int,
+def select_profiles(
+    profile_matrix: pd.DataFrame,
+    profile_metadata: pd.DataFrame,
+    max_profiles: int,
     min_traits: int,
     min_total_signal: int,
 ) -> pd.Index:
-    """Select studies with enough profile and trait signal for a readable heatmap."""
-    eligible = study_metadata[
-        (study_metadata["profile_count"] >= min_profiles)
-        & (study_metadata["trait_count"] >= min_traits)
-        & (study_metadata["total_trait_signal"] >= min_total_signal)
+    """Select profile rows for the heatmap; by default this keeps every profile."""
+    eligible = profile_metadata[
+        (profile_metadata["trait_count"] >= min_traits)
+        & (profile_metadata["total_trait_signal"] >= min_total_signal)
     ].copy()
     if len(eligible) < 2:
-        msg = "Fewer than two studies passed the selection filters."
+        msg = "Fewer than two profiles passed the selection filters."
         raise ValueError(msg)
-    eligible = eligible.loc[study_matrix.index.intersection(eligible.index)]
+    eligible = eligible.loc[profile_matrix.index.intersection(eligible.index)]
+    if max_profiles <= 0:
+        return eligible.index
+
     eligible = eligible.sort_values(
-        ["profile_count", "total_trait_signal", "trait_count"],
+        ["total_trait_signal", "trait_count"],
         ascending=False,
     )
-    return eligible.head(max_studies).index
+    return eligible.head(max_profiles).index
 
 
 def select_traits(
-    selected_study_matrix: pd.DataFrame,
+    selected_profile_matrix: pd.DataFrame,
     trait_labels: pd.DataFrame,
     max_traits: int,
-    min_study_support: int,
-    max_study_support_fraction: float,
+    min_profile_support: int,
+    max_profile_support_fraction: float,
     include_media_traits: bool,
 ) -> tuple[pd.Index, pd.DataFrame]:
     """Select traits that vary across the selected study profiles."""
-    row_sums = selected_study_matrix.sum(axis=1).replace(0, pd.NA)
-    composition = selected_study_matrix.div(row_sums, axis=0).fillna(0)
-    support = selected_study_matrix.gt(0).sum(axis=0).astype(int)
-    total_signal = selected_study_matrix.sum(axis=0).astype(float)
+    row_sums = selected_profile_matrix.sum(axis=1).replace(0, pd.NA)
+    composition = selected_profile_matrix.div(row_sums, axis=0).fillna(0)
+    support = selected_profile_matrix.gt(0).sum(axis=0).astype(int)
+    total_signal = selected_profile_matrix.sum(axis=0).astype(float)
     variance = composition.var(axis=0)
 
     trait_metadata = pd.DataFrame(
         {
             "trait_id": composition.columns,
-            "study_support": support,
+            "profile_support": support,
             "total_signal": total_signal,
             "composition_variance": variance,
         },
@@ -240,10 +249,10 @@ def select_traits(
         )
     ]
 
-    max_support = max(2, int(len(selected_study_matrix) * max_study_support_fraction))
+    max_support = max(2, int(len(selected_profile_matrix) * max_profile_support_fraction))
     eligible = trait_metadata[
-        (trait_metadata["study_support"] >= min_study_support)
-        & (trait_metadata["study_support"] <= max_support)
+        (trait_metadata["profile_support"] >= min_profile_support)
+        & (trait_metadata["profile_support"] <= max_support)
         & (trait_metadata["composition_variance"] > 0)
     ].copy()
     if not include_media_traits:
@@ -252,7 +261,7 @@ def select_traits(
             & ~eligible["display_label"].str.contains("mediadive.medium", regex=False)
         ].copy()
     eligible = eligible.sort_values(
-        ["selection_score", "composition_variance", "study_support"],
+        ["selection_score", "composition_variance", "profile_support"],
         ascending=False,
     ).head(max_traits)
     if len(eligible) < 2:
@@ -262,20 +271,161 @@ def select_traits(
 
 
 def build_plot_matrix(
-    selected_study_matrix: pd.DataFrame,
+    selected_profile_matrix: pd.DataFrame,
     selected_traits: pd.Index,
 ) -> pd.DataFrame:
-    """Create column-scaled log composition values for plotting."""
-    row_sums = selected_study_matrix.sum(axis=1).replace(0, pd.NA)
-    composition = selected_study_matrix[selected_traits].div(row_sums, axis=0).fillna(0)
+    """Create column z-scores from log-scaled trait fractions."""
+    row_sums = selected_profile_matrix.sum(axis=1).replace(0, pd.NA)
+    composition = selected_profile_matrix[selected_traits].div(row_sums, axis=0).fillna(0)
     scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
-    zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0).replace(0, pd.NA)
-    return zscores.fillna(0).clip(-2.5, 2.5)
+    zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, pd.NA)
+    return zscores.fillna(0)
+
+
+def cluster_index(indexed_matrix: pd.DataFrame) -> pd.Index:
+    """Return a clustered row order for a block, falling back to current order."""
+    if len(indexed_matrix) < 2:
+        return indexed_matrix.index
+    values = indexed_matrix.to_numpy(dtype=float)
+    if not np.isfinite(values).all():
+        return indexed_matrix.index
+    try:
+        row_linkage = linkage(values, method="average", metric="euclidean")
+    except ValueError:
+        return indexed_matrix.index
+    return indexed_matrix.index[leaves_list(row_linkage)]
+
+
+def order_profiles_by_direction(
+    plot_matrix: pd.DataFrame,
+    profile_metadata: pd.DataFrame,
+) -> pd.Index:
+    """Cluster rows within increased/decreased sections and keep sections separate."""
+    ordered: list[str] = []
+    for direction in ["inc", "dec"]:
+        direction_index = profile_metadata.index[profile_metadata["inc_dec"] == direction]
+        direction_index = direction_index.intersection(plot_matrix.index)
+        ordered.extend(cluster_index(plot_matrix.loc[direction_index]).tolist())
+
+    remaining = plot_matrix.index.difference(pd.Index(ordered), sort=False)
+    ordered.extend(cluster_index(plot_matrix.loc[remaining]).tolist())
+    return pd.Index(ordered)
+
+
+def most_common_series_value(series: pd.Series) -> str:
+    """Return the most common category value in a display bin."""
+    if series.empty:
+        return "unknown"
+    counts = series.map(clean_value).value_counts()
+    if counts.empty:
+        return "unknown"
+    return str(counts.sort_values(ascending=False).index[0])
+
+
+def allocate_display_bins(profile_metadata: pd.DataFrame, max_display_rows: int) -> dict[str, int]:
+    """Allocate rendered row bins across direction sections."""
+    if max_display_rows <= 0 or len(profile_metadata) <= max_display_rows:
+        return {
+            direction: int((profile_metadata["inc_dec"] == direction).sum())
+            for direction in profile_metadata["inc_dec"].dropna().unique()
+        }
+
+    directions = [
+        direction
+        for direction in ["inc", "dec"]
+        if int((profile_metadata["inc_dec"] == direction).sum()) > 0
+    ]
+    directions.extend(
+        direction
+        for direction in sorted(set(profile_metadata["inc_dec"]) - set(directions))
+        if int((profile_metadata["inc_dec"] == direction).sum()) > 0
+    )
+
+    remaining_rows = max_display_rows
+    allocations: dict[str, int] = {}
+    for index, direction in enumerate(directions):
+        direction_count = int((profile_metadata["inc_dec"] == direction).sum())
+        directions_left = len(directions) - index
+        if directions_left == 1:
+            allocation = remaining_rows
+        else:
+            proportional = round(max_display_rows * direction_count / len(profile_metadata))
+            allocation = max(1, min(proportional, remaining_rows - directions_left + 1))
+        allocation = min(allocation, direction_count)
+        allocations[direction] = allocation
+        remaining_rows -= allocation
+
+    return allocations
+
+
+def build_rendered_display_matrix(
+    plot_matrix: pd.DataFrame,
+    profile_metadata: pd.DataFrame,
+    trait_metadata: pd.DataFrame,
+    max_display_rows: int,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Aggregate adjacent clustered profiles into display bins for a readable PNG."""
+    if max_display_rows <= 0 or len(plot_matrix) <= max_display_rows:
+        display_matrix = build_display_matrix(plot_matrix, profile_metadata, trait_metadata)
+        display_metadata = profile_metadata.copy()
+        display_metadata.index = display_matrix.index
+        display_metadata["profile_count"] = 1
+        display_metadata["study_count_in_bin"] = 1
+        return display_matrix, display_metadata
+
+    rows: list[pd.Series] = []
+    metadata_rows: list[dict[str, object]] = []
+    allocations = allocate_display_bins(profile_metadata, max_display_rows)
+
+    for direction, bin_count in allocations.items():
+        direction_index = profile_metadata.index[profile_metadata["inc_dec"] == direction]
+        direction_index = direction_index.intersection(plot_matrix.index)
+        if len(direction_index) == 0:
+            continue
+
+        for bin_number, bin_profile_ids in enumerate(
+            np.array_split(direction_index.to_numpy(), bin_count),
+            start=1,
+        ):
+            if len(bin_profile_ids) == 0:
+                continue
+
+            bin_index = pd.Index(bin_profile_ids)
+            bin_values = plot_matrix.loc[bin_index].mean(axis=0)
+            bin_metadata = profile_metadata.loc[bin_index]
+            direction_label = DIRECTION_LABELS.get(direction, direction)
+            label = (
+                f"{direction_label} profile bin {bin_number:03d} | "
+                f"n={len(bin_index)} | studies={bin_metadata['study_id'].nunique()}"
+            )
+            bin_values.name = label
+            rows.append(bin_values)
+            metadata_rows.append(
+                {
+                    "display_label": label,
+                    "inc_dec": direction,
+                    "direction_label": direction_label,
+                    "profile_count": len(bin_index),
+                    "study_count_in_bin": bin_metadata["study_id"].nunique(),
+                    "body_site_group": most_common_series_value(bin_metadata["body_site_group"]),
+                    "condition_group": most_common_series_value(bin_metadata["condition_group"]),
+                    "first_profile_id": bin_index[0],
+                    "last_profile_id": bin_index[-1],
+                }
+            )
+
+    display_matrix = pd.DataFrame(rows)
+    display_matrix.columns = [
+        trait_metadata.loc[trait_id, "display_label"] or trait_id
+        for trait_id in display_matrix.columns
+    ]
+    display_metadata = pd.DataFrame.from_records(metadata_rows).set_index("display_label")
+    return display_matrix, display_metadata
 
 
 def build_display_matrix(
     plot_matrix: pd.DataFrame,
-    study_metadata: pd.DataFrame,
+    profile_metadata: pd.DataFrame,
     trait_metadata: pd.DataFrame,
 ) -> pd.DataFrame:
     """Apply readable labels for the plotted matrix."""
@@ -283,12 +433,12 @@ def build_display_matrix(
     display.index = [
         " | ".join(
             [
-                study_id,
-                compact_label(study_metadata.loc[study_id, "body_site_group"], 24),
-                compact_label(study_metadata.loc[study_id, "condition_group"], 36),
+                profile_metadata.loc[profile_id, "study_id"],
+                profile_metadata.loc[profile_id, "experiment_id"],
+                profile_metadata.loc[profile_id, "direction_label"],
             ]
         )
-        for study_id in display.index
+        for profile_id in display.index
     ]
     display.columns = [
         trait_metadata.loc[trait_id, "display_label"] or trait_id for trait_id in display.columns
@@ -323,28 +473,31 @@ def legend_handles(palette: dict[str, object], present_categories: pd.Series) ->
 
 def save_heatmap(
     display_matrix: pd.DataFrame,
-    study_metadata: pd.DataFrame,
+    display_metadata: pd.DataFrame,
     trait_metadata: pd.DataFrame,
     output_path: Path,
+    full_profile_count: int,
+    full_study_count: int,
 ) -> None:
     """Render and save the clustered study profile heatmap."""
     sns.set_theme(style="white")
-    display_to_study_id = {
-        display_label: display_label.split(" | ", 1)[0] for display_label in display_matrix.index
-    }
     display_to_trait_id = dict(zip(display_matrix.columns, trait_metadata.index, strict=True))
 
-    body_palette = palette_for_categories(study_metadata["body_site_group"], "tab20")
-    condition_palette = palette_for_categories(study_metadata["condition_group"], "Set3")
+    direction_palette = {"inc": "#c0392b", "dec": "#2874a6"}
+    body_palette = palette_for_categories(display_metadata["body_site_group"], "tab20")
+    condition_palette = palette_for_categories(display_metadata["condition_group"], "Set3")
     trait_palette = palette_for_categories(trait_metadata["display_category"], "Set2")
 
-    row_study_ids = pd.Index([display_to_study_id[label] for label in display_matrix.index])
     row_colors = pd.DataFrame(
         {
-            "body_site": study_metadata.loc[row_study_ids, "body_site_group"]
+            "direction": display_metadata.loc[display_matrix.index, "inc_dec"]
+            .map(direction_palette)
+            .fillna("#7f8c8d")
+            .to_numpy(),
+            "body_site": display_metadata.loc[display_matrix.index, "body_site_group"]
             .map(body_palette)
             .to_numpy(),
-            "condition": study_metadata.loc[row_study_ids, "condition_group"]
+            "condition": display_metadata.loc[display_matrix.index, "condition_group"]
             .map(condition_palette)
             .to_numpy(),
         },
@@ -364,27 +517,44 @@ def save_heatmap(
         display_matrix,
         cmap="vlag",
         center=0,
+        vmin=-1,
+        vmax=1,
         method="average",
         metric="correlation",
+        row_cluster=False,
+        col_cluster=True,
         row_colors=row_colors,
         col_colors=col_colors,
-        linewidths=0.12,
+        linewidths=0.05,
         linecolor="#e5e7eb",
         xticklabels=True,
-        yticklabels=True,
-        figsize=(24, 18),
+        yticklabels=len(display_matrix) <= 120,
+        figsize=(24, min(40, max(18, len(display_matrix) / 8))),
         cbar_pos=(0.02, 0.80, 0.02, 0.14),
         dendrogram_ratio=(0.12, 0.10),
         colors_ratio=(0.03, 0.03),
+        cbar_kws={
+            "label": (
+                "Column z-score of log1p trait fraction per 1,000 profile counts; "
+                "display capped at +/-1"
+            )
+        },
     )
     cluster.fig.suptitle(
-        "Study Trait Profile Clustering\nBugSigDB Studies by Aggregate Trait Composition",
+        "Study Trait Profile Clustering\n"
+        f"{full_profile_count} BugSigDB study/experiment/direction profiles from "
+        f"{full_study_count} studies, aggregated into {len(display_matrix)} "
+        "clustered display bins; "
+        "increased and decreased sections are separated",
         y=1.08,
         fontsize=16,
         fontweight="bold",
     )
     cluster.ax_heatmap.set_xlabel("Trait")
-    cluster.ax_heatmap.set_ylabel("Study | body site | condition")
+    cluster.ax_heatmap.set_ylabel("Clustered profile display bin")
+    increased_count = int((display_metadata["inc_dec"] == "inc").sum())
+    if 0 < increased_count < len(display_matrix):
+        cluster.ax_heatmap.axhline(increased_count, color="#111827", linewidth=0.8)
     for label in cluster.ax_heatmap.get_xticklabels():
         label.set_rotation(90)
         label.set_fontsize(7)
@@ -392,8 +562,8 @@ def save_heatmap(
         label.set_fontsize(7)
 
     cluster.ax_row_dendrogram.legend(
-        handles=legend_handles(body_palette, study_metadata["body_site_group"]),
-        title="Body site",
+        handles=legend_handles(direction_palette, display_metadata["inc_dec"]),
+        title="Direction",
         loc="center",
         bbox_to_anchor=(-0.25, 0.65),
         frameon=False,
@@ -409,7 +579,17 @@ def save_heatmap(
         title_fontsize=10,
     )
     cluster.fig.legend(
-        handles=legend_handles(condition_palette, study_metadata["condition_group"]),
+        handles=legend_handles(body_palette, display_metadata["body_site_group"]),
+        title="Body site",
+        loc="lower left",
+        bbox_to_anchor=(0.02, 0.18),
+        ncol=1,
+        frameon=False,
+        fontsize=8,
+        title_fontsize=9,
+    )
+    cluster.fig.legend(
+        handles=legend_handles(condition_palette, display_metadata["condition_group"]),
         title="Condition",
         loc="lower left",
         bbox_to_anchor=(0.02, 0.02),
@@ -427,25 +607,34 @@ def save_heatmap(
 def write_outputs(
     plot_matrix: pd.DataFrame,
     display_matrix: pd.DataFrame,
-    study_metadata: pd.DataFrame,
+    profile_metadata: pd.DataFrame,
     trait_metadata: pd.DataFrame,
+    rendered_rows: int,
     output_path: Path,
     matrix_output_path: Path,
-    study_metadata_output_path: Path,
+    profile_metadata_output_path: Path,
     trait_metadata_output_path: Path,
 ) -> None:
     """Write the plotted matrix and source metadata."""
     matrix_output_path.parent.mkdir(parents=True, exist_ok=True)
     display_matrix.to_csv(matrix_output_path, sep="\t")
-    study_ids = plot_matrix.index
+    profile_ids = plot_matrix.index
     trait_ids = plot_matrix.columns
-    study_metadata.loc[study_ids].to_csv(study_metadata_output_path, sep="\t")
+    profile_metadata.loc[profile_ids].to_csv(profile_metadata_output_path, sep="\t")
     trait_metadata.loc[trait_ids].to_csv(trait_metadata_output_path, sep="\t")
     print(f"Wrote heatmap: {output_path}")
     print(f"Wrote matrix: {matrix_output_path}")
-    print(f"Wrote study metadata: {study_metadata_output_path}")
+    print(f"Wrote profile metadata: {profile_metadata_output_path}")
     print(f"Wrote trait metadata: {trait_metadata_output_path}")
-    print(f"Studies plotted: {len(study_ids)}")
+    print("Measurement: column z-score of log1p trait fraction per 1,000 profile counts")
+    print(f"Profiles analyzed and written: {len(profile_ids)}")
+    print(f"Rendered heatmap display rows: {rendered_rows}")
+    print(f"Studies represented: {profile_metadata.loc[profile_ids, 'study_id'].nunique()}")
+    print(
+        "Increased/decreased profiles: "
+        f"{int((profile_metadata.loc[profile_ids, 'inc_dec'] == 'inc').sum())}/"
+        f"{int((profile_metadata.loc[profile_ids, 'inc_dec'] == 'dec').sum())}"
+    )
     print(f"Traits plotted: {len(trait_ids)}")
 
 
@@ -496,7 +685,7 @@ def main() -> None:
         "--study-metadata-output",
         type=Path,
         default=OUTPUT_DIR / "study_trait_profile_study_metadata.tsv",
-        help="Output selected study metadata TSV path.",
+        help="Output selected profile metadata TSV path.",
     )
     parser.add_argument(
         "--trait-metadata-output",
@@ -504,13 +693,44 @@ def main() -> None:
         default=OUTPUT_DIR / "study_trait_profile_trait_metadata.tsv",
         help="Output selected trait metadata TSV path.",
     )
-    parser.add_argument("--max-studies", type=int, default=80)
+    parser.add_argument(
+        "--max-profiles",
+        type=int,
+        default=0,
+        help="Maximum number of profile rows to plot. Use 0 to include every profile.",
+    )
+    parser.add_argument(
+        "--max-studies",
+        type=int,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
     parser.add_argument("--max-traits", type=int, default=60)
-    parser.add_argument("--min-profiles", type=int, default=2)
-    parser.add_argument("--min-traits", type=int, default=8)
-    parser.add_argument("--min-total-signal", type=int, default=20)
-    parser.add_argument("--min-study-support", type=int, default=6)
-    parser.add_argument("--max-study-support-fraction", type=float, default=0.95)
+    parser.add_argument(
+        "--display-max-rows",
+        type=int,
+        default=320,
+        help=(
+            "Maximum rows to render in the PNG. When fewer than all profiles, adjacent "
+            "clustered profiles are averaged into direction-specific display bins."
+        ),
+    )
+    parser.add_argument("--min-traits", type=int, default=0)
+    parser.add_argument("--min-total-signal", type=int, default=0)
+    parser.add_argument(
+        "--min-profile-support",
+        "--min-study-support",
+        dest="min_profile_support",
+        type=int,
+        default=6,
+    )
+    parser.add_argument(
+        "--max-profile-support-fraction",
+        "--max-study-support-fraction",
+        dest="max_profile_support_fraction",
+        type=float,
+        default=0.95,
+    )
     parser.add_argument("--max-body-site-categories", type=int, default=8)
     parser.add_argument("--max-condition-categories", type=int, default=8)
     parser.add_argument(
@@ -520,11 +740,19 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    study_matrix, study_profile_metadata, _trait_columns = load_aggregated_profiles(
+    profile_matrix, profile_metadata, _trait_columns = load_profile_matrix(
         args.study_trait_profiles_input
     )
-    study_metadata = study_profile_metadata.join(load_study_titles(args.studies_input), how="left")
-    study_metadata = study_metadata.join(load_raw_study_metadata(args.full_dump_input), how="left")
+    profile_metadata = profile_metadata.join(
+        load_study_titles(args.studies_input),
+        on="study_id",
+        how="left",
+    )
+    profile_metadata = profile_metadata.join(
+        load_raw_study_metadata(args.full_dump_input),
+        on="study_id",
+        how="left",
+    )
     for column in [
         "title",
         "publication_year",
@@ -533,44 +761,63 @@ def main() -> None:
         "location",
         "host_species",
     ]:
-        study_metadata[column] = study_metadata[column].map(clean_value)
+        profile_metadata[column] = profile_metadata[column].map(clean_value)
 
-    selected_studies = select_studies(
-        study_matrix,
-        study_metadata,
-        args.max_studies,
-        args.min_profiles,
+    max_profiles = args.max_profiles
+    if args.max_studies is not None and max_profiles == 0:
+        max_profiles = args.max_studies
+    selected_profiles = select_profiles(
+        profile_matrix,
+        profile_metadata,
+        max_profiles,
         args.min_traits,
         args.min_total_signal,
     )
-    selected_study_matrix = study_matrix.loc[selected_studies]
-    study_metadata = study_metadata.loc[selected_studies].copy()
-    study_metadata["body_site_group"] = group_top_categories(
-        study_metadata["body_site"],
+    selected_profile_matrix = profile_matrix.loc[selected_profiles]
+    profile_metadata = profile_metadata.loc[selected_profiles].copy()
+    profile_metadata["body_site_group"] = group_top_categories(
+        profile_metadata["body_site"],
         args.max_body_site_categories,
     )
-    study_metadata["condition_group"] = group_top_categories(
-        study_metadata["condition"],
+    profile_metadata["condition_group"] = group_top_categories(
+        profile_metadata["condition"],
         args.max_condition_categories,
     )
 
     trait_labels = load_trait_labels(args.trait_columns_input)
     selected_traits, trait_metadata = select_traits(
-        selected_study_matrix,
+        selected_profile_matrix,
         trait_labels,
         args.max_traits,
-        args.min_study_support,
-        args.max_study_support_fraction,
+        args.min_profile_support,
+        args.max_profile_support_fraction,
         args.include_media_traits,
     )
-    plot_matrix = build_plot_matrix(selected_study_matrix, selected_traits)
-    display_matrix = build_display_matrix(plot_matrix, study_metadata, trait_metadata)
-    save_heatmap(display_matrix, study_metadata, trait_metadata, args.output)
+    plot_matrix = build_plot_matrix(selected_profile_matrix, selected_traits)
+    ordered_profiles = order_profiles_by_direction(plot_matrix, profile_metadata)
+    plot_matrix = plot_matrix.loc[ordered_profiles]
+    profile_metadata = profile_metadata.loc[ordered_profiles]
+    display_matrix = build_display_matrix(plot_matrix, profile_metadata, trait_metadata)
+    rendered_matrix, rendered_metadata = build_rendered_display_matrix(
+        plot_matrix,
+        profile_metadata,
+        trait_metadata,
+        args.display_max_rows,
+    )
+    save_heatmap(
+        rendered_matrix,
+        rendered_metadata,
+        trait_metadata,
+        args.output,
+        full_profile_count=len(plot_matrix),
+        full_study_count=profile_metadata["study_id"].nunique(),
+    )
     write_outputs(
         plot_matrix,
         display_matrix,
-        study_metadata,
+        profile_metadata,
         trait_metadata,
+        len(rendered_matrix),
         args.output,
         args.matrix_output,
         args.study_metadata_output,
