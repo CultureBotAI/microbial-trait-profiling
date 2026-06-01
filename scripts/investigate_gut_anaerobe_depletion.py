@@ -8,6 +8,9 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.colors import TwoSlopeNorm
+from matplotlib.patches import Circle, PathPatch
+from matplotlib.path import Path as MplPath
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -35,6 +38,7 @@ GUT_BODY_SITE_RE = re.compile(
     r"feces|faeces|stool|colon|caecum|cecum|gut|intestin|digestive",
     re.IGNORECASE,
 )
+EXCLUDED_CONDITION_SUMMARY_LABELS = {"Clinical treatment"}
 
 
 def read_tsv(path: Path, **kwargs: object) -> pd.DataFrame:
@@ -155,6 +159,13 @@ def summarize_group(metadata: pd.DataFrame, group_column: str, min_profiles: int
         ["decreased_mean_guild_z", "profile_count"],
         ascending=[False, False],
     )
+
+
+def remove_excluded_condition_labels(condition_summary: pd.DataFrame) -> pd.DataFrame:
+    """Remove broad study-design labels from disease/injury condition summaries."""
+    return condition_summary[
+        ~condition_summary["condition"].isin(EXCLUDED_CONDITION_SUMMARY_LABELS)
+    ].copy()
 
 
 def load_taxa_direction_summary() -> pd.DataFrame:
@@ -329,10 +340,437 @@ def summarize_taxa_conditions(occurrences: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def count_target_taxa_conditions(
+    occurrences: pd.DataFrame,
+    direction: str,
+    *,
+    gut_context_only: bool,
+) -> pd.Series:
+    """Count condition labels for target taxon-profile occurrences."""
+    selected = occurrences[occurrences["direction"] == direction].copy()
+    if gut_context_only:
+        selected = selected[selected["gut_context"].fillna(False)].copy()
+    selected["condition"] = selected["condition"].map(clean_text)
+    selected = selected[
+        ~selected["condition"].isin(EXCLUDED_CONDITION_SUMMARY_LABELS)
+    ].copy()
+    return selected["condition"].value_counts()
+
+
+def counts_with_other_remainder(counts: pd.Series, max_direct_slices: int) -> pd.Series:
+    """Keep top categories and collapse the remaining long tail."""
+    top_counts = counts.head(max_direct_slices).copy()
+    remainder = counts.iloc[max_direct_slices:]
+    if remainder.empty:
+        return top_counts
+    other_count = pd.Series({"other conditions": int(remainder.sum())})
+    return pd.concat([top_counts, other_count])
+
+
+def percentage_label(percent: float) -> str:
+    """Hide tiny pie labels to keep dense pies readable."""
+    return f"{percent:.1f}%" if percent >= 2 else ""
+
+
+def save_condition_breakdown_plots(
+    counts: pd.Series,
+    *,
+    pie_output_path: Path,
+    histogram_output_path: Path,
+    title_prefix: str,
+    color: str,
+) -> None:
+    """Save pie and horizontal histogram plots for condition counts."""
+    if counts.empty:
+        return
+
+    pie_counts = counts_with_other_remainder(counts, max_direct_slices=12)
+    fig, ax = plt.subplots(figsize=(10, 7))
+    wedges, _texts, autotexts = ax.pie(
+        pie_counts.to_numpy(),
+        autopct=percentage_label,
+        startangle=90,
+        counterclock=False,
+        pctdistance=0.78,
+    )
+    for text in autotexts:
+        text.set_fontsize(8)
+    ax.legend(
+        wedges,
+        pie_counts.index,
+        title="Condition",
+        loc="center left",
+        bbox_to_anchor=(1.0, 0.5),
+        frameon=False,
+        fontsize=8,
+        title_fontsize=9,
+    )
+    ax.set_title(f"{title_prefix}: condition share")
+    fig.tight_layout()
+    fig.savefig(pie_output_path, bbox_inches="tight")
+    plt.close(fig)
+
+    histogram_counts = counts.head(20)
+    fig, ax = plt.subplots(figsize=(10, max(5, len(histogram_counts) * 0.35)))
+    ax.barh(histogram_counts.index, histogram_counts.to_numpy(), color=color)
+    ax.invert_yaxis()
+    ax.set_xlabel("Target taxon-profile occurrences")
+    ax.set_title(f"{title_prefix}: top conditions")
+    for index, value in enumerate(histogram_counts.to_numpy()):
+        ax.text(value, index, f" {int(value)}", va="center", fontsize=8)
+    fig.tight_layout()
+    fig.savefig(histogram_output_path, bbox_inches="tight")
+    plt.close(fig)
+
+
+def display_body_site(value: object) -> str:
+    """Return concise display labels for body-site groups."""
+    label = clean_text(value)
+    if label.lower() == "unknown":
+        return "unknown body site"
+    return label
+
+
+def is_other_body_site(value: object) -> bool:
+    return clean_text(value).lower() == "other"
+
+
+def anatomical_site_base(value: object) -> tuple[float, float]:
+    """Map body-site group labels to approximate body-diagram coordinates."""
+    label = clean_text(value).lower()
+    if "nasopharynx" in label or "airway" in label:
+        return 0.30, 0.86
+    if "subgingival" in label or "dental" in label:
+        return 0.275, 0.825
+    if "saliva" in label:
+        return 0.325, 0.825
+    if "mouth" in label or "oral" in label:
+        return 0.30, 0.825
+    if "colon" in label:
+        return 0.285, 0.47
+    if "caecum" in label or "cecum" in label:
+        return 0.33, 0.46
+    if "feces" in label or "faeces" in label or "stool" in label:
+        return 0.31, 0.37
+    if "vagina" in label or "urogenital" in label:
+        return 0.31, 0.25
+    if "unknown" in label:
+        return 0.16, 0.16
+    return 0.16, 0.47
+
+
+def add_anatomical_outline(ax: plt.Axes) -> None:
+    """Draw an original front-facing body-template outline for site callouts."""
+    face = "#f8fafc"
+    edge = "#94a3b8"
+
+    def add_path(
+        start: tuple[float, float],
+        segments: list[tuple[tuple[float, float], ...]],
+    ) -> None:
+        vertices = [start]
+        codes = [MplPath.MOVETO]
+        for segment in segments:
+            if len(segment) == 1:
+                vertices.append(segment[0])
+                codes.append(MplPath.LINETO)
+            else:
+                vertices.extend(segment)
+                codes.extend([MplPath.CURVE4] * 3)
+        vertices.append(start)
+        codes.append(MplPath.CLOSEPOLY)
+        ax.add_patch(
+            PathPatch(
+                MplPath(vertices, codes),
+                facecolor=face,
+                edgecolor=edge,
+                lw=1.4,
+                joinstyle="round",
+                zorder=1,
+            )
+        )
+
+    def mirror_point(point: tuple[float, float]) -> tuple[float, float]:
+        return 0.60 - point[0], point[1]
+
+    def mirror_segments(
+        segments: list[tuple[tuple[float, float], ...]],
+    ) -> list[tuple[tuple[float, float], ...]]:
+        return [tuple(mirror_point(point) for point in segment) for segment in segments]
+
+    ax.add_patch(
+        Circle(
+            (0.30, 0.87),
+            0.045,
+            facecolor=face,
+            edgecolor=edge,
+            lw=1.4,
+            zorder=1,
+        )
+    )
+    torso_segments = [
+        ((0.224, 0.800), (0.207, 0.775), (0.196, 0.735)),
+        ((0.178, 0.660), (0.178, 0.565), (0.195, 0.480)),
+        ((0.205, 0.420), (0.220, 0.355), (0.240, 0.320)),
+        ((0.265, 0.295), (0.335, 0.295), (0.360, 0.320)),
+        ((0.380, 0.355), (0.395, 0.420), (0.405, 0.480)),
+        ((0.422, 0.565), (0.422, 0.660), (0.404, 0.735)),
+        ((0.393, 0.775), (0.376, 0.800), (0.355, 0.805)),
+        ((0.335, 0.812), (0.265, 0.812), (0.245, 0.805)),
+    ]
+    left_arm_segments = [
+        ((0.175, 0.665), (0.160, 0.585), (0.142, 0.505)),
+        ((0.127, 0.445), (0.112, 0.395), (0.105, 0.365)),
+        ((0.113, 0.350), (0.135, 0.346), (0.150, 0.358)),
+        ((0.162, 0.395), (0.178, 0.455), (0.198, 0.535)),
+        ((0.207, 0.600), (0.213, 0.665), (0.224, 0.715)),
+    ]
+    left_leg_segments = [
+        ((0.258, 0.245), (0.250, 0.170), (0.238, 0.090)),
+        ((0.233, 0.060), (0.250, 0.045), (0.278, 0.050)),
+        ((0.292, 0.100), (0.295, 0.225), (0.295, 0.300)),
+    ]
+    add_path((0.245, 0.805), torso_segments)
+    add_path((0.205, 0.725), left_arm_segments)
+    add_path(mirror_point((0.205, 0.725)), mirror_segments(left_arm_segments))
+    add_path((0.265, 0.300), left_leg_segments)
+    add_path(mirror_point((0.265, 0.300)), mirror_segments(left_leg_segments))
+    ax.plot([0.280, 0.280], [0.805, 0.770], color=edge, lw=1.2, zorder=2)
+    ax.plot([0.320, 0.320], [0.805, 0.770], color=edge, lw=1.2, zorder=2)
+
+
+def save_anatomical_sites_diagram(
+    body_site_summary: pd.DataFrame,
+    *,
+    output_path: Path,
+    title: str,
+    signal_column: str,
+    signal_label: str,
+    max_sites: int = 12,
+) -> None:
+    """Save an anatomical-site callout diagram for body-site guild summaries."""
+    if body_site_summary.empty:
+        return
+
+    plot_sites = body_site_summary[
+        ~body_site_summary["body_site_group"].map(is_other_body_site)
+    ].head(max_sites).copy()
+    if plot_sites.empty:
+        return
+    plot_sites["profile_count"] = pd.to_numeric(
+        plot_sites["profile_count"],
+        errors="coerce",
+    ).fillna(0)
+    plot_sites[signal_column] = pd.to_numeric(
+        plot_sites[signal_column],
+        errors="coerce",
+    ).fillna(0)
+    points = [anatomical_site_base(site) for site in plot_sites["body_site_group"]]
+    plot_sites["anchor_x"] = [point[0] for point in points]
+    plot_sites["anchor_y"] = [point[1] for point in points]
+    plot_sites = plot_sites.sort_values(
+        ["anchor_y", "profile_count"],
+        ascending=[False, False],
+    )
+
+    max_count = max(float(plot_sites["profile_count"].max()), 1.0)
+    max_signal = max(float(plot_sites[signal_column].abs().max()), 0.1)
+    norm = TwoSlopeNorm(vmin=-max_signal, vcenter=0, vmax=max_signal)
+    cmap = plt.get_cmap("RdBu_r")
+
+    fig_height = max(7.2, 1.0 + len(plot_sites) * 0.82)
+    fig, ax = plt.subplots(figsize=(11, fig_height))
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_aspect("equal", adjustable="box")
+    ax.axis("off")
+    add_anatomical_outline(ax)
+
+    label_ys = [0.84]
+    if len(plot_sites) > 1:
+        step = 0.70 / (len(plot_sites) - 1)
+        label_ys = [0.84 - index * step for index in range(len(plot_sites))]
+
+    for label_y, row in zip(label_ys, plot_sites.itertuples(index=False), strict=False):
+        count = int(row.profile_count)
+        signal = float(getattr(row, signal_column))
+        color = cmap(norm(signal))
+        size = 95 + 900 * math.sqrt(count / max_count)
+        ax.scatter(
+            [row.anchor_x],
+            [row.anchor_y],
+            s=size,
+            c=[color],
+            edgecolors="#111827",
+            linewidths=0.8,
+            zorder=4,
+        )
+        ax.plot(
+            [row.anchor_x, 0.52, 0.57],
+            [row.anchor_y, label_y, label_y],
+            color="#6b7280",
+            lw=0.9,
+            zorder=2,
+        )
+        bar_width = 0.30 * count / max_count
+        ax.plot(
+            [0.58, 0.58 + bar_width],
+            [label_y, label_y],
+            color=color,
+            lw=7,
+            solid_capstyle="round",
+            zorder=3,
+        )
+        ax.text(
+            0.58,
+            label_y + 0.018,
+            display_body_site(row.body_site_group),
+            ha="left",
+            va="bottom",
+            fontsize=10,
+            fontweight="bold",
+        )
+        ax.text(
+            0.58,
+            label_y - 0.018,
+            f"{count:,} profiles; {signal_label} {signal:+.2f}",
+            ha="left",
+            va="top",
+            fontsize=8.5,
+            color="#374151",
+        )
+
+    ax.text(0.02, 0.965, title, ha="left", va="top", fontsize=17, fontweight="bold")
+    ax.text(
+        0.02,
+        0.035,
+        "Bubble and bar length show profile count; color shows the "
+        "direction-specific guild signal.",
+        ha="left",
+        va="bottom",
+        fontsize=8.5,
+        color="#374151",
+    )
+    scalar_mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+    scalar_mappable.set_array([])
+    colorbar = fig.colorbar(scalar_mappable, ax=ax, fraction=0.03, pad=0.02)
+    colorbar.set_label(signal_label)
+
+    fig.tight_layout()
+    fig.savefig(output_path, bbox_inches="tight")
+    plt.close(fig)
+
+
+def write_figure_methods() -> None:
+    """Write methods text for generated figure files."""
+    lines = [
+        "# Figure Methods",
+        "",
+        "These method notes describe how each PNG in this investigation folder was "
+        "generated by `scripts/investigate_gut_anaerobe_depletion.py`.",
+        "",
+        "## Shared Inputs",
+        "",
+        "Study-profile z-scores were read from "
+        "`trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv` and "
+        "joined to study metadata from "
+        "`trait-visualization/study_trait_profile_study_metadata.tsv`. The gut "
+        "anaerobe/fermentation guild score was the row-wise mean of the selected "
+        "guild traits: anaerobic, obligately anaerobic, Fermentation, cellulose "
+        "catabolic process, and xylan catabolic process. Gut-context profiles were "
+        "defined by body-site or grouped body-site labels matching "
+        "`feces`, `faeces`, `stool`, `colon`, `caecum`, `cecum`, `gut`, "
+        "`intestin`, or `digestive`.",
+        "",
+        "The focal taxa were defined a priori in the script's `TARGET_TAXA` map "
+        "using NCBI Taxonomy identifiers, which avoids ambiguity from synonym or "
+        "strain-name differences. The selected taxa were "
+        "Faecalibacterium prausnitzii (NCBITaxon:853), Anaerobutyricum hallii "
+        "(NCBITaxon:39488), Lachnospira eligens (NCBITaxon:39485), "
+        "Agathobacter rectalis (NCBITaxon:39491), Roseburia intestinalis "
+        "(NCBITaxon:166486), Ruminococcus bromii (NCBITaxon:40518), and "
+        "Roseburia inulinivorans (NCBITaxon:360807). They were chosen as focal "
+        "examples for the gut anaerobe/fermentation depletion hypothesis because "
+        "they are species-level gut anaerobe or fiber-fermentation candidates in "
+        "the selected guild, and the derived taxa-trait matrix gives each selected "
+        "taxon at least one of the investigation guild-trait annotations. The "
+        "script writes `candidate_taxa_trait_presence.tsv` from "
+        "`data/derived/taxa_trait_matrix.tsv` as the audit trail for those trait "
+        "annotations.",
+        "",
+        "## `candidate_taxa_depletion_bias.png`",
+        "",
+        "This figure uses the fixed focal taxa listed above, then intersects their "
+        "NCBI Taxonomy IDs with "
+        "`trait-visualization/taxa_guild_discovery_taxa_metadata.tsv`. That "
+        "metadata table supplies the total BugSigDB profile count and the number "
+        "of profiles where each taxon was reported as increased or decreased. For "
+        "each target taxon, depletion bias was calculated as `(decreased profile "
+        "count - increased profile count) / total BugSigDB profile count`. The "
+        "horizontal bars show this depletion-bias value for each target taxon. No "
+        "condition or body-site filter is applied to this figure; it summarizes "
+        "the overall BugSigDB direction tendency of the preselected focal taxa.",
+        "",
+        "## `condition_decreased_guild_signal.png`",
+        "",
+        "Gut-context study profiles were grouped by BugSigDB condition label. Groups "
+        "with fewer than five profiles were excluded, and the broad label "
+        "`Clinical treatment` was removed from the displayed condition summary. The "
+        "figure keeps the top 12 eligible conditions with at least three decreased "
+        "profiles and at least two studies, using fallback filtering if needed. Bar "
+        "height represents the mean gut anaerobe/fermentation guild z-score among "
+        "decreased profiles for that condition.",
+        "",
+        "## `guild_trait_direction_shift.png`",
+        "",
+        "For each selected guild trait, the script calculated the mean z-score in "
+        "all decreased study profiles and the mean z-score in all increased study "
+        "profiles. Bars show `decreased mean z - increased mean z`; positive values "
+        "indicate traits that are higher in decreased profiles.",
+        "",
+        "## `anatomical_sites_diagram.png`",
+        "",
+        "Gut-context profiles were grouped by `body_site_group`, requiring at least "
+        "10 profiles per group. The display excludes the generic `Other` body-site "
+        "group. Bubble and bar length encode the number of study profiles in the "
+        "body-site group. Color encodes the mean gut anaerobe/fermentation guild "
+        "z-score among decreased profiles at that body site. Body-site labels were "
+        "placed on a simplified, neutral front-view body outline using fixed "
+        "anatomical coordinates for feces/stool, colon, caecum, oral, airway, "
+        "urogenital, and unknown labels.",
+        "",
+        "## `target_taxa_condition_breakdown_pie.png`",
+        "",
+        "Target-taxon occurrences were loaded from `data/derived/taxa.tsv`, limited "
+        "to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study "
+        "profile, and joined to the scored study profiles. This produces one row "
+        "per focal taxon/profile occurrence with condition, body site, direction, "
+        "and guild-score metadata. The pie chart counts decreased "
+        "target-taxon/profile occurrences in gut-context profiles by condition, "
+        "after removing `Clinical treatment`. A condition with multiple focal "
+        "taxa can therefore contribute multiple occurrences; the chart is an "
+        "occurrence breakdown, not a unique-study breakdown. The top 12 condition "
+        "labels are shown directly; all remaining labels are collapsed into "
+        "`other conditions`. Percent labels below 2% are hidden for readability.",
+        "",
+        "## `target_taxa_condition_breakdown_histogram.png`",
+        "",
+        "The histogram uses the same decreased gut-context focal-taxon/profile "
+        "condition counts as the pie chart, including the same target-taxon "
+        "selection, gut-context filter, deduplication rule, and `Clinical "
+        "treatment` exclusion. It displays the top 20 explicit condition labels "
+        "as horizontal bars, with bar labels showing occurrence counts.",
+        "",
+    ]
+    (OUTPUT_DIR / "figure_methods.md").write_text("\n".join(lines), encoding="utf-8")
+
+
 def make_plots(
     taxa_summary: pd.DataFrame,
     condition_summary: pd.DataFrame,
     direction_summary: pd.DataFrame,
+    body_site_summary: pd.DataFrame,
+    occurrences: pd.DataFrame,
 ) -> None:
     plt.rcParams.update({"figure.dpi": 160, "savefig.dpi": 200})
 
@@ -381,6 +819,26 @@ def make_plots(
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "guild_trait_direction_shift.png")
     plt.close(fig)
+
+    condition_counts = count_target_taxa_conditions(
+        occurrences,
+        "decreased",
+        gut_context_only=True,
+    )
+    save_condition_breakdown_plots(
+        condition_counts,
+        pie_output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_pie.png",
+        histogram_output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_histogram.png",
+        title_prefix="Decreased gut anaerobe target taxa",
+        color="#2563eb",
+    )
+    save_anatomical_sites_diagram(
+        body_site_summary,
+        output_path=OUTPUT_DIR / "anatomical_sites_diagram.png",
+        title="Gut Anaerobe/Fermentation Depletion: Anatomical Sites",
+        signal_column="decreased_mean_guild_z",
+        signal_label="decreased-profile guild z",
+    )
 
 
 def write_summary_report(
@@ -546,9 +1004,13 @@ def write_summary_report(
             "- `candidate_taxa_condition_direction.tsv`",
             "- `candidate_taxa_profile_occurrences.tsv`",
             "- `top_decreased_guild_profiles.tsv`",
+            "- `figure_methods.md`",
             "- `candidate_taxa_depletion_bias.png`",
             "- `condition_decreased_guild_signal.png`",
             "- `guild_trait_direction_shift.png`",
+            "- `anatomical_sites_diagram.png`",
+            "- `target_taxa_condition_breakdown_pie.png`",
+            "- `target_taxa_condition_breakdown_histogram.png`",
             "",
         ]
     )
@@ -564,7 +1026,9 @@ def main() -> None:
 
     direction_summary = summarize_direction(scored_profiles)
     body_site_summary = summarize_group(gut_profiles, "body_site_group", min_profiles=10)
-    condition_summary = summarize_group(gut_profiles, "condition", min_profiles=5)
+    condition_summary = remove_excluded_condition_labels(
+        summarize_group(gut_profiles, "condition", min_profiles=5)
+    )
     taxa_summary = load_taxa_direction_summary()
     trait_presence = load_target_taxa_trait_counts()
     occurrences = load_target_taxa_occurrences(scored_profiles)
@@ -602,7 +1066,8 @@ def main() -> None:
     )
     trait_definitions.to_csv(OUTPUT_DIR / "guild_trait_definitions.tsv", sep="\t")
 
-    make_plots(taxa_summary, condition_summary, direction_summary)
+    make_plots(taxa_summary, condition_summary, direction_summary, body_site_summary, occurrences)
+    write_figure_methods()
     write_summary_report(
         direction_summary,
         body_site_summary,

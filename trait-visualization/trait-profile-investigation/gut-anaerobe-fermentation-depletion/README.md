@@ -58,7 +58,7 @@ The selected guild traits are consistently higher in decreased profiles than in 
 | Age-related macular degeneration | 10 | 3 | 0.913 | 0.729 |
 | Inflammatory bowel disease | 42 | 5 | 0.751 | 0.639 |
 | Lewy body dementia | 23 | 2 | 0.723 | 0.427 |
-| Clinical treatment | 21 | 4 | 0.674 | 0.193 |
+| Attention deficit hyperactivity disorder | 6 | 3 | 0.658 | 0.719 |
 
 ## Body-Site Check
 
@@ -100,6 +100,10 @@ The selected guild traits are consistently higher in decreased profiles than in 
 - `candidate_taxa_condition_direction.tsv`
 - `candidate_taxa_profile_occurrences.tsv`
 - `top_decreased_guild_profiles.tsv`
+- `figure_methods.md`
 - `candidate_taxa_depletion_bias.png`
 - `condition_decreased_guild_signal.png`
 - `guild_trait_direction_shift.png`
+- `anatomical_sites_diagram.png`
+- `target_taxa_condition_breakdown_pie.png`
+- `target_taxa_condition_breakdown_histogram.png`

@@ -1,4 +1,4 @@
-# Facultative Aerobe / Inflammatory Expansion Investigation
+# Facultative-Aerobe Trait Expansion Investigation
 
 This investigation uses the existing study trait profile clustered heatmap matrix, study metadata, taxa guild heatmap metadata, and derived taxa/trait matrices.
 
@@ -10,7 +10,7 @@ This investigation uses the existing study trait profile clustered heatmap matri
 
 ## Main Signal
 
-The selected guild traits are higher in increased profiles than in decreased profiles, supporting a facultative-aerobe/pathobiont expansion signal.
+The selected guild traits are higher in increased profiles than in decreased profiles, supporting a facultative-aerobe trait expansion signal.
 
 | trait | increased - decreased z |
 | --- | ---: |
@@ -61,10 +61,10 @@ The selected guild traits are higher in increased profiles than in decreased pro
 | Female infertility | 22 | 3 | 0.284 | 0.694 |
 | Multiple myeloma | 11 | 2 | 0.515 | 0.681 |
 | Tuberculosis | 8 | 3 | 0.336 | 0.678 |
-| Body fat distribution | 31 | 2 | 0.072 | 0.616 |
 | Autism | 14 | 4 | 0.530 | 0.597 |
 | Graft versus host disease | 13 | 4 | 0.324 | 0.596 |
-| Physical activity | 12 | 2 | 0.407 | 0.571 |
+| Colorectal carcinoma | 15 | 3 | 0.492 | 0.570 |
+| Vulvovaginitis | 5 | 2 | 0.307 | 0.543 |
 
 ## Body-Site Check
 
@@ -98,7 +98,7 @@ The selected guild traits are higher in increased profiles than in decreased pro
 
 ## Suggested Follow-Up
 
-1. Split the signal by body site before treating it as inflammatory expansion; oral and airway profiles can dominate aerobic/microaerophilic traits.
+1. Split the signal by body site before interpreting it as facultative-aerobe trait expansion; oral and airway profiles can dominate aerobic/microaerophilic traits.
 2. In gut-only analyses, test the target taxa against inflammation markers, nitrate respiration, oxygen tolerance, virulence genes, and resistome features.
 3. Compare expansion-biased taxa against the anaerobe-depletion guild to see whether the same conditions show reciprocal loss and expansion patterns.
 
@@ -112,6 +112,10 @@ The selected guild traits are higher in increased profiles than in decreased pro
 - `candidate_taxa_condition_direction.tsv`
 - `candidate_taxa_profile_occurrences.tsv`
 - `top_increased_guild_profiles.tsv`
+- `figure_methods.md`
 - `candidate_taxa_expansion_bias.png`
 - `condition_increased_guild_signal.png`
 - `guild_trait_direction_shift.png`
+- `anatomical_sites_diagram.png`
+- `target_taxa_condition_breakdown_pie.png`
+- `target_taxa_condition_breakdown_histogram.png`
