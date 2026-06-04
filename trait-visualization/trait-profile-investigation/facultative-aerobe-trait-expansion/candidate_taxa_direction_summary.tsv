@@ -1,4 +1,4 @@
-taxon_id	target_taxon_name	taxon_name	taxonomic_rank	bugsigdb_study_count	bugsigdb_profile_count	decreased	increased	dominant_direction	increased_fraction	expansion_bias	increased_to_decreased_ratio	trait_count
+taxon_id	target_taxon_name	taxon_name	taxonomic_rank	bugsigdb_study_count	bugsigdb_profile_count	decreased	increased	dominant_direction	increased_fraction	increased_profile_tendency	increased_to_decreased_ratio	trait_count
 NCBITaxon:33033	Parvimonas micra	Parvimonas micra	species	50	72	17	55	increased	0.7638888888888888	0.5277777777777778	3.235294117647059	13
 NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae	species	48	86	22	64	increased	0.7441860465116279	0.4883720930232558	2.909090909090909	24
 NCBITaxon:1328	Streptococcus anginosus	Streptococcus anginosus	species	47	73	19	54	increased	0.7397260273972602	0.4794520547945205	2.8421052631578947	19

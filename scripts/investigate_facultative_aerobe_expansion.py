@@ -1,4 +1,4 @@
-"""Investigate facultative-aerobe trait expansion signals."""
+"""Investigate facultative-aerobe increased-profile signals."""
 
 from __future__ import annotations
 
@@ -38,8 +38,10 @@ TARGET_TAXA = {
 }
 EXCLUDED_CONDITION_SUMMARY_LABELS = {
     "Body fat distribution",
+    "Exposure",
     "Health trait",
     "Microbiome",
+    "Population",
     "Physical activity",
 }
 
@@ -158,8 +160,18 @@ def summarize_group(metadata: pd.DataFrame, group_column: str, min_profiles: int
 def remove_excluded_condition_labels(condition_summary: pd.DataFrame) -> pd.DataFrame:
     """Remove broad study-design labels from condition summaries."""
     return condition_summary[
-        ~condition_summary["condition"].isin(EXCLUDED_CONDITION_SUMMARY_LABELS)
+        ~condition_summary["condition"].map(is_excluded_condition_label)
     ].copy()
+
+
+def is_excluded_condition_label(value: object) -> bool:
+    """Return whether a condition label is too broad for disease-context summaries."""
+    label = clean_text(value)
+    broad_terms = ("exposure", "measurement", "population")
+    lower_label = label.lower()
+    return label in EXCLUDED_CONDITION_SUMMARY_LABELS or any(
+        term in lower_label for term in broad_terms
+    )
 
 
 def select_top_conditions(condition_summary: pd.DataFrame, limit: int) -> pd.DataFrame:
@@ -169,19 +181,17 @@ def select_top_conditions(condition_summary: pd.DataFrame, limit: int) -> pd.Dat
         condition_summary[
             (condition_summary["increased_profile_count"] >= 3)
             & (condition_summary["study_count"] >= 2)
-            & (condition_summary["increased_minus_decreased_guild_z"] > 0)
-            & (condition_summary["increased_mean_guild_z"] > 0)
         ]
         .sort_values(
-            ["increased_minus_decreased_guild_z", "increased_mean_guild_z"],
+            ["increased_mean_guild_z", "increased_minus_decreased_guild_z"],
             ascending=[False, False],
         )
         .head(limit)
     )
     if top_conditions.empty:
-        top_conditions = condition_summary[
-            condition_summary["increased_profile_count"] >= 3
-        ].head(limit)
+        top_conditions = condition_summary[condition_summary["increased_profile_count"] >= 3].head(
+            limit
+        )
     return top_conditions
 
 
@@ -193,7 +203,7 @@ def load_taxa_direction_summary() -> pd.DataFrame:
         safe_ratio(float(row["increased"]), float(row["bugsigdb_profile_count"]))
         for _, row in summary.iterrows()
     ]
-    summary["expansion_bias"] = [
+    summary["increased_profile_tendency"] = [
         safe_ratio(
             float(row["increased"]) - float(row["decreased"]),
             float(row["bugsigdb_profile_count"]),
@@ -215,11 +225,11 @@ def load_taxa_direction_summary() -> pd.DataFrame:
             "increased",
             "dominant_direction",
             "increased_fraction",
-            "expansion_bias",
+            "increased_profile_tendency",
             "increased_to_decreased_ratio",
             "trait_count",
         ]
-    ].sort_values("expansion_bias", ascending=False)
+    ].sort_values("increased_profile_tendency", ascending=False)
 
 
 def load_target_taxa_trait_counts() -> pd.DataFrame:
@@ -345,11 +355,11 @@ def summarize_taxa_conditions(occurrences: pd.DataFrame) -> pd.DataFrame:
     output["total_profile_count"] = (
         output["decreased_profile_count"] + output["increased_profile_count"]
     )
-    output["expansion_bias"] = (
+    output["increased_profile_tendency"] = (
         output["increased_profile_count"] - output["decreased_profile_count"]
     ) / output["total_profile_count"].replace(0, pd.NA)
     return output.sort_values(
-        ["expansion_bias", "increased_study_count", "total_profile_count"],
+        ["increased_profile_tendency", "increased_study_count", "total_profile_count"],
         ascending=[False, False, False],
     )
 
@@ -358,75 +368,31 @@ def count_target_taxa_conditions(occurrences: pd.DataFrame, direction: str) -> p
     """Count condition labels for target taxon-profile occurrences."""
     selected = occurrences[occurrences["direction"] == direction].copy()
     selected["condition"] = selected["condition"].map(clean_text)
-    selected = selected[
-        ~selected["condition"].isin(EXCLUDED_CONDITION_SUMMARY_LABELS)
-    ].copy()
+    selected = selected[~selected["condition"].map(is_excluded_condition_label)].copy()
     return selected["condition"].value_counts()
 
 
-def counts_with_other_remainder(counts: pd.Series, max_direct_slices: int) -> pd.Series:
-    """Keep top categories and collapse the remaining long tail."""
-    top_counts = counts.head(max_direct_slices).copy()
-    remainder = counts.iloc[max_direct_slices:]
-    if remainder.empty:
-        return top_counts
-    other_count = pd.Series({"other conditions": int(remainder.sum())})
-    return pd.concat([top_counts, other_count])
-
-
-def percentage_label(percent: float) -> str:
-    """Hide tiny pie labels to keep dense pies readable."""
-    return f"{percent:.1f}%" if percent >= 2 else ""
-
-
-def save_condition_breakdown_plots(
+def save_condition_breakdown_bar_chart(
     counts: pd.Series,
     *,
-    pie_output_path: Path,
-    histogram_output_path: Path,
+    output_path: Path,
     title_prefix: str,
     color: str,
 ) -> None:
-    """Save pie and horizontal histogram plots for condition counts."""
+    """Save a horizontal bar chart for condition counts."""
     if counts.empty:
         return
 
-    pie_counts = counts_with_other_remainder(counts, max_direct_slices=12)
-    fig, ax = plt.subplots(figsize=(10, 7))
-    wedges, _texts, autotexts = ax.pie(
-        pie_counts.to_numpy(),
-        autopct=percentage_label,
-        startangle=90,
-        counterclock=False,
-        pctdistance=0.78,
-    )
-    for text in autotexts:
-        text.set_fontsize(8)
-    ax.legend(
-        wedges,
-        pie_counts.index,
-        title="Condition",
-        loc="center left",
-        bbox_to_anchor=(1.0, 0.5),
-        frameon=False,
-        fontsize=8,
-        title_fontsize=9,
-    )
-    ax.set_title(f"{title_prefix}: condition share")
-    fig.tight_layout()
-    fig.savefig(pie_output_path, bbox_inches="tight")
-    plt.close(fig)
-
-    histogram_counts = counts.head(20)
-    fig, ax = plt.subplots(figsize=(10, max(5, len(histogram_counts) * 0.35)))
-    ax.barh(histogram_counts.index, histogram_counts.to_numpy(), color=color)
+    bar_counts = counts.head(20)
+    fig, ax = plt.subplots(figsize=(10, max(5, len(bar_counts) * 0.35)))
+    ax.barh(bar_counts.index, bar_counts.to_numpy(), color=color)
     ax.invert_yaxis()
     ax.set_xlabel("Target taxon-profile occurrences")
     ax.set_title(f"{title_prefix}: top conditions")
-    for index, value in enumerate(histogram_counts.to_numpy()):
+    for index, value in enumerate(bar_counts.to_numpy()):
         ax.text(value, index, f" {int(value)}", va="center", fontsize=8)
     fig.tight_layout()
-    fig.savefig(histogram_output_path, bbox_inches="tight")
+    fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -553,15 +519,18 @@ def save_anatomical_sites_diagram(
     title: str,
     signal_column: str,
     signal_label: str,
+    legend_note: str | None = None,
     max_sites: int = 12,
 ) -> None:
     """Save an anatomical-site callout diagram for body-site guild summaries."""
     if body_site_summary.empty:
         return
 
-    plot_sites = body_site_summary[
-        ~body_site_summary["body_site_group"].map(is_other_body_site)
-    ].head(max_sites).copy()
+    plot_sites = (
+        body_site_summary[~body_site_summary["body_site_group"].map(is_other_body_site)]
+        .head(max_sites)
+        .copy()
+    )
     if plot_sites.empty:
         return
     plot_sites["profile_count"] = pd.to_numeric(
@@ -648,11 +617,15 @@ def save_anatomical_sites_diagram(
         )
 
     ax.text(0.02, 0.965, title, ha="left", va="top", fontsize=17, fontweight="bold")
+    footer = (
+        "Bubble and bar length show profile count; color shows the direction-specific guild signal."
+    )
+    if legend_note:
+        footer = f"{footer} {legend_note}"
     ax.text(
         0.02,
         0.035,
-        "Bubble and bar length show profile count; color shows the "
-        "direction-specific guild signal.",
+        footer,
         ha="left",
         va="bottom",
         fontsize=8.5,
@@ -685,6 +658,11 @@ def write_figure_methods() -> None:
         "facultative-aerobe guild score was the row-wise mean of the selected guild "
         "traits: facultatively aerobic, aerobic, gram negative, motile, "
         "microaerophilic, and nitrate_reduction.",
+        "Direction labels (`increased` and `decreased`) were taken from BugSigDB's "
+        "curated `Abundance in Group 1` signature field. This script did not "
+        "recalculate differential abundance; it grouped and filtered "
+        "BugSigDB-reported study/experiment/direction profiles by condition and "
+        "body-site metadata.",
         "",
         "The focal taxa were defined a priori in the script's `TARGET_TAXA` map "
         "using NCBI Taxonomy identifiers, which avoids ambiguity from synonym or "
@@ -695,27 +673,29 @@ def write_figure_methods() -> None:
         "(NCBITaxon:208479), Eggerthella lenta (NCBITaxon:84112), Prevotella "
         "intermedia (NCBITaxon:28131), Porphyromonas gingivalis (NCBITaxon:837), "
         "and Veillonella dispar (NCBITaxon:39778). They were chosen as focal "
-        "examples for the facultative-aerobe trait expansion hypothesis because "
+        "examples for the facultative-aerobe increased-profile signal because "
         "they include taxa with oxygen-tolerance, gram-negative, motility, "
         "microaerophilic, or nitrate-reduction annotations in the derived "
         "taxa-trait matrix, and because they provide gut, oral, and airway "
-        "contexts where facultative-aerobe or aerotolerant expansion may be "
+        "contexts where facultative-aerobe or aerotolerant increased-profile "
+        "patterns may be "
         "relevant. The script writes `candidate_taxa_trait_presence.tsv` from "
         "`data/derived/taxa_trait_matrix.tsv` as the audit trail for those trait "
         "annotations; some focal taxa carry broad multi-trait support, while "
         "others are retained as single-trait focal taxa for condition/body-site "
         "follow-up.",
         "",
-        "## `candidate_taxa_expansion_bias.png`",
+        "## `candidate_taxa_increased_profile_tendency.png`",
         "",
         "This figure uses the fixed focal taxa listed above, then intersects their "
         "NCBI Taxonomy IDs with "
         "`trait-visualization/taxa_guild_discovery_taxa_metadata.tsv`. That "
         "metadata table supplies the total BugSigDB profile count and the number "
         "of profiles where each taxon was reported as increased or decreased. For "
-        "each target taxon, expansion bias was calculated as `(increased profile "
-        "count - decreased profile count) / total BugSigDB profile count`. The "
-        "horizontal bars show this expansion-bias value for each target taxon. No "
+        "each target taxon, increased-profile tendency was calculated as "
+        "`(increased profile count - decreased profile count) / total BugSigDB "
+        "profile count`. The horizontal bars show this signed value for each target "
+        "taxon. No "
         "condition or body-site filter is applied to this figure; it summarizes "
         "the overall BugSigDB direction tendency of the preselected focal taxa.",
         "",
@@ -723,14 +703,15 @@ def write_figure_methods() -> None:
         "",
         "Study profiles from all body sites were grouped by BugSigDB condition "
         "label. Groups with fewer than five profiles were excluded. Broad "
-        "non-condition labels (`Body fat distribution`, `Health trait`, "
-        "`Microbiome`, and `Physical activity`) were removed from the displayed "
-        "condition summary. The figure keeps the top 12 eligible conditions with "
-        "at least three increased profiles, at least two studies, positive "
-        "increased-minus-decreased guild signal, and positive increased-profile "
-        "mean guild z-score, using fallback filtering if needed. Bars are sorted "
-        "high to low by mean facultative-aerobe guild z-score among increased "
-        "profiles.",
+        "non-condition or metadata labels (`Body fat distribution`, `Exposure`, "
+        "`Health trait`, `Microbiome`, `Population`, `Physical activity`, and "
+        "labels containing `exposure`, `measurement`, or `population`) were removed "
+        "from the displayed condition "
+        "summary. Those labels usually describe exposure, cohort, or measurement "
+        "metadata rather than a disease or condition context. The figure keeps the "
+        "top 12 eligible conditions with at least three increased profiles and at "
+        "least two studies, using fallback filtering if needed. Bars are sorted high "
+        "to low by mean facultative-aerobe guild z-score among increased profiles.",
         "",
         "## `guild_trait_direction_shift.png`",
         "",
@@ -748,29 +729,30 @@ def write_figure_methods() -> None:
         "among increased profiles at that body site. Body-site labels were placed "
         "on a simplified, neutral front-view body outline using fixed anatomical "
         "coordinates for feces/stool, colon, caecum, oral, airway, urogenital, and "
-        "unknown labels.",
+        "unknown labels. Unknown body site means the BugSigDB profile did not have "
+        "a specific body-site label; these profiles are placed off-body and should "
+        "not be interpreted as a physical anatomical location.",
         "",
-        "## `target_taxa_condition_breakdown_pie.png`",
+        "Oral-site increased-profile signals are biologically plausible because the "
+        "oral cavity is oxygen-exposed and includes aerotolerant, facultatively "
+        "aerobic, or microaerophilic taxa such as Streptococcus, Fusobacterium, "
+        "Prevotella, Porphyromonas, and Veillonella. Those oral-site signals should "
+        "be interpreted as body-site-specific microbial ecology, not as a gut "
+        "facultative-aerobe increased-profile signal.",
+        "",
+        "## `target_taxa_condition_breakdown_bar.png`",
         "",
         "Target-taxon occurrences were loaded from `data/derived/taxa.tsv`, limited "
         "to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study "
         "profile, and joined to the scored study profiles. This produces one row "
         "per focal taxon/profile occurrence with condition, body site, direction, "
-        "and guild-score metadata. The pie chart counts increased "
-        "target-taxon/profile occurrences by condition after removing the broad "
-        "non-condition labels. A condition with multiple focal taxa can therefore "
-        "contribute multiple occurrences; the chart is an occurrence breakdown, "
-        "not a unique-study breakdown. The top 12 condition labels are shown "
-        "directly; all remaining labels are collapsed into `other conditions`. "
-        "Percent labels below 2% are hidden for readability.",
-        "",
-        "## `target_taxa_condition_breakdown_histogram.png`",
-        "",
-        "The histogram uses the same increased focal-taxon/profile condition "
-        "counts as the pie chart, including the same target-taxon selection, "
-        "deduplication rule, and broad non-condition label exclusions. It displays "
-        "the top 20 explicit condition labels as horizontal bars, with bar labels "
-        "showing occurrence counts.",
+        "and guild-score metadata. The bar chart counts increased focal-taxon/profile "
+        "occurrences by condition after removing the broad non-condition and "
+        "metadata labels described above. A condition with multiple focal taxa can "
+        "therefore contribute multiple occurrences; the chart is an occurrence "
+        "breakdown, not a unique-study breakdown. It displays the top 20 explicit "
+        "condition labels as horizontal bars, with bar labels showing occurrence "
+        "counts.",
         "",
     ]
     (OUTPUT_DIR / "figure_methods.md").write_text("\n".join(lines), encoding="utf-8")
@@ -786,13 +768,17 @@ def make_plots(
     plt.rcParams.update({"figure.dpi": 160, "savefig.dpi": 200})
 
     fig, ax = plt.subplots(figsize=(9, 5.4))
-    plot_taxa = taxa_summary.sort_values("expansion_bias")
-    ax.barh(plot_taxa["target_taxon_name"], plot_taxa["expansion_bias"], color="#b91c1c")
+    plot_taxa = taxa_summary.sort_values("increased_profile_tendency")
+    ax.barh(
+        plot_taxa["target_taxon_name"],
+        plot_taxa["increased_profile_tendency"],
+        color="#b91c1c",
+    )
     ax.axvline(0, color="#333333", linewidth=0.8)
     ax.set_xlabel("(increased profiles - decreased profiles) / total profiles")
-    ax.set_title("Facultative Aerobe Candidate Taxa Are Expansion-Biased")
+    ax.set_title("Facultative-Aerobe Target Taxa: Increased-Profile Tendency")
     fig.tight_layout()
-    fig.savefig(OUTPUT_DIR / "candidate_taxa_expansion_bias.png")
+    fig.savefig(OUTPUT_DIR / "candidate_taxa_increased_profile_tendency.png")
     plt.close(fig)
 
     top_conditions = select_top_conditions(condition_summary, 12).sort_values(
@@ -828,19 +814,22 @@ def make_plots(
     plt.close(fig)
 
     condition_counts = count_target_taxa_conditions(occurrences, "increased")
-    save_condition_breakdown_plots(
+    save_condition_breakdown_bar_chart(
         condition_counts,
-        pie_output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_pie.png",
-        histogram_output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_histogram.png",
+        output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_bar.png",
         title_prefix="Increased facultative-aerobe target taxa",
         color="#dc2626",
     )
     save_anatomical_sites_diagram(
         body_site_summary,
         output_path=OUTPUT_DIR / "anatomical_sites_diagram.png",
-        title="Facultative-Aerobe Trait Expansion: Anatomical Sites",
+        title="Facultative-Aerobe Increased-Profile Signal: Anatomical Sites",
         signal_column="increased_mean_guild_z",
         signal_label="increased-profile guild z",
+        legend_note=(
+            "Unknown body site means no specific BugSigDB body-site label was available; "
+            "it is plotted off-body."
+        ),
     )
 
 
@@ -850,7 +839,7 @@ def write_summary_report(
     condition_summary: pd.DataFrame,
     taxa_summary: pd.DataFrame,
     condition_taxa_summary: pd.DataFrame,
-    top_expansion_profiles: pd.DataFrame,
+    top_increased_profiles: pd.DataFrame,
 ) -> None:
     direction_rows = direction_summary[
         direction_summary["trait"].isin(GUILD_TRAITS.values())
@@ -863,7 +852,7 @@ def write_summary_report(
     ].head(12)
 
     lines = [
-        "# Facultative-Aerobe Trait Expansion Investigation",
+        "# Facultative-Aerobe Increased-Profile Signal Investigation",
         "",
         "This investigation uses the existing study trait profile clustered heatmap matrix, "
         "study metadata, taxa guild heatmap metadata, and derived taxa/trait matrices.",
@@ -879,7 +868,7 @@ def write_summary_report(
         "## Main Signal",
         "",
         "The selected guild traits are higher in increased profiles than in decreased "
-        "profiles, supporting a facultative-aerobe trait expansion signal.",
+        "profiles, supporting a facultative-aerobe increased-profile signal.",
         "",
         "| trait | increased - decreased z |",
         "| --- | ---: |",
@@ -890,22 +879,22 @@ def write_summary_report(
     lines.extend(
         [
             "",
-            "## Strongest Expansion-Biased Taxa",
+            "## Target Taxa Most Often Reported In Increased Profiles",
             "",
-            "| taxon | increased / decreased profiles | expansion bias |",
+            "| taxon | increased / decreased profiles | increased-profile tendency |",
             "| --- | ---: | ---: |",
         ]
     )
     for row in top_taxa.itertuples(index=False):
         lines.append(
             f"| {row.target_taxon_name} | {int(row.increased)} / {int(row.decreased)} | "
-            f"{row.expansion_bias:.3f} |"
+            f"{row.increased_profile_tendency:.3f} |"
         )
 
     lines.extend(
         [
             "",
-            "## Recurrent Target-Taxon Expansions By Condition",
+            "## Recurrent Target-Taxon Increased Profiles By Condition",
             "",
             "| taxon | condition | body site | "
             "increased / decreased profiles | increased studies |",
@@ -940,6 +929,24 @@ def write_summary_report(
     lines.extend(
         [
             "",
+            "Broad labels such as `Exposure`, `Population`, and labels containing "
+            "`measurement` come from BugSigDB condition metadata but usually describe "
+            "study design, cohort, exposure, or measurement context rather than a "
+            "disease/condition context. They are excluded from displayed condition "
+            "bar charts and condition summaries.",
+            "",
+            "Oral-site increased-profile signals are expected in this analysis because "
+            "the oral cavity is oxygen-exposed and several focal taxa are common oral "
+            "or airway-associated aerotolerant, facultatively aerobic, or "
+            "microaerophilic lineages. These signals should be interpreted as "
+            "body-site-specific oral microbial ecology, not as a gut "
+            "increased-profile signal.",
+        ]
+    )
+
+    lines.extend(
+        [
+            "",
             "## Body-Site Check",
             "",
             "| body_site_group | profiles | increased mean guild z | increased - decreased z |",
@@ -963,7 +970,7 @@ def write_summary_report(
             "| --- | --- | --- | ---: | --- |",
         ]
     )
-    for row in top_expansion_profiles.head(10).itertuples(index=False):
+    for row in top_increased_profiles.head(10).itertuples(index=False):
         title = clean_text(row.title).replace("|", "/")
         if len(title) > 90:
             title = f"{title[:87]}..."
@@ -978,13 +985,14 @@ def write_summary_report(
             "",
             "## Suggested Follow-Up",
             "",
-            "1. Split the signal by body site before interpreting it as facultative-aerobe "
-            "trait expansion; "
+            "1. Split the signal by body site before interpreting it as a "
+            "facultative-aerobe increased-profile signal; "
             "oral and airway profiles can dominate aerobic/microaerophilic traits.",
             "2. In gut-only analyses, test the target taxa against inflammation markers, "
             "nitrate respiration, oxygen tolerance, virulence genes, and resistome features.",
-            "3. Compare expansion-biased taxa against the anaerobe-depletion guild to see "
-            "whether the same conditions show reciprocal loss and expansion patterns.",
+            "3. Compare increased-profile taxa against the anaerobe-depletion guild to see "
+            "whether the same conditions show reciprocal decreased- and "
+            "increased-profile patterns.",
             "",
             "## Files",
             "",
@@ -997,12 +1005,11 @@ def write_summary_report(
             "- `candidate_taxa_profile_occurrences.tsv`",
             "- `top_increased_guild_profiles.tsv`",
             "- `figure_methods.md`",
-            "- `candidate_taxa_expansion_bias.png`",
+            "- `candidate_taxa_increased_profile_tendency.png`",
             "- `condition_increased_guild_signal.png`",
             "- `guild_trait_direction_shift.png`",
             "- `anatomical_sites_diagram.png`",
-            "- `target_taxa_condition_breakdown_pie.png`",
-            "- `target_taxa_condition_breakdown_histogram.png`",
+            "- `target_taxa_condition_breakdown_bar.png`",
             "",
         ]
     )
@@ -1029,12 +1036,12 @@ def main() -> None:
     ].copy()
     trait_definitions["investigation_trait_name"] = trait_definitions.index.map(GUILD_TRAITS)
 
-    top_expansion_profiles = scored_profiles[scored_profiles["inc_dec"] == "inc"].copy()
-    top_expansion_profiles = top_expansion_profiles.sort_values(
+    top_increased_profiles = scored_profiles[scored_profiles["inc_dec"] == "inc"].copy()
+    top_increased_profiles = top_increased_profiles.sort_values(
         ["guild_z_mean", "total_trait_signal"],
         ascending=[False, False],
     ).head(100)
-    top_expansion_profiles = top_expansion_profiles.reset_index(names="profile_id")
+    top_increased_profiles = top_increased_profiles.reset_index(names="profile_id")
 
     direction_summary.to_csv(OUTPUT_DIR / "guild_trait_direction_shift.tsv", sep="\t", index=False)
     body_site_summary.to_csv(OUTPUT_DIR / "body_site_guild_summary.tsv", sep="\t", index=False)
@@ -1053,7 +1060,7 @@ def main() -> None:
         sep="\t",
         index=False,
     )
-    top_expansion_profiles.to_csv(
+    top_increased_profiles.to_csv(
         OUTPUT_DIR / "top_increased_guild_profiles.tsv",
         sep="\t",
         index=False,
@@ -1068,7 +1075,7 @@ def main() -> None:
         condition_summary,
         taxa_summary,
         condition_taxa_summary,
-        top_expansion_profiles,
+        top_increased_profiles,
     )
 
     print(f"Wrote investigation outputs to: {OUTPUT_DIR}")

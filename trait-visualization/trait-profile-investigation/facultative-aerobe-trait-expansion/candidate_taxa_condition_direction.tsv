@@ -1,4 +1,4 @@
-target_taxon_name	condition	body_site_group	decreased_profile_count	increased_profile_count	decreased_study_count	increased_study_count	total_profile_count	expansion_bias
+target_taxon_name	condition	body_site_group	decreased_profile_count	increased_profile_count	decreased_study_count	increased_study_count	total_profile_count	increased_profile_tendency
 Fusobacterium nucleatum	Colorectal cancer	Feces	0	16	0	10	16	1.0
 Parvimonas micra	Colorectal cancer	Feces	0	14	0	9	14	1.0
 Prevotella intermedia	Colorectal cancer	Feces	0	11	0	7	11	1.0

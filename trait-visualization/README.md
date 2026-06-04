@@ -3,6 +3,9 @@
 This folder contains clustered heatmap outputs for exploring BugSigDB-relevant taxa,
 study profiles, and condition-level microbial trait patterns.
 
+For a combined methods description of all clustered heatmaps and downstream
+investigation figures, see `figure_methods.md`.
+
 ## Visualizations
 
 ### Taxa guild discovery

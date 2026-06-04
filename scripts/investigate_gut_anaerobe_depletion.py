@@ -351,75 +351,31 @@ def count_target_taxa_conditions(
     if gut_context_only:
         selected = selected[selected["gut_context"].fillna(False)].copy()
     selected["condition"] = selected["condition"].map(clean_text)
-    selected = selected[
-        ~selected["condition"].isin(EXCLUDED_CONDITION_SUMMARY_LABELS)
-    ].copy()
+    selected = selected[~selected["condition"].isin(EXCLUDED_CONDITION_SUMMARY_LABELS)].copy()
     return selected["condition"].value_counts()
 
 
-def counts_with_other_remainder(counts: pd.Series, max_direct_slices: int) -> pd.Series:
-    """Keep top categories and collapse the remaining long tail."""
-    top_counts = counts.head(max_direct_slices).copy()
-    remainder = counts.iloc[max_direct_slices:]
-    if remainder.empty:
-        return top_counts
-    other_count = pd.Series({"other conditions": int(remainder.sum())})
-    return pd.concat([top_counts, other_count])
-
-
-def percentage_label(percent: float) -> str:
-    """Hide tiny pie labels to keep dense pies readable."""
-    return f"{percent:.1f}%" if percent >= 2 else ""
-
-
-def save_condition_breakdown_plots(
+def save_condition_breakdown_bar_chart(
     counts: pd.Series,
     *,
-    pie_output_path: Path,
-    histogram_output_path: Path,
+    output_path: Path,
     title_prefix: str,
     color: str,
 ) -> None:
-    """Save pie and horizontal histogram plots for condition counts."""
+    """Save a horizontal bar chart for condition counts."""
     if counts.empty:
         return
 
-    pie_counts = counts_with_other_remainder(counts, max_direct_slices=12)
-    fig, ax = plt.subplots(figsize=(10, 7))
-    wedges, _texts, autotexts = ax.pie(
-        pie_counts.to_numpy(),
-        autopct=percentage_label,
-        startangle=90,
-        counterclock=False,
-        pctdistance=0.78,
-    )
-    for text in autotexts:
-        text.set_fontsize(8)
-    ax.legend(
-        wedges,
-        pie_counts.index,
-        title="Condition",
-        loc="center left",
-        bbox_to_anchor=(1.0, 0.5),
-        frameon=False,
-        fontsize=8,
-        title_fontsize=9,
-    )
-    ax.set_title(f"{title_prefix}: condition share")
-    fig.tight_layout()
-    fig.savefig(pie_output_path, bbox_inches="tight")
-    plt.close(fig)
-
-    histogram_counts = counts.head(20)
-    fig, ax = plt.subplots(figsize=(10, max(5, len(histogram_counts) * 0.35)))
-    ax.barh(histogram_counts.index, histogram_counts.to_numpy(), color=color)
+    bar_counts = counts.head(20)
+    fig, ax = plt.subplots(figsize=(10, max(5, len(bar_counts) * 0.35)))
+    ax.barh(bar_counts.index, bar_counts.to_numpy(), color=color)
     ax.invert_yaxis()
     ax.set_xlabel("Target taxon-profile occurrences")
     ax.set_title(f"{title_prefix}: top conditions")
-    for index, value in enumerate(histogram_counts.to_numpy()):
+    for index, value in enumerate(bar_counts.to_numpy()):
         ax.text(value, index, f" {int(value)}", va="center", fontsize=8)
     fig.tight_layout()
-    fig.savefig(histogram_output_path, bbox_inches="tight")
+    fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -552,9 +508,11 @@ def save_anatomical_sites_diagram(
     if body_site_summary.empty:
         return
 
-    plot_sites = body_site_summary[
-        ~body_site_summary["body_site_group"].map(is_other_body_site)
-    ].head(max_sites).copy()
+    plot_sites = (
+        body_site_summary[~body_site_summary["body_site_group"].map(is_other_body_site)]
+        .head(max_sites)
+        .copy()
+    )
     if plot_sites.empty:
         return
     plot_sites["profile_count"] = pd.to_numeric(
@@ -681,6 +639,11 @@ def write_figure_methods() -> None:
         "defined by body-site or grouped body-site labels matching "
         "`feces`, `faeces`, `stool`, `colon`, `caecum`, `cecum`, `gut`, "
         "`intestin`, or `digestive`.",
+        "Direction labels (`increased` and `decreased`) were taken from BugSigDB's "
+        "curated `Abundance in Group 1` signature field. This script did not "
+        "recalculate differential abundance; it grouped and filtered "
+        "BugSigDB-reported study/experiment/direction profiles by condition and "
+        "body-site metadata.",
         "",
         "The focal taxa were defined a priori in the script's `TARGET_TAXA` map "
         "using NCBI Taxonomy identifiers, which avoids ambiguity from synonym or "
@@ -739,27 +702,19 @@ def write_figure_methods() -> None:
         "anatomical coordinates for feces/stool, colon, caecum, oral, airway, "
         "urogenital, and unknown labels.",
         "",
-        "## `target_taxa_condition_breakdown_pie.png`",
+        "## `target_taxa_condition_breakdown_bar.png`",
         "",
         "Target-taxon occurrences were loaded from `data/derived/taxa.tsv`, limited "
         "to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study "
         "profile, and joined to the scored study profiles. This produces one row "
         "per focal taxon/profile occurrence with condition, body site, direction, "
-        "and guild-score metadata. The pie chart counts decreased "
+        "and guild-score metadata. The bar chart counts decreased "
         "target-taxon/profile occurrences in gut-context profiles by condition, "
         "after removing `Clinical treatment`. A condition with multiple focal "
         "taxa can therefore contribute multiple occurrences; the chart is an "
-        "occurrence breakdown, not a unique-study breakdown. The top 12 condition "
-        "labels are shown directly; all remaining labels are collapsed into "
-        "`other conditions`. Percent labels below 2% are hidden for readability.",
-        "",
-        "## `target_taxa_condition_breakdown_histogram.png`",
-        "",
-        "The histogram uses the same decreased gut-context focal-taxon/profile "
-        "condition counts as the pie chart, including the same target-taxon "
-        "selection, gut-context filter, deduplication rule, and `Clinical "
-        "treatment` exclusion. It displays the top 20 explicit condition labels "
-        "as horizontal bars, with bar labels showing occurrence counts.",
+        "occurrence breakdown, not a unique-study breakdown. It displays the top "
+        "20 explicit condition labels as horizontal bars, with bar labels showing "
+        "occurrence counts.",
         "",
     ]
     (OUTPUT_DIR / "figure_methods.md").write_text("\n".join(lines), encoding="utf-8")
@@ -825,10 +780,9 @@ def make_plots(
         "decreased",
         gut_context_only=True,
     )
-    save_condition_breakdown_plots(
+    save_condition_breakdown_bar_chart(
         condition_counts,
-        pie_output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_pie.png",
-        histogram_output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_histogram.png",
+        output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_bar.png",
         title_prefix="Decreased gut anaerobe target taxa",
         color="#2563eb",
     )
@@ -1009,8 +963,7 @@ def write_summary_report(
             "- `condition_decreased_guild_signal.png`",
             "- `guild_trait_direction_shift.png`",
             "- `anatomical_sites_diagram.png`",
-            "- `target_taxa_condition_breakdown_pie.png`",
-            "- `target_taxa_condition_breakdown_histogram.png`",
+            "- `target_taxa_condition_breakdown_bar.png`",
             "",
         ]
     )

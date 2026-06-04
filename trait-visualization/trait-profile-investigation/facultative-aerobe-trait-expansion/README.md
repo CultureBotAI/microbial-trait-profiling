@@ -1,4 +1,4 @@
-# Facultative-Aerobe Trait Expansion Investigation
+# Facultative-Aerobe Increased-Profile Signal Investigation
 
 This investigation uses the existing study trait profile clustered heatmap matrix, study metadata, taxa guild heatmap metadata, and derived taxa/trait matrices.
 
@@ -10,7 +10,7 @@ This investigation uses the existing study trait profile clustered heatmap matri
 
 ## Main Signal
 
-The selected guild traits are higher in increased profiles than in decreased profiles, supporting a facultative-aerobe trait expansion signal.
+The selected guild traits are higher in increased profiles than in decreased profiles, supporting a facultative-aerobe increased-profile signal.
 
 | trait | increased - decreased z |
 | --- | ---: |
@@ -21,9 +21,9 @@ The selected guild traits are higher in increased profiles than in decreased pro
 | motile | 0.056 |
 | nitrate_reduction | 0.029 |
 
-## Strongest Expansion-Biased Taxa
+## Target Taxa Most Often Reported In Increased Profiles
 
-| taxon | increased / decreased profiles | expansion bias |
+| taxon | increased / decreased profiles | increased-profile tendency |
 | --- | ---: | ---: |
 | Parvimonas micra | 55 / 17 | 0.528 |
 | Klebsiella pneumoniae | 64 / 22 | 0.488 |
@@ -36,7 +36,7 @@ The selected guild traits are higher in increased profiles than in decreased pro
 | Porphyromonas gingivalis | 50 / 24 | 0.351 |
 | Veillonella dispar | 67 / 34 | 0.327 |
 
-## Recurrent Target-Taxon Expansions By Condition
+## Recurrent Target-Taxon Increased Profiles By Condition
 
 | taxon | condition | body site | increased / decreased profiles | increased studies |
 | --- | --- | --- | ---: | ---: |
@@ -57,14 +57,18 @@ The selected guild traits are higher in increased profiles than in decreased pro
 
 | condition | profiles | studies | increased mean guild z | increased - decreased z |
 | --- | ---: | ---: | ---: | ---: |
-| Lung transplantation | 7 | 2 | 0.453 | 0.845 |
-| Female infertility | 22 | 3 | 0.284 | 0.694 |
-| Multiple myeloma | 11 | 2 | 0.515 | 0.681 |
-| Tuberculosis | 8 | 3 | 0.336 | 0.678 |
-| Autism | 14 | 4 | 0.530 | 0.597 |
-| Graft versus host disease | 13 | 4 | 0.324 | 0.596 |
-| Colorectal carcinoma | 15 | 3 | 0.492 | 0.570 |
-| Vulvovaginitis | 5 | 2 | 0.307 | 0.543 |
+| Oral lichen planus | 14 | 2 | 0.766 | 0.123 |
+| Insecticide | 9 | 2 | 0.663 | -0.042 |
+| Non-Hodgkins lymphoma | 6 | 3 | 0.641 | 0.188 |
+| Alcohol drinking | 13 | 2 | 0.622 | 0.383 |
+| Bronchiectasis | 12 | 2 | 0.593 | 0.097 |
+| Systemic lupus erythematosus | 9 | 2 | 0.563 | 0.297 |
+| Nasopharyngeal squamous cell carcinoma | 9 | 2 | 0.546 | 0.365 |
+| Autoimmune disease | 8 | 2 | 0.532 | 0.474 |
+
+Broad labels such as `Exposure`, `Population`, and labels containing `measurement` come from BugSigDB condition metadata but usually describe study design, cohort, exposure, or measurement context rather than a disease/condition context. They are excluded from displayed condition bar charts and condition summaries.
+
+Oral-site increased-profile signals are expected in this analysis because the oral cavity is oxygen-exposed and several focal taxa are common oral or airway-associated aerotolerant, facultatively aerobic, or microaerophilic lineages. These signals should be interpreted as body-site-specific oral microbial ecology, not as a gut increased-profile signal.
 
 ## Body-Site Check
 
@@ -98,9 +102,9 @@ The selected guild traits are higher in increased profiles than in decreased pro
 
 ## Suggested Follow-Up
 
-1. Split the signal by body site before interpreting it as facultative-aerobe trait expansion; oral and airway profiles can dominate aerobic/microaerophilic traits.
+1. Split the signal by body site before interpreting it as a facultative-aerobe increased-profile signal; oral and airway profiles can dominate aerobic/microaerophilic traits.
 2. In gut-only analyses, test the target taxa against inflammation markers, nitrate respiration, oxygen tolerance, virulence genes, and resistome features.
-3. Compare expansion-biased taxa against the anaerobe-depletion guild to see whether the same conditions show reciprocal loss and expansion patterns.
+3. Compare increased-profile taxa against the anaerobe-depletion guild to see whether the same conditions show reciprocal decreased- and increased-profile patterns.
 
 ## Files
 
@@ -113,9 +117,8 @@ The selected guild traits are higher in increased profiles than in decreased pro
 - `candidate_taxa_profile_occurrences.tsv`
 - `top_increased_guild_profiles.tsv`
 - `figure_methods.md`
-- `candidate_taxa_expansion_bias.png`
+- `candidate_taxa_increased_profile_tendency.png`
 - `condition_increased_guild_signal.png`
 - `guild_trait_direction_shift.png`
 - `anatomical_sites_diagram.png`
-- `target_taxa_condition_breakdown_pie.png`
-- `target_taxa_condition_breakdown_histogram.png`
+- `target_taxa_condition_breakdown_bar.png`

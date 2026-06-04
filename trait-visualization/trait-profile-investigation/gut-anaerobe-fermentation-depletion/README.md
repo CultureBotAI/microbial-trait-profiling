@@ -105,5 +105,4 @@ The selected guild traits are consistently higher in decreased profiles than in 
 - `condition_decreased_guild_signal.png`
 - `guild_trait_direction_shift.png`
 - `anatomical_sites_diagram.png`
-- `target_taxa_condition_breakdown_pie.png`
-- `target_taxa_condition_breakdown_histogram.png`
+- `target_taxa_condition_breakdown_bar.png`
