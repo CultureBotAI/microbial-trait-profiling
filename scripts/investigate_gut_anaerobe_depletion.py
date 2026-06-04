@@ -39,6 +39,7 @@ GUT_BODY_SITE_RE = re.compile(
     re.IGNORECASE,
 )
 EXCLUDED_CONDITION_SUMMARY_LABELS = {"Clinical treatment"}
+MIN_PAIRED_SMD_PROFILE_PAIRS = 3
 
 
 def read_tsv(path: Path, **kwargs: object) -> pd.DataFrame:
@@ -60,6 +61,43 @@ def safe_ratio(numerator: float, denominator: float) -> float:
     if denominator == 0:
         return math.nan
     return numerator / denominator
+
+
+def paired_guild_enrichment_stats(group: pd.DataFrame) -> dict[str, float | int]:
+    """Calculate paired dec-vs-inc guild enrichment within study/experiment."""
+    paired = group.pivot_table(
+        index=["study_id", "experiment_id"],
+        columns="inc_dec",
+        values="guild_z_mean",
+        aggfunc="mean",
+    )
+    if not {"inc", "dec"}.issubset(paired.columns):
+        return {
+            "paired_profile_pair_count": 0,
+            "paired_mean_guild_z_difference": math.nan,
+            "paired_guild_z_difference_sd": math.nan,
+            "paired_standardized_mean_difference": math.nan,
+        }
+
+    paired = paired.dropna(subset=["inc", "dec"])
+    differences = paired["dec"] - paired["inc"]
+    pair_count = len(differences)
+    mean_difference = differences.mean() if pair_count else math.nan
+    difference_sd = differences.std(ddof=1) if pair_count > 1 else math.nan
+    smd = math.nan
+    if (
+        pair_count >= MIN_PAIRED_SMD_PROFILE_PAIRS
+        and not pd.isna(difference_sd)
+        and difference_sd > 0
+    ):
+        smd = mean_difference / difference_sd
+
+    return {
+        "paired_profile_pair_count": pair_count,
+        "paired_mean_guild_z_difference": mean_difference,
+        "paired_guild_z_difference_sd": difference_sd,
+        "paired_standardized_mean_difference": smd,
+    }
 
 
 def profile_id_from_taxa_row(row: pd.Series) -> str:
@@ -137,24 +175,23 @@ def summarize_group(metadata: pd.DataFrame, group_column: str, min_profiles: int
             continue
         inc = group[group["inc_dec"] == "inc"]
         dec = group[group["inc_dec"] == "dec"]
-        records.append(
-            {
-                group_column: clean_text(group_value),
-                "profile_count": len(group),
-                "study_count": group["study_id"].nunique(),
-                "increased_profile_count": len(inc),
-                "decreased_profile_count": len(dec),
-                "mean_guild_z": group["guild_z_mean"].mean(),
-                "increased_mean_guild_z": inc["guild_z_mean"].mean(),
-                "decreased_mean_guild_z": dec["guild_z_mean"].mean(),
-                "decreased_minus_increased_guild_z": dec["guild_z_mean"].mean()
-                - inc["guild_z_mean"].mean(),
-                "decreased_mean_fiber_z": dec["fiber_degradation_z_mean"].mean(),
-                "decreased_mean_anaerobe_fermentation_z": dec[
-                    "anaerobe_fermentation_z_mean"
-                ].mean(),
-            }
-        )
+        record = {
+            group_column: clean_text(group_value),
+            "profile_count": len(group),
+            "study_count": group["study_id"].nunique(),
+            "increased_profile_count": len(inc),
+            "decreased_profile_count": len(dec),
+            "mean_guild_z": group["guild_z_mean"].mean(),
+            "increased_mean_guild_z": inc["guild_z_mean"].mean(),
+            "decreased_mean_guild_z": dec["guild_z_mean"].mean(),
+            "decreased_minus_increased_guild_z": dec["guild_z_mean"].mean()
+            - inc["guild_z_mean"].mean(),
+            "decreased_mean_fiber_z": dec["fiber_degradation_z_mean"].mean(),
+            "decreased_mean_anaerobe_fermentation_z": dec["anaerobe_fermentation_z_mean"].mean(),
+        }
+        if group_column == "condition":
+            record.update(paired_guild_enrichment_stats(group))
+        records.append(record)
     return pd.DataFrame(records).sort_values(
         ["decreased_mean_guild_z", "profile_count"],
         ascending=[False, False],
@@ -166,6 +203,29 @@ def remove_excluded_condition_labels(condition_summary: pd.DataFrame) -> pd.Data
     return condition_summary[
         ~condition_summary["condition"].isin(EXCLUDED_CONDITION_SUMMARY_LABELS)
     ].copy()
+
+
+def select_top_conditions(condition_summary: pd.DataFrame, limit: int) -> pd.DataFrame:
+    """Select top condition rows after removing broad excluded labels."""
+    condition_summary = remove_excluded_condition_labels(condition_summary)
+    top_conditions = (
+        condition_summary[
+            (condition_summary["decreased_profile_count"] >= 3)
+            & (condition_summary["study_count"] >= 2)
+            & (condition_summary["decreased_minus_increased_guild_z"] > 0)
+            & (condition_summary["decreased_mean_guild_z"] > 0)
+        ]
+        .sort_values(
+            ["decreased_minus_increased_guild_z", "decreased_mean_guild_z"],
+            ascending=[False, False],
+        )
+        .head(limit)
+    )
+    if top_conditions.empty:
+        top_conditions = condition_summary[condition_summary["decreased_profile_count"] >= 3].head(
+            limit
+        )
+    return top_conditions
 
 
 def load_taxa_direction_summary() -> pd.DataFrame:
@@ -680,9 +740,11 @@ def write_figure_methods() -> None:
         "with fewer than five profiles were excluded, and the broad label "
         "`Clinical treatment` was removed from the displayed condition summary. The "
         "figure keeps the top 12 eligible conditions with at least three decreased "
-        "profiles and at least two studies, using fallback filtering if needed. Bar "
-        "height represents the mean gut anaerobe/fermentation guild z-score among "
-        "decreased profiles for that condition.",
+        "profiles, at least two studies, positive decreased-minus-increased guild "
+        "signal, and positive decreased-profile mean guild z-score, using fallback "
+        "filtering if needed. Conditions are selected and sorted by "
+        "decreased-minus-increased guild signal, and bar length is this "
+        "enrichment-oriented contrast.",
         "",
         "## `guild_trait_direction_shift.png`",
         "",
@@ -739,22 +801,17 @@ def make_plots(
     fig.savefig(OUTPUT_DIR / "candidate_taxa_depletion_bias.png")
     plt.close(fig)
 
-    top_conditions = condition_summary[
-        (condition_summary["decreased_profile_count"] >= 3)
-        & (condition_summary["study_count"] >= 2)
-    ].head(12)
-    if top_conditions.empty:
-        top_conditions = condition_summary[condition_summary["decreased_profile_count"] >= 3].head(
-            12
-        )
+    top_conditions = select_top_conditions(condition_summary, 12).sort_values(
+        "decreased_minus_increased_guild_z"
+    )
     fig, ax = plt.subplots(figsize=(10, 5.5))
     ax.barh(
-        top_conditions["condition"][::-1],
-        top_conditions["decreased_mean_guild_z"][::-1],
+        top_conditions["condition"],
+        top_conditions["decreased_minus_increased_guild_z"],
         color="#2563eb",
     )
-    ax.set_xlabel("Mean gut anaerobe/fermentation guild z-score in decreased profiles")
-    ax.set_title("Conditions With High Decreased-Profile Guild Signal")
+    ax.set_xlabel("Guild enrichment: decreased mean z - increased mean z")
+    ax.set_title("Conditions With Decreased-Profile Guild Enrichment")
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "condition_decreased_guild_signal.png")
     plt.close(fig)
@@ -806,14 +863,7 @@ def write_summary_report(
     direction_rows = direction_summary[
         direction_summary["trait"].isin(GUILD_TRAITS.values())
     ].sort_values("decreased_minus_increased_z", ascending=False)
-    top_conditions = condition_summary[
-        (condition_summary["decreased_profile_count"] >= 3)
-        & (condition_summary["study_count"] >= 2)
-    ].head(8)
-    if top_conditions.empty:
-        top_conditions = condition_summary[condition_summary["decreased_profile_count"] >= 3].head(
-            8
-        )
+    top_conditions = select_top_conditions(condition_summary, 8)
     top_taxa = taxa_summary.head(7)
     top_taxon_conditions = condition_taxa_summary[
         (condition_taxa_summary["decreased_profile_count"] >= 3)
@@ -883,16 +933,20 @@ def write_summary_report(
             "",
             "## Gut Contexts With High Decreased-Profile Guild Signal",
             "",
-            "| condition | profiles | studies | decreased mean guild z | decreased - increased z |",
-            "| --- | ---: | ---: | ---: | ---: |",
+            "| condition | profiles | studies | decreased - increased z | paired d | "
+            "matched pairs | decreased mean guild z |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
     )
     for row in top_conditions.itertuples(index=False):
         diff = row.decreased_minus_increased_guild_z
         diff_text = "" if pd.isna(diff) else f"{diff:.3f}"
+        smd = row.paired_standardized_mean_difference
+        smd_text = "" if pd.isna(smd) else f"{smd:.3f}"
         lines.append(
             f"| {row.condition} | {int(row.profile_count)} | {int(row.study_count)} | "
-            f"{row.decreased_mean_guild_z:.3f} | {diff_text} |"
+            f"{diff_text} | {smd_text} | {int(row.paired_profile_pair_count)} | "
+            f"{row.decreased_mean_guild_z:.3f} |"
         )
 
     lines.extend(

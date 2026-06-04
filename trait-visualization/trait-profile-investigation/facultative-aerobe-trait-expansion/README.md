@@ -55,16 +55,16 @@ The selected guild traits are higher in increased profiles than in decreased pro
 
 ## Contexts With High Increased-Profile Guild Signal
 
-| condition | profiles | studies | increased mean guild z | increased - decreased z |
-| --- | ---: | ---: | ---: | ---: |
-| Oral lichen planus | 14 | 2 | 0.766 | 0.123 |
-| Insecticide | 9 | 2 | 0.663 | -0.042 |
-| Non-Hodgkins lymphoma | 6 | 3 | 0.641 | 0.188 |
-| Alcohol drinking | 13 | 2 | 0.622 | 0.383 |
-| Bronchiectasis | 12 | 2 | 0.593 | 0.097 |
-| Systemic lupus erythematosus | 9 | 2 | 0.563 | 0.297 |
-| Nasopharyngeal squamous cell carcinoma | 9 | 2 | 0.546 | 0.365 |
-| Autoimmune disease | 8 | 2 | 0.532 | 0.474 |
+| condition | profiles | studies | increased - decreased z | paired d | matched pairs | increased mean guild z |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Lung transplantation | 7 | 2 | 0.845 |  | 2 | 0.453 |
+| Female infertility | 22 | 3 | 0.694 | 1.172 | 4 | 0.284 |
+| Multiple myeloma | 11 | 2 | 0.681 | 2.610 | 5 | 0.515 |
+| Tuberculosis | 8 | 3 | 0.678 |  | 1 | 0.336 |
+| Autism | 14 | 4 | 0.597 | 0.745 | 4 | 0.530 |
+| Graft versus host disease | 13 | 4 | 0.596 | 1.431 | 4 | 0.324 |
+| Colorectal carcinoma | 15 | 3 | 0.570 | 0.500 | 7 | 0.492 |
+| Vulvovaginitis | 5 | 2 | 0.543 |  | 2 | 0.307 |
 
 Broad labels such as `Exposure`, `Population`, and labels containing `measurement` come from BugSigDB condition metadata but usually describe study design, cohort, exposure, or measurement context rather than a disease/condition context. They are excluded from displayed condition bar charts and condition summaries.
 

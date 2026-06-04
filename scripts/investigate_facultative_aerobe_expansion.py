@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -44,6 +45,7 @@ EXCLUDED_CONDITION_SUMMARY_LABELS = {
     "Population",
     "Physical activity",
 }
+MIN_PAIRED_SMD_PROFILE_PAIRS = 3
 
 
 def read_tsv(path: Path, **kwargs: object) -> pd.DataFrame:
@@ -61,6 +63,43 @@ def safe_ratio(numerator: float, denominator: float) -> float:
     if denominator == 0:
         return math.nan
     return numerator / denominator
+
+
+def paired_guild_enrichment_stats(group: pd.DataFrame) -> dict[str, float | int]:
+    """Calculate paired inc-vs-dec guild enrichment within study/experiment."""
+    paired = group.pivot_table(
+        index=["study_id", "experiment_id"],
+        columns="inc_dec",
+        values="guild_z_mean",
+        aggfunc="mean",
+    )
+    if not {"inc", "dec"}.issubset(paired.columns):
+        return {
+            "paired_profile_pair_count": 0,
+            "paired_mean_guild_z_difference": math.nan,
+            "paired_guild_z_difference_sd": math.nan,
+            "paired_standardized_mean_difference": math.nan,
+        }
+
+    paired = paired.dropna(subset=["inc", "dec"])
+    differences = paired["inc"] - paired["dec"]
+    pair_count = len(differences)
+    mean_difference = differences.mean() if pair_count else math.nan
+    difference_sd = differences.std(ddof=1) if pair_count > 1 else math.nan
+    smd = math.nan
+    if (
+        pair_count >= MIN_PAIRED_SMD_PROFILE_PAIRS
+        and not pd.isna(difference_sd)
+        and difference_sd > 0
+    ):
+        smd = mean_difference / difference_sd
+
+    return {
+        "paired_profile_pair_count": pair_count,
+        "paired_mean_guild_z_difference": mean_difference,
+        "paired_guild_z_difference_sd": difference_sd,
+        "paired_standardized_mean_difference": smd,
+    }
 
 
 def profile_id_from_taxa_row(row: pd.Series) -> str:
@@ -133,24 +172,23 @@ def summarize_group(metadata: pd.DataFrame, group_column: str, min_profiles: int
             continue
         inc = group[group["inc_dec"] == "inc"]
         dec = group[group["inc_dec"] == "dec"]
-        records.append(
-            {
-                group_column: clean_text(group_value),
-                "profile_count": len(group),
-                "study_count": group["study_id"].nunique(),
-                "increased_profile_count": len(inc),
-                "decreased_profile_count": len(dec),
-                "mean_guild_z": group["guild_z_mean"].mean(),
-                "increased_mean_guild_z": inc["guild_z_mean"].mean(),
-                "decreased_mean_guild_z": dec["guild_z_mean"].mean(),
-                "increased_minus_decreased_guild_z": inc["guild_z_mean"].mean()
-                - dec["guild_z_mean"].mean(),
-                "increased_mean_oxygen_tolerance_z": inc["oxygen_tolerance_z_mean"].mean(),
-                "increased_mean_gram_negative_motility_z": inc[
-                    "gram_negative_motility_z_mean"
-                ].mean(),
-            }
-        )
+        record = {
+            group_column: clean_text(group_value),
+            "profile_count": len(group),
+            "study_count": group["study_id"].nunique(),
+            "increased_profile_count": len(inc),
+            "decreased_profile_count": len(dec),
+            "mean_guild_z": group["guild_z_mean"].mean(),
+            "increased_mean_guild_z": inc["guild_z_mean"].mean(),
+            "decreased_mean_guild_z": dec["guild_z_mean"].mean(),
+            "increased_minus_decreased_guild_z": inc["guild_z_mean"].mean()
+            - dec["guild_z_mean"].mean(),
+            "increased_mean_oxygen_tolerance_z": inc["oxygen_tolerance_z_mean"].mean(),
+            "increased_mean_gram_negative_motility_z": inc["gram_negative_motility_z_mean"].mean(),
+        }
+        if group_column == "condition":
+            record.update(paired_guild_enrichment_stats(group))
+        records.append(record)
     return pd.DataFrame(records).sort_values(
         ["increased_mean_guild_z", "profile_count"],
         ascending=[False, False],
@@ -181,9 +219,11 @@ def select_top_conditions(condition_summary: pd.DataFrame, limit: int) -> pd.Dat
         condition_summary[
             (condition_summary["increased_profile_count"] >= 3)
             & (condition_summary["study_count"] >= 2)
+            & (condition_summary["increased_minus_decreased_guild_z"] > 0)
+            & (condition_summary["increased_mean_guild_z"] > 0)
         ]
         .sort_values(
-            ["increased_mean_guild_z", "increased_minus_decreased_guild_z"],
+            ["increased_minus_decreased_guild_z", "increased_mean_guild_z"],
             ascending=[False, False],
         )
         .head(limit)
@@ -193,6 +233,14 @@ def select_top_conditions(condition_summary: pd.DataFrame, limit: int) -> pd.Dat
             limit
         )
     return top_conditions
+
+
+def paired_smd_label(row: Any) -> str:
+    pair_count = int(row.paired_profile_pair_count)
+    smd = row.paired_standardized_mean_difference
+    if pd.isna(smd):
+        return f"paired d=NA, n={pair_count}"
+    return f"paired d={smd:.2f}, n={pair_count}"
 
 
 def load_taxa_direction_summary() -> pd.DataFrame:
@@ -709,9 +757,15 @@ def write_figure_methods() -> None:
         "from the displayed condition "
         "summary. Those labels usually describe exposure, cohort, or measurement "
         "metadata rather than a disease or condition context. The figure keeps the "
-        "top 12 eligible conditions with at least three increased profiles and at "
-        "least two studies, using fallback filtering if needed. Bars are sorted high "
-        "to low by mean facultative-aerobe guild z-score among increased profiles.",
+        "top 12 eligible conditions with at least three increased profiles, at least "
+        "two studies, positive increased-minus-decreased guild signal, and positive "
+        "increased-profile mean guild z-score, using fallback filtering if needed. "
+        "Conditions are selected and sorted by increased-minus-decreased guild signal. "
+        "Bar length is this enrichment-oriented contrast, and the right-side labels "
+        "show the paired standardized mean difference (`paired d`) calculated from "
+        "matched increased/decreased profiles within the same study and experiment. "
+        "`paired d=NA` means fewer than three matched profile pairs, or zero variance "
+        "among the paired differences.",
         "",
         "## `guild_trait_direction_shift.png`",
         "",
@@ -782,17 +836,30 @@ def make_plots(
     plt.close(fig)
 
     top_conditions = select_top_conditions(condition_summary, 12).sort_values(
-        "increased_mean_guild_z",
-        ascending=False,
+        "increased_minus_decreased_guild_z"
     )
     fig, ax = plt.subplots(figsize=(10, 5.5))
+    condition_values = top_conditions["increased_minus_decreased_guild_z"]
     ax.barh(
-        top_conditions["condition"][::-1],
-        top_conditions["increased_mean_guild_z"][::-1],
+        top_conditions["condition"],
+        condition_values,
         color="#dc2626",
     )
-    ax.set_xlabel("Mean facultative-aerobe guild z-score in increased profiles")
-    ax.set_title("Conditions With High Increased-Profile Guild Signal")
+    if not top_conditions.empty:
+        x_max = condition_values.max()
+        x_pad = max(x_max * 0.025, 0.02)
+        ax.set_xlim(0, x_max * 1.52)
+        for y_pos, row in enumerate(top_conditions.itertuples(index=False)):
+            ax.text(
+                row.increased_minus_decreased_guild_z + x_pad,
+                y_pos,
+                paired_smd_label(row),
+                va="center",
+                fontsize=8,
+                color="#334155",
+            )
+    ax.set_xlabel("Guild enrichment: increased mean z - decreased mean z")
+    ax.set_title("Conditions With Increased-Profile Guild Enrichment")
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "condition_increased_guild_signal.png")
     plt.close(fig)
@@ -914,16 +981,20 @@ def write_summary_report(
             "",
             "## Contexts With High Increased-Profile Guild Signal",
             "",
-            "| condition | profiles | studies | increased mean guild z | increased - decreased z |",
-            "| --- | ---: | ---: | ---: | ---: |",
+            "| condition | profiles | studies | increased - decreased z | paired d | "
+            "matched pairs | increased mean guild z |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
     )
     for row in top_conditions.itertuples(index=False):
         diff = row.increased_minus_decreased_guild_z
         diff_text = "" if pd.isna(diff) else f"{diff:.3f}"
+        smd = row.paired_standardized_mean_difference
+        smd_text = "" if pd.isna(smd) else f"{smd:.3f}"
         lines.append(
             f"| {row.condition} | {int(row.profile_count)} | {int(row.study_count)} | "
-            f"{row.increased_mean_guild_z:.3f} | {diff_text} |"
+            f"{diff_text} | {smd_text} | {int(row.paired_profile_pair_count)} | "
+            f"{row.increased_mean_guild_z:.3f} |"
         )
 
     lines.extend(

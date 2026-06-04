@@ -15,7 +15,7 @@ This figure uses the fixed focal taxa listed above, then intersects their NCBI T
 
 ## `condition_decreased_guild_signal.png`
 
-Gut-context study profiles were grouped by BugSigDB condition label. Groups with fewer than five profiles were excluded, and the broad label `Clinical treatment` was removed from the displayed condition summary. The figure keeps the top 12 eligible conditions with at least three decreased profiles and at least two studies, using fallback filtering if needed. Bar height represents the mean gut anaerobe/fermentation guild z-score among decreased profiles for that condition.
+Gut-context study profiles were grouped by BugSigDB condition label. Groups with fewer than five profiles were excluded, and the broad label `Clinical treatment` was removed from the displayed condition summary. The figure keeps the top 12 eligible conditions with at least three decreased profiles, at least two studies, positive decreased-minus-increased guild signal, and positive decreased-profile mean guild z-score, using fallback filtering if needed. Conditions are selected and sorted by decreased-minus-increased guild signal, and bar length is this enrichment-oriented contrast.
 
 ## `guild_trait_direction_shift.png`
 

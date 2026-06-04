@@ -49,16 +49,16 @@ The selected guild traits are consistently higher in decreased profiles than in 
 
 ## Gut Contexts With High Decreased-Profile Guild Signal
 
-| condition | profiles | studies | decreased mean guild z | decreased - increased z |
-| --- | ---: | ---: | ---: | ---: |
-| Graft versus host disease | 13 | 4 | 1.199 | 1.141 |
-| Acute graft vs. host disease | 11 | 2 | 1.063 | 0.915 |
-| Colorectal carcinoma | 15 | 3 | 0.961 | 1.286 |
-| Autoimmune disease | 8 | 2 | 0.922 | 0.732 |
-| Age-related macular degeneration | 10 | 3 | 0.913 | 0.729 |
-| Inflammatory bowel disease | 42 | 5 | 0.751 | 0.639 |
-| Lewy body dementia | 23 | 2 | 0.723 | 0.427 |
-| Attention deficit hyperactivity disorder | 6 | 3 | 0.658 | 0.719 |
+| condition | profiles | studies | decreased - increased z | paired d | matched pairs | decreased mean guild z |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Colorectal carcinoma | 15 | 3 | 1.286 | 1.219 | 7 | 0.961 |
+| Graft versus host disease | 13 | 4 | 1.141 | 2.298 | 4 | 1.199 |
+| Dysmenorrhea | 13 | 2 | 0.924 | 0.717 | 6 | 0.519 |
+| Acute graft vs. host disease | 11 | 2 | 0.915 | 0.526 | 4 | 1.063 |
+| Spinal cord injury | 6 | 2 | 0.847 | 2.158 | 3 | 0.588 |
+| Diarrhea | 46 | 5 | 0.825 | 0.714 | 22 | 0.609 |
+| Prediabetes syndrome | 6 | 2 | 0.766 | 0.669 | 3 | 0.459 |
+| Response to allogeneic hematopoietic stem cell transplant | 22 | 3 | 0.742 | 0.426 | 6 | 0.557 |
 
 ## Body-Site Check
 

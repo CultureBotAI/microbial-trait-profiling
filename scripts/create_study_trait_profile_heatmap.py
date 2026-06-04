@@ -19,6 +19,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
 DIRECTION_LABELS = {"inc": "increased", "dec": "decreased"}
+PAIR_DIRECTION_LABEL = "increased - decreased"
 
 
 def clean_value(value: object) -> str:
@@ -446,6 +447,146 @@ def build_display_matrix(
     return display
 
 
+def build_paired_enrichment_matrix(
+    plot_matrix: pd.DataFrame,
+    profile_metadata: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Build matched inc-minus-dec rows for each study/experiment pair."""
+    rows: list[pd.Series] = []
+    metadata_rows: list[dict[str, object]] = []
+    group_columns = ["study_id", "experiment_id"]
+    for (study_id, experiment_id), group in profile_metadata.groupby(group_columns, sort=False):
+        inc_ids = group.index[group["inc_dec"] == "inc"].intersection(plot_matrix.index)
+        dec_ids = group.index[group["inc_dec"] == "dec"].intersection(plot_matrix.index)
+        if len(inc_ids) == 0 or len(dec_ids) == 0:
+            continue
+
+        inc_values = plot_matrix.loc[inc_ids].mean(axis=0)
+        dec_values = plot_matrix.loc[dec_ids].mean(axis=0)
+        pair_id = f"{study_id}|{experiment_id}|paired_inc_minus_dec"
+        pair_values = inc_values - dec_values
+        pair_values.name = pair_id
+        rows.append(pair_values)
+
+        pair_metadata = group.iloc[0]
+        metadata_rows.append(
+            {
+                "pair_id": pair_id,
+                "study_id": study_id,
+                "experiment_id": experiment_id,
+                "direction_label": PAIR_DIRECTION_LABEL,
+                "increased_profile_count": len(inc_ids),
+                "decreased_profile_count": len(dec_ids),
+                "increased_profile_ids": ";".join(inc_ids),
+                "decreased_profile_ids": ";".join(dec_ids),
+                "mean_paired_trait_enrichment": pair_values.mean(),
+                "max_abs_paired_trait_enrichment": pair_values.abs().max(),
+                "body_site": pair_metadata["body_site"],
+                "body_site_group": pair_metadata["body_site_group"],
+                "condition": pair_metadata["condition"],
+                "condition_group": pair_metadata["condition_group"],
+                "location": pair_metadata["location"],
+                "host_species": pair_metadata["host_species"],
+                "title": pair_metadata["title"],
+                "publication_year": pair_metadata["publication_year"],
+            }
+        )
+
+    if not rows:
+        msg = "No matched increased/decreased study-experiment pairs were available."
+        raise ValueError(msg)
+
+    pair_matrix = pd.DataFrame(rows)
+    pair_metadata = pd.DataFrame.from_records(metadata_rows).set_index("pair_id")
+    return pair_matrix, pair_metadata
+
+
+def build_paired_display_matrix(
+    pair_matrix: pd.DataFrame,
+    pair_metadata: pd.DataFrame,
+    trait_metadata: pd.DataFrame,
+) -> pd.DataFrame:
+    """Apply readable labels for the plotted paired-enrichment matrix."""
+    display = pair_matrix.copy()
+    display.index = [
+        " | ".join(
+            [
+                pair_metadata.loc[pair_id, "study_id"],
+                pair_metadata.loc[pair_id, "experiment_id"],
+                "increased - decreased",
+            ]
+        )
+        for pair_id in display.index
+    ]
+    display.columns = [
+        trait_metadata.loc[trait_id, "display_label"] or trait_id for trait_id in display.columns
+    ]
+    return display
+
+
+def build_rendered_paired_enrichment_matrix(
+    pair_matrix: pd.DataFrame,
+    pair_metadata: pd.DataFrame,
+    trait_metadata: pd.DataFrame,
+    max_display_rows: int,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Aggregate adjacent clustered pairs into display bins for a readable PNG."""
+    ordered_pairs = cluster_index(pair_matrix)
+    pair_matrix = pair_matrix.loc[ordered_pairs]
+    pair_metadata = pair_metadata.loc[ordered_pairs]
+
+    if max_display_rows <= 0 or len(pair_matrix) <= max_display_rows:
+        display_matrix = build_paired_display_matrix(pair_matrix, pair_metadata, trait_metadata)
+        display_metadata = pair_metadata.copy()
+        display_metadata.index = display_matrix.index
+        display_metadata["pair_count"] = 1
+        display_metadata["study_count_in_bin"] = 1
+        display_metadata["first_pair_id"] = ordered_pairs
+        display_metadata["last_pair_id"] = ordered_pairs
+        return display_matrix, display_metadata
+
+    rows: list[pd.Series] = []
+    metadata_rows: list[dict[str, object]] = []
+    for bin_number, bin_pair_ids in enumerate(
+        np.array_split(ordered_pairs.to_numpy(), max_display_rows),
+        start=1,
+    ):
+        if len(bin_pair_ids) == 0:
+            continue
+
+        bin_index = pd.Index(bin_pair_ids)
+        bin_values = pair_matrix.loc[bin_index].mean(axis=0)
+        bin_metadata = pair_metadata.loc[bin_index]
+        label = (
+            f"paired enrichment bin {bin_number:03d} | "
+            f"pairs={len(bin_index)} | studies={bin_metadata['study_id'].nunique()}"
+        )
+        bin_values.name = label
+        rows.append(bin_values)
+        metadata_rows.append(
+            {
+                "display_label": label,
+                "direction_label": PAIR_DIRECTION_LABEL,
+                "pair_count": len(bin_index),
+                "study_count_in_bin": bin_metadata["study_id"].nunique(),
+                "body_site_group": most_common_series_value(bin_metadata["body_site_group"]),
+                "condition_group": most_common_series_value(bin_metadata["condition_group"]),
+                "mean_paired_trait_enrichment": bin_values.mean(),
+                "max_abs_paired_trait_enrichment": bin_values.abs().max(),
+                "first_pair_id": bin_index[0],
+                "last_pair_id": bin_index[-1],
+            }
+        )
+
+    display_matrix = pd.DataFrame(rows)
+    display_matrix.columns = [
+        trait_metadata.loc[trait_id, "display_label"] or trait_id
+        for trait_id in display_matrix.columns
+    ]
+    display_metadata = pd.DataFrame.from_records(metadata_rows).set_index("display_label")
+    return display_matrix, display_metadata
+
+
 def palette_for_categories(categories: pd.Series, palette_name: str) -> dict[str, object]:
     """Build a stable palette for row or column annotation categories."""
     ordered = [
@@ -604,6 +745,123 @@ def save_heatmap(
     plt.close(cluster.fig)
 
 
+def save_paired_enrichment_heatmap(
+    display_matrix: pd.DataFrame,
+    display_metadata: pd.DataFrame,
+    trait_metadata: pd.DataFrame,
+    output_path: Path,
+    full_pair_count: int,
+    full_study_count: int,
+) -> None:
+    """Render and save the paired increased-minus-decreased enrichment heatmap."""
+    sns.set_theme(style="white")
+    display_to_trait_id = dict(zip(display_matrix.columns, trait_metadata.index, strict=True))
+
+    body_palette = palette_for_categories(display_metadata["body_site_group"], "tab20")
+    condition_palette = palette_for_categories(display_metadata["condition_group"], "Set3")
+    trait_palette = palette_for_categories(trait_metadata["display_category"], "Set2")
+
+    row_colors = pd.DataFrame(
+        {
+            "body_site": display_metadata.loc[display_matrix.index, "body_site_group"]
+            .map(body_palette)
+            .to_numpy(),
+            "condition": display_metadata.loc[display_matrix.index, "condition_group"]
+            .map(condition_palette)
+            .to_numpy(),
+        },
+        index=display_matrix.index,
+    )
+    col_trait_ids = pd.Index([display_to_trait_id[label] for label in display_matrix.columns])
+    col_colors = pd.DataFrame(
+        {
+            "trait_category": trait_metadata.loc[col_trait_ids, "display_category"]
+            .map(trait_palette)
+            .to_numpy(),
+        },
+        index=display_matrix.columns,
+    )
+
+    cluster = sns.clustermap(
+        display_matrix,
+        cmap="vlag",
+        center=0,
+        vmin=-1,
+        vmax=1,
+        method="average",
+        metric="correlation",
+        row_cluster=False,
+        col_cluster=True,
+        row_colors=row_colors,
+        col_colors=col_colors,
+        linewidths=0.05,
+        linecolor="#e5e7eb",
+        xticklabels=True,
+        yticklabels=len(display_matrix) <= 120,
+        figsize=(24, min(40, max(18, len(display_matrix) / 8))),
+        cbar_pos=(0.02, 0.80, 0.02, 0.14),
+        dendrogram_ratio=(0.12, 0.10),
+        colors_ratio=(0.03, 0.03),
+        cbar_kws={
+            "label": (
+                "Paired enrichment statistic: increased profile z-score - "
+                "decreased profile z-score; display capped at +/-1"
+            )
+        },
+    )
+    cluster.fig.suptitle(
+        "Paired Study Trait Enrichment\n"
+        f"{full_pair_count} matched BugSigDB study/experiment pairs from "
+        f"{full_study_count} studies, aggregated into {len(display_matrix)} "
+        "clustered display bins",
+        y=1.08,
+        fontsize=16,
+        fontweight="bold",
+    )
+    cluster.ax_heatmap.set_xlabel("Trait")
+    cluster.ax_heatmap.set_ylabel("Clustered matched-pair display bin")
+    for label in cluster.ax_heatmap.get_xticklabels():
+        label.set_rotation(90)
+        label.set_fontsize(7)
+    for label in cluster.ax_heatmap.get_yticklabels():
+        label.set_fontsize(7)
+
+    cluster.fig.legend(
+        handles=legend_handles(trait_palette, trait_metadata["display_category"]),
+        title="Trait category",
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.16),
+        ncol=4,
+        frameon=False,
+        fontsize=9,
+        title_fontsize=10,
+    )
+    cluster.fig.legend(
+        handles=legend_handles(body_palette, display_metadata["body_site_group"]),
+        title="Body site",
+        loc="lower left",
+        bbox_to_anchor=(0.02, 0.18),
+        ncol=1,
+        frameon=False,
+        fontsize=8,
+        title_fontsize=9,
+    )
+    cluster.fig.legend(
+        handles=legend_handles(condition_palette, display_metadata["condition_group"]),
+        title="Condition",
+        loc="lower left",
+        bbox_to_anchor=(0.02, 0.02),
+        ncol=1,
+        frameon=False,
+        fontsize=8,
+        title_fontsize=9,
+    )
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    cluster.fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(cluster.fig)
+
+
 def write_outputs(
     plot_matrix: pd.DataFrame,
     display_matrix: pd.DataFrame,
@@ -636,6 +894,28 @@ def write_outputs(
         f"{int((profile_metadata.loc[profile_ids, 'inc_dec'] == 'dec').sum())}"
     )
     print(f"Traits plotted: {len(trait_ids)}")
+
+
+def write_paired_outputs(
+    pair_matrix: pd.DataFrame,
+    pair_display_matrix: pd.DataFrame,
+    pair_metadata: pd.DataFrame,
+    rendered_rows: int,
+    output_path: Path,
+    matrix_output_path: Path,
+    metadata_output_path: Path,
+) -> None:
+    """Write the paired enrichment matrix and matched-pair metadata."""
+    matrix_output_path.parent.mkdir(parents=True, exist_ok=True)
+    pair_display_matrix.to_csv(matrix_output_path, sep="\t")
+    pair_metadata.loc[pair_matrix.index].to_csv(metadata_output_path, sep="\t")
+    print(f"Wrote paired enrichment heatmap: {output_path}")
+    print(f"Wrote paired enrichment matrix: {matrix_output_path}")
+    print(f"Wrote paired enrichment metadata: {metadata_output_path}")
+    print("Measurement: matched increased-minus-decreased profile z-score per trait")
+    print(f"Matched study/experiment pairs analyzed and written: {len(pair_matrix)}")
+    print(f"Rendered paired heatmap display rows: {rendered_rows}")
+    print(f"Studies represented by matched pairs: {pair_metadata['study_id'].nunique()}")
 
 
 def main() -> None:
@@ -694,6 +974,24 @@ def main() -> None:
         help="Output selected trait metadata TSV path.",
     )
     parser.add_argument(
+        "--paired-output",
+        type=Path,
+        default=OUTPUT_DIR / "study_trait_profile_paired_enrichment_heatmap.png",
+        help="Output paired increased-minus-decreased enrichment heatmap image path.",
+    )
+    parser.add_argument(
+        "--paired-matrix-output",
+        type=Path,
+        default=OUTPUT_DIR / "study_trait_profile_paired_enrichment_matrix.tsv",
+        help="Output paired increased-minus-decreased enrichment matrix TSV path.",
+    )
+    parser.add_argument(
+        "--paired-metadata-output",
+        type=Path,
+        default=OUTPUT_DIR / "study_trait_profile_paired_enrichment_metadata.tsv",
+        help="Output matched-pair metadata TSV path.",
+    )
+    parser.add_argument(
         "--max-profiles",
         type=int,
         default=0,
@@ -713,6 +1011,15 @@ def main() -> None:
         help=(
             "Maximum rows to render in the PNG. When fewer than all profiles, adjacent "
             "clustered profiles are averaged into direction-specific display bins."
+        ),
+    )
+    parser.add_argument(
+        "--paired-display-max-rows",
+        type=int,
+        default=320,
+        help=(
+            "Maximum rows to render in the paired enrichment PNG. When fewer than all "
+            "matched pairs, adjacent clustered pairs are averaged into display bins."
         ),
     )
     parser.add_argument("--min-traits", type=int, default=0)
@@ -822,6 +1129,39 @@ def main() -> None:
         args.matrix_output,
         args.study_metadata_output,
         args.trait_metadata_output,
+    )
+
+    pair_matrix, pair_metadata = build_paired_enrichment_matrix(plot_matrix, profile_metadata)
+    ordered_pairs = cluster_index(pair_matrix)
+    pair_matrix = pair_matrix.loc[ordered_pairs]
+    pair_metadata = pair_metadata.loc[ordered_pairs]
+    pair_display_matrix = build_paired_display_matrix(
+        pair_matrix,
+        pair_metadata,
+        trait_metadata,
+    )
+    rendered_pair_matrix, rendered_pair_metadata = build_rendered_paired_enrichment_matrix(
+        pair_matrix,
+        pair_metadata,
+        trait_metadata,
+        args.paired_display_max_rows,
+    )
+    save_paired_enrichment_heatmap(
+        rendered_pair_matrix,
+        rendered_pair_metadata,
+        trait_metadata,
+        args.paired_output,
+        full_pair_count=len(pair_matrix),
+        full_study_count=pair_metadata["study_id"].nunique(),
+    )
+    write_paired_outputs(
+        pair_matrix,
+        pair_display_matrix,
+        pair_metadata,
+        len(rendered_pair_matrix),
+        args.paired_output,
+        args.paired_matrix_output,
+        args.paired_metadata_output,
     )
 
 

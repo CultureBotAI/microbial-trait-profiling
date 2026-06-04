@@ -102,6 +102,31 @@ Companion files:
 - `study_trait_profile_study_metadata.tsv`
 - `study_trait_profile_trait_metadata.tsv`
 
+### `study_trait_profile_paired_enrichment_heatmap.png`
+
+This paired companion heatmap applies the matched enrichment statistic to the same
+selected study-profile trait z-scores. The script keeps study/experiment pairs that
+have both an increased and a decreased BugSigDB profile. For each matched
+study/experiment pair and each selected trait, the plotted statistic is `increased
+profile z-score - decreased profile z-score`. Positive values therefore indicate
+traits enriched in the increased profile relative to the decreased profile from the
+same study and experiment; negative values indicate the reverse. This paired contrast
+removes between-study baseline differences before visual clustering.
+
+The current paired matrix contains 4,784 matched study/experiment pairs from 1,704
+studies and the same 60 selected traits. The full paired matrix is written without
+display binning. The PNG rendering orders matched-pair rows by average-linkage
+hierarchical clustering with Euclidean distance on the paired enrichment vectors,
+then averages adjacent clustered pairs into 320 display bins by default. Columns are
+clustered with average linkage and correlation distance, so traits are grouped by
+similarity of their enrichment/depletion pattern across matched pairs. The color scale
+is centered at zero and capped at +/-1 for display.
+
+Companion files:
+
+- `study_trait_profile_paired_enrichment_matrix.tsv`
+- `study_trait_profile_paired_enrichment_metadata.tsv`
+
 ### `condition_trait_module_clustered_heatmap.png`
 
 This figure clusters condition/body-site modules by aggregate microbial trait

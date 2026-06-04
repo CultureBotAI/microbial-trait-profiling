@@ -1,0 +1,4 @@
+condition_group	condition	profile_count	study_count	increased_profile_count	decreased_profile_count	increased_study_count	decreased_study_count	mean_guild_z	increased_mean_guild_z	decreased_mean_guild_z	increased_minus_decreased_guild_z	body_site_groups
+Autism / autism spectrum disorder	Autism	14	4	8	6	4	4	0.2736147709617279	0.5296065666215151	-0.0677076232513215	0.5973141898728366	Feces
+Autism / autism spectrum disorder	Autism spectrum disorder	78	15	42	36	15	15	0.10471622591163232	0.09982095796498983	0.11042737184938191	-0.010606413884392082	Feces; Saliva
+Autoimmune disease	Autoimmune disease	8	2	4	4	2	2	0.29460831550157274	0.5316100130793904	0.057606617923755064	0.47400339515563533	Feces
