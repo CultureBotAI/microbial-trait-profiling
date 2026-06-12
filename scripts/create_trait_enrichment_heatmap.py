@@ -16,7 +16,7 @@ import seaborn as sns
 from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import pdist
 
-DEFAULT_REPORT_PATH = Path("data/derived/trait_enrichment_report.txt")
+DEFAULT_REPORT_PATH = Path("data/derived/trait_enrichment_results.tsv")
 DEFAULT_OUTPUT_PATH = Path("data/derived/trait_enrichment_clustered_heatmap.png")
 DEFAULT_MATRIX_PATH = Path("data/derived/trait_enrichment_clustered_heatmap_matrix.tsv")
 METPO_MAPPING_PATH = Path("metpo_phenotype_mapping.tsv")
@@ -175,13 +175,30 @@ def _parse_fold(value: str) -> float:
 
 
 def parse_report(path: Path) -> list[ParsedHit]:
+    """Parse either the new structured TSV or the old text report."""
+    if path.suffix == ".tsv":
+        df = pd.read_csv(path, sep="\t")
+        hits = []
+        for _, row in df.iterrows():
+            hits.append(
+                ParsedHit(
+                    study_id=str(row["study_id"]),
+                    experiment_id=str(row["experiment_id"]),
+                    inc_dec=str(row["inc_dec"]),
+                    trait=str(row["trait"]),
+                    pvalue=float(row.get("fdr_q", row["p_value"])),
+                    fold=float(row["fold"]),
+                )
+            )
+        return hits
+
     hits: list[ParsedHit] = []
     current_profile: ProfileParts | None = None
 
     with path.open("r", encoding="utf-8") as handle:
         for raw_line in handle:
             line = raw_line.strip()
-            if not line or line == "---" or line.startswith("p < "):
+            if not line or line == "---" or line.startswith("p < ") or line.startswith("FDR q < ") or line.startswith("Min Fold"):
                 continue
 
             if line.startswith("- "):
@@ -271,6 +288,16 @@ def build_matrix(
         .astype(float)
         .fillna(0.0)
     )
+
+    # Prune empty rows and columns to reduce white space
+    # This ensures that we only plot traits and profiles that have at least one significant hit
+    matrix = matrix.loc[(matrix > 0).any(axis=1)]
+    matrix = matrix.loc[:, (matrix > 0).any(axis=0)]
+
+    if matrix.empty:
+        msg = "No data remaining after pruning empty rows/cols"
+        raise ValueError(msg)
+
     ordered_traits = (
         selected_prevalence.loc[matrix.columns].sort_values(ascending=False).index
     )

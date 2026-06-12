@@ -3,6 +3,8 @@ set shell := ["bash", "-cu"]
 schema := "schema/bsdbng.yaml"
 lintconfig := "schema/.linkmllint.yaml"
 logdir := "logs"
+p_threshold := "0.01"
+min_fold := "0.0"
 
 default: check
 
@@ -78,8 +80,15 @@ study-tsvs: ingest
 taxa-trait-matrix: study-tsvs
 	uv run python scripts/create_taxa_trait_matrix.py
 
-study-trait-profiles:
-	uv run python scripts/create_study_trait_profiles.py
+# Build a clustered heatmap from the enriched trait report.
+trait-enrichment-heatmap: genheatmap
+
+# Build a densified clustered heatmap with stricter filtering (prevalence >= 5, hits >= 3).
+trait-enrichment-heatmap-dense: analyze
+	just timed trait-enrichment-heatmap-dense "uv run python scripts/create_trait_enrichment_heatmap.py --min-trait-prevalence 12 --min-profile-hits 10 --output data/derived/trait_enrichment_densified_heatmap.png"
+
+study-trait-profiles: taxa-trait-matrix
+	uv run python scripts/create_study_trait_profiles.py --format wide
 
 security:
 	uv run bandit -c pyproject.toml -r src scripts
@@ -131,7 +140,20 @@ validate-studies-linkml:
 stats:
 	@uv run python -c "from bsdbng.stats import print_stats; print_stats()"
 
-pipeline: download ingest
+# Run hypergeometric enrichment analysis on study trait profiles.
+analyze: study-trait-profiles
+	just timed analyze "uv run python scripts/trait_enrichment.py \
+	  --input data/derived/study_trait_profiles_wide.tsv \
+	  --output data/derived/trait_enrichment_report.txt \
+	  --tsv-output data/derived/trait_enrichment_results.tsv \
+	  --p-threshold {{p_threshold}} \
+	  --min-fold {{min_fold}}"
+
+# Generate a clustered heatmap from enrichment results.
+genheatmap: analyze
+	just timed genheatmap "uv run python scripts/create_trait_enrichment_heatmap.py"
+
+pipeline: download ingest analyze genheatmap
 
 # --- linkml-store over MongoDB (localhost:27017/bsdbng.studies) ---
 # Run once to populate the collection:
