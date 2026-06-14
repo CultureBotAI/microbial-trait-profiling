@@ -4,7 +4,7 @@ schema := "schema/bsdbng.yaml"
 lintconfig := "schema/.linkmllint.yaml"
 logdir := "logs"
 p_threshold := "0.01"
-min_fold := "0.0"
+min_fold := "1.5"
 
 default: check
 
@@ -85,7 +85,7 @@ trait-enrichment-heatmap: genheatmap
 
 # Build a densified clustered heatmap with stricter filtering (prevalence >= 5, hits >= 3).
 trait-enrichment-heatmap-dense: analyze
-	just timed trait-enrichment-heatmap-dense "uv run python scripts/create_trait_enrichment_heatmap.py --min-trait-prevalence 12 --min-profile-hits 10 --output data/derived/trait_enrichment_densified_heatmap.png"
+	just timed trait-enrichment-heatmap-dense "uv run python scripts/create_trait_enrichment_heatmap.py --min-trait-prevalence 14 --min-profile-hits 12 --output data/derived/trait_enrichment_densified_heatmap.png"
 
 study-trait-profiles: taxa-trait-matrix
 	uv run python scripts/create_study_trait_profiles.py --format wide

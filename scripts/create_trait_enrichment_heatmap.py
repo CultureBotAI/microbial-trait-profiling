@@ -123,7 +123,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--min-trait-prevalence",
         type=int,
-        default=0,
+        default=14,
         help="Keep only traits enriched in at least this many profiles.",
     )
     parser.add_argument(
@@ -135,13 +135,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--min-profile-hits",
         type=int,
-        default=0,
+        default=12,
         help="Keep only profiles with at least this many enriched traits in the selected matrix.",
     )
     parser.add_argument(
         "--min-profile-signal",
         type=float,
-        default=0.0,
+        default=50.0,
         help="Keep only profiles with signal_sum >= this value.",
     )
     parser.add_argument(

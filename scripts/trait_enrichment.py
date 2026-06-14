@@ -57,7 +57,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--min-fold",
         type=float,
-        default=0.0,
+        default=1.5,
         help="Minimum fold enrichment (count / expected)",
     )
     parser.add_argument(
