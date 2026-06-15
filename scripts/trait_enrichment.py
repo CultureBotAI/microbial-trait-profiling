@@ -357,6 +357,8 @@ def main() -> None:
     # Write TSV output if requested
     if args.tsv_output:
         args.tsv_output.parent.mkdir(parents=True, exist_ok=True)
+        # Sort globally by significance (FDR q), then by study/experiment/direction/trait
+        significant_hits.sort(key=lambda h: (h["fdr_q"], h["study_id"], h["experiment_id"], h["trait"]))
         with args.tsv_output.open("w", encoding="utf-8", newline="") as out_fh:
             writer = csv.DictWriter(out_fh, fieldnames=[
                 "study_id", "experiment_id", "inc_dec", "trait",

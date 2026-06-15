@@ -3,7 +3,7 @@ set shell := ["bash", "-cu"]
 schema := "schema/bsdbng.yaml"
 lintconfig := "schema/.linkmllint.yaml"
 logdir := "logs"
-p_threshold := "0.01"
+p_threshold := "0.001"
 min_fold := "1.5"
 
 default: check
