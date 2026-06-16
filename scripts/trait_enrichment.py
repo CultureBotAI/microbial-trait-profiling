@@ -39,7 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--p-threshold",
         type=float,
-        default=0.01,
+        default=0.001,
         help="Significance threshold (applied to FDR if used, else p-value)",
     )
     parser.add_argument(
