@@ -221,7 +221,24 @@ Companion file:
 
 ## Trait Profile Investigation Figures
 
-### Facultative-Aerobe Increased-Profile Signal
+### v2 Presentation Slideshow
+
+The presentation
+`trait-profile-investigation/trait_profile_investigation_figures.pptx` contains
+the current eleven-panel v2 figure slideshow. Slides 1-5 use
+`trait-profile-investigation/facultative-aerobe-v2/`, slides 6-10 use
+`trait-profile-investigation/gut-anaerobe-v2/`, and slide 11 is the summary
+diagram `trait-profile-investigation/profile_enrichment_guild_assignment_summary.png`.
+
+The slide-specific methods text for that deck is
+`trait-profile-investigation/figure_methods.md`. It maps each slide to its PNG,
+states whether the panel is guild-specific, and describes the exact filters,
+scores, direction-count formulas, and occurrence-count rules used for the
+presentation figures. It also documents how the summary diagram connects profile
+enrichment, selected trait-set guild scores, inferred evidence, and fixed
+target-taxon audit panels.
+
+### Legacy Facultative-Aerobe Increased-Profile Signal
 
 These method notes describe how each PNG in
 `trait-visualization/trait-profile-investigation/facultative-aerobe-trait-expansion/`
@@ -279,9 +296,15 @@ with fewer than five profiles were excluded. Broad non-condition or metadata lab
 `population`) were removed from the displayed condition summary. Those labels usually
 describe exposure, cohort, or measurement metadata rather than a disease or condition
 context. The figure keeps the top 12 eligible conditions with at least three
-increased profiles and at least two studies, using fallback filtering if needed.
-Bars are sorted high to low by mean facultative-aerobe guild z-score among increased
-profiles.
+increased profiles, at least two studies, positive increased-minus-decreased guild
+signal, and positive increased-profile mean guild z-score, using fallback filtering
+if needed. Conditions are selected and sorted by increased-minus-decreased guild
+signal. Bar length is this enrichment-oriented contrast, and the right-side labels
+show the paired standardized mean difference (`paired d`) calculated from matched
+increased/decreased profiles within the same study and experiment, plus a two-sided
+paired t-test p-value for the same matched differences. `paired d=NA` means fewer
+than three matched profile pairs, or zero variance among the paired differences; in
+those cases the paired p-value is also `NA`.
 
 #### `guild_trait_direction_shift.png`
 
@@ -320,7 +343,7 @@ taxa can therefore contribute multiple occurrences; the chart is an occurrence
 breakdown, not a unique-study breakdown. It displays the top 20 explicit condition
 labels as horizontal bars, with bar labels showing occurrence counts.
 
-### Gut Anaerobe/Fermentation Depletion
+### Legacy Gut Anaerobe/Fermentation Depletion
 
 These method notes describe how each PNG in
 `trait-visualization/trait-profile-investigation/gut-anaerobe-fermentation-depletion/`
@@ -372,9 +395,16 @@ BugSigDB direction tendency of the preselected focal taxa.
 Gut-context study profiles were grouped by BugSigDB condition label. Groups with
 fewer than five profiles were excluded, and the broad label `Clinical treatment` was
 removed from the displayed condition summary. The figure keeps the top 12 eligible
-conditions with at least three decreased profiles and at least two studies, using
-fallback filtering if needed. Bar height represents the mean gut anaerobe/fermentation
-guild z-score among decreased profiles for that condition.
+conditions with at least three decreased profiles, at least two studies, positive
+decreased-minus-increased guild signal, and positive decreased-profile mean guild
+z-score, using fallback filtering if needed. Conditions are selected and sorted by
+decreased-minus-increased guild signal, and bar length is this enrichment-oriented
+contrast. The right-side labels show the paired standardized mean difference
+(`paired d`) calculated from matched decreased/increased profiles within the same
+study and experiment, plus a two-sided paired t-test p-value for the same matched
+differences. `paired d=NA` means fewer than three matched profile pairs, or zero
+variance among the paired differences; in those cases the paired p-value is also
+`NA`.
 
 #### `guild_trait_direction_shift.png`
 

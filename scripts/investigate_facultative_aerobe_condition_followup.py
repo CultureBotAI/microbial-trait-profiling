@@ -13,8 +13,10 @@ from investigate_facultative_aerobe_expansion import (
     REPO_ROOT,
     TARGET_TAXA,
     add_guild_scores,
+    build_kg_microbe_taxon_universe,
     clean_text,
     load_study_heatmap,
+    summarize_inferred_guild_evidence,
 )
 from investigate_facultative_aerobe_expansion import (
     OUTPUT_DIR as FACULTATIVE_OUTPUT_DIR,
@@ -33,6 +35,9 @@ CONDITION_ORDER = [
 DIRECTION_ORDER = {"increased": 0, "decreased": 1}
 HEATMAP_RANKS = {"genus", "species"}
 HEATMAP_TOP_TAXA = 45
+NON_GUILD_SPECIFIC_TAXA_HEATMAP_NOTE = (
+    "Guild-specific: no - taxon direction-count heatmap; guild traits are annotation context."
+)
 
 
 def profile_id_from_parts(study_id: object, experiment_id: object, direction: object) -> str:
@@ -108,7 +113,6 @@ def load_taxa_occurrences(profiles: pd.DataFrame) -> pd.DataFrame:
         "publication_year",
         "guild_z_mean",
         "oxygen_tolerance_z_mean",
-        "gram_negative_motility_z_mean",
     ]
     taxa = pd.read_csv(
         REPO_ROOT / "data/derived/taxa.tsv",
@@ -420,9 +424,19 @@ def save_heatmap(
     ax.set_xlabel("Taxon")
     ax.set_ylabel("BugSigDB condition label")
     ax.set_title(
-        "Autism and Autoimmune Disease Follow-Up: Taxa Direction Signal\n"
+        "Autism and Autoimmune Disease Follow-Up: Facultative-Aerobe v2 Taxa Direction Signal\n"
         "Signed unique taxon-profile count: increased profiles minus decreased profiles",
-        pad=16,
+        pad=30,
+    )
+    ax.text(
+        0,
+        1.02,
+        NON_GUILD_SPECIFIC_TAXA_HEATMAP_NOTE,
+        transform=ax.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=8.5,
+        color="#475569",
     )
 
     ax.set_xticks([tick - 0.5 for tick in range(1, len(display_matrix.columns))], minor=True)
@@ -461,14 +475,23 @@ def write_readme(
     grouped_summary: pd.DataFrame,
     balance: pd.DataFrame,
     heatmap_matrix: pd.DataFrame,
+    inferred_group_summary: pd.DataFrame,
+    kg_microbe_taxon_universe: pd.DataFrame,
 ) -> None:
     """Write a compact human-readable follow-up summary."""
     lines = [
-        "# Autism and Autoimmune Disease Follow-Up",
+        "# Autism and Autoimmune Disease Follow-Up: Facultative-Aerobe v2",
         "",
         "This follow-up starts from the facultative-aerobe increased-profile guild signal "
         "and inspects the BugSigDB taxa reported in the autism/autism spectrum disorder "
         "and autoimmune disease condition labels.",
+        "",
+        "## Plot Guild Specificity",
+        "",
+        "| plot | guild-specific? | basis |",
+        "| --- | --- | --- |",
+        "| `autism_autoimmune_taxa_signed_heatmap.png` | no | "
+        "taxon direction-count heatmap; guild traits are annotation context |",
         "",
         "## Included Condition Labels",
         "",
@@ -521,38 +544,67 @@ def write_readme(
                 )
             lines.append("")
 
+    if not inferred_group_summary.empty:
+        lines.extend(
+            [
+                "## Inferred Guild Evidence",
+                "",
+                "This section uses a data-derived guild view: for each exact condition "
+                "label, it identifies v2 guild traits enriched in that condition's increased "
+                "profiles, then lists taxa observed in those same profiles that also "
+                "belong to the KG-Microbe-wide candidate universe and carry the enriched "
+                "trait annotations. The universe contains "
+                f"{len(kg_microbe_taxon_universe):,} taxa with at least one core "
+                "oxygen/respiration criterion annotation, not the fixed focal taxa list.",
+                "",
+                "| condition | increased profiles | universe taxa / observed taxa | "
+                "enriched traits | supporting taxa |",
+                "| --- | ---: | ---: | --- | --- |",
+            ]
+        )
+        for row in inferred_group_summary.itertuples(index=False):
+            lines.append(
+                f"| {row.condition} | {int(row.focus_profile_count)} | "
+                f"{int(row.kg_microbe_universe_taxon_count)} / "
+                f"{int(row.total_observed_taxon_count)} | "
+                f"{clean_text(row.top_enriched_traits)} | "
+                f"{clean_text(row.top_supporting_taxa)} |"
+            )
+        lines.append("")
+
     heatmap_taxa = len(heatmap_matrix.columns)
     full_taxa = balance["taxon_id"].nunique()
+    guild_trait_text = ", ".join(GUILD_TRAITS.values())
+    positive_conditions = profile_summary[
+        profile_summary["increased_minus_decreased_guild_z"] > 0
+    ]
+    if positive_conditions.empty:
+        positive_condition_text = "No included condition label has a positive v2 guild shift."
+    else:
+        condition_bits = [
+            f"`{row.condition}` ({row.increased_minus_decreased_guild_z:.3f})"
+            for row in positive_conditions.itertuples(index=False)
+        ]
+        positive_condition_text = (
+            "Included condition labels with positive increased-minus-decreased v2 guild "
+            "shifts are "
+            + ", ".join(condition_bits)
+            + "."
+        )
     lines.extend(
         [
             "## Interpretation",
             "",
-            "This follow-up supports a narrow, label-dependent connection rather than "
-            "a broad causal claim. The exact `Autism` and `Autoimmune disease` "
-            "BugSigDB condition labels both show a fecal facultative-aerobe "
-            "increased-profile guild signal: `Autism` has 14 profiles across 4 "
-            "studies with an increased-minus-decreased guild z-score of `0.597`, "
-            "and `Autoimmune disease` has 8 profiles across 2 studies with an "
-            "increased-minus-decreased guild z-score of `0.474`.",
+            "This v2 follow-up uses only the narrowed facultative-aerobe guild traits: "
+            f"{guild_trait_text}. It supports a label-dependent signal check rather than "
+            "a broad causal claim.",
             "",
-            "The broader `Autism spectrum disorder` label does not reproduce that "
-            "directional guild shift. It has 78 profiles across 15 studies, "
-            "includes feces and saliva, and has an increased-minus-decreased guild "
-            "z-score of `-0.011`. This means the apparent autism to autoimmune "
-            "similarity is strongest for the exact `Autism` label and becomes much "
-            "weaker when the broader ASD label is included.",
+            positive_condition_text,
             "",
-            "At the taxa-list level, there is overlap but it is not decisive. The "
-            "autism/ASD group has 318 increased taxa and the autoimmune group has "
-            "84 increased taxa, with 38 shared increased taxa. For decreased taxa, "
-            "autism/ASD has 756, autoimmune disease has 62, and 37 are shared. "
-            "After signed direction balancing, 15 taxa are increased-skewed in both "
-            "groups and 7 are decreased-skewed in both groups. The strongest shared "
-            "increased-skewed local taxon is `NCBITaxon:1224` / `taxon_1224`, with "
-            "signed counts of `+6` in autism/ASD and `+3` in autoimmune disease; "
-            "it carries all six guild traits used here: facultatively aerobic, "
-            "aerobic, gram negative, motile, microaerophilic, and "
-            "nitrate_reduction.",
+            "At the taxa-list level, overlap should still be interpreted cautiously. "
+            "The signed heatmap counts direction balance by taxon/profile occurrence, "
+            "while the guild annotation columns only indicate whether those taxa carry "
+            "one or more of the v2 oxygen-tolerance traits.",
             "",
             "The most defensible interpretation is that the exact autism and "
             "autoimmune disease labels share a candidate gut dysbiosis axis "
@@ -579,6 +631,10 @@ def write_readme(
             "- `autism_autoimmune_taxa_signed_balance.tsv`",
             "- `autism_autoimmune_taxa_signed_heatmap_matrix.tsv`",
             "- `autism_autoimmune_taxa_signed_heatmap.png`",
+            "- `autism_autoimmune_inferred_guild_summary.tsv`",
+            "- `autism_autoimmune_inferred_guild_trait_evidence.tsv`",
+            "- `autism_autoimmune_inferred_guild_taxa_evidence.tsv`",
+            "- `kg_microbe_candidate_taxon_universe.tsv`",
             "",
         ]
     )
@@ -588,7 +644,9 @@ def write_readme(
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+    study_matrix, _, study_trait_metadata = load_study_heatmap()
     profiles = load_scored_condition_profiles()
+    profiles["condition_group"] = profiles["condition_group_followup"]
     if profiles.empty:
         msg = "No matching profiles found for autism or autoimmune disease condition labels."
         raise ValueError(msg)
@@ -600,6 +658,19 @@ def main() -> None:
     signed_balance = build_signed_taxa_balance(occurrences)
     selected_taxa = select_heatmap_taxa(signed_balance)
     heatmap_matrix = build_heatmap_matrix(signed_balance, selected_taxa)
+    kg_microbe_taxon_universe = build_kg_microbe_taxon_universe()
+    inferred_group_summary, inferred_trait_evidence, inferred_taxa_evidence = (
+        summarize_inferred_guild_evidence(
+            study_matrix,
+            profiles,
+            study_trait_metadata,
+            occurrences,
+            profile_summary[["condition_group", "condition"]],
+            ["condition_group", "condition"],
+            focus_direction="increased",
+            taxon_universe_ids=set(kg_microbe_taxon_universe["taxon_id"]),
+        )
+    )
 
     profile_summary.to_csv(
         OUTPUT_DIR / "autism_autoimmune_profile_summary.tsv",
@@ -625,17 +696,46 @@ def main() -> None:
         OUTPUT_DIR / "autism_autoimmune_taxa_signed_heatmap_matrix.tsv",
         sep="\t",
     )
+    kg_microbe_taxon_universe.to_csv(
+        OUTPUT_DIR / "kg_microbe_candidate_taxon_universe.tsv",
+        sep="\t",
+        index=False,
+    )
+    inferred_group_summary.to_csv(
+        OUTPUT_DIR / "autism_autoimmune_inferred_guild_summary.tsv",
+        sep="\t",
+        index=False,
+    )
+    inferred_trait_evidence.to_csv(
+        OUTPUT_DIR / "autism_autoimmune_inferred_guild_trait_evidence.tsv",
+        sep="\t",
+        index=False,
+    )
+    inferred_taxa_evidence.to_csv(
+        OUTPUT_DIR / "autism_autoimmune_inferred_guild_taxa_evidence.tsv",
+        sep="\t",
+        index=False,
+    )
     save_heatmap(
         heatmap_matrix,
         profile_summary,
         OUTPUT_DIR / "autism_autoimmune_taxa_signed_heatmap.png",
     )
-    write_readme(profile_summary, grouped_taxa_summary, signed_balance, heatmap_matrix)
+    write_readme(
+        profile_summary,
+        grouped_taxa_summary,
+        signed_balance,
+        heatmap_matrix,
+        inferred_group_summary,
+        kg_microbe_taxon_universe,
+    )
 
     print(f"Wrote follow-up outputs to: {OUTPUT_DIR}")
     print(f"Profiles analyzed: {len(profiles)}")
     print(f"Taxon/profile occurrence rows: {len(occurrences)}")
     print(f"Unique taxa observed: {occurrences['taxon_id'].nunique()}")
+    print(f"KG-Microbe candidate taxon universe rows: {len(kg_microbe_taxon_universe)}")
+    print(f"Inferred guild rows: {len(inferred_group_summary)}")
     print(f"Heatmap taxa plotted: {len(heatmap_matrix.columns)}")
 
 

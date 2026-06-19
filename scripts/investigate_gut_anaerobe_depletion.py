@@ -1,10 +1,11 @@
-"""Investigate gut anaerobe and fermentation depletion signals."""
+"""Investigate gut anaerobe-only v2 depletion signals."""
 
 from __future__ import annotations
 
 import math
 import re
 from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -14,14 +15,11 @@ from matplotlib.path import Path as MplPath
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
-OUTPUT_DIR = VIS_DIR / "trait-profile-investigation" / "gut-anaerobe-fermentation-depletion"
+OUTPUT_DIR = VIS_DIR / "trait-profile-investigation" / "gut-anaerobe-v2"
 
 GUILD_TRAITS = {
     "METPO:1000603": "anaerobic",
     "METPO:1000607": "obligately anaerobic",
-    "METPO:1002005": "Fermentation",
-    "METPO:2000103|GO:0030245": "cellulose catabolic process",
-    "METPO:2000103|GO:0045493": "xylan catabolic process",
 }
 
 TARGET_TAXA = {
@@ -40,6 +38,26 @@ GUT_BODY_SITE_RE = re.compile(
 )
 EXCLUDED_CONDITION_SUMMARY_LABELS = {"Clinical treatment"}
 MIN_PAIRED_SMD_PROFILE_PAIRS = 3
+GUILD_SPECIFIC_NOTE = (
+    "Guild-specific: yes - uses the gut anaerobe v2 guild score (anaerobic, obligately anaerobic)."
+)
+NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE = (
+    "Guild-specific: no - fixed target-taxon count view; not recomputed from the guild score."
+)
+
+
+def add_specificity_note(ax: plt.Axes, note: str) -> None:
+    """Add a visible guild-specificity note below the plot title."""
+    ax.text(
+        0,
+        1.02,
+        note,
+        transform=ax.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=8.5,
+        color="#475569",
+    )
 
 
 def read_tsv(path: Path, **kwargs: object) -> pd.DataFrame:
@@ -63,6 +81,80 @@ def safe_ratio(numerator: float, denominator: float) -> float:
     return numerator / denominator
 
 
+def _incomplete_beta_continued_fraction(a: float, b: float, x: float) -> float:
+    max_iterations = 200
+    epsilon = 3e-14
+    tiny = 1e-300
+
+    qab = a + b
+    qap = a + 1.0
+    qam = a - 1.0
+    c = 1.0
+    d = 1.0 - qab * x / qap
+    if abs(d) < tiny:
+        d = tiny
+    d = 1.0 / d
+    h = d
+
+    for iteration in range(1, max_iterations + 1):
+        m2 = 2 * iteration
+        numerator = iteration * (b - iteration) * x
+        denominator = (qam + m2) * (a + m2)
+        d = 1.0 + numerator / denominator * d
+        if abs(d) < tiny:
+            d = tiny
+        c = 1.0 + numerator / denominator / c
+        if abs(c) < tiny:
+            c = tiny
+        d = 1.0 / d
+        h *= d * c
+
+        numerator = -(a + iteration) * (qab + iteration) * x
+        denominator = (a + m2) * (qap + m2)
+        d = 1.0 + numerator / denominator * d
+        if abs(d) < tiny:
+            d = tiny
+        c = 1.0 + numerator / denominator / c
+        if abs(c) < tiny:
+            c = tiny
+        d = 1.0 / d
+        delta = d * c
+        h *= delta
+        if abs(delta - 1.0) < epsilon:
+            break
+
+    return h
+
+
+def regularized_incomplete_beta(a: float, b: float, x: float) -> float:
+    if x <= 0:
+        return 0.0
+    if x >= 1:
+        return 1.0
+
+    log_beta_factor = (
+        math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b) + a * math.log(x) + b * math.log1p(-x)
+    )
+    beta_factor = math.exp(log_beta_factor)
+    if x < (a + 1.0) / (a + b + 2.0):
+        return beta_factor * _incomplete_beta_continued_fraction(a, b, x) / a
+    return 1.0 - beta_factor * _incomplete_beta_continued_fraction(b, a, 1.0 - x) / b
+
+
+def paired_t_test_p_value(
+    mean_difference: float,
+    difference_sd: float,
+    pair_count: int,
+) -> float:
+    if pair_count < MIN_PAIRED_SMD_PROFILE_PAIRS or pd.isna(difference_sd) or difference_sd <= 0:
+        return math.nan
+    t_statistic = mean_difference / (difference_sd / math.sqrt(pair_count))
+    degrees_of_freedom = pair_count - 1
+    x = degrees_of_freedom / (degrees_of_freedom + t_statistic**2)
+    p_value = regularized_incomplete_beta(degrees_of_freedom / 2.0, 0.5, x)
+    return max(0.0, min(1.0, p_value))
+
+
 def paired_guild_enrichment_stats(group: pd.DataFrame) -> dict[str, float | int]:
     """Calculate paired dec-vs-inc guild enrichment within study/experiment."""
     paired = group.pivot_table(
@@ -77,6 +169,7 @@ def paired_guild_enrichment_stats(group: pd.DataFrame) -> dict[str, float | int]
             "paired_mean_guild_z_difference": math.nan,
             "paired_guild_z_difference_sd": math.nan,
             "paired_standardized_mean_difference": math.nan,
+            "paired_t_test_p_value": math.nan,
         }
 
     paired = paired.dropna(subset=["inc", "dec"])
@@ -85,18 +178,21 @@ def paired_guild_enrichment_stats(group: pd.DataFrame) -> dict[str, float | int]
     mean_difference = differences.mean() if pair_count else math.nan
     difference_sd = differences.std(ddof=1) if pair_count > 1 else math.nan
     smd = math.nan
+    p_value = math.nan
     if (
         pair_count >= MIN_PAIRED_SMD_PROFILE_PAIRS
         and not pd.isna(difference_sd)
         and difference_sd > 0
     ):
         smd = mean_difference / difference_sd
+        p_value = paired_t_test_p_value(mean_difference, difference_sd, pair_count)
 
     return {
         "paired_profile_pair_count": pair_count,
         "paired_mean_guild_z_difference": mean_difference,
         "paired_guild_z_difference_sd": difference_sd,
         "paired_standardized_mean_difference": smd,
+        "paired_t_test_p_value": p_value,
     }
 
 
@@ -120,17 +216,15 @@ def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
 def add_guild_scores(matrix: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
     available_traits = [trait for trait in GUILD_TRAITS.values() if trait in matrix.columns]
+    if not available_traits:
+        msg = "No requested gut anaerobe v2 guild traits were found in the matrix."
+        raise ValueError(msg)
     scored = metadata.copy()
     scored["gut_context"] = scored["body_site"].map(is_gut_body_site) | scored[
         "body_site_group"
     ].map(is_gut_body_site)
     scored["guild_z_mean"] = matrix[available_traits].mean(axis=1)
-    scored["anaerobe_fermentation_z_mean"] = matrix[
-        ["anaerobic", "obligately anaerobic", "Fermentation"]
-    ].mean(axis=1)
-    scored["fiber_degradation_z_mean"] = matrix[
-        ["cellulose catabolic process", "xylan catabolic process"]
-    ].mean(axis=1)
+    scored["anaerobe_z_mean"] = scored["guild_z_mean"]
     for trait_name in available_traits:
         scored[f"z_{trait_name}"] = matrix[trait_name]
     return scored
@@ -152,8 +246,6 @@ def summarize_direction(metadata: pd.DataFrame) -> pd.DataFrame:
         )
     for score_name in [
         "guild_z_mean",
-        "anaerobe_fermentation_z_mean",
-        "fiber_degradation_z_mean",
     ]:
         inc_mean = metadata.loc[metadata["inc_dec"] == "inc", score_name].mean()
         dec_mean = metadata.loc[metadata["inc_dec"] == "dec", score_name].mean()
@@ -186,8 +278,7 @@ def summarize_group(metadata: pd.DataFrame, group_column: str, min_profiles: int
             "decreased_mean_guild_z": dec["guild_z_mean"].mean(),
             "decreased_minus_increased_guild_z": dec["guild_z_mean"].mean()
             - inc["guild_z_mean"].mean(),
-            "decreased_mean_fiber_z": dec["fiber_degradation_z_mean"].mean(),
-            "decreased_mean_anaerobe_fermentation_z": dec["anaerobe_fermentation_z_mean"].mean(),
+            "decreased_mean_anaerobe_z": dec["anaerobe_z_mean"].mean(),
         }
         if group_column == "condition":
             record.update(paired_guild_enrichment_stats(group))
@@ -226,6 +317,16 @@ def select_top_conditions(condition_summary: pd.DataFrame, limit: int) -> pd.Dat
             limit
         )
     return top_conditions
+
+
+def paired_smd_label(row: Any) -> str:
+    pair_count = int(row.paired_profile_pair_count)
+    smd = row.paired_standardized_mean_difference
+    p_value = row.paired_t_test_p_value
+    p_text = "p=NA" if pd.isna(p_value) else f"p={p_value:.3g}"
+    if pd.isna(smd):
+        return f"paired d=NA, {p_text}, n={pair_count}"
+    return f"paired d={smd:.2f}, {p_text}, n={pair_count}"
 
 
 def load_taxa_direction_summary() -> pd.DataFrame:
@@ -327,8 +428,7 @@ def load_target_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
         "host_species",
         "gut_context",
         "guild_z_mean",
-        "anaerobe_fermentation_z_mean",
-        "fiber_degradation_z_mean",
+        "anaerobe_z_mean",
     ]
     profiles = scored_profiles[profile_columns].copy()
     merged = taxa.merge(
@@ -421,6 +521,7 @@ def save_condition_breakdown_bar_chart(
     output_path: Path,
     title_prefix: str,
     color: str,
+    specificity_note: str,
 ) -> None:
     """Save a horizontal bar chart for condition counts."""
     if counts.empty:
@@ -431,7 +532,8 @@ def save_condition_breakdown_bar_chart(
     ax.barh(bar_counts.index, bar_counts.to_numpy(), color=color)
     ax.invert_yaxis()
     ax.set_xlabel("Target taxon-profile occurrences")
-    ax.set_title(f"{title_prefix}: top conditions")
+    ax.set_title(f"{title_prefix}: top conditions", pad=28)
+    add_specificity_note(ax, specificity_note)
     for index, value in enumerate(bar_counts.to_numpy()):
         ax.text(value, index, f" {int(value)}", va="center", fontsize=8)
     fig.tight_layout()
@@ -661,6 +763,15 @@ def save_anatomical_sites_diagram(
     ax.text(0.02, 0.965, title, ha="left", va="top", fontsize=17, fontweight="bold")
     ax.text(
         0.02,
+        0.925,
+        GUILD_SPECIFIC_NOTE,
+        ha="left",
+        va="top",
+        fontsize=8.5,
+        color="#475569",
+    )
+    ax.text(
+        0.02,
         0.035,
         "Bubble and bar length show profile count; color shows the "
         "direction-specific guild signal.",
@@ -693,9 +804,8 @@ def write_figure_methods() -> None:
         "`trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv` and "
         "joined to study metadata from "
         "`trait-visualization/study_trait_profile_study_metadata.tsv`. The gut "
-        "anaerobe/fermentation guild score was the row-wise mean of the selected "
-        "guild traits: anaerobic, obligately anaerobic, Fermentation, cellulose "
-        "catabolic process, and xylan catabolic process. Gut-context profiles were "
+        "anaerobe v2 guild score was the row-wise mean of the selected "
+        "guild traits: anaerobic and obligately anaerobic. Gut-context profiles were "
         "defined by body-site or grouped body-site labels matching "
         "`feces`, `faeces`, `stool`, `colon`, `caecum`, `cecum`, `gut`, "
         "`intestin`, or `digestive`.",
@@ -713,15 +823,18 @@ def write_figure_methods() -> None:
         "Agathobacter rectalis (NCBITaxon:39491), Roseburia intestinalis "
         "(NCBITaxon:166486), Ruminococcus bromii (NCBITaxon:40518), and "
         "Roseburia inulinivorans (NCBITaxon:360807). They were chosen as focal "
-        "examples for the gut anaerobe/fermentation depletion hypothesis because "
-        "they are species-level gut anaerobe or fiber-fermentation candidates in "
-        "the selected guild, and the derived taxa-trait matrix gives each selected "
+        "examples for the gut anaerobe v2 depletion hypothesis because "
+        "they are species-level gut anaerobe candidates in the selected guild, "
+        "and the derived taxa-trait matrix gives each selected "
         "taxon at least one of the investigation guild-trait annotations. The "
         "script writes `candidate_taxa_trait_presence.tsv` from "
         "`data/derived/taxa_trait_matrix.tsv` as the audit trail for those trait "
         "annotations.",
         "",
         "## `candidate_taxa_depletion_bias.png`",
+        "",
+        "Guild-specificity: no. This is a fixed target-taxon direction-count view; "
+        "it is not recomputed from the v2 guild score.",
         "",
         "This figure uses the fixed focal taxa listed above, then intersects their "
         "NCBI Taxonomy IDs with "
@@ -736,6 +849,9 @@ def write_figure_methods() -> None:
         "",
         "## `condition_decreased_guild_signal.png`",
         "",
+        "Guild-specificity: yes. This figure uses the gut anaerobe v2 guild score "
+        "from the two selected traits.",
+        "",
         "Gut-context study profiles were grouped by BugSigDB condition label. Groups "
         "with fewer than five profiles were excluded, and the broad label "
         "`Clinical treatment` was removed from the displayed condition summary. The "
@@ -744,27 +860,43 @@ def write_figure_methods() -> None:
         "signal, and positive decreased-profile mean guild z-score, using fallback "
         "filtering if needed. Conditions are selected and sorted by "
         "decreased-minus-increased guild signal, and bar length is this "
-        "enrichment-oriented contrast.",
+        "enrichment-oriented contrast. The right-side labels show the paired "
+        "standardized mean difference (`paired d`) calculated from matched "
+        "decreased/increased profiles within the same study and experiment, plus "
+        "a two-sided paired t-test p-value for the same matched differences. "
+        "`paired d=NA` means fewer than three matched profile pairs, or zero "
+        "variance among the paired differences; in those cases the paired p-value "
+        "is also `NA`.",
         "",
         "## `guild_trait_direction_shift.png`",
         "",
+        "Guild-specificity: yes. This figure shows the two selected v2 guild traits "
+        "and their decreased-minus-increased profile shifts.",
+        "",
         "For each selected guild trait, the script calculated the mean z-score in "
-        "all decreased study profiles and the mean z-score in all increased study "
-        "profiles. Bars show `decreased mean z - increased mean z`; positive values "
-        "indicate traits that are higher in decreased profiles.",
+        "gut-context decreased study profiles and the mean z-score in gut-context "
+        "increased study profiles. Bars show `decreased mean z - increased mean z`; "
+        "positive values indicate traits that are higher in decreased gut-context "
+        "profiles.",
         "",
         "## `anatomical_sites_diagram.png`",
+        "",
+        "Guild-specificity: yes. Color encodes the gut anaerobe v2 guild score "
+        "among decreased profiles at each body-site group.",
         "",
         "Gut-context profiles were grouped by `body_site_group`, requiring at least "
         "10 profiles per group. The display excludes the generic `Other` body-site "
         "group. Bubble and bar length encode the number of study profiles in the "
-        "body-site group. Color encodes the mean gut anaerobe/fermentation guild "
+        "body-site group. Color encodes the mean gut anaerobe v2 guild "
         "z-score among decreased profiles at that body site. Body-site labels were "
         "placed on a simplified, neutral front-view body outline using fixed "
         "anatomical coordinates for feces/stool, colon, caecum, oral, airway, "
         "urogenital, and unknown labels.",
         "",
         "## `target_taxa_condition_breakdown_bar.png`",
+        "",
+        "Guild-specificity: no. This is a fixed target-taxon occurrence-count view; "
+        "it is not recomputed from the v2 guild score.",
         "",
         "Target-taxon occurrences were loaded from `data/derived/taxa.tsv`, limited "
         "to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study "
@@ -796,7 +928,8 @@ def make_plots(
     ax.barh(plot_taxa["target_taxon_name"], plot_taxa["depletion_bias"], color="#8c2d04")
     ax.axvline(0, color="#333333", linewidth=0.8)
     ax.set_xlabel("(decreased profiles - increased profiles) / total profiles")
-    ax.set_title("Gut Anaerobe Candidate Taxa Are Depletion-Biased")
+    ax.set_title("Gut Anaerobe Candidate Taxa Are Depletion-Biased", pad=28)
+    add_specificity_note(ax, NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE)
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "candidate_taxa_depletion_bias.png")
     plt.close(fig)
@@ -804,14 +937,32 @@ def make_plots(
     top_conditions = select_top_conditions(condition_summary, 12).sort_values(
         "decreased_minus_increased_guild_z"
     )
-    fig, ax = plt.subplots(figsize=(10, 5.5))
+    fig, ax = plt.subplots(figsize=(11, 5.5))
+    condition_values = top_conditions["decreased_minus_increased_guild_z"]
     ax.barh(
         top_conditions["condition"],
-        top_conditions["decreased_minus_increased_guild_z"],
+        condition_values,
         color="#2563eb",
     )
-    ax.set_xlabel("Guild enrichment: decreased mean z - increased mean z")
-    ax.set_title("Conditions With Decreased-Profile Guild Enrichment")
+    if not top_conditions.empty:
+        x_max = condition_values.max()
+        x_pad = max(x_max * 0.025, 0.02)
+        ax.set_xlim(0, x_max * 1.75)
+        for y_pos, row in enumerate(top_conditions.itertuples(index=False)):
+            ax.text(
+                row.decreased_minus_increased_guild_z + x_pad,
+                y_pos,
+                paired_smd_label(row),
+                va="center",
+                fontsize=8,
+                color="#334155",
+            )
+    ax.set_xlabel("Gut anaerobe v2 guild enrichment: decreased mean z - increased mean z")
+    ax.set_title(
+        "Conditions With Decreased-Profile Gut Anaerobe v2 Guild Enrichment",
+        pad=28,
+    )
+    add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "condition_decreased_guild_signal.png")
     plt.close(fig)
@@ -826,8 +977,12 @@ def make_plots(
         color="#047857",
     )
     ax.axvline(0, color="#333333", linewidth=0.8)
-    ax.set_xlabel("decreased profile mean z - increased profile mean z")
-    ax.set_title("Guild Traits Are Higher in Decreased Profiles")
+    ax.set_xlabel("decreased gut-context profile mean z - increased gut-context profile mean z")
+    ax.set_title(
+        "Gut Anaerobe v2 Guild Traits Are Higher in Decreased Gut-Context Profiles",
+        pad=28,
+    )
+    add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "guild_trait_direction_shift.png")
     plt.close(fig)
@@ -842,11 +997,12 @@ def make_plots(
         output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_bar.png",
         title_prefix="Decreased gut anaerobe target taxa",
         color="#2563eb",
+        specificity_note=NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE,
     )
     save_anatomical_sites_diagram(
         body_site_summary,
         output_path=OUTPUT_DIR / "anatomical_sites_diagram.png",
-        title="Gut Anaerobe/Fermentation Depletion: Anatomical Sites",
+        title="Gut Anaerobe v2 Depletion: Anatomical Sites",
         signal_column="decreased_mean_guild_z",
         signal_label="decreased-profile guild z",
     )
@@ -871,7 +1027,7 @@ def write_summary_report(
     ].head(10)
 
     lines = [
-        "# Gut Anaerobe / Fermentation Depletion Investigation",
+        "# Gut Anaerobe v2 Depletion Investigation",
         "",
         "This investigation uses the existing study trait profile clustered heatmap matrix, "
         "study metadata, taxa guild heatmap metadata, and derived taxa/trait matrices.",
@@ -884,10 +1040,21 @@ def write_summary_report(
         "- Gut context: body-site labels matching feces/faeces/stool/colon/caecum/cecum/gut/"
         "intestin/digestive, plus matching grouped body-site labels.",
         "",
+        "## Plot Guild Specificity",
+        "",
+        "| plot | guild-specific? | basis |",
+        "| --- | --- | --- |",
+        "| `condition_decreased_guild_signal.png` | yes | v2 guild score by condition |",
+        "| `guild_trait_direction_shift.png` | yes | the two selected v2 guild traits |",
+        "| `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |",
+        "| `candidate_taxa_depletion_bias.png` | no | fixed target-taxon direction counts |",
+        "| `target_taxa_condition_breakdown_bar.png` | no | fixed target-taxon occurrence counts |",
+        "",
         "## Main Signal",
         "",
-        "The selected guild traits are consistently higher in decreased profiles than in "
-        "increased profiles, which supports the gut anaerobe/fermentation depletion hypothesis.",
+        "The selected anaerobe-only guild traits are consistently higher in decreased "
+        "gut-context profiles than in increased gut-context profiles, which supports "
+        "the gut anaerobe v2 depletion hypothesis.",
         "",
         "| trait | decreased - increased z |",
         "| --- | ---: |",
@@ -934,8 +1101,8 @@ def write_summary_report(
             "## Gut Contexts With High Decreased-Profile Guild Signal",
             "",
             "| condition | profiles | studies | decreased - increased z | paired d | "
-            "matched pairs | decreased mean guild z |",
-            "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+            "paired p | matched pairs | decreased mean guild z |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
     )
     for row in top_conditions.itertuples(index=False):
@@ -943,9 +1110,11 @@ def write_summary_report(
         diff_text = "" if pd.isna(diff) else f"{diff:.3f}"
         smd = row.paired_standardized_mean_difference
         smd_text = "" if pd.isna(smd) else f"{smd:.3f}"
+        p_value = row.paired_t_test_p_value
+        p_text = "" if pd.isna(p_value) else f"{p_value:.3g}"
         lines.append(
             f"| {row.condition} | {int(row.profile_count)} | {int(row.study_count)} | "
-            f"{diff_text} | {smd_text} | {int(row.paired_profile_pair_count)} | "
+            f"{diff_text} | {smd_text} | {p_text} | {int(row.paired_profile_pair_count)} | "
             f"{row.decreased_mean_guild_z:.3f} |"
         )
 
@@ -996,11 +1165,9 @@ def write_summary_report(
             "2. Prioritize conditions where decreased profiles have high guild scores "
             "and target taxa "
             "are repeatedly decreased across multiple studies.",
-            "3. Re-run the same summaries after adding explicit SCFA/butyrate "
-            "production annotations, "
-            "because the current selected heatmap traits capture fermentation and "
-            "fiber degradation "
-            "but do not fully encode butyrate production.",
+            "3. Compare this anaerobe-only v2 signal against the original "
+            "five-trait guild to separate oxygen-tolerance signal from "
+            "metabolic-capability signal.",
             "",
             "## Files",
             "",
@@ -1031,7 +1198,7 @@ def main() -> None:
     scored_profiles = add_guild_scores(study_matrix, study_metadata)
     gut_profiles = scored_profiles[scored_profiles["gut_context"]].copy()
 
-    direction_summary = summarize_direction(scored_profiles)
+    direction_summary = summarize_direction(gut_profiles)
     body_site_summary = summarize_group(gut_profiles, "body_site_group", min_profiles=10)
     condition_summary = remove_excluded_condition_labels(
         summarize_group(gut_profiles, "condition", min_profiles=5)

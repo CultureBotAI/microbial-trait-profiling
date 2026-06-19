@@ -1,0 +1,1027 @@
+condition_group	condition	taxon_id	taxon_name	taxonomic_rank	decreased_profile_count	increased_profile_count	signed_profile_count	total_profile_count	guild_trait_presence_count	guild_trait_names	is_focal_target_taxon	focal_target_taxon_name
+Autism / autism spectrum disorder	Autism	NCBITaxon:102106	taxon_102106	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:109326	taxon_109326	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:113286	taxon_113286	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:114627	taxon_114627	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:118747	taxon_118747	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1224	taxon_1224	genus	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1239	taxon_1239	genus	2	0	-2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1243	taxon_1243	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1263	taxon_1263	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:128827	taxon_128827	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1301	taxon_1301	genus	2	0	-2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1350	taxon_1350	genus	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1485	taxon_1485	genus	1	1	0	2	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1535	taxon_1535	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1578	taxon_1578	genus	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:162289	taxon_162289	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1653	taxon_1653	genus	0	2	2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1654	taxon_1654	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1678	taxon_1678	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1679	taxon_1679	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1683	taxon_1683	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:171549	taxon_171549	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1716	taxon_1716	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:1760	taxon_1760	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:186803	taxon_186803	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:186814	taxon_186814	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:186817	taxon_186817	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:186824	taxon_186824	genus	0	1	1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:189330	taxon_189330	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:191303	taxon_191303	genus	0	1	1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:200643	taxon_200643	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:201174	taxon_201174	genus	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:203492	taxon_203492	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:204475	taxon_204475	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:208479	taxon_208479	genus	0	2	2	2	0		True	Enterocloster bolteae
+Autism / autism spectrum disorder	Autism	NCBITaxon:213117	taxon_213117	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:218538	taxon_218538	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:239759	taxon_239759	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:253238	taxon_253238	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:258514	taxon_258514	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:286729	taxon_286729	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:29465	taxon_29465	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:31953	taxon_31953	genus	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:31977	taxon_31977	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:31983	taxon_31983	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:35832	taxon_35832	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:375288	taxon_375288	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:39948	taxon_39948	genus	2	0	-2	2	1	aerobic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:46255	taxon_46255	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:52784	taxon_52784	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:543	taxon_543	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:543311	taxon_543311	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:561	taxon_561	genus	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:58621	taxon_58621	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:620	taxon_620	genus	0	1	1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:816	taxon_816	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:81852	taxon_81852	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:821	taxon_821	genus	0	1	1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:85023	taxon_85023	genus	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:872	taxon_872	genus	0	1	1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:876	taxon_876	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:901	taxon_901	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:909929	taxon_909929	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:909932	taxon_909932	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism	NCBITaxon:976	taxon_976	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:100379	taxon_100379	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1007099	taxon_1007099	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1016	taxon_1016	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1017	taxon_1017	genus	3	0	-3	3	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1018	taxon_1018	genus	2	2	0	4	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1019	taxon_1019	genus	0	2	2	2	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:102106	taxon_102106	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:102148	taxon_102148	genus	3	4	1	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1032506	taxon_1032506	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:104955	taxon_104955	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1049583	taxon_1049583	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:105219	taxon_105219	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:106648	taxon_106648	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:106651	taxon_106651	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1068590	taxon_1068590	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1078480	taxon_1078480	genus	0	1	1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:108980	taxon_108980	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1099853	taxon_1099853	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1101373	taxon_1101373	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1105367	taxon_1105367	genus	1	0	-1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:111015	taxon_111015	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1110546	taxon_1110546	genus	3	1	-2	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1111760	taxon_1111760	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1117	taxon_1117	genus	0	1	1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:113107	taxon_113107	genus	2	2	0	4	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:114527	taxon_114527	genus	4	4	0	8	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1150298	taxon_1150298	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:116085	taxon_116085	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1161942	taxon_1161942	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:117563	taxon_117563	genus	0	2	2	2	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:117681	taxon_117681	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1177574	taxon_1177574	genus	2	4	2	6	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1183412	taxon_1183412	genus	1	0	-1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1183413	taxon_1183413	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:118748	taxon_118748	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:119060	taxon_119060	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:119852	taxon_119852	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1203033	taxon_1203033	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1203556	taxon_1203556	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1213720	taxon_1213720	genus	1	0	-1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1224	taxon_1224	genus	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1227267	taxon_1227267	genus	4	3	-1	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1227276	taxon_1227276	genus	3	0	-3	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1232426	taxon_1232426	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:123375	taxon_123375	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1236	taxon_1236	genus	2	1	-1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1239	taxon_1239	genus	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1239307	taxon_1239307	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1249	taxon_1249	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:125216	taxon_125216	genus	0	2	2	2	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1261623	taxon_1261623	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262736	taxon_1262736	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262739	taxon_1262739	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262740	taxon_1262740	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262743	taxon_1262743	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262744	taxon_1262744	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262747	taxon_1262747	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262752	taxon_1262752	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262785	taxon_1262785	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262869	taxon_1262869	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262913	taxon_1262913	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262918	taxon_1262918	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262921	taxon_1262921	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262924	taxon_1262924	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262935	taxon_1262935	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262937	taxon_1262937	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1262992	taxon_1262992	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1263	taxon_1263	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1266	taxon_1266	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1268622	taxon_1268622	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1269	taxon_1269	genus	0	1	1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1270	taxon_1270	genus	1	2	1	3	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1279	taxon_1279	genus	3	1	-2	4	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1280948	taxon_1280948	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1282	taxon_1282	genus	4	2	-2	6	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1283313	taxon_1283313	genus	3	1	-2	4	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1284680	taxon_1284680	genus	4	4	0	8	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1286	taxon_1286	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:128780	taxon_128780	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:128827	taxon_128827	genus	2	3	1	5	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1290	taxon_1290	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:129847	taxon_129847	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:129910	taxon_129910	genus	1	0	-1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1300	taxon_1300	genus	3	0	-3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1301	taxon_1301	genus	2	2	0	4	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1302	taxon_1302	genus	3	3	0	6	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1303	taxon_1303	genus	2	3	1	5	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1305	taxon_1305	genus	4	3	-1	7	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1306993	taxon_1306993	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1307	taxon_1307	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1308	taxon_1308	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1309	taxon_1309	genus	2	2	0	4	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1310	taxon_1310	genus	0	2	2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:131110	taxon_131110	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1313	taxon_1313	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1318	taxon_1318	genus	2	0	-2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1321785	taxon_1321785	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1322	taxon_1322	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:13276	taxon_13276	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1328	taxon_1328	genus	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	True	Streptococcus anginosus
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1332069	taxon_1332069	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1333651	taxon_1333651	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:133448	taxon_133448	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1335616	taxon_1335616	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:134034	taxon_134034	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1343	taxon_1343	genus	1	2	1	3	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1348	taxon_1348	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1348911	taxon_1348911	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1349	taxon_1349	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1350	taxon_1350	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:135080	taxon_135080	genus	2	3	1	5	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:135082	taxon_135082	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:135083	taxon_135083	genus	1	2	1	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1354	taxon_1354	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:135624	taxon_135624	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:135625	taxon_135625	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1357	taxon_1357	genus	2	0	-2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1358	taxon_1358	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:135858	taxon_135858	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1363	taxon_1363	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:137	taxon_137	genus	0	1	1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1375	taxon_1375	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:137732	taxon_137732	genus	2	0	-2	2	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1378	taxon_1378	genus	1	1	0	2	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:137838	taxon_137838	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1379	taxon_1379	genus	0	1	1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1380	taxon_1380	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1382	taxon_1382	genus	3	4	1	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1383	taxon_1383	genus	2	1	-1	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1386	taxon_1386	genus	0	2	2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1392389	taxon_1392389	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1393034	taxon_1393034	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1396	taxon_1396	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1404	taxon_1404	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1405396	taxon_1405396	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1421430	taxon_1421430	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1426	taxon_1426	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1432051	taxon_1432051	genus	2	2	0	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:143393	taxon_143393	genus	4	4	0	8	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1434701	taxon_1434701	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1462	taxon_1462	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:146474	taxon_146474	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:146476	taxon_146476	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1465756	taxon_1465756	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1470345	taxon_1470345	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1470349	taxon_1470349	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1472762	taxon_1472762	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:147645	taxon_147645	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:147709	taxon_147709	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1478	taxon_1478	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1481960	taxon_1481960	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1485	taxon_1485	genus	0	2	2	2	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:148814	taxon_148814	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1489678	taxon_1489678	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1491	taxon_1491	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1497340	taxon_1497340	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1501226	taxon_1501226	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1501329	taxon_1501329	genus	4	4	0	8	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1501332	taxon_1501332	genus	4	4	0	8	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1502	taxon_1502	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:150247	taxon_150247	genus	2	0	-2	2	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1502943	taxon_1502943	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1505657	taxon_1505657	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1506553	taxon_1506553	genus	2	4	2	6	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1506577	taxon_1506577	genus	3	0	-3	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1508657	taxon_1508657	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1511761	taxon_1511761	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1513896	taxon_1513896	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1519	taxon_1519	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1522312	taxon_1522312	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:152331	taxon_152331	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1523427	taxon_1523427	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1526658	taxon_1526658	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1531	taxon_1531	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1532	taxon_1532	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1535	taxon_1535	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:154288	taxon_154288	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1547448	taxon_1547448	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:155197	taxon_155197	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:155866	taxon_155866	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:155892	taxon_155892	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:156454	taxon_156454	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:157	taxon_157	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1574624	taxon_1574624	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:157688	taxon_157688	genus	4	3	-1	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:157692	taxon_157692	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1578	taxon_1578	genus	2	4	2	6	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:158	taxon_158	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1582879	taxon_1582879	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1583098	taxon_1583098	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1583341	taxon_1583341	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:158846	taxon_158846	genus	5	2	-3	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1588751	taxon_1588751	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1589	taxon_1589	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1602	taxon_1602	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1604	taxon_1604	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:160404	taxon_160404	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1604334	taxon_1604334	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1606	taxon_1606	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1610489	taxon_1610489	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1614	taxon_1614	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1618	taxon_1618	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:161879	taxon_161879	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:161899	taxon_161899	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:162156	taxon_162156	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:162289	taxon_162289	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1623	taxon_1623	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:162426	taxon_162426	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1633203	taxon_1633203	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1637	taxon_1637	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1643824	taxon_1643824	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:164393	taxon_164393	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:164514	taxon_164514	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1646373	taxon_1646373	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1646377	taxon_1646377	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1649459	taxon_1649459	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:165179	taxon_165179	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1653	taxon_1653	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1653434	taxon_1653434	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1655	taxon_1655	genus	3	3	0	6	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1658672	taxon_1658672	genus	1	2	1	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1660	taxon_1660	genus	3	4	1	7	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1676614	taxon_1676614	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1678	taxon_1678	genus	3	4	1	7	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1680	taxon_1680	genus	2	1	-1	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1681	taxon_1681	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1683	taxon_1683	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1685	taxon_1685	genus	0	1	1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1694	taxon_1694	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:169435	taxon_169435	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1697	taxon_1697	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:171549	taxon_171549	genus	4	0	-4	4	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:171551	taxon_171551	genus	2	2	0	4	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:171552	taxon_171552	genus	8	1	-7	9	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1716	taxon_1716	genus	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:172042	taxon_172042	genus	3	3	0	6	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:172900	taxon_172900	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1730	taxon_1730	genus	1	3	2	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1736	taxon_1736	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1736209	taxon_1736209	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1736224	taxon_1736224	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1736227	taxon_1736227	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1736276	taxon_1736276	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1738645	taxon_1738645	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1739309	taxon_1739309	genus	3	4	1	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1739341	taxon_1739341	genus	3	1	-2	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1739406	taxon_1739406	genus	3	4	1	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1739491	taxon_1739491	genus	3	4	1	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1739517	taxon_1739517	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1747	taxon_1747	genus	4	2	-2	6	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1748	taxon_1748	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1750	taxon_1750	genus	3	4	1	7	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1758194	taxon_1758194	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1759399	taxon_1759399	genus	2	2	0	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1761782	taxon_1761782	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:176292	taxon_176292	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1764	taxon_1764	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1766253	taxon_1766253	genus	2	2	0	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1769710	taxon_1769710	genus	1	2	1	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1776081	taxon_1776081	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1776741	taxon_1776741	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:178339	taxon_178339	genus	1	2	1	3	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1785996	taxon_1785996	genus	1	2	1	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1792040	taxon_1792040	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1795832	taxon_1795832	genus	4	3	-1	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1796644	taxon_1796644	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1797552	taxon_1797552	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:180162	taxon_180162	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1802169	taxon_1802169	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1805933	taxon_1805933	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:181675	taxon_181675	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:182337	taxon_182337	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1843491	taxon_1843491	genus	0	1	1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:186801	taxon_186801	genus	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:186802	taxon_186802	genus	2	4	2	6	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:186803	taxon_186803	genus	8	7	-1	15	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:186804	taxon_186804	genus	0	1	1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:186806	taxon_186806	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:186826	taxon_186826	genus	2	0	-2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:186827	taxon_186827	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1870884	taxon_1870884	genus	0	3	3	3	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1870991	taxon_1870991	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1870995	taxon_1870995	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1871336	taxon_1871336	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1871619	taxon_1871619	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:187326	taxon_187326	genus	4	4	0	8	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:187327	taxon_187327	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:187328	taxon_187328	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1873897	taxon_1873897	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:187491	taxon_187491	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1884263	taxon_1884263	genus	1	2	1	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1886670	taxon_1886670	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1891970	taxon_1891970	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:189330	taxon_189330	genus	1	3	2	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:189426	taxon_189426	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1895934	taxon_1895934	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1897634	taxon_1897634	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:190146	taxon_190146	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1903056	taxon_1903056	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1903686	taxon_1903686	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1906119	taxon_1906119	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1907779	taxon_1907779	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1909299	taxon_1909299	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1911679	taxon_1911679	genus	4	4	0	8	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1912216	taxon_1912216	genus	0	1	1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:191303	taxon_191303	genus	0	2	2	2	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1925021	taxon_1925021	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1926677	taxon_1926677	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1931995	taxon_1931995	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1933220	taxon_1933220	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:194	taxon_194	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1940255	taxon_1940255	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1940338	taxon_1940338	genus	3	1	-2	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1940789	taxon_1940789	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1943580	taxon_1943580	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:194702	taxon_194702	genus	3	3	0	6	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:194924	taxon_194924	genus	3	1	-2	4	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:195950	taxon_195950	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1960083	taxon_1960083	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1964541	taxon_1964541	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:197614	taxon_197614	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1985876	taxon_1985876	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:199	taxon_199	genus	4	4	0	8	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:199592	taxon_199592	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:200	taxon_200	genus	1	2	1	3	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2005473	taxon_2005473	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2005519	taxon_2005519	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2005525	taxon_2005525	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:200643	taxon_200643	genus	3	1	-2	4	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:201174	taxon_201174	genus	4	1	-3	5	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2013663	taxon_2013663	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2020506	taxon_2020506	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2025658	taxon_2025658	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2027459	taxon_2027459	genus	2	4	2	6	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:202789	taxon_202789	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:202956	taxon_202956	genus	0	2	2	2	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:203	taxon_203	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2032623	taxon_2032623	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2033502	taxon_2033502	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:203490	taxon_203490	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:203494	taxon_203494	genus	0	1	1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2035	taxon_2035	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:203557	taxon_203557	genus	2	0	-2	2	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2039302	taxon_2039302	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:204038	taxon_204038	genus	1	0	-1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:204516	taxon_204516	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2045451	taxon_2045451	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2047	taxon_2047	genus	2	3	1	5	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2049	taxon_2049	genus	2	0	-2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2049043	taxon_2049043	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2051	taxon_2051	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2052	taxon_2052	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2052957	taxon_2052957	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2056843	taxon_2056843	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2057180	taxon_2057180	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2058152	taxon_2058152	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2058307	taxon_2058307	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2060726	taxon_2060726	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2069310	taxon_2069310	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:207244	taxon_207244	genus	1	3	2	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2074	taxon_2074	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2081702	taxon_2081702	genus	3	0	-3	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:208480	taxon_208480	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2098	taxon_2098	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:209879	taxon_209879	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2109729	taxon_2109729	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2110	taxon_2110	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:212791	taxon_212791	genus	0	1	1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2130	taxon_2130	genus	1	0	-1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2135593	taxon_2135593	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:213849	taxon_213849	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:214856	taxon_214856	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:216572	taxon_216572	genus	2	4	2	6	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:216851	taxon_216851	genus	2	4	2	6	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2170735	taxon_2170735	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:217090	taxon_217090	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2172004	taxon_2172004	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:218139	taxon_218139	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:218538	taxon_218538	genus	3	1	-2	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:219181	taxon_219181	genus	0	1	1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2213080	taxon_2213080	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:225324	taxon_225324	genus	1	2	1	3	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:227943	taxon_227943	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:228229	taxon_228229	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2282449	taxon_2282449	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:228603	taxon_228603	genus	3	3	0	6	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:228604	taxon_228604	genus	5	4	-1	9	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:229545	taxon_229545	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:230143	taxon_230143	genus	2	1	-1	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:237576	taxon_237576	genus	4	4	0	8	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:238749	taxon_238749	genus	0	1	1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:239759	taxon_239759	genus	3	3	0	6	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:239934	taxon_239934	genus	2	1	-1	3	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:239935	taxon_239935	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:242750	taxon_242750	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:244566	taxon_244566	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:246	taxon_246	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:248744	taxon_248744	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:250	taxon_250	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:252393	taxon_252393	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:255457	taxon_255457	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:256845	taxon_256845	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2569097	taxon_2569097	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:258224	taxon_258224	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:261299	taxon_261299	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:263511	taxon_263511	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:265975	taxon_265975	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:266762	taxon_266762	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:267212	taxon_267212	genus	2	0	-2	2	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:270	taxon_270	genus	2	0	-2	2	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:270498	taxon_270498	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2717	taxon_2717	genus	0	1	1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2718	taxon_2718	genus	1	3	2	4	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2719313	taxon_2719313	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:273677	taxon_273677	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2740	taxon_2740	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2745	taxon_2745	genus	2	0	-2	2	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2801844	taxon_2801844	genus	0	1	1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28026	taxon_28026	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28031	taxon_28031	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28037	taxon_28037	genus	4	3	-1	7	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28050	taxon_28050	genus	3	1	-2	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28080	taxon_28080	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:280871	taxon_280871	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28095	taxon_28095	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28108	taxon_28108	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28109	taxon_28109	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28111	taxon_28111	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28119	taxon_28119	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28124	taxon_28124	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28129	taxon_28129	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28132	taxon_28132	genus	4	4	0	8	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28133	taxon_28133	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28134	taxon_28134	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28135	taxon_28135	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28137	taxon_28137	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28141	taxon_28141	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28151	taxon_28151	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28188	taxon_28188	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28197	taxon_28197	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28216	taxon_28216	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28258	taxon_28258	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28264	taxon_28264	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:283	taxon_283	genus	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:283168	taxon_283168	genus	4	1	-3	5	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28447	taxon_28447	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28449	taxon_28449	genus	2	0	-2	2	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:286	taxon_286	genus	2	0	-2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:287	taxon_287	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2888809	taxon_2888809	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28890	taxon_28890	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2895461	taxon_2895461	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:290053	taxon_290053	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:290054	taxon_290054	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:291644	taxon_291644	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:291645	taxon_291645	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:292632	taxon_292632	genus	1	4	3	5	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:292800	taxon_292800	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29347	taxon_29347	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29348	taxon_29348	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29388	taxon_29388	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29391	taxon_29391	genus	4	2	-2	6	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29394	taxon_29394	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29419	taxon_29419	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29465	taxon_29465	genus	2	2	0	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29466	taxon_29466	genus	2	3	1	5	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29484	taxon_29484	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29486	taxon_29486	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29524	taxon_29524	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29547	taxon_29547	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29555	taxon_29555	genus	1	0	-1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29581	taxon_29581	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:296995	taxon_296995	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:299568	taxon_299568	genus	0	2	2	2	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:301302	taxon_301302	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:3025755	taxon_3025755	genus	3	2	-1	5	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:304207	taxon_304207	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:3079744	taxon_3079744	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:310297	taxon_310297	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:310298	taxon_310298	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:315405	taxon_315405	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:318683	taxon_318683	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:31943	taxon_31943	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:31953	taxon_31953	genus	4	2	-2	6	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:319653	taxon_319653	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:31977	taxon_31977	genus	5	2	-3	7	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:319939	taxon_319939	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:32002	taxon_32002	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:32067	taxon_32067	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:322095	taxon_322095	genus	2	2	0	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:32257	taxon_32257	genus	0	1	1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:323284	taxon_323284	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:326523	taxon_326523	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:327575	taxon_327575	genus	2	2	0	4	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:328813	taxon_328813	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:329854	taxon_329854	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33007	taxon_33007	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33011	taxon_33011	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33024	taxon_33024	genus	3	2	-1	5	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33033	taxon_33033	genus	1	0	-1	1	1	microaerophilic	True	Parvimonas micra
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33035	taxon_33035	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33038	taxon_33038	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33039	taxon_33039	genus	4	0	-4	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33042	taxon_33042	genus	5	3	-2	8	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33051	taxon_33051	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33052	taxon_33052	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:332249	taxon_332249	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33882	taxon_33882	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33938	taxon_33938	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33941	taxon_33941	genus	1	0	-1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33958	taxon_33958	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33960	taxon_33960	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33990	taxon_33990	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:34062	taxon_34062	genus	1	2	1	3	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:343	taxon_343	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:346	taxon_346	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:35517	taxon_35517	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:357233	taxon_357233	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:35832	taxon_35832	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:35833	taxon_35833	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:358687	taxon_358687	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:361177	taxon_361177	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:362413	taxon_362413	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:363265	taxon_363265	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:363849	taxon_363849	genus	1	0	-1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:363952	taxon_363952	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:36807	taxon_36807	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:36874	taxon_36874	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:370622	taxon_370622	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:37330	taxon_37330	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:373672	taxon_373672	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:375288	taxon_375288	genus	1	4	3	5	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:375574	taxon_375574	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:37637	taxon_37637	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:376804	taxon_376804	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:376805	taxon_376805	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:38284	taxon_38284	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:38303	taxon_38303	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:38305	taxon_38305	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:38308	taxon_38308	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:384639	taxon_384639	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:384677	taxon_384677	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:386414	taxon_386414	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:387090	taxon_387090	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:390841	taxon_390841	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:390842	taxon_390842	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:392416	taxon_392416	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:393921	taxon_393921	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:394096	taxon_394096	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:39485	taxon_39485	genus	5	2	-3	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:39488	taxon_39488	genus	4	0	-4	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:39491	taxon_39491	genus	3	0	-3	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:39492	taxon_39492	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:39496	taxon_39496	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:39497	taxon_39497	genus	1	2	1	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:396323	taxon_396323	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:397290	taxon_397290	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:39777	taxon_39777	genus	2	4	2	6	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:39778	taxon_39778	genus	4	4	0	8	0		True	Veillonella dispar
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:397864	taxon_397864	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:397865	taxon_397865	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:399320	taxon_399320	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:39948	taxon_39948	genus	3	2	-1	5	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:40091	taxon_40091	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:40323	taxon_40323	genus	2	0	-2	2	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:40518	taxon_40518	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:40520	taxon_40520	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:405212	taxon_405212	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:40542	taxon_40542	genus	1	3	2	4	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:40544	taxon_40544	genus	2	0	-2	2	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:407	taxon_407	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:407975	taxon_407975	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:40840	taxon_40840	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:41202	taxon_41202	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:41295	taxon_41295	genus	2	0	-2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:41297	taxon_41297	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:41413	taxon_41413	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:416916	taxon_416916	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:418223	taxon_418223	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:419005	taxon_419005	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:419474	taxon_419474	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:41976	taxon_41976	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:41997	taxon_41997	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:420645	taxon_420645	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:423477	taxon_423477	genus	2	3	1	5	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:425941	taxon_425941	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:42817	taxon_42817	genus	0	2	2	2	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:428712	taxon_428712	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:431059	taxon_431059	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:431060	taxon_431060	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:43668	taxon_43668	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:43675	taxon_43675	genus	3	1	-2	4	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:43768	taxon_43768	genus	4	3	-1	7	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:43770	taxon_43770	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:437898	taxon_437898	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:439703	taxon_439703	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:43997	taxon_43997	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:444053	taxon_444053	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:446692	taxon_446692	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:447020	taxon_447020	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:44742	taxon_44742	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:448181	taxon_448181	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:451457	taxon_451457	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:45242	taxon_45242	genus	4	3	-1	7	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:454155	taxon_454155	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:456327	taxon_456327	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:45634	taxon_45634	genus	2	2	0	4	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:45851	taxon_45851	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:459526	taxon_459526	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:46123	taxon_46123	genus	0	1	1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:46125	taxon_46125	genus	1	2	1	3	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:461393	taxon_461393	genus	3	4	1	7	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:46205	taxon_46205	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:46206	taxon_46206	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:46255	taxon_46255	genus	0	2	2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:46256	taxon_46256	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:46472	taxon_46472	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:46503	taxon_46503	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:46506	taxon_46506	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:467174	taxon_467174	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:469	taxon_469	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:470453	taxon_470453	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:470565	taxon_470565	genus	3	3	0	6	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:47493	taxon_47493	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:475	taxon_475	genus	0	2	2	2	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:475961	taxon_475961	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:47671	taxon_47671	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:47678	taxon_47678	genus	3	0	-3	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:481723	taxon_481723	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:482827	taxon_482827	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:483	taxon_483	genus	0	1	1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:484	taxon_484	genus	2	1	-1	3	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:48461	taxon_48461	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:487175	taxon_487175	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:48736	taxon_48736	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:490	taxon_490	genus	0	2	2	2	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:497	taxon_497	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:497725	taxon_497725	genus	1	0	-1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:498	taxon_498	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:499555	taxon_499555	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:505	taxon_505	genus	4	3	-1	7	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:506	taxon_506	genus	2	1	-1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:515393	taxon_515393	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:518	taxon_518	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:52225	taxon_52225	genus	0	3	3	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:52768	taxon_52768	genus	1	2	1	3	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:53418	taxon_53418	genus	3	0	-3	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:538	taxon_538	genus	0	2	2	2	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:539	taxon_539	genus	3	3	0	6	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:539738	taxon_539738	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:54062	taxon_54062	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:543	taxon_543	genus	4	5	1	9	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:543311	taxon_543311	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:543314	taxon_543314	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:544	taxon_544	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:544448	taxon_544448	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:544580	taxon_544580	genus	4	4	0	8	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:544581	taxon_544581	genus	3	2	-1	5	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:546	taxon_546	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:546367	taxon_546367	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:547334	taxon_547334	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:5476	taxon_5476	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:548	taxon_548	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:54914	taxon_54914	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:549685	taxon_549685	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:549687	taxon_549687	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:55080	taxon_55080	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:55148	taxon_55148	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:55211	taxon_55211	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:55565	taxon_55565	genus	4	4	0	8	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:556	taxon_556	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:561879	taxon_561879	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:562	taxon_562	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	True	Escherichia coli
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:56448	taxon_56448	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:56454	taxon_56454	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:56458	taxon_56458	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:565	taxon_565	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:56774	taxon_56774	genus	2	1	-1	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:569	taxon_569	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:570	taxon_570	genus	0	2	2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:572511	taxon_572511	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:574096	taxon_574096	genus	1	0	-1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:574650	taxon_574650	genus	2	0	-2	2	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:574697	taxon_574697	genus	3	0	-3	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:574930	taxon_574930	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:577309	taxon_577309	genus	6	1	-5	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:577310	taxon_577310	genus	2	2	0	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:580596	taxon_580596	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:581	taxon_581	genus	0	2	2	2	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:584	taxon_584	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:586	taxon_586	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:586733	taxon_586733	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:587753	taxon_587753	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:589436	taxon_589436	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:589437	taxon_589437	genus	3	4	1	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:596767	taxon_596767	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:59733	taxon_59733	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:60133	taxon_60133	genus	5	4	-1	9	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:60520	taxon_60520	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:61170	taxon_61170	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:61592	taxon_61592	genus	2	2	0	4	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:61648	taxon_61648	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:61651	taxon_61651	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:617123	taxon_617123	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:62322	taxon_62322	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:626929	taxon_626929	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:626930	taxon_626930	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:626937	taxon_626937	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:626940	taxon_626940	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:631	taxon_631	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:633701	taxon_633701	genus	2	2	0	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:641148	taxon_641148	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:642	taxon_642	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:644652	taxon_644652	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:64642	taxon_64642	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:64667	taxon_64667	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:648995	taxon_648995	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:649756	taxon_649756	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:651609	taxon_651609	genus	1	2	1	3	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:651822	taxon_651822	genus	3	0	-3	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:652708	taxon_652708	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:652713	taxon_652713	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:652716	taxon_652716	genus	2	2	0	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:659	taxon_659	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:671213	taxon_671213	genus	4	3	-1	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:671218	taxon_671218	genus	2	2	0	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:671224	taxon_671224	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:68892	taxon_68892	genus	2	1	-1	3	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:68909	taxon_68909	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:69	taxon_69	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:69823	taxon_69823	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:70255	taxon_70255	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:707003	taxon_707003	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:709510	taxon_709510	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:712	taxon_712	genus	1	3	2	4	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:712121	taxon_712121	genus	2	3	1	5	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:712122	taxon_712122	genus	3	3	0	6	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:712124	taxon_712124	genus	1	0	-1	1	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:712359	taxon_712359	genus	4	3	-1	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:712368	taxon_712368	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:712437	taxon_712437	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:712461	taxon_712461	genus	3	1	-2	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:712469	taxon_712469	genus	2	2	0	4	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:712532	taxon_712532	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:712620	taxon_712620	genus	1	3	2	4	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:712982	taxon_712982	genus	1	2	1	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:71999	taxon_71999	genus	3	0	-3	3	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:72000	taxon_72000	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:724	taxon_724	genus	1	3	2	4	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:72556	taxon_72556	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:72557	taxon_72557	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:726	taxon_726	genus	0	1	1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:729	taxon_729	genus	1	1	0	2	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:733	taxon_733	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:735	taxon_735	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:739	taxon_739	genus	0	1	1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:74201	taxon_74201	genus	1	1	0	2	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:74426	taxon_74426	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:745368	taxon_745368	genus	2	0	-2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:754	taxon_754	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:76008	taxon_76008	genus	2	0	-2	2	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:76122	taxon_76122	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:76124	taxon_76124	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:762836	taxon_762836	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:76775	taxon_76775	genus	1	2	1	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:76777	taxon_76777	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:77020	taxon_77020	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:78119	taxon_78119	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:78346	taxon_78346	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:788	taxon_788	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:796942	taxon_796942	genus	2	1	-1	3	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:79880	taxon_79880	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:80840	taxon_80840	genus	2	1	-1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:80865	taxon_80865	genus	0	2	2	2	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:80878	taxon_80878	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:815	taxon_815	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:816	taxon_816	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:817	taxon_817	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:81852	taxon_81852	genus	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:821	taxon_821	genus	2	2	0	4	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:82203	taxon_82203	genus	3	0	-3	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:823	taxon_823	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:824	taxon_824	genus	4	4	0	8	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:82688	taxon_82688	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:82995	taxon_82995	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:830	taxon_830	genus	0	2	2	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:83683	taxon_83683	genus	1	0	-1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:837	taxon_837	genus	1	0	-1	1	0		True	Porphyromonas gingivalis
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:838	taxon_838	genus	7	1	-6	8	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:841	taxon_841	genus	2	1	-1	3	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:84107	taxon_84107	genus	3	4	1	7	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:84108	taxon_84108	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:84109	taxon_84109	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:84111	taxon_84111	genus	1	4	3	5	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:84112	taxon_84112	genus	0	1	1	1	1	microaerophilic	True	Eggerthella lenta
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:84135	taxon_84135	genus	0	1	1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:84136	taxon_84136	genus	0	1	1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:84642	taxon_84642	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:848	taxon_848	genus	1	3	2	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:84998	taxon_84998	genus	0	1	1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:84999	taxon_84999	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:850	taxon_850	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:85004	taxon_85004	genus	2	1	-1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:85013	taxon_85013	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:85020	taxon_85020	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:851	taxon_851	genus	0	2	2	2	0		True	Fusobacterium nucleatum
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:853	taxon_853	genus	3	0	-3	3	1	facultatively aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:856	taxon_856	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:856736	taxon_856736	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:857417	taxon_857417	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:85831	taxon_85831	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:860	taxon_860	genus	3	3	0	6	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:862134	taxon_862134	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:86331	taxon_86331	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:86332	taxon_86332	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:86664	taxon_86664	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:866786	taxon_866786	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:871325	taxon_871325	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:872	taxon_872	genus	3	1	-2	4	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:87541	taxon_87541	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:877420	taxon_877420	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:881260	taxon_881260	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:88132	taxon_88132	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:885040	taxon_885040	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:901	taxon_901	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:906	taxon_906	genus	2	4	2	6	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:907	taxon_907	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:90964	taxon_90964	genus	2	0	-2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:909929	taxon_909929	genus	1	1	0	2	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:909930	taxon_909930	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:909932	taxon_909932	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:91061	taxon_91061	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:910939	taxon_910939	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:91347	taxon_91347	genus	2	1	-1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:92645	taxon_92645	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:92647	taxon_92647	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:93064	taxon_93064	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:93220	taxon_93220	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:93466	taxon_93466	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:936548	taxon_936548	genus	4	4	0	8	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:936572	taxon_936572	genus	3	1	-2	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:938155	taxon_938155	genus	1	0	-1	1	2	facultatively aerobic; aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:946234	taxon_946234	genus	3	1	-2	4	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:970	taxon_970	genus	0	1	1	1	1	microaerophilic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:971	taxon_971	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:990719	taxon_990719	genus	1	1	0	2	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:990721	taxon_990721	genus	0	1	1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:996	taxon_996	genus	1	0	-1	1	1	aerobic	False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:999423	taxon_999423	genus	1	0	-1	1	0		False	
+Autism / autism spectrum disorder	Autism spectrum disorder	NCBITaxon:999425	taxon_999425	genus	2	1	-1	3	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:100134	taxon_100134	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:117563	taxon_117563	genus	0	1	1	1	1	microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1224	taxon_1224	genus	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1236	taxon_1236	genus	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1239	taxon_1239	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1263	taxon_1263	genus	1	1	0	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1300	taxon_1300	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1301	taxon_1301	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1304	taxon_1304	genus	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:135625	taxon_135625	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1485	taxon_1485	genus	1	1	0	2	1	microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1502	taxon_1502	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1506	taxon_1506	genus	0	1	1	1	1	microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1522	taxon_1522	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:154046	taxon_154046	genus	1	1	0	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1578	taxon_1578	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1579	taxon_1579	genus	0	1	1	1	2	facultatively aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:157949	taxon_157949	genus	0	2	2	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:165137	taxon_165137	genus	2	0	-2	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:165138	taxon_165138	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:165151	taxon_165151	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:165152	taxon_165152	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:165261	taxon_165261	genus	2	0	-2	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:171549	taxon_171549	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:171550	taxon_171550	genus	0	2	2	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:171551	taxon_171551	genus	2	1	-1	3	1	aerobic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:171552	taxon_171552	genus	1	0	-1	1	1	aerobic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1730	taxon_1730	genus	2	0	-2	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:186801	taxon_186801	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:186802	taxon_186802	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:186803	taxon_186803	genus	2	1	-1	3	2	facultatively aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:186806	taxon_186806	genus	3	0	-3	3	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:186826	taxon_186826	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:186828	taxon_186828	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:188893	taxon_188893	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:188902	taxon_188902	genus	0	2	2	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:189712	taxon_189712	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:200643	taxon_200643	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:203490	taxon_203490	genus	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:203491	taxon_203491	genus	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:203492	taxon_203492	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:216572	taxon_216572	genus	2	1	-1	3	2	facultatively aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:216851	taxon_216851	genus	1	1	0	2	1	facultatively aerobic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:239759	taxon_239759	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:258515	taxon_258515	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:269267	taxon_269267	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:28025	taxon_28025	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:28116	taxon_28116	genus	0	3	3	3	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:28118	taxon_28118	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:28216	taxon_28216	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:283168	taxon_283168	genus	1	1	0	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:292800	taxon_292800	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:29465	taxon_29465	genus	1	1	0	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:301302	taxon_301302	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:31977	taxon_31977	genus	0	3	3	3	1	aerobic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:31979	taxon_31979	genus	1	1	0	2	1	microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:32066	taxon_32066	genus	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:320872	taxon_320872	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:321195	taxon_321195	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:328813	taxon_328813	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:33038	taxon_33038	genus	2	1	-1	3	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:33958	taxon_33958	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:357276	taxon_357276	genus	1	1	0	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:358742	taxon_358742	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:375288	taxon_375288	genus	1	1	0	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:384639	taxon_384639	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:390634	taxon_390634	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:39485	taxon_39485	genus	2	0	-2	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:39491	taxon_39491	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:39777	taxon_39777	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:39778	taxon_39778	genus	1	0	-1	1	0		True	Veillonella dispar
+Autoimmune disease	Autoimmune disease	NCBITaxon:40518	taxon_40518	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:411567	taxon_411567	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:47678	taxon_47678	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:47715	taxon_47715	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:487175	taxon_487175	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:500389	taxon_500389	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:506	taxon_506	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:526524	taxon_526524	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:526525	taxon_526525	genus	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:536478	taxon_536478	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:537281	taxon_537281	genus	2	0	-2	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:537292	taxon_537292	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:537373	taxon_537373	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:537393	taxon_537393	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:543	taxon_543	genus	0	2	2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:543888	taxon_543888	genus	1	0	-1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:547	taxon_547	genus	0	2	2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:561	taxon_561	genus	0	2	2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:562	taxon_562	genus	0	2	2	2	3	facultatively aerobic; aerobic; microaerophilic	True	Escherichia coli
+Autoimmune disease	Autoimmune disease	NCBITaxon:572511	taxon_572511	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:620858	taxon_620858	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:621345	taxon_621345	genus	0	2	2	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:634877	taxon_634877	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:712	taxon_712	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:724	taxon_724	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:729	taxon_729	genus	2	0	-2	2	2	facultatively aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:80840	taxon_80840	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:815	taxon_815	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:816	taxon_816	genus	1	3	2	4	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:817	taxon_817	genus	3	1	-2	4	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:818	taxon_818	genus	2	2	0	4	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:820	taxon_820	genus	0	2	2	2	2	aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:821	taxon_821	genus	1	1	0	2	1	facultatively aerobic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:823	taxon_823	genus	1	1	0	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:841	taxon_841	genus	1	1	0	2	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:848	taxon_848	genus	0	1	1	1	0		False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:853	taxon_853	genus	1	1	0	2	1	facultatively aerobic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:91061	taxon_91061	genus	0	2	2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:91347	taxon_91347	genus	0	2	2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:976	taxon_976	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
