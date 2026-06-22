@@ -153,7 +153,11 @@ analyze: study-trait-profiles
 genheatmap: analyze
 	just timed genheatmap "uv run python scripts/create_trait_enrichment_heatmap.py"
 
-pipeline: download ingest analyze genheatmap
+# Generate enrichment histograms for traits (X) and profiles (Y).
+plot-histograms: genheatmap
+	just timed plot-histograms "uv run python scripts/plot_enrichment_histograms.py"
+
+pipeline: download ingest analyze genheatmap plot-histograms
 
 # --- linkml-store over MongoDB (localhost:27017/bsdbng.studies) ---
 # Run once to populate the collection:

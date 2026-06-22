@@ -81,12 +81,11 @@ def trait_display_name(trait: str, lookup: dict[str, str]) -> str:
     return lookup.get(trait, trait)
 
 
-def _binary_jaccard_linkage(matrix: pd.DataFrame, axis: int) -> object | None:
-    binary = matrix.gt(0).astype(int)
-    values = binary.to_numpy() if axis == 0 else binary.to_numpy().T
+def _euclidean_linkage(matrix: pd.DataFrame, axis: int) -> object | None:
+    values = matrix.to_numpy() if axis == 0 else matrix.to_numpy().T
     if values.shape[0] < 2 or values.shape[1] == 0:
         return None
-    distances = pdist(values, metric="jaccard")
+    distances = pdist(values, metric="euclidean")
     if len(distances) == 0:
         return None
     return linkage(distances, method="average")
@@ -117,7 +116,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--top-traits",
         type=int,
-        default=120,
+        default=0,
         help="Keep the most prevalent traits across profiles. Use 0 for all traits.",
     )
     parser.add_argument(
@@ -129,7 +128,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max-profiles",
         type=int,
-        default=300,
+        default=0,
         help="Maximum number of profiles to plot. Use 0 for all profiles.",
     )
     parser.add_argument(
@@ -442,28 +441,34 @@ def save_heatmap(matrix: pd.DataFrame, profile_meta: pd.DataFrame, output_path: 
 
     nonzero_values = matrix.to_numpy().ravel()
     nonzero_values = nonzero_values[nonzero_values > 0]
-    vmax = float(pd.Series(nonzero_values).quantile(0.95)) if len(nonzero_values) else 1.0
-    vmax = max(vmax, 1.0)
+    # Cap vmax to prevent extreme outliers from washing out the heatmap.
+    # We'll use the 90th percentile for the top of the color scale.
+    vmax = float(pd.Series(nonzero_values).quantile(0.90)) if len(nonzero_values) else 1.0
+    vmax = min(max(vmax, 5.0), 40.0)
 
-    row_linkage = _binary_jaccard_linkage(matrix, axis=0) if row_cluster else None
-    col_linkage = _binary_jaccard_linkage(matrix, axis=1) if col_cluster else None
+    # Use a mask for 0 values so they don't get colored.
+    mask = matrix == 0
+
+    row_linkage = _euclidean_linkage(matrix, axis=0) if row_cluster else None
+    col_linkage = _euclidean_linkage(matrix, axis=1) if col_cluster else None
 
     fig_width = min(48, max(20, col_count * 0.08))
     fig_height = min(48, max(20, row_count * 0.02))
 
+    # Set background color for masked cells to light gray so hits pop out
+    plt.rcParams['axes.facecolor'] = '#f0f0f0'
+
     cluster = sns.clustermap(
         matrix,
-        cmap=sns.color_palette(
-            ["#f7fbff", "#deebf7", "#9ecae1", "#3182bd", "#08519c"],
-            as_cmap=True,
-        ),
+        mask=mask,
+        cmap="Blues",  # Traditional blue sequential palette
         method="average",
         metric="euclidean",
         row_colors=row_colors,
         linewidths=0,
         xticklabels=show_col_labels,
         yticklabels=show_row_labels,
-        vmin=0,
+        vmin=2.0,
         vmax=vmax,
         row_linkage=row_linkage,
         col_linkage=col_linkage,
