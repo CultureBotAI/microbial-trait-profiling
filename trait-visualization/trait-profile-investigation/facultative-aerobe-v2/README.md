@@ -7,6 +7,7 @@ This investigation uses the existing study trait profile clustered heatmap matri
 - Guild traits: facultatively aerobic (METPO:1000608), aerobic (METPO:1000602), microaerophilic (METPO:1000604)
 - Target taxa: Parvimonas micra, Klebsiella pneumoniae, Streptococcus anginosus, Escherichia coli, Fusobacterium nucleatum, Enterocloster bolteae, Eggerthella lenta, Prevotella intermedia, Porphyromonas gingivalis, Veillonella dispar
 - Formal KG-Microbe taxon universe: 2,667 taxa with at least one core oxygen-tolerance annotation among facultatively aerobic, aerobic, microaerophilic
+- Guild trait selection audit: `guild_trait_selection.tsv` records the selected trait IDs, short rationale, and KG-Microbe taxon counts for each selected trait.
 - Context: all body sites, with body-site and condition summaries to separate gut, oral, airway, and other patterns.
 
 ## Plot Guild Specificity
@@ -132,6 +133,7 @@ For the top condition signals, this table uses all taxa observed in the increase
 ## Files
 
 - `guild_trait_direction_shift.tsv`
+- `guild_trait_selection.tsv`
 - `body_site_guild_summary.tsv`
 - `condition_guild_summary.tsv`
 - `candidate_taxa_direction_summary.tsv`

@@ -14,7 +14,30 @@ VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
 OUTPUT_PNG = INVESTIGATION_DIR / "profile_enrichment_guild_assignment_summary.png"
 OUTPUT_SVG = INVESTIGATION_DIR / "profile_enrichment_guild_assignment_summary.svg"
+PRE_GRID_OUTPUT_PNG = (
+    INVESTIGATION_DIR / "profile_enrichment_guild_assignment_pre_direction_grid_summary.png"
+)
+GRID_OUTPUT_TSV = INVESTIGATION_DIR / "profile_enrichment_guild_direction_grid.tsv"
 
+AEROBE_GUILD_TRAITS = {
+    "METPO:1000608": "facultatively aerobic",
+    "METPO:1000602": "aerobic",
+    "METPO:1000604": "microaerophilic",
+}
+ANAEROBE_GUILD_TRAITS = {
+    "METPO:1000603": "anaerobic",
+    "METPO:1000607": "obligately anaerobic",
+}
+EXCLUDED_CONDITION_LABELS = {
+    "Body fat distribution",
+    "Clinical treatment",
+    "Exposure",
+    "Health trait",
+    "Microbiome",
+    "Population",
+    "Physical activity",
+}
+MIN_CONDITION_PROFILES = 5
 SLATE_50 = "#f8fafc"
 SLATE_100 = "#f1f5f9"
 SLATE_200 = "#e2e8f0"
@@ -36,13 +59,111 @@ def read_tsv(path: Path, **kwargs: object) -> pd.DataFrame:
     return pd.read_csv(path, sep="\t", **kwargs)
 
 
+def clean_text(value: object) -> str:
+    text = str(value or "").strip()
+    if not text or text.lower() == "nan" or text.upper() == "NA":
+        return "unknown"
+    return text
+
+
+def is_excluded_condition_label(value: object) -> bool:
+    label = clean_text(value)
+    broad_terms = ("exposure", "measurement", "population")
+    lower_label = label.lower()
+    return label in EXCLUDED_CONDITION_LABELS or any(term in lower_label for term in broad_terms)
+
+
 def count_rows(path: Path) -> int:
+    if not path.exists():
+        return 0
     with path.open(encoding="utf-8") as handle:
         return max(0, sum(1 for _ in handle) - 1)
 
 
 def format_count(value: int) -> str:
     return f"{value:,}"
+
+
+def count_unique_conditions(path: Path) -> int:
+    if not path.exists():
+        return 0
+    return read_tsv(path, usecols=["condition"])["condition"].nunique()
+
+
+def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    matrix = read_tsv(VIS_DIR / "study_trait_profile_clustered_heatmap_matrix.tsv", index_col=0)
+    metadata = read_tsv(VIS_DIR / "study_trait_profile_study_metadata.tsv", index_col=0)
+    trait_metadata = read_tsv(VIS_DIR / "study_trait_profile_trait_metadata.tsv", index_col=0)
+
+    matrix.index = metadata.index
+    column_labels = {
+        row["display_label"]: row["object_name"] for _, row in trait_metadata.iterrows()
+    }
+    matrix = matrix.rename(columns=column_labels)
+    return matrix, metadata, trait_metadata
+
+
+def write_direction_grid_table() -> None:
+    """Write a unified 2x2 guild-by-direction condition summary table."""
+    matrix, metadata, _ = load_study_heatmap()
+    metadata = metadata.copy()
+    metadata["condition_clean"] = metadata["condition"].map(clean_text)
+
+    guilds = [
+        {
+            "guild": "aerobe_v2",
+            "traits": list(AEROBE_GUILD_TRAITS.values()),
+            "parent_direction": "increased",
+        },
+        {
+            "guild": "anaerobe_v2_depletion",
+            "traits": list(ANAEROBE_GUILD_TRAITS.values()),
+            "parent_direction": "decreased",
+        },
+    ]
+    direction_to_inc_dec = {"increased": "inc", "decreased": "dec"}
+    comparator_direction = {"increased": "decreased", "decreased": "increased"}
+    condition_counts = metadata["condition_clean"].value_counts()
+    conditions = sorted(
+        condition
+        for condition, profile_count in condition_counts.items()
+        if profile_count >= MIN_CONDITION_PROFILES and not is_excluded_condition_label(condition)
+    )
+
+    records: list[dict[str, object]] = []
+    for guild in guilds:
+        profiles = metadata.copy()
+        available_traits = [trait for trait in guild["traits"] if trait in matrix.columns]
+        profiles["guild_z_mean"] = matrix.loc[profiles.index, available_traits].mean(axis=1)
+
+        for condition in conditions:
+            condition_profiles = profiles[profiles["condition_clean"] == condition].copy()
+            for profile_direction in ["increased", "decreased"]:
+                comparator = comparator_direction[profile_direction]
+                direction_profiles = condition_profiles[
+                    condition_profiles["inc_dec"] == direction_to_inc_dec[profile_direction]
+                ]
+                comparator_profiles = condition_profiles[
+                    condition_profiles["inc_dec"] == direction_to_inc_dec[comparator]
+                ]
+                mean_guild_z = direction_profiles["guild_z_mean"].mean()
+                comparator_mean_guild_z = comparator_profiles["guild_z_mean"].mean()
+                direction_contrast = mean_guild_z - comparator_mean_guild_z
+                records.append(
+                    {
+                        "guild": guild["guild"],
+                        "profile_direction": profile_direction,
+                        "condition": condition,
+                        "profile_count": len(direction_profiles),
+                        "study_count": direction_profiles["study_id"].nunique(),
+                        "mean_guild_z": mean_guild_z,
+                        "comparator_mean_guild_z": comparator_mean_guild_z,
+                        "direction_contrast": direction_contrast,
+                        "parent_focus": profile_direction == guild["parent_direction"],
+                    }
+                )
+
+    pd.DataFrame(records).to_csv(GRID_OUTPUT_TSV, sep="\t", index=False)
 
 
 def get_summary_counts() -> dict[str, int]:
@@ -53,20 +174,25 @@ def get_summary_counts() -> dict[str, int]:
     return {
         "profile_count": len(metadata),
         "study_count": metadata["study_id"].nunique(),
+        "direction_grid_condition_count": count_unique_conditions(GRID_OUTPUT_TSV),
+        "direction_grid_row_count": count_rows(GRID_OUTPUT_TSV),
         "facultative_universe_count": count_rows(
             INVESTIGATION_DIR / "facultative-aerobe-v2" / "kg_microbe_candidate_taxon_universe.tsv"
         ),
         "facultative_condition_count": count_rows(
             INVESTIGATION_DIR / "facultative-aerobe-v2" / "condition_guild_summary.tsv"
         ),
-        "gut_condition_count": count_rows(
-            INVESTIGATION_DIR / "gut-anaerobe-v2" / "gut_condition_guild_summary.tsv"
+        "anaerobe_condition_count": count_rows(
+            INVESTIGATION_DIR / "anaerobe-depletion-v2" / "condition_guild_summary.tsv"
+        ),
+        "anaerobe_universe_count": count_rows(
+            INVESTIGATION_DIR / "anaerobe-depletion-v2" / "kg_microbe_candidate_taxon_universe.tsv"
         ),
         "facultative_target_taxa_count": count_rows(
             INVESTIGATION_DIR / "facultative-aerobe-v2" / "candidate_taxa_trait_presence.tsv"
         ),
-        "gut_target_taxa_count": count_rows(
-            INVESTIGATION_DIR / "gut-anaerobe-v2" / "candidate_taxa_trait_presence.tsv"
+        "anaerobe_target_taxa_count": count_rows(
+            INVESTIGATION_DIR / "anaerobe-depletion-v2" / "candidate_taxa_trait_presence.tsv"
         ),
     }
 
@@ -198,7 +324,320 @@ def add_badge(
     )
 
 
-def create_diagram() -> None:
+def add_compact_direction_grid(
+    ax: plt.Axes, *, xy: tuple[float, float], width: float, height: float
+) -> None:
+    """Add the 2x2 direction grid with parent signals and guardrail cells."""
+    x, y = xy
+    patch = FancyBboxPatch(
+        (x, y),
+        width,
+        height,
+        boxstyle="round,pad=0.45,rounding_size=1.25",
+        linewidth=1.2,
+        edgecolor=SLATE_200,
+        facecolor="white",
+        zorder=2,
+    )
+    ax.add_patch(patch)
+    ax.text(
+        x + 1.0,
+        y + height - 1.15,
+        "2x2 Direction Grid",
+        ha="left",
+        va="top",
+        fontsize=10.2,
+        fontweight="bold",
+        color=SLATE_900,
+        zorder=4,
+    )
+
+    grid_x = x + 1.0
+    grid_y = y + 0.85
+    grid_w = width - 2.0
+    grid_h = height - 4.1
+    header_h = 1.35
+    row_label_w = 8.4
+    cell_w = (grid_w - row_label_w) / 2
+    cell_h = (grid_h - header_h) / 2
+    ax.text(
+        grid_x + row_label_w + cell_w / 2,
+        grid_y + grid_h - 0.15,
+        "increased",
+        ha="center",
+        va="top",
+        fontsize=7.6,
+        color=SLATE_500,
+        fontweight="bold",
+    )
+    ax.text(
+        grid_x + row_label_w + cell_w * 1.5,
+        grid_y + grid_h - 0.15,
+        "decreased",
+        ha="center",
+        va="top",
+        fontsize=7.6,
+        color=SLATE_500,
+        fontweight="bold",
+    )
+    row_labels = [("Aerobe", RED_600), ("Anaerobe", BLUE_600)]
+    cells = [
+        ("parent:\naerobe increase", RED_50, "#fecaca", "#991b1b"),
+        ("guardrail:\ngenerally high?", SLATE_100, SLATE_200, SLATE_700),
+        ("guardrail:\nmixed signal?", SLATE_100, SLATE_200, SLATE_700),
+        ("parent:\nanaerobe decrease", BLUE_50, "#bfdbfe", "#1d4ed8"),
+    ]
+    for row_index, (label, label_color) in enumerate(row_labels):
+        cell_y = grid_y + (1 - row_index) * cell_h
+        ax.text(
+            grid_x + row_label_w - 0.5,
+            cell_y + cell_h / 2,
+            label,
+            ha="right",
+            va="center",
+            fontsize=7.8,
+            color=label_color,
+            fontweight="bold",
+            zorder=5,
+        )
+        for col_index in range(2):
+            cell_index = row_index * 2 + col_index
+            text, facecolor, edgecolor, text_color = cells[cell_index]
+            cell_x = grid_x + row_label_w + col_index * cell_w
+            rect = FancyBboxPatch(
+                (cell_x + 0.25, cell_y + 0.22),
+                cell_w - 0.5,
+                cell_h - 0.44,
+                boxstyle="round,pad=0.18,rounding_size=0.55",
+                linewidth=0.8,
+                edgecolor=edgecolor,
+                facecolor=facecolor,
+                zorder=3,
+            )
+            ax.add_patch(rect)
+            ax.text(
+                cell_x + cell_w / 2,
+                cell_y + cell_h / 2,
+                text,
+                ha="center",
+                va="center",
+                fontsize=7.3,
+                color=text_color,
+                fontweight="bold",
+                linespacing=1.1,
+                zorder=4,
+            )
+
+
+def add_grid_cell(
+    ax: plt.Axes,
+    *,
+    xy: tuple[float, float],
+    width: float,
+    height: float,
+    title: str,
+    body: str,
+    facecolor: str,
+    edgecolor: str,
+    title_color: str,
+    body_color: str = SLATE_700,
+    linewidth: float = 1.1,
+) -> None:
+    x, y = xy
+    patch = FancyBboxPatch(
+        (x, y),
+        width,
+        height,
+        boxstyle="round,pad=0.25,rounding_size=0.75",
+        linewidth=linewidth,
+        edgecolor=edgecolor,
+        facecolor=facecolor,
+        zorder=2,
+    )
+    ax.add_patch(patch)
+    ax.text(
+        x + 0.7,
+        y + height - 0.85,
+        title,
+        ha="left",
+        va="top",
+        fontsize=8.0,
+        fontweight="bold",
+        color=title_color,
+        zorder=3,
+    )
+    ax.text(
+        x + 0.7,
+        y + height - 2.65,
+        wrapped(body, 38),
+        ha="left",
+        va="top",
+        fontsize=6.9,
+        color=body_color,
+        linespacing=1.12,
+        zorder=3,
+    )
+
+
+def add_large_direction_grid(ax: plt.Axes, counts: dict[str, int]) -> None:
+    grid_x = 8.0
+    grid_y = 19.0
+    grid_w = 84.0
+    grid_h = 16.5
+    header_h = 3.0
+    label_w = 19.5
+    row_h = (grid_h - header_h) / 2
+    col_w = (grid_w - label_w) / 2
+    top_row_y = grid_y + row_h
+    header_y = grid_y + grid_h - header_h
+    inc_x = grid_x + label_w
+    dec_x = inc_x + col_w
+
+    outer = FancyBboxPatch(
+        (grid_x, grid_y),
+        grid_w,
+        grid_h,
+        boxstyle="round,pad=0.35,rounding_size=1.0",
+        linewidth=1.1,
+        edgecolor=SLATE_200,
+        facecolor="white",
+        zorder=1,
+    )
+    ax.add_patch(outer)
+    ax.text(
+        grid_x + 1.0,
+        header_y + 1.95,
+        "2 x 2 direction grid",
+        ha="left",
+        va="center",
+        fontsize=9.4,
+        fontweight="bold",
+        color=SLATE_900,
+        zorder=3,
+    )
+    ax.text(
+        inc_x + col_w / 2,
+        header_y + 1.95,
+        "Increased profiles",
+        ha="center",
+        va="center",
+        fontsize=8.4,
+        fontweight="bold",
+        color=SLATE_900,
+        zorder=3,
+    )
+    ax.text(
+        dec_x + col_w / 2,
+        header_y + 1.95,
+        "Decreased profiles",
+        ha="center",
+        va="center",
+        fontsize=8.4,
+        fontweight="bold",
+        color=SLATE_900,
+        zorder=3,
+    )
+
+    ax.text(
+        grid_x + 1.0,
+        top_row_y + row_h / 2,
+        "Aerobe\ntrait set",
+        ha="left",
+        va="center",
+        fontsize=8.2,
+        fontweight="bold",
+        color="#991b1b",
+        linespacing=1.15,
+        zorder=3,
+    )
+    ax.text(
+        grid_x + 1.0,
+        grid_y + row_h / 2,
+        "Anaerobe\ntrait set",
+        ha="left",
+        va="center",
+        fontsize=8.2,
+        fontweight="bold",
+        color="#1d4ed8",
+        linespacing=1.15,
+        zorder=3,
+    )
+
+    add_grid_cell(
+        ax,
+        xy=(inc_x, top_row_y),
+        width=col_w,
+        height=row_h,
+        title="Parent focus: aerobe increase",
+        body=(
+            "Aerobe guild score in increased profiles.\n"
+            f"{format_count(counts['direction_grid_condition_count'])} BugSigDB "
+            "condition-label rows (not experiments)."
+        ),
+        facecolor=RED_50,
+        edgecolor=RED_600,
+        title_color="#991b1b",
+        linewidth=1.8,
+    )
+    add_grid_cell(
+        ax,
+        xy=(dec_x, top_row_y),
+        width=col_w,
+        height=row_h,
+        title="Off-diagonal check",
+        body=("Aerobe guild score in decreased profiles.\nUsed as the comparator/reversal check."),
+        facecolor=SLATE_100,
+        edgecolor=SLATE_200,
+        title_color=SLATE_700,
+    )
+    add_grid_cell(
+        ax,
+        xy=(inc_x, grid_y),
+        width=col_w,
+        height=row_h,
+        title="Off-diagonal check",
+        body=(
+            "Anaerobe guild score in increased profiles.\nUsed as the comparator/reversal check."
+        ),
+        facecolor=SLATE_100,
+        edgecolor=SLATE_200,
+        title_color=SLATE_700,
+    )
+    add_grid_cell(
+        ax,
+        xy=(dec_x, grid_y),
+        width=col_w,
+        height=row_h,
+        title="Parent focus: anaerobe decrease",
+        body=(
+            "Anaerobe guild score in decreased profiles.\n"
+            f"{format_count(counts['direction_grid_condition_count'])} BugSigDB "
+            "condition-label rows (not experiments)."
+        ),
+        facecolor=BLUE_50,
+        edgecolor=BLUE_600,
+        title_color="#1d4ed8",
+        linewidth=1.8,
+    )
+
+    ax.text(
+        grid_x + 1.0,
+        grid_y - 1.0,
+        f"Unified table: {GRID_OUTPUT_TSV.name}; rows are guild x direction x condition.",
+        ha="left",
+        va="top",
+        fontsize=7.2,
+        color=SLATE_500,
+        zorder=3,
+    )
+
+
+def create_diagram(
+    *,
+    use_direction_grid: bool = True,
+    output_png: Path = OUTPUT_PNG,
+    output_svg: Path | None = OUTPUT_SVG,
+) -> None:
     counts = get_summary_counts()
     INVESTIGATION_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -275,89 +714,115 @@ def create_diagram() -> None:
         width=16.8,
         height=10.5,
         title="4. Evidence",
-        body="Keep traits with positive focus mean z and positive focus-minus-comparator contrast.",
+        body=(
+            "Keep traits whose z-score is above zero in the focus direction and higher "
+            "than the comparator."
+        ),
         facecolor="white",
         body_width=27,
     )
     add_box(
         ax,
-        xy=(79.0, 42.4),
+        xy=(79.0, 40.8),
         width=17.8,
-        height=10.5,
+        height=13.8,
         title="5. Guild call",
-        body="Selected trait sets define a named guild score and condition-level signal.",
+        body=(
+            "Trait sets are chosen a priori from KG-Microbe oxygen-tolerance "
+            "annotations, not from focal taxa or top conditions. Each guild score "
+            "is the row-wise mean of its selected trait z-scores; selection TSVs "
+            "list IDs, rationale, and taxon counts."
+        ),
         facecolor="white",
-        body_width=27,
+        body_width=29,
+        body_size=7.3,
     )
 
     for start_x, end_x in [(19.8, 22.0), (38.8, 41.0), (57.8, 60.0), (76.8, 79.0)]:
         add_arrow(ax, (start_x, 47.65), (end_x, 47.65))
 
-    add_box(
-        ax,
-        xy=(8.0, 21.1),
-        width=39.0,
-        height=14.7,
-        title="Facultative-aerobe v2 guild",
-        body=(
-            "Focus direction: increased profiles\n"
-            "Guild score: mean of facultatively aerobic, aerobic, and microaerophilic z-scores\n"
-            f"Condition summaries: {format_count(counts['facultative_condition_count'])}; "
-            f"target taxa: {format_count(counts['facultative_target_taxa_count'])}; "
-            f"candidate universe: {format_count(counts['facultative_universe_count'])} taxa"
-        ),
-        facecolor=RED_50,
-        edgecolor="#fecaca",
-        title_color="#991b1b",
-        body_width=55,
-    )
-    add_box(
-        ax,
-        xy=(53.0, 21.1),
-        width=39.0,
-        height=14.7,
-        title="Gut anaerobe v2 guild",
-        body=(
-            "Focus direction: decreased profiles in gut context\n"
-            "Guild score: mean of anaerobic and obligately anaerobic z-scores\n"
-            f"Condition summaries: {format_count(counts['gut_condition_count'])}; "
-            f"target taxa: {format_count(counts['gut_target_taxa_count'])}; "
-            "gut labels include feces, stool, colon, caecum, gut, intestine"
-        ),
-        facecolor=BLUE_50,
-        edgecolor="#bfdbfe",
-        title_color="#1d4ed8",
-        body_width=55,
-    )
-
-    add_arrow(
-        ax,
-        (83.0, 42.3),
-        (30.0, 35.9),
-        color=RED_600,
-        connectionstyle="arc3,rad=0.12",
-        label="increased",
-        label_xy=(67.8, 40.7),
-    )
-    add_arrow(
-        ax,
-        (88.0, 42.3),
-        (72.0, 35.9),
-        color=BLUE_600,
-        connectionstyle="arc3,rad=-0.12",
-        label="decreased gut",
-        label_xy=(81.0, 37.6),
-    )
+    if use_direction_grid:
+        add_large_direction_grid(ax, counts)
+        add_arrow(
+            ax,
+            (83.0, 42.3),
+            (43.6, 31.6),
+            color=RED_600,
+            connectionstyle="arc3,rad=0.12",
+        )
+        add_arrow(
+            ax,
+            (88.0, 42.3),
+            (76.0, 24.2),
+            color=BLUE_600,
+            connectionstyle="arc3,rad=-0.12",
+        )
+    else:
+        add_box(
+            ax,
+            xy=(8.0, 21.1),
+            width=39.0,
+            height=14.7,
+            title="Facultative-aerobe v2 guild",
+            body=(
+                "Focus direction: increased profiles\n"
+                "Guild score: mean of facultatively aerobic, aerobic, and "
+                "microaerophilic z-scores\n"
+                "Condition summary table: "
+                f"{format_count(counts['facultative_condition_count'])} BugSigDB "
+                "condition-label rows (not experiments)\n"
+                f"target taxa audit: {format_count(counts['facultative_target_taxa_count'])}; "
+                f"candidate universe: {format_count(counts['facultative_universe_count'])} taxa"
+            ),
+            facecolor=RED_50,
+            edgecolor="#fecaca",
+            title_color="#991b1b",
+            body_width=55,
+        )
+        add_box(
+            ax,
+            xy=(53.0, 21.1),
+            width=39.0,
+            height=14.7,
+            title="Anaerobe v2 depletion guild",
+            body=(
+                "Focus direction: decreased profiles across all body sites\n"
+                "Guild score: mean of anaerobic and obligately anaerobic z-scores\n"
+                "Condition summary table: "
+                f"{format_count(counts['anaerobe_condition_count'])} BugSigDB "
+                "condition-label rows (not experiments)\n"
+                f"target taxa audit: {format_count(counts['anaerobe_target_taxa_count'])}; "
+                f"candidate universe: {format_count(counts['anaerobe_universe_count'])} taxa"
+            ),
+            facecolor=BLUE_50,
+            edgecolor="#bfdbfe",
+            title_color="#1d4ed8",
+            body_width=55,
+        )
+        add_arrow(
+            ax,
+            (83.0, 42.3),
+            (30.0, 35.9),
+            color=RED_600,
+            connectionstyle="arc3,rad=0.12",
+        )
+        add_arrow(
+            ax,
+            (88.0, 42.3),
+            (72.0, 35.9),
+            color=BLUE_600,
+            connectionstyle="arc3,rad=-0.12",
+        )
 
     add_box(
         ax,
         xy=(5.0, 5.2),
         width=26.5,
         height=11.0,
-        title="Guardrail",
+        title="Recurrence audit",
         body=(
-            "Target-taxon recurrence is an audit layer. It is not the same as a "
-            "recomputed guild score."
+            "Target-taxon recurrence counts how often fixed taxa reappear in the "
+            "focus direction across profiles/studies; it does not define the guild score."
         ),
         facecolor=AMBER_50,
         edgecolor="#fde68a",
@@ -369,11 +834,10 @@ def create_diagram() -> None:
         xy=(35.0, 5.2),
         width=30.0,
         height=11.0,
-        title="Taxon support assignment",
+        title="Inferred taxon support",
         body=(
-            "Fixed focal taxa use NCBI IDs for direction and occurrence counts. "
-            "Data-inferred support intersects enriched traits with observed taxa carrying "
-            "KG-Microbe annotations."
+            "For each enriched trait, list observed candidate-universe taxa that carry "
+            "the matching KG-Microbe annotation."
         ),
         facecolor=GREEN_50,
         edgecolor="#a7f3d0",
@@ -387,8 +851,8 @@ def create_diagram() -> None:
         height=11.0,
         title="Generated outputs",
         body=(
-            "Condition guild signals, guild-trait shifts, body-site diagrams, "
-            "target-taxon condition counts, and inferred evidence TSVs."
+            "Unified direction-grid TSV, condition guild signals, body-site diagrams, "
+            "target-taxon counts, and inferred evidence TSVs."
         ),
         facecolor=SLATE_100,
         edgecolor=SLATE_200,
@@ -396,20 +860,21 @@ def create_diagram() -> None:
         body_width=35,
     )
 
-    add_arrow(
-        ax,
-        (29.0, 21.0),
-        (47.0, 16.3),
-        color=RED_600,
-        connectionstyle="arc3,rad=-0.08",
-    )
-    add_arrow(
-        ax,
-        (72.0, 21.0),
-        (54.0, 16.3),
-        color=BLUE_600,
-        connectionstyle="arc3,rad=0.08",
-    )
+    if not use_direction_grid:
+        add_arrow(
+            ax,
+            (29.0, 21.0),
+            (47.0, 16.3),
+            color=RED_600,
+            connectionstyle="arc3,rad=-0.08",
+        )
+        add_arrow(
+            ax,
+            (72.0, 21.0),
+            (54.0, 16.3),
+            color=BLUE_600,
+            connectionstyle="arc3,rad=0.08",
+        )
     add_arrow(ax, (65.0, 10.7), (68.5, 10.7), color=SLATE_400)
     add_arrow(ax, (31.5, 10.7), (35.0, 10.7), color=AMBER_600)
 
@@ -452,15 +917,24 @@ def create_diagram() -> None:
         va="bottom",
     )
 
-    fig.savefig(OUTPUT_PNG, dpi=220, bbox_inches="tight", facecolor=fig.get_facecolor())
-    fig.savefig(OUTPUT_SVG, bbox_inches="tight", facecolor=fig.get_facecolor())
+    fig.savefig(output_png, dpi=220, bbox_inches="tight", facecolor=fig.get_facecolor())
+    if output_svg is not None:
+        fig.savefig(output_svg, bbox_inches="tight", facecolor=fig.get_facecolor())
     plt.close(fig)
 
 
 def main() -> None:
+    write_direction_grid_table()
     create_diagram()
+    create_diagram(
+        use_direction_grid=False,
+        output_png=PRE_GRID_OUTPUT_PNG,
+        output_svg=None,
+    )
+    print(f"Wrote: {GRID_OUTPUT_TSV}")
     print(f"Wrote: {OUTPUT_PNG}")
     print(f"Wrote: {OUTPUT_SVG}")
+    print(f"Wrote: {PRE_GRID_OUTPUT_PNG}")
 
 
 if __name__ == "__main__":

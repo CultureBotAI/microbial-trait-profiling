@@ -39,6 +39,9 @@ format:
 	uv run ruff check --fix src tests scripts
 	uv run ruff format src tests scripts
 
+trait-profile-investigation:
+	uv run python scripts/regenerate_trait_profile_investigation.py
+
 typecheck:
 	uv run mypy src tests
 

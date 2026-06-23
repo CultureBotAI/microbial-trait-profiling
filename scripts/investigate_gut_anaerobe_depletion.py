@@ -1,9 +1,8 @@
-"""Investigate gut anaerobe-only v2 depletion signals."""
+"""Investigate anaerobe-only v2 depletion signals."""
 
 from __future__ import annotations
 
 import math
-import re
 from pathlib import Path
 from typing import Any
 
@@ -15,12 +14,27 @@ from matplotlib.path import Path as MplPath
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
-OUTPUT_DIR = VIS_DIR / "trait-profile-investigation" / "gut-anaerobe-v2"
+OUTPUT_DIR = VIS_DIR / "trait-profile-investigation" / "anaerobe-depletion-v2"
 
 GUILD_TRAITS = {
     "METPO:1000603": "anaerobic",
     "METPO:1000607": "obligately anaerobic",
 }
+GUILD_TRAIT_SELECTION_JUSTIFICATIONS = {
+    "METPO:1000603": (
+        "Anaerobic oxygen-tolerance counterpart to the facultative-aerobe v2 trait "
+        "set; selected for the decreased-profile comparison."
+    ),
+    "METPO:1000607": (
+        "Stricter anaerobe oxygen-tolerance concept; selected to keep the depletion "
+        "guild parallel to oxygen-tolerance rather than fermentation metabolism."
+    ),
+}
+KG_MICROBE_TAXON_UNIVERSE_TRAITS = {
+    "METPO:1000603": "anaerobic",
+    "METPO:1000607": "obligately anaerobic",
+}
+KG_MICROBE_TAXON_UNIVERSE_ASSOCIATED_TRAITS: dict[str, str] = {}
 
 TARGET_TAXA = {
     "NCBITaxon:853": "Faecalibacterium prausnitzii",
@@ -32,14 +46,23 @@ TARGET_TAXA = {
     "NCBITaxon:360807": "Roseburia inulinivorans",
 }
 
-GUT_BODY_SITE_RE = re.compile(
-    r"feces|faeces|stool|colon|caecum|cecum|gut|intestin|digestive",
-    re.IGNORECASE,
-)
-EXCLUDED_CONDITION_SUMMARY_LABELS = {"Clinical treatment"}
+EXCLUDED_CONDITION_SUMMARY_LABELS = {
+    "Body fat distribution",
+    "Clinical treatment",
+    "Exposure",
+    "Health trait",
+    "Microbiome",
+    "Population",
+    "Physical activity",
+}
 MIN_PAIRED_SMD_PROFILE_PAIRS = 3
+INFERRED_GUILD_TOP_TRAITS_PER_GROUP = 12
+INFERRED_GUILD_TOP_TAXA_PER_TRAIT = 12
+INFERRED_GUILD_TOP_TAXA_PER_GROUP = 12
+MIN_KG_MICROBE_UNIVERSE_CORE_TRAITS = 1
 GUILD_SPECIFIC_NOTE = (
-    "Guild-specific: yes - uses the gut anaerobe v2 guild score (anaerobic, obligately anaerobic)."
+    "Guild-specific: yes - uses the anaerobe v2 depletion guild score "
+    "(anaerobic, obligately anaerobic)."
 )
 NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE = (
     "Guild-specific: no - fixed target-taxon count view; not recomputed from the guild score."
@@ -69,10 +92,6 @@ def clean_text(value: object) -> str:
     if not text or text.lower() == "nan" or text.upper() == "NA":
         return "unknown"
     return text
-
-
-def is_gut_body_site(value: object) -> bool:
-    return bool(GUT_BODY_SITE_RE.search(clean_text(value)))
 
 
 def safe_ratio(numerator: float, denominator: float) -> float:
@@ -217,12 +236,9 @@ def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 def add_guild_scores(matrix: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
     available_traits = [trait for trait in GUILD_TRAITS.values() if trait in matrix.columns]
     if not available_traits:
-        msg = "No requested gut anaerobe v2 guild traits were found in the matrix."
+        msg = "No requested anaerobe v2 depletion guild traits were found in the matrix."
         raise ValueError(msg)
     scored = metadata.copy()
-    scored["gut_context"] = scored["body_site"].map(is_gut_body_site) | scored[
-        "body_site_group"
-    ].map(is_gut_body_site)
     scored["guild_z_mean"] = matrix[available_traits].mean(axis=1)
     scored["anaerobe_z_mean"] = scored["guild_z_mean"]
     for trait_name in available_traits:
@@ -292,8 +308,18 @@ def summarize_group(metadata: pd.DataFrame, group_column: str, min_profiles: int
 def remove_excluded_condition_labels(condition_summary: pd.DataFrame) -> pd.DataFrame:
     """Remove broad study-design labels from disease/injury condition summaries."""
     return condition_summary[
-        ~condition_summary["condition"].isin(EXCLUDED_CONDITION_SUMMARY_LABELS)
+        ~condition_summary["condition"].map(is_excluded_condition_label)
     ].copy()
+
+
+def is_excluded_condition_label(value: object) -> bool:
+    """Return whether a condition label is too broad for disease-context summaries."""
+    label = clean_text(value)
+    broad_terms = ("exposure", "measurement", "population")
+    lower_label = label.lower()
+    return label in EXCLUDED_CONDITION_SUMMARY_LABELS or any(
+        term in lower_label for term in broad_terms
+    )
 
 
 def select_top_conditions(condition_summary: pd.DataFrame, limit: int) -> pd.DataFrame:
@@ -327,6 +353,474 @@ def paired_smd_label(row: Any) -> str:
     if pd.isna(smd):
         return f"paired d=NA, {p_text}, n={pair_count}"
     return f"paired d={smd:.2f}, {p_text}, n={pair_count}"
+
+
+def limited_join(values: list[str], limit: int) -> str:
+    selected = [value for value in values if clean_text(value) != "unknown"]
+    if len(selected) <= limit:
+        return "; ".join(selected)
+    omitted = len(selected) - limit
+    return "; ".join([*selected[:limit], f"+{omitted} more"])
+
+
+def pluralize(count: int, singular: str, plural: str | None = None) -> str:
+    if count == 1:
+        return singular
+    return plural or f"{singular}s"
+
+
+def build_kg_microbe_taxon_universe() -> pd.DataFrame:
+    """Define the KG-Microbe-wide candidate taxon universe from trait criteria."""
+    trait_ids = {
+        *KG_MICROBE_TAXON_UNIVERSE_TRAITS,
+        *KG_MICROBE_TAXON_UNIVERSE_ASSOCIATED_TRAITS,
+    }
+    matrix = read_tsv(
+        REPO_ROOT / "data/derived/taxa_trait_matrix.tsv",
+        usecols=lambda column: column in {"taxon_id", "taxon_name", "taxonomic_rank", *trait_ids},
+    )
+    for trait_id in trait_ids:
+        matrix[trait_id] = pd.to_numeric(matrix[trait_id], errors="coerce").fillna(0)
+
+    core_columns = list(KG_MICROBE_TAXON_UNIVERSE_TRAITS)
+    associated_columns = list(KG_MICROBE_TAXON_UNIVERSE_ASSOCIATED_TRAITS)
+    matrix["kg_microbe_universe_core_trait_count"] = (matrix[core_columns] > 0).sum(axis=1)
+    if associated_columns:
+        matrix["kg_microbe_universe_associated_trait_count"] = (matrix[associated_columns] > 0).sum(
+            axis=1
+        )
+    else:
+        matrix["kg_microbe_universe_associated_trait_count"] = 0
+    universe = matrix[
+        matrix["kg_microbe_universe_core_trait_count"] >= MIN_KG_MICROBE_UNIVERSE_CORE_TRAITS
+    ].copy()
+    universe["kg_microbe_universe_core_traits"] = [
+        "; ".join(
+            trait_name
+            for trait_id, trait_name in KG_MICROBE_TAXON_UNIVERSE_TRAITS.items()
+            if row[trait_id] > 0
+        )
+        for _, row in universe.iterrows()
+    ]
+    if KG_MICROBE_TAXON_UNIVERSE_ASSOCIATED_TRAITS:
+        universe["kg_microbe_universe_associated_traits"] = [
+            "; ".join(
+                trait_name
+                for trait_id, trait_name in KG_MICROBE_TAXON_UNIVERSE_ASSOCIATED_TRAITS.items()
+                if row[trait_id] > 0
+            )
+            for _, row in universe.iterrows()
+        ]
+    else:
+        universe["kg_microbe_universe_associated_traits"] = ""
+    return universe.sort_values(
+        [
+            "kg_microbe_universe_core_trait_count",
+            "kg_microbe_universe_associated_trait_count",
+            "taxon_name",
+        ],
+        ascending=[False, False, True],
+    )
+
+
+def build_guild_trait_selection(study_trait_metadata: pd.DataFrame) -> pd.DataFrame:
+    """Document why each selected guild trait is in the score."""
+    trait_ids = set(GUILD_TRAITS)
+    taxa_trait_matrix = read_tsv(
+        REPO_ROOT / "data/derived/taxa_trait_matrix.tsv",
+        usecols=lambda column: column in {"taxon_id", *trait_ids},
+    )
+    for trait_id in trait_ids:
+        taxa_trait_matrix[trait_id] = pd.to_numeric(
+            taxa_trait_matrix[trait_id], errors="coerce"
+        ).fillna(0)
+
+    metadata = study_trait_metadata.copy()
+    metadata["trait_id"] = metadata["trait_id"].fillna(
+        pd.Series(metadata.index, index=metadata.index)
+    )
+    metadata = metadata.drop_duplicates(subset=["trait_id"]).set_index("trait_id", drop=False)
+
+    records: list[dict[str, object]] = []
+    for trait_id, trait_name in GUILD_TRAITS.items():
+        metadata_row = (
+            metadata.loc[trait_id] if trait_id in metadata.index else pd.Series(dtype=object)
+        )
+        records.append(
+            {
+                "guild": "anaerobe v2 depletion",
+                "focus_direction": "decreased",
+                "comparator_direction": "increased",
+                "candidate_universe_role": "core oxygen-tolerance trait",
+                "trait_id": trait_id,
+                "trait_name": trait_name,
+                "profile_matrix_object_name": metadata_row.get("object_name", trait_name),
+                "profile_support": metadata_row.get("profile_support", pd.NA),
+                "total_signal": metadata_row.get("total_signal", pd.NA),
+                "composition_variance": metadata_row.get("composition_variance", pd.NA),
+                "kg_microbe_taxa_with_trait_count": int((taxa_trait_matrix[trait_id] > 0).sum()),
+                "selection_justification": GUILD_TRAIT_SELECTION_JUSTIFICATIONS[trait_id],
+            }
+        )
+    return pd.DataFrame(records)
+
+
+def load_profile_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
+    """Load all taxon/profile occurrences and join scored profile metadata."""
+    taxa = read_tsv(
+        REPO_ROOT / "data/derived/taxa.tsv",
+        usecols=[
+            "study_id",
+            "experiment_id",
+            "signature_id",
+            "direction",
+            "taxon_id",
+            "taxon_name",
+            "taxonomic_rank",
+        ],
+    )
+    taxa["profile_id"] = taxa.apply(profile_id_from_taxa_row, axis=1)
+    taxa = taxa.drop_duplicates(subset=["taxon_id", "profile_id"])
+    profile_columns = [
+        "study_id",
+        "experiment_id",
+        "inc_dec",
+        "direction_label",
+        "title",
+        "publication_year",
+        "condition",
+        "body_site",
+        "body_site_group",
+        "condition_group",
+        "location",
+        "host_species",
+        "guild_z_mean",
+        "anaerobe_z_mean",
+    ]
+    profiles = scored_profiles[profile_columns].copy()
+    return taxa.merge(
+        profiles,
+        left_on="profile_id",
+        right_index=True,
+        how="inner",
+        suffixes=("_taxa", ""),
+    )
+
+
+def trait_metadata_for_inference(
+    study_matrix: pd.DataFrame,
+    study_trait_metadata: pd.DataFrame,
+) -> pd.DataFrame:
+    """Return trait metadata rows that can be matched across profile and taxa matrices."""
+    taxa_trait_path = REPO_ROOT / "data/derived/taxa_trait_matrix.tsv"
+    with taxa_trait_path.open(encoding="utf-8") as handle:
+        taxa_trait_columns = set(handle.readline().rstrip("\n").split("\t"))
+
+    metadata = study_trait_metadata.copy()
+    metadata["trait_id"] = metadata["trait_id"].fillna(
+        pd.Series(metadata.index, index=metadata.index)
+    )
+    metadata = metadata[
+        metadata["trait_id"].isin(taxa_trait_columns)
+        & metadata["object_name"].isin(study_matrix.columns)
+    ].copy()
+    metadata = metadata.drop_duplicates(subset=["trait_id"])
+    metadata["trait_name"] = metadata["object_name"].map(clean_text)
+    metadata = metadata.drop_duplicates(subset=["trait_name"])
+    return metadata
+
+
+def load_taxa_trait_subset(taxon_ids: set[str], trait_ids: set[str]) -> pd.DataFrame:
+    """Load taxa-trait matrix columns needed for inferred guild evidence."""
+    wanted_columns = {"taxon_id", "taxon_name", "taxonomic_rank", *trait_ids}
+    matrix = read_tsv(
+        REPO_ROOT / "data/derived/taxa_trait_matrix.tsv",
+        usecols=lambda column: column in wanted_columns,
+    )
+    matrix = matrix[matrix["taxon_id"].isin(taxon_ids)].copy()
+    for trait_id in sorted(trait_ids.intersection(matrix.columns)):
+        matrix[trait_id] = pd.to_numeric(matrix[trait_id], errors="coerce").fillna(0)
+    return matrix
+
+
+def profile_group_mask(
+    profiles: pd.DataFrame,
+    group_row: pd.Series,
+    group_columns: list[str],
+) -> pd.Series:
+    mask = pd.Series(True, index=profiles.index)
+    for column in group_columns:
+        mask &= profiles[column] == group_row[column]
+    return mask
+
+
+def select_enriched_traits_for_group(
+    study_matrix: pd.DataFrame,
+    trait_metadata: pd.DataFrame,
+    focus_profiles: pd.DataFrame,
+    comparator_profiles: pd.DataFrame,
+) -> pd.DataFrame:
+    """Select profile traits enriched in the focus direction for one group."""
+    trait_rows = trait_metadata.set_index("trait_name", drop=False)
+    trait_names = [trait_name for trait_name in trait_rows.index if trait_name in study_matrix]
+    if not trait_names:
+        return pd.DataFrame()
+
+    focus_means = study_matrix.loc[focus_profiles.index, trait_names].mean()
+    if comparator_profiles.empty:
+        comparator_means = pd.Series(math.nan, index=trait_names)
+    else:
+        comparator_means = study_matrix.loc[comparator_profiles.index, trait_names].mean()
+
+    records: list[dict[str, object]] = []
+    for trait_name in trait_names:
+        focus_mean = focus_means[trait_name]
+        comparator_mean = comparator_means[trait_name]
+        delta = focus_mean - comparator_mean
+        if pd.isna(focus_mean) or focus_mean <= 0:
+            continue
+        if not pd.isna(delta) and delta <= 0:
+            continue
+        metadata_row = trait_rows.loc[trait_name]
+        selection_score = focus_mean if pd.isna(delta) else delta * math.sqrt(len(focus_profiles))
+        records.append(
+            {
+                "trait_id": metadata_row["trait_id"],
+                "trait_name": trait_name,
+                "trait_category": metadata_row["display_category"],
+                "focus_mean_z": focus_mean,
+                "comparator_mean_z": comparator_mean,
+                "focus_minus_comparator_z": delta,
+                "selection_score": selection_score,
+            }
+        )
+
+    if not records:
+        return pd.DataFrame()
+    return (
+        pd.DataFrame(records)
+        .sort_values(
+            ["focus_minus_comparator_z", "focus_mean_z", "selection_score"],
+            ascending=[False, False, False],
+        )
+        .head(INFERRED_GUILD_TOP_TRAITS_PER_GROUP)
+    )
+
+
+def summarize_inferred_guild_evidence(
+    study_matrix: pd.DataFrame,
+    profiles: pd.DataFrame,
+    study_trait_metadata: pd.DataFrame,
+    profile_taxa_occurrences: pd.DataFrame,
+    group_rows: pd.DataFrame,
+    group_columns: list[str],
+    *,
+    focus_direction: str,
+    taxon_universe_ids: set[str] | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Infer condition-specific guild evidence from enriched traits and observed taxa."""
+    trait_metadata = trait_metadata_for_inference(study_matrix, study_trait_metadata)
+    trait_metadata = trait_metadata[trait_metadata["trait_id"].isin(GUILD_TRAITS)].copy()
+    if trait_metadata.empty or group_rows.empty:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
+    selected_profile_ids: set[str] = set()
+    group_profile_rows: list[tuple[pd.Series, pd.DataFrame, pd.DataFrame]] = []
+    for _, group_row in group_rows.iterrows():
+        group_profiles = profiles[profile_group_mask(profiles, group_row, group_columns)].copy()
+        focus_profiles = group_profiles[group_profiles["direction_label"] == focus_direction]
+        comparator_profiles = group_profiles[group_profiles["direction_label"] != focus_direction]
+        if focus_profiles.empty:
+            continue
+        selected_profile_ids.update(map(str, focus_profiles.index))
+        group_profile_rows.append((group_row, focus_profiles, comparator_profiles))
+
+    observed_taxa = profile_taxa_occurrences[
+        profile_taxa_occurrences["profile_id"].isin(selected_profile_ids)
+    ].copy()
+    if taxon_universe_ids is not None:
+        observed_taxa = observed_taxa[observed_taxa["taxon_id"].isin(taxon_universe_ids)].copy()
+    if observed_taxa.empty:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
+    taxa_trait_matrix = load_taxa_trait_subset(
+        set(observed_taxa["taxon_id"]),
+        set(trait_metadata["trait_id"]),
+    )
+    taxa_trait_by_id = taxa_trait_matrix.set_index("taxon_id", drop=False)
+
+    group_summary_rows: list[dict[str, object]] = []
+    trait_summary_rows: list[dict[str, object]] = []
+    taxon_summary_rows: list[dict[str, object]] = []
+
+    for group_row, focus_profiles, comparator_profiles in group_profile_rows:
+        enriched_traits = select_enriched_traits_for_group(
+            study_matrix,
+            trait_metadata,
+            focus_profiles,
+            comparator_profiles,
+        )
+        if enriched_traits.empty:
+            continue
+
+        focus_profile_ids = set(map(str, focus_profiles.index))
+        focus_occurrences = observed_taxa[
+            observed_taxa["profile_id"].isin(focus_profile_ids)
+        ].copy()
+        observed_taxon_count = focus_occurrences["taxon_id"].nunique()
+        total_focus_taxon_count = profile_taxa_occurrences[
+            profile_taxa_occurrences["profile_id"].isin(focus_profile_ids)
+        ]["taxon_id"].nunique()
+        group_values = {column: group_row[column] for column in group_columns}
+
+        for trait_row in enriched_traits.itertuples(index=False):
+            trait_id = str(trait_row.trait_id)
+            if trait_id not in taxa_trait_by_id:
+                continue
+            carrier_ids = set(taxa_trait_by_id.index[pd.to_numeric(taxa_trait_by_id[trait_id]) > 0])
+            carrier_occurrences = focus_occurrences[
+                focus_occurrences["taxon_id"].isin(carrier_ids)
+            ].copy()
+            carrier_occurrences = carrier_occurrences.drop_duplicates(
+                subset=["taxon_id", "profile_id"]
+            )
+            if carrier_occurrences.empty:
+                continue
+
+            taxa_for_trait = (
+                carrier_occurrences.groupby(
+                    ["taxon_id", "taxon_name", "taxonomic_rank"],
+                    dropna=False,
+                )
+                .agg(
+                    taxon_profile_count=("profile_id", "nunique"),
+                    study_count=("study_id", "nunique"),
+                )
+                .reset_index()
+            )
+            taxa_for_trait["trait_annotation_count"] = taxa_for_trait["taxon_id"].map(
+                taxa_trait_by_id[trait_id]
+            )
+            taxa_for_trait = taxa_for_trait.sort_values(
+                ["taxon_profile_count", "study_count", "taxon_name"],
+                ascending=[False, False, True],
+            )
+            top_taxa = [
+                f"{row.taxon_name} ({int(row.taxon_profile_count)})"
+                for row in taxa_for_trait.head(INFERRED_GUILD_TOP_TAXA_PER_TRAIT).itertuples(
+                    index=False
+                )
+            ]
+
+            trait_summary_rows.append(
+                {
+                    **group_values,
+                    "focus_direction": focus_direction,
+                    "focus_profile_count": len(focus_profiles),
+                    "focus_study_count": focus_profiles["study_id"].nunique(),
+                    "comparator_profile_count": len(comparator_profiles),
+                    "comparator_study_count": comparator_profiles["study_id"].nunique(),
+                    "total_observed_taxon_count": total_focus_taxon_count,
+                    "trait_id": trait_id,
+                    "trait_name": trait_row.trait_name,
+                    "trait_category": trait_row.trait_category,
+                    "focus_mean_z": trait_row.focus_mean_z,
+                    "comparator_mean_z": trait_row.comparator_mean_z,
+                    "focus_minus_comparator_z": trait_row.focus_minus_comparator_z,
+                    "observed_taxon_count": observed_taxon_count,
+                    "carrier_taxon_count": taxa_for_trait["taxon_id"].nunique(),
+                    "carrier_taxon_fraction": safe_ratio(
+                        float(taxa_for_trait["taxon_id"].nunique()),
+                        float(observed_taxon_count),
+                    ),
+                    "carrier_taxon_profile_count": carrier_occurrences["profile_id"].nunique(),
+                    "carrier_study_count": carrier_occurrences["study_id"].nunique(),
+                    "top_carrier_taxa": limited_join(top_taxa, INFERRED_GUILD_TOP_TAXA_PER_TRAIT),
+                }
+            )
+
+            for taxon_row in taxa_for_trait.itertuples(index=False):
+                taxon_summary_rows.append(
+                    {
+                        **group_values,
+                        "focus_direction": focus_direction,
+                        "trait_id": trait_id,
+                        "trait_name": trait_row.trait_name,
+                        "trait_category": trait_row.trait_category,
+                        "taxon_id": taxon_row.taxon_id,
+                        "taxon_name": taxon_row.taxon_name,
+                        "taxonomic_rank": taxon_row.taxonomic_rank,
+                        "taxon_profile_count": taxon_row.taxon_profile_count,
+                        "study_count": taxon_row.study_count,
+                        "trait_annotation_count": taxon_row.trait_annotation_count,
+                    }
+                )
+
+    trait_summary = pd.DataFrame(trait_summary_rows)
+    taxon_summary = pd.DataFrame(taxon_summary_rows)
+    if trait_summary.empty or taxon_summary.empty:
+        return pd.DataFrame(), trait_summary, taxon_summary
+
+    for group_values, group_traits in trait_summary.groupby(group_columns, dropna=False):
+        if not isinstance(group_values, tuple):
+            group_values = (group_values,)
+        group_dict = dict(zip(group_columns, group_values, strict=True))
+        selected_taxa = taxon_summary.copy()
+        for column, value in group_dict.items():
+            selected_taxa = selected_taxa[selected_taxa[column] == value]
+
+        taxa_rank = (
+            selected_taxa.groupby(["taxon_id", "taxon_name", "taxonomic_rank"], dropna=False)
+            .agg(
+                supported_enriched_trait_count=("trait_id", "nunique"),
+                max_taxon_profile_count=("taxon_profile_count", "max"),
+                max_study_count=("study_count", "max"),
+            )
+            .reset_index()
+            .sort_values(
+                ["supported_enriched_trait_count", "max_taxon_profile_count", "max_study_count"],
+                ascending=[False, False, False],
+            )
+        )
+        top_trait_text = [
+            f"{row.trait_name} ({row.focus_minus_comparator_z:+.2f})"
+            for row in group_traits.sort_values(
+                ["focus_minus_comparator_z", "focus_mean_z"],
+                ascending=[False, False],
+            )
+            .head(5)
+            .itertuples(index=False)
+        ]
+        top_taxa_text = [
+            f"{row.taxon_name} ("
+            f"{int(row.supported_enriched_trait_count)} "
+            f"{pluralize(int(row.supported_enriched_trait_count), 'trait')}, "
+            f"{int(row.max_taxon_profile_count)} "
+            f"{pluralize(int(row.max_taxon_profile_count), 'profile')})"
+            for row in taxa_rank.head(INFERRED_GUILD_TOP_TAXA_PER_GROUP).itertuples(index=False)
+        ]
+        first_trait = group_traits.iloc[0]
+        group_summary_rows.append(
+            {
+                **group_dict,
+                "focus_direction": focus_direction,
+                "focus_profile_count": int(first_trait["focus_profile_count"]),
+                "focus_study_count": int(first_trait["focus_study_count"]),
+                "comparator_profile_count": int(first_trait["comparator_profile_count"]),
+                "comparator_study_count": int(first_trait["comparator_study_count"]),
+                "total_observed_taxon_count": int(first_trait["total_observed_taxon_count"]),
+                "kg_microbe_universe_taxon_count": int(group_traits["observed_taxon_count"].max()),
+                "inferred_enriched_trait_count": group_traits["trait_id"].nunique(),
+                "supporting_taxon_count": selected_taxa["taxon_id"].nunique(),
+                "top_enriched_traits": limited_join(top_trait_text, 5),
+                "top_supporting_taxa": limited_join(
+                    top_taxa_text, INFERRED_GUILD_TOP_TAXA_PER_GROUP
+                ),
+            }
+        )
+
+    group_summary = pd.DataFrame(group_summary_rows)
+    return group_summary, trait_summary, taxon_summary
 
 
 def load_taxa_direction_summary() -> pd.DataFrame:
@@ -426,7 +920,6 @@ def load_target_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
         "condition_group",
         "location",
         "host_species",
-        "gut_context",
         "guild_z_mean",
         "anaerobe_z_mean",
     ]
@@ -442,9 +935,8 @@ def load_target_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
 
 
 def summarize_taxa_conditions(occurrences: pd.DataFrame) -> pd.DataFrame:
-    gut = occurrences[occurrences["gut_context"].fillna(False)].copy()
     grouped = (
-        gut.groupby(["target_taxon_name", "condition", "body_site_group", "direction"])[
+        occurrences.groupby(["target_taxon_name", "condition", "body_site_group", "direction"])[
             ["profile_id", "study_id"]
         ]
         .nunique()
@@ -503,15 +995,11 @@ def summarize_taxa_conditions(occurrences: pd.DataFrame) -> pd.DataFrame:
 def count_target_taxa_conditions(
     occurrences: pd.DataFrame,
     direction: str,
-    *,
-    gut_context_only: bool,
 ) -> pd.Series:
     """Count condition labels for target taxon-profile occurrences."""
     selected = occurrences[occurrences["direction"] == direction].copy()
-    if gut_context_only:
-        selected = selected[selected["gut_context"].fillna(False)].copy()
     selected["condition"] = selected["condition"].map(clean_text)
-    selected = selected[~selected["condition"].isin(EXCLUDED_CONDITION_SUMMARY_LABELS)].copy()
+    selected = selected[~selected["condition"].map(is_excluded_condition_label)].copy()
     return selected["condition"].value_counts()
 
 
@@ -803,12 +1291,17 @@ def write_figure_methods() -> None:
         "Study-profile z-scores were read from "
         "`trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv` and "
         "joined to study metadata from "
-        "`trait-visualization/study_trait_profile_study_metadata.tsv`. The gut "
-        "anaerobe v2 guild score was the row-wise mean of the selected "
-        "guild traits: anaerobic and obligately anaerobic. Gut-context profiles were "
-        "defined by body-site or grouped body-site labels matching "
-        "`feces`, `faeces`, `stool`, `colon`, `caecum`, `cecum`, `gut`, "
-        "`intestin`, or `digestive`.",
+        "`trait-visualization/study_trait_profile_study_metadata.tsv`. The "
+        "anaerobe v2 depletion guild score was the row-wise mean of the selected "
+        "oxygen-tolerance counterpart traits: anaerobic and obligately anaerobic. "
+        "This makes the comparison parallel to the facultative-aerobe v2 guild, "
+        "with the focus direction switched to decreased profiles. Profiles from "
+        "all body sites are retained, and body-site summaries are used to separate "
+        "gut, oral, airway, urogenital, and other contexts.",
+        "`guild_trait_selection.tsv` documents the a priori selected trait set, "
+        "the focus/comparator directions, a short selection justification for each "
+        "trait, and KG-Microbe grounding as the count of taxa carrying each trait "
+        "in `data/derived/taxa_trait_matrix.tsv`.",
         "Direction labels (`increased` and `decreased`) were taken from BugSigDB's "
         "curated `Abundance in Group 1` signature field. This script did not "
         "recalculate differential abundance; it grouped and filtered "
@@ -822,11 +1315,12 @@ def write_figure_methods() -> None:
         "(NCBITaxon:39488), Lachnospira eligens (NCBITaxon:39485), "
         "Agathobacter rectalis (NCBITaxon:39491), Roseburia intestinalis "
         "(NCBITaxon:166486), Ruminococcus bromii (NCBITaxon:40518), and "
-        "Roseburia inulinivorans (NCBITaxon:360807). They were chosen as focal "
-        "examples for the gut anaerobe v2 depletion hypothesis because "
-        "they are species-level gut anaerobe candidates in the selected guild, "
-        "and the derived taxa-trait matrix gives each selected "
-        "taxon at least one of the investigation guild-trait annotations. The "
+        "Roseburia inulinivorans (NCBITaxon:360807). These taxa are fixed focal "
+        "examples for recurrence audits in decreased profiles; they "
+        "do not define the formal v2 guild score. The formal guild is the "
+        "opposite-direction oxygen-tolerance trait set described above, and the "
+        "derived taxa-trait matrix gives each selected focal taxon at least one "
+        "of those investigation guild-trait annotations. The "
         "script writes `candidate_taxa_trait_presence.tsv` from "
         "`data/derived/taxa_trait_matrix.tsv` as the audit trail for those trait "
         "annotations.",
@@ -849,12 +1343,15 @@ def write_figure_methods() -> None:
         "",
         "## `condition_decreased_guild_signal.png`",
         "",
-        "Guild-specificity: yes. This figure uses the gut anaerobe v2 guild score "
+        "Guild-specificity: yes. This figure uses the anaerobe v2 depletion guild score "
         "from the two selected traits.",
         "",
-        "Gut-context study profiles were grouped by BugSigDB condition label. Groups "
-        "with fewer than five profiles were excluded, and the broad label "
-        "`Clinical treatment` was removed from the displayed condition summary. The "
+        "Study profiles from all body sites were grouped by BugSigDB condition label. Groups "
+        "with fewer than five profiles were excluded. Broad non-condition or "
+        "metadata labels (`Body fat distribution`, `Clinical treatment`, `Exposure`, "
+        "`Health trait`, `Microbiome`, `Population`, `Physical activity`, and labels "
+        "containing `exposure`, `measurement`, or `population`) were removed from "
+        "the displayed condition summary. The "
         "figure keeps the top 12 eligible conditions with at least three decreased "
         "profiles, at least two studies, positive decreased-minus-increased guild "
         "signal, and positive decreased-profile mean guild z-score, using fallback "
@@ -874,20 +1371,20 @@ def write_figure_methods() -> None:
         "and their decreased-minus-increased profile shifts.",
         "",
         "For each selected guild trait, the script calculated the mean z-score in "
-        "gut-context decreased study profiles and the mean z-score in gut-context "
-        "increased study profiles. Bars show `decreased mean z - increased mean z`; "
-        "positive values indicate traits that are higher in decreased gut-context "
+        "decreased study profiles and the mean z-score in increased study profiles. "
+        "Bars show `decreased mean z - increased mean z`; positive values indicate "
+        "traits that are higher in decreased "
         "profiles.",
         "",
         "## `anatomical_sites_diagram.png`",
         "",
-        "Guild-specificity: yes. Color encodes the gut anaerobe v2 guild score "
+        "Guild-specificity: yes. Color encodes the anaerobe v2 depletion guild score "
         "among decreased profiles at each body-site group.",
         "",
-        "Gut-context profiles were grouped by `body_site_group`, requiring at least "
+        "Profiles were grouped by `body_site_group`, requiring at least "
         "10 profiles per group. The display excludes the generic `Other` body-site "
         "group. Bubble and bar length encode the number of study profiles in the "
-        "body-site group. Color encodes the mean gut anaerobe v2 guild "
+        "body-site group. Color encodes the mean anaerobe v2 depletion guild "
         "z-score among decreased profiles at that body site. Body-site labels were "
         "placed on a simplified, neutral front-view body outline using fixed "
         "anatomical coordinates for feces/stool, colon, caecum, oral, airway, "
@@ -903,12 +1400,29 @@ def write_figure_methods() -> None:
         "profile, and joined to the scored study profiles. This produces one row "
         "per focal taxon/profile occurrence with condition, body site, direction, "
         "and guild-score metadata. The bar chart counts decreased "
-        "target-taxon/profile occurrences in gut-context profiles by condition, "
-        "after removing `Clinical treatment`. A condition with multiple focal "
+        "target-taxon/profile occurrences by condition after removing the broad "
+        "non-condition and metadata labels described above. A condition with multiple focal "
         "taxa can therefore contribute multiple occurrences; the chart is an "
         "occurrence breakdown, not a unique-study breakdown. It displays the top "
         "20 explicit condition labels as horizontal bars, with bar labels showing "
         "occurrence counts.",
+        "",
+        "## Inferred Guild Evidence TSVs",
+        "",
+        "`kg_microbe_candidate_taxon_universe.tsv`, "
+        "`condition_inferred_guild_summary.tsv`, "
+        "`condition_inferred_guild_trait_evidence.tsv`, and "
+        "`condition_inferred_guild_taxa_evidence.tsv` provide the anaerobe-side "
+        "match to the facultative-aerobe inferred evidence outputs. The taxon universe "
+        "is first defined across all taxa in `data/derived/taxa_trait_matrix.tsv`: "
+        "a taxon is included when it has at least one core oxygen-tolerance "
+        "annotation among anaerobic or obligately anaerobic. For each top "
+        "decreased-profile condition, the script intersects that "
+        "KG-Microbe-wide universe with taxa actually observed in the condition's "
+        "decreased profiles, identifies v2 guild traits whose z-score is above "
+        "zero in the decreased direction and whose decreased-minus-increased "
+        "condition contrast is positive, and reports which universe taxa carry "
+        "those enriched guild-trait annotations.",
         "",
     ]
     (OUTPUT_DIR / "figure_methods.md").write_text("\n".join(lines), encoding="utf-8")
@@ -928,7 +1442,7 @@ def make_plots(
     ax.barh(plot_taxa["target_taxon_name"], plot_taxa["depletion_bias"], color="#8c2d04")
     ax.axvline(0, color="#333333", linewidth=0.8)
     ax.set_xlabel("(decreased profiles - increased profiles) / total profiles")
-    ax.set_title("Gut Anaerobe Candidate Taxa Are Depletion-Biased", pad=28)
+    ax.set_title("Anaerobe Candidate Taxa Are Depletion-Biased", pad=28)
     add_specificity_note(ax, NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE)
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "candidate_taxa_depletion_bias.png")
@@ -957,9 +1471,9 @@ def make_plots(
                 fontsize=8,
                 color="#334155",
             )
-    ax.set_xlabel("Gut anaerobe v2 guild enrichment: decreased mean z - increased mean z")
+    ax.set_xlabel("Anaerobe v2 guild enrichment: decreased mean z - increased mean z")
     ax.set_title(
-        "Conditions With Decreased-Profile Gut Anaerobe v2 Guild Enrichment",
+        "Conditions With Decreased-Profile Anaerobe v2 Guild Enrichment",
         pad=28,
     )
     add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
@@ -977,9 +1491,9 @@ def make_plots(
         color="#047857",
     )
     ax.axvline(0, color="#333333", linewidth=0.8)
-    ax.set_xlabel("decreased gut-context profile mean z - increased gut-context profile mean z")
+    ax.set_xlabel("decreased profile mean z - increased profile mean z")
     ax.set_title(
-        "Gut Anaerobe v2 Guild Traits Are Higher in Decreased Gut-Context Profiles",
+        "Anaerobe v2 Guild Traits Are Higher in Decreased Profiles",
         pad=28,
     )
     add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
@@ -990,19 +1504,18 @@ def make_plots(
     condition_counts = count_target_taxa_conditions(
         occurrences,
         "decreased",
-        gut_context_only=True,
     )
     save_condition_breakdown_bar_chart(
         condition_counts,
         output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_bar.png",
-        title_prefix="Decreased gut anaerobe target taxa",
+        title_prefix="Decreased anaerobe target taxa",
         color="#2563eb",
         specificity_note=NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE,
     )
     save_anatomical_sites_diagram(
         body_site_summary,
         output_path=OUTPUT_DIR / "anatomical_sites_diagram.png",
-        title="Gut Anaerobe v2 Depletion: Anatomical Sites",
+        title="Anaerobe v2 Depletion: Anatomical Sites",
         signal_column="decreased_mean_guild_z",
         signal_label="decreased-profile guild z",
     )
@@ -1014,6 +1527,8 @@ def write_summary_report(
     condition_summary: pd.DataFrame,
     taxa_summary: pd.DataFrame,
     condition_taxa_summary: pd.DataFrame,
+    inferred_group_summary: pd.DataFrame,
+    kg_microbe_taxon_universe: pd.DataFrame,
     top_depletion_profiles: pd.DataFrame,
 ) -> None:
     direction_rows = direction_summary[
@@ -1027,7 +1542,7 @@ def write_summary_report(
     ].head(10)
 
     lines = [
-        "# Gut Anaerobe v2 Depletion Investigation",
+        "# Anaerobe v2 Depletion Investigation",
         "",
         "This investigation uses the existing study trait profile clustered heatmap matrix, "
         "study metadata, taxa guild heatmap metadata, and derived taxa/trait matrices.",
@@ -1037,8 +1552,14 @@ def write_summary_report(
         "- Guild traits: "
         + ", ".join(f"{name} ({trait_id})" for trait_id, name in GUILD_TRAITS.items()),
         "- Target taxa: " + ", ".join(TARGET_TAXA.values()),
-        "- Gut context: body-site labels matching feces/faeces/stool/colon/caecum/cecum/gut/"
-        "intestin/digestive, plus matching grouped body-site labels.",
+        "- Formal KG-Microbe taxon universe: "
+        f"{len(kg_microbe_taxon_universe):,} taxa with at least one core "
+        "oxygen-tolerance annotation among " + ", ".join(KG_MICROBE_TAXON_UNIVERSE_TRAITS.values()),
+        "- Guild trait selection audit: `guild_trait_selection.tsv` records the "
+        "selected trait IDs, short rationale, and KG-Microbe taxon counts for "
+        "each selected trait.",
+        "- Context: all body sites, with body-site and condition summaries to separate "
+        "gut, oral, airway, urogenital, and other patterns.",
         "",
         "## Plot Guild Specificity",
         "",
@@ -1052,9 +1573,14 @@ def write_summary_report(
         "",
         "## Main Signal",
         "",
-        "The selected anaerobe-only guild traits are consistently higher in decreased "
-        "gut-context profiles than in increased gut-context profiles, which supports "
-        "the gut anaerobe v2 depletion hypothesis.",
+        "The selected anaerobe-only oxygen-tolerance traits are consistently higher "
+        "in decreased profiles than in increased profiles. "
+        "This is the decreased-profile counterpart to the facultative-aerobe v2 "
+        "comparison, not a fermentation-defined gut guild.",
+        "",
+        "Guardrail: the increased-profile anaerobe score is retained in every "
+        "condition and body-site summary. It checks whether the anaerobe signal is "
+        "depletion-associated rather than simply high in both directions.",
         "",
         "| trait | decreased - increased z |",
         "| --- | ---: |",
@@ -1098,7 +1624,7 @@ def write_summary_report(
     lines.extend(
         [
             "",
-            "## Gut Contexts With High Decreased-Profile Guild Signal",
+            "## Conditions With High Decreased-Profile Guild Signal",
             "",
             "| condition | profiles | studies | decreased - increased z | paired d | "
             "paired p | matched pairs | decreased mean guild z |",
@@ -1117,6 +1643,34 @@ def write_summary_report(
             f"{diff_text} | {smd_text} | {p_text} | {int(row.paired_profile_pair_count)} | "
             f"{row.decreased_mean_guild_z:.3f} |"
         )
+
+    if not inferred_group_summary.empty:
+        lines.extend(
+            [
+                "",
+                "## Data-Inferred Guild Evidence",
+                "",
+                "For the top condition signals, this table uses all taxa "
+                "observed in the decreased profiles for that condition that also "
+                "belong to the KG-Microbe-wide anaerobe candidate taxon universe, "
+                "then reports the profile v2 guild traits that are enriched in "
+                "those same decreased profiles and the universe taxa that carry "
+                "those trait annotations. This is a data-derived guild summary, "
+                "not a fixed focal-taxon list.",
+                "",
+                "| condition | decreased profiles | universe taxa / observed taxa | "
+                "enriched traits | supporting taxa |",
+                "| --- | ---: | ---: | --- | --- |",
+            ]
+        )
+        for row in inferred_group_summary.head(8).itertuples(index=False):
+            lines.append(
+                f"| {clean_text(row.condition)} | {int(row.focus_profile_count)} | "
+                f"{int(row.kg_microbe_universe_taxon_count)} / "
+                f"{int(row.total_observed_taxon_count)} | "
+                f"{clean_text(row.top_enriched_traits)} | "
+                f"{clean_text(row.top_supporting_taxa)} |"
+            )
 
     lines.extend(
         [
@@ -1159,9 +1713,8 @@ def write_summary_report(
             "",
             "## Suggested Follow-Up",
             "",
-            "1. Treat the target taxa as a depletion guild and test enrichment by "
-            "condition/body site "
-            "rather than analyzing each taxon in isolation.",
+            "1. Treat target-taxon recurrence as an audit view and the selected "
+            "oxygen-tolerance traits as the formal guild score.",
             "2. Prioritize conditions where decreased profiles have high guild scores "
             "and target taxa "
             "are repeatedly decreased across multiple studies.",
@@ -1172,12 +1725,17 @@ def write_summary_report(
             "## Files",
             "",
             "- `guild_trait_direction_shift.tsv`",
-            "- `gut_body_site_guild_summary.tsv`",
-            "- `gut_condition_guild_summary.tsv`",
+            "- `guild_trait_selection.tsv`",
+            "- `body_site_guild_summary.tsv`",
+            "- `condition_guild_summary.tsv`",
             "- `candidate_taxa_direction_summary.tsv`",
             "- `candidate_taxa_trait_presence.tsv`",
             "- `candidate_taxa_condition_direction.tsv`",
             "- `candidate_taxa_profile_occurrences.tsv`",
+            "- `kg_microbe_candidate_taxon_universe.tsv`",
+            "- `condition_inferred_guild_summary.tsv`",
+            "- `condition_inferred_guild_trait_evidence.tsv`",
+            "- `condition_inferred_guild_taxa_evidence.tsv`",
             "- `top_decreased_guild_profiles.tsv`",
             "- `figure_methods.md`",
             "- `candidate_taxa_depletion_bias.png`",
@@ -1196,24 +1754,41 @@ def main() -> None:
 
     study_matrix, study_metadata, study_trait_metadata = load_study_heatmap()
     scored_profiles = add_guild_scores(study_matrix, study_metadata)
-    gut_profiles = scored_profiles[scored_profiles["gut_context"]].copy()
+    analysis_profiles = scored_profiles.copy()
 
-    direction_summary = summarize_direction(gut_profiles)
-    body_site_summary = summarize_group(gut_profiles, "body_site_group", min_profiles=10)
+    direction_summary = summarize_direction(analysis_profiles)
+    body_site_summary = summarize_group(analysis_profiles, "body_site_group", min_profiles=10)
     condition_summary = remove_excluded_condition_labels(
-        summarize_group(gut_profiles, "condition", min_profiles=5)
+        summarize_group(analysis_profiles, "condition", min_profiles=5)
     )
     taxa_summary = load_taxa_direction_summary()
     trait_presence = load_target_taxa_trait_counts()
     occurrences = load_target_taxa_occurrences(scored_profiles)
     condition_taxa_summary = summarize_taxa_conditions(occurrences)
+    profile_taxa_occurrences = load_profile_taxa_occurrences(scored_profiles)
+    kg_microbe_taxon_universe = build_kg_microbe_taxon_universe()
+    kg_microbe_taxon_universe_ids = set(kg_microbe_taxon_universe["taxon_id"])
+
+    inferred_group_summary, inferred_trait_evidence, inferred_taxa_evidence = (
+        summarize_inferred_guild_evidence(
+            study_matrix,
+            analysis_profiles,
+            study_trait_metadata,
+            profile_taxa_occurrences,
+            select_top_conditions(condition_summary, 8),
+            ["condition"],
+            focus_direction="decreased",
+            taxon_universe_ids=kg_microbe_taxon_universe_ids,
+        )
+    )
 
     trait_definitions = study_trait_metadata.loc[
         study_trait_metadata.index.intersection(GUILD_TRAITS.keys())
     ].copy()
     trait_definitions["investigation_trait_name"] = trait_definitions.index.map(GUILD_TRAITS)
+    guild_trait_selection = build_guild_trait_selection(study_trait_metadata)
 
-    top_depletion_profiles = gut_profiles[gut_profiles["inc_dec"] == "dec"].copy()
+    top_depletion_profiles = analysis_profiles[analysis_profiles["inc_dec"] == "dec"].copy()
     top_depletion_profiles = top_depletion_profiles.sort_values(
         ["guild_z_mean", "total_trait_signal"],
         ascending=[False, False],
@@ -1221,8 +1796,8 @@ def main() -> None:
     top_depletion_profiles = top_depletion_profiles.reset_index(names="profile_id")
 
     direction_summary.to_csv(OUTPUT_DIR / "guild_trait_direction_shift.tsv", sep="\t", index=False)
-    body_site_summary.to_csv(OUTPUT_DIR / "gut_body_site_guild_summary.tsv", sep="\t", index=False)
-    condition_summary.to_csv(OUTPUT_DIR / "gut_condition_guild_summary.tsv", sep="\t", index=False)
+    body_site_summary.to_csv(OUTPUT_DIR / "body_site_guild_summary.tsv", sep="\t", index=False)
+    condition_summary.to_csv(OUTPUT_DIR / "condition_guild_summary.tsv", sep="\t", index=False)
     taxa_summary.to_csv(OUTPUT_DIR / "candidate_taxa_direction_summary.tsv", sep="\t")
     trait_presence.to_csv(OUTPUT_DIR / "candidate_taxa_trait_presence.tsv", sep="\t", index=False)
     condition_taxa_summary.to_csv(
@@ -1233,12 +1808,37 @@ def main() -> None:
         sep="\t",
         index=False,
     )
+    kg_microbe_taxon_universe.to_csv(
+        OUTPUT_DIR / "kg_microbe_candidate_taxon_universe.tsv",
+        sep="\t",
+        index=False,
+    )
+    inferred_group_summary.to_csv(
+        OUTPUT_DIR / "condition_inferred_guild_summary.tsv",
+        sep="\t",
+        index=False,
+    )
+    inferred_trait_evidence.to_csv(
+        OUTPUT_DIR / "condition_inferred_guild_trait_evidence.tsv",
+        sep="\t",
+        index=False,
+    )
+    inferred_taxa_evidence.to_csv(
+        OUTPUT_DIR / "condition_inferred_guild_taxa_evidence.tsv",
+        sep="\t",
+        index=False,
+    )
     top_depletion_profiles.to_csv(
         OUTPUT_DIR / "top_decreased_guild_profiles.tsv",
         sep="\t",
         index=False,
     )
     trait_definitions.to_csv(OUTPUT_DIR / "guild_trait_definitions.tsv", sep="\t")
+    guild_trait_selection.to_csv(
+        OUTPUT_DIR / "guild_trait_selection.tsv",
+        sep="\t",
+        index=False,
+    )
 
     make_plots(taxa_summary, condition_summary, direction_summary, body_site_summary, occurrences)
     write_figure_methods()
@@ -1248,13 +1848,17 @@ def main() -> None:
         condition_summary,
         taxa_summary,
         condition_taxa_summary,
+        inferred_group_summary,
+        kg_microbe_taxon_universe,
         top_depletion_profiles,
     )
 
     print(f"Wrote investigation outputs to: {OUTPUT_DIR}")
     print(f"Study profiles analyzed: {len(scored_profiles)}")
-    print(f"Gut-context profiles analyzed: {len(gut_profiles)}")
+    print(f"Analysis profiles analyzed: {len(analysis_profiles)}")
     print(f"Target taxa occurrence rows: {len(occurrences)}")
+    print(f"KG-Microbe candidate taxon universe rows: {len(kg_microbe_taxon_universe)}")
+    print(f"Inferred guild condition rows: {len(inferred_group_summary)}")
     print(f"Condition/taxon rows: {len(condition_taxa_summary)}")
 
 

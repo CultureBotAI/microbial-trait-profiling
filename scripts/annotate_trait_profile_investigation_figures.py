@@ -28,7 +28,7 @@ GUT_BODY_SITE = (
     "by body-site group."
 )
 GUT_V2_BODY_SITE = (
-    "Guild-specific: yes - color encodes the gut anaerobe v2 guild score by body-site group."
+    "Guild-specific: yes - color encodes the anaerobe v2 depletion guild score by body-site group."
 )
 NON_GUILD_DIRECTION_COUNT = (
     "Guild-specific: no - fixed target-taxon direction-count view; "
@@ -108,13 +108,13 @@ FIGURE_LABELS = {
     Path("gut-anaerobe-fermentation-depletion/target_taxa_condition_breakdown_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT
     ),
-    Path("gut-anaerobe-v2/anatomical_sites_diagram.png"): GUT_V2_BODY_SITE,
-    Path("gut-anaerobe-v2/candidate_taxa_depletion_bias.png"): (NON_GUILD_DIRECTION_COUNT_V2),
+    Path("anaerobe-depletion-v2/anatomical_sites_diagram.png"): GUT_V2_BODY_SITE,
+    Path("anaerobe-depletion-v2/candidate_taxa_depletion_bias.png"): (NON_GUILD_DIRECTION_COUNT_V2),
     Path(
-        "gut-anaerobe-v2/condition_decreased_guild_signal.png"
-    ): "Guild-specific: yes - uses the gut anaerobe v2 guild score by condition.",
-    Path("gut-anaerobe-v2/guild_trait_direction_shift.png"): GUT_V2_GUILD_SHIFT,
-    Path("gut-anaerobe-v2/target_taxa_condition_breakdown_bar.png"): (
+        "anaerobe-depletion-v2/condition_decreased_guild_signal.png"
+    ): "Guild-specific: yes - uses the anaerobe v2 depletion guild score by condition.",
+    Path("anaerobe-depletion-v2/guild_trait_direction_shift.png"): GUT_V2_GUILD_SHIFT,
+    Path("anaerobe-depletion-v2/target_taxa_condition_breakdown_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT_V2
     ),
 }

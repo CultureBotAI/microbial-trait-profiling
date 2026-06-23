@@ -21,6 +21,7 @@ Lachnospira eligens	Age	Feces	3	0	2	0	3	1.0
 Lachnospira eligens	Colorectal carcinoma	Feces	3	0	2	0	3	1.0
 Anaerobutyricum hallii	Chronic kidney disease	Feces	2	0	2	0	2	1.0
 Faecalibacterium prausnitzii	Colorectal cancer	Colon	2	0	2	0	2	1.0
+Faecalibacterium prausnitzii	Crohn's disease	Other	2	0	2	0	2	1.0
 Lachnospira eligens	Depressive disorder	Feces	2	0	2	0	2	1.0
 Lachnospira eligens	Polycystic ovary syndrome	Feces	2	0	2	0	2	1.0
 Roseburia intestinalis	COVID-19	Feces	2	0	2	0	2	1.0
@@ -36,10 +37,12 @@ Lachnospira eligens	Type II diabetes mellitus	Feces	6	0	1	0	6	1.0
 Agathobacter rectalis	Tumor stage	Feces	4	0	1	0	4	1.0
 Ruminococcus bromii	Inflammatory bowel disease	Feces	4	0	1	0	4	1.0
 Agathobacter rectalis	Alzheimer's disease	Feces	3	0	1	0	3	1.0
+Agathobacter rectalis	Autism spectrum disorder	Saliva	3	0	1	0	3	1.0
 Agathobacter rectalis	Colorectal carcinoma	Feces	3	0	1	0	3	1.0
 Agathobacter rectalis	Increased intestinal transit time	Feces	3	0	1	0	3	1.0
 Agathobacter rectalis	Inflammatory bowel disease	Feces	3	0	1	0	3	1.0
 Anaerobutyricum hallii	Periodontitis	Feces	3	0	1	0	3	1.0
+Faecalibacterium prausnitzii	Autism spectrum disorder	Saliva	3	0	1	0	3	1.0
 Faecalibacterium prausnitzii	Periodontitis	Feces	3	0	1	0	3	1.0
 Lachnospira eligens	Inflammatory bowel disease	Feces	3	0	1	0	3	1.0
 Roseburia intestinalis	Inflammatory bowel disease	Feces	3	0	1	0	3	1.0
@@ -53,8 +56,11 @@ Agathobacter rectalis	Periodontitis	Feces	2	0	1	0	2	1.0
 Agathobacter rectalis	Physical activity	Feces	2	0	1	0	2	1.0
 Anaerobutyricum hallii	Age	Feces	2	0	1	0	2	1.0
 Anaerobutyricum hallii	Autism spectrum disorder	Feces	2	0	1	0	2	1.0
+Anaerobutyricum hallii	Autism spectrum disorder	Saliva	2	0	1	0	2	1.0
+Anaerobutyricum hallii	COVID-19	Other	2	0	1	0	2	1.0
 Anaerobutyricum hallii	Chronic fatigue syndrome	Feces	2	0	1	0	2	1.0
 Anaerobutyricum hallii	HIV infection	Feces	2	0	1	0	2	1.0
+Anaerobutyricum hallii	Mycobacterium tuberculosis	Other	2	0	1	0	2	1.0
 Anaerobutyricum hallii	Tumor stage	Feces	2	0	1	0	2	1.0
 Faecalibacterium prausnitzii	Body fat distribution	Caecum	2	0	1	0	2	1.0
 Faecalibacterium prausnitzii	Chronic fatigue syndrome	Feces	2	0	1	0	2	1.0
@@ -63,6 +69,7 @@ Faecalibacterium prausnitzii	Human immunodeficiency virus	Feces	2	0	1	0	2	1.0
 Faecalibacterium prausnitzii	Peutz-Jeghers Polyp	Feces	2	0	1	0	2	1.0
 Faecalibacterium prausnitzii	Response to placebo	Feces	2	0	1	0	2	1.0
 Lachnospira eligens	Anxiety disorder	Feces	2	0	1	0	2	1.0
+Lachnospira eligens	Autism spectrum disorder	Saliva	2	0	1	0	2	1.0
 Lachnospira eligens	Autoimmune disease	Feces	2	0	1	0	2	1.0
 Lachnospira eligens	Chronic granulomatous disease	Feces	2	0	1	0	2	1.0
 Lachnospira eligens	Periodontitis	Feces	2	0	1	0	2	1.0
@@ -74,11 +81,13 @@ Roseburia inulinivorans	Chronic fatigue syndrome	Feces	2	0	1	0	2	1.0
 Roseburia inulinivorans	HIV infection	Feces	2	0	1	0	2	1.0
 Roseburia inulinivorans	Periodontitis	Feces	2	0	1	0	2	1.0
 Roseburia inulinivorans	Psoriasis	Feces	2	0	1	0	2	1.0
+Ruminococcus bromii	Autism spectrum disorder	Saliva	2	0	1	0	2	1.0
 Ruminococcus bromii	Depressive disorder	Feces	2	0	1	0	2	1.0
 Ruminococcus bromii	Response to placebo	Feces	2	0	1	0	2	1.0
 Ruminococcus bromii	Tumor stage	Feces	2	0	1	0	2	1.0
 Ruminococcus bromii	Ulcerative colitis	Feces	2	0	1	0	2	1.0
 Agathobacter rectalis	Autoimmune disease	Feces	1	0	1	0	1	1.0
+Agathobacter rectalis	Birth measurement	Other	1	0	1	0	1	1.0
 Agathobacter rectalis	Chronic kidney disease	Feces	1	0	1	0	1	1.0
 Agathobacter rectalis	Constipation	Feces	1	0	1	0	1	1.0
 Agathobacter rectalis	Crohn's disease	Feces	1	0	1	0	1	1.0
@@ -111,10 +120,10 @@ Anaerobutyricum hallii	Sex hormone	Feces	1	0	1	0	1	1.0
 Anaerobutyricum hallii	Ulcerative colitis	Feces	1	0	1	0	1	1.0
 Faecalibacterium prausnitzii	Age	Other	1	0	1	0	1	1.0
 Faecalibacterium prausnitzii	Breast cancer	Feces	1	0	1	0	1	1.0
+Faecalibacterium prausnitzii	Breast cancer	Other	1	0	1	0	1	1.0
 Faecalibacterium prausnitzii	Breast carcinoma	Feces	1	0	1	0	1	1.0
 Faecalibacterium prausnitzii	Colitis	Feces	1	0	1	0	1	1.0
 Faecalibacterium prausnitzii	Colorectal Adenosquamous Carcinoma	Feces	1	0	1	0	1	1.0
-Faecalibacterium prausnitzii	Crohn's disease	Other	1	0	1	0	1	1.0
 Faecalibacterium prausnitzii	Depressive disorder	Feces	1	0	1	0	1	1.0
 Faecalibacterium prausnitzii	Endometrial cancer	Feces	1	0	1	0	1	1.0
 Faecalibacterium prausnitzii	Ethnic group,Socioeconomic status	Feces	1	0	1	0	1	1.0
@@ -178,6 +187,7 @@ Roseburia intestinalis	Response to placebo	Feces	1	0	1	0	1	1.0
 Roseburia intestinalis	Sampling site	Other	1	0	1	0	1	1.0
 Roseburia intestinalis	Species design	Feces	1	0	1	0	1	1.0
 Roseburia intestinalis	Treatment outcome measurement	Feces	1	0	1	0	1	1.0
+Roseburia inulinivorans	Benign prostatic hyperplasia,Periodontitis	Other	1	0	1	0	1	1.0
 Roseburia inulinivorans	Breast cancer	Feces	1	0	1	0	1	1.0
 Roseburia inulinivorans	Chronic constipation	Feces	1	0	1	0	1	1.0
 Roseburia inulinivorans	Chronic kidney disease	Feces	1	0	1	0	1	1.0
@@ -195,6 +205,7 @@ Roseburia inulinivorans	Sampling site	Other	1	0	1	0	1	1.0
 Roseburia inulinivorans	Stress-related disorder	Feces	1	0	1	0	1	1.0
 Roseburia inulinivorans	Stroke	Feces	1	0	1	0	1	1.0
 Roseburia inulinivorans	Ulcerative colitis	Feces	1	0	1	0	1	1.0
+Ruminococcus bromii	Birth measurement	Other	1	0	1	0	1	1.0
 Ruminococcus bromii	Colorectal carcinoma	Feces	1	0	1	0	1	1.0
 Ruminococcus bromii	Crohn's disease	Feces	1	0	1	0	1	1.0
 Ruminococcus bromii	Crohn's disease	Other	1	0	1	0	1	1.0
@@ -224,6 +235,7 @@ Faecalibacterium prausnitzii	Ulcerative colitis	Feces	2	1	2	1	3	0.33333333333333
 Ruminococcus bromii	Diet	Feces	2	1	2	1	3	0.3333333333333333
 Anaerobutyricum hallii	Irritable bowel syndrome	Feces	2	1	1	1	3	0.3333333333333333
 Faecalibacterium prausnitzii	Acute pancreatitis	Feces	2	1	1	1	3	0.3333333333333333
+Faecalibacterium prausnitzii	COVID-19	Other	2	1	1	1	3	0.3333333333333333
 Roseburia intestinalis	Alanine measurement	Feces	2	1	1	1	3	0.3333333333333333
 Faecalibacterium prausnitzii	Type II diabetes mellitus	Feces	7	4	2	2	11	0.2727272727272727
 Faecalibacterium prausnitzii	Antimicrobial agent	Feces	3	2	2	2	5	0.2
@@ -255,10 +267,12 @@ Roseburia inulinivorans	Antimicrobial agent	Feces	1	1	1	1	2	0.0
 Roseburia inulinivorans	Colorectal cancer	Feces	1	1	1	1	2	0.0
 Roseburia inulinivorans	Crohn's disease	Feces	1	1	1	1	2	0.0
 Roseburia inulinivorans	High density lipoprotein cholesterol measurement	Feces	1	1	1	1	2	0.0
+Roseburia inulinivorans	Pulmonary arterial hypertension associated with congenital heart disease	Other	1	1	1	1	2	0.0
 Roseburia inulinivorans	Trichuriasis	Feces	1	1	1	1	2	0.0
 Roseburia inulinivorans	Tumor stage	Feces	1	1	1	1	2	0.0
 Roseburia inulinivorans	Type II diabetes mellitus	Feces	1	1	1	1	2	0.0
 Ruminococcus bromii	Antimicrobial agent	Feces	1	1	1	1	2	0.0
+Ruminococcus bromii	Glaucoma	Other	1	1	1	1	2	0.0
 Ruminococcus bromii	Irritable bowel syndrome	Feces	1	1	1	1	2	0.0
 Anaerobutyricum hallii	Chronic constipation	Feces	5	6	3	1	11	-0.09090909090909091
 Faecalibacterium prausnitzii	Health-related quality of life measurement	Feces	3	4	1	1	7	-0.14285714285714285
@@ -267,12 +281,15 @@ Roseburia intestinalis	Tumor stage	Feces	2	3	1	1	5	-0.2
 Ruminococcus bromii	Parkinson's disease	Feces	2	3	1	3	5	-0.2
 Faecalibacterium prausnitzii	Obesity	Feces	11	19	9	8	30	-0.26666666666666666
 Agathobacter rectalis	Remission	Feces	1	2	1	1	3	-0.3333333333333333
+Anaerobutyricum hallii	Ovarian cancer	Other	1	2	1	1	3	-0.3333333333333333
 Faecalibacterium prausnitzii	Chronic constipation	Feces	1	2	1	1	3	-0.3333333333333333
 Roseburia inulinivorans	Remission	Feces	1	2	1	1	3	-0.3333333333333333
 Ruminococcus bromii	Colorectal cancer	Feces	1	2	1	2	3	-0.3333333333333333
 Ruminococcus bromii	Fat intake measurement	Feces	1	2	1	1	3	-0.3333333333333333
 Faecalibacterium prausnitzii	Diet	Feces	5	14	4	3	19	-0.47368421052631576
+Agathobacter rectalis	Ovarian cancer	Other	1	3	1	1	4	-0.5
 Faecalibacterium prausnitzii	Acute lymphoblastic leukemia	Feces	1	3	1	1	4	-0.5
+Faecalibacterium prausnitzii	Ovarian cancer	Other	1	3	1	1	4	-0.5
 Faecalibacterium prausnitzii	Response to immunochemotherapy	Feces	1	3	1	3	4	-0.5
 Roseburia inulinivorans	Obesity	Feces	1	3	1	2	4	-0.5
 Lachnospira eligens	Chronic constipation	Feces	2	7	1	4	9	-0.5555555555555556
@@ -281,6 +298,7 @@ Anaerobutyricum hallii	Treatment outcome measurement	Feces	1	7	1	1	8	-0.75
 Agathobacter rectalis	Response to antibiotic	Feces	0	5	0	2	5	-1.0
 Anaerobutyricum hallii	Gestational diabetes	Feces	0	5	0	2	5	-1.0
 Faecalibacterium prausnitzii	Treatment outcome measurement	Feces	0	5	0	1	5	-1.0
+Lachnospira eligens	Glaucoma	Other	0	4	0	1	4	-1.0
 Anaerobutyricum hallii	Acute lymphoblastic leukemia	Feces	0	3	0	1	3	-1.0
 Anaerobutyricum hallii	Response to antiviral drug	Feces	0	3	0	1	3	-1.0
 Faecalibacterium prausnitzii	Lifestyle measurement	Feces	0	3	0	2	3	-1.0
@@ -297,24 +315,31 @@ Anaerobutyricum hallii	Diet measurement	Feces	0	2	0	1	2	-1.0
 Anaerobutyricum hallii	HIV infection	Colon	0	2	0	1	2	-1.0
 Anaerobutyricum hallii	Obesity	Feces	0	2	0	2	2	-1.0
 Faecalibacterium prausnitzii	Age	Feces	0	2	0	1	2	-1.0
+Faecalibacterium prausnitzii	Glaucoma	Other	0	2	0	1	2	-1.0
 Faecalibacterium prausnitzii	Infectious diarrheal disease	Feces	0	2	0	1	2	-1.0
 Faecalibacterium prausnitzii	Insulin resistance,Prediabetes syndrome	Feces	0	2	0	1	2	-1.0
 Lachnospira eligens	Insulin resistance,Prediabetes syndrome	Feces	0	2	0	1	2	-1.0
+Roseburia intestinalis	Glaucoma	Other	0	2	0	1	2	-1.0
 Roseburia intestinalis	Insulin resistance,Prediabetes syndrome	Feces	0	2	0	1	2	-1.0
 Roseburia intestinalis	Oxidative Stress	Feces	0	2	0	1	2	-1.0
 Roseburia inulinivorans	Age	Feces	0	2	0	1	2	-1.0
+Roseburia inulinivorans	Glaucoma	Other	0	2	0	1	2	-1.0
 Roseburia inulinivorans	Health-related quality of life measurement	Feces	0	2	0	1	2	-1.0
+Roseburia inulinivorans	Mycobacterium tuberculosis	Other	0	2	0	1	2	-1.0
 Ruminococcus bromii	Insulin resistance,Prediabetes syndrome	Feces	0	2	0	1	2	-1.0
+Agathobacter rectalis	Cesarean section	Other	0	1	0	1	1	-1.0
 Agathobacter rectalis	Diabetic nephropathy	Feces	0	1	0	1	1	-1.0
 Agathobacter rectalis	Gastric cancer	Feces	0	1	0	1	1	-1.0
 Agathobacter rectalis	Mood disorder	Feces	0	1	0	1	1	-1.0
 Agathobacter rectalis	Response to vaccine	Feces	0	1	0	1	1	-1.0
+Agathobacter rectalis	Transport	Nasopharynx	0	1	0	1	1	-1.0
 Agathobacter rectalis	Vitiligo	Feces	0	1	0	1	1	-1.0
 Anaerobutyricum hallii	Chronic inflammatory demyelinating polyneuropathy	Feces	0	1	0	1	1	-1.0
 Anaerobutyricum hallii	Colorectal adenocarcinoma	Feces	0	1	0	1	1	-1.0
 Anaerobutyricum hallii	Coronary artery disease	Feces	0	1	0	1	1	-1.0
 Anaerobutyricum hallii	Endometriosis	Feces	0	1	0	1	1	-1.0
 Anaerobutyricum hallii	Fasting blood glucose measurement	Feces	0	1	0	1	1	-1.0
+Anaerobutyricum hallii	Glaucoma	Other	0	1	0	1	1	-1.0
 Anaerobutyricum hallii	Hashimoto's thyroiditis	Feces	0	1	0	1	1	-1.0
 Anaerobutyricum hallii	Infectious diarrheal disease	Feces	0	1	0	1	1	-1.0
 Anaerobutyricum hallii	Insulin resistance,Prediabetes syndrome	Feces	0	1	0	1	1	-1.0
@@ -327,21 +352,30 @@ Anaerobutyricum hallii	Shigellosis	Feces	0	1	0	1	1	-1.0
 Anaerobutyricum hallii	Thyroid carcinoma	Feces	0	1	0	1	1	-1.0
 Anaerobutyricum hallii	Vitiligo	Feces	0	1	0	1	1	-1.0
 Faecalibacterium prausnitzii	Breed	Colon	0	1	0	1	1	-1.0
+Faecalibacterium prausnitzii	COVID-19	Nasopharynx	0	1	0	1	1	-1.0
+Faecalibacterium prausnitzii	Cesarean section	Other	0	1	0	1	1	-1.0
 Faecalibacterium prausnitzii	Constipation	Feces	0	1	0	1	1	-1.0
 Faecalibacterium prausnitzii	Dementia	Feces	0	1	0	1	1	-1.0
 Faecalibacterium prausnitzii	Gestational diabetes	Feces	0	1	0	1	1	-1.0
+Faecalibacterium prausnitzii	Health study participation	Saliva	0	1	0	1	1	-1.0
 Faecalibacterium prausnitzii	Lewy body dementia	Feces	0	1	0	1	1	-1.0
 Faecalibacterium prausnitzii	Oxidative Stress	Feces	0	1	0	1	1	-1.0
+Faecalibacterium prausnitzii	Periodontitis	Saliva	0	1	0	1	1	-1.0
 Faecalibacterium prausnitzii	Premature birth	Feces	0	1	0	1	1	-1.0
 Faecalibacterium prausnitzii	Remission	Feces	0	1	0	1	1	-1.0
+Faecalibacterium prausnitzii	Response to liver transplant	Other	0	1	0	1	1	-1.0
 Faecalibacterium prausnitzii	Sample collection protocol	Feces	0	1	0	1	1	-1.0
 Faecalibacterium prausnitzii	Sampling time	Feces	0	1	0	1	1	-1.0
+Faecalibacterium prausnitzii	Type II diabetes mellitus	Other	0	1	0	1	1	-1.0
 Faecalibacterium prausnitzii	Vitiligo	Feces	0	1	0	1	1	-1.0
 Lachnospira eligens	Beverage consumption measurement	Feces	0	1	0	1	1	-1.0
+Lachnospira eligens	COVID-19	Nasopharynx	0	1	0	1	1	-1.0
 Lachnospira eligens	Dementia	Feces	0	1	0	1	1	-1.0
 Lachnospira eligens	Diet measurement	Feces	0	1	0	1	1	-1.0
+Lachnospira eligens	Human papilloma virus infection	Other	0	1	0	1	1	-1.0
 Lachnospira eligens	Infectious diarrheal disease	Feces	0	1	0	1	1	-1.0
 Lachnospira eligens	Mixed sex population	Feces	0	1	0	1	1	-1.0
+Lachnospira eligens	Ovarian cancer	Other	0	1	0	1	1	-1.0
 Lachnospira eligens	Sarcopenia	Feces	0	1	0	1	1	-1.0
 Roseburia intestinalis	Diet	Feces	0	1	0	1	1	-1.0
 Roseburia intestinalis	Diet measurement	Feces	0	1	0	1	1	-1.0
@@ -349,11 +383,13 @@ Roseburia intestinalis	HIV infection,Antimicrobial agent	Feces	0	1	0	1	1	-1.0
 Roseburia intestinalis	Health-related quality of life measurement	Feces	0	1	0	1	1	-1.0
 Roseburia intestinalis	Multiple chemical sensitivity	Feces	0	1	0	1	1	-1.0
 Roseburia intestinalis	Pulmonary tuberculosis,Diabetes mellitus	Feces	0	1	0	1	1	-1.0
+Roseburia intestinalis	Type II diabetes mellitus	Other	0	1	0	1	1	-1.0
 Roseburia intestinalis	Visceral adipose tissue measurement	Feces	0	1	0	1	1	-1.0
 Roseburia intestinalis	Vitiligo	Feces	0	1	0	1	1	-1.0
 Roseburia inulinivorans	Acute pancreatitis	Feces	0	1	0	1	1	-1.0
 Roseburia inulinivorans	Cervical cancer	Feces	0	1	0	1	1	-1.0
 Roseburia inulinivorans	Infectious diarrheal disease	Feces	0	1	0	1	1	-1.0
+Roseburia inulinivorans	Ovarian cancer	Other	0	1	0	1	1	-1.0
 Roseburia inulinivorans	Response to immunochemotherapy	Feces	0	1	0	1	1	-1.0
 Roseburia inulinivorans	Vitiligo	Feces	0	1	0	1	1	-1.0
 Ruminococcus bromii	Autoimmune disease	Feces	0	1	0	1	1	-1.0
@@ -363,8 +399,10 @@ Ruminococcus bromii	Chronic constipation	Feces	0	1	0	1	1	-1.0
 Ruminococcus bromii	Gestational diabetes	Feces	0	1	0	1	1	-1.0
 Ruminococcus bromii	Human immunodeficiency virus	Feces	0	1	0	1	1	-1.0
 Ruminococcus bromii	Multiple chemical sensitivity	Feces	0	1	0	1	1	-1.0
+Ruminococcus bromii	Mycobacterium tuberculosis	Other	0	1	0	1	1	-1.0
 Ruminococcus bromii	Non-alcoholic steatohepatitis	Feces	0	1	0	1	1	-1.0
 Ruminococcus bromii	Obesity	Feces	0	1	0	1	1	-1.0
+Ruminococcus bromii	Pulmonary tuberculosis	Other	0	1	0	1	1	-1.0
 Ruminococcus bromii	Response to exercise	Feces	0	1	0	1	1	-1.0
 Ruminococcus bromii	Response to immune checkpoint inhibitor	Feces	0	1	0	1	1	-1.0
 Ruminococcus bromii	Response to transplant	Feces	0	1	0	1	1	-1.0

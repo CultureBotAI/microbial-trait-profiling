@@ -21,6 +21,20 @@ GUILD_TRAITS = {
     "METPO:1000602": "aerobic",
     "METPO:1000604": "microaerophilic",
 }
+GUILD_TRAIT_SELECTION_JUSTIFICATIONS = {
+    "METPO:1000608": (
+        "Primary facultative-aerobe concept; selected as the named core trait for the "
+        "increased-profile oxygen-tolerance guild."
+    ),
+    "METPO:1000602": (
+        "Oxygen-positive growth trait; selected to capture taxa whose profile signal is "
+        "consistent with aerobic oxygen tolerance."
+    ),
+    "METPO:1000604": (
+        "Low-oxygen growth trait; selected to include microaerophilic oxygen tolerance "
+        "without broadening the score to unrelated metabolic traits."
+    ),
+}
 KG_MICROBE_TAXON_UNIVERSE_TRAITS = {
     "METPO:1000608": "facultatively aerobic",
     "METPO:1000602": "aerobic",
@@ -379,9 +393,9 @@ def build_kg_microbe_taxon_universe() -> pd.DataFrame:
     associated_columns = list(KG_MICROBE_TAXON_UNIVERSE_ASSOCIATED_TRAITS)
     matrix["kg_microbe_universe_core_trait_count"] = (matrix[core_columns] > 0).sum(axis=1)
     if associated_columns:
-        matrix["kg_microbe_universe_associated_trait_count"] = (
-            matrix[associated_columns] > 0
-        ).sum(axis=1)
+        matrix["kg_microbe_universe_associated_trait_count"] = (matrix[associated_columns] > 0).sum(
+            axis=1
+        )
     else:
         matrix["kg_microbe_universe_associated_trait_count"] = 0
     universe = matrix[
@@ -414,6 +428,48 @@ def build_kg_microbe_taxon_universe() -> pd.DataFrame:
         ],
         ascending=[False, False, True],
     )
+
+
+def build_guild_trait_selection(study_trait_metadata: pd.DataFrame) -> pd.DataFrame:
+    """Document why each selected guild trait is in the score."""
+    trait_ids = set(GUILD_TRAITS)
+    taxa_trait_matrix = read_tsv(
+        REPO_ROOT / "data/derived/taxa_trait_matrix.tsv",
+        usecols=lambda column: column in {"taxon_id", *trait_ids},
+    )
+    for trait_id in trait_ids:
+        taxa_trait_matrix[trait_id] = pd.to_numeric(
+            taxa_trait_matrix[trait_id], errors="coerce"
+        ).fillna(0)
+
+    metadata = study_trait_metadata.copy()
+    metadata["trait_id"] = metadata["trait_id"].fillna(
+        pd.Series(metadata.index, index=metadata.index)
+    )
+    metadata = metadata.drop_duplicates(subset=["trait_id"]).set_index("trait_id", drop=False)
+
+    records: list[dict[str, object]] = []
+    for trait_id, trait_name in GUILD_TRAITS.items():
+        metadata_row = (
+            metadata.loc[trait_id] if trait_id in metadata.index else pd.Series(dtype=object)
+        )
+        records.append(
+            {
+                "guild": "facultative-aerobe v2",
+                "focus_direction": "increased",
+                "comparator_direction": "decreased",
+                "candidate_universe_role": "core oxygen-tolerance trait",
+                "trait_id": trait_id,
+                "trait_name": trait_name,
+                "profile_matrix_object_name": metadata_row.get("object_name", trait_name),
+                "profile_support": metadata_row.get("profile_support", pd.NA),
+                "total_signal": metadata_row.get("total_signal", pd.NA),
+                "composition_variance": metadata_row.get("composition_variance", pd.NA),
+                "kg_microbe_taxa_with_trait_count": int((taxa_trait_matrix[trait_id] > 0).sum()),
+                "selection_justification": GUILD_TRAIT_SELECTION_JUSTIFICATIONS[trait_id],
+            }
+        )
+    return pd.DataFrame(records)
 
 
 def load_profile_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
@@ -628,9 +684,7 @@ def summarize_inferred_guild_evidence(
             trait_id = str(trait_row.trait_id)
             if trait_id not in taxa_trait_by_id:
                 continue
-            carrier_ids = set(
-                taxa_trait_by_id.index[pd.to_numeric(taxa_trait_by_id[trait_id]) > 0]
-            )
+            carrier_ids = set(taxa_trait_by_id.index[pd.to_numeric(taxa_trait_by_id[trait_id]) > 0])
             carrier_occurrences = focus_occurrences[
                 focus_occurrences["taxon_id"].isin(carrier_ids)
             ].copy()
@@ -750,9 +804,7 @@ def summarize_inferred_guild_evidence(
             f"{pluralize(int(row.supported_enriched_trait_count), 'trait')}, "
             f"{int(row.max_taxon_profile_count)} "
             f"{pluralize(int(row.max_taxon_profile_count), 'profile')})"
-            for row in taxa_rank.head(INFERRED_GUILD_TOP_TAXA_PER_GROUP).itertuples(
-                index=False
-            )
+            for row in taxa_rank.head(INFERRED_GUILD_TOP_TAXA_PER_GROUP).itertuples(index=False)
         ]
         first_trait = group_traits.iloc[0]
         group_summary_rows.append(
@@ -1250,6 +1302,10 @@ def write_figure_methods() -> None:
         "`trait-visualization/study_trait_profile_study_metadata.tsv`. The "
         "facultative-aerobe guild score was the row-wise mean of the selected guild "
         "traits: facultatively aerobic, aerobic, and microaerophilic.",
+        "`guild_trait_selection.tsv` documents the a priori selected trait set, "
+        "the focus/comparator directions, a short selection justification for each "
+        "trait, and KG-Microbe grounding as the count of taxa carrying each trait "
+        "in `data/derived/taxa_trait_matrix.tsv`.",
         "Direction labels (`increased` and `decreased`) were taken from BugSigDB's "
         "curated `Abundance in Group 1` signature field. This script did not "
         "recalculate differential abundance; it grouped and filtered "
@@ -1381,9 +1437,10 @@ def write_figure_methods() -> None:
         "microaerophilic. For each top increased-profile "
         "condition, the script then intersects that KG-Microbe-wide universe with "
         "the taxa actually observed in the condition's increased profiles, "
-        "identifies v2 guild traits with positive mean z-score and positive "
-        "increased-minus-decreased condition contrast, and reports which universe "
-        "taxa carry those enriched guild-trait annotations.",
+        "identifies v2 guild traits whose z-score is above zero in the increased "
+        "direction and whose increased-minus-decreased condition contrast is "
+        "positive, and reports which universe taxa carry those enriched "
+        "guild-trait annotations.",
         "",
     ]
     (OUTPUT_DIR / "figure_methods.md").write_text("\n".join(lines), encoding="utf-8")
@@ -1516,8 +1573,10 @@ def write_summary_report(
         "- Target taxa: " + ", ".join(TARGET_TAXA.values()),
         "- Formal KG-Microbe taxon universe: "
         f"{len(kg_microbe_taxon_universe):,} taxa with at least one core "
-        "oxygen-tolerance annotation among "
-        + ", ".join(KG_MICROBE_TAXON_UNIVERSE_TRAITS.values()),
+        "oxygen-tolerance annotation among " + ", ".join(KG_MICROBE_TAXON_UNIVERSE_TRAITS.values()),
+        "- Guild trait selection audit: `guild_trait_selection.tsv` records the "
+        "selected trait IDs, short rationale, and KG-Microbe taxon counts for "
+        "each selected trait.",
         "- Context: all body sites, with body-site and condition summaries to separate "
         "gut, oral, airway, and other patterns.",
         "",
@@ -1530,8 +1589,7 @@ def write_summary_report(
         "| `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |",
         "| `candidate_taxa_increased_profile_tendency.png` | no | "
         "fixed target-taxon direction counts |",
-        "| `target_taxa_condition_breakdown_bar.png` | no | "
-        "fixed target-taxon occurrence counts |",
+        "| `target_taxa_condition_breakdown_bar.png` | no | fixed target-taxon occurrence counts |",
         "",
         "## Main Signal",
         "",
@@ -1699,6 +1757,7 @@ def write_summary_report(
             "## Files",
             "",
             "- `guild_trait_direction_shift.tsv`",
+            "- `guild_trait_selection.tsv`",
             "- `body_site_guild_summary.tsv`",
             "- `condition_guild_summary.tsv`",
             "- `candidate_taxa_direction_summary.tsv`",
@@ -1739,6 +1798,7 @@ def main() -> None:
     profile_taxa_occurrences = load_profile_taxa_occurrences(scored_profiles)
     kg_microbe_taxon_universe = build_kg_microbe_taxon_universe()
     kg_microbe_taxon_universe_ids = set(kg_microbe_taxon_universe["taxon_id"])
+    guild_trait_selection = build_guild_trait_selection(study_trait_metadata)
 
     inferred_group_summary, inferred_trait_evidence, inferred_taxa_evidence = (
         summarize_inferred_guild_evidence(
@@ -1808,6 +1868,11 @@ def main() -> None:
         index=False,
     )
     trait_definitions.to_csv(OUTPUT_DIR / "guild_trait_definitions.tsv", sep="\t")
+    guild_trait_selection.to_csv(
+        OUTPUT_DIR / "guild_trait_selection.tsv",
+        sep="\t",
+        index=False,
+    )
 
     make_plots(taxa_summary, condition_summary, direction_summary, body_site_summary, occurrences)
     write_figure_methods()

@@ -1,207 +1,590 @@
 # Trait Profile Investigation Figure Methods
 
-This text corresponds to `trait_profile_investigation_figures.pptx`. The
-slideshow contains eleven figure panels from the current v2 investigation
-outputs: five facultative-aerobe increased-profile panels, five gut anaerobe
-depletion panels, and one summary diagram connecting profile enrichment to guild
-assignment.
+This cumulative methods file corresponds to
+`trait_profile_investigation_figures.pptx`. It consolidates the per-folder
+methods notes from the current v2 figure folders and preserves the interpretive
+context from the earlier exploratory folders. The PowerPoint currently contains
+11 slides: five facultative-aerobe v2 panels, five anaerobe v2 depletion panels,
+and one profile-enrichment-to-guild-assignment summary diagram.
 
-Direction labels (`increased` and `decreased`) come from BugSigDB curation,
-specifically the `Abundance in Group 1` signature direction. These figures group,
-filter, count, and summarize curated BugSigDB study/experiment/direction profiles;
-they do not recalculate differential abundance.
+The primary source methods files are:
 
-## Slide Map
+- `facultative-aerobe-v2/figure_methods.md`
+- `anaerobe-depletion-v2/figure_methods.md`
+- `facultative-aerobe-trait-expansion/figure_methods.md`
+- `gut-anaerobe-fermentation-depletion/figure_methods.md`
 
-| slide | figure | source folder | guild-specific? |
-| ---: | --- | --- | --- |
-| 1 | `candidate_taxa_increased_profile_tendency.png` | `facultative-aerobe-v2/` | no |
-| 2 | `condition_increased_guild_signal.png` | `facultative-aerobe-v2/` | yes |
-| 3 | `guild_trait_direction_shift.png` | `facultative-aerobe-v2/` | yes |
-| 4 | `anatomical_sites_diagram.png` | `facultative-aerobe-v2/` | yes |
-| 5 | `target_taxa_condition_breakdown_bar.png` | `facultative-aerobe-v2/` | no |
-| 6 | `candidate_taxa_depletion_bias.png` | `gut-anaerobe-v2/` | no |
-| 7 | `condition_decreased_guild_signal.png` | `gut-anaerobe-v2/` | yes |
-| 8 | `guild_trait_direction_shift.png` | `gut-anaerobe-v2/` | yes |
-| 9 | `anatomical_sites_diagram.png` | `gut-anaerobe-v2/` | yes |
-| 10 | `target_taxa_condition_breakdown_bar.png` | `gut-anaerobe-v2/` | no |
-| 11 | `profile_enrichment_guild_assignment_summary.png` | `trait-profile-investigation/` | yes |
+The canonical regeneration command is `just trait-profile-investigation`, which
+runs `scripts/regenerate_trait_profile_investigation.py`.
 
-Target-taxon direction-count and occurrence-count panels are not guild-score
-figures. They use fixed focal taxon lists as audit views for taxa that motivated
-or illustrate the guild hypotheses. The summary diagram on slide 11 separates
-these taxon-audit panels from the guild-score panels and inferred-evidence TSVs.
+The current PowerPoint slide images use the v2 outputs. The older exploratory
+folders are summarized in the appendix because they explain why the current v2
+guilds were narrowed to oxygen-tolerance traits and how to interpret older
+figures that may still be present in the investigation folder.
 
-## Shared Data Inputs
+## PowerPoint Slide Map
 
-Both investigations read profile z-scores from
-`trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv` and join
-them to profile metadata from
-`trait-visualization/study_trait_profile_study_metadata.tsv`. The scripts also
-use `trait-visualization/taxa_guild_discovery_taxa_metadata.tsv`,
-`data/derived/taxa.tsv`, and `data/derived/taxa_trait_matrix.tsv` for taxon
-direction summaries, taxon-profile occurrences, and trait-presence audit tables.
+| slide | PowerPoint title | figure file | source folder | guild-specific? |
+| ---: | --- | --- | --- | --- |
+| 1 | Target taxa most often reported in increased profiles | `candidate_taxa_increased_profile_tendency.png` | `facultative-aerobe-v2/` | no |
+| 2 | Conditions with high increased-profile v2 guild signal | `condition_increased_guild_signal.png` | `facultative-aerobe-v2/` | yes |
+| 3 | V2 guild traits are higher in increased profiles | `guild_trait_direction_shift.png` | `facultative-aerobe-v2/` | yes |
+| 4 | Anatomical sites for increased-profile facultative-aerobe v2 signal | `anatomical_sites_diagram.png` | `facultative-aerobe-v2/` | yes |
+| 5 | Top conditions for increased target-taxon occurrences | `target_taxa_condition_breakdown_bar.png` | `facultative-aerobe-v2/` | no |
+| 6 | Target taxa most often reported in decreased profiles | `candidate_taxa_depletion_bias.png` | `anaerobe-depletion-v2/` | no |
+| 7 | Conditions with high decreased-profile anaerobe v2 guild signal | `condition_decreased_guild_signal.png` | `anaerobe-depletion-v2/` | yes |
+| 8 | V2 guild traits are higher in decreased profiles | `guild_trait_direction_shift.png` | `anaerobe-depletion-v2/` | yes |
+| 9 | Anatomical sites for decreased-profile anaerobe v2 signal | `anatomical_sites_diagram.png` | `anaerobe-depletion-v2/` | yes |
+| 10 | Top conditions for decreased target-taxon occurrences | `target_taxa_condition_breakdown_bar.png` | `anaerobe-depletion-v2/` | no |
+| 11 | Profile enrichment to guild assignment | `profile_enrichment_guild_assignment_summary.png` | `trait-profile-investigation/` | yes |
 
-The v2 figures were generated by:
+## Shared Data Collection and Label Definitions
 
-- `scripts/investigate_facultative_aerobe_expansion.py`
-- `scripts/investigate_gut_anaerobe_depletion.py`
-- `scripts/create_profile_enrichment_guild_assignment_diagram.py`
+The figures use precomputed BugSigDB study-profile trait tables. They do not
+recompute differential abundance from raw sequencing data. BugSigDB direction
+labels are curated signature directions, specifically the `Abundance in Group 1`
+direction represented downstream as `increased` or `decreased`.
+
+`trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv` contains
+profile-level standardized trait z-scores. Rows are BugSigDB study profiles and
+columns are traits mapped from KG-Microbe and related derived trait tables.
+`trait-visualization/study_trait_profile_study_metadata.tsv` supplies the
+profile metadata used for grouping: study identifier, condition label,
+experiment/profile identifiers, body-site labels, body-site groups, and the
+curated profile direction. The z-score columns are therefore profile summaries,
+not measurements from one taxon alone.
+
+`data/derived/taxa_trait_matrix.tsv` is used as the KG-Microbe grounding table
+for taxon-to-trait annotations. `data/derived/taxa.tsv` supplies BugSigDB taxon
+occurrences, which are deduplicated by taxon and study profile before target
+taxon occurrence charts are counted.
+`trait-visualization/taxa_guild_discovery_taxa_metadata.tsv` supplies the
+overall increased/decreased BugSigDB profile counts for fixed target taxa.
+
+Important units and labels:
+
+- `profile_count` is the number of BugSigDB study-profile rows after filtering.
+  It is not the number of experiments.
+- `study_count` is the number of unique BugSigDB studies represented by those
+  profile rows.
+- `condition` is the BugSigDB condition label. Some labels are disease labels,
+  while others are study-design or metadata labels such as exposure,
+  measurement, timepoint, population, or treatment context. Condition labels can
+  also be comma-joined labels.
+- `body_site_group` is a coarse display grouping derived from BugSigDB body-site
+  labels. `unknown` means no specific body-site label was available.
+- `mean_guild_z` is the mean profile-level guild z-score across all profiles in
+  a group.
+- `increased_mean_guild_z` and `decreased_mean_guild_z` are group means within
+  the two BugSigDB profile directions.
+- `increased_minus_decreased_guild_z` is the focus-minus-comparator contrast for
+  the facultative-aerobe parent story.
+- `decreased_minus_increased_guild_z` is the focus-minus-comparator contrast for
+  the anaerobe-depletion parent story.
+- `paired d` is a paired standardized mean difference calculated from matched
+  increased/decreased profile pairs within the same study and experiment.
+  `paired d=NA` means fewer than three matched pairs or zero variance among the
+  paired differences.
+- `p` is a two-sided paired t-test p-value for the same matched differences.
+  These p-values are descriptive labels on the screening plots, not a multiple
+  testing-adjusted discovery procedure.
+- `target taxon-profile occurrence` means one fixed focal taxon observed in one
+  BugSigDB study profile after taxon/profile deduplication. If several focal
+  taxa occur in the same profile, that profile can contribute several
+  occurrences to a target-taxon condition chart.
+
+The condition-guild bar charts remove a defined set of broad condition labels
+before display. The exclusion rules remove exact labels such as `Exposure`,
+`Population`, `Physical activity`, `Body fat distribution`, `Health trait`, and
+`Microbiome`; the anaerobe script also removes `Clinical treatment`. Labels
+containing `exposure`, `measurement`, or `population` are also excluded. Labels
+such as `Timepoint`, `Diet`, or `Health study participation` can still appear if
+they are not in the explicit exclusion list, so they should be interpreted as
+metadata-like contexts unless manually reviewed.
+
+## Guild Selection and Parent Hypotheses
+
+The v2 guilds use a priori KG-Microbe oxygen-tolerance traits rather than a
+taxon list, top condition list, or post hoc selected enrichment result. The
+selected traits are recorded in each folder's `guild_trait_selection.tsv`,
+including trait IDs, focus direction, comparator direction, a short selection
+justification, and the number of taxa in `data/derived/taxa_trait_matrix.tsv`
+carrying each selected trait.
+
+The parent hypotheses are kept explicit:
+
+- Aerobe parent focus: aerobe guild score in increased profiles.
+- Anaerobe parent focus: anaerobe guild score in decreased profiles.
+
+The facultative-aerobe v2 guild score is the row-wise mean of three
+oxygen-tolerance trait z-scores:
+
+| trait ID | trait label | KG-Microbe taxa with trait | selection role |
+| --- | --- | ---: | --- |
+| `METPO:1000608` | facultatively aerobic | 1,092 | primary facultative-aerobe concept |
+| `METPO:1000602` | aerobic | 2,146 | oxygen-positive growth trait |
+| `METPO:1000604` | microaerophilic | 1,016 | low-oxygen growth trait kept within oxygen tolerance |
+
+The anaerobe v2 depletion guild score is the row-wise mean of two
+oxygen-tolerance counterpart trait z-scores:
+
+| trait ID | trait label | KG-Microbe taxa with trait | selection role |
+| --- | --- | ---: | --- |
+| `METPO:1000603` | anaerobic | 1,942 | oxygen-tolerance counterpart selected for decreased profiles |
+| `METPO:1000607` | obligately anaerobic | 352 | stricter anaerobe concept, avoiding fermentation metabolism |
+
+Target-taxon panels are audit views, not the guild definition. They use fixed
+NCBI Taxonomy IDs to ask whether named taxa recur in the expected BugSigDB
+direction and condition contexts. Guild-score panels instead summarize selected
+trait-set scores across all taxa contributing to the profile-level trait matrix.
 
 ## Slides 1-5: Facultative-Aerobe v2 Increased-Profile Signal
 
-The facultative-aerobe v2 guild score is the row-wise mean of three selected
-oxygen-tolerance traits in the study-profile matrix: facultatively aerobic
-(`METPO:1000608`), aerobic (`METPO:1000602`), and microaerophilic
-(`METPO:1000604`). Profiles from all body sites are retained, and body-site
-summaries are used to separate gut, oral, airway, and other contexts.
+The v2 facultative-aerobe analysis is generated by
+`scripts/investigate_facultative_aerobe_expansion.py`. It keeps profiles from
+all body sites and then uses condition and body-site summaries to show where the
+increased-profile aerobe signal is concentrated.
 
-The focal taxa are defined a priori by NCBI Taxonomy ID: Parvimonas micra,
-Klebsiella pneumoniae, Streptococcus anginosus, Escherichia coli,
-Fusobacterium nucleatum, Enterocloster bolteae, Eggerthella lenta,
-Prevotella intermedia, Porphyromonas gingivalis, and Veillonella dispar.
-The script writes `candidate_taxa_trait_presence.tsv` as the audit trail for
-their selected guild-trait annotations.
+The fixed focal taxa used only for audit panels are Parvimonas micra
+(`NCBITaxon:33033`), Klebsiella pneumoniae (`NCBITaxon:573`),
+Streptococcus anginosus (`NCBITaxon:1328`), Escherichia coli
+(`NCBITaxon:562`), Fusobacterium nucleatum (`NCBITaxon:851`),
+Enterocloster bolteae (`NCBITaxon:208479`), Eggerthella lenta
+(`NCBITaxon:84112`), Prevotella intermedia (`NCBITaxon:28131`),
+Porphyromonas gingivalis (`NCBITaxon:837`), and Veillonella dispar
+(`NCBITaxon:39778`).
 
-### Slide 1: Target Taxa Increased-Profile Tendency
+### Slide 1: Target Taxa Most Often Reported in Increased Profiles
 
-`candidate_taxa_increased_profile_tendency.png` intersects the fixed focal taxon
-IDs with `taxa_guild_discovery_taxa_metadata.tsv`. For each focal taxon, the
-plotted value is `(increased profile count - decreased profile count) / total
-BugSigDB profile count`. No condition or body-site filter is applied.
+`candidate_taxa_increased_profile_tendency.png` is not a guild-score figure. It
+intersects the fixed focal NCBI Taxonomy IDs with
+`taxa_guild_discovery_taxa_metadata.tsv`. The x-axis is:
 
-### Slide 2: Condition-Level v2 Guild Signal
+`(increased profile count - decreased profile count) / total BugSigDB profile count`
 
-`condition_increased_guild_signal.png` groups study profiles by BugSigDB
-condition label. Groups with fewer than five profiles are excluded. Broad
-metadata labels such as `Exposure`, `Population`, `Physical activity`, and
-labels containing `exposure`, `measurement`, or `population` are removed from
-the displayed condition summary.
+All ten fixed focal taxa are increased-biased in the BugSigDB profile metadata.
+The strongest tendency values are Parvimonas micra (55 increased vs 17
+decreased profiles; tendency 0.528), Klebsiella pneumoniae (64 vs 22; 0.488),
+Streptococcus anginosus (54 vs 19; 0.479), Escherichia coli (185 vs 66; 0.474),
+and Fusobacterium nucleatum (76 vs 28; 0.462). Veillonella dispar is still
+increased-biased but has the smallest tendency among the focal set (67 vs 34;
+0.327).
 
-Displayed conditions have at least three increased profiles, at least two
-studies, positive increased-minus-decreased guild signal, and positive
-increased-profile mean guild z-score, with fallback filtering if needed. Bar
-length is the increased-minus-decreased v2 guild contrast. Right-side labels
-show the paired standardized mean difference (`paired d`) and a two-sided paired
-t-test p-value from matched increased/decreased profiles within the same study
-and experiment. `paired d=NA` means fewer than three matched profile pairs or
-zero variance among paired differences.
+Interpretation: this panel shows recurrence direction for a fixed target-taxon
+audit list. The taxa span gut, oral, airway, and opportunistic/pathobiont
+contexts, so the figure supports a broad increased-profile tendency among
+aerotolerant or facultative taxa but does not by itself identify a single body
+site or disease mechanism.
 
-### Slide 3: v2 Guild Trait Direction Shift
+### Slide 2: Conditions With High Increased-Profile v2 Guild Signal
 
-`guild_trait_direction_shift.png` calculates the mean z-score for each selected
-v2 guild trait in all increased profiles and in all decreased profiles. Bars
-show `increased mean z - decreased mean z`; positive values indicate traits
-higher in increased profiles.
+`condition_increased_guild_signal.png` is a guild-score figure. Study profiles
+from all body sites are grouped by BugSigDB condition label. Groups with fewer
+than five profiles are excluded. Displayed rows require at least three
+increased profiles, at least two studies, positive
+`increased_minus_decreased_guild_z`, and positive
+`increased_mean_guild_z`, after broad metadata-like labels are removed.
 
-### Slide 4: Anatomical Site Summary
+The bar length is the facultative-aerobe v2 guild enrichment contrast:
 
-`anatomical_sites_diagram.png` groups profiles by `body_site_group`, requiring
-at least ten profiles per group and excluding the generic `Other` body-site
-group from the diagram. Bubble and bar length encode profile count. Color
-encodes the mean facultative-aerobe v2 guild z-score among increased profiles
-at that body-site group. Labels are placed on a simplified front-view body
-outline with fixed coordinates for oral, airway, gut, urogenital, and unknown
-contexts.
+`increased mean guild z - decreased mean guild z`
 
-### Slide 5: Target-Taxon Condition Occurrences
+The right-side labels show `paired d`, p-value, and matched-pair count when
+study/experiment-paired increased and decreased profiles are available.
 
-`target_taxa_condition_breakdown_bar.png` loads focal taxon occurrences from
-`data/derived/taxa.tsv`, deduplicates by taxon and study profile, joins the
-scored profile metadata, and counts increased focal taxon-profile occurrences by
-condition after removing broad metadata labels. A condition can contribute
-multiple counts when several focal taxa appear in the same profile, so this is
-an occurrence breakdown rather than a unique-study breakdown.
+The largest displayed condition-label contrasts are lung transplantation
+(contrast 1.213), age-related macular degeneration (1.019; paired d 1.19;
+p=0.00106), multiple myeloma (1.010; paired d 1.26; p=0.0485),
+tuberculosis (0.964), sarcopenia (0.903), graft-versus-host disease (0.870),
+acute graft-versus-host disease (0.782), autism (0.755), stroke (0.753),
+response to allogeneic hematopoietic stem cell transplant (0.720),
+nasopharyngeal squamous cell carcinoma (0.701), and respiratory tract
+infectious disease (0.661).
 
-## Slides 6-10: Gut Anaerobe v2 Depletion
+Interpretation: the condition screen highlights heterogeneous contexts rather
+than one disease. Several labels point to immune disruption, transplantation,
+infection, oncology, airway/oral contexts, neurodevelopmental labels, and
+systemic disease. Because body sites are mixed at this stage, these bars should
+be read as a condition-level screening view for high aerobe-v2 signal, not as
+proof that every listed condition is gut-specific.
 
-The gut anaerobe v2 guild score is the row-wise mean of two oxygen-tolerance
-traits in the study-profile matrix: anaerobic (`METPO:1000603`) and obligately
-anaerobic (`METPO:1000607`). Gut-context profiles are defined by body-site or
-grouped body-site labels matching `feces`, `faeces`, `stool`, `colon`,
-`caecum`, `cecum`, `gut`, `intestin`, or `digestive`.
+### Slide 3: V2 Guild Traits Are Higher in Increased Profiles
 
-The focal taxa are defined a priori by NCBI Taxonomy ID: Faecalibacterium
-prausnitzii, Anaerobutyricum hallii, Lachnospira eligens, Agathobacter rectalis,
-Roseburia intestinalis, Ruminococcus bromii, and Roseburia inulinivorans. The
-script writes `candidate_taxa_trait_presence.tsv` as the audit trail for their
-selected guild-trait annotations.
+`guild_trait_direction_shift.png` is a guild-score figure. It calculates the
+mean z-score for each selected trait in all increased profiles and all decreased
+profiles, then plots:
 
-### Slide 6: Target Taxa Depletion Bias
+`increased profile mean z - decreased profile mean z`
 
-`candidate_taxa_depletion_bias.png` intersects the fixed focal taxon IDs with
-`taxa_guild_discovery_taxa_metadata.tsv`. For each focal taxon, the plotted
-value is `(decreased profile count - increased profile count) / total BugSigDB
-profile count`. No condition or body-site filter is applied.
+The selected trait shifts are all positive: facultatively aerobic (0.127),
+aerobic (0.085), and microaerophilic (0.060). The composite
+`guild_z_mean` shift is 0.091.
 
-### Slide 7: Condition-Level v2 Guild Signal
+Interpretation: the three selected oxygen-tolerance traits move in the same
+direction, with the strongest contribution from the named facultative-aerobe
+trait. This supports the v2 simplification: the parent aerobe story is driven by
+oxygen-tolerance traits rather than a larger mixture of motility, gram stain,
+or nitrate-reduction traits.
 
-`condition_decreased_guild_signal.png` groups gut-context profiles by BugSigDB
-condition label. Groups with fewer than five profiles are excluded, and
-`Clinical treatment` is removed from the displayed condition summary.
+### Slide 4: Anatomical Sites for Increased-Profile Facultative-Aerobe v2 Signal
 
-Displayed conditions have at least three decreased profiles, at least two
-studies, positive decreased-minus-increased guild signal, and positive
-decreased-profile mean guild z-score, with fallback filtering if needed. Bar
-length is the decreased-minus-increased v2 guild contrast. Right-side labels
-show `paired d` and a two-sided paired t-test p-value from matched
-decreased/increased profiles within the same study and experiment.
+`anatomical_sites_diagram.png` is a guild-score figure. Profiles are grouped by
+`body_site_group`, requiring at least 10 profiles per group. The generic `Other`
+body-site group is excluded from the display. Bubble size and adjacent bar
+length encode profile count. Color encodes `increased_mean_guild_z`, the mean
+facultative-aerobe v2 guild score among increased profiles at that body-site
+group. Labels are positioned on a simplified front-view body outline; `unknown`
+is placed off-body because it is missing metadata, not an anatomical location.
 
-### Slide 8: v2 Guild Trait Direction Shift
+The highest increased-profile mean guild z-scores are nasopharynx (0.536; 126
+profiles), saliva (0.383; 638 profiles), mouth (0.296; 170 profiles), and
+subgingival dental plaque (0.219; 211 profiles). Feces has the largest profile
+count (7,595 profiles) but a negative increased-profile mean guild z-score
+(-0.069), while colon is also negative (-0.227).
 
-`guild_trait_direction_shift.png` calculates the mean z-score for each selected
-v2 guild trait in gut-context decreased profiles and gut-context increased
-profiles. Bars show `decreased mean z - increased mean z`; positive values
-indicate traits higher in decreased gut-context profiles.
+Interpretation: the strongest positive facultative-aerobe v2 body-site signal is
+oral/airway-associated rather than lower-gut-associated. Feces and colon remain
+important because they have large sample context and positive
+increased-minus-decreased contrasts, but their focus-direction mean values are
+lower than the oral and nasopharyngeal groups. The body-site slide is therefore
+essential for avoiding over-interpretation of a global condition bar as a gut
+signal.
 
-### Slide 9: Anatomical Site Summary
+### Slide 5: Top Conditions for Increased Target-Taxon Occurrences
 
-`anatomical_sites_diagram.png` groups gut-context profiles by `body_site_group`,
-requiring at least ten profiles per group and excluding the generic `Other`
-body-site group from the diagram. Bubble and bar length encode profile count.
-Color encodes the mean gut anaerobe v2 guild z-score among decreased profiles at
-that body-site group.
+`target_taxa_condition_breakdown_bar.png` is not a guild-score figure. It loads
+target-taxon occurrences from `data/derived/taxa.tsv`, limits them to the fixed
+focal NCBI Taxonomy IDs, deduplicates by taxon and study profile, joins the
+scored profile metadata, removes broad metadata-like condition labels, and
+counts increased target taxon-profile occurrences by condition.
 
-### Slide 10: Target-Taxon Condition Occurrences
+The x-axis unit is target taxon-profile occurrences. It is not unique studies,
+not unique experiments, and not a guild z-score. A single profile can contribute
+multiple occurrences if several focal taxa are observed in that profile.
 
-`target_taxa_condition_breakdown_bar.png` loads focal taxon occurrences from
-`data/derived/taxa.tsv`, deduplicates by taxon and study profile, joins the
-scored profile metadata, filters to gut-context profiles, and counts decreased
-focal taxon-profile occurrences by condition after removing `Clinical
-treatment`. A condition can contribute multiple counts when several focal taxa
-appear in the same profile, so this is an occurrence breakdown rather than a
-unique-study breakdown.
+The largest condition labels after the broad-label filter are colorectal cancer
+(70 increased focal taxon-profile occurrences), type II diabetes mellitus (43),
+chronic periodontitis (18), diet (18), COVID-19 (18), obesity (16), tumor stage
+(15), aging (15), gingivitis (14), smoking behavior (14), periodontitis (13),
+and response to diet (12).
+
+Interpretation: colorectal cancer dominates the fixed target-taxon recurrence
+view, with both gut-associated and oral-associated focal taxa contributing. The
+presence of periodontitis, gingivitis, saliva/oral taxa, diet, tumor stage, and
+metabolic labels reinforces that this audit panel is a recurrence/context view,
+not a formal guild-enrichment result.
+
+## Slides 6-10: Anaerobe v2 Depletion Signal
+
+The v2 anaerobe depletion analysis is generated by
+`scripts/investigate_gut_anaerobe_depletion.py`. In the current workspace the
+PowerPoint source figure folder is `anaerobe-depletion-v2/`. The parent focus
+is deliberately parallel to the aerobe story: it asks whether the anaerobe
+oxygen-tolerance guild score is higher in decreased profiles.
+
+The fixed focal taxa used only for audit panels are Faecalibacterium
+prausnitzii (`NCBITaxon:853`), Anaerobutyricum hallii (`NCBITaxon:39488`),
+Lachnospira eligens (`NCBITaxon:39485`), Agathobacter rectalis
+(`NCBITaxon:39491`), Roseburia intestinalis (`NCBITaxon:166486`),
+Ruminococcus bromii (`NCBITaxon:40518`), and Roseburia inulinivorans
+(`NCBITaxon:360807`).
+
+### Slide 6: Target Taxa Most Often Reported in Decreased Profiles
+
+`candidate_taxa_depletion_bias.png` is not a guild-score figure. It intersects
+the fixed focal NCBI Taxonomy IDs with
+`taxa_guild_discovery_taxa_metadata.tsv`. The x-axis is:
+
+`(decreased profile count - increased profile count) / total BugSigDB profile count`
+
+All seven fixed focal taxa are depletion-biased in the BugSigDB profile
+metadata. The strongest depletion-bias values are Agathobacter rectalis (92
+decreased vs 33 increased profiles; 0.472), Lachnospira eligens (101 vs 39;
+0.443), Roseburia intestinalis (76 vs 31; 0.421), and Roseburia inulinivorans
+(62 vs 29; 0.363). Ruminococcus bromii, Faecalibacterium prausnitzii, and
+Anaerobutyricum hallii are also decreased-biased, with smaller signed values.
+
+Interpretation: the fixed focal anaerobe taxa tend to recur in decreased
+BugSigDB profiles. This supports using them as an audit list for depletion
+contexts, but it does not define the v2 guild score. The formal v2 guild is the
+two-trait oxygen-tolerance score described above.
+
+### Slide 7: Conditions With High Decreased-Profile Anaerobe v2 Guild Signal
+
+`condition_decreased_guild_signal.png` is a guild-score figure. Profiles are
+grouped by BugSigDB condition label across all body sites. Groups with fewer
+than five profiles are excluded. Displayed rows require at least three decreased
+profiles, at least two studies, positive
+`decreased_minus_increased_guild_z`, and positive
+`decreased_mean_guild_z`, after the scripted broad-label filter is applied.
+
+The bar length is the anaerobe v2 guild enrichment contrast:
+
+`decreased mean guild z - increased mean guild z`
+
+The largest displayed contrasts are age-related macular degeneration (1.269;
+paired d 2.10; p=6.53e-06), graft-versus-host disease (1.254), acute
+graft-versus-host disease (1.080), lung transplantation (1.049), timepoint
+(0.946), health study participation (0.847), head and neck carcinoma (0.828),
+acute pancreatitis (0.818), Graves ophthalmopathy (0.818), diarrhea (0.817),
+inflammatory bowel disease (0.813), and autism (0.789).
+
+Interpretation: the strongest anaerobe-v2 condition signals include immune and
+transplant contexts, gastrointestinal/inflammatory labels, cancer labels, and
+some metadata-like labels that warrant manual review. `Timepoint` and `Health
+study participation` are not disease mechanisms; their presence should be read
+as evidence that the condition label field can include study-design context even
+after broad filters. The biological parent story should therefore be anchored in
+the trait direction and body-site summaries, not in condition labels alone.
+
+### Slide 8: V2 Guild Traits Are Higher in Decreased Profiles
+
+`guild_trait_direction_shift.png` is a guild-score figure. It calculates the
+mean z-score for each selected trait in decreased profiles and increased
+profiles, then plots:
+
+`decreased profile mean z - increased profile mean z`
+
+Both selected traits shift in the parent direction: anaerobic (0.077) and
+obligately anaerobic (0.074). The composite `guild_z_mean` shift is 0.075.
+
+Interpretation: the anaerobe v2 score is internally coherent: both
+oxygen-tolerance traits are higher in decreased profiles. This keeps the
+anaerobe comparison parallel to the aerobe v2 comparison and avoids mixing the
+parent depletion hypothesis with fermentation or fiber-degradation traits.
+
+### Slide 9: Anatomical Sites for Decreased-Profile Anaerobe v2 Signal
+
+`anatomical_sites_diagram.png` is a guild-score figure. Profiles are grouped by
+`body_site_group`, requiring at least 10 profiles per group. The generic `Other`
+group is excluded. Bubble size and adjacent bar length encode profile count.
+Color encodes `decreased_mean_guild_z`, the mean anaerobe v2 guild score among
+decreased profiles at each body-site group.
+
+The strongest decreased-profile mean guild z-scores are colon (0.445; 139
+profiles) and feces (0.231; 7,595 profiles). Caecum is closer to neutral (0.100)
+and has a negative decreased-minus-increased contrast. Oral/airway-associated
+groups such as saliva, subgingival dental plaque, nasopharynx, and mouth are
+negative or much weaker for the decreased-profile anaerobe v2 focus.
+
+Interpretation: this slide supports a lower-gut interpretation for the anaerobe
+depletion parent focus. Colon provides the strongest decreased-profile guild
+mean, while feces supplies the largest profile-count context. This body-site
+evidence is more directly aligned with gut anaerobe biology than the mixed
+condition-label screen by itself.
+
+### Slide 10: Top Conditions for Decreased Target-Taxon Occurrences
+
+`target_taxa_condition_breakdown_bar.png` is not a guild-score figure. It uses
+the fixed focal anaerobe taxon list, loads occurrences from `data/derived/taxa.tsv`,
+deduplicates by taxon and study profile, joins profile metadata, removes broad
+metadata-like condition labels, and counts decreased focal taxon-profile
+occurrences by condition.
+
+The x-axis unit is target taxon-profile occurrences. A condition can have a
+large count because many focal taxa recur in the same condition, because the
+condition has many profiles, or both.
+
+The largest labels are aging (59 decreased occurrences), COVID-19 (48),
+Parkinson's disease (47), colorectal cancer (39), type II diabetes mellitus
+(24), inflammatory bowel disease (19), autism spectrum disorder (17), tumor
+stage (17), HIV infection (15), periodontitis (15), obesity (14), multiple
+sclerosis (13), diet (13), colorectal carcinoma (12), and psoriasis vulgaris
+(12).
+
+Interpretation: the fixed focal anaerobe taxa recur as decreased across several
+gut, metabolic, neuro, immune, and infection contexts. This panel is consistent
+with a broad depletion tendency for named lower-gut anaerobes, but it remains an
+audit/recurrence panel and should not be treated as the composite guild signal.
 
 ## Slide 11: Profile Enrichment to Guild Assignment Summary
 
 `profile_enrichment_guild_assignment_summary.png` is generated by
-`scripts/create_profile_enrichment_guild_assignment_diagram.py`, with an SVG
-version written to `profile_enrichment_guild_assignment_summary.svg`. The
-diagram summarizes the shared workflow used by slides 1-10: BugSigDB curated
-profile directions are represented as profile-level trait z-scores, focal
-directions are contrasted against comparator directions within condition or
-body-site groups, and positive trait-level evidence is summarized as named v2
-guild calls.
+`scripts/create_profile_enrichment_guild_assignment_diagram.py`; an SVG version
+is written to `profile_enrichment_guild_assignment_summary.svg`. The slide
+summarizes how BugSigDB curated profile directions become trait-level profile
+z-scores, how focus directions are contrasted against comparator directions,
+and how selected KG-Microbe trait sets become named guild scores.
 
-The diagram reads current investigation table sizes from
-`study_trait_profile_study_metadata.tsv`, the facultative-aerobe v2 candidate
-taxon universe, the two v2 condition guild summary tables, and the two v2
-candidate-taxon trait-presence audit tables. It explicitly distinguishes
-guild-specific panels from taxon-audit panels: condition guild signals,
-guild-trait shifts, and body-site diagrams summarize selected trait-set scores,
-whereas target-taxon direction and condition panels audit fixed focal taxa by
-NCBI ID. The inferred-evidence branch represents the TSV outputs that join
-enriched traits to observed taxa carrying KG-Microbe annotations.
+The top workflow boxes mean:
+
+- `1. Profiles`: the input is the BugSigDB profile set. The current tables
+  contain 12,108 profile rows from 1,924 studies. The `increased` and
+  `decreased` labels are curated BugSigDB direction labels.
+- `2. Trait matrix`: taxon occurrences are aggregated with KG-Microbe trait
+  annotations and represented as standardized profile-level trait z-scores.
+- `3. Enrichment`: within each condition or body-site group, the focus direction
+  is compared with its comparator direction.
+- `4. Evidence`: traits are retained as evidence when the focus-direction
+  z-score is above zero and higher than the comparator.
+- `5. Guild call`: selected trait sets are chosen a priori from KG-Microbe
+  oxygen-tolerance annotations. The selected traits are documented in
+  `guild_trait_selection.tsv` files, including trait IDs, justifications, and
+  KG-Microbe taxon counts.
+
+The middle of the slide is a 2 by 2 direction grid. The rows are guild trait
+sets and the columns are BugSigDB profile directions. The parent cells are
+visually emphasized:
+
+- Red parent cell: aerobe trait set in increased profiles. This is the aerobe
+  parent focus.
+- Blue parent cell: anaerobe trait set in decreased profiles. This is the
+  anaerobe parent focus.
+- Gray off-diagonal cells: guardrail checks. Aerobe score in decreased profiles
+  checks whether the aerobe signal is generally high regardless of direction.
+  Anaerobe score in increased profiles checks whether the anaerobe signal is
+  mixed or reversed.
+
+The summary script also writes `profile_enrichment_guild_direction_grid.tsv`.
+This unified table has one row per `guild`, `profile_direction`, and
+`condition`, with these columns:
+
+- `guild`: `aerobe_v2` or `anaerobe_v2_depletion`.
+- `profile_direction`: `increased` or `decreased`.
+- `condition`: BugSigDB condition-label row.
+- `profile_count`: number of profile rows in that guild/direction/condition
+  cell.
+- `study_count`: number of unique studies in that cell.
+- `mean_guild_z`: mean guild z-score for the cell.
+- `comparator_mean_guild_z`: mean guild z-score for the opposite profile
+  direction within the same guild and condition.
+- `direction_contrast`: `mean_guild_z - comparator_mean_guild_z`.
+- `parent_focus`: `True` for aerobe/increased and anaerobe/decreased cells.
+
+The table currently contains 1,372 rows: 343 condition-label rows for each of
+the four guild-by-direction cells. The diagram labels these as
+`BugSigDB condition-label rows (not experiments)` to avoid confusing the count
+with experiment count, study count, or profile count.
+
+The lower boxes distinguish three interpretation layers:
+
+- `Recurrence audit`: target-taxon recurrence asks how often fixed focal taxa
+  reappear in the focus direction across profiles and studies. It does not
+  define the guild score.
+- `Inferred taxon support`: for each enriched trait, the scripts list observed
+  candidate-universe taxa that carry matching KG-Microbe annotations.
+- `Generated outputs`: the generated table and figure outputs include unified
+  direction-grid TSVs, condition guild signals, body-site diagrams,
+  target-taxon count views, and inferred-evidence TSVs.
+
+Interpretation: slide 11 is the logic diagram for the whole deck. Its main
+message is that the parent hypotheses are trait-set comparisons across profile
+directions, while the target-taxon panels are support/audit views. The
+off-diagonal cells should stay in the analysis because they test whether the
+parent signal is direction-specific or simply high in both directions.
+
+## Inferred Guild Evidence Outputs
+
+Both v2 folders write inferred-evidence TSVs that connect enriched traits back
+to observed taxa carrying KG-Microbe annotations:
+
+- `kg_microbe_candidate_taxon_universe.tsv`
+- `condition_inferred_guild_summary.tsv`
+- `condition_inferred_guild_trait_evidence.tsv`
+- `condition_inferred_guild_taxa_evidence.tsv`
+
+For the facultative-aerobe v2 folder, the candidate universe includes taxa with
+at least one of the selected core traits: facultatively aerobic, aerobic, or
+microaerophilic. For the anaerobe v2 depletion folder, the candidate universe
+includes taxa with at least one of the selected core traits: anaerobic or
+obligately anaerobic.
+
+For each top condition signal, the scripts identify selected guild traits whose
+focus-direction z-score is above zero and whose focus-minus-comparator contrast
+is positive. They then intersect the KG-Microbe-wide candidate universe with
+taxa actually observed in the focus-direction profiles for that condition. The
+resulting evidence tables report enriched traits and supporting observed taxa.
+This provides data-derived support for the trait signal without redefining the
+formal guild as the fixed focal taxon list.
+
+## Appendix: Additional Folder Methods and Non-PowerPoint Figures
+
+The older exploratory folders are not the current 11-slide PowerPoint source,
+but their methods files are still useful because they document broader guilds
+that preceded the v2 oxygen-tolerance-only comparison.
+
+### `facultative-aerobe-trait-expansion/`
+
+This exploratory folder used a broader facultative-aerobe guild score: the
+row-wise mean of facultatively aerobic, aerobic, gram negative, motile,
+microaerophilic, and nitrate_reduction trait z-scores. Its figures use the same
+BugSigDB profile metadata, target taxa, and direction labels as the v2
+facultative-aerobe folder, but the score mixes oxygen tolerance with envelope,
+motility, and respiration-associated traits.
+
+Key figure interpretations from that folder:
+
+- `candidate_taxa_increased_profile_tendency.png`: all fixed focal taxa have
+  positive increased-profile tendency, with Parvimonas micra, Klebsiella
+  pneumoniae, Streptococcus anginosus, Escherichia coli, and Fusobacterium
+  nucleatum among the strongest.
+- `condition_increased_guild_signal.png`: prominent condition labels included
+  lung transplantation, female infertility, multiple myeloma, tuberculosis,
+  autism, graft-versus-host disease, colorectal carcinoma, and vulvovaginitis.
+  The mixed labels were interpreted as a condition-screening view rather than a
+  gut-specific claim.
+- `guild_trait_direction_shift.png`: all six selected exploratory traits shifted
+  upward in increased profiles, with the largest shifts for facultatively
+  aerobic and aerobic traits.
+- `anatomical_sites_diagram.png`: oral and airway labels such as nasopharynx,
+  saliva, subgingival dental plaque, and mouth dominated the positive signal.
+- `target_taxa_condition_breakdown_bar.png`: colorectal cancer was the dominant
+  target-taxon recurrence label, with additional COVID-19, type II diabetes
+  mellitus, Parkinson's disease, smoking behavior, rheumatoid arthritis, and
+  oral plaque contexts.
+- `autism_autoimmune_taxa_signed_heatmap.png`: the follow-up heatmap counted
+  increased minus decreased target-taxon occurrences for Autism, Autism spectrum
+  disorder, and Autoimmune disease profiles. It showed label-specific
+  heterogeneity and should not be collapsed across those related labels without
+  checking direction balance.
+
+### `gut-anaerobe-fermentation-depletion/`
+
+This exploratory folder used a broader gut anaerobe/fermentation guild score:
+the row-wise mean of anaerobic, obligately anaerobic, Fermentation, cellulose
+catabolic process, and xylan catabolic process trait z-scores. Gut-context
+profiles were defined by body-site or grouped body-site labels matching terms
+such as feces, faeces, stool, colon, caecum, cecum, gut, intestine, or
+digestive. The current v2 anaerobe deck narrows this to oxygen-tolerance traits
+only so that the aerobe/increased and anaerobe/decreased comparison is more
+parallel.
+
+Key figure interpretations from that folder:
+
+- `candidate_taxa_depletion_bias.png`: all focal gut anaerobe candidates were
+  depletion-biased, with Agathobacter rectalis, Lachnospira eligens, Roseburia
+  intestinalis, and Roseburia inulinivorans among the strongest.
+- `condition_decreased_guild_signal.png`: leading labels included colorectal
+  carcinoma, graft-versus-host disease, dysmenorrhea, acute graft-versus-host
+  disease, spinal cord injury, diarrhea, prediabetes syndrome, and response to
+  allogeneic hematopoietic stem cell transplant.
+- `guild_trait_direction_shift.png`: all five selected traits were higher in
+  decreased profiles, with cellulose and xylan catabolic processes showing the
+  largest shifts. This is why the broader exploratory guild should be described
+  as anaerobe/fermentation rather than oxygen tolerance alone.
+- `anatomical_sites_diagram.png`: colon, feces, and caecum were the main
+  anatomical labels, supporting a lower-gut depletion interpretation.
+- `target_taxa_condition_breakdown_bar.png`: Parkinson's disease, COVID-19, and
+  colorectal cancer dominated recurrent focal-taxon depletion labels.
 
 ## Interpretation Guardrails
 
-- The guild-score panels summarize profile-level trait z-scores, not new
-  differential-abundance estimates.
-- The target-taxon panels are audit and recurrence views for fixed taxon lists;
-  they should not be interpreted as recomputed guild enrichment.
-- Body-site panels are essential for interpretation because oxygen-tolerance
-  signals can be driven by oral or airway ecology, while gut anaerobe depletion
-  is restricted to gut-context profiles.
-- Broad BugSigDB labels can represent study design, timepoint, exposure, or
-  measurement metadata rather than disease mechanisms; the displayed condition
-  charts remove some broad labels but still require label-level review.
+These guardrails apply to all slides:
+
+- Guild-score figures summarize profile-level trait z-scores, not new
+  differential-abundance estimates from raw sequencing data.
+- Target-taxon direction and condition panels are audit views for fixed focal
+  NCBI Taxonomy IDs. They should not be interpreted as recomputed guild
+  enrichment.
+- Condition-label rows are BugSigDB label rows after filtering. They are not
+  experiments, and they can include metadata-like labels.
+- Body-site panels are required context because oxygen-tolerance signals can be
+  driven by oral, airway, lower-gut, urogenital, unknown, or mixed body-site
+  profiles.
+- The v2 parent comparison is intentionally simple: aerobe score in increased
+  profiles and anaerobe score in decreased profiles. Off-diagonal cells are
+  guardrails for direction specificity.
+- KG-Microbe grounding means the selected trait IDs are connected back to taxa
+  carrying those annotations in `data/derived/taxa_trait_matrix.tsv`; it does
+  not mean every observed profile taxon is experimentally validated in the same
+  study.

@@ -227,16 +227,23 @@ The presentation
 `trait-profile-investigation/trait_profile_investigation_figures.pptx` contains
 the current eleven-panel v2 figure slideshow. Slides 1-5 use
 `trait-profile-investigation/facultative-aerobe-v2/`, slides 6-10 use
-`trait-profile-investigation/gut-anaerobe-v2/`, and slide 11 is the summary
-diagram `trait-profile-investigation/profile_enrichment_guild_assignment_summary.png`.
+`trait-profile-investigation/anaerobe-depletion-v2/`, regenerated as an
+all-body-site anaerobe depletion analysis, and slide 11 is the summary diagram
+`trait-profile-investigation/profile_enrichment_guild_assignment_summary.png`.
 
 The slide-specific methods text for that deck is
 `trait-profile-investigation/figure_methods.md`. It maps each slide to its PNG,
 states whether the panel is guild-specific, and describes the exact filters,
 scores, direction-count formulas, and occurrence-count rules used for the
 presentation figures. It also documents how the summary diagram connects profile
-enrichment, selected trait-set guild scores, inferred evidence, and fixed
-target-taxon audit panels.
+enrichment, selected trait-set guild scores, inferred evidence, fixed
+target-taxon audit panels, and the 2x2 guild-by-direction grid where
+aerobe/increased and anaerobe/decreased are the parent cells while the
+off-diagonal cells are guardrails.
+
+Regenerate the current v2 investigation outputs with
+`just trait-profile-investigation`, which runs
+`scripts/regenerate_trait_profile_investigation.py`.
 
 ### Legacy Facultative-Aerobe Increased-Profile Signal
 
