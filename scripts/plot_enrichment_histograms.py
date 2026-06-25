@@ -36,16 +36,11 @@ def parse_args():
 def main():
     args = parse_args()
     
-    # Load universe to get all possible profiles and traits (not needed for non-zero plots, but kept for context)
-    print(f"Loading universe metadata from {args.universe}...")
-    universe_header = pd.read_csv(args.universe, sep="\t", nrows=0)
-    all_traits_in_universe = [col for col in universe_header.columns if col not in {"study_id", "experiment_id", "inc_dec"}]
-    
-    universe_df = pd.read_csv(args.universe, sep="\t", usecols=["study_id", "experiment_id", "inc_dec"])
-    all_profiles_in_universe = (universe_df["study_id"] + "|" + universe_df["experiment_id"] + "|" + universe_df["inc_dec"]).unique()
-    
     # Load enrichment results
     print(f"Loading enrichment results from {args.results}...")
+    if not args.results.exists():
+        print(f"Error: Results file {args.results} not found.")
+        return
     results_df = pd.read_csv(args.results, sep="\t")
     
     # 1. Y-Axis: Profile Depth (How many traits are enriched in each profile?)
@@ -135,7 +130,7 @@ def main():
     plt.savefig(profile_plot_path, dpi=300, bbox_inches="tight")
     print(f"Wrote stacked profile plot to {profile_plot_path}")
     plt.close()
-
+    
     # Trait Frequency Plot (X-Axis)
     plt.figure(figsize=(12, 7))
     bin_labels_x = [f"{int(bins_x[i])}-{int(bins_x[i+1])}" for i in range(len(bins_x)-1)]
@@ -164,10 +159,11 @@ def main():
     plt.savefig(trait_plot_path, dpi=300, bbox_inches="tight")
     print(f"Wrote stacked trait plot to {trait_plot_path}")
     plt.close()
-
+    
     # Save summary counts
     active_traits.to_csv(args.output_dir / "trait_enrichment_counts_stacked.tsv", sep="\t")
     active_profiles.to_csv(args.output_dir / "profile_enrichment_counts_stacked.tsv", sep="\t")
 
 if __name__ == "__main__":
     main()
+

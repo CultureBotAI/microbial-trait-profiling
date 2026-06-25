@@ -499,7 +499,13 @@ def save_heatmap(matrix: pd.DataFrame, profile_meta: pd.DataFrame, output_path: 
 
     if show_row_labels:
         # Build richer row labels including disease and anatomy when available.
-        new_labels = [_format_profile_label(r) for _, r in profile_meta.iterrows()]
+        # We MUST use the reordered indices if clustering occurred to ensure labels match rows.
+        reordered_indices = (
+            cluster.dendrogram_row.reordered_ind if row_cluster else range(len(matrix))
+        )
+        reordered_meta = profile_meta.iloc[reordered_indices]
+        new_labels = [_format_profile_label(r) for _, r in reordered_meta.iterrows()]
+
         cluster.ax_heatmap.set_yticklabels(new_labels)
         # Move y-axis tick labels to the right side of the heatmap
         cluster.ax_heatmap.yaxis.tick_right()

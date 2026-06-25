@@ -2,34 +2,51 @@
 Trait ID                                 Enrichment Count     Description
 ----------------------------------------------------------------------------------------------------
 METPO:1000603                            4619                 anaerobic
-METPO:2000517|mediadive.medium:J14       4214                 grows in
-METPO:2000517|mediadive.medium:104       3769                 grows in
-METPO:2000517|mediadive.medium:693       3582                 grows in
+METPO:2000517|mediadive.medium:J14       4214                 Grows in: EG MEDIUM
+METPO:2000517|mediadive.medium:104       3769                 Grows in: PYG MEDIUM MODIFIED
+METPO:2000517|mediadive.medium:693       3582                 Grows in: COLUMBIA BLOOD MEDIUM
 METPO:1000615                            3323                 mesophilic
-METPO:2000517|mediadive.medium:78        3213                 grows in
+METPO:2000517|mediadive.medium:78        3213                 Grows in: CHOPPED MEAT MEDIUM
 METPO:1000607                            3132                 obligately anaerobic
 METPO:1000698                            3107                 gram positive
 METPO:1000699                            3057                 gram negative
 METPO:1000703                            3037                 non motile
 
 
-=== TOP 10 PROFILES WITH MOST ENRICHED TRAITS ===
-Profile ID                                                                       Count      Condition                      Body Site
---------------------------------------------------------------------------------------------------------------------------------------------
-bsdb:33485388|bsdb:33485388-1|dec                                                224        Seasonality measurement        Feces
-bsdb:40460079|bsdb:40460079-4|inc                                                210        Age                            Feces
-bsdb:40257273|bsdb:40257273-2|inc                                                210        High altitude adaptation       Feces
-bsdb:40026814|bsdb:40026814-4|inc                                                196        Chronic constipation           Feces
-bsdb:38319728|bsdb:38319728-2|dec                                                196        Response to transplant         Feces
-bsdb:38763328|bsdb:38763328-7|dec                                                189        Stimulus or stress design      Feces
-bsdb:36081798|bsdb:36081798-2|inc                                                182        Diabetic retinopathy           Feces
-bsdb:39438708|bsdb:39438708-1|inc                                                179        Thalassemia                    Feces
-bsdb:38424099|bsdb:38424099-4|dec                                                174        Diet                           Feces
-bsdb:29625474|bsdb:29625474-1|dec                                                169        Anterior uveitis               Feces
+=== TOP 10 CONDITIONS BY AVERAGE ENRICHMENT DEPTH ===
+Condition                                Avg Total       Avg Inc         Avg Dec
+----------------------------------------------------------------------------------------------------
+Thalassemia                              225.00          142.50          82.50
+Sleep Disorder                           216.00          152.00          64.00
+Head and neck squamous cell carcinoma    210.33          105.00          105.33
+Hepatitis                                204.00          69.00           135.00
+Chronic inflammatory demyelinating polyneuropathy 196.00          102.00          94.00
+Temporomandibular joint disorder         195.00          98.00           97.00
+Abnormal sperm morphology                192.00          153.00          39.00
+Cervix erosion                           192.00          101.00          91.00
+Lichen planopilaris                      189.50          154.00          35.50
+Environmental samples                    186.00          86.00           100.00
+
+
+=== TOP 10 BODY SITES BY ENRICHMENT DENSITY (Normalized by Sample Size) ===
+Note: Sites with missing sample size data are excluded from density normalization.
+Body Site                                Hits/100 Samples     Total Hits      Total Samples
+----------------------------------------------------------------------------------------------------
+Mucus,Exoskeleton                        716.67               86              12
+Tadpole                                  687.50               110             16
+Meconium,Feces                           614.71               418             68
+Mesenteric lymph node                    492.31               128             26
+Saliva,Dental plaque                     446.88               143             32
+Mucosa of oral region,Mucosa of oropharynx 418.42               159             38
+Surface of tongue                        393.36               1007            256
+Skin of abdomen                          390.00               390             100
+Venous blood                             375.00               75              20
+Large intestine                          373.08               97              26
 
 
 === SCIENTIFIC FINDINGS SUMMARY ===
 Total Enriched Traits across all profiles: 338,888
+Functional scope: 2,651 distinct metabolic/physiological traits analyzed.
 Average enrichment count per profile (active only): 31.27
-Top Body Site by Total Enrichment: Feces (207610 hits)
+Top Body Site by Enrichment Density: Mucus,Exoskeleton (716.67 hits/100 samples)
 Directionality Bias: More traits found in 'Increased' profiles (172,007 inc vs 147,443 dec).

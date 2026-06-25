@@ -6,6 +6,21 @@ from pathlib import Path
 import numpy as np
 import re
 
+def shorten_grows_in(desc):
+    """Shortens long 'grows in' medium labels for presentation."""
+    if "grows in:" in str(desc):
+        # Extract medium name: "grows in: EG MEDIUM mediadive.medium:J14" -> "Grows in: EG"
+        # Often looks like: "grows in: [NAME] [ID] [SOURCE]"
+        match = re.search(r"grows in:\s*(.*?)(?:\s+mediadive\.medium:|\s+DSMZ Medium|$)", str(desc))
+        if match:
+            clean_name = match.group(1).strip()
+            # If it's too long, take the first 2-3 words
+            words = clean_name.split()
+            if len(words) > 3:
+                clean_name = " ".join(words[:3])
+            return f"Grows in: {clean_name}"
+    return desc
+
 def main():
     # Paths
     trait_counts_path = Path("bsdbng/data/derived/trait_enrichment_counts.tsv")
@@ -13,6 +28,7 @@ def main():
     mapping_path = Path("metpo_phenotype_mapping.tsv")
     matrix_path = Path("bsdbng/data/derived/trait_enrichment_clustered_heatmap_matrix.tsv")
     experiments_path = Path("bsdbng/data/raw/experiments.csv")
+    trait_meta_path = Path("bsdbng/data/derived/taxa_trait_matrix_columns.tsv")
     output_text_path = Path("bsdbng/data/derived/enrichment_summary_top10.txt")
     output_img_path = Path("bsdbng/data/derived/enrichment_infographic.png")
 
@@ -20,7 +36,18 @@ def main():
     print("Loading data...")
     trait_counts = pd.read_csv(trait_counts_path, sep="\t")
     profile_counts = pd.read_csv(profile_counts_path, sep="\t")
-    mapping = pd.read_csv(mapping_path, sep="\t").set_index("METPO_ID")["Description"].to_dict()
+    
+    # Load phenotype mapping
+    mapping = {}
+    if mapping_path.exists():
+        mapping = pd.read_csv(mapping_path, sep="\t").set_index("METPO_ID")["Description"].to_dict()
+    
+    # Load more detailed trait mapping from matrix columns
+    if trait_meta_path.exists():
+        print("Enriching trait labels from matrix columns...")
+        trait_meta = pd.read_csv(trait_meta_path, sep="\t")
+        for _, row in trait_meta.iterrows():
+            mapping[row['column_id']] = row['column_label']
     
     # Load basic metadata from matrix
     matrix_meta = pd.read_csv(matrix_path, sep="\t", usecols=["profile_id", "study_id", "experiment_id", "inc_dec"])
@@ -38,34 +65,68 @@ def main():
         exdf['exp_num'] = exdf['Experiment page name'].str.extract(r'(\d+)', expand=False)
         exdf['exp_key'] = exdf['study_key'] + "-" + exdf['exp_num'].fillna("1")
         
+        # Extract sample sizes and compute total
+        exdf['sample_size_0'] = pd.to_numeric(exdf['Group 0 sample size'], errors='coerce').fillna(0)
+        exdf['sample_size_1'] = pd.to_numeric(exdf['Group 1 sample size'], errors='coerce').fillna(0)
+        exdf['total_samples'] = exdf['sample_size_0'] + exdf['sample_size_1']
+        
         # Keep only one row per experiment key to avoid non-unique index error
         exdf_unique = exdf.drop_duplicates(subset='exp_key')
-        lookup = exdf_unique.set_index('exp_key')[['Body site', 'Condition']].to_dict('index')
+        lookup = exdf_unique.set_index('exp_key')[['Body site', 'Condition', 'total_samples']].to_dict('index')
         
         matrix_meta['body_site'] = matrix_meta['experiment_id'].map(lambda x: lookup.get(x, {}).get('Body site', 'Unknown'))
         matrix_meta['condition'] = matrix_meta['experiment_id'].map(lambda x: lookup.get(x, {}).get('Condition', 'Unknown'))
+        matrix_meta['total_samples'] = matrix_meta['experiment_id'].map(lambda x: lookup.get(x, {}).get('total_samples', 0))
     else:
         print("experiments.csv not found, using 'Unknown' for metadata.")
         matrix_meta['body_site'] = "Unknown"
         matrix_meta['condition'] = "Unknown"
+        matrix_meta['total_samples'] = 0
 
     matrix_meta = matrix_meta.set_index("profile_id")
 
     # 2. Top 10 Traits
     top_traits = trait_counts.sort_values("enrichment_count", ascending=False).head(10).copy()
-    top_traits["description"] = top_traits["trait"].map(lambda x: mapping.get(x.split("|")[0], x))
+    # Use full mapping or fallback to base METPO ID mapping
+    top_traits["description"] = top_traits["trait"].map(lambda x: mapping.get(x, mapping.get(x.split("|")[0], x)))
+    # Clean up long labels (remove [METPO:...] and ID suffixes)
+    top_traits["description"] = top_traits["description"].apply(lambda x: str(x).split(" [METPO")[0] if " [METPO" in str(x) else x)
+    top_traits["description"] = top_traits["description"].apply(lambda x: str(x).split(" METPO:")[0] if " METPO:" in str(x) else x)
+    # Presentation-ready shortening for grows in
+    top_traits["description"] = top_traits["description"].apply(shorten_grows_in)
     
-    # 3. Top 10 Profiles
-    top_profiles = profile_counts.sort_values("enrichment_count", ascending=False).head(10).copy()
-    top_profiles = top_profiles.join(matrix_meta, on="profile_id")
+    # 3. Robust Condition-Level Analysis (Panel B)
+    full_profile_data = profile_counts.join(matrix_meta, on="profile_id")
+    full_profile_data['condition'] = full_profile_data['condition'].fillna("Unknown")
+    full_profile_data['body_site'] = full_profile_data['body_site'].fillna("Unknown")
+    full_profile_data['total_samples'] = full_profile_data['total_samples'].fillna(0)
 
-    # 4. Additional Finding: Body Site Distribution
-    all_profile_activity = profile_counts[profile_counts["enrichment_count"] > 0].join(matrix_meta, on="profile_id")
-    # Clean body site names for the pie chart
-    all_profile_activity['body_site'] = all_profile_activity['body_site'].fillna("Unknown")
-    body_site_activity = all_profile_activity.groupby("body_site")["enrichment_count"].sum().sort_values(ascending=False)
+    condition_stats = full_profile_data.groupby(["condition", "inc_dec"])["enrichment_count"].agg(['sum', 'count']).reset_index()
+    condition_stats['avg_enrichment'] = condition_stats['sum'] / condition_stats['count']
     
-    # 5. Additional Finding: Directionality Bias
+    cond_pivot = condition_stats.pivot(index='condition', columns='inc_dec', values='avg_enrichment').fillna(0)
+    cond_pivot['total_avg'] = cond_pivot.sum(axis=1)
+    top_conditions_avg = cond_pivot.sort_values("total_avg", ascending=False).head(10)
+
+    # 4. Normalized Body Site Analysis (Panel C)
+    # Filter for sites with valid sample size data for meaningful normalization
+    valid_site_data = full_profile_data[full_profile_data['total_samples'] > 0].copy()
+    
+    if not valid_site_data.empty:
+        site_stats = valid_site_data.groupby("body_site").agg({
+            "enrichment_count": "sum",
+            "total_samples": "sum",
+            "profile_id": "count"
+        }).reset_index()
+        
+        # Calculate density per 100 samples
+        site_stats['density'] = (site_stats['enrichment_count'] / site_stats['total_samples']) * 100
+        body_site_density = site_stats.sort_values("density", ascending=False)
+    else:
+        body_site_density = pd.DataFrame(columns=['body_site', 'enrichment_count', 'total_samples', 'density'])
+    
+    # 5. Additional Finding: Directionality Bias (Total hits)
+    all_profile_activity = full_profile_data[full_profile_data["enrichment_count"] > 0]
     direction_activity = all_profile_activity.groupby("inc_dec")["enrichment_count"].sum()
 
     # 6. Write Text File
@@ -77,21 +138,29 @@ def main():
         for _, row in top_traits.iterrows():
             f.write(f"{row['trait']:<40} {row['enrichment_count']:<20} {row['description']}\n")
         
-        f.write("\n\n=== TOP 10 PROFILES WITH MOST ENRICHED TRAITS ===\n")
-        f.write(f"{'Profile ID':<80} {'Count':<10} {'Condition':<30} {'Body Site'}\n")
-        f.write("-" * 140 + "\n")
-        for _, row in top_profiles.iterrows():
-            cond = str(row['condition'])[:28]
-            site = str(row['body_site'])
-            f.write(f"{row['profile_id']:<80} {row['enrichment_count']:<10} {cond:<30} {site}\n")
+        f.write("\n\n=== TOP 10 CONDITIONS BY AVERAGE ENRICHMENT DEPTH ===\n")
+        f.write(f"{'Condition':<40} {'Avg Total':<15} {'Avg Inc':<15} {'Avg Dec'}\n")
+        f.write("-" * 100 + "\n")
+        for cond, row in top_conditions_avg.iterrows():
+            inc = row.get('inc', 0)
+            dec = row.get('dec', 0)
+            f.write(f"{str(cond):<40} {row['total_avg']:<15.2f} {inc:<15.2f} {dec:.2f}\n")
             
+        f.write("\n\n=== TOP 10 BODY SITES BY ENRICHMENT DENSITY (Normalized by Sample Size) ===\n")
+        f.write("Note: Sites with missing sample size data are excluded from density normalization.\n")
+        f.write(f"{'Body Site':<40} {'Hits/100 Samples':<20} {'Total Hits':<15} {'Total Samples'}\n")
+        f.write("-" * 100 + "\n")
+        for _, row in body_site_density.head(10).iterrows():
+            f.write(f"{str(row['body_site']):<40} {row['density']:<20.2f} {row['enrichment_count']:<15.0f} {row['total_samples']:.0f}\n")
+
         f.write("\n\n=== SCIENTIFIC FINDINGS SUMMARY ===\n")
         f.write(f"Total Enriched Traits across all profiles: {trait_counts['enrichment_count'].sum():,}\n")
+        f.write(f"Functional scope: {len(trait_counts):,} distinct metabolic/physiological traits analyzed.\n")
         if not all_profile_activity.empty:
             f.write(f"Average enrichment count per profile (active only): {all_profile_activity['enrichment_count'].mean():.2f}\n")
         
-        if not body_site_activity.empty:
-            f.write(f"Top Body Site by Total Enrichment: {body_site_activity.index[0]} ({body_site_activity.iloc[0]} hits)\n")
+        if not body_site_density.empty:
+            f.write(f"Top Body Site by Enrichment Density: {body_site_density.iloc[0]['body_site']} ({body_site_density.iloc[0]['density']:.2f} hits/100 samples)\n")
         
         bias_inc = direction_activity.get("inc", 0)
         bias_dec = direction_activity.get("dec", 0)
@@ -101,60 +170,218 @@ def main():
     # 7. Generate Infographic
     print(f"Generating infographic to {output_img_path}...")
     plt.style.use('seaborn-v0_8-whitegrid')
-    fig = plt.figure(figsize=(16, 12))
-    gs = fig.add_gridspec(2, 2, hspace=0.4, wspace=0.3)
+    fig = plt.figure(figsize=(20, 15))
+    gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.35)
 
-    # Panel A: Top 10 Traits
+    # Panel A: Top 10 Traits (Shortened Labels)
     ax1 = fig.add_subplot(gs[0, 0])
     sns.barplot(data=top_traits, x="enrichment_count", y="description", hue="description", palette="viridis", ax=ax1, legend=False)
-    ax1.set_title("A. Top 10 Most Enriched Traits", fontsize=14, fontweight='bold')
+    ax1.set_title("A. Top Enriched Traits", fontsize=16, fontweight='bold')
     ax1.set_xlabel("Number of Profiles Enriched In")
     ax1.set_ylabel("")
 
-    # Panel B: Top 10 Profiles
+    # Panel B: Condition Average Enrichment (Stacked & Visible)
     ax2 = fig.add_subplot(gs[0, 1])
-    top_profiles["short_label"] = top_profiles.apply(
-        lambda r: f"{str(r['condition'])[:15]}... ({str(r['study_id']).split(':')[-1]})", axis=1
-    )
-    sns.barplot(data=top_profiles, x="enrichment_count", y="short_label", hue="short_label", palette="magma", ax=ax2, legend=False)
-    ax2.set_title("B. Profiles with Highest Enrichment Depth", fontsize=14, fontweight='bold')
-    ax2.set_xlabel("Number of Enriched Traits")
+    plot_data_b = top_conditions_avg.drop(columns='total_avg').copy()
+    plot_data_b.index = [str(i)[:25] for i in plot_data_b.index]
+    # Show highest total average at the top
+    plot_data_b = plot_data_b.iloc[::-1]
+    plot_data_b.plot(kind='barh', stacked=True, color=['#e74c3c', '#3498db'], ax=ax2, alpha=0.8)
+    
+    # Add value labels for better visibility
+    for i, (idx, row) in enumerate(plot_data_b.iterrows()):
+        total = row.sum()
+        if total > 0:
+            ax2.text(total + 2, i, f"{total:.1f}", va='center', fontsize=10, fontweight='bold')
+            
+    ax2.set_title("B. Avg Enriched Traits per Condition", fontsize=16, fontweight='bold')
+    ax2.set_xlabel("Average Number of Enriched Traits")
     ax2.set_ylabel("")
+    ax2.legend(["Decreased", "Increased"], loc="center left", bbox_to_anchor=(1, 0.5), title="Taxonomic Signature")
 
-    # Panel C: Body Site Distribution
+    # Panel C: Anatomical Representation
     ax3 = fig.add_subplot(gs[1, 0])
-    if not body_site_activity.empty:
-        plot_sites = body_site_activity.head(8)
-        ax3.pie(plot_sites, labels=plot_sites.index, autopct='%1.1f%%', colors=sns.color_palette("pastel"), startangle=140)
-        ax3.set_title("C. Enrichment Activity by Body Site", fontsize=14, fontweight='bold')
+    ax3.axis('off')
+    
+    if not body_site_density.empty:
+        # Define relative coordinates (0-1) for body sites
+        # Exact-match coordinates for the actual compound body site names in the data.
+        # Sites on the left (x < 0.5) get left-margin labels; right (x >= 0.5) get right-margin labels.
+        # Fallback substring keys (shorter strings) are listed last so exact matches win first.
+        site_coords = {
+            # Head / oral region — spread across right side of head outline
+            'Nasopharynx,Oropharynx': (0.55, 0.96),
+            'Mucosa of oral region,Mucosa of oropharynx': (0.57, 0.93),
+            'Surface of tongue': (0.56, 0.90),
+            'Saliva,Dental plaque': (0.54, 0.87),
+            'Subgingival dental plaque,Saliva': (0.56, 0.84),
+            'Saliva,Supragingival dental plaque,Buccal mucosa,Tongue': (0.54, 0.81),
+            # Gut / lower torso — left side
+            'Meconium,Feces': (0.48, 0.35),
+            'Mesenteric lymph node': (0.38, 0.42),
+            'Large intestine': (0.42, 0.47),
+            'Jejunum': (0.44, 0.50),
+            'Ileum,Jejunum': (0.46, 0.53),
+            'Mucosa of ascending colon': (0.42, 0.44),
+            # Skin / external — left arm / side
+            'Skin of abdomen': (0.22, 0.62),
+            'Anatomical surface': (0.2, 0.58),
+            'Body external integument structure': (0.2, 0.54),
+            'Bulbar conjunctiva': (0.22, 0.72),
+            'Pinna': (0.22, 0.76),
+            # Blood / systemic — left torso
+            'Venous blood': (0.32, 0.55),
+            # Exoskeleton / mucus — right arm
+            'Mucus,Exoskeleton': (0.78, 0.65),
+            # Tadpole — lower left (non-human host)
+            'Tadpole': (0.22, 0.32),
+        }
+        
+        # Draw improved body outline
+        t = np.linspace(0, 2*np.pi, 100)
+        # Head
+        ax3.plot(0.5 + 0.07*np.cos(t), 0.9 + 0.07*np.sin(t), color='lightgray', lw=1.5, alpha=0.6)
+        # Torso
+        ax3.plot([0.38, 0.62, 0.65, 0.6, 0.4, 0.35, 0.38], [0.8, 0.8, 0.3, 0.25, 0.25, 0.3, 0.8], color='lightgray', lw=1.5, alpha=0.6)
+        # Legs
+        ax3.plot([0.4, 0.37, 0.45, 0.48], [0.25, 0.05, 0.05, 0.25], color='lightgray', lw=1.5, alpha=0.6)
+        ax3.plot([0.6, 0.63, 0.55, 0.52], [0.25, 0.05, 0.05, 0.25], color='lightgray', lw=1.5, alpha=0.6)
+        # Arms
+        ax3.plot([0.38, 0.22, 0.25, 0.38], [0.8, 0.6, 0.58, 0.78], color='lightgray', lw=1.5, alpha=0.6)
+        ax3.plot([0.62, 0.78, 0.75, 0.62], [0.8, 0.6, 0.58, 0.78], color='lightgray', lw=1.5, alpha=0.6)
+
+        plot_sites = body_site_density.head(8).copy()
+        max_d = plot_sites['density'].max()
+        cmap = plt.get_cmap('YlOrRd')
+        
+        # Prepare data for plotting and labeling.
+        # Lookup order: exact match first, then substring fallback.
+        ready_to_plot = []
+        for _, row in plot_sites.iterrows():
+            site = str(row['body_site'])
+            site_lower = site.lower()
+            coord = None
+            # 1. Exact match
+            if site in site_coords:
+                coord = site_coords[site]
+            else:
+                # 2. Substring fallback: prefer longer keys (more specific) first
+                for key in sorted(site_coords, key=len, reverse=True):
+                    if key.lower() in site_lower:
+                        coord = site_coords[key]
+                        break
+            if coord:
+                ready_to_plot.append({
+                    'name': site,
+                    'x': coord[0],
+                    'y': coord[1],
+                    'density': row['density']
+                })
+
+        # Draw Bubbles first (so leader lines render on top)
+        for item in ready_to_plot:
+            radius = (item['density'] / max_d) * 0.05 + 0.015
+            color = cmap(item['density'] / max_d)
+            # Sharper edge (lw=1.5) and lower alpha so overlapping bubbles
+            # remain visually distinct rather than merging into one blob.
+            circle = plt.Circle(
+                (item['x'], item['y']), radius,
+                color=color, alpha=0.6, ec='black', lw=1.5, zorder=3
+            )
+            ax3.add_patch(circle)
+            item['radius'] = radius
+
+        # De-conflict Labels with Callout Lines
+        # Separate into left (x < 0.5) and right (x >= 0.5) sides so labels
+        # are anchored in the clear margins on each side of the body outline.
+        left_side = [i for i in ready_to_plot if i['x'] < 0.5]
+        right_side = [i for i in ready_to_plot if i['x'] >= 0.5]
+
+        # Sort each side top-to-bottom so the vertical spacing algorithm
+        # processes labels in the order they appear on the figure.
+        left_side.sort(key=lambda item: item['y'], reverse=True)
+        right_side.sort(key=lambda item: item['y'], reverse=True)
+
+        def place_side_labels(side_items, x_target, ha):
+            # Distribute labels evenly across the full Y range of the axes,
+            # anchored to the natural Y of each hotspot where possible.
+            # min_gap ensures no two labels are closer than this fraction of axes height.
+            last_y = 1.02   # start just above the top of the axes
+            min_gap = 0.12  # generous gap so labels never crowd each other
+            for item in side_items:
+                # Prefer the hotspot's natural Y, but enforce minimum spacing
+                target_y = min(last_y - min_gap, item['y'])
+                target_y = max(0.02, min(0.98, target_y))
+                # Shorten label: use first meaningful segment before a comma
+                label_text = item['name'].split(',')[0].strip()
+                if len(label_text) > 20:
+                    label_text = label_text[:18] + ".."
+                ax3.annotate(
+                    f"{label_text}\n({item['density']:.1f})",
+                    xy=(item['x'], item['y']),
+                    xytext=(x_target, target_y),
+                    fontsize=9,
+                    fontweight='bold',
+                    va='center',
+                    ha=ha,
+                    arrowprops=dict(
+                        arrowstyle='-',
+                        color='gray',
+                        lw=0.8,
+                        alpha=0.5,
+                        shrinkA=0,
+                        shrinkB=5,
+                    ),
+                    bbox=dict(
+                        facecolor='white',
+                        alpha=0.9,
+                        edgecolor='lightgray',
+                        boxstyle='round,pad=0.3',
+                    ),
+                    zorder=5,
+                )
+                last_y = target_y
+
+        place_side_labels(left_side, x_target=0.03, ha='left')
+        place_side_labels(right_side, x_target=0.97, ha='right')
+
+        ax3.set_xlim(0, 1)
+        ax3.set_ylim(0, 1)
+        ax3.set_title("C. Anatomical Enrichment", fontsize=16, fontweight='bold')
+        
+        # Legend for color
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=max_d))
+        cbar = fig.colorbar(sm, ax=ax3, shrink=0.5, label='Hits / 100 Samples')
     else:
         ax3.text(0.5, 0.5, "No Body Site Data Available", ha='center', va='center')
 
-    # Panel D: Scientific Summary Text
+    # Panel D: Scientific Summary
     ax4 = fig.add_subplot(gs[1, 1])
     ax4.axis('off')
     
-    top_trait_name = top_traits.iloc[0]['description'] if not top_traits.empty else "N/A"
-    top_trait_count = top_traits.iloc[0]['enrichment_count'] if not top_traits.empty else 0
-    top_site_name = body_site_activity.index[0] if not body_site_activity.empty else "N/A"
+    top_site_name = body_site_density.iloc[0]['body_site'] if not body_site_density.empty else "N/A"
+    top_site_val = body_site_density.iloc[0]['density'] if not body_site_density.empty else 0
+
+    # Highlight top 3 sites
+    top_3_sites = body_site_density.head(3)
+    top_3_str = ", ".join([f"'{row['body_site']}' ({row['density']:.1f})" for _, row in top_3_sites.iterrows()])
 
     summary_text = (
-        "KEY SCIENTIFIC FINDINGS\n\n"
-        f"• Global Scale: {len(trait_counts):,} traits analyzed across {len(profile_counts):,} study profiles.\n\n"
-        f"• Prevalence: The most enriched trait, '{top_trait_name}',\n"
-        f"  appears in {top_trait_count:,} distinct biological contexts.\n\n"
-        f"• Hotspots: Microbial signatures in the '{top_site_name}'\n"
-        "  show high density of trait-level changes.\n\n"
-        f"• Consistency: {bias_inc:,} traits were enriched in 'Increased'\n"
-        f"  taxa vs {bias_dec:,} in 'Decreased' taxa, suggesting a\n"
-        "  potential gain-of-function dominance in dysbiosis."
+        "PRESENTATION SUMMARY\n\n"
+        f"• Functional Scope: {len(trait_counts):,} metabolic/physiological traits analyzed.\n"
+        f"  Total of {trait_counts['enrichment_count'].sum():,} significant associations.\n\n"
+        f"• Condition Robustness: Panel B shows average enrichment per profile,\n"
+        "  highlighting clinical functional burden independent of cohort size.\n\n"
+        f"• Anatomical Hotspots: Top 3 sites by density (hits/100 samples):\n"
+        f"  {top_3_str}.\n\n"
+        f"• Symmetry: {direction_activity.get('inc', 0):,} 'Increased' vs {direction_activity.get('dec', 0):,} 'Decreased'\n"
+        "  hits suggest slight bias towards taxa gaining dominance."
     )
-    ax4.text(0.05, 0.95, summary_text, transform=ax4.transAxes, fontsize=12, va='top', ha='left',
-             bbox=dict(boxstyle='round,pad=1', facecolor='aliceblue', alpha=0.5))
-    ax4.set_title("D. Summary & Implications", fontsize=14, fontweight='bold')
+    ax4.text(0.05, 0.95, summary_text, transform=ax4.transAxes, fontsize=13, va='top', ha='left',
+             bbox=dict(boxstyle='round,pad=1', facecolor='aliceblue', alpha=0.7))
+    ax4.set_title("D. Scientific Implications", fontsize=16, fontweight='bold')
 
-    plt.suptitle("CultureBotAI: Trait Enrichment Landscape Analysis", fontsize=20, fontweight='bold', y=0.98)
-    
+    plt.suptitle("CultureBotAI: Meta-Analysis of Microbial Trait Enrichment", fontsize=24, fontweight='bold', y=0.98)
     plt.savefig(output_img_path, dpi=300, bbox_inches="tight")
     print(f"Infographic saved to {output_img_path}")
     print("Done.")
