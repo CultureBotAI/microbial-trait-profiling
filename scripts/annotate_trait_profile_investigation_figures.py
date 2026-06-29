@@ -14,6 +14,7 @@ TOP_LABEL_FOLDERS = {
     "gut-anaerobe-fermentation-depletion",
 }
 UNLABELED_FIGURES = {
+    Path("profile_enrichment_guild_assignment_pre_direction_grid_summary.png"),
     Path("profile_enrichment_guild_assignment_summary.png"),
 }
 
@@ -93,6 +94,9 @@ FIGURE_LABELS = {
     Path(
         "facultative-aerobe-v2/condition_increased_guild_signal.png"
     ): "Guild-specific: yes - uses the facultative-aerobe v2 guild score by condition.",
+    Path("facultative-aerobe-v2/condition_target_taxa_stacked_bar.png"): (
+        NON_GUILD_OCCURRENCE_COUNT_V2
+    ),
     Path("facultative-aerobe-v2/guild_trait_direction_shift.png"): (FACULTATIVE_V2_GUILD_SHIFT),
     Path("facultative-aerobe-v2/target_taxa_condition_breakdown_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT_V2
@@ -113,6 +117,9 @@ FIGURE_LABELS = {
     Path(
         "anaerobe-depletion-v2/condition_decreased_guild_signal.png"
     ): "Guild-specific: yes - uses the anaerobe v2 depletion guild score by condition.",
+    Path("anaerobe-depletion-v2/condition_target_taxa_stacked_bar.png"): (
+        NON_GUILD_OCCURRENCE_COUNT_V2
+    ),
     Path("anaerobe-depletion-v2/guild_trait_direction_shift.png"): GUT_V2_GUILD_SHIFT,
     Path("anaerobe-depletion-v2/target_taxa_condition_breakdown_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT_V2

@@ -50,10 +50,12 @@ EXCLUDED_CONDITION_SUMMARY_LABELS = {
     "Body fat distribution",
     "Clinical treatment",
     "Exposure",
+    "Health study participation",
     "Health trait",
     "Microbiome",
     "Population",
     "Physical activity",
+    "Timepoint",
 }
 MIN_PAIRED_SMD_PROFILE_PAIRS = 3
 INFERRED_GUILD_TOP_TRAITS_PER_GROUP = 12
@@ -67,6 +69,24 @@ GUILD_SPECIFIC_NOTE = (
 NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE = (
     "Guild-specific: no - fixed target-taxon count view; not recomputed from the guild score."
 )
+TARGET_TAXON_COLORS = {
+    "Faecalibacterium prausnitzii": "#2563eb",
+    "Lachnospira eligens": "#d97706",
+    "Agathobacter rectalis": "#059669",
+    "Anaerobutyricum hallii": "#dc2626",
+    "Roseburia intestinalis": "#7c3aed",
+    "Roseburia inulinivorans": "#0891b2",
+    "Ruminococcus bromii": "#64748b",
+}
+TARGET_TAXON_LEGEND_LABELS = {
+    "Faecalibacterium prausnitzii": "F. prausnitzii",
+    "Lachnospira eligens": "L. eligens",
+    "Agathobacter rectalis": "A. rectalis",
+    "Anaerobutyricum hallii": "A. hallii",
+    "Roseburia intestinalis": "R. intestinalis",
+    "Roseburia inulinivorans": "R. inulinivorans",
+    "Ruminococcus bromii": "R. bromii",
+}
 
 
 def add_specificity_note(ax: plt.Axes, note: str) -> None:
@@ -1029,6 +1049,129 @@ def save_condition_breakdown_bar_chart(
     plt.close(fig)
 
 
+def dominant_body_site_label(group: pd.DataFrame) -> str:
+    """Return a concise dominant body-site label for a condition group."""
+    body_site_counts = group["body_site_group"].map(display_body_site).value_counts()
+    if body_site_counts.empty:
+        return "site unknown"
+    dominant_site = str(body_site_counts.index[0])
+    dominant_count = int(body_site_counts.iloc[0])
+    total_count = int(body_site_counts.sum())
+    if dominant_count == total_count:
+        return dominant_site
+    return f"{dominant_site} {dominant_count}/{total_count}"
+
+
+def guild_delta_label(condition: str, condition_summary: pd.DataFrame) -> str:
+    """Return the condition's guild-score contrast label when available."""
+    if condition_summary.empty:
+        return ""
+    matches = condition_summary[condition_summary["condition"] == condition]
+    if matches.empty:
+        return ""
+    value = matches.iloc[0]["decreased_minus_increased_guild_z"]
+    if pd.isna(value):
+        return ""
+    if abs(value) < 0.005:
+        value = 0
+    return f"; guild dz={value:.2f}"
+
+
+def save_condition_target_taxa_stacked_bar_chart(
+    occurrences: pd.DataFrame,
+    condition_summary: pd.DataFrame,
+    *,
+    output_path: Path,
+    limit: int = 12,
+) -> None:
+    """Save a stacked bar chart of decreased focal-taxon recurrence by condition."""
+    selected = occurrences[occurrences["direction"] == "decreased"].copy()
+    selected["condition"] = selected["condition"].map(clean_text)
+    selected = selected[~selected["condition"].map(is_excluded_condition_label)].copy()
+    if selected.empty:
+        return
+
+    counts = selected.pivot_table(
+        index="condition",
+        columns="target_taxon_name",
+        values="profile_id",
+        aggfunc="count",
+        fill_value=0,
+    )
+    condition_totals = counts.sum(axis=1).sort_values(ascending=False)
+    top_conditions = condition_totals.head(limit).index
+    counts = counts.loc[top_conditions]
+    taxon_order = counts.sum(axis=0).sort_values(ascending=False)
+    taxon_order = [taxon for taxon in taxon_order.index if taxon_order[taxon] > 0]
+
+    selected_top = selected[selected["condition"].isin(top_conditions)]
+    study_counts = selected_top.groupby("condition")["study_id"].nunique()
+    body_site_labels = {
+        condition: dominant_body_site_label(group)
+        for condition, group in selected_top.groupby("condition")
+    }
+
+    fig_height = max(5.5, len(counts) * 0.45)
+    fig, ax = plt.subplots(figsize=(13, fig_height))
+    y_positions = list(range(len(counts)))
+    left = pd.Series(0, index=counts.index, dtype=float)
+    for taxon in taxon_order:
+        values = counts[taxon]
+        ax.barh(
+            y_positions,
+            values,
+            left=left,
+            color=TARGET_TAXON_COLORS.get(taxon, "#475569"),
+            label=TARGET_TAXON_LEGEND_LABELS.get(taxon, taxon),
+        )
+        left = left + values
+
+    totals = counts.sum(axis=1)
+    x_max = float(totals.max())
+    ax.set_xlim(0, x_max * 1.82)
+    x_pad = max(x_max * 0.025, 1)
+    for y_pos, condition in enumerate(counts.index):
+        total = int(totals.loc[condition])
+        study_count = int(study_counts.get(condition, 0))
+        body_site = body_site_labels.get(condition, "site unknown")
+        label = (
+            f"{total} occ.; {study_count} "
+            f"{pluralize(study_count, 'study')}; {body_site}"
+            f"{guild_delta_label(condition, condition_summary)}"
+        )
+        ax.text(total + x_pad, y_pos, label, va="center", fontsize=8, color="#334155")
+
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(counts.index)
+    ax.invert_yaxis()
+    ax.set_xlabel("Decreased target-taxon profile occurrences")
+    ax.set_title(
+        "Decreased Anaerobe Target-Taxon Recurrence by Condition",
+        pad=28,
+    )
+    add_specificity_note(ax, NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE)
+    ax.legend(
+        title="Focal taxon",
+        loc="lower right",
+        bbox_to_anchor=(0.98, 0.03),
+        ncol=1,
+        frameon=False,
+        fontsize=8,
+        title_fontsize=8,
+    )
+    fig.text(
+        0.01,
+        0.01,
+        "Counts are target-taxon/profile occurrences; a profile can contribute "
+        "once per focal taxon.",
+        fontsize=8,
+        color="#475569",
+    )
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
+    fig.savefig(output_path, bbox_inches="tight")
+    plt.close(fig)
+
+
 def display_body_site(value: object) -> str:
     """Return concise display labels for body-site groups."""
     label = clean_text(value)
@@ -1349,7 +1492,8 @@ def write_figure_methods() -> None:
         "Study profiles from all body sites were grouped by BugSigDB condition label. Groups "
         "with fewer than five profiles were excluded. Broad non-condition or "
         "metadata labels (`Body fat distribution`, `Clinical treatment`, `Exposure`, "
-        "`Health trait`, `Microbiome`, `Population`, `Physical activity`, and labels "
+        "`Health study participation`, `Health trait`, `Microbiome`, `Population`, "
+        "`Physical activity`, `Timepoint`, and labels "
         "containing `exposure`, `measurement`, or `population`) were removed from "
         "the displayed condition summary. The "
         "figure keeps the top 12 eligible conditions with at least three decreased "
@@ -1406,6 +1550,22 @@ def write_figure_methods() -> None:
         "occurrence breakdown, not a unique-study breakdown. It displays the top "
         "20 explicit condition labels as horizontal bars, with bar labels showing "
         "occurrence counts.",
+        "",
+        "## `condition_target_taxa_stacked_bar.png`",
+        "",
+        "Guild-specificity: no. This is a fixed target-taxon occurrence-count view; "
+        "it is not recomputed from the v2 guild score.",
+        "",
+        "This figure uses the same target-taxon/profile occurrence table and "
+        "broad-label filtering as `target_taxa_condition_breakdown_bar.png`, then "
+        "keeps the top 12 conditions by decreased target-taxon/profile occurrence "
+        "count. Each horizontal bar is stacked by focal taxon. Right-side labels "
+        "report the total occurrence count, unique decreased-profile study count, "
+        "dominant body-site group among the plotted occurrences, and the "
+        "condition-level decreased-minus-increased anaerobe v2 guild-score "
+        "contrast when available. Counts are occurrence counts: a profile that "
+        "contains multiple focal taxa can contribute once to each corresponding "
+        "taxon stack.",
         "",
         "## Inferred Guild Evidence TSVs",
         "",
@@ -1512,6 +1672,11 @@ def make_plots(
         color="#2563eb",
         specificity_note=NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE,
     )
+    save_condition_target_taxa_stacked_bar_chart(
+        occurrences,
+        condition_summary,
+        output_path=OUTPUT_DIR / "condition_target_taxa_stacked_bar.png",
+    )
     save_anatomical_sites_diagram(
         body_site_summary,
         output_path=OUTPUT_DIR / "anatomical_sites_diagram.png",
@@ -1569,6 +1734,8 @@ def write_summary_report(
         "| `guild_trait_direction_shift.png` | yes | the two selected v2 guild traits |",
         "| `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |",
         "| `candidate_taxa_depletion_bias.png` | no | fixed target-taxon direction counts |",
+        "| `condition_target_taxa_stacked_bar.png` | no | fixed target-taxon occurrence "
+        "counts stacked by taxon |",
         "| `target_taxa_condition_breakdown_bar.png` | no | fixed target-taxon occurrence counts |",
         "",
         "## Main Signal",
@@ -1740,6 +1907,7 @@ def write_summary_report(
             "- `figure_methods.md`",
             "- `candidate_taxa_depletion_bias.png`",
             "- `condition_decreased_guild_signal.png`",
+            "- `condition_target_taxa_stacked_bar.png`",
             "- `guild_trait_direction_shift.png`",
             "- `anatomical_sites_diagram.png`",
             "- `target_taxa_condition_breakdown_bar.png`",

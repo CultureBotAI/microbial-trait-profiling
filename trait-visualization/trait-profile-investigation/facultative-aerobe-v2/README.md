@@ -18,6 +18,7 @@ This investigation uses the existing study trait profile clustered heatmap matri
 | `guild_trait_direction_shift.png` | yes | the three selected v2 guild traits |
 | `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |
 | `candidate_taxa_increased_profile_tendency.png` | no | fixed target-taxon direction counts |
+| `condition_target_taxa_stacked_bar.png` | no | fixed target-taxon occurrence counts stacked by taxon |
 | `target_taxa_condition_breakdown_bar.png` | no | fixed target-taxon occurrence counts |
 
 ## Main Signal
@@ -148,6 +149,7 @@ For the top condition signals, this table uses all taxa observed in the increase
 - `figure_methods.md`
 - `candidate_taxa_increased_profile_tendency.png`
 - `condition_increased_guild_signal.png`
+- `condition_target_taxa_stacked_bar.png`
 - `guild_trait_direction_shift.png`
 - `anatomical_sites_diagram.png`
 - `target_taxa_condition_breakdown_bar.png`

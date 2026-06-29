@@ -18,6 +18,7 @@ This investigation uses the existing study trait profile clustered heatmap matri
 | `guild_trait_direction_shift.png` | yes | the two selected v2 guild traits |
 | `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |
 | `candidate_taxa_depletion_bias.png` | no | fixed target-taxon direction counts |
+| `condition_target_taxa_stacked_bar.png` | no | fixed target-taxon occurrence counts stacked by taxon |
 | `target_taxa_condition_breakdown_bar.png` | no | fixed target-taxon occurrence counts |
 
 ## Main Signal
@@ -66,10 +67,10 @@ Guardrail: the increased-profile anaerobe score is retained in every condition a
 | Graft versus host disease | 13 | 4 | 1.254 | 1.480 | 0.0595 | 4 | 0.848 |
 | Acute graft vs. host disease | 11 | 2 | 1.080 | 0.675 | 0.27 | 4 | 0.569 |
 | Lung transplantation | 7 | 2 | 1.049 |  |  | 2 | 0.479 |
-| Timepoint | 5 | 2 | 0.946 |  |  | 1 | 0.349 |
-| Health study participation | 67 | 7 | 0.847 | 0.905 | 0.000139 | 25 | 0.244 |
 | Head and neck carcinoma | 7 | 2 | 0.828 | 0.966 | 0.236 | 3 | 0.132 |
 | Acute pancreatitis | 20 | 2 | 0.818 | 0.977 | 0.0129 | 10 | 0.394 |
+| Graves ophthalmopathy | 13 | 2 | 0.818 | 0.887 | 0.118 | 5 | 0.023 |
+| Diarrhea | 46 | 5 | 0.817 | 0.676 | 0.0046 | 22 | 0.523 |
 
 ## Data-Inferred Guild Evidence
 
@@ -80,11 +81,11 @@ For the top condition signals, this table uses all taxa observed in the decrease
 | Acute graft vs. host disease | 7 | 28 / 30 | obligately anaerobic (+1.09); anaerobic (+1.07) | taxon_841 (2 traits, 4 profiles); taxon_1263 (2 traits, 2 profiles); taxon_171549 (2 traits, 2 profiles); taxon_200643 (2 traits, 2 profiles); taxon_28050 (2 traits, 2 profiles); taxon_816 (2 traits, 2 profiles); taxon_976 (2 traits, 2 profiles); taxon_1224 (2 traits, 1 profile); taxon_1236 (2 traits, 1 profile); taxon_1678 (2 traits, 1 profile); taxon_171550 (2 traits, 1 profile); taxon_186801 (2 traits, 1 profile) |
 | Acute pancreatitis | 10 | 49 / 77 | anaerobic (+0.92); obligately anaerobic (+0.72) | taxon_200940 (2 traits, 3 profiles); taxon_208479 (2 traits, 3 profiles); taxon_1496 (2 traits, 2 profiles); taxon_28889 (2 traits, 2 profiles); taxon_292800 (2 traits, 2 profiles); taxon_872 (2 traits, 2 profiles); taxon_1224 (2 traits, 1 profile); taxon_1239 (2 traits, 1 profile); taxon_1350 (2 traits, 1 profile); taxon_201174 (2 traits, 1 profile); taxon_246787 (2 traits, 1 profile); taxon_28111 (2 traits, 1 profile) |
 | Age-related macular degeneration | 14 | 36 / 39 | obligately anaerobic (+1.57); anaerobic (+0.97) | taxon_838 (2 traits, 6 profiles); taxon_186803 (2 traits, 3 profiles); taxon_186801 (2 traits, 2 profiles); taxon_816 (2 traits, 2 profiles); taxon_28111 (2 traits, 2 profiles); taxon_572511 (2 traits, 2 profiles); taxon_1239 (2 traits, 1 profile); taxon_171549 (2 traits, 1 profile); taxon_171552 (2 traits, 1 profile); taxon_2172 (2 traits, 1 profile); taxon_28050 (2 traits, 1 profile); taxon_3085636 (2 traits, 1 profile) |
+| Diarrhea | 22 | 86 / 92 | obligately anaerobic (+0.92); anaerobic (+0.72) | taxon_816 (2 traits, 9 profiles); taxon_84107 (2 traits, 6 profiles); taxon_1678 (2 traits, 6 profiles); taxon_572511 (2 traits, 6 profiles); taxon_1263 (2 traits, 6 profiles); taxon_817 (2 traits, 4 profiles); taxon_1239 (2 traits, 4 profiles); taxon_186803 (2 traits, 3 profiles); taxon_201174 (2 traits, 3 profiles); taxon_91061 (2 traits, 2 profiles); taxon_1485 (2 traits, 1 profile); taxon_1643824 (2 traits, 1 profile) |
 | Graft versus host disease | 6 | 19 / 22 | obligately anaerobic (+1.47); anaerobic (+1.04) | taxon_186803 (2 traits, 5 profiles); taxon_572511 (2 traits, 3 profiles); taxon_186801 (2 traits, 2 profiles); taxon_186802 (2 traits, 2 profiles); taxon_946234 (2 traits, 2 profiles); taxon_186804 (2 traits, 1 profile); taxon_200643 (2 traits, 1 profile); taxon_1506553 (1 trait, 3 profiles); taxon_1769710 (1 trait, 2 profiles); taxon_128827 (1 trait, 1 profile); taxon_1378 (1 trait, 1 profile); taxon_1392389 (1 trait, 1 profile) |
+| Graves ophthalmopathy | 5 | 14 / 15 | anaerobic (+1.38) | taxon_29523 (1 trait, 2 profiles); taxon_976 (1 trait, 2 profiles); taxon_102106 (1 trait, 1 profile); taxon_1239 (1 trait, 1 profile); taxon_1263 (1 trait, 1 profile); taxon_1407607 (1 trait, 1 profile); taxon_204516 (1 trait, 1 profile); taxon_207244 (1 trait, 1 profile); taxon_328814 (1 trait, 1 profile); taxon_39488 (1 trait, 1 profile); taxon_39496 (1 trait, 1 profile); taxon_41200 (1 trait, 1 profile) |
 | Head and neck carcinoma | 4 | 53 / 62 | anaerobic (+0.88); obligately anaerobic (+0.78) | taxon_836 (2 traits, 3 profiles); taxon_186804 (2 traits, 2 profiles); taxon_203490 (2 traits, 2 profiles); taxon_203491 (2 traits, 2 profiles); taxon_203492 (2 traits, 2 profiles); taxon_32066 (2 traits, 2 profiles); taxon_838 (2 traits, 2 profiles); taxon_841 (2 traits, 2 profiles); taxon_136 (2 traits, 1 profile); taxon_137 (2 traits, 1 profile); taxon_157 (2 traits, 1 profile); taxon_1654 (2 traits, 1 profile) |
-| Health study participation | 29 | 64 / 84 | anaerobic (+0.92); obligately anaerobic (+0.78) | taxon_1239 (2 traits, 8 profiles); taxon_31977 (2 traits, 5 profiles); taxon_201174 (2 traits, 2 profiles); taxon_712 (2 traits, 2 profiles); taxon_976 (2 traits, 2 profiles); taxon_1236 (2 traits, 2 profiles); taxon_171552 (2 traits, 2 profiles); taxon_186803 (2 traits, 2 profiles); taxon_204516 (2 traits, 2 profiles); taxon_674529 (2 traits, 2 profiles); taxon_84107 (2 traits, 2 profiles); taxon_135625 (2 traits, 1 profile) |
 | Lung transplantation | 3 | 25 / 25 | obligately anaerobic (+1.06); anaerobic (+1.04) | taxon_171549 (2 traits, 2 profiles); taxon_171552 (2 traits, 2 profiles); taxon_186802 (2 traits, 2 profiles); taxon_200643 (2 traits, 2 profiles); taxon_203490 (2 traits, 2 profiles); taxon_203491 (2 traits, 2 profiles); taxon_203492 (2 traits, 2 profiles); taxon_216572 (2 traits, 2 profiles); taxon_310298 (2 traits, 2 profiles); taxon_32066 (2 traits, 2 profiles); taxon_815 (2 traits, 2 profiles); taxon_816 (2 traits, 2 profiles) |
-| Timepoint | 4 | 9 / 9 | anaerobic (+1.14); obligately anaerobic (+0.76) | taxon_1678 (2 traits, 3 profiles); taxon_1350 (2 traits, 2 profiles); taxon_1380 (2 traits, 2 profiles); taxon_817 (2 traits, 2 profiles); taxon_171549 (2 traits, 1 profile); taxon_200643 (2 traits, 1 profile); taxon_838 (2 traits, 1 profile); taxon_976 (2 traits, 1 profile); taxon_1766253 (1 trait, 1 profile) |
 
 ## Body-Site Check
 
@@ -140,6 +141,7 @@ For the top condition signals, this table uses all taxa observed in the decrease
 - `figure_methods.md`
 - `candidate_taxa_depletion_bias.png`
 - `condition_decreased_guild_signal.png`
+- `condition_target_taxa_stacked_bar.png`
 - `guild_trait_direction_shift.png`
 - `anatomical_sites_diagram.png`
 - `target_taxa_condition_breakdown_bar.png`
