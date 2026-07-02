@@ -85,14 +85,19 @@ def main():
 
     matrix_meta = matrix_meta.set_index("profile_id")
 
-    # 2. Top 10 Traits
-    top_traits = trait_counts.sort_values("enrichment_count", ascending=False).head(10).copy()
-    # Use full mapping or fallback to base METPO ID mapping
-    top_traits["description"] = top_traits["trait"].map(lambda x: mapping.get(x, mapping.get(x.split("|")[0], x)))
+    # 2. Top 10 Traits (Filtered)
+    # Use full mapping or fallback to base METPO ID mapping to get descriptions for filtering
+    trait_counts["description"] = trait_counts["trait"].map(lambda x: mapping.get(x, mapping.get(x.split("|")[0], x)))
+    
+    # Filter out "grows in" traits before selecting top 10
+    filtered_traits = trait_counts[~trait_counts["description"].str.contains("grows in:", case=False, na=False)].copy()
+    
+    top_traits = filtered_traits.sort_values("enrichment_count", ascending=False).head(10).copy()
+    
     # Clean up long labels (remove [METPO:...] and ID suffixes)
     top_traits["description"] = top_traits["description"].apply(lambda x: str(x).split(" [METPO")[0] if " [METPO" in str(x) else x)
     top_traits["description"] = top_traits["description"].apply(lambda x: str(x).split(" METPO:")[0] if " METPO:" in str(x) else x)
-    # Presentation-ready shortening for grows in
+    # Presentation-ready shortening for grows in (if any remain)
     top_traits["description"] = top_traits["description"].apply(shorten_grows_in)
     
     # 3. Robust Condition-Level Analysis (Panel B)
@@ -110,7 +115,11 @@ def main():
 
     # 4. Normalized Body Site Analysis (Panel C)
     # Filter for sites with valid sample size data for meaningful normalization
-    valid_site_data = full_profile_data[full_profile_data['total_samples'] > 0].copy()
+    # ALSO Filter out compound body sites (containing commas)
+    valid_site_data = full_profile_data[
+        (full_profile_data['total_samples'] > 0) &
+        (~full_profile_data['body_site'].str.contains(',', na=False))
+    ].copy()
     
     if not valid_site_data.empty:
         site_stats = valid_site_data.groupby("body_site").agg({

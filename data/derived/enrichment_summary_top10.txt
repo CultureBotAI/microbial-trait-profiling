@@ -2,15 +2,15 @@
 Trait ID                                 Enrichment Count     Description
 ----------------------------------------------------------------------------------------------------
 METPO:1000603                            4619                 anaerobic
-METPO:2000517|mediadive.medium:J14       4214                 Grows in: EG MEDIUM
-METPO:2000517|mediadive.medium:104       3769                 Grows in: PYG MEDIUM MODIFIED
-METPO:2000517|mediadive.medium:693       3582                 Grows in: COLUMBIA BLOOD MEDIUM
 METPO:1000615                            3323                 mesophilic
-METPO:2000517|mediadive.medium:78        3213                 Grows in: CHOPPED MEAT MEDIUM
 METPO:1000607                            3132                 obligately anaerobic
 METPO:1000698                            3107                 gram positive
 METPO:1000699                            3057                 gram negative
 METPO:1000703                            3037                 non motile
+METPO:1000432                            2946                 GC high
+METPO:1000872                            2664                 non-spore forming
+METPO:1002005                            2549                 Fermentation
+METPO:1000604                            2491                 microaerophilic
 
 
 === TOP 10 CONDITIONS BY AVERAGE ENRICHMENT DEPTH ===
@@ -32,21 +32,21 @@ Environmental samples                    186.00          86.00           100.00
 Note: Sites with missing sample size data are excluded from density normalization.
 Body Site                                Hits/100 Samples     Total Hits      Total Samples
 ----------------------------------------------------------------------------------------------------
-Mucus,Exoskeleton                        716.67               86              12
 Tadpole                                  687.50               110             16
-Meconium,Feces                           614.71               418             68
 Mesenteric lymph node                    492.31               128             26
-Saliva,Dental plaque                     446.88               143             32
-Mucosa of oral region,Mucosa of oropharynx 418.42               159             38
 Surface of tongue                        393.36               1007            256
 Skin of abdomen                          390.00               390             100
 Venous blood                             375.00               75              20
 Large intestine                          373.08               97              26
+Anatomical surface                       347.22               250             72
+Jejunum                                  320.42               910             284
+Bulbar conjunctiva                       318.00               159             50
+Pinna                                    317.65               108             34
 
 
 === SCIENTIFIC FINDINGS SUMMARY ===
 Total Enriched Traits across all profiles: 338,888
 Functional scope: 2,651 distinct metabolic/physiological traits analyzed.
 Average enrichment count per profile (active only): 31.27
-Top Body Site by Enrichment Density: Mucus,Exoskeleton (716.67 hits/100 samples)
+Top Body Site by Enrichment Density: Tadpole (687.50 hits/100 samples)
 Directionality Bias: More traits found in 'Increased' profiles (172,007 inc vs 147,443 dec).
