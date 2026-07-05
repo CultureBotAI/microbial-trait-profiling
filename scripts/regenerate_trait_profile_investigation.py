@@ -62,9 +62,7 @@ CT_NS = "http://schemas.openxmlformats.org/package/2006/content-types"
 SLIDE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
 IMAGE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 NOTES_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide"
-SLIDE_CONTENT_TYPE = (
-    "application/vnd.openxmlformats-officedocument.presentationml.slide+xml"
-)
+SLIDE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.slide+xml"
 ET.register_namespace("p", P_NS)
 ET.register_namespace("r", R_NS)
 ET.register_namespace("", REL_NS)
@@ -185,9 +183,7 @@ def ensure_presentation_slide_relationships(entries: dict[str, bytes]) -> dict[i
         target = f"ppt/slides/slide{slide_number}.xml"
         relationship_id = target_to_id.get(target)
         if relationship_id is None:
-            spec = next(
-                item for item in STACKED_SLIDE_SPECS if item["slide"] == slide_number
-            )
+            spec = next(item for item in STACKED_SLIDE_SPECS if item["slide"] == slide_number)
             relationship_id = str(spec["presentation_rel_id"])
             ET.SubElement(
                 root,
@@ -329,6 +325,7 @@ def main() -> None:
     run_script("investigate_facultative_aerobe_expansion.py")
     run_script("investigate_gut_anaerobe_depletion.py")
     run_script("create_profile_enrichment_guild_assignment_diagram.py")
+    run_script("create_trait_profile_infographic.py")
     run_script("annotate_trait_profile_investigation_figures.py")
     refresh_powerpoint()
     print("Regenerated current trait-profile investigation outputs.")

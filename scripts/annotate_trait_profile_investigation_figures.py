@@ -16,6 +16,7 @@ TOP_LABEL_FOLDERS = {
 UNLABELED_FIGURES = {
     Path("profile_enrichment_guild_assignment_pre_direction_grid_summary.png"),
     Path("profile_enrichment_guild_assignment_summary.png"),
+    Path("trait_profile_paired_contrast_infographic.png"),
 }
 
 FACULTATIVE_BODY_SITE = (
