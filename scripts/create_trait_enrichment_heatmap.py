@@ -456,7 +456,7 @@ def save_heatmap(matrix: pd.DataFrame, profile_meta: pd.DataFrame, output_path: 
     fig_height = min(48, max(20, row_count * 0.02))
 
     # Set background color for masked cells to light gray so hits pop out
-    plt.rcParams['axes.facecolor'] = '#f0f0f0'
+    plt.rcParams["axes.facecolor"] = "#f0f0f0"
 
     cluster = sns.clustermap(
         matrix,

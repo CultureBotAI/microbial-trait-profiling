@@ -184,7 +184,7 @@ def main():
 
     # Panel A: Top 10 Traits (Shortened Labels)
     ax1 = fig.add_subplot(gs[0, 0])
-    sns.barplot(data=top_traits, x="enrichment_count", y="description", hue="description", palette="viridis", ax=ax1, legend=False)
+    sns.barplot(data=top_traits, x="enrichment_count", y="description", color="steelblue", ax=ax1)
     ax1.set_title("A. Top Enriched Traits", fontsize=16, fontweight='bold')
     ax1.set_xlabel("Number of Profiles Enriched In")
     ax1.set_ylabel("")
@@ -201,7 +201,7 @@ def main():
     for i, (idx, row) in enumerate(plot_data_b.iterrows()):
         total = row.sum()
         if total > 0:
-            ax2.text(total + 2, i, f"{total:.1f}", va='center', fontsize=10, fontweight='bold')
+            ax2.text(total + 2, i, f"{round(total)}", va='center', fontsize=10, fontweight='bold')
             
     ax2.set_title("B. Avg Enriched Traits per Condition", fontsize=16, fontweight='bold')
     ax2.set_xlabel("Average Number of Enriched Traits")
@@ -225,21 +225,32 @@ def main():
             'Saliva,Dental plaque': (0.54, 0.87),
             'Subgingival dental plaque,Saliva': (0.56, 0.84),
             'Saliva,Supragingival dental plaque,Buccal mucosa,Tongue': (0.54, 0.81),
+            'Dental plaque': (0.54, 0.87),
             # Gut / lower torso — left side
             'Meconium,Feces': (0.48, 0.35),
+            'Meconium': (0.48, 0.35),
             'Mesenteric lymph node': (0.38, 0.42),
             'Large intestine': (0.42, 0.47),
             'Jejunum': (0.44, 0.50),
             'Ileum,Jejunum': (0.46, 0.53),
             'Mucosa of ascending colon': (0.42, 0.44),
+            'Caecum': (0.46, 0.42),
+            'Rectum': (0.48, 0.30),
             # Skin / external — left arm / side
             'Skin of abdomen': (0.22, 0.62),
+            'Axilla skin': (0.20, 0.65),
+            'Skin of body': (0.22, 0.58),
             'Anatomical surface': (0.2, 0.58),
             'Body external integument structure': (0.2, 0.54),
             'Bulbar conjunctiva': (0.22, 0.72),
             'Pinna': (0.22, 0.76),
+            # Respiratory
+            'Middle nasal meatus': (0.45, 0.88),
             # Blood / systemic — left torso
             'Venous blood': (0.32, 0.55),
+            # Reproductive / Other
+            'Ovary': (0.52, 0.32),
+            'Rumen': (0.42, 0.38),
             # Exoskeleton / mucus — right arm
             'Mucus,Exoskeleton': (0.78, 0.65),
             # Tadpole — lower left (non-human host)
@@ -249,15 +260,15 @@ def main():
         # Draw improved body outline
         t = np.linspace(0, 2*np.pi, 100)
         # Head
-        ax3.plot(0.5 + 0.07*np.cos(t), 0.9 + 0.07*np.sin(t), color='lightgray', lw=1.5, alpha=0.6)
+        ax3.plot(0.5 + 0.07*np.cos(t), 0.9 + 0.07*np.sin(t), color='gray', lw=2.0, alpha=0.8)
         # Torso
-        ax3.plot([0.38, 0.62, 0.65, 0.6, 0.4, 0.35, 0.38], [0.8, 0.8, 0.3, 0.25, 0.25, 0.3, 0.8], color='lightgray', lw=1.5, alpha=0.6)
+        ax3.plot([0.38, 0.62, 0.65, 0.6, 0.4, 0.35, 0.38], [0.8, 0.8, 0.3, 0.25, 0.25, 0.3, 0.8], color='gray', lw=2.0, alpha=0.8)
         # Legs
-        ax3.plot([0.4, 0.37, 0.45, 0.48], [0.25, 0.05, 0.05, 0.25], color='lightgray', lw=1.5, alpha=0.6)
-        ax3.plot([0.6, 0.63, 0.55, 0.52], [0.25, 0.05, 0.05, 0.25], color='lightgray', lw=1.5, alpha=0.6)
+        ax3.plot([0.4, 0.37, 0.45, 0.48], [0.25, 0.05, 0.05, 0.25], color='gray', lw=2.0, alpha=0.8)
+        ax3.plot([0.6, 0.63, 0.55, 0.52], [0.25, 0.05, 0.05, 0.25], color='gray', lw=2.0, alpha=0.8)
         # Arms
-        ax3.plot([0.38, 0.22, 0.25, 0.38], [0.8, 0.6, 0.58, 0.78], color='lightgray', lw=1.5, alpha=0.6)
-        ax3.plot([0.62, 0.78, 0.75, 0.62], [0.8, 0.6, 0.58, 0.78], color='lightgray', lw=1.5, alpha=0.6)
+        ax3.plot([0.38, 0.22, 0.25, 0.38], [0.8, 0.6, 0.58, 0.78], color='gray', lw=2.0, alpha=0.8)
+        ax3.plot([0.62, 0.78, 0.75, 0.62], [0.8, 0.6, 0.58, 0.78], color='gray', lw=2.0, alpha=0.8)
 
         plot_sites = body_site_density.head(8).copy()
         max_d = plot_sites['density'].max()
@@ -274,9 +285,9 @@ def main():
             if site in site_coords:
                 coord = site_coords[site]
             else:
-                # 2. Substring fallback: prefer longer keys (more specific) first
+                # 2. Substring fallback: check if site is in key OR key is in site
                 for key in sorted(site_coords, key=len, reverse=True):
-                    if key.lower() in site_lower:
+                    if key.lower() in site_lower or site_lower in key.lower():
                         coord = site_coords[key]
                         break
             if coord:

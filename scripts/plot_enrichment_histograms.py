@@ -26,6 +26,12 @@ def parse_args():
         help="Path to the full study trait profiles wide TSV."
     )
     parser.add_argument(
+        "--experiments",
+        type=Path,
+        default=Path("data/derived/experiments.tsv"),
+        help="Path to the experiments metadata TSV."
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=Path("data/derived"),
@@ -42,7 +48,27 @@ def main():
         print(f"Error: Results file {args.results} not found.")
         return
     results_df = pd.read_csv(args.results, sep="\t")
-    
+
+    # Load experiments metadata for stacking by condition/anatomy
+    print(f"Loading experiment metadata from {args.experiments}...")
+    if args.experiments.exists():
+        exp_df = pd.read_csv(args.experiments, sep="\t")
+        # Ensure we only have the columns we need to avoid duplicates if study_tsv was run multiple times
+        exp_df = exp_df[["study_id", "experiment_id", "condition", "body_site"]].drop_duplicates()
+        
+        # Merge with results
+        results_with_meta = results_df.merge(exp_df, on=["study_id", "experiment_id"], how="left")
+        
+        # Fill missing with "Unknown"
+        results_with_meta["condition"] = results_with_meta["condition"].fillna("Unknown")
+        results_with_meta["body_site"] = results_with_meta["body_site"].fillna("Unknown")
+        
+        # Create combined category
+        results_with_meta["category"] = results_with_meta["condition"] + " (" + results_with_meta["body_site"] + ")"
+    else:
+        print(f"Warning: Experiments file {args.experiments} not found. Skipping metadata-based plots.")
+        results_with_meta = None
+
     # 1. Y-Axis: Profile Depth (How many traits are enriched in each profile?)
     # Group by profile and direction
     profile_trait_counts = results_df.groupby(["study_id", "experiment_id", "inc_dec"])["trait"].nunique().reset_index()
@@ -160,6 +186,71 @@ def main():
     print(f"Wrote stacked trait plot to {trait_plot_path}")
     plt.close()
     
+    # 3. X-Axis: Trait Frequency Stacked by Condition/Anatomy (Separate Plot)
+    if results_with_meta is not None:
+        print("Creating Trait Frequency plot stacked by Condition and Anatomy...")
+        plt.figure(figsize=(14, 8))
+        
+        # Identify top categories for the legend, group the rest as "Other"
+        top_n = 12
+        cat_counts = results_with_meta["category"].value_counts()
+        top_cats = cat_counts.head(top_n).index.tolist()
+        
+        results_with_meta["plot_category"] = results_with_meta["category"].apply(
+            lambda x: x if x in top_cats else "Other"
+        )
+        
+        # We need the same bins as the previous X plot
+        # active_traits["total"] contains the frequency per trait
+        trait_to_total = active_traits["total"].to_dict()
+        results_with_meta["trait_freq"] = results_with_meta["trait"].map(trait_to_total)
+        
+        # Assign to bins
+        results_with_meta["bin_idx"] = pd.cut(
+            results_with_meta["trait_freq"],
+            bins=bins_x,
+            labels=False,
+            include_lowest=True
+        )
+        
+        # Group by bin and plot_category
+        trait_cat_binned = results_with_meta.groupby(["bin_idx", "plot_category"]).size().unstack(fill_value=0)
+        
+        # Reindex to ensure all bins are represented
+        trait_cat_binned = trait_cat_binned.reindex(range(num_bins), fill_value=0)
+        
+        # Sort columns so "Other" is last and others are consistent (e.g. by total frequency)
+        other_col = [c for c in trait_cat_binned.columns if c == "Other"]
+        main_cols = sorted([c for c in trait_cat_binned.columns if c != "Other"])
+        trait_cat_binned = trait_cat_binned[main_cols + other_col]
+        
+        # Use a more diverse color palette for many categories
+        cat_colors = sns.color_palette("husl", len(trait_cat_binned.columns))
+        
+        ax_x_cat = trait_cat_binned.plot(
+            kind="bar",
+            stacked=True,
+            width=0.8,
+            color=cat_colors,
+            ax=plt.gca()
+        )
+        
+        plt.title(f"Trait Enrichment Frequency by Condition & Anatomy (X-Axis)\nStacked by top {top_n} categories", pad=15)
+        plt.xlabel("Number of Profiles Enriched In (Binned)")
+        plt.ylabel("Total Enrichment Hits (log10 scale)")
+        plt.yscale("log")
+        
+        plt.xticks(tick_indices, [bin_labels_x[i] for i in tick_indices], rotation=45)
+        
+        # Place legend outside to the right
+        plt.legend(title="Condition (Anatomy)", bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.grid(axis='y', which='both', linestyle='-', alpha=0.3)
+        
+        trait_cat_plot_path = args.output_dir / "trait_enrichment_x_condition_site_histogram.png"
+        plt.savefig(trait_cat_plot_path, dpi=300, bbox_inches="tight")
+        print(f"Wrote stacked trait condition plot to {trait_cat_plot_path}")
+        plt.close()
+
     # Save summary counts
     active_traits.to_csv(args.output_dir / "trait_enrichment_counts_stacked.tsv", sep="\t")
     active_profiles.to_csv(args.output_dir / "profile_enrichment_counts_stacked.tsv", sep="\t")
