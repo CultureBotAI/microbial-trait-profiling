@@ -14,6 +14,10 @@ DEFAULT_INPUT_CANDIDATES = [
     Path("data/derived/trait_enrichment_report_p0.001.txt"),
     Path("data/derived/trait_enrichment_report.txt"),
 ]
+DEFAULT_RESULTS_CANDIDATES = [
+    Path("data/derived/trait_enrichment_results_p0.001.tsv"),
+    Path("data/derived/trait_enrichment_results.tsv"),
+]
 DEFAULT_OVERALL_OUTPUT = Path("data/derived/trait_enrichment_traits_overall_ranked.tsv")
 DEFAULT_PAIR_OUTPUT = Path("data/derived/trait_enrichment_trait_study_pairs_ranked.tsv")
 
@@ -39,6 +43,22 @@ def resolve_default_input() -> Path:
     return DEFAULT_INPUT_CANDIDATES[-1]
 
 
+def resolve_default_results(report_path: Path | None = None) -> Path:
+    if report_path:
+        # Try to find a .tsv with same name/prefix as report
+        stem = report_path.stem
+        if stem.startswith("trait_enrichment_report"):
+            tsv_stem = stem.replace("report", "results")
+            candidate = report_path.parent / f"{tsv_stem}.tsv"
+            if candidate.exists():
+                return candidate
+    
+    for candidate in DEFAULT_RESULTS_CANDIDATES:
+        if candidate.exists():
+            return candidate
+    return DEFAULT_RESULTS_CANDIDATES[-1]
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Export ranked trait enrichment TSV outputs from a text report."
@@ -47,7 +67,12 @@ def parse_args() -> argparse.Namespace:
         "--input",
         type=Path,
         default=resolve_default_input(),
-        help="Input trait enrichment report path.",
+        help="Input trait enrichment report path (used for header detection).",
+    )
+    parser.add_argument(
+        "--results",
+        type=Path,
+        help="Input trait enrichment results TSV (used for data aggregation). Defaults to companion of --input.",
     )
     parser.add_argument(
         "--overall-output",
@@ -74,6 +99,59 @@ def _parse_summary_values(summary: str) -> tuple[float | None, float | None, flo
     return obs, exp, fold
 
 
+def detect_stat_type(path: Path) -> tuple[str, float]:
+    """Detect if the report used p-value or FDR q-value and the threshold."""
+    if not path.exists():
+        return "p_value", 0.001
+    
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if line.startswith("p < "):
+                return "p_value", float(line.split("<")[1].strip())
+            if line.startswith("FDR q < "):
+                return "fdr_q", float(line.split("<")[1].strip())
+    
+    return "p_value", 0.001
+
+
+def parse_results_tsv(
+    path: Path, stat_type: str, threshold: float, min_fold: float = 1.5
+) -> list[ParsedRow]:
+    if not path.exists():
+        raise FileNotFoundError(f"Results TSV not found: {path}")
+
+    # Use p_value if stat_type is p_value, else fdr_q
+    col = "p_value" if stat_type == "p_value" else "fdr_q"
+
+    df = pd.read_csv(path, sep="\t")
+    
+    # Apply filtering to match report logic
+    df = df[(df[col] <= threshold) & (df["fold"] >= min_fold)]
+    print(f"Filtered to {len(df)} significant hits (threshold={threshold}, fold={min_fold})")
+    
+    rows = []
+    for _, r in df.iterrows():
+        study_id = str(r["study_id"])
+        experiment_id = str(r["experiment_id"])
+        inc_dec = str(r["inc_dec"])
+        rows.append(
+            ParsedRow(
+                study_id=study_id,
+                experiment_id=experiment_id,
+                inc_dec=inc_dec,
+                profile_id=f"{study_id}|{experiment_id}|{inc_dec}",
+                trait=str(r["trait"]),
+                pvalue=float(r[col]),
+                fold=float(r["fold"]),
+                obs=float(r["count"]),
+                exp=float(r["expected"]),
+                hit_count=None,
+            )
+        )
+    return rows
+
+
 def parse_report(path: Path) -> list[ParsedRow]:
     rows: list[ParsedRow] = []
     current_header: tuple[str, str, str] | None = None
@@ -81,7 +159,7 @@ def parse_report(path: Path) -> list[ParsedRow]:
     with path.open("r", encoding="utf-8") as handle:
         for raw in handle:
             line = raw.strip()
-            if not line or line == "---" or line.startswith("p < "):
+            if not line or line == "---" or line.startswith("p < ") or line.startswith("FDR q < "):
                 continue
 
             if line.startswith("- "):
@@ -100,6 +178,9 @@ def parse_report(path: Path) -> list[ParsedRow]:
 
                 summary = parts[3] if len(parts) >= 4 else parts[2]
                 obs, exp, fold = _parse_summary_values(summary)
+
+                if current_header is None:
+                    raise ValueError(f"Trait row found before profile header: {line!r}")
 
                 study_id, experiment_id, inc_dec = current_header
                 profile_id = f"{study_id}|{experiment_id}|{inc_dec}"
@@ -130,7 +211,7 @@ def parse_report(path: Path) -> list[ParsedRow]:
     return rows
 
 
-def build_overall_table(frame: pd.DataFrame) -> pd.DataFrame:
+def build_overall_table(frame: pd.DataFrame, stat_type: str) -> pd.DataFrame:
     grouped = frame.groupby("trait", dropna=False)
 
     best_idx = grouped["pvalue"].idxmin()
@@ -145,8 +226,8 @@ def build_overall_table(frame: pd.DataFrame) -> pd.DataFrame:
     )
 
     summary = grouped.agg(
-        best_pvalue=("pvalue", "min"),
-        median_pvalue=("pvalue", "median"),
+        best_stat=("pvalue", "min"),
+        median_stat=("pvalue", "median"),
         hit_rows=("trait", "size"),
         unique_profiles=("profile_id", "nunique"),
         mean_fold=("fold", "mean"),
@@ -163,8 +244,9 @@ def build_overall_table(frame: pd.DataFrame) -> pd.DataFrame:
     overall = summary.join(inc_counts, how="left").join(dec_counts, how="left")
     overall[["inc_hits", "dec_hits"]] = overall[["inc_hits", "dec_hits"]].fillna(0).astype(int)
     overall = overall.reset_index().merge(best_rows, on="trait", how="left")
+    overall.insert(1, "stat_type", stat_type)
     overall = overall.sort_values(
-        ["best_pvalue", "hit_rows", "max_fold"],
+        ["best_stat", "hit_rows", "max_fold"],
         ascending=[True, False, False],
     )
     overall.insert(0, "rank", range(1, len(overall) + 1))
@@ -180,10 +262,20 @@ def build_pair_table(frame: pd.DataFrame) -> pd.DataFrame:
 
 def main() -> int:
     args = parse_args()
-    rows = parse_report(args.input)
+    
+    stat_type, stat_threshold = detect_stat_type(args.input)
+    results_path = args.results or resolve_default_results(args.input)
+    
+    if results_path.exists():
+        print(f"Loading data from results TSV: {results_path}")
+        rows = parse_results_tsv(results_path, stat_type, stat_threshold)
+    else:
+        print(f"Warning: Results TSV not found at {results_path}. Falling back to report parser (may be truncated).")
+        rows = parse_report(args.input)
+        
     frame = pd.DataFrame([row.__dict__ for row in rows])
 
-    overall = build_overall_table(frame)
+    overall = build_overall_table(frame, stat_type)
     pairs = build_pair_table(frame)
 
     args.overall_output.parent.mkdir(parents=True, exist_ok=True)
