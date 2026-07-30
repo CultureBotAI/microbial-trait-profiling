@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import os
 import re
+import runpy
 import shutil
-import subprocess
 import sys
 import tempfile
-import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
+
+import defusedxml.ElementTree as ET
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INVESTIGATION_DIR = REPO_ROOT / "trait-visualization" / "trait-profile-investigation"
@@ -63,10 +64,6 @@ SLIDE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relation
 IMAGE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 NOTES_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide"
 SLIDE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.slide+xml"
-ET.register_namespace("p", P_NS)
-ET.register_namespace("r", R_NS)
-ET.register_namespace("", REL_NS)
-ET.register_namespace("", CT_NS)
 
 PPTX_TEXT_REPLACEMENTS = {
     "ppt/slides/slide6.xml": {
@@ -100,7 +97,15 @@ def run_script(script_name: str) -> None:
     """Run one repo script using this interpreter."""
     script = REPO_ROOT / "scripts" / script_name
     print(f"==> {script.relative_to(REPO_ROOT)}")
-    subprocess.run([sys.executable, str(script)], cwd=REPO_ROOT, check=True)
+    previous_cwd = Path.cwd()
+    previous_argv = sys.argv[:]
+    try:
+        os.chdir(REPO_ROOT)
+        sys.argv = [str(script)]
+        runpy.run_path(str(script), run_name="__main__")
+    finally:
+        sys.argv = previous_argv
+        os.chdir(previous_cwd)
 
 
 def patch_pptx_entry(name: str, data: bytes) -> bytes:
@@ -151,13 +156,14 @@ def ensure_slide_content_type(entries: dict[str, bytes], slide_number: int) -> N
     for override in root:
         if override.attrib.get("PartName") == part_name:
             return
-    ET.SubElement(
-        root,
-        f"{{{CT_NS}}}Override",
-        {
-            "PartName": part_name,
-            "ContentType": SLIDE_CONTENT_TYPE,
-        },
+    root.append(
+        root.makeelement(
+            f"{{{CT_NS}}}Override",
+            {
+                "PartName": part_name,
+                "ContentType": SLIDE_CONTENT_TYPE,
+            },
+        )
     )
     entries["[Content_Types].xml"] = encode_xml(
         ET.tostring(root, encoding="unicode", xml_declaration=True)
@@ -185,14 +191,15 @@ def ensure_presentation_slide_relationships(entries: dict[str, bytes]) -> dict[i
         if relationship_id is None:
             spec = next(item for item in STACKED_SLIDE_SPECS if item["slide"] == slide_number)
             relationship_id = str(spec["presentation_rel_id"])
-            ET.SubElement(
-                root,
-                f"{{{REL_NS}}}Relationship",
-                {
-                    "Type": SLIDE_REL_TYPE,
-                    "Target": f"/{target}",
-                    "Id": relationship_id,
-                },
+            root.append(
+                root.makeelement(
+                    f"{{{REL_NS}}}Relationship",
+                    {
+                        "Type": SLIDE_REL_TYPE,
+                        "Target": f"/{target}",
+                        "Id": relationship_id,
+                    },
+                )
             )
         slide_rel_ids[slide_number] = relationship_id
 
@@ -226,13 +233,14 @@ def update_presentation_slide_order(
         if slide_id_value is None:
             slide_id_value = next_id
             next_id += 1
-        ET.SubElement(
-            slide_id_list,
-            f"{{{P_NS}}}sldId",
-            {
-                "id": str(slide_id_value),
-                f"{{{R_NS}}}id": relationship_id,
-            },
+        slide_id_list.append(
+            slide_id_list.makeelement(
+                f"{{{P_NS}}}sldId",
+                {
+                    "id": str(slide_id_value),
+                    f"{{{R_NS}}}id": relationship_id,
+                },
+            )
         )
 
     entries["ppt/presentation.xml"] = encode_xml(

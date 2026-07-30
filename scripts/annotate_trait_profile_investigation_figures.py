@@ -114,10 +114,18 @@ FIGURE_LABELS = {
         NON_GUILD_OCCURRENCE_COUNT
     ),
     Path("anaerobe-depletion-v2/anatomical_sites_diagram.png"): GUT_V2_BODY_SITE,
+    Path("anaerobe-depletion-v2/anatomical_sites_enriched_profile_diagram.png"): (
+        "Guild-specific: yes - counts anatomical-site increased/decreased profiles "
+        "with at least one enriched anaerobe v2 guild trait."
+    ),
     Path("anaerobe-depletion-v2/candidate_taxa_depletion_bias.png"): (NON_GUILD_DIRECTION_COUNT_V2),
     Path(
         "anaerobe-depletion-v2/condition_decreased_guild_signal.png"
     ): "Guild-specific: yes - uses the anaerobe v2 depletion guild score by condition.",
+    Path("anaerobe-depletion-v2/condition_enriched_profile_histogram.png"): (
+        "Guild-specific: yes - counts condition-level increased/decreased profiles "
+        "with at least one enriched anaerobe v2 guild trait."
+    ),
     Path("anaerobe-depletion-v2/condition_target_taxa_stacked_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT_V2
     ),

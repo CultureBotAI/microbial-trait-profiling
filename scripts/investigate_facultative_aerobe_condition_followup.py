@@ -575,9 +575,7 @@ def write_readme(
     heatmap_taxa = len(heatmap_matrix.columns)
     full_taxa = balance["taxon_id"].nunique()
     guild_trait_text = ", ".join(GUILD_TRAITS.values())
-    positive_conditions = profile_summary[
-        profile_summary["increased_minus_decreased_guild_z"] > 0
-    ]
+    positive_conditions = profile_summary[profile_summary["increased_minus_decreased_guild_z"] > 0]
     if positive_conditions.empty:
         positive_condition_text = "No included condition label has a positive v2 guild shift."
     else:
@@ -587,9 +585,7 @@ def write_readme(
         ]
         positive_condition_text = (
             "Included condition labels with positive increased-minus-decreased v2 guild "
-            "shifts are "
-            + ", ".join(condition_bits)
-            + "."
+            "shifts are " + ", ".join(condition_bits) + "."
         )
     lines.extend(
         [

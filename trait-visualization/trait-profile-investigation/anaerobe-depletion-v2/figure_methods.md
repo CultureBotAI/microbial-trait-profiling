@@ -7,6 +7,7 @@ These method notes describe how each PNG in this investigation folder was genera
 Study-profile z-scores were read from `trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv` and joined to study metadata from `trait-visualization/study_trait_profile_study_metadata.tsv`. The anaerobe v2 depletion guild score was the row-wise mean of the selected oxygen-tolerance counterpart traits: anaerobic and obligately anaerobic. This makes the comparison parallel to the facultative-aerobe v2 guild, with the focus direction switched to decreased profiles. Profiles from all body sites are retained, and body-site summaries are used to separate gut, oral, airway, urogenital, and other contexts.
 `guild_trait_selection.tsv` documents the a priori selected trait set, the focus/comparator directions, a short selection justification for each trait, and KG-Microbe grounding as the count of taxa carrying each trait in `data/derived/taxa_trait_matrix.tsv`.
 Direction labels (`increased` and `decreased`) were taken from BugSigDB's curated `Abundance in Group 1` signature field. This script did not recalculate differential abundance; it grouped and filtered BugSigDB-reported study/experiment/direction profiles by condition and body-site metadata.
+For profile-enrichment filtering, a profile's `enriched_guild_trait_count` is the number of selected anaerobe v2 guild traits with a positive z-score in that profile. Profiles with zero positive selected guild-trait z-scores are retained in the main guild-score summaries but are excluded from enrichment-filtered profile-count plots.
 
 The focal taxa were defined a priori in the script's `TARGET_TAXA` map using NCBI Taxonomy identifiers, which avoids ambiguity from synonym or strain-name differences. The selected taxa were Faecalibacterium prausnitzii (NCBITaxon:853), Anaerobutyricum hallii (NCBITaxon:39488), Lachnospira eligens (NCBITaxon:39485), Agathobacter rectalis (NCBITaxon:39491), Roseburia intestinalis (NCBITaxon:166486), Ruminococcus bromii (NCBITaxon:40518), and Roseburia inulinivorans (NCBITaxon:360807). These taxa are fixed focal examples for recurrence audits in decreased profiles; they do not define the formal v2 guild score. The formal guild is the opposite-direction oxygen-tolerance trait set described above, and the derived taxa-trait matrix gives each selected focal taxon at least one of those investigation guild-trait annotations. The script writes `candidate_taxa_trait_presence.tsv` from `data/derived/taxa_trait_matrix.tsv` as the audit trail for those trait annotations.
 
@@ -28,11 +29,23 @@ Guild-specificity: yes. This figure shows the two selected v2 guild traits and t
 
 For each selected guild trait, the script calculated the mean z-score in decreased study profiles and the mean z-score in increased study profiles. Bars show `decreased mean z - increased mean z`; positive values indicate traits that are higher in decreased profiles.
 
+## `condition_enriched_profile_histogram.png`
+
+Guild-specificity: yes. This figure counts profile directions after filtering to profiles with at least one positive anaerobe v2 guild-trait z-score.
+
+The script first counts selected anaerobe v2 guild traits with positive z-scores for every study/experiment/direction profile. Broad non-condition and metadata labels are removed using the same condition filter as the condition guild-signal plot. Within each remaining condition and direction, profiles with zero enriched guild traits are dropped, then the number of retained profiles is binned as 1, 2, 3-4, 5-9, 10-19, 20-49, 50-99, or 100+. Bars show how many conditions fall into each retained-profile-count bin for increased and decreased profiles. The legend reports how many profiles in each direction had zero enriched guild traits within this condition-filtered universe and therefore dropped out of this enrichment-filtered view. The companion TSV `condition_enriched_profile_counts.tsv` preserves both total and retained profile counts by condition and direction.
+
+## `anatomical_sites_enriched_profile_diagram.png`
+
+Guild-specificity: yes. This figure is an enrichment-filtered anatomical companion to `anatomical_sites_diagram.png`.
+
+Profiles were grouped by `body_site_group`, requiring at least 10 total profiles per group before enrichment filtering. The display excludes the generic `Other` body-site group and then keeps body-site groups with at least 10 profiles containing a positive anaerobe v2 guild-trait z-score. Bubble and stacked bar length encode the number of retained profiles. The stacked bar segments separate retained increased and decreased profiles. The legend reports how many profiles in each direction had zero enriched guild traits and therefore dropped out of this enrichment-filtered anatomical view. The companion TSV `body_site_enriched_profile_summary.tsv` preserves total, retained, and zero-enriched profile counts by body-site group and direction.
+
 ## `anatomical_sites_diagram.png`
 
 Guild-specificity: yes. Color encodes the anaerobe v2 depletion guild score among decreased profiles at each body-site group.
 
-Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 depletion guild z-score among decreased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using fixed anatomical coordinates for feces/stool, colon, caecum, oral, airway, urogenital, and unknown labels.
+Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 depletion guild z-score among decreased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using fixed anatomical coordinates for feces/stool, colon, caecum, oral, airway, urogenital, and unknown labels. The diagram legend also reports how many increased and decreased profiles have zero enriched anaerobe v2 guild traits.
 
 ## `target_taxa_condition_breakdown_bar.png`
 

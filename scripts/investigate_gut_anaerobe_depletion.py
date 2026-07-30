@@ -9,7 +9,7 @@ from typing import Any
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
-from matplotlib.patches import Circle, PathPatch
+from matplotlib.patches import Circle, Patch, PathPatch
 from matplotlib.path import Path as MplPath
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -87,6 +87,24 @@ TARGET_TAXON_LEGEND_LABELS = {
     "Roseburia inulinivorans": "R. inulinivorans",
     "Ruminococcus bromii": "R. bromii",
 }
+DIRECTION_LABELS = {
+    "inc": "Increased",
+    "dec": "Decreased",
+}
+DIRECTION_COLORS = {
+    "inc": "#dc2626",
+    "dec": "#2563eb",
+}
+PROFILE_COUNT_BIN_DEFINITIONS = (
+    (1, 1, "1"),
+    (2, 2, "2"),
+    (3, 4, "3-4"),
+    (5, 9, "5-9"),
+    (10, 19, "10-19"),
+    (20, 49, "20-49"),
+    (50, 99, "50-99"),
+    (100, None, "100+"),
+)
 
 
 def add_specificity_note(ax: plt.Axes, note: str) -> None:
@@ -261,6 +279,8 @@ def add_guild_scores(matrix: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFra
     scored = metadata.copy()
     scored["guild_z_mean"] = matrix[available_traits].mean(axis=1)
     scored["anaerobe_z_mean"] = scored["guild_z_mean"]
+    scored["enriched_guild_trait_count"] = matrix[available_traits].gt(0).sum(axis=1)
+    scored["has_enriched_guild_trait"] = scored["enriched_guild_trait_count"] > 0
     for trait_name in available_traits:
         scored[f"z_{trait_name}"] = matrix[trait_name]
     return scored
@@ -387,6 +407,125 @@ def pluralize(count: int, singular: str, plural: str | None = None) -> str:
     if count == 1:
         return singular
     return plural or f"{singular}s"
+
+
+def direction_label(inc_dec: object) -> str:
+    """Return a display label for compact profile directions."""
+    return DIRECTION_LABELS.get(clean_text(inc_dec), clean_text(inc_dec))
+
+
+def count_zero_enriched_traits_by_direction(profiles: pd.DataFrame) -> dict[str, int]:
+    """Count profiles with no positive selected guild-trait z-scores by direction."""
+    zero_enriched = profiles["enriched_guild_trait_count"].eq(0)
+    counts = zero_enriched.groupby(profiles["inc_dec"]).sum()
+    return {direction: int(counts.get(direction, 0)) for direction in DIRECTION_LABELS}
+
+
+def format_zero_enriched_trait_counts(counts: dict[str, int]) -> str:
+    """Return a compact zero-enriched profile-count note."""
+    return f"Zero enriched guild traits: inc {counts.get('inc', 0):,}; dec {counts.get('dec', 0):,}"
+
+
+def profile_count_bin_label(profile_count: int) -> str:
+    """Return the histogram bin label for an enriched profile count."""
+    for lower, upper, label in PROFILE_COUNT_BIN_DEFINITIONS:
+        if upper is None and profile_count >= lower:
+            return label
+        if upper is not None and lower <= profile_count <= upper:
+            return label
+    return "0"
+
+
+def summarize_condition_enriched_profile_counts(profiles: pd.DataFrame) -> pd.DataFrame:
+    """Summarize condition-direction profile counts after zero-enrichment dropouts."""
+    selected = profiles.copy()
+    selected["condition"] = selected["condition"].map(clean_text)
+    selected = selected[~selected["condition"].map(is_excluded_condition_label)].copy()
+
+    rows: list[dict[str, object]] = []
+    for (condition, inc_dec), group in selected.groupby(["condition", "inc_dec"], dropna=False):
+        enriched_group = group[group["has_enriched_guild_trait"]].copy()
+        profile_count = len(group)
+        enriched_profile_count = len(enriched_group)
+        zero_enriched_profile_count = profile_count - enriched_profile_count
+        rows.append(
+            {
+                "condition": condition,
+                "inc_dec": inc_dec,
+                "direction_label": direction_label(inc_dec),
+                "profile_count": profile_count,
+                "enriched_profile_count": enriched_profile_count,
+                "zero_enriched_profile_count": zero_enriched_profile_count,
+                "enriched_profile_fraction": safe_ratio(
+                    float(enriched_profile_count),
+                    float(profile_count),
+                ),
+                "study_count": group["study_id"].nunique(),
+                "enriched_study_count": enriched_group["study_id"].nunique(),
+                "max_enriched_guild_trait_count": (
+                    int(enriched_group["enriched_guild_trait_count"].max())
+                    if enriched_profile_count
+                    else 0
+                ),
+            }
+        )
+
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows).sort_values(
+        ["enriched_profile_count", "profile_count", "condition", "inc_dec"],
+        ascending=[False, False, True, True],
+    )
+
+
+def summarize_body_site_enriched_profile_counts(
+    profiles: pd.DataFrame,
+    min_profiles: int,
+) -> pd.DataFrame:
+    """Summarize body-site profile counts after zero-enrichment dropouts."""
+    rows: list[dict[str, object]] = []
+    for body_site_group, group in profiles.groupby("body_site_group", dropna=False):
+        if len(group) < min_profiles:
+            continue
+
+        enriched_group = group[group["has_enriched_guild_trait"]].copy()
+        inc = group[group["inc_dec"] == "inc"]
+        dec = group[group["inc_dec"] == "dec"]
+        enriched_inc = enriched_group[enriched_group["inc_dec"] == "inc"]
+        enriched_dec = enriched_group[enriched_group["inc_dec"] == "dec"]
+        enriched_profile_count = len(enriched_group)
+        rows.append(
+            {
+                "body_site_group": clean_text(body_site_group),
+                "profile_count": len(group),
+                "enriched_profile_count": enriched_profile_count,
+                "zero_enriched_profile_count": len(group) - enriched_profile_count,
+                "increased_profile_count": len(inc),
+                "decreased_profile_count": len(dec),
+                "increased_enriched_profile_count": len(enriched_inc),
+                "decreased_enriched_profile_count": len(enriched_dec),
+                "increased_zero_enriched_profile_count": len(inc) - len(enriched_inc),
+                "decreased_zero_enriched_profile_count": len(dec) - len(enriched_dec),
+                "enriched_profile_fraction": safe_ratio(
+                    float(enriched_profile_count),
+                    float(len(group)),
+                ),
+                "decreased_enriched_profile_fraction": safe_ratio(
+                    float(len(enriched_dec)),
+                    float(enriched_profile_count),
+                ),
+                "mean_enriched_guild_trait_count": enriched_group[
+                    "enriched_guild_trait_count"
+                ].mean(),
+            }
+        )
+
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows).sort_values(
+        ["enriched_profile_count", "profile_count", "body_site_group"],
+        ascending=[False, False, True],
+    )
 
 
 def build_kg_microbe_taxon_universe() -> pd.DataFrame:
@@ -1172,6 +1311,265 @@ def save_condition_target_taxa_stacked_bar_chart(
     plt.close(fig)
 
 
+def save_condition_enriched_profile_histogram(
+    condition_enriched_profile_counts: pd.DataFrame,
+    *,
+    output_path: Path,
+) -> None:
+    """Save a histogram of condition counts by enriched profile count."""
+    if condition_enriched_profile_counts.empty:
+        return
+
+    selected = condition_enriched_profile_counts[
+        condition_enriched_profile_counts["enriched_profile_count"] > 0
+    ].copy()
+    if selected.empty:
+        return
+
+    bin_labels = [label for _, _, label in PROFILE_COUNT_BIN_DEFINITIONS]
+    selected["profile_count_bin"] = selected["enriched_profile_count"].map(
+        lambda count: profile_count_bin_label(int(count))
+    )
+    histogram = (
+        selected.groupby(["profile_count_bin", "inc_dec"], dropna=False)["condition"]
+        .nunique()
+        .unstack(fill_value=0)
+        .reindex(bin_labels, fill_value=0)
+    )
+    zero_enriched_trait_counts = {
+        direction: int(
+            condition_enriched_profile_counts.loc[
+                condition_enriched_profile_counts["inc_dec"] == direction,
+                "zero_enriched_profile_count",
+            ].sum()
+        )
+        for direction in DIRECTION_LABELS
+    }
+
+    fig, ax = plt.subplots(figsize=(9.5, 5.2))
+    x_positions = list(range(len(bin_labels)))
+    bar_width = 0.38
+    offsets = {"inc": -bar_width / 2, "dec": bar_width / 2}
+
+    for direction in ["inc", "dec"]:
+        values = (
+            histogram[direction].to_numpy()
+            if direction in histogram.columns
+            else [0] * len(bin_labels)
+        )
+        ax.bar(
+            [x + offsets[direction] for x in x_positions],
+            values,
+            width=bar_width,
+            color=DIRECTION_COLORS[direction],
+            label=(
+                f"{DIRECTION_LABELS[direction]} "
+                f"(zero enriched: {zero_enriched_trait_counts.get(direction, 0):,})"
+            ),
+        )
+
+    ax.set_xticks(x_positions)
+    ax.set_xticklabels(bin_labels)
+    ax.set_xlabel("Enriched profiles per condition")
+    ax.set_ylabel("Number of conditions")
+    ax.set_title(
+        "Condition Histogram After Anaerobe v2 Profile-Enrichment Filtering",
+        pad=28,
+    )
+    add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
+    ax.legend(title="BugSigDB profile direction", frameon=False)
+    fig.text(
+        0.01,
+        0.01,
+        "A profile is retained when at least one selected anaerobe v2 trait has "
+        "a positive z-score; zero-enriched profiles are excluded and counted "
+        "in the legend.",
+        fontsize=8,
+        color="#475569",
+    )
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
+    fig.savefig(output_path, bbox_inches="tight")
+    plt.close(fig)
+
+
+def save_anatomical_enriched_profile_diagram(
+    body_site_enriched_profile_summary: pd.DataFrame,
+    zero_enriched_trait_counts: dict[str, int],
+    *,
+    output_path: Path,
+    min_enriched_profiles: int = 10,
+    max_sites: int = 12,
+) -> None:
+    """Save an anatomical-site diagram for enrichment-filtered profile counts."""
+    if body_site_enriched_profile_summary.empty:
+        return
+
+    plot_sites = (
+        body_site_enriched_profile_summary[
+            ~body_site_enriched_profile_summary["body_site_group"].map(is_other_body_site)
+            & (
+                body_site_enriched_profile_summary["enriched_profile_count"]
+                >= min_enriched_profiles
+            )
+        ]
+        .head(max_sites)
+        .copy()
+    )
+    if plot_sites.empty:
+        return
+
+    numeric_columns = [
+        "enriched_profile_count",
+        "increased_enriched_profile_count",
+        "decreased_enriched_profile_count",
+    ]
+    for column in numeric_columns:
+        plot_sites[column] = pd.to_numeric(plot_sites[column], errors="coerce").fillna(0)
+
+    points = [anatomical_site_base(site) for site in plot_sites["body_site_group"]]
+    plot_sites["anchor_x"] = [point[0] for point in points]
+    plot_sites["anchor_y"] = [point[1] for point in points]
+    plot_sites = plot_sites.sort_values(
+        ["anchor_y", "enriched_profile_count"],
+        ascending=[False, False],
+    )
+
+    max_count = max(float(plot_sites["enriched_profile_count"].max()), 1.0)
+    fig_height = max(7.2, 1.0 + len(plot_sites) * 0.82)
+    fig, ax = plt.subplots(figsize=(11, fig_height))
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_aspect("equal", adjustable="box")
+    ax.axis("off")
+    add_anatomical_outline(ax)
+
+    label_ys = [0.84]
+    if len(plot_sites) > 1:
+        step = 0.60 / (len(plot_sites) - 1)
+        label_ys = [0.84 - index * step for index in range(len(plot_sites))]
+
+    for label_y, row in zip(label_ys, plot_sites.itertuples(index=False), strict=False):
+        enriched_count = int(row.enriched_profile_count)
+        increased_count = int(row.increased_enriched_profile_count)
+        decreased_count = int(row.decreased_enriched_profile_count)
+        size = 95 + 900 * math.sqrt(enriched_count / max_count)
+        ax.scatter(
+            [row.anchor_x],
+            [row.anchor_y],
+            s=size,
+            c=["#e2e8f0"],
+            edgecolors="#111827",
+            linewidths=0.8,
+            zorder=4,
+        )
+        ax.plot(
+            [row.anchor_x, 0.52, 0.57],
+            [row.anchor_y, label_y, label_y],
+            color="#6b7280",
+            lw=0.9,
+            zorder=2,
+        )
+
+        bar_width = 0.30 * enriched_count / max_count
+        increased_width = bar_width * safe_ratio(float(increased_count), float(enriched_count))
+        decreased_width = bar_width * safe_ratio(float(decreased_count), float(enriched_count))
+        if increased_width > 0:
+            ax.plot(
+                [0.58, 0.58 + increased_width],
+                [label_y, label_y],
+                color=DIRECTION_COLORS["inc"],
+                lw=7,
+                solid_capstyle="round",
+                zorder=3,
+            )
+        if decreased_width > 0:
+            ax.plot(
+                [0.58 + increased_width, 0.58 + increased_width + decreased_width],
+                [label_y, label_y],
+                color=DIRECTION_COLORS["dec"],
+                lw=7,
+                solid_capstyle="round",
+                zorder=3,
+            )
+
+        ax.text(
+            0.58,
+            label_y + 0.018,
+            display_body_site(row.body_site_group),
+            ha="left",
+            va="bottom",
+            fontsize=10,
+            fontweight="bold",
+        )
+        ax.text(
+            0.58,
+            label_y - 0.018,
+            f"{enriched_count:,} enriched profiles; inc {increased_count:,}, "
+            f"dec {decreased_count:,}",
+            ha="left",
+            va="top",
+            fontsize=8.5,
+            color="#374151",
+        )
+
+    ax.text(
+        0.02,
+        0.965,
+        "Anaerobe v2 Enriched Profiles: Anatomical Sites",
+        ha="left",
+        va="top",
+        fontsize=17,
+        fontweight="bold",
+    )
+    ax.text(
+        0.02,
+        0.925,
+        GUILD_SPECIFIC_NOTE,
+        ha="left",
+        va="top",
+        fontsize=8.5,
+        color="#475569",
+    )
+    ax.text(
+        0.02,
+        0.035,
+        "Retained = at least one positive v2 guild-trait z-score.",
+        ha="left",
+        va="bottom",
+        fontsize=8.5,
+        color="#374151",
+    )
+    legend_handles = [
+        Patch(
+            color=DIRECTION_COLORS["inc"],
+            label=(
+                f"Increased retained (zero enriched: {zero_enriched_trait_counts.get('inc', 0):,})"
+            ),
+        ),
+        Patch(
+            color=DIRECTION_COLORS["dec"],
+            label=(
+                f"Decreased retained (zero enriched: {zero_enriched_trait_counts.get('dec', 0):,})"
+            ),
+        ),
+    ]
+    ax.legend(
+        handles=legend_handles,
+        title="Profile direction",
+        loc="lower right",
+        bbox_to_anchor=(0.98, 0.035),
+        frameon=True,
+        framealpha=1,
+        edgecolor="#cbd5e1",
+        fontsize=8,
+        title_fontsize=8.5,
+    )
+
+    fig.tight_layout()
+    fig.savefig(output_path, bbox_inches="tight")
+    plt.close(fig)
+
+
 def display_body_site(value: object) -> str:
     """Return concise display labels for body-site groups."""
     label = clean_text(value)
@@ -1295,6 +1693,7 @@ def save_anatomical_sites_diagram(
     title: str,
     signal_column: str,
     signal_label: str,
+    zero_enriched_trait_counts: dict[str, int] | None = None,
     max_sites: int = 12,
 ) -> None:
     """Save an anatomical-site callout diagram for body-site guild summaries."""
@@ -1411,6 +1810,24 @@ def save_anatomical_sites_diagram(
         fontsize=8.5,
         color="#374151",
     )
+    if zero_enriched_trait_counts is not None:
+        ax.text(
+            0.72,
+            0.035,
+            "Zero enriched guild traits\n"
+            f"Increased profiles: {zero_enriched_trait_counts.get('inc', 0):,}\n"
+            f"Decreased profiles: {zero_enriched_trait_counts.get('dec', 0):,}",
+            ha="left",
+            va="bottom",
+            fontsize=8.3,
+            color="#374151",
+            bbox={
+                "boxstyle": "round,pad=0.35",
+                "facecolor": "#ffffff",
+                "edgecolor": "#cbd5e1",
+                "linewidth": 0.8,
+            },
+        )
     scalar_mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
     scalar_mappable.set_array([])
     colorbar = fig.colorbar(scalar_mappable, ax=ax, fraction=0.03, pad=0.02)
@@ -1450,6 +1867,11 @@ def write_figure_methods() -> None:
         "recalculate differential abundance; it grouped and filtered "
         "BugSigDB-reported study/experiment/direction profiles by condition and "
         "body-site metadata.",
+        "For profile-enrichment filtering, a profile's "
+        "`enriched_guild_trait_count` is the number of selected anaerobe v2 "
+        "guild traits with a positive z-score in that profile. Profiles with zero "
+        "positive selected guild-trait z-scores are retained in the main guild-score "
+        "summaries but are excluded from enrichment-filtered profile-count plots.",
         "",
         "The focal taxa were defined a priori in the script's `TARGET_TAXA` map "
         "using NCBI Taxonomy identifiers, which avoids ambiguity from synonym or "
@@ -1520,6 +1942,43 @@ def write_figure_methods() -> None:
         "traits that are higher in decreased "
         "profiles.",
         "",
+        "## `condition_enriched_profile_histogram.png`",
+        "",
+        "Guild-specificity: yes. This figure counts profile directions after "
+        "filtering to profiles with at least one positive anaerobe v2 guild-trait "
+        "z-score.",
+        "",
+        "The script first counts selected anaerobe v2 guild traits with positive "
+        "z-scores for every study/experiment/direction profile. Broad non-condition "
+        "and metadata labels are removed using the same condition filter as the "
+        "condition guild-signal plot. Within each remaining condition and direction, "
+        "profiles with zero enriched guild traits are dropped, then the number of "
+        "retained profiles is binned as 1, 2, 3-4, 5-9, 10-19, 20-49, 50-99, or "
+        "100+. Bars show how many conditions fall into each retained-profile-count "
+        "bin for increased and decreased profiles. The legend reports how many "
+        "profiles in each direction had zero enriched guild traits within this "
+        "condition-filtered universe and therefore dropped out of this "
+        "enrichment-filtered view. The companion TSV "
+        "`condition_enriched_profile_counts.tsv` preserves both total and retained "
+        "profile counts by condition and direction.",
+        "",
+        "## `anatomical_sites_enriched_profile_diagram.png`",
+        "",
+        "Guild-specificity: yes. This figure is an enrichment-filtered anatomical "
+        "companion to `anatomical_sites_diagram.png`.",
+        "",
+        "Profiles were grouped by `body_site_group`, requiring at least 10 total "
+        "profiles per group before enrichment filtering. The display excludes the "
+        "generic `Other` body-site group and then keeps body-site groups with at "
+        "least 10 profiles containing a positive anaerobe v2 guild-trait z-score. "
+        "Bubble and stacked bar length encode the number of retained profiles. "
+        "The stacked bar segments separate retained increased and decreased "
+        "profiles. The legend reports how many profiles in each direction had zero "
+        "enriched guild traits and therefore dropped out of this "
+        "enrichment-filtered anatomical view. The companion TSV "
+        "`body_site_enriched_profile_summary.tsv` preserves total, retained, and "
+        "zero-enriched profile counts by body-site group and direction.",
+        "",
         "## `anatomical_sites_diagram.png`",
         "",
         "Guild-specificity: yes. Color encodes the anaerobe v2 depletion guild score "
@@ -1532,7 +1991,9 @@ def write_figure_methods() -> None:
         "z-score among decreased profiles at that body site. Body-site labels were "
         "placed on a simplified, neutral front-view body outline using fixed "
         "anatomical coordinates for feces/stool, colon, caecum, oral, airway, "
-        "urogenital, and unknown labels.",
+        "urogenital, and unknown labels. The diagram legend also reports how many "
+        "increased and decreased profiles have zero enriched anaerobe v2 guild "
+        "traits.",
         "",
         "## `target_taxa_condition_breakdown_bar.png`",
         "",
@@ -1593,7 +2054,10 @@ def make_plots(
     condition_summary: pd.DataFrame,
     direction_summary: pd.DataFrame,
     body_site_summary: pd.DataFrame,
+    body_site_enriched_profile_summary: pd.DataFrame,
     occurrences: pd.DataFrame,
+    condition_enriched_profile_counts: pd.DataFrame,
+    zero_enriched_trait_counts: dict[str, int],
 ) -> None:
     plt.rcParams.update({"figure.dpi": 160, "savefig.dpi": 200})
 
@@ -1677,12 +2141,22 @@ def make_plots(
         condition_summary,
         output_path=OUTPUT_DIR / "condition_target_taxa_stacked_bar.png",
     )
+    save_condition_enriched_profile_histogram(
+        condition_enriched_profile_counts,
+        output_path=OUTPUT_DIR / "condition_enriched_profile_histogram.png",
+    )
+    save_anatomical_enriched_profile_diagram(
+        body_site_enriched_profile_summary,
+        zero_enriched_trait_counts,
+        output_path=OUTPUT_DIR / "anatomical_sites_enriched_profile_diagram.png",
+    )
     save_anatomical_sites_diagram(
         body_site_summary,
         output_path=OUTPUT_DIR / "anatomical_sites_diagram.png",
         title="Anaerobe v2 Depletion: Anatomical Sites",
         signal_column="decreased_mean_guild_z",
         signal_label="decreased-profile guild z",
+        zero_enriched_trait_counts=zero_enriched_trait_counts,
     )
 
 
@@ -1692,6 +2166,8 @@ def write_summary_report(
     condition_summary: pd.DataFrame,
     taxa_summary: pd.DataFrame,
     condition_taxa_summary: pd.DataFrame,
+    condition_enriched_profile_counts: pd.DataFrame,
+    body_site_enriched_profile_summary: pd.DataFrame,
     inferred_group_summary: pd.DataFrame,
     kg_microbe_taxon_universe: pd.DataFrame,
     top_depletion_profiles: pd.DataFrame,
@@ -1705,6 +2181,29 @@ def write_summary_report(
         (condition_taxa_summary["decreased_profile_count"] >= 3)
         & (condition_taxa_summary["decreased_study_count"] >= 2)
     ].head(10)
+    enriched_direction_rows: list[dict[str, object]] = []
+    if not condition_enriched_profile_counts.empty:
+        for inc_dec, group in condition_enriched_profile_counts.groupby("inc_dec", dropna=False):
+            nonzero = group[group["enriched_profile_count"] > 0]
+            enriched_direction_rows.append(
+                {
+                    "direction": direction_label(inc_dec),
+                    "condition_count": nonzero["condition"].nunique(),
+                    "profile_count": int(group["profile_count"].sum()),
+                    "enriched_profile_count": int(group["enriched_profile_count"].sum()),
+                    "zero_enriched_profile_count": int(group["zero_enriched_profile_count"].sum()),
+                    "enriched_profile_fraction": safe_ratio(
+                        float(group["enriched_profile_count"].sum()),
+                        float(group["profile_count"].sum()),
+                    ),
+                }
+            )
+    plotted_body_site_enriched_rows = pd.DataFrame()
+    if not body_site_enriched_profile_summary.empty:
+        plotted_body_site_enriched_rows = body_site_enriched_profile_summary[
+            ~body_site_enriched_profile_summary["body_site_group"].map(is_other_body_site)
+            & (body_site_enriched_profile_summary["enriched_profile_count"] >= 10)
+        ].head(10)
 
     lines = [
         "# Anaerobe v2 Depletion Investigation",
@@ -1732,6 +2231,10 @@ def write_summary_report(
         "| --- | --- | --- |",
         "| `condition_decreased_guild_signal.png` | yes | v2 guild score by condition |",
         "| `guild_trait_direction_shift.png` | yes | the two selected v2 guild traits |",
+        "| `condition_enriched_profile_histogram.png` | yes | condition counts after "
+        "profile-level v2 trait-enrichment filtering |",
+        "| `anatomical_sites_enriched_profile_diagram.png` | yes | anatomical "
+        "body-site counts after profile-level v2 trait-enrichment filtering |",
         "| `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |",
         "| `candidate_taxa_depletion_bias.png` | no | fixed target-taxon direction counts |",
         "| `condition_target_taxa_stacked_bar.png` | no | fixed target-taxon occurrence "
@@ -1810,6 +2313,54 @@ def write_summary_report(
             f"{diff_text} | {smd_text} | {p_text} | {int(row.paired_profile_pair_count)} | "
             f"{row.decreased_mean_guild_z:.3f} |"
         )
+
+    if enriched_direction_rows:
+        lines.extend(
+            [
+                "",
+                "## Condition Enriched-Profile Histogram",
+                "",
+                "The enrichment-filtered histogram counts conditions by how many profiles "
+                "remain after dropping profiles with zero positive anaerobe v2 guild-trait "
+                "z-scores. The dropped profiles are still retained in the main guild-score "
+                "summaries and are reported here by profile direction.",
+                "",
+                "| direction | conditions with retained profiles | retained profiles | "
+                "zero-enriched profiles | retained / total profiles |",
+                "| --- | ---: | ---: | ---: | ---: |",
+            ]
+        )
+        for row in sorted(enriched_direction_rows, key=lambda item: str(item["direction"])):
+            lines.append(
+                f"| {row['direction']} | {int(row['condition_count'])} | "
+                f"{int(row['enriched_profile_count'])} | "
+                f"{int(row['zero_enriched_profile_count'])} | "
+                f"{row['enriched_profile_fraction']:.3f} |"
+            )
+
+    if not plotted_body_site_enriched_rows.empty:
+        lines.extend(
+            [
+                "",
+                "## Enrichment-Filtered Anatomical Sites",
+                "",
+                "The anatomical companion keeps body-site groups with at least 10 "
+                "profiles containing a positive anaerobe v2 guild-trait z-score. "
+                "Counts below are retained profiles after zero-enriched profiles "
+                "drop out.",
+                "",
+                "| body_site_group | retained profiles | inc retained | dec retained | "
+                "zero-enriched profiles |",
+                "| --- | ---: | ---: | ---: | ---: |",
+            ]
+        )
+        for row in plotted_body_site_enriched_rows.itertuples(index=False):
+            lines.append(
+                f"| {row.body_site_group} | {int(row.enriched_profile_count)} | "
+                f"{int(row.increased_enriched_profile_count)} | "
+                f"{int(row.decreased_enriched_profile_count)} | "
+                f"{int(row.zero_enriched_profile_count)} |"
+            )
 
     if not inferred_group_summary.empty:
         lines.extend(
@@ -1894,7 +2445,9 @@ def write_summary_report(
             "- `guild_trait_direction_shift.tsv`",
             "- `guild_trait_selection.tsv`",
             "- `body_site_guild_summary.tsv`",
+            "- `body_site_enriched_profile_summary.tsv`",
             "- `condition_guild_summary.tsv`",
+            "- `condition_enriched_profile_counts.tsv`",
             "- `candidate_taxa_direction_summary.tsv`",
             "- `candidate_taxa_trait_presence.tsv`",
             "- `candidate_taxa_condition_direction.tsv`",
@@ -1907,9 +2460,11 @@ def write_summary_report(
             "- `figure_methods.md`",
             "- `candidate_taxa_depletion_bias.png`",
             "- `condition_decreased_guild_signal.png`",
+            "- `condition_enriched_profile_histogram.png`",
             "- `condition_target_taxa_stacked_bar.png`",
             "- `guild_trait_direction_shift.png`",
             "- `anatomical_sites_diagram.png`",
+            "- `anatomical_sites_enriched_profile_diagram.png`",
             "- `target_taxa_condition_breakdown_bar.png`",
             "",
         ]
@@ -1926,9 +2481,17 @@ def main() -> None:
 
     direction_summary = summarize_direction(analysis_profiles)
     body_site_summary = summarize_group(analysis_profiles, "body_site_group", min_profiles=10)
+    body_site_enriched_profile_summary = summarize_body_site_enriched_profile_counts(
+        analysis_profiles,
+        min_profiles=10,
+    )
     condition_summary = remove_excluded_condition_labels(
         summarize_group(analysis_profiles, "condition", min_profiles=5)
     )
+    condition_enriched_profile_counts = summarize_condition_enriched_profile_counts(
+        analysis_profiles
+    )
+    zero_enriched_trait_counts = count_zero_enriched_traits_by_direction(analysis_profiles)
     taxa_summary = load_taxa_direction_summary()
     trait_presence = load_target_taxa_trait_counts()
     occurrences = load_target_taxa_occurrences(scored_profiles)
@@ -1965,7 +2528,17 @@ def main() -> None:
 
     direction_summary.to_csv(OUTPUT_DIR / "guild_trait_direction_shift.tsv", sep="\t", index=False)
     body_site_summary.to_csv(OUTPUT_DIR / "body_site_guild_summary.tsv", sep="\t", index=False)
+    body_site_enriched_profile_summary.to_csv(
+        OUTPUT_DIR / "body_site_enriched_profile_summary.tsv",
+        sep="\t",
+        index=False,
+    )
     condition_summary.to_csv(OUTPUT_DIR / "condition_guild_summary.tsv", sep="\t", index=False)
+    condition_enriched_profile_counts.to_csv(
+        OUTPUT_DIR / "condition_enriched_profile_counts.tsv",
+        sep="\t",
+        index=False,
+    )
     taxa_summary.to_csv(OUTPUT_DIR / "candidate_taxa_direction_summary.tsv", sep="\t")
     trait_presence.to_csv(OUTPUT_DIR / "candidate_taxa_trait_presence.tsv", sep="\t", index=False)
     condition_taxa_summary.to_csv(
@@ -2008,7 +2581,16 @@ def main() -> None:
         index=False,
     )
 
-    make_plots(taxa_summary, condition_summary, direction_summary, body_site_summary, occurrences)
+    make_plots(
+        taxa_summary,
+        condition_summary,
+        direction_summary,
+        body_site_summary,
+        body_site_enriched_profile_summary,
+        occurrences,
+        condition_enriched_profile_counts,
+        zero_enriched_trait_counts,
+    )
     write_figure_methods()
     write_summary_report(
         direction_summary,
@@ -2016,6 +2598,8 @@ def main() -> None:
         condition_summary,
         taxa_summary,
         condition_taxa_summary,
+        condition_enriched_profile_counts,
+        body_site_enriched_profile_summary,
         inferred_group_summary,
         kg_microbe_taxon_universe,
         top_depletion_profiles,
@@ -2024,6 +2608,7 @@ def main() -> None:
     print(f"Wrote investigation outputs to: {OUTPUT_DIR}")
     print(f"Study profiles analyzed: {len(scored_profiles)}")
     print(f"Analysis profiles analyzed: {len(analysis_profiles)}")
+    print(format_zero_enriched_trait_counts(zero_enriched_trait_counts))
     print(f"Target taxa occurrence rows: {len(occurrences)}")
     print(f"KG-Microbe candidate taxon universe rows: {len(kg_microbe_taxon_universe)}")
     print(f"Inferred guild condition rows: {len(inferred_group_summary)}")

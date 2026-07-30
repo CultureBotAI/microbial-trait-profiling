@@ -16,6 +16,8 @@ This investigation uses the existing study trait profile clustered heatmap matri
 | --- | --- | --- |
 | `condition_decreased_guild_signal.png` | yes | v2 guild score by condition |
 | `guild_trait_direction_shift.png` | yes | the two selected v2 guild traits |
+| `condition_enriched_profile_histogram.png` | yes | condition counts after profile-level v2 trait-enrichment filtering |
+| `anatomical_sites_enriched_profile_diagram.png` | yes | anatomical body-site counts after profile-level v2 trait-enrichment filtering |
 | `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |
 | `candidate_taxa_depletion_bias.png` | no | fixed target-taxon direction counts |
 | `condition_target_taxa_stacked_bar.png` | no | fixed target-taxon occurrence counts stacked by taxon |
@@ -71,6 +73,30 @@ Guardrail: the increased-profile anaerobe score is retained in every condition a
 | Acute pancreatitis | 20 | 2 | 0.818 | 0.977 | 0.0129 | 10 | 0.394 |
 | Graves ophthalmopathy | 13 | 2 | 0.818 | 0.887 | 0.118 | 5 | 0.023 |
 | Diarrhea | 46 | 5 | 0.817 | 0.676 | 0.0046 | 22 | 0.523 |
+
+## Condition Enriched-Profile Histogram
+
+The enrichment-filtered histogram counts conditions by how many profiles remain after dropping profiles with zero positive anaerobe v2 guild-trait z-scores. The dropped profiles are still retained in the main guild-score summaries and are reported here by profile direction.
+
+| direction | conditions with retained profiles | retained profiles | zero-enriched profiles | retained / total profiles |
+| --- | ---: | ---: | ---: | ---: |
+| Decreased | 430 | 3414 | 1569 | 0.685 |
+| Increased | 438 | 3666 | 2146 | 0.631 |
+
+## Enrichment-Filtered Anatomical Sites
+
+The anatomical companion keeps body-site groups with at least 10 profiles containing a positive anaerobe v2 guild-trait z-score. Counts below are retained profiles after zero-enriched profiles drop out.
+
+| body_site_group | retained profiles | inc retained | dec retained | zero-enriched profiles |
+| --- | ---: | ---: | ---: | ---: |
+| Feces | 5459 | 2750 | 2709 | 2136 |
+| Saliva | 384 | 202 | 182 | 254 |
+| Subgingival dental plaque | 127 | 76 | 51 | 84 |
+| Caecum | 124 | 73 | 51 | 41 |
+| Vagina | 123 | 77 | 46 | 73 |
+| Colon | 105 | 55 | 50 | 34 |
+| Mouth | 79 | 39 | 40 | 91 |
+| Nasopharynx | 70 | 51 | 19 | 56 |
 
 ## Data-Inferred Guild Evidence
 
@@ -128,7 +154,9 @@ For the top condition signals, this table uses all taxa observed in the decrease
 - `guild_trait_direction_shift.tsv`
 - `guild_trait_selection.tsv`
 - `body_site_guild_summary.tsv`
+- `body_site_enriched_profile_summary.tsv`
 - `condition_guild_summary.tsv`
+- `condition_enriched_profile_counts.tsv`
 - `candidate_taxa_direction_summary.tsv`
 - `candidate_taxa_trait_presence.tsv`
 - `candidate_taxa_condition_direction.tsv`
@@ -141,7 +169,9 @@ For the top condition signals, this table uses all taxa observed in the decrease
 - `figure_methods.md`
 - `candidate_taxa_depletion_bias.png`
 - `condition_decreased_guild_signal.png`
+- `condition_enriched_profile_histogram.png`
 - `condition_target_taxa_stacked_bar.png`
 - `guild_trait_direction_shift.png`
 - `anatomical_sites_diagram.png`
+- `anatomical_sites_enriched_profile_diagram.png`
 - `target_taxa_condition_breakdown_bar.png`
