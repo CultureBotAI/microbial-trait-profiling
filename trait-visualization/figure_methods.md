@@ -126,6 +126,15 @@ Companion files:
 
 - `study_trait_profile_paired_enrichment_matrix.tsv`
 - `study_trait_profile_paired_enrichment_metadata.tsv`
+- `study_trait_profile_paired_required_trait_check.tsv`
+
+The paired heatmap generator also requires three requested profile traits to be
+present in the selected trait set: `mesophilic` (`METPO:1000615`), `gram positive`
+(`METPO:1000698`), and `non motile` (`METPO:1000703`). If any of these traits no
+longer passes the heatmap selection filters, generation fails instead of silently
+dropping the requested check. The companion required-trait TSV records each
+trait's profile support, selection score, inclusion status, and matched-pair
+increased-minus-decreased summary.
 
 ### `condition_trait_module_clustered_heatmap.png`
 

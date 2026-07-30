@@ -16,6 +16,7 @@ This investigation uses the existing study trait profile clustered heatmap matri
 | --- | --- | --- |
 | `condition_decreased_guild_signal.png` | yes | v2 guild score by condition |
 | `guild_trait_direction_shift.png` | yes | the two selected v2 guild traits |
+| `trait_enriched_profile_histogram.png` | yes | trait counts inside profile-level v2 trait-enrichment filtering |
 | `condition_enriched_profile_histogram.png` | yes | condition counts after profile-level v2 trait-enrichment filtering |
 | `anatomical_sites_enriched_profile_diagram.png` | yes | anatomical body-site counts after profile-level v2 trait-enrichment filtering |
 | `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |
@@ -82,6 +83,23 @@ The enrichment-filtered histogram counts conditions by how many profiles remain 
 | --- | ---: | ---: | ---: | ---: |
 | Decreased | 430 | 3414 | 1569 | 0.685 |
 | Increased | 438 | 3666 | 2146 | 0.631 |
+
+## Trait Enriched-Profile Histogram
+
+The trait-side companion histogram counts selected heatmap traits by how many retained enriched profiles have a positive z-score for each trait. The retained-profile universe is the same one used by the condition histogram: profiles with at least one positive anaerobe v2 guild-trait z-score.
+
+| direction | trait | positive retained profiles | retained profile fraction |
+| --- | --- | ---: | ---: |
+| Increased | anaerobic | 3824 | 0.927 |
+| Decreased | anaerobic | 3579 | 0.936 |
+| Increased | non motile | 3126 | 0.758 |
+| Increased | GC high | 2999 | 0.727 |
+| Increased | GC low | 2986 | 0.724 |
+| Increased | bacillus shaped | 2964 | 0.719 |
+| Increased | gram positive | 2920 | 0.708 |
+| Decreased | GC low | 2872 | 0.751 |
+| Decreased | non motile | 2870 | 0.751 |
+| Decreased | GC high | 2863 | 0.749 |
 
 ## Enrichment-Filtered Anatomical Sites
 
@@ -156,6 +174,7 @@ For the top condition signals, this table uses all taxa observed in the decrease
 - `body_site_guild_summary.tsv`
 - `body_site_enriched_profile_summary.tsv`
 - `condition_guild_summary.tsv`
+- `trait_enriched_profile_counts.tsv`
 - `condition_enriched_profile_counts.tsv`
 - `candidate_taxa_direction_summary.tsv`
 - `candidate_taxa_trait_presence.tsv`
@@ -169,6 +188,7 @@ For the top condition signals, this table uses all taxa observed in the decrease
 - `figure_methods.md`
 - `candidate_taxa_depletion_bias.png`
 - `condition_decreased_guild_signal.png`
+- `trait_enriched_profile_histogram.png`
 - `condition_enriched_profile_histogram.png`
 - `condition_target_taxa_stacked_bar.png`
 - `guild_trait_direction_shift.png`

@@ -105,6 +105,16 @@ PROFILE_COUNT_BIN_DEFINITIONS = (
     (50, 99, "50-99"),
     (100, None, "100+"),
 )
+TRAIT_PROFILE_COUNT_BIN_DEFINITIONS = (
+    (1, 99, "1-99"),
+    (100, 499, "100-499"),
+    (500, 999, "500-999"),
+    (1000, 1499, "1,000-1,499"),
+    (1500, 1999, "1,500-1,999"),
+    (2000, 2499, "2,000-2,499"),
+    (2500, 2999, "2,500-2,999"),
+    (3000, None, "3,000+"),
+)
 
 
 def add_specificity_note(ax: plt.Axes, note: str) -> None:
@@ -436,6 +446,16 @@ def profile_count_bin_label(profile_count: int) -> str:
     return "0"
 
 
+def trait_profile_count_bin_label(profile_count: int) -> str:
+    """Return the histogram bin label for a trait's enriched-profile support."""
+    for lower, upper, label in TRAIT_PROFILE_COUNT_BIN_DEFINITIONS:
+        if upper is None and profile_count >= lower:
+            return label
+        if upper is not None and lower <= profile_count <= upper:
+            return label
+    return "0"
+
+
 def summarize_condition_enriched_profile_counts(profiles: pd.DataFrame) -> pd.DataFrame:
     """Summarize condition-direction profile counts after zero-enrichment dropouts."""
     selected = profiles.copy()
@@ -525,6 +545,78 @@ def summarize_body_site_enriched_profile_counts(
     return pd.DataFrame(rows).sort_values(
         ["enriched_profile_count", "profile_count", "body_site_group"],
         ascending=[False, False, True],
+    )
+
+
+def summarize_trait_enriched_profile_counts(
+    study_matrix: pd.DataFrame,
+    profiles: pd.DataFrame,
+    study_trait_metadata: pd.DataFrame,
+) -> pd.DataFrame:
+    """Summarize positive trait z-scores within enrichment-filtered profiles."""
+    retained_profiles = profiles[profiles["has_enriched_guild_trait"]].copy()
+    retained_index = retained_profiles.index.intersection(study_matrix.index)
+    retained_profiles = retained_profiles.loc[retained_index]
+    if retained_profiles.empty:
+        return pd.DataFrame()
+
+    metadata = study_trait_metadata.copy()
+    metadata["trait_id"] = metadata["trait_id"].fillna(
+        pd.Series(metadata.index, index=metadata.index)
+    )
+    metadata["trait_name"] = metadata["object_name"].map(clean_text)
+    metadata = metadata.drop_duplicates(subset=["trait_name"]).set_index("trait_name", drop=False)
+
+    rows: list[dict[str, object]] = []
+    for trait_name in study_matrix.columns:
+        trait_values = pd.to_numeric(
+            study_matrix.loc[retained_index, trait_name],
+            errors="coerce",
+        ).fillna(0)
+        metadata_row = (
+            metadata.loc[trait_name] if trait_name in metadata.index else pd.Series(dtype=object)
+        )
+        trait_id = str(metadata_row.get("trait_id", ""))
+        for inc_dec, group in retained_profiles.groupby("inc_dec", dropna=False):
+            direction_values = trait_values.loc[group.index]
+            positive_profile_ids = direction_values.index[direction_values > 0]
+            positive_group = group.loc[positive_profile_ids]
+            trait_enriched_profile_count = len(positive_group)
+            retained_profile_count = len(group)
+            rows.append(
+                {
+                    "trait_id": trait_id,
+                    "trait_name": trait_name,
+                    "trait_category": metadata_row.get("display_category", ""),
+                    "is_guild_trait": trait_id in GUILD_TRAITS,
+                    "inc_dec": inc_dec,
+                    "direction_label": direction_label(inc_dec),
+                    "retained_profile_count": retained_profile_count,
+                    "trait_enriched_profile_count": trait_enriched_profile_count,
+                    "trait_zero_profile_count": (
+                        retained_profile_count - trait_enriched_profile_count
+                    ),
+                    "trait_enriched_profile_fraction": safe_ratio(
+                        float(trait_enriched_profile_count),
+                        float(retained_profile_count),
+                    ),
+                    "retained_study_count": group["study_id"].nunique(),
+                    "trait_enriched_study_count": positive_group["study_id"].nunique(),
+                    "retained_condition_count": group["condition"].map(clean_text).nunique(),
+                    "trait_enriched_condition_count": (
+                        positive_group["condition"].map(clean_text).nunique()
+                    ),
+                }
+            )
+
+    return pd.DataFrame(rows).sort_values(
+        [
+            "trait_enriched_profile_count",
+            "trait_enriched_study_count",
+            "trait_name",
+            "inc_dec",
+        ],
+        ascending=[False, False, True, True],
     )
 
 
@@ -1311,6 +1403,75 @@ def save_condition_target_taxa_stacked_bar_chart(
     plt.close(fig)
 
 
+def save_trait_enriched_profile_histogram(
+    trait_enriched_profile_counts: pd.DataFrame,
+    *,
+    output_path: Path,
+) -> None:
+    """Save a histogram of trait counts by enriched profile support."""
+    if trait_enriched_profile_counts.empty:
+        return
+
+    selected = trait_enriched_profile_counts[
+        trait_enriched_profile_counts["trait_enriched_profile_count"] > 0
+    ].copy()
+    if selected.empty:
+        return
+
+    bin_labels = [label for _, _, label in TRAIT_PROFILE_COUNT_BIN_DEFINITIONS]
+    selected["profile_count_bin"] = selected["trait_enriched_profile_count"].map(
+        lambda count: trait_profile_count_bin_label(int(count))
+    )
+    histogram = (
+        selected.groupby(["profile_count_bin", "inc_dec"], dropna=False)["trait_name"]
+        .nunique()
+        .unstack(fill_value=0)
+        .reindex(bin_labels, fill_value=0)
+    )
+
+    fig, ax = plt.subplots(figsize=(10.5, 5.2))
+    x_positions = list(range(len(bin_labels)))
+    bar_width = 0.38
+    offsets = {"inc": -bar_width / 2, "dec": bar_width / 2}
+
+    for direction in ["inc", "dec"]:
+        values = (
+            histogram[direction].to_numpy()
+            if direction in histogram.columns
+            else [0] * len(bin_labels)
+        )
+        ax.bar(
+            [x + offsets[direction] for x in x_positions],
+            values,
+            width=bar_width,
+            color=DIRECTION_COLORS[direction],
+            label=DIRECTION_LABELS[direction],
+        )
+
+    ax.set_xticks(x_positions)
+    ax.set_xticklabels(bin_labels, rotation=20, ha="right")
+    ax.set_xlabel("Positive-z retained profiles per trait")
+    ax.set_ylabel("Number of traits")
+    ax.set_title(
+        "Trait Histogram Within Anaerobe v2 Enriched Profiles",
+        pad=28,
+    )
+    add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
+    ax.legend(title="BugSigDB profile direction", frameon=False)
+    fig.text(
+        0.01,
+        0.01,
+        "Universe: profiles retained by the anaerobe v2 enrichment filter. "
+        "Bars count selected heatmap traits by the number of retained profiles "
+        "where that trait has a positive z-score.",
+        fontsize=8,
+        color="#475569",
+    )
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
+    fig.savefig(output_path, bbox_inches="tight")
+    plt.close(fig)
+
+
 def save_condition_enriched_profile_histogram(
     condition_enriched_profile_counts: pd.DataFrame,
     *,
@@ -1873,6 +2034,11 @@ def write_figure_methods() -> None:
         "positive selected guild-trait z-scores are retained in the main guild-score "
         "summaries but are excluded from enrichment-filtered profile-count plots.",
         "",
+        "The enrichment-filtered trait/condition histogram pair uses that same "
+        "retained-profile universe. The trait histogram asks how many retained "
+        "profiles have each selected heatmap trait above zero; the condition "
+        "histogram asks how many retained profiles are assigned to each condition.",
+        "",
         "The focal taxa were defined a priori in the script's `TARGET_TAXA` map "
         "using NCBI Taxonomy identifiers, which avoids ambiguity from synonym or "
         "strain-name differences. The selected taxa were "
@@ -1961,6 +2127,22 @@ def write_figure_methods() -> None:
         "enrichment-filtered view. The companion TSV "
         "`condition_enriched_profile_counts.tsv` preserves both total and retained "
         "profile counts by condition and direction.",
+        "",
+        "## `trait_enriched_profile_histogram.png`",
+        "",
+        "Guild-specificity: yes. This figure is the trait-side companion to "
+        "`condition_enriched_profile_histogram.png` and uses the same "
+        "enrichment-filtered retained-profile universe.",
+        "",
+        "For every selected heatmap trait and profile direction, the script counts "
+        "how many retained profiles have that trait's z-score above zero. Those "
+        "trait-level retained-profile counts are then binned as 1-99, 100-499, "
+        "500-999, 1,000-1,499, 1,500-1,999, 2,000-2,499, 2,500-2,999, or "
+        "3,000+. Bars show how many traits fall into each retained-profile-count "
+        "bin for increased and decreased profiles. The companion TSV "
+        "`trait_enriched_profile_counts.tsv` preserves retained-profile counts, "
+        "study counts, condition counts, and retained-profile fractions for each "
+        "trait and direction.",
         "",
         "## `anatomical_sites_enriched_profile_diagram.png`",
         "",
@@ -2056,6 +2238,7 @@ def make_plots(
     body_site_summary: pd.DataFrame,
     body_site_enriched_profile_summary: pd.DataFrame,
     occurrences: pd.DataFrame,
+    trait_enriched_profile_counts: pd.DataFrame,
     condition_enriched_profile_counts: pd.DataFrame,
     zero_enriched_trait_counts: dict[str, int],
 ) -> None:
@@ -2141,6 +2324,10 @@ def make_plots(
         condition_summary,
         output_path=OUTPUT_DIR / "condition_target_taxa_stacked_bar.png",
     )
+    save_trait_enriched_profile_histogram(
+        trait_enriched_profile_counts,
+        output_path=OUTPUT_DIR / "trait_enriched_profile_histogram.png",
+    )
     save_condition_enriched_profile_histogram(
         condition_enriched_profile_counts,
         output_path=OUTPUT_DIR / "condition_enriched_profile_histogram.png",
@@ -2166,6 +2353,7 @@ def write_summary_report(
     condition_summary: pd.DataFrame,
     taxa_summary: pd.DataFrame,
     condition_taxa_summary: pd.DataFrame,
+    trait_enriched_profile_counts: pd.DataFrame,
     condition_enriched_profile_counts: pd.DataFrame,
     body_site_enriched_profile_summary: pd.DataFrame,
     inferred_group_summary: pd.DataFrame,
@@ -2198,6 +2386,16 @@ def write_summary_report(
                     ),
                 }
             )
+    top_enriched_trait_rows = pd.DataFrame()
+    if not trait_enriched_profile_counts.empty:
+        top_enriched_trait_rows = trait_enriched_profile_counts.sort_values(
+            [
+                "trait_enriched_profile_count",
+                "trait_enriched_study_count",
+                "trait_name",
+            ],
+            ascending=[False, False, True],
+        ).head(10)
     plotted_body_site_enriched_rows = pd.DataFrame()
     if not body_site_enriched_profile_summary.empty:
         plotted_body_site_enriched_rows = body_site_enriched_profile_summary[
@@ -2231,6 +2429,8 @@ def write_summary_report(
         "| --- | --- | --- |",
         "| `condition_decreased_guild_signal.png` | yes | v2 guild score by condition |",
         "| `guild_trait_direction_shift.png` | yes | the two selected v2 guild traits |",
+        "| `trait_enriched_profile_histogram.png` | yes | trait counts inside "
+        "profile-level v2 trait-enrichment filtering |",
         "| `condition_enriched_profile_histogram.png` | yes | condition counts after "
         "profile-level v2 trait-enrichment filtering |",
         "| `anatomical_sites_enriched_profile_diagram.png` | yes | anatomical "
@@ -2336,6 +2536,29 @@ def write_summary_report(
                 f"{int(row['enriched_profile_count'])} | "
                 f"{int(row['zero_enriched_profile_count'])} | "
                 f"{row['enriched_profile_fraction']:.3f} |"
+            )
+
+    if not top_enriched_trait_rows.empty:
+        lines.extend(
+            [
+                "",
+                "## Trait Enriched-Profile Histogram",
+                "",
+                "The trait-side companion histogram counts selected heatmap traits by "
+                "how many retained enriched profiles have a positive z-score for each "
+                "trait. The retained-profile universe is the same one used by the "
+                "condition histogram: profiles with at least one positive anaerobe v2 "
+                "guild-trait z-score.",
+                "",
+                "| direction | trait | positive retained profiles | retained profile fraction |",
+                "| --- | --- | ---: | ---: |",
+            ]
+        )
+        for row in top_enriched_trait_rows.itertuples(index=False):
+            lines.append(
+                f"| {direction_label(row.inc_dec)} | {clean_text(row.trait_name)} | "
+                f"{int(row.trait_enriched_profile_count)} | "
+                f"{row.trait_enriched_profile_fraction:.3f} |"
             )
 
     if not plotted_body_site_enriched_rows.empty:
@@ -2447,6 +2670,7 @@ def write_summary_report(
             "- `body_site_guild_summary.tsv`",
             "- `body_site_enriched_profile_summary.tsv`",
             "- `condition_guild_summary.tsv`",
+            "- `trait_enriched_profile_counts.tsv`",
             "- `condition_enriched_profile_counts.tsv`",
             "- `candidate_taxa_direction_summary.tsv`",
             "- `candidate_taxa_trait_presence.tsv`",
@@ -2460,6 +2684,7 @@ def write_summary_report(
             "- `figure_methods.md`",
             "- `candidate_taxa_depletion_bias.png`",
             "- `condition_decreased_guild_signal.png`",
+            "- `trait_enriched_profile_histogram.png`",
             "- `condition_enriched_profile_histogram.png`",
             "- `condition_target_taxa_stacked_bar.png`",
             "- `guild_trait_direction_shift.png`",
@@ -2487,6 +2712,11 @@ def main() -> None:
     )
     condition_summary = remove_excluded_condition_labels(
         summarize_group(analysis_profiles, "condition", min_profiles=5)
+    )
+    trait_enriched_profile_counts = summarize_trait_enriched_profile_counts(
+        study_matrix,
+        analysis_profiles,
+        study_trait_metadata,
     )
     condition_enriched_profile_counts = summarize_condition_enriched_profile_counts(
         analysis_profiles
@@ -2534,6 +2764,11 @@ def main() -> None:
         index=False,
     )
     condition_summary.to_csv(OUTPUT_DIR / "condition_guild_summary.tsv", sep="\t", index=False)
+    trait_enriched_profile_counts.to_csv(
+        OUTPUT_DIR / "trait_enriched_profile_counts.tsv",
+        sep="\t",
+        index=False,
+    )
     condition_enriched_profile_counts.to_csv(
         OUTPUT_DIR / "condition_enriched_profile_counts.tsv",
         sep="\t",
@@ -2588,6 +2823,7 @@ def main() -> None:
         body_site_summary,
         body_site_enriched_profile_summary,
         occurrences,
+        trait_enriched_profile_counts,
         condition_enriched_profile_counts,
         zero_enriched_trait_counts,
     )
@@ -2598,6 +2834,7 @@ def main() -> None:
         condition_summary,
         taxa_summary,
         condition_taxa_summary,
+        trait_enriched_profile_counts,
         condition_enriched_profile_counts,
         body_site_enriched_profile_summary,
         inferred_group_summary,

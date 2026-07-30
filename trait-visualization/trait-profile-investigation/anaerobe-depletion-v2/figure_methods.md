@@ -9,6 +9,8 @@ Study-profile z-scores were read from `trait-visualization/study_trait_profile_c
 Direction labels (`increased` and `decreased`) were taken from BugSigDB's curated `Abundance in Group 1` signature field. This script did not recalculate differential abundance; it grouped and filtered BugSigDB-reported study/experiment/direction profiles by condition and body-site metadata.
 For profile-enrichment filtering, a profile's `enriched_guild_trait_count` is the number of selected anaerobe v2 guild traits with a positive z-score in that profile. Profiles with zero positive selected guild-trait z-scores are retained in the main guild-score summaries but are excluded from enrichment-filtered profile-count plots.
 
+The enrichment-filtered trait/condition histogram pair uses that same retained-profile universe. The trait histogram asks how many retained profiles have each selected heatmap trait above zero; the condition histogram asks how many retained profiles are assigned to each condition.
+
 The focal taxa were defined a priori in the script's `TARGET_TAXA` map using NCBI Taxonomy identifiers, which avoids ambiguity from synonym or strain-name differences. The selected taxa were Faecalibacterium prausnitzii (NCBITaxon:853), Anaerobutyricum hallii (NCBITaxon:39488), Lachnospira eligens (NCBITaxon:39485), Agathobacter rectalis (NCBITaxon:39491), Roseburia intestinalis (NCBITaxon:166486), Ruminococcus bromii (NCBITaxon:40518), and Roseburia inulinivorans (NCBITaxon:360807). These taxa are fixed focal examples for recurrence audits in decreased profiles; they do not define the formal v2 guild score. The formal guild is the opposite-direction oxygen-tolerance trait set described above, and the derived taxa-trait matrix gives each selected focal taxon at least one of those investigation guild-trait annotations. The script writes `candidate_taxa_trait_presence.tsv` from `data/derived/taxa_trait_matrix.tsv` as the audit trail for those trait annotations.
 
 ## `candidate_taxa_depletion_bias.png`
@@ -34,6 +36,12 @@ For each selected guild trait, the script calculated the mean z-score in decreas
 Guild-specificity: yes. This figure counts profile directions after filtering to profiles with at least one positive anaerobe v2 guild-trait z-score.
 
 The script first counts selected anaerobe v2 guild traits with positive z-scores for every study/experiment/direction profile. Broad non-condition and metadata labels are removed using the same condition filter as the condition guild-signal plot. Within each remaining condition and direction, profiles with zero enriched guild traits are dropped, then the number of retained profiles is binned as 1, 2, 3-4, 5-9, 10-19, 20-49, 50-99, or 100+. Bars show how many conditions fall into each retained-profile-count bin for increased and decreased profiles. The legend reports how many profiles in each direction had zero enriched guild traits within this condition-filtered universe and therefore dropped out of this enrichment-filtered view. The companion TSV `condition_enriched_profile_counts.tsv` preserves both total and retained profile counts by condition and direction.
+
+## `trait_enriched_profile_histogram.png`
+
+Guild-specificity: yes. This figure is the trait-side companion to `condition_enriched_profile_histogram.png` and uses the same enrichment-filtered retained-profile universe.
+
+For every selected heatmap trait and profile direction, the script counts how many retained profiles have that trait's z-score above zero. Those trait-level retained-profile counts are then binned as 1-99, 100-499, 500-999, 1,000-1,499, 1,500-1,999, 2,000-2,499, 2,500-2,999, or 3,000+. Bars show how many traits fall into each retained-profile-count bin for increased and decreased profiles. The companion TSV `trait_enriched_profile_counts.tsv` preserves retained-profile counts, study counts, condition counts, and retained-profile fractions for each trait and direction.
 
 ## `anatomical_sites_enriched_profile_diagram.png`
 

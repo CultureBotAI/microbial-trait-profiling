@@ -20,6 +20,11 @@ OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
 DIRECTION_LABELS = {"inc": "increased", "dec": "decreased"}
 PAIR_DIRECTION_LABEL = "increased - decreased"
+REQUIRED_PAIRED_TRAITS = {
+    "METPO:1000615": "mesophilic",
+    "METPO:1000698": "gram positive",
+    "METPO:1000703": "non motile",
+}
 
 
 def clean_value(value: object) -> str:
@@ -264,7 +269,37 @@ def select_traits(
     eligible = eligible.sort_values(
         ["selection_score", "composition_variance", "profile_support"],
         ascending=False,
-    ).head(max_traits)
+    )
+    missing_required = [
+        f"{trait_name} ({trait_id})"
+        for trait_id, trait_name in REQUIRED_PAIRED_TRAITS.items()
+        if trait_id not in eligible.index
+    ]
+    if missing_required:
+        msg = "Required paired-heatmap trait(s) did not pass selection filters: " + ", ".join(
+            missing_required
+        )
+        raise ValueError(msg)
+
+    required_ids = set(REQUIRED_PAIRED_TRAITS)
+    if max_traits < len(required_ids):
+        msg = (
+            f"--max-traits must be at least {len(required_ids)} to include the "
+            "required paired-heatmap trait checks."
+        )
+        raise ValueError(msg)
+
+    selected_set = set(eligible.head(max_traits).index) | required_ids
+    optional_keep = [
+        trait_id for trait_id in eligible.index if trait_id in selected_set - required_ids
+    ][: max_traits - len(required_ids)]
+    selected_ids = [
+        trait_id
+        for trait_id in eligible.index
+        if trait_id in required_ids or trait_id in optional_keep
+    ]
+
+    eligible = eligible.loc[selected_ids]
     if len(eligible) < 2:
         msg = "Fewer than two traits passed the selection filters."
         raise ValueError(msg)
@@ -499,6 +534,64 @@ def build_paired_enrichment_matrix(
     pair_matrix = pd.DataFrame(rows)
     pair_metadata = pd.DataFrame.from_records(metadata_rows).set_index("pair_id")
     return pair_matrix, pair_metadata
+
+
+def summarize_required_paired_traits(
+    pair_matrix: pd.DataFrame,
+    trait_metadata: pd.DataFrame,
+) -> pd.DataFrame:
+    """Summarize requested trait checks in the paired enrichment matrix."""
+    rows: list[dict[str, object]] = []
+    for trait_id, requested_trait_name in REQUIRED_PAIRED_TRAITS.items():
+        metadata_row = (
+            trait_metadata.loc[trait_id]
+            if trait_id in trait_metadata.index
+            else pd.Series(dtype=object)
+        )
+        if trait_id in pair_matrix.columns:
+            values = pd.to_numeric(pair_matrix[trait_id], errors="coerce").fillna(0.0)
+            mean_contrast = float(values.mean())
+            median_contrast = float(values.median())
+            std_contrast = float(values.std(ddof=1))
+            positive_fraction = float((values > 0).mean())
+            negative_fraction = float((values < 0).mean())
+            pair_count = len(values)
+            direction = (
+                "increased-profile higher" if mean_contrast >= 0 else "decreased-profile higher"
+            )
+        else:
+            mean_contrast = math.nan
+            median_contrast = math.nan
+            std_contrast = math.nan
+            positive_fraction = math.nan
+            negative_fraction = math.nan
+            pair_count = 0
+            direction = "not present"
+
+        rows.append(
+            {
+                "trait_id": trait_id,
+                "requested_trait_name": requested_trait_name,
+                "heatmap_trait_name": metadata_row.get("object_name", ""),
+                "display_label": clean_value(metadata_row.get("display_label", "")).replace(
+                    "\n", " "
+                ),
+                "profile_support": metadata_row.get("profile_support", pd.NA),
+                "total_signal": metadata_row.get("total_signal", pd.NA),
+                "composition_variance": metadata_row.get("composition_variance", pd.NA),
+                "selection_score": metadata_row.get("selection_score", pd.NA),
+                "included_in_paired_heatmap": trait_id in pair_matrix.columns,
+                "pair_count": pair_count,
+                "mean_increased_minus_decreased": mean_contrast,
+                "median_increased_minus_decreased": median_contrast,
+                "std_increased_minus_decreased": std_contrast,
+                "positive_pair_fraction": positive_fraction,
+                "negative_pair_fraction": negative_fraction,
+                "direction": direction,
+            }
+        )
+
+    return pd.DataFrame.from_records(rows)
 
 
 def build_paired_display_matrix(
@@ -900,18 +993,22 @@ def write_paired_outputs(
     pair_matrix: pd.DataFrame,
     pair_display_matrix: pd.DataFrame,
     pair_metadata: pd.DataFrame,
+    required_trait_check: pd.DataFrame,
     rendered_rows: int,
     output_path: Path,
     matrix_output_path: Path,
     metadata_output_path: Path,
+    required_trait_check_output_path: Path,
 ) -> None:
     """Write the paired enrichment matrix and matched-pair metadata."""
     matrix_output_path.parent.mkdir(parents=True, exist_ok=True)
     pair_display_matrix.to_csv(matrix_output_path, sep="\t")
     pair_metadata.loc[pair_matrix.index].to_csv(metadata_output_path, sep="\t")
+    required_trait_check.to_csv(required_trait_check_output_path, sep="\t", index=False)
     print(f"Wrote paired enrichment heatmap: {output_path}")
     print(f"Wrote paired enrichment matrix: {matrix_output_path}")
     print(f"Wrote paired enrichment metadata: {metadata_output_path}")
+    print(f"Wrote paired requested-trait check: {required_trait_check_output_path}")
     print("Measurement: matched increased-minus-decreased profile z-score per trait")
     print(f"Matched study/experiment pairs analyzed and written: {len(pair_matrix)}")
     print(f"Rendered paired heatmap display rows: {rendered_rows}")
@@ -990,6 +1087,15 @@ def main() -> None:
         type=Path,
         default=OUTPUT_DIR / "study_trait_profile_paired_enrichment_metadata.tsv",
         help="Output matched-pair metadata TSV path.",
+    )
+    parser.add_argument(
+        "--paired-required-trait-check-output",
+        type=Path,
+        default=OUTPUT_DIR / "study_trait_profile_paired_required_trait_check.tsv",
+        help=(
+            "Output requested-trait audit TSV for required paired heatmap traits "
+            "(mesophilic, gram positive, non motile)."
+        ),
     )
     parser.add_argument(
         "--max-profiles",
@@ -1154,14 +1260,17 @@ def main() -> None:
         full_pair_count=len(pair_matrix),
         full_study_count=pair_metadata["study_id"].nunique(),
     )
+    required_trait_check = summarize_required_paired_traits(pair_matrix, trait_metadata)
     write_paired_outputs(
         pair_matrix,
         pair_display_matrix,
         pair_metadata,
+        required_trait_check,
         len(rendered_pair_matrix),
         args.paired_output,
         args.paired_matrix_output,
         args.paired_metadata_output,
+        args.paired_required_trait_check_output,
     )
 
 

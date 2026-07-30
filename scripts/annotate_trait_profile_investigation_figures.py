@@ -126,6 +126,10 @@ FIGURE_LABELS = {
         "Guild-specific: yes - counts condition-level increased/decreased profiles "
         "with at least one enriched anaerobe v2 guild trait."
     ),
+    Path("anaerobe-depletion-v2/trait_enriched_profile_histogram.png"): (
+        "Guild-specific: yes - counts trait-level increased/decreased profiles "
+        "within the anaerobe v2 enriched-profile universe."
+    ),
     Path("anaerobe-depletion-v2/condition_target_taxa_stacked_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT_V2
     ),
