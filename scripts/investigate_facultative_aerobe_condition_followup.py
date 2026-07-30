@@ -7,6 +7,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
+from matplotlib.patches import Patch, Rectangle
 
 from investigate_facultative_aerobe_expansion import (
     GUILD_TRAITS,
@@ -35,9 +36,18 @@ CONDITION_ORDER = [
 DIRECTION_ORDER = {"increased": 0, "decreased": 1}
 HEATMAP_RANKS = {"genus", "species"}
 HEATMAP_TOP_TAXA = 45
+PATTERN_LABEL_TOP_N = 15
 NON_GUILD_SPECIFIC_TAXA_HEATMAP_NOTE = (
     "Guild-specific: no - taxon direction-count heatmap; guild traits are annotation context."
 )
+PROFILE_SIMILARITY_PATTERN_NOTE = (
+    "Colored x labels/strip: red = exact Autism and Autoimmune increased-skew; "
+    "blue = broader ASD decreased-skew contrast; purple = both."
+)
+PATTERN_COLOR_EXACT_RED = "#b91c1c"
+PATTERN_COLOR_BLUE = "#1d4ed8"
+PATTERN_COLOR_BOTH = "#7c3aed"
+PATTERN_COLOR_LABEL = "#111827"
 
 
 def profile_id_from_parts(study_id: object, experiment_id: object, direction: object) -> str:
@@ -342,6 +352,30 @@ def compact_taxon_label(row: pd.Series, max_length: int = 34) -> str:
     return f"{name}\n{clean_text(row['taxonomic_rank'])}"
 
 
+def combine_text_values(values: pd.Series) -> str:
+    """Combine semicolon-delimited annotation strings into one stable value."""
+    items: set[str] = set()
+    for value in values:
+        for item in clean_text(value).split(";"):
+            item = item.strip()
+            if item and item != "unknown":
+                items.add(item)
+    return "; ".join(sorted(items))
+
+
+def build_taxon_label_frame(balance: pd.DataFrame) -> pd.DataFrame:
+    """Build heatmap axis labels and export-friendly labels for taxa."""
+    label_frame = balance[["taxon_id", "taxon_name", "taxonomic_rank"]].drop_duplicates("taxon_id")
+    label_frame = label_frame.copy()
+    label_frame["heatmap_axis_label"] = label_frame.apply(compact_taxon_label, axis=1)
+    label_frame["heatmap_label"] = label_frame["heatmap_axis_label"].str.replace(
+        "\n",
+        " ",
+        regex=False,
+    )
+    return label_frame
+
+
 def select_heatmap_taxa(balance: pd.DataFrame, limit: int = HEATMAP_TOP_TAXA) -> pd.Index:
     """Select a readable top genus/species set for the heatmap."""
     candidates = balance[balance["taxonomic_rank"].isin(HEATMAP_RANKS)].copy()
@@ -372,11 +406,8 @@ def select_heatmap_taxa(balance: pd.DataFrame, limit: int = HEATMAP_TOP_TAXA) ->
 def build_heatmap_matrix(balance: pd.DataFrame, selected_taxa: pd.Index) -> pd.DataFrame:
     """Build the signed condition x taxon heatmap matrix."""
     plot_balance = balance[balance["taxon_id"].isin(selected_taxa)].copy()
-    label_frame = plot_balance[["taxon_id", "taxon_name", "taxonomic_rank"]].drop_duplicates(
-        "taxon_id"
-    )
-    label_frame["taxon_label"] = label_frame.apply(compact_taxon_label, axis=1)
-    label_lookup = label_frame.set_index("taxon_id")["taxon_label"].to_dict()
+    label_frame = build_taxon_label_frame(plot_balance)
+    label_lookup = label_frame.set_index("taxon_id")["heatmap_axis_label"].to_dict()
     plot_balance["taxon_label"] = plot_balance["taxon_id"].map(label_lookup)
     matrix = plot_balance.pivot_table(
         index="condition",
@@ -395,9 +426,210 @@ def build_heatmap_matrix(balance: pd.DataFrame, selected_taxa: pd.Index) -> pd.D
     return matrix.loc[:, column_order]
 
 
+def append_pattern_rows(
+    rows: list[pd.DataFrame],
+    source: pd.DataFrame,
+    mask: pd.Series,
+    pattern_name: str,
+    pattern_color: str,
+    profile_similarity_role: str,
+    pattern_score: pd.Series,
+    pattern_order: int,
+) -> None:
+    """Append one signed-pattern subset to the pattern-label output."""
+    selected = source.loc[mask].copy()
+    if selected.empty:
+        return
+    selected["pattern_name"] = pattern_name
+    selected["pattern_color"] = pattern_color
+    selected["profile_similarity_role"] = profile_similarity_role
+    selected["pattern_score"] = pattern_score.loc[selected.index].round(3)
+    selected["pattern_order"] = pattern_order
+    rows.append(selected)
+
+
+def build_signed_pattern_labels(
+    balance: pd.DataFrame, heatmap_matrix: pd.DataFrame
+) -> pd.DataFrame:
+    """Extract taxa labels supporting red/blue Autism-Autoimmune profile patterns."""
+    taxon_columns = ["taxon_id", "taxon_name", "taxonomic_rank"]
+    signed = balance.pivot_table(
+        index=taxon_columns,
+        columns="condition",
+        values="signed_profile_count",
+        aggfunc="sum",
+        fill_value=0,
+    ).reset_index()
+    for condition in CONDITION_ORDER:
+        if condition not in signed.columns:
+            signed[condition] = 0
+    signed = signed.rename(
+        columns={
+            "Autism": "autism_signed_profile_count",
+            "Autism spectrum disorder": "asd_signed_profile_count",
+            "Autoimmune disease": "autoimmune_signed_profile_count",
+        }
+    )
+    signed_count_columns = [
+        "autism_signed_profile_count",
+        "asd_signed_profile_count",
+        "autoimmune_signed_profile_count",
+    ]
+    for column in signed_count_columns:
+        signed[column] = pd.to_numeric(signed[column], errors="coerce").fillna(0).astype(int)
+
+    annotations = (
+        balance.groupby(taxon_columns, dropna=False)
+        .agg(
+            total_profile_count=("total_profile_count", "sum"),
+            guild_trait_presence_count=("guild_trait_presence_count", "max"),
+            guild_trait_names=("guild_trait_names", combine_text_values),
+            is_focal_target_taxon=("is_focal_target_taxon", "max"),
+            focal_target_taxon_name=("focal_target_taxon_name", combine_text_values),
+        )
+        .reset_index()
+    )
+    output = signed.merge(annotations, on=taxon_columns, how="left")
+    output = output.merge(build_taxon_label_frame(balance), on=taxon_columns, how="left")
+    output["in_heatmap"] = output["heatmap_axis_label"].isin(set(heatmap_matrix.columns))
+    output["guild_trait_presence_count"] = (
+        pd.to_numeric(output["guild_trait_presence_count"], errors="coerce").fillna(0).astype(int)
+    )
+    output["total_profile_count"] = (
+        pd.to_numeric(output["total_profile_count"], errors="coerce").fillna(0).astype(int)
+    )
+    for column in ["guild_trait_names", "focal_target_taxon_name"]:
+        output[column] = output[column].fillna("")
+    output["is_focal_target_taxon"] = output["is_focal_target_taxon"].fillna(False).astype(bool)
+
+    autism = output["autism_signed_profile_count"]
+    asd = output["asd_signed_profile_count"]
+    autoimmune = output["autoimmune_signed_profile_count"]
+    guild_bonus = output["guild_trait_presence_count"] * 0.01
+    rows: list[pd.DataFrame] = []
+    append_pattern_rows(
+        rows,
+        output,
+        (autism > 0) & (autoimmune > 0),
+        "shared_red_exact_autism_autoimmune",
+        "red",
+        "Exact Autism and Autoimmune disease are both increased-skewed for this taxon.",
+        autism.clip(lower=0) + autoimmune.clip(lower=0) + guild_bonus,
+        0,
+    )
+    append_pattern_rows(
+        rows,
+        output,
+        (autism < 0) & (autoimmune < 0),
+        "shared_blue_exact_autism_autoimmune",
+        "blue",
+        "Exact Autism and Autoimmune disease are both decreased-skewed for this taxon.",
+        -autism.clip(upper=0) - autoimmune.clip(upper=0) + guild_bonus,
+        1,
+    )
+    append_pattern_rows(
+        rows,
+        output,
+        (asd < 0) & ((autism >= 0) | (autoimmune >= 0)),
+        "asd_blue_contrast_to_exact_labels",
+        "blue",
+        (
+            "Broader Autism spectrum disorder is decreased-skewed while an exact "
+            "comparison label is neutral or increased-skewed."
+        ),
+        -asd.clip(upper=0) + autism.clip(lower=0) * 0.1 + autoimmune.clip(lower=0) * 0.1,
+        2,
+    )
+    if not rows:
+        return pd.DataFrame(
+            columns=[
+                "pattern_name",
+                "pattern_color",
+                "profile_similarity_role",
+                "taxon_id",
+                "taxon_name",
+                "taxonomic_rank",
+                "heatmap_label",
+                *signed_count_columns,
+                "total_profile_count",
+                "guild_trait_presence_count",
+                "guild_trait_names",
+                "is_focal_target_taxon",
+                "focal_target_taxon_name",
+                "in_heatmap",
+                "pattern_score",
+            ]
+        )
+
+    pattern_labels = pd.concat(rows, ignore_index=True)
+    pattern_labels = pattern_labels.sort_values(
+        [
+            "pattern_order",
+            "in_heatmap",
+            "pattern_score",
+            "total_profile_count",
+            "guild_trait_presence_count",
+            "taxon_name",
+        ],
+        ascending=[True, False, False, False, False, True],
+    )
+    return pattern_labels[
+        [
+            "pattern_name",
+            "pattern_color",
+            "profile_similarity_role",
+            "taxon_id",
+            "taxon_name",
+            "taxonomic_rank",
+            "heatmap_label",
+            *signed_count_columns,
+            "total_profile_count",
+            "guild_trait_presence_count",
+            "guild_trait_names",
+            "is_focal_target_taxon",
+            "focal_target_taxon_name",
+            "in_heatmap",
+            "pattern_score",
+        ]
+    ].reset_index(drop=True)
+
+
+def heatmap_pattern_style_lookup(pattern_labels: pd.DataFrame) -> dict[str, tuple[str, str]]:
+    """Map export-friendly heatmap labels to visible plot highlight styles."""
+    if pattern_labels.empty:
+        return {}
+
+    lookup: dict[str, tuple[str, str]] = {}
+    plotted = pattern_labels[pattern_labels["in_heatmap"]].copy()
+    for heatmap_label, group in plotted.groupby("heatmap_label", sort=False):
+        pattern_names = set(group["pattern_name"])
+        has_shared_red = "shared_red_exact_autism_autoimmune" in pattern_names
+        has_blue = bool(
+            pattern_names
+            & {
+                "shared_blue_exact_autism_autoimmune",
+                "asd_blue_contrast_to_exact_labels",
+            }
+        )
+        if has_shared_red and has_blue:
+            lookup[heatmap_label] = (
+                PATTERN_COLOR_BOTH,
+                "shared red plus ASD blue contrast",
+            )
+        elif has_shared_red:
+            lookup[heatmap_label] = (
+                PATTERN_COLOR_EXACT_RED,
+                "shared red: exact Autism and Autoimmune disease",
+            )
+        elif has_blue:
+            lookup[heatmap_label] = (PATTERN_COLOR_BLUE, "blue contrast label")
+    return lookup
+
+
 def save_heatmap(
     matrix: pd.DataFrame,
     profile_summary: pd.DataFrame,
+    pattern_labels: pd.DataFrame,
     output_path: Path,
 ) -> None:
     """Save a signed profile-count heatmap."""
@@ -413,12 +645,24 @@ def save_heatmap(
     max_abs = float(display_matrix.abs().to_numpy().max())
     norm = TwoSlopeNorm(vmin=-max_abs, vcenter=0, vmax=max_abs) if max_abs else None
     fig_width = max(12.0, len(display_matrix.columns) * 0.34)
-    fig_height = max(4.6, len(display_matrix.index) * 0.75 + 2.2)
+    fig_height = max(5.0, len(display_matrix.index) * 0.75 + 2.6)
     fig, ax = plt.subplots(figsize=(fig_width, fig_height))
     image = ax.imshow(display_matrix.to_numpy(), aspect="auto", cmap="RdBu_r", norm=norm)
+    pattern_styles = heatmap_pattern_style_lookup(pattern_labels)
 
     ax.set_xticks(range(len(display_matrix.columns)))
     ax.set_xticklabels(display_matrix.columns, rotation=90, ha="center", fontsize=7)
+    for tick_label, column_label in zip(
+        ax.get_xticklabels(),
+        display_matrix.columns,
+        strict=False,
+    ):
+        plot_label = column_label.replace("\n", " ")
+        if plot_label not in pattern_styles:
+            continue
+        tick_color, _ = pattern_styles[plot_label]
+        tick_label.set_color(tick_color)
+        tick_label.set_fontweight("bold")
     ax.set_yticks(range(len(display_matrix.index)))
     ax.set_yticklabels(display_matrix.index, fontsize=9)
     ax.set_xlabel("Taxon")
@@ -438,6 +682,32 @@ def save_heatmap(
         fontsize=8.5,
         color="#475569",
     )
+    for column_index, column_label in enumerate(display_matrix.columns):
+        plot_label = column_label.replace("\n", " ")
+        if plot_label not in pattern_styles:
+            continue
+        fill_color, _ = pattern_styles[plot_label]
+        ax.add_patch(
+            Rectangle(
+                (column_index - 0.5, -0.76),
+                1.0,
+                0.18,
+                facecolor=fill_color,
+                edgecolor="none",
+                clip_on=False,
+            )
+        )
+    ax.text(
+        -0.75,
+        -0.67,
+        "pattern",
+        ha="right",
+        va="center",
+        fontsize=7.5,
+        color="#475569",
+        clip_on=False,
+    )
+    ax.set_ylim(len(display_matrix.index) - 0.5, -0.9)
 
     ax.set_xticks([tick - 0.5 for tick in range(1, len(display_matrix.columns))], minor=True)
     ax.set_yticks([tick - 0.5 for tick in range(1, len(display_matrix.index))], minor=True)
@@ -464,10 +734,74 @@ def save_heatmap(
 
     colorbar = fig.colorbar(image, ax=ax, fraction=0.025, pad=0.01)
     colorbar.set_label("increased minus decreased profile count")
-    fig.tight_layout()
+    legend_handles = [
+        Patch(
+            facecolor=PATTERN_COLOR_EXACT_RED,
+            label="shared red exact Autism + Autoimmune",
+        ),
+        Patch(facecolor=PATTERN_COLOR_BLUE, label="ASD blue contrast"),
+        Patch(facecolor=PATTERN_COLOR_BOTH, label="both"),
+    ]
+    ax.legend(
+        handles=legend_handles,
+        loc="upper right",
+        bbox_to_anchor=(1.0, 1.18),
+        ncol=3,
+        frameon=False,
+        fontsize=8,
+        handlelength=1.1,
+        columnspacing=1.1,
+    )
+    fig.text(
+        0.01,
+        0.015,
+        PROFILE_SIMILARITY_PATTERN_NOTE,
+        ha="left",
+        va="bottom",
+        fontsize=8.5,
+        color="#334155",
+    )
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close(fig)
+
+
+def append_pattern_label_table(
+    lines: list[str],
+    pattern_labels: pd.DataFrame,
+    pattern_name: str,
+    title: str,
+) -> None:
+    """Append a compact table of red/blue heatmap labels to the Markdown report."""
+    selected = pattern_labels[pattern_labels["pattern_name"] == pattern_name].head(
+        PATTERN_LABEL_TOP_N
+    )
+    lines.extend(
+        [
+            f"### {title}",
+            "",
+            "| heatmap label | Autism | ASD | Autoimmune disease | guild traits | in heatmap |",
+            "| --- | ---: | ---: | ---: | --- | --- |",
+        ]
+    )
+    if selected.empty:
+        lines.append("| none |  |  |  |  |  |")
+        lines.append("")
+        return
+
+    for row in selected.itertuples(index=False):
+        guild_traits = clean_text(row.guild_trait_names)
+        if guild_traits == "unknown":
+            guild_traits = ""
+        in_heatmap = "yes" if bool(row.in_heatmap) else "no"
+        lines.append(
+            f"| {row.heatmap_label} | {int(row.autism_signed_profile_count)} | "
+            f"{int(row.asd_signed_profile_count)} | "
+            f"{int(row.autoimmune_signed_profile_count)} | {guild_traits} | "
+            f"{in_heatmap} |"
+        )
+    lines.append("")
 
 
 def write_readme(
@@ -475,6 +809,7 @@ def write_readme(
     grouped_summary: pd.DataFrame,
     balance: pd.DataFrame,
     heatmap_matrix: pd.DataFrame,
+    pattern_labels: pd.DataFrame,
     inferred_group_summary: pd.DataFrame,
     kg_microbe_taxon_universe: pd.DataFrame,
 ) -> None:
@@ -544,6 +879,39 @@ def write_readme(
                 )
             lines.append("")
 
+    lines.extend(
+        [
+            "## Red/Blue Pattern Labels",
+            "",
+            "These lists make the profile-similarity interpretation auditable. "
+            "Shared red labels have positive signed counts in both exact `Autism` "
+            "and `Autoimmune disease`, supporting the increased-profile similarity "
+            "readout. Shared blue labels would have negative signed counts in both "
+            "exact labels. The ASD blue-contrast list marks taxa where the broader "
+            "`Autism spectrum disorder` label is decreased-skewed while at least one "
+            "exact comparison label is neutral or increased-skewed.",
+            "",
+        ]
+    )
+    append_pattern_label_table(
+        lines,
+        pattern_labels,
+        "shared_red_exact_autism_autoimmune",
+        "Shared red labels: exact Autism and Autoimmune disease",
+    )
+    append_pattern_label_table(
+        lines,
+        pattern_labels,
+        "shared_blue_exact_autism_autoimmune",
+        "Shared blue labels: exact Autism and Autoimmune disease",
+    )
+    append_pattern_label_table(
+        lines,
+        pattern_labels,
+        "asd_blue_contrast_to_exact_labels",
+        "ASD blue-contrast labels",
+    )
+
     if not inferred_group_summary.empty:
         lines.extend(
             [
@@ -602,6 +970,10 @@ def write_readme(
             "while the guild annotation columns only indicate whether those taxa carry "
             "one or more of the v2 oxygen-tolerance traits.",
             "",
+            "`autism_autoimmune_taxa_signed_pattern_labels.tsv` extracts the heatmap "
+            "labels that directly support the red/blue readout above so the visual "
+            "pattern can be audited without manually reading the plot.",
+            "",
             "The most defensible interpretation is that the exact autism and "
             "autoimmune disease labels share a candidate gut dysbiosis axis "
             "involving increased facultative or aerotolerant guild signal. This "
@@ -617,7 +989,9 @@ def write_readme(
             f"`autism_autoimmune_taxa_signed_heatmap.png` shows the top {heatmap_taxa} "
             f"genus/species taxa selected from {full_taxa} observed taxa. Cell values are "
             "`increased unique taxon-profile count - decreased unique taxon-profile count`; "
-            "red is increased-skewed and blue is decreased-skewed.",
+            "red is increased-skewed and blue is decreased-skewed. Colored x-axis labels "
+            "and the marker strip above the heatmap identify taxa included in the "
+            "red/blue pattern-label extraction.",
             "",
             "## Files",
             "",
@@ -626,6 +1000,7 @@ def write_readme(
             "- `autism_autoimmune_taxa_direction_summary_grouped.tsv`",
             "- `autism_autoimmune_taxa_signed_balance.tsv`",
             "- `autism_autoimmune_taxa_signed_heatmap_matrix.tsv`",
+            "- `autism_autoimmune_taxa_signed_pattern_labels.tsv`",
             "- `autism_autoimmune_taxa_signed_heatmap.png`",
             "- `autism_autoimmune_inferred_guild_summary.tsv`",
             "- `autism_autoimmune_inferred_guild_trait_evidence.tsv`",
@@ -654,6 +1029,7 @@ def main() -> None:
     signed_balance = build_signed_taxa_balance(occurrences)
     selected_taxa = select_heatmap_taxa(signed_balance)
     heatmap_matrix = build_heatmap_matrix(signed_balance, selected_taxa)
+    pattern_labels = build_signed_pattern_labels(signed_balance, heatmap_matrix)
     kg_microbe_taxon_universe = build_kg_microbe_taxon_universe()
     inferred_group_summary, inferred_trait_evidence, inferred_taxa_evidence = (
         summarize_inferred_guild_evidence(
@@ -692,6 +1068,11 @@ def main() -> None:
         OUTPUT_DIR / "autism_autoimmune_taxa_signed_heatmap_matrix.tsv",
         sep="\t",
     )
+    pattern_labels.to_csv(
+        OUTPUT_DIR / "autism_autoimmune_taxa_signed_pattern_labels.tsv",
+        sep="\t",
+        index=False,
+    )
     kg_microbe_taxon_universe.to_csv(
         OUTPUT_DIR / "kg_microbe_candidate_taxon_universe.tsv",
         sep="\t",
@@ -715,6 +1096,7 @@ def main() -> None:
     save_heatmap(
         heatmap_matrix,
         profile_summary,
+        pattern_labels,
         OUTPUT_DIR / "autism_autoimmune_taxa_signed_heatmap.png",
     )
     write_readme(
@@ -722,6 +1104,7 @@ def main() -> None:
         grouped_taxa_summary,
         signed_balance,
         heatmap_matrix,
+        pattern_labels,
         inferred_group_summary,
         kg_microbe_taxon_universe,
     )
@@ -733,6 +1116,7 @@ def main() -> None:
     print(f"KG-Microbe candidate taxon universe rows: {len(kg_microbe_taxon_universe)}")
     print(f"Inferred guild rows: {len(inferred_group_summary)}")
     print(f"Heatmap taxa plotted: {len(heatmap_matrix.columns)}")
+    print(f"Pattern label rows: {len(pattern_labels)}")
 
 
 if __name__ == "__main__":

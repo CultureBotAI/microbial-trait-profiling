@@ -7,17 +7,22 @@ from textwrap import fill
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
 OUTPUT_PNG = INVESTIGATION_DIR / "profile_enrichment_guild_assignment_summary.png"
 OUTPUT_SVG = INVESTIGATION_DIR / "profile_enrichment_guild_assignment_summary.svg"
+ANAEROBE_GUILD_DEFINITION_TABLE_PNG = INVESTIGATION_DIR / "anaerobe_v2_guild_definition_table.png"
+ANAEROBE_GUILD_DEFINITION_TABLE_SVG = INVESTIGATION_DIR / "anaerobe_v2_guild_definition_table.svg"
 PRE_GRID_OUTPUT_PNG = (
     INVESTIGATION_DIR / "profile_enrichment_guild_assignment_pre_direction_grid_summary.png"
 )
 GRID_OUTPUT_TSV = INVESTIGATION_DIR / "profile_enrichment_guild_direction_grid.tsv"
+ANAEROBE_GUILD_SELECTION_TSV = (
+    INVESTIGATION_DIR / "anaerobe-depletion-v2" / "guild_trait_selection.tsv"
+)
 
 AEROBE_GUILD_TRAITS = {
     "METPO:1000608": "facultatively aerobic",
@@ -27,6 +32,21 @@ AEROBE_GUILD_TRAITS = {
 ANAEROBE_GUILD_TRAITS = {
     "METPO:1000603": "anaerobic",
     "METPO:1000607": "obligately anaerobic",
+}
+ANAEROBE_GUILD_TRAIT_DEFINITIONS = {
+    "METPO:1000603": (
+        "Taxa carrying anaerobic oxygen-tolerance annotations; broad counterpart "
+        "to oxygen-positive traits."
+    ),
+    "METPO:1000607": (
+        "Stricter anaerobe annotation for taxa expected to rely on oxygen-free growth contexts."
+    ),
+}
+ANAEROBE_GUILD_TRAIT_ROLES = {
+    "METPO:1000603": "Core trait for decreased-profile anaerobe signal.",
+    "METPO:1000607": (
+        "Keeps the guild specific to oxygen tolerance rather than fermentation metabolism."
+    ),
 }
 EXCLUDED_CONDITION_LABELS = {
     "Body fat distribution",
@@ -632,6 +652,211 @@ def add_large_direction_grid(ax: plt.Axes, counts: dict[str, int]) -> None:
     )
 
 
+def format_optional_count(value: object) -> str:
+    try:
+        return format_count(int(float(str(value))))
+    except ValueError:
+        return "n/a"
+
+
+def load_anaerobe_guild_definition_rows() -> list[dict[str, str]]:
+    selection = pd.DataFrame()
+    if ANAEROBE_GUILD_SELECTION_TSV.exists():
+        selection = read_tsv(ANAEROBE_GUILD_SELECTION_TSV).set_index("trait_id")
+
+    rows: list[dict[str, str]] = []
+    for trait_id, trait_name in ANAEROBE_GUILD_TRAITS.items():
+        source = selection.loc[trait_id] if trait_id in selection.index else pd.Series(dtype=str)
+        taxon_count = source.get("kg_microbe_taxa_with_trait_count", "")
+        rows.append(
+            {
+                "trait": f"{trait_name}\n{trait_id}",
+                "definition": ANAEROBE_GUILD_TRAIT_DEFINITIONS[trait_id],
+                "role": ANAEROBE_GUILD_TRAIT_ROLES[trait_id],
+                "taxa": format_optional_count(taxon_count),
+            }
+        )
+    return rows
+
+
+def add_definition_table_cell(
+    ax: plt.Axes,
+    *,
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+    text: str,
+    facecolor: str,
+    edgecolor: str,
+    color: str = SLATE_700,
+    fontsize: float = 7.2,
+    fontweight: str = "normal",
+    ha: str = "left",
+    wrap_width: int = 34,
+) -> None:
+    rect = Rectangle(
+        (x, y),
+        width,
+        height,
+        linewidth=0.65,
+        edgecolor=edgecolor,
+        facecolor=facecolor,
+        zorder=2,
+    )
+    ax.add_patch(rect)
+    text_x = x + width / 2 if ha == "center" else x + 0.75
+    ax.text(
+        text_x,
+        y + height / 2,
+        wrapped(text, wrap_width),
+        ha=ha,
+        va="center",
+        fontsize=fontsize,
+        fontweight=fontweight,
+        color=color,
+        linespacing=1.1,
+        zorder=3,
+    )
+
+
+def create_anaerobe_guild_definition_table(
+    *,
+    output_png: Path = ANAEROBE_GUILD_DEFINITION_TABLE_PNG,
+    output_svg: Path | None = ANAEROBE_GUILD_DEFINITION_TABLE_SVG,
+) -> None:
+    """Create a compact diagram-ready table for the anaerobe v2 guild traits."""
+    rows = load_anaerobe_guild_definition_rows()
+
+    output_png.parent.mkdir(parents=True, exist_ok=True)
+    fig, ax = plt.subplots(figsize=(15.2, 4.2), dpi=180)
+    fig.patch.set_facecolor(SLATE_50)
+    ax.set_facecolor(SLATE_50)
+    ax.set_xlim(0, 100)
+    ax.set_ylim(0, 30)
+    ax.axis("off")
+
+    ax.text(
+        3.5,
+        27.4,
+        "Anaerobe v2 depletion guild definitions",
+        fontsize=18,
+        fontweight="bold",
+        color=SLATE_900,
+        ha="left",
+        va="top",
+    )
+    ax.text(
+        3.5,
+        24.9,
+        (
+            "Parent focus: decreased profiles. Guild score is the row-wise mean of "
+            "the selected oxygen-tolerance trait z-scores."
+        ),
+        fontsize=9.4,
+        color=SLATE_500,
+        ha="left",
+        va="top",
+    )
+    add_badge(
+        ax,
+        (78.5, 24.3),
+        "anaerobe decrease",
+        facecolor=BLUE_50,
+        edgecolor="#bfdbfe",
+        text_color="#1d4ed8",
+    )
+
+    table_x = 3.5
+    table_y = 5.8
+    table_w = 93.0
+    header_h = 3.1
+    row_h = 6.35
+    table_h = header_h + row_h * len(rows)
+    columns = [
+        ("Trait", 18.6, 18),
+        ("Diagram definition", 34.0, 43),
+        ("Guild role", 30.8, 39),
+        ("KG taxa", 9.6, 9),
+    ]
+
+    outer = FancyBboxPatch(
+        (table_x, table_y),
+        table_w,
+        table_h,
+        boxstyle="round,pad=0.35,rounding_size=0.9",
+        linewidth=1.1,
+        edgecolor=SLATE_200,
+        facecolor="white",
+        zorder=1,
+    )
+    ax.add_patch(outer)
+
+    x = table_x
+    for header, width, wrap_width in columns:
+        add_definition_table_cell(
+            ax,
+            x=x,
+            y=table_y + row_h * len(rows),
+            width=width,
+            height=header_h,
+            text=header,
+            facecolor=BLUE_50,
+            edgecolor=SLATE_200,
+            color="#1d4ed8",
+            fontsize=7.4,
+            fontweight="bold",
+            ha="center" if header == "KG taxa" else "left",
+            wrap_width=wrap_width,
+        )
+        x += width
+
+    for row_index, row in enumerate(rows):
+        y = table_y + row_h * (len(rows) - 1 - row_index)
+        facecolor = "white" if row_index == 0 else SLATE_50
+        x = table_x
+        for key, width, wrap_width in [
+            ("trait", columns[0][1], columns[0][2]),
+            ("definition", columns[1][1], columns[1][2]),
+            ("role", columns[2][1], columns[2][2]),
+            ("taxa", columns[3][1], columns[3][2]),
+        ]:
+            add_definition_table_cell(
+                ax,
+                x=x,
+                y=y,
+                width=width,
+                height=row_h,
+                text=row[key],
+                facecolor=facecolor,
+                edgecolor=SLATE_200,
+                color="#1d4ed8" if key == "trait" else SLATE_700,
+                fontsize=7.0 if key != "trait" else 7.2,
+                fontweight="bold" if key == "trait" else "normal",
+                ha="center" if key == "taxa" else "left",
+                wrap_width=wrap_width,
+            )
+            x += width
+
+    ax.text(
+        3.5,
+        2.6,
+        (
+            "This table defines the v2 guild score. Focal target taxa are recurrence "
+            "audit examples and do not define the formal guild."
+        ),
+        fontsize=8.2,
+        color=SLATE_500,
+        ha="left",
+        va="bottom",
+    )
+
+    fig.savefig(output_png, dpi=220, bbox_inches="tight", facecolor=fig.get_facecolor())
+    if output_svg is not None:
+        fig.savefig(output_svg, bbox_inches="tight", facecolor=fig.get_facecolor())
+    plt.close(fig)
+
+
 def create_diagram(
     *,
     use_direction_grid: bool = True,
@@ -926,6 +1151,7 @@ def create_diagram(
 def main() -> None:
     write_direction_grid_table()
     create_diagram()
+    create_anaerobe_guild_definition_table()
     create_diagram(
         use_direction_grid=False,
         output_png=PRE_GRID_OUTPUT_PNG,
@@ -934,6 +1160,8 @@ def main() -> None:
     print(f"Wrote: {GRID_OUTPUT_TSV}")
     print(f"Wrote: {OUTPUT_PNG}")
     print(f"Wrote: {OUTPUT_SVG}")
+    print(f"Wrote: {ANAEROBE_GUILD_DEFINITION_TABLE_PNG}")
+    print(f"Wrote: {ANAEROBE_GUILD_DEFINITION_TABLE_SVG}")
     print(f"Wrote: {PRE_GRID_OUTPUT_PNG}")
 
 

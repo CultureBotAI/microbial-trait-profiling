@@ -331,6 +331,7 @@ def refresh_powerpoint() -> None:
 
 def main() -> None:
     run_script("investigate_facultative_aerobe_expansion.py")
+    run_script("investigate_facultative_aerobe_condition_followup.py")
     run_script("investigate_gut_anaerobe_depletion.py")
     run_script("create_profile_enrichment_guild_assignment_diagram.py")
     run_script("create_trait_profile_infographic.py")

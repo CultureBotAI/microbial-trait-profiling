@@ -34,6 +34,8 @@ The top-level summary files are also current outputs:
 
 - `profile_enrichment_guild_assignment_summary.png`
 - `profile_enrichment_guild_assignment_summary.svg`
+- `anaerobe_v2_guild_definition_table.png`
+- `anaerobe_v2_guild_definition_table.svg`
 - `profile_enrichment_guild_direction_grid.tsv`
 - `trait_profile_paired_contrast_infographic.png`
 - `trait_profile_paired_contrast_trait_stats.tsv`

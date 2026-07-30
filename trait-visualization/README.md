@@ -76,6 +76,8 @@ trait's inclusion status and matched-pair increased-minus-decreased summary.
 
 Files:
 
+- `condition_trait_module_guild_definition_table.png`
+- `condition_trait_module_guild_definition_table.svg`
 - `condition_trait_module_clustered_heatmap.png`
 - `condition_trait_module_clustered_heatmap_matrix.tsv`
 - `condition_trait_module_group_metadata.tsv`
@@ -90,6 +92,11 @@ uv run python scripts/create_condition_trait_module_heatmap.py
 This groups studies by condition and body site, aggregates trait profiles within
 each group, and clusters the resulting condition-level modules. It is intended to
 highlight condition-specific trait signatures.
+
+For slide-level interpretation, use
+`condition_trait_module_guild_definition_table.png` as the compact guild-definition
+diagram. It uses `X OR Y OR Z` for taxon support and mean z-score over selected
+traits for profile/module scoring; `X AND Y AND Z` is not the default.
 
 ### BugSigDB taxa-only heatmaps
 

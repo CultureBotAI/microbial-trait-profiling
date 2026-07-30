@@ -7,15 +7,31 @@ import csv
 import math
 from collections import Counter, defaultdict
 from pathlib import Path
+from textwrap import fill
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from matplotlib.patches import Patch
+from matplotlib.patches import FancyBboxPatch, Patch, Rectangle
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
+GUILD_DEFINITION_TABLE_OUTPUT = OUTPUT_DIR / "condition_trait_module_guild_definition_table.png"
+GUILD_DEFINITION_TABLE_SVG_OUTPUT = OUTPUT_DIR / "condition_trait_module_guild_definition_table.svg"
+
+SLATE_50 = "#f8fafc"
+SLATE_100 = "#f1f5f9"
+SLATE_200 = "#e2e8f0"
+SLATE_500 = "#64748b"
+SLATE_700 = "#334155"
+SLATE_900 = "#0f172a"
+BLUE_50 = "#eff6ff"
+BLUE_600 = "#2563eb"
+GREEN_50 = "#ecfdf5"
+GREEN_700 = "#047857"
+AMBER_50 = "#fffbeb"
+AMBER_700 = "#b45309"
 
 
 def clean_value(value: object) -> str:
@@ -32,6 +48,11 @@ def compact_label(value: str, max_length: int = 46) -> str:
     if len(value) <= max_length:
         return value
     return f"{value[: max_length - 3]}..."
+
+
+def wrapped(value: str, width: int) -> str:
+    """Wrap text for compact diagram labels."""
+    return "\n".join(fill(line, width=width) for line in value.split("\n"))
 
 
 def study_id_from_bsdb_id(bsdb_id: str) -> str:
@@ -453,6 +474,240 @@ def save_heatmap(
     plt.close(cluster.fig)
 
 
+def summarize_trait_categories(trait_metadata: pd.DataFrame, max_categories: int = 4) -> str:
+    """Return a compact category summary for the selected trait set."""
+    counts = trait_metadata["display_category"].map(clean_value).value_counts()
+    parts = [f"{category}: {count}" for category, count in counts.head(max_categories).items()]
+    remaining = len(counts) - len(parts)
+    if remaining > 0:
+        parts.append(f"+{remaining} more")
+    return "; ".join(parts)
+
+
+def add_table_cell(
+    ax: plt.Axes,
+    *,
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+    text: str,
+    facecolor: str,
+    edgecolor: str,
+    color: str = SLATE_700,
+    fontsize: float = 7.2,
+    fontweight: str = "normal",
+    ha: str = "left",
+    wrap_width: int = 34,
+) -> None:
+    rect = Rectangle(
+        (x, y),
+        width,
+        height,
+        linewidth=0.65,
+        edgecolor=edgecolor,
+        facecolor=facecolor,
+        zorder=2,
+    )
+    ax.add_patch(rect)
+    text_x = x + width / 2 if ha == "center" else x + 0.75
+    ax.text(
+        text_x,
+        y + height / 2,
+        wrapped(text, wrap_width),
+        ha=ha,
+        va="center",
+        fontsize=fontsize,
+        fontweight=fontweight,
+        color=color,
+        linespacing=1.1,
+        zorder=3,
+    )
+
+
+def save_guild_definition_table(
+    group_metadata: pd.DataFrame,
+    trait_metadata: pd.DataFrame,
+    output_path: Path,
+    svg_output_path: Path | None,
+) -> None:
+    """Render a diagram table that defines guild logic for condition modules."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    rows = [
+        {
+            "layer": "Taxon support",
+            "definition": "A taxon supports a guild when it carries X OR Y OR Z.",
+            "use": "Candidate universe and supporting-taxa evidence.",
+            "logic": "OR",
+        },
+        {
+            "layer": "Profile score",
+            "definition": "Score each profile as mean z(X, Y, Z) over selected trait columns.",
+            "use": "Continuous guild signal for profile and direction summaries.",
+            "logic": "mean",
+        },
+        {
+            "layer": "Disease module",
+            "definition": "Aggregate profiles by condition/body site, then summarize guild score.",
+            "use": "Condition-level link to a trait-defined guild.",
+            "logic": "group mean",
+        },
+        {
+            "layer": "Strict all-trait rule",
+            "definition": "Use X AND Y AND Z only when every trait is a required criterion.",
+            "use": "Not the default for broad KG-Microbe phenotype guilds.",
+            "logic": "avoid AND",
+        },
+    ]
+
+    fig, ax = plt.subplots(figsize=(15.2, 5.25), dpi=180)
+    fig.patch.set_facecolor(SLATE_50)
+    ax.set_facecolor(SLATE_50)
+    ax.set_xlim(0, 100)
+    ax.set_ylim(0, 38)
+    ax.axis("off")
+
+    ax.text(
+        3.5,
+        35.2,
+        "Condition/disease module guild definition logic",
+        fontsize=18,
+        fontweight="bold",
+        color=SLATE_900,
+        ha="left",
+        va="top",
+    )
+    ax.text(
+        3.5,
+        32.7,
+        (
+            f"Current context: {len(group_metadata):,} condition/body-site modules x "
+            f"{len(trait_metadata):,} selected trait columns."
+        ),
+        fontsize=8.9,
+        color=SLATE_500,
+        ha="left",
+        va="top",
+    )
+
+    badge = FancyBboxPatch(
+        (78.5, 31.4),
+        17.0,
+        2.5,
+        boxstyle="round,pad=0.25,rounding_size=1.2",
+        linewidth=1.0,
+        edgecolor="#a7f3d0",
+        facecolor=GREEN_50,
+        zorder=3,
+    )
+    ax.add_patch(badge)
+    ax.text(
+        87.0,
+        32.65,
+        "use OR for support",
+        ha="center",
+        va="center",
+        fontsize=7.6,
+        fontweight="bold",
+        color=GREEN_700,
+        zorder=4,
+    )
+
+    table_x = 3.5
+    table_y = 6.0
+    table_w = 93.0
+    header_h = 3.0
+    row_h = 5.3
+    table_h = header_h + row_h * len(rows)
+    columns = [
+        ("Layer", 17.0, 16),
+        ("Definition", 35.0, 44),
+        ("Use in diagram", 29.0, 37),
+        ("Logic", 12.0, 12),
+    ]
+
+    outer = FancyBboxPatch(
+        (table_x, table_y),
+        table_w,
+        table_h,
+        boxstyle="round,pad=0.35,rounding_size=0.9",
+        linewidth=1.1,
+        edgecolor=SLATE_200,
+        facecolor="white",
+        zorder=1,
+    )
+    ax.add_patch(outer)
+
+    x = table_x
+    for header, width, wrap_width in columns:
+        add_table_cell(
+            ax,
+            x=x,
+            y=table_y + row_h * len(rows),
+            width=width,
+            height=header_h,
+            text=header,
+            facecolor=BLUE_50,
+            edgecolor=SLATE_200,
+            color=BLUE_600,
+            fontsize=7.4,
+            fontweight="bold",
+            ha="center" if header == "Logic" else "left",
+            wrap_width=wrap_width,
+        )
+        x += width
+
+    for row_index, row in enumerate(rows):
+        y = table_y + row_h * (len(rows) - 1 - row_index)
+        facecolor = "white" if row_index % 2 == 0 else SLATE_50
+        logic_color = GREEN_700 if row["logic"] == "OR" else AMBER_700
+        if row["logic"] == "avoid AND":
+            logic_color = SLATE_500
+        x = table_x
+        for key, width, wrap_width in [
+            ("layer", columns[0][1], columns[0][2]),
+            ("definition", columns[1][1], columns[1][2]),
+            ("use", columns[2][1], columns[2][2]),
+            ("logic", columns[3][1], columns[3][2]),
+        ]:
+            add_table_cell(
+                ax,
+                x=x,
+                y=y,
+                width=width,
+                height=row_h,
+                text=row[key],
+                facecolor=facecolor,
+                edgecolor=SLATE_200,
+                color=logic_color if key == "logic" else SLATE_700,
+                fontsize=7.2,
+                fontweight="bold" if key in {"layer", "logic"} else "normal",
+                ha="center" if key == "logic" else "left",
+                wrap_width=wrap_width,
+            )
+            x += width
+
+    ax.text(
+        3.5,
+        2.6,
+        (
+            "Use OR because KG-Microbe annotations are partially overlapping and incomplete. "
+            "Requiring every selected trait would measure annotation completeness, "
+            "not guild support."
+        ),
+        fontsize=8.2,
+        color=SLATE_500,
+        ha="left",
+        va="bottom",
+    )
+
+    fig.savefig(output_path, dpi=220, bbox_inches="tight", facecolor=fig.get_facecolor())
+    if svg_output_path is not None:
+        fig.savefig(svg_output_path, bbox_inches="tight", facecolor=fig.get_facecolor())
+    plt.close(fig)
+
+
 def write_outputs(
     plot_matrix: pd.DataFrame,
     display_matrix: pd.DataFrame,
@@ -532,6 +787,18 @@ def main() -> None:
         help="Output selected trait metadata TSV path.",
     )
     parser.add_argument(
+        "--guild-definition-table-output",
+        type=Path,
+        default=GUILD_DEFINITION_TABLE_OUTPUT,
+        help="Output guild definition table diagram PNG path.",
+    )
+    parser.add_argument(
+        "--guild-definition-table-svg-output",
+        type=Path,
+        default=GUILD_DEFINITION_TABLE_SVG_OUTPUT,
+        help="Output guild definition table diagram SVG path.",
+    )
+    parser.add_argument(
         "--group-by",
         nargs="+",
         default=["condition", "body_site"],
@@ -599,6 +866,14 @@ def main() -> None:
     plot_matrix = build_plot_matrix(group_matrix, selected_traits)
     display_matrix = build_display_matrix(plot_matrix, group_metadata, trait_metadata)
     save_heatmap(display_matrix, group_metadata, trait_metadata, args.output)
+    save_guild_definition_table(
+        group_metadata.loc[plot_matrix.index],
+        trait_metadata.loc[plot_matrix.columns],
+        args.guild_definition_table_output,
+        args.guild_definition_table_svg_output,
+    )
+    print(f"Wrote guild definition table: {args.guild_definition_table_output}")
+    print(f"Wrote guild definition table SVG: {args.guild_definition_table_svg_output}")
     write_outputs(
         plot_matrix,
         display_matrix,

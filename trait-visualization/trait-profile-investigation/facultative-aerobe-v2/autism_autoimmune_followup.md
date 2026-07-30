@@ -92,6 +92,47 @@ Top decreased taxa:
 | taxon_33038 | genus | 2 | 1 |  |
 | taxon_39485 | genus | 2 | 1 |  |
 
+## Red/Blue Pattern Labels
+
+These lists make the profile-similarity interpretation auditable. Shared red labels have positive signed counts in both exact `Autism` and `Autoimmune disease`, supporting the increased-profile similarity readout. Shared blue labels would have negative signed counts in both exact labels. The ASD blue-contrast list marks taxa where the broader `Autism spectrum disorder` label is decreased-skewed while at least one exact comparison label is neutral or increased-skewed.
+
+### Shared red labels: exact Autism and Autoimmune disease
+
+| heatmap label | Autism | ASD | Autoimmune disease | guild traits | in heatmap |
+| --- | ---: | ---: | ---: | --- | --- |
+| NCBI:1224 genus | 3 | 3 | 3 | aerobic; facultatively aerobic; microaerophilic | yes |
+| NCBI:543 genus | 1 | 1 | 2 | aerobic; facultatively aerobic; microaerophilic | yes |
+| NCBI:200643 genus | 1 | -2 | 1 | aerobic; facultatively aerobic; microaerophilic | yes |
+| NCBI:816 genus | 1 | 1 | 2 | aerobic; facultatively aerobic; microaerophilic | no |
+| NCBI:976 genus | 1 | 0 | 1 | aerobic; facultatively aerobic; microaerophilic | no |
+| NCBI:203492 genus | 1 | 0 | 1 |  | no |
+
+### Shared blue labels: exact Autism and Autoimmune disease
+
+| heatmap label | Autism | ASD | Autoimmune disease | guild traits | in heatmap |
+| --- | ---: | ---: | ---: | --- | --- |
+| NCBI:186803 genus | -1 | -1 | -1 | facultatively aerobic; microaerophilic | no |
+
+### ASD blue-contrast labels
+
+| heatmap label | Autism | ASD | Autoimmune disease | guild traits | in heatmap |
+| --- | ---: | ---: | ---: | --- | --- |
+| NCBI:171552 genus | 0 | -7 | -1 | aerobic | yes |
+| NCBI:838 genus | 0 | -6 | 0 |  | yes |
+| NCBI:577309 genus | 0 | -5 | 0 |  | yes |
+| NCBI:171549 genus | -1 | -4 | 1 | aerobic; facultatively aerobic; microaerophilic | yes |
+| NCBI:33039 genus | 0 | -4 | 0 |  | yes |
+| NCBI:39488 genus | 0 | -4 | 0 |  | yes |
+| NCBI:31977 genus | -1 | -3 | 3 | aerobic | yes |
+| NCBI:1300 genus | 0 | -3 | 1 | aerobic; facultatively aerobic; microaerophilic | yes |
+| NCBI:39485 genus | 0 | -3 | -2 |  | yes |
+| NCBI:201174 genus | 0 | -3 | 0 | aerobic; facultatively aerobic; microaerophilic | yes |
+| NCBI:158846 genus | 0 | -3 | 0 |  | yes |
+| NCBI:283168 genus | 0 | -3 | 0 |  | yes |
+| NCBI:853 genus | 0 | -3 | 0 | facultatively aerobic | yes |
+| NCBI:39491 genus | 0 | -3 | -1 |  | yes |
+| NCBI:47678 genus | 0 | -3 | -1 |  | yes |
+
 ## Inferred Guild Evidence
 
 This section uses a data-derived guild view: for each exact condition label, it identifies v2 guild traits enriched in that condition's increased profiles, then lists taxa observed in those same profiles that also belong to the KG-Microbe-wide candidate universe and carry the enriched trait annotations. The universe contains 2,667 taxa with at least one core oxygen/respiration criterion annotation, not the fixed focal taxa list.
@@ -109,11 +150,13 @@ Included condition labels with positive increased-minus-decreased v2 guild shift
 
 At the taxa-list level, overlap should still be interpreted cautiously. The signed heatmap counts direction balance by taxon/profile occurrence, while the guild annotation columns only indicate whether those taxa carry one or more of the v2 oxygen-tolerance traits.
 
+`autism_autoimmune_taxa_signed_pattern_labels.tsv` extracts the heatmap labels that directly support the red/blue readout above so the visual pattern can be audited without manually reading the plot.
+
 The most defensible interpretation is that the exact autism and autoimmune disease labels share a candidate gut dysbiosis axis involving increased facultative or aerotolerant guild signal. This analysis does not show that autism and autoimmune disease are causally linked, driven by the same taxa, or even consistently connected across broader ASD metadata. The autoimmune subset is small, and many taxa are locally unresolved as `taxon_<NCBI id>`, so the taxa-level results should be treated as candidate NCBI IDs for follow-up rather than polished biological names.
 
 ## Heatmap
 
-`autism_autoimmune_taxa_signed_heatmap.png` shows the top 45 genus/species taxa selected from 923 observed taxa. Cell values are `increased unique taxon-profile count - decreased unique taxon-profile count`; red is increased-skewed and blue is decreased-skewed.
+`autism_autoimmune_taxa_signed_heatmap.png` shows the top 45 genus/species taxa selected from 923 observed taxa. Cell values are `increased unique taxon-profile count - decreased unique taxon-profile count`; red is increased-skewed and blue is decreased-skewed. Colored x-axis labels and the marker strip above the heatmap identify taxa included in the red/blue pattern-label extraction.
 
 ## Files
 
@@ -122,6 +165,7 @@ The most defensible interpretation is that the exact autism and autoimmune disea
 - `autism_autoimmune_taxa_direction_summary_grouped.tsv`
 - `autism_autoimmune_taxa_signed_balance.tsv`
 - `autism_autoimmune_taxa_signed_heatmap_matrix.tsv`
+- `autism_autoimmune_taxa_signed_pattern_labels.tsv`
 - `autism_autoimmune_taxa_signed_heatmap.png`
 - `autism_autoimmune_inferred_guild_summary.tsv`
 - `autism_autoimmune_inferred_guild_trait_evidence.tsv`
