@@ -1,0 +1,16 @@
+query_condition	rank	neighbor_condition	neighbor_is_other_target_condition	cosine_similarity	neighbor_profile_count	neighbor_study_count	neighbor_experiment_count
+Thalassemia	1	Seasonal gut microbiome measurement	False	0.9615091681480408	2	1	1
+Thalassemia	2	Schistosomiasis	False	0.9586307406425476	2	1	1
+Thalassemia	3	Gastric carcinoma	False	0.9566397666931152	2	1	1
+Thalassemia	4	Carrier status	False	0.952788770198822	4	1	2
+Thalassemia	5	Renal transplant outcome measurement	False	0.9525197744369507	2	1	1
+Sleep Disorder	1	Non-alcoholic steatohepatitis	False	0.9496489763259888	21	4	13
+Sleep Disorder	2	Behcet's syndrome	False	0.9439646601676941	13	4	7
+Sleep Disorder	3	Type I diabetes mellitus	False	0.9411911964416504	22	6	13
+Sleep Disorder	4	Peripheral neuron	False	0.9410460591316223	14	1	8
+Sleep Disorder	5	Urolithiasis,Nephrolithiasis	False	0.9374472498893738	4	2	2
+Head and neck squamous cell carcinoma	1	Response to antibiotic	False	0.9697152376174927	86	16	61
+Head and neck squamous cell carcinoma	2	Periodontitis	False	0.9687576293945312	114	28	68
+Head and neck squamous cell carcinoma	3	Mycobacterium tuberculosis	False	0.9667009711265564	28	3	20
+Head and neck squamous cell carcinoma	4	Asthma	False	0.9660020470619202	68	14	39
+Head and neck squamous cell carcinoma	5	Cervical glandular intraepithelial neoplasia	False	0.965728759765625	54	13	37
