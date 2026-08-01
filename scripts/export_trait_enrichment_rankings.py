@@ -29,11 +29,13 @@ class ParsedRow:
     inc_dec: str
     profile_id: str
     trait: str
-    pvalue: float
-    fold: float | None
-    obs: float | None
-    exp: float | None
-    hit_count: int | None
+    p_value: float
+    fdr_q: float
+    fold: float
+    obs: float
+    exp: float
+    testable_profiles: int
+    hit_count: int | None = None
 
 
 def resolve_default_input() -> Path:
@@ -99,20 +101,32 @@ def _parse_summary_values(summary: str) -> tuple[float | None, float | None, flo
     return obs, exp, fold
 
 
-def detect_stat_type(path: Path) -> tuple[str, float]:
-    """Detect if the report used p-value or FDR q-value and the threshold."""
+def detect_metadata(path: Path) -> dict[str, any]:
+    """Detect metadata from the report or results TSV."""
+    meta = {"stat_type": "p_value", "threshold": 0.001, "testable_profiles": None}
     if not path.exists():
-        return "p_value", 0.001
-    
+        return meta
+
     with path.open("r", encoding="utf-8") as handle:
         for line in handle:
             line = line.strip()
+            # Text report format
             if line.startswith("p < "):
-                return "p_value", float(line.split("<")[1].strip())
-            if line.startswith("FDR q < "):
-                return "fdr_q", float(line.split("<")[1].strip())
-    
-    return "p_value", 0.001
+                meta["stat_type"] = "p_value"
+                meta["threshold"] = float(line.split("<")[1].strip())
+            elif line.startswith("FDR q < "):
+                meta["stat_type"] = "fdr_q"
+                meta["threshold"] = float(line.split("<")[1].strip())
+            # TSV metadata header format
+            elif line.startswith("# FDR: "):
+                is_fdr = line.split(": ")[1].strip().lower() == "true"
+                meta["stat_type"] = "fdr_q" if is_fdr else "p_value"
+            elif line.startswith("# P-Threshold: "):
+                meta["threshold"] = float(line.split(": ")[1].strip())
+            elif line.startswith("# Testable-Profiles: "):
+                meta["testable_profiles"] = int(line.split(": ")[1].strip())
+
+    return meta
 
 
 def parse_results_tsv(
@@ -121,15 +135,18 @@ def parse_results_tsv(
     if not path.exists():
         raise FileNotFoundError(f"Results TSV not found: {path}")
 
-    # Use p_value if stat_type is p_value, else fdr_q
+    # Use comment='#' to skip the metadata header emitted by trait_enrichment.py
+    df = pd.read_csv(path, sep="\t", comment="#")
+
+    # col used for filtering
     col = "p_value" if stat_type == "p_value" else "fdr_q"
 
-    df = pd.read_csv(path, sep="\t")
-    
     # Apply filtering to match report logic
     df = df[(df[col] <= threshold) & (df["fold"] >= min_fold)]
-    print(f"Filtered to {len(df)} significant hits (threshold={threshold}, fold={min_fold})")
-    
+    print(
+        f"Filtered to {len(df)} significant hits (source={path.name}, threshold={threshold}, fold={min_fold})"
+    )
+
     rows = []
     for _, r in df.iterrows():
         study_id = str(r["study_id"])
@@ -142,11 +159,12 @@ def parse_results_tsv(
                 inc_dec=inc_dec,
                 profile_id=f"{study_id}|{experiment_id}|{inc_dec}",
                 trait=str(r["trait"]),
-                pvalue=float(r[col]),
+                p_value=float(r["p_value"]),
+                fdr_q=float(r["fdr_q"]),
                 fold=float(r["fold"]),
                 obs=float(r["count"]),
                 exp=float(r["expected"]),
-                hit_count=None,
+                testable_profiles=int(r["testable_profiles"]),
             )
         )
     return rows
@@ -181,8 +199,11 @@ def parse_report(path: Path) -> list[ParsedRow]:
 
                 if current_header is None:
                     raise ValueError(f"Trait row found before profile header: {line!r}")
-
-                study_id, experiment_id, inc_dec = current_header
+                (
+                    study_id,
+                    experiment_id,
+                    inc_dec,
+                ) = current_header  # pylint: disable=unpacking-non-sequence
                 profile_id = f"{study_id}|{experiment_id}|{inc_dec}"
                 rows.append(
                     ParsedRow(
@@ -191,10 +212,12 @@ def parse_report(path: Path) -> list[ParsedRow]:
                         inc_dec=inc_dec,
                         profile_id=profile_id,
                         trait=trait,
-                        pvalue=pvalue,
-                        fold=fold,
-                        obs=obs,
-                        exp=exp,
+                        p_value=pvalue,
+                        fdr_q=pvalue,  # Report only has one, use for both
+                        fold=fold or 0.0,
+                        obs=obs or 0.0,
+                        exp=exp or 0.0,
+                        testable_profiles=0,  # Not available in text report
                         hit_count=hit_count,
                     )
                 )
@@ -211,10 +234,13 @@ def parse_report(path: Path) -> list[ParsedRow]:
     return rows
 
 
-def build_overall_table(frame: pd.DataFrame, stat_type: str) -> pd.DataFrame:
+def build_overall_table(frame: pd.DataFrame, stat_type: str, total_profiles: int | None = None) -> pd.DataFrame:
     grouped = frame.groupby("trait", dropna=False)
 
-    best_idx = grouped["pvalue"].idxmin()
+    # Use the relevant stat for choosing the 'best' row metadata
+    stat_col = "fdr_q" if stat_type == "fdr_q" else "p_value"
+
+    best_idx = grouped[stat_col].idxmin()
     best_rows = frame.loc[best_idx, ["trait", "inc_dec", "study_id", "experiment_id", "profile_id"]]
     best_rows = best_rows.rename(
         columns={
@@ -226,12 +252,15 @@ def build_overall_table(frame: pd.DataFrame, stat_type: str) -> pd.DataFrame:
     )
 
     summary = grouped.agg(
-        best_stat=("pvalue", "min"),
-        median_stat=("pvalue", "median"),
+        best_fdr_q=("fdr_q", "min"),
+        median_fdr_q=("fdr_q", "median"),
+        best_p_value=("p_value", "min"),
+        median_p_value=("p_value", "median"),
         hit_rows=("trait", "size"),
         unique_profiles=("profile_id", "nunique"),
         mean_fold=("fold", "mean"),
         max_fold=("fold", "max"),
+        testable_profiles=("testable_profiles", "first"),
     )
 
     inc_counts = (
@@ -245,43 +274,82 @@ def build_overall_table(frame: pd.DataFrame, stat_type: str) -> pd.DataFrame:
     overall[["inc_hits", "dec_hits"]] = overall[["inc_hits", "dec_hits"]].fillna(0).astype(int)
     overall = overall.reset_index().merge(best_rows, on="trait", how="left")
     overall.insert(1, "stat_type", stat_type)
+
+    # #119: Calculate prevalence fraction.
+    # Denominator is the number of profiles where the trait was testable
+    # (i.e., appeared at least once).
+    overall["prevalence"] = overall["hit_rows"] / overall["testable_profiles"]
+
+    # #115: Minimum hit thresholding for overall ranking to reduce noise.
+    # We require traits to be significant in at least 2 profiles to appear in rankings.
+    overall = overall[overall["hit_rows"] >= 2]
+
+    # #119: Rank by prevalence (significant / testable) descending, then by significance.
+    # This provides a directly interpretable ranking that avoids extreme-value inflation.
+    sort_stat = "best_fdr_q" if stat_type == "fdr_q" else "best_p_value"
     overall = overall.sort_values(
-        ["best_stat", "hit_rows", "max_fold"],
-        ascending=[True, False, False],
+        ["prevalence", sort_stat, "max_fold"],
+        ascending=[False, True, False],
     )
     overall.insert(0, "rank", range(1, len(overall) + 1))
     return overall
 
 
-def build_pair_table(frame: pd.DataFrame) -> pd.DataFrame:
+def build_pair_table(frame: pd.DataFrame, stat_type: str) -> pd.DataFrame:
     pairs = frame.copy()
-    pairs = pairs.sort_values(["pvalue", "fold"], ascending=[True, False])
+    sort_col = "fdr_q" if stat_type == "fdr_q" else "p_value"
+    pairs = pairs.sort_values([sort_col, "fold"], ascending=[True, False])
     pairs.insert(0, "rank", range(1, len(pairs) + 1))
     return pairs
 
 
 def main() -> int:
     args = parse_args()
-    
-    stat_type, stat_threshold = detect_stat_type(args.input)
+
+    meta = detect_metadata(args.input)
+    stat_type = meta["stat_type"]
+    stat_threshold = meta["threshold"]
+    testable_profiles = meta["testable_profiles"]
+
     results_path = args.results or resolve_default_results(args.input)
-    
+
     if results_path.exists():
         print(f"Loading data from results TSV: {results_path}")
+        # If we just detected metadata from the report, check the results TSV too
+        if testable_profiles is None:
+            results_meta = detect_metadata(results_path)
+            stat_type = results_meta["stat_type"]
+            stat_threshold = results_meta["threshold"]
+            testable_profiles = results_meta["testable_profiles"]
+        
         rows = parse_results_tsv(results_path, stat_type, stat_threshold)
     else:
-        print(f"Warning: Results TSV not found at {results_path}. Falling back to report parser (may be truncated).")
+        print(
+            f"Warning: Results TSV not found at {results_path}. Falling back to report parser (truncated to {args.input.name})."
+        )
         rows = parse_report(args.input)
-        
+
     frame = pd.DataFrame([row.__dict__ for row in rows])
 
-    overall = build_overall_table(frame, stat_type)
-    pairs = build_pair_table(frame)
+    overall = build_overall_table(frame, stat_type, total_profiles=testable_profiles)
+    pairs = build_pair_table(frame, stat_type)
 
     args.overall_output.parent.mkdir(parents=True, exist_ok=True)
     args.pair_output.parent.mkdir(parents=True, exist_ok=True)
-    overall.to_csv(args.overall_output, sep="\t", index=False)
-    pairs.to_csv(args.pair_output, sep="\t", index=False)
+
+    # Write overall table with metadata header
+    with args.overall_output.open("w", encoding="utf-8", newline="") as f:
+        f.write(f"# Stat-Type: {stat_type}\n")
+        f.write(f"# Stat-Threshold: {stat_threshold}\n")
+        if testable_profiles:
+            f.write(f"# Total-Testable-Profiles: {testable_profiles}\n")
+        overall.to_csv(f, sep="\t", index=False)
+
+    # Write pair table with metadata header
+    with args.pair_output.open("w", encoding="utf-8", newline="") as f:
+        f.write(f"# Stat-Type: {stat_type}\n")
+        f.write(f"# Stat-Threshold: {stat_threshold}\n")
+        pairs.to_csv(f, sep="\t", index=False)
 
     print(f"Input rows parsed: {len(frame)}")
     print(f"Unique traits: {frame['trait'].nunique()}")

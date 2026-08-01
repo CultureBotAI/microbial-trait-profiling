@@ -176,7 +176,7 @@ def _parse_fold(value: str) -> float:
 def parse_report(path: Path) -> list[ParsedHit]:
     """Parse either the new structured TSV or the old text report."""
     if path.suffix == ".tsv":
-        df = pd.read_csv(path, sep="\t")
+        df = pd.read_csv(path, sep="\t", comment="#")
         hits = []
         for _, row in df.iterrows():
             hits.append(

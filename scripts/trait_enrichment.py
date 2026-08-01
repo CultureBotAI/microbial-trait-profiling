@@ -64,7 +64,7 @@ def parse_args() -> argparse.Namespace:
         "--max-traits-per-row",
         type=int,
         default=10,
-        help="Maximum number of bullet traits to show per row in text report",
+        help="Maximum number of bullet traits to show per row in text report (0 or -1 for all)",
     )
     return parser.parse_args()
 
@@ -272,6 +272,8 @@ def main() -> None:
         rows = []
         # Background counts for hypergeometric test
         background_counts = dict.fromkeys(trait_columns, 0)
+        # Count how many profiles each trait appeared in (denominator for prevalence)
+        testable_counts = dict.fromkeys(trait_columns, 0)
         row_totals: list[int] = []
         background_total = 0
 
@@ -294,6 +296,7 @@ def main() -> None:
                         row_traits_data[t] = c
                         row_total += c
                         background_counts[t] += c
+                        testable_counts[t] += 1
             
             rows.append({
                 "study_id": row.get("study_id", ""),
@@ -336,7 +339,8 @@ def main() -> None:
                 "count": count,
                 "expected": expected,
                 "row_total": row_total,
-                "trait_total": trait_total
+                "trait_total": trait_total,
+                "testable_profiles": testable_counts[trait]
             })
 
     # Apply FDR correction if requested
@@ -360,9 +364,22 @@ def main() -> None:
         # Sort globally by significance (FDR q), then by study/experiment/direction/trait
         significant_hits.sort(key=lambda h: (h["fdr_q"], h["study_id"], h["experiment_id"], h["trait"]))
         with args.tsv_output.open("w", encoding="utf-8", newline="") as out_fh:
+            # Metadata header
+            out_fh.write(f"# FDR: {args.fdr}\n")
+            out_fh.write(f"# P-Threshold: {args.p_threshold}\n")
+            out_fh.write(f"# Min-Fold: {args.min_fold}\n")
+            out_fh.write(f"# Max-Traits-Per-Row-Report: {args.max_traits_per_row}\n")
+            testable_profile_count = len([rt for rt in row_totals if rt > 0])
+            mean_assertions = sum(row_totals) / testable_profile_count if testable_profile_count > 0 else 0
+            out_fh.write(f"# Total-Profiles-Input: {len(rows)}\n")
+            out_fh.write(f"# Testable-Profiles: {testable_profile_count}\n")
+            out_fh.write(f"# Mean-Assertions-Per-Testable-Profile: {mean_assertions:.2f}\n")
+            out_fh.write(f"# Total-Tests-Performed: {len(all_hits)}\n")
+            
             writer = csv.DictWriter(out_fh, fieldnames=[
                 "study_id", "experiment_id", "inc_dec", "trait",
-                "p_value", "fdr_q", "fold", "count", "expected"
+                "p_value", "fdr_q", "fold", "count", "expected",
+                "testable_profiles"
             ], delimiter="\t")
             writer.writeheader()
             for h in significant_hits:
@@ -375,7 +392,8 @@ def main() -> None:
                     "fdr_q": h["fdr_q"],
                     "fold": h["fold"],
                     "count": h["count"],
-                    "expected": h["expected"]
+                    "expected": h["expected"],
+                    "testable_profiles": h["testable_profiles"]
                 })
 
     # Generate text report
@@ -386,6 +404,10 @@ def main() -> None:
         report_lines.append(f"p < {args.p_threshold:g}")
     if args.min_fold > 0:
         report_lines.append(f"Min Fold >= {args.min_fold:g}")
+    if args.max_traits_per_row > 0:
+        report_lines.append(f"Max traits per profile: {args.max_traits_per_row}")
+    else:
+        report_lines.append("Max traits per profile: unlimited")
     report_lines.append("")
 
     # Group significant hits for report
@@ -404,7 +426,11 @@ def main() -> None:
 
         report_lines.append(f"{key[0]}\t{key[1]}\t{key[2]}")
         report_lines.append("")
-        for h in group[: args.max_traits_per_row]:
+        
+        limit = args.max_traits_per_row
+        subset = group if limit <= 0 else group[:limit]
+        
+        for h in subset:
             report_lines.append(
                 "- "
                 f"{format_trait_name(h['trait'])}, "
@@ -424,6 +450,8 @@ def main() -> None:
 
     print(f"Input rows: {len(rows)}")
     print(f"Trait columns: {len(trait_columns)}")
+    testable_profile_count = len([rt for rt in row_totals if rt > 0])
+    print(f"Total testable profiles: {testable_profile_count}")
     print(f"Total tests performed: {len(all_hits)}")
     print(f"Significant hits: {len(significant_hits)}")
     print(f"Rows with hits: {rows_with_hits}")

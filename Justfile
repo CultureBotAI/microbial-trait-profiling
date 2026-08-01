@@ -157,6 +157,23 @@ genheatmap: analyze
 plot-histograms: genheatmap
 	just timed plot-histograms "uv run python scripts/plot_enrichment_histograms.py"
 
+# Run site-stratified enrichment (e.g., Feces only). Partitioning the input
+# TSV before `analyze` produces site-specific backgrounds ($M$ and $K$)
+# and prevalence rankings for free.
+analyze-site SITE: study-trait-profiles
+	@mkdir -p data/derived/sites/{{SITE}}
+	@uv run python -c "import pandas as pd; df = pd.read_csv('data/derived/study_trait_profiles_wide.tsv', sep='\t'); meta = pd.read_csv('data/derived/experiments.tsv', sep='\t'); merged = df.merge(meta[['study_id', 'experiment_id', 'body_site']], on=['study_id', 'experiment_id']); filtered = merged[merged['body_site'] == '{{SITE}}'].drop(columns='body_site'); filtered.to_csv('data/derived/sites/{{SITE}}/study_trait_profiles_wide.tsv', sep='\t', index=False)"
+	uv run python scripts/trait_enrichment.py \
+	  --input data/derived/sites/{{SITE}}/study_trait_profiles_wide.tsv \
+	  --output data/derived/sites/{{SITE}}/trait_enrichment_report.txt \
+	  --tsv-output data/derived/sites/{{SITE}}/trait_enrichment_results.tsv \
+	  --p-threshold {{p_threshold}} \
+	  --min-fold {{min_fold}}
+	uv run python scripts/export_trait_enrichment_rankings.py \
+	  --input data/derived/sites/{{SITE}}/trait_enrichment_results.tsv \
+	  --overall-output data/derived/sites/{{SITE}}/trait_enrichment_traits_overall_ranked.tsv \
+	  --pair-output data/derived/sites/{{SITE}}/trait_enrichment_trait_study_pairs_ranked.tsv
+
 pipeline: download ingest analyze genheatmap plot-histograms
 
 # --- linkml-store over MongoDB (localhost:27017/bsdbng.studies) ---

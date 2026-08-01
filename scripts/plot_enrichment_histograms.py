@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from scipy.spatial.distance import pdist, squareform
+from scipy.cluster.hierarchy import linkage
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Plot enrichment stacked bar graphs.")
@@ -47,7 +49,7 @@ def main():
     if not args.results.exists():
         print(f"Error: Results file {args.results} not found.")
         return
-    results_df = pd.read_csv(args.results, sep="\t")
+    results_df = pd.read_csv(args.results, sep="\t", comment="#")
 
     # Load experiments metadata for stacking by condition/anatomy
     print(f"Loading experiment metadata from {args.experiments}...")
@@ -124,74 +126,61 @@ def main():
     # Plotting
     sns.set_theme(style="whitegrid")
     colors = {"inc": "#3498db", "dec": "#e74c3c"} # Blue for Increase, Red for Decrease
-    
-    # Profile Depth Plot (Y-Axis)
-    plt.figure(figsize=(12, 7))
-    bin_labels_y = [f"{int(bins_y[i])}-{int(bins_y[i+1])}" for i in range(len(bins_y)-1)]
-    
-    # Reindex to ensure all bins are represented even if empty (within range)
-    profile_binned = profile_binned.reindex(range(num_bins), fill_value=0)
-    
-    ax_y = profile_binned.plot(
-        kind="bar", 
-        stacked=True, 
-        width=0.8, 
-        color=[colors["inc"], colors["dec"]],
-        ax=plt.gca()
-    )
-    
-    plt.title(f"Profile Enrichment Depth (Y-Axis)\n{len(active_profiles)} active profiles (zero-hit tail removed)", pad=15)
-    plt.xlabel("Number of Enriched Traits (Binned)")
-    plt.ylabel("Number of Profiles (log10 scale)")
-    plt.yscale("log")
-    
-    # Set x-labels every 5 bins to avoid overcrowding
     tick_indices = range(0, num_bins, 2)
-    plt.xticks(tick_indices, [bin_labels_y[i] for i in tick_indices], rotation=45)
-    
-    plt.legend(title="Profile Direction")
-    plt.grid(axis='y', which='both', linestyle='-', alpha=0.3)
-    
-    profile_plot_path = args.output_dir / "profile_enrichment_y_histogram.png"
-    plt.savefig(profile_plot_path, dpi=300, bbox_inches="tight")
-    print(f"Wrote stacked profile plot to {profile_plot_path}")
-    plt.close()
-    
-    # Trait Frequency Plot (X-Axis)
-    plt.figure(figsize=(12, 7))
-    bin_labels_x = [f"{int(bins_x[i])}-{int(bins_x[i+1])}" for i in range(len(bins_x)-1)]
-    
-    trait_binned = trait_binned.reindex(range(num_bins), fill_value=0)
-    
-    ax_x = trait_binned.plot(
-        kind="bar", 
-        stacked=True, 
-        width=0.8, 
-        color=[colors["inc"], colors["dec"]],
-        ax=plt.gca()
-    )
-    
-    plt.title(f"Trait Enrichment Frequency (X-Axis)\n{len(active_traits)} active traits (zero-hit tail removed)", pad=15)
-    plt.xlabel("Number of Profiles Enriched In (Binned)")
-    plt.ylabel("Total Enrichment Hits (log10 scale)")
-    plt.yscale("log")
-    
-    plt.xticks(tick_indices, [bin_labels_x[i] for i in tick_indices], rotation=45)
-    
-    plt.legend(title="Enrichment Direction")
-    plt.grid(axis='y', which='both', linestyle='-', alpha=0.3)
-    
-    trait_plot_path = args.output_dir / "trait_enrichment_x_histogram.png"
-    plt.savefig(trait_plot_path, dpi=300, bbox_inches="tight")
-    print(f"Wrote stacked trait plot to {trait_plot_path}")
-    plt.close()
-    
-    # 3. X-Axis: Trait Frequency Stacked by Condition/Anatomy (Separate Plot)
-    if results_with_meta is not None:
-        print("Creating Trait Frequency plot stacked by Condition and Anatomy...")
-        plt.figure(figsize=(14, 8))
+
+    def save_histogram(df, title, xlabel, ylabel, path, use_log=True, is_stacked=True, color_map=None, bin_labels=None):
+        plt.figure(figsize=(12, 7))
+        ax = df.plot(
+            kind="bar",
+            stacked=is_stacked,
+            width=0.8,
+            color=color_map,
+            ax=plt.gca()
+        )
+        plt.title(title, pad=15)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        if use_log:
+            plt.yscale("log")
         
-        # Identify top categories for the legend, group the rest as "Other"
+        if bin_labels:
+            plt.xticks(tick_indices, [bin_labels[i] for i in tick_indices], rotation=45)
+        
+        plt.legend(title="Category", bbox_to_anchor=(1.05, 1) if len(df.columns) > 5 else None, loc='upper left' if len(df.columns) > 5 else None)
+        plt.grid(axis='y', which='both', linestyle='-', alpha=0.3)
+        plt.savefig(path, dpi=300, bbox_inches="tight")
+        print(f"Wrote plot to {path}")
+        plt.close()
+
+    # 1. Profile Depth Plots (Y-Axis)
+    bin_labels_y = [f"{int(bins_y[i])}-{int(bins_y[i+1])}" for i in range(len(bins_y)-1)]
+    profile_binned = profile_binned.reindex(range(num_bins), fill_value=0)
+    save_histogram(
+        profile_binned,
+        f"Profile Enrichment Depth (Y-Axis)\n{len(active_profiles)} active profiles",
+        "Number of Enriched Traits (Binned)",
+        "Number of Profiles (log10 scale)",
+        args.output_dir / "profile_enrichment_y_histogram.png",
+        color_map=[colors["inc"], colors["dec"]],
+        bin_labels=bin_labels_y
+    )
+
+    # 2. Trait Frequency Plots (X-Axis)
+    bin_labels_x = [f"{int(bins_x[i])}-{int(bins_x[i+1])}" for i in range(len(bins_x)-1)]
+    trait_binned = trait_binned.reindex(range(num_bins), fill_value=0)
+    save_histogram(
+        trait_binned,
+        f"Trait Enrichment Frequency (X-Axis)\n{len(active_traits)} active traits",
+        "Number of Profiles Enriched In (Binned)",
+        "Total Enrichment Hits (log10 scale)",
+        args.output_dir / "trait_enrichment_x_histogram.png",
+        color_map=[colors["inc"], colors["dec"]],
+        bin_labels=bin_labels_x
+    )
+
+    # 3. X-Axis: Trait Frequency Stacked by Condition/Anatomy
+    if results_with_meta is not None:
+        print("Creating Condition/Anatomy split plots...")
         top_n = 12
         cat_counts = results_with_meta["category"].value_counts()
         top_cats = cat_counts.head(top_n).index.tolist()
@@ -200,56 +189,105 @@ def main():
             lambda x: x if x in top_cats else "Other"
         )
         
-        # We need the same bins as the previous X plot
-        # active_traits["total"] contains the frequency per trait
         trait_to_total = active_traits["total"].to_dict()
         results_with_meta["trait_freq"] = results_with_meta["trait"].map(trait_to_total)
-        
-        # Assign to bins
         results_with_meta["bin_idx"] = pd.cut(
             results_with_meta["trait_freq"],
             bins=bins_x,
             labels=False,
             include_lowest=True
         )
+
+        # Helper to plot both count and 100% stacked for a subset
+        def plot_category_histograms(df_subset, suffix):
+            # Group by bin and plot_category
+            binned = df_subset.groupby(["bin_idx", "plot_category"]).size().unstack(fill_value=0)
+            binned = binned.reindex(range(num_bins), fill_value=0)
+            
+            # Sort columns
+            other_col = [c for c in binned.columns if c == "Other"]
+            main_cols = sorted([c for c in binned.columns if c != "Other"])
+            binned = binned[main_cols + other_col]
+            
+            cat_colors = sns.color_palette("husl", len(binned.columns))
+            
+            # 1. Normal count plot (log scale)
+            save_histogram(
+                binned,
+                f"Trait Enrichment Frequency by Condition ({suffix})\nStacked Counts",
+                "Number of Profiles Enriched In (Binned)",
+                "Total Enrichment Hits (log10 scale)",
+                args.output_dir / f"trait_enrichment_x_condition_{suffix}_counts.png",
+                color_map=cat_colors,
+                bin_labels=bin_labels_x
+            )
+            
+            # 2. 100% Stacked (stretched)
+            binned_stretched = binned.div(binned.sum(axis=1), axis=0).fillna(0)
+            save_histogram(
+                binned_stretched,
+                f"Trait Enrichment Frequency by Condition ({suffix})\n100% Stacked (Relative Proportion)",
+                "Number of Profiles Enriched In (Binned)",
+                "Relative Proportion (0-1)",
+                args.output_dir / f"trait_enrichment_x_condition_{suffix}_stretched.png",
+                use_log=False,
+                color_map=cat_colors,
+                bin_labels=bin_labels_x
+            )
+            return binned
+
+        # Plot for All, Inc, Dec
+        print("Generating 'All' condition plots...")
+        cat_binned_all = plot_category_histograms(results_with_meta, "all")
         
-        # Group by bin and plot_category
-        trait_cat_binned = results_with_meta.groupby(["bin_idx", "plot_category"]).size().unstack(fill_value=0)
+        print("Generating 'Increased' condition plots...")
+        plot_category_histograms(results_with_meta[results_with_meta["inc_dec"] == "inc"], "inc")
         
-        # Reindex to ensure all bins are represented
-        trait_cat_binned = trait_cat_binned.reindex(range(num_bins), fill_value=0)
+        print("Generating 'Decreased' condition plots...")
+        plot_category_histograms(results_with_meta[results_with_meta["inc_dec"] == "dec"], "dec")
+
+        # 4. Correlation Matrix (Euclidean Distance Heatmap)
+        print("Creating Euclidean distance heatmap for categories (including Direction)...")
+        # We want to compare (Category + Direction) profiles.
+        results_with_meta["cat_dir"] = results_with_meta["plot_category"] + " [" + results_with_meta["inc_dec"] + "]"
         
-        # Sort columns so "Other" is last and others are consistent (e.g. by total frequency)
-        other_col = [c for c in trait_cat_binned.columns if c == "Other"]
-        main_cols = sorted([c for c in trait_cat_binned.columns if c != "Other"])
-        trait_cat_binned = trait_cat_binned[main_cols + other_col]
+        # Group by bin and cat_dir
+        cat_dir_binned = results_with_meta.groupby(["bin_idx", "cat_dir"]).size().unstack(fill_value=0)
+        cat_dir_binned = cat_dir_binned.reindex(range(num_bins), fill_value=0)
         
-        # Use a more diverse color palette for many categories
-        cat_colors = sns.color_palette("husl", len(trait_cat_binned.columns))
+        # Normalize vectors to compare 'shape' rather than absolute magnitude
+        # This prevents high-count categories from dominating the distance calculation
+        cat_dir_norm = cat_dir_binned.div(cat_dir_binned.sum(axis=0), axis=1).fillna(0)
         
-        ax_x_cat = trait_cat_binned.plot(
-            kind="bar",
-            stacked=True,
-            width=0.8,
-            color=cat_colors,
-            ax=plt.gca()
-        )
+        # Transpose so rows are observations (categories)
+        obs_matrix = cat_dir_norm.T
         
-        plt.title(f"Trait Enrichment Frequency by Condition & Anatomy (X-Axis)\nStacked by top {top_n} categories", pad=15)
-        plt.xlabel("Number of Profiles Enriched In (Binned)")
-        plt.ylabel("Total Enrichment Hits (log10 scale)")
-        plt.yscale("log")
-        
-        plt.xticks(tick_indices, [bin_labels_x[i] for i in tick_indices], rotation=45)
-        
-        # Place legend outside to the right
-        plt.legend(title="Condition (Anatomy)", bbox_to_anchor=(1.05, 1), loc='upper left')
-        plt.grid(axis='y', which='both', linestyle='-', alpha=0.3)
-        
-        trait_cat_plot_path = args.output_dir / "trait_enrichment_x_condition_site_histogram.png"
-        plt.savefig(trait_cat_plot_path, dpi=300, bbox_inches="tight")
-        print(f"Wrote stacked trait condition plot to {trait_cat_plot_path}")
-        plt.close()
+        if not obs_matrix.empty and len(obs_matrix) > 1:
+            # Calculate Euclidean distance on normalized vectors
+            dist_vec = pdist(obs_matrix, metric='euclidean')
+            dist_matrix = squareform(dist_vec)
+            dist_df = pd.DataFrame(dist_matrix, index=obs_matrix.index, columns=obs_matrix.index)
+            
+            # Perform linkage
+            linkage_matrix = linkage(dist_vec, method='average')
+            
+            plt.figure(figsize=(16, 14))
+            g = sns.clustermap(
+                dist_df,
+                row_linkage=linkage_matrix,
+                col_linkage=linkage_matrix,
+                cmap="rocket_r", # Different palette to distinguish from previous version
+                linewidths=0.5,
+                annot=True if len(dist_df) < 25 else False,
+                fmt=".2f",
+                cbar_kws={'label': 'Euclidean Distance (Normalized Vectors)'}
+            )
+            g.fig.suptitle("Similarity of (Condition + Direction) Enrichment Profiles\nEuclidean Distance on Normalized Frequency Vectors", y=1.02)
+            
+            heatmap_path = args.output_dir / "trait_enrichment_category_direction_distance_heatmap.png"
+            plt.savefig(heatmap_path, dpi=300, bbox_inches="tight")
+            print(f"Wrote detailed distance heatmap to {heatmap_path}")
+            plt.close()
 
     # Save summary counts
     active_traits.to_csv(args.output_dir / "trait_enrichment_counts_stacked.tsv", sep="\t")
