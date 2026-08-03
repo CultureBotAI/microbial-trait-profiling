@@ -101,7 +101,12 @@ def _parse_summary_values(summary: str) -> tuple[float | None, float | None, flo
 
 def detect_metadata(path: Path) -> dict[str, any]:
     """Detect metadata from the report or results TSV."""
-    meta = {"stat_type": "p_value", "threshold": 0.001, "testable_profiles": None}
+    meta = {
+        "stat_type": "p_value",
+        "threshold": 0.001,
+        "testable_profiles": None,
+        "max_traits": None,
+    }
     if not path.exists():
         return meta
 
@@ -123,6 +128,9 @@ def detect_metadata(path: Path) -> dict[str, any]:
                 meta["threshold"] = float(line.split(": ")[1].strip())
             elif line.startswith("# Testable-Profiles: "):
                 meta["testable_profiles"] = int(line.split(": ")[1].strip())
+            elif line.startswith("# Max-Traits-Per-Row-Report: "):
+                val = line.split(": ")[1].strip()
+                meta["max_traits"] = None if val in ("0", "-1") else int(val)
             elif line.startswith("Max traits per profile: "):
                 val = line.split(": ")[1].strip()
                 meta["max_traits"] = None if val == "unlimited" else int(val)
@@ -203,6 +211,8 @@ def parse_report(path: Path, stat_type: str = "p_value") -> list[ParsedRow]:
                 summary = parts[3] if len(parts) >= 4 else parts[2]
                 obs, exp, fold = _parse_summary_values(summary)
 
+                if current_header is None:
+                    raise ValueError(f"Trait row found before profile header: {line!r}")
                 study_id, experiment_id, inc_dec = current_header
                 profile_id = f"{study_id}|{experiment_id}|{inc_dec}"
                 # Exclude MediaDive growth-medium traits for consistency
@@ -242,8 +252,22 @@ def parse_report(path: Path, stat_type: str = "p_value") -> list[ParsedRow]:
     return rows
 
 
-def build_overall_table(frame: pd.DataFrame, stat_type: str, total_profiles: int | None = None) -> pd.DataFrame:
+def build_overall_table(
+    frame: pd.DataFrame,
+    stat_type: str,
+    total_profiles: int | None = None,
+    max_traits: int | None = None,
+) -> pd.DataFrame:
     grouped = frame.groupby("trait", dropna=False)
+
+    # If we are parsing from a truncated source, identify potentially censored profiles.
+    # A profile is censored if it hit the cap.
+    if max_traits:
+        counts_per_profile = frame.groupby("profile_id").size()
+        censored_profiles = set(counts_per_profile[counts_per_profile >= max_traits].index)
+        frame["is_censored_hit"] = frame["profile_id"].isin(censored_profiles)
+    else:
+        frame["is_censored_hit"] = False
 
     # Use the relevant stat for choosing the 'best' row metadata
     stat_col = "fdr_q" if stat_type == "fdr_q" else "p_value"
@@ -295,6 +319,13 @@ def build_overall_table(frame: pd.DataFrame, stat_type: str, total_profiles: int
     overall = overall.reset_index().merge(best_rows, on="trait", how="left")
     overall.insert(1, "stat_type", stat_type)
 
+    if max_traits:
+        censored_counts = (
+            frame[frame["is_censored_hit"]].groupby("trait").size().rename("n_censored_profiles")
+        )
+        overall = overall.join(censored_counts, how="left")
+        overall["n_censored_profiles"] = overall["n_censored_profiles"].fillna(0).astype(int)
+
     # #119: Calculate prevalence fraction.
     # Denominator is the number of profiles where the trait was testable
     # (i.e., appeared at least once).
@@ -337,19 +368,24 @@ def main() -> int:
     stat_type = meta["stat_type"]
     stat_threshold = meta["threshold"]
     testable_profiles = meta["testable_profiles"]
+    max_traits = meta.get("max_traits")
+    is_source_truncated = False
 
     results_path = args.results or resolve_default_results(args.input)
 
     if results_path.exists():
         print(f"Loading data from results TSV: {results_path}")
-        # If we just detected metadata from the report, check the results TSV too
-        if testable_profiles is None:
-            results_meta = detect_metadata(results_path)
-            stat_type = results_meta["stat_type"]
-            stat_threshold = results_meta["threshold"]
-            testable_profiles = results_meta["testable_profiles"]
+        results_meta = detect_metadata(results_path)
+        
+        # Prefer TSV metadata if available
+        stat_type = results_meta.get("stat_type", stat_type)
+        stat_threshold = results_meta.get("threshold", stat_threshold)
+        testable_profiles = results_meta.get("testable_profiles") or testable_profiles
         
         rows = parse_results_tsv(results_path, stat_type, stat_threshold)
+        # Results TSV contains all hits regardless of the report truncation cap
+        is_source_truncated = False
+        max_traits = None
     else:
         print(
             f"Warning: Results TSV not found at {results_path}. Falling back to report parser ({args.input.name})."
@@ -357,8 +393,8 @@ def main() -> int:
         rows = parse_report(args.input, stat_type=stat_type)
         
         # Check for truncation in the report metadata
-        max_traits = meta.get("max_traits")
         if max_traits is not None:
+            is_source_truncated = True
             print(
                 f"\nCRITICAL WARNING: The source report '{args.input.name}' is truncated to {max_traits} traits per profile."
             )
@@ -371,7 +407,9 @@ def main() -> int:
 
     frame = pd.DataFrame([row.__dict__ for row in rows])
 
-    overall = build_overall_table(frame, stat_type, total_profiles=testable_profiles)
+    overall = build_overall_table(
+        frame, stat_type, total_profiles=testable_profiles, max_traits=max_traits
+    )
     pairs = build_pair_table(frame, stat_type)
 
     # Resolve dynamic filenames
@@ -394,12 +432,18 @@ def main() -> int:
         f.write(f"# Stat-Threshold: {stat_threshold}\n")
         if testable_profiles:
             f.write(f"# Total-Testable-Profiles: {testable_profiles}\n")
+        if is_source_truncated:
+            f.write(f"# Max-Traits-Per-Profile-Cap: {max_traits}\n")
+            f.write("# WARNING: Totals are censored due to source truncation.\n")
         overall.to_csv(f, sep="\t", index=False)
 
     # Write pair table with metadata header
     with pair_out.open("w", encoding="utf-8", newline="") as f:
         f.write(f"# Stat-Type: {stat_type}\n")
         f.write(f"# Stat-Threshold: {stat_threshold}\n")
+        if is_source_truncated:
+            f.write(f"# Max-Traits-Per-Profile-Cap: {max_traits}\n")
+            f.write("# WARNING: Data is censored due to source truncation.\n")
         pairs.to_csv(f, sep="\t", index=False)
 
     print(f"Input rows parsed: {len(frame)}")

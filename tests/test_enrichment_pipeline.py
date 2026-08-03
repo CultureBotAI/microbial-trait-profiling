@@ -111,3 +111,48 @@ def test_enrichment_pipeline_no_fdr_propagation(tmp_path: Path):
         assert "best_pvalue" in header
         assert "median_pvalue" in header
         assert "best_qvalue" in header # Should still be there but maybe 1.0
+
+def test_enrichment_pipeline_censorship_detection(tmp_path: Path):
+    # Create input that will result in more than 1 hit
+    input_tsv = tmp_path / "input_profiles.tsv"
+    input_tsv.write_text(
+        "study_id\texperiment_id\tinc_dec\tTraitA\tTraitB\tTraitC\n"
+        "s1\te1\tinc\t10\t10\t10\n",
+        encoding="utf-8"
+    )
+
+    report_txt = tmp_path / "report.txt"
+    results_tsv = tmp_path / "results.tsv"
+
+    # 1. Run with truncation cap of 2 traits
+    subprocess.run([
+        sys.executable, "bsdbng/scripts/trait_enrichment.py",
+        "--input", str(input_tsv),
+        "--output", str(report_txt),
+        "--tsv-output", str(results_tsv),
+        "--max-traits-per-row", "2",
+        "--p-threshold", "1.0",
+    ], check=True, capture_output=True, text=True)
+
+    # 2. Run exporter forcing it to use the truncated report (results_tsv deleted)
+    results_tsv.unlink()
+    overall_out = tmp_path / "overall.tsv"
+    
+    subprocess.run([
+        sys.executable, "bsdbng/scripts/export_trait_enrichment_rankings.py",
+        "--input", str(report_txt),
+        "--overall-output", str(overall_out),
+    ], check=True, capture_output=True, text=True)
+
+    with overall_out.open("r", encoding="utf-8") as f:
+        lines = f.readlines()
+        assert "# Max-Traits-Per-Profile-Cap: 2" in "".join(lines)
+        assert "WARNING: Totals are censored" in "".join(lines)
+        
+        header = [l for l in lines if not l.startswith("#")][0].strip().split("\t")
+        assert "n_censored_profiles" in header
+        
+        # Check first data row
+        data_row = [l for l in lines if not l.startswith("#")][1].strip().split("\t")
+        censored_idx = header.index("n_censored_profiles")
+        assert int(data_row[censored_idx]) == 1 # Profile s1|e1|inc reached the cap
