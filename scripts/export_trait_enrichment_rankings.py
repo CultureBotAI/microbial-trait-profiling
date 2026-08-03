@@ -125,6 +125,9 @@ def detect_metadata(path: Path) -> dict[str, any]:
                 meta["threshold"] = float(line.split(": ")[1].strip())
             elif line.startswith("# Testable-Profiles: "):
                 meta["testable_profiles"] = int(line.split(": ")[1].strip())
+            elif line.startswith("Max traits per profile: "):
+                val = line.split(": ")[1].strip()
+                meta["max_traits"] = None if val == "unlimited" else int(val)
 
     return meta
 
@@ -149,6 +152,11 @@ def parse_results_tsv(
 
     rows = []
     for _, r in df.iterrows():
+        trait = str(r["trait"])
+        # Exclude MediaDive growth-medium traits for consistency
+        if "mediadive.medium:" in trait:
+            continue
+
         study_id = str(r["study_id"])
         experiment_id = str(r["experiment_id"])
         inc_dec = str(r["inc_dec"])
@@ -205,6 +213,10 @@ def parse_report(path: Path) -> list[ParsedRow]:
                     inc_dec,
                 ) = current_header  # pylint: disable=unpacking-non-sequence
                 profile_id = f"{study_id}|{experiment_id}|{inc_dec}"
+                # Exclude MediaDive growth-medium traits for consistency
+                if "mediadive.medium:" in trait:
+                    continue
+
                 rows.append(
                     ParsedRow(
                         study_id=study_id,
@@ -325,9 +337,22 @@ def main() -> int:
         rows = parse_results_tsv(results_path, stat_type, stat_threshold)
     else:
         print(
-            f"Warning: Results TSV not found at {results_path}. Falling back to report parser (truncated to {args.input.name})."
+            f"Warning: Results TSV not found at {results_path}. Falling back to report parser ({args.input.name})."
         )
         rows = parse_report(args.input)
+        
+        # Check for truncation in the report metadata
+        max_traits = meta.get("max_traits")
+        if max_traits is not None:
+            print(
+                f"\nCRITICAL WARNING: The source report '{args.input.name}' is truncated to {max_traits} traits per profile."
+            )
+            print(
+                "Downstream rankings (hit_rows, unique_profiles, mean_fold) will be systematically biased."
+            )
+            print(
+                "Please regenerate the report with --max-traits-per-row 0 or ensure the results TSV is available.\n"
+            )
 
     frame = pd.DataFrame([row.__dict__ for row in rows])
 

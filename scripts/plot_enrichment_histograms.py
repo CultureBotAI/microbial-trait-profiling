@@ -50,6 +50,8 @@ def main():
         print(f"Error: Results file {args.results} not found.")
         return
     results_df = pd.read_csv(args.results, sep="\t", comment="#")
+    # Exclude MediaDive growth-medium traits for consistency across analysis arms
+    results_df = results_df[~results_df["trait"].str.contains("mediadive.medium:", na=False)]
 
     # Load experiments metadata for stacking by condition/anatomy
     print(f"Loading experiment metadata from {args.experiments}...")

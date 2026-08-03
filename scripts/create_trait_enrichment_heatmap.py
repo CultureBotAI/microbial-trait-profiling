@@ -187,9 +187,9 @@ def parse_report(path: Path) -> list[ParsedHit]:
                     trait=str(row["trait"]),
                     pvalue=float(row.get("fdr_q", row["p_value"])),
                     fold=float(row["fold"]),
-                )
+                ) if "mediadive.medium:" not in str(row["trait"]) else None
             )
-        return hits
+        return [h for h in hits if h is not None]
 
     hits: list[ParsedHit] = []
     current_profile: ProfileParts | None = None
@@ -225,16 +225,17 @@ def parse_report(path: Path) -> list[ParsedHit]:
                         msg = f"Unparseable summary in trait row: {line!r}"
                         raise ValueError(msg)
                     fold_text = summary.split("=", 1)[-1]
-                hits.append(
-                    ParsedHit(
-                        study_id=profile.study_id,
-                        experiment_id=profile.experiment_id,
-                        inc_dec=profile.inc_dec,
-                        trait=trait,
-                        pvalue=float(pvalue_text),
-                        fold=_parse_fold(fold_text),
+                if "mediadive.medium:" not in trait:
+                    hits.append(
+                        ParsedHit(
+                            study_id=profile.study_id,
+                            experiment_id=profile.experiment_id,
+                            inc_dec=profile.inc_dec,
+                            trait=trait,
+                            pvalue=float(pvalue_text),
+                            fold=_parse_fold(fold_text),
+                        )
                     )
-                )
                 continue
 
             current_profile = _parse_profile_header(line)

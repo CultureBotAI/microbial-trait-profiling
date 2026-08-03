@@ -63,7 +63,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max-traits-per-row",
         type=int,
-        default=10,
+        default=0,
         help="Maximum number of bullet traits to show per row in text report (0 or -1 for all)",
     )
     return parser.parse_args()
@@ -265,7 +265,10 @@ def main() -> None:
             raise ValueError(f"Input TSV missing required columns: {sorted(missing)}")
 
         exclude_cols = {"study_id", "experiment_id", "inc_dec"}
-        trait_columns = [col for col in fieldnames if col not in exclude_cols]
+        trait_columns = [
+            col for col in fieldnames
+            if col not in exclude_cols and "mediadive.medium:" not in col
+        ]
         if not trait_columns:
             raise ValueError("No trait columns found in input TSV")
 
