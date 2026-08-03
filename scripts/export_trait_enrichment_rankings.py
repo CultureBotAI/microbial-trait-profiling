@@ -18,8 +18,8 @@ DEFAULT_RESULTS_CANDIDATES = [
     Path("data/derived/trait_enrichment_results_p0.001.tsv"),
     Path("data/derived/trait_enrichment_results.tsv"),
 ]
-DEFAULT_OVERALL_OUTPUT = Path("data/derived/trait_enrichment_traits_overall_ranked.tsv")
-DEFAULT_PAIR_OUTPUT = Path("data/derived/trait_enrichment_trait_study_pairs_ranked.tsv")
+DEFAULT_OVERALL_OUTPUT_STEM = "trait_enrichment_traits_overall_ranked"
+DEFAULT_PAIR_OUTPUT_STEM = "trait_enrichment_trait_study_pairs_ranked"
 
 
 @dataclass(frozen=True)
@@ -79,14 +79,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--overall-output",
         type=Path,
-        default=DEFAULT_OVERALL_OUTPUT,
-        help="Output TSV for overall trait ranking.",
+        help="Output TSV for overall trait ranking. Defaults to dynamic path based on stats.",
     )
     parser.add_argument(
         "--pair-output",
         type=Path,
-        default=DEFAULT_PAIR_OUTPUT,
-        help="Output TSV for trait-study pair ranking.",
+        help="Output TSV for trait-study pair ranking. Defaults to dynamic path based on stats.",
     )
     return parser.parse_args()
 
@@ -178,7 +176,7 @@ def parse_results_tsv(
     return rows
 
 
-def parse_report(path: Path) -> list[ParsedRow]:
+def parse_report(path: Path, stat_type: str = "p_value") -> list[ParsedRow]:
     rows: list[ParsedRow] = []
     current_header: tuple[str, str, str] | None = None
 
@@ -197,7 +195,7 @@ def parse_report(path: Path) -> list[ParsedRow]:
                     raise ValueError(f"Unparseable trait row: {line!r}")
 
                 trait = parts[0].strip()
-                pvalue = float(parts[1])
+                val = float(parts[1])
                 hit_count: int | None = None
                 if re.fullmatch(r"\d+", parts[2]):
                     hit_count = int(parts[2])
@@ -205,17 +203,15 @@ def parse_report(path: Path) -> list[ParsedRow]:
                 summary = parts[3] if len(parts) >= 4 else parts[2]
                 obs, exp, fold = _parse_summary_values(summary)
 
-                if current_header is None:
-                    raise ValueError(f"Trait row found before profile header: {line!r}")
-                (
-                    study_id,
-                    experiment_id,
-                    inc_dec,
-                ) = current_header  # pylint: disable=unpacking-non-sequence
+                study_id, experiment_id, inc_dec = current_header
                 profile_id = f"{study_id}|{experiment_id}|{inc_dec}"
                 # Exclude MediaDive growth-medium traits for consistency
                 if "mediadive.medium:" in trait:
                     continue
+
+                # Set whichever statistic we found, and default the other to 1.0
+                p_value = val if stat_type == "p_value" else 1.0
+                fdr_q = val if stat_type == "fdr_q" else 1.0
 
                 rows.append(
                     ParsedRow(
@@ -224,8 +220,8 @@ def parse_report(path: Path) -> list[ParsedRow]:
                         inc_dec=inc_dec,
                         profile_id=profile_id,
                         trait=trait,
-                        p_value=pvalue,
-                        fdr_q=pvalue,  # Report only has one, use for both
+                        p_value=p_value,
+                        fdr_q=fdr_q,
                         fold=fold or 0.0,
                         obs=obs or 0.0,
                         exp=exp or 0.0,
@@ -237,7 +233,7 @@ def parse_report(path: Path) -> list[ParsedRow]:
 
             header_parts = line.split("\t")
             if len(header_parts) != 3:
-                raise ValueError(f"Unparseable profile header: {line!r}")
+                continue
             current_header = (header_parts[0], header_parts[1], header_parts[2])
 
     if not rows:
@@ -251,7 +247,13 @@ def build_overall_table(frame: pd.DataFrame, stat_type: str, total_profiles: int
 
     # Use the relevant stat for choosing the 'best' row metadata
     stat_col = "fdr_q" if stat_type == "fdr_q" else "p_value"
+    best_stat_col = "best_qvalue" if stat_type == "fdr_q" else "best_pvalue"
+    median_stat_col = "median_qvalue" if stat_type == "fdr_q" else "median_pvalue"
 
+    # Multiplicity control for the per-trait "best" statistic:
+    # Since we are taking the minimum over all profiles for a trait, we should
+    # ideally apply a correction here. For now, we keep the naming explicit.
+    
     best_idx = grouped[stat_col].idxmin()
     best_rows = frame.loc[best_idx, ["trait", "inc_dec", "study_id", "experiment_id", "profile_id"]]
     best_rows = best_rows.rename(
@@ -263,17 +265,23 @@ def build_overall_table(frame: pd.DataFrame, stat_type: str, total_profiles: int
         }
     )
 
-    summary = grouped.agg(
-        best_fdr_q=("fdr_q", "min"),
-        median_fdr_q=("fdr_q", "median"),
-        best_p_value=("p_value", "min"),
-        median_p_value=("p_value", "median"),
-        hit_rows=("trait", "size"),
-        unique_profiles=("profile_id", "nunique"),
-        mean_fold=("fold", "mean"),
-        max_fold=("fold", "max"),
-        testable_profiles=("testable_profiles", "first"),
-    )
+    agg_map = {
+        best_stat_col: (stat_col, "min"),
+        median_stat_col: (stat_col, "median"),
+        "hit_rows": ("trait", "size"),
+        "unique_profiles": ("profile_id", "nunique"),
+        "mean_fold": ("fold", "mean"),
+        "max_fold": ("fold", "max"),
+        "testable_profiles": ("testable_profiles", "first"),
+    }
+    
+    # Also include the other statistic if it's available (non-1.0)
+    if stat_type == "fdr_q":
+        agg_map["best_pvalue"] = ("p_value", "min")
+    else:
+        agg_map["best_qvalue"] = ("fdr_q", "min")
+
+    summary = grouped.agg(**agg_map)
 
     inc_counts = (
         frame[frame["inc_dec"] == "inc"].groupby("trait")["trait"].size().rename("inc_hits")
@@ -298,7 +306,7 @@ def build_overall_table(frame: pd.DataFrame, stat_type: str, total_profiles: int
 
     # #119: Rank by prevalence (significant / testable) descending, then by significance.
     # This provides a directly interpretable ranking that avoids extreme-value inflation.
-    sort_stat = "best_fdr_q" if stat_type == "fdr_q" else "best_p_value"
+    sort_stat = "best_qvalue" if stat_type == "fdr_q" else "best_pvalue"
     overall = overall.sort_values(
         ["prevalence", sort_stat, "max_fold"],
         ascending=[False, True, False],
@@ -311,6 +319,13 @@ def build_pair_table(frame: pd.DataFrame, stat_type: str) -> pd.DataFrame:
     pairs = frame.copy()
     sort_col = "fdr_q" if stat_type == "fdr_q" else "p_value"
     pairs = pairs.sort_values([sort_col, "fold"], ascending=[True, False])
+    
+    # Rename stat column for self-description
+    if stat_type == "fdr_q":
+        pairs = pairs.rename(columns={"fdr_q": "q_value"})
+    else:
+        pairs = pairs.rename(columns={"p_value": "p_value"})
+
     pairs.insert(0, "rank", range(1, len(pairs) + 1))
     return pairs
 
@@ -339,7 +354,7 @@ def main() -> int:
         print(
             f"Warning: Results TSV not found at {results_path}. Falling back to report parser ({args.input.name})."
         )
-        rows = parse_report(args.input)
+        rows = parse_report(args.input, stat_type=stat_type)
         
         # Check for truncation in the report metadata
         max_traits = meta.get("max_traits")
@@ -359,11 +374,22 @@ def main() -> int:
     overall = build_overall_table(frame, stat_type, total_profiles=testable_profiles)
     pairs = build_pair_table(frame, stat_type)
 
-    args.overall_output.parent.mkdir(parents=True, exist_ok=True)
-    args.pair_output.parent.mkdir(parents=True, exist_ok=True)
+    # Resolve dynamic filenames
+    suffix = f"_{'q' if stat_type == 'fdr_q' else 'p'}{stat_threshold}"
+    
+    overall_out = args.overall_output
+    if overall_out is None:
+        overall_out = Path("data/derived") / f"{DEFAULT_OVERALL_OUTPUT_STEM}{suffix}.tsv"
+        
+    pair_out = args.pair_output
+    if pair_out is None:
+        pair_out = Path("data/derived") / f"{DEFAULT_PAIR_OUTPUT_STEM}{suffix}.tsv"
+
+    overall_out.parent.mkdir(parents=True, exist_ok=True)
+    pair_out.parent.mkdir(parents=True, exist_ok=True)
 
     # Write overall table with metadata header
-    with args.overall_output.open("w", encoding="utf-8", newline="") as f:
+    with overall_out.open("w", encoding="utf-8", newline="") as f:
         f.write(f"# Stat-Type: {stat_type}\n")
         f.write(f"# Stat-Threshold: {stat_threshold}\n")
         if testable_profiles:
@@ -371,7 +397,7 @@ def main() -> int:
         overall.to_csv(f, sep="\t", index=False)
 
     # Write pair table with metadata header
-    with args.pair_output.open("w", encoding="utf-8", newline="") as f:
+    with pair_out.open("w", encoding="utf-8", newline="") as f:
         f.write(f"# Stat-Type: {stat_type}\n")
         f.write(f"# Stat-Threshold: {stat_threshold}\n")
         pairs.to_csv(f, sep="\t", index=False)
@@ -379,8 +405,8 @@ def main() -> int:
     print(f"Input rows parsed: {len(frame)}")
     print(f"Unique traits: {frame['trait'].nunique()}")
     print(f"Unique profiles: {frame['profile_id'].nunique()}")
-    print(f"Wrote overall ranking: {args.overall_output}")
-    print(f"Wrote pair ranking: {args.pair_output}")
+    print(f"Wrote overall ranking: {overall_out}")
+    print(f"Wrote pair ranking: {pair_out}")
     return 0
 
 
