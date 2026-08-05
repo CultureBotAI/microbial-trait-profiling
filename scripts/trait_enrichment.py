@@ -55,6 +55,12 @@ def parse_args() -> argparse.Namespace:
         help="Disable FDR correction",
     )
     parser.add_argument(
+        "--fdr-scope",
+        choices=["global", "profile"],
+        default="global",
+        help="Scope for FDR correction (default: global)",
+    )
+    parser.add_argument(
         "--min-fold",
         type=float,
         default=1.5,
@@ -313,7 +319,7 @@ def main() -> None:
     if not rows:
         raise ValueError("Input TSV contains no rows")
 
-    # Second pass: Collect all P-values for global FDR
+    # Second pass: Collect all P-values
     all_hits: list[dict] = []
     for row, row_total in zip(rows, row_totals, strict=True):
         if row_total == 0:
@@ -328,8 +334,16 @@ def main() -> None:
         row_successes = [int(background_counts[t]) for t in row_traits]
 
         p_values = hypergeom_sf_many(row_counts, background_total, row_successes, row_total)
+        
+        # Per-profile FDR correction if requested
+        if args.fdr and args.fdr_scope == "profile":
+            q_values = benjamini_hochberg(p_values)
+        else:
+            q_values = p_values # Will be corrected globally or left as p-values
 
-        for trait, p, count, trait_total in zip(row_traits, p_values, row_counts, row_successes, strict=True):
+        for trait, p, q, count, trait_total in zip(
+            row_traits, p_values, q_values, row_counts, row_successes, strict=True
+        ):
             expected = row_total * (trait_total / background_total)
             fold = (count / expected) if expected > 0 else float("inf")
             all_hits.append({
@@ -338,6 +352,7 @@ def main() -> None:
                 "inc_dec": row["inc_dec"],
                 "trait": trait,
                 "p_value": p,
+                "fdr_q": q, # Preliminary q-value
                 "fold": fold,
                 "count": count,
                 "expected": expected,
@@ -346,13 +361,18 @@ def main() -> None:
                 "testable_profiles": testable_counts[trait]
             })
 
-    # Apply FDR correction if requested
+    # Apply global FDR correction if requested
     if args.fdr:
-        p_vals = [h["p_value"] for h in all_hits]
-        q_vals = benjamini_hochberg(p_vals)
-        for h, q in zip(all_hits, q_vals, strict=True):
-            h["fdr_q"] = q
-            h["is_significant"] = (q <= args.p_threshold) and (h["fold"] >= args.min_fold)
+        if args.fdr_scope == "global":
+            p_vals = [h["p_value"] for h in all_hits]
+            q_vals = benjamini_hochberg(p_vals)
+            for h, q in zip(all_hits, q_vals, strict=True):
+                h["fdr_q"] = q
+                h["is_significant"] = (q <= args.p_threshold) and (h["fold"] >= args.min_fold)
+        else:
+            # Already corrected per-profile
+            for h in all_hits:
+                h["is_significant"] = (h["fdr_q"] <= args.p_threshold) and (h["fold"] >= args.min_fold)
     else:
         for h in all_hits:
             h["fdr_q"] = h["p_value"]
@@ -369,6 +389,7 @@ def main() -> None:
         with args.tsv_output.open("w", encoding="utf-8", newline="") as out_fh:
             # Metadata header
             out_fh.write(f"# FDR: {args.fdr}\n")
+            out_fh.write(f"# FDR-Scope: {args.fdr_scope}\n")
             out_fh.write(f"# P-Threshold: {args.p_threshold}\n")
             out_fh.write(f"# Min-Fold: {args.min_fold}\n")
             out_fh.write(f"# Max-Traits-Per-Row-Report: {args.max_traits_per_row}\n")

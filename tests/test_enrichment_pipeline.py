@@ -57,18 +57,19 @@ def test_enrichment_pipeline_fdr_propagation(tmp_path: Path):
     # 4. Verify output content
     with overall_out.open("r", encoding="utf-8") as f:
         lines = f.readlines()
-        assert "# Stat-Type: fdr_q" in lines[0]
+        assert any("# Stat-Type: fdr_q" in l for l in lines)
         
-        # Check column names
-        header = lines[2].strip().split("\t")
+        # Check column names (first non-comment line)
+        header = [l for l in lines if not l.startswith("#")][0].strip().split("\t")
         assert "best_qvalue" in header
         assert "median_qvalue" in header
         assert "best_pvalue" in header
+        assert "prevalence_summary" in header
         
     with pair_out.open("r", encoding="utf-8") as f:
         lines = f.readlines()
-        assert "# Stat-Type: fdr_q" in lines[0]
-        header = lines[2].strip().split("\t")
+        assert any("# Stat-Type: fdr_q" in l for l in lines)
+        header = [l for l in lines if not l.startswith("#")][0].strip().split("\t")
         assert "q_value" in header
 
 def test_enrichment_pipeline_no_fdr_propagation(tmp_path: Path):
@@ -106,8 +107,8 @@ def test_enrichment_pipeline_no_fdr_propagation(tmp_path: Path):
 
     with overall_out.open("r", encoding="utf-8") as f:
         lines = f.readlines()
-        assert "# Stat-Type: p_value" in lines[0]
-        header = lines[2].strip().split("\t")
+        assert any("# Stat-Type: p_value" in l for l in lines)
+        header = [l for l in lines if not l.startswith("#")][0].strip().split("\t")
         assert "best_pvalue" in header
         assert "median_pvalue" in header
         assert "best_qvalue" in header # Should still be there but maybe 1.0
@@ -156,3 +157,49 @@ def test_enrichment_pipeline_censorship_detection(tmp_path: Path):
         data_row = [l for l in lines if not l.startswith("#")][1].strip().split("\t")
         censored_idx = header.index("n_censored_profiles")
         assert int(data_row[censored_idx]) == 1 # Profile s1|e1|inc reached the cap
+
+def test_enrichment_pipeline_profile_fdr_propagation(tmp_path: Path):
+    input_tsv = tmp_path / "input_profiles.tsv"
+    input_tsv.write_text(
+        "study_id\texperiment_id\tinc_dec\tTraitA\tTraitB\n"
+        "s1\te1\tinc\t10\t1\n"
+        "s1\te2\tinc\t10\t1\n"
+        "s1\te3\tinc\t0\t10\n"
+        "s1\te4\tinc\t0\t10\n"
+        "s1\te5\tinc\t0\t10\n",
+        encoding="utf-8"
+    )
+
+    report_txt = tmp_path / "report.txt"
+    results_tsv = tmp_path / "results.tsv"
+
+    # Run with --fdr-scope profile
+    subprocess.run([
+        sys.executable, "bsdbng/scripts/trait_enrichment.py",
+        "--input", str(input_tsv),
+        "--output", str(report_txt),
+        "--tsv-output", str(results_tsv),
+        "--fdr-scope", "profile",
+        "--p-threshold", "1.0",
+    ], check=True, capture_output=True, text=True)
+
+    overall_out = tmp_path / "overall.tsv"
+    
+    subprocess.run([
+        sys.executable, "bsdbng/scripts/export_trait_enrichment_rankings.py",
+        "--input", str(report_txt),
+        "--results", str(results_tsv),
+        "--overall-output", str(overall_out),
+    ], check=True, capture_output=True, text=True)
+
+    with overall_out.open("r", encoding="utf-8") as f:
+        lines = f.readlines()
+        assert "# FDR-Scope: profile" in "".join(lines)
+        
+        header = [l for l in lines if not l.startswith("#")][0].strip().split("\t")
+        assert "prevalence_summary" in header
+        
+        # Check data row for prevalence summary format "X / Y"
+        data_row = [l for l in lines if not l.startswith("#")][1].strip().split("\t")
+        prev_idx = header.index("prevalence_summary")
+        assert "/" in data_row[prev_idx]

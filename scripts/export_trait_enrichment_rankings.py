@@ -106,6 +106,7 @@ def detect_metadata(path: Path) -> dict[str, any]:
         "threshold": 0.001,
         "testable_profiles": None,
         "max_traits": None,
+        "fdr_scope": "global",
     }
     if not path.exists():
         return meta
@@ -126,6 +127,8 @@ def detect_metadata(path: Path) -> dict[str, any]:
                 meta["stat_type"] = "fdr_q" if is_fdr else "p_value"
             elif line.startswith("# P-Threshold: "):
                 meta["threshold"] = float(line.split(": ")[1].strip())
+            elif line.startswith("# FDR-Scope: "):
+                meta["fdr_scope"] = line.split(": ")[1].strip().lower()
             elif line.startswith("# Testable-Profiles: "):
                 meta["testable_profiles"] = int(line.split(": ")[1].strip())
             elif line.startswith("# Max-Traits-Per-Row-Report: "):
@@ -211,8 +214,8 @@ def parse_report(path: Path, stat_type: str = "p_value") -> list[ParsedRow]:
                 summary = parts[3] if len(parts) >= 4 else parts[2]
                 obs, exp, fold = _parse_summary_values(summary)
 
-                if current_header is None:
-                    raise ValueError(f"Trait row found before profile header: {line!r}")
+                # Pylint: current_header is checked at top of block
+                assert current_header is not None
                 study_id, experiment_id, inc_dec = current_header
                 profile_id = f"{study_id}|{experiment_id}|{inc_dec}"
                 # Exclude MediaDive growth-medium traits for consistency
@@ -257,6 +260,7 @@ def build_overall_table(
     stat_type: str,
     total_profiles: int | None = None,
     max_traits: int | None = None,
+    fdr_scope: str = "global",
 ) -> pd.DataFrame:
     grouped = frame.groupby("trait", dropna=False)
 
@@ -330,6 +334,11 @@ def build_overall_table(
     # Denominator is the number of profiles where the trait was testable
     # (i.e., appeared at least once).
     overall["prevalence"] = overall["hit_rows"] / overall["testable_profiles"]
+    
+    # Add human-readable prevalence summary
+    overall["prevalence_summary"] = (
+        overall["hit_rows"].astype(str) + " / " + overall["testable_profiles"].astype(str)
+    )
 
     # #115: Minimum hit thresholding for overall ranking to reduce noise.
     # We require traits to be significant in at least 2 profiles to appear in rankings.
@@ -368,6 +377,7 @@ def main() -> int:
     stat_type = meta["stat_type"]
     stat_threshold = meta["threshold"]
     testable_profiles = meta["testable_profiles"]
+    fdr_scope = meta["fdr_scope"]
     max_traits = meta.get("max_traits")
     is_source_truncated = False
 
@@ -380,6 +390,7 @@ def main() -> int:
         # Prefer TSV metadata if available
         stat_type = results_meta.get("stat_type", stat_type)
         stat_threshold = results_meta.get("threshold", stat_threshold)
+        fdr_scope = results_meta.get("fdr_scope", fdr_scope)
         testable_profiles = results_meta.get("testable_profiles") or testable_profiles
         
         rows = parse_results_tsv(results_path, stat_type, stat_threshold)
@@ -408,12 +419,21 @@ def main() -> int:
     frame = pd.DataFrame([row.__dict__ for row in rows])
 
     overall = build_overall_table(
-        frame, stat_type, total_profiles=testable_profiles, max_traits=max_traits
+        frame,
+        stat_type,
+        total_profiles=testable_profiles,
+        max_traits=max_traits,
+        fdr_scope=fdr_scope,
     )
     pairs = build_pair_table(frame, stat_type)
 
     # Resolve dynamic filenames
-    suffix = f"_{'q' if stat_type == 'fdr_q' else 'p'}{stat_threshold}"
+    # Include 'profile' in suffix if using per-profile FDR
+    method_suffix = "q" if stat_type == "fdr_q" else "p"
+    if stat_type == "fdr_q" and fdr_scope == "profile":
+        method_suffix = "q_profile"
+        
+    suffix = f"_{method_suffix}{stat_threshold}"
     
     overall_out = args.overall_output
     if overall_out is None:
@@ -429,6 +449,7 @@ def main() -> int:
     # Write overall table with metadata header
     with overall_out.open("w", encoding="utf-8", newline="") as f:
         f.write(f"# Stat-Type: {stat_type}\n")
+        f.write(f"# FDR-Scope: {fdr_scope}\n")
         f.write(f"# Stat-Threshold: {stat_threshold}\n")
         if testable_profiles:
             f.write(f"# Total-Testable-Profiles: {testable_profiles}\n")
@@ -440,6 +461,7 @@ def main() -> int:
     # Write pair table with metadata header
     with pair_out.open("w", encoding="utf-8", newline="") as f:
         f.write(f"# Stat-Type: {stat_type}\n")
+        f.write(f"# FDR-Scope: {fdr_scope}\n")
         f.write(f"# Stat-Threshold: {stat_threshold}\n")
         if is_source_truncated:
             f.write(f"# Max-Traits-Per-Profile-Cap: {max_traits}\n")
