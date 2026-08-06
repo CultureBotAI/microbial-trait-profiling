@@ -1,0 +1,67 @@
+# Trait Profile Investigation
+
+This folder contains the current v2 trait-profile investigation outputs plus
+older exploratory folders retained for comparison.
+
+## Regenerate Current Outputs
+
+Run the complete current investigation with:
+
+```bash
+just trait-profile-investigation
+```
+
+Equivalent direct command:
+
+```bash
+uv run python scripts/regenerate_trait_profile_investigation.py
+```
+
+The regeneration command writes the current v2 output folders, summary diagram,
+direction-grid TSV, figure annotations, and the PowerPoint deck media.
+
+## Current v2 Outputs
+
+These folders define the current project story and are the source for
+`trait_profile_investigation_figures.pptx`.
+
+| folder | parent focus | generator | role |
+| --- | --- | --- | --- |
+| `facultative-aerobe-v2/` | aerobe signal in increased profiles | `scripts/investigate_facultative_aerobe_expansion.py` | Current aerobe-side v2 analysis using selected oxygen-tolerance traits. |
+| `anaerobe-depletion-v2/` | anaerobe signal in decreased profiles | `scripts/investigate_gut_anaerobe_depletion.py` | Current anaerobe-side v2 depletion analysis across all body sites. |
+
+The top-level summary files are also current outputs:
+
+- `profile_enrichment_guild_assignment_summary.png`
+- `profile_enrichment_guild_assignment_summary.svg`
+- `anaerobe_v2_guild_definition_table.png`
+- `anaerobe_v2_guild_definition_table.svg`
+- `profile_enrichment_guild_direction_grid.tsv`
+- `trait_profile_paired_contrast_infographic.png`
+- `trait_profile_paired_contrast_trait_stats.tsv`
+- `trait_profile_paired_contrast_condition_summary.tsv`
+- `trait_profile_paired_contrast_body_site_summary.tsv`
+- `trait_profile_investigation_figures.pptx`
+- `figure_methods.md`
+
+## Legacy Exploratory Outputs
+
+These folders are retained as interpretation history. They are not the canonical
+source for the current PowerPoint deck.
+
+| folder | status | role |
+| --- | --- | --- |
+| `facultative-aerobe-trait-expansion/` | legacy exploratory | Earlier facultative-aerobe expansion analysis retained to show how the v2 oxygen-tolerance focus was selected. |
+| `gut-anaerobe-fermentation-depletion/` | legacy exploratory | Earlier gut-restricted anaerobe/fermentation depletion analysis retained as a comparison against the current all-body-site anaerobe v2 depletion analysis. |
+
+## Interpretation Rules
+
+- The v2 guild-score panels are trait-score summaries, not new differential
+  abundance estimates.
+- Target-taxon panels are audit and recurrence views for fixed NCBI Taxonomy ID
+  lists; they do not define the guild score.
+- The parent comparison is aerobe increase versus anaerobe decrease.
+- Off-diagonal cells in `profile_enrichment_guild_direction_grid.tsv` are
+  guardrails: aerobe score in decreased profiles checks for generally high
+  aerobe signal, and anaerobe score in increased profiles checks for mixed
+  anaerobe signal.

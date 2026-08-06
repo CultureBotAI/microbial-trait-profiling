@@ -12,6 +12,7 @@ authors = [
   { name = "Mark Miller" }
 ]
 dependencies = [
+  "defusedxml>=0.7.1",
   "httpx>=0.28.0",
   "linkml>=1.10.0",
   "linkml-runtime>=1.8.3",

@@ -1,0 +1,13 @@
+	trait_id	profile_support	total_signal	composition_variance	display_label	column_label	object_name	object_category	display_category	selection_score	investigation_trait_name
+METPO:1000699	METPO:1000699	10869	19345122.0	0.0063912214322002	"gram negative
+METPO:1000699"	gram negative METPO:1000699	gram negative	biolink:PhenotypicQuality	PhenotypicQuality	0.1072315994081481	gram negative
+METPO:1000608	METPO:1000608	9499	9187502.0	0.0012877705264931	"facultatively aerobic
+METPO:1000608"	facultatively aerobic METPO:1000608	facultatively aerobic	biolink:PhenotypicQuality	PhenotypicQuality	0.0206472816866143	facultatively aerobic
+METPO:1000702	METPO:1000702	9781	7258013.0	0.000731561513882	"motile
+METPO:1000702"	motile METPO:1000702	motile	biolink:PhenotypicQuality	PhenotypicQuality	0.0115569284587611	motile
+METPO:1000602	METPO:1000602	9147	9138107.0	0.0005661579553469	"aerobic
+METPO:1000602"	aerobic METPO:1000602	aerobic	biolink:PhenotypicQuality	PhenotypicQuality	0.0090743592812161	aerobic
+METPO:1000604	METPO:1000604	9524	2421798.0	0.0003982142105708	"microaerophilic
+METPO:1000604"	microaerophilic METPO:1000604	microaerophilic	biolink:PhenotypicQuality	PhenotypicQuality	0.0058537573416688	microaerophilic
+METPO:2000103|pathways:nitrate_reduction	METPO:2000103|pathways:nitrate_reduction	8022	1851660.0	3.2549070094728974e-05	"nitrate reduction
+nitrate_reduction"	capable of: nitrate_reduction pathways:nitrate_reduction [METPO:2000103]	nitrate_reduction	biolink:BiologicalProcess	BiologicalProcess	0.0004697349527091	nitrate_reduction

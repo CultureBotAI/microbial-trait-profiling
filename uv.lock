@@ -126,6 +126,7 @@ name = "bsdbng"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "defusedxml" },
     { name = "httpx" },
     { name = "linkml" },
     { name = "linkml-runtime" },
@@ -169,6 +170,7 @@ qa = [
 
 [package.metadata]
 requires-dist = [
+    { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "gdown", marker = "extra == 'kg'", specifier = ">=6.0.0" },
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "linkml", specifier = ">=1.10.0" },
