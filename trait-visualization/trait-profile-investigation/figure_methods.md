@@ -48,19 +48,44 @@ by enrichment frequency.
 ## Supplemental Paired Profile-Contrast Infographic
 
 `trait_profile_paired_contrast_infographic.png` is an analogy to the
-enrichment-analysis infographic but uses the paired profile tables from
-`trait-visualization/study_trait_profile_paired_enrichment_matrix.tsv` and
+enrichment-analysis infographic but uses the full profile table from
+`data/derived/study_trait_profiles_wide.tsv` and matched-pair metadata from
 `trait-visualization/study_trait_profile_paired_enrichment_metadata.tsv`. Rows
 are matched BugSigDB study/experiment pairs with the increased profile z-score
-minus the decreased profile z-score for each selected trait.
+minus the decreased profile z-score for each eligible selected trait.
 
-Panel A ranks the 60 selected profile traits by one-sample paired t-test signal
+Panel A ranks eligible profile traits by one-sample paired t-test signal
 against zero over the matched increased-minus-decreased rows. The plotted value
 is `-log10(p)`, and bar color encodes whether the mean contrast is higher in
 increased profiles or decreased profiles. The companion table
 `trait_profile_paired_contrast_trait_stats.tsv` records the mean, median,
 standard deviation, direction, p-value, and Benjamini-Hochberg q-value for each
 trait.
+
+The same script also writes explicit paired-contrast trait-stat tables for
+downstream evidence-matrix assembly. `trait_profile_paired_contrast_trait_stats.tsv`
+is the backward-compatible pooled table, and
+`trait_profile_paired_contrast_trait_stats_pooled.tsv` is the same pooled result
+under an explicit filename. Per-stratum tables are written as
+`trait_profile_paired_contrast_trait_stats_<body_site_group>.tsv` for each
+body-site group with at least 50 matched pairs, with the primary stratified
+analysis in `trait_profile_paired_contrast_trait_stats_feces.tsv` and the
+robustness run in
+`trait_profile_paired_contrast_trait_stats_feces_excluded.tsv`. The manifest
+`trait_profile_paired_contrast_trait_stats_manifest.tsv` records the emitted
+strata, pair counts, study counts, and output paths.
+
+The pooled table and each stratum rerun profile-trait selection rather than
+reusing the 60-trait heatmap list. The selection first keeps traits with
+sufficient annotation support among profiles represented in the analysis set and
+then ranks traits by the existing variance-weighted profile-composition
+selection score. No top-60 cap is applied to these TSVs; every eligible trait is
+retained. The resulting tables record
+`selected_trait_rank`, selection support columns, `n_profiles_where_annotated`,
+and `annotated_profile_fraction` so downstream checks can separate lack of
+signal from limited annotation coverage. The `trait` column is a stable trait
+identifier suitable for joins, while `trait_label` keeps the readable display
+label.
 
 Panel B groups matched pairs by BugSigDB condition label after removing broad
 metadata-like labels such as exposure, measurement, population, clinical
