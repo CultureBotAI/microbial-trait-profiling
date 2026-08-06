@@ -39,10 +39,18 @@ The top-level summary files are also current outputs:
 - `profile_enrichment_guild_direction_grid.tsv`
 - `trait_profile_paired_contrast_infographic.png`
 - `trait_profile_paired_contrast_trait_stats.tsv`
+- `trait_profile_paired_contrast_trait_stats_pooled.tsv`
+- `trait_profile_paired_contrast_trait_stats_manifest.tsv`
+- `trait_profile_paired_contrast_trait_stats_<body_site_group>.tsv`
 - `trait_profile_paired_contrast_condition_summary.tsv`
 - `trait_profile_paired_contrast_body_site_summary.tsv`
 - `trait_profile_investigation_figures.pptx`
 - `figure_methods.md`
+
+The paired-contrast trait-stat files include the pooled analysis, explicit
+Feces-only and Feces-excluded analyses, and one file per body-site group with at
+least 50 matched pairs. The manifest lists the emitted strata, pair counts, and
+file paths.
 
 ## Legacy Exploratory Outputs
 

@@ -62,6 +62,30 @@ increased profiles or decreased profiles. The companion table
 standard deviation, direction, p-value, and Benjamini-Hochberg q-value for each
 trait.
 
+The same script also writes explicit paired-contrast trait-stat tables for
+downstream evidence-matrix assembly. `trait_profile_paired_contrast_trait_stats.tsv`
+is the backward-compatible pooled table, and
+`trait_profile_paired_contrast_trait_stats_pooled.tsv` is the same pooled result
+under an explicit filename. Per-stratum tables are written as
+`trait_profile_paired_contrast_trait_stats_<body_site_group>.tsv` for each
+body-site group with at least 50 matched pairs, with the primary stratified
+analysis in `trait_profile_paired_contrast_trait_stats_feces.tsv` and the
+robustness run in
+`trait_profile_paired_contrast_trait_stats_feces_excluded.tsv`. The manifest
+`trait_profile_paired_contrast_trait_stats_manifest.tsv` records the emitted
+strata, pair counts, study counts, and output paths.
+
+Each stratum reruns the profile-trait selection inside that stratum rather than
+reusing the pooled top-60 list. The selection first keeps traits with sufficient
+annotation support among profiles represented in the stratum and then ranks
+traits by the existing variance-weighted profile-composition selection score.
+The resulting tables record
+`selected_trait_rank`, selection support columns, `n_profiles_where_annotated`,
+and `annotated_profile_fraction` so downstream checks can separate lack of
+signal from limited annotation coverage. The `trait` column is a stable trait
+identifier suitable for joins, while `trait_label` keeps the readable display
+label.
+
 Panel B groups matched pairs by BugSigDB condition label after removing broad
 metadata-like labels such as exposure, measurement, population, clinical
 treatment, health trait, microbiome, and physical activity. It shows the average
