@@ -1,0 +1,46 @@
+taxon_id	taxon_name	taxonomic_rank	target_profile_count	target_study_count	target_experiment_count	target_condition_count	target_conditions	target_directions	increased	decreased	dominant_direction	dominant_condition	selected_trait_count	display_condition
+NCBITaxon:851	Fusobacterium nucleatum	species	14	3	14	1	Gingivitis	decreased; increased	4	10	decreased	Gingivitis	6	Gingivitis
+NCBITaxon:1655	Actinomyces naeslundii	species	12	4	12	1	Gingivitis	decreased; increased	6	6	mixed	Gingivitis	8	Gingivitis
+NCBITaxon:729	Haemophilus parainfluenzae	species	13	4	13	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	4	9	decreased	Gingivitis	6	Gingivitis
+NCBITaxon:157688	Leptotrichia hofstadii	species	11	2	11	1	Gingivitis	decreased; increased	2	9	decreased	Gingivitis	10	Gingivitis
+NCBITaxon:47671	Lautropia mirabilis	species	10	3	10	1	Gingivitis	decreased	0	10	decreased	Gingivitis	4	Gingivitis
+NCBITaxon:176090	Streptococcus sinensis	species	10	2	10	1	Gingivitis	decreased; increased	1	9	decreased	Gingivitis	4	Gingivitis
+NCBITaxon:157691	Leptotrichia shahii	species	9	2	9	1	Gingivitis	decreased; increased	2	7	decreased	Gingivitis	14	Gingivitis
+NCBITaxon:714	Aggregatibacter actinomycetemcomitans	species	9	3	9	1	Gingivitis	decreased; increased	2	7	decreased	Gingivitis	11	Gingivitis
+NCBITaxon:45634	Streptococcus cristatus	species	9	2	9	1	Gingivitis	decreased	0	9	decreased	Gingivitis	8	Gingivitis
+NCBITaxon:484	Neisseria flavescens	species	9	2	9	1	Gingivitis	decreased; increased	2	7	decreased	Gingivitis	7	Gingivitis
+NCBITaxon:28449	Neisseria subflava	species	9	2	9	1	Gingivitis	decreased; increased	2	7	decreased	Gingivitis	7	Gingivitis
+NCBITaxon:739	Aggregatibacter segnis	species	9	3	9	1	Gingivitis	decreased; increased	2	7	decreased	Gingivitis	6	Gingivitis
+NCBITaxon:109328	Leptotrichia trevisanii	species	9	2	9	1	Gingivitis	decreased; increased	2	7	decreased	Gingivitis	5	Gingivitis
+NCBITaxon:726	Haemophilus haemolyticus	species	9	2	9	1	Gingivitis	decreased	0	9	decreased	Gingivitis	4	Gingivitis
+NCBITaxon:487	Neisseria meningitidis	species	11	3	11	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	5	6	decreased	Gingivitis	8	Gingivitis
+NCBITaxon:838	Prevotella	genus	10	3	8	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	4	6	decreased	Gastroesophageal reflux disease	21	Gastroesophageal reflux disease
+NCBITaxon:29465	Veillonella	genus	5	2	4	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	3	2	increased	Gastroesophageal reflux disease	16	Gastroesophageal reflux disease
+NCBITaxon:1301	Streptococcus	genus	7	3	6	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	4	3	increased	Gingivitis	29	Gastroesophageal reflux disease
+NCBITaxon:44259	Filifactor	genus	5	3	5	2	Gastroesophageal reflux disease; Gingivitis	increased	5	0	increased	Gastroesophageal reflux disease	7	Gastroesophageal reflux disease
+NCBITaxon:1578	Lactobacillus	genus	4	2	4	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	1	3	decreased	Gastroesophageal reflux disease	28	Gastroesophageal reflux disease
+NCBITaxon:32067	Leptotrichia	genus	9	4	7	3	Gastroesophageal reflux disease; Gingivitis; Lung carcinoma	decreased; increased	5	4	increased	Gingivitis	18	Gastroesophageal reflux disease
+NCBITaxon:906	Megasphaera	genus	6	3	6	3	Gastroesophageal reflux disease; Gingivitis; Lung carcinoma	decreased; increased	2	4	decreased	Gingivitis	15	Gastroesophageal reflux disease
+NCBITaxon:496	Neisseria macacae	species	10	3	10	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	3	7	decreased	Gingivitis	4	Gastroesophageal reflux disease
+NCBITaxon:194	Campylobacter	genus	7	4	7	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	6	1	increased	Gingivitis	24	Gastroesophageal reflux disease
+NCBITaxon:482	Neisseria	genus	7	3	7	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	3	4	decreased	Gingivitis	23	Gastroesophageal reflux disease
+NCBITaxon:1283313	Alloprevotella	genus	4	3	3	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	2	2	mixed	Gastroesophageal reflux disease	18	Gastroesophageal reflux disease
+NCBITaxon:265975	Oribacterium	genus	2	1	2	1	Gastroesophageal reflux disease	decreased; increased	1	1	mixed	Gastroesophageal reflux disease	11	Gastroesophageal reflux disease
+NCBITaxon:186831	Acetoanaerobium	genus	2	1	2	1	Gastroesophageal reflux disease	increased	2	0	increased	Gastroesophageal reflux disease	6	Gastroesophageal reflux disease
+NCBITaxon:58231	Treponema medium	species	2	1	2	1	Gastroesophageal reflux disease	increased	2	0	increased	Gastroesophageal reflux disease	5	Gastroesophageal reflux disease
+NCBITaxon:187326	Megasphaera micronuciformis	species	5	4	5	3	Gastroesophageal reflux disease; Gingivitis; Lung carcinoma	decreased	0	5	decreased	Gingivitis	8	Gastroesophageal reflux disease
+NCBITaxon:861	Fusobacterium ulcerans	species	2	1	2	1	Lung carcinoma	increased	2	0	increased	Lung carcinoma	7	Lung carcinoma
+NCBITaxon:1380	Atopobium	genus	3	3	3	3	Gastroesophageal reflux disease; Gingivitis; Lung carcinoma	decreased; increased	1	2	decreased	Gastroesophageal reflux disease	7	Lung carcinoma
+NCBITaxon:157	Treponema	genus	7	5	7	2	Gingivitis; Lung carcinoma	decreased; increased	5	2	increased	Gingivitis	21	Lung carcinoma
+NCBITaxon:840	Hoylesella loescheii	species	7	3	7	2	Gingivitis; Lung carcinoma	decreased; increased	1	6	decreased	Gingivitis	7	Lung carcinoma
+NCBITaxon:1660	Schaalia odontolytica	species	7	3	7	2	Gingivitis; Lung carcinoma	decreased	0	7	decreased	Gingivitis	7	Lung carcinoma
+NCBITaxon:35517	[Eubacterium] brachy	species	3	3	3	2	Gingivitis; Lung carcinoma	increased	3	0	increased	Gingivitis	4	Lung carcinoma
+NCBITaxon:816	Bacteroides	genus	2	2	2	2	Gingivitis; Lung carcinoma	increased	2	0	increased	Gingivitis	30	Lung carcinoma
+NCBITaxon:43994	Johnsonella	genus	2	2	2	2	Gingivitis; Lung carcinoma	decreased; increased	1	1	mixed	Gingivitis	6	Lung carcinoma
+NCBITaxon:286	Pseudomonas	genus	1	1	1	1	Lung carcinoma	decreased	0	1	decreased	Lung carcinoma	30	Lung carcinoma
+NCBITaxon:265	Paracoccus	genus	1	1	1	1	Lung carcinoma	increased	1	0	increased	Lung carcinoma	27	Lung carcinoma
+NCBITaxon:41275	Brevundimonas	genus	1	1	1	1	Lung carcinoma	increased	1	0	increased	Lung carcinoma	23	Lung carcinoma
+NCBITaxon:447020	Adlercreutzia	genus	1	1	1	1	Lung carcinoma	increased	1	0	increased	Lung carcinoma	15	Lung carcinoma
+NCBITaxon:580596	Butyricicoccus	genus	1	1	1	1	Lung carcinoma	increased	1	0	increased	Lung carcinoma	10	Lung carcinoma
+NCBITaxon:248744	Marvinbryantia	genus	1	1	1	1	Lung carcinoma	increased	1	0	increased	Lung carcinoma	9	Lung carcinoma
+NCBITaxon:40520	Blautia obeum	species	1	1	1	1	Lung carcinoma	increased	1	0	increased	Lung carcinoma	8	Lung carcinoma

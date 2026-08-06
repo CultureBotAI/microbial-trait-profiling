@@ -1,0 +1,80 @@
+	"facultatively aerobic
+METPO:1000608"	"cellulose catabolic process
+METPO:2000103|GO:0030245"	"aerobic
+METPO:1000602"	"gram negative
+METPO:1000699"	"non-spore forming
+METPO:1000872"	"bacillus shaped
+METPO:1000667"	"non motile
+METPO:1000703"	"anaerobic
+METPO:1000603"	"mesophilic
+METPO:1000615"	"gram positive
+METPO:1000698"	"GC low
+METPO:1000429"	"microaerophilic
+METPO:1000604"	"coccus shaped
+METPO:1000668"	"GC high
+METPO:1000432"	"motile
+METPO:1000702"	"nitrate_reduction
+..."	"rod shaped
+METPO:1000681"	"D-glucose
+..."	"mannose
+..."	"temperature range mid3
+METPO:1000452"	"temperature range mid4
+METPO:1000453"	"cell width very small
+METPO:1000887"	"maltose
+..."	"temperature range mid2
+METPO:1000451"	"temperature optimum mid4
+METPO:1000446"	"sucrose
+..."	"cell length large
+METPO:1000886"	"fructose
+..."	"temperature range mid1
+METPO:1000450"	"Fermentation
+METPO:1002005"	"non halophilic
+METPO:1000624"	"lactose
+..."	"coccobacillus shaped
+METPO:1000688"	"GC mid2
+METPO:1000431"
+Fusobacterium nucleatum (14 profiles)	0	0	0	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Actinomyces naeslundii (12 profiles)	0	0	0	0	1	1	1	1	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
+Haemophilus parainfluenzae (13 profiles)	1	0	0	1	1	1	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Leptotrichia hofstadii (11 profiles)	0	0	0	1	1	1	1	1	1	0	0	0	0	0	0	0	1	0	1	0	0	0	0	0	1	0	1	0	0	0	0	0	0	0
+Lautropia mirabilis (10 profiles)	0	0	1	1	1	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Streptococcus sinensis (10 profiles)	0	0	0	0	0	0	0	1	0	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Leptotrichia shahii (9 profiles)	1	0	0	1	1	1	1	1	1	0	0	0	0	0	0	0	1	0	0	1	1	0	0	1	1	0	1	0	1	0	0	0	0	0
+Aggregatibacter actinomycetemcomitans (9 profiles)	1	0	0	1	1	1	1	1	1	0	1	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
+Streptococcus cristatus (9 profiles)	0	0	0	1	1	0	1	1	0	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Neisseria flavescens (9 profiles)	0	0	1	1	1	0	1	0	1	0	0	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Neisseria subflava (9 profiles)	0	0	1	1	1	0	1	0	1	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Aggregatibacter segnis (9 profiles)	1	0	0	1	1	1	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Leptotrichia trevisanii (9 profiles)	0	0	1	1	1	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Haemophilus haemolyticus (9 profiles)	0	0	0	1	1	1	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Neisseria meningitidis (11 profiles)	0	0	1	1	1	0	1	0	1	0	0	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Prevotella (10 profiles)	0	0	0	1	1	1	1	1	1	1	1	0	0	1	0	0	1	1	1	0	0	0	1	0	1	1	1	1	0	1	0	1	1	1
+Veillonella (5 profiles)	0	0	0	1	1	0	1	1	1	1	0	0	1	1	1	1	0	0	0	1	1	1	0	1	1	0	0	0	1	0	0	0	0	0
+Streptococcus (7 profiles)	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	0	0	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	0
+Filifactor (5 profiles)	0	0	0	1	1	1	0	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
+Lactobacillus (4 profiles)	1	0	1	0	1	1	1	1	1	1	1	1	0	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	0
+Leptotrichia (9 profiles)	1	0	1	1	1	1	1	1	1	0	0	1	0	0	0	0	1	0	1	1	1	1	0	1	1	0	1	0	1	0	0	0	0	0
+Megasphaera (6 profiles)	0	0	0	1	1	0	1	1	1	1	1	0	1	1	0	0	0	0	0	1	1	0	0	1	0	0	0	0	1	1	0	0	0	1
+Neisseria macacae (10 profiles)	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0
+Campylobacter (7 profiles)	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	0	1	1	1	0	1	1	0	1	0	0	0	1	0	1	0
+Neisseria (7 profiles)	1	0	1	1	1	1	1	0	1	0	1	1	1	0	1	1	1	1	0	1	1	1	1	1	0	1	1	1	1	0	0	0	0	0
+Alloprevotella (4 profiles)	0	0	1	1	1	1	1	1	1	0	1	0	0	0	0	0	0	1	1	1	1	0	1	1	1	0	0	1	0	0	0	1	1	0
+Oribacterium (2 profiles)	0	0	0	1	1	1	0	1	1	1	1	0	0	1	0	0	0	1	0	0	0	0	0	0	0	1	0	0	0	0	0	0	1	0
+Acetoanaerobium (2 profiles)	0	0	0	0	0	1	0	1	1	1	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Treponema medium (2 profiles)	0	0	0	1	1	0	0	1	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
+Megasphaera micronuciformis (5 profiles)	0	0	0	1	1	0	1	1	1	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Fusobacterium ulcerans (2 profiles)	0	0	0	1	1	0	1	1	1	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
+Atopobium (3 profiles)	0	0	0	0	1	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Treponema (7 profiles)	0	0	0	1	1	0	1	1	1	1	1	1	1	1	1	0	0	1	1	1	1	1	1	0	0	1	1	1	0	1	0	0	0	0
+Hoylesella loescheii (7 profiles)	0	0	0	1	1	1	1	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
+Schaalia odontolytica (7 profiles)	1	0	0	0	1	1	1	0	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+[Eubacterium] brachy (3 profiles)	0	0	0	1	1	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Bacteroides (2 profiles)	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	0
+Johnsonella (2 profiles)	1	0	0	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Pseudomonas (1 profiles)	1	1	1	1	1	1	1	0	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	0	1
+Paracoccus (1 profiles)	1	0	1	1	1	1	1	0	1	1	0	1	1	0	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	0	0	1	1	1
+Brevundimonas (1 profiles)	1	0	1	1	1	1	0	1	1	1	0	1	0	0	1	1	1	1	1	1	1	1	1	1	0	1	0	1	1	0	0	0	0	1
+Adlercreutzia (1 profiles)	0	0	0	0	1	1	1	1	0	1	0	0	0	0	0	0	1	1	0	1	1	1	0	1	1	0	0	0	1	0	0	0	1	1
+Butyricicoccus (1 profiles)	0	0	0	0	1	0	1	1	0	1	1	0	1	0	0	0	0	1	1	0	0	0	1	0	0	1	0	0	0	0	0	0	0	0
+Marvinbryantia (1 profiles)	0	1	0	1	1	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Blautia obeum (1 profiles)	0	1	0	0	1	0	1	1	1	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0

@@ -1,0 +1,7 @@
+guild	guild_traits	condition	profile_count	study_count	experiment_count	mean_guild_trait_signal	mean_relative_guild_signal	increased_mean_guild_trait_signal	decreased_mean_guild_trait_signal
+aerobe_v2	aerobic; microaerophilic; facultatively aerobic	Gingivitis	53	8	36	101.40881	0.02879715	136.53969	78.35417
+aerobe_v2	aerobic; microaerophilic; facultatively aerobic	Gastroesophageal reflux disease	19	1	10	1010.35095	0.028524784	1371.3333	609.2593
+aerobe_v2	aerobic; microaerophilic; facultatively aerobic	Lung carcinoma	12	1	6	664.3056	0.012811807	1056.3334	272.27777
+anaerobe_v2_depletion	anaerobic; obligately anaerobic	Gingivitis	53	8	36	62.31132	0.030838521	100.04762	37.546875
+anaerobe_v2_depletion	anaerobic; obligately anaerobic	Gastroesophageal reflux disease	19	1	10	400.07895	0.021787927	613.7	162.72223
+anaerobe_v2_depletion	anaerobic; obligately anaerobic	Lung carcinoma	12	1	6	404.45834	0.030060062	454.58334	354.33334

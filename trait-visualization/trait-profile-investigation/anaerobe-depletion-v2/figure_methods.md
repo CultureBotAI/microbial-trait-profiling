@@ -49,6 +49,12 @@ Guild-specificity: yes. This figure is an enrichment-filtered anatomical compani
 
 Profiles were grouped by `body_site_group`, requiring at least 10 total profiles per group before enrichment filtering. The display excludes the generic `Other` body-site group and then keeps body-site groups with at least 10 profiles containing a positive anaerobe v2 guild-trait z-score. Bubble and stacked bar length encode the number of retained profiles. The stacked bar segments separate retained increased and decreased profiles. The legend reports how many profiles in each direction had zero enriched guild traits and therefore dropped out of this enrichment-filtered anatomical view. The companion TSV `body_site_enriched_profile_summary.tsv` preserves total, retained, and zero-enriched profile counts by body-site group and direction.
 
+## `anatomical_sites_increased_profile_diagram.png`
+
+Guild-specificity: yes. This figure is the increased-profile companion to `anatomical_sites_diagram.png`; color encodes the anaerobe v2 guild score among increased profiles at each body-site group.
+
+Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 guild z-score among increased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using fixed anatomical coordinates for feces/stool, colon, caecum, oral, airway, urogenital, and unknown labels. The diagram legend also reports how many increased and decreased profiles have zero enriched anaerobe v2 guild traits.
+
 ## `anatomical_sites_diagram.png`
 
 Guild-specificity: yes. Color encodes the anaerobe v2 depletion guild score among decreased profiles at each body-site group.

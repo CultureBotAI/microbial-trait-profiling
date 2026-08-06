@@ -2161,6 +2161,22 @@ def write_figure_methods() -> None:
         "`body_site_enriched_profile_summary.tsv` preserves total, retained, and "
         "zero-enriched profile counts by body-site group and direction.",
         "",
+        "## `anatomical_sites_increased_profile_diagram.png`",
+        "",
+        "Guild-specificity: yes. This figure is the increased-profile companion "
+        "to `anatomical_sites_diagram.png`; color encodes the anaerobe v2 guild "
+        "score among increased profiles at each body-site group.",
+        "",
+        "Profiles were grouped by `body_site_group`, requiring at least "
+        "10 profiles per group. The display excludes the generic `Other` body-site "
+        "group. Bubble and bar length encode the number of study profiles in the "
+        "body-site group. Color encodes the mean anaerobe v2 guild z-score among "
+        "increased profiles at that body site. Body-site labels were placed on a "
+        "simplified, neutral front-view body outline using fixed anatomical "
+        "coordinates for feces/stool, colon, caecum, oral, airway, urogenital, "
+        "and unknown labels. The diagram legend also reports how many increased "
+        "and decreased profiles have zero enriched anaerobe v2 guild traits.",
+        "",
         "## `anatomical_sites_diagram.png`",
         "",
         "Guild-specificity: yes. Color encodes the anaerobe v2 depletion guild score "
@@ -2345,6 +2361,14 @@ def make_plots(
         signal_label="decreased-profile guild z",
         zero_enriched_trait_counts=zero_enriched_trait_counts,
     )
+    save_anatomical_sites_diagram(
+        body_site_summary,
+        output_path=OUTPUT_DIR / "anatomical_sites_increased_profile_diagram.png",
+        title="Anaerobe v2 Increased-Profile Signal: Anatomical Sites",
+        signal_column="increased_mean_guild_z",
+        signal_label="increased-profile guild z",
+        zero_enriched_trait_counts=zero_enriched_trait_counts,
+    )
 
 
 def write_summary_report(
@@ -2435,6 +2459,8 @@ def write_summary_report(
         "profile-level v2 trait-enrichment filtering |",
         "| `anatomical_sites_enriched_profile_diagram.png` | yes | anatomical "
         "body-site counts after profile-level v2 trait-enrichment filtering |",
+        "| `anatomical_sites_increased_profile_diagram.png` | yes | increased-profile "
+        "v2 guild score by body-site group |",
         "| `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |",
         "| `candidate_taxa_depletion_bias.png` | no | fixed target-taxon direction counts |",
         "| `condition_target_taxa_stacked_bar.png` | no | fixed target-taxon occurrence "
@@ -2618,8 +2644,9 @@ def write_summary_report(
             "",
             "## Body-Site Check",
             "",
-            "| body_site_group | profiles | decreased mean guild z | decreased - increased z |",
-            "| --- | ---: | ---: | ---: |",
+            "| body_site_group | profiles | increased mean guild z | decreased mean guild z | "
+            "decreased - increased z |",
+            "| --- | ---: | ---: | ---: | ---: |",
         ]
     )
     for row in body_site_summary.head(10).itertuples(index=False):
@@ -2627,7 +2654,8 @@ def write_summary_report(
         diff_text = "" if pd.isna(diff) else f"{diff:.3f}"
         lines.append(
             f"| {row.body_site_group} | {int(row.profile_count)} | "
-            f"{row.decreased_mean_guild_z:.3f} | {diff_text} |"
+            f"{row.increased_mean_guild_z:.3f} | {row.decreased_mean_guild_z:.3f} | "
+            f"{diff_text} |"
         )
 
     lines.extend(
@@ -2689,6 +2717,7 @@ def write_summary_report(
             "- `condition_target_taxa_stacked_bar.png`",
             "- `guild_trait_direction_shift.png`",
             "- `anatomical_sites_diagram.png`",
+            "- `anatomical_sites_increased_profile_diagram.png`",
             "- `anatomical_sites_enriched_profile_diagram.png`",
             "- `target_taxa_condition_breakdown_bar.png`",
             "",

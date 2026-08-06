@@ -19,6 +19,7 @@ This investigation uses the existing study trait profile clustered heatmap matri
 | `trait_enriched_profile_histogram.png` | yes | trait counts inside profile-level v2 trait-enrichment filtering |
 | `condition_enriched_profile_histogram.png` | yes | condition counts after profile-level v2 trait-enrichment filtering |
 | `anatomical_sites_enriched_profile_diagram.png` | yes | anatomical body-site counts after profile-level v2 trait-enrichment filtering |
+| `anatomical_sites_increased_profile_diagram.png` | yes | increased-profile v2 guild score by body-site group |
 | `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |
 | `candidate_taxa_depletion_bias.png` | no | fixed target-taxon direction counts |
 | `condition_target_taxa_stacked_bar.png` | no | fixed target-taxon occurrence counts stacked by taxon |
@@ -133,18 +134,18 @@ For the top condition signals, this table uses all taxa observed in the decrease
 
 ## Body-Site Check
 
-| body_site_group | profiles | decreased mean guild z | decreased - increased z |
-| --- | ---: | ---: | ---: |
-| Colon | 139 | 0.445 | 0.366 |
-| Feces | 7595 | 0.231 | 0.152 |
-| Caecum | 165 | 0.100 | -0.069 |
-| Saliva | 638 | -0.153 | -0.006 |
-| Vagina | 196 | -0.193 | -0.218 |
-| Subgingival dental plaque | 211 | -0.247 | -0.261 |
-| Other | 2829 | -0.344 | -0.066 |
-| Nasopharynx | 126 | -0.373 | 0.036 |
-| Mouth | 170 | -0.519 | 0.011 |
-| unknown | 39 | -1.427 | -0.147 |
+| body_site_group | profiles | increased mean guild z | decreased mean guild z | decreased - increased z |
+| --- | ---: | ---: | ---: | ---: |
+| Colon | 139 | 0.079 | 0.445 | 0.366 |
+| Feces | 7595 | 0.079 | 0.231 | 0.152 |
+| Caecum | 165 | 0.169 | 0.100 | -0.069 |
+| Saliva | 638 | -0.146 | -0.153 | -0.006 |
+| Vagina | 196 | 0.025 | -0.193 | -0.218 |
+| Subgingival dental plaque | 211 | 0.015 | -0.247 | -0.261 |
+| Other | 2829 | -0.278 | -0.344 | -0.066 |
+| Nasopharynx | 126 | -0.410 | -0.373 | 0.036 |
+| Mouth | 170 | -0.530 | -0.519 | 0.011 |
+| unknown | 39 | -1.280 | -1.427 | -0.147 |
 
 ## Top Decreased Profiles To Inspect
 
@@ -193,5 +194,6 @@ For the top condition signals, this table uses all taxa observed in the decrease
 - `condition_target_taxa_stacked_bar.png`
 - `guild_trait_direction_shift.png`
 - `anatomical_sites_diagram.png`
+- `anatomical_sites_increased_profile_diagram.png`
 - `anatomical_sites_enriched_profile_diagram.png`
 - `target_taxa_condition_breakdown_bar.png`

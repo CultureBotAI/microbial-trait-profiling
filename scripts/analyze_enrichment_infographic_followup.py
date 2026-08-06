@@ -23,6 +23,18 @@ OUTPUT_DIR = (
     / "trait-profile-investigation"
     / ("enrichment-infographic-followup")
 )
+PAIRED_TRAIT_STATS_PATH = (
+    REPO_ROOT
+    / "trait-visualization"
+    / "trait-profile-investigation"
+    / "trait_profile_paired_contrast_trait_stats.tsv"
+)
+PAIRED_CONDITION_SUMMARY_PATH = (
+    REPO_ROOT
+    / "trait-visualization"
+    / "trait-profile-investigation"
+    / "trait_profile_paired_contrast_condition_summary.tsv"
+)
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
 TARGET_CONDITIONS = (
     "Thalassemia",
@@ -34,6 +46,7 @@ INFOGRAPHIC_AVG_ENRICHMENT_DEPTH = {
     "Sleep Disorder": 216.00,
     "Head and neck squamous cell carcinoma": 210.33,
 }
+CONDITION_RANKING_VALUES = INFOGRAPHIC_AVG_ENRICHMENT_DEPTH.copy()
 INFOGRAPHIC_TOP_TRAITS = {
     "METPO:1000603": "anaerobic",
     "METPO:1000615": "mesophilic",
@@ -91,6 +104,52 @@ def clean_optional_text(value: object) -> str:
 def compact_label(value: object, max_length: int = 44) -> str:
     """Create a compact one-line display label."""
     return shorten(clean_text(value).replace("\n", " "), width=max_length, placeholder="...")
+
+
+def format_optional_float(value: object, digits: int = 2) -> str:
+    """Format optional numeric values for Markdown tables."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return ""
+    if not math.isfinite(number):
+        return ""
+    return f"{number:.{digits}f}"
+
+
+def prefixed_filename(prefix: str, filename: str) -> str:
+    """Return an output filename with an optional prefix."""
+    return f"{prefix}{filename}" if prefix else filename
+
+
+def output_path(output_dir: Path, prefix: str, filename: str) -> Path:
+    """Return an output path with an optional filename prefix."""
+    return output_dir / prefixed_filename(prefix, filename)
+
+
+def trait_id_from_ranked_label(value: object) -> str:
+    """Extract the stable trait ID from a ranked trait label."""
+    text = clean_text(value).replace("\r", "\n")
+    for token in reversed(re.split(r"\s+", text)):
+        if ":" in token:
+            return token
+    return text
+
+
+def resolve_trait_column_id(trait_id: str, trait_labels: pd.DataFrame) -> str:
+    """Resolve a displayed object ID to the matching matrix column ID."""
+    if trait_id in trait_labels.index:
+        return trait_id
+    if "object_id" in trait_labels:
+        object_matches = trait_labels.index[trait_labels["object_id"] == trait_id].tolist()
+        if object_matches:
+            return str(object_matches[0])
+    suffix_matches = [
+        column_id for column_id in trait_labels.index if str(column_id).endswith(f"|{trait_id}")
+    ]
+    if suffix_matches:
+        return str(suffix_matches[0])
+    return trait_id
 
 
 def study_id_from_raw_study(value: object) -> str:
@@ -346,12 +405,14 @@ def summarize_condition_depth(metadata: pd.DataFrame, min_profiles: int) -> pd.D
     ranked["current_profile_depth_outlier"] = (ranked["depth_percentile"] >= 0.95) | (
         ranked["robust_z"] >= 3.0
     )
+    ranked["target_condition_rank_score"] = ranked["condition"].map(CONDITION_RANKING_VALUES)
+    ranked["target_condition_selected"] = ranked["condition"].isin(TARGET_CONDITIONS)
     ranked["infographic_avg_enrichment_depth"] = ranked["condition"].map(
         INFOGRAPHIC_AVG_ENRICHMENT_DEPTH
     )
     ranked["infographic_top_three_condition"] = ranked["condition"].isin(TARGET_CONDITIONS)
     return ranked.sort_values(
-        ["infographic_top_three_condition", "infographic_avg_enrichment_depth", "depth_rank"],
+        ["target_condition_selected", "target_condition_rank_score", "depth_rank"],
         ascending=[False, False, True],
     )
 
@@ -557,10 +618,10 @@ def compute_profile_neighbors(
                 "other_target_condition_found_in_top5_profiles": bool(len(hits)),
                 "matched_other_target_conditions": join_unique(hits["neighbor_condition"])
                 if len(hits)
-                else "",
+                else "NA",
                 "matched_neighbor_profile_ids": join_unique(hits["neighbor_profile_id"])
                 if len(hits)
-                else "",
+                else "NA",
             }
         )
     crosscheck = pd.DataFrame(crosscheck_records)
@@ -696,6 +757,8 @@ def select_heatmap_traits(
     metadata: pd.DataFrame,
     trait_labels: pd.DataFrame,
     max_traits: int,
+    preferred_traits: list[str] | None = None,
+    fill_with_high_signal_traits: bool = True,
 ) -> list[str]:
     """Select infographic and target-condition traits for the companion heatmap."""
     target_profile_ids = metadata.index[metadata["condition"].isin(TARGET_CONDITIONS)]
@@ -730,20 +793,21 @@ def select_heatmap_traits(
         trait_summary["target_condition_support"] * np.log1p(trait_summary["target_total_signal"])
         + trait_summary["target_profile_support"]
     )
-    ordered = list(INFOGRAPHIC_TOP_TRAITS)
-    ordered.extend(
-        trait_summary.sort_values(
-            [
-                "selection_score",
-                "target_condition_support",
-                "target_profile_support",
-                "target_total_signal",
-            ],
-            ascending=False,
+    ordered = list(preferred_traits or INFOGRAPHIC_TOP_TRAITS)
+    if fill_with_high_signal_traits:
+        ordered.extend(
+            trait_summary.sort_values(
+                [
+                    "selection_score",
+                    "target_condition_support",
+                    "target_profile_support",
+                    "target_total_signal",
+                ],
+                ascending=False,
+            )
+            .head(max_traits * 2)
+            .index.tolist()
         )
-        .head(max_traits * 2)
-        .index.tolist()
-    )
     selected: list[str] = []
     for trait_id in ordered:
         if trait_id in trait_summary.index and trait_id not in selected:
@@ -751,6 +815,59 @@ def select_heatmap_traits(
         if len(selected) >= max_traits:
             break
     return selected
+
+
+def load_top_paired_traits(path: Path, top_n: int, trait_labels: pd.DataFrame) -> list[str]:
+    """Load the top ranked paired-profile contrast trait IDs."""
+    if top_n < 1:
+        msg = "--top-paired-traits must be at least 1."
+        raise ValueError(msg)
+    stats = pd.read_csv(path, sep="\t", dtype=str).fillna("")
+    if "trait" not in stats:
+        msg = f"Missing required trait column in {path}."
+        raise ValueError(msg)
+    trait_ids = [
+        resolve_trait_column_id(trait_id_from_ranked_label(value), trait_labels)
+        for value in stats["trait"]
+    ]
+    selected: list[str] = []
+    for trait_id in trait_ids:
+        if trait_id not in selected:
+            selected.append(trait_id)
+        if len(selected) >= top_n:
+            break
+    if len(selected) < top_n:
+        msg = f"Only found {len(selected)} ranked traits in {path}; requested {top_n}."
+        raise ValueError(msg)
+    return selected
+
+
+def load_top_paired_conditions(path: Path, top_n: int) -> tuple[tuple[str, ...], dict[str, float]]:
+    """Load the top ranked paired-profile contrast condition labels."""
+    if top_n < 1:
+        msg = "--top-paired-conditions must be at least 1."
+        raise ValueError(msg)
+    summary = pd.read_csv(path, sep="\t", dtype=str).fillna("")
+    required_columns = {"condition", "absolute_contrast_load"}
+    missing_columns = required_columns - set(summary.columns)
+    if missing_columns:
+        msg = f"Missing required column(s) in {path}: {', '.join(sorted(missing_columns))}."
+        raise ValueError(msg)
+
+    conditions: list[str] = []
+    condition_scores: dict[str, float] = {}
+    for _, row in summary.iterrows():
+        condition = clean_text(row["condition"])
+        if condition == "unknown" or condition in conditions:
+            continue
+        conditions.append(condition)
+        condition_scores[condition] = float(row["absolute_contrast_load"])
+        if len(conditions) >= top_n:
+            break
+    if len(conditions) < top_n:
+        msg = f"Only found {len(conditions)} ranked conditions in {path}; requested {top_n}."
+        raise ValueError(msg)
+    return tuple(conditions), condition_scores
 
 
 def summarize_target_taxa(occurrences: pd.DataFrame) -> pd.DataFrame:
@@ -819,9 +936,19 @@ def build_traits_vs_organisms_heatmap(
     taxa_trait_matrix_path: Path,
     max_traits: int,
     max_taxa: int,
+    preferred_traits: list[str] | None = None,
+    fill_with_high_signal_traits: bool = True,
+    balance_taxa_by_condition: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Build the companion target-condition traits x organisms matrix."""
-    selected_traits = select_heatmap_traits(values, metadata, trait_labels, max_traits)
+    selected_traits = select_heatmap_traits(
+        values,
+        metadata,
+        trait_labels,
+        max_traits,
+        preferred_traits,
+        fill_with_high_signal_traits,
+    )
     occurrences = load_target_taxa_occurrences(full_dump_path)
     preferred_occurrences = occurrences[
         occurrences["taxonomic_rank"].isin(PREFERRED_HEATMAP_RANKS)
@@ -849,7 +976,7 @@ def build_traits_vs_organisms_heatmap(
         how="inner",
     )
     taxa_metadata = taxa_metadata[taxa_metadata["selected_trait_count"] > 0].copy()
-    taxa_metadata = taxa_metadata.sort_values(
+    ranked_taxa = taxa_metadata.sort_values(
         [
             "target_condition_count",
             "target_profile_count",
@@ -858,9 +985,80 @@ def build_traits_vs_organisms_heatmap(
             "taxon_name",
         ],
         ascending=[False, False, False, False, True],
-    ).head(max_taxa)
+    )
+    if balance_taxa_by_condition:
+        condition_counts = (
+            occurrences[["taxon_id", "profile_id", "condition"]]
+            .drop_duplicates()
+            .pivot_table(
+                index="taxon_id",
+                columns="condition",
+                values="profile_id",
+                aggfunc="nunique",
+                fill_value=0,
+            )
+            .reindex(ranked_taxa.index)
+            .fillna(0)
+        )
+        per_condition_limit = max(1, math.ceil(max_taxa / max(len(TARGET_CONDITIONS), 1)))
+        selected_taxa: list[str] = []
+        display_conditions: dict[str, str] = {}
+        for condition in TARGET_CONDITIONS:
+            if condition not in condition_counts:
+                continue
+            selected_for_condition = 0
+            condition_candidates = ranked_taxa[condition_counts[condition] > 0].copy()
+            condition_candidates["condition_profile_count"] = condition_counts.loc[
+                condition_candidates.index, condition
+            ]
+            condition_candidates = condition_candidates.sort_values(
+                [
+                    "condition_profile_count",
+                    "target_condition_count",
+                    "target_profile_count",
+                    "selected_trait_count",
+                    "target_study_count",
+                    "taxon_name",
+                ],
+                ascending=[False, False, False, False, False, True],
+            )
+            for taxon_id in condition_candidates.index:
+                if taxon_id in selected_taxa:
+                    continue
+                selected_taxa.append(taxon_id)
+                display_conditions[taxon_id] = condition
+                selected_for_condition += 1
+                if selected_for_condition >= per_condition_limit:
+                    break
+                if len(selected_taxa) >= max_taxa:
+                    break
+            if len(selected_taxa) >= max_taxa:
+                break
+
+        for taxon_id in ranked_taxa.index:
+            if len(selected_taxa) >= max_taxa:
+                break
+            if taxon_id not in selected_taxa:
+                selected_taxa.append(taxon_id)
+                display_conditions[taxon_id] = clean_text(
+                    ranked_taxa.loc[taxon_id, "dominant_condition"]
+                )
+
+        taxa_metadata = ranked_taxa.loc[selected_taxa].copy()
+        taxa_metadata["display_condition"] = [
+            display_conditions.get(taxon_id, clean_text(row["dominant_condition"]))
+            for taxon_id, row in taxa_metadata.iterrows()
+        ]
+    else:
+        taxa_metadata = ranked_taxa.head(max_taxa).copy()
+        taxa_metadata["display_condition"] = taxa_metadata["dominant_condition"].map(clean_text)
     selected_matrix = binary.loc[taxa_metadata.index].copy()
-    selected_traits_with_support = selected_matrix.columns[selected_matrix.sum(axis=0) > 0].tolist()
+    explicit_traits = set(preferred_traits or [])
+    selected_traits_with_support = [
+        trait_id
+        for trait_id in selected_matrix.columns
+        if selected_matrix[trait_id].sum() > 0 or trait_id in explicit_traits
+    ]
     selected_matrix = selected_matrix[selected_traits_with_support]
     selected_trait_metadata = trait_labels.loc[selected_traits_with_support].copy()
     return selected_matrix, taxa_metadata, selected_trait_metadata
@@ -881,6 +1079,8 @@ def save_traits_vs_organisms_heatmap(
     taxa_metadata: pd.DataFrame,
     trait_metadata: pd.DataFrame,
     output_path: Path,
+    title: str = "Companion Heatmap: Traits vs Organisms in Infographic Outlier Conditions",
+    cluster_columns: bool = True,
 ) -> pd.DataFrame:
     """Render and save the companion traits x organisms heatmap."""
     sns.set_theme(style="white")
@@ -892,14 +1092,28 @@ def save_traits_vs_organisms_heatmap(
         trait_metadata.loc[trait_id, "heatmap_label"] for trait_id in display_matrix.columns
     ]
 
+    palette_colors = [
+        "#b91c1c",
+        "#2563eb",
+        "#047857",
+        "#7c3aed",
+        "#c2410c",
+        "#0f766e",
+        "#be123c",
+        "#4338ca",
+    ]
     condition_palette = {
-        "Thalassemia": "#b91c1c",
-        "Sleep Disorder": "#2563eb",
-        "Head and neck squamous cell carcinoma": "#047857",
-        "unknown": "#64748b",
+        condition: palette_colors[index % len(palette_colors)]
+        for index, condition in enumerate(TARGET_CONDITIONS)
     }
+    condition_palette["unknown"] = "#64748b"
     row_taxon_ids = matrix.index.tolist()
-    row_colors = taxa_metadata.loc[row_taxon_ids, "dominant_condition"].map(
+    condition_color_column = (
+        "display_condition"
+        if "display_condition" in taxa_metadata.columns
+        else "dominant_condition"
+    )
+    row_colors = taxa_metadata.loc[row_taxon_ids, condition_color_column].map(
         lambda condition: condition_palette.get(condition, "#64748b")
     )
     row_colors.index = display_matrix.index
@@ -910,6 +1124,7 @@ def save_traits_vs_organisms_heatmap(
         cmap=sns.color_palette(["#f8fafc", "#155e75"], as_cmap=True),
         method="average",
         metric="jaccard",
+        col_cluster=cluster_columns,
         row_colors=row_colors,
         linewidths=0.2,
         linecolor="#e2e8f0",
@@ -925,7 +1140,7 @@ def save_traits_vs_organisms_heatmap(
     cluster.ax_heatmap.set_title("")
     cluster.fig.subplots_adjust(top=0.88)
     cluster.fig.suptitle(
-        "Companion Heatmap: Traits vs Organisms in Infographic Outlier Conditions\n"
+        f"{title}\n"
         "Rows are organisms observed in target BugSigDB profiles; columns are binary "
         "KG-Microbe trait annotations",
         y=0.98,
@@ -940,13 +1155,13 @@ def save_traits_vs_organisms_heatmap(
         label.set_fontsize(7)
 
     handles = [
-        Patch(color=color, label=condition)
-        for condition, color in condition_palette.items()
-        if condition != "unknown"
+        Patch(color=condition_palette[condition], label=condition)
+        for condition in TARGET_CONDITIONS
+        if condition in condition_palette
     ]
     cluster.ax_row_dendrogram.legend(
         handles=handles,
-        title="Dominant target condition",
+        title="Target condition",
         loc="center",
         bbox_to_anchor=(-0.08, 0.5),
         frameon=False,
@@ -1008,11 +1223,16 @@ def write_report(
     crosscheck: pd.DataFrame,
     guild_summary: pd.DataFrame,
     heatmap_matrix: pd.DataFrame,
+    heatmap_trait_description: str,
+    target_condition_description: str,
+    condition_score_label: str,
+    artifact_prefix: str,
 ) -> None:
     """Write a compact Markdown report for the follow-up artifacts."""
+    heatmap_filename = prefixed_filename(artifact_prefix, "traits_vs_organisms_heatmap.png")
     target_depth = condition_depth[condition_depth["condition"].isin(TARGET_CONDITIONS)].copy()
     target_depth = target_depth.sort_values(
-        "infographic_avg_enrichment_depth",
+        "target_condition_rank_score",
         ascending=False,
     )
 
@@ -1023,24 +1243,24 @@ def write_report(
         "https://github.com/CultureBotAI/bsdbng/blob/"
         "enrichment-analysis-heatmap-cluster/data/derived/enrichment_infographic.png",
         "",
-        "The referenced infographic ranks the following three conditions as the top "
-        "condition-level enrichment-depth outliers. The local follow-up uses the full "
+        f"The target conditions for this run are selected from {target_condition_description}. "
+        "The local follow-up uses the full "
         "`data/derived/study_trait_profiles_wide.tsv` matrix and raw BugSigDB experiment "
         "metadata to list titles, find similar profiles, and connect enriched traits to "
         "organisms.",
         "",
         "## Target Conditions",
         "",
-        "| condition | infographic avg enrichment depth | local profiles | studies | "
+        f"| condition | {condition_score_label} | local profiles | studies | "
         "experiments | local mean nonzero traits/profile | local percentile | local outlier? |",
         "| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     for _, row in target_depth.iterrows():
         lines.append(
-            "| {condition} | {infographic:.2f} | {profiles:d} | {studies:d} | "
+            "| {condition} | {rank_score} | {profiles:d} | {studies:d} | "
             "{experiments:d} | {mean_traits:.1f} | {percentile:.1%} | {outlier} |".format(
                 condition=row["condition"],
-                infographic=float(row["infographic_avg_enrichment_depth"]),
+                rank_score=format_optional_float(row["target_condition_rank_score"]),
                 profiles=int(row["profile_count"]),
                 studies=int(row["study_count"]),
                 experiments=int(row["experiment_count"]),
@@ -1053,12 +1273,8 @@ def write_report(
     lines.extend(
         [
             "",
-            "Interpretation: the infographic itself identifies these as high average "
-            "enrichment-depth conditions. In this local profile-trait-count proxy, "
-            "condition support matters: Thalassemia is concentrated in one study and two "
-            "experiments, Sleep Disorder spans two studies and five experiments, and head "
-            "and neck squamous cell carcinoma spans more experiments but has a mix of "
-            "saliva/oral-cavity/fecal comparisons.",
+            "Interpretation: condition support matters because profile counts, study counts, "
+            "and body-site mix vary across exact BugSigDB condition labels.",
             "",
             "## Study And Experiment Titles",
             "",
@@ -1174,31 +1390,35 @@ def write_report(
             f"{float(row['mean_relative_guild_signal']):.5f} |"
         )
 
+    output_filenames = [
+        "outlier_condition_study_experiment_titles.tsv",
+        "outlier_condition_depth_summary.tsv",
+        "autism_condition_label_check.tsv",
+        "outlier_condition_profile_neighbors.tsv",
+        "outlier_condition_neighbor_crosscheck.tsv",
+        "target_condition_centroid_neighbors.tsv",
+        "guild_profile_connection_summary.tsv",
+        "traits_vs_organisms_heatmap_matrix.tsv",
+        "traits_vs_organisms_taxa_metadata.tsv",
+        "traits_vs_organisms_trait_metadata.tsv",
+        "traits_vs_organisms_heatmap.png",
+    ]
     lines.extend(
         [
             "",
             "## Companion Traits Vs Organisms Heatmap",
             "",
-            f"`traits_vs_organisms_heatmap.png` plots {len(heatmap_matrix)} organisms by "
+            f"`{heatmap_filename}` plots {len(heatmap_matrix)} organisms by "
             f"{len(heatmap_matrix.columns)} traits. Rows are organisms observed in the "
             "target-condition BugSigDB profiles; columns are binary KG-Microbe trait "
-            "annotations selected from the infographic top traits plus high-signal "
-            "target-condition traits.",
+            f"annotations selected from {heatmap_trait_description}.",
             "",
             "## Files",
             "",
-            "- `outlier_condition_study_experiment_titles.tsv`",
-            "- `outlier_condition_depth_summary.tsv`",
-            "- `autism_condition_label_check.tsv`",
-            "- `outlier_condition_profile_neighbors.tsv`",
-            "- `outlier_condition_neighbor_crosscheck.tsv`",
-            "- `target_condition_centroid_neighbors.tsv`",
-            "- `guild_profile_connection_summary.tsv`",
-            "- `traits_vs_organisms_heatmap_matrix.tsv`",
-            "- `traits_vs_organisms_taxa_metadata.tsv`",
-            "- `traits_vs_organisms_trait_metadata.tsv`",
-            "- `traits_vs_organisms_heatmap.png`",
         ]
+    )
+    lines.extend(
+        f"- `{prefixed_filename(artifact_prefix, filename)}`" for filename in output_filenames
     )
     output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -1254,6 +1474,11 @@ def parse_args() -> argparse.Namespace:
         help="Output directory for report artifacts.",
     )
     parser.add_argument(
+        "--artifact-prefix",
+        default="",
+        help="Optional prefix for all written artifact filenames.",
+    )
+    parser.add_argument(
         "--top-neighbors",
         type=int,
         default=5,
@@ -1277,11 +1502,57 @@ def parse_args() -> argparse.Namespace:
         default=2,
         help="Minimum active profiles required for condition centroid comparisons.",
     )
+    parser.add_argument(
+        "--trait-source",
+        choices=["infographic", "paired-top"],
+        default="infographic",
+        help="Primary trait ranking used for the companion heatmap columns.",
+    )
+    parser.add_argument(
+        "--paired-trait-stats-input",
+        type=Path,
+        default=PAIRED_TRAIT_STATS_PATH,
+        help="Input paired-profile contrast trait stats TSV for --trait-source paired-top.",
+    )
+    parser.add_argument(
+        "--top-paired-traits",
+        type=int,
+        default=3,
+        help="Number of ranked paired-profile traits to use for --trait-source paired-top.",
+    )
+    parser.add_argument(
+        "--fill-heatmap-traits",
+        action="store_true",
+        help=(
+            "After the primary ranked traits, fill remaining heatmap columns with "
+            "high-signal target-condition traits."
+        ),
+    )
+    parser.add_argument(
+        "--condition-source",
+        choices=["infographic", "paired-top"],
+        default="infographic",
+        help="Target condition ranking used for the companion heatmap rows.",
+    )
+    parser.add_argument(
+        "--paired-condition-summary-input",
+        type=Path,
+        default=PAIRED_CONDITION_SUMMARY_PATH,
+        help="Input paired-profile condition summary TSV for --condition-source paired-top.",
+    )
+    parser.add_argument(
+        "--top-paired-conditions",
+        type=int,
+        default=3,
+        help="Number of ranked paired-profile conditions to use for --condition-source paired-top.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     """Run the enrichment infographic follow-up analysis."""
+    global CONDITION_RANKING_VALUES, TARGET_CONDITIONS
+
     args = parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1289,13 +1560,70 @@ def main() -> None:
     studies = load_studies(args.studies_input)
     trait_labels = load_trait_labels(args.taxa_trait_columns_input)
     values, metadata, _ = load_profiles(args.profiles_input, experiments, studies)
+    target_condition_description = "the infographic top three condition-level outliers"
+    condition_score_label = "infographic avg enrichment depth"
+    condition_source_title = "Infographic Outlier Conditions"
+    balance_taxa_by_condition = False
+    if args.condition_source == "paired-top":
+        TARGET_CONDITIONS, CONDITION_RANKING_VALUES = load_top_paired_conditions(
+            args.paired_condition_summary_input,
+            args.top_paired_conditions,
+        )
+        target_condition_description = (
+            f"the top {len(TARGET_CONDITIONS)} paired-profile condition contrast rows from "
+            f"`{args.paired_condition_summary_input.relative_to(REPO_ROOT)}`"
+        )
+        condition_score_label = "paired absolute contrast load"
+        condition_source_title = "Our Top Paired-Profile Conditions"
+        balance_taxa_by_condition = True
+
+    preferred_traits: list[str] | None = None
+    fill_with_high_signal_traits = True
+    heatmap_title = f"Companion Heatmap: Traits vs Organisms in {condition_source_title}"
+    heatmap_trait_description = (
+        "the infographic top traits plus high-signal target-condition traits"
+    )
+    cluster_heatmap_columns = True
+    max_heatmap_traits = args.max_heatmap_traits
+    if args.trait_source == "paired-top":
+        preferred_traits = load_top_paired_traits(
+            args.paired_trait_stats_input,
+            args.top_paired_traits,
+            trait_labels,
+        )
+        fill_with_high_signal_traits = args.fill_heatmap_traits
+        if not fill_with_high_signal_traits:
+            max_heatmap_traits = len(preferred_traits)
+            cluster_heatmap_columns = False
+            heatmap_title = (
+                f"Companion Heatmap: Our Top Paired-Profile Traits vs Organisms in "
+                f"{condition_source_title}\n"
+                "Traits ranked left-to-right by paired-profile contrast p-value"
+            )
+            heatmap_trait_description = (
+                f"the top {len(preferred_traits)} paired-profile contrast traits from "
+                f"`{args.paired_trait_stats_input.relative_to(REPO_ROOT)}`"
+            )
+        else:
+            heatmap_title = (
+                f"Companion Heatmap: Relevant Traits vs Organisms in {condition_source_title}\n"
+                "Trait columns include paired-profile top traits plus high-signal "
+                "target-condition traits"
+            )
+            heatmap_trait_description = (
+                f"the top {len(preferred_traits)} paired-profile contrast traits from "
+                f"`{args.paired_trait_stats_input.relative_to(REPO_ROOT)}` plus high-signal "
+                "target-condition traits selected with the original heatmap ranking logic"
+            )
 
     condition_depth = summarize_condition_depth(metadata, args.min_condition_profiles)
     titles = write_target_title_table(
         metadata,
         experiments,
         studies,
-        args.output_dir / "outlier_condition_study_experiment_titles.tsv",
+        output_path(
+            args.output_dir, args.artifact_prefix, "outlier_condition_study_experiment_titles.tsv"
+        ),
     )
     autism = summarize_autism_labels(metadata, experiments)
     profile_neighbors, crosscheck, centroid_neighbors = compute_profile_neighbors(
@@ -1311,56 +1639,75 @@ def main() -> None:
         trait_labels,
         args.full_dump_input,
         args.taxa_trait_matrix_input,
-        args.max_heatmap_traits,
+        max_heatmap_traits,
         args.max_heatmap_taxa,
+        preferred_traits,
+        fill_with_high_signal_traits,
+        balance_taxa_by_condition,
     )
     display_matrix = save_traits_vs_organisms_heatmap(
         organism_matrix,
         taxa_metadata,
         trait_metadata,
-        args.output_dir / "traits_vs_organisms_heatmap.png",
+        output_path(args.output_dir, args.artifact_prefix, "traits_vs_organisms_heatmap.png"),
+        heatmap_title,
+        cluster_heatmap_columns,
     )
 
     condition_depth.to_csv(
-        args.output_dir / "outlier_condition_depth_summary.tsv",
+        output_path(args.output_dir, args.artifact_prefix, "outlier_condition_depth_summary.tsv"),
         sep="\t",
         index=False,
     )
-    autism.to_csv(args.output_dir / "autism_condition_label_check.tsv", sep="\t", index=False)
+    autism.to_csv(
+        output_path(args.output_dir, args.artifact_prefix, "autism_condition_label_check.tsv"),
+        sep="\t",
+        index=False,
+    )
     profile_neighbors.to_csv(
-        args.output_dir / "outlier_condition_profile_neighbors.tsv",
+        output_path(
+            args.output_dir, args.artifact_prefix, "outlier_condition_profile_neighbors.tsv"
+        ),
         sep="\t",
         index=False,
     )
     crosscheck.to_csv(
-        args.output_dir / "outlier_condition_neighbor_crosscheck.tsv",
+        output_path(
+            args.output_dir, args.artifact_prefix, "outlier_condition_neighbor_crosscheck.tsv"
+        ),
         sep="\t",
         index=False,
     )
     centroid_neighbors.to_csv(
-        args.output_dir / "target_condition_centroid_neighbors.tsv",
+        output_path(
+            args.output_dir, args.artifact_prefix, "target_condition_centroid_neighbors.tsv"
+        ),
         sep="\t",
         index=False,
     )
     guild_summary.to_csv(
-        args.output_dir / "guild_profile_connection_summary.tsv",
+        output_path(args.output_dir, args.artifact_prefix, "guild_profile_connection_summary.tsv"),
         sep="\t",
         index=False,
     )
     display_matrix.to_csv(
-        args.output_dir / "traits_vs_organisms_heatmap_matrix.tsv",
+        output_path(
+            args.output_dir, args.artifact_prefix, "traits_vs_organisms_heatmap_matrix.tsv"
+        ),
         sep="\t",
     )
     taxa_metadata.to_csv(
-        args.output_dir / "traits_vs_organisms_taxa_metadata.tsv",
+        output_path(args.output_dir, args.artifact_prefix, "traits_vs_organisms_taxa_metadata.tsv"),
         sep="\t",
     )
     trait_metadata.to_csv(
-        args.output_dir / "traits_vs_organisms_trait_metadata.tsv",
+        output_path(
+            args.output_dir, args.artifact_prefix, "traits_vs_organisms_trait_metadata.tsv"
+        ),
         sep="\t",
     )
     write_report(
-        args.output_dir / "README.md",
+        output_path(args.output_dir, args.artifact_prefix, "README.md"),
         condition_depth,
         titles,
         autism,
@@ -1369,10 +1716,17 @@ def main() -> None:
         crosscheck,
         guild_summary,
         organism_matrix,
+        heatmap_trait_description,
+        target_condition_description,
+        condition_score_label,
+        args.artifact_prefix,
     )
 
-    print(f"Wrote report: {args.output_dir / 'README.md'}")
-    print(f"Wrote heatmap: {args.output_dir / 'traits_vs_organisms_heatmap.png'}")
+    print(f"Wrote report: {output_path(args.output_dir, args.artifact_prefix, 'README.md')}")
+    print(
+        "Wrote heatmap: "
+        f"{output_path(args.output_dir, args.artifact_prefix, 'traits_vs_organisms_heatmap.png')}"
+    )
     print(f"Target title rows: {len(titles)}")
     print(f"Profile neighbor rows: {len(profile_neighbors)}")
     print(f"Heatmap shape: {organism_matrix.shape[0]} taxa x {organism_matrix.shape[1]} traits")
