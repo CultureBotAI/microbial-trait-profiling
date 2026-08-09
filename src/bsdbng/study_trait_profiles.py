@@ -151,6 +151,10 @@ def collect_profile_taxa(
             if not isinstance(experiment, dict):
                 continue
 
+            host = _as_text(experiment.get("host_species")).strip().lower()
+            if host != "homo sapiens":
+                continue
+
             experiment_id = _as_text(experiment.get("id")).strip()
             signatures_obj = experiment.get("signatures")
             signatures = signatures_obj if isinstance(signatures_obj, list) else []

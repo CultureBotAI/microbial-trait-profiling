@@ -13,6 +13,7 @@ Method summary:
 
 import argparse
 import csv
+from collections import defaultdict
 import gzip
 import math
 from pathlib import Path
@@ -278,6 +279,26 @@ def main() -> None:
         if not trait_columns:
             raise ValueError("No trait columns found in input TSV")
 
+        # 1. Read all rows to identify paired experiments
+        all_raw_rows = list(reader)
+        experiment_directions = defaultdict(set)
+        for row in all_raw_rows:
+            sid = row.get("study_id", "").strip()
+            eid = row.get("experiment_id", "").strip()
+            direction = row.get("inc_dec", "").strip().lower()
+            if sid and eid and direction in {"inc", "dec"}:
+                experiment_directions[(sid, eid)].add(direction)
+        
+        # Identify experiments with both 'inc' and 'dec'
+        paired_experiments = {
+            key for key, dirs in experiment_directions.items()
+            if "inc" in dirs and "dec" in dirs
+        }
+        
+        print(f"Total experiments found: {len(experiment_directions)}")
+        print(f"Paired experiments identified: {len(paired_experiments)}")
+        print(f"Dropping {len(experiment_directions) - len(paired_experiments)} unpaired experiments.")
+
         rows = []
         # Background counts for hypergeometric test
         background_counts = dict.fromkeys(trait_columns, 0)
@@ -286,12 +307,18 @@ def main() -> None:
         row_totals: list[int] = []
         background_total = 0
 
-        for row in reader:
+        # 2. Process only paired rows
+        for row in all_raw_rows:
+            sid = row.get("study_id", "").strip()
+            eid = row.get("experiment_id", "").strip()
+            if (sid, eid) not in paired_experiments:
+                continue
+
             row_traits_data = {}
             row_total = 0
             # Iterate only over keys present in the row to avoid looking up all 2654 columns
             for t, val in row.items():
-                if t in exclude_cols:
+                if t not in background_counts:
                     continue
                 if val and val != "0":
                     try:
@@ -308,8 +335,8 @@ def main() -> None:
                         testable_counts[t] += 1
             
             rows.append({
-                "study_id": row.get("study_id", ""),
-                "experiment_id": row.get("experiment_id", ""),
+                "study_id": sid,
+                "experiment_id": eid,
                 "inc_dec": row.get("inc_dec", ""),
                 "traits": row_traits_data
             })

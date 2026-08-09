@@ -1,52 +1,52 @@
 === TOP 10 MOST ENRICHED TRAITS ===
 Trait ID                                 Enrichment Count     Description
 ----------------------------------------------------------------------------------------------------
-METPO:1000603                            4619                 anaerobic
-METPO:1000615                            3323                 mesophilic
-METPO:1000607                            3132                 obligately anaerobic
-METPO:1000698                            3107                 gram positive
-METPO:1000699                            3057                 gram negative
-METPO:1000703                            3037                 non motile
-METPO:1000432                            2946                 GC high
-METPO:1000872                            2664                 non-spore forming
-METPO:1002005                            2549                 Fermentation
-METPO:1000604                            2491                 microaerophilic
+METPO:1000603                            2967                 anaerobic
+METPO:1000615                            2260                 mesophilic
+METPO:1000703                            2144                 non motile
+METPO:1000698                            2127                 gram positive
+METPO:1000699                            2057                 gram negative
+METPO:1000607                            2003                 obligately anaerobic
+METPO:1000872                            1998                 non-spore forming
+METPO:1000432                            1853                 GC high
+METPO:1002005                            1598                 Fermentation
+METPO:1000604                            1565                 microaerophilic
 
 
 === TOP 10 CONDITIONS BY AVERAGE ENRICHMENT DEPTH ===
 Condition                                Avg Total       Avg Inc         Avg Dec
 ----------------------------------------------------------------------------------------------------
-Thalassemia                              225.00          142.50          82.50
-Sleep Disorder                           216.00          152.00          64.00
-Head and neck squamous cell carcinoma    210.33          105.00          105.33
-Hepatitis                                204.00          69.00           135.00
-Chronic inflammatory demyelinating polyneuropathy 196.00          102.00          94.00
-Temporomandibular joint disorder         195.00          98.00           97.00
-Abnormal sperm morphology                192.00          153.00          39.00
-Cervix erosion                           192.00          101.00          91.00
-Lichen planopilaris                      189.50          154.00          35.50
-Environmental samples                    186.00          86.00           100.00
+Temporomandibular joint disorder         111.00          58.00           53.00
+Cervix erosion                           111.00          48.00           63.00
+Hepatitis                                98.00           40.00           58.00
+Puberty                                  92.00           66.00           26.00
+Pulmonary tuberculosis,Pneumonia         84.00           52.00           32.00
+Rare dyslipidemia,Polycystic ovary syndrome 83.00           40.00           43.00
+Pemphigus vulgaris                       79.00           3.00            76.00
+Sickle cell anemia                       75.00           52.00           23.00
+Triple-negative breast cancer,HER2 Positive Breast Carcinoma 74.00           45.00           29.00
+Cholestasis                              74.00           48.00           26.00
 
 
 === TOP 10 BODY SITES BY ENRICHMENT DENSITY (Normalized by Sample Size) ===
 Note: Sites with missing sample size data are excluded from density normalization.
 Body Site                                Hits/100 Samples     Total Hits      Total Samples
 ----------------------------------------------------------------------------------------------------
-Tadpole                                  687.50               110             16
-Mesenteric lymph node                    492.31               128             26
-Surface of tongue                        393.36               1007            256
-Skin of abdomen                          390.00               390             100
-Venous blood                             375.00               75              20
-Large intestine                          373.08               97              26
-Anatomical surface                       347.22               250             72
-Jejunum                                  320.42               910             284
-Bulbar conjunctiva                       318.00               159             50
-Pinna                                    317.65               108             34
+Brain                                    170.00               34              20
+Cardia of stomach                        147.50               118             80
+Mucosa of ascending colon                126.92               66              52
+Superior surface of tongue               110.00               33              30
+Mucosa of small intestine                83.33                40              48
+Dental pulp                              78.75                63              80
+Mucus                                    74.14                86              116
+Renal pelvis/ureter                      68.18                60              88
+Venous blood                             65.00                26              40
+Semen                                    62.24                61              98
 
 
 === SCIENTIFIC FINDINGS SUMMARY ===
-Total Enriched Traits across all profiles: 338,888
-Functional scope: 2,651 distinct metabolic/physiological traits analyzed.
-Average enrichment count per profile (active only): 31.27
-Top Body Site by Enrichment Density: Tadpole (687.50 hits/100 samples)
-Directionality Bias: More traits found in 'Increased' profiles (172,007 inc vs 147,443 dec).
+Total Enriched Traits across all profiles: 103,448
+Functional scope: 317 metabolic/physiological traits analyzed (from 2,651 total assertions).
+Average enrichment count per profile (all human): 8.51
+Top Body Site by Enrichment Density: Brain (170.00 hits/100 samples)
+Directionality Bias: More traits found in 'Decreased' profiles (51,551 inc vs 51,897 dec).

@@ -129,6 +129,10 @@ def generate_tables(
                 continue
 
             experiment_id = _as_text(experiment.get("id"))
+            host = _as_text(experiment.get("host_species")).strip().lower()
+            if host != "homo sapiens":
+                continue
+
             signatures_obj = experiment.get("signatures")
             signatures = signatures_obj if isinstance(signatures_obj, list) else []
             experiment_signature_count = 0
@@ -193,6 +197,7 @@ def generate_tables(
                     "condition": _as_text(experiment.get("condition")),
                     "group_0_name": _as_text(experiment.get("group_0_name")),
                     "group_1_name": _as_text(experiment.get("group_1_name")),
+                    "host_species": _as_text(experiment.get("host_species")),
                     "signature_count": experiment_signature_count,
                     "taxon_count": experiment_taxon_count,
                 }
@@ -251,6 +256,7 @@ def generate_tables(
             "condition",
             "group_0_name",
             "group_1_name",
+            "host_species",
             "signature_count",
             "taxon_count",
         ],

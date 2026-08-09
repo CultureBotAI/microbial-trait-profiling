@@ -75,8 +75,19 @@ def main():
 
     # 1. Y-Axis: Profile Depth (How many traits are enriched in each profile?)
     # Group by profile and direction
-    profile_trait_counts = results_df.groupby(["study_id", "experiment_id", "inc_dec"])["trait"].nunique().reset_index()
-    profile_trait_counts.columns = ["study_id", "experiment_id", "inc_dec", "trait_count"]
+    # We define a unique profile as the combination of study, experiment, and direction.
+    results_df["profile_id"] = (
+        results_df["study_id"].astype(str) + "|" +
+        results_df["experiment_id"].astype(str) + "|" +
+        results_df["inc_dec"].astype(str)
+    )
+    profile_trait_counts = results_df.groupby("profile_id").agg({
+        "study_id": "first",
+        "experiment_id": "first",
+        "inc_dec": "first",
+        "trait": "nunique"
+    }).reset_index()
+    profile_trait_counts.columns = ["profile_id", "study_id", "experiment_id", "inc_dec", "trait_count"]
     
     # Filter out profiles with 0 hits (remove tails)
     active_profiles = profile_trait_counts[profile_trait_counts["trait_count"] > 0].copy()
@@ -101,10 +112,11 @@ def main():
     profile_binned = profile_binned[["inc", "dec"]]
     
     # 2. X-Axis: Trait Frequency (How many profiles is each trait enriched in?)
-    # Count occurrences for each trait separated by profile direction
-    trait_inc = results_df[results_df["inc_dec"] == "inc"].groupby("trait")["experiment_id"].nunique()
-    trait_dec = results_df[results_df["inc_dec"] == "dec"].groupby("trait")["experiment_id"].nunique()
-    trait_total = results_df.groupby("trait")["experiment_id"].nunique()
+    # Count unique profiles for each trait separated by direction.
+    # This ensures traits enriched in both directions for one experiment are counted twice (once per profile).
+    trait_inc = results_df[results_df["inc_dec"] == "inc"].groupby("trait")["profile_id"].nunique()
+    trait_dec = results_df[results_df["inc_dec"] == "dec"].groupby("trait")["profile_id"].nunique()
+    trait_total = results_df.groupby("trait")["profile_id"].nunique()
     
     trait_data = pd.DataFrame({
         "inc": trait_inc,
@@ -161,7 +173,7 @@ def main():
         profile_binned,
         f"Profile Enrichment Depth (Y-Axis)\n{len(active_profiles)} active profiles",
         "Number of Enriched Traits (Binned)",
-        "Number of Profiles (log10 scale)",
+        "Number of Profiles",
         args.output_dir / "profile_enrichment_y_histogram.png",
         color_map=[colors["inc"], colors["dec"]],
         bin_labels=bin_labels_y
@@ -174,7 +186,7 @@ def main():
         trait_binned,
         f"Trait Enrichment Frequency (X-Axis)\n{len(active_traits)} active traits",
         "Number of Profiles Enriched In (Binned)",
-        "Total Enrichment Hits (log10 scale)",
+        "Number of Profile Hits",
         args.output_dir / "trait_enrichment_x_histogram.png",
         color_map=[colors["inc"], colors["dec"]],
         bin_labels=bin_labels_x
@@ -218,7 +230,7 @@ def main():
                 binned,
                 f"Trait Enrichment Frequency by Condition ({suffix})\nStacked Counts",
                 "Number of Profiles Enriched In (Binned)",
-                "Total Enrichment Hits (log10 scale)",
+                "Number of Profile Hits",
                 args.output_dir / f"trait_enrichment_x_condition_{suffix}_counts.png",
                 color_map=cat_colors,
                 bin_labels=bin_labels_x

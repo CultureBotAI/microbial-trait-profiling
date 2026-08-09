@@ -286,10 +286,10 @@ def build_overall_table(
     best_rows = frame.loc[best_idx, ["trait", "inc_dec", "study_id", "experiment_id", "profile_id"]]
     best_rows = best_rows.rename(
         columns={
-            "inc_dec": "best_direction",
-            "study_id": "best_study_id",
-            "experiment_id": "best_experiment_id",
-            "profile_id": "best_profile_id",
+            "inc_dec": "min_p_direction",
+            "study_id": "min_p_study_id",
+            "experiment_id": "min_p_experiment_id",
+            "profile_id": "min_p_profile_id",
         }
     )
 
@@ -323,6 +323,16 @@ def build_overall_table(
     overall = overall.reset_index().merge(best_rows, on="trait", how="left")
     overall.insert(1, "stat_type", stat_type)
 
+    # Calculate net direction based on vote count
+    def get_net_direction(row):
+        if row["inc_hits"] > row["dec_hits"]:
+            return "inc"
+        if row["dec_hits"] > row["inc_hits"]:
+            return "dec"
+        return "mixed"
+
+    overall["net_direction"] = overall.apply(get_net_direction, axis=1)
+
     if max_traits:
         censored_counts = (
             frame[frame["is_censored_hit"]].groupby("trait").size().rename("n_censored_profiles")
@@ -352,6 +362,14 @@ def build_overall_table(
         ascending=[False, True, False],
     )
     overall.insert(0, "rank", range(1, len(overall) + 1))
+
+    # Reorder columns to put consensus metrics upfront
+    cols = list(overall.columns)
+    # Move net_direction, inc_hits, dec_hits after trait
+    front_cols = ["rank", "trait", "net_direction", "inc_hits", "dec_hits", "prevalence_summary"]
+    remaining = [c for c in cols if c not in front_cols]
+    overall = overall[front_cols + remaining]
+
     return overall
 
 
