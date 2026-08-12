@@ -155,7 +155,7 @@ def profile_id_from_parts(study_id: str, experiment_id: str, inc_dec: str) -> st
 
 
 def load_profile_matrix(profile_path: Path) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
-    """Load one row per study, experiment, and inc/dec trait profile."""
+    """Load one row per study, experiment, and increased/decreased trait profile."""
     profiles = pd.read_csv(profile_path, sep="\t")
     trait_columns = [
         column for column in profiles.columns if column not in PROFILE_METADATA_COLUMNS
@@ -486,7 +486,7 @@ def build_paired_enrichment_matrix(
     plot_matrix: pd.DataFrame,
     profile_metadata: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Build matched inc-minus-dec rows for each study/experiment pair."""
+    """Build matched increased-minus-decreased rows for each study/experiment pair."""
     rows: list[pd.Series] = []
     metadata_rows: list[dict[str, object]] = []
     group_columns = ["study_id", "experiment_id"]
@@ -557,7 +557,9 @@ def summarize_required_paired_traits(
             negative_fraction = float((values < 0).mean())
             pair_count = len(values)
             direction = (
-                "increased-profile higher" if mean_contrast >= 0 else "decreased-profile higher"
+                "trait enriched in increased profiles"
+                if mean_contrast >= 0
+                else "trait enriched in decreased profiles"
             )
         else:
             mean_contrast = math.nan

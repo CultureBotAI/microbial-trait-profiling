@@ -97,25 +97,25 @@ The z-scores are standardized profile-level trait signals. They are computed
 after raw trait counts are converted to fractions of each profile's total trait
 signal, scaled, log-transformed, and standardized by trait column.
 
-- `z = 0`: average trait or guild signal relative to the analyzed profile
+- `z = 0`: average trait or trait-set signal relative to the analyzed profile
   universe.
-- `z > 0`: above-average trait or guild signal.
-- `z < 0`: below-average trait or guild signal.
+- `z > 0`: above-average trait or trait-set signal.
+- `z < 0`: below-average trait or trait-set signal.
 
 A negative z-score in an increased-profile diagram does not mean negative
 abundance, and it does not mean the profile is decreased. The word `increased`
 refers to the BugSigDB signature direction. The z-score refers to whether the
-selected trait or guild is above or below average among profile-level trait
+selected trait or trait set is above or below average among profile-level trait
 signals.
 
-For the increased-profile facultative-aerobe diagram, positive mean guild
+For the increased-profile facultative-aerobe diagram, positive mean trait-set
 z-scores support the idea that increased-signature taxa are relatively enriched
 for aerobic, facultative, or microaerophilic traits. Negative values mean the
 increased-signature taxa in that condition or body site are not especially
 aerobe-like relative to the broader dataset.
 
-For the decreased-profile anaerobe diagram, positive mean guild z-scores support
-the idea that decreased-signature taxa are relatively enriched for anaerobic or
+For the decreased-profile anaerobe diagram, positive mean trait-set z-scores
+support the idea that decreased-signature taxa are relatively enriched for anaerobic or
 obligately anaerobic traits. Negative values mean the decreased-signature taxa
 are not especially anaerobe-like in that context.
 
@@ -126,26 +126,26 @@ create the original profile-level z-scores. The z-scores are calculated first,
 then profiles are grouped by BugSigDB `condition` or by `body_site_group`, and
 the relevant z-scores are averaged within each group.
 
-For conditions, a condition-level mean guild z-score answers: in profiles
-associated with this condition, is the selected trait or guild signal higher or
-lower than the broader profile-level average?
+For conditions, a condition-level mean trait-set z-score answers: in profiles
+associated with this condition, is the selected trait or trait-set signal above
+or below the broader profile-level average?
 
-For body sites, a body-site mean guild z-score answers the same question after
+For body sites, a body-site mean trait-set z-score answers the same question after
 grouping profiles by anatomical context such as `Feces`, `Mouth`, `Saliva`,
 `Colon`, or `Vagina`.
 
 The main directional contrasts are:
 
-- Increased-profile analysis: `increased mean guild z - decreased mean guild z`.
-- Decreased-profile analysis: `decreased mean guild z - increased mean guild z`.
+- Increased-profile analysis: `increased mean trait-set z - decreased mean trait-set z`.
+- Decreased-profile analysis: `decreased mean trait-set z - increased mean trait-set z`.
 
 Interpretation grid:
 
 | Pattern | Interpretation |
 | --- | --- |
 | Focus mean z > 0 and focus-minus-comparator > 0 | Strongest support: above-average trait signal in the expected direction. |
-| Focus mean z > 0 and contrast <= 0 | Trait is high in the condition or body site, but not specifically higher in the focus direction. |
-| Focus mean z < 0 and contrast > 0 | Focus direction is higher than comparator, but still below average overall. |
+| Focus mean z > 0 and contrast <= 0 | Trait is enriched in the condition or body site, but not specifically in the focus direction. |
+| Focus mean z < 0 and contrast > 0 | Focus direction has the larger mean than the comparator, but still below average overall. |
 | Focus mean z < 0 and contrast < 0 | Does not support the proposed trait-direction story for that condition or body site. |
 
 ## Relationship to Single-Trait Enrichment

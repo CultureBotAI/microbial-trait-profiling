@@ -1,4 +1,4 @@
-"""Follow up facultative-aerobe guild signals for autism and autoimmune labels."""
+"""Follow up facultative-aerobe trait enrichment for autism and autoimmune labels."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ HEATMAP_RANKS = {"genus", "species"}
 HEATMAP_TOP_TAXA = 45
 PATTERN_LABEL_TOP_N = 15
 NON_GUILD_SPECIFIC_TAXA_HEATMAP_NOTE = (
-    "Guild-specific: no - taxon direction-count heatmap; guild traits are annotation context."
+    "Guild-specific: no - taxon direction-count heatmap; selected traits are annotation context."
 )
 PROFILE_SIMILARITY_PATTERN_NOTE = (
     "Colored x labels/strip: red = exact Autism and Autoimmune increased-skew; "
@@ -76,7 +76,7 @@ def load_scored_condition_profiles() -> pd.DataFrame:
 
 
 def summarize_profiles(profiles: pd.DataFrame) -> pd.DataFrame:
-    """Summarize profile counts and guild scores for each exact condition label."""
+    """Summarize profile counts and trait-enrichment scores for each exact condition label."""
     rows: list[dict[str, object]] = []
     for condition, group in profiles.groupby("condition", sort=False):
         increased = group[group["direction_label"] == "increased"]
@@ -781,7 +781,7 @@ def append_pattern_label_table(
         [
             f"### {title}",
             "",
-            "| heatmap label | Autism | ASD | Autoimmune disease | guild traits | in heatmap |",
+            "| heatmap label | Autism | ASD | Autoimmune disease | selected traits | in heatmap |",
             "| --- | ---: | ---: | ---: | --- | --- |",
         ]
     )
@@ -817,7 +817,7 @@ def write_readme(
     lines = [
         "# Autism and Autoimmune Disease Follow-Up: Facultative-Aerobe v2",
         "",
-        "This follow-up starts from the facultative-aerobe increased-profile guild signal "
+        "This follow-up starts from facultative-aerobe trait enrichment in increased profiles "
         "and inspects the BugSigDB taxa reported in the autism/autism spectrum disorder "
         "and autoimmune disease condition labels.",
         "",
@@ -826,12 +826,12 @@ def write_readme(
         "| plot | guild-specific? | basis |",
         "| --- | --- | --- |",
         "| `autism_autoimmune_taxa_signed_heatmap.png` | no | "
-        "taxon direction-count heatmap; guild traits are annotation context |",
+        "taxon direction-count heatmap; selected traits are annotation context |",
         "",
         "## Included Condition Labels",
         "",
         "| condition group | exact condition label | profiles | studies | "
-        "increased / decreased profiles | increased - decreased guild z | body-site groups |",
+        "increased / decreased profiles | increased - decreased trait z | body-site groups |",
         "| --- | --- | ---: | ---: | ---: | ---: | --- |",
     ]
     for row in profile_summary.itertuples(index=False):
@@ -863,7 +863,7 @@ def write_readme(
                 [
                     f"Top {direction} taxa:",
                     "",
-                    "| taxon | rank | profiles | studies | guild traits |",
+                    "| taxon | rank | profiles | studies | selected traits |",
                     "| --- | --- | ---: | ---: | --- |",
                 ]
             )
@@ -917,8 +917,8 @@ def write_readme(
             [
                 "## Inferred Guild Evidence",
                 "",
-                "This section uses a data-derived guild view: for each exact condition "
-                "label, it identifies v2 guild traits enriched in that condition's increased "
+                "This section uses a data-derived trait-enrichment view: for each exact condition "
+                "label, it identifies v2 traits enriched in that condition's increased "
                 "profiles, then lists taxa observed in those same profiles that also "
                 "belong to the KG-Microbe-wide candidate universe and carry the enriched "
                 "trait annotations. The universe contains "
@@ -952,14 +952,14 @@ def write_readme(
             for row in positive_conditions.itertuples(index=False)
         ]
         positive_condition_text = (
-            "Included condition labels with positive increased-minus-decreased v2 guild "
+            "Included condition labels with positive increased-minus-decreased v2 trait-enrichment "
             "shifts are " + ", ".join(condition_bits) + "."
         )
     lines.extend(
         [
             "## Interpretation",
             "",
-            "This v2 follow-up uses only the narrowed facultative-aerobe guild traits: "
+            "This v2 follow-up uses only the narrowed facultative-aerobe selected traits: "
             f"{guild_trait_text}. It supports a label-dependent signal check rather than "
             "a broad causal claim.",
             "",
@@ -976,7 +976,7 @@ def write_readme(
             "",
             "The most defensible interpretation is that the exact autism and "
             "autoimmune disease labels share a candidate gut dysbiosis axis "
-            "involving increased facultative or aerotolerant guild signal. This "
+            "involving increased-profile facultative or aerotolerant trait enrichment. This "
             "analysis does not show that autism and autoimmune disease are causally "
             "linked, driven by the same taxa, or even consistently connected across "
             "broader ASD metadata. The autoimmune subset is small, and many taxa "

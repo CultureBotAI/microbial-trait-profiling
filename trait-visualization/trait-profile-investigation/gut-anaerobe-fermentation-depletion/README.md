@@ -10,7 +10,7 @@ This investigation uses the existing study trait profile clustered heatmap matri
 
 ## Main Signal
 
-The selected guild traits are consistently higher in decreased profiles than in increased profiles, which supports the gut anaerobe/fermentation depletion hypothesis.
+The selected traits are consistently enriched in decreased profiles relative to increased profiles, which supports the gut anaerobe/fermentation depletion hypothesis.
 
 | trait | decreased - increased z |
 | --- | ---: |
@@ -86,8 +86,8 @@ The selected guild traits are consistently higher in decreased profiles than in 
 
 ## Suggested Follow-Up
 
-1. Treat the target taxa as a depletion guild and test enrichment by condition/body site rather than analyzing each taxon in isolation.
-2. Prioritize conditions where decreased profiles have high guild scores and target taxa are repeatedly decreased across multiple studies.
+1. Treat the target taxa as a depletion-focused trait set and test enrichment by condition/body site rather than analyzing each taxon in isolation.
+2. Prioritize conditions where decreased profiles have strong trait-enrichment scores and target taxa are repeatedly decreased across multiple studies.
 3. Re-run the same summaries after adding explicit SCFA/butyrate production annotations, because the current selected heatmap traits capture fermentation and fiber degradation but do not fully encode butyrate production.
 
 ## Files

@@ -130,11 +130,11 @@ Top five condition-centroid neighbors are also written to `target_condition_cent
 | Lung carcinoma | 4 | Chronic kidney disease | 0.974 | no |
 | Lung carcinoma | 5 | Chronic hepatitis B virus infection | 0.974 | no |
 
-## How Guilds Connect To Profiles
+## How Trait Sets Connect To Profiles
 
-A profile is one BugSigDB study/experiment/direction row. Its trait vector counts KG-Microbe trait annotations among organisms reported as increased or decreased in that experiment. A guild is a named set of biologically related traits, such as `aerobe_v2` or `anaerobe_v2_depletion`. A profile connects to a guild when the guild's trait columns carry signal in that profile; organism support is then checked by intersecting organisms observed in the same profile with organism-trait annotations from `data/derived/taxa_trait_matrix.tsv`.
+A profile is one BugSigDB study/experiment/direction row. Its trait vector counts KG-Microbe trait annotations among organisms reported as increased or decreased in that experiment. A trait set is a named group of biologically related traits, such as `aerobe_v2` or `anaerobe_v2_depletion`. A profile connects to a trait set when the selected trait columns carry signal in that profile; organism support is then checked by intersecting organisms observed in the same profile with organism-trait annotations from `data/derived/taxa_trait_matrix.tsv`.
 
-| guild | condition | profiles | mean guild signal | mean relative guild signal |
+| trait set | condition | profiles | mean trait-set signal | mean relative trait-set signal |
 | --- | --- | ---: | ---: | ---: |
 | aerobe_v2 | Gingivitis | 53 | 101.409 | 0.02880 |
 | aerobe_v2 | Gastroesophageal reflux disease | 19 | 1010.351 | 0.02852 |

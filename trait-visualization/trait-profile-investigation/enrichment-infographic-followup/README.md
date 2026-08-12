@@ -98,11 +98,11 @@ Top five condition-centroid neighbors are also written to `target_condition_cent
 | Head and neck squamous cell carcinoma | 4 | Asthma | 0.966 | no |
 | Head and neck squamous cell carcinoma | 5 | Cervical glandular intraepithelial neoplasia | 0.966 | no |
 
-## How Guilds Connect To Profiles
+## How Trait Sets Connect To Profiles
 
-A profile is one BugSigDB study/experiment/direction row. Its trait vector counts KG-Microbe trait annotations among organisms reported as increased or decreased in that experiment. A guild is a named set of biologically related traits, such as `aerobe_v2` or `anaerobe_v2_depletion`. A profile connects to a guild when the guild's trait columns carry signal in that profile; organism support is then checked by intersecting organisms observed in the same profile with organism-trait annotations from `data/derived/taxa_trait_matrix.tsv`.
+A profile is one BugSigDB study/experiment/direction row. Its trait vector counts KG-Microbe trait annotations among organisms reported as increased or decreased in that experiment. A trait set is a named group of biologically related traits, such as `aerobe_v2` or `anaerobe_v2_depletion`. A profile connects to a trait set when the selected trait columns carry signal in that profile; organism support is then checked by intersecting organisms observed in the same profile with organism-trait annotations from `data/derived/taxa_trait_matrix.tsv`.
 
-| guild | condition | profiles | mean guild signal | mean relative guild signal |
+| trait set | condition | profiles | mean trait-set signal | mean relative trait-set signal |
 | --- | --- | ---: | ---: | ---: |
 | aerobe_v2 | Head and neck squamous cell carcinoma | 25 | 181.360 | 0.01820 |
 | aerobe_v2 | Sleep Disorder | 7 | 564.571 | 0.00985 |

@@ -417,7 +417,9 @@ def compute_trait_stats(
                 "t_statistic": t_stat,
                 "p_value": p_value,
                 "direction": (
-                    "increased-profile higher" if mean_contrast >= 0 else "decreased-profile higher"
+                    "trait enriched in increased profiles"
+                    if mean_contrast >= 0
+                    else "trait enriched in decreased profiles"
                 ),
             }
         )
@@ -499,8 +501,8 @@ def summarize_groups(
     summary = summary[summary["pair_count"] >= min_pairs].copy()
     summary["dominant_direction"] = np.where(
         summary["net_increased_minus_decreased"] >= 0,
-        "increased-profile higher",
-        "decreased-profile higher",
+        "trait enriched in increased profiles",
+        "trait enriched in decreased profiles",
     )
     return summary.sort_values(
         ["absolute_contrast_load", "pair_count", group_column],
@@ -774,7 +776,7 @@ def plot_top_traits(ax: plt.Axes, trait_stats: pd.DataFrame) -> None:
     labels = [trait_label(label, 38) for label in top_traits["trait_label"]]
     bars = ax.barh(labels, top_traits["minus_log10_p"], color=colors, edgecolor="white")
     ax.set_title("A. Top Profile-Differentiating Traits", fontsize=14, fontweight="bold", pad=8)
-    ax.set_xlabel("-log10(p) from paired inc-minus-dec profile contrast")
+    ax.set_xlabel("-log10(p) from paired increased-minus-decreased profile contrast")
     ax.grid(axis="x", color=SLATE_200, linewidth=0.8)
     ax.set_axisbelow(True)
     ax.tick_params(axis="y", labelsize=9)
@@ -783,8 +785,12 @@ def plot_top_traits(ax: plt.Axes, trait_stats: pd.DataFrame) -> None:
     ax.spines["bottom"].set_color(SLATE_200)
     ax.legend(
         handles=[
-            plt.Rectangle((0, 0), 1, 1, color=INCREASED_BLUE, label="Higher in increased"),
-            plt.Rectangle((0, 0), 1, 1, color=DECREASED_RED, label="Higher in decreased"),
+            plt.Rectangle(
+                (0, 0), 1, 1, color=INCREASED_BLUE, label="Enriched in increased profiles"
+            ),
+            plt.Rectangle(
+                (0, 0), 1, 1, color=DECREASED_RED, label="Enriched in decreased profiles"
+            ),
         ],
         loc="lower right",
         frameon=False,
@@ -811,14 +817,20 @@ def plot_condition_summary(ax: plt.Axes, condition_summary: pd.DataFrame) -> Non
     labels = [compact_label(label, 40) for label in plot_data["condition"]]
     decreased = plot_data["decreased_profile_higher_load"]
     increased = plot_data["increased_profile_higher_load"]
-    ax.barh(labels, decreased, color=DECREASED_RED, alpha=0.82, label="Decreased-profile higher")
+    ax.barh(
+        labels,
+        decreased,
+        color=DECREASED_RED,
+        alpha=0.82,
+        label="Traits enriched in decreased profiles",
+    )
     ax.barh(
         labels,
         increased,
         left=decreased,
         color=INCREASED_BLUE,
         alpha=0.82,
-        label="Increased-profile higher",
+        label="Traits enriched in increased profiles",
     )
     ax.set_title(
         "B. Avg Trait-Profile Contrast per Condition", fontsize=14, fontweight="bold", pad=8
@@ -919,7 +931,7 @@ def plot_body_site_summary(ax: plt.Axes, body_site_summary: pd.DataFrame) -> Non
     ax.text(
         0.02,
         0.04,
-        "Bubble size = matched pairs; color = net inc-minus-dec trait contrast.",
+        "Bubble size = matched pairs; color = net increased-minus-decreased trait contrast.",
         ha="left",
         va="bottom",
         fontsize=8.2,
@@ -971,16 +983,16 @@ def plot_story_box(
             "Scope",
             (
                 f"{trait_count:,} selected profile traits across {pair_count:,} matched "
-                f"study/experiment inc-minus-dec pairs from {study_count:,} studies."
+                f"study/experiment increased-minus-decreased pairs from {study_count:,} studies."
             ),
         ),
         (
             "Strongest split",
             (
-                f"{trait_label(top_increased.trait_label, 42)} is higher in increased "
+                f"{trait_label(top_increased.trait_label, 42)} is enriched in inc "
                 f"profiles (mean {top_increased.mean_increased_minus_decreased:+.2f}, "
                 f"q={format_q(float(top_increased.q_value))}); "
-                f"{trait_label(top_decreased.trait_label, 42)} is higher in decreased "
+                f"{trait_label(top_decreased.trait_label, 42)} is enriched in dec "
                 f"profiles (mean {top_decreased.mean_increased_minus_decreased:+.2f}, "
                 f"q={format_q(float(top_decreased.q_value))})."
             ),

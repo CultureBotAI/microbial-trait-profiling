@@ -1,4 +1,4 @@
-"""Ensure trait-profile investigation figures have non-redundant guild labels."""
+"""Ensure trait-profile investigation figures have non-redundant specificity labels."""
 
 from __future__ import annotations
 
@@ -20,50 +20,48 @@ UNLABELED_FIGURES = {
 }
 
 FACULTATIVE_BODY_SITE = (
-    "Guild-specific: yes - color encodes the facultative-aerobe guild score by body-site group."
+    "Guild-specific: yes - color encodes facultative-aerobe trait enrichment by body-site group."
 )
 FACULTATIVE_V2_BODY_SITE = (
-    "Guild-specific: yes - color encodes the facultative-aerobe v2 guild score by body-site group."
+    "Guild-specific: yes - color encodes facultative-aerobe v2 trait enrichment by body-site group."
 )
 GUT_BODY_SITE = (
-    "Guild-specific: yes - color encodes the gut anaerobe/fermentation guild score "
+    "Guild-specific: yes - color encodes gut anaerobe/fermentation trait enrichment "
     "by body-site group."
 )
 GUT_V2_BODY_SITE = (
-    "Guild-specific: yes - color encodes the anaerobe v2 depletion guild score by body-site group."
+    "Guild-specific: yes - color encodes anaerobe v2 trait enrichment by body-site group."
 )
 NON_GUILD_DIRECTION_COUNT = (
     "Guild-specific: no - fixed target-taxon direction-count view; "
-    "not recomputed from the guild score."
+    "not recomputed from the trait-enrichment score."
 )
 NON_GUILD_DIRECTION_COUNT_V2 = (
     "Guild-specific: no - fixed target-taxon direction-count view; "
-    "not recomputed from the v2 guild score."
+    "not recomputed from the v2 trait-enrichment score."
 )
 NON_GUILD_OCCURRENCE_COUNT = (
     "Guild-specific: no - fixed target-taxon occurrence-count view; "
-    "not recomputed from the guild score."
+    "not recomputed from the trait-enrichment score."
 )
 NON_GUILD_OCCURRENCE_COUNT_V2 = (
     "Guild-specific: no - fixed target-taxon occurrence-count view; "
-    "not recomputed from the v2 guild score."
+    "not recomputed from the v2 trait-enrichment score."
 )
 NON_GUILD_TAXA_HEATMAP = (
-    "Guild-specific: no - taxon direction-count heatmap; guild traits are annotation context."
+    "Guild-specific: no - taxon direction-count heatmap; selected traits are annotation context."
 )
 FACULTATIVE_GUILD_SHIFT = (
-    "Guild-specific: yes - shows selected guild traits and their increased-minus-decreased shifts."
+    "Guild-specific: yes - shows selected traits enriched in increased vs decreased profiles."
 )
 FACULTATIVE_V2_GUILD_SHIFT = (
-    "Guild-specific: yes - shows selected v2 guild traits and their "
-    "increased-minus-decreased shifts."
+    "Guild-specific: yes - shows selected v2 traits enriched in increased vs decreased profiles."
 )
 GUT_GUILD_SHIFT = (
-    "Guild-specific: yes - shows selected guild traits and their decreased-minus-increased shifts."
+    "Guild-specific: yes - shows selected traits enriched in decreased vs increased profiles."
 )
 GUT_V2_GUILD_SHIFT = (
-    "Guild-specific: yes - shows selected v2 guild traits and their "
-    "decreased-minus-increased shifts."
+    "Guild-specific: yes - shows selected v2 traits enriched in decreased vs increased profiles."
 )
 
 FIGURE_LABELS = {
@@ -78,7 +76,7 @@ FIGURE_LABELS = {
     ),
     Path(
         "facultative-aerobe-trait-expansion/condition_increased_guild_signal.png"
-    ): "Guild-specific: yes - uses the facultative-aerobe guild score by condition.",
+    ): "Guild-specific: yes - uses facultative-aerobe trait enrichment by condition.",
     Path("facultative-aerobe-trait-expansion/guild_trait_direction_shift.png"): (
         FACULTATIVE_GUILD_SHIFT
     ),
@@ -94,7 +92,10 @@ FIGURE_LABELS = {
     ),
     Path(
         "facultative-aerobe-v2/condition_increased_guild_signal.png"
-    ): "Guild-specific: yes - uses the facultative-aerobe v2 guild score by condition.",
+    ): "Guild-specific: yes - uses facultative-aerobe v2 trait enrichment by condition.",
+    Path("facultative-aerobe-v2/condition_body_site_guild_map.png"): (
+        "Guild-specific: yes - maps facultative-aerobe v2 trait enrichment in increased profiles."
+    ),
     Path("facultative-aerobe-v2/condition_target_taxa_stacked_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT_V2
     ),
@@ -108,7 +109,7 @@ FIGURE_LABELS = {
     ),
     Path(
         "gut-anaerobe-fermentation-depletion/condition_decreased_guild_signal.png"
-    ): "Guild-specific: yes - uses the gut anaerobe/fermentation guild score by condition.",
+    ): "Guild-specific: yes - uses gut anaerobe/fermentation trait enrichment by condition.",
     Path("gut-anaerobe-fermentation-depletion/guild_trait_direction_shift.png"): (GUT_GUILD_SHIFT),
     Path("gut-anaerobe-fermentation-depletion/target_taxa_condition_breakdown_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT
@@ -116,15 +117,22 @@ FIGURE_LABELS = {
     Path("anaerobe-depletion-v2/anatomical_sites_diagram.png"): GUT_V2_BODY_SITE,
     Path("anaerobe-depletion-v2/anatomical_sites_enriched_profile_diagram.png"): (
         "Guild-specific: yes - counts anatomical-site increased/decreased profiles "
-        "with at least one enriched anaerobe v2 guild trait."
+        "with at least one enriched anaerobe v2 trait."
+    ),
+    Path("anaerobe-depletion-v2/anatomical_sites_increased_profile_diagram.png"): (
+        "Guild-specific: yes - companion increased-profile anaerobe v2 trait enrichment "
+        "by body site."
     ),
     Path("anaerobe-depletion-v2/candidate_taxa_depletion_bias.png"): (NON_GUILD_DIRECTION_COUNT_V2),
     Path(
         "anaerobe-depletion-v2/condition_decreased_guild_signal.png"
-    ): "Guild-specific: yes - uses the anaerobe v2 depletion guild score by condition.",
+    ): "Guild-specific: yes - uses anaerobe v2 trait enrichment by condition.",
+    Path("anaerobe-depletion-v2/condition_body_site_guild_map.png"): (
+        "Guild-specific: yes - maps anaerobe v2 trait enrichment in decreased profiles."
+    ),
     Path("anaerobe-depletion-v2/condition_enriched_profile_histogram.png"): (
         "Guild-specific: yes - counts condition-level increased/decreased profiles "
-        "with at least one enriched anaerobe v2 guild trait."
+        "with at least one enriched anaerobe v2 trait."
     ),
     Path("anaerobe-depletion-v2/trait_enriched_profile_histogram.png"): (
         "Guild-specific: yes - counts trait-level increased/decreased profiles "
@@ -137,6 +145,41 @@ FIGURE_LABELS = {
     Path("anaerobe-depletion-v2/target_taxa_condition_breakdown_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT_V2
     ),
+    Path("anaerobe_v2_guild_definition_table.png"): (
+        "Guild-specific: yes - defines anaerobe v2 trait-enrichment roles."
+    ),
+    Path("profile-condition-bars/condition_average_positive_traits_bar.png"): (
+        "Guild-specific: yes - averages positive selected trait signals by "
+        "increased/decreased profile direction."
+    ),
+    Path("profile-condition-bars/condition_depleted_profile_coverage_bar.png"): (
+        "Guild-specific: yes - shows positive selected-trait profile coverage for "
+        "depleted-signal conditions."
+    ),
+    Path("profile-condition-bars/condition_depleted_profile_signal_diagram.png"): (
+        "Guild-specific: yes - combines depleted-profile trait-signal bias with "
+        "directional profile coverage."
+    ),
+    Path("profile-condition-bars/condition_depleted_trait_signal_bar.png"): (
+        "Guild-specific: yes - ranks depleted-profile conditions by "
+        "decreased-minus-increased selected-trait signal."
+    ),
+    Path("profile-condition-bars/condition_positive_profile_count_bar.png"): (
+        "Guild-specific: yes - counts conditions with positive selected trait signals by "
+        "increased/decreased profile direction."
+    ),
+    Path("enrichment-infographic-followup/traits_vs_organisms_heatmap.png"): (
+        "Guild-specific: yes - links selected enriched traits to supporting organisms."
+    ),
+    Path("enrichment-infographic-followup/my_top3_traits_vs_organisms_heatmap.png"): (
+        "Guild-specific: yes - links selected enriched traits to supporting organisms."
+    ),
+    Path(
+        "enrichment-infographic-followup/my_top3_conditions_relevant_traits_traits_vs_organisms_heatmap.png"
+    ): "Guild-specific: yes - links selected enriched traits to supporting organisms.",
+    Path(
+        "enrichment-infographic-followup/my-top3-enriched-traits/traits_vs_organisms_heatmap.png"
+    ): ("Guild-specific: yes - links selected enriched traits to supporting organisms."),
 }
 
 

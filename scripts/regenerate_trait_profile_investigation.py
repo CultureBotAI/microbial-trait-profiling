@@ -66,29 +66,69 @@ NOTES_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relation
 SLIDE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.slide+xml"
 
 PPTX_TEXT_REPLACEMENTS = {
+    "ppt/slides/slide1.xml": {
+        "Target taxa most often reported in increased profiles": (
+            "Target taxa most often reported in increased profiles"
+        ),
+    },
+    "ppt/slides/slide2.xml": {
+        "Conditions with high increased-profile v2 guild signal": (
+            "Conditions with facultative-aerobe v2 trait enrichment in increased profiles"
+        ),
+    },
+    "ppt/slides/slide3.xml": {
+        "V2 guild traits are higher in increased profiles": (
+            "V2 traits enriched in increased profiles"
+        ),
+    },
+    "ppt/slides/slide4.xml": {
+        "Anatomical sites for increased-profile facultative-aerobe v2 signal": (
+            "Anatomical sites for facultative-aerobe v2 trait enrichment in increased profiles"
+        ),
+    },
+    "ppt/slides/slide5.xml": {
+        "Top conditions for increased target-taxon occurrences": (
+            "Top conditions for increased-profile target-taxon occurrences"
+        ),
+    },
     "ppt/slides/slide6.xml": {
         "GUT ANAEROBE V2 DEPLETION": "ANAEROBE V2 DEPLETION SIGNAL",
+        "Target taxa most often reported in decreased profiles": (
+            "Target taxa most often reported in decreased profiles"
+        ),
     },
     "ppt/slides/slide7.xml": {
         "GUT ANAEROBE V2 DEPLETION": "ANAEROBE V2 DEPLETION SIGNAL",
         "Conditions with high decreased-profile gut anaerobe v2 guild signal": (
-            "Conditions with high decreased-profile anaerobe v2 guild signal"
+            "Conditions with anaerobe v2 trait enrichment in decreased profiles"
+        ),
+        "Conditions with high decreased-profile anaerobe v2 guild signal": (
+            "Conditions with anaerobe v2 trait enrichment in decreased profiles"
         ),
     },
     "ppt/slides/slide8.xml": {
         "GUT ANAEROBE V2 DEPLETION": "ANAEROBE V2 DEPLETION SIGNAL",
         "V2 guild traits are higher in decreased gut-context profiles": (
-            "V2 guild traits are higher in decreased profiles"
+            "V2 traits enriched in decreased profiles"
+        ),
+        "V2 guild traits are higher in decreased profiles": (
+            "V2 traits enriched in decreased profiles"
         ),
     },
     "ppt/slides/slide9.xml": {
         "GUT ANAEROBE V2 DEPLETION": "ANAEROBE V2 DEPLETION SIGNAL",
         "Anatomical sites for decreased-profile gut anaerobe v2 signal": (
-            "Anatomical sites for decreased-profile anaerobe v2 signal"
+            "Anatomical sites for anaerobe v2 trait enrichment in decreased profiles"
+        ),
+        "Anatomical sites for decreased-profile anaerobe v2 signal": (
+            "Anatomical sites for anaerobe v2 trait enrichment in decreased profiles"
         ),
     },
     "ppt/slides/slide10.xml": {
         "GUT ANAEROBE V2 DEPLETION": "ANAEROBE V2 DEPLETION SIGNAL",
+        "Top conditions for decreased target-taxon occurrences": (
+            "Top conditions for decreased-profile target-taxon occurrences"
+        ),
     },
 }
 
@@ -262,15 +302,14 @@ def ensure_stacked_slides(entries: dict[str, bytes]) -> None:
             raise FileNotFoundError(msg)
 
         slide_xml = decode_xml(entries.get(slide_name, entries[source_slide_name]))
-        slide_xml = slide_xml.replace(str(spec["source_title"]), str(spec["title"]))
-        slide_xml = slide_xml.replace(
+        for source_title in (
+            str(spec["source_title"]),
             "Top conditions for increased target-taxon occurrences",
-            str(spec["title"]),
-        )
-        slide_xml = slide_xml.replace(
             "Top conditions for decreased target-taxon occurrences",
-            str(spec["title"]),
-        )
+            "Top conditions for increased-profile target-taxon occurrences",
+            "Top conditions for decreased-profile target-taxon occurrences",
+        ):
+            slide_xml = slide_xml.replace(source_title, str(spec["title"]))
         entries[slide_name] = encode_xml(slide_xml)
 
         rels_xml = decode_xml(entries.get(rels_name, entries[source_rels_name]))

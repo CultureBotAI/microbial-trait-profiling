@@ -1,29 +1,29 @@
-# Facultative-Aerobe v2 Increased-Profile Signal Investigation
+# Facultative-Aerobe v2 Increased-Profile Trait-Enrichment Investigation
 
 This investigation uses the existing study trait profile clustered heatmap matrix, study metadata, taxa guild heatmap metadata, and derived taxa/trait matrices.
 
 ## Scope
 
-- Guild traits: facultatively aerobic (METPO:1000608), aerobic (METPO:1000602), microaerophilic (METPO:1000604)
+- Selected traits: facultatively aerobic (METPO:1000608), aerobic (METPO:1000602), microaerophilic (METPO:1000604)
 - Target taxa: Parvimonas micra, Klebsiella pneumoniae, Streptococcus anginosus, Escherichia coli, Fusobacterium nucleatum, Enterocloster bolteae, Eggerthella lenta, Prevotella intermedia, Porphyromonas gingivalis, Veillonella dispar
 - Formal KG-Microbe taxon universe: 2,667 taxa with at least one core oxygen-tolerance annotation among facultatively aerobic, aerobic, microaerophilic
-- Guild trait selection audit: `guild_trait_selection.tsv` records the selected trait IDs, short rationale, and KG-Microbe taxon counts for each selected trait.
+- Trait selection audit: `guild_trait_selection.tsv` records the selected trait IDs, short rationale, and KG-Microbe taxon counts for each selected trait.
 - Context: all body sites, with body-site and condition summaries to separate gut, oral, airway, and other patterns.
 
 ## Plot Guild Specificity
 
 | plot | guild-specific? | basis |
 | --- | --- | --- |
-| `condition_increased_guild_signal.png` | yes | v2 guild score by condition |
-| `guild_trait_direction_shift.png` | yes | the three selected v2 guild traits |
-| `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |
+| `condition_increased_guild_signal.png` | yes | v2 trait-enrichment score by condition |
+| `guild_trait_direction_shift.png` | yes | the three selected v2 traits |
+| `anatomical_sites_diagram.png` | yes | v2 trait-enrichment score by body-site group |
 | `candidate_taxa_increased_profile_tendency.png` | no | fixed target-taxon direction counts |
 | `condition_target_taxa_stacked_bar.png` | no | fixed target-taxon occurrence counts stacked by taxon |
 | `target_taxa_condition_breakdown_bar.png` | no | fixed target-taxon occurrence counts |
 
 ## Main Signal
 
-The selected guild traits are higher in increased profiles than in decreased profiles, supporting a facultative-aerobe increased-profile signal.
+The selected traits are enriched in increased profiles relative to decreased profiles, supporting a facultative-aerobe increased-profile signal.
 
 | trait | increased - decreased z |
 | --- | ---: |
@@ -63,9 +63,9 @@ The selected guild traits are higher in increased profiles than in decreased pro
 | Escherichia coli | Type II diabetes mellitus | Feces | 14 / 0 | 2 |
 | Porphyromonas gingivalis | Colorectal cancer | Saliva | 6 / 0 | 2 |
 
-## Contexts With High Increased-Profile Guild Signal
+## Contexts With Facultative-Aerobe v2 Trait Enrichment in Increased Profiles
 
-| condition | profiles | studies | increased - decreased z | paired d | paired p | matched pairs | increased mean guild z |
+| condition | profiles | studies | increased - decreased z | paired d | paired p | matched pairs | increased mean trait z |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Lung transplantation | 7 | 2 | 1.213 |  |  | 2 | 0.630 |
 | Age-related macular degeneration | 27 | 5 | 1.019 | 1.189 | 0.00106 | 13 | 0.504 |
@@ -78,11 +78,11 @@ The selected guild traits are higher in increased profiles than in decreased pro
 
 Broad labels such as `Exposure`, `Population`, and labels containing `measurement` come from BugSigDB condition metadata but usually describe study design, cohort, exposure, or measurement context rather than a disease/condition context. They are excluded from displayed condition bar charts and condition summaries.
 
-Oral-site increased-profile signals are expected in this analysis because the oral cavity is oxygen-exposed and several focal taxa are common oral or airway-associated aerotolerant, facultatively aerobic, or microaerophilic lineages. These signals should be interpreted as body-site-specific oral microbial ecology, not as a gut increased-profile signal.
+Oral-site increased-profile trait signals are expected in this analysis because the oral cavity is oxygen-exposed and several focal taxa are common oral or airway-associated aerotolerant, facultatively aerobic, or microaerophilic lineages. These signals should be interpreted as body-site-specific oral microbial ecology, not as a gut increased-profile trait-enrichment signal.
 
 ## Data-Inferred Guild Evidence
 
-For the top condition signals, this table uses all taxa observed in the increased profiles for that condition that also belong to the KG-Microbe-wide candidate taxon universe, then reports the profile v2 guild traits that are enriched in those same increased profiles and the universe taxa that carry those trait annotations. This is a data-derived guild summary, not a literature-defined facultative-aerobe/aerotolerant guild.
+For the top condition signals, this table uses all taxa observed in the increased profiles for that condition that also belong to the KG-Microbe-wide candidate taxon universe, then reports the profile v2 traits that are enriched in those same increased profiles and the universe taxa that carry those trait annotations. This is a data-derived guild summary, not a literature-defined facultative-aerobe/aerotolerant guild.
 
 | condition | increased profiles | universe taxa / observed taxa | enriched traits | supporting taxa |
 | --- | ---: | ---: | --- | --- |
@@ -97,7 +97,7 @@ For the top condition signals, this table uses all taxa observed in the increase
 
 ## Body-Site Check
 
-| body_site_group | profiles | increased mean guild z | increased - decreased z |
+| body_site_group | profiles | increased mean trait z | increased - decreased z |
 | --- | ---: | ---: | ---: |
 | Nasopharynx | 126 | 0.536 | 0.114 |
 | Saliva | 638 | 0.383 | -0.017 |
@@ -112,7 +112,7 @@ For the top condition signals, this table uses all taxa observed in the increase
 
 ## Top Increased Profiles To Inspect
 
-| profile | condition | body site | guild z | title |
+| profile | condition | body site | trait z | title |
 | --- | --- | --- | ---: | --- |
 | bsdb:32115690\|bsdb:32115690-1\|inc | Acute lymphoblastic leukemia | Feces | 1.822 | Gastrointestinal toxicity during induction treatment for childhood acute lymphoblastic ... |
 | bsdb:37596536\|bsdb:37596536-10\|inc | Population | Saliva | 1.677 | Oral microbiome homogeneity across diverse human groups from southern Africa: first res... |
@@ -127,9 +127,9 @@ For the top condition signals, this table uses all taxa observed in the increase
 
 ## Suggested Follow-Up
 
-1. Split the signal by body site before interpreting it as a facultative-aerobe increased-profile signal; oral and airway profiles can dominate aerobic/microaerophilic traits.
+1. Split the signal by body site before interpreting it as a facultative-aerobe increased-profile trait-enrichment signal; oral and airway profiles can dominate aerobic/microaerophilic traits.
 2. In gut-only analyses, test the target taxa against inflammation markers, oxygen tolerance, virulence genes, and resistome features.
-3. Compare increased-profile taxa against the anaerobe-depletion guild to see whether the same conditions show reciprocal decreased- and increased-profile patterns.
+3. Compare increased-profile taxa against the anaerobe v2 trait set to see whether the same conditions show reciprocal decreased- and increased-profile patterns.
 
 ## Files
 

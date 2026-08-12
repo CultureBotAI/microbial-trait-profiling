@@ -43,9 +43,10 @@ ANAEROBE_GUILD_TRAIT_DEFINITIONS = {
     ),
 }
 ANAEROBE_GUILD_TRAIT_ROLES = {
-    "METPO:1000603": "Core trait for decreased-profile anaerobe signal.",
+    "METPO:1000603": "Core trait for anaerobe enrichment in decreased profiles.",
     "METPO:1000607": (
-        "Keeps the guild specific to oxygen tolerance rather than fermentation metabolism."
+        "Keeps the selected trait set specific to oxygen tolerance rather than "
+        "fermentation metabolism."
     ),
 }
 EXCLUDED_CONDITION_LABELS = {
@@ -124,7 +125,7 @@ def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
 
 def write_direction_grid_table() -> None:
-    """Write a unified 2x2 guild-by-direction condition summary table."""
+    """Write a unified 2x2 trait-set-by-direction condition summary table."""
     matrix, metadata, _ = load_study_heatmap()
     metadata = metadata.copy()
     metadata["condition_clean"] = metadata["condition"].map(clean_text)
@@ -383,7 +384,7 @@ def add_compact_direction_grid(
     ax.text(
         grid_x + row_label_w + cell_w / 2,
         grid_y + grid_h - 0.15,
-        "increased",
+        "inc",
         ha="center",
         va="top",
         fontsize=7.6,
@@ -393,7 +394,7 @@ def add_compact_direction_grid(
     ax.text(
         grid_x + row_label_w + cell_w * 1.5,
         grid_y + grid_h - 0.15,
-        "decreased",
+        "dec",
         ha="center",
         va="top",
         fontsize=7.6,
@@ -402,10 +403,10 @@ def add_compact_direction_grid(
     )
     row_labels = [("Aerobe", RED_600), ("Anaerobe", BLUE_600)]
     cells = [
-        ("parent:\naerobe increase", RED_50, "#fecaca", "#991b1b"),
+        ("parent:\naerobe enriched", RED_50, "#fecaca", "#991b1b"),
         ("guardrail:\ngenerally high?", SLATE_100, SLATE_200, SLATE_700),
         ("guardrail:\nmixed signal?", SLATE_100, SLATE_200, SLATE_700),
-        ("parent:\nanaerobe decrease", BLUE_50, "#bfdbfe", "#1d4ed8"),
+        ("parent:\nanaerobe enriched", BLUE_50, "#bfdbfe", "#1d4ed8"),
     ]
     for row_index, (label, label_color) in enumerate(row_labels):
         cell_y = grid_y + (1 - row_index) * cell_h
@@ -538,7 +539,7 @@ def add_large_direction_grid(ax: plt.Axes, counts: dict[str, int]) -> None:
     ax.text(
         inc_x + col_w / 2,
         header_y + 1.95,
-        "Increased profiles",
+        "increased profiles",
         ha="center",
         va="center",
         fontsize=8.4,
@@ -549,7 +550,7 @@ def add_large_direction_grid(ax: plt.Axes, counts: dict[str, int]) -> None:
     ax.text(
         dec_x + col_w / 2,
         header_y + 1.95,
-        "Decreased profiles",
+        "decreased profiles",
         ha="center",
         va="center",
         fontsize=8.4,
@@ -588,9 +589,9 @@ def add_large_direction_grid(ax: plt.Axes, counts: dict[str, int]) -> None:
         xy=(inc_x, top_row_y),
         width=col_w,
         height=row_h,
-        title="Parent focus: aerobe increase",
+        title="Parent focus: aerobe enriched",
         body=(
-            "Aerobe guild score in increased profiles.\n"
+            "Aerobe traits enriched in increased profiles.\n"
             f"{format_count(counts['direction_grid_condition_count'])} BugSigDB "
             "condition-label rows (not experiments)."
         ),
@@ -605,7 +606,10 @@ def add_large_direction_grid(ax: plt.Axes, counts: dict[str, int]) -> None:
         width=col_w,
         height=row_h,
         title="Off-diagonal check",
-        body=("Aerobe guild score in decreased profiles.\nUsed as the comparator/reversal check."),
+        body=(
+            "Aerobe trait score in decreased profiles.\n"
+            "Used as the comparator/reversal check."
+        ),
         facecolor=SLATE_100,
         edgecolor=SLATE_200,
         title_color=SLATE_700,
@@ -617,7 +621,8 @@ def add_large_direction_grid(ax: plt.Axes, counts: dict[str, int]) -> None:
         height=row_h,
         title="Off-diagonal check",
         body=(
-            "Anaerobe guild score in increased profiles.\nUsed as the comparator/reversal check."
+            "Anaerobe trait score in increased profiles.\n"
+            "Used as the comparator/reversal check."
         ),
         facecolor=SLATE_100,
         edgecolor=SLATE_200,
@@ -628,9 +633,9 @@ def add_large_direction_grid(ax: plt.Axes, counts: dict[str, int]) -> None:
         xy=(dec_x, grid_y),
         width=col_w,
         height=row_h,
-        title="Parent focus: anaerobe decrease",
+        title="Parent focus: anaerobe enriched",
         body=(
-            "Anaerobe guild score in decreased profiles.\n"
+            "Anaerobe traits enriched in decreased profiles.\n"
             f"{format_count(counts['direction_grid_condition_count'])} BugSigDB "
             "condition-label rows (not experiments)."
         ),
@@ -725,7 +730,7 @@ def create_anaerobe_guild_definition_table(
     output_png: Path = ANAEROBE_GUILD_DEFINITION_TABLE_PNG,
     output_svg: Path | None = ANAEROBE_GUILD_DEFINITION_TABLE_SVG,
 ) -> None:
-    """Create a compact diagram-ready table for the anaerobe v2 guild traits."""
+    """Create a compact diagram-ready table for the anaerobe v2 selected traits."""
     rows = load_anaerobe_guild_definition_rows()
 
     output_png.parent.mkdir(parents=True, exist_ok=True)
@@ -739,7 +744,7 @@ def create_anaerobe_guild_definition_table(
     ax.text(
         3.5,
         27.4,
-        "Anaerobe v2 depletion guild definitions",
+        "Anaerobe v2 trait-enrichment guild definitions",
         fontsize=18,
         fontweight="bold",
         color=SLATE_900,
@@ -750,7 +755,7 @@ def create_anaerobe_guild_definition_table(
         3.5,
         24.9,
         (
-            "Parent focus: decreased profiles. Guild score is the row-wise mean of "
+            "Parent focus: decreased profiles. Trait score is the row-wise mean of "
             "the selected oxygen-tolerance trait z-scores."
         ),
         fontsize=9.4,
@@ -761,7 +766,7 @@ def create_anaerobe_guild_definition_table(
     add_badge(
         ax,
         (78.5, 24.3),
-        "anaerobe decrease",
+        "anaerobe enriched in dec",
         facecolor=BLUE_50,
         edgecolor="#bfdbfe",
         text_color="#1d4ed8",
@@ -842,8 +847,8 @@ def create_anaerobe_guild_definition_table(
         3.5,
         2.6,
         (
-            "This table defines the v2 guild score. Focal target taxa are recurrence "
-            "audit examples and do not define the formal guild."
+            "This table defines the v2 trait-enrichment score. Focal target taxa are "
+            "recurrence audit examples and do not define the formal trait set."
         ),
         fontsize=8.2,
         color=SLATE_500,
@@ -888,7 +893,7 @@ def create_diagram(
         56.4,
         (
             "BugSigDB curated profile directions are converted to trait z-scores, "
-            "contrasted within metadata groups, then summarized as v2 guild signals."
+            "contrasted within metadata groups, then summarized as v2 trait enrichment."
         ),
         fontsize=10.2,
         color=SLATE_500,
@@ -905,7 +910,7 @@ def create_diagram(
         body=(
             f"{format_count(counts['profile_count'])} profiles\n"
             f"{format_count(counts['study_count'])} studies\n"
-            "curated BugSigDB inc/dec labels"
+            "curated BugSigDB increased/decreased labels"
         ),
         facecolor="white",
         body_width=25,
@@ -940,8 +945,8 @@ def create_diagram(
         height=10.5,
         title="4. Evidence",
         body=(
-            "Keep traits whose z-score is above zero in the focus direction and higher "
-            "than the comparator."
+            "Keep traits whose z-score is above zero in the focus direction and enriched "
+            "relative to the comparator."
         ),
         facecolor="white",
         body_width=27,
@@ -954,7 +959,7 @@ def create_diagram(
         title="5. Guild call",
         body=(
             "Trait sets are chosen a priori from KG-Microbe oxygen-tolerance "
-            "annotations, not from focal taxa or top conditions. Each guild score "
+            "annotations, not from focal taxa or top conditions. Each trait-enrichment score "
             "is the row-wise mean of its selected trait z-scores; selection TSVs "
             "list IDs, rationale, and taxon counts."
         ),
@@ -991,7 +996,7 @@ def create_diagram(
             title="Facultative-aerobe v2 guild",
             body=(
                 "Focus direction: increased profiles\n"
-                "Guild score: mean of facultatively aerobic, aerobic, and "
+                "Trait score: mean of facultatively aerobic, aerobic, and "
                 "microaerophilic z-scores\n"
                 "Condition summary table: "
                 f"{format_count(counts['facultative_condition_count'])} BugSigDB "
@@ -1009,10 +1014,10 @@ def create_diagram(
             xy=(53.0, 21.1),
             width=39.0,
             height=14.7,
-            title="Anaerobe v2 depletion guild",
+            title="Anaerobe v2 decreased-profile trait set",
             body=(
                 "Focus direction: decreased profiles across all body sites\n"
-                "Guild score: mean of anaerobic and obligately anaerobic z-scores\n"
+                "Trait score: mean of anaerobic and obligately anaerobic z-scores\n"
                 "Condition summary table: "
                 f"{format_count(counts['anaerobe_condition_count'])} BugSigDB "
                 "condition-label rows (not experiments)\n"
@@ -1047,7 +1052,8 @@ def create_diagram(
         title="Recurrence audit",
         body=(
             "Target-taxon recurrence counts how often fixed taxa reappear in the "
-            "focus direction across profiles/studies; it does not define the guild score."
+            "focus direction across profiles/studies; it does not define the "
+            "trait-enrichment score."
         ),
         facecolor=AMBER_50,
         edgecolor="#fde68a",
@@ -1076,7 +1082,7 @@ def create_diagram(
         height=11.0,
         title="Generated outputs",
         body=(
-            "Unified direction-grid TSV, condition guild signals, body-site diagrams, "
+            "Unified direction-grid TSV, condition trait enrichment, body-site diagrams, "
             "target-taxon counts, and inferred evidence TSVs."
         ),
         facecolor=SLATE_100,

@@ -4,41 +4,41 @@ This investigation uses the existing study trait profile clustered heatmap matri
 
 ## Scope
 
-- Guild traits: anaerobic (METPO:1000603), obligately anaerobic (METPO:1000607)
+- Selected traits: anaerobic (METPO:1000603), obligately anaerobic (METPO:1000607)
 - Target taxa: Faecalibacterium prausnitzii, Anaerobutyricum hallii, Lachnospira eligens, Agathobacter rectalis, Roseburia intestinalis, Ruminococcus bromii, Roseburia inulinivorans
 - Formal KG-Microbe taxon universe: 1,959 taxa with at least one core oxygen-tolerance annotation among anaerobic, obligately anaerobic
-- Guild trait selection audit: `guild_trait_selection.tsv` records the selected trait IDs, short rationale, and KG-Microbe taxon counts for each selected trait.
+- Trait selection audit: `guild_trait_selection.tsv` records the selected trait IDs, short rationale, and KG-Microbe taxon counts for each selected trait.
 - Context: all body sites, with body-site and condition summaries to separate gut, oral, airway, urogenital, and other patterns.
 
 ## Plot Guild Specificity
 
 | plot | guild-specific? | basis |
 | --- | --- | --- |
-| `condition_decreased_guild_signal.png` | yes | v2 guild score by condition |
-| `guild_trait_direction_shift.png` | yes | the two selected v2 guild traits |
+| `condition_decreased_guild_signal.png` | yes | v2 trait-enrichment score by condition |
+| `guild_trait_direction_shift.png` | yes | the two selected v2 traits |
 | `trait_enriched_profile_histogram.png` | yes | trait counts inside profile-level v2 trait-enrichment filtering |
 | `condition_enriched_profile_histogram.png` | yes | condition counts after profile-level v2 trait-enrichment filtering |
 | `anatomical_sites_enriched_profile_diagram.png` | yes | anatomical body-site counts after profile-level v2 trait-enrichment filtering |
-| `anatomical_sites_increased_profile_diagram.png` | yes | increased-profile v2 guild score by body-site group |
-| `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |
+| `anatomical_sites_increased_profile_diagram.png` | yes | increased-profile v2 trait-enrichment score by body-site group |
+| `anatomical_sites_diagram.png` | yes | v2 trait-enrichment score by body-site group |
 | `candidate_taxa_depletion_bias.png` | no | fixed target-taxon direction counts |
 | `condition_target_taxa_stacked_bar.png` | no | fixed target-taxon occurrence counts stacked by taxon |
 | `target_taxa_condition_breakdown_bar.png` | no | fixed target-taxon occurrence counts |
 
 ## Main Signal
 
-The selected anaerobe-only oxygen-tolerance traits are consistently higher in decreased profiles than in increased profiles. This is the decreased-profile counterpart to the facultative-aerobe v2 comparison, not a fermentation-defined gut guild.
+The selected anaerobe-only oxygen-tolerance traits are consistently enriched in decreased profiles relative to increased profiles. This is the decreased-profile counterpart to the facultative-aerobe v2 comparison, not a fermentation-defined gut trait set.
 
-Guardrail: the increased-profile anaerobe score is retained in every condition and body-site summary. It checks whether the anaerobe signal is depletion-associated rather than simply high in both directions.
+Guardrail: the increased-profile anaerobe score is retained in every condition and body-site summary. It checks whether the anaerobe signal is decreased-profile-associated rather than simply high in both directions.
 
 | trait | decreased - increased z |
 | --- | ---: |
 | anaerobic | 0.077 |
 | obligately anaerobic | 0.074 |
 
-## Strongest Depletion-Biased Taxa
+## Strongest Decreased-Profile-Biased Taxa
 
-| taxon | decreased / increased profiles | depletion bias |
+| taxon | decreased / increased profiles | decreased-profile bias |
 | --- | ---: | ---: |
 | Agathobacter rectalis | 92 / 33 | 0.472 |
 | Lachnospira eligens | 101 / 39 | 0.443 |
@@ -48,7 +48,7 @@ Guardrail: the increased-profile anaerobe score is retained in every condition a
 | Faecalibacterium prausnitzii | 177 / 111 | 0.229 |
 | Anaerobutyricum hallii | 86 / 63 | 0.154 |
 
-## Recurrent Target-Taxon Depletions By Condition
+## Recurrent Target-Taxon Decreased Profiles By Condition
 
 | taxon | condition | body site | decreased / increased profiles | decreased studies |
 | --- | --- | --- | ---: | ---: |
@@ -63,9 +63,9 @@ Guardrail: the increased-profile anaerobe score is retained in every condition a
 | Agathobacter rectalis | Colorectal cancer | Feces | 4 / 0 | 3 |
 | Agathobacter rectalis | Parkinson's disease | Feces | 3 / 0 | 3 |
 
-## Conditions With High Decreased-Profile Guild Signal
+## Conditions With Anaerobe v2 Trait Enrichment in Decreased Profiles
 
-| condition | profiles | studies | decreased - increased z | paired d | paired p | matched pairs | decreased mean guild z |
+| condition | profiles | studies | decreased - increased z | paired d | paired p | matched pairs | decreased mean trait z |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Age-related macular degeneration | 27 | 5 | 1.269 | 2.101 | 6.53e-06 | 13 | 0.767 |
 | Graft versus host disease | 13 | 4 | 1.254 | 1.480 | 0.0595 | 4 | 0.848 |
@@ -78,35 +78,35 @@ Guardrail: the increased-profile anaerobe score is retained in every condition a
 
 ## Condition Enriched-Profile Histogram
 
-The enrichment-filtered histogram counts conditions by how many profiles remain after dropping profiles with zero positive anaerobe v2 guild-trait z-scores. The dropped profiles are still retained in the main guild-score summaries and are reported here by profile direction.
+The enrichment-filtered histogram counts conditions by how many profiles remain after dropping profiles with zero positive anaerobe v2 selected-trait z-scores. The dropped profiles are still retained in the main trait-enrichment summaries and are reported here by profile direction.
 
 | direction | conditions with retained profiles | retained profiles | zero-enriched profiles | retained / total profiles |
 | --- | ---: | ---: | ---: | ---: |
-| Decreased | 430 | 3414 | 1569 | 0.685 |
-| Increased | 438 | 3666 | 2146 | 0.631 |
+| decreased profiles | 430 | 3414 | 1569 | 0.685 |
+| increased profiles | 438 | 3666 | 2146 | 0.631 |
 
 ## Trait Enriched-Profile Histogram
 
-The trait-side companion histogram counts selected heatmap traits by how many retained enriched profiles have a positive z-score for each trait. The retained-profile universe is the same one used by the condition histogram: profiles with at least one positive anaerobe v2 guild-trait z-score.
+The trait-side companion histogram counts selected heatmap traits by how many retained enriched profiles have a positive z-score for each trait. The retained-profile universe is the same one used by the condition histogram: profiles with at least one positive anaerobe v2 selected-trait z-score.
 
 | direction | trait | positive retained profiles | retained profile fraction |
 | --- | --- | ---: | ---: |
-| Increased | anaerobic | 3824 | 0.927 |
-| Decreased | anaerobic | 3579 | 0.936 |
-| Increased | non motile | 3126 | 0.758 |
-| Increased | GC high | 2999 | 0.727 |
-| Increased | GC low | 2986 | 0.724 |
-| Increased | bacillus shaped | 2964 | 0.719 |
-| Increased | gram positive | 2920 | 0.708 |
-| Decreased | GC low | 2872 | 0.751 |
-| Decreased | non motile | 2870 | 0.751 |
-| Decreased | GC high | 2863 | 0.749 |
+| increased profiles | anaerobic | 3824 | 0.927 |
+| decreased profiles | anaerobic | 3579 | 0.936 |
+| increased profiles | non motile | 3126 | 0.758 |
+| increased profiles | GC high | 2999 | 0.727 |
+| increased profiles | GC low | 2986 | 0.724 |
+| increased profiles | bacillus shaped | 2964 | 0.719 |
+| increased profiles | gram positive | 2920 | 0.708 |
+| decreased profiles | GC low | 2872 | 0.751 |
+| decreased profiles | non motile | 2870 | 0.751 |
+| decreased profiles | GC high | 2863 | 0.749 |
 
 ## Enrichment-Filtered Anatomical Sites
 
-The anatomical companion keeps body-site groups with at least 10 profiles containing a positive anaerobe v2 guild-trait z-score. Counts below are retained profiles after zero-enriched profiles drop out.
+The anatomical companion keeps body-site groups with at least 10 profiles containing a positive anaerobe v2 selected-trait z-score. Counts below are retained profiles after zero-enriched profiles drop out.
 
-| body_site_group | retained profiles | inc retained | dec retained | zero-enriched profiles |
+| body_site_group | retained profiles | increased retained | decreased retained | zero-enriched profiles |
 | --- | ---: | ---: | ---: | ---: |
 | Feces | 5459 | 2750 | 2709 | 2136 |
 | Saliva | 384 | 202 | 182 | 254 |
@@ -119,7 +119,7 @@ The anatomical companion keeps body-site groups with at least 10 profiles contai
 
 ## Data-Inferred Guild Evidence
 
-For the top condition signals, this table uses all taxa observed in the decreased profiles for that condition that also belong to the KG-Microbe-wide anaerobe candidate taxon universe, then reports the profile v2 guild traits that are enriched in those same decreased profiles and the universe taxa that carry those trait annotations. This is a data-derived guild summary, not a fixed focal-taxon list.
+For the top condition signals, this table uses all taxa observed in the decreased profiles for that condition that also belong to the KG-Microbe-wide anaerobe candidate taxon universe, then reports the profile v2 traits that are enriched in those same decreased profiles and the universe taxa that carry those trait annotations. This is a data-derived guild summary, not a fixed focal-taxon list.
 
 | condition | decreased profiles | universe taxa / observed taxa | enriched traits | supporting taxa |
 | --- | ---: | ---: | --- | --- |
@@ -134,7 +134,7 @@ For the top condition signals, this table uses all taxa observed in the decrease
 
 ## Body-Site Check
 
-| body_site_group | profiles | increased mean guild z | decreased mean guild z | decreased - increased z |
+| body_site_group | profiles | increased mean trait z | decreased mean trait z | decreased - increased z |
 | --- | ---: | ---: | ---: | ---: |
 | Colon | 139 | 0.079 | 0.445 | 0.366 |
 | Feces | 7595 | 0.079 | 0.231 | 0.152 |
@@ -149,7 +149,7 @@ For the top condition signals, this table uses all taxa observed in the decrease
 
 ## Top Decreased Profiles To Inspect
 
-| profile | condition | body site | guild z | title |
+| profile | condition | body site | trait z | title |
 | --- | --- | --- | ---: | --- |
 | bsdb:36621696\|bsdb:36621696-2\|dec | Psoriasis vulgaris | Feces | 1.921 | Altered gut microbiome composition in nontreated plaque psoriasis patients |
 | bsdb:39976263\|bsdb:39976263-10\|dec | Alanine measurement | Feces | 1.921 | <i>Roseburia hominis</i> improves host metabolism in diet-induced obesity |
@@ -164,9 +164,9 @@ For the top condition signals, this table uses all taxa observed in the decrease
 
 ## Suggested Follow-Up
 
-1. Treat target-taxon recurrence as an audit view and the selected oxygen-tolerance traits as the formal guild score.
-2. Prioritize conditions where decreased profiles have high guild scores and target taxa are repeatedly decreased across multiple studies.
-3. Compare this anaerobe-only v2 signal against the original five-trait guild to separate oxygen-tolerance signal from metabolic-capability signal.
+1. Treat target-taxon recurrence as an audit view and the selected oxygen-tolerance traits as the formal trait-enrichment score.
+2. Prioritize conditions where decreased profiles have high trait-enrichment scores and target taxa are repeatedly reported in decreased profiles across multiple studies.
+3. Compare this anaerobe-only v2 signal against the original five-trait set to separate oxygen-tolerance signal from metabolic-capability signal.
 
 ## Files
 

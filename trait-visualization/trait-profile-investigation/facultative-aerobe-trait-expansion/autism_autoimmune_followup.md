@@ -1,6 +1,6 @@
 # Autism and Autoimmune Disease Follow-Up
 
-This follow-up starts from the facultative-aerobe increased-profile guild signal and inspects the BugSigDB taxa reported in the autism/autism spectrum disorder and autoimmune disease condition labels.
+This follow-up starts from facultative-aerobe trait enrichment in increased profiles and inspects the BugSigDB taxa reported in the autism/autism spectrum disorder and autoimmune disease condition labels.
 
 ## Included Condition Labels
 
@@ -18,7 +18,7 @@ The tables below count unique taxon/profile occurrences after deduplicating the 
 
 Top increased taxa:
 
-| taxon | rank | profiles | studies | guild traits |
+| taxon | rank | profiles | studies | selected traits |
 | --- | --- | ---: | ---: | --- |
 | taxon_186803 | genus | 7 | 6 | facultatively aerobic; gram negative; motile; microaerophilic; nitrate_reduction |
 | taxon_1224 | genus | 6 | 4 | facultatively aerobic; aerobic; gram negative; motile; microaerophilic; nitrate_reduction |
@@ -35,7 +35,7 @@ Top increased taxa:
 
 Top decreased taxa:
 
-| taxon | rank | profiles | studies | guild traits |
+| taxon | rank | profiles | studies | selected traits |
 | --- | --- | ---: | ---: | --- |
 | taxon_186803 | genus | 9 | 6 | facultatively aerobic; gram negative; motile; microaerophilic; nitrate_reduction |
 | taxon_171552 | genus | 8 | 4 | aerobic; gram negative |
@@ -54,7 +54,7 @@ Top decreased taxa:
 
 Top increased taxa:
 
-| taxon | rank | profiles | studies | guild traits |
+| taxon | rank | profiles | studies | selected traits |
 | --- | --- | ---: | ---: | --- |
 | taxon_816 | genus | 3 | 2 | facultatively aerobic; aerobic; gram negative; motile; microaerophilic |
 | taxon_28116 | genus | 3 | 2 | gram negative |
@@ -71,7 +71,7 @@ Top increased taxa:
 
 Top decreased taxa:
 
-| taxon | rank | profiles | studies | guild traits |
+| taxon | rank | profiles | studies | selected traits |
 | --- | --- | ---: | ---: | --- |
 | taxon_186806 | genus | 3 | 1 | gram negative; motile; nitrate_reduction |
 | taxon_817 | genus | 3 | 1 | gram negative |
@@ -98,13 +98,13 @@ This section uses a data-derived guild view: for each exact condition label, it 
 
 ## Interpretation
 
-This follow-up supports a narrow, label-dependent connection rather than a broad causal claim. The exact `Autism` and `Autoimmune disease` BugSigDB condition labels both show a fecal facultative-aerobe increased-profile guild signal: `Autism` has 14 profiles across 4 studies with an increased-minus-decreased guild z-score of `0.597`, and `Autoimmune disease` has 8 profiles across 2 studies with an increased-minus-decreased guild z-score of `0.474`.
+This follow-up supports a narrow, label-dependent connection rather than a broad causal claim. The exact `Autism` and `Autoimmune disease` BugSigDB condition labels both show fecal facultative-aerobe trait enrichment in increased profiles: `Autism` has 14 profiles across 4 studies with an increased-minus-decreased mean trait z-score of `0.597`, and `Autoimmune disease` has 8 profiles across 2 studies with an increased-minus-decreased mean trait z-score of `0.474`.
 
 The broader `Autism spectrum disorder` label does not reproduce that directional guild shift. It has 78 profiles across 15 studies, includes feces and saliva, and has an increased-minus-decreased guild z-score of `-0.011`. This means the apparent autism to autoimmune similarity is strongest for the exact `Autism` label and becomes much weaker when the broader ASD label is included.
 
-At the taxa-list level, there is overlap but it is not decisive. The autism/ASD group has 318 increased taxa and the autoimmune group has 84 increased taxa, with 38 shared increased taxa. For decreased taxa, autism/ASD has 756, autoimmune disease has 62, and 37 are shared. After signed direction balancing, 15 taxa are increased-skewed in both groups and 7 are decreased-skewed in both groups. The strongest shared increased-skewed local taxon is `NCBITaxon:1224` / `taxon_1224`, with signed counts of `+6` in autism/ASD and `+3` in autoimmune disease; it carries all six guild traits used here: facultatively aerobic, aerobic, gram negative, motile, microaerophilic, and nitrate_reduction.
+At the taxa-list level, there is overlap but it is not decisive. The autism/ASD group has 318 increased taxa and the autoimmune group has 84 increased taxa, with 38 shared increased taxa. For decreased taxa, autism/ASD has 756, autoimmune disease has 62, and 37 are shared. After signed direction balancing, 15 taxa are increased-skewed in both groups and 7 are decreased-skewed in both groups. The strongest shared increased-skewed local taxon is `NCBITaxon:1224` / `taxon_1224`, with signed counts of `+6` in autism/ASD and `+3` in autoimmune disease; it carries all six selected traits used here: facultatively aerobic, aerobic, gram negative, motile, microaerophilic, and nitrate_reduction.
 
-The most defensible interpretation is that the exact autism and autoimmune disease labels share a candidate gut dysbiosis axis involving increased facultative or aerotolerant guild signal. This analysis does not show that autism and autoimmune disease are causally linked, driven by the same taxa, or even consistently connected across broader ASD metadata. The autoimmune subset is small, and many taxa are locally unresolved as `taxon_<NCBI id>`, so the taxa-level results should be treated as candidate NCBI IDs for follow-up rather than polished biological names.
+The most defensible interpretation is that the exact autism and autoimmune disease labels share a candidate gut dysbiosis axis involving enrichment of facultative or aerotolerant traits in increased profiles. This analysis does not show that autism and autoimmune disease are causally linked, driven by the same taxa, or even consistently connected across broader ASD metadata. The autoimmune subset is small, and many taxa are locally unresolved as `taxon_<NCBI id>`, so the taxa-level results should be treated as candidate NCBI IDs for follow-up rather than polished biological names.
 
 ## Heatmap
 

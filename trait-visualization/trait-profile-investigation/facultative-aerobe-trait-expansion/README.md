@@ -11,7 +11,7 @@ This investigation uses the existing study trait profile clustered heatmap matri
 
 ## Main Signal
 
-The selected guild traits are higher in increased profiles than in decreased profiles, supporting a facultative-aerobe increased-profile signal.
+The selected traits are enriched in increased profiles relative to decreased profiles, supporting a facultative-aerobe increased-profile signal.
 
 | trait | increased - decreased z |
 | --- | ---: |
@@ -120,7 +120,7 @@ For the top condition signals, this table uses all taxa observed in the increase
 
 1. Split the signal by body site before interpreting it as a facultative-aerobe increased-profile signal; oral and airway profiles can dominate aerobic/microaerophilic traits.
 2. In gut-only analyses, test the target taxa against inflammation markers, nitrate respiration, oxygen tolerance, virulence genes, and resistome features.
-3. Compare increased-profile taxa against the anaerobe-depletion guild to see whether the same conditions show reciprocal decreased- and increased-profile patterns.
+3. Compare increased-profile taxa against the decreased-profile anaerobe trait set to see whether the same conditions show reciprocal decreased- and increased-profile patterns.
 
 ## Files
 

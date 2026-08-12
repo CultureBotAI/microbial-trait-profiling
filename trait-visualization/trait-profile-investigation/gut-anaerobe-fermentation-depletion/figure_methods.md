@@ -4,7 +4,7 @@ These notes describe every PNG in this investigation folder. Interpretations are
 
 ## Shared Inputs
 
-Study-profile z-scores were read from `trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv` and joined to study metadata from `trait-visualization/study_trait_profile_study_metadata.tsv`. The gut anaerobe/fermentation guild score was the row-wise mean of anaerobic, obligately anaerobic, Fermentation, cellulose catabolic process, and xylan catabolic process traits. Gut-context profiles were defined by body-site or grouped body-site labels matching `feces`, `faeces`, `stool`, `colon`, `caecum`, `cecum`, `gut`, `intestin`, or `digestive`.
+Study-profile z-scores were read from `trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv` and joined to study metadata from `trait-visualization/study_trait_profile_study_metadata.tsv`. The gut anaerobe/fermentation trait-enrichment score was the row-wise mean of anaerobic, obligately anaerobic, Fermentation, cellulose catabolic process, and xylan catabolic process traits. Gut-context profiles were defined by body-site or grouped body-site labels matching `feces`, `faeces`, `stool`, `colon`, `caecum`, `cecum`, `gut`, `intestin`, or `digestive`.
 
 Focal taxa were defined a priori by NCBI Taxonomy ID: Faecalibacterium prausnitzii, Anaerobutyricum hallii, Lachnospira eligens, Agathobacter rectalis, Roseburia intestinalis, Ruminococcus bromii, and Roseburia inulinivorans.
 
@@ -24,16 +24,16 @@ Interpretation: The leading labels include colorectal carcinoma, graft-versus-ho
 
 Methods: For each selected guild trait, the script calculated the mean z-score in all decreased profiles and the mean z-score in all increased profiles. Bars show `decreased mean z - increased mean z`; positive bars indicate traits enriched in decreased profiles.
 
-Interpretation: All five selected traits are higher in decreased profiles. Cellulose and xylan catabolic processes have the largest shifts, followed by anaerobic, obligately anaerobic, and Fermentation. The theme is not only oxygen intolerance; the original guild also emphasizes fiber-degradation and fermentation capabilities that are characteristic of gut commensal anaerobes.
+Interpretation: All five selected traits are enriched in decreased profiles. Cellulose and xylan catabolic processes have the largest shifts, followed by anaerobic, obligately anaerobic, and Fermentation. The theme is not only oxygen intolerance; the original trait set also emphasizes fiber-degradation and fermentation capabilities that are characteristic of gut commensal anaerobes.
 
 ## `anatomical_sites_diagram.png`
 
 Methods: Gut-context profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The generic `Other` group was excluded from the diagram. Bubble and bar length encode profile count, and color encodes the decreased-profile gut anaerobe/fermentation guild z-score at each body-site group.
 
-Interpretation: Colon, feces, and caecum are the main anatomical labels, which is consistent with the gut-context filter and the biology of anaerobe/fiber-fermentation traits. Colon shows the strongest decreased-profile guild signal, with feces providing the largest profile-count context. The figure supports interpreting this guild primarily as a lower-gut depletion signal.
+Interpretation: Colon, feces, and caecum are the main anatomical labels, which is consistent with the gut-context filter and the biology of anaerobe/fiber-fermentation traits. Colon shows the strongest trait enrichment in decreased profiles, with feces providing the largest profile-count context. The figure supports interpreting this trait set primarily as a lower-gut depletion signal.
 
 ## `target_taxa_condition_breakdown_bar.png`
 
 Methods: Focal taxon occurrences were loaded from `data/derived/taxa.tsv`, deduplicated by taxon and study profile, joined to scored study profiles, and counted by condition for decreased-profile occurrences in gut-context profiles. A condition can contribute multiple counts if multiple focal taxa appear in the same profile.
 
-Interpretation: Parkinson's disease, COVID-19, and colorectal cancer dominate the recurrent focal-taxon depletion labels, with additional gut or inflammatory labels contributing smaller counts. The target-taxon view is consistent with the guild-score plots but answers a different question: where the named anaerobe candidates are repeatedly decreased, not where the composite guild score is highest.
+Interpretation: Parkinson's disease, COVID-19, and colorectal cancer dominate the recurrent focal-taxon depletion labels, with additional gut or inflammatory labels contributing smaller counts. The target-taxon view is consistent with the trait-enrichment plots but answers a different question: where the named anaerobe candidates are repeatedly decreased, not where the composite trait-enrichment score is highest.

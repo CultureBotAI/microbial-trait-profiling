@@ -1,4 +1,4 @@
-"""Investigate facultative-aerobe increased-profile signals."""
+"""Investigate facultative-aerobe trait enrichment in increased profiles."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ GUILD_TRAITS = {
 GUILD_TRAIT_SELECTION_JUSTIFICATIONS = {
     "METPO:1000608": (
         "Primary facultative-aerobe concept; selected as the named core trait for the "
-        "increased-profile oxygen-tolerance guild."
+        "increased-profile oxygen-tolerance trait set."
     ),
     "METPO:1000602": (
         "Oxygen-positive growth trait; selected to capture taxa whose profile signal is "
@@ -68,11 +68,12 @@ INFERRED_GUILD_TOP_TAXA_PER_TRAIT = 12
 INFERRED_GUILD_TOP_TAXA_PER_GROUP = 12
 MIN_KG_MICROBE_UNIVERSE_CORE_TRAITS = 1
 GUILD_SPECIFIC_NOTE = (
-    "Guild-specific: yes - uses the facultative-aerobe v2 guild score "
+    "Guild-specific: yes - uses the facultative-aerobe v2 trait-enrichment score "
     "(facultatively aerobic, aerobic, microaerophilic)."
 )
 NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE = (
-    "Guild-specific: no - fixed target-taxon count view; not recomputed from the guild score."
+    "Guild-specific: no - fixed target-taxon count view; "
+    "not recomputed from the trait-enrichment score."
 )
 TARGET_TAXON_COLORS = {
     "Escherichia coli": "#dc2626",
@@ -206,7 +207,7 @@ def paired_t_test_p_value(
 
 
 def paired_guild_enrichment_stats(group: pd.DataFrame) -> dict[str, float | int]:
-    """Calculate paired inc-vs-dec guild enrichment within study/experiment."""
+    """Calculate paired inc-vs-dec trait enrichment within study/experiment."""
     paired = group.pivot_table(
         index=["study_id", "experiment_id"],
         columns="inc_dec",
@@ -267,7 +268,7 @@ def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 def add_guild_scores(matrix: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
     available_traits = [trait for trait in GUILD_TRAITS.values() if trait in matrix.columns]
     if not available_traits:
-        msg = "No requested facultative-aerobe v2 guild traits were found in the matrix."
+        msg = "No requested facultative-aerobe v2 trait-enrichment traits were found in the matrix."
         raise ValueError(msg)
     scored = metadata.copy()
     scored["guild_z_mean"] = matrix[available_traits].mean(axis=1)
@@ -455,7 +456,7 @@ def build_kg_microbe_taxon_universe() -> pd.DataFrame:
 
 
 def build_guild_trait_selection(study_trait_metadata: pd.DataFrame) -> pd.DataFrame:
-    """Document why each selected guild trait is in the score."""
+    """Document why each selected trait is in the score."""
     trait_ids = set(GUILD_TRAITS)
     taxa_trait_matrix = read_tsv(
         REPO_ROOT / "data/derived/taxa_trait_matrix.tsv",
@@ -1091,7 +1092,7 @@ def save_condition_target_taxa_stacked_bar_chart(
     output_path: Path,
     limit: int = 12,
 ) -> None:
-    """Save a stacked bar chart of increased focal-taxon recurrence by condition."""
+    """Save a stacked bar chart of increased-profile focal-taxon recurrence by condition."""
     selected = occurrences[occurrences["direction"] == "increased"].copy()
     selected["condition"] = selected["condition"].map(clean_text)
     selected = selected[~selected["condition"].map(is_excluded_condition_label)].copy()
@@ -1151,9 +1152,9 @@ def save_condition_target_taxa_stacked_bar_chart(
     ax.set_yticks(y_positions)
     ax.set_yticklabels(counts.index)
     ax.invert_yaxis()
-    ax.set_xlabel("Increased target-taxon profile occurrences")
+    ax.set_xlabel("Increased-profile target-taxon occurrences")
     ax.set_title(
-        "Increased Facultative-Aerobe Target-Taxon Recurrence by Condition",
+        "Increased-Profile Facultative-Aerobe Target-Taxon Recurrence by Condition",
         pad=28,
     )
     add_specificity_note(ax, NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE)
@@ -1410,7 +1411,7 @@ def save_anatomical_sites_diagram(
         color="#475569",
     )
     footer = (
-        "Bubble and bar length show profile count; color shows the direction-specific guild signal."
+        "Bubble and bar length show profile count; color shows direction-specific trait enrichment."
     )
     if legend_note:
         footer = f"{footer} {legend_note}"
@@ -1447,7 +1448,7 @@ def write_figure_methods() -> None:
         "`trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv` and "
         "joined to study metadata from "
         "`trait-visualization/study_trait_profile_study_metadata.tsv`. The "
-        "facultative-aerobe guild score was the row-wise mean of the selected guild "
+        "facultative-aerobe trait-enrichment score was the row-wise mean of the selected "
         "traits: facultatively aerobic, aerobic, and microaerophilic.",
         "`guild_trait_selection.tsv` documents the a priori selected trait set, "
         "the focus/comparator directions, a short selection justification for each "
@@ -1468,7 +1469,7 @@ def write_figure_methods() -> None:
         "(NCBITaxon:208479), Eggerthella lenta (NCBITaxon:84112), Prevotella "
         "intermedia (NCBITaxon:28131), Porphyromonas gingivalis (NCBITaxon:837), "
         "and Veillonella dispar (NCBITaxon:39778). They were chosen as focal "
-        "examples for the facultative-aerobe increased-profile signal because "
+        "examples for the facultative-aerobe increased-profile trait-enrichment signal because "
         "they include taxa with oxygen-tolerance annotations in the derived "
         "taxa-trait matrix, and because they provide gut, oral, and airway "
         "contexts where facultative-aerobe or aerotolerant increased-profile "
@@ -1482,13 +1483,14 @@ def write_figure_methods() -> None:
         "## `candidate_taxa_increased_profile_tendency.png`",
         "",
         "Guild-specificity: no. This is a fixed target-taxon direction-count view; "
-        "it is not recomputed from the v2 guild score.",
+        "it is not recomputed from the v2 trait-enrichment score.",
         "",
         "This figure uses the fixed focal taxa listed above, then intersects their "
         "NCBI Taxonomy IDs with "
         "`trait-visualization/taxa_guild_discovery_taxa_metadata.tsv`. That "
         "metadata table supplies the total BugSigDB profile count and the number "
-        "of profiles where each taxon was reported as increased or decreased. For "
+        "of profiles where each taxon was reported as increased or decreased; "
+        "the figures report these source directions as increased and decreased profiles. For "
         "each target taxon, increased-profile tendency was calculated as "
         "`(increased profile count - decreased profile count) / total BugSigDB "
         "profile count`. The horizontal bars show this signed value for each target "
@@ -1498,8 +1500,8 @@ def write_figure_methods() -> None:
         "",
         "## `condition_increased_guild_signal.png`",
         "",
-        "Guild-specificity: yes. This figure uses the facultative-aerobe v2 guild "
-        "score from the three selected traits.",
+        "Guild-specificity: yes. This figure uses the facultative-aerobe v2 "
+        "trait-enrichment score from the three selected traits.",
         "",
         "Study profiles from all body sites were grouped by BugSigDB condition "
         "label. Groups with fewer than five profiles were excluded. Broad "
@@ -1510,9 +1512,10 @@ def write_figure_methods() -> None:
         "summary. Those labels usually describe exposure, cohort, or measurement "
         "metadata rather than a disease or condition context. The figure keeps the "
         "top 12 eligible conditions with at least three increased profiles, at least "
-        "two studies, positive increased-minus-decreased guild signal, and positive "
-        "increased-profile mean guild z-score, using fallback filtering if needed. "
-        "Conditions are selected and sorted by increased-minus-decreased guild signal. "
+        "two studies, positive increased-minus-decreased trait-enrichment signal, and "
+        "positive increased-profile mean trait z-score, using fallback filtering if needed. "
+        "Conditions are selected and sorted by increased-minus-decreased "
+        "trait-enrichment signal. "
         "Bar length is this enrichment-oriented contrast, and the right-side labels "
         "show the paired standardized mean difference (`paired d`) calculated from "
         "matched increased/decreased profiles within the same study and experiment, "
@@ -1523,23 +1526,23 @@ def write_figure_methods() -> None:
         "",
         "## `guild_trait_direction_shift.png`",
         "",
-        "Guild-specificity: yes. This figure shows the three selected v2 guild "
-        "traits and their increased-minus-decreased profile shifts.",
+        "Guild-specificity: yes. This figure shows the three selected v2 traits "
+        "and their increased-minus-decreased profile shifts.",
         "",
-        "For each selected guild trait, the script calculated the mean z-score in "
+        "For each selected trait, the script calculated the mean z-score in "
         "all increased study profiles and the mean z-score in all decreased study "
         "profiles. Bars show `increased mean z - decreased mean z`; positive values "
-        "indicate traits that are higher in increased profiles.",
+        "indicate traits enriched in increased profiles.",
         "",
         "## `anatomical_sites_diagram.png`",
         "",
-        "Guild-specificity: yes. Color encodes the facultative-aerobe v2 guild "
-        "score among increased profiles at each body-site group.",
+        "Guild-specificity: yes. Color encodes the facultative-aerobe v2 "
+        "trait-enrichment score among increased profiles at each body-site group.",
         "",
         "Study profiles were grouped by `body_site_group`, requiring at least 10 "
         "profiles per group. The display excludes the generic `Other` body-site "
         "group. Bubble and bar length encode the number of study profiles in the "
-        "body-site group. Color encodes the mean facultative-aerobe guild z-score "
+        "body-site group. Color encodes the mean facultative-aerobe trait z-score "
         "among increased profiles at that body site. Body-site labels were placed "
         "on a simplified, neutral front-view body outline using fixed anatomical "
         "coordinates for feces/stool, colon, caecum, oral, airway, urogenital, and "
@@ -1547,23 +1550,23 @@ def write_figure_methods() -> None:
         "a specific body-site label; these profiles are placed off-body and should "
         "not be interpreted as a physical anatomical location.",
         "",
-        "Oral-site increased-profile signals are biologically plausible because the "
+        "Oral-site increased-profile trait signals are biologically plausible because the "
         "oral cavity is oxygen-exposed and includes aerotolerant, facultatively "
         "aerobic, or microaerophilic taxa such as Streptococcus, Fusobacterium, "
         "Prevotella, Porphyromonas, and Veillonella. Those oral-site signals should "
         "be interpreted as body-site-specific microbial ecology, not as a gut "
-        "facultative-aerobe increased-profile signal.",
+        "facultative-aerobe increased-profile trait-enrichment signal.",
         "",
         "## `target_taxa_condition_breakdown_bar.png`",
         "",
         "Guild-specificity: no. This is a fixed target-taxon occurrence-count view; "
-        "it is not recomputed from the v2 guild score.",
+        "it is not recomputed from the v2 trait-enrichment score.",
         "",
         "Target-taxon occurrences were loaded from `data/derived/taxa.tsv`, limited "
         "to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study "
         "profile, and joined to the scored study profiles. This produces one row "
         "per focal taxon/profile occurrence with condition, body site, direction, "
-        "and guild-score metadata. The bar chart counts increased focal-taxon/profile "
+        "and trait-enrichment metadata. The bar chart counts increased focal-taxon/profile "
         "occurrences by condition after removing the broad non-condition and "
         "metadata labels described above. A condition with multiple focal taxa can "
         "therefore contribute multiple occurrences; the chart is an occurrence "
@@ -1574,7 +1577,7 @@ def write_figure_methods() -> None:
         "## `condition_target_taxa_stacked_bar.png`",
         "",
         "Guild-specificity: no. This is a fixed target-taxon occurrence-count view; "
-        "it is not recomputed from the v2 guild score.",
+        "it is not recomputed from the v2 trait-enrichment score.",
         "",
         "This figure uses the same target-taxon/profile occurrence table and "
         "broad-label filtering as `target_taxa_condition_breakdown_bar.png`, then "
@@ -1583,7 +1586,7 @@ def write_figure_methods() -> None:
         "report the total occurrence count, unique increased-profile study count, "
         "dominant body-site group among the plotted occurrences, and the "
         "condition-level increased-minus-decreased facultative-aerobe v2 "
-        "guild-score contrast when available. Counts are occurrence counts: a "
+        "trait-enrichment contrast when available. Counts are occurrence counts: a "
         "profile that contains multiple focal taxa can contribute once to each "
         "corresponding taxon stack.",
         "",
@@ -1600,7 +1603,7 @@ def write_figure_methods() -> None:
         "microaerophilic. For each top increased-profile "
         "condition, the script then intersects that KG-Microbe-wide universe with "
         "the taxa actually observed in the condition's increased profiles, "
-        "identifies v2 guild traits whose z-score is above zero in the increased "
+        "identifies v2 traits whose z-score is above zero in the increased "
         "direction and whose increased-minus-decreased condition contrast is "
         "positive, and reports which universe taxa carry those enriched "
         "guild-trait annotations.",
@@ -1656,9 +1659,11 @@ def make_plots(
                 fontsize=8,
                 color="#334155",
             )
-    ax.set_xlabel("Facultative-aerobe guild enrichment: increased mean z - decreased mean z")
+    ax.set_xlabel(
+        "Facultative-aerobe trait enrichment: increased mean z - decreased mean z"
+    )
     ax.set_title(
-        "Conditions With Increased-Profile Facultative-Aerobe v2 Guild Enrichment",
+        "Conditions With Facultative-Aerobe v2 Trait Enrichment in Increased Profiles",
         pad=28,
     )
     add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
@@ -1677,7 +1682,7 @@ def make_plots(
     )
     ax.axvline(0, color="#333333", linewidth=0.8)
     ax.set_xlabel("increased profile mean z - decreased profile mean z")
-    ax.set_title("Facultative-Aerobe v2 Guild Traits Are Higher in Increased Profiles", pad=28)
+    ax.set_title("Facultative-Aerobe v2 Traits Enriched in Increased Profiles", pad=28)
     add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "guild_trait_direction_shift.png")
@@ -1687,7 +1692,7 @@ def make_plots(
     save_condition_breakdown_bar_chart(
         condition_counts,
         output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_bar.png",
-        title_prefix="Increased facultative-aerobe target taxa",
+        title_prefix="Inc-profile facultative-aerobe target taxa",
         color="#dc2626",
     )
     save_condition_target_taxa_stacked_bar_chart(
@@ -1698,9 +1703,9 @@ def make_plots(
     save_anatomical_sites_diagram(
         body_site_summary,
         output_path=OUTPUT_DIR / "anatomical_sites_diagram.png",
-        title="Facultative-Aerobe v2 Increased-Profile Signal: Anatomical Sites",
+        title="Facultative-Aerobe v2 Trait Enrichment in Increased Profiles: Anatomical Sites",
         signal_column="increased_mean_guild_z",
-        signal_label="increased-profile guild z",
+        signal_label="increased-profile trait z",
         legend_note=(
             "Unknown body site means no specific BugSigDB body-site label was available; "
             "it is plotted off-body."
@@ -1729,20 +1734,20 @@ def write_summary_report(
     ].head(12)
 
     lines = [
-        "# Facultative-Aerobe v2 Increased-Profile Signal Investigation",
+        "# Facultative-Aerobe v2 Increased-Profile Trait-Enrichment Investigation",
         "",
         "This investigation uses the existing study trait profile clustered heatmap matrix, "
         "study metadata, taxa guild heatmap metadata, and derived taxa/trait matrices.",
         "",
         "## Scope",
         "",
-        "- Guild traits: "
+        "- Selected traits: "
         + ", ".join(f"{name} ({trait_id})" for trait_id, name in GUILD_TRAITS.items()),
         "- Target taxa: " + ", ".join(TARGET_TAXA.values()),
         "- Formal KG-Microbe taxon universe: "
         f"{len(kg_microbe_taxon_universe):,} taxa with at least one core "
         "oxygen-tolerance annotation among " + ", ".join(KG_MICROBE_TAXON_UNIVERSE_TRAITS.values()),
-        "- Guild trait selection audit: `guild_trait_selection.tsv` records the "
+        "- Trait selection audit: `guild_trait_selection.tsv` records the "
         "selected trait IDs, short rationale, and KG-Microbe taxon counts for "
         "each selected trait.",
         "- Context: all body sites, with body-site and condition summaries to separate "
@@ -1752,9 +1757,9 @@ def write_summary_report(
         "",
         "| plot | guild-specific? | basis |",
         "| --- | --- | --- |",
-        "| `condition_increased_guild_signal.png` | yes | v2 guild score by condition |",
-        "| `guild_trait_direction_shift.png` | yes | the three selected v2 guild traits |",
-        "| `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |",
+        "| `condition_increased_guild_signal.png` | yes | v2 trait-enrichment score by condition |",
+        "| `guild_trait_direction_shift.png` | yes | the three selected v2 traits |",
+        "| `anatomical_sites_diagram.png` | yes | v2 trait-enrichment score by body-site group |",
         "| `candidate_taxa_increased_profile_tendency.png` | no | "
         "fixed target-taxon direction counts |",
         "| `condition_target_taxa_stacked_bar.png` | no | fixed target-taxon occurrence "
@@ -1763,7 +1768,7 @@ def write_summary_report(
         "",
         "## Main Signal",
         "",
-        "The selected guild traits are higher in increased profiles than in decreased "
+        "The selected traits are enriched in increased profiles relative to decreased "
         "profiles, supporting a facultative-aerobe increased-profile signal.",
         "",
         "| trait | increased - decreased z |",
@@ -1808,10 +1813,10 @@ def write_summary_report(
     lines.extend(
         [
             "",
-            "## Contexts With High Increased-Profile Guild Signal",
+            "## Contexts With Facultative-Aerobe v2 Trait Enrichment in Increased Profiles",
             "",
             "| condition | profiles | studies | increased - decreased z | paired d | "
-            "paired p | matched pairs | increased mean guild z |",
+            "paired p | matched pairs | increased mean trait z |",
             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
     )
@@ -1837,12 +1842,12 @@ def write_summary_report(
             "disease/condition context. They are excluded from displayed condition "
             "bar charts and condition summaries.",
             "",
-            "Oral-site increased-profile signals are expected in this analysis because "
+            "Oral-site increased-profile trait signals are expected in this analysis because "
             "the oral cavity is oxygen-exposed and several focal taxa are common oral "
             "or airway-associated aerotolerant, facultatively aerobic, or "
             "microaerophilic lineages. These signals should be interpreted as "
             "body-site-specific oral microbial ecology, not as a gut "
-            "increased-profile signal.",
+            "increased-profile trait-enrichment signal.",
         ]
     )
 
@@ -1855,7 +1860,7 @@ def write_summary_report(
                 "For the top condition signals, this table uses all taxa observed in the "
                 "increased profiles for that condition that also belong to the "
                 "KG-Microbe-wide candidate taxon universe, then reports the profile "
-                "v2 guild traits that are enriched in those same increased profiles and the "
+                "v2 traits that are enriched in those same increased profiles and the "
                 "universe taxa that carry those trait annotations. This is a data-derived "
                 "guild summary, not a literature-defined facultative-aerobe/aerotolerant "
                 "guild.",
@@ -1879,7 +1884,7 @@ def write_summary_report(
             "",
             "## Body-Site Check",
             "",
-            "| body_site_group | profiles | increased mean guild z | increased - decreased z |",
+            "| body_site_group | profiles | increased mean trait z | increased - decreased z |",
             "| --- | ---: | ---: | ---: |",
         ]
     )
@@ -1896,7 +1901,7 @@ def write_summary_report(
             "",
             "## Top Increased Profiles To Inspect",
             "",
-            "| profile | condition | body site | guild z | title |",
+            "| profile | condition | body site | trait z | title |",
             "| --- | --- | --- | ---: | --- |",
         ]
     )
@@ -1916,11 +1921,11 @@ def write_summary_report(
             "## Suggested Follow-Up",
             "",
             "1. Split the signal by body site before interpreting it as a "
-            "facultative-aerobe increased-profile signal; "
+            "facultative-aerobe increased-profile trait-enrichment signal; "
             "oral and airway profiles can dominate aerobic/microaerophilic traits.",
             "2. In gut-only analyses, test the target taxa against inflammation markers, "
             "oxygen tolerance, virulence genes, and resistome features.",
-            "3. Compare increased-profile taxa against the anaerobe-depletion guild to see "
+            "3. Compare increased-profile taxa against the anaerobe v2 trait set to see "
             "whether the same conditions show reciprocal decreased- and "
             "increased-profile patterns.",
             "",

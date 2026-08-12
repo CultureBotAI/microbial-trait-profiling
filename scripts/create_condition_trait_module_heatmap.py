@@ -152,7 +152,7 @@ def format_trait_label(column_id: str, row: pd.Series) -> str:
 
 
 def load_aggregated_study_profiles(profile_path: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Aggregate inc/dec experiment profiles to study-level trait profiles."""
+    """Aggregate increased/decreased experiment profiles to study-level trait profiles."""
     profiles = pd.read_csv(profile_path, sep="\t")
     trait_columns = [
         column for column in profiles.columns if column not in PROFILE_METADATA_COLUMNS
@@ -544,12 +544,15 @@ def save_guild_definition_table(
         {
             "layer": "Profile score",
             "definition": "Score each profile as mean z(X, Y, Z) over selected trait columns.",
-            "use": "Continuous guild signal for profile and direction summaries.",
+            "use": "Continuous trait-enrichment signal for profile and direction summaries.",
             "logic": "mean",
         },
         {
             "layer": "Disease module",
-            "definition": "Aggregate profiles by condition/body site, then summarize guild score.",
+            "definition": (
+                "Aggregate profiles by condition/body site, then summarize "
+                "trait-enrichment score."
+            ),
             "use": "Condition-level link to a trait-defined guild.",
             "logic": "group mean",
         },

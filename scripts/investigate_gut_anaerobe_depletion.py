@@ -1,4 +1,4 @@
-"""Investigate anaerobe-only v2 depletion signals."""
+"""Investigate anaerobe-only v2 trait enrichment in decreased profiles."""
 
 from __future__ import annotations
 
@@ -26,8 +26,8 @@ GUILD_TRAIT_SELECTION_JUSTIFICATIONS = {
         "set; selected for the decreased-profile comparison."
     ),
     "METPO:1000607": (
-        "Stricter anaerobe oxygen-tolerance concept; selected to keep the depletion "
-        "guild parallel to oxygen-tolerance rather than fermentation metabolism."
+        "Stricter anaerobe oxygen-tolerance concept; selected to keep the decreased-profile "
+        "trait set parallel to oxygen-tolerance rather than fermentation metabolism."
     ),
 }
 KG_MICROBE_TAXON_UNIVERSE_TRAITS = {
@@ -63,11 +63,12 @@ INFERRED_GUILD_TOP_TAXA_PER_TRAIT = 12
 INFERRED_GUILD_TOP_TAXA_PER_GROUP = 12
 MIN_KG_MICROBE_UNIVERSE_CORE_TRAITS = 1
 GUILD_SPECIFIC_NOTE = (
-    "Guild-specific: yes - uses the anaerobe v2 depletion guild score "
+    "Guild-specific: yes - uses the anaerobe v2 trait-enrichment score "
     "(anaerobic, obligately anaerobic)."
 )
 NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE = (
-    "Guild-specific: no - fixed target-taxon count view; not recomputed from the guild score."
+    "Guild-specific: no - fixed target-taxon count view; "
+    "not recomputed from the trait-enrichment score."
 )
 TARGET_TAXON_COLORS = {
     "Faecalibacterium prausnitzii": "#2563eb",
@@ -88,8 +89,8 @@ TARGET_TAXON_LEGEND_LABELS = {
     "Ruminococcus bromii": "R. bromii",
 }
 DIRECTION_LABELS = {
-    "inc": "Increased",
-    "dec": "Decreased",
+    "inc": "increased profiles",
+    "dec": "decreased profiles",
 }
 DIRECTION_COLORS = {
     "inc": "#dc2626",
@@ -223,7 +224,7 @@ def paired_t_test_p_value(
 
 
 def paired_guild_enrichment_stats(group: pd.DataFrame) -> dict[str, float | int]:
-    """Calculate paired dec-vs-inc guild enrichment within study/experiment."""
+    """Calculate paired decreased-vs-increased trait enrichment within study/experiment."""
     paired = group.pivot_table(
         index=["study_id", "experiment_id"],
         columns="inc_dec",
@@ -284,7 +285,7 @@ def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 def add_guild_scores(matrix: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
     available_traits = [trait for trait in GUILD_TRAITS.values() if trait in matrix.columns]
     if not available_traits:
-        msg = "No requested anaerobe v2 depletion guild traits were found in the matrix."
+        msg = "No requested anaerobe v2 trait-enrichment traits were found in the matrix."
         raise ValueError(msg)
     scored = metadata.copy()
     scored["guild_z_mean"] = matrix[available_traits].mean(axis=1)
@@ -433,7 +434,10 @@ def count_zero_enriched_traits_by_direction(profiles: pd.DataFrame) -> dict[str,
 
 def format_zero_enriched_trait_counts(counts: dict[str, int]) -> str:
     """Return a compact zero-enriched profile-count note."""
-    return f"Zero enriched guild traits: inc {counts.get('inc', 0):,}; dec {counts.get('dec', 0):,}"
+    return (
+        "Zero enriched selected traits: "
+        f"increased {counts.get('inc', 0):,}; decreased {counts.get('dec', 0):,}"
+    )
 
 
 def profile_count_bin_label(profile_count: int) -> str:
@@ -699,7 +703,7 @@ def build_guild_trait_selection(study_trait_metadata: pd.DataFrame) -> pd.DataFr
         )
         records.append(
             {
-                "guild": "anaerobe v2 depletion",
+                "guild": "anaerobe v2",
                 "focus_direction": "decreased",
                 "comparator_direction": "increased",
                 "candidate_universe_role": "core oxygen-tolerance trait",
@@ -1294,7 +1298,7 @@ def dominant_body_site_label(group: pd.DataFrame) -> str:
 
 
 def guild_delta_label(condition: str, condition_summary: pd.DataFrame) -> str:
-    """Return the condition's guild-score contrast label when available."""
+    """Return the condition's trait-enrichment contrast label when available."""
     if condition_summary.empty:
         return ""
     matches = condition_summary[condition_summary["condition"] == condition]
@@ -1305,7 +1309,7 @@ def guild_delta_label(condition: str, condition_summary: pd.DataFrame) -> str:
         return ""
     if abs(value) < 0.005:
         value = 0
-    return f"; guild dz={value:.2f}"
+    return f"; trait dz={value:.2f}"
 
 
 def save_condition_target_taxa_stacked_bar_chart(
@@ -1315,7 +1319,7 @@ def save_condition_target_taxa_stacked_bar_chart(
     output_path: Path,
     limit: int = 12,
 ) -> None:
-    """Save a stacked bar chart of decreased focal-taxon recurrence by condition."""
+    """Save a stacked bar chart of decreased-profile focal-taxon recurrence by condition."""
     selected = occurrences[occurrences["direction"] == "decreased"].copy()
     selected["condition"] = selected["condition"].map(clean_text)
     selected = selected[~selected["condition"].map(is_excluded_condition_label)].copy()
@@ -1375,9 +1379,9 @@ def save_condition_target_taxa_stacked_bar_chart(
     ax.set_yticks(y_positions)
     ax.set_yticklabels(counts.index)
     ax.invert_yaxis()
-    ax.set_xlabel("Decreased target-taxon profile occurrences")
+    ax.set_xlabel("Decreased-profile target-taxon occurrences")
     ax.set_title(
-        "Decreased Anaerobe Target-Taxon Recurrence by Condition",
+        "Decreased-Profile Anaerobe Target-Taxon Recurrence by Condition",
         pad=28,
     )
     add_specificity_note(ax, NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE)
@@ -1453,7 +1457,7 @@ def save_trait_enriched_profile_histogram(
     ax.set_xlabel("Positive-z retained profiles per trait")
     ax.set_ylabel("Number of traits")
     ax.set_title(
-        "Trait Histogram Within Anaerobe v2 Enriched Profiles",
+        "Trait Enrichment Histogram Within Anaerobe v2 Retained Profiles",
         pad=28,
     )
     add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
@@ -1525,7 +1529,7 @@ def save_condition_enriched_profile_histogram(
             color=DIRECTION_COLORS[direction],
             label=(
                 f"{DIRECTION_LABELS[direction]} "
-                f"(zero enriched: {zero_enriched_trait_counts.get(direction, 0):,})"
+                f"(zero enriched traits: {zero_enriched_trait_counts.get(direction, 0):,})"
             ),
         )
 
@@ -1534,7 +1538,7 @@ def save_condition_enriched_profile_histogram(
     ax.set_xlabel("Enriched profiles per condition")
     ax.set_ylabel("Number of conditions")
     ax.set_title(
-        "Condition Histogram After Anaerobe v2 Profile-Enrichment Filtering",
+        "Condition Histogram After Anaerobe v2 Trait-Enrichment Filtering",
         pad=28,
     )
     add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
@@ -1665,8 +1669,8 @@ def save_anatomical_enriched_profile_diagram(
         ax.text(
             0.58,
             label_y - 0.018,
-            f"{enriched_count:,} enriched profiles; inc {increased_count:,}, "
-            f"dec {decreased_count:,}",
+            f"{enriched_count:,} enriched profiles; increased {increased_count:,}, "
+            f"decreased {decreased_count:,}",
             ha="left",
             va="top",
             fontsize=8.5,
@@ -1676,7 +1680,7 @@ def save_anatomical_enriched_profile_diagram(
     ax.text(
         0.02,
         0.965,
-        "Anaerobe v2 Enriched Profiles: Anatomical Sites",
+        "Anaerobe v2 Trait-Enriched Profiles: Anatomical Sites",
         ha="left",
         va="top",
         fontsize=17,
@@ -1694,7 +1698,7 @@ def save_anatomical_enriched_profile_diagram(
     ax.text(
         0.02,
         0.035,
-        "Retained = at least one positive v2 guild-trait z-score.",
+        "Retained = at least one positive selected-trait z-score.",
         ha="left",
         va="bottom",
         fontsize=8.5,
@@ -1964,8 +1968,8 @@ def save_anatomical_sites_diagram(
     ax.text(
         0.02,
         0.035,
-        "Bubble and bar length show profile count; color shows the "
-        "direction-specific guild signal.",
+        "Bubble and bar length show profile count; color shows "
+        "direction-specific trait enrichment.",
         ha="left",
         va="bottom",
         fontsize=8.5,
@@ -1975,9 +1979,9 @@ def save_anatomical_sites_diagram(
         ax.text(
             0.72,
             0.035,
-            "Zero enriched guild traits\n"
-            f"Increased profiles: {zero_enriched_trait_counts.get('inc', 0):,}\n"
-            f"Decreased profiles: {zero_enriched_trait_counts.get('dec', 0):,}",
+            "Zero enriched selected traits\n"
+            f"increased profiles: {zero_enriched_trait_counts.get('inc', 0):,}\n"
+            f"decreased profiles: {zero_enriched_trait_counts.get('dec', 0):,}",
             ha="left",
             va="bottom",
             fontsize=8.3,
@@ -2013,9 +2017,9 @@ def write_figure_methods() -> None:
         "`trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv` and "
         "joined to study metadata from "
         "`trait-visualization/study_trait_profile_study_metadata.tsv`. The "
-        "anaerobe v2 depletion guild score was the row-wise mean of the selected "
+        "anaerobe v2 trait-enrichment score was the row-wise mean of the selected "
         "oxygen-tolerance counterpart traits: anaerobic and obligately anaerobic. "
-        "This makes the comparison parallel to the facultative-aerobe v2 guild, "
+        "This makes the comparison parallel to the facultative-aerobe v2 trait set, "
         "with the focus direction switched to decreased profiles. Profiles from "
         "all body sites are retained, and body-site summaries are used to separate "
         "gut, oral, airway, urogenital, and other contexts.",
@@ -2030,8 +2034,8 @@ def write_figure_methods() -> None:
         "body-site metadata.",
         "For profile-enrichment filtering, a profile's "
         "`enriched_guild_trait_count` is the number of selected anaerobe v2 "
-        "guild traits with a positive z-score in that profile. Profiles with zero "
-        "positive selected guild-trait z-scores are retained in the main guild-score "
+        "traits with a positive z-score in that profile. Profiles with zero "
+        "positive selected trait z-scores are retained in the main trait-enrichment "
         "summaries but are excluded from enrichment-filtered profile-count plots.",
         "",
         "The enrichment-filtered trait/condition histogram pair uses that same "
@@ -2048,7 +2052,7 @@ def write_figure_methods() -> None:
         "(NCBITaxon:166486), Ruminococcus bromii (NCBITaxon:40518), and "
         "Roseburia inulinivorans (NCBITaxon:360807). These taxa are fixed focal "
         "examples for recurrence audits in decreased profiles; they "
-        "do not define the formal v2 guild score. The formal guild is the "
+        "do not define the formal v2 trait-enrichment score. The formal trait set is the "
         "opposite-direction oxygen-tolerance trait set described above, and the "
         "derived taxa-trait matrix gives each selected focal taxon at least one "
         "of those investigation guild-trait annotations. The "
@@ -2059,22 +2063,23 @@ def write_figure_methods() -> None:
         "## `candidate_taxa_depletion_bias.png`",
         "",
         "Guild-specificity: no. This is a fixed target-taxon direction-count view; "
-        "it is not recomputed from the v2 guild score.",
+        "it is not recomputed from the v2 trait-enrichment score.",
         "",
         "This figure uses the fixed focal taxa listed above, then intersects their "
         "NCBI Taxonomy IDs with "
         "`trait-visualization/taxa_guild_discovery_taxa_metadata.tsv`. That "
         "metadata table supplies the total BugSigDB profile count and the number "
-        "of profiles where each taxon was reported as increased or decreased. For "
-        "each target taxon, depletion bias was calculated as `(decreased profile "
+        "of profiles where each taxon was reported as increased or decreased; "
+        "the figures report these source directions as increased and decreased profiles. For "
+        "each target taxon, decreased-profile bias was calculated as `(decreased profile "
         "count - increased profile count) / total BugSigDB profile count`. The "
-        "horizontal bars show this depletion-bias value for each target taxon. No "
+        "horizontal bars show this decreased-profile-bias value for each target taxon. No "
         "condition or body-site filter is applied to this figure; it summarizes "
         "the overall BugSigDB direction tendency of the preselected focal taxa.",
         "",
         "## `condition_decreased_guild_signal.png`",
         "",
-        "Guild-specificity: yes. This figure uses the anaerobe v2 depletion guild score "
+        "Guild-specificity: yes. This figure uses the anaerobe v2 trait-enrichment score "
         "from the two selected traits.",
         "",
         "Study profiles from all body sites were grouped by BugSigDB condition label. Groups "
@@ -2085,10 +2090,10 @@ def write_figure_methods() -> None:
         "containing `exposure`, `measurement`, or `population`) were removed from "
         "the displayed condition summary. The "
         "figure keeps the top 12 eligible conditions with at least three decreased "
-        "profiles, at least two studies, positive decreased-minus-increased guild "
-        "signal, and positive decreased-profile mean guild z-score, using fallback "
-        "filtering if needed. Conditions are selected and sorted by "
-        "decreased-minus-increased guild signal, and bar length is this "
+        "profiles, at least two studies, positive decreased-minus-increased "
+        "trait-enrichment signal, and positive decreased-profile mean trait z-score, "
+        "using fallback filtering if needed. Conditions are selected and sorted by "
+        "decreased-minus-increased trait-enrichment signal, and bar length is this "
         "enrichment-oriented contrast. The right-side labels show the paired "
         "standardized mean difference (`paired d`) calculated from matched "
         "decreased/increased profiles within the same study and experiment, plus "
@@ -2099,30 +2104,29 @@ def write_figure_methods() -> None:
         "",
         "## `guild_trait_direction_shift.png`",
         "",
-        "Guild-specificity: yes. This figure shows the two selected v2 guild traits "
+        "Guild-specificity: yes. This figure shows the two selected v2 traits "
         "and their decreased-minus-increased profile shifts.",
         "",
-        "For each selected guild trait, the script calculated the mean z-score in "
+        "For each selected trait, the script calculated the mean z-score in "
         "decreased study profiles and the mean z-score in increased study profiles. "
         "Bars show `decreased mean z - increased mean z`; positive values indicate "
-        "traits that are higher in decreased "
-        "profiles.",
+        "traits enriched in decreased profiles.",
         "",
         "## `condition_enriched_profile_histogram.png`",
         "",
         "Guild-specificity: yes. This figure counts profile directions after "
-        "filtering to profiles with at least one positive anaerobe v2 guild-trait "
+        "filtering to profiles with at least one positive anaerobe v2 selected-trait "
         "z-score.",
         "",
-        "The script first counts selected anaerobe v2 guild traits with positive "
+        "The script first counts selected anaerobe v2 traits with positive "
         "z-scores for every study/experiment/direction profile. Broad non-condition "
         "and metadata labels are removed using the same condition filter as the "
-        "condition guild-signal plot. Within each remaining condition and direction, "
-        "profiles with zero enriched guild traits are dropped, then the number of "
+        "condition trait-enrichment plot. Within each remaining condition and direction, "
+        "profiles with zero enriched selected traits are dropped, then the number of "
         "retained profiles is binned as 1, 2, 3-4, 5-9, 10-19, 20-49, 50-99, or "
         "100+. Bars show how many conditions fall into each retained-profile-count "
         "bin for increased and decreased profiles. The legend reports how many "
-        "profiles in each direction had zero enriched guild traits within this "
+        "profiles in each direction had zero enriched selected traits within this "
         "condition-filtered universe and therefore dropped out of this "
         "enrichment-filtered view. The companion TSV "
         "`condition_enriched_profile_counts.tsv` preserves both total and retained "
@@ -2152,11 +2156,11 @@ def write_figure_methods() -> None:
         "Profiles were grouped by `body_site_group`, requiring at least 10 total "
         "profiles per group before enrichment filtering. The display excludes the "
         "generic `Other` body-site group and then keeps body-site groups with at "
-        "least 10 profiles containing a positive anaerobe v2 guild-trait z-score. "
+        "least 10 profiles containing a positive anaerobe v2 selected-trait z-score. "
         "Bubble and stacked bar length encode the number of retained profiles. "
         "The stacked bar segments separate retained increased and decreased "
         "profiles. The legend reports how many profiles in each direction had zero "
-        "enriched guild traits and therefore dropped out of this "
+        "enriched selected traits and therefore dropped out of this "
         "enrichment-filtered anatomical view. The companion TSV "
         "`body_site_enriched_profile_summary.tsv` preserves total, retained, and "
         "zero-enriched profile counts by body-site group and direction.",
@@ -2164,45 +2168,44 @@ def write_figure_methods() -> None:
         "## `anatomical_sites_increased_profile_diagram.png`",
         "",
         "Guild-specificity: yes. This figure is the increased-profile companion "
-        "to `anatomical_sites_diagram.png`; color encodes the anaerobe v2 guild "
-        "score among increased profiles at each body-site group.",
+        "to `anatomical_sites_diagram.png`; color encodes the anaerobe v2 "
+        "trait-enrichment score among increased profiles at each body-site group.",
         "",
         "Profiles were grouped by `body_site_group`, requiring at least "
         "10 profiles per group. The display excludes the generic `Other` body-site "
         "group. Bubble and bar length encode the number of study profiles in the "
-        "body-site group. Color encodes the mean anaerobe v2 guild z-score among "
+        "body-site group. Color encodes the mean anaerobe v2 trait z-score among "
         "increased profiles at that body site. Body-site labels were placed on a "
         "simplified, neutral front-view body outline using fixed anatomical "
         "coordinates for feces/stool, colon, caecum, oral, airway, urogenital, "
         "and unknown labels. The diagram legend also reports how many increased "
-        "and decreased profiles have zero enriched anaerobe v2 guild traits.",
+        "and decreased profiles have zero enriched anaerobe v2 traits.",
         "",
         "## `anatomical_sites_diagram.png`",
         "",
-        "Guild-specificity: yes. Color encodes the anaerobe v2 depletion guild score "
+        "Guild-specificity: yes. Color encodes the anaerobe v2 trait-enrichment score "
         "among decreased profiles at each body-site group.",
         "",
         "Profiles were grouped by `body_site_group`, requiring at least "
         "10 profiles per group. The display excludes the generic `Other` body-site "
         "group. Bubble and bar length encode the number of study profiles in the "
-        "body-site group. Color encodes the mean anaerobe v2 depletion guild "
+        "body-site group. Color encodes the mean anaerobe v2 trait "
         "z-score among decreased profiles at that body site. Body-site labels were "
         "placed on a simplified, neutral front-view body outline using fixed "
         "anatomical coordinates for feces/stool, colon, caecum, oral, airway, "
         "urogenital, and unknown labels. The diagram legend also reports how many "
-        "increased and decreased profiles have zero enriched anaerobe v2 guild "
-        "traits.",
+        "increased and decreased profiles have zero enriched anaerobe v2 traits.",
         "",
         "## `target_taxa_condition_breakdown_bar.png`",
         "",
         "Guild-specificity: no. This is a fixed target-taxon occurrence-count view; "
-        "it is not recomputed from the v2 guild score.",
+        "it is not recomputed from the v2 trait-enrichment score.",
         "",
         "Target-taxon occurrences were loaded from `data/derived/taxa.tsv`, limited "
         "to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study "
         "profile, and joined to the scored study profiles. This produces one row "
         "per focal taxon/profile occurrence with condition, body site, direction, "
-        "and guild-score metadata. The bar chart counts decreased "
+        "and trait-enrichment metadata. The bar chart counts decreased "
         "target-taxon/profile occurrences by condition after removing the broad "
         "non-condition and metadata labels described above. A condition with multiple focal "
         "taxa can therefore contribute multiple occurrences; the chart is an "
@@ -2213,7 +2216,7 @@ def write_figure_methods() -> None:
         "## `condition_target_taxa_stacked_bar.png`",
         "",
         "Guild-specificity: no. This is a fixed target-taxon occurrence-count view; "
-        "it is not recomputed from the v2 guild score.",
+        "it is not recomputed from the v2 trait-enrichment score.",
         "",
         "This figure uses the same target-taxon/profile occurrence table and "
         "broad-label filtering as `target_taxa_condition_breakdown_bar.png`, then "
@@ -2221,7 +2224,7 @@ def write_figure_methods() -> None:
         "count. Each horizontal bar is stacked by focal taxon. Right-side labels "
         "report the total occurrence count, unique decreased-profile study count, "
         "dominant body-site group among the plotted occurrences, and the "
-        "condition-level decreased-minus-increased anaerobe v2 guild-score "
+        "condition-level decreased-minus-increased anaerobe v2 trait-enrichment "
         "contrast when available. Counts are occurrence counts: a profile that "
         "contains multiple focal taxa can contribute once to each corresponding "
         "taxon stack.",
@@ -2238,10 +2241,10 @@ def write_figure_methods() -> None:
         "annotation among anaerobic or obligately anaerobic. For each top "
         "decreased-profile condition, the script intersects that "
         "KG-Microbe-wide universe with taxa actually observed in the condition's "
-        "decreased profiles, identifies v2 guild traits whose z-score is above "
+        "decreased profiles, identifies v2 traits whose z-score is above "
         "zero in the decreased direction and whose decreased-minus-increased "
         "condition contrast is positive, and reports which universe taxa carry "
-        "those enriched guild-trait annotations.",
+        "those enriched trait annotations.",
         "",
     ]
     (OUTPUT_DIR / "figure_methods.md").write_text("\n".join(lines), encoding="utf-8")
@@ -2265,7 +2268,7 @@ def make_plots(
     ax.barh(plot_taxa["target_taxon_name"], plot_taxa["depletion_bias"], color="#8c2d04")
     ax.axvline(0, color="#333333", linewidth=0.8)
     ax.set_xlabel("(decreased profiles - increased profiles) / total profiles")
-    ax.set_title("Anaerobe Candidate Taxa Are Depletion-Biased", pad=28)
+    ax.set_title("Anaerobe Candidate Taxa Are Decreased-Profile Biased", pad=28)
     add_specificity_note(ax, NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE)
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "candidate_taxa_depletion_bias.png")
@@ -2294,9 +2297,9 @@ def make_plots(
                 fontsize=8,
                 color="#334155",
             )
-    ax.set_xlabel("Anaerobe v2 guild enrichment: decreased mean z - increased mean z")
+    ax.set_xlabel("Anaerobe v2 trait enrichment: decreased mean z - increased mean z")
     ax.set_title(
-        "Conditions With Decreased-Profile Anaerobe v2 Guild Enrichment",
+        "Conditions With Anaerobe v2 Trait Enrichment in Decreased Profiles",
         pad=28,
     )
     add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
@@ -2316,7 +2319,7 @@ def make_plots(
     ax.axvline(0, color="#333333", linewidth=0.8)
     ax.set_xlabel("decreased profile mean z - increased profile mean z")
     ax.set_title(
-        "Anaerobe v2 Guild Traits Are Higher in Decreased Profiles",
+        "Anaerobe v2 Traits Enriched in Decreased Profiles",
         pad=28,
     )
     add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
@@ -2331,7 +2334,7 @@ def make_plots(
     save_condition_breakdown_bar_chart(
         condition_counts,
         output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_bar.png",
-        title_prefix="Decreased anaerobe target taxa",
+        title_prefix="Dec-profile anaerobe target taxa",
         color="#2563eb",
         specificity_note=NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE,
     )
@@ -2356,17 +2359,17 @@ def make_plots(
     save_anatomical_sites_diagram(
         body_site_summary,
         output_path=OUTPUT_DIR / "anatomical_sites_diagram.png",
-        title="Anaerobe v2 Depletion: Anatomical Sites",
+        title="Anaerobe v2 Trait Enrichment in Decreased Profiles: Anatomical Sites",
         signal_column="decreased_mean_guild_z",
-        signal_label="decreased-profile guild z",
+        signal_label="decreased-profile trait z",
         zero_enriched_trait_counts=zero_enriched_trait_counts,
     )
     save_anatomical_sites_diagram(
         body_site_summary,
         output_path=OUTPUT_DIR / "anatomical_sites_increased_profile_diagram.png",
-        title="Anaerobe v2 Increased-Profile Signal: Anatomical Sites",
+        title="Anaerobe v2 Trait Enrichment in Increased Profiles: Anatomical Sites",
         signal_column="increased_mean_guild_z",
-        signal_label="increased-profile guild z",
+        signal_label="increased-profile trait z",
         zero_enriched_trait_counts=zero_enriched_trait_counts,
     )
 
@@ -2435,13 +2438,13 @@ def write_summary_report(
         "",
         "## Scope",
         "",
-        "- Guild traits: "
+        "- Selected traits: "
         + ", ".join(f"{name} ({trait_id})" for trait_id, name in GUILD_TRAITS.items()),
         "- Target taxa: " + ", ".join(TARGET_TAXA.values()),
         "- Formal KG-Microbe taxon universe: "
         f"{len(kg_microbe_taxon_universe):,} taxa with at least one core "
         "oxygen-tolerance annotation among " + ", ".join(KG_MICROBE_TAXON_UNIVERSE_TRAITS.values()),
-        "- Guild trait selection audit: `guild_trait_selection.tsv` records the "
+        "- Trait selection audit: `guild_trait_selection.tsv` records the "
         "selected trait IDs, short rationale, and KG-Microbe taxon counts for "
         "each selected trait.",
         "- Context: all body sites, with body-site and condition summaries to separate "
@@ -2451,8 +2454,8 @@ def write_summary_report(
         "",
         "| plot | guild-specific? | basis |",
         "| --- | --- | --- |",
-        "| `condition_decreased_guild_signal.png` | yes | v2 guild score by condition |",
-        "| `guild_trait_direction_shift.png` | yes | the two selected v2 guild traits |",
+        "| `condition_decreased_guild_signal.png` | yes | v2 trait-enrichment score by condition |",
+        "| `guild_trait_direction_shift.png` | yes | the two selected v2 traits |",
         "| `trait_enriched_profile_histogram.png` | yes | trait counts inside "
         "profile-level v2 trait-enrichment filtering |",
         "| `condition_enriched_profile_histogram.png` | yes | condition counts after "
@@ -2460,8 +2463,8 @@ def write_summary_report(
         "| `anatomical_sites_enriched_profile_diagram.png` | yes | anatomical "
         "body-site counts after profile-level v2 trait-enrichment filtering |",
         "| `anatomical_sites_increased_profile_diagram.png` | yes | increased-profile "
-        "v2 guild score by body-site group |",
-        "| `anatomical_sites_diagram.png` | yes | v2 guild score by body-site group |",
+        "v2 trait-enrichment score by body-site group |",
+        "| `anatomical_sites_diagram.png` | yes | v2 trait-enrichment score by body-site group |",
         "| `candidate_taxa_depletion_bias.png` | no | fixed target-taxon direction counts |",
         "| `condition_target_taxa_stacked_bar.png` | no | fixed target-taxon occurrence "
         "counts stacked by taxon |",
@@ -2469,14 +2472,14 @@ def write_summary_report(
         "",
         "## Main Signal",
         "",
-        "The selected anaerobe-only oxygen-tolerance traits are consistently higher "
-        "in decreased profiles than in increased profiles. "
+        "The selected anaerobe-only oxygen-tolerance traits are consistently enriched "
+        "in decreased profiles relative to increased profiles. "
         "This is the decreased-profile counterpart to the facultative-aerobe v2 "
-        "comparison, not a fermentation-defined gut guild.",
+        "comparison, not a fermentation-defined gut trait set.",
         "",
         "Guardrail: the increased-profile anaerobe score is retained in every "
         "condition and body-site summary. It checks whether the anaerobe signal is "
-        "depletion-associated rather than simply high in both directions.",
+        "decreased-profile-associated rather than simply high in both directions.",
         "",
         "| trait | decreased - increased z |",
         "| --- | ---: |",
@@ -2487,9 +2490,9 @@ def write_summary_report(
     lines.extend(
         [
             "",
-            "## Strongest Depletion-Biased Taxa",
+            "## Strongest Decreased-Profile-Biased Taxa",
             "",
-            "| taxon | decreased / increased profiles | depletion bias |",
+            "| taxon | decreased / increased profiles | decreased-profile bias |",
             "| --- | ---: | ---: |",
         ]
     )
@@ -2502,7 +2505,7 @@ def write_summary_report(
     lines.extend(
         [
             "",
-            "## Recurrent Target-Taxon Depletions By Condition",
+            "## Recurrent Target-Taxon Decreased Profiles By Condition",
             "",
             "| taxon | condition | body site | "
             "decreased / increased profiles | decreased studies |",
@@ -2520,10 +2523,10 @@ def write_summary_report(
     lines.extend(
         [
             "",
-            "## Conditions With High Decreased-Profile Guild Signal",
+            "## Conditions With Anaerobe v2 Trait Enrichment in Decreased Profiles",
             "",
             "| condition | profiles | studies | decreased - increased z | paired d | "
-            "paired p | matched pairs | decreased mean guild z |",
+            "paired p | matched pairs | decreased mean trait z |",
             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
     )
@@ -2547,8 +2550,8 @@ def write_summary_report(
                 "## Condition Enriched-Profile Histogram",
                 "",
                 "The enrichment-filtered histogram counts conditions by how many profiles "
-                "remain after dropping profiles with zero positive anaerobe v2 guild-trait "
-                "z-scores. The dropped profiles are still retained in the main guild-score "
+                "remain after dropping profiles with zero positive anaerobe v2 selected-trait "
+                "z-scores. The dropped profiles are still retained in the main trait-enrichment "
                 "summaries and are reported here by profile direction.",
                 "",
                 "| direction | conditions with retained profiles | retained profiles | "
@@ -2574,7 +2577,7 @@ def write_summary_report(
                 "how many retained enriched profiles have a positive z-score for each "
                 "trait. The retained-profile universe is the same one used by the "
                 "condition histogram: profiles with at least one positive anaerobe v2 "
-                "guild-trait z-score.",
+                "selected-trait z-score.",
                 "",
                 "| direction | trait | positive retained profiles | retained profile fraction |",
                 "| --- | --- | ---: | ---: |",
@@ -2594,11 +2597,11 @@ def write_summary_report(
                 "## Enrichment-Filtered Anatomical Sites",
                 "",
                 "The anatomical companion keeps body-site groups with at least 10 "
-                "profiles containing a positive anaerobe v2 guild-trait z-score. "
+                "profiles containing a positive anaerobe v2 selected-trait z-score. "
                 "Counts below are retained profiles after zero-enriched profiles "
                 "drop out.",
                 "",
-                "| body_site_group | retained profiles | inc retained | dec retained | "
+                "| body_site_group | retained profiles | increased retained | decreased retained | "
                 "zero-enriched profiles |",
                 "| --- | ---: | ---: | ---: | ---: |",
             ]
@@ -2620,7 +2623,7 @@ def write_summary_report(
                 "For the top condition signals, this table uses all taxa "
                 "observed in the decreased profiles for that condition that also "
                 "belong to the KG-Microbe-wide anaerobe candidate taxon universe, "
-                "then reports the profile v2 guild traits that are enriched in "
+                "then reports the profile v2 traits that are enriched in "
                 "those same decreased profiles and the universe taxa that carry "
                 "those trait annotations. This is a data-derived guild summary, "
                 "not a fixed focal-taxon list.",
@@ -2644,7 +2647,7 @@ def write_summary_report(
             "",
             "## Body-Site Check",
             "",
-            "| body_site_group | profiles | increased mean guild z | decreased mean guild z | "
+            "| body_site_group | profiles | increased mean trait z | decreased mean trait z | "
             "decreased - increased z |",
             "| --- | ---: | ---: | ---: | ---: |",
         ]
@@ -2663,7 +2666,7 @@ def write_summary_report(
             "",
             "## Top Decreased Profiles To Inspect",
             "",
-            "| profile | condition | body site | guild z | title |",
+            "| profile | condition | body site | trait z | title |",
             "| --- | --- | --- | ---: | --- |",
         ]
     )
@@ -2683,12 +2686,12 @@ def write_summary_report(
             "## Suggested Follow-Up",
             "",
             "1. Treat target-taxon recurrence as an audit view and the selected "
-            "oxygen-tolerance traits as the formal guild score.",
-            "2. Prioritize conditions where decreased profiles have high guild scores "
+            "oxygen-tolerance traits as the formal trait-enrichment score.",
+            "2. Prioritize conditions where decreased profiles have high trait-enrichment scores "
             "and target taxa "
-            "are repeatedly decreased across multiple studies.",
+            "are repeatedly reported in decreased profiles across multiple studies.",
             "3. Compare this anaerobe-only v2 signal against the original "
-            "five-trait guild to separate oxygen-tolerance signal from "
+            "five-trait set to separate oxygen-tolerance signal from "
             "metabolic-capability signal.",
             "",
             "## Files",

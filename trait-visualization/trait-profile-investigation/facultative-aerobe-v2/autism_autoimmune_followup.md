@@ -1,16 +1,16 @@
 # Autism and Autoimmune Disease Follow-Up: Facultative-Aerobe v2
 
-This follow-up starts from the facultative-aerobe increased-profile guild signal and inspects the BugSigDB taxa reported in the autism/autism spectrum disorder and autoimmune disease condition labels.
+This follow-up starts from facultative-aerobe trait enrichment in increased profiles and inspects the BugSigDB taxa reported in the autism/autism spectrum disorder and autoimmune disease condition labels.
 
 ## Plot Guild Specificity
 
 | plot | guild-specific? | basis |
 | --- | --- | --- |
-| `autism_autoimmune_taxa_signed_heatmap.png` | no | taxon direction-count heatmap; guild traits are annotation context |
+| `autism_autoimmune_taxa_signed_heatmap.png` | no | taxon direction-count heatmap; selected traits are annotation context |
 
 ## Included Condition Labels
 
-| condition group | exact condition label | profiles | studies | increased / decreased profiles | increased - decreased guild z | body-site groups |
+| condition group | exact condition label | profiles | studies | increased / decreased profiles | increased - decreased trait z | body-site groups |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
 | Autism / autism spectrum disorder | Autism | 14 | 4 | 8 / 6 | 0.755 | Feces |
 | Autism / autism spectrum disorder | Autism spectrum disorder | 78 | 15 | 42 / 36 | -0.125 | Feces; Saliva |
@@ -24,7 +24,7 @@ The tables below count unique taxon/profile occurrences after deduplicating the 
 
 Top increased taxa:
 
-| taxon | rank | profiles | studies | guild traits |
+| taxon | rank | profiles | studies | selected traits |
 | --- | --- | ---: | ---: | --- |
 | taxon_186803 | genus | 7 | 6 | facultatively aerobic; microaerophilic |
 | taxon_1224 | genus | 6 | 4 | facultatively aerobic; aerobic; microaerophilic |
@@ -41,7 +41,7 @@ Top increased taxa:
 
 Top decreased taxa:
 
-| taxon | rank | profiles | studies | guild traits |
+| taxon | rank | profiles | studies | selected traits |
 | --- | --- | ---: | ---: | --- |
 | taxon_186803 | genus | 9 | 6 | facultatively aerobic; microaerophilic |
 | taxon_171552 | genus | 8 | 4 | aerobic |
@@ -60,7 +60,7 @@ Top decreased taxa:
 
 Top increased taxa:
 
-| taxon | rank | profiles | studies | guild traits |
+| taxon | rank | profiles | studies | selected traits |
 | --- | --- | ---: | ---: | --- |
 | taxon_816 | genus | 3 | 2 | facultatively aerobic; aerobic; microaerophilic |
 | taxon_28116 | genus | 3 | 2 |  |
@@ -77,7 +77,7 @@ Top increased taxa:
 
 Top decreased taxa:
 
-| taxon | rank | profiles | studies | guild traits |
+| taxon | rank | profiles | studies | selected traits |
 | --- | --- | ---: | ---: | --- |
 | taxon_186806 | genus | 3 | 1 |  |
 | taxon_817 | genus | 3 | 1 |  |
@@ -98,7 +98,7 @@ These lists make the profile-similarity interpretation auditable. Shared red lab
 
 ### Shared red labels: exact Autism and Autoimmune disease
 
-| heatmap label | Autism | ASD | Autoimmune disease | guild traits | in heatmap |
+| heatmap label | Autism | ASD | Autoimmune disease | selected traits | in heatmap |
 | --- | ---: | ---: | ---: | --- | --- |
 | NCBI:1224 genus | 3 | 3 | 3 | aerobic; facultatively aerobic; microaerophilic | yes |
 | NCBI:543 genus | 1 | 1 | 2 | aerobic; facultatively aerobic; microaerophilic | yes |
@@ -109,13 +109,13 @@ These lists make the profile-similarity interpretation auditable. Shared red lab
 
 ### Shared blue labels: exact Autism and Autoimmune disease
 
-| heatmap label | Autism | ASD | Autoimmune disease | guild traits | in heatmap |
+| heatmap label | Autism | ASD | Autoimmune disease | selected traits | in heatmap |
 | --- | ---: | ---: | ---: | --- | --- |
 | NCBI:186803 genus | -1 | -1 | -1 | facultatively aerobic; microaerophilic | no |
 
 ### ASD blue-contrast labels
 
-| heatmap label | Autism | ASD | Autoimmune disease | guild traits | in heatmap |
+| heatmap label | Autism | ASD | Autoimmune disease | selected traits | in heatmap |
 | --- | ---: | ---: | ---: | --- | --- |
 | NCBI:171552 genus | 0 | -7 | -1 | aerobic | yes |
 | NCBI:838 genus | 0 | -6 | 0 |  | yes |
@@ -135,7 +135,7 @@ These lists make the profile-similarity interpretation auditable. Shared red lab
 
 ## Inferred Guild Evidence
 
-This section uses a data-derived guild view: for each exact condition label, it identifies v2 guild traits enriched in that condition's increased profiles, then lists taxa observed in those same profiles that also belong to the KG-Microbe-wide candidate universe and carry the enriched trait annotations. The universe contains 2,667 taxa with at least one core oxygen/respiration criterion annotation, not the fixed focal taxa list.
+This section uses a data-derived trait-enrichment view: for each exact condition label, it identifies v2 traits enriched in that condition's increased profiles, then lists taxa observed in those same profiles that also belong to the KG-Microbe-wide candidate universe and carry the enriched trait annotations. The universe contains 2,667 taxa with at least one core oxygen/respiration criterion annotation, not the fixed focal taxa list.
 
 | condition | increased profiles | universe taxa / observed taxa | enriched traits | supporting taxa |
 | --- | ---: | ---: | --- | --- |
@@ -144,15 +144,15 @@ This section uses a data-derived guild view: for each exact condition label, it 
 
 ## Interpretation
 
-This v2 follow-up uses only the narrowed facultative-aerobe guild traits: facultatively aerobic, aerobic, microaerophilic. It supports a label-dependent signal check rather than a broad causal claim.
+This v2 follow-up uses only the narrowed facultative-aerobe selected traits: facultatively aerobic, aerobic, microaerophilic. It supports a label-dependent signal check rather than a broad causal claim.
 
-Included condition labels with positive increased-minus-decreased v2 guild shifts are `Autism` (0.755), `Autoimmune disease` (0.423).
+Included condition labels with positive increased-minus-decreased v2 trait-enrichment shifts are `Autism` (0.755), `Autoimmune disease` (0.423).
 
 At the taxa-list level, overlap should still be interpreted cautiously. The signed heatmap counts direction balance by taxon/profile occurrence, while the guild annotation columns only indicate whether those taxa carry one or more of the v2 oxygen-tolerance traits.
 
 `autism_autoimmune_taxa_signed_pattern_labels.tsv` extracts the heatmap labels that directly support the red/blue readout above so the visual pattern can be audited without manually reading the plot.
 
-The most defensible interpretation is that the exact autism and autoimmune disease labels share a candidate gut dysbiosis axis involving increased facultative or aerotolerant guild signal. This analysis does not show that autism and autoimmune disease are causally linked, driven by the same taxa, or even consistently connected across broader ASD metadata. The autoimmune subset is small, and many taxa are locally unresolved as `taxon_<NCBI id>`, so the taxa-level results should be treated as candidate NCBI IDs for follow-up rather than polished biological names.
+The most defensible interpretation is that the exact autism and autoimmune disease labels share a candidate gut dysbiosis axis involving increased-profile facultative or aerotolerant trait enrichment. This analysis does not show that autism and autoimmune disease are causally linked, driven by the same taxa, or even consistently connected across broader ASD metadata. The autoimmune subset is small, and many taxa are locally unresolved as `taxon_<NCBI id>`, so the taxa-level results should be treated as candidate NCBI IDs for follow-up rather than polished biological names.
 
 ## Heatmap
 

@@ -73,12 +73,13 @@ source for the current PowerPoint deck.
 
 ## Interpretation Rules
 
-- The v2 guild-score panels are trait-score summaries, not new differential
+- The v2 trait-enrichment panels are trait-score summaries, not new differential
   abundance estimates.
 - Target-taxon panels are audit and recurrence views for fixed NCBI Taxonomy ID
-  lists; they do not define the guild score.
-- The parent comparison is aerobe increase versus anaerobe decrease.
+  lists; they do not define the trait-enrichment score.
+- The parent comparison is aerobe trait enrichment in increased profiles versus
+  anaerobe trait enrichment in decreased profiles.
 - Off-diagonal cells in `profile_enrichment_guild_direction_grid.tsv` are
-  guardrails: aerobe score in decreased profiles checks for generally high
-  aerobe signal, and anaerobe score in increased profiles checks for mixed
-  anaerobe signal.
+  guardrails: the aerobe trait-set score in decreased profiles checks for
+  generally high aerobe signal, and the anaerobe trait-set score in increased
+  profiles checks for mixed anaerobe signal.

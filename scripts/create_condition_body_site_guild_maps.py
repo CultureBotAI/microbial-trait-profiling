@@ -67,7 +67,7 @@ class MapConfig:
 
 FACULTATIVE_CONFIG = MapConfig(
     key="facultative_aerobe_increased",
-    title="Condition-to-Body-Site Map: Increased-Profile Facultative-Aerobe Signal",
+    title="Condition-to-Body-Site Map: Facultative-Aerobe Trait Enrichment in Increased Profiles",
     focus_label="increased",
     comparator_label="decreased",
     focus_direction="inc",
@@ -88,7 +88,7 @@ FACULTATIVE_CONFIG = MapConfig(
 
 ANAEROBE_CONFIG = MapConfig(
     key="anaerobe_decreased",
-    title="Condition-to-Body-Site Map: Decreased-Profile Anaerobe Signal",
+    title="Condition-to-Body-Site Map: Anaerobe Trait Enrichment in Decreased Profiles",
     focus_label="decreased",
     comparator_label="increased",
     focus_direction="dec",
@@ -169,7 +169,7 @@ def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 def load_guild_traits(config: MapConfig) -> list[str]:
-    """Load the selected guild traits for one analysis."""
+    """Load the selected traits for one analysis."""
     selection = read_tsv(config.guild_selection_path)
     trait_column = (
         "profile_matrix_object_name"
@@ -189,7 +189,7 @@ def add_guild_scores(
     guild_traits = load_guild_traits(config)
     available_traits = [trait for trait in guild_traits if trait in matrix.columns]
     if not available_traits:
-        msg = f"No guild traits for {config.key} were found in the profile matrix."
+        msg = f"No selected traits for {config.key} were found in the profile matrix."
         raise ValueError(msg)
 
     scored = metadata.copy()
@@ -512,7 +512,7 @@ def plot_condition_body_site_map(
         (
             "Edges connect BugSigDB conditions to anatomical body-site groups. "
             f"Width = {config.focus_label}-profile support; color = "
-            f"{config.focus_label} minus {config.comparator_label} mean guild z-score."
+            f"{config.focus_label} minus {config.comparator_label} mean trait z-score."
         ),
         ha="left",
         va="top",
@@ -526,7 +526,7 @@ def plot_condition_body_site_map(
     sm.set_array([])
     cbar = fig.colorbar(sm, ax=ax, fraction=0.030, pad=0.02, shrink=0.55)
     cbar.set_label(
-        f"{config.focus_label} - {config.comparator_label} mean guild z-score",
+        f"{config.focus_label} - {config.comparator_label} mean trait z-score",
         fontsize=9,
     )
     cbar.ax.tick_params(labelsize=8)
@@ -552,7 +552,7 @@ def plot_condition_body_site_map(
     ]
     legend = ax.legend(
         handles=legend_lines,
-        title=f"{config.focus_label.capitalize()} profiles",
+        title=f"{config.focus_label} profiles",
         loc="lower center",
         bbox_to_anchor=(0.50, -0.015),
         ncol=len(legend_lines),
@@ -566,7 +566,7 @@ def plot_condition_body_site_map(
         0.05,
         0.035,
         (
-            f"Displayed edges require at least {MIN_FOCUS_PROFILES} focus-direction profiles, "
+            f"Displayed edges require at least {MIN_FOCUS_PROFILES} {config.focus_label} profiles, "
             f"{MIN_STUDIES} studies, positive focus mean z-score, and are ranked by "
             "contrast-weighted support. Other/unknown body-site groups and broad metadata-like "
             "conditions are excluded."

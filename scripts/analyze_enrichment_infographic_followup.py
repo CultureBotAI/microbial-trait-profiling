@@ -1368,18 +1368,19 @@ def write_report(
     lines.extend(
         [
             "",
-            "## How Guilds Connect To Profiles",
+            "## How Trait Sets Connect To Profiles",
             "",
             "A profile is one BugSigDB study/experiment/direction row. Its trait vector "
             "counts KG-Microbe trait annotations among organisms reported as increased "
-            "or decreased in that experiment. A guild is a named set of biologically "
+            "or decreased in that experiment. A trait set is a named group of biologically "
             "related traits, such as `aerobe_v2` or `anaerobe_v2_depletion`. A profile "
-            "connects to a guild when the guild's trait columns carry signal in that "
+            "connects to a trait set when the selected trait columns carry signal in that "
             "profile; organism support is then checked by intersecting organisms observed "
             "in the same profile with organism-trait annotations from "
             "`data/derived/taxa_trait_matrix.tsv`.",
             "",
-            "| guild | condition | profiles | mean guild signal | mean relative guild signal |",
+            "| trait set | condition | profiles | mean trait-set signal | "
+            "mean relative trait-set signal |",
             "| --- | --- | ---: | ---: | ---: |",
         ]
     )

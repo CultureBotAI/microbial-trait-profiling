@@ -4,7 +4,7 @@ These notes describe every PNG in this investigation folder. Interpretations are
 
 ## Shared Inputs
 
-Study-profile z-scores were read from `trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv` and joined to study metadata from `trait-visualization/study_trait_profile_study_metadata.tsv`. The facultative-aerobe guild score was the row-wise mean of facultatively aerobic, aerobic, gram negative, motile, microaerophilic, and nitrate_reduction traits. Direction labels (`increased` and `decreased`) were taken from BugSigDB's curated `Abundance in Group 1` signature field.
+Study-profile z-scores were read from `trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv` and joined to study metadata from `trait-visualization/study_trait_profile_study_metadata.tsv`. The facultative-aerobe trait-enrichment score was the row-wise mean of facultatively aerobic, aerobic, gram negative, motile, microaerophilic, and nitrate_reduction traits. Direction labels (`increased` and `decreased`) were taken from BugSigDB's curated `Abundance in Group 1` signature field.
 
 Focal taxa were defined a priori by NCBI Taxonomy ID: Parvimonas micra, Klebsiella pneumoniae, Streptococcus anginosus, Escherichia coli, Fusobacterium nucleatum, Enterocloster bolteae, Eggerthella lenta, Prevotella intermedia, Porphyromonas gingivalis, and Veillonella dispar.
 
