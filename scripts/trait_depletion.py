@@ -1,0 +1,453 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import sys
+"""Trait depletion using a hypergeometric test.
+
+Method summary:
+1. Parse trait count rows grouped by study_id, experiment_id, and inc_dec
+2. Compute per-row hypergeometric depletion p-values for observed trait counts
+3. Apply global Benjamini-Hochberg FDR correction
+4. Keep only traits passing a significance threshold (default FDR q <= 0.05)
+5. Emit a compact manuscript-style bullet list and optional structured TSV
+"""
+
+import argparse
+import csv
+from collections import defaultdict
+import gzip
+import math
+from pathlib import Path
+
+try:
+    from scipy.stats import hypergeom as _scipy_hypergeom  # type: ignore
+    _HAVE_SCIPY = True
+except Exception:
+    _scipy_hypergeom = None
+    _HAVE_SCIPY = False
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Trait depletion report with hypergeometric p-values"
+    )
+    parser.add_argument("--input", type=Path, required=True, help="Path to trait TSV file")
+    parser.add_argument("--output", type=Path, required=True, help="Path to write text report")
+    parser.add_argument(
+        "--tsv-output",
+        type=Path,
+        help="Path to write structured TSV results",
+    )
+    parser.add_argument(
+        "--p-threshold",
+        type=float,
+        default=0.001,
+        help="Significance threshold (applied to FDR if used, else p-value)",
+    )
+    parser.add_argument(
+        "--fdr",
+        action="store_true",
+        default=True,
+        help="Apply Benjamini-Hochberg FDR correction (default: True)",
+    )
+    parser.add_argument(
+        "--no-fdr",
+        action="store_false",
+        dest="fdr",
+        help="Disable FDR correction",
+    )
+    parser.add_argument(
+        "--fdr-scope",
+        choices=["global", "profile"],
+        default="global",
+        help="Scope for FDR correction (default: global)",
+    )
+    parser.add_argument(
+        "--max-fold",
+        type=float,
+        default=0.67,
+        help="Maximum fold depletion (count / expected)",
+    )
+    parser.add_argument(
+        "--max-traits-per-row",
+        type=int,
+        default=0,
+        help="Maximum number of bullet traits to show per row in text report (0 or -1 for all)",
+    )
+    return parser.parse_args()
+
+
+def _to_float(value: str) -> float:
+    cleaned = value.strip()
+    if cleaned == "":
+        return 0.0
+    return float(cleaned)
+
+
+def _to_int(value: str) -> int:
+    return int(_to_float(value))
+
+
+def _comb(n: int, k: int) -> int:
+    if k < 0 or k > n:
+        return 0
+    return math.comb(n, k)
+
+
+def hypergeom_cdf(x: int, population_size: int, population_successes: int, draws: int) -> float:
+    """Return P[X <= x] for Hypergeometric(population_size, population_successes, draws)."""
+    # Use SciPy's implementation if available for speed and numerical stability
+    if _HAVE_SCIPY:
+        # scipy.hypergeom.cdf(k, M, K, N) == P[X <= k]
+        try:
+            return float(_scipy_hypergeom.cdf(x, population_size, population_successes, draws))
+        except Exception:
+            pass
+
+    # Fallback calculation: P(X <= x) = sum_{k=0}^{x} P(X=k)
+    if x < 0:
+        return 0.0
+    max_k = min(population_successes, draws)
+    if x >= max_k:
+        return 1.0
+
+    # Fallback using recurrence: P(X=k+1) = P(X=k) * (K-k)(N-k) / ((k+1)(M-K-N+k+1))
+    # Starting from k=0 is safer for CDF.
+    try:
+        M, K, N = population_size, population_successes, draws
+        
+        # P(X=0) = comb(M-K, N) / comb(M, N)
+        # log P(X=0) = log_comb(M-K, N) - log_comb(M, N)
+        def log_comb(n, k):
+            if k < 0 or k > n: return -float('inf')
+            return math.lgamma(n + 1) - math.lgamma(k + 1) - math.lgamma(n - k + 1)
+        
+        log_p0 = log_comb(M - K, N) - log_comb(M, N)
+        curr_px = math.exp(log_p0)
+        p_sum = curr_px
+        
+        for k in range(0, x):
+            # px(k+1) = px(k) * (K-k)(N-k) / ((k+1)(M-K-N+k+1))
+            curr_px *= (K - k) * (N - k) / ((k + 1) * (M - K - N + k + 1))
+            p_sum += curr_px
+            
+        return min(p_sum, 1.0)
+    except (OverflowError, MemoryError, ZeroDivisionError):
+        return 1.0
+
+
+def hypergeom_cdf_many(
+    counts: list[int],
+    population_size: int,
+    population_successes: list[int],
+    draws: int,
+) -> list[float]:
+    """Return P[X <= x] for many Hypergeometric draws."""
+    if not counts:
+        return []
+
+    if _HAVE_SCIPY:
+        try:
+            # scipy.hypergeom.cdf(k, M, K, N) == P[X <= k]
+            values = _scipy_hypergeom.cdf(
+                counts,
+                population_size,
+                population_successes,
+                draws,
+            )
+            if hasattr(values, "__iter__"):
+                return [float(v) for v in values]
+            return [float(values)]
+        except Exception:
+            pass
+
+    # Fallback loop
+    results = []
+    for x, K in zip(counts, population_successes, strict=True):
+        results.append(hypergeom_cdf(x, population_size, K, draws))
+    return results
+
+
+def benjamini_hochberg(p_values: list[float]) -> list[float]:
+    """Apply Benjamini-Hochberg FDR correction."""
+    n = len(p_values)
+    if n == 0:
+        return []
+
+    # Sort indices by p-value
+    indexed_p = sorted(enumerate(p_values), key=lambda x: x[1])
+    q_values = [0.0] * n
+
+    min_q = float("inf")
+    for i in range(n - 1, -1, -1):
+        idx, p = indexed_p[i]
+        rank = i + 1
+        q = (p * n) / rank
+        min_q = min(min_q, q)
+        q_values[idx] = min(min_q, 1.0)
+
+    return q_values
+
+
+def format_pvalue(value: float) -> str:
+    if value < 0.0001:
+        return f"{value:.6g}"
+    return f"{value:.4f}"
+
+
+def format_trait_name(name: str) -> str:
+    words = name.split()
+    if not words:
+        return name
+    return " ".join(word if word.isupper() else word.capitalize() for word in words)
+
+
+def open_input_text(path: Path):
+    if path.suffix == ".gz":
+        return gzip.open(path, "rt", encoding="utf-8", newline="")
+    return path.open("r", encoding="utf-8", newline="")
+
+
+def main() -> None:
+    args = parse_args()
+
+    with open_input_text(args.input) as fh:
+        reader = csv.DictReader(fh, delimiter="\t")
+        fieldnames = reader.fieldnames or []
+        required = {"study_id", "experiment_id", "inc_dec"}
+        missing = required - set(fieldnames)
+        if missing:
+            raise ValueError(f"Input TSV missing required columns: {sorted(missing)}")
+
+        exclude_cols = {"study_id", "experiment_id", "inc_dec"}
+        trait_columns = [
+            col for col in fieldnames
+            if col not in exclude_cols and "mediadive.medium:" not in col
+        ]
+        if not trait_columns:
+            raise ValueError("No trait columns found in input TSV")
+
+        # 1. Read all rows to identify paired experiments
+        all_raw_rows = list(reader)
+        experiment_directions = defaultdict(set)
+        for row in all_raw_rows:
+            sid = row.get("study_id", "").strip()
+            eid = row.get("experiment_id", "").strip()
+            direction = row.get("inc_dec", "").strip().lower()
+            if sid and eid and direction in {"inc", "dec"}:
+                experiment_directions[(sid, eid)].add(direction)
+        
+        # Identify experiments with both 'inc' and 'dec'
+        paired_experiments = {
+            key for key, dirs in experiment_directions.items()
+            if "inc" in dirs and "dec" in dirs
+        }
+        
+        print(f"Total experiments found: {len(experiment_directions)}")
+        print(f"Paired experiments identified: {len(paired_experiments)}")
+        print(f"Dropping {len(experiment_directions) - len(paired_experiments)} unpaired experiments.")
+
+        rows = []
+        # Background counts for hypergeometric test
+        background_counts = dict.fromkeys(trait_columns, 0)
+        # Count how many profiles each trait appeared in (denominator for prevalence)
+        testable_counts = dict.fromkeys(trait_columns, 0)
+        row_totals: list[int] = []
+        background_total = 0
+
+        # 2. Process only paired rows
+        for row in all_raw_rows:
+            sid = row.get("study_id", "").strip()
+            eid = row.get("experiment_id", "").strip()
+            if (sid, eid) not in paired_experiments:
+                continue
+
+            row_traits_data = {}
+            row_total = 0
+            for t in trait_columns:
+                val = row.get(t)
+                if val and val != "0":
+                    try:
+                        c = int(val)
+                    except ValueError:
+                        try:
+                            c = int(float(val))
+                        except ValueError:
+                            c = 0
+                    if c > 0:
+                        row_traits_data[t] = c
+                        row_total += c
+                        background_counts[t] += c
+                        testable_counts[t] += 1
+                else:
+                    # Trait is present in study but not in this profile
+                    testable_counts[t] += 1
+            
+            rows.append({
+                "study_id": sid,
+                "experiment_id": eid,
+                "inc_dec": row.get("inc_dec", ""),
+                "traits": row_traits_data
+            })
+            row_totals.append(row_total)
+            background_total += row_total
+
+    if not rows:
+        raise ValueError("Input TSV contains no rows")
+
+    # Second pass: Collect all P-values
+    all_hits: list[dict] = []
+    for row, row_total in zip(rows, row_totals, strict=True):
+        if row_total == 0:
+            continue
+
+        # For depletion, we test ALL traits, even those with count 0 in this profile
+        row_traits = trait_columns
+        row_counts = [row["traits"].get(t, 0) for t in row_traits]
+        row_successes = [int(background_counts[t]) for t in row_traits]
+
+        # Calculate P[X <= x]
+        p_values = hypergeom_cdf_many(row_counts, background_total, row_successes, row_total)
+        
+        # Per-profile FDR correction if requested
+        if args.fdr and args.fdr_scope == "profile":
+            q_values = benjamini_hochberg(p_values)
+        else:
+            q_values = p_values 
+
+        for trait, p, q, count, trait_total in zip(
+            row_traits, p_values, q_values, row_counts, row_successes, strict=True
+        ):
+            expected = row_total * (trait_total / background_total)
+            fold = (count / expected) if expected > 0 else 0.0
+            all_hits.append({
+                "study_id": row["study_id"],
+                "experiment_id": row["experiment_id"],
+                "inc_dec": row["inc_dec"],
+                "trait": trait,
+                "p_value": p,
+                "fdr_q": q,
+                "fold": fold,
+                "count": count,
+                "expected": expected,
+                "row_total": row_total,
+                "trait_total": trait_total,
+                "testable_profiles": testable_counts[trait]
+            })
+
+    # Apply global FDR correction if requested
+    if args.fdr:
+        if args.fdr_scope == "global":
+            p_vals = [h["p_value"] for h in all_hits]
+            q_vals = benjamini_hochberg(p_vals)
+            for h, q in zip(all_hits, q_vals, strict=True):
+                h["fdr_q"] = q
+                h["is_significant"] = (q <= args.p_threshold) and (h["fold"] <= args.max_fold)
+        else:
+            for h in all_hits:
+                h["is_significant"] = (h["fdr_q"] <= args.p_threshold) and (h["fold"] <= args.max_fold)
+    else:
+        for h in all_hits:
+            h["fdr_q"] = h["p_value"]
+            h["is_significant"] = (h["p_value"] <= args.p_threshold) and (h["fold"] <= args.max_fold)
+
+    # Filter significant hits
+    significant_hits = [h for h in all_hits if h["is_significant"]]
+
+    # Write TSV output if requested
+    if args.tsv_output:
+        args.tsv_output.parent.mkdir(parents=True, exist_ok=True)
+        significant_hits.sort(key=lambda h: (h["fdr_q"], h["study_id"], h["experiment_id"], h["trait"]))
+        with args.tsv_output.open("w", encoding="utf-8", newline="") as out_fh:
+            out_fh.write(f"# FDR: {args.fdr}\n")
+            out_fh.write(f"# FDR-Scope: {args.fdr_scope}\n")
+            out_fh.write(f"# P-Threshold: {args.p_threshold}\n")
+            out_fh.write(f"# Max-Fold: {args.max_fold}\n")
+            out_fh.write(f"# Max-Traits-Per-Row-Report: {args.max_traits_per_row}\n")
+            testable_profile_count = len([rt for rt in row_totals if rt > 0])
+            mean_assertions = sum(row_totals) / testable_profile_count if testable_profile_count > 0 else 0
+            out_fh.write(f"# Total-Profiles-Input: {len(rows)}\n")
+            out_fh.write(f"# Testable-Profiles: {testable_profile_count}\n")
+            out_fh.write(f"# Mean-Assertions-Per-Testable-Profile: {mean_assertions:.2f}\n")
+            out_fh.write(f"# Total-Tests-Performed: {len(all_hits)}\n")
+            
+            writer = csv.DictWriter(out_fh, fieldnames=[
+                "study_id", "experiment_id", "inc_dec", "trait",
+                "p_value", "fdr_q", "fold", "count", "expected",
+                "testable_profiles"
+            ], delimiter="\t")
+            writer.writeheader()
+            for h in significant_hits:
+                writer.writerow({
+                    "study_id": h["study_id"],
+                    "experiment_id": h["experiment_id"],
+                    "inc_dec": h["inc_dec"],
+                    "trait": h["trait"],
+                    "p_value": h["p_value"],
+                    "fdr_q": h["fdr_q"],
+                    "fold": h["fold"],
+                    "count": h["count"],
+                    "expected": h["expected"],
+                    "testable_profiles": h["testable_profiles"]
+                })
+
+    # Generate text report
+    report_lines: list[str] = []
+    if args.fdr:
+        report_lines.append(f"FDR q < {args.p_threshold:g} (Depletion)")
+    else:
+        report_lines.append(f"p < {args.p_threshold:g} (Depletion)")
+    if args.max_fold < float("inf"):
+        report_lines.append(f"Max Fold <= {args.max_fold:g}")
+    
+    report_lines.append("")
+
+    report_groups: dict[tuple, list[dict]] = {}
+    for h in significant_hits:
+        key = (h["study_id"], h["experiment_id"], h["inc_dec"])
+        if key not in report_groups:
+            report_groups[key] = []
+        report_groups[key].append(h)
+
+    rows_with_hits = 0
+    for key, group in report_groups.items():
+        rows_with_hits += 1
+        group.sort(key=lambda h: (h["fdr_q"], h["fold"], h["trait"]))
+
+        report_lines.append(f"{key[0]}\t{key[1]}\t{key[2]}")
+        report_lines.append("")
+        
+        limit = args.max_traits_per_row
+        subset = group if limit <= 0 else group[:limit]
+        
+        for h in subset:
+            report_lines.append(
+                "- "
+                f"{format_trait_name(h['trait'])}, "
+                f"{format_pvalue(h['fdr_q'])}, "
+                f"fold={h['fold']:.2f}"
+            )
+        report_lines.append("")
+        report_lines.append("---")
+        report_lines.append("")
+
+    if rows_with_hits == 0:
+        report_lines.append("No traits passed the depletion threshold.")
+        report_lines.append("")
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text("\n".join(report_lines).rstrip() + "\n", encoding="utf-8")
+
+    print(f"Input rows: {len(rows)}")
+    print(f"Trait columns: {len(trait_columns)}")
+    testable_profile_count = len([rt for rt in row_totals if rt > 0])
+    print(f"Total testable profiles: {testable_profile_count}")
+    print(f"Total tests performed: {len(all_hits)}")
+    print(f"Significant depletion hits: {len(significant_hits)}")
+    print(f"Rows with hits: {rows_with_hits}")
+    print(f"Wrote report: {args.output}")
+    if args.tsv_output:
+        print(f"Wrote results TSV: {args.tsv_output}")
+
+
+if __name__ == "__main__":
+    main()

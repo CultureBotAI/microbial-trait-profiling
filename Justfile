@@ -157,6 +157,19 @@ genheatmap: analyze
 plot-histograms: genheatmap
 	just timed plot-histograms "uv run python scripts/plot_enrichment_histograms.py"
 
+# Run hypergeometric depletion analysis.
+analyze-depletion: study-trait-profiles
+	just timed analyze-depletion "uv run python scripts/trait_depletion.py \
+	  --input data/derived/study_trait_profiles_wide.tsv \
+	  --output data/derived/trait_depletion_report.txt \
+	  --tsv-output data/derived/trait_depletion_results.tsv \
+	  --p-threshold {{p_threshold}} \
+	  --max-fold 0.5"
+
+# Generate a visual summary of trait depletion.
+depletion-infographic: analyze-depletion
+	just timed depletion-infographic "uv run python scripts/generate_depletion_summary.py"
+
 # Run site-stratified enrichment (e.g., Feces only). Partitioning the input
 # TSV before `analyze` produces site-specific backgrounds ($M$ and $K$)
 # and prevalence rankings for free.
