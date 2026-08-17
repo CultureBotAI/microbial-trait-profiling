@@ -28,6 +28,7 @@ MIN_STUDIES = 2
 MAX_DISPLAY_EDGES = 18
 MAX_DISPLAY_CONDITIONS = 12
 MAX_LABEL_WIDTH = 36
+MAX_OTHER_SITES_PER_CONDITION = 3
 
 SLATE_50 = "#f8fafc"
 SLATE_200 = "#e2e8f0"
@@ -59,6 +60,10 @@ class MapConfig:
     @property
     def edge_tsv_path(self) -> Path:
         return self.output_dir / f"{self.output_stem}_edges.tsv"
+
+    @property
+    def sampled_site_tsv_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_sampled_body_sites.tsv"
 
     @property
     def png_path(self) -> Path:
@@ -148,6 +153,24 @@ def is_display_body_site(value: object) -> bool:
     return label not in {"unknown", "other"}
 
 
+def join_unique(values: pd.Series) -> str:
+    """Join unique non-empty values while preserving first-seen order."""
+    seen: list[str] = []
+    for value in values:
+        text = clean_text(value)
+        if text != "unknown" and text not in seen:
+            seen.append(text)
+    return "; ".join(seen)
+
+
+def split_joined_values(value: object) -> list[str]:
+    """Split a semicolon-delimited value emitted by join_unique."""
+    text = clean_text(value)
+    if text == "unknown":
+        return []
+    return [part.strip() for part in text.split(";") if part.strip()]
+
+
 def read_tsv(path: Path, *, index_col: int | str | None = None) -> pd.DataFrame:
     """Read a TSV file with stable defaults."""
     return pd.read_csv(path, sep="\t", index_col=index_col)
@@ -206,17 +229,20 @@ def nan_mean(series: pd.Series) -> float:
     return float(series.mean())
 
 
-def summarize_condition_body_site_edges(
-    scored: pd.DataFrame,
-    config: MapConfig,
-) -> pd.DataFrame:
-    """Summarize guild z-scores for each condition/body-site pair."""
+def condition_body_site_source(scored: pd.DataFrame, config: MapConfig) -> pd.DataFrame:
+    """Return condition/body-site profile rows eligible for map summarization."""
     condition_is_allowed = ~scored["condition"].map(
         lambda value: is_excluded_condition_label(value, config.excluded_condition_labels)
     )
-    source = scored[
-        condition_is_allowed & scored["body_site_group"].map(is_display_body_site)
-    ].copy()
+    return scored[condition_is_allowed & scored["body_site_group"].map(is_display_body_site)].copy()
+
+
+def summarize_sampled_body_sites(
+    scored: pd.DataFrame,
+    config: MapConfig,
+) -> pd.DataFrame:
+    """Summarize every sampled condition/body-site pair before display filtering."""
+    source = condition_body_site_source(scored, config)
 
     records: list[dict[str, object]] = []
     for (condition, body_site_group), group in source.groupby(
@@ -226,8 +252,6 @@ def summarize_condition_body_site_edges(
     ):
         focus = group[group["inc_dec"] == config.focus_direction]
         comparator = group[group["inc_dec"] == config.comparator_direction]
-        if focus.empty:
-            continue
 
         focus_mean = nan_mean(focus["guild_z_mean"])
         comparator_mean = nan_mean(comparator["guild_z_mean"])
@@ -239,10 +263,15 @@ def summarize_condition_body_site_edges(
                 "body_site_group": clean_text(body_site_group),
                 "profile_count": len(group),
                 "study_count": group["study_id"].nunique(),
+                "study_ids": join_unique(group["study_id"]),
                 "focus_direction": config.focus_label,
                 "comparator_direction": config.comparator_label,
                 "focus_profile_count": len(focus),
+                "focus_study_count": focus["study_id"].nunique(),
+                "focus_study_ids": join_unique(focus["study_id"]),
                 "comparator_profile_count": len(comparator),
+                "comparator_study_count": comparator["study_id"].nunique(),
+                "comparator_study_ids": join_unique(comparator["study_id"]),
                 "increased_profile_count": int((group["inc_dec"] == "inc").sum()),
                 "decreased_profile_count": int((group["inc_dec"] == "dec").sum()),
                 "mean_guild_z": nan_mean(group["guild_z_mean"]),
@@ -261,7 +290,18 @@ def summarize_condition_body_site_edges(
     if not records:
         return pd.DataFrame()
 
-    edges = pd.DataFrame.from_records(records)
+    return pd.DataFrame.from_records(records)
+
+
+def summarize_condition_body_site_edges(sampled_sites: pd.DataFrame) -> pd.DataFrame:
+    """Build display-ranking edges from sampled condition/body-site pairs."""
+    if sampled_sites.empty:
+        return pd.DataFrame()
+
+    edges = sampled_sites[sampled_sites["focus_profile_count"] > 0].copy()
+    if edges.empty:
+        return pd.DataFrame()
+
     edges["rank_signal"] = edges["focus_minus_comparator_guild_z"].fillna(
         edges["focus_mean_guild_z"]
     )
@@ -335,6 +375,19 @@ def node_positions(labels: list[str]) -> dict[str, float]:
     return dict(zip(labels, positions, strict=True))
 
 
+def union_joined_counts(group: pd.DataFrame, column: str, fallback_column: str) -> int:
+    """Count unique joined identifiers, falling back to the existing count column."""
+    values: set[str] = set()
+    if column in group:
+        for value in group[column]:
+            values.update(split_joined_values(value))
+    if values:
+        return len(values)
+    if fallback_column in group and not group[fallback_column].empty:
+        return int(group[fallback_column].max())
+    return 0
+
+
 def weighted_node_stats(edges: pd.DataFrame, node_column: str) -> pd.DataFrame:
     """Summarize displayed node support and focus mean z-score."""
     rows: list[dict[str, object]] = []
@@ -348,7 +401,7 @@ def weighted_node_stats(edges: pd.DataFrame, node_column: str) -> pd.DataFrame:
             {
                 node_column: label,
                 "focus_profile_count": int(group["focus_profile_count"].sum()),
-                "study_count": int(group["study_count"].max()),
+                "study_count": union_joined_counts(group, "study_ids", "study_count"),
                 "focus_mean_guild_z": float(np.average(focus_values, weights=weights)),
                 "focus_minus_comparator_guild_z": float(
                     np.average(contrast_values, weights=weights)
@@ -399,6 +452,7 @@ def draw_node(
     label: str,
     stats_row: pd.Series,
     align: str,
+    note: str = "",
 ) -> None:
     """Draw a node marker and its text label."""
     ax.add_patch(
@@ -412,23 +466,69 @@ def draw_node(
         )
     )
     text_x = x - 0.025 if align == "right" else x + 0.025
+    text_lines = [
+        wrap_label(label),
+        (
+            f"n={int(stats_row.focus_profile_count)}, "
+            f"s={int(stats_row.study_count)}, "
+            f"z={stats_row.focus_mean_guild_z:+.2f}"
+        ),
+    ]
+    if note:
+        text_lines.extend(wrap(note, width=42))
     ax.text(
         text_x,
         y,
-        (
-            f"{wrap_label(label)}\n"
-            f"n={int(stats_row.focus_profile_count)}, z={stats_row.focus_mean_guild_z:+.2f}"
-        ),
+        "\n".join(text_lines),
         ha=align,
         va="center",
-        fontsize=8.6,
+        fontsize=7.7 if note else 8.6,
         color=SLATE_900,
         linespacing=1.08,
     )
 
 
+def build_condition_sampled_site_notes(
+    display_edges: pd.DataFrame,
+    sampled_sites: pd.DataFrame,
+) -> dict[str, str]:
+    """List sampled body sites for displayed conditions that are not drawn as edges."""
+    notes: dict[str, str] = {}
+    if sampled_sites.empty:
+        return notes
+
+    displayed_by_condition = {
+        condition: set(group["body_site_group"])
+        for condition, group in display_edges.groupby("condition", sort=False)
+    }
+    for condition, displayed_sites in displayed_by_condition.items():
+        condition_sites = sampled_sites[
+            (sampled_sites["condition"] == condition)
+            & ~sampled_sites["body_site_group"].isin(displayed_sites)
+        ].copy()
+        if condition_sites.empty:
+            continue
+        condition_sites = condition_sites.sort_values(
+            ["profile_count", "study_count", "body_site_group"],
+            ascending=[False, False, True],
+        )
+        entries = [
+            (
+                f"{compact_label(row.body_site_group, width=18)} "
+                f"n={int(row.profile_count)} s={int(row.study_count)}"
+            )
+            for row in condition_sites.head(MAX_OTHER_SITES_PER_CONDITION).itertuples()
+        ]
+        remaining = len(condition_sites) - len(entries)
+        if remaining > 0:
+            entries.append(f"+{remaining} more")
+        notes[condition] = "other sampled sites: " + "; ".join(entries)
+    return notes
+
+
 def plot_condition_body_site_map(
     display_edges: pd.DataFrame,
+    sampled_sites: pd.DataFrame,
     config: MapConfig,
     output_path: Path,
 ) -> None:
@@ -453,8 +553,14 @@ def plot_condition_body_site_map(
     body_site_y = node_positions(body_site_order)
     condition_stats = weighted_node_stats(display_edges, "condition")
     body_site_stats = weighted_node_stats(display_edges, "body_site_group")
+    condition_notes = build_condition_sampled_site_notes(display_edges, sampled_sites)
 
-    height = max(8.0, 1.0 + 0.58 * max(len(condition_order), len(body_site_order)))
+    height = max(
+        8.0,
+        1.2
+        + 0.64 * max(len(condition_order), len(body_site_order))
+        + 0.12 * len(condition_notes),
+    )
     fig, ax = plt.subplots(figsize=(13.5, height))
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
@@ -494,6 +600,7 @@ def plot_condition_body_site_map(
             label=condition,
             stats_row=condition_stats.loc[condition],
             align="right",
+            note=condition_notes.get(condition, ""),
         )
     for body_site in body_site_order:
         draw_node(
@@ -512,7 +619,8 @@ def plot_condition_body_site_map(
         (
             "Edges connect BugSigDB conditions to anatomical body-site groups. "
             f"Width = {config.focus_label}-profile support; color = "
-            f"{config.focus_label} minus {config.comparator_label} mean trait z-score."
+            f"{config.focus_label} minus {config.comparator_label} mean trait z-score; "
+            "s = unique studies."
         ),
         ha="left",
         va="top",
@@ -568,8 +676,8 @@ def plot_condition_body_site_map(
         (
             f"Displayed edges require at least {MIN_FOCUS_PROFILES} {config.focus_label} profiles, "
             f"{MIN_STUDIES} studies, positive focus mean z-score, and are ranked by "
-            "contrast-weighted support. Other/unknown body-site groups and broad metadata-like "
-            "conditions are excluded."
+            "contrast-weighted support. Condition notes list sampled body sites for that "
+            "condition that were not drawn as enriched edges."
         ),
         ha="left",
         va="bottom",
@@ -585,7 +693,8 @@ def plot_condition_body_site_map(
 def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapConfig) -> None:
     """Write the edge table and PNG for one analysis."""
     scored = add_guild_scores(matrix, metadata, config)
-    edges = summarize_condition_body_site_edges(scored, config)
+    sampled_sites = summarize_sampled_body_sites(scored, config)
+    edges = summarize_condition_body_site_edges(sampled_sites)
     display_edges = select_display_edges(edges)
     display_keys = set(
         zip(display_edges["condition"], display_edges["body_site_group"], strict=True)
@@ -594,9 +703,24 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
         (condition, body_site) in display_keys
         for condition, body_site in zip(edges["condition"], edges["body_site_group"], strict=True)
     ]
+    sampled_sites["displayed_in_map"] = [
+        (condition, body_site) in display_keys
+        for condition, body_site in zip(
+            sampled_sites["condition"], sampled_sites["body_site_group"], strict=True
+        )
+    ]
+    displayed_conditions = set(display_edges["condition"])
+    sampled_sites["sampled_not_displayed_for_displayed_condition"] = [
+        condition in displayed_conditions and not displayed
+        for condition, displayed in zip(
+            sampled_sites["condition"], sampled_sites["displayed_in_map"], strict=True
+        )
+    ]
     edges.to_csv(config.edge_tsv_path, sep="\t", index=False)
-    plot_condition_body_site_map(display_edges, config, config.png_path)
+    sampled_sites.to_csv(config.sampled_site_tsv_path, sep="\t", index=False)
+    plot_condition_body_site_map(display_edges, sampled_sites, config, config.png_path)
     print(f"Wrote: {config.edge_tsv_path}")
+    print(f"Wrote: {config.sampled_site_tsv_path}")
     print(f"Wrote: {config.png_path}")
 
 

@@ -61,6 +61,14 @@ Guild-specificity: yes. Color encodes the anaerobe v2 trait-enrichment score amo
 
 Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 trait z-score among decreased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using fixed anatomical coordinates for feces/stool, colon, caecum, oral, airway, urogenital, and unknown labels. The diagram legend also reports how many increased and decreased profiles have zero enriched anaerobe v2 traits.
 
+## `condition_body_site_guild_map.png`
+
+Guild-specificity: yes. This figure maps condition labels to anatomical body-site groups using the anaerobe v2 trait-enrichment score among decreased profiles.
+
+Profiles were grouped by BugSigDB condition and `body_site_group` after removing broad metadata-like condition labels and excluding `Other` or `unknown` body-site groups. Each condition/body-site pair was scored by the mean anaerobe selected-trait z-score in decreased profiles, the mean score in increased profiles, and the decreased-minus-increased contrast. Displayed edges require at least three decreased profiles, at least two studies, and positive decreased-profile mean trait z-score; when enough edges pass, the display prioritizes positive decreased-minus-increased contrasts. Edge width is decreased-profile count, edge color is decreased-minus-increased mean trait z-score, and node labels report `n=` focus-profile count, `s=` unique study count, and focus mean trait z-score. For displayed conditions with additional sampled body-site groups that were not drawn as enriched edges, the condition label lists those body sites as `other sampled sites` with their profile and study support.
+
+The edge TSV `condition_body_site_guild_map_edges.tsv` records the ranked condition/body-site pairs used for display selection. The companion TSV `condition_body_site_guild_map_sampled_body_sites.tsv` preserves every sampled condition/body-site pair after label filtering, including pairs not displayed in the PNG.
+
 ## `target_taxa_condition_breakdown_bar.png`
 
 Guild-specificity: no. This is a fixed target-taxon occurrence-count view; it is not recomputed from the v2 trait-enrichment score.

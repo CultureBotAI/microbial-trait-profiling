@@ -185,10 +185,13 @@ For the top condition signals, this table uses all taxa observed in the decrease
 - `condition_inferred_guild_summary.tsv`
 - `condition_inferred_guild_trait_evidence.tsv`
 - `condition_inferred_guild_taxa_evidence.tsv`
+- `condition_body_site_guild_map_edges.tsv`
+- `condition_body_site_guild_map_sampled_body_sites.tsv`
 - `top_decreased_guild_profiles.tsv`
 - `figure_methods.md`
 - `candidate_taxa_depletion_bias.png`
 - `condition_decreased_guild_signal.png`
+- `condition_body_site_guild_map.png`
 - `trait_enriched_profile_histogram.png`
 - `condition_enriched_profile_histogram.png`
 - `condition_target_taxa_stacked_bar.png`

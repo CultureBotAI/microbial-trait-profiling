@@ -18,7 +18,8 @@ uv run python scripts/regenerate_trait_profile_investigation.py
 ```
 
 The regeneration command writes the current v2 output folders, summary diagram,
-direction-grid TSV, figure annotations, and the PowerPoint deck media.
+all-BugSigDB direction maps, direction-grid TSV, figure annotations, and the
+PowerPoint deck media.
 
 ## Current v2 Outputs
 
@@ -35,10 +36,14 @@ Each v2 folder also includes `condition_body_site_guild_map.png` and
 `scripts/create_condition_body_site_guild_maps.py`. These maps connect
 condition labels to anatomical body-site groups with edge width showing
 focus-direction profile support and edge color showing the focus-minus-comparator
-mean guild z-score.
+mean trait z-score. Node labels include `s=` for unique study support, and the
+companion `condition_body_site_guild_map_sampled_body_sites.tsv` files list all
+sampled condition/body-site pairs after label filtering, including sampled body
+sites that were not drawn as enriched edges in the PNG.
 
 The top-level summary files are also current outputs:
 
+- `all-bugsigdb-condition-body-site-maps/`
 - `profile_enrichment_guild_assignment_summary.png`
 - `profile_enrichment_guild_assignment_summary.svg`
 - `anaerobe_v2_guild_definition_table.png`
@@ -60,6 +65,13 @@ least 50 matched pairs. The manifest lists the emitted strata, pair counts, and
 file paths. Pooled and per-stratum TSVs include every trait that passes the
 analysis-set support and variance filters; they are not capped to the top 60
 variable traits.
+
+`all-bugsigdb-condition-body-site-maps/` contains increased-profile and
+decreased-profile condition/body-site maps generated from all BugSigDB profile
+metadata. These maps are direction-support summaries rather than selected-trait
+enrichment maps: edge width is focus-direction profile support, edge color is
+focus direction balance against the opposite profile direction, and labels use
+`s=` for unique study support.
 
 ## Legacy Exploratory Outputs
 

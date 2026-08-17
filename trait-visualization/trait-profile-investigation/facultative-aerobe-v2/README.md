@@ -145,10 +145,13 @@ For the top condition signals, this table uses all taxa observed in the increase
 - `condition_inferred_guild_summary.tsv`
 - `condition_inferred_guild_trait_evidence.tsv`
 - `condition_inferred_guild_taxa_evidence.tsv`
+- `condition_body_site_guild_map_edges.tsv`
+- `condition_body_site_guild_map_sampled_body_sites.tsv`
 - `top_increased_guild_profiles.tsv`
 - `figure_methods.md`
 - `candidate_taxa_increased_profile_tendency.png`
 - `condition_increased_guild_signal.png`
+- `condition_body_site_guild_map.png`
 - `condition_target_taxa_stacked_bar.png`
 - `guild_trait_direction_shift.png`
 - `anatomical_sites_diagram.png`
