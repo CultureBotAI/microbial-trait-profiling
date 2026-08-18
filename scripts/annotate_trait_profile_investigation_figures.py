@@ -9,40 +9,22 @@ from PIL import Image, ImageDraw, ImageFont, PngImagePlugin
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FIGURE_ROOT = REPO_ROOT / "trait-visualization" / "trait-profile-investigation"
 FOOTER_LINE_COLOR = (203, 213, 225)
-TOP_LABEL_FOLDERS = {
-    "facultative-aerobe-trait-expansion",
-    "gut-anaerobe-fermentation-depletion",
-}
+TOP_LABEL_FOLDERS: set[str] = set()
 UNLABELED_FIGURES = {
     Path("profile_enrichment_guild_assignment_pre_direction_grid_summary.png"),
     Path("profile_enrichment_guild_assignment_summary.png"),
     Path("trait_profile_paired_contrast_infographic.png"),
 }
 
-FACULTATIVE_BODY_SITE = (
-    "Guild-specific: yes - color encodes facultative-aerobe trait enrichment by body-site group."
-)
 FACULTATIVE_V2_BODY_SITE = (
     "Guild-specific: yes - color encodes facultative-aerobe v2 trait enrichment by body-site group."
-)
-GUT_BODY_SITE = (
-    "Guild-specific: yes - color encodes gut anaerobe/fermentation trait enrichment "
-    "by body-site group."
 )
 GUT_V2_BODY_SITE = (
     "Guild-specific: yes - color encodes anaerobe v2 trait enrichment by body-site group."
 )
-NON_GUILD_DIRECTION_COUNT = (
-    "Guild-specific: no - fixed target-taxon direction-count view; "
-    "not recomputed from the trait-enrichment score."
-)
 NON_GUILD_DIRECTION_COUNT_V2 = (
     "Guild-specific: no - fixed target-taxon direction-count view; "
     "not recomputed from the v2 trait-enrichment score."
-)
-NON_GUILD_OCCURRENCE_COUNT = (
-    "Guild-specific: no - fixed target-taxon occurrence-count view; "
-    "not recomputed from the trait-enrichment score."
 )
 NON_GUILD_OCCURRENCE_COUNT_V2 = (
     "Guild-specific: no - fixed target-taxon occurrence-count view; "
@@ -51,38 +33,14 @@ NON_GUILD_OCCURRENCE_COUNT_V2 = (
 NON_GUILD_TAXA_HEATMAP = (
     "Guild-specific: no - taxon direction-count heatmap; selected traits are annotation context."
 )
-FACULTATIVE_GUILD_SHIFT = (
-    "Guild-specific: yes - shows selected traits enriched in increased vs decreased profiles."
-)
 FACULTATIVE_V2_GUILD_SHIFT = (
     "Guild-specific: yes - shows selected v2 traits enriched in increased vs decreased profiles."
-)
-GUT_GUILD_SHIFT = (
-    "Guild-specific: yes - shows selected traits enriched in decreased vs increased profiles."
 )
 GUT_V2_GUILD_SHIFT = (
     "Guild-specific: yes - shows selected v2 traits enriched in decreased vs increased profiles."
 )
 
 FIGURE_LABELS = {
-    Path("facultative-aerobe-trait-expansion/anatomical_sites_diagram.png"): (
-        FACULTATIVE_BODY_SITE
-    ),
-    Path("facultative-aerobe-trait-expansion/autism_autoimmune_taxa_signed_heatmap.png"): (
-        NON_GUILD_TAXA_HEATMAP
-    ),
-    Path("facultative-aerobe-trait-expansion/candidate_taxa_increased_profile_tendency.png"): (
-        NON_GUILD_DIRECTION_COUNT
-    ),
-    Path(
-        "facultative-aerobe-trait-expansion/condition_increased_guild_signal.png"
-    ): "Guild-specific: yes - uses facultative-aerobe trait enrichment by condition.",
-    Path("facultative-aerobe-trait-expansion/guild_trait_direction_shift.png"): (
-        FACULTATIVE_GUILD_SHIFT
-    ),
-    Path("facultative-aerobe-trait-expansion/target_taxa_condition_breakdown_bar.png"): (
-        NON_GUILD_OCCURRENCE_COUNT
-    ),
     Path("facultative-aerobe-v2/anatomical_sites_diagram.png"): FACULTATIVE_V2_BODY_SITE,
     Path("facultative-aerobe-v2/autism_autoimmune_taxa_signed_heatmap.png"): (
         NON_GUILD_TAXA_HEATMAP
@@ -102,17 +60,6 @@ FIGURE_LABELS = {
     Path("facultative-aerobe-v2/guild_trait_direction_shift.png"): (FACULTATIVE_V2_GUILD_SHIFT),
     Path("facultative-aerobe-v2/target_taxa_condition_breakdown_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT_V2
-    ),
-    Path("gut-anaerobe-fermentation-depletion/anatomical_sites_diagram.png"): GUT_BODY_SITE,
-    Path("gut-anaerobe-fermentation-depletion/candidate_taxa_depletion_bias.png"): (
-        NON_GUILD_DIRECTION_COUNT
-    ),
-    Path(
-        "gut-anaerobe-fermentation-depletion/condition_decreased_guild_signal.png"
-    ): "Guild-specific: yes - uses gut anaerobe/fermentation trait enrichment by condition.",
-    Path("gut-anaerobe-fermentation-depletion/guild_trait_direction_shift.png"): (GUT_GUILD_SHIFT),
-    Path("gut-anaerobe-fermentation-depletion/target_taxa_condition_breakdown_bar.png"): (
-        NON_GUILD_OCCURRENCE_COUNT
     ),
     Path("anaerobe-depletion-v2/anatomical_sites_diagram.png"): GUT_V2_BODY_SITE,
     Path("anaerobe-depletion-v2/anatomical_sites_enriched_profile_diagram.png"): (

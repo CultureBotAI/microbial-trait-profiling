@@ -1,8 +1,0 @@
-taxon_id	target_taxon_name	taxonomic_rank	guild_trait_presence_count	anaerobic_present	anaerobic_count	obligately anaerobic_present	obligately anaerobic_count	Fermentation_present	Fermentation_count	cellulose catabolic process_present	cellulose catabolic process_count	xylan catabolic process_present	xylan catabolic process_count
-NCBITaxon:40518	Ruminococcus bromii	species	4	True	2	True	1	True	1	True	2	False	0
-NCBITaxon:39491	Agathobacter rectalis	species	2	True	3	False	0	True	1	False	0	False	0
-NCBITaxon:39488	Anaerobutyricum hallii	species	2	True	2	False	0	True	1	False	0	False	0
-NCBITaxon:39485	Lachnospira eligens	species	2	True	2	True	1	False	0	False	0	False	0
-NCBITaxon:853	Faecalibacterium prausnitzii	species	1	True	3	False	0	False	0	False	0	False	0
-NCBITaxon:166486	Roseburia intestinalis	species	1	True	3	False	0	False	0	False	0	False	0
-NCBITaxon:360807	Roseburia inulinivorans	species	1	True	2	False	0	False	0	False	0	False	0

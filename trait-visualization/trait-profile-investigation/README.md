@@ -1,7 +1,7 @@
 # Trait Profile Investigation
 
-This folder contains the current v2 trait-profile investigation outputs plus
-older exploratory folders retained for comparison.
+This folder contains the current v2 trait-profile investigation outputs and
+supplemental profile-condition/profile-contrast diagnostics.
 
 ## Regenerate Current Outputs
 
@@ -57,7 +57,7 @@ The top-level summary files are also current outputs:
 - `trait_profile_paired_contrast_condition_summary.tsv`
 - `trait_profile_paired_contrast_body_site_summary.tsv`
 - `trait_profile_investigation_figures.pptx`
-- `figure_methods.md`
+- `../figure_methods.md`
 
 The paired-contrast trait-stat files include the pooled analysis, explicit
 Feces-only and Feces-excluded analyses, and one file per body-site group with at
@@ -73,15 +73,12 @@ enrichment maps: edge width is focus-direction profile support, edge color is
 focus direction balance against the opposite profile direction, and labels use
 `s=` for unique study support.
 
-## Legacy Exploratory Outputs
+## Cleanup Note
 
-These folders are retained as interpretation history. They are not the canonical
-source for the current PowerPoint deck.
-
-| folder | status | role |
-| --- | --- | --- |
-| `facultative-aerobe-trait-expansion/` | legacy exploratory | Earlier facultative-aerobe expansion analysis retained to show how the v2 oxygen-tolerance focus was selected. |
-| `gut-anaerobe-fermentation-depletion/` | legacy exploratory | Earlier gut-restricted anaerobe/fermentation depletion analysis retained as a comparison against the current all-body-site anaerobe v2 depletion analysis. |
+Earlier exploratory folders for the broad facultative-aerobe trait expansion and
+gut anaerobe/fermentation depletion analyses were removed from this branch to
+keep the investigation focused on the current v2 oxygen-tolerance outputs. Their
+history remains available through git if the exploratory context is needed.
 
 ## Interpretation Rules
 
