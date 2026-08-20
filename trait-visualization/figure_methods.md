@@ -397,14 +397,25 @@ profiles and at least two studies. The depleted-condition focus additionally
 requires at least three decreased profiles and a positive decreased-minus-increased
 mean positive-trait delta. The default command uses `--focus-direction dec`,
 `--sort-by depletion-bias`, `--min-decreased-profiles 3`, and no body-site
-filter. Optional arguments allow the same workflow to be rerun for increased
-profiles or for a specific `body_site_group`/`body_site`.
+filter. The bar-style figures display the top 15 focus-condition rows after
+ranking, while the scatterplot and condition x trait heatmap include every
+focus-eligible row after the same filters. Optional arguments allow the same
+workflow to be rerun for increased profiles or for a specific
+`body_site_group`/`body_site`.
 
 The companion table
 `profile-condition-bars/condition_profile_trait_summary.tsv` records the
 condition-level counts, direction-specific profile counts, positive-profile
 fractions, average positive-trait depths, and both
 decreased-minus-increased and increased-minus-decreased summary deltas.
+It also records coverage-weighted signal scores, defined as direction-delta
+times the square root of positive-signal profile count times the square root of
+study count, as supplemental prioritization values.
+The additional scatter table
+`profile-condition-bars/condition_depleted_signal_vs_coverage_scatter.tsv`
+records the uncapped focus-condition rows used for the support scatterplot, and
+`profile-condition-bars/condition_depleted_trait_signal_heatmap_matrix.tsv`
+records the uncapped condition x selected-trait matrix used for the heatmap.
 
 #### `condition_positive_profile_count_bar.png`
 
@@ -445,7 +456,11 @@ Rows are retained only after the shared condition filters, the minimum
 decreased-profile support filter, and the positive direction-delta filter.
 Only the direction delta is plotted, so every displayed bar answers the same
 question: how much higher is the positive selected-trait depth in decreased
-profiles than in increased profiles for the same condition label?
+profiles than in increased profiles for the same condition label? The x-axis is
+worded as "More selected trait signals in decreased profiles than increased
+profiles" for interpretability. The signal bars use a separate purple palette
+so they are not confused with the red/blue profile-direction coverage encoding.
+Rows with limited study support are hatched.
 
 Interpretation: this is the primary depleted-condition screen in the
 profile-condition bar set. The top displayed labels are bronchiectasis,
@@ -464,7 +479,8 @@ This companion plot uses the exact same condition rows as
 of signal delta. Bars are stacked by profiles with at least one positive
 selected-trait signal in the decreased and increased directions, and labels
 report the total positive-signal profiles plus the number of represented
-studies.
+studies. Rows with limited study support are hatched consistently with the
+signal plot.
 
 Interpretation: this figure is the support guardrail for the depleted-condition
 screen. It separates a strong direction delta with modest support from a more
@@ -480,7 +496,11 @@ the direction-specific trait-signal delta from
 `condition_depleted_trait_signal_bar.png`. Panel B is the profile-coverage
 guardrail from `condition_depleted_profile_coverage_bar.png`. The row order is
 shared between panels, so the reader can compare depletion-bias magnitude and
-profile/study support directly for each condition.
+profile/study support directly for each condition. Panel A is titled "Trait
+signal stronger in decreased profiles", uses purple bars for the trait-signal
+difference, and includes a legend entry for that encoding. Hatched rows denote
+limited study support. The subtitle describes the ranking as how much stronger
+selected traits are in decreased profiles than increased profiles.
 
 Interpretation: this is the recommended summary figure when presenting
 depleted conditions from the generic profile-condition bar workflow. Panel A
@@ -489,6 +509,45 @@ shows whether the row is supported by enough profiles and studies to prioritize
 for follow-up. The diagram should still be described as a z-score-based
 profile-trait screen, not a formal ORA result or a new differential-abundance
 test.
+
+#### `condition_depleted_signal_vs_coverage_scatter.png`
+
+This uncapped follow-up scatterplot uses every depleted-focus condition row
+that passes the shared filters, the minimum decreased-profile support filter,
+and the positive decreased-minus-increased direction-delta filter. The x-axis is
+the same direction-specific signal difference used in Panel A of
+`condition_depleted_profile_signal_diagram.png`. The y-axis is the total number
+of positive-signal profiles across decreased and increased directions. Point
+color encodes the number of represented studies, point size follows the total
+positive-signal profile count, and outlined square markers denote rows with
+limited study support. The companion table
+`condition_depleted_signal_vs_coverage_scatter.tsv` records the plotted values
+plus `coverage_weighted_signal`, a descriptive product of the direction delta,
+square-root positive-signal profile count, and square-root study count. That
+combined score is not used as a filter.
+
+Interpretation: this figure separates large but sparsely supported depleted
+signals from conditions with broader profile and study support. It is intended
+as a prioritization view for follow-up rather than a replacement for the
+two-panel summary figure.
+
+#### `condition_depleted_trait_signal_heatmap.png`
+
+This uncapped heatmap decomposes the depleted-profile signal by selected trait.
+Rows are all depleted-focus condition rows that pass the same filters as the
+scatterplot; columns are all selected trait columns in
+`study_trait_profile_clustered_heatmap_matrix.tsv`. For each condition and
+trait, the plotted value is the fraction of decreased profiles with a positive
+selected-trait z-score minus the fraction of increased profiles with a positive
+selected-trait z-score. The companion matrix
+`condition_depleted_trait_signal_heatmap_matrix.tsv` records those values.
+
+Interpretation: this figure asks which selected traits drive each
+condition-level depleted-profile signal. Red cells indicate traits more often
+positive in decreased profiles; blue cells indicate traits more often positive
+in increased profiles. Because the heatmap includes all focus-eligible rows and
+all selected traits, it is best used for detailed investigation rather than as a
+compact presentation panel.
 
 ### Supplemental Condition-to-Body-Site Maps
 
