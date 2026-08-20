@@ -12,9 +12,9 @@ This follow-up starts from facultative-aerobe trait enrichment in increased prof
 
 | condition group | exact condition label | profiles | studies | increased / decreased profiles | increased - decreased trait z | body-site groups |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
-| Autism / autism spectrum disorder | Autism | 14 | 4 | 8 / 6 | 0.755 | Feces |
-| Autism / autism spectrum disorder | Autism spectrum disorder | 78 | 15 | 42 / 36 | -0.125 | Feces; Saliva |
-| Autoimmune disease | Autoimmune disease | 8 | 2 | 4 / 4 | 0.423 | Feces |
+| Autism / autism spectrum disorder | Autism | 14 | 4 | 8 / 6 | 0.752 | Feces |
+| Autism / autism spectrum disorder | Autism spectrum disorder | 78 | 15 | 42 / 36 | -0.124 | Feces; Saliva |
+| Autoimmune disease | Autoimmune disease | 8 | 2 | 4 / 4 | 0.421 | Feces |
 
 ## Top Taxa
 
@@ -139,14 +139,14 @@ This section uses a data-derived trait-enrichment view: for each exact condition
 
 | condition | increased profiles | universe taxa / observed taxa | enriched traits | supporting taxa |
 | --- | ---: | ---: | --- | --- |
-| Autism | 8 | 24 / 36 | aerobic (+1.05); facultatively aerobic (+0.80); microaerophilic (+0.42) | taxon_1224 (3 traits, 3 profiles); taxon_1350 (3 traits, 3 profiles); taxon_31953 (3 traits, 3 profiles); taxon_85023 (3 traits, 3 profiles); taxon_1653 (3 traits, 2 profiles); taxon_976 (3 traits, 2 profiles); taxon_1678 (3 traits, 2 profiles); taxon_128827 (3 traits, 1 profile); taxon_1578 (3 traits, 1 profile); taxon_1716 (3 traits, 1 profile); taxon_1760 (3 traits, 1 profile); taxon_186817 (3 traits, 1 profile) |
-| Autoimmune disease | 4 | 45 / 84 | facultatively aerobic (+0.61); aerobic (+0.45); microaerophilic (+0.21) | taxon_816 (3 traits, 3 profiles); taxon_1224 (3 traits, 3 profiles); taxon_1236 (3 traits, 3 profiles); taxon_1239 (3 traits, 2 profiles); taxon_1300 (3 traits, 2 profiles); taxon_1301 (3 traits, 2 profiles); taxon_171549 (3 traits, 2 profiles); taxon_186801 (3 traits, 2 profiles); taxon_186802 (3 traits, 2 profiles); taxon_186826 (3 traits, 2 profiles); taxon_200643 (3 traits, 2 profiles); taxon_543 (3 traits, 2 profiles) |
+| Autism | 8 | 24 / 36 | aerobic (+1.05); facultatively aerobic (+0.79); microaerophilic (+0.42) | taxon_1224 (3 traits, 3 profiles); taxon_1350 (3 traits, 3 profiles); taxon_31953 (3 traits, 3 profiles); taxon_85023 (3 traits, 3 profiles); taxon_1653 (3 traits, 2 profiles); taxon_976 (3 traits, 2 profiles); taxon_1678 (3 traits, 2 profiles); taxon_128827 (3 traits, 1 profile); taxon_1578 (3 traits, 1 profile); taxon_1716 (3 traits, 1 profile); taxon_1760 (3 traits, 1 profile); taxon_186817 (3 traits, 1 profile) |
+| Autoimmune disease | 4 | 45 / 84 | facultatively aerobic (+0.60); aerobic (+0.45); microaerophilic (+0.21) | taxon_816 (3 traits, 3 profiles); taxon_1224 (3 traits, 3 profiles); taxon_1236 (3 traits, 3 profiles); taxon_1239 (3 traits, 2 profiles); taxon_1300 (3 traits, 2 profiles); taxon_1301 (3 traits, 2 profiles); taxon_171549 (3 traits, 2 profiles); taxon_186801 (3 traits, 2 profiles); taxon_186802 (3 traits, 2 profiles); taxon_186826 (3 traits, 2 profiles); taxon_200643 (3 traits, 2 profiles); taxon_543 (3 traits, 2 profiles) |
 
 ## Interpretation
 
 This v2 follow-up uses only the narrowed facultative-aerobe selected traits: facultatively aerobic, aerobic, microaerophilic. It supports a label-dependent signal check rather than a broad causal claim.
 
-Included condition labels with positive increased-minus-decreased v2 trait-enrichment shifts are `Autism` (0.755), `Autoimmune disease` (0.423).
+Included condition labels with positive increased-minus-decreased v2 trait-enrichment shifts are `Autism` (0.752), `Autoimmune disease` (0.421).
 
 At the taxa-list level, overlap should still be interpreted cautiously. The signed heatmap counts direction balance by taxon/profile occurrence, while the guild annotation columns only indicate whether those taxa carry one or more of the v2 oxygen-tolerance traits.
 

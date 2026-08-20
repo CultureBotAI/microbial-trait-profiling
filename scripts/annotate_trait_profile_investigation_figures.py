@@ -33,6 +33,9 @@ NON_GUILD_OCCURRENCE_COUNT_V2 = (
 NON_GUILD_TAXA_HEATMAP = (
     "Guild-specific: no - taxon direction-count heatmap; selected traits are annotation context."
 )
+NON_GUILD_CORPUS_BODY_SITE_MAP = (
+    "Guild-specific: no - corpus-level condition/body-site profile direction map."
+)
 FACULTATIVE_V2_GUILD_SHIFT = (
     "Guild-specific: yes - shows selected v2 traits enriched in increased vs decreased profiles."
 )
@@ -41,6 +44,12 @@ GUT_V2_GUILD_SHIFT = (
 )
 
 FIGURE_LABELS = {
+    Path(
+        "all-bugsigdb-condition-body-site-maps/all_bugsigdb_decreased_profile_condition_body_site_map.png"
+    ): NON_GUILD_CORPUS_BODY_SITE_MAP,
+    Path(
+        "all-bugsigdb-condition-body-site-maps/all_bugsigdb_increased_profile_condition_body_site_map.png"
+    ): NON_GUILD_CORPUS_BODY_SITE_MAP,
     Path("facultative-aerobe-v2/anatomical_sites_diagram.png"): FACULTATIVE_V2_BODY_SITE,
     Path("facultative-aerobe-v2/autism_autoimmune_taxa_signed_heatmap.png"): (
         NON_GUILD_TAXA_HEATMAP

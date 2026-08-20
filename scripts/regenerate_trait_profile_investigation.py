@@ -369,6 +369,7 @@ def refresh_powerpoint() -> None:
 
 
 def main() -> None:
+    run_script("create_study_trait_profile_heatmap.py")
     run_script("investigate_facultative_aerobe_expansion.py")
     run_script("investigate_facultative_aerobe_condition_followup.py")
     run_script("investigate_gut_anaerobe_depletion.py")

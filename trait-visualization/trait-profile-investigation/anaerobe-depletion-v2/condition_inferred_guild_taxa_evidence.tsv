@@ -1,4 +1,39 @@
 condition	focus_direction	trait_id	trait_name	trait_category	taxon_id	taxon_name	taxonomic_rank	taxon_profile_count	study_count	trait_annotation_count
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:841	taxon_841	genus	4	2	9
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:216851	taxon_216851	genus	3	2	4
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:189330	taxon_189330	genus	2	1	5
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28050	taxon_28050	genus	2	1	4
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	2	1	85
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1263	taxon_1263	genus	1	1	17
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	1	1	127
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:171549	taxon_171549	genus	1	1	347
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:171550	taxon_171550	genus	1	1	27
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	1	1	1264
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	592
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	1	1	173
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:200643	taxon_200643	genus	1	1	356
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:216572	taxon_216572	genus	1	1	97
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:3085636	taxon_3085636	genus	1	1	188
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:33042	taxon_33042	genus	1	1	5
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:572511	taxon_572511	genus	1	1	16
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:815	taxon_815	genus	1	1	108
+Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:976	taxon_976	genus	1	1	369
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:841	taxon_841	genus	4	2	1
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:28050	taxon_28050	genus	2	1	1
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	2	1	38
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1263	taxon_1263	genus	1	1	1
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	1	1	2
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:171549	taxon_171549	genus	1	1	75
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:171550	taxon_171550	genus	1	1	1
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	1	1	125
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	58
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	1	1	17
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:200643	taxon_200643	genus	1	1	75
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:216572	taxon_216572	genus	1	1	8
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:3085636	taxon_3085636	genus	1	1	18
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:572511	taxon_572511	genus	1	1	1
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:815	taxon_815	genus	1	1	42
+Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:976	taxon_976	genus	1	1	75
 Age-related macular degeneration	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:838	taxon_838	genus	6	1	5
 Age-related macular degeneration	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	3	2	17
 Age-related macular degeneration	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	2	2	125
@@ -78,52 +113,65 @@ Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NC
 Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:207244	taxon_207244	genus	1	1	6
 Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28211	taxon_28211	genus	1	1	95
 Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:459786	taxon_459786	genus	1	1	3
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:841	taxon_841	genus	4	2	1
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1263	taxon_1263	genus	2	2	1
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:171549	taxon_171549	genus	2	1	75
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:200643	taxon_200643	genus	2	1	75
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:28050	taxon_28050	genus	2	1	1
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	2	1	38
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:976	taxon_976	genus	2	1	75
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1224	taxon_1224	genus	1	1	3
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1236	taxon_1236	genus	1	1	3
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	1	1	2
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:171550	taxon_171550	genus	1	1	1
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	1	1	125
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	58
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	1	1	17
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:216572	taxon_216572	genus	1	1	8
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:3085636	taxon_3085636	genus	1	1	18
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:572511	taxon_572511	genus	1	1	1
-Acute graft vs. host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:815	taxon_815	genus	1	1	42
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:841	taxon_841	genus	4	2	9
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:216851	taxon_216851	genus	3	2	4
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1263	taxon_1263	genus	2	2	17
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:171549	taxon_171549	genus	2	1	347
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:189330	taxon_189330	genus	2	1	5
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:200643	taxon_200643	genus	2	1	356
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28050	taxon_28050	genus	2	1	4
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	2	1	85
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:976	taxon_976	genus	2	1	369
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1224	taxon_1224	genus	1	1	449
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1236	taxon_1236	genus	1	1	295
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1506553	taxon_1506553	genus	1	1	12
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	1	1	127
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:171550	taxon_171550	genus	1	1	27
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	1	1	1264
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	592
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	1	1	173
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:2005473	taxon_2005473	genus	1	1	1
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:216572	taxon_216572	genus	1	1	97
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28211	taxon_28211	genus	1	1	95
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:3085636	taxon_3085636	genus	1	1	188
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:33042	taxon_33042	genus	1	1	5
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	1	1	41
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:570	taxon_570	genus	1	1	2
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:572511	taxon_572511	genus	1	1	16
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:588605	taxon_588605	genus	1	1	1
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:815	taxon_815	genus	1	1	108
-Acute graft vs. host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:91347	taxon_91347	genus	1	1	57
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	9	3	38
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	6	2	2
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1263	taxon_1263	genus	6	1	1
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:84107	taxon_84107	genus	5	2	1
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:204475	taxon_204475	genus	5	1	1
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:817	taxon_817	genus	4	2	4
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:572511	taxon_572511	genus	4	1	1
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:745368	taxon_745368	genus	3	1	1
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	2	1	17
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1485	taxon_1485	genus	1	1	30
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:171552	taxon_171552	genus	1	1	15
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	58
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	1	1	31
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:31953	taxon_31953	genus	1	1	21
+Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:85004	taxon_85004	genus	1	1	21
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	9	3	85
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:853	taxon_853	genus	7	2	3
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1730	taxon_1730	genus	7	1	13
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:189330	taxon_189330	genus	7	1	5
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:207244	taxon_207244	genus	7	1	6
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:33042	taxon_33042	genus	7	1	5
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	6	2	127
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1263	taxon_1263	genus	6	1	17
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1407607	taxon_1407607	genus	6	1	1
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1501226	taxon_1501226	genus	6	1	2
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1508657	taxon_1508657	genus	6	1	11
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:459786	taxon_459786	genus	6	1	3
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:84107	taxon_84107	genus	5	2	17
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:100883	taxon_100883	genus	5	1	5
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:216851	taxon_216851	genus	5	1	4
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:487173	taxon_487173	genus	4	2	2
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:817	taxon_817	genus	4	2	4
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:3025755	taxon_3025755	genus	4	1	6
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:572511	taxon_572511	genus	4	1	16
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:649756	taxon_649756	genus	3	2	2
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:52225	taxon_52225	genus	3	1	4
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1301	taxon_1301	genus	2	1	129
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1505657	taxon_1505657	genus	2	1	1
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1578	taxon_1578	genus	2	1	33
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:165179	taxon_165179	genus	2	1	2
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	2	1	173
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28128	taxon_28128	genus	2	1	2
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:83771	taxon_83771	genus	2	1	1
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1266	taxon_1266	genus	1	1	3
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:128827	taxon_128827	genus	1	1	22
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1357	taxon_1357	genus	1	1	3
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1485	taxon_1485	genus	1	1	227
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1623	taxon_1623	genus	1	1	5
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:171552	taxon_171552	genus	1	1	122
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	592
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	1	1	425
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:204457	taxon_204457	genus	1	1	8
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:239935	taxon_239935	genus	1	1	2
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:31953	taxon_31953	genus	1	1	149
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:360807	taxon_360807	genus	1	1	2
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:363265	taxon_363265	genus	1	1	2
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:544	taxon_544	genus	1	1	2
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:561	taxon_561	genus	1	1	13
+Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:85004	taxon_85004	genus	1	1	149
 Lung transplantation	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:171549	taxon_171549	genus	2	1	75
 Lung transplantation	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:171552	taxon_171552	genus	2	1	15
 Lung transplantation	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	2	1	58
@@ -167,6 +215,73 @@ Lung transplantation	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITax
 Lung transplantation	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	1	1	173
 Lung transplantation	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:3085636	taxon_3085636	genus	1	1	188
 Lung transplantation	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:33038	taxon_33038	genus	1	1	2
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:745368	taxon_745368	genus	3	2	1
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:31979	taxon_31979	genus	3	1	30
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:39485	taxon_39485	genus	2	2	1
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:135625	taxon_135625	genus	2	1	1
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1485	taxon_1485	genus	2	1	30
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186804	taxon_186804	genus	2	1	21
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:40518	taxon_40518	genus	2	1	1
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:712	taxon_712	genus	2	1	1
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:841	taxon_841	genus	2	1	1
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1239	taxon_1239	genus	1	1	145
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1263	taxon_1263	genus	1	1	1
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1502	taxon_1502	genus	1	1	3
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	1	1	125
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	58
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	1	1	17
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:204516	taxon_204516	genus	1	1	1
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:216572	taxon_216572	genus	1	1	8
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:301301	taxon_301301	genus	1	1	1
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:820	taxon_820	genus	1	1	1
+Depressive disorder	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:821	taxon_821	genus	1	1	1
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:31979	taxon_31979	genus	3	1	269
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:216851	taxon_216851	genus	2	2	4
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:39485	taxon_39485	genus	2	2	2
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:135625	taxon_135625	genus	2	1	7
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1485	taxon_1485	genus	2	1	227
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1628085	taxon_1628085	genus	2	1	1
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186804	taxon_186804	genus	2	1	269
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:39491	taxon_39491	genus	2	1	3
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:40518	taxon_40518	genus	2	1	2
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:487175	taxon_487175	genus	2	1	2
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:712	taxon_712	genus	2	1	7
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:724	taxon_724	genus	2	1	1
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:841	taxon_841	genus	2	1	9
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:102106	taxon_102106	genus	1	1	9
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1150298	taxon_1150298	genus	1	1	1
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:123375	taxon_123375	genus	1	1	3
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1239	taxon_1239	genus	1	1	3975
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1263	taxon_1263	genus	1	1	17
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1267	taxon_1267	genus	1	1	1
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1304	taxon_1304	genus	1	1	1
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1414720	taxon_1414720	genus	1	1	1
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1470347	taxon_1470347	genus	1	1	2
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1492	taxon_1492	genus	1	1	5
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1502	taxon_1502	genus	1	1	18
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1506	taxon_1506	genus	1	1	1
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1650663	taxon_1650663	genus	1	1	1
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1686	taxon_1686	genus	1	1	4
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	1	1	1264
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	592
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	1	1	173
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:191303	taxon_191303	genus	1	1	2
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:204516	taxon_204516	genus	1	1	2
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:216572	taxon_216572	genus	1	1	97
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:2810281	taxon_2810281	genus	1	1	2
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:301301	taxon_301301	genus	1	1	2
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:328814	taxon_328814	genus	1	1	2
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:33025	taxon_33025	genus	1	1	2
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:360807	taxon_360807	genus	1	1	2
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:36835	taxon_36835	genus	1	1	1
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:390806	taxon_390806	genus	1	1	2
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:40519	taxon_40519	genus	1	1	1
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:592978	taxon_592978	genus	1	1	1
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:820	taxon_820	genus	1	1	2
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:821	taxon_821	genus	1	1	3
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:848	taxon_848	genus	1	1	56
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:853	taxon_853	genus	1	1	3
+Depressive disorder	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:88431	taxon_88431	genus	1	1	1
 Head and neck carcinoma	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1716	taxon_1716	genus	3	2	30
 Head and neck carcinoma	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:713	taxon_713	genus	3	2	1
 Head and neck carcinoma	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:836	taxon_836	genus	3	2	27
@@ -247,74 +362,6 @@ Head and neck carcinoma	decreased	METPO:1000607	obligately anaerobic	PhenotypicQ
 Head and neck carcinoma	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:909929	taxon_909929	genus	1	1	6
 Head and neck carcinoma	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:909932	taxon_909932	genus	1	1	9
 Head and neck carcinoma	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:970	taxon_970	genus	1	1	1
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:200940	taxon_200940	genus	3	2	371
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:208479	taxon_208479	genus	3	2	3
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:67814	taxon_67814	genus	3	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:328814	taxon_328814	genus	2	2	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1496	taxon_1496	genus	2	1	237
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1506553	taxon_1506553	genus	2	1	12
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:214856	taxon_214856	genus	2	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28117	taxon_28117	genus	2	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28889	taxon_28889	genus	2	1	53
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:292800	taxon_292800	genus	2	1	4
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:29347	taxon_29347	genus	2	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:328813	taxon_328813	genus	2	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:33035	taxon_33035	genus	2	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:3366641	taxon_3366641	genus	2	1	1
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:853	taxon_853	genus	2	1	3
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:872	taxon_872	genus	2	1	29
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1224	taxon_1224	genus	1	1	449
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1239	taxon_1239	genus	1	1	3975
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1279	taxon_1279	genus	1	1	2025
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1283313	taxon_1283313	genus	1	1	3
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1318	taxon_1318	genus	1	1	3
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	1	1	6
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:166486	taxon_166486	genus	1	1	3
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:200783	taxon_200783	genus	1	1	17
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	1	1	425
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:239759	taxon_239759	genus	1	1	21
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:246787	taxon_246787	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28111	taxon_28111	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28128	taxon_28128	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28137	taxon_28137	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28890	taxon_28890	genus	1	1	313
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:292480	taxon_292480	genus	1	1	1
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:301301	taxon_301301	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:32066	taxon_32066	genus	1	1	91
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:33025	taxon_33025	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:338188	taxon_338188	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:437897	taxon_437897	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:47678	taxon_47678	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:544	taxon_544	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:544448	taxon_544448	genus	1	1	11
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:544645	taxon_544645	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:562	taxon_562	genus	1	1	13
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:570	taxon_570	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:59823	taxon_59823	genus	1	1	1
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:66831	taxon_66831	genus	1	1	1
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:68297	taxon_68297	genus	1	1	4
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:817	taxon_817	genus	1	1	4
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:818	taxon_818	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:850	taxon_850	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:200940	taxon_200940	genus	3	2	20
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:208479	taxon_208479	genus	3	2	1
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1496	taxon_1496	genus	2	1	21
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:28889	taxon_28889	genus	2	1	9
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:292800	taxon_292800	genus	2	1	2
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:872	taxon_872	genus	2	1	5
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1224	taxon_1224	genus	1	1	3
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1239	taxon_1239	genus	1	1	145
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	1	1	1
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	1	1	31
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:246787	taxon_246787	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:28111	taxon_28111	genus	1	1	1
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:28137	taxon_28137	genus	1	1	1
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:28890	taxon_28890	genus	1	1	58
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:301301	taxon_301301	genus	1	1	1
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:32066	taxon_32066	genus	1	1	2
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:47678	taxon_47678	genus	1	1	1
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:817	taxon_817	genus	1	1	4
-Acute pancreatitis	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:818	taxon_818	genus	1	1	2
 Graves ophthalmopathy	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:29523	taxon_29523	genus	2	1	1
 Graves ophthalmopathy	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:976	taxon_976	genus	2	1	369
 Graves ophthalmopathy	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:102106	taxon_102106	genus	1	1	9
@@ -329,119 +376,3 @@ Graves ophthalmopathy	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITa
 Graves ophthalmopathy	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:41200	taxon_41200	genus	1	1	1
 Graves ophthalmopathy	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:572511	taxon_572511	genus	1	1	16
 Graves ophthalmopathy	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:574697	taxon_574697	genus	1	1	5
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	9	3	38
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:84107	taxon_84107	genus	6	3	1
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	6	2	2
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:572511	taxon_572511	genus	6	2	1
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1263	taxon_1263	genus	6	1	1
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:204475	taxon_204475	genus	5	1	1
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:817	taxon_817	genus	4	2	4
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1239	taxon_1239	genus	4	1	145
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	3	2	17
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	3	2	31
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:745368	taxon_745368	genus	3	1	1
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:91061	taxon_91061	genus	2	1	1
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1485	taxon_1485	genus	1	1	30
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1643824	taxon_1643824	genus	1	1	2
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:171552	taxon_171552	genus	1	1	15
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1737405	taxon_1737405	genus	1	1	2
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1843489	taxon_1843489	genus	1	1	2
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	1	1	125
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	58
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186804	taxon_186804	genus	1	1	21
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:200940	taxon_200940	genus	1	1	20
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:216572	taxon_216572	genus	1	1	8
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:3082720	taxon_3082720	genus	1	1	23
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:3085636	taxon_3085636	genus	1	1	18
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:31953	taxon_31953	genus	1	1	21
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:31977	taxon_31977	genus	1	1	2
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:74201	taxon_74201	genus	1	1	2
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:84998	taxon_84998	genus	1	1	9
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:84999	taxon_84999	genus	1	1	3
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:85004	taxon_85004	genus	1	1	21
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:909929	taxon_909929	genus	1	1	6
-Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:909932	taxon_909932	genus	1	1	9
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	9	3	85
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1407607	taxon_1407607	genus	7	2	1
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:853	taxon_853	genus	7	2	3
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1730	taxon_1730	genus	7	1	13
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:189330	taxon_189330	genus	7	1	5
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:207244	taxon_207244	genus	7	1	6
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:33042	taxon_33042	genus	7	1	5
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:84107	taxon_84107	genus	6	3	17
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	6	2	127
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:3025755	taxon_3025755	genus	6	2	6
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:572511	taxon_572511	genus	6	2	16
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1263	taxon_1263	genus	6	1	17
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1501226	taxon_1501226	genus	6	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1508657	taxon_1508657	genus	6	1	11
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:459786	taxon_459786	genus	6	1	3
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:100883	taxon_100883	genus	5	1	5
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:216851	taxon_216851	genus	5	1	4
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:487173	taxon_487173	genus	4	2	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:817	taxon_817	genus	4	2	4
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1239	taxon_1239	genus	4	1	3975
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	3	2	173
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	3	2	425
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:649756	taxon_649756	genus	3	2	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:52225	taxon_52225	genus	3	1	4
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1266	taxon_1266	genus	2	2	3
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:128827	taxon_128827	genus	2	2	22
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:102106	taxon_102106	genus	2	1	9
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1117	taxon_1117	genus	2	1	5
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:123375	taxon_123375	genus	2	1	3
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1279	taxon_1279	genus	2	1	2025
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1301	taxon_1301	genus	2	1	129
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:135858	taxon_135858	genus	2	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1481960	taxon_1481960	genus	2	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1505657	taxon_1505657	genus	2	1	1
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1506577	taxon_1506577	genus	2	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1578	taxon_1578	genus	2	1	33
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:165179	taxon_165179	genus	2	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:203682	taxon_203682	genus	2	1	10
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28128	taxon_28128	genus	2	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:526525	taxon_526525	genus	2	1	43
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:83771	taxon_83771	genus	2	1	1
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:91061	taxon_91061	genus	2	1	2377
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1357	taxon_1357	genus	1	1	3
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1386	taxon_1386	genus	1	1	9
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1392389	taxon_1392389	genus	1	1	1
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:147207	taxon_147207	genus	1	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1485	taxon_1485	genus	1	1	227
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1623	taxon_1623	genus	1	1	5
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1643824	taxon_1643824	genus	1	1	18
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:171552	taxon_171552	genus	1	1	122
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1737405	taxon_1737405	genus	1	1	96
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1843489	taxon_1843489	genus	1	1	57
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	1	1	1264
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	592
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186804	taxon_186804	genus	1	1	269
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:200940	taxon_200940	genus	1	1	371
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:204457	taxon_204457	genus	1	1	8
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:216572	taxon_216572	genus	1	1	97
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:239935	taxon_239935	genus	1	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:264995	taxon_264995	genus	1	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:29348	taxon_29348	genus	1	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:3082720	taxon_3082720	genus	1	1	327
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:3085636	taxon_3085636	genus	1	1	188
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:3085642	taxon_3085642	genus	1	1	3
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:31953	taxon_31953	genus	1	1	149
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:31977	taxon_31977	genus	1	1	57
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:360807	taxon_360807	genus	1	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:363265	taxon_363265	genus	1	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:36835	taxon_36835	genus	1	1	1
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:39488	taxon_39488	genus	1	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:39948	taxon_39948	genus	1	1	9
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:469	taxon_469	genus	1	1	86
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:536633	taxon_536633	genus	1	1	1
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:544	taxon_544	genus	1	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:561	taxon_561	genus	1	1	13
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:580596	taxon_580596	genus	1	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:626935	taxon_626935	genus	1	1	2
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:74201	taxon_74201	genus	1	1	6
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:84998	taxon_84998	genus	1	1	60
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:84999	taxon_84999	genus	1	1	35
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:85004	taxon_85004	genus	1	1	149
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:90964	taxon_90964	genus	1	1	2025
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:909929	taxon_909929	genus	1	1	88
-Diarrhea	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:909932	taxon_909932	genus	1	1	160

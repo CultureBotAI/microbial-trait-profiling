@@ -2,8 +2,8 @@
 
 These maps summarize all BugSigDB study/experiment/direction profiles available in `trait-visualization/study_trait_profile_study_metadata.tsv`. They do not use a selected trait set or trait-enrichment score; they are direction-support maps for increased and decreased profiles.
 
-Profiles summarized: 12,108
-Studies summarized: 1,924
+Profiles summarized: 9,344
+Studies summarized: 1,646
 
 ## Files
 
@@ -13,7 +13,7 @@ Studies summarized: 1,924
   for the increased-profile map; 24 rows are drawn.
 - `all_bugsigdb_decreased_profile_condition_body_site_map.png`: displayed decreased-profile map.
 - `all_bugsigdb_decreased_profile_condition_body_site_map_edges.tsv`: display-candidate edge table 
-  for the decreased-profile map; 23 rows are drawn.
+  for the decreased-profile map; 24 rows are drawn.
 
 ## Interpretation
 

@@ -606,10 +606,7 @@ def add_large_direction_grid(ax: plt.Axes, counts: dict[str, int]) -> None:
         width=col_w,
         height=row_h,
         title="Off-diagonal check",
-        body=(
-            "Aerobe trait score in decreased profiles.\n"
-            "Used as the comparator/reversal check."
-        ),
+        body=("Aerobe trait score in decreased profiles.\nUsed as the comparator/reversal check."),
         facecolor=SLATE_100,
         edgecolor=SLATE_200,
         title_color=SLATE_700,
@@ -621,8 +618,7 @@ def add_large_direction_grid(ax: plt.Axes, counts: dict[str, int]) -> None:
         height=row_h,
         title="Off-diagonal check",
         body=(
-            "Anaerobe trait score in increased profiles.\n"
-            "Used as the comparator/reversal check."
+            "Anaerobe trait score in increased profiles.\nUsed as the comparator/reversal check."
         ),
         facecolor=SLATE_100,
         edgecolor=SLATE_200,

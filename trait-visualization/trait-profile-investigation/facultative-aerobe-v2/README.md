@@ -27,9 +27,9 @@ The selected traits are enriched in increased profiles relative to decreased pro
 
 | trait | increased - decreased z |
 | --- | ---: |
-| facultatively aerobic | 0.127 |
-| aerobic | 0.085 |
-| microaerophilic | 0.060 |
+| facultatively aerobic | 0.161 |
+| microaerophilic | 0.090 |
+| aerobic | 0.084 |
 
 ## Target Taxa Most Often Reported In Increased Profiles
 
@@ -67,14 +67,14 @@ The selected traits are enriched in increased profiles relative to decreased pro
 
 | condition | profiles | studies | increased - decreased z | paired d | paired p | matched pairs | increased mean trait z |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Lung transplantation | 7 | 2 | 1.213 |  |  | 2 | 0.630 |
-| Age-related macular degeneration | 27 | 5 | 1.019 | 1.189 | 0.00106 | 13 | 0.504 |
-| Multiple myeloma | 11 | 2 | 1.010 | 1.255 | 0.0485 | 5 | 0.387 |
-| Tuberculosis | 8 | 3 | 0.964 |  |  | 1 | 0.364 |
-| Sarcopenia | 26 | 2 | 0.903 | 0.298 | 0.428 | 8 | 0.172 |
-| Graft versus host disease | 13 | 4 | 0.870 | 1.333 | 0.0759 | 4 | 0.163 |
-| Acute graft vs. host disease | 11 | 2 | 0.782 | 0.658 | 0.28 | 4 | 0.111 |
-| Autism | 14 | 4 | 0.755 | 0.538 | 0.361 | 4 | 0.459 |
+| Lung transplantation | 7 | 2 | 1.209 |  |  | 2 | 0.624 |
+| Age-related macular degeneration | 27 | 5 | 1.015 | 1.189 | 0.00106 | 13 | 0.498 |
+| Multiple myeloma | 11 | 2 | 1.006 | 1.254 | 0.0486 | 5 | 0.381 |
+| Tuberculosis | 8 | 3 | 0.960 |  |  | 1 | 0.358 |
+| Diarrhea | 32 | 4 | 0.958 | 1.115 | 0.000706 | 15 | 0.636 |
+| Sarcopenia | 26 | 2 | 0.900 | 0.298 | 0.428 | 8 | 0.167 |
+| Graft versus host disease | 13 | 4 | 0.867 | 1.334 | 0.0758 | 4 | 0.157 |
+| High fat diet | 5 | 2 | 0.778 |  |  | 2 | 0.335 |
 
 Broad labels such as `Exposure`, `Population`, and labels containing `measurement` come from BugSigDB condition metadata but usually describe study design, cohort, exposure, or measurement context rather than a disease/condition context. They are excluded from displayed condition bar charts and condition summaries.
 
@@ -86,44 +86,43 @@ For the top condition signals, this table uses all taxa observed in the increase
 
 | condition | increased profiles | universe taxa / observed taxa | enriched traits | supporting taxa |
 | --- | ---: | ---: | --- | --- |
-| Acute graft vs. host disease | 4 | 15 / 16 | aerobic (+0.92); facultatively aerobic (+0.71) | taxon_106589 (2 traits, 1 profile); taxon_119060 (2 traits, 1 profile); taxon_1239 (2 traits, 1 profile); taxon_1350 (2 traits, 1 profile); taxon_186801 (2 traits, 1 profile); taxon_203494 (2 traits, 1 profile); taxon_48461 (2 traits, 1 profile); taxon_74201 (2 traits, 1 profile); taxon_815 (2 traits, 1 profile); taxon_816 (2 traits, 1 profile); taxon_1647988 (1 trait, 1 profile); taxon_186803 (1 trait, 1 profile) |
-| Age-related macular degeneration | 13 | 31 / 45 | facultatively aerobic (+1.32); microaerophilic (+1.19) | taxon_1301 (2 traits, 5 profiles); taxon_1378 (2 traits, 4 profiles); taxon_29317 (2 traits, 2 profiles); taxon_1224 (2 traits, 1 profile); taxon_1236 (2 traits, 1 profile); taxon_1239 (2 traits, 1 profile); taxon_1300 (2 traits, 1 profile); taxon_1306 (2 traits, 1 profile); taxon_1350 (2 traits, 1 profile); taxon_135621 (2 traits, 1 profile); taxon_1578 (2 traits, 1 profile); taxon_171549 (2 traits, 1 profile) |
-| Autism | 8 | 24 / 36 | aerobic (+1.05); facultatively aerobic (+0.80); microaerophilic (+0.42) | taxon_1224 (3 traits, 3 profiles); taxon_1350 (3 traits, 3 profiles); taxon_31953 (3 traits, 3 profiles); taxon_85023 (3 traits, 3 profiles); taxon_1653 (3 traits, 2 profiles); taxon_976 (3 traits, 2 profiles); taxon_1678 (3 traits, 2 profiles); taxon_128827 (3 traits, 1 profile); taxon_1578 (3 traits, 1 profile); taxon_1716 (3 traits, 1 profile); taxon_1760 (3 traits, 1 profile); taxon_186817 (3 traits, 1 profile) |
-| Graft versus host disease | 7 | 12 / 15 | aerobic (+1.24); facultatively aerobic (+1.01) | taxon_1239 (2 traits, 2 profiles); taxon_40323 (2 traits, 2 profiles); taxon_543 (2 traits, 2 profiles); taxon_1224 (2 traits, 1 profile); taxon_1236 (2 traits, 1 profile); taxon_135614 (2 traits, 1 profile); taxon_1357 (2 traits, 1 profile); taxon_32033 (2 traits, 1 profile); taxon_91347 (2 traits, 1 profile); taxon_171551 (1 trait, 1 profile); taxon_216851 (1 trait, 1 profile); taxon_47670 (1 trait, 1 profile) |
-| Lung transplantation | 4 | 30 / 34 | microaerophilic (+1.37); facultatively aerobic (+1.27); aerobic (+1.00) | taxon_1129771 (3 traits, 2 profiles); taxon_1268 (3 traits, 2 profiles); taxon_1300 (3 traits, 2 profiles); taxon_1301 (3 traits, 2 profiles); taxon_1350 (3 traits, 2 profiles); taxon_1386 (3 traits, 2 profiles); taxon_1654 (3 traits, 2 profiles); taxon_186826 (3 traits, 2 profiles); taxon_186827 (3 traits, 2 profiles); taxon_201174 (3 traits, 2 profiles); taxon_203490 (3 traits, 2 profiles); taxon_203491 (3 traits, 2 profiles) |
-| Multiple myeloma | 6 | 24 / 41 | facultatively aerobic (+1.48); aerobic (+0.96) | taxon_1224 (2 traits, 2 profiles); taxon_1302 (2 traits, 2 profiles); taxon_1304 (2 traits, 2 profiles); taxon_1313 (2 traits, 2 profiles); taxon_244366 (2 traits, 2 profiles); taxon_28037 (2 traits, 2 profiles); taxon_54291 (2 traits, 2 profiles); taxon_546 (2 traits, 2 profiles); taxon_548 (2 traits, 2 profiles); taxon_550 (2 traits, 2 profiles); taxon_573 (2 traits, 2 profiles); taxon_816 (2 traits, 2 profiles) |
-| Sarcopenia | 13 | 59 / 155 | aerobic (+1.01); microaerophilic (+0.89); facultatively aerobic (+0.81) | taxon_1350 (3 traits, 4 profiles); taxon_547 (3 traits, 3 profiles); taxon_3031852 (3 traits, 2 profiles); taxon_1352 (3 traits, 1 profile); taxon_1624 (3 traits, 1 profile); taxon_186801 (3 traits, 1 profile); taxon_186802 (3 traits, 1 profile); taxon_1903414 (3 traits, 1 profile); taxon_204441 (3 traits, 1 profile); taxon_213849 (3 traits, 1 profile); taxon_28211 (3 traits, 1 profile); taxon_287 (3 traits, 1 profile) |
-| Tuberculosis | 7 | 36 / 58 | facultatively aerobic (+1.24); aerobic (+1.08); microaerophilic (+0.58) | taxon_1301 (3 traits, 2 profiles); taxon_186826 (3 traits, 2 profiles); taxon_543 (3 traits, 2 profiles); taxon_91061 (3 traits, 2 profiles); taxon_91347 (3 traits, 2 profiles); taxon_118968 (3 traits, 1 profile); taxon_118969 (3 traits, 1 profile); taxon_119060 (3 traits, 1 profile); taxon_1236 (3 traits, 1 profile); taxon_1253 (3 traits, 1 profile); taxon_128827 (3 traits, 1 profile); taxon_1300 (3 traits, 1 profile) |
+| Age-related macular degeneration | 13 | 31 / 45 | facultatively aerobic (+1.31); microaerophilic (+1.19) | taxon_1301 (2 traits, 5 profiles); taxon_1378 (2 traits, 4 profiles); taxon_29317 (2 traits, 2 profiles); taxon_1224 (2 traits, 1 profile); taxon_1236 (2 traits, 1 profile); taxon_1239 (2 traits, 1 profile); taxon_1300 (2 traits, 1 profile); taxon_1306 (2 traits, 1 profile); taxon_1350 (2 traits, 1 profile); taxon_135621 (2 traits, 1 profile); taxon_1578 (2 traits, 1 profile); taxon_171549 (2 traits, 1 profile) |
+| Diarrhea | 17 | 24 / 38 | microaerophilic (+1.31); facultatively aerobic (+1.02) | taxon_1301 (2 traits, 7 profiles); taxon_1350 (2 traits, 4 profiles); taxon_561 (2 traits, 4 profiles); taxon_729 (2 traits, 3 profiles); taxon_1306 (2 traits, 3 profiles); taxon_194 (2 traits, 3 profiles); taxon_1578 (2 traits, 2 profiles); taxon_1678 (2 traits, 2 profiles); taxon_1623 (2 traits, 2 profiles); taxon_171549 (2 traits, 1 profile); taxon_200643 (2 traits, 1 profile); taxon_201174 (2 traits, 1 profile) |
+| Graft versus host disease | 7 | 12 / 15 | aerobic (+1.24); facultatively aerobic (+1.00) | taxon_1239 (2 traits, 2 profiles); taxon_40323 (2 traits, 2 profiles); taxon_543 (2 traits, 2 profiles); taxon_1224 (2 traits, 1 profile); taxon_1236 (2 traits, 1 profile); taxon_135614 (2 traits, 1 profile); taxon_1357 (2 traits, 1 profile); taxon_32033 (2 traits, 1 profile); taxon_91347 (2 traits, 1 profile); taxon_171551 (1 trait, 1 profile); taxon_216851 (1 trait, 1 profile); taxon_47670 (1 trait, 1 profile) |
+| High fat diet | 3 | 6 / 9 | facultatively aerobic (+1.56); microaerophilic (+0.89) | taxon_1301 (2 traits, 1 profile); taxon_1350 (2 traits, 1 profile); taxon_1357 (2 traits, 1 profile); taxon_561 (2 traits, 1 profile); taxon_872 (2 traits, 1 profile); taxon_117563 (1 trait, 1 profile) |
+| Lung transplantation | 4 | 30 / 34 | microaerophilic (+1.37); facultatively aerobic (+1.26); aerobic (+0.99) | taxon_1129771 (3 traits, 2 profiles); taxon_1268 (3 traits, 2 profiles); taxon_1300 (3 traits, 2 profiles); taxon_1301 (3 traits, 2 profiles); taxon_1350 (3 traits, 2 profiles); taxon_1386 (3 traits, 2 profiles); taxon_1654 (3 traits, 2 profiles); taxon_186826 (3 traits, 2 profiles); taxon_186827 (3 traits, 2 profiles); taxon_201174 (3 traits, 2 profiles); taxon_203490 (3 traits, 2 profiles); taxon_203491 (3 traits, 2 profiles) |
+| Multiple myeloma | 6 | 24 / 41 | facultatively aerobic (+1.47); aerobic (+0.96) | taxon_1224 (2 traits, 2 profiles); taxon_1302 (2 traits, 2 profiles); taxon_1304 (2 traits, 2 profiles); taxon_1313 (2 traits, 2 profiles); taxon_244366 (2 traits, 2 profiles); taxon_28037 (2 traits, 2 profiles); taxon_54291 (2 traits, 2 profiles); taxon_546 (2 traits, 2 profiles); taxon_548 (2 traits, 2 profiles); taxon_550 (2 traits, 2 profiles); taxon_573 (2 traits, 2 profiles); taxon_816 (2 traits, 2 profiles) |
+| Sarcopenia | 13 | 59 / 155 | aerobic (+1.01); microaerophilic (+0.89); facultatively aerobic (+0.80) | taxon_1350 (3 traits, 4 profiles); taxon_547 (3 traits, 3 profiles); taxon_3031852 (3 traits, 2 profiles); taxon_1352 (3 traits, 1 profile); taxon_1624 (3 traits, 1 profile); taxon_186801 (3 traits, 1 profile); taxon_186802 (3 traits, 1 profile); taxon_1903414 (3 traits, 1 profile); taxon_204441 (3 traits, 1 profile); taxon_213849 (3 traits, 1 profile); taxon_28211 (3 traits, 1 profile); taxon_287 (3 traits, 1 profile) |
+| Tuberculosis | 7 | 36 / 58 | facultatively aerobic (+1.23); aerobic (+1.07); microaerophilic (+0.57) | taxon_1301 (3 traits, 2 profiles); taxon_186826 (3 traits, 2 profiles); taxon_543 (3 traits, 2 profiles); taxon_91061 (3 traits, 2 profiles); taxon_91347 (3 traits, 2 profiles); taxon_118968 (3 traits, 1 profile); taxon_118969 (3 traits, 1 profile); taxon_119060 (3 traits, 1 profile); taxon_1236 (3 traits, 1 profile); taxon_1253 (3 traits, 1 profile); taxon_128827 (3 traits, 1 profile); taxon_1300 (3 traits, 1 profile) |
 
 ## Body-Site Check
 
 | body_site_group | profiles | increased mean trait z | increased - decreased z |
 | --- | ---: | ---: | ---: |
-| Nasopharynx | 126 | 0.536 | 0.114 |
-| Saliva | 638 | 0.383 | -0.017 |
-| Mouth | 170 | 0.296 | -0.202 |
-| Other | 2829 | 0.228 | 0.022 |
-| Subgingival dental plaque | 211 | 0.219 | -0.304 |
-| Vagina | 196 | 0.060 | -0.135 |
-| Caecum | 165 | 0.028 | 0.091 |
-| Feces | 7595 | -0.069 | 0.146 |
-| Colon | 139 | -0.227 | 0.170 |
-| unknown | 39 | -0.430 | 0.060 |
+| Nasopharynx | 115 | 0.510 | 0.102 |
+| Saliva | 619 | 0.384 | -0.024 |
+| Oral cavity | 94 | 0.381 | 0.108 |
+| Sputum | 82 | 0.351 | 0.088 |
+| Subgingival dental plaque | 210 | 0.212 | -0.305 |
+| Other | 2184 | 0.211 | 0.022 |
+| Uterine cervix | 83 | 0.161 | -0.027 |
+| Vagina | 188 | 0.038 | -0.130 |
+| Feces | 5769 | -0.072 | 0.178 |
 
 ## Top Increased Profiles To Inspect
 
 | profile | condition | body site | trait z | title |
 | --- | --- | --- | ---: | --- |
-| bsdb:32115690\|bsdb:32115690-1\|inc | Acute lymphoblastic leukemia | Feces | 1.822 | Gastrointestinal toxicity during induction treatment for childhood acute lymphoblastic ... |
-| bsdb:37596536\|bsdb:37596536-10\|inc | Population | Saliva | 1.677 | Oral microbiome homogeneity across diverse human groups from southern Africa: first res... |
-| bsdb:39738315\|bsdb:39738315-2\|inc | Response to diet | Feces | 1.623 | Modulating the human gut microbiome and health markers through kombucha consumption: a ... |
-| bsdb:39738315\|bsdb:39738315-3\|inc | Response to diet | Feces | 1.623 | Modulating the human gut microbiome and health markers through kombucha consumption: a ... |
-| bsdb:37721699\|bsdb:37721699-10\|inc | Chlamydia trachomatis infectious disease | Vagina | 1.503 | Changes in the Vaginal Microbiome During Pregnancy and the Postpartum Period in South A... |
-| bsdb:38535538\|bsdb:38535538-4\|inc | Alzheimer's disease | Oral cavity | 1.486 | Oral Microbiome Stamp in Alzheimer's Disease |
-| bsdb:39642873\|bsdb:39642873-1\|inc | Respiratory Syncytial Virus Infection | Nasopharynx | 1.476 | The respiratory microbiome is linked to the severity of RSV infections and the persiste... |
-| bsdb:39642873\|bsdb:39642873-4\|inc | Respiratory Syncytial Virus Infection | Nasopharynx | 1.476 | The respiratory microbiome is linked to the severity of RSV infections and the persiste... |
-| bsdb:36203175\|bsdb:36203175-1\|inc | Down syndrome | Oral cavity | 1.469 | Salivary microbiome in children with Down syndrome: a case-control study |
-| bsdb:36171758\|bsdb:36171758-10\|inc | Transport | Nasopharynx | 1.447 | Geography, niches, and transportation influence bovine respiratory microbiome and health |
+| bsdb:32115690\|bsdb:32115690-1\|inc | Acute lymphoblastic leukemia | Feces | 1.812 | Gastrointestinal toxicity during induction treatment for childhood acute lymphoblastic ... |
+| bsdb:37596536\|bsdb:37596536-10\|inc | Population | Saliva | 1.667 | Oral microbiome homogeneity across diverse human groups from southern Africa: first res... |
+| bsdb:39738315\|bsdb:39738315-2\|inc | Response to diet | Feces | 1.613 | Modulating the human gut microbiome and health markers through kombucha consumption: a ... |
+| bsdb:39738315\|bsdb:39738315-3\|inc | Response to diet | Feces | 1.613 | Modulating the human gut microbiome and health markers through kombucha consumption: a ... |
+| bsdb:37721699\|bsdb:37721699-10\|inc | Chlamydia trachomatis infectious disease | Vagina | 1.493 | Changes in the Vaginal Microbiome During Pregnancy and the Postpartum Period in South A... |
+| bsdb:38535538\|bsdb:38535538-4\|inc | Alzheimer's disease | Oral cavity | 1.476 | Oral Microbiome Stamp in Alzheimer's Disease |
+| bsdb:39642873\|bsdb:39642873-1\|inc | Respiratory Syncytial Virus Infection | Nasopharynx | 1.467 | The respiratory microbiome is linked to the severity of RSV infections and the persiste... |
+| bsdb:39642873\|bsdb:39642873-4\|inc | Respiratory Syncytial Virus Infection | Nasopharynx | 1.467 | The respiratory microbiome is linked to the severity of RSV infections and the persiste... |
+| bsdb:36203175\|bsdb:36203175-1\|inc | Down syndrome | Oral cavity | 1.461 | Salivary microbiome in children with Down syndrome: a case-control study |
+| bsdb:28216066\|bsdb:28216066-3\|inc | Oral mucositis | Mucosa of oropharynx,Mucosa of oral region | 1.428 | The Potential Effect of Oral Microbiota in the Prediction of Mucositis During Radiother... |
 
 ## Suggested Follow-Up
 
@@ -145,13 +144,10 @@ For the top condition signals, this table uses all taxa observed in the increase
 - `condition_inferred_guild_summary.tsv`
 - `condition_inferred_guild_trait_evidence.tsv`
 - `condition_inferred_guild_taxa_evidence.tsv`
-- `condition_body_site_guild_map_edges.tsv`
-- `condition_body_site_guild_map_sampled_body_sites.tsv`
 - `top_increased_guild_profiles.tsv`
 - `figure_methods.md`
 - `candidate_taxa_increased_profile_tendency.png`
 - `condition_increased_guild_signal.png`
-- `condition_body_site_guild_map.png`
 - `condition_target_taxa_stacked_bar.png`
 - `guild_trait_direction_shift.png`
 - `anatomical_sites_diagram.png`

@@ -16,8 +16,14 @@ dependencies = [
   "httpx>=0.28.0",
   "linkml>=1.10.0",
   "linkml-runtime>=1.8.3",
+  "matplotlib>=3.10.0",
+  "numpy>=2.4.0",
+  "pandas>=3.0.0",
+  "pillow>=12.0.0",
   "pydantic>=2.13.0",
   "pyyaml>=6.0.2",
+  "scipy>=1.17.0",
+  "seaborn>=0.13.0",
 ]
 
 [project.optional-dependencies]
@@ -40,6 +46,7 @@ mongo = [
 [dependency-groups]
 dev = [
   "mypy>=1.15.0",
+  "pandas-stubs>=3.0.5.260730",
   "pre-commit>=4.2.0",
   "pytest>=8.3.5",
   "pytest-cov>=6.0.0",

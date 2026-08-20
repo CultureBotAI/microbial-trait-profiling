@@ -53,11 +53,12 @@ uv run python scripts/create_study_trait_profile_heatmap.py
 This clusters every BugSigDB study/experiment/direction trait profile rather
 than aggregating increased and decreased profiles together at the study level.
 The full matrix and row metadata include the study ID, experiment ID, and inc/dec
-direction for all 12,108 profiles from all 1,924 studies. To keep the PNG from
-washing out to gray, the rendered image averages adjacent clustered profiles into
-320 direction-specific display bins by default while keeping increased and
-decreased sections separate. Use `--display-max-rows` to change the rendered bin
-count without changing the full per-profile TSV outputs.
+direction for the human-host corpus: 9,344 profiles from 1,646 studies after
+excluding non-`Homo sapiens` host samples. To keep the PNG from washing out to
+gray, the rendered image averages adjacent clustered profiles into 320
+direction-specific display bins by default while keeping increased and decreased
+sections separate. Use `--display-max-rows` to change the rendered bin count
+without changing the full per-profile TSV outputs.
 
 The same script also writes a paired enrichment heatmap for matched
 study/experiment profiles. This paired view keeps only experiments with both an

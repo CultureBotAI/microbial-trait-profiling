@@ -78,10 +78,9 @@ precommit:
 	uv run pre-commit run --all-files
 
 validate-schema:
-	uv run linkml validate -s {{schema}}
+	uv run linkml validate {{schema}}
 
 lint-schema:
-	uv run linkml lint --config {{lintconfig}} --validate --ignore-warnings {{schema}}
 	uv run linkml lint --config {{lintconfig}} --ignore-warnings {{schema}}
 
 check-schema: validate-schema lint-schema

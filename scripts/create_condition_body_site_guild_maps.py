@@ -141,9 +141,7 @@ def is_excluded_condition_label(value: object, excluded: frozenset[str]) -> bool
     lower_label = label.lower()
     broad_terms = ("exposure", "measurement", "population")
     return (
-        label in excluded
-        or label == "unknown"
-        or any(term in lower_label for term in broad_terms)
+        label in excluded or label == "unknown" or any(term in lower_label for term in broad_terms)
     )
 
 
@@ -394,9 +392,11 @@ def weighted_node_stats(edges: pd.DataFrame, node_column: str) -> pd.DataFrame:
     for label, group in edges.groupby(node_column, sort=False):
         weights = group["focus_profile_count"].to_numpy(dtype=float)
         focus_values = group["focus_mean_guild_z"].to_numpy(dtype=float)
-        contrast_values = group["focus_minus_comparator_guild_z"].fillna(
-            group["focus_mean_guild_z"]
-        ).to_numpy(dtype=float)
+        contrast_values = (
+            group["focus_minus_comparator_guild_z"]
+            .fillna(group["focus_mean_guild_z"])
+            .to_numpy(dtype=float)
+        )
         rows.append(
             {
                 node_column: label,
@@ -557,9 +557,7 @@ def plot_condition_body_site_map(
 
     height = max(
         8.0,
-        1.2
-        + 0.64 * max(len(condition_order), len(body_site_order))
-        + 0.12 * len(condition_notes),
+        1.2 + 0.64 * max(len(condition_order), len(body_site_order)) + 0.12 * len(condition_notes),
     )
     fig, ax = plt.subplots(figsize=(13.5, height))
     ax.set_xlim(0, 1)

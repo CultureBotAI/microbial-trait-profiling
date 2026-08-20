@@ -36,14 +36,6 @@ Study profiles were grouped by `body_site_group`, requiring at least 10 profiles
 
 Oral-site increased-profile trait signals are biologically plausible because the oral cavity is oxygen-exposed and includes aerotolerant, facultatively aerobic, or microaerophilic taxa such as Streptococcus, Fusobacterium, Prevotella, Porphyromonas, and Veillonella. Those oral-site signals should be interpreted as body-site-specific microbial ecology, not as a gut facultative-aerobe increased-profile trait-enrichment signal.
 
-## `condition_body_site_guild_map.png`
-
-Guild-specificity: yes. This figure maps condition labels to anatomical body-site groups using the facultative-aerobe v2 trait-enrichment score among increased profiles.
-
-Profiles were grouped by BugSigDB condition and `body_site_group` after removing broad metadata-like condition labels and excluding `Other` or `unknown` body-site groups. Each condition/body-site pair was scored by the mean facultative-aerobe selected-trait z-score in increased profiles, the mean score in decreased profiles, and the increased-minus-decreased contrast. Displayed edges require at least three increased profiles, at least two studies, and positive increased-profile mean trait z-score; when enough edges pass, the display prioritizes positive increased-minus-decreased contrasts. Edge width is increased-profile count, edge color is increased-minus-decreased mean trait z-score, and node labels report `n=` focus-profile count, `s=` unique study count, and focus mean trait z-score. For displayed conditions with additional sampled body-site groups that were not drawn as enriched edges, the condition label lists those body sites as `other sampled sites` with their profile and study support.
-
-The edge TSV `condition_body_site_guild_map_edges.tsv` records the ranked condition/body-site pairs used for display selection. The companion TSV `condition_body_site_guild_map_sampled_body_sites.tsv` preserves every sampled condition/body-site pair after label filtering, including pairs not displayed in the PNG.
-
 ## `target_taxa_condition_breakdown_bar.png`
 
 Guild-specificity: no. This is a fixed target-taxon occurrence-count view; it is not recomputed from the v2 trait-enrichment score.

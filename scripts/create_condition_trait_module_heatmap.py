@@ -17,6 +17,7 @@ from matplotlib.patches import FancyBboxPatch, Patch, Rectangle
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
+HUMAN_HOST_SPECIES = "Homo sapiens"
 GUILD_DEFINITION_TABLE_OUTPUT = OUTPUT_DIR / "condition_trait_module_guild_definition_table.png"
 GUILD_DEFINITION_TABLE_SVG_OUTPUT = OUTPUT_DIR / "condition_trait_module_guild_definition_table.svg"
 
@@ -59,6 +60,15 @@ def study_id_from_bsdb_id(bsdb_id: str) -> str:
     """Convert a full BugSigDB signature ID into the derived study ID format."""
     compact_id = bsdb_id.strip().removeprefix("bsdb:").split("/", 1)[0]
     return f"bsdb:{compact_id}"
+
+
+def experiment_id_from_bsdb_id(bsdb_id: str) -> str:
+    """Convert a full BugSigDB signature ID into the derived experiment ID format."""
+    compact_id = bsdb_id.strip().removeprefix("bsdb:")
+    parts = compact_id.split("/")
+    if len(parts) < 2:
+        return "unknown"
+    return f"bsdb:{parts[0]}-{parts[1]}"
 
 
 def most_common_label(values: list[str]) -> str:
@@ -115,6 +125,35 @@ def load_raw_study_metadata(full_dump_path: Path) -> pd.DataFrame:
     return pd.DataFrame.from_records(records).set_index("study_id")
 
 
+def load_raw_experiment_hosts(full_dump_path: Path) -> pd.DataFrame:
+    """Extract host species labels for each BugSigDB study/experiment profile."""
+    values_by_experiment: dict[tuple[str, str], list[str]] = defaultdict(list)
+    with full_dump_path.open(encoding="utf-8", newline="") as handle:
+        rows = (line for line in handle if not line.startswith("#"))
+        reader = csv.DictReader(rows)
+        for row in reader:
+            bsdb_id = clean_value(row.get("BSDB ID"))
+            if bsdb_id == "unknown":
+                continue
+            experiment_id = experiment_id_from_bsdb_id(bsdb_id)
+            if experiment_id == "unknown":
+                continue
+            study_id = study_id_from_bsdb_id(bsdb_id)
+            values_by_experiment[(study_id, experiment_id)].append(
+                clean_value(row.get("Host species"))
+            )
+
+    records = [
+        {
+            "study_id": study_id,
+            "experiment_id": experiment_id,
+            "host_species": most_common_label(host_species_values),
+        }
+        for (study_id, experiment_id), host_species_values in values_by_experiment.items()
+    ]
+    return pd.DataFrame.from_records(records).set_index(["study_id", "experiment_id"])
+
+
 def load_study_titles(studies_path: Path) -> pd.DataFrame:
     """Load compact study metadata from derived studies.tsv."""
     studies = pd.read_csv(
@@ -151,9 +190,25 @@ def format_trait_label(column_id: str, row: pd.Series) -> str:
     return f"{name}\n{short_id}"
 
 
-def load_aggregated_study_profiles(profile_path: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+def load_aggregated_study_profiles(
+    profile_path: Path,
+    human_experiment_ids: set[str] | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Aggregate increased/decreased experiment profiles to study-level trait profiles."""
     profiles = pd.read_csv(profile_path, sep="\t")
+    unfiltered_profile_count = len(profiles)
+    unfiltered_study_count = profiles["study_id"].nunique()
+    if human_experiment_ids is not None:
+        profiles = profiles[profiles["experiment_id"].isin(human_experiment_ids)].copy()
+        if profiles.empty:
+            msg = "No Homo sapiens profiles were available after applying the human-host filter."
+            raise ValueError(msg)
+        print(
+            "Human-host corpus filter retained "
+            f"{len(profiles):,}/{unfiltered_profile_count:,} profiles from "
+            f"{profiles['study_id'].nunique():,}/{unfiltered_study_count:,} studies."
+        )
+
     trait_columns = [
         column for column in profiles.columns if column not in PROFILE_METADATA_COLUMNS
     ]
@@ -550,8 +605,7 @@ def save_guild_definition_table(
         {
             "layer": "Disease module",
             "definition": (
-                "Aggregate profiles by condition/body site, then summarize "
-                "trait-enrichment score."
+                "Aggregate profiles by condition/body site, then summarize trait-enrichment score."
             ),
             "use": "Condition-level link to a trait-defined guild.",
             "logic": "group mean",
@@ -829,11 +883,21 @@ def main() -> None:
     args = parser.parse_args()
 
     group_by = normalize_group_fields(args.group_by)
-    study_matrix, profile_metadata = load_aggregated_study_profiles(args.study_trait_profiles_input)
+    experiment_hosts = load_raw_experiment_hosts(args.full_dump_input)
+    human_experiment_ids = set(
+        experiment_hosts.index.get_level_values("experiment_id")[
+            experiment_hosts["host_species"].map(clean_value) == HUMAN_HOST_SPECIES
+        ]
+    )
+    study_matrix, profile_metadata = load_aggregated_study_profiles(
+        args.study_trait_profiles_input,
+        human_experiment_ids,
+    )
     study_metadata = profile_metadata.join(load_study_titles(args.studies_input), how="left")
     study_metadata = study_metadata.join(load_raw_study_metadata(args.full_dump_input), how="left")
     for column in ["condition", "body_site", "location", "host_species"]:
         study_metadata[column] = study_metadata[column].map(clean_value)
+    study_metadata["host_species"] = HUMAN_HOST_SPECIES
 
     group_matrix, group_metadata = build_condition_modules(
         study_matrix,

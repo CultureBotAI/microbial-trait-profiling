@@ -1659,9 +1659,7 @@ def make_plots(
                 fontsize=8,
                 color="#334155",
             )
-    ax.set_xlabel(
-        "Facultative-aerobe trait enrichment: increased mean z - decreased mean z"
-    )
+    ax.set_xlabel("Facultative-aerobe trait enrichment: increased mean z - decreased mean z")
     ax.set_title(
         "Conditions With Facultative-Aerobe v2 Trait Enrichment in Increased Profiles",
         pad=28,
