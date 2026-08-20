@@ -72,8 +72,16 @@ class DirectionMapConfig:
         return OUTPUT_DIR / f"{self.output_stem}_edges.tsv"
 
     @property
+    def edge_v2_tsv_path(self) -> Path:
+        return OUTPUT_DIR / f"{self.output_stem}_v2_edges.tsv"
+
+    @property
     def png_path(self) -> Path:
         return OUTPUT_DIR / f"{self.output_stem}.png"
+
+    @property
+    def png_v2_path(self) -> Path:
+        return OUTPUT_DIR / f"{self.output_stem}_v2.png"
 
 
 CONFIGS = (
@@ -296,6 +304,18 @@ def select_display_edges(edges: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def select_uncapped_display_edges(edges: pd.DataFrame) -> pd.DataFrame:
+    """Return every supported edge for the uncapped v2 PNG."""
+    candidates = edges[
+        (edges["focus_profile_count"] >= MIN_FOCUS_PROFILES)
+        & (edges["focus_study_count"] >= MIN_FOCUS_STUDIES)
+    ].copy()
+    return candidates.sort_values(
+        ["rank_score", "focus_profile_count", "focus_study_count", "condition"],
+        ascending=[False, False, False, True],
+    )
+
+
 def scaled_line_width(values: pd.Series) -> pd.Series:
     """Scale profile counts to readable line widths."""
     counts = values.astype(float)
@@ -307,11 +327,16 @@ def scaled_line_width(values: pd.Series) -> pd.Series:
     return 1.1 + scaled * 8.0
 
 
-def node_positions(labels: list[str]) -> dict[str, float]:
+def node_positions(
+    labels: list[str],
+    *,
+    top: float = 0.88,
+    bottom: float = 0.14,
+) -> dict[str, float]:
     """Return evenly spaced vertical positions for node labels."""
     if len(labels) == 1:
         return {labels[0]: 0.52}
-    positions = np.linspace(0.88, 0.14, len(labels))
+    positions = np.linspace(top, bottom, len(labels))
     return dict(zip(labels, positions, strict=True))
 
 
@@ -472,6 +497,10 @@ def plot_direction_map(
     summary: pd.DataFrame,
     config: DirectionMapConfig,
     output_path: Path,
+    *,
+    title_suffix: str = "",
+    selection_note: str | None = None,
+    dense_layout: bool = False,
 ) -> None:
     """Render an all-BugSigDB direction map."""
     if display_edges.empty:
@@ -490,8 +519,11 @@ def plot_direction_map(
         .sort_values(ascending=False)
         .index.tolist()
     )
-    condition_y = node_positions(condition_order)
-    body_site_y = node_positions(body_site_order)
+    node_top = 0.98 if dense_layout else 0.88
+    node_bottom = 0.05 if dense_layout else 0.14
+    header_y = 0.985 if dense_layout else 0.93
+    condition_y = node_positions(condition_order, top=node_top, bottom=node_bottom)
+    body_site_y = node_positions(body_site_order, top=node_top, bottom=node_bottom)
     condition_stats = weighted_node_stats(display_edges, "condition")
     body_site_stats = weighted_node_stats(display_edges, "body_site_group")
     condition_notes = build_sampled_site_notes(display_edges, summary)
@@ -501,6 +533,8 @@ def plot_direction_map(
         1.4 + 0.62 * max(len(condition_order), len(body_site_order)) + 0.10 * len(condition_notes),
     )
     fig, ax = plt.subplots(figsize=(14.6, height))
+    if dense_layout:
+        fig.subplots_adjust(left=0.05, right=0.90, top=0.91, bottom=0.07)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
@@ -542,7 +576,15 @@ def plot_direction_map(
             align="left",
         )
 
-    fig.text(0.05, 0.965, config.title, ha="left", va="top", fontsize=17, fontweight="bold")
+    fig.text(
+        0.05,
+        0.965,
+        f"{config.title}{title_suffix}",
+        ha="left",
+        va="top",
+        fontsize=17,
+        fontweight="bold",
+    )
     fig.text(
         0.05,
         0.927,
@@ -557,8 +599,16 @@ def plot_direction_map(
         fontsize=10,
         color=SLATE_700,
     )
-    ax.text(0.21, 0.93, "Conditions", ha="center", va="center", fontsize=12, color=SLATE_700)
-    ax.text(0.79, 0.93, "Body-site groups", ha="center", va="center", fontsize=12, color=SLATE_700)
+    ax.text(0.21, header_y, "Conditions", ha="center", va="center", fontsize=12, color=SLATE_700)
+    ax.text(
+        0.79,
+        header_y,
+        "Body-site groups",
+        ha="center",
+        va="center",
+        fontsize=12,
+        color=SLATE_700,
+    )
 
     sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
     sm.set_array([])
@@ -601,16 +651,19 @@ def plot_direction_map(
     )
     ax.add_artist(legend)
 
-    fig.text(
-        0.05,
-        0.035,
-        (
+    if selection_note is None:
+        selection_note = (
             f"Displayed edges require at least {MIN_FOCUS_PROFILES} {config.focus_label} "
             f"profiles and {MIN_FOCUS_STUDIES} focus-direction studies, then are ranked by "
             "profile support, study support, and direction balance. Other/unknown body sites "
             "and broad metadata-like condition labels remain in the summary TSV but are not "
             "drawn in the PNG."
-        ),
+        )
+
+    fig.text(
+        0.05,
+        0.035,
+        selection_note,
         ha="left",
         va="bottom",
         fontsize=8.2,
@@ -658,6 +711,11 @@ def write_readme(summary: pd.DataFrame, edge_tables: dict[str, pd.DataFrame]) ->
                 f"- `{config.output_stem}.png`: displayed {config.focus_label}-profile map.",
                 f"- `{config.output_stem}_edges.tsv`: display-candidate edge table ",
                 f"  for the {config.focus_label}-profile map; {displayed} rows are drawn.",
+                (f"- `{config.output_stem}_v2.png`: uncapped v2 {config.focus_label}-profile map."),
+                (
+                    f"- `{config.output_stem}_v2_edges.tsv`: uncapped v2 edge table "
+                    f"for the {config.focus_label}-profile map."
+                ),
             ]
         )
     lines.extend(
@@ -682,6 +740,13 @@ def write_readme(summary: pd.DataFrame, edge_tables: dict[str, pd.DataFrame]) ->
                 "labels and `Other`/`unknown` body-site groups are kept in the TSV but "
                 "not drawn."
             ),
+            "",
+            (
+                "The `_v2` PNGs remove the readability caps on displayed edges, "
+                "conditions, body-site groups, and per-body-site edge selection. They "
+                "still use the same support threshold and label filters as the displayed "
+                "maps."
+            ),
         ]
     )
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -698,23 +763,60 @@ def main() -> None:
     for config in CONFIGS:
         edges = build_direction_edges(summary, config)
         display_edges = select_display_edges(edges)
+        display_edges_v2 = select_uncapped_display_edges(edges)
         display_keys = set(
             zip(display_edges["condition"], display_edges["body_site_group"], strict=True)
         )
-        edges["displayed_in_map"] = [
+        display_v2_keys = set(
+            zip(display_edges_v2["condition"], display_edges_v2["body_site_group"], strict=True)
+        )
+        edge_output = edges.copy()
+        edge_output["displayed_in_map"] = [
             (condition, body_site) in display_keys
             for condition, body_site in zip(
-                edges["condition"], edges["body_site_group"], strict=True
+                edge_output["condition"], edge_output["body_site_group"], strict=True
             )
         ]
-        edge_tables[config.key] = edges
-        edges.to_csv(config.edge_tsv_path, sep="\t", index=False)
+        edge_v2_output = edges.copy()
+        edge_v2_output["displayed_in_map"] = [
+            (condition, body_site) in display_v2_keys
+            for condition, body_site in zip(
+                edge_v2_output["condition"], edge_v2_output["body_site_group"], strict=True
+            )
+        ]
+        edge_tables[config.key] = edge_output
+        edge_output.to_csv(config.edge_tsv_path, sep="\t", index=False)
+        edge_v2_output.to_csv(config.edge_v2_tsv_path, sep="\t", index=False)
         plot_direction_map(display_edges, summary, config, config.png_path)
+        plot_direction_map(
+            display_edges_v2,
+            summary,
+            config,
+            config.png_v2_path,
+            title_suffix=" (v2 uncapped)",
+            selection_note=(
+                f"V2 uncapped display: edges require at least {MIN_FOCUS_PROFILES} "
+                f"{config.focus_label} profiles and {MIN_FOCUS_STUDIES} focus-direction "
+                "studies. Every edge meeting those criteria is drawn, with no edge, "
+                "condition, body-site, or per-body-site display cap. Other/unknown body "
+                "sites and broad metadata-like condition labels remain in the summary TSV "
+                "but are not drawn in the PNG."
+            ),
+            dense_layout=True,
+        )
         print(f"Wrote: {config.edge_tsv_path}")
         print(f"Wrote: {config.png_path}")
+        print(f"Wrote: {config.edge_v2_tsv_path}")
+        print(f"Wrote: {config.png_v2_path}")
 
         summary[f"displayed_in_{config.key}_map"] = [
             (condition, body_site) in display_keys
+            for condition, body_site in zip(
+                summary["condition"], summary["body_site_group"], strict=True
+            )
+        ]
+        summary[f"displayed_in_{config.key}_v2_map"] = [
+            (condition, body_site) in display_v2_keys
             for condition, body_site in zip(
                 summary["condition"], summary["body_site_group"], strict=True
             )

@@ -148,7 +148,7 @@ For the top condition signals, this table uses all taxa observed in the increase
 - `condition_body_site_guild_map_edges.tsv`
 - `condition_body_site_guild_map_sampled_body_sites.tsv`
 - `top_increased_guild_profiles.tsv`
-- `figure_methods.md`
+- Methods are consolidated in `../../figure_methods.md`.
 - `candidate_taxa_increased_profile_tendency.png`
 - `condition_increased_guild_signal.png`
 - `condition_body_site_guild_map.png`

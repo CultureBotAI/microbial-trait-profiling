@@ -62,12 +62,24 @@ class MapConfig:
         return self.output_dir / f"{self.output_stem}_edges.tsv"
 
     @property
+    def edge_v2_tsv_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_v2_edges.tsv"
+
+    @property
     def sampled_site_tsv_path(self) -> Path:
         return self.output_dir / f"{self.output_stem}_sampled_body_sites.tsv"
 
     @property
+    def sampled_site_v2_tsv_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_v2_sampled_body_sites.tsv"
+
+    @property
     def png_path(self) -> Path:
         return self.output_dir / f"{self.output_stem}.png"
+
+    @property
+    def png_v2_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_v2.png"
 
 
 FACULTATIVE_CONFIG = MapConfig(
@@ -141,9 +153,7 @@ def is_excluded_condition_label(value: object, excluded: frozenset[str]) -> bool
     lower_label = label.lower()
     broad_terms = ("exposure", "measurement", "population")
     return (
-        label in excluded
-        or label == "unknown"
-        or any(term in lower_label for term in broad_terms)
+        label in excluded or label == "unknown" or any(term in lower_label for term in broad_terms)
     )
 
 
@@ -356,6 +366,19 @@ def select_display_edges(edges: pd.DataFrame) -> pd.DataFrame:
     return display.copy()
 
 
+def select_uncapped_display_edges(edges: pd.DataFrame) -> pd.DataFrame:
+    """Return every supported high-signal edge for the uncapped v2 PNG."""
+    candidates = edges[
+        (edges["focus_profile_count"] >= MIN_FOCUS_PROFILES)
+        & (edges["study_count"] >= MIN_STUDIES)
+        & (edges["focus_mean_guild_z"] > 0)
+    ].copy()
+    return candidates.sort_values(
+        ["rank_score", "rank_signal", "focus_profile_count", "study_count"],
+        ascending=[False, False, False, False],
+    )
+
+
 def scaled_line_width(values: pd.Series) -> pd.Series:
     """Scale profile counts to readable line widths."""
     counts = values.astype(float)
@@ -367,11 +390,16 @@ def scaled_line_width(values: pd.Series) -> pd.Series:
     return 1.2 + scaled * 8.0
 
 
-def node_positions(labels: list[str]) -> dict[str, float]:
+def node_positions(
+    labels: list[str],
+    *,
+    top: float = 0.88,
+    bottom: float = 0.16,
+) -> dict[str, float]:
     """Return evenly spaced vertical positions for node labels."""
     if len(labels) == 1:
         return {labels[0]: 0.52}
-    positions = np.linspace(0.88, 0.16, len(labels))
+    positions = np.linspace(top, bottom, len(labels))
     return dict(zip(labels, positions, strict=True))
 
 
@@ -394,9 +422,11 @@ def weighted_node_stats(edges: pd.DataFrame, node_column: str) -> pd.DataFrame:
     for label, group in edges.groupby(node_column, sort=False):
         weights = group["focus_profile_count"].to_numpy(dtype=float)
         focus_values = group["focus_mean_guild_z"].to_numpy(dtype=float)
-        contrast_values = group["focus_minus_comparator_guild_z"].fillna(
-            group["focus_mean_guild_z"]
-        ).to_numpy(dtype=float)
+        contrast_values = (
+            group["focus_minus_comparator_guild_z"]
+            .fillna(group["focus_mean_guild_z"])
+            .to_numpy(dtype=float)
+        )
         rows.append(
             {
                 node_column: label,
@@ -531,6 +561,10 @@ def plot_condition_body_site_map(
     sampled_sites: pd.DataFrame,
     config: MapConfig,
     output_path: Path,
+    *,
+    title_suffix: str = "",
+    selection_note: str | None = None,
+    dense_layout: bool = False,
 ) -> None:
     """Render a condition-to-body-site bipartite guild map."""
     if display_edges.empty:
@@ -549,19 +583,22 @@ def plot_condition_body_site_map(
         .sort_values(ascending=False)
         .index.tolist()
     )
-    condition_y = node_positions(condition_order)
-    body_site_y = node_positions(body_site_order)
+    node_top = 0.98 if dense_layout else 0.88
+    node_bottom = 0.05 if dense_layout else 0.16
+    header_y = 0.985 if dense_layout else 0.93
+    condition_y = node_positions(condition_order, top=node_top, bottom=node_bottom)
+    body_site_y = node_positions(body_site_order, top=node_top, bottom=node_bottom)
     condition_stats = weighted_node_stats(display_edges, "condition")
     body_site_stats = weighted_node_stats(display_edges, "body_site_group")
     condition_notes = build_condition_sampled_site_notes(display_edges, sampled_sites)
 
     height = max(
         8.0,
-        1.2
-        + 0.64 * max(len(condition_order), len(body_site_order))
-        + 0.12 * len(condition_notes),
+        1.2 + 0.64 * max(len(condition_order), len(body_site_order)) + 0.12 * len(condition_notes),
     )
     fig, ax = plt.subplots(figsize=(13.5, height))
+    if dense_layout:
+        fig.subplots_adjust(left=0.05, right=0.90, top=0.91, bottom=0.07)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
@@ -612,7 +649,15 @@ def plot_condition_body_site_map(
             align="left",
         )
 
-    fig.text(0.05, 0.965, config.title, ha="left", va="top", fontsize=17, fontweight="bold")
+    fig.text(
+        0.05,
+        0.965,
+        f"{config.title}{title_suffix}",
+        ha="left",
+        va="top",
+        fontsize=17,
+        fontweight="bold",
+    )
     fig.text(
         0.05,
         0.925,
@@ -627,8 +672,16 @@ def plot_condition_body_site_map(
         fontsize=10,
         color=SLATE_700,
     )
-    ax.text(0.21, 0.93, "Conditions", ha="center", va="center", fontsize=12, color=SLATE_700)
-    ax.text(0.79, 0.93, "Body-site groups", ha="center", va="center", fontsize=12, color=SLATE_700)
+    ax.text(0.21, header_y, "Conditions", ha="center", va="center", fontsize=12, color=SLATE_700)
+    ax.text(
+        0.79,
+        header_y,
+        "Body-site groups",
+        ha="center",
+        va="center",
+        fontsize=12,
+        color=SLATE_700,
+    )
 
     sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
     sm.set_array([])
@@ -670,15 +723,18 @@ def plot_condition_body_site_map(
     )
     ax.add_artist(legend)
 
-    fig.text(
-        0.05,
-        0.035,
-        (
+    if selection_note is None:
+        selection_note = (
             f"Displayed edges require at least {MIN_FOCUS_PROFILES} {config.focus_label} profiles, "
             f"{MIN_STUDIES} studies, positive focus mean z-score, and are ranked by "
             "contrast-weighted support. Condition notes list sampled body sites for that "
             "condition that were not drawn as enriched edges."
-        ),
+        )
+
+    fig.text(
+        0.05,
+        0.035,
+        selection_note,
         ha="left",
         va="bottom",
         fontsize=8.2,
@@ -696,32 +752,83 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
     sampled_sites = summarize_sampled_body_sites(scored, config)
     edges = summarize_condition_body_site_edges(sampled_sites)
     display_edges = select_display_edges(edges)
+    display_edges_v2 = select_uncapped_display_edges(edges)
     display_keys = set(
         zip(display_edges["condition"], display_edges["body_site_group"], strict=True)
     )
-    edges["displayed_in_map"] = [
-        (condition, body_site) in display_keys
-        for condition, body_site in zip(edges["condition"], edges["body_site_group"], strict=True)
-    ]
-    sampled_sites["displayed_in_map"] = [
+    display_v2_keys = set(
+        zip(display_edges_v2["condition"], display_edges_v2["body_site_group"], strict=True)
+    )
+
+    edge_output = edges.copy()
+    edge_output["displayed_in_map"] = [
         (condition, body_site) in display_keys
         for condition, body_site in zip(
-            sampled_sites["condition"], sampled_sites["body_site_group"], strict=True
+            edge_output["condition"], edge_output["body_site_group"], strict=True
+        )
+    ]
+    sampled_output = sampled_sites.copy()
+    sampled_output["displayed_in_map"] = [
+        (condition, body_site) in display_keys
+        for condition, body_site in zip(
+            sampled_output["condition"], sampled_output["body_site_group"], strict=True
         )
     ]
     displayed_conditions = set(display_edges["condition"])
-    sampled_sites["sampled_not_displayed_for_displayed_condition"] = [
+    sampled_output["sampled_not_displayed_for_displayed_condition"] = [
         condition in displayed_conditions and not displayed
         for condition, displayed in zip(
-            sampled_sites["condition"], sampled_sites["displayed_in_map"], strict=True
+            sampled_output["condition"], sampled_output["displayed_in_map"], strict=True
         )
     ]
-    edges.to_csv(config.edge_tsv_path, sep="\t", index=False)
-    sampled_sites.to_csv(config.sampled_site_tsv_path, sep="\t", index=False)
+
+    edge_v2_output = edges.copy()
+    edge_v2_output["displayed_in_map"] = [
+        (condition, body_site) in display_v2_keys
+        for condition, body_site in zip(
+            edge_v2_output["condition"], edge_v2_output["body_site_group"], strict=True
+        )
+    ]
+    sampled_v2_output = sampled_sites.copy()
+    sampled_v2_output["displayed_in_map"] = [
+        (condition, body_site) in display_v2_keys
+        for condition, body_site in zip(
+            sampled_v2_output["condition"], sampled_v2_output["body_site_group"], strict=True
+        )
+    ]
+    displayed_v2_conditions = set(display_edges_v2["condition"])
+    sampled_v2_output["sampled_not_displayed_for_displayed_condition"] = [
+        condition in displayed_v2_conditions and not displayed
+        for condition, displayed in zip(
+            sampled_v2_output["condition"], sampled_v2_output["displayed_in_map"], strict=True
+        )
+    ]
+
+    edge_output.to_csv(config.edge_tsv_path, sep="\t", index=False)
+    sampled_output.to_csv(config.sampled_site_tsv_path, sep="\t", index=False)
+    edge_v2_output.to_csv(config.edge_v2_tsv_path, sep="\t", index=False)
+    sampled_v2_output.to_csv(config.sampled_site_v2_tsv_path, sep="\t", index=False)
     plot_condition_body_site_map(display_edges, sampled_sites, config, config.png_path)
+    plot_condition_body_site_map(
+        display_edges_v2,
+        sampled_sites,
+        config,
+        config.png_v2_path,
+        title_suffix=" (v2 uncapped)",
+        selection_note=(
+            f"V2 uncapped display: edges require at least {MIN_FOCUS_PROFILES} "
+            f"{config.focus_label} profiles, {MIN_STUDIES} studies, and positive focus "
+            "mean z-score. Every edge meeting those criteria is drawn, with no edge, "
+            "condition, body-site, or per-body-site display cap."
+        ),
+        dense_layout=True,
+    )
     print(f"Wrote: {config.edge_tsv_path}")
     print(f"Wrote: {config.sampled_site_tsv_path}")
     print(f"Wrote: {config.png_path}")
+    print(f"Wrote: {config.edge_v2_tsv_path}")
+    print(f"Wrote: {config.sampled_site_v2_tsv_path}")
+    print(f"Wrote: {config.png_v2_path}")
 
 
 def main() -> None:

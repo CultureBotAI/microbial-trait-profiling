@@ -2,7 +2,7 @@
 
 This note consolidates the interpretation guidance discussed for the paired
 trait-profile contrast outputs in this folder. It is intended as a companion to
-`figure_methods.md`, the paired contrast TSVs, and the increased/decreased
+`../figure_methods.md`, the paired contrast TSVs, and the increased/decreased
 profile guild figures.
 
 ## Key Output Files
