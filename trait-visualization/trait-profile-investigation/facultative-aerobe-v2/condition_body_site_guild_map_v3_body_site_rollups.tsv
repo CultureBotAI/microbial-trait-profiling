@@ -1,0 +1,211 @@
+raw_body_site	raw_body_site_group	body_site_group	body_site_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
+Feces	Feces	Feces	feces/stool rollup	7582	1185	4062	4816
+Saliva	Saliva	Oral cavity / dental	oral/dental rollup	638	90	330	562
+Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	211	38	111	179
+Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	196	35	113	155
+Mouth	Mouth	Oral cavity / dental	oral/dental rollup	170	18	84	156
+Caecum	Caecum	Lower GI tract	lower-gi rollup	165	20	96	114
+Colon	Colon	Lower GI tract	lower-gi rollup	139	20	76	78
+Nasopharynx	Nasopharynx	Upper airway / nasal	upper-airway/nasal rollup	126	22	85	117
+Oral cavity	Other	Oral cavity / dental	oral/dental rollup	105	21	56	87
+Ileum	Other	Lower GI tract	lower-gi rollup	100	4	55	78
+Rectum	Other	Lower GI tract	lower-gi rollup	87	12	44	72
+Uterine cervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	83	17	44	69
+Sputum	Other	Lower airway / lung	lower-airway/lung rollup	82	22	46	72
+Intestine	Other	Lower GI tract	lower-gi rollup	72	13	38	57
+Skin of body	Other	Skin	skin rollup	71	12	37	65
+Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	70	8	34	55
+Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	68	12	35	57
+Lung	Other	Lower airway / lung	lower-airway/lung rollup	67	15	38	63
+Dental plaque	Other	Oral cavity / dental	oral/dental rollup	64	9	38	55
+Blood	Other	Blood	blood rollup	57	10	28	52
+Breast	Other	Other body sites	other body-site rollup	56	11	28	55
+Urine	Other	Urinary tract	urinary rollup	52	11	28	45
+Stomach	Other	Other body sites	other body-site rollup	52	10	26	43
+Nasal cavity	Other	Upper airway / nasal	upper-airway/nasal rollup	44	7	27	43
+Meconium	Other	Other body sites	other body-site rollup	41	11	21	36
+Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	41	8	15	33
+Cecum mucosa	Other	Lower GI tract	lower-gi rollup	41	5	24	32
+Intestinal mucosa	Other	Lower GI tract	lower-gi rollup	41	4	19	33
+Esophagus	Other	Other body sites	other body-site rollup	40	1	25	31
+Vagina,Uterine cervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	39	1	24	33
+unknown	unknown	Unknown body site	unknown body-site rollup	39	1	20	16
+Posterior fornix of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	38	9	20	34
+Vaginal fluid	Other	Vaginal / reproductive	vaginal/reproductive rollup	36	9	20	31
+Tongue	Other	Oral cavity / dental	oral/dental rollup	33	9	15	26
+Thyroid gland	Other	Other body sites	other body-site rollup	33	1	13	32
+Pharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	32	2	20	24
+Surface of tongue	Other	Oral cavity / dental	oral/dental rollup	32	2	18	16
+Ileum,Right colon,Rectum	Other	Lower GI tract	lower-gi rollup	32	1	16	14
+Uterus	Other	Vaginal / reproductive	vaginal/reproductive rollup	28	9	17	24
+Oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	25	5	13	21
+Skin epidermis	Other	Skin	skin rollup	25	4	14	16
+Conjunctival sac	Other	Other body sites	other body-site rollup	22	5	11	22
+Endocervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	22	3	14	21
+Alveolus of lung	Other	Lower airway / lung	lower-airway/lung rollup	22	2	11	15
+Ileal mucosa	Other	Other body sites	other body-site rollup	22	1	12	17
+Gingival groove	Other	Oral cavity / dental	oral/dental rollup	21	2	12	18
+Conjunctiva	Other	Other body sites	other body-site rollup	20	3	13	19
+Bronchoalveolar duct junction	Other	Lower airway / lung	lower-airway/lung rollup	20	2	14	18
+Gastric juice	Other	Other body sites	other body-site rollup	20	2	13	19
+Mucosa of sigmoid colon	Other	Lower GI tract	lower-gi rollup	19	2	11	9
+Bulbar conjunctiva	Other	Other body sites	other body-site rollup	18	4	10	17
+Colorectal mucosa	Other	Other body sites	other body-site rollup	18	4	12	13
+Duodenum	Other	Other body sites	other body-site rollup	18	2	9	17
+Bronchus	Other	Other body sites	other body-site rollup	18	1	9	18
+Mouth mucosa	Other	Oral cavity / dental	oral/dental rollup	17	2	8	12
+Blood serum	Other	Blood	blood rollup	17	1	9	17
+Small intestine	Other	Lower GI tract	lower-gi rollup	16	4	8	15
+Bile duct	Other	Other body sites	other body-site rollup	16	1	8	15
+Colorectum	Other	Lower GI tract	lower-gi rollup	15	2	9	9
+Cheek	Other	Other body sites	other body-site rollup	15	1	7	8
+Jejunum	Other	Other body sites	other body-site rollup	14	3	7	12
+Axilla skin	Other	Skin	skin rollup	14	2	8	14
+Duodenal mucosa	Other	Other body sites	other body-site rollup	14	2	8	13
+Wall of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	14	2	8	2
+Body proper,Insect leg	Other	Other body sites	other body-site rollup	14	1	7	14
+Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	13	2	11	4
+Endothelium of trachea	Other	Other body sites	other body-site rollup	13	1	6	11
+Feces,Oral cavity	Other	Feces	feces/stool rollup	13	1	6	12
+Milk	Other	Other body sites	other body-site rollup	12	3	5	9
+Breast,Milk	Other	Other body sites	other body-site rollup	12	1	6	12
+Bronchus,Mouth	Other	Oral cavity / dental	oral/dental rollup	12	1	7	12
+Gastrointestinal system mucosa	Other	Lower GI tract	lower-gi rollup	12	1	6	12
+Midgut,Saliva-secreting gland,Ovary	Other	Oral cavity / dental	oral/dental rollup	12	1	6	12
+Nasopharyngeal gland,Saliva	Other	Upper airway / nasal	upper-airway/nasal rollup	12	1	6	12
+Nasopharynx,Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	12	1	6	10
+Tear film	Other	Other body sites	other body-site rollup	11	3	6	11
+Material entity in digestive tract	Other	Other body sites	other body-site rollup	11	2	6	9
+Liver	Other	Other body sites	other body-site rollup	11	1	7	11
+Colonic mucosa	Other	Lower GI tract	lower-gi rollup	10	3	5	7
+Rumen	Other	Other body sites	other body-site rollup	10	2	5	5
+Margin of eyelid	Other	Other body sites	other body-site rollup	10	1	6	8
+Mucosa of oropharynx,Mucosa of oral region	Other	Upper airway / nasal	upper-airway/nasal rollup	10	1	5	10
+Nose epithelium	Other	Upper airway / nasal	upper-airway/nasal rollup	10	1	5	8
+Saliva,Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	1	5	4
+Body proper	Other	Other body sites	other body-site rollup	9	2	6	9
+Feces,Blood	Other	Feces	feces/stool rollup	9	2	5	2
+Mucosa of body of stomach	Other	Other body sites	other body-site rollup	9	1	6	9
+Proventriculus,Cloaca	Other	Other body sites	other body-site rollup	9	1	4	4
+Blood plasma	Other	Blood	blood rollup	8	2	6	5
+Mucosa of stomach	Other	Other body sites	other body-site rollup	8	2	5	7
+Amniotic fluid,Feces	Other	Feces	feces/stool rollup	8	1	4	7
+Anterior naris	Other	Other body sites	other body-site rollup	8	1	4	7
+Bile	Other	Other body sites	other body-site rollup	8	1	5	8
+Digestive tract	Other	Other body sites	other body-site rollup	8	1	4	8
+External ear	Other	Other body sites	other body-site rollup	8	1	5	3
+Feces,Duodenum	Other	Feces	feces/stool rollup	8	1	4	7
+Internal cheek pouch	Other	Other body sites	other body-site rollup	8	1	4	5
+Lower lip,Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	8	1	5	8
+Margin of eyelid,Conjunctiva	Other	Other body sites	other body-site rollup	8	1	4	7
+Middle lobe of lung	Other	Lower airway / lung	lower-airway/lung rollup	8	1	4	8
+Nasopharynx,Oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	8	1	4	8
+Pancreas	Other	Other body sites	other body-site rollup	8	1	4	8
+Sputum,Feces	Other	Feces	feces/stool rollup	8	1	4	3
+Semen	Other	Other body sites	other body-site rollup	7	2	4	5
+Skin of penis	Other	Skin	skin rollup	7	2	3	5
+Body external integument structure	Other	Other body sites	other body-site rollup	7	1	4	6
+Cheek,Forehead	Other	Other body sites	other body-site rollup	7	1	3	3
+Feces,Mucosa of descending colon	Other	Feces	feces/stool rollup	7	1	4	6
+Skin epithelium	Other	Skin	skin rollup	7	1	3	7
+Anatomical surface	Other	Other body sites	other body-site rollup	6	1	6	6
+Ear	Other	Other body sites	other body-site rollup	6	1	4	3
+Hindgut	Other	Lower GI tract	lower-gi rollup	6	1	4	6
+Kidney	Other	Other body sites	other body-site rollup	6	1	3	6
+Meibum	Other	Other body sites	other body-site rollup	6	1	3	6
+Middle nasal meatus	Other	Upper airway / nasal	upper-airway/nasal rollup	6	1	2	5
+Posterior fornix of vagina,External cervical os	Other	Vaginal / reproductive	vaginal/reproductive rollup	6	1	3	6
+Saliva,Subgingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	6	1	3	0
+Cecum mucosa,Colonic mucosa,Mucosa of rectum,Ileal mucosa	Other	Lower GI tract	lower-gi rollup	5	1	2	4
+Colostrum	Other	Other body sites	other body-site rollup	5	1	3	5
+Conjunctival fornix	Other	Other body sites	other body-site rollup	5	1	2	5
+Endometrium	Other	Vaginal / reproductive	vaginal/reproductive rollup	5	1	3	5
+Female urethra	Other	Other body sites	other body-site rollup	5	1	2	5
+Gingiva	Other	Other body sites	other body-site rollup	5	1	3	4
+Ileum,Feces,Rectum	Other	Feces	feces/stool rollup	5	1	3	4
+Meconium,Feces	Other	Feces	feces/stool rollup	5	1	2	5
+Mucosa of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	5	1	5	4
+Skin of abdomen,Chin,Perianal skin,Axilla,Skin of back,Interdigital region,External ear,Nose skin	Other	Skin	skin rollup	5	1	5	4
+Upper respiratory tract	Other	Upper airway / nasal	upper-airway/nasal rollup	5	1	2	5
+Colorectal mucosa,Feces	Other	Feces	feces/stool rollup	4	1	2	2
+Dental pulp	Other	Other body sites	other body-site rollup	4	1	2	2
+Dorsum of tongue	Other	Oral cavity / dental	oral/dental rollup	4	1	2	2
+Entire surface of organism	Other	Other body sites	other body-site rollup	4	1	2	4
+Feces,Buccal mucosa	Other	Feces	feces/stool rollup	4	1	3	4
+Feces,Saliva,Anterior naris,Posterior fornix of vagina,Epithelium of elbow	Other	Feces	feces/stool rollup	4	1	2	4
+Gastric pit	Other	Other body sites	other body-site rollup	4	1	2	4
+Insect head,Body proper	Other	Other body sites	other body-site rollup	4	1	2	4
+Mucosa of nasopharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	4	1	2	4
+Mucosa of oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	4	1	2	4
+Renal pelvis/ureter	Other	Other body sites	other body-site rollup	4	1	2	4
+Saliva,Dental plaque	Other	Oral cavity / dental	oral/dental rollup	4	1	2	4
+Skin of palm of manus	Other	Skin	skin rollup	4	1	2	4
+Skin of scalp	Other	Skin	skin rollup	4	1	2	2
+Skin sebaceous gland	Other	Skin	skin rollup	4	1	2	0
+Skin of forearm	Other	Skin	skin rollup	3	2	2	3
+Cervical cavity	Other	Vaginal / reproductive	vaginal/reproductive rollup	3	1	3	3
+Feces,Blood vessel	Other	Feces	feces/stool rollup	3	1	2	1
+Instar larval stage,Pupa	Other	Other body sites	other body-site rollup	3	1	2	3
+Lower part of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	3	1	2	3
+Mucosa of small intestine	Other	Lower GI tract	lower-gi rollup	3	1	2	3
+Mucus	Other	Other body sites	other body-site rollup	3	1	2	3
+Nose skin	Other	Skin	skin rollup	3	1	1	3
+Skin of cheek	Other	Skin	skin rollup	3	1	2	3
+Skin of cheek,Nose	Other	Skin	skin rollup	3	1	1	3
+Uterine cervix,Vaginal fluid	Other	Vaginal / reproductive	vaginal/reproductive rollup	3	1	2	3
+feces	Other	Feces	feces/stool rollup	2	2	2	2
+Accessory nerve root	Other	Other body sites	other body-site rollup	2	1	1	2
+Anterior fornix of vagina,Lateral fornix of vagina,Uterine cervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	2
+Cavity of pharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	2	1	1	2
+Cervical mucus	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	2
+Cervix epithelium	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	2
+Colon,Feces	Other	Feces	feces/stool rollup	2	1	1	2
+Dental plaque,Internal cheek pouch,Saliva	Other	Oral cavity / dental	oral/dental rollup	2	1	1	1
+Dentine	Other	Other body sites	other body-site rollup	2	1	1	1
+External female genitalia	Other	Other body sites	other body-site rollup	2	1	1	0
+Eyelid	Other	Other body sites	other body-site rollup	2	1	2	2
+Feces,Hindgut	Other	Feces	feces/stool rollup	2	1	1	2
+Feces,Urine,Blood plasma	Other	Feces	feces/stool rollup	2	1	1	2
+Gingiva of upper jaw	Other	Other body sites	other body-site rollup	2	1	1	2
+Inferior nasal concha	Other	Upper airway / nasal	upper-airway/nasal rollup	2	1	1	2
+Intestine secretion	Other	Lower GI tract	lower-gi rollup	2	1	1	0
+Margin of eyelid,Conjunctival sac	Other	Other body sites	other body-site rollup	2	1	1	2
+Marsupium	Other	Other body sites	other body-site rollup	2	1	1	1
+Mesenteric lymph node	Other	Other body sites	other body-site rollup	2	1	1	2
+Middle ear	Other	Other body sites	other body-site rollup	2	1	1	2
+Midgut	Other	Lower GI tract	lower-gi rollup	2	1	1	2
+Mucosa	Other	Other body sites	other body-site rollup	2	1	1	2
+Mucosa of oral region	Other	Oral cavity / dental	oral/dental rollup	2	1	1	2
+Mucus,Exoskeleton	Other	Other body sites	other body-site rollup	2	1	1	2
+Nasal cavity mucosa	Other	Upper airway / nasal	upper-airway/nasal rollup	2	1	1	2
+Ocular surface region	Other	Other body sites	other body-site rollup	2	1	1	2
+Oral cavity,Feces	Other	Feces	feces/stool rollup	2	1	1	1
+Oral opening	Other	Oral cavity / dental	oral/dental rollup	2	1	1	1
+Ovary	Other	Other body sites	other body-site rollup	2	1	1	2
+Oviduct	Other	Other body sites	other body-site rollup	2	1	1	2
+Placenta	Other	Other body sites	other body-site rollup	2	1	1	0
+Prostate gland secretion	Other	Other body sites	other body-site rollup	2	1	1	2
+Right lung middle lobe bronchiole	Other	Lower airway / lung	lower-airway/lung rollup	2	1	1	2
+Saliva,Supragingival dental plaque,Buccal mucosa,Tongue	Other	Oral cavity / dental	oral/dental rollup	2	1	1	2
+Sigmoid colon	Other	Lower GI tract	lower-gi rollup	2	1	1	1
+Skin of sole of pes	Other	Skin	skin rollup	2	1	1	2
+Skin of sole of pes,Interdigital space	Other	Skin	skin rollup	2	1	1	0
+Sputum,Blood	Other	Lower airway / lung	lower-airway/lung rollup	2	1	1	1
+Superior surface of tongue	Other	Oral cavity / dental	oral/dental rollup	2	1	1	2
+Tadpole	Other	Other body sites	other body-site rollup	2	1	1	2
+Tonsillar fossa	Other	Other body sites	other body-site rollup	2	1	0	2
+Upper part of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	1
+Urinary bladder	Other	Urinary tract	urinary rollup	2	1	1	2
+Uterine cervix,Endometrium	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	2
+Uterovesical pouch	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	2
+Vaginal fluid,Feces,Endocervix	Other	Feces	feces/stool rollup	2	1	1	2
+Wall of small intestine	Other	Lower GI tract	lower-gi rollup	2	1	1	0
+Duodenum,Bile duct	Other	Other body sites	other body-site rollup	1	1	1	1
+Feces,Colonic mucosa	Other	Feces	feces/stool rollup	1	1	0	1
+Feces,Mucosa of small intestine	Other	Feces	feces/stool rollup	1	1	0	0
+Hypopharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	1	0
+Lower part of vagina,Upper part of vagina,Cervical mucus	Other	Vaginal / reproductive	vaginal/reproductive rollup	1	1	1	1
+Mammary gland	Other	Other body sites	other body-site rollup	1	1	1	0
+Nasopharyngeal gland	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	1	1
+Prostate gland	Other	Other body sites	other body-site rollup	1	1	1	1
+Saliva,Supragingival dental plaque,Subgingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	1	1	1	0

@@ -15,6 +15,11 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, PathPatch
 from matplotlib.path import Path as MplPath
 
+from sankey_v3_rollups import (
+    body_site_display_label,
+    condition_display_label,
+)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
@@ -29,6 +34,10 @@ MAX_DISPLAY_EDGES = 18
 MAX_DISPLAY_CONDITIONS = 12
 MAX_LABEL_WIDTH = 36
 MAX_OTHER_SITES_PER_CONDITION = 3
+V3_MAX_DISPLAY_EDGES = 32
+V3_MAX_DISPLAY_CONDITIONS = 12
+V3_MIN_FOCUS_ENRICHED_PROFILES = 3
+V3_BACKGROUND_EDGE_Y_OFFSET = -0.007
 
 SLATE_50 = "#f8fafc"
 SLATE_200 = "#e2e8f0"
@@ -66,6 +75,18 @@ class MapConfig:
         return self.output_dir / f"{self.output_stem}_v2_edges.tsv"
 
     @property
+    def edge_v3_tsv_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_v3_edges.tsv"
+
+    @property
+    def condition_rollup_v3_tsv_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_v3_condition_rollups.tsv"
+
+    @property
+    def body_site_rollup_v3_tsv_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_v3_body_site_rollups.tsv"
+
+    @property
     def sampled_site_tsv_path(self) -> Path:
         return self.output_dir / f"{self.output_stem}_sampled_body_sites.tsv"
 
@@ -80,6 +101,10 @@ class MapConfig:
     @property
     def png_v2_path(self) -> Path:
         return self.output_dir / f"{self.output_stem}_v2.png"
+
+    @property
+    def png_v3_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_v3.png"
 
 
 FACULTATIVE_CONFIG = MapConfig(
@@ -226,8 +251,12 @@ def add_guild_scores(
         raise ValueError(msg)
 
     scored = metadata.copy()
+    scored["profile_id"] = scored.index
     scored["guild_z_mean"] = matrix[available_traits].mean(axis=1)
+    scored["guild_positive_trait_count"] = matrix[available_traits].gt(0.0).sum(axis=1)
+    scored["has_guild_enriched_trait"] = scored["guild_positive_trait_count"] > 0
     scored["condition"] = scored["condition"].map(clean_text)
+    scored["body_site"] = scored["body_site"].map(clean_text)
     scored["body_site_group"] = scored["body_site_group"].map(clean_text)
     return scored
 
@@ -379,6 +408,224 @@ def select_uncapped_display_edges(edges: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def add_v3_display_rollups(
+    scored: pd.DataFrame,
+    config: MapConfig,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Attach v3 display labels and return source rows plus audit rollup tables."""
+    source = scored.copy()
+    condition_pairs = source["condition"].map(condition_display_label)
+    source["raw_condition"] = source["condition"]
+    source["condition"] = [label for label, _rule in condition_pairs]
+    source["condition_rollup_rule"] = [rule for _label, rule in condition_pairs]
+
+    body_pairs = [
+        body_site_display_label(row.body_site, row.body_site_group)
+        for row in source.itertuples()
+    ]
+    source["raw_body_site"] = source["body_site"]
+    source["raw_body_site_group"] = source["body_site_group"]
+    source["body_site_group"] = [label for label, _rule in body_pairs]
+    source["body_site_rollup_rule"] = [rule for _label, rule in body_pairs]
+    source = source[source["condition"] != "unknown"].copy()
+
+    condition_rollups = (
+        source.groupby(
+            ["raw_condition", "condition", "condition_rollup_rule"],
+            dropna=False,
+            sort=False,
+        )
+        .agg(
+            profile_count=("profile_id", "count"),
+            study_count=("study_id", "nunique"),
+            focus_profile_count=(
+                "inc_dec",
+                lambda values: int((values == config.focus_direction).sum()),
+            ),
+            selected_guild_enriched_profile_count=(
+                "has_guild_enriched_trait",
+                lambda values: int(values.sum()),
+            ),
+        )
+        .reset_index()
+        .sort_values(
+            ["profile_count", "study_count", "raw_condition"],
+            ascending=[False, False, True],
+        )
+    )
+    body_site_rollups = (
+        source.groupby(
+            [
+                "raw_body_site",
+                "raw_body_site_group",
+                "body_site_group",
+                "body_site_rollup_rule",
+            ],
+            dropna=False,
+            sort=False,
+        )
+        .agg(
+            profile_count=("profile_id", "count"),
+            study_count=("study_id", "nunique"),
+            focus_profile_count=(
+                "inc_dec",
+                lambda values: int((values == config.focus_direction).sum()),
+            ),
+            selected_guild_enriched_profile_count=(
+                "has_guild_enriched_trait",
+                lambda values: int(values.sum()),
+            ),
+        )
+        .reset_index()
+        .sort_values(
+            ["profile_count", "study_count", "raw_body_site"],
+            ascending=[False, False, True],
+        )
+    )
+    return source, condition_rollups, body_site_rollups
+
+
+def summarize_v3_condition_body_site_edges(scored: pd.DataFrame, config: MapConfig) -> pd.DataFrame:
+    """Build v3 condition/body-site edges after display-label rollups."""
+    source, _, _ = add_v3_display_rollups(scored, config)
+    records: list[dict[str, object]] = []
+    for (condition, body_site_group), group in source.groupby(
+        ["condition", "body_site_group"],
+        sort=False,
+        dropna=False,
+    ):
+        focus = group[group["inc_dec"] == config.focus_direction]
+        comparator = group[group["inc_dec"] == config.comparator_direction]
+        focus_enriched = focus[focus["has_guild_enriched_trait"]]
+        background_no_enriched = group[~group["has_guild_enriched_trait"]]
+        focus_no_enriched = focus[~focus["has_guild_enriched_trait"]]
+        comparator_enriched = comparator[comparator["has_guild_enriched_trait"]]
+
+        focus_mean = nan_mean(focus["guild_z_mean"])
+        focus_enriched_mean = nan_mean(focus_enriched["guild_z_mean"])
+        comparator_mean = nan_mean(comparator["guild_z_mean"])
+        signal_focus_mean = focus_enriched_mean if np.isfinite(focus_enriched_mean) else focus_mean
+        contrast = (
+            signal_focus_mean - comparator_mean
+            if np.isfinite(signal_focus_mean) and np.isfinite(comparator_mean)
+            else signal_focus_mean
+        )
+        records.append(
+            {
+                "analysis": config.key,
+                "condition": clean_text(condition),
+                "body_site_group": clean_text(body_site_group),
+                "raw_conditions": join_unique(group["raw_condition"]),
+                "raw_body_sites": join_unique(group["raw_body_site"]),
+                "raw_body_site_groups": join_unique(group["raw_body_site_group"]),
+                "profile_count": len(group),
+                "study_count": group["study_id"].nunique(),
+                "study_ids": join_unique(group["study_id"]),
+                "focus_direction": config.focus_label,
+                "comparator_direction": config.comparator_label,
+                "focus_profile_count": len(focus),
+                "focus_study_count": focus["study_id"].nunique(),
+                "focus_study_ids": join_unique(focus["study_id"]),
+                "focus_enriched_profile_count": len(focus_enriched),
+                "focus_enriched_study_count": focus_enriched["study_id"].nunique(),
+                "focus_enriched_study_ids": join_unique(focus_enriched["study_id"]),
+                "focus_no_enriched_trait_profile_count": len(focus_no_enriched),
+                "comparator_profile_count": len(comparator),
+                "comparator_study_count": comparator["study_id"].nunique(),
+                "comparator_study_ids": join_unique(comparator["study_id"]),
+                "comparator_enriched_profile_count": len(comparator_enriched),
+                "background_no_enriched_profile_count": len(background_no_enriched),
+                "background_no_enriched_study_count": background_no_enriched[
+                    "study_id"
+                ].nunique(),
+                "background_no_enriched_study_ids": join_unique(
+                    background_no_enriched["study_id"]
+                ),
+                "increased_profile_count": int((group["inc_dec"] == "inc").sum()),
+                "decreased_profile_count": int((group["inc_dec"] == "dec").sum()),
+                "selected_guild_enriched_profile_count": int(
+                    group["has_guild_enriched_trait"].sum()
+                ),
+                "mean_guild_z": nan_mean(group["guild_z_mean"]),
+                "focus_mean_guild_z": focus_mean,
+                "focus_enriched_mean_guild_z": focus_enriched_mean,
+                "comparator_mean_guild_z": comparator_mean,
+                "focus_enriched_minus_comparator_guild_z": contrast,
+            }
+        )
+
+    if not records:
+        return pd.DataFrame()
+
+    edges = pd.DataFrame.from_records(records)
+    edges = edges[edges["focus_enriched_profile_count"] > 0].copy()
+    if edges.empty:
+        return edges
+    edges["rank_signal"] = edges["focus_enriched_minus_comparator_guild_z"].fillna(
+        edges["focus_enriched_mean_guild_z"]
+    )
+    edges["rank_score"] = (
+        edges["focus_enriched_profile_count"]
+        * np.log1p(edges["focus_enriched_study_count"].clip(lower=1))
+        * (1.0 + np.maximum(edges["rank_signal"], 0.0))
+    )
+    edges["displayed_in_map"] = False
+    return edges.sort_values(
+        [
+            "focus_enriched_profile_count",
+            "rank_score",
+            "rank_signal",
+            "study_count",
+        ],
+        ascending=[False, False, False, False],
+    )
+
+
+def select_v3_display_edges(edges: pd.DataFrame) -> pd.DataFrame:
+    """Choose grouped v3 edges, preserving body-site diversity."""
+    if edges.empty:
+        return edges.copy()
+
+    candidates = edges[
+        (edges["focus_enriched_profile_count"] >= V3_MIN_FOCUS_ENRICHED_PROFILES)
+        & (edges["focus_enriched_study_count"] >= MIN_STUDIES)
+    ].copy()
+    if candidates.empty:
+        candidates = edges.head(V3_MAX_DISPLAY_EDGES).copy()
+
+    candidates = candidates.sort_values(
+        [
+            "focus_enriched_profile_count",
+            "rank_score",
+            "rank_signal",
+            "study_count",
+        ],
+        ascending=[False, False, False, False],
+    )
+    per_body_site = candidates.groupby("body_site_group", sort=False).head(2)
+    selected_indices: list[int] = []
+    selected_conditions: set[str] = set()
+
+    def add_candidate(index: int, row: pd.Series) -> None:
+        if index in selected_indices or len(selected_indices) >= V3_MAX_DISPLAY_EDGES:
+            return
+        condition = str(row["condition"])
+        if (
+            condition not in selected_conditions
+            and len(selected_conditions) >= V3_MAX_DISPLAY_CONDITIONS
+        ):
+            return
+        selected_indices.append(index)
+        selected_conditions.add(condition)
+
+    for index, row in per_body_site.iterrows():
+        add_candidate(index, row)
+    for index, row in candidates.iterrows():
+        add_candidate(index, row)
+
+    return candidates.loc[selected_indices].copy()
+
+
 def scaled_line_width(values: pd.Series) -> pd.Series:
     """Scale profile counts to readable line widths."""
     counts = values.astype(float)
@@ -388,6 +635,30 @@ def scaled_line_width(values: pd.Series) -> pd.Series:
         np.sqrt(counts.max()) - np.sqrt(counts.min())
     )
     return 1.2 + scaled * 8.0
+
+
+def scaled_line_width_from_range(
+    values: pd.Series,
+    *,
+    min_count: float,
+    max_count: float,
+    min_width: float = 0.9,
+    max_width: float = 9.5,
+) -> pd.Series:
+    """Scale profile counts against a shared count range."""
+    counts = values.astype(float)
+    widths = pd.Series(0.0, index=values.index, dtype=float)
+    positive = counts > 0
+    if not positive.any():
+        return widths
+    if max_count <= min_count:
+        widths.loc[positive] = (min_width + max_width) / 2
+        return widths
+    scaled = (np.sqrt(counts[positive]) - np.sqrt(min_count)) / (
+        np.sqrt(max_count) - np.sqrt(min_count)
+    )
+    widths.loc[positive] = min_width + scaled.clip(0.0, 1.0) * (max_width - min_width)
+    return widths
 
 
 def node_positions(
@@ -441,6 +712,40 @@ def weighted_node_stats(edges: pd.DataFrame, node_column: str) -> pd.DataFrame:
     return pd.DataFrame.from_records(rows).set_index(node_column)
 
 
+def weighted_v3_node_stats(edges: pd.DataFrame, node_column: str) -> pd.DataFrame:
+    """Summarize v3 node support over displayed grouped edges."""
+    rows: list[dict[str, object]] = []
+    for label, group in edges.groupby(node_column, sort=False):
+        enriched_count = int(group["focus_enriched_profile_count"].sum())
+        background_count = int(group["background_no_enriched_profile_count"].sum())
+        total_count = int(group["profile_count"].sum())
+        weights = group["focus_enriched_profile_count"].to_numpy(dtype=float)
+        values = (
+            group["focus_enriched_minus_comparator_guild_z"]
+            .fillna(group["focus_enriched_mean_guild_z"])
+            .fillna(0.0)
+            .to_numpy(dtype=float)
+        )
+        rows.append(
+            {
+                node_column: label,
+                "focus_enriched_profile_count": enriched_count,
+                "background_no_enriched_profile_count": background_count,
+                "profile_count": total_count,
+                "study_count": union_joined_counts(group, "study_ids", "study_count"),
+                "focus_enriched_study_count": union_joined_counts(
+                    group,
+                    "focus_enriched_study_ids",
+                    "focus_enriched_study_count",
+                ),
+                "focus_enriched_minus_comparator_guild_z": float(
+                    np.average(values, weights=weights) if weights.sum() else np.nan
+                ),
+            }
+        )
+    return pd.DataFrame.from_records(rows).set_index(node_column)
+
+
 def draw_curve(
     ax: plt.Axes,
     *,
@@ -448,6 +753,8 @@ def draw_curve(
     end: tuple[float, float],
     color: str,
     linewidth: float,
+    alpha: float = 0.72,
+    zorder: float = 1.0,
 ) -> None:
     """Draw one left-to-right Bezier edge."""
     x0, y0 = start
@@ -467,9 +774,10 @@ def draw_curve(
         facecolor="none",
         edgecolor=color,
         linewidth=linewidth,
-        alpha=0.72,
+        alpha=alpha,
         capstyle="round",
         joinstyle="round",
+        zorder=zorder,
     )
     ax.add_patch(patch)
 
@@ -513,6 +821,47 @@ def draw_node(
         ha=align,
         va="center",
         fontsize=7.7 if note else 8.6,
+        color=SLATE_900,
+        linespacing=1.08,
+    )
+
+
+def draw_node_v3(
+    ax: plt.Axes,
+    *,
+    x: float,
+    y: float,
+    label: str,
+    stats_row: pd.Series,
+    align: str,
+) -> None:
+    """Draw a v3 node marker with enriched and background counts."""
+    ax.add_patch(
+        Circle(
+            (x, y),
+            0.012,
+            facecolor="white",
+            edgecolor=SLATE_700,
+            linewidth=1.0,
+            zorder=5,
+        )
+    )
+    text_x = x - 0.025 if align == "right" else x + 0.025
+    label_lines = [
+        wrap_label(label),
+        (
+            f"n={int(stats_row.focus_enriched_profile_count)}, "
+            f"s={int(stats_row.focus_enriched_study_count)}, "
+            f"bg={int(stats_row.background_no_enriched_profile_count)}"
+        ),
+    ]
+    ax.text(
+        text_x,
+        y,
+        "\n".join(label_lines),
+        ha=align,
+        va="center",
+        fontsize=8.0,
         color=SLATE_900,
         linespacing=1.08,
     )
@@ -746,6 +1095,264 @@ def plot_condition_body_site_map(
     plt.close(fig)
 
 
+def plot_condition_body_site_map_v3(
+    display_edges: pd.DataFrame,
+    config: MapConfig,
+    output_path: Path,
+) -> None:
+    """Render the grouped v3 condition-to-body-site guild map."""
+    if display_edges.empty:
+        msg = f"No v3 display edges available for {config.key}."
+        raise ValueError(msg)
+
+    condition_order_frame = (
+        display_edges.groupby("condition", sort=False)
+        .agg(
+            focus_enriched_profile_count=("focus_enriched_profile_count", "sum"),
+            rank_score=("rank_score", "max"),
+        )
+        .sort_values(
+            ["focus_enriched_profile_count", "rank_score"],
+            ascending=[False, False],
+        )
+    )
+    condition_order = condition_order_frame.index.tolist()
+    body_site_order_frame = (
+        display_edges.groupby("body_site_group", sort=False)
+        .agg(
+            focus_enriched_profile_count=("focus_enriched_profile_count", "sum"),
+            background_no_enriched_profile_count=(
+                "background_no_enriched_profile_count",
+                "sum",
+            ),
+        )
+        .sort_values(
+            ["focus_enriched_profile_count", "background_no_enriched_profile_count"],
+            ascending=[False, False],
+        )
+    )
+    body_site_order = body_site_order_frame.index.tolist()
+
+    node_top = 0.90
+    node_bottom = 0.06
+    header_y = 0.965
+    condition_y = node_positions(condition_order, top=node_top, bottom=node_bottom)
+    body_site_y = node_positions(body_site_order, top=node_top, bottom=node_bottom)
+    condition_stats = weighted_v3_node_stats(display_edges, "condition")
+    body_site_stats = weighted_v3_node_stats(display_edges, "body_site_group")
+
+    height = max(9.0, 1.5 + 0.66 * max(len(condition_order), len(body_site_order)))
+    fig, ax = plt.subplots(figsize=(15.0, height))
+    fig.subplots_adjust(left=0.05, right=0.90, top=0.90, bottom=0.08)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.axis("off")
+    fig.patch.set_facecolor("white")
+    ax.set_facecolor("white")
+
+    color_values = display_edges["focus_enriched_minus_comparator_guild_z"].fillna(
+        display_edges["focus_enriched_mean_guild_z"]
+    )
+    vmax = max(0.4, float(color_values.abs().max()))
+    norm = TwoSlopeNorm(vmin=-vmax, vcenter=0.0, vmax=vmax)
+    cmap = plt.get_cmap("RdBu_r")
+
+    all_counts = pd.concat(
+        [
+            display_edges["focus_enriched_profile_count"],
+            display_edges["background_no_enriched_profile_count"],
+        ],
+        ignore_index=True,
+    )
+    positive_counts = all_counts[all_counts > 0]
+    min_count = float(positive_counts.min())
+    max_count = float(positive_counts.max())
+    enriched_widths = scaled_line_width_from_range(
+        display_edges["focus_enriched_profile_count"],
+        min_count=min_count,
+        max_count=max_count,
+        min_width=1.1,
+        max_width=9.5,
+    )
+    background_widths = scaled_line_width_from_range(
+        display_edges["background_no_enriched_profile_count"],
+        min_count=min_count,
+        max_count=max_count,
+        min_width=1.6,
+        max_width=12.0,
+    )
+
+    left_x = 0.34
+    right_x = 0.68
+    for edge, linewidth in zip(display_edges.itertuples(), background_widths, strict=True):
+        if linewidth <= 0:
+            continue
+        draw_curve(
+            ax,
+            start=(left_x, condition_y[edge.condition] + V3_BACKGROUND_EDGE_Y_OFFSET),
+            end=(right_x, body_site_y[edge.body_site_group] + V3_BACKGROUND_EDGE_Y_OFFSET),
+            color=SLATE_500,
+            linewidth=float(linewidth),
+            alpha=0.48,
+            zorder=1.0,
+        )
+
+    for edge, linewidth in zip(display_edges.itertuples(), enriched_widths, strict=True):
+        signal = (
+            edge.focus_enriched_minus_comparator_guild_z
+            if np.isfinite(edge.focus_enriched_minus_comparator_guild_z)
+            else edge.focus_enriched_mean_guild_z
+        )
+        draw_curve(
+            ax,
+            start=(left_x, condition_y[edge.condition]),
+            end=(right_x, body_site_y[edge.body_site_group]),
+            color=cmap(norm(signal)),
+            linewidth=float(linewidth),
+            alpha=0.76,
+            zorder=1.5,
+        )
+
+    for condition in condition_order:
+        draw_node_v3(
+            ax,
+            x=left_x,
+            y=condition_y[condition],
+            label=condition,
+            stats_row=condition_stats.loc[condition],
+            align="right",
+        )
+    for body_site in body_site_order:
+        draw_node_v3(
+            ax,
+            x=right_x,
+            y=body_site_y[body_site],
+            label=body_site,
+            stats_row=body_site_stats.loc[body_site],
+            align="left",
+        )
+
+    fig.text(
+        0.05,
+        0.965,
+        f"{config.title} (v3 display with background)",
+        ha="left",
+        va="top",
+        fontsize=17,
+        fontweight="bold",
+    )
+    fig.text(
+        0.05,
+        0.925,
+        (
+            f"Colored edges = {config.focus_label} profiles with at least one selected "
+            "guild trait above zero. Parallel grey edges = profiles in the same "
+            "display condition/body-site pair with zero selected guild traits. "
+            "Conditions are ordered by colored n."
+        ),
+        ha="left",
+        va="top",
+        fontsize=10,
+        color=SLATE_700,
+    )
+    ax.text(
+        0.21,
+        header_y,
+        "Condition labels / rollups",
+        ha="center",
+        va="center",
+        fontsize=12,
+        color=SLATE_700,
+    )
+    ax.text(
+        0.79,
+        header_y,
+        "Body-site display groups",
+        ha="center",
+        va="center",
+        fontsize=12,
+        color=SLATE_700,
+    )
+
+    sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=ax, fraction=0.030, pad=0.02, shrink=0.55)
+    cbar.set_label(
+        f"{config.focus_label} enriched - {config.comparator_label} mean trait z-score",
+        fontsize=9,
+    )
+    cbar.ax.tick_params(labelsize=8)
+
+    representative_counts = sorted(
+        {
+            int(display_edges["focus_enriched_profile_count"].min()),
+            int(display_edges["focus_enriched_profile_count"].median()),
+            int(display_edges["focus_enriched_profile_count"].max()),
+        }
+    )
+    width_lookup = scaled_line_width_from_range(
+        pd.Series(representative_counts, index=representative_counts),
+        min_count=min_count,
+        max_count=max_count,
+        min_width=1.1,
+        max_width=9.5,
+    )
+    legend_lines = [
+        Line2D(
+            [0],
+            [0],
+            color=EDGE_NEUTRAL,
+            linewidth=float(width_lookup.loc[count]),
+            alpha=0.76,
+            solid_capstyle="round",
+            label=f"n={count}",
+        )
+        for count in representative_counts
+    ]
+    legend_lines.append(
+        Line2D(
+            [0],
+            [0],
+            color=SLATE_500,
+            linewidth=6.5,
+            alpha=0.48,
+            solid_capstyle="round",
+            label="bg=no selected guild traits",
+        )
+    )
+    legend = ax.legend(
+        handles=legend_lines,
+        title=f"{config.focus_label} enriched profiles",
+        loc="lower center",
+        bbox_to_anchor=(0.50, -0.02),
+        ncol=min(len(legend_lines), 4),
+        frameon=False,
+        fontsize=8,
+        title_fontsize=9,
+    )
+    ax.add_artist(legend)
+
+    fig.text(
+        0.05,
+        0.035,
+        (
+            f"V3 display uses disease/body-site rollups, keeps transplant/graft and "
+            "metadata/exposure labels raw, "
+            f"requires at least {V3_MIN_FOCUS_ENRICHED_PROFILES} colored profiles and "
+            f"{MIN_STUDIES} colored-profile studies where possible, and preserves all "
+            "grouped edge and rollup details in companion TSVs."
+        ),
+        ha="left",
+        va="bottom",
+        fontsize=8.2,
+        color=SLATE_500,
+    )
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=220, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+
+
 def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapConfig) -> None:
     """Write the edge table and PNG for one analysis."""
     scored = add_guild_scores(matrix, metadata, config)
@@ -753,11 +1360,20 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
     edges = summarize_condition_body_site_edges(sampled_sites)
     display_edges = select_display_edges(edges)
     display_edges_v2 = select_uncapped_display_edges(edges)
+    _v3_source, condition_rollups_v3, body_site_rollups_v3 = add_v3_display_rollups(
+        scored,
+        config,
+    )
+    edges_v3 = summarize_v3_condition_body_site_edges(scored, config)
+    display_edges_v3 = select_v3_display_edges(edges_v3)
     display_keys = set(
         zip(display_edges["condition"], display_edges["body_site_group"], strict=True)
     )
     display_v2_keys = set(
         zip(display_edges_v2["condition"], display_edges_v2["body_site_group"], strict=True)
+    )
+    display_v3_keys = set(
+        zip(display_edges_v3["condition"], display_edges_v3["body_site_group"], strict=True)
     )
 
     edge_output = edges.copy()
@@ -804,10 +1420,21 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
         )
     ]
 
+    edge_v3_output = edges_v3.copy()
+    edge_v3_output["displayed_in_map"] = [
+        (condition, body_site) in display_v3_keys
+        for condition, body_site in zip(
+            edge_v3_output["condition"], edge_v3_output["body_site_group"], strict=True
+        )
+    ]
+
     edge_output.to_csv(config.edge_tsv_path, sep="\t", index=False)
     sampled_output.to_csv(config.sampled_site_tsv_path, sep="\t", index=False)
     edge_v2_output.to_csv(config.edge_v2_tsv_path, sep="\t", index=False)
     sampled_v2_output.to_csv(config.sampled_site_v2_tsv_path, sep="\t", index=False)
+    edge_v3_output.to_csv(config.edge_v3_tsv_path, sep="\t", index=False)
+    condition_rollups_v3.to_csv(config.condition_rollup_v3_tsv_path, sep="\t", index=False)
+    body_site_rollups_v3.to_csv(config.body_site_rollup_v3_tsv_path, sep="\t", index=False)
     plot_condition_body_site_map(display_edges, sampled_sites, config, config.png_path)
     plot_condition_body_site_map(
         display_edges_v2,
@@ -823,12 +1450,17 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
         ),
         dense_layout=True,
     )
+    plot_condition_body_site_map_v3(display_edges_v3, config, config.png_v3_path)
     print(f"Wrote: {config.edge_tsv_path}")
     print(f"Wrote: {config.sampled_site_tsv_path}")
     print(f"Wrote: {config.png_path}")
     print(f"Wrote: {config.edge_v2_tsv_path}")
     print(f"Wrote: {config.sampled_site_v2_tsv_path}")
     print(f"Wrote: {config.png_v2_path}")
+    print(f"Wrote: {config.edge_v3_tsv_path}")
+    print(f"Wrote: {config.condition_rollup_v3_tsv_path}")
+    print(f"Wrote: {config.body_site_rollup_v3_tsv_path}")
+    print(f"Wrote: {config.png_v3_path}")
 
 
 def main() -> None:

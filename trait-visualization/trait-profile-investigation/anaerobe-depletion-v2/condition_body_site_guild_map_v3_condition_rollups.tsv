@@ -1,0 +1,597 @@
+raw_condition	condition	condition_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
+Diet	Diet	kept raw exposure/intervention label	451	47	199	290
+Parkinson's disease	Parkinson's disease	kept raw	377	76	182	275
+Colorectal cancer	Colorectal neoplasia	colorectal neoplasia rollup	291	67	132	208
+Obesity	Metabolic / endocrine	metabolic/endocrine rollup	252	56	117	208
+COVID-19	COVID-19	kept raw	216	45	103	126
+Response to transplant	Response to transplant	kept raw transplant/graft label	179	18	71	134
+Type II diabetes mellitus	Metabolic / endocrine	metabolic/endocrine rollup	176	26	85	120
+Polycystic ovary syndrome	Metabolic / endocrine	metabolic/endocrine rollup	172	27	77	115
+Constipation	GI symptoms / motility	gi-symptom rollup	160	15	62	119
+Response to diet	Response to diet	kept raw exposure/intervention label	147	23	58	102
+Alzheimer's disease	Alzheimer's disease	kept raw	141	24	66	93
+Antimicrobial agent	Antimicrobial agent	kept raw exposure/intervention label	140	25	74	98
+Population	Population	kept raw metadata/cohort-factor label	139	6	63	96
+Age	Age	kept raw metadata/cohort-factor label	136	15	60	87
+Atopic eczema	Atopic eczema	kept raw	131	10	65	58
+Gestational diabetes	Metabolic / endocrine	metabolic/endocrine rollup	130	14	63	95
+Irritable bowel syndrome	GI symptoms / motility	gi-symptom rollup	128	30	64	98
+Extraction protocol	Extraction protocol	kept raw	126	1	63	114
+HIV infection	HIV infection	kept raw	125	28	62	93
+Periodontitis	Periodontal disease	periodontal-disease rollup	122	21	55	84
+Chronic constipation	GI symptoms / motility	gi-symptom rollup	120	16	57	92
+Crohn's disease	Inflammatory bowel disease	ibd rollup	120	14	60	80
+Gastric cancer	Gastric cancer	kept raw	116	19	55	52
+Smoking behavior	Smoking behavior	kept raw	108	23	53	67
+Species design	Species design	kept raw metadata/cohort-factor label	93	6	39	58
+Lifestyle measurement	Lifestyle measurement	kept raw metadata/cohort-factor label	89	10	38	57
+Pulmonary tuberculosis	Pulmonary tuberculosis	kept raw	87	28	41	48
+Breast cancer	Breast cancer	kept raw	86	16	41	49
+Response to antibiotic	Response to antibiotic	kept raw exposure/intervention label	85	12	32	63
+Multiple sclerosis	Multiple sclerosis	kept raw	83	5	40	72
+Traditional Chinese medicine type	Traditional Chinese medicine type	kept raw	82	7	33	61
+Human papilloma virus infection	Human papilloma virus infection	kept raw	79	19	34	42
+Autism spectrum disorder	Autism / neurodevelopmental	autism/neurodevelopmental rollup	78	15	36	57
+Treatment	Treatment	kept raw exposure/intervention label	73	8	29	45
+Asthma	Asthma	kept raw	68	12	33	40
+Non-alcoholic fatty liver disease	Metabolic / endocrine	metabolic/endocrine rollup	68	9	32	28
+Response to antiviral drug	Response to antiviral drug	kept raw exposure/intervention label	68	6	33	55
+Schizophrenia	Schizophrenia	kept raw	67	21	34	41
+Health study participation	Health study participation	kept raw	67	7	29	36
+Aging	Aging	kept raw	64	6	29	32
+Maternal milk	Maternal milk	kept raw	64	4	31	55
+Response to anti-tuberculosis drug	Response to anti-tuberculosis drug	kept raw exposure/intervention label	62	1	31	58
+Cervical glandular intraepithelial neoplasia	Cervical glandular intraepithelial neoplasia	kept raw	60	11	27	44
+Treatment outcome measurement	Treatment outcome measurement	kept raw exposure/intervention label	59	6	28	47
+Exposure	Exposure	kept raw metadata/cohort-factor label	59	3	23	34
+Diet measurement	Diet measurement	kept raw exposure/intervention label	58	7	28	43
+Endometriosis	Endometriosis	kept raw	57	17	21	38
+Ethnic group	Ethnic group	kept raw metadata/cohort-factor label	56	10	24	43
+Food allergy	Food allergy	kept raw	56	10	26	38
+Dry eye syndrome	Dry eye syndrome	kept raw	53	11	23	18
+Metabolic toxicity	Metabolic toxicity	kept raw	53	1	27	38
+Air pollution	Air pollution	kept raw exposure/intervention label	52	12	24	38
+Graves disease	Graves disease	kept raw	50	11	24	39
+Transplant outcome measurement	Transplant outcome measurement	kept raw transplant/graft label	47	3	17	35
+Oxalate measurement	Oxalate measurement	kept raw metadata/cohort-factor label	47	1	24	33
+Response to ketogenic diet	Response to ketogenic diet	kept raw exposure/intervention label	46	8	23	34
+Diarrhea	GI symptoms / motility	gi-symptom rollup	46	5	22	29
+Waist circumference	Waist circumference	kept raw	46	1	21	26
+Ulcerative colitis	Inflammatory bowel disease	ibd rollup	45	7	24	33
+Stroke	Stroke	stroke rollup	45	5	15	25
+Ovarian cancer	Ovarian cancer	kept raw	45	4	18	20
+Delivery measurement	Delivery measurement	kept raw metadata/cohort-factor label	45	1	21	25
+Inflammatory bowel disease	Inflammatory bowel disease	ibd rollup	44	6	18	31
+Spontaneous preterm birth	Spontaneous preterm birth	kept raw	44	6	15	32
+Response to vaccine	Response to vaccine	kept raw exposure/intervention label	44	4	20	32
+Rheumatoid arthritis	Rheumatoid arthritis	kept raw	43	12	21	25
+Gingivitis	Periodontal disease	periodontal-disease rollup	42	5	27	28
+Small for gestational age	Small for gestational age	kept raw metadata/cohort-factor label	41	1	20	14
+Cesarean section	Cesarean section	kept raw	40	11	23	23
+Fasting blood glucose measurement	Fasting blood glucose measurement	kept raw metadata/cohort-factor label	40	3	19	30
+Gastroesophageal reflux disease	Gastroesophageal reflux disease	kept raw metadata/cohort-factor label	40	1	15	22
+Chronic kidney disease	Chronic kidney disease	kept raw	39	10	16	27
+Urinary tract infection	Urinary tract infection	kept raw	39	8	18	27
+Sampling site	Sampling site	kept raw	39	7	16	11
+Obstructive sleep apnea	Obstructive sleep apnea	kept raw	39	2	19	24
+Psoriasis	Psoriasis	kept raw	38	10	20	30
+Clinical treatment	Clinical treatment	kept raw exposure/intervention label	37	6	18	23
+Depressive disorder	Depressive disorder	depressive-disorder rollup	37	3	16	25
+Smoking behaviour measurement	Smoking behaviour measurement	kept raw metadata/cohort-factor label	37	2	18	23
+Systemic inflammatory response syndrome	Systemic inflammatory response syndrome	kept raw	37	1	23	28
+Colorectal adenoma	Colorectal neoplasia	colorectal neoplasia rollup	36	8	15	26
+Hepatocellular carcinoma	Hepatocellular carcinoma	kept raw	36	4	17	21
+Major depressive disorder	Depressive disorder	depressive-disorder rollup	35	7	20	17
+Pregnancy	Pregnancy	kept raw	35	7	19	23
+Pancreatic carcinoma	Pancreatic carcinoma	kept raw	35	5	18	23
+Gingivitis,Mucositis	Periodontal disease	periodontal-disease rollup	35	1	17	12
+Estradiol measurement	Estradiol measurement	kept raw metadata/cohort-factor label	34	2	9	20
+Papillary thyroid carcinoma	Papillary thyroid carcinoma	kept raw	33	1	20	10
+Chronic periodontitis	Periodontal disease	periodontal-disease rollup	32	7	12	23
+Glaucoma	Glaucoma	kept raw	32	6	14	16
+Body fat distribution	Body fat distribution	kept raw metadata/cohort-factor label	31	2	21	8
+Helminthiasis	Helminthiasis	kept raw	31	1	17	16
+Phenotype	Phenotype	kept raw	31	1	14	28
+Peri-Implantitis	Peri-Implantitis	kept raw	30	3	14	24
+Atopic asthma	Atopic asthma	kept raw	30	2	14	20
+Tumor stage	Tumor stage	kept raw metadata/cohort-factor label	30	1	15	28
+Colitis	Colitis	kept raw	29	4	13	17
+Hypertension	Hypertension	kept raw	29	4	17	18
+Chronic hepatitis B virus infection	Chronic hepatitis B virus infection	kept raw	28	4	12	21
+Oral mucositis	Oral mucositis	kept raw	28	4	13	18
+Mycobacterium tuberculosis	Mycobacterium tuberculosis	kept raw	28	2	9	25
+Phenylketonuria	Phenylketonuria	kept raw	28	2	15	16
+Health-related quality of life measurement	Health-related quality of life measurement	kept raw metadata/cohort-factor label	28	1	12	22
+Schizophrenia,Metabolic syndrome	Metabolic / endocrine	metabolic/endocrine rollup	28	1	15	24
+Lung cancer	Lung cancer	kept raw	27	7	11	16
+Age-related macular degeneration	Age-related macular degeneration	kept raw metadata/cohort-factor label	27	5	14	16
+Acute lymphoblastic leukemia	Acute lymphoblastic leukemia	kept raw	26	7	10	18
+Chronic obstructive pulmonary disease	Chronic obstructive pulmonary disease	kept raw	26	6	13	16
+Dental caries	Dental caries	kept raw	26	4	11	13
+Hypoxia	Hypoxia	kept raw	26	2	14	21
+Sarcopenia	Sarcopenia	kept raw	26	2	13	19
+Cognitive impairment	Cognitive impairment	kept raw	25	5	13	15
+Response to allogeneic hematopoietic stem cell transplant	Response to allogeneic hematopoietic stem cell transplant	kept raw transplant/graft label	25	5	15	15
+Clostridium difficile infection	Clostridium difficile infection	kept raw	25	3	15	15
+Breed	Breed	kept raw	25	2	12	13
+High density lipoprotein cholesterol measurement	High density lipoprotein cholesterol measurement	kept raw metadata/cohort-factor label	25	1	15	15
+Psoriasis vulgaris	Psoriasis vulgaris	kept raw	25	1	11	22
+Epilepsy	Epilepsy	kept raw	24	5	8	11
+Diabetes mellitus	Metabolic / endocrine	metabolic/endocrine rollup	24	4	12	11
+Endometrial cancer	Endometrial cancer	kept raw	24	4	11	14
+Breastfeeding duration	Breastfeeding duration	kept raw exposure/intervention label	24	3	12	19
+Eczema	Eczema	kept raw	24	3	15	10
+Grey matter volume measurement	Grey matter volume measurement	kept raw metadata/cohort-factor label	24	1	12	19
+Hematopoietic stem cell	Hematopoietic stem cell	kept raw	24	1	10	15
+Socioeconomic status	Socioeconomic status	kept raw metadata/cohort-factor label	23	11	11	20
+Response to immunochemotherapy	Response to immunochemotherapy	kept raw exposure/intervention label	23	10	11	19
+Oral squamous cell carcinoma	Oral squamous cell carcinoma	kept raw	23	6	12	16
+Head and neck squamous cell carcinoma	Head and neck squamous cell carcinoma	kept raw	23	3	11	13
+Respiratory tract infectious disease	Respiratory tract infectious disease	kept raw	23	3	6	10
+Lewy body dementia	Lewy body dementia	kept raw	23	2	8	22
+Male homosexuality	Male homosexuality	kept raw	23	1	11	22
+Cervical cancer	Cervical cancer	kept raw	22	5	11	15
+Squamous cell carcinoma	Squamous cell carcinoma	kept raw	22	5	12	14
+Attention deficit-hyperactivity disorder	Attention deficit-hyperactivity disorder	kept raw	22	3	10	15
+Female infertility	Female infertility	kept raw	22	3	9	10
+Alanine measurement	Alanine measurement	kept raw metadata/cohort-factor label	22	1	11	20
+Bilirubin measurement	Bilirubin measurement	kept raw metadata/cohort-factor label	22	1	10	19
+Bacterial vaginosis	Bacterial vaginosis	kept raw	21	4	9	7
+Smoking status measurement	Smoking status measurement	kept raw metadata/cohort-factor label	21	4	9	11
+Delivery method	Delivery method	kept raw	21	3	9	12
+Human immunodeficiency virus	Human immunodeficiency virus	kept raw	21	2	11	16
+Increased intestinal transit time	Increased intestinal transit time	kept raw metadata/cohort-factor label	21	2	9	21
+Response to surgery	Response to surgery	kept raw exposure/intervention label	21	1	2	14
+Unipolar depression	Unipolar depression	kept raw	20	6	11	17
+Ischemic stroke	Stroke	stroke rollup	20	5	8	17
+Alcohol consumption measurement	Alcohol consumption measurement	kept raw metadata/cohort-factor label	20	3	10	18
+Diabetic nephropathy	Diabetic nephropathy	kept raw	20	3	8	17
+Acute pancreatitis	Acute pancreatitis	kept raw	20	2	10	10
+Fungal infectious disease	Fungal infectious disease	kept raw	20	2	8	5
+HIV mother to child transmission	HIV mother to child transmission	kept raw	20	2	11	17
+Lung carcinoma	Lung carcinoma	kept raw	20	1	10	12
+Sample collection protocol	Sample collection protocol	kept raw	20	1	10	11
+Simian immunodeficiency virus infection	Simian immunodeficiency virus infection	kept raw	20	1	10	15
+Time	Time	kept raw metadata/cohort-factor label	20	1	0	20
+Bipolar disorder	Bipolar disorder	kept raw	19	4	7	14
+Esophageal squamous cell carcinoma	Esophageal squamous cell carcinoma	kept raw metadata/cohort-factor label	19	3	10	15
+Myocardial infarction	Myocardial infarction	kept raw	19	3	10	4
+Non-alcoholic steatohepatitis	Non-alcoholic steatohepatitis	kept raw	19	3	9	12
+Biological sex	Biological sex	kept raw	19	2	8	14
+HIV-1 infection	HIV-1 infection	kept raw	19	2	10	19
+Benign prostatic hyperplasia,Periodontitis	Periodontal disease	periodontal-disease rollup	19	1	8	10
+Response to drug	Response to drug	kept raw exposure/intervention label	19	1	9	12
+Environmental factor	Environmental factor	kept raw	18	5	9	12
+Postpartum	Postpartum	kept raw	18	2	7	16
+Heart failure	Heart failure	kept raw	18	1	9	9
+Chronic fatigue syndrome	Chronic fatigue syndrome	kept raw	17	5	9	14
+Milk allergic reaction	Milk allergic reaction	kept raw	17	5	7	13
+Gastric adenocarcinoma	Gastric adenocarcinoma	kept raw	17	3	7	8
+Autoantibody measurement	Autoantibody measurement	kept raw metadata/cohort-factor label	17	1	9	15
+Fat intake measurement	Fat intake measurement	kept raw metadata/cohort-factor label	17	1	12	17
+Behcet's syndrome	Behcet's syndrome	kept raw	16	4	8	10
+Environmental exposure measurement	Environmental exposure measurement	kept raw metadata/cohort-factor label	16	4	7	7
+SARS-CoV-2-related disease	SARS-CoV-2-related disease	kept raw	16	3	9	8
+Anxiety disorder	Anxiety disorder	kept raw	16	2	8	8
+Chlamydia trachomatis infectious disease	Chlamydia trachomatis infectious disease	kept raw	16	2	6	12
+SARS coronavirus	SARS coronavirus	kept raw	16	2	8	14
+Antibody measurement	Antibody measurement	kept raw metadata/cohort-factor label	16	1	9	7
+Carcinogenicity	Carcinogenicity	kept raw	16	1	8	8
+Helicobacter pylori	Helicobacter pylori	kept raw	16	1	5	3
+High altitude adaptation	High altitude adaptation	kept raw	16	1	6	15
+Hypertension, pregnancy-induced	Hypertension, pregnancy-induced	kept raw	16	1	8	2
+Periodontal measurement	Periodontal measurement	kept raw metadata/cohort-factor label	16	1	6	7
+Response to liver transplant	Response to liver transplant	kept raw transplant/graft label	16	1	8	3
+Colorectal carcinoma	Colorectal neoplasia	colorectal neoplasia rollup	15	3	8	10
+Chlamydia trachomatis	Chlamydia trachomatis	kept raw	15	2	7	5
+Beverage consumption measurement	Beverage consumption measurement	kept raw metadata/cohort-factor label	15	1	2	10
+Gastrointestinal disease	Gastrointestinal disease	kept raw	15	1	6	12
+Glucose	Glucose	kept raw	15	1	8	10
+Stress-related disorder	Stress-related disorder	kept raw	15	1	6	10
+Viral disease	Viral disease	kept raw	15	1	7	4
+Autism	Autism / neurodevelopmental	autism/neurodevelopmental rollup	14	4	6	9
+Body odor measurement	Body odor measurement	kept raw metadata/cohort-factor label	14	2	9	8
+Oral lichen planus	Oral lichen planus	kept raw	14	2	7	6
+Osteoporosis	Osteoporosis	kept raw	14	2	6	9
+Viral load	Viral load	kept raw metadata/cohort-factor label	14	2	3	3
+Age at menarche	Age at menarche	kept raw metadata/cohort-factor label	14	1	7	13
+Brain hypoxia-Ischemia	Brain hypoxia-Ischemia	kept raw	14	1	7	6
+Creatine measurement	Creatine measurement	kept raw metadata/cohort-factor label	14	1	7	13
+Peripheral neuron	Peripheral neuron	kept raw	14	1	6	10
+Urinary schistosomiasis	Urinary schistosomiasis	kept raw	14	1	7	12
+Zika virus infectious disease	Zika virus infectious disease	kept raw	14	1	7	5
+Graft versus host disease	Graft versus host disease	kept raw transplant/graft label	13	4	6	10
+High fat diet	High fat diet	kept raw exposure/intervention label	13	4	6	9
+Acne	Acne	kept raw	13	3	7	2
+Alcohol drinking	Alcohol drinking	kept raw	13	2	7	9
+Dysmenorrhea	Dysmenorrhea	kept raw	13	2	6	8
+Graves ophthalmopathy	Graves ophthalmopathy	kept raw	13	2	5	8
+Acute respiratory failure	Acute respiratory failure	kept raw	13	1	7	7
+Cutaneous melanoma	Cutaneous melanoma	kept raw	13	1	6	10
+IgG4-related ophthalmic disease	IgG4-related ophthalmic disease	kept raw	13	1	2	6
+Ketogenic diet	Ketogenic diet	kept raw exposure/intervention label	13	1	4	5
+Respiratory Syncytial Virus Infection	Respiratory Syncytial Virus Infection	kept raw	13	1	6	0
+Breast carcinoma	Breast carcinoma	kept raw	12	3	6	5
+Bronchiectasis	Bronchiectasis	kept raw	12	2	6	7
+Physical activity	Physical activity	kept raw metadata/cohort-factor label	12	2	6	8
+Sleep duration	Sleep duration	kept raw	12	2	6	11
+Alcoholic liver disease	Alcoholic liver disease	kept raw	12	1	6	5
+Body mass index,Physical activity	Body mass index,Physical activity	kept raw metadata/cohort-factor label	12	1	7	10
+Brain neoplasm	Brain neoplasm	kept raw	12	1	6	11
+Celiac disease	Celiac disease	kept raw	12	1	6	7
+Compound based treatment	Compound based treatment	kept raw exposure/intervention label	12	1	5	5
+Glioma	Glioma	kept raw	12	1	6	9
+Iron biomarker measurement	Iron biomarker measurement	kept raw metadata/cohort-factor label	12	1	6	7
+Oral cavity carcinoma	Oral cavity carcinoma	kept raw	12	1	6	6
+Response to dietary antigen	Response to dietary antigen	kept raw exposure/intervention label	12	1	6	8
+Response to opioid	Response to opioid	kept raw exposure/intervention label	12	1	6	12
+Streptococcus pneumoniae	Streptococcus pneumoniae	kept raw	12	1	6	5
+Anorexia nervosa	Anorexia nervosa	kept raw	11	4	6	7
+Metabolic syndrome	Metabolic / endocrine	metabolic/endocrine rollup	11	4	7	7
+Pneumonia	Pneumonia	kept raw	11	4	5	8
+Acute myeloid leukemia	Acute myeloid leukemia	kept raw	11	3	5	0
+Acute graft vs. host disease	Acute graft vs. host disease	kept raw transplant/graft label	11	2	7	8
+Juvenile idiopathic arthritis	Juvenile idiopathic arthritis	kept raw	11	2	5	6
+Metastatic colorectal cancer	Colorectal neoplasia	colorectal neoplasia rollup	11	2	5	7
+Multiple myeloma	Multiple myeloma	kept raw	11	2	5	4
+Transport	Transport	kept raw	11	1	1	4
+Vitamin D measurement	Vitamin D measurement	kept raw metadata/cohort-factor label	11	1	7	10
+Arthritis	Arthritis	kept raw	10	6	5	7
+Allergic rhinitis	Allergic rhinitis	kept raw	10	3	5	7
+Sampling time	Sampling time	kept raw metadata/cohort-factor label	10	3	5	8
+Vitiligo	Vitiligo	kept raw	10	3	5	6
+Diabetic retinopathy	Diabetic retinopathy	kept raw	10	2	5	8
+Intestinal polyp	Intestinal polyp	kept raw	10	2	5	6
+Body mass index	Body mass index	kept raw	10	1	4	10
+Common variable immunodeficiency	Common variable immunodeficiency	kept raw	10	1	2	1
+Diarrhea, Infantile	GI symptoms / motility	gi-symptom rollup	10	1	5	8
+Digestive System Carcinoma	Digestive System Carcinoma	kept raw	10	1	5	9
+Experimental arthritis	Experimental arthritis	kept raw	10	1	5	5
+Increased body weight	Increased body weight	kept raw	10	1	3	6
+Lactose intolerance	Lactose intolerance	kept raw	10	1	5	5
+Liver fibrosis measurement	Liver fibrosis measurement	kept raw metadata/cohort-factor label	10	1	2	7
+Remission	Remission	kept raw	10	1	4	6
+Response to radiation	Response to radiation	kept raw exposure/intervention label	10	1	5	9
+Social interaction measurement	Social interaction measurement	kept raw metadata/cohort-factor label	10	1	4	2
+Wheezing	Wheezing	kept raw	10	1	5	1
+Premature birth	Premature birth	kept raw	9	4	4	4
+Type I diabetes mellitus	Metabolic / endocrine	metabolic/endocrine rollup	9	4	5	8
+Restricted to specific location	Restricted to specific location	kept raw	9	3	4	4
+Birth measurement	Birth measurement	kept raw metadata/cohort-factor label	9	2	5	6
+Dementia	Dementia	kept raw	9	2	3	6
+Insecticide	Insecticide	kept raw	9	2	3	2
+Microbiome	Microbiome	kept raw metadata/cohort-factor label	9	2	4	6
+Mucositis	Mucositis	kept raw	9	2	4	6
+Nasopharyngeal squamous cell carcinoma	Nasopharyngeal squamous cell carcinoma	kept raw	9	2	4	4
+Obsessive-compulsive disorder	Obsessive-compulsive disorder	kept raw	9	2	5	8
+Response to exercise	Response to exercise	kept raw exposure/intervention label	9	2	4	5
+Systemic lupus erythematosus	Systemic lupus erythematosus	kept raw	9	2	5	4
+Chronic granulomatous disease	Chronic granulomatous disease	kept raw	9	1	4	6
+Coccidiosis	Coccidiosis	kept raw	9	1	4	7
+Colorectal adenocarcinoma	Colorectal adenocarcinoma	kept raw	9	1	4	6
+Contraception	Contraception	kept raw	9	1	4	3
+Hypertrophy	Hypertrophy	kept raw	9	1	1	6
+Metabolic process	Metabolic process	kept raw	9	1	4	3
+Methamphetamine dependence	Methamphetamine dependence	kept raw	9	1	4	8
+Primary immunodeficiency disease	Primary immunodeficiency disease	kept raw	9	1	4	4
+Treatment refractory schizophrenia	Treatment refractory schizophrenia	kept raw exposure/intervention label	9	1	4	3
+Leukemia	Leukemia	kept raw	8	4	4	7
+Exercise	Exercise	kept raw	8	3	4	6
+Tuberculosis	Tuberculosis	kept raw	8	3	1	6
+Autoimmune disease	Autoimmune disease	kept raw	8	2	4	5
+Esophageal cancer	Esophageal cancer	kept raw metadata/cohort-factor label	8	2	4	4
+Human papillomavirus	Human papillomavirus	kept raw	8	2	5	5
+Iron deficiency anemia	Iron deficiency anemia	kept raw	8	2	4	5
+Sleep Disorder	Sleep Disorder	kept raw	8	2	3	6
+Vulvovaginal candidiasis	Vulvovaginal candidiasis	kept raw	8	2	1	6
+Aggressive periodontitis	Periodontal disease	periodontal-disease rollup	8	1	4	4
+Anterior uveitis	Anterior uveitis	kept raw	8	1	5	7
+Ascariasis	Ascariasis	kept raw	8	1	4	6
+Blepharitis	Blepharitis	kept raw	8	1	4	5
+Bone mineral content measurement	Bone mineral content measurement	kept raw metadata/cohort-factor label	8	1	6	8
+Cancer	Cancer	kept raw	8	1	2	2
+Cannabis use	Cannabis use	kept raw	8	1	4	2
+Cardiovascular disease	Cardiovascular disease	kept raw	8	1	4	6
+Chronic rhinitis	Chronic rhinitis	kept raw	8	1	2	4
+Disease prognosis measurement	Disease prognosis measurement	kept raw metadata/cohort-factor label	8	1	3	4
+Genital neoplasm, female	Genital neoplasm, female	kept raw	8	1	4	6
+Growth condition	Growth condition	kept raw	8	1	4	5
+Helminthiasis, animal	Helminthiasis, animal	kept raw	8	1	4	3
+Hepatitis, Alcoholic	Hepatitis, Alcoholic	kept raw	8	1	4	6
+Hypothyroidism	Hypothyroidism	kept raw	8	1	6	1
+Infectious diarrheal disease	GI symptoms / motility	gi-symptom rollup	8	1	2	7
+Insulin sensitivity measurement	Insulin sensitivity measurement	kept raw metadata/cohort-factor label	8	1	4	5
+Low density lipoprotein cholesterol measurement	Low density lipoprotein cholesterol measurement	kept raw metadata/cohort-factor label	8	1	4	5
+Mixed sex population	Mixed sex population	kept raw metadata/cohort-factor label	8	1	3	2
+Myostatin-related muscle hypertrophy	Myostatin-related muscle hypertrophy	kept raw	8	1	4	8
+Pancreatic ductal adenocarcinoma	Pancreatic ductal adenocarcinoma	kept raw	8	1	4	3
+Patent ductus arteriosus	Patent ductus arteriosus	kept raw	8	1	4	5
+Peutz-Jeghers Polyp	Peutz-Jeghers Polyp	kept raw	8	1	4	2
+Preeclampsia	Preeclampsia	kept raw	8	1	4	8
+Protozoa infectious disease	Protozoa infectious disease	kept raw	8	1	4	5
+Pulmonary arterial hypertension associated with congenital heart disease	Pulmonary arterial hypertension associated with congenital heart disease	kept raw	8	1	4	5
+Sensory perception of bitter taste	Sensory perception of bitter taste	kept raw	8	1	4	6
+Short stature	Short stature	kept raw	8	1	2	8
+Systemic scleroderma	Systemic scleroderma	kept raw	8	1	4	4
+Vesicle membrane	Vesicle membrane	kept raw	8	1	4	6
+Visceral adipose tissue measurement	Visceral adipose tissue measurement	kept raw metadata/cohort-factor label	8	1	4	5
+Azithromycin	Azithromycin	kept raw	7	2	1	5
+Body weight	Body weight	kept raw	7	2	3	5
+Head and neck carcinoma	Head and neck carcinoma	kept raw	7	2	4	4
+Health trait	Health trait	kept raw metadata/cohort-factor label	7	2	3	2
+Lung transplantation	Lung transplantation	kept raw transplant/graft label	7	2	3	4
+Pulmonary non-tuberculous mycobacterial infection	Pulmonary non-tuberculous mycobacterial infection	kept raw	7	2	4	0
+Thyroid carcinoma	Thyroid carcinoma	kept raw	7	2	4	3
+Tobacco smoke exposure measurement	Tobacco smoke exposure measurement	kept raw metadata/cohort-factor label	7	2	4	3
+Colorectal cancer,Diabetes mellitus	Colorectal neoplasia	colorectal neoplasia rollup	7	1	2	3
+Essential thrombocythemia	Essential thrombocythemia	kept raw	7	1	3	5
+Gene expression protocol	Gene expression protocol	kept raw	7	1	3	6
+Illness severity status	Illness severity status	kept raw	7	1	1	5
+Medroxyprogesterone acetate	Medroxyprogesterone acetate	kept raw	7	1	3	6
+Response to risperidone	Response to risperidone	kept raw exposure/intervention label	7	1	5	6
+Sample treatment protocol	Sample treatment protocol	kept raw exposure/intervention label	7	1	3	3
+Attention deficit hyperactivity disorder	Autism / neurodevelopmental	autism/neurodevelopmental rollup	6	3	3	4
+Henoch-Schoenlein purpura	Henoch-Schoenlein purpura	kept raw	6	3	3	5
+Non-Hodgkins lymphoma	Non-Hodgkins lymphoma	kept raw	6	3	3	4
+Primary ovarian insufficiency	Primary ovarian insufficiency	kept raw	6	3	3	4
+Biliary atresia	Biliary atresia	kept raw	6	2	3	4
+Colon carcinoma	Colon carcinoma	kept raw	6	2	3	6
+Gut microbiome measurement	Gut microbiome measurement	kept raw metadata/cohort-factor label	6	2	3	3
+Prediabetes syndrome	Metabolic / endocrine	metabolic/endocrine rollup	6	2	3	3
+Reproductive behaviour measurement	Reproductive behaviour measurement	kept raw metadata/cohort-factor label	6	2	3	6
+Spinal cord injury	Spinal cord injury	kept raw	6	2	3	4
+Abnormality of the gastrointestinal tract	Abnormality of the gastrointestinal tract	kept raw	6	1	3	3
+Abnormality on pulmonary function testing	Abnormality on pulmonary function testing	kept raw	6	1	3	3
+Bacterial disease	Bacterial disease	kept raw	6	1	0	3
+Bladder carcinoma	Bladder carcinoma	kept raw	6	1	3	4
+COVID-19 symptoms measurement	COVID-19 symptoms measurement	kept raw metadata/cohort-factor label	6	1	3	4
+Cerebral small vessel disease	Cerebral small vessel disease	kept raw	6	1	3	5
+Cervical glandular intraepithelial neoplasia,Human papilloma virus infection	Cervical glandular intraepithelial neoplasia,Human papilloma virus infection	kept raw	6	1	4	0
+Childhood trauma measurement	Childhood trauma measurement	kept raw metadata/cohort-factor label	6	1	4	4
+Chronic hepatitis C virus infection	Chronic hepatitis C virus infection	kept raw	6	1	3	5
+Chronic rhinosinusitis with nasal polyps	Chronic rhinosinusitis with nasal polyps	kept raw	6	1	4	2
+Colorectal Adenosquamous Carcinoma	Colorectal Adenosquamous Carcinoma	kept raw	6	1	3	6
+Curcumin	Curcumin	kept raw	6	1	3	4
+Dental fluorosis	Dental fluorosis	kept raw	6	1	3	5
+Dermatitis	Dermatitis	kept raw	6	1	3	2
+Granulomatosis with Polyangiitis	Granulomatosis with Polyangiitis	kept raw	6	1	3	1
+Hepatitis virus-related hepatocellular carcinoma	Hepatitis virus-related hepatocellular carcinoma	kept raw	6	1	3	6
+Insulin resistance,Prediabetes syndrome	Metabolic / endocrine	metabolic/endocrine rollup	6	1	3	6
+Iron	Iron	kept raw	6	1	3	0
+Lung cancer,Pneumonia	Lung cancer,Pneumonia	kept raw	6	1	3	0
+Meibomian cyst	Meibomian cyst	kept raw	6	1	3	1
+Memory impairment	Memory impairment	kept raw	6	1	2	3
+Meningeal tuberculosis	Meningeal tuberculosis	kept raw	6	1	3	3
+Nutraceutical	Nutraceutical	kept raw	6	1	3	3
+Nutraceutical,Colorectal cancer	Colorectal neoplasia	colorectal neoplasia rollup	6	1	3	4
+Oral leukoplakia	Oral leukoplakia	kept raw	6	1	3	0
+Otitis externa,Otitis media	Otitis externa,Otitis media	kept raw	6	1	2	1
+Periodontitis,Crohn's disease	Inflammatory bowel disease	ibd rollup	6	1	2	4
+REM sleep behavior disorder	REM sleep behavior disorder	kept raw	6	1	3	6
+Relapsing-remitting multiple sclerosis	Relapsing-remitting multiple sclerosis	kept raw	6	1	2	6
+Response to platinum-based neoadjuvant chemotherapy	Response to platinum-based neoadjuvant chemotherapy	kept raw exposure/intervention label	6	1	3	4
+Sex hormone	Sex hormone	kept raw	6	1	3	5
+Small intestine enteropathy	Small intestine enteropathy	kept raw	6	1	2	4
+Sun exposure measurement	Sun exposure measurement	kept raw metadata/cohort-factor label	6	1	2	6
+Trichuriasis	Trichuriasis	kept raw	6	1	3	6
+Nephrolithiasis	Nephrolithiasis	kept raw	5	2	3	3
+Postnatal growth retardation	Postnatal growth retardation	kept raw	5	2	3	4
+Response to immune checkpoint inhibitor	Response to immune checkpoint inhibitor	kept raw exposure/intervention label	5	2	2	5
+Timepoint	Timepoint	kept raw metadata/cohort-factor label	5	2	4	4
+Vulvovaginitis	Vulvovaginitis	kept raw	5	2	2	4
+Adenomatous colon polyp	Adenomatous colon polyp	kept raw	5	1	3	4
+Anxiety	Anxiety	kept raw	5	1	3	4
+Behavior or behavioral disorder measurement	Behavior or behavioral disorder measurement	kept raw metadata/cohort-factor label	5	1	2	5
+Chronic kidney disease,Stage 5 chronic kidney disease	Chronic kidney disease,Stage 5 chronic kidney disease	kept raw metadata/cohort-factor label	5	1	2	2
+Coinfection,Age	Coinfection,Age	kept raw metadata/cohort-factor label	5	1	1	4
+Ethnic group,Place of residence measurement	Ethnic group,Place of residence measurement	kept raw metadata/cohort-factor label	5	1	3	2
+Food allergy,Dermatitis	Food allergy,Dermatitis	kept raw	5	1	1	4
+Infant	Infant	kept raw	5	1	2	2
+Infertility	Infertility	kept raw	5	1	2	3
+Intestinal obstruction	Intestinal obstruction	kept raw	5	1	2	2
+Mood disorder	Mood disorder	kept raw	5	1	2	5
+Non-small cell lung carcinoma,Renal cell carcinoma,Disease progression measurement	Non-small cell lung carcinoma,Renal cell carcinoma,Disease progression measurement	kept raw metadata/cohort-factor label	5	1	3	3
+Oxidative Stress	Oxidative Stress	kept raw	5	1	2	4
+Cutaneous T-cell lymphoma	Cutaneous T-cell lymphoma	kept raw	4	2	3	2
+Gestational age	Gestational age	kept raw metadata/cohort-factor label	4	2	1	3
+Hashimoto's thyroiditis	Hashimoto's thyroiditis	kept raw	4	2	2	3
+Lower respiratory tract disease	Lower respiratory tract disease	kept raw	4	2	2	2
+Menstrual disorder	Menstrual disorder	kept raw	4	2	2	4
+Preterm premature rupture of the membranes	Preterm premature rupture of the membranes	kept raw	4	2	2	3
+Prostate cancer	Prostate cancer	kept raw	4	2	2	2
+Response to stress	Response to stress	kept raw exposure/intervention label	4	2	1	4
+Streptococcal infection	Streptococcal infection	kept raw	4	2	2	2
+Age at assessment	Age at assessment	kept raw metadata/cohort-factor label	4	1	2	2
+Alcohol drinking,Smoking behavior	Alcohol drinking,Smoking behavior	kept raw	4	1	2	2
+Allergic asthma	Allergic asthma	kept raw	4	1	2	3
+Antiphospholipid syndrome	Antiphospholipid syndrome	kept raw	4	1	2	3
+Atrial fibrillation	Atrial fibrillation	kept raw	4	1	2	3
+Blastocystis hominis infectious disease	Blastocystis hominis infectious disease	kept raw	4	1	2	2
+CD4-positive T-lymphocyte count	CD4-positive T-lymphocyte count	kept raw	4	1	2	2
+Colon adenocarcinoma	Colon adenocarcinoma	kept raw	4	1	2	2
+Coronary artery disease,Depressive disorder	Depressive disorder	depressive-disorder rollup	4	1	2	4
+Development or differentiation design	Development or differentiation design	kept raw	4	1	2	2
+Disease progression measurement	Disease progression measurement	kept raw metadata/cohort-factor label	4	1	2	2
+Disease staging	Disease staging	kept raw	4	1	2	2
+Down syndrome	Down syndrome	kept raw	4	1	2	2
+Drug resistance	Drug resistance	kept raw exposure/intervention label	4	1	2	2
+Drug-resistant tuberculosis,Multidrug-resistant tuberculosis	Drug-resistant tuberculosis,Multidrug-resistant tuberculosis	kept raw exposure/intervention label	4	1	2	1
+Eczema,Allergic rhinitis	Eczema,Allergic rhinitis	kept raw	4	1	2	4
+Encephalitis	Encephalitis	kept raw	4	1	2	1
+Environmental samples	Environmental samples	kept raw	4	1	2	2
+Fatigue	Fatigue	kept raw	4	1	2	2
+Gastroenteritis	Gastroenteritis	kept raw	4	1	2	4
+Glucose metabolism measurement	Glucose metabolism measurement	kept raw metadata/cohort-factor label	4	1	2	4
+Glucose tolerance test	Glucose tolerance test	kept raw	4	1	2	4
+Hidradenitis suppurativa	Hidradenitis suppurativa	kept raw	4	1	2	3
+Hippocampal fissure volume	Hippocampal fissure volume	kept raw	4	1	2	4
+Infant head circumference	Infant head circumference	kept raw	4	1	2	1
+Infectious meningitis	Infectious meningitis	kept raw	4	1	2	3
+Intestinal helminthiasis	Intestinal helminthiasis	kept raw	4	1	2	3
+Lactobacillus kimchii	Lactobacillus kimchii	kept raw	4	1	2	1
+Library preparation	Library preparation	kept raw metadata/cohort-factor label	4	1	2	1
+Light	Light	kept raw	4	1	2	3
+Mastitis	Mastitis	kept raw	4	1	1	0
+Melanoma	Melanoma	kept raw	4	1	2	2
+Metabolite	Metabolite	kept raw	4	1	2	3
+Neonatal jaundice	Neonatal jaundice	kept raw	4	1	2	2
+Nephrolithiasis,Urolithiasis	Nephrolithiasis,Urolithiasis	kept raw	4	1	2	1
+Nephropathy	Nephropathy	kept raw	4	1	2	3
+Nitrite measurement	Nitrite measurement	kept raw metadata/cohort-factor label	4	1	1	2
+Nucleic acid extraction protocol	Nucleic acid extraction protocol	kept raw	4	1	2	4
+Obesity due to congenital leptin deficiency	Metabolic / endocrine	metabolic/endocrine rollup	4	1	2	2
+Osteoarthritis, knee	Osteoarthritis, knee	kept raw	4	1	2	4
+Osteoarthritis,Rheumatoid arthritis	Osteoarthritis,Rheumatoid arthritis	kept raw	4	1	2	3
+Periapical Periodontitis	Periodontal disease	periodontal-disease rollup	4	1	2	2
+Primary bacterial infectious disease	Primary bacterial infectious disease	kept raw	4	1	2	2
+Psoriatic arthritis	Psoriatic arthritis	kept raw	4	1	3	3
+Psychosis	Psychosis	kept raw	4	1	2	3
+Response to heat	Response to heat	kept raw exposure/intervention label	4	1	2	2
+Response to placebo	Response to placebo	kept raw exposure/intervention label	4	1	2	3
+Seasonality measurement	Seasonality measurement	kept raw metadata/cohort-factor label	4	1	2	4
+Sepsis	Sepsis	kept raw	4	1	2	2
+Severe aplastic anemia	Severe aplastic anemia	kept raw	4	1	2	0
+Sickle cell anemia	Sickle cell anemia	kept raw	4	1	2	2
+Spontaneous abortion	Spontaneous abortion	kept raw	4	1	3	0
+Substance-related disorder	Substance-related disorder	kept raw	4	1	2	2
+Viral pneumonia	Viral pneumonia	kept raw	4	1	2	2
+Vitamin D	Vitamin D	kept raw	4	1	2	3
+Autoimmune type 1 diabetes	Metabolic / endocrine	metabolic/endocrine rollup	3	2	1	2
+Stimulus or stress design	Stimulus or stress design	kept raw	3	2	1	3
+Abnormal stool composition	Abnormal stool composition	kept raw	3	1	2	3
+Adenomyosis,Endometriosis	Adenomyosis,Endometriosis	kept raw	3	1	0	0
+Anemia	Anemia	kept raw	3	1	1	3
+Bacterial vaginosis,Cervical intraepithelial neoplasia,Human papilloma virus infection	Bacterial vaginosis,Cervical intraepithelial neoplasia,Human papilloma virus infection	kept raw	3	1	1	2
+Brain growth measurement	Brain growth measurement	kept raw metadata/cohort-factor label	3	1	0	2
+Chronic inflammatory demyelinating polyneuropathy	Chronic inflammatory demyelinating polyneuropathy	kept raw	3	1	1	2
+Dermatomyositis	Dermatomyositis	kept raw	3	1	2	3
+Eating behaviour	Eating behaviour	kept raw	3	1	1	1
+Egg allergy	Egg allergy	kept raw	3	1	1	2
+Essential tremor	Essential tremor	kept raw	3	1	1	2
+Fetal growth restriction	Fetal growth restriction	kept raw	3	1	0	1
+Gingival disease	Gingival disease	kept raw	3	1	1	0
+HIV/AIDS pre-exposure prophylaxis	HIV/AIDS pre-exposure prophylaxis	kept raw metadata/cohort-factor label	3	1	1	0
+Lichen planopilaris	Lichen planopilaris	kept raw	3	1	2	2
+Necrotizing enterocolitis	Necrotizing enterocolitis	kept raw	3	1	1	2
+Opioid use measurement	Opioid use measurement	kept raw metadata/cohort-factor label	3	1	2	1
+Pulmonary tuberculosis,Diabetes mellitus	Metabolic / endocrine	metabolic/endocrine rollup	3	1	0	3
+Response to irinotecan	Response to irinotecan	kept raw exposure/intervention label	3	1	1	1
+Retinopathy	Retinopathy	kept raw	3	1	1	2
+Rosacea	Rosacea	kept raw	3	1	2	2
+Skin wound	Skin wound	kept raw	3	1	2	2
+Social environment measurement	Social environment measurement	kept raw metadata/cohort-factor label	3	1	0	3
+healthy	healthy	kept raw	2	2	0	0
+Abnormal sperm morphology	Abnormal sperm morphology	kept raw	2	1	1	1
+Abnormality of the gastrointestinal tract,Abnormal intestine morphology	Abnormality of the gastrointestinal tract,Abnormal intestine morphology	kept raw	2	1	1	2
+Acetaldehyde	Acetaldehyde	kept raw	2	1	1	2
+Adenomyosis	Adenomyosis	kept raw	2	1	1	2
+Adult T-cell leukemia/lymphoma	Adult T-cell leukemia/lymphoma	kept raw	2	1	0	2
+Alzheimer's disease biomarker measurement	Alzheimer's disease biomarker measurement	kept raw metadata/cohort-factor label	2	1	1	1
+Amyotrophic lateral sclerosis	Amyotrophic lateral sclerosis	kept raw	2	1	1	2
+Ankylosing spondylitis	Ankylosing spondylitis	kept raw	2	1	1	2
+Antimicrobial agent,Amoxicillin	Antimicrobial agent,Amoxicillin	kept raw exposure/intervention label	2	1	0	0
+Asthma,Allergic rhinitis,Food allergy,Dermatitis	Asthma,Allergic rhinitis,Food allergy,Dermatitis	kept raw	2	1	1	1
+Autoimmune Hepatitis	Autoimmune Hepatitis	kept raw	2	1	1	1
+Blood disease	Blood disease	kept raw	2	1	1	0
+Cachexia	Cachexia	kept raw	2	1	1	2
+Carotid artery intima media thickness	Carotid artery intima media thickness	kept raw	2	1	1	2
+Cerebral infarction	Cerebral infarction	kept raw	2	1	1	1
+Cervical carcinoma	Cervical carcinoma	kept raw	2	1	1	0
+Cervical cerclage	Cervical cerclage	kept raw metadata/cohort-factor label	2	1	1	1
+Cervical glandular intraepithelial neoplasia,Cervical cancer	Cervical glandular intraepithelial neoplasia,Cervical cancer	kept raw	2	1	1	2
+Cervix erosion	Cervix erosion	kept raw	2	1	1	1
+Cholestasis	Cholestasis	kept raw	2	1	1	1
+Chronic inflammatory demyelinating polyradiculoneuropathy	Chronic inflammatory demyelinating polyradiculoneuropathy	kept raw	2	1	1	1
+Chronic otitis media	Chronic otitis media	kept raw	2	1	0	0
+Clonorchiasis	Clonorchiasis	kept raw	2	1	1	1
+Cognitive impairment measurement	Cognitive impairment measurement	kept raw metadata/cohort-factor label	2	1	2	2
+Colorectal cancer cell line	Colorectal neoplasia	colorectal neoplasia rollup	2	1	1	1
+Colorectal health	Colorectal health	kept raw	2	1	1	2
+Coronary artery disease	Coronary artery disease	kept raw	2	1	1	2
+Developmental stage	Developmental stage	kept raw metadata/cohort-factor label	2	1	1	0
+Diabetic neuropathy	Diabetic neuropathy	kept raw	2	1	1	2
+Diffuse large B-cell lymphoma	Diffuse large B-cell lymphoma	kept raw	2	1	1	1
+Ethnic group,Socioeconomic status	Ethnic group,Socioeconomic status	kept raw metadata/cohort-factor label	2	1	1	2
+Extrahepatic cholestasis	Extrahepatic cholestasis	kept raw	2	1	1	2
+Fasting	Fasting	kept raw	2	1	1	1
+Fibromyalgia	Fibromyalgia	kept raw	2	1	1	2
+Gallstones	Gallstones	kept raw	2	1	1	2
+Gastric adenocarcinoma,Epstein-Barr virus infection	Gastric adenocarcinoma,Epstein-Barr virus infection	kept raw	2	1	1	0
+Gastric carcinoma	Gastric carcinoma	kept raw	2	1	1	1
+Gonorrhea	Gonorrhea	kept raw	2	1	2	0
+Growth rate measurement	Growth rate measurement	kept raw metadata/cohort-factor label	2	1	1	2
+Gut microbiome measurement,Acute graft vs. host disease	Gut microbiome measurement,Acute graft vs. host disease	kept raw transplant/graft label	2	1	1	1
+HIV infection,Antimicrobial agent	HIV infection,Antimicrobial agent	kept raw exposure/intervention label	2	1	1	0
+Halitosis	Halitosis	kept raw	2	1	1	1
+Hepatitis	Hepatitis	kept raw	2	1	1	1
+Hormone replacement therapy	Hormone replacement therapy	kept raw	2	1	1	2
+Huntington disease	Huntington disease	kept raw	2	1	1	0
+Hypercholesterolemia	Hypercholesterolemia	kept raw	2	1	1	2
+Idiopathic pulmonary fibrosis	Idiopathic pulmonary fibrosis	kept raw	2	1	1	0
+Influenza A (H1N1)	Influenza A (H1N1)	kept raw	2	1	1	1
+Insomnia	Insomnia	kept raw	2	1	1	2
+Insulin resistance,Systemic inflammatory response syndrome,Obesity, hyperphagia, and developmental delay	Metabolic / endocrine	metabolic/endocrine rollup	2	1	1	2
+Keratoconjunctivitis	Keratoconjunctivitis	kept raw	2	1	1	2
+Kidney disease	Kidney disease	kept raw	2	1	1	2
+Lung disease	Lung disease	kept raw	2	1	1	0
+Malnutrition	Malnutrition	kept raw	2	1	1	1
+Menopausal or post-menopausal disease	Menopausal or post-menopausal disease	kept raw	2	1	1	1
+Mental or behavioural disorder	Mental or behavioural disorder	kept raw	2	1	1	1
+Methionine measurement	Methionine measurement	kept raw metadata/cohort-factor label	2	1	1	1
+Multiple chemical sensitivity	Multiple chemical sensitivity	kept raw	2	1	1	0
+Myopia	Myopia	kept raw	2	1	1	0
+Neonatal death	Neonatal death	kept raw	2	1	1	1
+Neuromyelitis optica	Neuromyelitis optica	kept raw	2	1	1	1
+Nicotine dependence,Smoking behavior	Nicotine dependence,Smoking behavior	kept raw	2	1	0	2
+Number of teeth measurement	Number of teeth measurement	kept raw metadata/cohort-factor label	2	1	1	0
+Overactive bladder	Overactive bladder	kept raw	2	1	1	1
+Pelvic Inflammatory Disease	Pelvic Inflammatory Disease	kept raw	2	1	1	1
+Pemphigus vulgaris	Pemphigus vulgaris	kept raw	2	1	1	0
+Peptic esophagitis	Peptic esophagitis	kept raw	2	1	1	1
+Perceived unattractiveness to mosquitos measurement	Perceived unattractiveness to mosquitos measurement	kept raw metadata/cohort-factor label	2	1	1	1
+Periodontal Pocket	Periodontal Pocket	kept raw	2	1	1	1
+Pesticide exposure measurement	Pesticide exposure measurement	kept raw metadata/cohort-factor label	2	1	2	0
+Physical activity measurement	Physical activity measurement	kept raw metadata/cohort-factor label	2	1	1	1
+Pituitary Gland Adenoma	Pituitary Gland Adenoma	kept raw	2	1	1	2
+Post-COVID-19 disorder	Post-COVID-19 disorder	kept raw	2	1	1	1
+Postmenopausal osteoporosis	Postmenopausal osteoporosis	kept raw	2	1	1	2
+Postpartum depression	Postpartum depression	kept raw	2	1	1	1
+Prion disease	Prion disease	kept raw	2	1	1	1
+Pruritus	Pruritus	kept raw	2	1	1	0
+Puberty	Puberty	kept raw	2	1	1	1
+Renal transplant outcome measurement	Renal transplant outcome measurement	kept raw transplant/graft label	2	1	1	1
+Respiratory system disease	Respiratory system disease	kept raw	2	1	1	1
+Response to metformin	Response to metformin	kept raw exposure/intervention label	2	1	1	1
+Restless legs syndrome	Restless legs syndrome	kept raw	2	1	2	2
+Risk factor	Risk factor	kept raw	2	1	1	2
+Root	Root	kept raw	2	1	1	0
+Root caries	Root caries	kept raw	2	1	1	1
+SAPHO syndrome	SAPHO syndrome	kept raw	2	1	1	2
+Schistosomiasis	Schistosomiasis	kept raw	2	1	1	1
+Seasonal gut microbiome measurement	Seasonal gut microbiome measurement	kept raw metadata/cohort-factor label	2	1	1	1
+Shigellosis	Shigellosis	kept raw	2	1	1	2
+Silicosis	Silicosis	kept raw	2	1	1	0
+Sjogren syndrome	Sjogren syndrome	kept raw	2	1	1	1
+Social anxiety disorder	Social anxiety disorder	kept raw	2	1	1	2
+Social deprivation	Social deprivation	kept raw	2	1	1	2
+Stevens-Johnson syndrome	Stevens-Johnson syndrome	kept raw	2	1	1	2
+Survival time	Survival time	kept raw metadata/cohort-factor label	2	1	1	1
+Temperature	Temperature	kept raw	2	1	1	2
+Titanium dioxide nanoparticle	Titanium dioxide nanoparticle	kept raw	2	1	1	1
+Triple-negative breast cancer	Triple-negative breast cancer	kept raw	2	1	1	0
+Tuberculosis,Diabetes mellitus	Metabolic / endocrine	metabolic/endocrine rollup	2	1	1	1
+Ulcerative proctosigmoiditis	Ulcerative proctosigmoiditis	kept raw	2	1	1	1
+Urinary retention	Urinary retention	kept raw	2	1	1	1
+Urolithiasis	Urolithiasis	kept raw	2	1	0	2
+Urolithiasis,Nephrolithiasis	Urolithiasis,Nephrolithiasis	kept raw	2	1	1	2
+Vaginal inflammation	Vaginal inflammation	kept raw	2	1	1	1
+Vitamin K measurement	Vitamin K measurement	kept raw metadata/cohort-factor label	2	1	1	2
+Chronic pancreatitis	Chronic pancreatitis	kept raw	1	1	1	1
+Equol	Equol	kept raw	1	1	0	1
+Freeze dried specimen	Freeze dried specimen	kept raw	1	1	1	1
+HIV infection,Diabetes mellitus	Metabolic / endocrine	metabolic/endocrine rollup	1	1	1	1
+Non-small cell lung carcinoma	Non-small cell lung carcinoma	kept raw	1	1	0	1
+Prostate carcinoma	Prostate carcinoma	kept raw	1	1	0	1
+Streptococcal pneumonia	Streptococcal pneumonia	kept raw	1	1	0	0
+Syncope	Syncope	kept raw	1	1	0	0
+Urothelial carcinoma	Urothelial carcinoma	kept raw	1	1	0	0

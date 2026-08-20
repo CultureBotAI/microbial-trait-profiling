@@ -8,16 +8,25 @@ Studies summarized: 1,924
 ## Files
 
 - `all_bugsigdb_condition_body_site_direction_summary.tsv`: all condition/body-site pairs, including broad labels and `Other`/`unknown` body-site groups.
+- `all_bugsigdb_condition_body_site_direction_summary_v3.tsv`: all condition/body-site pairs after v3 disease/body-site display rollups.
 - `all_bugsigdb_increased_profile_condition_body_site_map.png`: displayed increased-profile map.
 - `all_bugsigdb_increased_profile_condition_body_site_map_edges.tsv`: display-candidate edge table 
   for the increased-profile map; 24 rows are drawn.
 - `all_bugsigdb_increased_profile_condition_body_site_map_v2.png`: uncapped v2 increased-profile map.
 - `all_bugsigdb_increased_profile_condition_body_site_map_v2_edges.tsv`: uncapped v2 edge table for the increased-profile map.
+- `all_bugsigdb_increased_profile_condition_body_site_map_v3.png`: v3 increased-profile map with display rollups and grey comparator-background edges.
+- `all_bugsigdb_increased_profile_condition_body_site_map_v3_edges.tsv`: v3 edge table for the increased-profile map; 30 rows are drawn.
+- `all_bugsigdb_increased_profile_condition_body_site_map_v3_condition_rollups.tsv`: raw-to-display condition-label audit table.
+- `all_bugsigdb_increased_profile_condition_body_site_map_v3_body_site_rollups.tsv`: raw-to-display body-site audit table.
 - `all_bugsigdb_decreased_profile_condition_body_site_map.png`: displayed decreased-profile map.
 - `all_bugsigdb_decreased_profile_condition_body_site_map_edges.tsv`: display-candidate edge table 
   for the decreased-profile map; 23 rows are drawn.
 - `all_bugsigdb_decreased_profile_condition_body_site_map_v2.png`: uncapped v2 decreased-profile map.
 - `all_bugsigdb_decreased_profile_condition_body_site_map_v2_edges.tsv`: uncapped v2 edge table for the decreased-profile map.
+- `all_bugsigdb_decreased_profile_condition_body_site_map_v3.png`: v3 decreased-profile map with display rollups and grey comparator-background edges.
+- `all_bugsigdb_decreased_profile_condition_body_site_map_v3_edges.tsv`: v3 edge table for the decreased-profile map; 30 rows are drawn.
+- `all_bugsigdb_decreased_profile_condition_body_site_map_v3_condition_rollups.tsv`: raw-to-display condition-label audit table.
+- `all_bugsigdb_decreased_profile_condition_body_site_map_v3_body_site_rollups.tsv`: raw-to-display body-site audit table.
 
 ## Interpretation
 
@@ -26,3 +35,9 @@ Each row of the source profile metadata is one BugSigDB study/experiment/directi
 The TSV preserves all sampled condition/body-site pairs. The PNG is intentionally filtered for readability: broad metadata-like condition labels and `Other`/`unknown` body-site groups are kept in the TSV but not drawn.
 
 The `_v2` PNGs remove the readability caps on displayed edges, conditions, body-site groups, and per-body-site edge selection. They still use the same support threshold and label filters as the displayed maps.
+
+The `_v3` PNGs use the same v3 display rollups as the guild Sankey maps. Disease-like condition labels are grouped when the display rule matches, but transplant/graft labels and metadata/exposure labels are kept raw. Raw body sites are rolled up to readable display groups such as `Upper airway / nasal`, `Oral cavity / dental`, `Lower airway / lung`, `Vaginal / reproductive`, and `Other body sites`.
+
+In each v3 direction map, colored edges count the focus-direction BugSigDB profiles and parallel grey edges count comparator-direction profiles in the same display condition/body-site pair. V3 condition nodes are ordered by the colored focus-profile count reported as `n=`; `bg=` reports comparator-profile support.
+
+The v3 rolled-up summary contains 753 display condition/body-site pairs before PNG selection.

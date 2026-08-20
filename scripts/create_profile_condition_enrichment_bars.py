@@ -847,7 +847,7 @@ def save_focus_signal_diagram(
     fig.text(
         0.01,
         0.026,
-        "Panel A: purple bars show the difference between the "
+        "Panel A: signal bars show the difference between the "
         f"{DIRECTION_LABELS[focus_direction]} and {DIRECTION_LABELS[comparator]} averages.",
         fontsize=8.2,
         color="#475569",
