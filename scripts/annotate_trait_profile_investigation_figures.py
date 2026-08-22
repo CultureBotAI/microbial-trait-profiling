@@ -16,8 +16,8 @@ UNLABELED_FIGURES = {
     Path("trait_profile_paired_contrast_infographic.png"),
 }
 
-FACULTATIVE_V2_BODY_SITE = (
-    "Guild-specific: yes - color encodes facultative-aerobe v2 trait enrichment by body-site group."
+AEROBE_V2_BODY_SITE = (
+    "Guild-specific: yes - color encodes aerobe v2 trait enrichment by body-site group."
 )
 GUT_V2_BODY_SITE = (
     "Guild-specific: yes - color encodes anaerobe v2 trait enrichment by body-site group."
@@ -33,7 +33,7 @@ NON_GUILD_OCCURRENCE_COUNT_V2 = (
 NON_GUILD_TAXA_HEATMAP = (
     "Guild-specific: no - taxon direction-count heatmap; selected traits are annotation context."
 )
-FACULTATIVE_V2_GUILD_SHIFT = (
+AEROBE_V2_GUILD_SHIFT = (
     "Guild-specific: yes - shows selected v2 traits enriched in increased vs decreased profiles."
 )
 GUT_V2_GUILD_SHIFT = (
@@ -41,7 +41,7 @@ GUT_V2_GUILD_SHIFT = (
 )
 
 FIGURE_LABELS = {
-    Path("facultative-aerobe-v2/anatomical_sites_diagram.png"): FACULTATIVE_V2_BODY_SITE,
+    Path("facultative-aerobe-v2/anatomical_sites_diagram.png"): AEROBE_V2_BODY_SITE,
     Path("facultative-aerobe-v2/autism_autoimmune_taxa_signed_heatmap.png"): (
         NON_GUILD_TAXA_HEATMAP
     ),
@@ -50,14 +50,21 @@ FIGURE_LABELS = {
     ),
     Path(
         "facultative-aerobe-v2/condition_increased_guild_signal.png"
-    ): "Guild-specific: yes - uses facultative-aerobe v2 trait enrichment by condition.",
+    ): "Guild-specific: yes - uses aerobe v2 trait enrichment by condition.",
     Path("facultative-aerobe-v2/condition_body_site_guild_map.png"): (
-        "Guild-specific: yes - maps facultative-aerobe v2 trait enrichment in increased profiles."
+        "Guild-specific: yes - maps aerobe v2 trait enrichment in increased profiles."
+    ),
+    Path("facultative-aerobe-v2/condition_body_site_guild_map_v2.png"): (
+        "Guild-specific: yes - maps aerobe v2 trait enrichment in increased profiles."
+    ),
+    Path("facultative-aerobe-v2/condition_body_site_guild_map_v3.png"): (
+        "Guild-specific: yes - maps aerobe v2 trait enrichment with non-enriched "
+        "background profiles."
     ),
     Path("facultative-aerobe-v2/condition_target_taxa_stacked_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT_V2
     ),
-    Path("facultative-aerobe-v2/guild_trait_direction_shift.png"): (FACULTATIVE_V2_GUILD_SHIFT),
+    Path("facultative-aerobe-v2/guild_trait_direction_shift.png"): (AEROBE_V2_GUILD_SHIFT),
     Path("facultative-aerobe-v2/target_taxa_condition_breakdown_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT_V2
     ),
@@ -77,6 +84,17 @@ FIGURE_LABELS = {
     Path("anaerobe-depletion-v2/condition_body_site_guild_map.png"): (
         "Guild-specific: yes - maps anaerobe v2 trait enrichment in decreased profiles."
     ),
+    Path("anaerobe-depletion-v2/condition_body_site_guild_map_v2.png"): (
+        "Guild-specific: yes - maps anaerobe v2 trait enrichment in decreased profiles."
+    ),
+    Path("anaerobe-depletion-v2/condition_body_site_guild_map_v3_individual.png"): (
+        "Guild-specific: yes - maps anaerobe v2 trait enrichment with raw condition "
+        "and body-site labels plus non-enriched background profiles."
+    ),
+    Path("anaerobe-depletion-v2/condition_body_site_guild_map_v3_grouped.png"): (
+        "Guild-specific: yes - maps anaerobe v2 trait enrichment with non-enriched "
+        "background profiles using condition and body-site display groups."
+    ),
     Path("anaerobe-depletion-v2/condition_enriched_profile_histogram.png"): (
         "Guild-specific: yes - counts condition-level increased/decreased profiles "
         "with at least one enriched anaerobe v2 trait."
@@ -95,26 +113,54 @@ FIGURE_LABELS = {
     Path("anaerobe_v2_guild_definition_table.png"): (
         "Guild-specific: yes - defines anaerobe v2 trait-enrichment roles."
     ),
-    Path("profile-condition-bars/condition_average_positive_traits_bar.png"): (
-        "Guild-specific: yes - averages positive selected trait signals by "
-        "increased/decreased profile direction."
-    ),
-    Path("profile-condition-bars/condition_depleted_profile_coverage_bar.png"): (
-        "Guild-specific: yes - shows positive selected-trait profile coverage for "
-        "depleted-signal conditions."
-    ),
     Path("profile-condition-bars/condition_depleted_profile_signal_diagram.png"): (
         "Guild-specific: yes - combines depleted-profile trait-signal bias with "
         "directional profile coverage."
     ),
-    Path("profile-condition-bars/condition_depleted_trait_signal_bar.png"): (
-        "Guild-specific: yes - ranks depleted-profile conditions by "
-        "decreased-minus-increased selected-trait signal."
+    Path("profile-condition-bars/condition_depleted_signal_vs_coverage_scatter.png"): (
+        "Guild-specific: yes - compares depleted-profile trait-signal bias with "
+        "depleted-profile coverage."
     ),
-    Path("profile-condition-bars/condition_positive_profile_count_bar.png"): (
-        "Guild-specific: yes - counts conditions with positive selected trait signals by "
-        "increased/decreased profile direction."
+    Path("profile-condition-bars/condition_depleted_trait_signal_heatmap.png"): (
+        "Guild-specific: yes - summarizes selected trait signals across depleted-profile "
+        "conditions."
     ),
+    Path("profile-condition-bars/condition_increased_profile_signal_diagram.png"): (
+        "Guild-specific: yes - combines increased-profile trait-signal bias with "
+        "directional profile coverage."
+    ),
+    Path("profile-condition-bars/condition_increased_signal_vs_coverage_scatter.png"): (
+        "Guild-specific: yes - compares increased-profile trait-signal bias with "
+        "increased-profile coverage."
+    ),
+    Path("profile-condition-bars/condition_increased_trait_signal_heatmap.png"): (
+        "Guild-specific: yes - summarizes selected trait signals across increased-profile "
+        "conditions."
+    ),
+    Path(
+        "all-bugsigdb-condition-body-site-maps/"
+        "all_bugsigdb_decreased_profile_condition_body_site_map.png"
+    ): "Guild-specific: no - maps all BugSigDB decreased profiles by condition and body site.",
+    Path(
+        "all-bugsigdb-condition-body-site-maps/"
+        "all_bugsigdb_decreased_profile_condition_body_site_map_v2.png"
+    ): "Guild-specific: no - maps all BugSigDB decreased profiles by condition and body site.",
+    Path(
+        "all-bugsigdb-condition-body-site-maps/"
+        "all_bugsigdb_decreased_profile_condition_body_site_map_v3.png"
+    ): "Guild-specific: no - v3 all-BugSigDB decreased-profile condition/body-site map.",
+    Path(
+        "all-bugsigdb-condition-body-site-maps/"
+        "all_bugsigdb_increased_profile_condition_body_site_map.png"
+    ): "Guild-specific: no - maps all BugSigDB increased profiles by condition and body site.",
+    Path(
+        "all-bugsigdb-condition-body-site-maps/"
+        "all_bugsigdb_increased_profile_condition_body_site_map_v2.png"
+    ): "Guild-specific: no - maps all BugSigDB increased profiles by condition and body site.",
+    Path(
+        "all-bugsigdb-condition-body-site-maps/"
+        "all_bugsigdb_increased_profile_condition_body_site_map_v3.png"
+    ): "Guild-specific: no - v3 all-BugSigDB increased-profile condition/body-site map.",
     Path("enrichment-infographic-followup/traits_vs_organisms_heatmap.png"): (
         "Guild-specific: yes - links selected enriched traits to supporting organisms."
     ),

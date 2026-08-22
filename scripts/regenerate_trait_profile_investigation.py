@@ -67,28 +67,57 @@ SLIDE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.presentation
 
 PPTX_TEXT_REPLACEMENTS = {
     "ppt/slides/slide1.xml": {
+        "FACULTATIVE-AEROBE V2 INCREASED-PROFILE SIGNAL": (
+            "AEROBE V2 TRAIT ENRICHMENT IN INCREASED PROFILES"
+        ),
         "Target taxa most often reported in increased profiles": (
             "Target taxa most often reported in increased profiles"
         ),
     },
     "ppt/slides/slide2.xml": {
+        "FACULTATIVE-AEROBE V2 INCREASED-PROFILE SIGNAL": (
+            "AEROBE V2 TRAIT ENRICHMENT IN INCREASED PROFILES"
+        ),
         "Conditions with high increased-profile v2 guild signal": (
-            "Conditions with facultative-aerobe v2 trait enrichment in increased profiles"
+            "Conditions with aerobe v2 trait enrichment in increased profiles"
+        ),
+        "Conditions with facultative-aerobe v2 trait enrichment in increased profiles": (
+            "Conditions with aerobe v2 trait enrichment in increased profiles"
         ),
     },
     "ppt/slides/slide3.xml": {
+        "FACULTATIVE-AEROBE V2 INCREASED-PROFILE SIGNAL": (
+            "AEROBE V2 TRAIT ENRICHMENT IN INCREASED PROFILES"
+        ),
         "V2 guild traits are higher in increased profiles": (
             "V2 traits enriched in increased profiles"
         ),
     },
     "ppt/slides/slide4.xml": {
+        "FACULTATIVE-AEROBE V2 INCREASED-PROFILE SIGNAL": (
+            "AEROBE V2 TRAIT ENRICHMENT IN INCREASED PROFILES"
+        ),
         "Anatomical sites for increased-profile facultative-aerobe v2 signal": (
-            "Anatomical sites for facultative-aerobe v2 trait enrichment in increased profiles"
+            "Anatomical sites for aerobe v2 trait enrichment in increased profiles"
+        ),
+        "Anatomical sites for facultative-aerobe v2 trait enrichment in increased profiles": (
+            "Anatomical sites for aerobe v2 trait enrichment in increased profiles"
+        ),
+        "Anatomical sites for increased-profile aerobe v2 signal": (
+            "Anatomical sites for aerobe v2 trait enrichment in increased profiles"
         ),
     },
     "ppt/slides/slide5.xml": {
+        "FACULTATIVE-AEROBE V2 INCREASED-PROFILE SIGNAL": (
+            "AEROBE V2 TRAIT ENRICHMENT IN INCREASED PROFILES"
+        ),
         "Top conditions for increased target-taxon occurrences": (
             "Top conditions for increased-profile target-taxon occurrences"
+        ),
+    },
+    "ppt/slides/slide12.xml": {
+        "FACULTATIVE-AEROBE V2 INCREASED-PROFILE SIGNAL": (
+            "AEROBE V2 TRAIT ENRICHMENT IN INCREASED PROFILES"
         ),
     },
     "ppt/slides/slide6.xml": {

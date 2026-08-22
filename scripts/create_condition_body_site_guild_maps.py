@@ -38,6 +38,8 @@ V3_MAX_DISPLAY_EDGES = 32
 V3_MAX_DISPLAY_CONDITIONS = 12
 V3_MIN_FOCUS_ENRICHED_PROFILES = 3
 V3_BACKGROUND_EDGE_Y_OFFSET = -0.007
+V3_GROUPED_MODE = "grouped"
+V3_INDIVIDUAL_MODE = "individual"
 
 SLATE_50 = "#f8fafc"
 SLATE_200 = "#e2e8f0"
@@ -106,10 +108,34 @@ class MapConfig:
     def png_v3_path(self) -> Path:
         return self.output_dir / f"{self.output_stem}_v3.png"
 
+    @property
+    def edge_v3_individual_tsv_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_v3_individual_edges.tsv"
+
+    @property
+    def edge_v3_grouped_tsv_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_v3_grouped_edges.tsv"
+
+    @property
+    def condition_rollup_v3_grouped_tsv_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_v3_grouped_condition_rollups.tsv"
+
+    @property
+    def body_site_rollup_v3_grouped_tsv_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_v3_grouped_body_site_rollups.tsv"
+
+    @property
+    def png_v3_individual_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_v3_individual.png"
+
+    @property
+    def png_v3_grouped_path(self) -> Path:
+        return self.output_dir / f"{self.output_stem}_v3_grouped.png"
+
 
 FACULTATIVE_CONFIG = MapConfig(
     key="facultative_aerobe_increased",
-    title="Condition-to-Body-Site Map: Facultative-Aerobe Trait Enrichment in Increased Profiles",
+    title="Condition-to-Body-Site Map: Aerobe v2 Trait Enrichment in Increased Profiles",
     focus_label="increased",
     comparator_label="decreased",
     focus_direction="inc",
@@ -408,25 +434,838 @@ def select_uncapped_display_edges(edges: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def has_any_label_term(text: str, terms: tuple[str, ...]) -> bool:
+    """Return whether any lowercase term appears in normalized label text."""
+    return any(term in text for term in terms)
+
+
+def v3_anaerobe_condition_display_label(value: object) -> tuple[str, str]:
+    """Return fully grouped condition labels for the anaerobe grouped v3 map."""
+    label = clean_text(value)
+    lower = label.lower()
+    if label == "unknown":
+        return "Unknown condition", "unknown condition group"
+
+    if lower == "healthy":
+        return "Healthy reference", "healthy-reference condition group"
+
+    if has_any_label_term(lower, ("crohn", "ulcerative colitis", "inflammatory bowel disease")):
+        return "Inflammatory bowel disease", "ibd condition group"
+
+    if has_any_label_term(
+        lower,
+        ("colorectal cancer", "colorectal carcinoma", "colorectal adenoma"),
+    ):
+        return "Colorectal neoplasia", "colorectal neoplasia condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "periodontitis",
+            "gingivitis",
+            "peri-implantitis",
+            "oral mucositis",
+            "dental",
+        ),
+    ):
+        return "Oral / periodontal disease", "oral/periodontal condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "constipation",
+            "diarrhea",
+            "irritable bowel syndrome",
+            "celiac",
+            "gastroesophageal",
+            "enteropathy",
+            "pancreatitis",
+            "biliary",
+            "liver disease",
+            "gastroenteritis",
+            "colitis",
+            "gastrointestinal disease",
+            "gastrointestinal tract",
+            "intestinal obstruction",
+            "intestinal polyp",
+            "peptic esophagitis",
+            "lactose intolerance",
+            "necrotizing enterocolitis",
+            "ulcerative proctosigmoiditis",
+            "abnormal stool",
+            "colorectal health",
+        ),
+    ):
+        return "GI / digestive disease", "gi/digestive condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "macular",
+            "glaucoma",
+            "dry eye",
+            "ophthalmopathy",
+            "keratoconjunctivitis",
+            "blepharitis",
+            "retinopathy",
+            "uveitis",
+            "myopia",
+            "meibomian",
+        ),
+    ):
+        return "Ocular / eye disease", "ocular/eye condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "obesity",
+            "diabetes",
+            "prediabetes",
+            "metabolic syndrome",
+            "polycystic ovary syndrome",
+            "non-alcoholic fatty liver disease",
+            "insulin",
+            "metabolic",
+            "endocrine",
+            "fasting blood glucose",
+            "glucose",
+            "cholesterol",
+            "lipoprotein",
+            "phenylketonuria",
+            "hypothyroidism",
+            "thyroiditis",
+            "hypercholesterolemia",
+            "malnutrition",
+        ),
+    ):
+        return "Metabolic / endocrine", "metabolic/endocrine condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "pregnancy",
+            "preterm",
+            "premature birth",
+            "cesarean",
+            "maternal",
+            "breastfeeding",
+            "neonatal",
+            "infant",
+            "gestational",
+            "postpartum",
+            "fetal growth restriction",
+            "delivery method",
+            "delivery measurement",
+            "preeclampsia",
+        ),
+    ):
+        return "Pregnancy / neonatal", "pregnancy/neonatal condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "waist circumference",
+            "body mass index",
+            "body weight",
+            "increased body weight",
+            "body fat",
+            "visceral adipose",
+            "growth rate",
+            "postnatal growth",
+            "short stature",
+            "hypertrophy",
+            "cachexia",
+            "sarcopenia",
+            "body composition",
+        ),
+    ):
+        return "Body composition / growth", "body-composition/growth condition group"
+
+    if has_any_label_term(lower, ("ischemic stroke", "stroke")):
+        return "Stroke", "stroke condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "autism",
+            "attention deficit",
+            "parkinson",
+            "alzheimer",
+            "multiple sclerosis",
+            "neuromyelitis optica",
+            "dementia",
+            "lewy body",
+            "cognitive impairment",
+            "memory impairment",
+            "epilepsy",
+            "essential tremor",
+            "amyotrophic lateral sclerosis",
+            "huntington",
+            "prion disease",
+            "restless legs",
+            "spinal cord injury",
+            "brain hypoxia",
+            "cerebral small vessel",
+            "cerebral infarction",
+            "encephalitis",
+            "down syndrome",
+            "diabetic neuropathy",
+            "sleep",
+            "insomnia",
+            "neurologic",
+            "neurodegenerative",
+        ),
+    ):
+        return "Neurologic / cognitive disease", "neurologic/cognitive condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "major depressive disorder",
+            "depressive disorder",
+            "unipolar depression",
+            "postpartum depression",
+            "bipolar disorder",
+            "schizophrenia",
+            "psychosis",
+            "obsessive-compulsive",
+            "anxiety",
+            "mood disorder",
+            "stress-related disorder",
+            "mental or behavioural disorder",
+            "anorexia nervosa",
+            "eating behaviour",
+            "behavior or behavioral disorder",
+            "social interaction",
+            "childhood trauma",
+            "chronic fatigue syndrome",
+            "fatigue",
+        ),
+    ):
+        return "Psychiatric / behavioral health", "psychiatric/behavioral condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "covid",
+            "sars",
+            "tuberculosis",
+            "pneumonia",
+            "hiv",
+            "virus",
+            "viral",
+            "infection",
+            "infectious",
+            "helicobacter",
+            "chlamydia",
+            "zika",
+            "bacterial disease",
+            "hepatitis",
+            "helminth",
+            "ascariasis",
+            "schistosomiasis",
+            "trichuriasis",
+            "clonorchiasis",
+            "coccidiosis",
+            "gonorrhea",
+            "shigellosis",
+            "influenza",
+            "sepsis",
+        ),
+    ):
+        return "Infectious disease", "infectious-disease condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "asthma",
+            "chronic obstructive pulmonary",
+            "allergic rhinitis",
+            "respiratory",
+            "lung",
+            "airway",
+            "bronchiectasis",
+            "wheezing",
+            "pulmonary function",
+            "pulmonary fibrosis",
+            "pulmonary arterial hypertension",
+            "rhinitis",
+            "rhinosinusitis",
+        ),
+    ):
+        return "Respiratory / airway disease", "respiratory/airway condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "cancer",
+            "carcinoma",
+            "leukemia",
+            "lymphoma",
+            "myeloma",
+            "melanoma",
+            "neoplasm",
+            "tumor",
+            "adenocarcinoma",
+            "hepatocellular",
+            "glioma",
+            "leukoplakia",
+            "carcinogenicity",
+            "pituitary gland adenoma",
+            "peutz-jeghers polyp",
+            "adenomatous colon polyp",
+        ),
+    ):
+        return "Cancer / neoplasia", "cancer/neoplasia condition group"
+
+    if has_any_label_term(
+        lower,
+        ("kidney", "nephro", "urinary", "bladder", "renal", "urolithiasis"),
+    ):
+        return "Renal / urinary disease", "renal/urinary condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "ovarian",
+            "cervical",
+            "endometrial",
+            "infertility",
+            "reproductive",
+            "vagina",
+            "menopause",
+            "endometriosis",
+            "adenomyosis",
+            "dysmenorrhea",
+            "menstrual",
+            "menopausal",
+            "vulvovaginitis",
+            "bacterial vaginosis",
+            "mastitis",
+            "sperm",
+            "contraception",
+            "medroxyprogesterone",
+            "estradiol",
+            "sex hormone",
+            "puberty",
+            "hormone replacement",
+            "cervix erosion",
+            "spontaneous abortion",
+            "male homosexuality",
+        ),
+    ):
+        return "Reproductive / hormonal health", "reproductive/hormonal condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "cardiovascular",
+            "hypertension",
+            "myocardial infarction",
+            "heart failure",
+            "coronary artery",
+            "atrial fibrillation",
+            "patent ductus arteriosus",
+            "congenital heart",
+            "carotid artery",
+            "syncope",
+        ),
+    ):
+        return "Cardiovascular disease", "cardiovascular condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "eczema",
+            "dermatitis",
+            "acne",
+            "rosacea",
+            "hidradenitis",
+            "lichen planopilaris",
+            "skin wound",
+            "pruritus",
+        ),
+    ):
+        return "Skin / hair disease", "skin/hair condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "anemia",
+            "thrombocythemia",
+            "aplastic",
+            "blood disease",
+            "hematopoietic",
+            "immunodeficiency",
+            "chronic granulomatous",
+            "cd4-positive",
+        ),
+    ):
+        return "Blood / immune deficiency", "blood/immune-deficiency condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "rheumatoid",
+            "lupus",
+            "behcet",
+            "psoriasis",
+            "vitiligo",
+            "atopic eczema",
+            "allergy",
+            "allergic",
+            "autoimmune",
+            "inflammatory",
+            "graves",
+            "stevens-johnson",
+            "scleroderma",
+            "sjogren",
+            "oxidative stress",
+            "purpura",
+            "granulomatosis",
+            "polyangiitis",
+            "antiphospholipid",
+            "sapho",
+            "pemphigus",
+        ),
+    ):
+        return "Autoimmune / inflammatory disease", "autoimmune/inflammatory condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "arthritis",
+            "osteoarthritis",
+            "spondylitis",
+            "osteoporosis",
+            "dermatomyositis",
+            "bone mineral",
+            "myostatin",
+            "muscle",
+            "fibromyalgia",
+        ),
+    ):
+        return "Musculoskeletal / connective tissue", "musculoskeletal/connective condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "otitis",
+            "halitosis",
+            "bitter taste",
+            "body odor",
+            "oral lichen planus",
+            "mucositis",
+            "rhinitis",
+            "sinusitis",
+        ),
+    ):
+        return "ENT / oral mucosal disease", "ent/oral-mucosal condition group"
+
+    if has_any_label_term(lower, ("transplant", "graft", "gvhd")):
+        return "Transplant / graft response", "transplant/graft condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "antimicrobial agent",
+            "antibiotic",
+            "antiviral",
+            "azithromycin",
+        ),
+    ):
+        return "Antibiotic / antimicrobial exposure", "antibiotic/antimicrobial condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "drug",
+            "vaccine",
+            "treatment",
+            "response to",
+            "clinical treatment",
+        ),
+    ):
+        return "Medication / clinical treatment", "medication/clinical-treatment condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "diet",
+            "ketogenic",
+            "high fat",
+            "traditional chinese medicine",
+            "nutraceutical",
+            "curcumin",
+            "vitamin",
+            "fasting",
+            "beverage",
+            "fat intake",
+            "iron",
+            "equol",
+            "lactobacillus",
+        ),
+    ):
+        return "Diet / nutrition / supplements", "diet/nutrition/supplement condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "smoking",
+            "alcohol",
+            "tobacco",
+            "nicotine",
+            "cannabis",
+            "methamphetamine",
+            "opioid",
+            "substance-related",
+        ),
+    ):
+        return "Smoking / alcohol / drug use", "smoking/alcohol/drug-use condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "air pollution",
+            "exposure",
+            "environmental",
+            "pesticide",
+            "insecticide",
+            "titanium dioxide",
+            "silicosis",
+            "chemical sensitivity",
+            "light",
+            "temperature",
+            "high altitude",
+            "sun exposure",
+            "seasonality",
+            "mosquito",
+            "acetaldehyde",
+            "hypoxia",
+        ),
+    ):
+        return "Environmental / chemical exposure", "environmental/chemical condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "age",
+            "biological sex",
+            "birth measurement",
+            "developmental stage",
+            "brain growth",
+            "puberty",
+            "aging",
+            "development or differentiation",
+            "breed",
+        ),
+    ):
+        return "Age / development / sex", "age/development/sex condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "population",
+            "ethnic group",
+            "socioeconomic",
+            "social deprivation",
+            "place of residence",
+            "restricted to specific location",
+            "health study participation",
+            "mixed sex population",
+        ),
+    ):
+        return "Population / social covariates", "population/social-covariate condition group"
+
+    if has_any_label_term(
+        lower,
+        ("physical activity", "exercise", "lifestyle measurement"),
+    ):
+        return "Activity / lifestyle score", "activity/lifestyle-score condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "autoantibody",
+            "antibody",
+            "igg4",
+            "immune biomarker",
+        ),
+    ):
+        return "Immune biomarker", "immune-biomarker condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "bilirubin",
+            "alanine",
+            "liver fibrosis",
+            "cholestasis",
+            "gallstones",
+            "bile",
+        ),
+    ):
+        return "Liver / biliary biomarker", "liver/biliary-biomarker condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "oxalate",
+            "nitrite",
+            "methionine",
+            "creatine",
+            "metabolite",
+            "vitamin k",
+        ),
+    ):
+        return "Metabolite biomarker", "metabolite-biomarker condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "grey matter volume",
+            "hippocampal fissure",
+            "brain growth measurement",
+        ),
+    ):
+        return "Brain morphology measurement", "brain-morphology condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "periodontal measurement",
+            "number of teeth",
+            "root caries",
+            "periodontal pocket",
+            "gingival disease",
+        ),
+    ):
+        return "Dental / periodontal measurement", "dental/periodontal-measurement group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "disease staging",
+            "illness severity",
+            "disease prognosis",
+            "disease progression",
+            "remission",
+            "survival time",
+            "health-related quality of life",
+            "risk factor",
+        ),
+    ):
+        return "Disease activity / severity", "disease-activity/severity condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "microbiome",
+            "seasonal gut microbiome",
+            "abnormal stool composition",
+        ),
+    ):
+        return "Microbiome phenotype", "microbiome-phenotype condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "extraction protocol",
+            "library preparation",
+            "nucleic acid extraction",
+            "gene expression protocol",
+        ),
+    ):
+        return "Extraction / library protocol", "extraction/library-protocol condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "sample collection protocol",
+            "freeze dried specimen",
+            "transport",
+        ),
+    ):
+        return "Sample collection / handling", "sample-collection/handling condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "sampling site",
+            "sampling time",
+            "timepoint",
+            "time",
+        ),
+    ):
+        return "Sampling site / time protocol", "sampling-site/time condition group"
+
+    if has_any_label_term(lower, ("species design",)):
+        return "Host species / model design", "host-species/model-design condition group"
+
+    if has_any_label_term(
+        lower,
+        (
+            "species design",
+            "growth condition",
+            "stimulus or stress design",
+            "phenotype",
+            "vesicle membrane",
+            "root",
+            "peripheral neuron",
+            "health trait",
+        ),
+    ):
+        return "Experimental phenotype labels", "experimental-phenotype-label condition group"
+
+    return "Other specific clinical labels", "other-specific-clinical-label condition group"
+
+
+def v3_condition_display_label(value: object, config: MapConfig) -> tuple[str, str]:
+    """Return the grouped v3 condition label for this map."""
+    if config.key == ANAEROBE_CONFIG.key:
+        return v3_anaerobe_condition_display_label(value)
+    return condition_display_label(value)
+
+
+def v3_body_site_display_label(
+    body_site: object,
+    body_site_group: object,
+    config: MapConfig,
+) -> tuple[str, str]:
+    """Return the grouped v3 body-site label for this map."""
+    label, rule = body_site_display_label(body_site, body_site_group)
+    if config.key == ANAEROBE_CONFIG.key and label == "Unknown body site":
+        return "Missing body-site metadata", "missing body-site metadata group"
+    if config.key == ANAEROBE_CONFIG.key and label == "Other body sites":
+        raw_site = clean_text(body_site)
+        raw_group = clean_text(body_site_group)
+        text = f"{raw_site} {raw_group}".lower()
+
+        if has_any_label_term(text, ("naris", "tonsillar", "tonsil")):
+            return "Upper airway / nasal", "upper-airway/nasal body-site group"
+
+        if has_any_label_term(text, ("bronchus", "bronchial", "trachea", "tracheal")):
+            return "Bronchial / tracheal", "bronchial/tracheal body-site group"
+
+        if has_any_label_term(text, ("stomach", "gastric", "esophagus", "oesophagus")):
+            return "Stomach / esophagus", "stomach/esophagus body-site group"
+
+        if has_any_label_term(
+            text,
+            (
+                "duodenum",
+                "duodenal",
+                "jejunum",
+                "ileal",
+                "ileum",
+                "small intestine",
+                "colorectal mucosa",
+                "mesenteric lymph node",
+                "digestive tract",
+                "rumen",
+                "proventriculus",
+                "cloaca",
+            ),
+        ):
+            return "Intestinal / GI mucosa", "intestinal/gi-mucosa body-site group"
+
+        if has_any_label_term(text, ("conjunct", "tear", "eyelid", "meibum", "ocular")):
+            return "Ocular / eye", "ocular/eye body-site group"
+
+        if has_any_label_term(text, ("breast", "milk", "colostrum", "mammary")):
+            return "Breast / milk", "breast/milk body-site group"
+
+        if has_any_label_term(text, ("meconium", "placenta", "marsupium")):
+            return "Birth-associated samples", "birth-associated body-site group"
+
+        if has_any_label_term(text, ("bile", "biliary", "liver", "pancreas", "pancreatic")):
+            return "Hepatobiliary / pancreas", "hepatobiliary/pancreas body-site group"
+
+        if has_any_label_term(
+            text,
+            ("cheek", "gingiva", "gingival", "dental", "dentine", "tooth", "teeth"),
+        ):
+            return "Oral cavity / dental", "oral/dental body-site group"
+
+        if has_any_label_term(text, ("semen", "ovary", "oviduct", "prostate", "genitalia")):
+            return "Reproductive / genital", "reproductive/genital body-site group"
+
+        if has_any_label_term(text, ("kidney", "renal", "ureter", "urethra")):
+            return "Urinary tract", "urinary body-site group"
+
+        if has_any_label_term(text, ("ear", "otic")):
+            return "Ear", "ear body-site group"
+
+        if has_any_label_term(
+            text,
+            (
+                "body proper",
+                "anatomical surface",
+                "integument",
+                "entire surface",
+                "forehead",
+                "exoskeleton",
+                "insect",
+                "tadpole",
+                "instar",
+                "pupa",
+            ),
+        ):
+            return "External surface / non-human", "external-surface/non-human body-site group"
+
+        if has_any_label_term(text, ("mucosa", "mucus")):
+            return "Unlocalized mucosal samples", "unlocalized-mucosal body-site group"
+
+        if has_any_label_term(text, ("thyroid",)):
+            return "Thyroid tissue", "thyroid-tissue body-site group"
+
+        if has_any_label_term(text, ("nerve root",)):
+            return "Neural tissue", "neural-tissue body-site group"
+
+        return "Miscellaneous sampled tissues", "miscellaneous sampled tissue body-site group"
+    return label, rule
+
+
 def add_v3_display_rollups(
     scored: pd.DataFrame,
     config: MapConfig,
+    *,
+    display_mode: str = V3_GROUPED_MODE,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Attach v3 display labels and return source rows plus audit rollup tables."""
+    """Attach v3 labels and return source rows plus audit rollup tables."""
     source = scored.copy()
-    condition_pairs = source["condition"].map(condition_display_label)
     source["raw_condition"] = source["condition"]
-    source["condition"] = [label for label, _rule in condition_pairs]
-    source["condition_rollup_rule"] = [rule for _label, rule in condition_pairs]
+    if display_mode == V3_GROUPED_MODE:
+        condition_pairs = source["condition"].map(
+            lambda value: v3_condition_display_label(value, config)
+        )
+        source["condition"] = [label for label, _rule in condition_pairs]
+        source["condition_rollup_rule"] = [rule for _label, rule in condition_pairs]
+    elif display_mode == V3_INDIVIDUAL_MODE:
+        source["condition"] = source["condition"].map(clean_text)
+        source["condition_rollup_rule"] = "kept raw individual condition label"
+    else:
+        msg = f"Unknown v3 display mode: {display_mode}"
+        raise ValueError(msg)
 
-    body_pairs = [
-        body_site_display_label(row.body_site, row.body_site_group)
-        for row in source.itertuples()
-    ]
     source["raw_body_site"] = source["body_site"]
     source["raw_body_site_group"] = source["body_site_group"]
-    source["body_site_group"] = [label for label, _rule in body_pairs]
-    source["body_site_rollup_rule"] = [rule for _label, rule in body_pairs]
+    if display_mode == V3_GROUPED_MODE:
+        body_pairs = [
+            v3_body_site_display_label(row.body_site, row.body_site_group, config)
+            for row in source.itertuples()
+        ]
+        source["body_site_group"] = [label for label, _rule in body_pairs]
+        source["body_site_rollup_rule"] = [rule for _label, rule in body_pairs]
+    else:
+        source["body_site_group"] = source["body_site"].map(
+            lambda value: (
+                "Unknown body site"
+                if clean_text(value) == "unknown"
+                else clean_text(value)
+            )
+        )
+        source["body_site_rollup_rule"] = "kept raw individual body-site label"
     source = source[source["condition"] != "unknown"].copy()
 
     condition_rollups = (
@@ -486,8 +1325,22 @@ def add_v3_display_rollups(
 
 
 def summarize_v3_condition_body_site_edges(scored: pd.DataFrame, config: MapConfig) -> pd.DataFrame:
-    """Build v3 condition/body-site edges after display-label rollups."""
-    source, _, _ = add_v3_display_rollups(scored, config)
+    """Build grouped v3 condition/body-site edges after display-label rollups."""
+    return summarize_v3_condition_body_site_edges_for_mode(
+        scored,
+        config,
+        display_mode=V3_GROUPED_MODE,
+    )
+
+
+def summarize_v3_condition_body_site_edges_for_mode(
+    scored: pd.DataFrame,
+    config: MapConfig,
+    *,
+    display_mode: str,
+) -> pd.DataFrame:
+    """Build v3 condition/body-site edges for one label display mode."""
+    source, _, _ = add_v3_display_rollups(scored, config, display_mode=display_mode)
     records: list[dict[str, object]] = []
     for (condition, body_site_group), group in source.groupby(
         ["condition", "body_site_group"],
@@ -1099,10 +1952,47 @@ def plot_condition_body_site_map_v3(
     display_edges: pd.DataFrame,
     config: MapConfig,
     output_path: Path,
+    *,
+    display_mode: str = V3_GROUPED_MODE,
 ) -> None:
-    """Render the grouped v3 condition-to-body-site guild map."""
+    """Render a v3 condition-to-body-site guild map."""
     if display_edges.empty:
-        msg = f"No v3 display edges available for {config.key}."
+        msg = f"No v3 {display_mode} display edges available for {config.key}."
+        raise ValueError(msg)
+    if display_mode == V3_INDIVIDUAL_MODE:
+        title_suffix = "v3 individual labels with background"
+        condition_header = "Individual condition labels"
+        body_site_header = "Individual body sites"
+        pair_description = "same exact condition/body-site pair"
+        footer_note = (
+            "V3 individual display keeps raw condition labels and raw body-site labels, "
+            f"requires at least {V3_MIN_FOCUS_ENRICHED_PROFILES} colored profiles and "
+            f"{MIN_STUDIES} colored-profile studies where possible, and preserves all "
+            "individual edge details in the companion TSV."
+        )
+    elif display_mode == V3_GROUPED_MODE:
+        title_suffix = "v3 grouped display with background"
+        condition_header = "Condition display groups"
+        body_site_header = "Body-site display groups"
+        pair_description = "same display condition/body-site pair"
+        if config.key == ANAEROBE_CONFIG.key:
+            footer_note = (
+                "V3 grouped display assigns every condition and body site to display "
+                "groups, "
+                f"requires at least {V3_MIN_FOCUS_ENRICHED_PROFILES} colored profiles "
+                f"and {MIN_STUDIES} colored-profile studies where possible, and "
+                "preserves all grouped edge and rollup details in companion TSVs."
+            )
+        else:
+            footer_note = (
+                "V3 grouped display uses disease/body-site rollups, keeps "
+                "transplant/graft and metadata/exposure labels raw, "
+                f"requires at least {V3_MIN_FOCUS_ENRICHED_PROFILES} colored profiles "
+                f"and {MIN_STUDIES} colored-profile studies where possible, and "
+                "preserves all grouped edge and rollup details in companion TSVs."
+            )
+    else:
+        msg = f"Unknown v3 display mode: {display_mode}"
         raise ValueError(msg)
 
     condition_order_frame = (
@@ -1235,7 +2125,7 @@ def plot_condition_body_site_map_v3(
     fig.text(
         0.05,
         0.965,
-        f"{config.title} (v3 display with background)",
+        f"{config.title} ({title_suffix})",
         ha="left",
         va="top",
         fontsize=17,
@@ -1246,9 +2136,9 @@ def plot_condition_body_site_map_v3(
         0.925,
         (
             f"Colored edges = {config.focus_label} profiles with at least one selected "
-            "guild trait above zero. Parallel grey edges = profiles in the same "
-            "display condition/body-site pair with zero selected guild traits. "
-            "Conditions are ordered by colored n."
+            "guild trait above zero. Parallel grey edges = profiles in the "
+            f"{pair_description} with zero selected guild traits. Conditions are "
+            "ordered by colored n."
         ),
         ha="left",
         va="top",
@@ -1258,7 +2148,7 @@ def plot_condition_body_site_map_v3(
     ax.text(
         0.21,
         header_y,
-        "Condition labels / rollups",
+        condition_header,
         ha="center",
         va="center",
         fontsize=12,
@@ -1267,7 +2157,7 @@ def plot_condition_body_site_map_v3(
     ax.text(
         0.79,
         header_y,
-        "Body-site display groups",
+        body_site_header,
         ha="center",
         va="center",
         fontsize=12,
@@ -1335,13 +2225,7 @@ def plot_condition_body_site_map_v3(
     fig.text(
         0.05,
         0.035,
-        (
-            f"V3 display uses disease/body-site rollups, keeps transplant/graft and "
-            "metadata/exposure labels raw, "
-            f"requires at least {V3_MIN_FOCUS_ENRICHED_PROFILES} colored profiles and "
-            f"{MIN_STUDIES} colored-profile studies where possible, and preserves all "
-            "grouped edge and rollup details in companion TSVs."
-        ),
+        footer_note,
         ha="left",
         va="bottom",
         fontsize=8.2,
@@ -1351,6 +2235,38 @@ def plot_condition_body_site_map_v3(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=220, bbox_inches="tight", facecolor="white")
     plt.close(fig)
+
+
+def add_displayed_flag(
+    edges: pd.DataFrame,
+    display_edges: pd.DataFrame,
+) -> pd.DataFrame:
+    """Return an edge table with a boolean flag for the plotted subset."""
+    display_keys = set(
+        zip(display_edges["condition"], display_edges["body_site_group"], strict=True)
+    )
+    output = edges.copy()
+    output["displayed_in_map"] = [
+        (condition, body_site) in display_keys
+        for condition, body_site in zip(
+            output["condition"], output["body_site_group"], strict=True
+        )
+    ]
+    return output
+
+
+def remove_legacy_anaerobe_single_v3_outputs(config: MapConfig) -> None:
+    """Remove the superseded single anaerobe v3 files after writing split v3 outputs."""
+    if config.key != ANAEROBE_CONFIG.key:
+        return
+    for path in [
+        config.edge_v3_tsv_path,
+        config.condition_rollup_v3_tsv_path,
+        config.body_site_rollup_v3_tsv_path,
+        config.png_v3_path,
+    ]:
+        if path.exists():
+            path.unlink()
 
 
 def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapConfig) -> None:
@@ -1363,6 +2279,7 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
     _v3_source, condition_rollups_v3, body_site_rollups_v3 = add_v3_display_rollups(
         scored,
         config,
+        display_mode=V3_GROUPED_MODE,
     )
     edges_v3 = summarize_v3_condition_body_site_edges(scored, config)
     display_edges_v3 = select_v3_display_edges(edges_v3)
@@ -1371,9 +2288,6 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
     )
     display_v2_keys = set(
         zip(display_edges_v2["condition"], display_edges_v2["body_site_group"], strict=True)
-    )
-    display_v3_keys = set(
-        zip(display_edges_v3["condition"], display_edges_v3["body_site_group"], strict=True)
     )
 
     edge_output = edges.copy()
@@ -1420,21 +2334,12 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
         )
     ]
 
-    edge_v3_output = edges_v3.copy()
-    edge_v3_output["displayed_in_map"] = [
-        (condition, body_site) in display_v3_keys
-        for condition, body_site in zip(
-            edge_v3_output["condition"], edge_v3_output["body_site_group"], strict=True
-        )
-    ]
+    edge_v3_output = add_displayed_flag(edges_v3, display_edges_v3)
 
     edge_output.to_csv(config.edge_tsv_path, sep="\t", index=False)
     sampled_output.to_csv(config.sampled_site_tsv_path, sep="\t", index=False)
     edge_v2_output.to_csv(config.edge_v2_tsv_path, sep="\t", index=False)
     sampled_v2_output.to_csv(config.sampled_site_v2_tsv_path, sep="\t", index=False)
-    edge_v3_output.to_csv(config.edge_v3_tsv_path, sep="\t", index=False)
-    condition_rollups_v3.to_csv(config.condition_rollup_v3_tsv_path, sep="\t", index=False)
-    body_site_rollups_v3.to_csv(config.body_site_rollup_v3_tsv_path, sep="\t", index=False)
     plot_condition_body_site_map(display_edges, sampled_sites, config, config.png_path)
     plot_condition_body_site_map(
         display_edges_v2,
@@ -1450,17 +2355,76 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
         ),
         dense_layout=True,
     )
-    plot_condition_body_site_map_v3(display_edges_v3, config, config.png_v3_path)
+    if config.key == ANAEROBE_CONFIG.key:
+        edges_v3_individual = summarize_v3_condition_body_site_edges_for_mode(
+            scored,
+            config,
+            display_mode=V3_INDIVIDUAL_MODE,
+        )
+        display_edges_v3_individual = select_v3_display_edges(edges_v3_individual)
+        edge_v3_individual_output = add_displayed_flag(
+            edges_v3_individual,
+            display_edges_v3_individual,
+        )
+        edge_v3_grouped_output = edge_v3_output
+
+        edge_v3_individual_output.to_csv(
+            config.edge_v3_individual_tsv_path,
+            sep="\t",
+            index=False,
+        )
+        edge_v3_grouped_output.to_csv(config.edge_v3_grouped_tsv_path, sep="\t", index=False)
+        condition_rollups_v3.to_csv(
+            config.condition_rollup_v3_grouped_tsv_path,
+            sep="\t",
+            index=False,
+        )
+        body_site_rollups_v3.to_csv(
+            config.body_site_rollup_v3_grouped_tsv_path,
+            sep="\t",
+            index=False,
+        )
+        plot_condition_body_site_map_v3(
+            display_edges_v3_individual,
+            config,
+            config.png_v3_individual_path,
+            display_mode=V3_INDIVIDUAL_MODE,
+        )
+        plot_condition_body_site_map_v3(
+            display_edges_v3,
+            config,
+            config.png_v3_grouped_path,
+            display_mode=V3_GROUPED_MODE,
+        )
+        remove_legacy_anaerobe_single_v3_outputs(config)
+    else:
+        edge_v3_output.to_csv(config.edge_v3_tsv_path, sep="\t", index=False)
+        condition_rollups_v3.to_csv(config.condition_rollup_v3_tsv_path, sep="\t", index=False)
+        body_site_rollups_v3.to_csv(config.body_site_rollup_v3_tsv_path, sep="\t", index=False)
+        plot_condition_body_site_map_v3(
+            display_edges_v3,
+            config,
+            config.png_v3_path,
+            display_mode=V3_GROUPED_MODE,
+        )
     print(f"Wrote: {config.edge_tsv_path}")
     print(f"Wrote: {config.sampled_site_tsv_path}")
     print(f"Wrote: {config.png_path}")
     print(f"Wrote: {config.edge_v2_tsv_path}")
     print(f"Wrote: {config.sampled_site_v2_tsv_path}")
     print(f"Wrote: {config.png_v2_path}")
-    print(f"Wrote: {config.edge_v3_tsv_path}")
-    print(f"Wrote: {config.condition_rollup_v3_tsv_path}")
-    print(f"Wrote: {config.body_site_rollup_v3_tsv_path}")
-    print(f"Wrote: {config.png_v3_path}")
+    if config.key == ANAEROBE_CONFIG.key:
+        print(f"Wrote: {config.edge_v3_individual_tsv_path}")
+        print(f"Wrote: {config.png_v3_individual_path}")
+        print(f"Wrote: {config.edge_v3_grouped_tsv_path}")
+        print(f"Wrote: {config.condition_rollup_v3_grouped_tsv_path}")
+        print(f"Wrote: {config.body_site_rollup_v3_grouped_tsv_path}")
+        print(f"Wrote: {config.png_v3_grouped_path}")
+    else:
+        print(f"Wrote: {config.edge_v3_tsv_path}")
+        print(f"Wrote: {config.condition_rollup_v3_tsv_path}")
+        print(f"Wrote: {config.body_site_rollup_v3_tsv_path}")
+        print(f"Wrote: {config.png_v3_path}")
 
 
 def main() -> None:

@@ -1,6 +1,6 @@
-# Autism and Autoimmune Disease Follow-Up: Facultative-Aerobe v2
+# Autism and Autoimmune Disease Follow-Up: Aerobe v2
 
-This follow-up starts from facultative-aerobe trait enrichment in increased profiles and inspects the BugSigDB taxa reported in the autism/autism spectrum disorder and autoimmune disease condition labels.
+This follow-up starts from aerobe v2 trait enrichment in increased profiles and inspects the BugSigDB taxa reported in the autism/autism spectrum disorder and autoimmune disease condition labels.
 
 ## Plot Guild Specificity
 
@@ -144,7 +144,7 @@ This section uses a data-derived trait-enrichment view: for each exact condition
 
 ## Interpretation
 
-This v2 follow-up uses only the narrowed facultative-aerobe selected traits: facultatively aerobic, aerobic, microaerophilic. It supports a label-dependent signal check rather than a broad causal claim.
+This v2 follow-up uses only the narrowed aerobe v2 selected traits: facultatively aerobic, aerobic, microaerophilic. It supports a label-dependent signal check rather than a broad causal claim.
 
 Included condition labels with positive increased-minus-decreased v2 trait-enrichment shifts are `Autism` (0.755), `Autoimmune disease` (0.423).
 

@@ -1,4 +1,4 @@
-# Facultative-Aerobe v2 Increased-Profile Trait-Enrichment Investigation
+# Aerobe v2 Trait Enrichment in Increased Profiles
 
 This investigation uses the existing study trait profile clustered heatmap matrix, study metadata, taxa guild heatmap metadata, and derived taxa/trait matrices.
 
@@ -23,7 +23,7 @@ This investigation uses the existing study trait profile clustered heatmap matri
 
 ## Main Signal
 
-The selected traits are enriched in increased profiles relative to decreased profiles, supporting a facultative-aerobe increased-profile signal.
+The selected traits are enriched in increased profiles relative to decreased profiles, supporting an aerobe v2 increased-profile trait-enrichment signal.
 
 | trait | increased - decreased z |
 | --- | ---: |
@@ -63,7 +63,7 @@ The selected traits are enriched in increased profiles relative to decreased pro
 | Escherichia coli | Type II diabetes mellitus | Feces | 14 / 0 | 2 |
 | Porphyromonas gingivalis | Colorectal cancer | Saliva | 6 / 0 | 2 |
 
-## Contexts With Facultative-Aerobe v2 Trait Enrichment in Increased Profiles
+## Contexts With Aerobe v2 Trait Enrichment in Increased Profiles
 
 | condition | profiles | studies | increased - decreased z | paired d | paired p | matched pairs | increased mean trait z |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -82,7 +82,7 @@ Oral-site increased-profile trait signals are expected in this analysis because 
 
 ## Data-Inferred Guild Evidence
 
-For the top condition signals, this table uses all taxa observed in the increased profiles for that condition that also belong to the KG-Microbe-wide candidate taxon universe, then reports the profile v2 traits that are enriched in those same increased profiles and the universe taxa that carry those trait annotations. This is a data-derived guild summary, not a literature-defined facultative-aerobe/aerotolerant guild.
+For the top condition signals, this table uses all taxa observed in the increased profiles for that condition that also belong to the KG-Microbe-wide candidate taxon universe, then reports the profile v2 traits that are enriched in those same increased profiles and the universe taxa that carry those trait annotations. This is a data-derived guild summary, not a literature-defined aerobe/aerotolerant guild.
 
 | condition | increased profiles | universe taxa / observed taxa | enriched traits | supporting taxa |
 | --- | ---: | ---: | --- | --- |
@@ -127,7 +127,7 @@ For the top condition signals, this table uses all taxa observed in the increase
 
 ## Suggested Follow-Up
 
-1. Split the signal by body site before interpreting it as a facultative-aerobe increased-profile trait-enrichment signal; oral and airway profiles can dominate aerobic/microaerophilic traits.
+1. Split the signal by body site before interpreting it as an aerobe v2 increased-profile trait-enrichment signal; oral and airway profiles can dominate aerobic/microaerophilic traits.
 2. In gut-only analyses, test the target taxa against inflammation markers, oxygen tolerance, virulence genes, and resistome features.
 3. Compare increased-profile taxa against the anaerobe v2 trait set to see whether the same conditions show reciprocal decreased- and increased-profile patterns.
 
@@ -147,11 +147,18 @@ For the top condition signals, this table uses all taxa observed in the increase
 - `condition_inferred_guild_taxa_evidence.tsv`
 - `condition_body_site_guild_map_edges.tsv`
 - `condition_body_site_guild_map_sampled_body_sites.tsv`
+- `condition_body_site_guild_map_v2_edges.tsv`
+- `condition_body_site_guild_map_v2_sampled_body_sites.tsv`
+- `condition_body_site_guild_map_v3_edges.tsv`
+- `condition_body_site_guild_map_v3_condition_rollups.tsv`
+- `condition_body_site_guild_map_v3_body_site_rollups.tsv`
 - `top_increased_guild_profiles.tsv`
 - Methods are consolidated in `../../figure_methods.md`.
 - `candidate_taxa_increased_profile_tendency.png`
 - `condition_increased_guild_signal.png`
 - `condition_body_site_guild_map.png`
+- `condition_body_site_guild_map_v2.png`
+- `condition_body_site_guild_map_v3.png`
 - `condition_target_taxa_stacked_bar.png`
 - `guild_trait_direction_shift.png`
 - `anatomical_sites_diagram.png`

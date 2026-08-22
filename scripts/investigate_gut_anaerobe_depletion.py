@@ -22,7 +22,7 @@ GUILD_TRAITS = {
 }
 GUILD_TRAIT_SELECTION_JUSTIFICATIONS = {
     "METPO:1000603": (
-        "Anaerobic oxygen-tolerance counterpart to the facultative-aerobe v2 trait "
+        "Anaerobic oxygen-tolerance counterpart to the aerobe v2 trait "
         "set; selected for the decreased-profile comparison."
     ),
     "METPO:1000607": (
@@ -2227,7 +2227,7 @@ def write_summary_report(
         "",
         "The selected anaerobe-only oxygen-tolerance traits are consistently enriched "
         "in decreased profiles relative to increased profiles. "
-        "This is the decreased-profile counterpart to the facultative-aerobe v2 "
+        "This is the decreased-profile counterpart to the aerobe v2 "
         "comparison, not a fermentation-defined gut trait set.",
         "",
         "Guardrail: the increased-profile anaerobe score is retained in every "
@@ -2464,10 +2464,22 @@ def write_summary_report(
             "- `condition_inferred_guild_summary.tsv`",
             "- `condition_inferred_guild_trait_evidence.tsv`",
             "- `condition_inferred_guild_taxa_evidence.tsv`",
+            "- `condition_body_site_guild_map_edges.tsv`",
+            "- `condition_body_site_guild_map_sampled_body_sites.tsv`",
+            "- `condition_body_site_guild_map_v2_edges.tsv`",
+            "- `condition_body_site_guild_map_v2_sampled_body_sites.tsv`",
+            "- `condition_body_site_guild_map_v3_individual_edges.tsv`",
+            "- `condition_body_site_guild_map_v3_grouped_edges.tsv`",
+            "- `condition_body_site_guild_map_v3_grouped_condition_rollups.tsv`",
+            "- `condition_body_site_guild_map_v3_grouped_body_site_rollups.tsv`",
             "- `top_decreased_guild_profiles.tsv`",
             "- Methods are consolidated in `../../figure_methods.md`.",
             "- `candidate_taxa_depletion_bias.png`",
             "- `condition_decreased_guild_signal.png`",
+            "- `condition_body_site_guild_map.png`",
+            "- `condition_body_site_guild_map_v2.png`",
+            "- `condition_body_site_guild_map_v3_individual.png`",
+            "- `condition_body_site_guild_map_v3_grouped.png`",
             "- `trait_enriched_profile_histogram.png`",
             "- `condition_enriched_profile_histogram.png`",
             "- `condition_target_taxa_stacked_bar.png`",

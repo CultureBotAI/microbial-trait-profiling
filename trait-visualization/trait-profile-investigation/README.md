@@ -75,7 +75,7 @@ focus direction balance against the opposite profile direction, and labels use
 
 ## Cleanup Note
 
-Earlier exploratory folders for the broad facultative-aerobe trait expansion and
+Earlier exploratory folders for the broad aerobe trait expansion and
 gut anaerobe/fermentation depletion analyses were removed from this branch to
 keep the investigation focused on the current v2 oxygen-tolerance outputs. Their
 history remains available through git if the exploratory context is needed.

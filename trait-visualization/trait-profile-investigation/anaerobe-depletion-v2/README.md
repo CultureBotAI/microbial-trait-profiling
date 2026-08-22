@@ -27,7 +27,7 @@ This investigation uses the existing study trait profile clustered heatmap matri
 
 ## Main Signal
 
-The selected anaerobe-only oxygen-tolerance traits are consistently enriched in decreased profiles relative to increased profiles. This is the decreased-profile counterpart to the facultative-aerobe v2 comparison, not a fermentation-defined gut trait set.
+The selected anaerobe-only oxygen-tolerance traits are consistently enriched in decreased profiles relative to increased profiles. This is the decreased-profile counterpart to the aerobe v2 comparison, not a fermentation-defined gut trait set.
 
 Guardrail: the increased-profile anaerobe score is retained in every condition and body-site summary. It checks whether the anaerobe signal is decreased-profile-associated rather than simply high in both directions.
 
@@ -187,11 +187,20 @@ For the top condition signals, this table uses all taxa observed in the decrease
 - `condition_inferred_guild_taxa_evidence.tsv`
 - `condition_body_site_guild_map_edges.tsv`
 - `condition_body_site_guild_map_sampled_body_sites.tsv`
+- `condition_body_site_guild_map_v2_edges.tsv`
+- `condition_body_site_guild_map_v2_sampled_body_sites.tsv`
+- `condition_body_site_guild_map_v3_individual_edges.tsv`
+- `condition_body_site_guild_map_v3_grouped_edges.tsv`
+- `condition_body_site_guild_map_v3_grouped_condition_rollups.tsv`
+- `condition_body_site_guild_map_v3_grouped_body_site_rollups.tsv`
 - `top_decreased_guild_profiles.tsv`
 - Methods are consolidated in `../../figure_methods.md`.
 - `candidate_taxa_depletion_bias.png`
 - `condition_decreased_guild_signal.png`
 - `condition_body_site_guild_map.png`
+- `condition_body_site_guild_map_v2.png`
+- `condition_body_site_guild_map_v3_individual.png`
+- `condition_body_site_guild_map_v3_grouped.png`
 - `trait_enriched_profile_histogram.png`
 - `condition_enriched_profile_histogram.png`
 - `condition_target_taxa_stacked_bar.png`

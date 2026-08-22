@@ -1,4 +1,4 @@
-"""Follow up facultative-aerobe trait enrichment for autism and autoimmune labels."""
+"""Follow up aerobe v2 trait enrichment for autism and autoimmune labels."""
 
 from __future__ import annotations
 
@@ -154,7 +154,7 @@ def load_taxa_occurrences(profiles: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_guild_trait_annotations(taxon_ids: set[str]) -> pd.DataFrame:
-    """Load facultative-aerobe guild trait annotations for observed taxa."""
+    """Load aerobe v2 guild trait annotations for observed taxa."""
     matrix = pd.read_csv(
         REPO_ROOT / "data/derived/taxa_trait_matrix.tsv",
         sep="\t",
@@ -668,7 +668,7 @@ def save_heatmap(
     ax.set_xlabel("Taxon")
     ax.set_ylabel("BugSigDB condition label")
     ax.set_title(
-        "Autism and Autoimmune Disease Follow-Up: Facultative-Aerobe v2 Taxa Direction Signal\n"
+        "Autism and Autoimmune Disease Follow-Up: Aerobe v2 Taxa Direction Signal\n"
         "Signed unique taxon-profile count: increased profiles minus decreased profiles",
         pad=30,
     )
@@ -815,9 +815,9 @@ def write_readme(
 ) -> None:
     """Write a compact human-readable follow-up summary."""
     lines = [
-        "# Autism and Autoimmune Disease Follow-Up: Facultative-Aerobe v2",
+        "# Autism and Autoimmune Disease Follow-Up: Aerobe v2",
         "",
-        "This follow-up starts from facultative-aerobe trait enrichment in increased profiles "
+        "This follow-up starts from aerobe v2 trait enrichment in increased profiles "
         "and inspects the BugSigDB taxa reported in the autism/autism spectrum disorder "
         "and autoimmune disease condition labels.",
         "",
@@ -959,7 +959,7 @@ def write_readme(
         [
             "## Interpretation",
             "",
-            "This v2 follow-up uses only the narrowed facultative-aerobe selected traits: "
+            "This v2 follow-up uses only the narrowed aerobe v2 selected traits: "
             f"{guild_trait_text}. It supports a label-dependent signal check rather than "
             "a broad causal claim.",
             "",

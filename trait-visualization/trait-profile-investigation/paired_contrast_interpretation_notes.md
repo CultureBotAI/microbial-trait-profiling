@@ -20,9 +20,9 @@ profile guild figures.
 - `trait_profile_paired_contrast_body_site_summary.tsv`: body-site-level paired
   contrast load summary.
 - `facultative-aerobe-v2/condition_increased_guild_signal.png`: condition
-  figure for the increased-profile facultative-aerobe story.
+  figure for the increased-profile aerobe v2 story.
 - `facultative-aerobe-v2/anatomical_sites_diagram.png`: body-site figure for
-  the increased-profile facultative-aerobe story.
+  the increased-profile aerobe v2 story.
 - `anaerobe-depletion-v2/condition_decreased_guild_signal.png`: condition
   figure for the decreased-profile anaerobe story.
 - `anaerobe-depletion-v2/anatomical_sites_diagram.png`: body-site figure for
@@ -108,7 +108,7 @@ refers to the BugSigDB signature direction. The z-score refers to whether the
 selected trait or trait set is above or below average among profile-level trait
 signals.
 
-For the increased-profile facultative-aerobe diagram, positive mean trait-set
+For the increased-profile aerobe v2 diagram, positive mean trait-set
 z-scores support the idea that increased-signature taxa are relatively enriched
 for aerobic, facultative, or microaerophilic traits. Negative values mean the
 increased-signature taxa in that condition or body site are not especially
@@ -169,7 +169,7 @@ Integration grid:
 | Low or moderate enrichment | Strong paired contrast | Direction-specific but less prevalent; possible niche or body-site-specific signal. |
 | Low enrichment | Near-zero contrast | Weak support for the profile story. |
 
-For the increased-profile facultative-aerobe story, the strongest support comes
+For the increased-profile aerobe v2 story, the strongest support comes
 from traits that are enriched in the single-trait analysis and also have
 positive `mean_increased_minus_decreased`, positive-pair fraction above 0.5,
 adequate annotation coverage, and supporting body-site or condition context.

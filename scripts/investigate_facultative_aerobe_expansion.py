@@ -1,4 +1,4 @@
-"""Investigate facultative-aerobe trait enrichment in increased profiles."""
+"""Investigate aerobe v2 trait enrichment in increased profiles."""
 
 from __future__ import annotations
 
@@ -23,8 +23,8 @@ GUILD_TRAITS = {
 }
 GUILD_TRAIT_SELECTION_JUSTIFICATIONS = {
     "METPO:1000608": (
-        "Primary facultative-aerobe concept; selected as the named core trait for the "
-        "increased-profile oxygen-tolerance trait set."
+        "Primary facultatively aerobic concept; selected as one core trait for the "
+        "increased-profile aerobe v2 oxygen-tolerance trait set."
     ),
     "METPO:1000602": (
         "Oxygen-positive growth trait; selected to capture taxa whose profile signal is "
@@ -68,7 +68,7 @@ INFERRED_GUILD_TOP_TAXA_PER_TRAIT = 12
 INFERRED_GUILD_TOP_TAXA_PER_GROUP = 12
 MIN_KG_MICROBE_UNIVERSE_CORE_TRAITS = 1
 GUILD_SPECIFIC_NOTE = (
-    "Guild-specific: yes - uses the facultative-aerobe v2 trait-enrichment score "
+    "Guild-specific: yes - uses the aerobe v2 trait-enrichment score "
     "(facultatively aerobic, aerobic, microaerophilic)."
 )
 NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE = (
@@ -268,7 +268,7 @@ def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 def add_guild_scores(matrix: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
     available_traits = [trait for trait in GUILD_TRAITS.values() if trait in matrix.columns]
     if not available_traits:
-        msg = "No requested facultative-aerobe v2 trait-enrichment traits were found in the matrix."
+        msg = "No requested aerobe v2 trait-enrichment traits were found in the matrix."
         raise ValueError(msg)
     scored = metadata.copy()
     scored["guild_z_mean"] = matrix[available_traits].mean(axis=1)
@@ -480,7 +480,7 @@ def build_guild_trait_selection(study_trait_metadata: pd.DataFrame) -> pd.DataFr
         )
         records.append(
             {
-                "guild": "facultative-aerobe v2",
+                "guild": "aerobe v2",
                 "focus_direction": "increased",
                 "comparator_direction": "decreased",
                 "candidate_universe_role": "core oxygen-tolerance trait",
@@ -1154,7 +1154,7 @@ def save_condition_target_taxa_stacked_bar_chart(
     ax.invert_yaxis()
     ax.set_xlabel("Increased-profile target-taxon occurrences")
     ax.set_title(
-        "Increased-Profile Facultative-Aerobe Target-Taxon Recurrence by Condition",
+        "Increased-Profile Aerobe v2 Target-Taxon Recurrence by Condition",
         pad=28,
     )
     add_specificity_note(ax, NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE)
@@ -1452,7 +1452,7 @@ def make_plots(
     )
     ax.axvline(0, color="#333333", linewidth=0.8)
     ax.set_xlabel("(increased profiles - decreased profiles) / total profiles")
-    ax.set_title("Facultative-Aerobe v2 Target Taxa: Increased-Profile Tendency", pad=28)
+    ax.set_title("Aerobe v2 Target Taxa: Increased-Profile Tendency", pad=28)
     add_specificity_note(ax, NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE)
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "candidate_taxa_increased_profile_tendency.png")
@@ -1481,9 +1481,9 @@ def make_plots(
                 fontsize=8,
                 color="#334155",
             )
-    ax.set_xlabel("Facultative-aerobe trait enrichment: increased mean z - decreased mean z")
+    ax.set_xlabel("Aerobe v2 trait enrichment: increased mean z - decreased mean z")
     ax.set_title(
-        "Conditions With Facultative-Aerobe v2 Trait Enrichment in Increased Profiles",
+        "Conditions With Aerobe v2 Trait Enrichment in Increased Profiles",
         pad=28,
     )
     add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
@@ -1502,7 +1502,7 @@ def make_plots(
     )
     ax.axvline(0, color="#333333", linewidth=0.8)
     ax.set_xlabel("increased profile mean z - decreased profile mean z")
-    ax.set_title("Facultative-Aerobe v2 Traits Enriched in Increased Profiles", pad=28)
+    ax.set_title("Aerobe v2 Traits Enriched in Increased Profiles", pad=28)
     add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "guild_trait_direction_shift.png")
@@ -1512,7 +1512,7 @@ def make_plots(
     save_condition_breakdown_bar_chart(
         condition_counts,
         output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_bar.png",
-        title_prefix="Inc-profile facultative-aerobe target taxa",
+        title_prefix="Inc-profile aerobe v2 target taxa",
         color="#dc2626",
     )
     save_condition_target_taxa_stacked_bar_chart(
@@ -1523,7 +1523,7 @@ def make_plots(
     save_anatomical_sites_diagram(
         body_site_summary,
         output_path=OUTPUT_DIR / "anatomical_sites_diagram.png",
-        title="Facultative-Aerobe v2 Trait Enrichment in Increased Profiles: Anatomical Sites",
+        title="Aerobe v2 Trait Enrichment in Increased Profiles: Anatomical Sites",
         signal_column="increased_mean_guild_z",
         signal_label="increased-profile trait z",
         legend_note=(
@@ -1554,7 +1554,7 @@ def write_summary_report(
     ].head(12)
 
     lines = [
-        "# Facultative-Aerobe v2 Increased-Profile Trait-Enrichment Investigation",
+        "# Aerobe v2 Trait Enrichment in Increased Profiles",
         "",
         "This investigation uses the existing study trait profile clustered heatmap matrix, "
         "study metadata, taxa guild heatmap metadata, and derived taxa/trait matrices.",
@@ -1589,7 +1589,7 @@ def write_summary_report(
         "## Main Signal",
         "",
         "The selected traits are enriched in increased profiles relative to decreased "
-        "profiles, supporting a facultative-aerobe increased-profile signal.",
+        "profiles, supporting an aerobe v2 increased-profile trait-enrichment signal.",
         "",
         "| trait | increased - decreased z |",
         "| --- | ---: |",
@@ -1633,7 +1633,7 @@ def write_summary_report(
     lines.extend(
         [
             "",
-            "## Contexts With Facultative-Aerobe v2 Trait Enrichment in Increased Profiles",
+            "## Contexts With Aerobe v2 Trait Enrichment in Increased Profiles",
             "",
             "| condition | profiles | studies | increased - decreased z | paired d | "
             "paired p | matched pairs | increased mean trait z |",
@@ -1682,7 +1682,7 @@ def write_summary_report(
                 "KG-Microbe-wide candidate taxon universe, then reports the profile "
                 "v2 traits that are enriched in those same increased profiles and the "
                 "universe taxa that carry those trait annotations. This is a data-derived "
-                "guild summary, not a literature-defined facultative-aerobe/aerotolerant "
+                "guild summary, not a literature-defined aerobe/aerotolerant "
                 "guild.",
                 "",
                 "| condition | increased profiles | universe taxa / observed taxa | "
@@ -1740,8 +1740,8 @@ def write_summary_report(
             "",
             "## Suggested Follow-Up",
             "",
-            "1. Split the signal by body site before interpreting it as a "
-            "facultative-aerobe increased-profile trait-enrichment signal; "
+            "1. Split the signal by body site before interpreting it as an "
+            "aerobe v2 increased-profile trait-enrichment signal; "
             "oral and airway profiles can dominate aerobic/microaerophilic traits.",
             "2. In gut-only analyses, test the target taxa against inflammation markers, "
             "oxygen tolerance, virulence genes, and resistome features.",
@@ -1763,10 +1763,20 @@ def write_summary_report(
             "- `condition_inferred_guild_summary.tsv`",
             "- `condition_inferred_guild_trait_evidence.tsv`",
             "- `condition_inferred_guild_taxa_evidence.tsv`",
+            "- `condition_body_site_guild_map_edges.tsv`",
+            "- `condition_body_site_guild_map_sampled_body_sites.tsv`",
+            "- `condition_body_site_guild_map_v2_edges.tsv`",
+            "- `condition_body_site_guild_map_v2_sampled_body_sites.tsv`",
+            "- `condition_body_site_guild_map_v3_edges.tsv`",
+            "- `condition_body_site_guild_map_v3_condition_rollups.tsv`",
+            "- `condition_body_site_guild_map_v3_body_site_rollups.tsv`",
             "- `top_increased_guild_profiles.tsv`",
             "- Methods are consolidated in `../../figure_methods.md`.",
             "- `candidate_taxa_increased_profile_tendency.png`",
             "- `condition_increased_guild_signal.png`",
+            "- `condition_body_site_guild_map.png`",
+            "- `condition_body_site_guild_map_v2.png`",
+            "- `condition_body_site_guild_map_v3.png`",
             "- `condition_target_taxa_stacked_bar.png`",
             "- `guild_trait_direction_shift.png`",
             "- `anatomical_sites_diagram.png`",

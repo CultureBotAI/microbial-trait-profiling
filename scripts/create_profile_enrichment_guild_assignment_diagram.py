@@ -993,7 +993,7 @@ def create_diagram(
             xy=(8.0, 21.1),
             width=39.0,
             height=14.7,
-            title="Facultative-aerobe v2 guild",
+            title="Aerobe v2 increased-profile trait set",
             body=(
                 "Focus direction: increased profiles\n"
                 "Trait score: mean of facultatively aerobic, aerobic, and "
