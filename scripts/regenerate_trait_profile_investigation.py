@@ -17,7 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 INVESTIGATION_DIR = REPO_ROOT / "trait-visualization" / "trait-profile-investigation"
 PPTX_PATH = INVESTIGATION_DIR / "trait_profile_investigation_figures.pptx"
 
-FACULTATIVE_DIR = INVESTIGATION_DIR / "facultative-aerobe-v2"
+FACULTATIVE_DIR = INVESTIGATION_DIR / "aerobe-enrichment-v2"
 ANAEROBE_DIR = INVESTIGATION_DIR / "anaerobe-depletion-v2"
 
 SLIDE_IMAGE_SOURCES = {

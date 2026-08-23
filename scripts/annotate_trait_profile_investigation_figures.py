@@ -41,31 +41,35 @@ GUT_V2_GUILD_SHIFT = (
 )
 
 FIGURE_LABELS = {
-    Path("facultative-aerobe-v2/anatomical_sites_diagram.png"): AEROBE_V2_BODY_SITE,
-    Path("facultative-aerobe-v2/autism_autoimmune_taxa_signed_heatmap.png"): (
+    Path("aerobe-enrichment-v2/anatomical_sites_diagram.png"): AEROBE_V2_BODY_SITE,
+    Path("aerobe-enrichment-v2/autism_autoimmune_taxa_signed_heatmap.png"): (
         NON_GUILD_TAXA_HEATMAP
     ),
-    Path("facultative-aerobe-v2/candidate_taxa_increased_profile_tendency.png"): (
+    Path("aerobe-enrichment-v2/candidate_taxa_increased_profile_tendency.png"): (
         NON_GUILD_DIRECTION_COUNT_V2
     ),
     Path(
-        "facultative-aerobe-v2/condition_increased_guild_signal.png"
+        "aerobe-enrichment-v2/condition_increased_guild_signal.png"
     ): "Guild-specific: yes - uses aerobe v2 trait enrichment by condition.",
-    Path("facultative-aerobe-v2/condition_body_site_guild_map.png"): (
+    Path("aerobe-enrichment-v2/condition_body_site_guild_map.png"): (
         "Guild-specific: yes - maps aerobe v2 trait enrichment in increased profiles."
     ),
-    Path("facultative-aerobe-v2/condition_body_site_guild_map_v2.png"): (
+    Path("aerobe-enrichment-v2/condition_body_site_guild_map_v2.png"): (
         "Guild-specific: yes - maps aerobe v2 trait enrichment in increased profiles."
     ),
-    Path("facultative-aerobe-v2/condition_body_site_guild_map_v3.png"): (
+    Path("aerobe-enrichment-v2/condition_body_site_guild_map_v3_individual.png"): (
+        "Guild-specific: yes - maps aerobe v2 trait enrichment with raw condition "
+        "and body-site labels plus non-enriched background profiles."
+    ),
+    Path("aerobe-enrichment-v2/condition_body_site_guild_map_v3_grouped.png"): (
         "Guild-specific: yes - maps aerobe v2 trait enrichment with non-enriched "
-        "background profiles."
+        "background profiles using condition and body-site display groups."
     ),
-    Path("facultative-aerobe-v2/condition_target_taxa_stacked_bar.png"): (
+    Path("aerobe-enrichment-v2/condition_target_taxa_stacked_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT_V2
     ),
-    Path("facultative-aerobe-v2/guild_trait_direction_shift.png"): (AEROBE_V2_GUILD_SHIFT),
-    Path("facultative-aerobe-v2/target_taxa_condition_breakdown_bar.png"): (
+    Path("aerobe-enrichment-v2/guild_trait_direction_shift.png"): (AEROBE_V2_GUILD_SHIFT),
+    Path("aerobe-enrichment-v2/target_taxa_condition_breakdown_bar.png"): (
         NON_GUILD_OCCURRENCE_COUNT_V2
     ),
     Path("anaerobe-depletion-v2/anatomical_sites_diagram.png"): GUT_V2_BODY_SITE,
@@ -147,8 +151,18 @@ FIGURE_LABELS = {
     ): "Guild-specific: no - maps all BugSigDB decreased profiles by condition and body site.",
     Path(
         "all-bugsigdb-condition-body-site-maps/"
-        "all_bugsigdb_decreased_profile_condition_body_site_map_v3.png"
-    ): "Guild-specific: no - v3 all-BugSigDB decreased-profile condition/body-site map.",
+        "all_bugsigdb_decreased_profile_condition_body_site_map_v3_individual.png"
+    ): (
+        "Guild-specific: no - v3 all-BugSigDB decreased-profile condition/body-site "
+        "map with raw labels."
+    ),
+    Path(
+        "all-bugsigdb-condition-body-site-maps/"
+        "all_bugsigdb_decreased_profile_condition_body_site_map_v3_grouped.png"
+    ): (
+        "Guild-specific: no - v3 all-BugSigDB decreased-profile condition/body-site "
+        "map with display groups."
+    ),
     Path(
         "all-bugsigdb-condition-body-site-maps/"
         "all_bugsigdb_increased_profile_condition_body_site_map.png"
@@ -159,8 +173,18 @@ FIGURE_LABELS = {
     ): "Guild-specific: no - maps all BugSigDB increased profiles by condition and body site.",
     Path(
         "all-bugsigdb-condition-body-site-maps/"
-        "all_bugsigdb_increased_profile_condition_body_site_map_v3.png"
-    ): "Guild-specific: no - v3 all-BugSigDB increased-profile condition/body-site map.",
+        "all_bugsigdb_increased_profile_condition_body_site_map_v3_individual.png"
+    ): (
+        "Guild-specific: no - v3 all-BugSigDB increased-profile condition/body-site "
+        "map with raw labels."
+    ),
+    Path(
+        "all-bugsigdb-condition-body-site-maps/"
+        "all_bugsigdb_increased_profile_condition_body_site_map_v3_grouped.png"
+    ): (
+        "Guild-specific: no - v3 all-BugSigDB increased-profile condition/body-site "
+        "map with display groups."
+    ),
     Path("enrichment-infographic-followup/traits_vs_organisms_heatmap.png"): (
         "Guild-specific: yes - links selected enriched traits to supporting organisms."
     ),

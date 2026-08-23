@@ -198,10 +198,10 @@ def get_summary_counts() -> dict[str, int]:
         "direction_grid_condition_count": count_unique_conditions(GRID_OUTPUT_TSV),
         "direction_grid_row_count": count_rows(GRID_OUTPUT_TSV),
         "facultative_universe_count": count_rows(
-            INVESTIGATION_DIR / "facultative-aerobe-v2" / "kg_microbe_candidate_taxon_universe.tsv"
+            INVESTIGATION_DIR / "aerobe-enrichment-v2" / "kg_microbe_candidate_taxon_universe.tsv"
         ),
         "facultative_condition_count": count_rows(
-            INVESTIGATION_DIR / "facultative-aerobe-v2" / "condition_guild_summary.tsv"
+            INVESTIGATION_DIR / "aerobe-enrichment-v2" / "condition_guild_summary.tsv"
         ),
         "anaerobe_condition_count": count_rows(
             INVESTIGATION_DIR / "anaerobe-depletion-v2" / "condition_guild_summary.tsv"
@@ -210,7 +210,7 @@ def get_summary_counts() -> dict[str, int]:
             INVESTIGATION_DIR / "anaerobe-depletion-v2" / "kg_microbe_candidate_taxon_universe.tsv"
         ),
         "facultative_target_taxa_count": count_rows(
-            INVESTIGATION_DIR / "facultative-aerobe-v2" / "candidate_taxa_trait_presence.tsv"
+            INVESTIGATION_DIR / "aerobe-enrichment-v2" / "candidate_taxa_trait_presence.tsv"
         ),
         "anaerobe_target_taxa_count": count_rows(
             INVESTIGATION_DIR / "anaerobe-depletion-v2" / "candidate_taxa_trait_presence.tsv"

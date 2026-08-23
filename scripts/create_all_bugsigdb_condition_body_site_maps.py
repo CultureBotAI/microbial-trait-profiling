@@ -34,6 +34,8 @@ MAX_OTHER_SITES_PER_CONDITION = 2
 V3_MAX_DISPLAY_EDGES = 32
 V3_MAX_DISPLAY_CONDITIONS = 12
 V3_BACKGROUND_EDGE_Y_OFFSET = -0.007
+V3_GROUPED_MODE = "grouped"
+V3_INDIVIDUAL_MODE = "individual"
 
 DIRECTION_LABELS = {"inc": "increased", "dec": "decreased"}
 DISPLAY_EXCLUDED_CONDITION_LABELS = frozenset(
@@ -106,6 +108,30 @@ class DirectionMapConfig:
     @property
     def png_v3_path(self) -> Path:
         return OUTPUT_DIR / f"{self.output_stem}_v3.png"
+
+    @property
+    def edge_v3_individual_tsv_path(self) -> Path:
+        return OUTPUT_DIR / f"{self.output_stem}_v3_individual_edges.tsv"
+
+    @property
+    def edge_v3_grouped_tsv_path(self) -> Path:
+        return OUTPUT_DIR / f"{self.output_stem}_v3_grouped_edges.tsv"
+
+    @property
+    def condition_rollup_v3_grouped_tsv_path(self) -> Path:
+        return OUTPUT_DIR / f"{self.output_stem}_v3_grouped_condition_rollups.tsv"
+
+    @property
+    def body_site_rollup_v3_grouped_tsv_path(self) -> Path:
+        return OUTPUT_DIR / f"{self.output_stem}_v3_grouped_body_site_rollups.tsv"
+
+    @property
+    def png_v3_individual_path(self) -> Path:
+        return OUTPUT_DIR / f"{self.output_stem}_v3_individual.png"
+
+    @property
+    def png_v3_grouped_path(self) -> Path:
+        return OUTPUT_DIR / f"{self.output_stem}_v3_grouped.png"
 
 
 CONFIGS = (
@@ -258,19 +284,36 @@ def summarize_condition_body_sites(metadata: pd.DataFrame) -> pd.DataFrame:
 
 def add_v3_display_rollups(
     metadata: pd.DataFrame,
+    *,
+    display_mode: str = V3_GROUPED_MODE,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Attach v3 condition/body-site display labels and audit rollup tables."""
     source = metadata.copy()
-    condition_pairs = source["condition"].map(condition_display_label)
-    source["condition_display"] = [label for label, _rule in condition_pairs]
-    source["condition_rollup_rule"] = [rule for _label, rule in condition_pairs]
+    if display_mode == V3_GROUPED_MODE:
+        condition_pairs = source["condition"].map(condition_display_label)
+        source["condition_display"] = [label for label, _rule in condition_pairs]
+        source["condition_rollup_rule"] = [rule for _label, rule in condition_pairs]
 
-    body_site_pairs = [
-        body_site_display_label(row.body_site, row.body_site_group)
-        for row in source[["body_site", "body_site_group"]].itertuples(index=False)
-    ]
-    source["body_site_display"] = [label for label, _rule in body_site_pairs]
-    source["body_site_rollup_rule"] = [rule for _label, rule in body_site_pairs]
+        body_site_pairs = [
+            body_site_display_label(row.body_site, row.body_site_group)
+            for row in source[["body_site", "body_site_group"]].itertuples(index=False)
+        ]
+        source["body_site_display"] = [label for label, _rule in body_site_pairs]
+        source["body_site_rollup_rule"] = [rule for _label, rule in body_site_pairs]
+    elif display_mode == V3_INDIVIDUAL_MODE:
+        source["condition_display"] = source["condition"].map(clean_text)
+        source["condition_rollup_rule"] = "kept raw individual condition label"
+        source["body_site_display"] = source["body_site"].map(
+            lambda value: (
+                "Unknown body site"
+                if clean_text(value) == "unknown"
+                else clean_text(value)
+            )
+        )
+        source["body_site_rollup_rule"] = "kept raw individual body-site label"
+    else:
+        msg = f"Unknown v3 display mode: {display_mode}"
+        raise ValueError(msg)
 
     condition_records: list[dict[str, object]] = []
     for (raw_condition, condition, rule), group in source.groupby(
@@ -996,10 +1039,37 @@ def plot_direction_map_v3(
     display_edges: pd.DataFrame,
     config: DirectionMapConfig,
     output_path: Path,
+    *,
+    display_mode: str = V3_GROUPED_MODE,
 ) -> None:
     """Render a v3 all-BugSigDB direction map."""
     if display_edges.empty:
-        msg = f"No v3 display edges available for {config.key}."
+        msg = f"No v3 {display_mode} display edges available for {config.key}."
+        raise ValueError(msg)
+    if display_mode == V3_INDIVIDUAL_MODE:
+        condition_header = "Individual condition labels"
+        body_site_header = "Individual body sites"
+        pair_description = "same exact condition/body-site pair"
+        footer_note = (
+            "V3 individual display keeps raw condition labels and raw body-site labels, "
+            f"requires at least {MIN_FOCUS_PROFILES} {config.focus_label} profiles "
+            f"and {MIN_FOCUS_STUDIES} focus-direction studies where possible, and "
+            "preserves all individual edge details in the companion TSV."
+        )
+    elif display_mode == V3_GROUPED_MODE:
+        condition_header = "Condition display groups"
+        body_site_header = "Body-site display groups"
+        pair_description = "same display condition/body-site pair"
+        footer_note = (
+            "V3 grouped display uses disease/body-site rollups, keeps transplant/graft "
+            "and metadata/exposure labels raw, includes condensed Other/unknown "
+            f"body-site groups, requires at least {MIN_FOCUS_PROFILES} "
+            f"{config.focus_label} profiles and {MIN_FOCUS_STUDIES} focus-direction "
+            "studies where possible, and preserves all grouped edge and rollup details "
+            "in companion TSVs."
+        )
+    else:
+        msg = f"Unknown v3 display mode: {display_mode}"
         raise ValueError(msg)
 
     condition_order_frame = (
@@ -1119,7 +1189,7 @@ def plot_direction_map_v3(
     fig.text(
         0.05,
         0.965,
-        f"{config.title} (v3 display with grey context)",
+        config.title,
         ha="left",
         va="top",
         fontsize=17,
@@ -1130,8 +1200,8 @@ def plot_direction_map_v3(
         0.927,
         (
             f"Colored edges = {config.focus_label} BugSigDB profiles. Parallel grey "
-            f"edges = {config.comparator_label} profiles in the same display "
-            "condition/body-site pair. Conditions are ordered by colored n."
+            f"edges = {config.comparator_label} profiles in the {pair_description}. "
+            "Conditions are ordered by colored n."
         ),
         ha="left",
         va="top",
@@ -1141,7 +1211,7 @@ def plot_direction_map_v3(
     ax.text(
         0.21,
         header_y,
-        "Condition labels / rollups",
+        condition_header,
         ha="center",
         va="center",
         fontsize=12,
@@ -1150,7 +1220,7 @@ def plot_direction_map_v3(
     ax.text(
         0.79,
         header_y,
-        "Body-site display groups",
+        body_site_header,
         ha="center",
         va="center",
         fontsize=12,
@@ -1215,13 +1285,7 @@ def plot_direction_map_v3(
     fig.text(
         0.05,
         0.035,
-        (
-            "V3 display uses disease/body-site rollups, keeps transplant/graft and "
-            "metadata/exposure labels raw, includes condensed Other/unknown body-site "
-            f"groups, requires at least {MIN_FOCUS_PROFILES} {config.focus_label} "
-            f"profiles and {MIN_FOCUS_STUDIES} focus-direction studies where possible, "
-            "and preserves all display edge and rollup details in companion TSVs."
-        ),
+        footer_note,
         ha="left",
         va="bottom",
         fontsize=8.2,
@@ -1235,9 +1299,11 @@ def plot_direction_map_v3(
 
 def write_readme(
     summary: pd.DataFrame,
-    summary_v3: pd.DataFrame,
+    summary_v3_individual: pd.DataFrame,
+    summary_v3_grouped: pd.DataFrame,
     edge_tables: dict[str, pd.DataFrame],
-    edge_tables_v3: dict[str, pd.DataFrame],
+    edge_tables_v3_individual: dict[str, pd.DataFrame],
+    edge_tables_v3_grouped: dict[str, pd.DataFrame],
 ) -> None:
     """Write a short methods README for the all-data direction maps."""
     metadata_path = METADATA_PATH.relative_to(REPO_ROOT).as_posix()
@@ -1266,15 +1332,21 @@ def write_readme(
             "body-site groups."
         ),
         (
-            "- `all_bugsigdb_condition_body_site_direction_summary_v3.tsv`: all "
-            "condition/body-site pairs after v3 disease/body-site display rollups."
+            "- `all_bugsigdb_condition_body_site_direction_summary_v3_individual.tsv`: "
+            "all condition/body-site pairs after v3 raw-label display mapping."
+        ),
+        (
+            "- `all_bugsigdb_condition_body_site_direction_summary_v3_grouped.tsv`: "
+            "all condition/body-site pairs after v3 disease/body-site display rollups."
         ),
     ]
     for config in CONFIGS:
         edges = edge_tables[config.key]
-        edges_v3 = edge_tables_v3[config.key]
+        edges_v3_individual = edge_tables_v3_individual[config.key]
+        edges_v3_grouped = edge_tables_v3_grouped[config.key]
         displayed = int(edges["displayed_in_map"].sum())
-        displayed_v3 = int(edges_v3["displayed_in_map"].sum())
+        displayed_v3_individual = int(edges_v3_individual["displayed_in_map"].sum())
+        displayed_v3_grouped = int(edges_v3_grouped["displayed_in_map"].sum())
         lines.extend(
             [
                 f"- `{config.output_stem}.png`: displayed {config.focus_label}-profile map.",
@@ -1286,20 +1358,32 @@ def write_readme(
                     f"for the {config.focus_label}-profile map."
                 ),
                 (
-                    f"- `{config.output_stem}_v3.png`: v3 {config.focus_label}-profile "
-                    "map with display rollups and grey comparator-background edges."
+                    f"- `{config.output_stem}_v3_individual.png`: v3 "
+                    f"{config.focus_label}-profile map with raw labels and grey "
+                    "comparator-background edges."
                 ),
                 (
-                    f"- `{config.output_stem}_v3_edges.tsv`: v3 edge table for the "
-                    f"{config.focus_label}-profile map; {displayed_v3} rows are drawn."
+                    f"- `{config.output_stem}_v3_individual_edges.tsv`: v3 individual "
+                    f"edge table for the {config.focus_label}-profile map; "
+                    f"{displayed_v3_individual} rows are drawn."
                 ),
                 (
-                    f"- `{config.output_stem}_v3_condition_rollups.tsv`: raw-to-display "
-                    "condition-label audit table."
+                    f"- `{config.output_stem}_v3_grouped.png`: v3 "
+                    f"{config.focus_label}-profile map with display rollups and grey "
+                    "comparator-background edges."
                 ),
                 (
-                    f"- `{config.output_stem}_v3_body_site_rollups.tsv`: raw-to-display "
-                    "body-site audit table."
+                    f"- `{config.output_stem}_v3_grouped_edges.tsv`: v3 grouped edge "
+                    f"table for the {config.focus_label}-profile map; "
+                    f"{displayed_v3_grouped} rows are drawn."
+                ),
+                (
+                    f"- `{config.output_stem}_v3_grouped_condition_rollups.tsv`: "
+                    "raw-to-display condition-label audit table."
+                ),
+                (
+                    f"- `{config.output_stem}_v3_grouped_body_site_rollups.tsv`: "
+                    "raw-to-display body-site audit table."
                 ),
             ]
         )
@@ -1334,25 +1418,28 @@ def write_readme(
             ),
             "",
             (
-                "The `_v3` PNGs use the same v3 display rollups as the guild Sankey "
-                "maps. Disease-like condition labels are grouped when the display rule "
-                "matches, but transplant/graft labels and metadata/exposure labels are "
-                "kept raw. Raw body sites are rolled up to readable display groups such "
-                "as `Upper airway / nasal`, `Oral cavity / dental`, `Lower airway / "
-                "lung`, `Vaginal / reproductive`, and `Other body sites`."
+                "The `_v3_individual` PNGs keep raw condition labels and raw body-site "
+                "labels. The `_v3_grouped` PNGs use the same v3 display rollups as the "
+                "guild Sankey maps. Disease-like condition labels are grouped when the "
+                "display rule matches, but transplant/graft labels and metadata/exposure "
+                "labels are kept raw. Raw body sites are rolled up to readable display "
+                "groups such as `Upper airway / nasal`, `Oral cavity / dental`, "
+                "`Lower airway / lung`, `Vaginal / reproductive`, and `Other body sites`."
             ),
             "",
             (
                 "In each v3 direction map, colored edges count the focus-direction "
                 "BugSigDB profiles and parallel grey edges count comparator-direction "
-                "profiles in the same display condition/body-site pair. V3 condition "
-                "nodes are ordered by the colored focus-profile count reported as `n=`; "
-                "`bg=` reports comparator-profile support."
+                "profiles in the same condition/body-site pair for that display mode. "
+                "V3 condition nodes are ordered by the colored focus-profile count "
+                "reported as `n=`; `bg=` reports comparator-profile support."
             ),
             "",
             (
-                f"The v3 rolled-up summary contains {len(summary_v3):,} display "
-                "condition/body-site pairs before PNG selection."
+                f"The v3 individual summary contains {len(summary_v3_individual):,} "
+                "condition/body-site pairs before PNG selection. The v3 grouped summary "
+                f"contains {len(summary_v3_grouped):,} display condition/body-site pairs "
+                "before PNG selection."
             ),
         ]
     )
@@ -1360,30 +1447,67 @@ def write_readme(
     (OUTPUT_DIR / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def remove_legacy_single_v3_outputs() -> None:
+    """Remove superseded single v3 files after writing split v3 outputs."""
+    for config in CONFIGS:
+        for path in [
+            config.edge_v3_tsv_path,
+            config.condition_rollup_v3_tsv_path,
+            config.body_site_rollup_v3_tsv_path,
+            config.png_v3_path,
+        ]:
+            if path.exists():
+                path.unlink()
+    legacy_summary = OUTPUT_DIR / "all_bugsigdb_condition_body_site_direction_summary_v3.tsv"
+    if legacy_summary.exists():
+        legacy_summary.unlink()
+
+
 def main() -> None:
     """Write all-data direction maps and companion TSVs."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     metadata = load_profile_metadata()
     summary = summarize_condition_body_sites(metadata)
-    source_v3, condition_rollups_v3, body_site_rollups_v3 = add_v3_display_rollups(metadata)
-    summary_v3 = summarize_v3_condition_body_sites(source_v3)
+    source_v3_individual, _, _ = add_v3_display_rollups(
+        metadata,
+        display_mode=V3_INDIVIDUAL_MODE,
+    )
+    source_v3_grouped, condition_rollups_v3_grouped, body_site_rollups_v3_grouped = (
+        add_v3_display_rollups(metadata, display_mode=V3_GROUPED_MODE)
+    )
+    summary_v3_individual = summarize_v3_condition_body_sites(source_v3_individual)
+    summary_v3_grouped = summarize_v3_condition_body_sites(source_v3_grouped)
     edge_tables: dict[str, pd.DataFrame] = {}
-    edge_tables_v3: dict[str, pd.DataFrame] = {}
+    edge_tables_v3_individual: dict[str, pd.DataFrame] = {}
+    edge_tables_v3_grouped: dict[str, pd.DataFrame] = {}
 
     for config in CONFIGS:
         edges = build_direction_edges(summary, config)
         display_edges = select_display_edges(edges)
         display_edges_v2 = select_uncapped_display_edges(edges)
-        edges_v3 = build_direction_edges_v3(summary_v3, config)
-        display_edges_v3 = select_display_edges_v3(edges_v3)
+        edges_v3_individual = build_direction_edges_v3(summary_v3_individual, config)
+        display_edges_v3_individual = select_display_edges_v3(edges_v3_individual)
+        edges_v3_grouped = build_direction_edges_v3(summary_v3_grouped, config)
+        display_edges_v3_grouped = select_display_edges_v3(edges_v3_grouped)
         display_keys = set(
             zip(display_edges["condition"], display_edges["body_site_group"], strict=True)
         )
         display_v2_keys = set(
             zip(display_edges_v2["condition"], display_edges_v2["body_site_group"], strict=True)
         )
-        display_v3_keys = set(
-            zip(display_edges_v3["condition"], display_edges_v3["body_site_group"], strict=True)
+        display_v3_individual_keys = set(
+            zip(
+                display_edges_v3_individual["condition"],
+                display_edges_v3_individual["body_site_group"],
+                strict=True,
+            )
+        )
+        display_v3_grouped_keys = set(
+            zip(
+                display_edges_v3_grouped["condition"],
+                display_edges_v3_grouped["body_site_group"],
+                strict=True,
+            )
         )
         edge_output = edges.copy()
         edge_output["displayed_in_map"] = [
@@ -1399,20 +1523,45 @@ def main() -> None:
                 edge_v2_output["condition"], edge_v2_output["body_site_group"], strict=True
             )
         ]
-        edge_v3_output = edges_v3.copy()
-        edge_v3_output["displayed_in_map"] = [
-            (condition, body_site) in display_v3_keys
+        edge_v3_individual_output = edges_v3_individual.copy()
+        edge_v3_individual_output["displayed_in_map"] = [
+            (condition, body_site) in display_v3_individual_keys
             for condition, body_site in zip(
-                edge_v3_output["condition"], edge_v3_output["body_site_group"], strict=True
+                edge_v3_individual_output["condition"],
+                edge_v3_individual_output["body_site_group"],
+                strict=True,
+            )
+        ]
+        edge_v3_grouped_output = edges_v3_grouped.copy()
+        edge_v3_grouped_output["displayed_in_map"] = [
+            (condition, body_site) in display_v3_grouped_keys
+            for condition, body_site in zip(
+                edge_v3_grouped_output["condition"],
+                edge_v3_grouped_output["body_site_group"],
+                strict=True,
             )
         ]
         edge_tables[config.key] = edge_output
-        edge_tables_v3[config.key] = edge_v3_output
+        edge_tables_v3_individual[config.key] = edge_v3_individual_output
+        edge_tables_v3_grouped[config.key] = edge_v3_grouped_output
         edge_output.to_csv(config.edge_tsv_path, sep="\t", index=False)
         edge_v2_output.to_csv(config.edge_v2_tsv_path, sep="\t", index=False)
-        edge_v3_output.to_csv(config.edge_v3_tsv_path, sep="\t", index=False)
-        condition_rollups_v3.to_csv(config.condition_rollup_v3_tsv_path, sep="\t", index=False)
-        body_site_rollups_v3.to_csv(config.body_site_rollup_v3_tsv_path, sep="\t", index=False)
+        edge_v3_individual_output.to_csv(
+            config.edge_v3_individual_tsv_path,
+            sep="\t",
+            index=False,
+        )
+        edge_v3_grouped_output.to_csv(config.edge_v3_grouped_tsv_path, sep="\t", index=False)
+        condition_rollups_v3_grouped.to_csv(
+            config.condition_rollup_v3_grouped_tsv_path,
+            sep="\t",
+            index=False,
+        )
+        body_site_rollups_v3_grouped.to_csv(
+            config.body_site_rollup_v3_grouped_tsv_path,
+            sep="\t",
+            index=False,
+        )
         plot_direction_map(display_edges, summary, config, config.png_path)
         plot_direction_map(
             display_edges_v2,
@@ -1430,15 +1579,28 @@ def main() -> None:
             ),
             dense_layout=True,
         )
-        plot_direction_map_v3(display_edges_v3, config, config.png_v3_path)
+        plot_direction_map_v3(
+            display_edges_v3_individual,
+            config,
+            config.png_v3_individual_path,
+            display_mode=V3_INDIVIDUAL_MODE,
+        )
+        plot_direction_map_v3(
+            display_edges_v3_grouped,
+            config,
+            config.png_v3_grouped_path,
+            display_mode=V3_GROUPED_MODE,
+        )
         print(f"Wrote: {config.edge_tsv_path}")
         print(f"Wrote: {config.png_path}")
         print(f"Wrote: {config.edge_v2_tsv_path}")
         print(f"Wrote: {config.png_v2_path}")
-        print(f"Wrote: {config.edge_v3_tsv_path}")
-        print(f"Wrote: {config.condition_rollup_v3_tsv_path}")
-        print(f"Wrote: {config.body_site_rollup_v3_tsv_path}")
-        print(f"Wrote: {config.png_v3_path}")
+        print(f"Wrote: {config.edge_v3_individual_tsv_path}")
+        print(f"Wrote: {config.png_v3_individual_path}")
+        print(f"Wrote: {config.edge_v3_grouped_tsv_path}")
+        print(f"Wrote: {config.condition_rollup_v3_grouped_tsv_path}")
+        print(f"Wrote: {config.body_site_rollup_v3_grouped_tsv_path}")
+        print(f"Wrote: {config.png_v3_grouped_path}")
 
         summary[f"displayed_in_{config.key}_map"] = [
             (condition, body_site) in display_keys
@@ -1452,10 +1614,20 @@ def main() -> None:
                 summary["condition"], summary["body_site_group"], strict=True
             )
         ]
-        summary_v3[f"displayed_in_{config.key}_v3_map"] = [
-            (condition, body_site) in display_v3_keys
+        summary_v3_individual[f"displayed_in_{config.key}_v3_individual_map"] = [
+            (condition, body_site) in display_v3_individual_keys
             for condition, body_site in zip(
-                summary_v3["condition"], summary_v3["body_site_group"], strict=True
+                summary_v3_individual["condition"],
+                summary_v3_individual["body_site_group"],
+                strict=True,
+            )
+        ]
+        summary_v3_grouped[f"displayed_in_{config.key}_v3_grouped_map"] = [
+            (condition, body_site) in display_v3_grouped_keys
+            for condition, body_site in zip(
+                summary_v3_grouped["condition"],
+                summary_v3_grouped["body_site_group"],
+                strict=True,
             )
         ]
 
@@ -1464,14 +1636,34 @@ def main() -> None:
         sep="\t",
         index=False,
     )
-    summary_v3.to_csv(
-        OUTPUT_DIR / "all_bugsigdb_condition_body_site_direction_summary_v3.tsv",
+    summary_v3_individual.to_csv(
+        OUTPUT_DIR / "all_bugsigdb_condition_body_site_direction_summary_v3_individual.tsv",
         sep="\t",
         index=False,
     )
-    write_readme(summary, summary_v3, edge_tables, edge_tables_v3)
+    summary_v3_grouped.to_csv(
+        OUTPUT_DIR / "all_bugsigdb_condition_body_site_direction_summary_v3_grouped.tsv",
+        sep="\t",
+        index=False,
+    )
+    write_readme(
+        summary,
+        summary_v3_individual,
+        summary_v3_grouped,
+        edge_tables,
+        edge_tables_v3_individual,
+        edge_tables_v3_grouped,
+    )
+    remove_legacy_single_v3_outputs()
     print(f"Wrote: {OUTPUT_DIR / 'all_bugsigdb_condition_body_site_direction_summary.tsv'}")
-    print(f"Wrote: {OUTPUT_DIR / 'all_bugsigdb_condition_body_site_direction_summary_v3.tsv'}")
+    print(
+        "Wrote: "
+        f"{OUTPUT_DIR / 'all_bugsigdb_condition_body_site_direction_summary_v3_individual.tsv'}"
+    )
+    print(
+        "Wrote: "
+        f"{OUTPUT_DIR / 'all_bugsigdb_condition_body_site_direction_summary_v3_grouped.tsv'}"
+    )
     print(f"Wrote: {OUTPUT_DIR / 'README.md'}")
 
 

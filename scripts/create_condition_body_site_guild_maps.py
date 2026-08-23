@@ -140,7 +140,7 @@ FACULTATIVE_CONFIG = MapConfig(
     comparator_label="decreased",
     focus_direction="inc",
     comparator_direction="dec",
-    output_dir=INVESTIGATION_DIR / "facultative-aerobe-v2",
+    output_dir=INVESTIGATION_DIR / "aerobe-enrichment-v2",
     output_stem="condition_body_site_guild_map",
     excluded_condition_labels=frozenset(
         {
@@ -439,8 +439,8 @@ def has_any_label_term(text: str, terms: tuple[str, ...]) -> bool:
     return any(term in text for term in terms)
 
 
-def v3_anaerobe_condition_display_label(value: object) -> tuple[str, str]:
-    """Return fully grouped condition labels for the anaerobe grouped v3 map."""
+def v3_fully_grouped_condition_display_label(value: object) -> tuple[str, str]:
+    """Return fully grouped condition labels for grouped v3 guild maps."""
     label = clean_text(value)
     lower = label.lower()
     if label == "unknown":
@@ -1122,8 +1122,8 @@ def v3_anaerobe_condition_display_label(value: object) -> tuple[str, str]:
 
 def v3_condition_display_label(value: object, config: MapConfig) -> tuple[str, str]:
     """Return the grouped v3 condition label for this map."""
-    if config.key == ANAEROBE_CONFIG.key:
-        return v3_anaerobe_condition_display_label(value)
+    if config.key in {FACULTATIVE_CONFIG.key, ANAEROBE_CONFIG.key}:
+        return v3_fully_grouped_condition_display_label(value)
     return condition_display_label(value)
 
 
@@ -1134,9 +1134,13 @@ def v3_body_site_display_label(
 ) -> tuple[str, str]:
     """Return the grouped v3 body-site label for this map."""
     label, rule = body_site_display_label(body_site, body_site_group)
-    if config.key == ANAEROBE_CONFIG.key and label == "Unknown body site":
+    has_guild_specific_body_site_rollups = config.key in {
+        FACULTATIVE_CONFIG.key,
+        ANAEROBE_CONFIG.key,
+    }
+    if has_guild_specific_body_site_rollups and label == "Unknown body site":
         return "Missing body-site metadata", "missing body-site metadata group"
-    if config.key == ANAEROBE_CONFIG.key and label == "Other body sites":
+    if has_guild_specific_body_site_rollups and label == "Other body sites":
         raw_site = clean_text(body_site)
         raw_group = clean_text(body_site_group)
         text = f"{raw_site} {raw_group}".lower()
@@ -1960,7 +1964,6 @@ def plot_condition_body_site_map_v3(
         msg = f"No v3 {display_mode} display edges available for {config.key}."
         raise ValueError(msg)
     if display_mode == V3_INDIVIDUAL_MODE:
-        title_suffix = "v3 individual labels with background"
         condition_header = "Individual condition labels"
         body_site_header = "Individual body sites"
         pair_description = "same exact condition/body-site pair"
@@ -1971,11 +1974,10 @@ def plot_condition_body_site_map_v3(
             "individual edge details in the companion TSV."
         )
     elif display_mode == V3_GROUPED_MODE:
-        title_suffix = "v3 grouped display with background"
         condition_header = "Condition display groups"
         body_site_header = "Body-site display groups"
         pair_description = "same display condition/body-site pair"
-        if config.key == ANAEROBE_CONFIG.key:
+        if config.key in {FACULTATIVE_CONFIG.key, ANAEROBE_CONFIG.key}:
             footer_note = (
                 "V3 grouped display assigns every condition and body site to display "
                 "groups, "
@@ -2125,7 +2127,7 @@ def plot_condition_body_site_map_v3(
     fig.text(
         0.05,
         0.965,
-        f"{config.title} ({title_suffix})",
+        config.title,
         ha="left",
         va="top",
         fontsize=17,
@@ -2255,10 +2257,8 @@ def add_displayed_flag(
     return output
 
 
-def remove_legacy_anaerobe_single_v3_outputs(config: MapConfig) -> None:
-    """Remove the superseded single anaerobe v3 files after writing split v3 outputs."""
-    if config.key != ANAEROBE_CONFIG.key:
-        return
+def remove_legacy_single_v3_outputs(config: MapConfig) -> None:
+    """Remove superseded single v3 files after writing split v3 outputs."""
     for path in [
         config.edge_v3_tsv_path,
         config.condition_rollup_v3_tsv_path,
@@ -2283,6 +2283,12 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
     )
     edges_v3 = summarize_v3_condition_body_site_edges(scored, config)
     display_edges_v3 = select_v3_display_edges(edges_v3)
+    edges_v3_individual = summarize_v3_condition_body_site_edges_for_mode(
+        scored,
+        config,
+        display_mode=V3_INDIVIDUAL_MODE,
+    )
+    display_edges_v3_individual = select_v3_display_edges(edges_v3_individual)
     display_keys = set(
         zip(display_edges["condition"], display_edges["body_site_group"], strict=True)
     )
@@ -2334,7 +2340,11 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
         )
     ]
 
-    edge_v3_output = add_displayed_flag(edges_v3, display_edges_v3)
+    edge_v3_grouped_output = add_displayed_flag(edges_v3, display_edges_v3)
+    edge_v3_individual_output = add_displayed_flag(
+        edges_v3_individual,
+        display_edges_v3_individual,
+    )
 
     edge_output.to_csv(config.edge_tsv_path, sep="\t", index=False)
     sampled_output.to_csv(config.sampled_site_tsv_path, sep="\t", index=False)
@@ -2355,76 +2365,47 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
         ),
         dense_layout=True,
     )
-    if config.key == ANAEROBE_CONFIG.key:
-        edges_v3_individual = summarize_v3_condition_body_site_edges_for_mode(
-            scored,
-            config,
-            display_mode=V3_INDIVIDUAL_MODE,
-        )
-        display_edges_v3_individual = select_v3_display_edges(edges_v3_individual)
-        edge_v3_individual_output = add_displayed_flag(
-            edges_v3_individual,
-            display_edges_v3_individual,
-        )
-        edge_v3_grouped_output = edge_v3_output
-
-        edge_v3_individual_output.to_csv(
-            config.edge_v3_individual_tsv_path,
-            sep="\t",
-            index=False,
-        )
-        edge_v3_grouped_output.to_csv(config.edge_v3_grouped_tsv_path, sep="\t", index=False)
-        condition_rollups_v3.to_csv(
-            config.condition_rollup_v3_grouped_tsv_path,
-            sep="\t",
-            index=False,
-        )
-        body_site_rollups_v3.to_csv(
-            config.body_site_rollup_v3_grouped_tsv_path,
-            sep="\t",
-            index=False,
-        )
-        plot_condition_body_site_map_v3(
-            display_edges_v3_individual,
-            config,
-            config.png_v3_individual_path,
-            display_mode=V3_INDIVIDUAL_MODE,
-        )
-        plot_condition_body_site_map_v3(
-            display_edges_v3,
-            config,
-            config.png_v3_grouped_path,
-            display_mode=V3_GROUPED_MODE,
-        )
-        remove_legacy_anaerobe_single_v3_outputs(config)
-    else:
-        edge_v3_output.to_csv(config.edge_v3_tsv_path, sep="\t", index=False)
-        condition_rollups_v3.to_csv(config.condition_rollup_v3_tsv_path, sep="\t", index=False)
-        body_site_rollups_v3.to_csv(config.body_site_rollup_v3_tsv_path, sep="\t", index=False)
-        plot_condition_body_site_map_v3(
-            display_edges_v3,
-            config,
-            config.png_v3_path,
-            display_mode=V3_GROUPED_MODE,
-        )
+    edge_v3_individual_output.to_csv(
+        config.edge_v3_individual_tsv_path,
+        sep="\t",
+        index=False,
+    )
+    edge_v3_grouped_output.to_csv(config.edge_v3_grouped_tsv_path, sep="\t", index=False)
+    condition_rollups_v3.to_csv(
+        config.condition_rollup_v3_grouped_tsv_path,
+        sep="\t",
+        index=False,
+    )
+    body_site_rollups_v3.to_csv(
+        config.body_site_rollup_v3_grouped_tsv_path,
+        sep="\t",
+        index=False,
+    )
+    plot_condition_body_site_map_v3(
+        display_edges_v3_individual,
+        config,
+        config.png_v3_individual_path,
+        display_mode=V3_INDIVIDUAL_MODE,
+    )
+    plot_condition_body_site_map_v3(
+        display_edges_v3,
+        config,
+        config.png_v3_grouped_path,
+        display_mode=V3_GROUPED_MODE,
+    )
+    remove_legacy_single_v3_outputs(config)
     print(f"Wrote: {config.edge_tsv_path}")
     print(f"Wrote: {config.sampled_site_tsv_path}")
     print(f"Wrote: {config.png_path}")
     print(f"Wrote: {config.edge_v2_tsv_path}")
     print(f"Wrote: {config.sampled_site_v2_tsv_path}")
     print(f"Wrote: {config.png_v2_path}")
-    if config.key == ANAEROBE_CONFIG.key:
-        print(f"Wrote: {config.edge_v3_individual_tsv_path}")
-        print(f"Wrote: {config.png_v3_individual_path}")
-        print(f"Wrote: {config.edge_v3_grouped_tsv_path}")
-        print(f"Wrote: {config.condition_rollup_v3_grouped_tsv_path}")
-        print(f"Wrote: {config.body_site_rollup_v3_grouped_tsv_path}")
-        print(f"Wrote: {config.png_v3_grouped_path}")
-    else:
-        print(f"Wrote: {config.edge_v3_tsv_path}")
-        print(f"Wrote: {config.condition_rollup_v3_tsv_path}")
-        print(f"Wrote: {config.body_site_rollup_v3_tsv_path}")
-        print(f"Wrote: {config.png_v3_path}")
+    print(f"Wrote: {config.edge_v3_individual_tsv_path}")
+    print(f"Wrote: {config.png_v3_individual_path}")
+    print(f"Wrote: {config.edge_v3_grouped_tsv_path}")
+    print(f"Wrote: {config.condition_rollup_v3_grouped_tsv_path}")
+    print(f"Wrote: {config.body_site_rollup_v3_grouped_tsv_path}")
+    print(f"Wrote: {config.png_v3_grouped_path}")
 
 
 def main() -> None:

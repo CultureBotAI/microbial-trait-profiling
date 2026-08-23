@@ -149,16 +149,18 @@ For the top condition signals, this table uses all taxa observed in the increase
 - `condition_body_site_guild_map_sampled_body_sites.tsv`
 - `condition_body_site_guild_map_v2_edges.tsv`
 - `condition_body_site_guild_map_v2_sampled_body_sites.tsv`
-- `condition_body_site_guild_map_v3_edges.tsv`
-- `condition_body_site_guild_map_v3_condition_rollups.tsv`
-- `condition_body_site_guild_map_v3_body_site_rollups.tsv`
+- `condition_body_site_guild_map_v3_individual_edges.tsv`
+- `condition_body_site_guild_map_v3_grouped_edges.tsv`
+- `condition_body_site_guild_map_v3_grouped_condition_rollups.tsv`
+- `condition_body_site_guild_map_v3_grouped_body_site_rollups.tsv`
 - `top_increased_guild_profiles.tsv`
 - Methods are consolidated in `../../figure_methods.md`.
 - `candidate_taxa_increased_profile_tendency.png`
 - `condition_increased_guild_signal.png`
 - `condition_body_site_guild_map.png`
 - `condition_body_site_guild_map_v2.png`
-- `condition_body_site_guild_map_v3.png`
+- `condition_body_site_guild_map_v3_individual.png`
+- `condition_body_site_guild_map_v3_grouped.png`
 - `condition_target_taxa_stacked_bar.png`
 - `guild_trait_direction_shift.png`
 - `anatomical_sites_diagram.png`

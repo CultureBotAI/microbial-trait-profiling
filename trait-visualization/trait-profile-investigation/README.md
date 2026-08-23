@@ -28,7 +28,7 @@ These folders define the current project story and are the source for
 
 | folder | parent focus | generator | role |
 | --- | --- | --- | --- |
-| `facultative-aerobe-v2/` | aerobe signal in increased profiles | `scripts/investigate_facultative_aerobe_expansion.py` | Current aerobe-side v2 analysis using selected oxygen-tolerance traits. |
+| `aerobe-enrichment-v2/` | aerobe signal in increased profiles | `scripts/investigate_facultative_aerobe_expansion.py` | Current aerobe-side v2 analysis using selected oxygen-tolerance traits. |
 | `anaerobe-depletion-v2/` | anaerobe signal in decreased profiles | `scripts/investigate_gut_anaerobe_depletion.py` | Current anaerobe-side v2 depletion analysis across all body sites. |
 
 Each v2 folder also includes `condition_body_site_guild_map.png` and
