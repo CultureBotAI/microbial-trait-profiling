@@ -1,0 +1,13 @@
+analysis	analysis_label	target_taxon_name	condition	body_site_group	decreased_profile_count	increased_profile_count	decreased_study_count	increased_study_count	total_profile_count	focus_direction	focus_profile_count	focus_study_count	comparator_direction	comparator_profile_count	comparator_study_count	focus_bias	net_increased_minus_decreased	dominant_direction	dominant_profile_count	dominant_study_count
+aerobe_enrichment_v2	Aerobe enrichment v2	Klebsiella pneumoniae	Parkinson's disease	Feces	0	4	0	3	4	increased	4	3	decreased	0	0	1.0	4	increased	4	3
+aerobe_enrichment_v2	Aerobe enrichment v2	Eggerthella lenta	Parkinson's disease	Feces	1	1	1	1	2	increased	1	1	decreased	1	1	0.0	0	balanced	1	1
+aerobe_enrichment_v2	Aerobe enrichment v2	Escherichia coli	Parkinson's disease	Feces	2	1	2	1	3	increased	1	1	decreased	2	2	-0.3333333333333333	-1	decreased	2	2
+aerobe_enrichment_v2	Aerobe enrichment v2	Streptococcus anginosus	Parkinson's disease	Feces	0	1	0	1	1	increased	1	1	decreased	0	0	1.0	1	increased	1	1
+aerobe_enrichment_v2	Aerobe enrichment v2	Veillonella dispar	Parkinson's disease	Feces	1	0	1	0	1	increased	0	0	decreased	1	1	-1.0	-1	decreased	1	1
+anaerobe_depletion_v2	Anaerobe depletion v2	Faecalibacterium prausnitzii	Parkinson's disease	Feces	16	0	11	0	16	decreased	16	11	increased	0	0	1.0	-16	decreased	16	11
+anaerobe_depletion_v2	Anaerobe depletion v2	Roseburia intestinalis	Parkinson's disease	Feces	12	0	7	0	12	decreased	12	7	increased	0	0	1.0	-12	decreased	12	7
+anaerobe_depletion_v2	Anaerobe depletion v2	Roseburia inulinivorans	Parkinson's disease	Feces	8	1	5	1	9	decreased	8	5	increased	1	1	0.7777777777777778	-7	decreased	8	5
+anaerobe_depletion_v2	Anaerobe depletion v2	Agathobacter rectalis	Parkinson's disease	Feces	3	0	3	0	3	decreased	3	3	increased	0	0	1.0	-3	decreased	3	3
+anaerobe_depletion_v2	Anaerobe depletion v2	Anaerobutyricum hallii	Parkinson's disease	Feces	3	0	3	0	3	decreased	3	3	increased	0	0	1.0	-3	decreased	3	3
+anaerobe_depletion_v2	Anaerobe depletion v2	Lachnospira eligens	Parkinson's disease	Feces	3	1	3	1	4	decreased	3	3	increased	1	1	0.5	-2	decreased	3	3
+anaerobe_depletion_v2	Anaerobe depletion v2	Ruminococcus bromii	Parkinson's disease	Feces	2	3	1	3	5	decreased	2	1	increased	3	3	-0.2	1	increased	3	3

@@ -1,0 +1,5 @@
+analysis	comparison	positive_effect_interpretation	focus_direction	comparator_direction	focus_count	comparator_count	focus_mean	comparator_mean	focus_minus_comparator	test	p_value
+Aerobe enrichment v2	profile-level focus direction vs comparator direction	increased profiles have higher aerobe enrichment scores	inc	dec	182	170	-0.010569244505180568	-0.43881161732381174	0.4282423728186312	Mann-Whitney U	3.1369229299656873e-07
+Aerobe enrichment v2	within-experiment paired contrast	increased profiles have higher aerobe enrichment scores	inc	dec	146	146	0.4075615360728161	0.0	0.4075615360728161	Wilcoxon signed-rank vs zero	1.9070337762592535e-05
+Anaerobe depletion v2	profile-level focus direction vs comparator direction	decreased profiles have higher anaerobe depletion scores	dec	inc	170	182	0.419304237897445	0.046637943632636014	0.37266629426480896	Mann-Whitney U	6.8472708460195935e-06
+Anaerobe depletion v2	within-experiment paired contrast	decreased profiles have higher anaerobe depletion scores	dec	inc	146	146	0.3158837903751981	0.0	0.3158837903751981	Wilcoxon signed-rank vs zero	0.0002869278624457443

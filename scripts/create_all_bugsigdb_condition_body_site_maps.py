@@ -14,9 +14,12 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, PathPatch
 from matplotlib.path import Path as MplPath
 
-from sankey_v3_rollups import (
-    body_site_display_label,
-    condition_display_label,
+from create_condition_body_site_guild_maps import (
+    FACULTATIVE_CONFIG as FULLY_GROUPED_BODY_SITE_CONFIG,
+)
+from create_condition_body_site_guild_maps import (
+    v3_body_site_display_label,
+    v3_fully_grouped_condition_display_label,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -290,12 +293,16 @@ def add_v3_display_rollups(
     """Attach v3 condition/body-site display labels and audit rollup tables."""
     source = metadata.copy()
     if display_mode == V3_GROUPED_MODE:
-        condition_pairs = source["condition"].map(condition_display_label)
+        condition_pairs = source["condition"].map(v3_fully_grouped_condition_display_label)
         source["condition_display"] = [label for label, _rule in condition_pairs]
         source["condition_rollup_rule"] = [rule for _label, rule in condition_pairs]
 
         body_site_pairs = [
-            body_site_display_label(row.body_site, row.body_site_group)
+            v3_body_site_display_label(
+                row.body_site,
+                row.body_site_group,
+                FULLY_GROUPED_BODY_SITE_CONFIG,
+            )
             for row in source[["body_site", "body_site_group"]].itertuples(index=False)
         ]
         source["body_site_display"] = [label for label, _rule in body_site_pairs]
@@ -305,9 +312,7 @@ def add_v3_display_rollups(
         source["condition_rollup_rule"] = "kept raw individual condition label"
         source["body_site_display"] = source["body_site"].map(
             lambda value: (
-                "Unknown body site"
-                if clean_text(value) == "unknown"
-                else clean_text(value)
+                "Unknown body site" if clean_text(value) == "unknown" else clean_text(value)
             )
         )
         source["body_site_rollup_rule"] = "kept raw individual body-site label"
@@ -1061,9 +1066,9 @@ def plot_direction_map_v3(
         body_site_header = "Body-site display groups"
         pair_description = "same display condition/body-site pair"
         footer_note = (
-            "V3 grouped display uses disease/body-site rollups, keeps transplant/graft "
-            "and metadata/exposure labels raw, includes condensed Other/unknown "
-            f"body-site groups, requires at least {MIN_FOCUS_PROFILES} "
+            "V3 grouped display assigns every condition and body site to the same "
+            "display groups used by the grouped guild Sankey maps, requires at least "
+            f"{MIN_FOCUS_PROFILES} "
             f"{config.focus_label} profiles and {MIN_FOCUS_STUDIES} focus-direction "
             "studies where possible, and preserves all grouped edge and rollup details "
             "in companion TSVs."
@@ -1337,7 +1342,7 @@ def write_readme(
         ),
         (
             "- `all_bugsigdb_condition_body_site_direction_summary_v3_grouped.tsv`: "
-            "all condition/body-site pairs after v3 disease/body-site display rollups."
+            "all condition/body-site pairs after fully grouped v3 display rollups."
         ),
     ]
     for config in CONFIGS:
@@ -1419,12 +1424,12 @@ def write_readme(
             "",
             (
                 "The `_v3_individual` PNGs keep raw condition labels and raw body-site "
-                "labels. The `_v3_grouped` PNGs use the same v3 display rollups as the "
-                "guild Sankey maps. Disease-like condition labels are grouped when the "
-                "display rule matches, but transplant/graft labels and metadata/exposure "
-                "labels are kept raw. Raw body sites are rolled up to readable display "
-                "groups such as `Upper airway / nasal`, `Oral cavity / dental`, "
-                "`Lower airway / lung`, `Vaginal / reproductive`, and `Other body sites`."
+                "labels. The `_v3_grouped` PNGs use the same fully grouped v3 display "
+                "rollups as the guild Sankey maps. Every condition is assigned to a "
+                "display group. Raw body sites are rolled up to readable display groups "
+                "such as `Upper airway / nasal`, `Oral cavity / dental`, "
+                "`Lower airway / lung`, `Vaginal / reproductive`, and "
+                "`Miscellaneous sampled tissues`."
             ),
             "",
             (
@@ -1661,8 +1666,7 @@ def main() -> None:
         f"{OUTPUT_DIR / 'all_bugsigdb_condition_body_site_direction_summary_v3_individual.tsv'}"
     )
     print(
-        "Wrote: "
-        f"{OUTPUT_DIR / 'all_bugsigdb_condition_body_site_direction_summary_v3_grouped.tsv'}"
+        f"Wrote: {OUTPUT_DIR / 'all_bugsigdb_condition_body_site_direction_summary_v3_grouped.tsv'}"
     )
     print(f"Wrote: {OUTPUT_DIR / 'README.md'}")
 

@@ -1,0 +1,3 @@
+analysis_label	taxa_count	total_profile_count	focus_profile_count	comparator_profile_count	focus_taxa_count	perfect_focus_bias_taxa_count	top_focus_taxon	top_focus_profile_count	top_focus_study_count
+Aerobe enrichment v2	5	11	7	4	4	2	Klebsiella pneumoniae	4	3
+Anaerobe depletion v2	7	52	47	5	7	4	Faecalibacterium prausnitzii	16	11
