@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -11,12 +12,58 @@ import seaborn as sns
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization/bsdb-taxa-only"
+HUMAN_HOST_SPECIES = "Homo sapiens"
+
+
+def clean_value(value: object) -> str:
+    """Normalize empty BugSigDB metadata values."""
+    text = str(value or "").strip()
+    if not text or text.upper() == "NA" or text.lower() == "nan":
+        return ""
+    return text
+
+
+def study_id_from_bsdb_id(bsdb_id: str) -> str:
+    """Convert a full BugSigDB signature ID into the derived study ID format."""
+    compact_id = bsdb_id.strip().removeprefix("bsdb:").split("/", 1)[0]
+    return f"bsdb:{compact_id}"
+
+
+def experiment_id_from_bsdb_id(bsdb_id: str) -> str:
+    """Convert a full BugSigDB signature ID into the derived experiment ID format."""
+    parts = bsdb_id.strip().removeprefix("bsdb:").split("/")
+    if len(parts) >= 2:
+        return f"bsdb:{parts[0]}-{parts[1]}"
+    return bsdb_id
+
+
+def load_human_experiment_ids(full_dump_path: Path | None) -> set[tuple[str, str]]:
+    """Return study/experiment IDs for Homo sapiens rows in full_dump.csv."""
+    if full_dump_path is None or not full_dump_path.exists():
+        return set()
+
+    experiment_ids: set[tuple[str, str]] = set()
+    with full_dump_path.open(encoding="utf-8", newline="") as handle:
+        rows = (line for line in handle if not line.startswith("#"))
+        reader = csv.DictReader(rows)
+        for row in reader:
+            bsdb_id = clean_value(row.get("BSDB ID"))
+            host_species = clean_value(row.get("Host species"))
+            if bsdb_id and host_species == HUMAN_HOST_SPECIES:
+                experiment_ids.add(
+                    (
+                        study_id_from_bsdb_id(bsdb_id),
+                        experiment_id_from_bsdb_id(bsdb_id),
+                    )
+                )
+    return experiment_ids
 
 
 def build_binary_matrix(
     taxa_path: Path,
     top_taxa: int,
     max_profiles: int,
+    full_dump_path: Path | None,
 ) -> tuple[pd.DataFrame, pd.Series]:
     """Build a binary profile x genus matrix from taxa.tsv."""
     taxa = pd.read_csv(
@@ -24,6 +71,18 @@ def build_binary_matrix(
         sep="\t",
         usecols=["study_id", "experiment_id", "direction", "taxon_name", "taxonomic_rank"],
     )
+    human_experiment_ids = load_human_experiment_ids(full_dump_path)
+    if human_experiment_ids:
+        taxa = taxa[
+            [
+                (study_id, experiment_id) in human_experiment_ids
+                for study_id, experiment_id in zip(
+                    taxa["study_id"],
+                    taxa["experiment_id"],
+                    strict=True,
+                )
+            ]
+        ].copy()
     taxa = taxa[taxa["taxonomic_rank"] == "genus"].copy()
     taxa["inc_dec"] = (
         taxa["direction"].map({"increased": "inc", "decreased": "dec"}).fillna(taxa["direction"])
@@ -92,8 +151,8 @@ def save_clustered_heatmap(
     cluster.ax_heatmap.set_xlabel("Genus")
     cluster.ax_heatmap.set_ylabel("Profiles")
     cluster.ax_heatmap.set_title(
-        "BugSigDB Genus Presence/Absence Clustered Heatmap\n"
-        "Top prevalent genera; rows are study|experiment|direction profiles",
+        "BugSigDB Human-Host Genus Presence/Absence Clustered Heatmap\n"
+        "Top prevalent genera; rows are human-host study|experiment|direction profiles",
         pad=18,
     )
 
@@ -124,6 +183,12 @@ def main() -> None:
         help="Input taxa TSV path.",
     )
     parser.add_argument(
+        "--full-dump-input",
+        type=Path,
+        default=REPO_ROOT / "data/raw/full_dump.csv",
+        help="Input BugSigDB full_dump.csv path used to restrict profiles to Homo sapiens.",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=OUTPUT_DIR / "clustered_heatmap_genus_top100.png",
@@ -149,7 +214,12 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    matrix, inc_dec = build_binary_matrix(args.input, args.top_taxa, args.max_profiles)
+    matrix, inc_dec = build_binary_matrix(
+        args.input,
+        args.top_taxa,
+        args.max_profiles,
+        args.full_dump_input,
+    )
 
     matrix_to_save = matrix.copy()
     matrix_to_save.insert(0, "inc_dec", inc_dec)

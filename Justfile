@@ -42,6 +42,39 @@ format:
 trait-profile-investigation:
 	uv run python scripts/regenerate_trait_profile_investigation.py
 
+# Flatten per-study YAML into data/derived/*.tsv.
+study-tsvs:
+	uv run python -m bsdbng.study_tsv
+
+# Build data/derived/taxa_trait_matrix.tsv from BugSigDB taxa and KG-Microbe.
+# Requires data/kg-microbe/merged-kg_{edges,nodes}.tsv; run `just download-kg` first.
+taxa-trait-matrix:
+	uv run python scripts/create_taxa_trait_matrix.py
+
+# Sum taxon trait vectors by study, experiment, and increased/decreased profile.
+study-trait-profiles:
+	uv run python scripts/create_study_trait_profiles.py
+
+trait-heatmaps:
+	uv run python scripts/create_clustered_heatmap.py
+	uv run python scripts/create_condition_taxon_heatmap.py
+	uv run python scripts/create_taxa_guild_heatmap.py
+	uv run python scripts/create_study_trait_profile_heatmap.py
+	uv run python scripts/create_condition_trait_module_heatmap.py
+
+trait-visualization:
+	just download-kg
+	just pipeline
+	just study-tsvs
+	just taxa-trait-matrix
+	just study-trait-profiles
+	just trait-heatmaps
+	just trait-profile-investigation
+
+refresh-v131-trait-visualization:
+	just clean-all
+	just trait-visualization
+
 typecheck:
 	uv run mypy src tests
 

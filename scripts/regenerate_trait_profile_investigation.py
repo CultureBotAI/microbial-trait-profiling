@@ -405,6 +405,7 @@ def main() -> None:
     run_script("create_all_bugsigdb_condition_body_site_maps.py")
     run_script("create_profile_enrichment_guild_assignment_diagram.py")
     run_script("create_trait_profile_infographic.py")
+    run_script("analyze_parkinsons_disease_trait_profiles.py")
     run_script("annotate_trait_profile_investigation_figures.py")
     refresh_powerpoint()
     print("Regenerated current trait-profile investigation outputs.")

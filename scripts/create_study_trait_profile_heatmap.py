@@ -20,6 +20,7 @@ OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
 DIRECTION_LABELS = {"inc": "increased", "dec": "decreased"}
 PAIR_DIRECTION_LABEL = "increased - decreased"
+HUMAN_HOST_SPECIES = "Homo sapiens"
 REQUIRED_PAIRED_TRAITS = {
     "METPO:1000615": "mesophilic",
     "METPO:1000698": "gram positive",
@@ -47,6 +48,15 @@ def study_id_from_bsdb_id(bsdb_id: str) -> str:
     """Convert a full BugSigDB signature ID into the derived study ID format."""
     compact_id = bsdb_id.strip().removeprefix("bsdb:").split("/", 1)[0]
     return f"bsdb:{compact_id}"
+
+
+def experiment_id_from_bsdb_id(bsdb_id: str) -> str:
+    """Convert a full BugSigDB signature ID into the derived experiment ID format."""
+    compact_id = bsdb_id.strip().removeprefix("bsdb:")
+    parts = compact_id.split("/")
+    if len(parts) < 2:
+        return "unknown"
+    return f"bsdb:{parts[0]}-{parts[1]}"
 
 
 def most_common_label(values: list[str]) -> str:
@@ -101,6 +111,35 @@ def load_raw_study_metadata(full_dump_path: Path) -> pd.DataFrame:
             }
         )
     return pd.DataFrame.from_records(records).set_index("study_id")
+
+
+def load_raw_experiment_hosts(full_dump_path: Path) -> pd.DataFrame:
+    """Extract host species labels for each BugSigDB study/experiment profile."""
+    values_by_experiment: dict[tuple[str, str], list[str]] = defaultdict(list)
+    with full_dump_path.open(encoding="utf-8", newline="") as handle:
+        rows = (line for line in handle if not line.startswith("#"))
+        reader = csv.DictReader(rows)
+        for row in reader:
+            bsdb_id = clean_value(row.get("BSDB ID"))
+            if bsdb_id == "unknown":
+                continue
+            experiment_id = experiment_id_from_bsdb_id(bsdb_id)
+            if experiment_id == "unknown":
+                continue
+            study_id = study_id_from_bsdb_id(bsdb_id)
+            values_by_experiment[(study_id, experiment_id)].append(
+                clean_value(row.get("Host species"))
+            )
+
+    records = [
+        {
+            "study_id": study_id,
+            "experiment_id": experiment_id,
+            "host_species": most_common_label(host_species_values),
+        }
+        for (study_id, experiment_id), host_species_values in values_by_experiment.items()
+    ]
+    return pd.DataFrame.from_records(records).set_index(["study_id", "experiment_id"])
 
 
 def load_study_titles(studies_path: Path) -> pd.DataFrame:
@@ -180,6 +219,27 @@ def load_profile_matrix(profile_path: Path) -> tuple[pd.DataFrame, pd.DataFrame,
     metadata["total_trait_signal"] = profile_matrix.sum(axis=1)
     metadata["trait_count"] = profile_matrix.gt(0).sum(axis=1)
     return profile_matrix, metadata, trait_columns
+
+
+def filter_human_host_profiles(
+    profile_matrix: pd.DataFrame,
+    profile_metadata: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Keep only human-host profiles before downstream profile or trait selection."""
+    if "host_species" not in profile_metadata.columns:
+        msg = "Cannot apply human-host corpus filter: missing host_species metadata."
+        raise ValueError(msg)
+
+    host_species = profile_metadata["host_species"].map(clean_value)
+    human_profile_ids = profile_metadata.index[host_species == HUMAN_HOST_SPECIES]
+    aligned_profile_ids = profile_matrix.index[profile_matrix.index.isin(human_profile_ids)]
+    filtered_matrix = profile_matrix.loc[aligned_profile_ids].copy()
+    filtered_metadata = profile_metadata.loc[aligned_profile_ids].copy()
+    filtered_metadata["host_species"] = host_species.loc[aligned_profile_ids]
+    if filtered_metadata.empty:
+        msg = "No Homo sapiens profiles were available after applying the human-host filter."
+        raise ValueError(msg)
+    return filtered_matrix, filtered_metadata
 
 
 def select_profiles(
@@ -1168,6 +1228,16 @@ def main() -> None:
         on="study_id",
         how="left",
     )
+    experiment_hosts = load_raw_experiment_hosts(args.full_dump_input).rename(
+        columns={"host_species": "experiment_host_species"}
+    )
+    profile_metadata = profile_metadata.join(
+        experiment_hosts,
+        on=["study_id", "experiment_id"],
+        how="left",
+    )
+    profile_metadata["host_species"] = profile_metadata["experiment_host_species"]
+    profile_metadata = profile_metadata.drop(columns=["experiment_host_species"])
     for column in [
         "title",
         "publication_year",
@@ -1177,6 +1247,18 @@ def main() -> None:
         "host_species",
     ]:
         profile_metadata[column] = profile_metadata[column].map(clean_value)
+
+    unfiltered_profile_count = len(profile_metadata)
+    unfiltered_study_count = profile_metadata["study_id"].nunique()
+    profile_matrix, profile_metadata = filter_human_host_profiles(
+        profile_matrix,
+        profile_metadata,
+    )
+    print(
+        "Human-host corpus filter retained "
+        f"{len(profile_metadata):,}/{unfiltered_profile_count:,} profiles from "
+        f"{profile_metadata['study_id'].nunique():,}/{unfiltered_study_count:,} studies."
+    )
 
     max_profiles = args.max_profiles
     if args.max_studies is not None and max_profiles == 0:

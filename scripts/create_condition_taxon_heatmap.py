@@ -13,25 +13,54 @@ import seaborn as sns
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization/bsdb-taxa-only"
+HUMAN_HOST_SPECIES = "Homo sapiens"
+
+
+def clean_value(value: object) -> str:
+    """Normalize empty BugSigDB metadata values."""
+    text = str(value or "").strip()
+    if not text or text.upper() == "NA" or text.lower() == "nan":
+        return ""
+    return text
+
+
+def study_id_from_bsdb_id(bsdb_id: str) -> str:
+    """Convert a full BugSigDB signature ID into the derived study ID format."""
+    compact_id = bsdb_id.strip().removeprefix("bsdb:").split("/", 1)[0]
+    return f"bsdb:{compact_id}"
+
+
+def experiment_id_from_bsdb_id(bsdb_id: str) -> str:
+    """Convert a full BugSigDB signature ID into the derived experiment ID format."""
+    parts = bsdb_id.strip().removeprefix("bsdb:").split("/")
+    if len(parts) >= 2:
+        return f"bsdb:{parts[0]}-{parts[1]}"
+    return bsdb_id
 
 
 def load_study_condition_pairs(full_dump_path: Path) -> pd.DataFrame:
-    """Extract unique study-condition pairs from full_dump.csv."""
-    study_conditions: defaultdict[str, set[str]] = defaultdict(set)
+    """Extract unique human-host study/experiment condition pairs from full_dump.csv."""
+    experiment_conditions: defaultdict[tuple[str, str], set[str]] = defaultdict(set)
     with full_dump_path.open(encoding="utf-8", newline="") as handle:
         rows = (line for line in handle if not line.startswith("#"))
         reader = csv.DictReader(rows)
         for row in reader:
-            bsdb_id = (row.get("BSDB ID") or "").strip()
-            condition = (row.get("Condition") or "").strip()
-            if not bsdb_id or not condition or condition == "NA":
+            bsdb_id = clean_value(row.get("BSDB ID"))
+            condition = clean_value(row.get("Condition"))
+            host_species = clean_value(row.get("Host species"))
+            if not bsdb_id or not condition or host_species != HUMAN_HOST_SPECIES:
                 continue
-            study_id = f"bsdb:{bsdb_id.removeprefix('bsdb:').split('/')[0]}"
-            study_conditions[study_id].add(condition)
+            study_id = study_id_from_bsdb_id(bsdb_id)
+            experiment_id = experiment_id_from_bsdb_id(bsdb_id)
+            experiment_conditions[(study_id, experiment_id)].add(condition)
 
     pairs = [
-        {"study_id": study_id, "condition": condition}
-        for study_id, conditions in study_conditions.items()
+        {
+            "study_id": study_id,
+            "experiment_id": experiment_id,
+            "condition": condition,
+        }
+        for (study_id, experiment_id), conditions in experiment_conditions.items()
         for condition in sorted(conditions)
     ]
     return pd.DataFrame(pairs)
@@ -52,10 +81,10 @@ def build_condition_genus_matrix(
     taxa = pd.read_csv(
         taxa_path,
         sep="\t",
-        usecols=["study_id", "taxon_name", "taxonomic_rank"],
+        usecols=["study_id", "experiment_id", "taxon_name", "taxonomic_rank"],
     )
     taxa = taxa[taxa["taxonomic_rank"] == "genus"].copy()
-    taxa = taxa[["study_id", "taxon_name"]].drop_duplicates()
+    taxa = taxa[["study_id", "experiment_id", "taxon_name"]].drop_duplicates()
 
     top_condition_names = (
         study_conditions.groupby("condition")["study_id"]
@@ -68,7 +97,7 @@ def build_condition_genus_matrix(
         study_conditions["condition"].isin(top_condition_names)
     ].copy()
 
-    merged = study_conditions.merge(taxa, on="study_id", how="inner")
+    merged = study_conditions.merge(taxa, on=["study_id", "experiment_id"], how="inner")
     if merged.empty:
         msg = "No overlap between condition labels and genus taxa"
         raise ValueError(msg)
@@ -134,8 +163,8 @@ def save_condition_heatmap(
     cluster.ax_heatmap.set_xlabel("Genus")
     cluster.ax_heatmap.set_ylabel("Condition")
     cluster.ax_heatmap.set_title(
-        "BugSigDB Condition x Genus Clustered Heatmap\n"
-        "Cell values are the fraction of studies in each condition containing the genus",
+        "BugSigDB Human-Host Condition x Genus Clustered Heatmap\n"
+        "Cell values are the fraction of human-host studies in each condition containing the genus",
         pad=18,
     )
 
