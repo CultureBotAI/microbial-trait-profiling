@@ -112,6 +112,20 @@ FIGURE_LABELS = {
         "Guild-specific: yes - shows positive selected-trait profile coverage for "
         "depleted-signal conditions."
     ),
+    Path("parkinsons-disease/parkinsons_anaerobe_depletion_taxa_support.png"): (
+        "Guild-specific: no - fixed Parkinson's disease anaerobe-depletion target-taxon support."
+    ),
+    Path("parkinsons-disease/parkinsons_feces_paired_trait_contrast.png"): (
+        "Guild-specific: yes - compares paired aerobe and anaerobe v2 scores in Parkinson's "
+        "disease feces profiles."
+    ),
+    Path("parkinsons-disease/parkinsons_feces_profile_trait_score_contrast.png"): (
+        "Guild-specific: yes - compares aerobe and anaerobe v2 scores in Parkinson's "
+        "disease feces profiles."
+    ),
+    Path("parkinsons-disease/parkinsons_target_taxa_direction_bar.png"): (
+        "Guild-specific: no - fixed Parkinson's disease target-taxon direction counts."
+    ),
     Path("profile-condition-bars/condition_depleted_profile_signal_diagram.png"): (
         "Guild-specific: yes - combines depleted-profile trait-signal bias with "
         "directional profile coverage."

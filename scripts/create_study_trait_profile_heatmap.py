@@ -225,7 +225,7 @@ def filter_human_host_profiles(
     profile_matrix: pd.DataFrame,
     profile_metadata: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Keep only human-host profiles before any downstream profile or trait selection."""
+    """Keep only human-host profiles before downstream profile or trait selection."""
     if "host_species" not in profile_metadata.columns:
         msg = "Cannot apply human-host corpus filter: missing host_species metadata."
         raise ValueError(msg)

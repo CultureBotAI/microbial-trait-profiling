@@ -1,4 +1,4 @@
-"""Download BugSigDB raw CSV exports."""
+"""Download BugSigDB CSV exports."""
 
 from __future__ import annotations
 
@@ -12,9 +12,15 @@ import httpx
 
 from bsdbng.paths import RAW_DATA_DIR
 
-EXPORT_BASE = "https://bugsigdb.org/w/images/csv_reports"
+EXPORT_BASE = "https://bugsigdb-csv.s3.us-east-va.perf.cloud.ovh.us"
 EXPORT_FILES = ("studies.csv", "experiments.csv", "signatures.csv")
-FULL_DUMP_URL = "https://raw.githubusercontent.com/waldronlab/BugSigDBExports/devel/full_dump.csv"
+BUGSIGDB_EXPORTS_VERSION = "v1.3.1"
+BUGSIGDB_EXPORTS_DOI = "10.5281/zenodo.19740674"
+BUGSIGDB_EXPORTS_TAG_SHA = "5815c2638d6b56134ac8db19edc2bb3c4b17f1ca"
+FULL_DUMP_URL = (
+    "https://raw.githubusercontent.com/waldronlab/BugSigDBExports/"
+    f"{BUGSIGDB_EXPORTS_VERSION}/full_dump.csv"
+)
 PROVENANCE_FILE = "download_provenance.json"
 
 MAX_RETRIES = 5
@@ -46,7 +52,7 @@ def _fetch_with_retry(
 
 
 def download_exports(raw_dir: Path | None = None, *, force: bool = False) -> list[Path]:
-    """Download the three BugSigDB CSV exports and full_dump.csv into *raw_dir*.
+    """Download BugSigDB raw CSV exports and pinned release full dump into *raw_dir*.
 
     Uses ETag and Last-Modified headers for conditional requests when
     provenance data is available. Skips download on 304 Not Modified.
@@ -100,10 +106,21 @@ def download_exports(raw_dir: Path | None = None, *, force: bool = False) -> lis
             # Record provenance with cache headers for next conditional request
             file_prov = {
                 "downloaded_at": datetime.now(tz=UTC).isoformat(),
+                "url": url,
                 "etag": resp.headers.get("ETag"),
                 "last_modified": resp.headers.get("Last-Modified"),
                 "content_length": resp.headers.get("Content-Length"),
+                "downloaded_bytes": len(resp.content),
             }
+            if name == "full_dump.csv":
+                file_prov.update(
+                    {
+                        "source": "waldronlab/BugSigDBExports",
+                        "version": BUGSIGDB_EXPORTS_VERSION,
+                        "doi": BUGSIGDB_EXPORTS_DOI,
+                        "tag_sha": BUGSIGDB_EXPORTS_TAG_SHA,
+                    }
+                )
             provenance[name] = file_prov
             downloaded.append(dest)
 

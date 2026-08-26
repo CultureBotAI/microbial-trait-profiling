@@ -15,6 +15,7 @@ from matplotlib.patches import Patch
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 MATRIX_METADATA_COLUMNS = ["taxon_id", "taxon_name", "taxonomic_rank"]
+HUMAN_HOST_SPECIES = "Homo sapiens"
 METAPHLAN_RANK_MAP = {
     "k__": "superkingdom",
     "p__": "phylum",
@@ -126,7 +127,12 @@ def load_bugsigdb_taxa_records(
             for row in reader:
                 bsdb_id = clean_value(row.get("BSDB ID"))
                 direction = clean_value(row.get("Abundance in Group 1")).lower()
-                if not bsdb_id or direction not in {"increased", "decreased"}:
+                host_species = clean_value(row.get("Host species"))
+                if (
+                    not bsdb_id
+                    or direction not in {"increased", "decreased"}
+                    or host_species != HUMAN_HOST_SPECIES
+                ):
                     continue
 
                 for taxon in parse_taxa_from_raw_row(row):
@@ -457,7 +463,8 @@ def save_heatmap(
     )
     cluster.ax_heatmap.set_title(
         "Taxa Guild Discovery: BugSigDB Taxa Clustered by Trait Vectors\n"
-        f"Rows are high-support taxa ({rank_note}); columns are binary KG-Microbe traits; "
+        f"Rows are high-support human-host taxa ({rank_note}); columns are binary "
+        "KG-Microbe traits; "
         f"{studies_analyzed} studies and {profiles_analyzed} study/experiment/direction "
         "profiles analyzed",
         pad=18,
