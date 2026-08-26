@@ -15,7 +15,7 @@ TRAIT_PREFIX = "METPO:"
 SUBCLASS_OF = "biolink:subclass_of"
 TRAIT_KEY_SEPARATOR = "|"
 
-DEFAULT_TAXA_PATH = REPO_ROOT / "data" / "derived" / "bugsigdb_taxa.tsv"
+DEFAULT_TAXA_PATH = REPO_ROOT / "data" / "derived" / "taxa.tsv"
 DEFAULT_KG_DIR = REPO_ROOT / "data" / "kg-microbe"
 DEFAULT_OUTPUT_PATH = REPO_ROOT / "data" / "derived" / "taxa_trait_matrix.tsv"
 EDGES_FILENAME = "merged-kg_edges.tsv"
@@ -81,7 +81,7 @@ def resolve_kg_file(filename: str, kg_dir: Path, explicit_path: Path | None = No
 
 
 def read_reported_taxa(taxa_path: Path) -> list[ReportedTaxon]:
-    """Read unique increased/decreased BugSigDB taxa from data/derived/bugsigdb_taxa.tsv."""
+    """Read unique increased/decreased BugSigDB taxa from data/derived/taxa.tsv."""
     taxa_by_id: dict[str, ReportedTaxon] = {}
     required_columns = {"direction", "taxon_id", "taxon_name", "taxonomic_rank"}
 
@@ -468,3 +468,7 @@ def main() -> int:
     print(f"KG edges: {stats.edges_path}")
     print(f"KG nodes: {stats.nodes_path}")
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

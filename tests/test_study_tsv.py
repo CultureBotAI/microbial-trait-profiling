@@ -72,7 +72,7 @@ def test_generate_tables_writes_flattened_outputs(tmp_path: Path) -> None:
 
     tables = generate_tables(study_dir, output_dir)
 
-    assert tables.taxa == output_dir / "bugsigdb_taxa.tsv"
+    assert tables.taxa == output_dir / "taxa.tsv"
 
     study_rows = _read_tsv(tables.studies)
     assert study_rows == [

@@ -4,7 +4,7 @@ from bsdbng.taxa_trait_matrix import create_taxa_trait_matrix
 
 
 def test_create_taxa_trait_matrix_counts_self_and_descendants(tmp_path: Path) -> None:
-    taxa_path = tmp_path / "bugsigdb_taxa.tsv"
+    taxa_path = tmp_path / "taxa.tsv"
     nodes_path = tmp_path / "nodes.tsv"
     edges_path = tmp_path / "edges.tsv"
     output_path = tmp_path / "taxa_trait_matrix.tsv"
