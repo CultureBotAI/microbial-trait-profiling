@@ -29,7 +29,8 @@ strain rows are present in the current BugSigDB raw export. The current rendered
 heatmap uses species-level taxa because `data/raw/full_dump.csv` contains no
 MetaPhlAn `t__` strain leaves. It is intended to reveal taxa that share similar
 biological, ecological, or phenotypic traits even when they appear in different
-studies.
+studies. The plotted taxa are restricted to `Homo sapiens` experiments when
+`data/raw/full_dump.csv` is available.
 
 ### Study trait profile clustering
 
@@ -53,11 +54,11 @@ uv run python scripts/create_study_trait_profile_heatmap.py
 This clusters every BugSigDB study/experiment/direction trait profile rather
 than aggregating increased and decreased profiles together at the study level.
 The full matrix and row metadata include the study ID, experiment ID, and inc/dec
-direction for all 12,108 profiles from all 1,924 studies. To keep the PNG from
-washing out to gray, the rendered image averages adjacent clustered profiles into
-320 direction-specific display bins by default while keeping increased and
-decreased sections separate. Use `--display-max-rows` to change the rendered bin
-count without changing the full per-profile TSV outputs.
+direction for 5,829 human-host profiles from 1,080 studies. To keep the PNG from
+washing out to gray, the rendered image averages adjacent clustered profiles
+into 320 direction-specific display bins by default while keeping increased and
+decreased sections separate. Use `--display-max-rows` to change the rendered
+bin count without changing the full per-profile TSV outputs.
 
 The same script also writes a paired enrichment heatmap for matched
 study/experiment profiles. This paired view keeps only experiments with both an
@@ -91,7 +92,7 @@ uv run python scripts/create_condition_trait_module_heatmap.py
 
 This groups studies by condition and body site, aggregates trait profiles within
 each group, and clusters the resulting condition-level modules. It is intended to
-highlight condition-specific trait signatures.
+highlight condition-specific trait signatures in the human-host corpus.
 
 For slide-level interpretation, use
 `condition_trait_module_guild_definition_table.png` as the compact guild-definition
@@ -112,7 +113,9 @@ uv run python scripts/create_condition_taxon_heatmap.py
 ```
 
 This subfolder contains earlier heatmaps based directly on BugSigDB taxa
-presence/absence and condition-by-genus prevalence.
+presence/absence and condition-by-genus prevalence. These scripts now restrict
+profiles to `Homo sapiens` experiments when `data/raw/full_dump.csv` is
+available.
 
 ## Interpreting Heatmap Colors
 
@@ -148,6 +151,10 @@ The visualizations are generated from derived BugSigDB and trait tables:
 - `data/derived/study_trait_profiles_wide.tsv`
 - `data/derived/studies.tsv`
 - `data/raw/full_dump.csv`
+
+The current committed visualizations were regenerated from the citable
+BugSigDBExports `v1.3.1` full dump (`10.5281/zenodo.19740674`) and use
+human-host filters for the plotted figures.
 
 The plotted TSV files in this folder contain the exact matrices and metadata
 used for analysis. The study-trait-profile PNG is a binned rendering of the full

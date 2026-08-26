@@ -6,7 +6,7 @@ This investigation uses the existing study trait profile clustered heatmap matri
 
 - Selected traits: anaerobic (METPO:1000603), obligately anaerobic (METPO:1000607)
 - Target taxa: Faecalibacterium prausnitzii, Anaerobutyricum hallii, Lachnospira eligens, Agathobacter rectalis, Roseburia intestinalis, Ruminococcus bromii, Roseburia inulinivorans
-- Formal KG-Microbe taxon universe: 1,959 taxa with at least one core oxygen-tolerance annotation among anaerobic, obligately anaerobic
+- Formal KG-Microbe taxon universe: 1,722 taxa with at least one core oxygen-tolerance annotation among anaerobic, obligately anaerobic
 - Trait selection audit: `guild_trait_selection.tsv` records the selected trait IDs, short rationale, and KG-Microbe taxon counts for each selected trait.
 - Context: all body sites, with body-site and condition summaries to separate gut, oral, airway, urogenital, and other patterns.
 
@@ -33,48 +33,48 @@ Guardrail: the increased-profile anaerobe score is retained in every condition a
 
 | trait | decreased - increased z |
 | --- | ---: |
-| anaerobic | 0.077 |
-| obligately anaerobic | 0.074 |
+| obligately anaerobic | 0.100 |
+| anaerobic | 0.081 |
 
 ## Strongest Decreased-Profile-Biased Taxa
 
 | taxon | decreased / increased profiles | decreased-profile bias |
 | --- | ---: | ---: |
-| Agathobacter rectalis | 92 / 33 | 0.472 |
-| Lachnospira eligens | 101 / 39 | 0.443 |
-| Roseburia intestinalis | 76 / 31 | 0.421 |
-| Roseburia inulinivorans | 62 / 29 | 0.363 |
-| Ruminococcus bromii | 61 / 38 | 0.232 |
-| Faecalibacterium prausnitzii | 177 / 111 | 0.229 |
-| Anaerobutyricum hallii | 86 / 63 | 0.154 |
+| Agathobacter rectalis | 67 / 18 | 0.576 |
+| Roseburia intestinalis | 46 / 18 | 0.438 |
+| Roseburia inulinivorans | 45 / 18 | 0.429 |
+| Lachnospira eligens | 64 / 26 | 0.422 |
+| Ruminococcus bromii | 45 / 26 | 0.268 |
+| Faecalibacterium prausnitzii | 108 / 63 | 0.263 |
+| Anaerobutyricum hallii | 50 / 44 | 0.064 |
 
 ## Recurrent Target-Taxon Decreased Profiles By Condition
 
 | taxon | condition | body site | decreased / increased profiles | decreased studies |
 | --- | --- | --- | ---: | ---: |
-| Faecalibacterium prausnitzii | Parkinson's disease | Feces | 16 / 0 | 11 |
+| Faecalibacterium prausnitzii | Parkinson's disease | Feces | 13 / 0 | 8 |
 | Roseburia intestinalis | Parkinson's disease | Feces | 12 / 0 | 7 |
-| Faecalibacterium prausnitzii | COVID-19 | Feces | 11 / 0 | 6 |
-| Lachnospira eligens | Colorectal cancer | Feces | 9 / 0 | 5 |
-| Ruminococcus bromii | COVID-19 | Feces | 9 / 0 | 5 |
-| Agathobacter rectalis | COVID-19 | Feces | 7 / 0 | 5 |
-| Anaerobutyricum hallii | Colorectal cancer | Feces | 5 / 0 | 5 |
-| Roseburia intestinalis | Colorectal cancer | Feces | 5 / 0 | 5 |
-| Agathobacter rectalis | Colorectal cancer | Feces | 4 / 0 | 3 |
+| Faecalibacterium prausnitzii | COVID-19 | Feces | 8 / 0 | 5 |
+| Lachnospira eligens | Colorectal cancer | Feces | 8 / 0 | 4 |
+| Agathobacter rectalis | COVID-19 | Feces | 6 / 0 | 4 |
+| Ruminococcus bromii | COVID-19 | Feces | 6 / 0 | 4 |
+| Anaerobutyricum hallii | Colorectal cancer | Feces | 4 / 0 | 4 |
+| Faecalibacterium prausnitzii | Colorectal cancer | Feces | 4 / 0 | 4 |
 | Agathobacter rectalis | Parkinson's disease | Feces | 3 / 0 | 3 |
+| Roseburia intestinalis | Colorectal cancer | Feces | 3 / 0 | 3 |
 
 ## Conditions With Anaerobe v2 Trait Enrichment in Decreased Profiles
 
 | condition | profiles | studies | decreased - increased z | paired d | paired p | matched pairs | decreased mean trait z |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Age-related macular degeneration | 27 | 5 | 1.269 | 2.101 | 6.53e-06 | 13 | 0.767 |
-| Graft versus host disease | 13 | 4 | 1.254 | 1.480 | 0.0595 | 4 | 0.848 |
-| Acute graft vs. host disease | 11 | 2 | 1.080 | 0.675 | 0.27 | 4 | 0.569 |
-| Lung transplantation | 7 | 2 | 1.049 |  |  | 2 | 0.479 |
-| Head and neck carcinoma | 7 | 2 | 0.828 | 0.966 | 0.236 | 3 | 0.132 |
-| Acute pancreatitis | 20 | 2 | 0.818 | 0.977 | 0.0129 | 10 | 0.394 |
-| Graves ophthalmopathy | 13 | 2 | 0.818 | 0.887 | 0.118 | 5 | 0.023 |
-| Diarrhea | 46 | 5 | 0.817 | 0.676 | 0.0046 | 22 | 0.523 |
+| Inflammatory bowel disease | 23 | 3 | 1.332 | 1.531 | 0.0549 | 4 | 0.897 |
+| Age-related macular degeneration | 27 | 5 | 1.251 | 2.101 | 6.53e-06 | 13 | 0.748 |
+| Graft versus host disease | 13 | 4 | 1.236 | 1.480 | 0.0595 | 4 | 0.828 |
+| Diarrhea | 25 | 3 | 1.192 | 1.035 | 0.00427 | 12 | 0.709 |
+| Respiratory tract infectious disease | 11 | 2 | 0.999 | 0.373 | 0.51 | 4 | 0.472 |
+| Response to antibiotic | 7 | 2 | 0.881 | 0.545 | 0.445 | 3 | 0.635 |
+| Chronic kidney disease | 23 | 7 | 0.877 | 0.696 | 0.0435 | 11 | 0.464 |
+| Response to antiviral drug | 32 | 4 | 0.848 | 1.303 | 0.000516 | 13 | 0.742 |
 
 ## Condition Enriched-Profile Histogram
 
@@ -82,8 +82,8 @@ The enrichment-filtered histogram counts conditions by how many profiles remain 
 
 | direction | conditions with retained profiles | retained profiles | zero-enriched profiles | retained / total profiles |
 | --- | ---: | ---: | ---: | ---: |
-| decreased profiles | 430 | 3414 | 1569 | 0.685 |
-| increased profiles | 438 | 3666 | 2146 | 0.631 |
+| decreased profiles | 271 | 1697 | 793 | 0.682 |
+| increased profiles | 275 | 1714 | 1045 | 0.621 |
 
 ## Trait Enriched-Profile Histogram
 
@@ -91,16 +91,16 @@ The trait-side companion histogram counts selected heatmap traits by how many re
 
 | direction | trait | positive retained profiles | retained profile fraction |
 | --- | --- | ---: | ---: |
-| increased profiles | anaerobic | 3824 | 0.927 |
-| decreased profiles | anaerobic | 3579 | 0.936 |
-| increased profiles | non motile | 3126 | 0.758 |
-| increased profiles | GC high | 2999 | 0.727 |
-| increased profiles | GC low | 2986 | 0.724 |
-| increased profiles | bacillus shaped | 2964 | 0.719 |
-| increased profiles | gram positive | 2920 | 0.708 |
-| decreased profiles | GC low | 2872 | 0.751 |
-| decreased profiles | non motile | 2870 | 0.751 |
-| decreased profiles | GC high | 2863 | 0.749 |
+| decreased profiles | anaerobic | 1778 | 0.938 |
+| increased profiles | anaerobic | 1758 | 0.918 |
+| decreased profiles | bacillus shaped | 1477 | 0.779 |
+| increased profiles | non motile | 1462 | 0.764 |
+| decreased profiles | non motile | 1434 | 0.756 |
+| decreased profiles | GC high | 1420 | 0.749 |
+| decreased profiles | GC low | 1410 | 0.744 |
+| increased profiles | GC high | 1384 | 0.723 |
+| increased profiles | gram positive | 1378 | 0.720 |
+| decreased profiles | gram positive | 1362 | 0.718 |
 
 ## Enrichment-Filtered Anatomical Sites
 
@@ -108,14 +108,14 @@ The anatomical companion keeps body-site groups with at least 10 profiles contai
 
 | body_site_group | retained profiles | increased retained | decreased retained | zero-enriched profiles |
 | --- | ---: | ---: | ---: | ---: |
-| Feces | 5459 | 2750 | 2709 | 2136 |
-| Saliva | 384 | 202 | 182 | 254 |
-| Subgingival dental plaque | 127 | 76 | 51 | 84 |
-| Caecum | 124 | 73 | 51 | 41 |
-| Vagina | 123 | 77 | 46 | 73 |
-| Colon | 105 | 55 | 50 | 34 |
-| Mouth | 79 | 39 | 40 | 91 |
-| Nasopharynx | 70 | 51 | 19 | 56 |
+| Feces | 2628 | 1250 | 1378 | 1044 |
+| Saliva | 172 | 98 | 74 | 127 |
+| Vagina | 82 | 47 | 35 | 42 |
+| Uterine cervix | 47 | 26 | 21 | 35 |
+| Oral cavity | 46 | 24 | 22 | 36 |
+| Nasopharynx | 45 | 33 | 12 | 29 |
+| Mouth | 42 | 21 | 21 | 32 |
+| Subgingival dental plaque | 42 | 26 | 16 | 28 |
 
 ## Data-Inferred Guild Evidence
 
@@ -123,44 +123,43 @@ For the top condition signals, this table uses all taxa observed in the decrease
 
 | condition | decreased profiles | universe taxa / observed taxa | enriched traits | supporting taxa |
 | --- | ---: | ---: | --- | --- |
-| Acute graft vs. host disease | 7 | 28 / 30 | obligately anaerobic (+1.09); anaerobic (+1.07) | taxon_841 (2 traits, 4 profiles); taxon_1263 (2 traits, 2 profiles); taxon_171549 (2 traits, 2 profiles); taxon_200643 (2 traits, 2 profiles); taxon_28050 (2 traits, 2 profiles); taxon_816 (2 traits, 2 profiles); taxon_976 (2 traits, 2 profiles); taxon_1224 (2 traits, 1 profile); taxon_1236 (2 traits, 1 profile); taxon_1678 (2 traits, 1 profile); taxon_171550 (2 traits, 1 profile); taxon_186801 (2 traits, 1 profile) |
-| Acute pancreatitis | 10 | 49 / 77 | anaerobic (+0.92); obligately anaerobic (+0.72) | taxon_200940 (2 traits, 3 profiles); taxon_208479 (2 traits, 3 profiles); taxon_1496 (2 traits, 2 profiles); taxon_28889 (2 traits, 2 profiles); taxon_292800 (2 traits, 2 profiles); taxon_872 (2 traits, 2 profiles); taxon_1224 (2 traits, 1 profile); taxon_1239 (2 traits, 1 profile); taxon_1350 (2 traits, 1 profile); taxon_201174 (2 traits, 1 profile); taxon_246787 (2 traits, 1 profile); taxon_28111 (2 traits, 1 profile) |
-| Age-related macular degeneration | 14 | 36 / 39 | obligately anaerobic (+1.57); anaerobic (+0.97) | taxon_838 (2 traits, 6 profiles); taxon_186803 (2 traits, 3 profiles); taxon_186801 (2 traits, 2 profiles); taxon_816 (2 traits, 2 profiles); taxon_28111 (2 traits, 2 profiles); taxon_572511 (2 traits, 2 profiles); taxon_1239 (2 traits, 1 profile); taxon_171549 (2 traits, 1 profile); taxon_171552 (2 traits, 1 profile); taxon_2172 (2 traits, 1 profile); taxon_28050 (2 traits, 1 profile); taxon_3085636 (2 traits, 1 profile) |
-| Diarrhea | 22 | 86 / 92 | obligately anaerobic (+0.92); anaerobic (+0.72) | taxon_816 (2 traits, 9 profiles); taxon_84107 (2 traits, 6 profiles); taxon_1678 (2 traits, 6 profiles); taxon_572511 (2 traits, 6 profiles); taxon_1263 (2 traits, 6 profiles); taxon_817 (2 traits, 4 profiles); taxon_1239 (2 traits, 4 profiles); taxon_186803 (2 traits, 3 profiles); taxon_201174 (2 traits, 3 profiles); taxon_91061 (2 traits, 2 profiles); taxon_1485 (2 traits, 1 profile); taxon_1643824 (2 traits, 1 profile) |
-| Graft versus host disease | 6 | 19 / 22 | obligately anaerobic (+1.47); anaerobic (+1.04) | taxon_186803 (2 traits, 5 profiles); taxon_572511 (2 traits, 3 profiles); taxon_186801 (2 traits, 2 profiles); taxon_186802 (2 traits, 2 profiles); taxon_946234 (2 traits, 2 profiles); taxon_186804 (2 traits, 1 profile); taxon_200643 (2 traits, 1 profile); taxon_1506553 (1 trait, 3 profiles); taxon_1769710 (1 trait, 2 profiles); taxon_128827 (1 trait, 1 profile); taxon_1378 (1 trait, 1 profile); taxon_1392389 (1 trait, 1 profile) |
-| Graves ophthalmopathy | 5 | 14 / 15 | anaerobic (+1.38) | taxon_29523 (1 trait, 2 profiles); taxon_976 (1 trait, 2 profiles); taxon_102106 (1 trait, 1 profile); taxon_1239 (1 trait, 1 profile); taxon_1263 (1 trait, 1 profile); taxon_1407607 (1 trait, 1 profile); taxon_204516 (1 trait, 1 profile); taxon_207244 (1 trait, 1 profile); taxon_328814 (1 trait, 1 profile); taxon_39488 (1 trait, 1 profile); taxon_39496 (1 trait, 1 profile); taxon_41200 (1 trait, 1 profile) |
-| Head and neck carcinoma | 4 | 53 / 62 | anaerobic (+0.88); obligately anaerobic (+0.78) | taxon_836 (2 traits, 3 profiles); taxon_186804 (2 traits, 2 profiles); taxon_203490 (2 traits, 2 profiles); taxon_203491 (2 traits, 2 profiles); taxon_203492 (2 traits, 2 profiles); taxon_32066 (2 traits, 2 profiles); taxon_838 (2 traits, 2 profiles); taxon_841 (2 traits, 2 profiles); taxon_136 (2 traits, 1 profile); taxon_137 (2 traits, 1 profile); taxon_157 (2 traits, 1 profile); taxon_1654 (2 traits, 1 profile) |
-| Lung transplantation | 3 | 25 / 25 | obligately anaerobic (+1.06); anaerobic (+1.04) | taxon_171549 (2 traits, 2 profiles); taxon_171552 (2 traits, 2 profiles); taxon_186802 (2 traits, 2 profiles); taxon_200643 (2 traits, 2 profiles); taxon_203490 (2 traits, 2 profiles); taxon_203491 (2 traits, 2 profiles); taxon_203492 (2 traits, 2 profiles); taxon_216572 (2 traits, 2 profiles); taxon_310298 (2 traits, 2 profiles); taxon_32066 (2 traits, 2 profiles); taxon_815 (2 traits, 2 profiles); taxon_816 (2 traits, 2 profiles) |
+| Age-related macular degeneration | 14 | 36 / 39 | obligately anaerobic (+1.54); anaerobic (+0.96) | Prevotella (2 traits, 6 profiles); Lachnospiraceae (2 traits, 3 profiles); Clostridia (2 traits, 2 profiles); Bacteroides (2 traits, 2 profiles); Bacteroides eggerthii (2 traits, 2 profiles); Blautia (2 traits, 2 profiles); Bacillota (2 traits, 1 profile); Bacteroidales (2 traits, 1 profile); Prevotellaceae (2 traits, 1 profile); Methanobrevibacter (2 traits, 1 profile); Lachnospira (2 traits, 1 profile); Lachnospirales (2 traits, 1 profile) |
+| Chronic kidney disease | 11 | 110 / 125 | anaerobic (+1.11); obligately anaerobic (+0.64) | Bacillota (2 traits, 3 profiles); Clostridia (2 traits, 3 profiles); Eubacteriales (2 traits, 3 profiles); Lachnospiraceae (2 traits, 3 profiles); Veillonellaceae (2 traits, 3 profiles); Roseburia (2 traits, 3 profiles); Selenomonadales (2 traits, 3 profiles); Negativicutes (2 traits, 3 profiles); Ruminococcus (2 traits, 2 profiles); Prevotellaceae (2 traits, 2 profiles); Lachnospira (2 traits, 2 profiles); Verrucomicrobiota (2 traits, 2 profiles) |
+| Diarrhea | 12 | 44 / 46 | obligately anaerobic (+1.49); anaerobic (+0.89) | Bacteroides (2 traits, 8 profiles); Bifidobacterium (2 traits, 6 profiles); Ruminococcus (2 traits, 6 profiles); Blautia (2 traits, 4 profiles); Coriobacteriaceae (2 traits, 4 profiles); Bacteroides fragilis (2 traits, 3 profiles); Lachnospiraceae (2 traits, 2 profiles); Clostridium (2 traits, 1 profile); Prevotellaceae (2 traits, 1 profile); Eubacteriales (2 traits, 1 profile); Actinomycetota (2 traits, 1 profile); Bifidobacteriaceae (2 traits, 1 profile) |
+| Graft versus host disease | 6 | 19 / 22 | obligately anaerobic (+1.45); anaerobic (+1.02) | Lachnospiraceae (2 traits, 5 profiles); Blautia (2 traits, 3 profiles); Clostridia (2 traits, 2 profiles); Eubacteriales (2 traits, 2 profiles); Flavonifractor (2 traits, 2 profiles); Peptostreptococcaceae (2 traits, 1 profile); Bacteroidia (2 traits, 1 profile); Lachnoclostridium (1 trait, 3 profiles); Sellimonas (1 trait, 2 profiles); Erysipelotrichaceae (1 trait, 1 profile); Gemella (1 trait, 1 profile); Intestinimonas (1 trait, 1 profile) |
+| Inflammatory bowel disease | 8 | 42 / 42 | obligately anaerobic (+1.50); anaerobic (+1.17) | Roseburia hominis (2 traits, 5 profiles); Ruminococcus bromii (2 traits, 4 profiles); Lachnospira eligens (2 traits, 3 profiles); Bifidobacterium adolescentis (2 traits, 2 profiles); Bacteroides caccae (2 traits, 2 profiles); Bacillota (2 traits, 1 profile); Bifidobacterium (2 traits, 1 profile); Bacteroides cellulosilyticus (2 traits, 1 profile); Gardnerella (2 traits, 1 profile); Bacteroides intestinalis (2 traits, 1 profile); Bacteroides stercoris (2 traits, 1 profile); Roseburia inulinivorans (1 trait, 4 profiles) |
+| Respiratory tract infectious disease | 4 | 16 / 20 | anaerobic (+1.19); obligately anaerobic (+0.81) | Clostridia (2 traits, 1 profile); Eubacteriales (2 traits, 1 profile); Desulfobacterales (2 traits, 1 profile); Oscillospiraceae (2 traits, 1 profile); Dethiosulfovibrio (2 traits, 1 profile); Synergistota (2 traits, 1 profile); Verrucomicrobiota (2 traits, 1 profile); Coprobacillus (1 trait, 1 profile); Erysipelotrichaceae (1 trait, 1 profile); Eubacterium sp. (1 trait, 1 profile); Eubacterium (1 trait, 1 profile); Holdemanella biformis (1 trait, 1 profile) |
+| Response to antibiotic | 4 | 18 / 23 | obligately anaerobic (+0.91); anaerobic (+0.86) | Bifidobacterium (2 traits, 2 profiles); Bifidobacterium adolescentis (2 traits, 2 profiles); Bifidobacterium breve (2 traits, 2 profiles); Bacillati (2 traits, 1 profile); Oscillospiraceae (2 traits, 1 profile); Clostridiaceae (2 traits, 1 profile); Parabacteroides (2 traits, 1 profile); Bacteroides (2 traits, 1 profile); Phocaeicola (2 traits, 1 profile); Bifidobacterium pseudocatenulatum (1 trait, 3 profiles); Bifidobacterium angulatum (1 trait, 2 profiles); Collinsella aerofaciens (1 trait, 2 profiles) |
+| Response to antiviral drug | 18 | 35 / 38 | obligately anaerobic (+1.14); anaerobic (+0.56) | Clostridium (2 traits, 6 profiles); Rikenellaceae (2 traits, 3 profiles); Lachnospira (2 traits, 3 profiles); Bacteroides (2 traits, 3 profiles); Blautia (2 traits, 2 profiles); Coriobacteriaceae (2 traits, 2 profiles); Bifidobacterium (2 traits, 1 profile); Bacteroidales (2 traits, 1 profile); Clostridia (2 traits, 1 profile); Eubacteriales (2 traits, 1 profile); Lachnospiraceae (2 traits, 1 profile); Actinomycetaceae (2 traits, 1 profile) |
 
 ## Body-Site Check
 
 | body_site_group | profiles | increased mean trait z | decreased mean trait z | decreased - increased z |
 | --- | ---: | ---: | ---: | ---: |
-| Colon | 139 | 0.079 | 0.445 | 0.366 |
-| Feces | 7595 | 0.079 | 0.231 | 0.152 |
-| Caecum | 165 | 0.169 | 0.100 | -0.069 |
-| Saliva | 638 | -0.146 | -0.153 | -0.006 |
-| Vagina | 196 | 0.025 | -0.193 | -0.218 |
-| Subgingival dental plaque | 211 | 0.015 | -0.247 | -0.261 |
-| Other | 2829 | -0.278 | -0.344 | -0.066 |
-| Nasopharynx | 126 | -0.410 | -0.373 | 0.036 |
-| Mouth | 170 | -0.530 | -0.519 | 0.011 |
-| unknown | 39 | -1.280 | -1.427 | -0.147 |
+| Feces | 3672 | 0.062 | 0.249 | 0.187 |
+| Vagina | 124 | 0.048 | -0.062 | -0.110 |
+| Saliva | 299 | -0.166 | -0.231 | -0.064 |
+| Mouth | 74 | -0.306 | -0.264 | 0.042 |
+| Oral cavity | 82 | -0.230 | -0.277 | -0.048 |
+| Uterine cervix | 82 | -0.049 | -0.279 | -0.230 |
+| Subgingival dental plaque | 70 | 0.203 | -0.335 | -0.538 |
+| Nasopharynx | 74 | -0.340 | -0.353 | -0.013 |
+| Other | 1352 | -0.267 | -0.354 | -0.087 |
 
 ## Top Decreased Profiles To Inspect
 
 | profile | condition | body site | trait z | title |
 | --- | --- | --- | ---: | --- |
-| bsdb:36621696\|bsdb:36621696-2\|dec | Psoriasis vulgaris | Feces | 1.921 | Altered gut microbiome composition in nontreated plaque psoriasis patients |
-| bsdb:39976263\|bsdb:39976263-10\|dec | Alanine measurement | Feces | 1.921 | <i>Roseburia hominis</i> improves host metabolism in diet-induced obesity |
-| bsdb:31171880\|bsdb:31171880-2\|dec | Colorectal cancer | Feces | 1.891 | Metagenomic and metabolomic analyses reveal distinct stage-specific phenotypes of the g... |
-| bsdb:34698096\|bsdb:34698096-3\|dec | Sensory perception of bitter taste | Internal cheek pouch | 1.866 | Association of Bitter Taste Receptor T2R38 Polymorphisms, Oral Microbiota, and Rheumato... |
-| bsdb:39417117\|bsdb:39417117-24\|dec | Metabolic toxicity | Feces | 1.815 | Toxic Metals Impact Gut Microbiota and Metabolic Risk in Five African-Origin Populations |
-| bsdb:40811957\|bsdb:40811957-7\|dec | Peri-Implantitis | Dental plaque | 1.803 | Microbiome Shifts in Peri-Implantitis: Longitudinal Characterization of Dysbiosis and R... |
-| bsdb:39191760\|bsdb:39191760-11\|dec | Response to transplant | Feces | 1.743 | Fecal microbiota transplantation influences microbiota without connection to symptom re... |
-| bsdb:36566315\|bsdb:36566315-1\|dec | Fasting blood glucose measurement | Feces | 1.721 | The gut microbiome of obese postpartum women with and without previous gestational diab... |
-| bsdb:40520642\|bsdb:40520642-1\|dec | Type II diabetes mellitus | Feces | 1.721 | Fecal microbiome analysis in patients with metabolic syndrome and type 2 diabetes |
-| bsdb:35140064\|bsdb:35140064-15\|dec | Response to vaccine | Feces | 1.721 | Gut microbiota composition is associated with SARS-CoV-2 vaccine immunogenicity and adv... |
+| bsdb:36621696\|bsdb:36621696-2\|dec | Psoriasis vulgaris | Feces | 1.885 | Altered gut microbiome composition in nontreated plaque psoriasis patients |
+| bsdb:39976263\|bsdb:39976263-10\|dec | Alanine measurement | Feces | 1.885 | <i>Roseburia hominis</i> improves host metabolism in diet-induced obesity |
+| bsdb:31171880\|bsdb:31171880-2\|dec | Colorectal cancer | Feces | 1.855 | Metagenomic and metabolomic analyses reveal distinct stage-specific phenotypes of the g... |
+| bsdb:34698096\|bsdb:34698096-3\|dec | Sensory perception of bitter taste | Internal cheek pouch | 1.831 | Association of Bitter Taste Receptor T2R38 Polymorphisms, Oral Microbiota, and Rheumato... |
+| bsdb:39417117\|bsdb:39417117-24\|dec | Metabolic toxicity | Feces | 1.780 | Toxic Metals Impact Gut Microbiota and Metabolic Risk in Five African-Origin Populations |
+| bsdb:36566315\|bsdb:36566315-1\|dec | Fasting blood glucose measurement | Feces | 1.687 | The gut microbiome of obese postpartum women with and without previous gestational diab... |
+| bsdb:37894412\|bsdb:37894412-2\|dec | Intestinal polyp | Colonic mucosa | 1.687 | Mucosal Microbiome in Patients with Early Bowel Polyps: Inferences from Short-Read and ... |
+| bsdb:31530647\|bsdb:31530647-2\|dec | Colorectal cancer | Feces | 1.650 | Altered Fecal Small RNA Profiles in Colorectal Cancer Reflect Gut Microbiome Compositio... |
+| bsdb:41011244\|bsdb:41011244-4\|dec | Autism spectrum disorder | Feces | 1.650 | Metagenomic Characterization of Gut Microbiota in Children with Autism Spectrum Disorde... |
+| bsdb:38384431\|bsdb:38384431-8\|dec | Diet measurement | Feces | 1.650 | Short-term pectin-enriched smoothie consumption has beneficial effects on the gut micro... |
 
 ## Suggested Follow-Up
 

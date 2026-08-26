@@ -1,5 +1,5 @@
 	trait_id	profile_support	total_signal	composition_variance	display_label	column_label	object_name	object_category	display_category	selection_score	investigation_trait_name
-METPO:1000603	METPO:1000603	11365	9427690.0	0.0021644190988953	"anaerobic
-METPO:1000603"	anaerobic METPO:1000603	anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	0.0347587564424491	anaerobic
-METPO:1000607	METPO:1000607	8439	503255.0	9.694762264923249e-05	"obligately anaerobic
-METPO:1000607"	obligately anaerobic METPO:1000607	obligately anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	0.0012728112091906	obligately anaerobic
+METPO:1000603	METPO:1000603	5438	4365128.0	0.0022801833577767	"anaerobic
+METPO:1000603"	anaerobic METPO:1000603	anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	0.0348620843102645	anaerobic
+METPO:1000607	METPO:1000607	4018	234129.0	0.0001086273915812	"obligately anaerobic
+METPO:1000607"	obligately anaerobic METPO:1000607	obligately anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	0.0013430290724306	obligately anaerobic

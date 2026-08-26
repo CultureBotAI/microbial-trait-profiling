@@ -1,10 +1,5 @@
 stratum_kind	stratum	filename_token	analysis_role	pair_count	study_count	selected_trait_count	path
-body_site_group	Feces	feces	primary-analysis	3021	1064	313	trait-visualization\trait-profile-investigation\trait_profile_paired_contrast_trait_stats_feces.tsv
-body_site_group_excluded	Feces excluded	feces_excluded	robustness-feces-excluded	1763	640	304	trait-visualization\trait-profile-investigation\trait_profile_paired_contrast_trait_stats_feces_excluded.tsv
-body_site_group	Caecum	caecum	body-site	65	16	288	trait-visualization\trait-profile-investigation\trait_profile_paired_contrast_trait_stats_caecum.tsv
-body_site_group	Colon	colon	body-site	59	19	288	trait-visualization\trait-profile-investigation\trait_profile_paired_contrast_trait_stats_colon.tsv
-body_site_group	Mouth	mouth	body-site	60	16	288	trait-visualization\trait-profile-investigation\trait_profile_paired_contrast_trait_stats_mouth.tsv
-body_site_group	Other	other	body-site	1096	423	301	trait-visualization\trait-profile-investigation\trait_profile_paired_contrast_trait_stats_other.tsv
-body_site_group	Saliva	saliva	body-site	272	86	285	trait-visualization\trait-profile-investigation\trait_profile_paired_contrast_trait_stats_saliva.tsv
-body_site_group	Subgingival dental plaque	subgingival_dental_plaque	body-site	91	33	264	trait-visualization\trait-profile-investigation\trait_profile_paired_contrast_trait_stats_subgingival_dental_plaque.tsv
-body_site_group	Vagina	vagina	body-site	65	29	285	trait-visualization\trait-profile-investigation\trait_profile_paired_contrast_trait_stats_vagina.tsv
+body_site_group	Feces	feces	primary-analysis	1485	594	314	trait-visualization\trait-profile-investigation\trait_profile_paired_contrast_trait_stats_feces.tsv
+body_site_group_excluded	Feces excluded	feces_excluded	robustness-feces-excluded	850	365	298	trait-visualization\trait-profile-investigation\trait_profile_paired_contrast_trait_stats_feces_excluded.tsv
+body_site_group	Other	other	body-site	521	223	299	trait-visualization\trait-profile-investigation\trait_profile_paired_contrast_trait_stats_other.tsv
+body_site_group	Saliva	saliva	body-site	129	55	285	trait-visualization\trait-profile-investigation\trait_profile_paired_contrast_trait_stats_saliva.tsv

@@ -1,121 +1,121 @@
 	trait_id	module_support	total_signal	composition_variance	display_label	column_label	object_name	object_category	display_category	selection_score
-METPO:1000844	METPO:1000844	32	9564.0	6.683963896036627e-08	"Methanogenesis
-METPO:1000844"	Methanogenesis METPO:1000844	Methanogenesis	biolink:OntologyClass	OntologyClass	6.126431663036209e-07
-METPO:1000657	METPO:1000657	74	26045.0	1.7043864281399443e-08	"photoheterotrophic
-METPO:1000657"	photoheterotrophic METPO:1000657	photoheterotrophic	biolink:PhenotypicQuality	PhenotypicQuality	1.732955265592018e-07
-METPO:2000006|CHEBI:17748	METPO:2000006|CHEBI:17748	76	40088.0	9.873599565323873e-09	"thymidine
-CHEBI:17748"	uses as carbon source: thymidine CHEBI:17748 [METPO:2000006]	thymidine	biolink:SmallMolecule	SmallMolecule	1.046488724495743e-07
-METPO:1000660	METPO:1000660	73	19559.0	1.0376350631947658e-08	"phototrophic
-METPO:1000660"	phototrophic METPO:1000660	phototrophic	biolink:PhenotypicQuality	PhenotypicQuality	1.0253123108578543e-07
-METPO:2000006|CHEBI:16526	METPO:2000006|CHEBI:16526	28	3900.0	1.1506516894870349e-08	"carbon dioxide
-CHEBI:16526"	uses as carbon source: carbon dioxide CHEBI:16526 [METPO:2000006]	carbon dioxide	biolink:SmallMolecule	SmallMolecule	9.514725253617205e-08
-METPO:2000006|CHEBI:18276	METPO:2000006|CHEBI:18276	28	3900.0	1.1506516894870349e-08	"diydrogen
-CHEBI:18276"	uses as carbon source: diydrogen CHEBI:18276 [METPO:2000006]	diydrogen	biolink:SmallMolecule	SmallMolecule	9.514725253617205e-08
-METPO:1000656	METPO:1000656	73	14916.0	5.016987581288368e-09	"photoautotrophic
-METPO:1000656"	photoautotrophic METPO:1000656	photoautotrophic	biolink:PhenotypicQuality	PhenotypicQuality	4.821453892404159e-08
-METPO:1000651	METPO:1000651	76	21440.0	3.184074903298667e-09	"methylotrophic
-METPO:1000651"	methylotrophic METPO:1000651	methylotrophic	biolink:PhenotypicQuality	PhenotypicQuality	3.1754970869858645e-08
-METPO:1000649	METPO:1000649	76	13341.0	2.6401321902533965e-09	"lithotrophic
-METPO:1000649"	lithotrophic METPO:1000649	lithotrophic	biolink:PhenotypicQuality	PhenotypicQuality	2.5077750327720824e-08
-METPO:2000103|pathways:nitrification	METPO:2000103|pathways:nitrification	75	9543.0	2.420195291722814e-09	"nitrification
-nitrification"	capable of: nitrification pathways:nitrification [METPO:2000103]	nitrification	biolink:BiologicalProcess	BiologicalProcess	2.21778660608461e-08
-METPO:2000103|GO:0015946	METPO:2000103|GO:0015946	76	16143.0	1.6368031756410833e-09	"methanol oxidation
-GO:0015946"	capable of: methanol oxidation GO:0015946 [METPO:2000103]	methanol oxidation	biolink:BiologicalProcess	BiologicalProcess	1.5859483135627893e-08
-METPO:2000103|pathways:methanogenesis_h2co2	METPO:2000103|pathways:methanogenesis_h2co2	29	1793.0	2.080707091398205e-09	"methanogenesis H2CO2
-methanogenesis_h2co2"	capable of: methanogenesis_H2CO2 pathways:methanogenesis_h2co2 [METPO:2000103]	methanogenesis_H2CO2	biolink:BiologicalProcess	BiologicalProcess	1.5589080000972024e-08
-METPO:2000103|pathways:sulfur_oxidation_dark	METPO:2000103|pathways:sulfur_oxidation_dark	75	10030.0	1.5012289245906222e-09	"sulfur oxidation dark
-sulfur_oxidation_dark"	capable of: sulfur_oxidation_dark pathways:sulfur_oxidation_dark [METPO:2000103]	sulfur_oxidation_dark	biolink:BiologicalProcess	BiologicalProcess	1.3831475982869774e-08
-METPO:2000103|pathways:pah_degradation	METPO:2000103|pathways:pah_degradation	76	8040.0	1.4691126968110588e-09	"PAH degradation
-pah_degradation"	capable of: PAH_degradation pathways:pah_degradation [METPO:2000103]	PAH_degradation	biolink:BiologicalProcess	BiologicalProcess	1.3210714932631446e-08
-METPO:1000617	METPO:1000617	76	7766.0	1.3778330072662433e-09	"hyperthermophilic
-METPO:1000617"	hyperthermophilic METPO:1000617	hyperthermophilic	biolink:PhenotypicQuality	PhenotypicQuality	1.2342131051212836e-08
-METPO:2000103|pathways:methane_oxidation	METPO:2000103|pathways:methane_oxidation	68	6514.0	9.465720045300935e-10	"methane oxidation
-methane_oxidation"	capable of: methane_oxidation pathways:methane_oxidation [METPO:2000103]	methane_oxidation	biolink:BiologicalProcess	BiologicalProcess	8.312665180249447e-09
-METPO:2000103|pathways:sulfide_oxidation_dark	METPO:2000103|pathways:sulfide_oxidation_dark	75	6849.0	8.044433767721455e-10	"sulfide oxidation dark
-sulfide_oxidation_dark"	capable of: sulfide_oxidation_dark pathways:sulfide_oxidation_dark [METPO:2000103]	sulfide_oxidation_dark	biolink:BiologicalProcess	BiologicalProcess	7.104847066124659e-09
-METPO:2000006|CHEBI:18139	METPO:2000006|CHEBI:18139	24	879.0	9.823537845026085e-10	"trimethylamine
-CHEBI:18139"	uses as carbon source: trimethylamine CHEBI:18139 [METPO:2000006]	trimethylamine	biolink:SmallMolecule	SmallMolecule	6.660281944437511e-09
-METPO:2000006|CHEBI:53424	METPO:2000006|CHEBI:53424	74	7726.0	7.250181098311747e-10	"tween 20
-CHEBI:53424"	uses as carbon source: tween 20 CHEBI:53424 [METPO:2000006]	tween 20	biolink:SmallMolecule	SmallMolecule	6.490707204580223e-09
-METPO:2000006|CHEBI:17170	METPO:2000006|CHEBI:17170	24	829.0	8.703615183369867e-10	"dimethylamine
-CHEBI:17170"	uses as carbon source: dimethylamine CHEBI:17170 [METPO:2000006]	dimethylamine	biolink:SmallMolecule	SmallMolecule	5.8500702783293895e-09
-METPO:2000006|CHEBI:17790	METPO:2000006|CHEBI:17790	19	803.0	8.685730822486887e-10	"methanol
-CHEBI:17790"	uses as carbon source: methanol CHEBI:17790 [METPO:2000006]	methanol	biolink:SmallMolecule	SmallMolecule	5.8104058562393505e-09
-METPO:2000103|pathways:arsenite_oxidation	METPO:2000103|pathways:arsenite_oxidation	74	4168.0	6.843352341366698e-10	"arsenite oxidation
-arsenite_oxidation"	capable of: arsenite_oxidation pathways:arsenite_oxidation [METPO:2000103]	arsenite_oxidation	biolink:BiologicalProcess	BiologicalProcess	5.704229452045722e-09
-METPO:2000006|CHEBI:16830	METPO:2000006|CHEBI:16830	18	750.0	7.627911608140324e-10	"methylamine
-CHEBI:16830"	uses as carbon source: methylamine CHEBI:16830 [METPO:2000006]	methylamine	biolink:SmallMolecule	SmallMolecule	5.050749703329759e-09
-METPO:2000103|GO:0019412	METPO:2000103|GO:0019412	72	2178.0	6.248022621933314e-10	"aerobic respiration, using hydr...
-GO:0019412"	capable of: aerobic respiration, using hydrogen as electron donor GO:0019412 [METPO:2000103]	aerobic respiration, using hydrogen as electron donor	biolink:BiologicalProcess	BiologicalProcess	4.802618398696923e-09
-METPO:1003026	METPO:1003026	73	6021.0	4.3212978781753687e-10	"orange pigmented
-METPO:1003026"	orange pigmented METPO:1003026	orange pigmented	biolink:PhenotypicQuality	PhenotypicQuality	3.760901040357134e-09
-METPO:1003024	METPO:1003024	76	5405.0	3.86981141263414e-10	"cream pigmented
-METPO:1003024"	cream pigmented METPO:1003024	cream pigmented	biolink:PhenotypicQuality	PhenotypicQuality	3.3262053534523136e-09
-METPO:2000103|pathways:gelatin_degradation	METPO:2000103|pathways:gelatin_degradation	74	1166.0	3.901327985817558e-10	"gelatin degradation
-gelatin_degradation"	capable of: gelatin_degradation pathways:gelatin_degradation [METPO:2000103]	gelatin_degradation	biolink:BiologicalProcess	BiologicalProcess	2.755192585624612e-09
-METPO:2000103|pathways:sulfite_oxidation_dark	METPO:2000103|pathways:sulfite_oxidation_dark	72	2875.0	3.239592067078435e-10	"sulfite oxidation dark
-sulfite_oxidation_dark"	capable of: sulfite_oxidation_dark pathways:sulfite_oxidation_dark [METPO:2000103]	sulfite_oxidation_dark	biolink:BiologicalProcess	BiologicalProcess	2.5800615687734446e-09
-METPO:2000103|GO:0019418	METPO:2000103|GO:0019418	73	5175.0	2.9043744150819014e-10	"sulfide oxidation
-GO:0019418"	capable of: sulfide oxidation GO:0019418 [METPO:2000103]	sulfide oxidation	biolink:BiologicalProcess	BiologicalProcess	2.4837593794611947e-09
-METPO:1003029	METPO:1003029	73	4096.0	1.9201168144993874e-10	"white pigmented
-METPO:1003029"	white pigmented METPO:1003029	white pigmented	biolink:PhenotypicQuality	PhenotypicQuality	1.5971551397096465e-09
-METPO:1000622	METPO:1000622	74	2892.0	1.336750023869732e-10	"halotolerant
-METPO:1000622"	halotolerant METPO:1000622	halotolerant	biolink:PhenotypicQuality	PhenotypicQuality	1.065396359866979e-09
-METPO:1000689	METPO:1000689	68	1043.0	1.4916374631584864e-10	"disc shaped
-METPO:1000689"	disc shaped METPO:1000689	disc shaped	biolink:PhenotypicQuality	PhenotypicQuality	1.0368095708084237e-09
-METPO:2000006|CHEBI:53425	METPO:2000006|CHEBI:53425	74	3536.0	1.1136386728546685e-10	"tween 60
-CHEBI:53425"	uses as carbon source: tween 60 CHEBI:53425 [METPO:2000006]	tween 60	biolink:SmallMolecule	SmallMolecule	9.099579670316913e-10
-METPO:1000619	METPO:1000619	70	2728.0	1.1389935768132254e-10	"thermotolerant
-METPO:1000619"	thermotolerant METPO:1000619	thermotolerant	biolink:OntologyClass	OntologyClass	9.011364684820881e-10
-METPO:1003028	METPO:1003028	75	2778.0	1.0453901024414911e-10	"red pigmented
-METPO:1003028"	red pigmented METPO:1003028	red pigmented	biolink:PhenotypicQuality	PhenotypicQuality	8.289782971533808e-10
-METPO:2000103|pathways:thiosulfate_oxidation	METPO:2000103|pathways:thiosulfate_oxidation	69	2097.0	1.0218126302894234e-10	"thiosulfate oxidation
-thiosulfate_oxidation"	capable of: thiosulfate_oxidation pathways:thiosulfate_oxidation [METPO:2000103]	thiosulfate_oxidation	biolink:BiologicalProcess	BiologicalProcess	7.815578922152747e-10
-METPO:2000103|pathways:carbon_monoxide_oxidation	METPO:2000103|pathways:carbon_monoxide_oxidation	73	2165.0	8.423732307016647e-11	"carbon monoxide oxidation
-carbon_monoxide_oxi..."	capable of: carbon_monoxide_oxidation pathways:carbon_monoxide_oxidation [METPO:2000103]	carbon_monoxide_oxidation	biolink:BiologicalProcess	BiologicalProcess	6.469963363702629e-10
-METPO:1003027	METPO:1003027	75	3380.0	7.903012643318974e-11	"pink pigmented
-METPO:1003027"	pink pigmented METPO:1003027	pink pigmented	biolink:PhenotypicQuality	PhenotypicQuality	6.421930226048494e-10
-METPO:2000103|pathways:chlorate_reduction	METPO:2000103|pathways:chlorate_reduction	74	1931.0	8.229251679151108e-11	"chlorate reduction
-chlorate_reduction"	capable of: chlorate_reduction pathways:chlorate_reduction [METPO:2000103]	chlorate_reduction	biolink:BiologicalProcess	BiologicalProcess	6.226507762329582e-10
-METPO:2000006|CHEBI:17437	METPO:2000006|CHEBI:17437	24	304.0	1.0380731323482243e-10	"dimethyl sulfide
-CHEBI:17437"	uses as carbon source: dimethyl sulfide CHEBI:17437 [METPO:2000006]	dimethyl sulfide	biolink:SmallMolecule	SmallMolecule	5.938101963951292e-10
-METPO:2000103|pathways:tetrathionate_oxidation	METPO:2000103|pathways:tetrathionate_oxidation	73	2529.0	7.323948842504451e-11	"tetrathionate oxidation
-tetrathionate_oxida..."	capable of: tetrathionate_oxidation pathways:tetrathionate_oxidation [METPO:2000103]	tetrathionate_oxidation	biolink:BiologicalProcess	BiologicalProcess	5.739027696769396e-10
-METPO:1000611	METPO:1000611	74	651.0	6.815491215446911e-11	"strictly anaerobic
-METPO:1000611"	strictly anaerobic METPO:1000611	strictly anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	4.416468678751563e-10
-METPO:1000705	METPO:1000705	75	1609.0	5.5225152769426415e-11	"axially filamented
-METPO:1000705"	axially filamented METPO:1000705	axially filamented	biolink:OntologyClass	OntologyClass	4.0778194586469733e-10
-METPO:2000103|pathways:methanogenesis_acetoclastic	METPO:2000103|pathways:methanogenesis_acetoclastic	18	225.0	6.865120447326291e-11	"methanogenesis acetoclastic
-methanogenesis_acet..."	capable of: methanogenesis_acetoclastic pathways:methanogenesis_acetoclastic [METPO:2000103]	methanogenesis_acetoclastic	biolink:BiologicalProcess	BiologicalProcess	3.7212625658951973e-10
-METPO:2000103|pathways:selenate_reduction	METPO:2000103|pathways:selenate_reduction	75	2284.0	4.698379846928207e-11	"selenate reduction
-selenate_reduction"	capable of: selenate_reduction pathways:selenate_reduction [METPO:2000103]	selenate_reduction	biolink:BiologicalProcess	BiologicalProcess	3.6337839665255826e-10
-METPO:2000103|pathways:uranyl_reduction	METPO:2000103|pathways:uranyl_reduction	71	1206.0	4.6128744934585096e-11	"uranyl reduction
-uranyl_reduction"	capable of: uranyl_reduction pathways:uranyl_reduction [METPO:2000103]	uranyl_reduction	biolink:BiologicalProcess	BiologicalProcess	3.273246484790595e-10
-METPO:2000103|pathways:sulfur_compound_oxidation_dark	METPO:2000103|pathways:sulfur_compound_oxidation_dark	69	1219.0	4.2502468657381233e-11	"sulfur compound oxidation dark
-sulfur_compound_oxi..."	capable of: sulfur_compound_oxidation_dark pathways:sulfur_compound_oxidation_dark [METPO:2000103]	sulfur_compound_oxidation_dark	biolink:BiologicalProcess	BiologicalProcess	3.020483046291078e-10
-METPO:2000103|GO:0019332	METPO:2000103|GO:0019332	70	1304.0	4.024803162167541e-11	"aerobic respiration, using nitr...
-GO:0019332"	capable of: aerobic respiration, using nitrite as electron donor GO:0019332 [METPO:2000103]	aerobic respiration, using nitrite as electron donor	biolink:BiologicalProcess	BiologicalProcess	2.8873770130615284e-10
-METPO:2000103|GO:0046274	METPO:2000103|GO:0046274	71	1196.0	3.545269676425359e-11	"lignin catabolic process
-GO:0046274"	capable of: lignin catabolic process GO:0046274 [METPO:2000103]	lignin catabolic process	biolink:BiologicalProcess	BiologicalProcess	2.5127360137744397e-10
-METPO:2000103|pathways:cellobiose_degradation	METPO:2000103|pathways:cellobiose_degradation	67	463.0	3.705164238998101e-11	"cellobiose degradation
-cellobiose_degradation"	capable of: cellobiose_degradation pathways:cellobiose_degradation [METPO:2000103]	cellobiose_degradation	biolink:BiologicalProcess	BiologicalProcess	2.274928067448559e-10
-METPO:1003031	METPO:1003031	64	894.0	2.807555662100802e-11	"carotenoid pigmentation
-METPO:1003031"	carotenoid pigmentation METPO:1003031	carotenoid pigmentation	biolink:PhenotypicQuality	PhenotypicQuality	1.9082460914543597e-10
-METPO:2000103|pathways:uranium_oxidation	METPO:2000103|pathways:uranium_oxidation	69	679.0	2.8831908793312893e-11	"uranium oxidation
-uranium_oxidation"	capable of: uranium_oxidation pathways:uranium_oxidation [METPO:2000103]	uranium_oxidation	biolink:BiologicalProcess	BiologicalProcess	1.880443846983647e-10
-METPO:1000680	METPO:1000680	71	1069.0	2.638242798046926e-11	"ring shaped
-METPO:1000680"	ring shaped METPO:1000680	ring shaped	biolink:PhenotypicQuality	PhenotypicQuality	1.8402835557506888e-10
-METPO:1000687	METPO:1000687	63	756.0	2.7268812128857788e-11	"branched shaped
-METPO:1000687"	branched shaped METPO:1000687	branched shaped	biolink:PhenotypicQuality	PhenotypicQuality	1.8077486109193923e-10
-METPO:2000006|CHEBI:30832	METPO:2000006|CHEBI:30832	73	820.0	2.6235030315006622e-11	"adipic acid
-CHEBI:30832"	uses as carbon source: adipic acid CHEBI:30832 [METPO:2000006]	adipic acid	biolink:SmallMolecule	SmallMolecule	1.7605077720603694e-10
-METPO:1000694	METPO:1000694	64	762.0	2.5647342079429993e-11	"square shaped
-METPO:1000694"	square shaped METPO:1000694	square shaped	biolink:PhenotypicQuality	PhenotypicQuality	1.7022802719779653e-10
-METPO:2000006|CHEBI:29987	METPO:2000006|CHEBI:29987	72	844.0	2.444420655358585e-11	"glutamate
-CHEBI:29987"	uses as carbon source: glutamate CHEBI:29987 [METPO:2000006]	glutamate	biolink:SmallMolecule	SmallMolecule	1.647377365532654e-10
-METPO:2000006|CHEBI:14321	METPO:2000006|CHEBI:14321	72	844.0	2.444420655358585e-11	"glutamate(1-)
-CHEBI:14321"	uses as carbon source: glutamate(1-) CHEBI:14321 [METPO:2000006]	glutamate(1-)	biolink:SmallMolecule	SmallMolecule	1.647377365532654e-10
-METPO:2000006|CHEBI:18237	METPO:2000006|CHEBI:18237	72	844.0	2.444420655358585e-11	"glutamic acid
-CHEBI:18237"	uses as carbon source: glutamic acid CHEBI:18237 [METPO:2000006]	glutamic acid	biolink:SmallMolecule	SmallMolecule	1.647377365532654e-10
-METPO:2000006|CHEBI:16015	METPO:2000006|CHEBI:16015	72	844.0	2.444420655358585e-11	"L-glutamic acid
-CHEBI:16015"	uses as carbon source: L-glutamic acid CHEBI:16015 [METPO:2000006]	L-glutamic acid	biolink:SmallMolecule	SmallMolecule	1.647377365532654e-10
+METPO:1000706	METPO:1000706	76	22529.0	1.2099034199761986e-07	"gliding
+METPO:1000706"	gliding METPO:1000706	gliding	biolink:OntologyClass	OntologyClass	1.212638168720629e-06
+METPO:2000103|pathways:thiosulfate_reduction	METPO:2000103|pathways:thiosulfate_reduction	75	20778.0	8.901816003786294e-08	"thiosulfate reduction
+thiosulfate_reduction"	capable of: thiosulfate_reduction pathways:thiosulfate_reduction [METPO:2000103]	thiosulfate_reduction	biolink:BiologicalProcess	BiologicalProcess	8.849916761013391e-07
+METPO:1000844	METPO:1000844	22	4619.0	6.949429073911761e-08	"Methanogenesis
+METPO:1000844"	Methanogenesis METPO:1000844	Methanogenesis	biolink:OntologyClass	OntologyClass	5.864032482936432e-07
+METPO:1000690	METPO:1000690	73	3435.0	3.212264036127435e-08	"fusiform shaped
+METPO:1000690"	fusiform shaped METPO:1000690	fusiform shaped	biolink:PhenotypicQuality	PhenotypicQuality	2.615445706418912e-07
+METPO:2000006|CHEBI:18401	METPO:2000006|CHEBI:18401	76	18102.0	2.653853474652231e-08	"phenylacetate
+CHEBI:18401"	uses as carbon source: phenylacetate CHEBI:18401 [METPO:2000006]	phenylacetate	biolink:SmallMolecule	SmallMolecule	2.6017936137611376e-07
+METPO:1000657	METPO:1000657	64	14647.0	2.6632065111267532e-08	"photoheterotrophic
+METPO:1000657"	photoheterotrophic METPO:1000657	photoheterotrophic	biolink:PhenotypicQuality	PhenotypicQuality	2.554563421389143e-07
+METPO:2000006|CHEBI:40585	METPO:2000006|CHEBI:40585	73	17679.0	2.1195052887627592e-08	"alpha-cyclodextrin
+CHEBI:40585"	uses as carbon source: alpha-cyclodextrin CHEBI:40585 [METPO:2000006]	alpha-cyclodextrin	biolink:MacromolecularComplex	MacromolecularComplex	2.0729163023159308e-07
+METPO:2000103|pathways:sulfur_reduction	METPO:2000103|pathways:sulfur_reduction	75	10415.0	1.884516942930897e-08	"sulfur reduction
+sulfur_reduction"	capable of: sulfur_reduction pathways:sulfur_reduction [METPO:2000103]	sulfur_reduction	biolink:BiologicalProcess	BiologicalProcess	1.743385160852323e-07
+METPO:1000660	METPO:1000660	62	11087.0	1.6237757467505368e-08	"phototrophic
+METPO:1000660"	phototrophic METPO:1000660	phototrophic	biolink:PhenotypicQuality	PhenotypicQuality	1.5123228194339263e-07
+METPO:2000006|CHEBI:16526	METPO:2000006|CHEBI:16526	19	1845.0	1.1881319107359795e-08	"carbon dioxide
+CHEBI:16526"	uses as carbon source: carbon dioxide CHEBI:16526 [METPO:2000006]	carbon dioxide	biolink:SmallMolecule	SmallMolecule	8.935674452246651e-08
+METPO:2000006|CHEBI:18276	METPO:2000006|CHEBI:18276	19	1845.0	1.1881319107359795e-08	"diydrogen
+CHEBI:18276"	uses as carbon source: diydrogen CHEBI:18276 [METPO:2000006]	diydrogen	biolink:SmallMolecule	SmallMolecule	8.935674452246651e-08
+METPO:1000656	METPO:1000656	62	8268.0	8.002621639715098e-09	"photoautotrophic
+METPO:1000656"	photoautotrophic METPO:1000656	photoautotrophic	biolink:PhenotypicQuality	PhenotypicQuality	7.218579878886609e-08
+METPO:1000651	METPO:1000651	75	11597.0	6.1672155962671986e-09	"methylotrophic
+METPO:1000651"	methylotrophic METPO:1000651	methylotrophic	biolink:PhenotypicQuality	PhenotypicQuality	5.771642955463512e-08
+METPO:1000632	METPO:1000632	75	8113.0	4.763729302064195e-09	"autotrophic
+METPO:1000632"	autotrophic METPO:1000632	autotrophic	biolink:PhenotypicQuality	PhenotypicQuality	4.2879976859455436e-08
+METPO:1000649	METPO:1000649	71	7039.0	4.279764967022385e-09	"lithotrophic
+METPO:1000649"	lithotrophic METPO:1000649	lithotrophic	biolink:PhenotypicQuality	PhenotypicQuality	3.7915993319799706e-08
+METPO:2000103|GO:0015946	METPO:2000103|GO:0015946	75	8657.0	3.696171890917448e-09	"methanol oxidation
+GO:0015946"	capable of: methanol oxidation GO:0015946 [METPO:2000103]	methanol oxidation	biolink:BiologicalProcess	BiologicalProcess	3.351037785163944e-08
+METPO:2000103|pathways:iron_oxidation_dark	METPO:2000103|pathways:iron_oxidation_dark	72	6236.0	3.422417957622659e-09	"iron oxidation dark
+iron_oxidation_dark"	capable of: iron_oxidation_dark pathways:iron_oxidation_dark [METPO:2000103]	iron_oxidation_dark	biolink:BiologicalProcess	BiologicalProcess	2.9905959380981384e-08
+METPO:2000103|pathways:nitrification	METPO:2000103|pathways:nitrification	70	5217.0	3.4198196730663245e-09	"nitrification
+nitrification"	capable of: nitrification pathways:nitrification [METPO:2000103]	nitrification	biolink:BiologicalProcess	BiologicalProcess	2.927320999766921e-08
+METPO:2000103|pathways:manganese_reduction	METPO:2000103|pathways:manganese_reduction	74	4825.0	2.754785803659952e-09	"manganese reduction
+manganese_reduction"	capable of: manganese_reduction pathways:manganese_reduction [METPO:2000103]	manganese_reduction	biolink:BiologicalProcess	BiologicalProcess	2.3365468528453163e-08
+METPO:2000103|pathways:pah_degradation	METPO:2000103|pathways:pah_degradation	72	4361.0	2.5230951455303993e-09	"PAH degradation
+pah_degradation"	capable of: PAH_degradation pathways:pah_degradation [METPO:2000103]	PAH_degradation	biolink:BiologicalProcess	BiologicalProcess	2.1145268028488965e-08
+METPO:2000103|pathways:sulfur_oxidation_dark	METPO:2000103|pathways:sulfur_oxidation_dark	72	5356.0	2.415565084448943e-09	"sulfur oxidation dark
+sulfur_oxidation_dark"	capable of: sulfur_oxidation_dark pathways:sulfur_oxidation_dark [METPO:2000103]	sulfur_oxidation_dark	biolink:BiologicalProcess	BiologicalProcess	2.0740426846203278e-08
+METPO:2000006|CHEBI:17126	METPO:2000006|CHEBI:17126	76	6028.0	2.29858106926222e-09	"carnitine
+CHEBI:17126"	uses as carbon source: carnitine CHEBI:17126 [METPO:2000006]	carnitine	biolink:SmallMolecule	SmallMolecule	2.0007622958001084e-08
+METPO:1000617	METPO:1000617	72	4077.0	2.2877394731147214e-09	"hyperthermophilic
+METPO:1000617"	hyperthermophilic METPO:1000617	hyperthermophilic	biolink:PhenotypicQuality	PhenotypicQuality	1.9018806289900184e-08
+METPO:2000103|pathways:iron_oxidation	METPO:2000103|pathways:iron_oxidation	74	5212.0	2.220601603780516e-09	"iron oxidation
+iron_oxidation"	capable of: iron_oxidation pathways:iron_oxidation [METPO:2000103]	iron_oxidation	biolink:BiologicalProcess	BiologicalProcess	1.9005931015270412e-08
+METPO:2000006|CHEBI:53426	METPO:2000006|CHEBI:53426	72	6485.0	2.126284121128885e-09	"tween 80
+CHEBI:53426"	uses as carbon source: tween 80 CHEBI:53426 [METPO:2000006]	tween 80	biolink:SmallMolecule	SmallMolecule	1.8663248981042105e-08
+METPO:1000691	METPO:1000691	70	1874.0	2.3763834986297078e-09	"irregular shaped
+METPO:1000691"	irregular shaped METPO:1000691	irregular shaped	biolink:PhenotypicQuality	PhenotypicQuality	1.7909290902892475e-08
+METPO:2000006|CHEBI:9300	METPO:2000006|CHEBI:9300	75	5768.0	1.9044081445511403e-09	"suberic acid
+CHEBI:9300"	uses as carbon source: suberic acid CHEBI:9300 [METPO:2000006]	suberic acid	biolink:SmallMolecule	SmallMolecule	1.6492658316720688e-08
+METPO:2000103|pathways:methanogenesis_h2co2	METPO:2000103|pathways:methanogenesis_h2co2	17	812.0	2.1522869773455175e-09	"methanogenesis H2CO2
+methanogenesis_h2co2"	capable of: methanogenesis_H2CO2 pathways:methanogenesis_h2co2 [METPO:2000103]	methanogenesis_H2CO2	biolink:BiologicalProcess	BiologicalProcess	1.4421896305773732e-08
+METPO:1000685	METPO:1000685	76	3688.0	1.5370170396359936e-09	"star shaped
+METPO:1000685"	star shaped METPO:1000685	star shaped	biolink:PhenotypicQuality	PhenotypicQuality	1.2623691090622753e-08
+METPO:2000103|pathways:methane_oxidation	METPO:2000103|pathways:methane_oxidation	61	3577.0	1.4913666110579758e-09	"methane oxidation
+methane_oxidation"	capable of: methane_oxidation pathways:methane_oxidation [METPO:2000103]	methane_oxidation	biolink:BiologicalProcess	BiologicalProcess	1.220319567943513e-08
+METPO:2000103|pathways:sulfide_oxidation_dark	METPO:2000103|pathways:sulfide_oxidation_dark	71	3657.0	1.3542341753137077e-09	"sulfide oxidation dark
+sulfide_oxidation_dark"	capable of: sulfide_oxidation_dark pathways:sulfide_oxidation_dark [METPO:2000103]	sulfide_oxidation_dark	biolink:BiologicalProcess	BiologicalProcess	1.1111046987998811e-08
+METPO:2000103|pathways:aliphatic_non_methane_hydrocarbon_degradation	METPO:2000103|pathways:aliphatic_non_methane_hydrocarbon_degradation	70	4419.0	1.1078177727723301e-09	"aliphatic non methane hydrocarb...
+aliphatic_non_metha..."	capable of: aliphatic_non_methane_hydrocarbon_degradation pathways:aliphatic_non_methane_hydrocarbon_degradation [METPO:2000103]	aliphatic_non_methane_hydrocarbon_degradation	biolink:BiologicalProcess	BiologicalProcess	9.298906036168832e-09
+METPO:1000628	METPO:1000628	73	3049.0	1.1464217002948293e-09	"extremely halophilic
+METPO:1000628"	extremely halophilic METPO:1000628	extremely halophilic	biolink:PhenotypicQuality	PhenotypicQuality	9.197623070538566e-09
+METPO:2000006|CHEBI:53424	METPO:2000006|CHEBI:53424	69	4018.0	1.0564910340886216e-09	"tween 20
+CHEBI:53424"	uses as carbon source: tween 20 CHEBI:53424 [METPO:2000006]	tween 20	biolink:SmallMolecule	SmallMolecule	8.767595532534287e-09
+METPO:2000103|GO:0019412	METPO:2000103|GO:0019412	58	933.0	1.2490511039956294e-09	"aerobic respiration, using hydr...
+GO:0019412"	capable of: aerobic respiration, using hydrogen as electron donor GO:0019412 [METPO:2000103]	aerobic respiration, using hydrogen as electron donor	biolink:BiologicalProcess	BiologicalProcess	8.542855595921832e-09
+METPO:2000103|pathways:arsenite_oxidation	METPO:2000103|pathways:arsenite_oxidation	67	2208.0	1.015608787383683e-09	"arsenite oxidation
+arsenite_oxidation"	capable of: arsenite_oxidation pathways:arsenite_oxidation [METPO:2000103]	arsenite_oxidation	biolink:BiologicalProcess	BiologicalProcess	7.820487474041896e-09
+METPO:2000006|CHEBI:18139	METPO:2000006|CHEBI:18139	12	517.0	1.1671021059870105e-09	"trimethylamine
+CHEBI:18139"	uses as carbon source: trimethylamine CHEBI:18139 [METPO:2000006]	trimethylamine	biolink:SmallMolecule	SmallMolecule	7.294359267607718e-09
+METPO:1000441	METPO:1000441	75	4045.0	8.686349554956982e-10	"temperature optimum very low
+METPO:1000441"	temperature optimum very low METPO:1000441	temperature optimum very low	biolink:PhenotypicQuality	PhenotypicQuality	7.214433740109125e-09
+METPO:2000006|CHEBI:53423	METPO:2000006|CHEBI:53423	72	3703.0	8.747846517895145e-10	"tween 40
+CHEBI:53423"	uses as carbon source: tween 40 CHEBI:53423 [METPO:2000006]	tween 40	biolink:SmallMolecule	SmallMolecule	7.188252968742956e-09
+METPO:2000006|CHEBI:17170	METPO:2000006|CHEBI:17170	11	486.0	1.0333094936212528e-09	"dimethylamine
+CHEBI:17170"	uses as carbon source: dimethylamine CHEBI:17170 [METPO:2000006]	dimethylamine	biolink:SmallMolecule	SmallMolecule	6.3943920674170365e-09
+METPO:2000006|CHEBI:17790	METPO:2000006|CHEBI:17790	12	482.0	1.0316075781376844e-09	"methanol
+CHEBI:17790"	uses as carbon source: methanol CHEBI:17790 [METPO:2000006]	methanol	biolink:SmallMolecule	SmallMolecule	6.375352012925087e-09
+METPO:2000006|CHEBI:16830	METPO:2000006|CHEBI:16830	11	451.0	9.071406197597022e-10	"methylamine
+CHEBI:16830"	uses as carbon source: methylamine CHEBI:16830 [METPO:2000006]	methylamine	biolink:SmallMolecule	SmallMolecule	5.5459694416268575e-09
+METPO:1000620	METPO:1000620	73	4071.0	6.6274844512168e-10	"halophilic
+METPO:1000620"	halophilic METPO:1000620	halophilic	biolink:PhenotypicQuality	PhenotypicQuality	5.508691880740298e-09
+METPO:1003026	METPO:1003026	66	2987.0	6.312395106930935e-10	"orange pigmented
+METPO:1003026"	orange pigmented METPO:1003026	orange pigmented	biolink:PhenotypicQuality	PhenotypicQuality	5.051405524366764e-09
+METPO:2000103|GO:0019418	METPO:2000103|GO:0019418	69	2827.0	6.331742503097583e-10	"sulfide oxidation
+GO:0019418"	capable of: sulfide oxidation GO:0019418 [METPO:2000103]	sulfide oxidation	biolink:BiologicalProcess	BiologicalProcess	5.032041565949128e-09
+METPO:2000103|pathways:nitric_oxide_reduction	METPO:2000103|pathways:nitric_oxide_reduction	76	1271.0	6.739631286570352e-10	"nitric oxide reduction
+nitric_oxide_reduction"	capable of: nitric_oxide_reduction pathways:nitric_oxide_reduction [METPO:2000103]	nitric_oxide_reduction	biolink:BiologicalProcess	BiologicalProcess	4.817721462281091e-09
+METPO:2000006|CHEBI:16865	METPO:2000006|CHEBI:16865	75	3118.0	5.551239912638445e-10	"gamma-aminobutyric acid
+CHEBI:16865"	uses as carbon source: gamma-aminobutyric acid CHEBI:16865 [METPO:2000006]	gamma-aminobutyric acid	biolink:SmallMolecule	SmallMolecule	4.4661211256294805e-09
+METPO:1003024	METPO:1003024	68	2648.0	5.430891074758336e-10	"cream pigmented
+METPO:1003024"	cream pigmented METPO:1003024	cream pigmented	biolink:PhenotypicQuality	PhenotypicQuality	4.2805943962290814e-09
+METPO:2000103|pathways:aminoacid_degradation	METPO:2000103|pathways:aminoacid_degradation	73	1182.0	5.297932837460701e-10	"aminoacid degradation
+aminoacid_degradation"	capable of: aminoacid_degradation pathways:aminoacid_degradation [METPO:2000103]	aminoacid_degradation	biolink:BiologicalProcess	BiologicalProcess	3.74871601320666e-09
+METPO:2000103|pathways:gelatin_degradation	METPO:2000103|pathways:gelatin_degradation	69	652.0	4.5836697125235304e-10	"gelatin degradation
+gelatin_degradation"	capable of: gelatin_degradation pathways:gelatin_degradation [METPO:2000103]	gelatin_degradation	biolink:BiologicalProcess	BiologicalProcess	2.9709408776849587e-09
+METPO:2000103|pathways:sulfite_oxidation_dark	METPO:2000103|pathways:sulfite_oxidation_dark	61	1382.0	3.680303555404739e-10	"sulfite oxidation dark
+sulfite_oxidation_dark"	capable of: sulfite_oxidation_dark pathways:sulfite_oxidation_dark [METPO:2000103]	sulfite_oxidation_dark	biolink:BiologicalProcess	BiologicalProcess	2.6615993336349618e-09
+METPO:1003029	METPO:1003029	66	2078.0	3.2181825293118434e-10	"white pigmented
+METPO:1003029"	white pigmented METPO:1003029	white pigmented	biolink:PhenotypicQuality	PhenotypicQuality	2.458576334097662e-09
+METPO:1003023	METPO:1003023	74	2715.0	3.0165659772140535e-10	"brown pigmented
+METPO:1003023"	brown pigmented METPO:1003023	brown pigmented	biolink:PhenotypicQuality	PhenotypicQuality	2.385173224785466e-09
+METPO:1000692	METPO:1000692	76	811.0	2.6569933212982447e-10	"spindle shaped
+METPO:1000692"	spindle shaped METPO:1000692	spindle shaped	biolink:PhenotypicQuality	PhenotypicQuality	1.7800527659844898e-09
+METPO:1003022	METPO:1003022	74	1310.0	2.2751571685383112e-10	"black pigmented
+METPO:1003022"	black pigmented METPO:1003022	black pigmented	biolink:PhenotypicQuality	PhenotypicQuality	1.6332319217063301e-09
+METPO:2000103|pathways:tetrathionate_oxidation	METPO:2000103|pathways:tetrathionate_oxidation	66	1382.0	2.0217083599064314e-10	"tetrathionate oxidation
+tetrathionate_oxida..."	capable of: tetrathionate_oxidation pathways:tetrathionate_oxidation [METPO:2000103]	tetrathionate_oxidation	biolink:BiologicalProcess	BiologicalProcess	1.4621015746456326e-09
+METPO:1000622	METPO:1000622	66	1498.0	1.907914088334847e-10	"halotolerant
+METPO:1000622"	halotolerant METPO:1000622	halotolerant	biolink:PhenotypicQuality	PhenotypicQuality	1.3951723840732213e-09
+METPO:1000611	METPO:1000611	69	364.0	2.3246956396284502e-10	"strictly anaerobic
+METPO:1000611"	strictly anaerobic METPO:1000611	strictly anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	1.371546565212865e-09
+METPO:2000006|CHEBI:53425	METPO:2000006|CHEBI:53425	69	1871.0	1.7943134106351125e-10	"tween 60
+CHEBI:53425"	uses as carbon source: tween 60 CHEBI:53425 [METPO:2000006]	tween 60	biolink:SmallMolecule	SmallMolecule	1.3519725681475105e-09
+METPO:1000689	METPO:1000689	55	577.0	1.9022845600952303e-10	"disc shaped
+METPO:1000689"	disc shaped METPO:1000689	disc shaped	biolink:PhenotypicQuality	PhenotypicQuality	1.2097719179160557e-09

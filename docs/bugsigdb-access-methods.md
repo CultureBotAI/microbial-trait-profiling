@@ -1,127 +1,112 @@
 # BugSigDB Data Access Methods
 
-This note documents the available ways to access BugSigDB data, what we
-learned about each, and the criteria for choosing among them in `bsdbng`.
+This note documents the public BugSigDB data surfaces and the source decision
+used for the `clustered-heatmap-generation` regeneration workflow.
 
-## BugSigDB is a structured database
+## Current Decision
 
-BugSigDB is a MediaWiki-based structured database. The data is entered
-through forms with distinct Study, Experiment, and Signature entities.
-The CSV exports are a flattened representation of this structure — the
-hierarchy is encoded in the `BSDB ID` column (e.g. `bsdb:10202341/1/1`
-= study/experiment/signature) and repeated metadata columns.
+Use `waldronlab/BugSigDBExports` tag `v1.3.1` as the citable BugSigDB input for
+regenerated figures and derived analysis artifacts.
 
-Our ingestion pipeline is essentially unflattening the CSV back into the
-structure that BugSigDB already stores internally. This means we are
-working around CSV encoding artifacts (comma-separated ontology IDs,
-pipe/semicolon-encoded MetaPhlAn lineage paths) that wouldn't exist if
-we had access to the structured data directly.
+- version: `v1.3.1`
+- DOI: `10.5281/zenodo.19740674`
+- tag SHA: `5815c2638d6b56134ac8db19edc2bb3c4b17f1ca`
+- branch input file: `data/raw/full_dump.csv`
+- branch corpus after ingest: 1,245 usable studies
+- human-host figure corpus: 5,829 profiles from 1,080 studies
 
-## Study count comparison (2026-04-17)
+The live raw exports are downloaded for comparison and future ingestion work,
+but the branch does not use them as the primary input until separate-table
+joining is implemented in Python.
 
-| Source | Studies | Notes |
-|--------|---------|-------|
-| BugSigDB main page (live) | 2,010 | Authoritative count |
-| studies.csv (Help:Export) | 2,009 | 1,993 Complete, 10 Incomplete, 6 blank State |
-| full_dump.csv (BugSigDBExports) | 1,949 | 60 studies lost to upstream filtering |
-| bsdbng output | 1,923 | After our filtering (NA direction/taxa) |
+## Count Comparison
 
-The 60-study gap between studies.csv and full_dump.csv is caused by
-BugSigDBExports' `dump_release.R` filtering. We don't control that filter.
+Counts were refreshed on 2026-08-26.
 
-## Available methods
+| Source | Studies | Rows | Notes |
+| --- | ---: | ---: | --- |
+| raw `studies.csv` | 2,191 | 2,191 | 2,169 complete, 22 incomplete |
+| raw `experiments.csv` | n/a | 9,140 | 7,210 Homo sapiens experiment rows |
+| raw `signatures.csv` | n/a | 14,474 | 14,468 complete, 4 incomplete, 2 blank state |
+| `BugSigDBExports` `v1.3.1` `full_dump.csv` | 1,246 parsed IDs | 7,425 | complete rows only |
+| bsdbng YAML output | 1,245 | n/a | one parsed study skipped after ingestion filtering |
 
-### 1. Raw CSV exports from BugSigDB
+## Available Methods
+
+### 1. Raw CSV Exports From BugSigDB
 
 BugSigDB exposes three raw export tables on `Help:Export`:
 
-- `studies.csv` — 2,009 studies (13 columns including State)
-- `experiments.csv` — 8,091 rows (experiment-level metadata)
-- `signatures.csv` — 13,023 rows (taxa, direction, curator info)
+- `studies.csv`
+- `experiments.csv`
+- `signatures.csv`
 
-These are the closest public exports to the current operational state of the
-database. They are the least transformed input surface available to us.
+These are the closest public exports to the live operational state of the
+database. They are separate tables, so they must be joined to recover the
+Study -> Experiment -> Signature -> Taxa hierarchy. The join keys are encoded
+in `BSDB ID` plus the study and experiment page-name columns.
 
-**Important:** these are separate tables that must be joined to produce
-the full study→experiment→signature→taxa hierarchy. The join keys are
-encoded in the BSDB ID column and the Study/Experiment page name columns.
+bsdbng downloads these files from the current S3-backed `Help:Export` links,
+but `ingest.py` still raises `NotImplementedError` for separate raw-table
+merging when `full_dump.csv` is absent.
 
-### 2. BugSigDBExports repository
+### 2. BugSigDBExports Tagged Full Dump
 
-The `waldronlab/BugSigDBExports` repository is a derived export layer built
-from the three raw BugSigDB CSV tables.
+`waldronlab/BugSigDBExports` is a derived export layer built from the BugSigDB
+tables. Its `full_dump.csv` is pre-joined and convenient for bsdbng's current
+ingestion code.
 
-Its `dump_release.R` script:
+For reproducible branch artifacts, use the `v1.3.1` tag rather than `devel`:
 
-1. obtains and merges the study, experiment, and signature tables from
-   `Help:Export`
-2. **filters incomplete records** (this is where 60 studies are lost)
-3. adds signature IDs
-4. writes `full_dump.csv` (51 columns, pre-merged flat table)
-5. writes GMT files for multiple identifier schemes and taxonomic levels
+- `v1.3.1` is reviewed/complete enough for citation and has a DOI.
+- `devel` is fresher but moving and uncitable.
+- `v1.3.0` should not be used for new work; it is older and was only named in
+  earlier scripts/issues because it was current when that code was written.
 
-`full_dump.csv` is convenient (pre-joined, one file) but inherits upstream
-filtering decisions we don't control.
+### 3. Zenodo Release
 
-### 3. Stable snapshot releases
+Zenodo is the authoritative citation target for the pinned release. The branch
+stores the DOI and tag SHA in `data/raw/download_provenance.json` when
+`download_exports(force=True)` refreshes `full_dump.csv`.
 
-BugSigDB publishes stable snapshot releases on Zenodo. Useful when
-reproducibility matters more than freshness.
+### 4. `bugsigdbr` R Package
 
-### 4. `bugsigdbr` R package
+The Bioconductor `bugsigdbr` package may eventually provide a better structured
+access path. That is separate from the current Python regeneration workflow.
 
-The Bioconductor R package for programmatic access to BugSigDB. May
-provide structured access to the data without CSV flattening artifacts.
-Tracked in issue #62.
+## Regeneration Workflow
 
-## CSV encoding artifacts we work around
+The intended branch refresh command is:
 
-These are properties of the CSV flattening, not of the underlying data:
+```bash
+just refresh-v131-trait-visualization
+```
 
-| Artifact | Where | What we do |
-|----------|-------|------------|
-| Pipe-separated lineage paths | NCBI Taxonomy IDs column | Split on `;` for taxa, take leaf of `\|`-separated lineage |
-| MetaPhlAn rank prefixes | MetaPhlAn taxon names column | Parse `k__`, `g__`, `s__` etc. for rank |
-| Comma-separated ontology IDs | UBERON ID, EFO ID columns | Split into multivalued lists |
-| Mixed ontology prefixes in "EFO ID" | EFO ID column | 20+ prefixes (EFO, MONDO, HP, CHEBI, GO...), renamed to condition_ontology_id |
-| Repeated study/experiment metadata | Every row | Verified: fields are consistent within each study/experiment group — first row is representative |
+On this Windows workspace, the equivalent commands were run with the repo
+virtual environment and the existing KG-Microbe TSVs from `Downloads`:
 
-## Column coverage (51 columns in full_dump.csv)
+```bash
+python -c "from bsdbng.download import download_exports; download_exports(force=True)"
+python -c "from bsdbng.ingest import ingest; ingest()"
+python -m bsdbng.study_tsv
+python scripts/create_taxa_trait_matrix.py --edges C:/Users/kimoz/Downloads/merged-kg_edges.tsv --nodes C:/Users/kimoz/Downloads/merged-kg_nodes.tsv
+python scripts/create_study_trait_profiles.py
+python scripts/create_clustered_heatmap.py
+python scripts/create_condition_taxon_heatmap.py
+python scripts/create_taxa_guild_heatmap.py
+python scripts/create_study_trait_profile_heatmap.py
+python scripts/create_condition_trait_module_heatmap.py
+python scripts/regenerate_trait_profile_investigation.py
+python scripts/benchmark_bugsigdb_access.py
+```
 
-- **45 captured** in bsdbng schema (study, experiment, signature, taxon levels)
-- **6 not captured** (curatorial metadata): Signature page name, Curated date, Curator, Revision editor, State, Reviewer
-- **State column** should be used to filter: only ingest Complete records
-  (not yet implemented — tracked in issue #64)
-
-## Current approach in bsdbng
-
-bsdbng currently uses `full_dump.csv` (from BugSigDBExports) as the
-primary input, with the three raw CSVs downloaded but unused. The merge
-from separate CSVs is a `NotImplementedError` stub.
-
-**Planned change (issue #64):** switch to using the three separate CSVs
-as primary input, implementing the join in Python, so we control filtering
-and don't lose 60 studies to upstream decisions.
-
-## Selection criteria
-
-- source fidelity
-- reproducibility
-- freshness
-- developer time
-- machine-time performance
-- good citizenship toward upstream infrastructure
-- fit for purpose
+The visible figure outputs default to Homo sapiens experiments when
+`data/raw/full_dump.csv` is available.
 
 ## Sources
 
 - BugSigDB `Help:Export`: https://bugsigdb.org/Help:Export
-- BugSigDBExports README:
-  https://github.com/waldronlab/BugSigDBExports/blob/devel/README.md
-- BugSigDB paper:
-  https://doi.org/10.1038/s41587-023-01872-y
-  https://pmc.ncbi.nlm.nih.gov/articles/PMC11098749/
-- Stable releases:
-  https://zenodo.org/records/15272273
-  https://zenodo.org/records/13997429
-  https://zenodo.org/records/10407666
+- BugSigDB main page: https://bugsigdb.org/Main_Page
+- BugSigDBExports `v1.3.1`: https://github.com/waldronlab/BugSigDBExports/tree/v1.3.1
+- Zenodo record: https://zenodo.org/records/19740674
+- BugSigDB paper: https://doi.org/10.1038/s41587-023-01872-y

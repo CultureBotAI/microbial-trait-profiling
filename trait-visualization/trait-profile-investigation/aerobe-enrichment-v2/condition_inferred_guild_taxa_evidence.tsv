@@ -1,507 +1,437 @@
 condition	focus_direction	trait_id	trait_name	trait_category	taxon_id	taxon_name	taxonomic_rank	taxon_profile_count	study_count	trait_annotation_count
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1129771	taxon_1129771	genus	2	1	8
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1268	taxon_1268	genus	2	1	19
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1300	taxon_1300	genus	2	1	154
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	taxon_1301	genus	2	1	141
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	2	1	64
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1386	taxon_1386	genus	2	1	10
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1654	taxon_1654	genus	2	1	17
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186826	taxon_186826	genus	2	1	564
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186827	taxon_186827	genus	2	1	22
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	2	1	331
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:203490	taxon_203490	genus	2	1	8
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:203491	taxon_203491	genus	2	1	8
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2037	taxon_2037	genus	2	1	45
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2049	taxon_2049	genus	2	1	45
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:32067	taxon_32067	genus	2	1	2
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:33958	taxon_33958	genus	2	1	281
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:46123	taxon_46123	genus	2	1	1
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:481	taxon_481	genus	2	1	45
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:482	taxon_482	genus	2	1	28
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	2	1	7
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:81852	taxon_81852	genus	2	1	79
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:85006	taxon_85006	genus	2	1	72
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91061	taxon_91061	genus	2	1	651
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	7
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2759736	taxon_2759736	genus	1	1	17
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2810280	taxon_2810280	genus	1	1	1
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31979	taxon_31979	genus	1	1	2
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:32207	taxon_32207	genus	1	1	7
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:570	taxon_570	genus	1	1	3
-Lung transplantation	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91347	taxon_91347	genus	1	1	13
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1129771	taxon_1129771	genus	2	1	3
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1268	taxon_1268	genus	2	1	5
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1300	taxon_1300	genus	2	1	763
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	taxon_1301	genus	2	1	736
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	2	1	109
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1386	taxon_1386	genus	2	1	132
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1654	taxon_1654	genus	2	1	16
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186826	taxon_186826	genus	2	1	1138
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186827	taxon_186827	genus	2	1	6
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	2	1	197
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:203490	taxon_203490	genus	2	1	3
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:203491	taxon_203491	genus	2	1	3
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:2037	taxon_2037	genus	2	1	40
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:2049	taxon_2049	genus	2	1	40
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:32067	taxon_32067	genus	2	1	2
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:33958	taxon_33958	genus	2	1	238
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:46123	taxon_46123	genus	2	1	1
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:481	taxon_481	genus	2	1	7
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:482	taxon_482	genus	2	1	5
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	2	1	1206
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:81852	taxon_81852	genus	2	1	119
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:85006	taxon_85006	genus	2	1	39
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91061	taxon_91061	genus	2	1	2357
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	6
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:2759736	taxon_2759736	genus	1	1	34
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:2810280	taxon_2810280	genus	1	1	1
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:32207	taxon_32207	genus	1	1	3
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:570	taxon_570	genus	1	1	28
-Lung transplantation	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91347	taxon_91347	genus	1	1	1482
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1129771	taxon_1129771	genus	2	1	2
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1268	taxon_1268	genus	2	1	159
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1300	taxon_1300	genus	2	1	38
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1301	taxon_1301	genus	2	1	33
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	2	1	34
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1386	taxon_1386	genus	2	1	195
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1654	taxon_1654	genus	2	1	2
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186826	taxon_186826	genus	2	1	204
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186827	taxon_186827	genus	2	1	6
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	2	1	2394
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:203490	taxon_203490	genus	2	1	2
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:203491	taxon_203491	genus	2	1	2
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:2037	taxon_2037	genus	2	1	5
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:2049	taxon_2049	genus	2	1	5
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:32067	taxon_32067	genus	2	1	1
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:33958	taxon_33958	genus	2	1	94
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:481	taxon_481	genus	2	1	120
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:482	taxon_482	genus	2	1	103
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	2	1	227
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:81852	taxon_81852	genus	2	1	43
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:85006	taxon_85006	genus	2	1	603
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:91061	taxon_91061	genus	2	1	1245
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	7
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:2759736	taxon_2759736	genus	1	1	4
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:32207	taxon_32207	genus	1	1	10
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:570	taxon_570	genus	1	1	15
-Lung transplantation	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:91347	taxon_91347	genus	1	1	402
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	taxon_1301	genus	5	2	736
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1378	taxon_1378	genus	4	2	8
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:29317	taxon_29317	genus	2	1	1
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	taxon_1224	genus	1	1	2507
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1236	taxon_1236	genus	1	1	2190
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1239	taxon_1239	genus	1	1	2377
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1300	taxon_1300	genus	1	1	763
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1306	taxon_1306	genus	1	1	1
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	1	1	109
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:135621	taxon_135621	genus	1	1	25
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1578	taxon_1578	genus	1	1	60
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:171549	taxon_171549	genus	1	1	8
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1716	taxon_1716	genus	1	1	75
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186826	taxon_186826	genus	1	1	1138
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:191303	taxon_191303	genus	1	1	1
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:200643	taxon_200643	genus	1	1	12
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	1	1	197
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:2049	taxon_2049	genus	1	1	40
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216572	taxon_216572	genus	1	1	2
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:29387	taxon_29387	genus	1	1	1
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:31957	taxon_31957	genus	1	1	5
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:32207	taxon_32207	genus	1	1	3
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:416916	taxon_416916	genus	1	1	39
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:570	taxon_570	genus	1	1	28
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:724	taxon_724	genus	1	1	38
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:80840	taxon_80840	genus	1	1	75
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:815	taxon_815	genus	1	1	5
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	1	1	2
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:976	taxon_976	genus	1	1	83
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	taxon_1301	genus	5	2	141
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1378	taxon_1378	genus	4	2	5
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:29317	taxon_29317	genus	2	1	1
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1224	taxon_1224	genus	1	1	425
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1236	taxon_1236	genus	1	1	243
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1239	taxon_1239	genus	1	1	671
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1300	taxon_1300	genus	1	1	154
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1306	taxon_1306	genus	1	1	1
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	1	1	64
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:135621	taxon_135621	genus	1	1	8
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	taxon_1578	genus	1	1	63
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:162289	taxon_162289	genus	1	1	1
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:171549	taxon_171549	genus	1	1	7
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1716	taxon_1716	genus	1	1	76
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186826	taxon_186826	genus	1	1	564
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200643	taxon_200643	genus	1	1	7
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	1	1	331
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2049	taxon_2049	genus	1	1	45
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:216572	taxon_216572	genus	1	1	1
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31957	taxon_31957	genus	1	1	14
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:32207	taxon_32207	genus	1	1	7
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:416916	taxon_416916	genus	1	1	7
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:570	taxon_570	genus	1	1	3
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:724	taxon_724	genus	1	1	17
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:80840	taxon_80840	genus	1	1	46
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:815	taxon_815	genus	1	1	2
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	1	1	2
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:909932	taxon_909932	genus	1	1	1
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:976	taxon_976	genus	1	1	49
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	taxon_1224	genus	2	1	2507
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1302	taxon_1302	genus	2	1	1
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1303	taxon_1303	genus	2	1	6
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1304	taxon_1304	genus	2	1	6
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1313	taxon_1313	genus	2	1	215
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:244366	taxon_244366	genus	2	1	1
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:28037	taxon_28037	genus	2	1	6
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:54291	taxon_54291	genus	2	1	2
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:546	taxon_546	genus	2	1	5
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:548	taxon_548	genus	2	1	1
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:550	taxon_550	genus	2	1	6
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:573	taxon_573	genus	2	1	20
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	2	1	2
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1308	taxon_1308	genus	1	1	5
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1318	taxon_1318	genus	1	1	1
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1328	taxon_1328	genus	1	1	1
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:191303	taxon_191303	genus	1	1	1
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216851	taxon_216851	genus	1	1	1
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:28141	taxon_28141	genus	1	1	4
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:287	taxon_287	genus	1	1	6
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:413496	taxon_413496	genus	1	1	16
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:61645	taxon_61645	genus	1	1	2
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:732	taxon_732	genus	1	1	3
-Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:815	taxon_815	genus	1	1	5
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	taxon_1224	genus	2	1	4306
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1302	taxon_1302	genus	2	1	1
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1304	taxon_1304	genus	2	1	2
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1313	taxon_1313	genus	2	1	1
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:244366	taxon_244366	genus	2	1	1
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:28037	taxon_28037	genus	2	1	2
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:54291	taxon_54291	genus	2	1	1
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:546	taxon_546	genus	2	1	3
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:548	taxon_548	genus	2	1	1
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:550	taxon_550	genus	2	1	4
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:573	taxon_573	genus	2	1	8
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	2	1	1
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1308	taxon_1308	genus	1	1	3
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1318	taxon_1318	genus	1	1	1
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1328	taxon_1328	genus	1	1	1
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:28141	taxon_28141	genus	1	1	1
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:287	taxon_287	genus	1	1	46
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:413496	taxon_413496	genus	1	1	5
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:61645	taxon_61645	genus	1	1	1
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:732	taxon_732	genus	1	1	1
-Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:815	taxon_815	genus	1	1	2
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	taxon_1301	genus	2	2	736
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186826	taxon_186826	genus	2	2	1138
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	2	2	1206
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91061	taxon_91061	genus	2	2	2357
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91347	taxon_91347	genus	2	2	1482
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	2	1	5
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:118968	taxon_118968	genus	1	1	8
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:118969	taxon_118969	genus	1	1	8
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:119060	taxon_119060	genus	1	1	36
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1236	taxon_1236	genus	1	1	2190
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1253	taxon_1253	genus	1	1	3
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:128827	taxon_128827	genus	1	1	1
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1300	taxon_1300	genus	1	1	763
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:135625	taxon_135625	genus	1	1	136
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1578	taxon_1578	genus	1	1	60
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1654	taxon_1654	genus	1	1	16
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	1	1	7
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:171549	taxon_171549	genus	1	1	8
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186804	taxon_186804	genus	1	1	4
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186828	taxon_186828	genus	1	1	12
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:200643	taxon_200643	genus	1	1	12
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:2049	taxon_2049	genus	1	1	40
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:283	taxon_283	genus	1	1	1
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:31953	taxon_31953	genus	1	1	27
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:31969	taxon_31969	genus	1	1	31
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:33958	taxon_33958	genus	1	1	238
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:712	taxon_712	genus	1	1	136
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:724	taxon_724	genus	1	1	38
-Tuberculosis	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:85004	taxon_85004	genus	1	1	27
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1301	taxon_1301	genus	2	2	33
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186826	taxon_186826	genus	2	2	204
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	2	2	227
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:91061	taxon_91061	genus	2	2	1245
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:91347	taxon_91347	genus	2	2	402
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:118968	taxon_118968	genus	1	1	1
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:118969	taxon_118969	genus	1	1	31
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:119060	taxon_119060	genus	1	1	256
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1236	taxon_1236	genus	1	1	2036
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1253	taxon_1253	genus	1	1	9
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:128827	taxon_128827	genus	1	1	4
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1300	taxon_1300	genus	1	1	38
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:135625	taxon_135625	genus	1	1	49
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1578	taxon_1578	genus	1	1	8
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1654	taxon_1654	genus	1	1	2
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	1	1	1
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171549	taxon_171549	genus	1	1	6
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171552	taxon_171552	genus	1	1	1
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186828	taxon_186828	genus	1	1	23
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:200643	taxon_200643	genus	1	1	17
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:2049	taxon_2049	genus	1	1	5
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:283	taxon_283	genus	1	1	23
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:31953	taxon_31953	genus	1	1	1
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:31969	taxon_31969	genus	1	1	11
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:33958	taxon_33958	genus	1	1	94
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:47670	taxon_47670	genus	1	1	1
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:712	taxon_712	genus	1	1	49
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:85004	taxon_85004	genus	1	1	1
-Tuberculosis	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:909932	taxon_909932	genus	1	1	1
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	taxon_1301	genus	2	2	141
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186826	taxon_186826	genus	2	2	564
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	2	2	7
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91061	taxon_91061	genus	2	2	651
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91347	taxon_91347	genus	2	2	13
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	2	1	1
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:117563	taxon_117563	genus	1	1	3
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:118968	taxon_118968	genus	1	1	2
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:118969	taxon_118969	genus	1	1	62
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:119060	taxon_119060	genus	1	1	4
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1236	taxon_1236	genus	1	1	243
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1253	taxon_1253	genus	1	1	9
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:128827	taxon_128827	genus	1	1	5
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1300	taxon_1300	genus	1	1	154
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:135625	taxon_135625	genus	1	1	95
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1485	taxon_1485	genus	1	1	2
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	taxon_1578	genus	1	1	63
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1654	taxon_1654	genus	1	1	17
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	1	1	3
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:171549	taxon_171549	genus	1	1	7
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186828	taxon_186828	genus	1	1	28
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200643	taxon_200643	genus	1	1	7
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2049	taxon_2049	genus	1	1	45
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:283	taxon_283	genus	1	1	1
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31953	taxon_31953	genus	1	1	7
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31969	taxon_31969	genus	1	1	54
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31979	taxon_31979	genus	1	1	2
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:33958	taxon_33958	genus	1	1	281
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:40544	taxon_40544	genus	1	1	2
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:47670	taxon_47670	genus	1	1	1
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:712	taxon_712	genus	1	1	95
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:724	taxon_724	genus	1	1	17
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:85004	taxon_85004	genus	1	1	7
-Tuberculosis	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:909932	taxon_909932	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	4	1	34
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:547	taxon_547	genus	3	1	15
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:3031852	taxon_3031852	genus	2	1	193
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:39948	taxon_39948	genus	2	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:44008	taxon_44008	genus	2	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:671267	taxon_671267	genus	2	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1270	taxon_1270	genus	1	1	3
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1283313	taxon_1283313	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1352	taxon_1352	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:135624	taxon_135624	genus	1	1	43
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1408	taxon_1408	genus	1	1	6
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1624	taxon_1624	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171552	taxon_171552	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	1	1	7
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	7
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1903414	taxon_1903414	genus	1	1	53
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:191863	taxon_191863	genus	1	1	2
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:204441	taxon_204441	genus	1	1	45
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:213849	taxon_213849	genus	1	1	193
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:2718	taxon_2718	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:28211	taxon_28211	genus	1	1	1453
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:287	taxon_287	genus	1	1	46
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:29547	taxon_29547	genus	1	1	193
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:29581	taxon_29581	genus	1	1	2
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:321267	taxon_321267	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:40214	taxon_40214	genus	1	1	2
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:45242	taxon_45242	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:508461	taxon_508461	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:521720	taxon_521720	genus	1	1	2
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	1	1	227
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:546	taxon_546	genus	1	1	3
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:582	taxon_582	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:615	taxon_615	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:61645	taxon_61645	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:64988	taxon_64988	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:670	taxon_670	genus	1	1	2
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:72274	taxon_72274	genus	1	1	455
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:75682	taxon_75682	genus	1	1	75
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:81852	taxon_81852	genus	1	1	43
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:820	taxon_820	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:89059	taxon_89059	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:93222	taxon_93222	genus	1	1	1
-Sarcopenia	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:989	taxon_989	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	4	1	64
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:547	taxon_547	genus	3	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:3031852	taxon_3031852	genus	2	1	300
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:44008	taxon_44008	genus	2	1	2
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1018	taxon_1018	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1270	taxon_1270	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1352	taxon_1352	genus	1	1	2
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1408	taxon_1408	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1587	taxon_1587	genus	1	1	2
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1622	taxon_1622	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1624	taxon_1624	genus	1	1	6
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1660	taxon_1660	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1685	taxon_1685	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1747	taxon_1747	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	1	1	8
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	7
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1903414	taxon_1903414	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:204441	taxon_204441	genus	1	1	23
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:213849	taxon_213849	genus	1	1	298
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:216572	taxon_216572	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:216816	taxon_216816	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2718	taxon_2718	genus	1	1	2
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:28211	taxon_28211	genus	1	1	78
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:287	taxon_287	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:29547	taxon_29547	genus	1	1	300
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:33959	taxon_33959	genus	1	1	6
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:45242	taxon_45242	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:47770	taxon_47770	genus	1	1	7
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	1	1	7
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:61645	taxon_61645	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:714549	taxon_714549	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:72274	taxon_72274	genus	1	1	8
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:75682	taxon_75682	genus	1	1	5
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:81852	taxon_81852	genus	1	1	79
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:820	taxon_820	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:84112	taxon_84112	genus	1	1	1
-Sarcopenia	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:89059	taxon_89059	genus	1	1	1
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	4	1	109
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:547	taxon_547	genus	3	1	15
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:180295	taxon_180295	genus	2	1	1
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:3031852	taxon_3031852	genus	2	1	14
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1018	taxon_1018	genus	1	1	2
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1352	taxon_1352	genus	1	1	30
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:135624	taxon_135624	genus	1	1	22
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:157691	taxon_157691	genus	1	1	1
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1587	taxon_1587	genus	1	1	7
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1622	taxon_1622	genus	1	1	1
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1624	taxon_1624	genus	1	1	5
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1660	taxon_1660	genus	1	1	3
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	1	1	15
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186802	taxon_186802	genus	1	1	6
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1903414	taxon_1903414	genus	1	1	27
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:204441	taxon_204441	genus	1	1	24
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:213849	taxon_213849	genus	1	1	12
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216572	taxon_216572	genus	1	1	2
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216816	taxon_216816	genus	1	1	1
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:28211	taxon_28211	genus	1	1	177
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:287	taxon_287	genus	1	1	6
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:29547	taxon_29547	genus	1	1	14
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:33959	taxon_33959	genus	1	1	2
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:45242	taxon_45242	genus	1	1	1
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:47770	taxon_47770	genus	1	1	6
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	1	1	1206
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:546	taxon_546	genus	1	1	5
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:615	taxon_615	genus	1	1	4
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:61645	taxon_61645	genus	1	1	2
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:670	taxon_670	genus	1	1	11
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:714549	taxon_714549	genus	1	1	1
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:72274	taxon_72274	genus	1	1	36
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:75682	taxon_75682	genus	1	1	2
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:81852	taxon_81852	genus	1	1	119
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:821	taxon_821	genus	1	1	3
-Sarcopenia	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:853	taxon_853	genus	1	1	1
-Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1239	taxon_1239	genus	2	2	1259
-Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:40323	taxon_40323	genus	2	1	19
-Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	2	1	227
-Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	taxon_1224	genus	1	1	4306
-Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1236	taxon_1236	genus	1	1	2036
-Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:135614	taxon_135614	genus	1	1	184
-Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1357	taxon_1357	genus	1	1	5
-Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171551	taxon_171551	genus	1	1	1
-Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:32033	taxon_32033	genus	1	1	150
-Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:47670	taxon_47670	genus	1	1	1
-Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:91347	taxon_91347	genus	1	1	402
-Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1239	taxon_1239	genus	2	2	2377
-Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:40323	taxon_40323	genus	2	1	1
-Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	2	1	1206
-Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	taxon_1224	genus	1	1	2507
-Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1236	taxon_1236	genus	1	1	2190
-Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:135614	taxon_135614	genus	1	1	13
-Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1357	taxon_1357	genus	1	1	23
-Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216851	taxon_216851	genus	1	1	1
-Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:32033	taxon_32033	genus	1	1	5
-Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91347	taxon_91347	genus	1	1	1482
-Acute graft vs. host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:106589	taxon_106589	genus	1	1	28
-Acute graft vs. host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:119060	taxon_119060	genus	1	1	256
-Acute graft vs. host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1239	taxon_1239	genus	1	1	1259
-Acute graft vs. host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	1	1	34
-Acute graft vs. host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1647988	taxon_1647988	genus	1	1	1
-Acute graft vs. host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	1	1	7
-Acute graft vs. host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:203494	taxon_203494	genus	1	1	12
-Acute graft vs. host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:239934	taxon_239934	genus	1	1	1
-Acute graft vs. host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:48461	taxon_48461	genus	1	1	10
-Acute graft vs. host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:74201	taxon_74201	genus	1	1	25
-Acute graft vs. host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:815	taxon_815	genus	1	1	2
-Acute graft vs. host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	1	1	1
-Acute graft vs. host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:106589	taxon_106589	genus	1	1	5
-Acute graft vs. host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:119060	taxon_119060	genus	1	1	36
-Acute graft vs. host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1239	taxon_1239	genus	1	1	2377
-Acute graft vs. host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	1	1	109
-Acute graft vs. host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186801	taxon_186801	genus	1	1	15
-Acute graft vs. host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186803	taxon_186803	genus	1	1	5
-Acute graft vs. host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:203494	taxon_203494	genus	1	1	3
-Acute graft vs. host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:292480	taxon_292480	genus	1	1	1
-Acute graft vs. host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:3085636	taxon_3085636	genus	1	1	5
-Acute graft vs. host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:48461	taxon_48461	genus	1	1	3
-Acute graft vs. host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:74201	taxon_74201	genus	1	1	10
-Acute graft vs. host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:815	taxon_815	genus	1	1	5
-Acute graft vs. host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	1	1	2
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	taxon_1224	genus	3	2	4306
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	3	1	34
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:31953	taxon_31953	genus	3	1	1
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:85023	taxon_85023	genus	3	1	222
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1653	taxon_1653	genus	2	2	122
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:976	taxon_976	genus	2	2	762
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	2	1	1
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:128827	taxon_128827	genus	1	1	4
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1578	taxon_1578	genus	1	1	8
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1716	taxon_1716	genus	1	1	122
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1760	taxon_1760	genus	1	1	2367
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186817	taxon_186817	genus	1	1	500
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186824	taxon_186824	genus	1	1	25
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:200643	taxon_200643	genus	1	1	17
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	1	1	2394
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	1	1	227
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:561	taxon_561	genus	1	1	17
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:620	taxon_620	genus	1	1	10
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	1	1	1
-Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:81852	taxon_81852	genus	1	1	43
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	taxon_1224	genus	3	2	2507
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	3	1	109
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:31953	taxon_31953	genus	3	1	27
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:85023	taxon_85023	genus	3	1	1
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1653	taxon_1653	genus	2	2	75
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:976	taxon_976	genus	2	2	83
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	2	1	7
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:128827	taxon_128827	genus	1	1	1
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1578	taxon_1578	genus	1	1	60
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1716	taxon_1716	genus	1	1	75
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1760	taxon_1760	genus	1	1	196
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186817	taxon_186817	genus	1	1	204
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:191303	taxon_191303	genus	1	1	1
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:200643	taxon_200643	genus	1	1	12
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	1	1	197
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	1	1	1206
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:561	taxon_561	genus	1	1	800
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:620	taxon_620	genus	1	1	47
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	1	1	2
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:81852	taxon_81852	genus	1	1	119
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:821	taxon_821	genus	1	1	3
-Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:872	taxon_872	genus	1	1	3
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1224	taxon_1224	genus	3	2	425
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	taxon_1350	genus	3	1	64
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31953	taxon_31953	genus	3	1	7
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:85023	taxon_85023	genus	3	1	24
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1653	taxon_1653	genus	2	2	76
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:976	taxon_976	genus	2	2	49
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1678	taxon_1678	genus	2	1	3
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:128827	taxon_128827	genus	1	1	5
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1485	taxon_1485	genus	1	1	2
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	taxon_1578	genus	1	1	63
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1716	taxon_1716	genus	1	1	76
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1760	taxon_1760	genus	1	1	330
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186817	taxon_186817	genus	1	1	28
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186824	taxon_186824	genus	1	1	2
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200643	taxon_200643	genus	1	1	7
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	taxon_201174	genus	1	1	331
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	taxon_543	genus	1	1	7
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:561	taxon_561	genus	1	1	1
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:816	taxon_816	genus	1	1	2
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:81852	taxon_81852	genus	1	1	79
-Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:872	taxon_872	genus	1	1	1
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:546	Citrobacter freundii	species	2	1	5
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:550	Enterobacter cloacae	species	2	1	6
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:548	Klebsiella aerogenes	species	2	1	1
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:54291	Klebsiella ornithinolytica	species	2	1	2
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:573	Klebsiella pneumoniae	species	2	1	20
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:244366	Klebsiella variicola	species	2	1	1
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1302	Streptococcus gordonii	species	2	1	1
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:28037	Streptococcus mitis	species	2	1	6
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1303	Streptococcus oralis	species	2	1	6
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1313	Streptococcus pneumoniae	species	2	1	215
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1304	Streptococcus salivarius	species	2	1	6
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:732	Aggregatibacter aphrophilus	species	1	1	3
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:61645	Enterobacter asburiae	species	1	1	2
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216851	Faecalibacterium	genus	1	1	1
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	2507
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:287	Pseudomonas aeruginosa	species	1	1	6
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1328	Streptococcus anginosus	species	1	1	1
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1318	Streptococcus parasanguinis	species	1	1	1
+Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1308	Streptococcus thermophilus	species	1	1	5
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:546	Citrobacter freundii	species	2	1	3
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:550	Enterobacter cloacae	species	2	1	4
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:548	Klebsiella aerogenes	species	2	1	1
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:54291	Klebsiella ornithinolytica	species	2	1	1
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:573	Klebsiella pneumoniae	species	2	1	8
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:244366	Klebsiella variicola	species	2	1	1
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1302	Streptococcus gordonii	species	2	1	1
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:28037	Streptococcus mitis	species	2	1	2
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1313	Streptococcus pneumoniae	species	2	1	1
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1304	Streptococcus salivarius	species	2	1	2
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:732	Aggregatibacter aphrophilus	species	1	1	1
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	1
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:61645	Enterobacter asburiae	species	1	1	1
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	4306
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:287	Pseudomonas aeruginosa	species	1	1	46
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1328	Streptococcus anginosus	species	1	1	1
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1318	Streptococcus parasanguinis	species	1	1	1
+Multiple myeloma	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1308	Streptococcus thermophilus	species	1	1	3
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	5	2	736
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1378	Gemella	genus	4	2	8
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:29317	Actinomyces sp.	species	2	1	1
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:2049	Actinomycetaceae	family	1	1	40
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	197
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:416916	Aggregatibacter	genus	1	1	39
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	1	1	2377
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:815	Bacteroidaceae	family	1	1	5
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	1	1	8
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	12
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	1	1	83
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	75
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	75
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	1	1	109
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	1	1	2190
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:724	Haemophilus	genus	1	1	38
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:570	Klebsiella	genus	1	1	28
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	1	1	1138
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	60
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216572	Oscillospiraceae	family	1	1	2
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:31957	Propionibacteriaceae	family	1	1	5
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:135621	Pseudomonadaceae	family	1	1	25
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	2507
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:32207	Rothia	genus	1	1	3
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:29387	Staphylococcus sp.	species	1	1	1
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	763
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1306	Streptococcus sp.	species	1	1	1
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:191303	Turicibacter	genus	1	1	1
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	5	2	141
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1378	Gemella	genus	4	2	5
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:29317	Actinomyces sp.	species	2	1	1
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2049	Actinomycetaceae	family	1	1	45
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	331
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:416916	Aggregatibacter	genus	1	1	7
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	1	1	671
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:815	Bacteroidaceae	family	1	1	2
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	1	1	7
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	7
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	1	1	49
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	46
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	76
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	1	1	64
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	1	1	243
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:724	Haemophilus	genus	1	1	17
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:570	Klebsiella	genus	1	1	3
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	1	1	564
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	63
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:909932	Negativicutes	class	1	1	1
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:216572	Oscillospiraceae	family	1	1	1
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:162289	Peptoniphilus	genus	1	1	1
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31957	Propionibacteriaceae	family	1	1	14
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:135621	Pseudomonadaceae	family	1	1	8
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	425
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:32207	Rothia	genus	1	1	7
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	154
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1306	Streptococcus sp.	species	1	1	1
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:547	Enterobacter	genus	2	1	15
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:724	Haemophilus	genus	2	1	38
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:565	Atlantibacter hermannii	species	1	1	1
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:544	Citrobacter	genus	1	1	14
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:546	Citrobacter freundii	species	1	1	5
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:545	Citrobacter koseri	species	1	1	2
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:133448	Citrobacter youngae	species	1	1	1
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186801	Clostridia	class	1	1	15
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:194924	Desulfovibrionaceae	family	1	1	4
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:550	Enterobacter cloacae	species	1	1	6
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	1	1	109
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:71452	Enterococcus raffinosus	species	1	1	2
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	800
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	1	1	6
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216851	Faecalibacterium	genus	1	1	1
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:729	Haemophilus parainfluenzae	species	1	1	2
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:570	Klebsiella	genus	1	1	28
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:548	Klebsiella aerogenes	species	1	1	1
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:573	Klebsiella pneumoniae	species	1	1	20
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	1	1	5
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1357	Lactococcus	genus	1	1	23
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:407	Methylobacterium	genus	1	1	2
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:544448	Mycoplasmatota	phylum	1	1	117
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:472695	Pantoea septica	species	1	1	1
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:909656	Phocaeicola	genus	1	1	3
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1660	Schaalia odontolytica	species	1	1	3
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	1	1	736
+Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:68892	Streptococcus infantis	species	1	1	3
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:547	Enterobacter	genus	2	1	1
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:724	Haemophilus	genus	2	1	17
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186801	Clostridia	class	1	1	8
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31979	Clostridiaceae	family	1	1	2
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1485	Clostridium	genus	1	1	2
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:194924	Desulfovibrionaceae	family	1	1	2
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	1	1	64
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:71452	Enterococcus raffinosus	species	1	1	2
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	1
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	1	1	7
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:729	Haemophilus parainfluenzae	species	1	1	2
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:570	Klebsiella	genus	1	1	3
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:573	Klebsiella pneumoniae	species	1	1	1
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	1	1	1
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1357	Lactococcus	genus	1	1	11
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:407	Methylobacterium	genus	1	1	1
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:544448	Mycoplasmatota	phylum	1	1	67
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:488	Neisseria mucosa	species	1	1	1
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:28449	Neisseria subflava	species	1	1	1
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1660	Schaalia odontolytica	species	1	1	1
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	1	1	141
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:68892	Streptococcus infantis	species	1	1	2
+Response to antibiotic	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:68891	Streptococcus peroris	species	1	1	2
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:547	Enterobacter	genus	2	1	15
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:239934	Akkermansia	genus	1	1	1
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:565	Atlantibacter hermannii	species	1	1	1
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	1
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:544	Citrobacter	genus	1	1	15
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:35703	Citrobacter amalonaticus	species	1	1	1
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:546	Citrobacter freundii	species	1	1	3
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:545	Citrobacter koseri	species	1	1	1
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:133448	Citrobacter youngae	species	1	1	1
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186801	Clostridia	class	1	1	7
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:550	Enterobacter cloacae	species	1	1	4
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:158836	Enterobacter hormaechei	species	1	1	4
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:299767	Enterobacter ludwigii	species	1	1	1
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	1	1	34
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:71452	Enterococcus raffinosus	species	1	1	1
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	17
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	1	1	7
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:570	Klebsiella	genus	1	1	15
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:548	Klebsiella aerogenes	species	1	1	1
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:573	Klebsiella pneumoniae	species	1	1	8
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1357	Lactococcus	genus	1	1	5
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:407	Methylobacterium	genus	1	1	35
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:544448	Mycoplasmatota	phylum	1	1	28
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:488	Neisseria mucosa	species	1	1	3
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:28449	Neisseria subflava	species	1	1	2
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:909656	Phocaeicola	genus	1	1	1
+Response to antibiotic	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	1	1	33
+Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	2	2	1259
+Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	2	1	227
+Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:40323	Stenotrophomonas	genus	2	1	19
+Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:91347	Enterobacterales	order	1	1	402
+Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	1	1	2036
+Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1357	Lactococcus	genus	1	1	5
+Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:47670	Lautropia	genus	1	1	1
+Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:32033	Lysobacteraceae	family	1	1	150
+Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:135614	Lysobacterales	order	1	1	184
+Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171551	Porphyromonadaceae	family	1	1	1
+Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	4306
+Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	2	2	2377
+Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	2	1	1206
+Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:40323	Stenotrophomonas	genus	2	1	1
+Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91347	Enterobacterales	order	1	1	1482
+Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216851	Faecalibacterium	genus	1	1	1
+Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	1	1	2190
+Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1357	Lactococcus	genus	1	1	23
+Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:32033	Lysobacteraceae	family	1	1	5
+Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:135614	Lysobacterales	order	1	1	13
+Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	2507
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	7	2	736
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	4	1	109
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	4	1	800
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:194	Campylobacter	genus	3	1	2
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	2	2	7
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:729	Haemophilus parainfluenzae	species	2	1	2
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1623	Ligilactobacillus ruminis	species	2	1	1
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	197
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	1	1	8
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	12
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:28216	Betaproteobacteria	class	1	1	134
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	1	1	27
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:85004	Bifidobacteriales	order	1	1	27
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	75
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	1206
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216851	Faecalibacterium	genus	1	1	1
+Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	60
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	7	2	141
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	4	1	64
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	4	1	1
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:194	Campylobacter	genus	3	1	195
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	2	2	3
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:729	Haemophilus parainfluenzae	species	2	1	2
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1623	Ligilactobacillus ruminis	species	2	1	3
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	331
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	1	1	7
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	7
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:28216	Betaproteobacteria	class	1	1	100
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	1	1	7
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:85004	Bifidobacteriales	order	1	1	7
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	46
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	7
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	63
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:909932	Negativicutes	class	1	1	1
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:909929	Selenomonadales	order	1	1	1
+Diarrhea	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:40544	Sutterella	genus	1	1	2
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	7	2	33
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	4	1	34
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	4	1	17
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:194	Campylobacter	genus	3	1	1
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	2	2	1
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	2394
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	1	1	6
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	1
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	17
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:28216	Betaproteobacteria	class	1	1	801
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	1	1	1
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:85004	Bifidobacteriales	order	1	1	1
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	580
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	227
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	8
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:909932	Negativicutes	class	1	1	1
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171552	Prevotellaceae	family	1	1	1
+Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:31977	Veillonellaceae	family	1	1	1
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	4	1	281
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	4	1	63
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	2	1	331
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31979	Clostridiaceae	family	2	1	2
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:84998	Coriobacteriia	class	2	1	1
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91061	Bacilli	class	1	1	651
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	7
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	1	1	1
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	1	1	564
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	154
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	1	1	141
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91347	Enterobacterales	order	8	3	1482
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	8	3	1206
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	7	2	109
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	7	2	2507
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	6	2	119
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	6	2	2190
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	6	2	1138
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	5	3	60
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91061	Bacilli	class	5	2	2357
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:551	Erwinia	genus	5	1	18
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216572	Oscillospiraceae	family	4	2	2
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:702	Plesiomonas	genus	4	1	1
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:872	Desulfovibrio	genus	3	3	3
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	3	3	238
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216851	Faecalibacterium	genus	3	1	1
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	3	1	5
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:194924	Desulfovibrionaceae	family	2	2	4
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:213115	Desulfovibrionales	order	2	2	4
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	2	2	800
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:203491	Fusobacteriales	order	2	2	3
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:203490	Fusobacteriia	class	2	2	3
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:416916	Aggregatibacter	genus	2	1	39
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:2049	Actinomycetaceae	family	1	1	40
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:135624	Aeromonadales	order	1	1	22
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:28211	Alphaproteobacteria	class	1	1	177
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:28216	Betaproteobacteria	class	1	1	134
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	75
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	1	1	75
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	75
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:3031449	Desulfovibrionia	class	1	1	4
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:547	Enterobacter	genus	1	1	15
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:526525	Erysipelotrichales	order	1	1	3
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:526524	Erysipelotrichia	class	1	1	3
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	1	1	6
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:32066	Fusobacteriota	phylum	1	1	3
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:160674	Klebsiella	genus	1	1	2
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1357	Lactococcus	genus	1	1	23
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1363	Lactococcus garvieae	species	1	1	9
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1243	Leuconostoc	genus	1	1	19
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:400634	Lysinibacillus	genus	1	1	1
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:407	Methylobacterium	genus	1	1	2
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:414999	Opitutia	class	1	1	7
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:712	Pasteurellaceae	family	1	1	136
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:135625	Pasteurellales	order	1	1	136
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186804	Peptostreptococcaceae	family	1	1	4
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:583	Proteus	genus	1	1	7
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:584	Proteus mirabilis	species	1	1	4
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:415002	Puniceicoccaceae	family	1	1	1
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:415001	Puniceicoccales	order	1	1	2
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:613	Serratia	genus	1	1	23
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	763
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	1	1	736
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:200940	Thermodesulfobacteriota	phylum	1	1	5
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:183967	Thermoplasmata	class	1	1	3
+Stroke	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:2737	Vagococcus	genus	1	1	2
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91347	Enterobacterales	order	8	3	13
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	8	3	7
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	7	2	64
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	7	2	425
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	6	2	79
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	6	2	243
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	6	2	564
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	5	3	63
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91061	Bacilli	class	5	2	651
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:216572	Oscillospiraceae	family	4	2	1
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:872	Desulfovibrio	genus	3	3	1
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	3	3	281
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	3	1	1
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:194924	Desulfovibrionaceae	family	2	2	2
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:213115	Desulfovibrionales	order	2	2	2
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	2	2	1
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:203491	Fusobacteriales	order	2	2	8
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:203490	Fusobacteriia	class	2	2	8
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:416916	Aggregatibacter	genus	2	1	7
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:76833	Actinobaculum	genus	1	1	1
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2049	Actinomycetaceae	family	1	1	45
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:28211	Alphaproteobacteria	class	1	1	78
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:28216	Betaproteobacteria	class	1	1	100
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	46
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1485	Clostridium	genus	1	1	2
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	1	1	76
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	76
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:80865	Delftia	genus	1	1	1
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:3031449	Desulfovibrionia	class	1	1	2
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:547	Enterobacter	genus	1	1	1
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	5
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:526525	Erysipelotrichales	order	1	1	6
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:526524	Erysipelotrichia	class	1	1	6
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	1	1	7
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:32066	Fusobacteriota	phylum	1	1	8
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1357	Lactococcus	genus	1	1	11
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1363	Lactococcus garvieae	species	1	1	2
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1243	Leuconostoc	genus	1	1	18
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:400634	Lysinibacillus	genus	1	1	3
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:407	Methylobacterium	genus	1	1	1
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:712	Pasteurellaceae	family	1	1	95
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:135625	Pasteurellales	order	1	1	95
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:83618	Pseudoxanthomonas	genus	1	1	1
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:613	Serratia	genus	1	1	1
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	154
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	1	1	141
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200940	Thermodesulfobacteriota	phylum	1	1	3
+Stroke	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2737	Vagococcus	genus	1	1	5
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:91347	Enterobacterales	order	8	3	402
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	8	3	227
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	7	2	34
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	7	2	4306
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	6	2	43
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	6	2	2036
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	6	2	204
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	5	3	8
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:91061	Bacilli	class	5	2	1245
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:551	Erwinia	genus	5	1	11
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:702	Plesiomonas	genus	4	1	3
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	3	3	94
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171551	Porphyromonadaceae	family	3	1	1
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:31977	Veillonellaceae	family	3	1	1
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	2	2	17
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:203491	Fusobacteriales	order	2	2	2
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:203490	Fusobacteriia	class	2	2	2
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:416916	Aggregatibacter	genus	2	1	1
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:434	Acetobacter	genus	1	1	32
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:2049	Actinomycetaceae	family	1	1	5
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:135624	Aeromonadales	order	1	1	43
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:28211	Alphaproteobacteria	class	1	1	1453
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:28216	Betaproteobacteria	class	1	1	801
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	580
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:442430	Coraliomargarita	genus	1	1	1
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	1	1	122
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	122
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:80865	Delftia	genus	1	1	8
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:28221	Deltaproteobacteria	class	1	1	1
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:547	Enterobacter	genus	1	1	15
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	4
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:526525	Erysipelotrichales	order	1	1	4
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:526524	Erysipelotrichia	class	1	1	4
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	1	1	7
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:32066	Fusobacteriota	phylum	1	1	2
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:232523	Hylemonella	genus	1	1	2
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:160674	Klebsiella	genus	1	1	5
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1357	Lactococcus	genus	1	1	5
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1363	Lactococcus garvieae	species	1	1	1
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1243	Leuconostoc	genus	1	1	7
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:400634	Lysinibacillus	genus	1	1	15
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:407	Methylobacterium	genus	1	1	35
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:414999	Opitutia	class	1	1	7
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:712	Pasteurellaceae	family	1	1	49
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:135625	Pasteurellales	order	1	1	49
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:836	Porphyromonas	genus	1	1	1
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:583	Proteus	genus	1	1	10
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:584	Proteus mirabilis	species	1	1	2
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:83618	Pseudoxanthomonas	genus	1	1	16
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:415002	Puniceicoccaceae	family	1	1	1
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:415001	Puniceicoccales	order	1	1	3
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:613	Serratia	genus	1	1	20
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:28453	Sphingobacterium	genus	1	1	23
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	38
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	1	1	33
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:183967	Thermoplasmata	class	1	1	5
+Stroke	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:2737	Vagococcus	genus	1	1	6
+High fat diet	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:872	Desulfovibrio	genus	1	1	3
+High fat diet	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	1	1	109
+High fat diet	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	800
+High fat diet	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1357	Lactococcus	genus	1	1	23
+High fat diet	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	1	1	736
+High fat diet	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:872	Desulfovibrio	genus	1	1	1
+High fat diet	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	1	1	64
+High fat diet	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	1
+High fat diet	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:117563	Granulicatella	genus	1	1	3
+High fat diet	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1357	Lactococcus	genus	1	1	11
+High fat diet	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	1	1	141
