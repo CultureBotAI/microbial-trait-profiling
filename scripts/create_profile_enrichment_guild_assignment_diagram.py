@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from itertools import pairwise
 from pathlib import Path
 from textwrap import fill
 
@@ -283,18 +284,21 @@ def add_arrow(
     connectionstyle: str = "arc3,rad=0",
     label: str | None = None,
     label_xy: tuple[float, float] | None = None,
+    linewidth: float = 1.8,
+    mutation_scale: float = 14,
+    zorder: int = 1,
 ) -> None:
     arrow = FancyArrowPatch(
         start,
         end,
         arrowstyle="-|>",
-        mutation_scale=14,
-        linewidth=1.8,
+        mutation_scale=mutation_scale,
+        linewidth=linewidth,
         color=color,
         connectionstyle=connectionstyle,
         shrinkA=6,
         shrinkB=6,
-        zorder=1,
+        zorder=zorder,
     )
     ax.add_patch(arrow)
     if label and label_xy:
@@ -309,6 +313,260 @@ def add_arrow(
             fontweight="bold",
             zorder=4,
         )
+
+
+def add_stage_box(
+    ax: plt.Axes,
+    *,
+    xy: tuple[float, float],
+    width: float,
+    height: float,
+    number: str,
+    title: str,
+    body: str,
+    facecolor: str = "white",
+    edgecolor: str = SLATE_200,
+    accent: str = SLATE_700,
+    body_width: int = 25,
+) -> None:
+    """Draw a numbered workflow stage with a compact caption."""
+    x, y = xy
+    patch = FancyBboxPatch(
+        (x, y),
+        width,
+        height,
+        boxstyle="round,pad=0.45,rounding_size=1.15",
+        linewidth=1.2,
+        edgecolor=edgecolor,
+        facecolor=facecolor,
+        zorder=2,
+    )
+    ax.add_patch(patch)
+    badge = FancyBboxPatch(
+        (x + 0.85, y + height - 2.35),
+        2.55,
+        1.8,
+        boxstyle="round,pad=0.2,rounding_size=0.75",
+        linewidth=0,
+        facecolor=accent,
+        zorder=3,
+    )
+    ax.add_patch(badge)
+    ax.text(
+        x + 2.125,
+        y + height - 1.45,
+        number,
+        ha="center",
+        va="center",
+        fontsize=8.0,
+        fontweight="bold",
+        color="white",
+        zorder=4,
+    )
+    ax.text(
+        x + 4.0,
+        y + height - 0.95,
+        title,
+        ha="left",
+        va="top",
+        fontsize=9.2,
+        fontweight="bold",
+        color=SLATE_900,
+        zorder=4,
+    )
+    ax.text(
+        x + 1.0,
+        y + height - 3.65,
+        wrapped(body, body_width),
+        ha="left",
+        va="top",
+        fontsize=7.55,
+        color=SLATE_700,
+        linespacing=1.14,
+        zorder=4,
+    )
+
+
+def add_output_chip(
+    ax: plt.Axes,
+    *,
+    xy: tuple[float, float],
+    width: float,
+    text: str,
+    facecolor: str,
+    edgecolor: str,
+    text_color: str,
+    wrap_width: int = 38,
+) -> None:
+    x, y = xy
+    patch = FancyBboxPatch(
+        (x, y),
+        width,
+        2.55,
+        boxstyle="round,pad=0.22,rounding_size=0.65",
+        linewidth=0.8,
+        edgecolor=edgecolor,
+        facecolor=facecolor,
+        zorder=3,
+    )
+    ax.add_patch(patch)
+    ax.text(
+        x + 0.65,
+        y + 1.28,
+        wrapped(text, wrap_width),
+        ha="left",
+        va="center",
+        fontsize=6.8,
+        color=text_color,
+        fontweight="bold",
+        linespacing=1.05,
+        zorder=4,
+    )
+
+
+def add_sankey_preview(
+    ax: plt.Axes,
+    *,
+    xy: tuple[float, float],
+    width: float,
+    height: float,
+    flow_color: str,
+    node_color: str,
+) -> None:
+    """Draw a small condition-to-body-site Sankey glyph."""
+    x, y = xy
+    left_nodes = [
+        (x + 0.8, y + height * 0.70, 1.3, 3.3),
+        (x + 0.8, y + height * 0.28, 1.3, 3.0),
+    ]
+    right_nodes = [
+        (x + width - 2.1, y + height * 0.78, 1.3, 2.7),
+        (x + width - 2.1, y + height * 0.49, 1.3, 2.9),
+        (x + width - 2.1, y + height * 0.20, 1.3, 2.5),
+    ]
+    flows = [
+        ((x + 2.1, y + height * 0.78), (x + width - 2.2, y + height * 0.82), 5.2, 0.03),
+        ((x + 2.1, y + height * 0.67), (x + width - 2.2, y + height * 0.53), 4.0, -0.13),
+        ((x + 2.1, y + height * 0.33), (x + width - 2.2, y + height * 0.48), 4.4, 0.16),
+        ((x + 2.1, y + height * 0.25), (x + width - 2.2, y + height * 0.24), 3.2, -0.04),
+    ]
+    for start, end, line_width, rad in flows:
+        ax.add_patch(
+            FancyArrowPatch(
+                start,
+                end,
+                arrowstyle="-",
+                connectionstyle=f"arc3,rad={rad}",
+                linewidth=line_width,
+                color=flow_color,
+                alpha=0.46,
+                zorder=2,
+            )
+        )
+    for node_x, node_y, node_w, node_h in [*left_nodes, *right_nodes]:
+        ax.add_patch(
+            FancyBboxPatch(
+                (node_x, node_y - node_h / 2),
+                node_w,
+                node_h,
+                boxstyle="round,pad=0.08,rounding_size=0.35",
+                linewidth=0.8,
+                edgecolor=node_color,
+                facecolor="white",
+                zorder=3,
+            )
+        )
+    ax.text(
+        x,
+        y + 0.2,
+        "conditions",
+        ha="left",
+        va="bottom",
+        fontsize=6.3,
+        color=SLATE_500,
+        zorder=4,
+    )
+    ax.text(
+        x + width,
+        y + 0.2,
+        "body sites",
+        ha="right",
+        va="bottom",
+        fontsize=6.3,
+        color=SLATE_500,
+        zorder=4,
+    )
+
+
+def add_workflow_lane(
+    ax: plt.Axes,
+    *,
+    xy: tuple[float, float],
+    width: float,
+    height: float,
+    title: str,
+    body: str,
+    chips: list[str],
+    facecolor: str,
+    edgecolor: str,
+    title_color: str,
+    flow_color: str,
+) -> None:
+    x, y = xy
+    panel = FancyBboxPatch(
+        (x, y),
+        width,
+        height,
+        boxstyle="round,pad=0.45,rounding_size=1.2",
+        linewidth=1.2,
+        edgecolor=edgecolor,
+        facecolor=facecolor,
+        zorder=1,
+    )
+    ax.add_patch(panel)
+    ax.text(
+        x + 1.0,
+        y + height - 1.15,
+        title,
+        ha="left",
+        va="top",
+        fontsize=10.4,
+        fontweight="bold",
+        color=title_color,
+        zorder=4,
+    )
+    ax.text(
+        x + 1.0,
+        y + height - 4.2,
+        wrapped(body, 58),
+        ha="left",
+        va="top",
+        fontsize=7.35,
+        color=SLATE_700,
+        linespacing=1.14,
+        zorder=4,
+    )
+    chip_y = y + 1.15 + max(0, len(chips) - 1) * 2.95
+    for chip in chips:
+        add_output_chip(
+            ax,
+            xy=(x + 1.0, chip_y),
+            width=width * 0.58,
+            text=chip,
+            facecolor="white",
+            edgecolor=edgecolor,
+            text_color=title_color,
+            wrap_width=46,
+        )
+        chip_y -= 2.95
+    add_sankey_preview(
+        ax,
+        xy=(x + width * 0.66, y + 1.7),
+        width=width * 0.27,
+        height=height * 0.54,
+        flow_color=flow_color,
+        node_color=edgecolor,
+    )
 
 
 def add_badge(
@@ -606,10 +864,7 @@ def add_large_direction_grid(ax: plt.Axes, counts: dict[str, int]) -> None:
         width=col_w,
         height=row_h,
         title="Off-diagonal check",
-        body=(
-            "Aerobe trait score in decreased profiles.\n"
-            "Used as the comparator/reversal check."
-        ),
+        body=("Aerobe trait score in decreased profiles.\nUsed as the comparator/reversal check."),
         facecolor=SLATE_100,
         edgecolor=SLATE_200,
         title_color=SLATE_700,
@@ -621,8 +876,7 @@ def add_large_direction_grid(ax: plt.Axes, counts: dict[str, int]) -> None:
         height=row_h,
         title="Off-diagonal check",
         body=(
-            "Anaerobe trait score in increased profiles.\n"
-            "Used as the comparator/reversal check."
+            "Anaerobe trait score in increased profiles.\nUsed as the comparator/reversal check."
         ),
         facecolor=SLATE_100,
         edgecolor=SLATE_200,
@@ -849,6 +1103,257 @@ def create_anaerobe_guild_definition_table(
         (
             "This table defines the v2 trait-enrichment score. Focal target taxa are "
             "recurrence audit examples and do not define the formal trait set."
+        ),
+        fontsize=8.2,
+        color=SLATE_500,
+        ha="left",
+        va="bottom",
+    )
+
+    fig.savefig(output_png, dpi=220, bbox_inches="tight", facecolor=fig.get_facecolor())
+    if output_svg is not None:
+        fig.savefig(output_svg, bbox_inches="tight", facecolor=fig.get_facecolor())
+    plt.close(fig)
+
+
+def create_workflow_diagram(
+    *,
+    output_png: Path = OUTPUT_PNG,
+    output_svg: Path | None = OUTPUT_SVG,
+) -> None:
+    """Create the BugSigDB-to-Sankey workflow diagram."""
+    counts = get_summary_counts()
+    INVESTIGATION_DIR.mkdir(parents=True, exist_ok=True)
+
+    fig, ax = plt.subplots(figsize=(15.2, 8.6), dpi=180)
+    fig.patch.set_facecolor(SLATE_50)
+    ax.set_facecolor(SLATE_50)
+    ax.set_xlim(0, 100)
+    ax.set_ylim(0, 62)
+    ax.axis("off")
+
+    ax.text(
+        3.5,
+        59.3,
+        "BugSigDB data to trait-enrichment Sankey diagrams",
+        fontsize=21,
+        fontweight="bold",
+        color=SLATE_900,
+        ha="left",
+        va="top",
+    )
+    ax.text(
+        3.5,
+        56.4,
+        (
+            f"{format_count(counts['profile_count'])} curated profile rows from "
+            f"{format_count(counts['study_count'])} studies are transformed into "
+            "profile-trait scores, guild calls, edge tables, and rendered "
+            "condition-to-body-site Sankey maps."
+        ),
+        fontsize=10.0,
+        color=SLATE_500,
+        ha="left",
+        va="top",
+    )
+
+    stage_y = 40.2
+    stage_h = 11.0
+    stage_w = 17.4
+    stage_xs = [3.0, 22.0, 41.0, 60.0, 79.0]
+    stages = [
+        {
+            "number": "1",
+            "title": "BugSigDB data",
+            "body": (
+                "Study profiles with taxa, condition labels, body sites, and curated "
+                "increased/decreased directions."
+            ),
+            "accent": SLATE_700,
+            "facecolor": "white",
+            "edgecolor": SLATE_200,
+        },
+        {
+            "number": "2",
+            "title": "Trait profiles",
+            "body": (
+                "Map profile taxa to KG-Microbe traits, then standardize trait "
+                "z-scores per profile."
+            ),
+            "accent": GREEN_700,
+            "facecolor": GREEN_50,
+            "edgecolor": "#a7f3d0",
+        },
+        {
+            "number": "3",
+            "title": "Guild enrichment",
+            "body": (
+                "Apply selected oxygen-tolerance trait sets and compare focus "
+                "direction against the comparator."
+            ),
+            "accent": AMBER_600,
+            "facecolor": AMBER_50,
+            "edgecolor": "#fde68a",
+        },
+        {
+            "number": "4",
+            "title": "Sankey tables",
+            "body": (
+                "Group condition-to-body-site pairs, apply v3 display rollups, and "
+                "write edge plus audit TSVs."
+            ),
+            "accent": BLUE_600,
+            "facecolor": BLUE_50,
+            "edgecolor": "#bfdbfe",
+        },
+        {
+            "number": "5",
+            "title": "Sankey diagrams",
+            "body": (
+                "Render condition-to-body-site maps. Edge width is profile support; "
+                "color carries enrichment or direction balance."
+            ),
+            "accent": RED_600,
+            "facecolor": RED_50,
+            "edgecolor": "#fecaca",
+        },
+    ]
+    for stage_x, stage in zip(stage_xs, stages, strict=True):
+        add_stage_box(
+            ax,
+            xy=(stage_x, stage_y),
+            width=stage_w,
+            height=stage_h,
+            number=str(stage["number"]),
+            title=str(stage["title"]),
+            body=str(stage["body"]),
+            facecolor=str(stage["facecolor"]),
+            edgecolor=str(stage["edgecolor"]),
+            accent=str(stage["accent"]),
+            body_width=26,
+        )
+
+    for start_x, end_x in pairwise(stage_xs):
+        add_arrow(
+            ax,
+            (start_x + stage_w, stage_y + stage_h / 2),
+            (end_x, stage_y + stage_h / 2),
+            color=SLATE_400,
+            linewidth=2.0,
+            mutation_scale=16,
+        )
+
+    ax.text(
+        3.5,
+        36.5,
+        "The workflow branches into two Sankey products after shared metadata rollups.",
+        fontsize=9.6,
+        fontweight="bold",
+        color=SLATE_900,
+        ha="left",
+        va="top",
+    )
+    ax.text(
+        3.5,
+        34.6,
+        (
+            "Guild Sankeys use selected trait-enrichment scores; all-BugSigDB direction "
+            "Sankeys use the same profile metadata without guild filtering."
+        ),
+        fontsize=8.2,
+        color=SLATE_500,
+        ha="left",
+        va="top",
+    )
+
+    add_workflow_lane(
+        ax,
+        xy=(3.0, 17.2),
+        width=46.0,
+        height=15.2,
+        title="Trait-enrichment guild Sankeys",
+        body=(
+            "Selected-trait maps for aerobe v2 increased profiles and anaerobe v2 "
+            "decreased profiles. Colored edges mark enriched guild-trait support."
+        ),
+        chips=[
+            "Aerobe + anaerobe v3 grouped guild Sankey PNGs",
+            "Guild edge, rollup, and sampled-site TSVs",
+        ],
+        facecolor=BLUE_50,
+        edgecolor="#bfdbfe",
+        title_color="#1d4ed8",
+        flow_color=BLUE_600,
+    )
+    add_workflow_lane(
+        ax,
+        xy=(51.0, 17.2),
+        width=46.0,
+        height=15.2,
+        title="All-BugSigDB direction Sankeys",
+        body=(
+            "Direction-support maps for the full BugSigDB profile metadata corpus. "
+            "Colored edges count the focus direction; grey edges count comparators."
+        ),
+        chips=[
+            "Increased + decreased all-BugSigDB Sankey PNGs",
+            "Direction edge and rollup audit TSVs",
+        ],
+        facecolor=SLATE_100,
+        edgecolor=SLATE_200,
+        title_color=SLATE_900,
+        flow_color=SLATE_500,
+    )
+
+    add_box(
+        ax,
+        xy=(3.0, 5.0),
+        width=27.0,
+        height=8.2,
+        title="Shared profile metadata",
+        body=("Metadata TSV supplies study ID, condition, body site, and direction labels."),
+        facecolor="white",
+        body_width=36,
+        title_size=9.4,
+        body_size=7.2,
+    )
+    add_box(
+        ax,
+        xy=(36.5, 5.0),
+        width=27.0,
+        height=8.2,
+        title="Trait-score matrix",
+        body=("Clustered heatmap matrix TSV supplies profile-level KG-Microbe trait z-scores."),
+        facecolor="white",
+        body_width=36,
+        title_size=9.4,
+        body_size=7.2,
+    )
+    add_box(
+        ax,
+        xy=(70.0, 5.0),
+        width=27.0,
+        height=8.2,
+        title="Display rollups",
+        body=(
+            "sankey_v3_rollups.py and grouped wrappers convert raw labels into "
+            "readable condition/body-site nodes."
+        ),
+        facecolor="white",
+        body_width=36,
+        title_size=9.4,
+        body_size=7.2,
+    )
+    add_arrow(ax, (30.0, 9.1), (36.5, 9.1), color=SLATE_400, linewidth=1.7)
+    add_arrow(ax, (63.5, 9.1), (70.0, 9.1), color=SLATE_400, linewidth=1.7)
+
+    ax.text(
+        3.5,
+        2.0,
+        (
+            "Summary workflow generated from the current trait-profile investigation. "
+            "The PNG and SVG are reproducible from "
+            "scripts/create_profile_enrichment_guild_assignment_diagram.py."
         ),
         fontsize=8.2,
         color=SLATE_500,
@@ -1156,10 +1661,10 @@ def create_diagram(
 
 def main() -> None:
     write_direction_grid_table()
-    create_diagram()
+    create_workflow_diagram()
     create_anaerobe_guild_definition_table()
     create_diagram(
-        use_direction_grid=False,
+        use_direction_grid=True,
         output_png=PRE_GRID_OUTPUT_PNG,
         output_svg=None,
     )
