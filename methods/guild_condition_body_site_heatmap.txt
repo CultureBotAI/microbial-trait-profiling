@@ -39,6 +39,26 @@ Rows are conditions and columns are body sites crossed with the four
 guild-by-direction combinations, so each body site contributes the two-by-two
 guild by direction table unrolled into four adjacent columns.
 
+The two guilds are drawn on separate colour scales, aerobe on a red-orange ramp
+and anaerobe on a green-yellow ramp, each with its own colour bar. A single
+shared scale invited direct comparison of an aerobe cell against an anaerobe
+cell, which is not meaningful here: the guilds contain different numbers of
+METPO terms and different numbers of annotated taxa, so only within-guild
+comparisons across conditions and sites are interpretable.
+
+Cells fall into four states, recorded per cell in a companion status table so
+the distinction is machine-readable rather than only visual. A cell carries a
+value when at least the minimum number of studies support it and at least one
+study has non-zero guild signal. A cell is filled dark grey when the body site
+was sampled for that condition but no taxon in those profiles carried any trait
+of that guild; previously such a cell was drawn as a fraction of zero and was
+indistinguishable from a genuinely small fraction, which understated how often a
+guild is simply absent. A cell is left blank when the site was sampled by fewer
+studies than the threshold, and blank when the site was never sampled for that
+condition at all. On the run described here, of 936 cells 220 carry a value, 121
+fall below the study threshold, 3 are sampled with no guild signal, and 592 were
+never sampled.
+
 The association between guild and direction was tested on a two-by-two table of
 studies. Each study was scored once per guild by the sign of its mean increased
 fraction minus its mean decreased fraction, giving cells of guild by shift

@@ -46,6 +46,10 @@ class GuildMatrix:
     columns: list[str]
     values: list[list[float | None]]
     study_counts: list[list[int]]
+    # True where the body site was sampled for that condition but no taxon in the
+    # profile carried any trait of that guild. Without this, an all-zero cell is
+    # drawn in the same colour as a genuinely low fraction.
+    sampled_no_signal: list[list[bool]]
 
 
 def _top_labels(counts: dict[str, int], limit: int) -> list[str]:
@@ -103,9 +107,11 @@ def build_matrix(
 
     values: list[list[float | None]] = []
     study_counts: list[list[int]] = []
+    sampled_no_signal: list[list[bool]] = []
     for condition in conditions:
         value_row: list[float | None] = []
         count_row: list[int] = []
+        blank_row: list[bool] = []
         for site in body_sites:
             for guild in GUILD_ORDER:
                 for direction in DIRECTIONS:
@@ -114,13 +120,16 @@ def build_matrix(
                     )
                     n_studies = len(by_study)
                     count_row.append(n_studies)
-                    if n_studies < min_studies:
+                    study_means = [sum(v) / len(v) for v in by_study.values()]
+                    zero_signal = n_studies > 0 and not any(m > 0 for m in study_means)
+                    blank_row.append(zero_signal)
+                    if n_studies < min_studies or zero_signal:
                         value_row.append(None)
                         continue
-                    study_means = [sum(v) / len(v) for v in by_study.values()]
                     value_row.append(sum(study_means) / len(study_means))
         values.append(value_row)
         study_counts.append(count_row)
+        sampled_no_signal.append(blank_row)
 
     return GuildMatrix(
         conditions=conditions,
@@ -128,6 +137,7 @@ def build_matrix(
         columns=columns,
         values=values,
         study_counts=study_counts,
+        sampled_no_signal=sampled_no_signal,
     )
 
 
@@ -235,12 +245,28 @@ def write_outputs(
     value_rows = [["" if v is None else f"{v:.6f}" for v in row] for row in matrix.values]
     count_rows = [[str(c) for c in row] for row in matrix.study_counts]
 
+    status_rows = [
+        [
+            "value"
+            if value is not None
+            else "no_guild_signal"
+            if blank
+            else ("below_min_studies" if count else "not_sampled")
+            for value, blank, count in zip(v_row, b_row, c_row, strict=True)
+        ]
+        for v_row, b_row, c_row in zip(
+            matrix.values, matrix.sampled_no_signal, matrix.study_counts, strict=True
+        )
+    ]
+
     values_path = output_dir / "guild_condition_body_site_matrix.tsv"
+    status_path = output_dir / "guild_condition_body_site_cell_status.tsv"
     counts_path = output_dir / "guild_condition_body_site_study_counts.tsv"
     stats_path = output_dir / "guild_aerobe_anaerobe_correlation.tsv"
 
     _write_matrix_tsv(values_path, matrix, value_rows)
     _write_matrix_tsv(counts_path, matrix, count_rows)
+    _write_matrix_tsv(status_path, matrix, status_rows)
 
     with stats_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
@@ -269,31 +295,84 @@ def write_outputs(
                 ]
             )
 
-    return [values_path, counts_path, stats_path]
+    return [values_path, counts_path, status_path, stats_path]
+
+
+GUILD_COLORSCALES = {"aerobe": "OrRd", "anaerobe": "YlGn"}
+NO_SIGNAL_COLOR = "#4d4d4d"
+
+
+def _guild_of_column(column: str) -> str:
+    """Return the guild encoded in a `site|guild_direction` column label."""
+    return column.split("|", 1)[1].rsplit("_", 1)[0]
 
 
 def write_figure(matrix: GuildMatrix, output_path: Path, vintage: str | None) -> Path:
-    """Render the heatmap, leaving masked cells blank rather than drawing a zero."""
+    """Render the heatmap with one colour scale per guild.
+
+    Aerobe and anaerobe fractions are drawn as two overlaid traces so each guild
+    keeps its own scale and colour bar; a shared scale made the two guilds look
+    comparable when only within-guild comparisons are meaningful. Cells where the
+    site was sampled but carried no guild trait are filled dark grey, so an
+    absent guild is distinguishable from a small fraction.
+    """
     import plotly.graph_objects as go
+
+    figure = go.Figure()
+    for position, guild in enumerate(GUILD_ORDER):
+        z_guild: list[list[float | None]] = [
+            [
+                value if _guild_of_column(column) == guild else None
+                for column, value in zip(matrix.columns, row, strict=True)
+            ]
+            for row in matrix.values
+        ]
+        figure.add_trace(
+            go.Heatmap(
+                z=z_guild,
+                x=matrix.columns,
+                y=matrix.conditions,
+                colorscale=GUILD_COLORSCALES[guild],
+                hoverongaps=False,
+                name=guild,
+                colorbar={
+                    "title": f"{guild}<br>fraction",
+                    "len": 0.42,
+                    "y": 0.79 - 0.46 * position,
+                    "yanchor": "middle",
+                    "thickness": 14,
+                },
+            )
+        )
+
+    shapes = [
+        {
+            "type": "rect",
+            "xref": "x",
+            "yref": "y",
+            "x0": col - 0.5,
+            "x1": col + 0.5,
+            "y0": row - 0.5,
+            "y1": row + 0.5,
+            "fillcolor": NO_SIGNAL_COLOR,
+            "line": {"color": NO_SIGNAL_COLOR, "width": 0},
+            "layer": "above",
+        }
+        for row, flags in enumerate(matrix.sampled_no_signal)
+        for col, sampled in enumerate(flags)
+        if sampled
+    ]
 
     subtitle = (
         "Mean guild trait fraction, averaged within study then across studies. "
+        "Dark grey = site sampled for that condition but no taxon carried the guild trait. "
         f"BugSigDB {vintage or 'vintage unknown'}."
-    )
-    figure = go.Figure(
-        data=go.Heatmap(
-            z=matrix.values,
-            x=matrix.columns,
-            y=matrix.conditions,
-            colorscale="Viridis",
-            hoverongaps=False,
-            colorbar={"title": "mean fraction"},
-        )
     )
     figure.update_layout(
         title={"text": f"Oxygen guilds by condition and body site<br><sub>{subtitle}</sub>"},
         xaxis={"title": "body site | guild _ direction", "tickangle": -60},
         yaxis={"title": "condition", "autorange": "reversed"},
+        shapes=shapes,
         width=max(900, 26 * len(matrix.columns)),
         height=max(600, 26 * len(matrix.conditions) + 260),
         margin={"l": 260, "b": 260},

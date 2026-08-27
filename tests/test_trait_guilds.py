@@ -175,3 +175,36 @@ def test_fraction_is_zero_when_a_profile_has_no_signal() -> None:
         total=0,
     )
     assert empty.fraction("aerobe") == 0.0
+
+
+def test_sampled_cells_without_guild_signal_are_flagged_not_drawn_as_zero(
+    tmp_path: Path,
+) -> None:
+    """A site sampled for a condition but carrying no guild trait is its own state."""
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    # Both guilds are absent; only the non-guild trait carries any count.
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [0, 0, 0, 0, 0, 7, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [0, 0, 0, 0, 0, 7, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Periodontitis", "Saliva", "Homo sapiens")],
+    )
+    profiles, _ = load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+    matrix = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
+
+    saliva = [i for i, c in enumerate(matrix.columns) if c.startswith("Saliva|")]
+    assert saliva, "expected Saliva columns"
+    row = matrix.conditions.index("Periodontitis")
+
+    for i in saliva:
+        # Sampled, so a study is counted, but no value is drawn and the cell is
+        # flagged so the figure can shade it distinctly from a small fraction.
+        assert matrix.study_counts[row][i] == 1
+        assert matrix.values[row][i] is None
+        assert matrix.sampled_no_signal[row][i] is True
