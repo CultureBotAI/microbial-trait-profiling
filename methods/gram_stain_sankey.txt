@@ -1,0 +1,36 @@
+Gram-stain directional Sankey diagrams
+
+Gram stain classes were taken from KG-Microbe as METPO:1000698 (gram positive)
+and METPO:1000699 (gram negative); both labels were read from the merged
+KG-Microbe node table. The input corpus, filters, and per-profile trait
+fractions are identical to those used for the oxygen guild heatmap: BugSigDB
+2026-04-18_11:12_UTC, human samples only, matched increased/decreased experiment
+pairs only, and MediaDive growth-medium trait columns excluded, leaving 317
+traits over 3,736 experiments and 7,472 profiles.
+
+Gram positive and gram negative annotations are close to exhaustive and close to
+equal across KG-Microbe taxa, so counting how often each class appears on the
+increased and decreased sides produces two near-mirror-image totals by
+construction rather than by biology. Per-direction hit counts are therefore not
+reported. Instead each study contributes a paired contrast: for one condition and
+body site, the mean increased fraction minus the mean decreased fraction of that
+gram class, averaged over the study's experiments. A study contributes to the
+increased flow when that contrast is positive and to the decreased flow when it
+is negative; studies whose contrast is exactly zero contribute to neither.
+
+Flows run from condition to body site. Link width is the number of studies whose
+paired contrast runs in that direction, and flows supported by fewer than three
+studies are dropped rather than drawn. Four diagrams are produced, one for each
+gram class and contrast direction, together with a tab-separated edge table
+listing every rendered flow with its study count and mean absolute contrast, so
+the figures can be audited without measuring pixels. With the settings above, 255
+edges met the threshold.
+
+The diagrams were rendered with plotly and produced by src/bsdbng/gram_sankey.py,
+driven deterministically by `just gram-sankey`. This analysis does not reuse the
+existing enrichment ranking tables, whose hypergeometric urn draws taxon-trait
+assertions rather than taxa; no p-value from that procedure enters these figures.
+The BugSigDB export timestamp is read from the dump's leading comment line and is
+recorded in the edge table and in every figure caption. The pipeline code and
+this description were drafted with the assistance of a coding agent (Claude Code)
+and reviewed by the author.

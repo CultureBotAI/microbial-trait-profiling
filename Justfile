@@ -88,6 +88,12 @@ study-trait-profiles:
 guild-maps:
 	just timed guild-maps "uv run python scripts/create_guild_maps.py"
 
+# Same inputs and filters as `just guild-maps`. Emits four Sankey PNGs (gram
+# positive/negative x increased/decreased) plus the edge table backing them, to
+# data/derived/gram_sankey/.
+gram-sankey:
+	just timed gram-sankey "uv run python scripts/create_gram_sankey.py"
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
