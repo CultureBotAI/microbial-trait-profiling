@@ -69,12 +69,14 @@ GitHub transfer redirect to `CultureBotAI/bsdbng`. `AGENTS.md` still says
 name once, then stop worrying about it.
 
 **2. Most analysis work lives on unmerged branches, not `main`.** The two
-trait-analysis arms — the **ORA/enrichment arm** ("Analysis A" in issue titles;
-`scripts/trait_enrichment.py`, `scripts/trait_depletion.py`,
-`scripts/export_trait_enrichment_rankings.py`) and the **composition /
-paired-contrast arm** ("Analysis B"; `scripts/create_trait_profile_infographic.py`,
-`scripts/create_study_trait_profile_heatmap.py`, `trait-visualization/`) — each
-sit on their author's branch on the `culturebot` remote. An issue about either
+trait-analysis arms — the **composition / paired-contrast arm** ("Analysis A"
+in issue titles; `scripts/create_study_trait_profile_heatmap.py`,
+`scripts/create_trait_profile_infographic.py`, `trait-visualization/`) and the
+**ORA/enrichment arm** ("Analysis B"; `scripts/trait_enrichment.py`,
+`scripts/trait_depletion.py`, `scripts/export_trait_enrichment_rankings.py`) —
+each sit on their author's branch on the `culturebot` remote. Verify the A/B
+label against the script paths an issue cites; the letters are convention, not
+metadata. An issue about either
 arm is a claim about *that branch tip*. Reading `main`, or a stale local
 checkout, answers a different question. Always:
 
@@ -136,7 +138,7 @@ BugSigDB release vintage (Zenodo full_dump.csv pinned; wiki CSVs live)
   -> study TSVs (bugsigdb_taxa.tsv, experiments join)
   -> KG-Microbe download + taxa_trait_matrix.tsv
   -> study_trait_profiles_wide.tsv (shared by both arms)
-  -> ORA/enrichment arm      | composition / paired-contrast arm
+  -> composition arm (A)     | ORA/enrichment arm (B)
   -> rankings, heatmaps, infographics, cross-arm evidence table
   -> release assets, README claims, manuscript/deck statements
 ```
@@ -159,7 +161,8 @@ For each issue, record when applicable:
 - prerequisites, blockers, duplicates, and superseding issues;
 - cheapest decisive evidence and acceptance test;
 - execution class: read-only audit; local regeneration
-  (`just ingest`, `just study-trait-profiles` — minutes); KG-Microbe re-download
+  (`just ingest`, `just study-trait-profiles`; take durations from the
+  `just timed` logs in `logs/`, not from memory); KG-Microbe re-download
   (large, ask first); full arm rerun on a branch; release cut.
 
 ### 3. Check current reality and staleness
