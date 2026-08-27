@@ -81,6 +81,13 @@ taxa-trait-matrix: study-tsvs
 study-trait-profiles:
 	uv run python scripts/create_study_trait_profiles.py
 
+# Requires data/derived/study_trait_profiles_wide.tsv (`just study-trait-profiles`)
+# and data/derived/experiments.tsv (`just study-tsvs`). Human samples only, matched
+# inc/dec pairs only, MediaDive traits excluded. Writes the heatmap plus its value
+# matrix, study-count matrix, and correlation table to data/derived/guild_maps/.
+guild-maps:
+	just timed guild-maps "uv run python scripts/create_guild_maps.py"
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
