@@ -13,7 +13,9 @@ build/
 coverage.xml
 
 data/raw/*.csv
-data/raw/download_provenance.json
+# download_provenance.json is deliberately NOT ignored (#115): it records which
+# BugSigDB release a checkout was built from, and that has to survive into version
+# control or the vintage is only recoverable from the machine that ran the download.
 data/studies/*.yaml
 data/derived/*
 !data/derived/.gitkeep

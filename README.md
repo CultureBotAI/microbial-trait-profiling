@@ -35,6 +35,55 @@ just ingest      # parse into per-study YAML (~22s, 1900+ studies)
 
 That's it. After `just ingest`, look at `data/studies/` for the output.
 
+### BugSigDB data provenance
+
+`just download` pins the ingest input to a citable release rather than a moving branch.
+
+| field | value |
+|---|---|
+| source | [waldronlab/BugSigDBExports](https://github.com/waldronlab/BugSigDBExports) release **v1.3.1** |
+| version DOI | [`10.5281/zenodo.19740674`](https://doi.org/10.5281/zenodo.19740674) |
+| pinned by | commit SHA `5815c2638d6b56134ac8db19edc2bb3c4b17f1ca` — not the tag name, which is mutable |
+| integrity | md5 `00df5a86c684eac19fd767c029ff0130`, 16,241,290 bytes, checked on every download |
+| release published | 2026-04-24 |
+| pinned file | `full_dump.csv` |
+
+**Why v1.3.1 and not v1.3.0.** v1.3.1 is a *reviewed-only* export: every row carries
+`State = Complete` and a named `Reviewer`, which v1.3.0 and `devel` do not. It therefore
+ingests *fewer* studies than v1.3.0 despite being a year newer (1,245 vs 1,368). v1.3.0 is
+unfiltered, 16 months older, and contains four studies present in no current source. See
+issue #130 before changing this pin.
+
+**What is and is not pinned.** The ingest reads only `full_dump.csv`, so pinning that file
+pins the ingest. The three MediaWiki exports — `studies.csv`, `experiments.csv`,
+`signatures.csv` — are live wiki tables with **no pinned equivalent** (the release does not
+contain them). They are still downloaded, because `just stats` reports on them and
+downstream analyses join against `experiments.csv`, but they are **not pinned**: two runs on
+different days can fetch different vintages. Do not read "the ingest is pinned" as
+"everything in `data/raw/` is pinned". Because they are not ingest inputs, an outage on them
+is a warning rather than a failure — a dead export URL should not take down a pinned run.
+
+**Every dump declares its own vintage.** Line 1 of `full_dump.csv` is a comment the CSV
+reader strips:
+
+```
+# BugSigDB 2026-04-24_00:41_UTC, License: ..., URL: https://bugsigdb.org
+```
+
+That timestamp is parsed into `data/raw/download_provenance.json` alongside the resolved
+release, DOI, tag SHA, per-file source URL, ETag and a per-file `pinned` flag — and the
+resolved source is printed at the start of every run. The sidecar is **committed**, so the
+vintage of a checkout is recoverable from version control rather than only from the machine
+that ran the download. It is recorded for unpinned runs too: a `live` run cannot be repeated,
+but it can at least be identified afterwards.
+
+To fetch the moving `devel` branch instead — for a deliberate freshness check, never for a
+reproducible run:
+
+```bash
+BSDBNG_BUGSIGDB_SOURCE=live just download
+```
+
 ### If `just download` is unreachable: use the release raw-data tarball
 
 Each tagged release attaches a `bsdbng-raw-data-v<tag>.tar.gz` asset containing:
