@@ -120,16 +120,23 @@ def test_missing_guild_column_raises(corpus: tuple[Path, Path]) -> None:
         load_profiles(profiles_path, experiments_path, GRAM_GUILDS)
 
 
-def test_matrix_masks_cells_below_the_study_threshold(corpus: tuple[Path, Path]) -> None:
+def test_rows_with_no_surviving_cells_are_dropped(corpus: tuple[Path, Path]) -> None:
+    """A condition whose every cell is masked would render as a blank row."""
     profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
-    matrix = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=2)
 
-    # Each condition here is backed by a single study, so every cell is masked.
-    assert all(value is None for row in matrix.values for value in row)
-    assert any(count == 1 for row in matrix.study_counts for count in row)
+    # Each condition here is backed by a single study, so at a threshold of two
+    # nothing survives and every row is dropped rather than drawn empty.
+    masked = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=2)
+    assert masked.conditions == []
+    assert set(masked.dropped_empty_conditions) == {"Colorectal cancer", "Asthma", OTHER_LABEL}
 
-    unmasked = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
-    assert any(value is not None for row in unmasked.values for value in row)
+    # At a threshold of one the same conditions carry values and are kept. Other
+    # is still dropped: the cap is above the number of conditions, so it pooled
+    # nothing and its row would be blank.
+    kept = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
+    assert set(kept.conditions) == {"Colorectal cancer", "Asthma"}
+    assert kept.dropped_empty_conditions == [OTHER_LABEL]
+    assert any(value is not None for row in kept.values for value in row)
 
 
 def test_correlation_counts_studies_by_shift_direction(corpus: tuple[Path, Path]) -> None:
@@ -200,6 +207,10 @@ def test_sampled_cells_without_guild_signal_are_flagged_not_drawn_as_zero(
 
     saliva = [i for i, c in enumerate(matrix.columns) if c.startswith("Saliva|")]
     assert saliva, "expected Saliva columns"
+    # The row has no values at all, but is kept: "sampled, no guild trait" is a
+    # result, so only entirely blank rows are dropped.
+    assert "Periodontitis" in matrix.conditions
+    assert "Periodontitis" not in matrix.dropped_empty_conditions
     row = matrix.conditions.index("Periodontitis")
 
     for i in saliva:

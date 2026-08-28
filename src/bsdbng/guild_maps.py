@@ -69,6 +69,9 @@ class GuildMatrix:
     # Cluster id per condition row, from Euclidean clustering of the row vectors.
     row_clusters: list[int]
     pooled: list[PooledLabels]
+    # Conditions removed because no cell survived the study threshold and none was
+    # sampled-without-signal, so the row would render entirely blank.
+    dropped_empty_conditions: list[str]
     # True where the body site was sampled for that condition but no taxon in the
     # profile carried any trait of that guild. Without this, an all-zero cell is
     # drawn in the same colour as a genuinely low fraction.
@@ -195,6 +198,19 @@ def build_matrix(
         study_counts.append(count_row)
         sampled_no_signal.append(blank_row)
 
+    # Drop rows that would render entirely blank. A row keeping only dark-grey
+    # cells is retained: "sampled, no guild trait" is a result, not an absence.
+    keep_rows = [
+        i
+        for i in range(len(conditions))
+        if any(v is not None for v in values[i]) or any(sampled_no_signal[i])
+    ]
+    dropped = [conditions[i] for i in range(len(conditions)) if i not in set(keep_rows)]
+    conditions = [conditions[i] for i in keep_rows]
+    values = [values[i] for i in keep_rows]
+    study_counts = [study_counts[i] for i in keep_rows]
+    sampled_no_signal = [sampled_no_signal[i] for i in keep_rows]
+
     order, labels = _cluster_rows(values, n_clusters)
     return GuildMatrix(
         conditions=[conditions[i] for i in order],
@@ -204,6 +220,7 @@ def build_matrix(
         study_counts=[study_counts[i] for i in order],
         row_clusters=[labels[i] for i in order],
         pooled=pooled,
+        dropped_empty_conditions=dropped,
         sampled_no_signal=[sampled_no_signal[i] for i in order],
     )
 
@@ -551,6 +568,11 @@ def main() -> int:
     )
     for pooled in matrix.pooled:
         print(pooled.describe())
+    if matrix.dropped_empty_conditions:
+        print(
+            f"conditions dropped as entirely blank: {len(matrix.dropped_empty_conditions)} "
+            f"({', '.join(sorted(matrix.dropped_empty_conditions))})"
+        )
     correlation = compute_correlation(profiles, matrix)
     written = write_outputs(matrix, correlation, args.output_dir, vintage)
     written.append(

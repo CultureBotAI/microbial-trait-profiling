@@ -53,6 +53,13 @@ span the same range, from zero to the larger of the two observed maxima. Keeping
 the range common means a cell in one guild is directly comparable in magnitude
 to a cell in the other, while the hue still identifies which guild is being read.
 
+A condition whose every cell was masked would render as a blank row and is
+dropped before clustering; the dropped labels are listed on each run. A row that
+keeps only dark-grey cells is retained, because "sampled, but no taxon carried
+the guild trait" is a result rather than an absence. On the run described here 4
+conditions were dropped (Atopic asthma, Extraction protocol, Helminthiasis,
+Metabolic toxicity), leaving 57 rows.
+
 Condition rows are ordered by hierarchical clustering of their value vectors
 under Euclidean distance with Ward linkage, and the tree is cut into six groups
 which are separated in the figure by blank rows; no dendrogram is drawn. Masked
