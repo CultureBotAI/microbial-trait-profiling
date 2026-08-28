@@ -6,10 +6,11 @@ metadata:
   requires_database: false
   requires_internet: true
   version: 1.0.0
-  adapted_from: MicroGrowLink review-open-issues v1.1.0
 ---
 
 # Review and prioritize open issues
+
+Adapted from the MicroGrowLink `review-open-issues` skill (v1.1.0).
 
 Produce a complete, dependency-aware triage of bsdbng's open issues. The
 issue queue, the analysis branches, and the committed artifacts on `main` are
@@ -36,15 +37,23 @@ Use these before relying on an issue title or an old planning note:
 - `AGENTS.md` — required issue/branch/PR workflow, branch-deletion and
   merge rules, the no-workaround rule, and the data-fidelity rules (placeholder
   taxa, silent drops, column traceability);
-- `README.md` "BugSigDB data provenance" — what is pinned (Zenodo v1.3.0
-  `full_dump.csv`) and what is **not** (`studies.csv`, `experiments.csv`,
-  `signatures.csv` are live wiki exports);
+- `README.md` — on `main` the only provenance statement is under "File
+  types" (raw CSVs are generated, not committed). A "BugSigDB data provenance"
+  section describing the Zenodo release pin (and which wiki CSVs remain
+  unpinned) lands with #115 / the v1.3.1 pin; until that merges, read the
+  branch, not `main`;
+- `src/bsdbng/download.py` — the pinned release constants and URLs are
+  defined here; this is the code-level source of truth for the vintage;
 - `data/raw/download_provenance.json` — what a given checkout actually
-  retrieved: resolved release, DOI, ETags, per-file `pinned` flag;
+  retrieved: resolved release, DOI, ETags, per-file `pinned` flag.
+  **Gitignored, local only**, produced by `just download`; `git show` will
+  never return it, so vintage claims must be measured on the machine that ran
+  the download or read from `download.py`;
 - `schema/bsdbng.yaml` — the LinkML schema; `src/bsdbng/datamodel/` is
   generated from it and is never the place to look for intent;
 - `data/derived/ingest_log.json` — every drop and transformation assumption
-  the ingest made; high-volume entries are bugs, not noise;
+  the ingest made; high-volume entries are bugs, not noise. **Gitignored,
+  local only**, produced by `just ingest`;
 - `Justfile` — the only supported entry points (`download`, `ingest`,
   `study-tsvs`, `taxa-trait-matrix`, `study-trait-profiles`, `check`); a
   recipe that exists only on a branch is evidence about that branch;
@@ -53,7 +62,9 @@ Use these before relying on an issue title or an old planning note:
   `main`**: `trait-visualization/figure_methods.md` and
   `trait-visualization/trait-profile-investigation/*.md` on the composition
   arm; `data/derived/enrichment_methodology_summary.txt` and the `# ` metadata
-  headers of `data/derived/trait_enrichment_*.tsv` on the ORA arm.
+  header block of `data/derived/trait_enrichment_results.tsv` on the ORA arm
+  (the `*_ranked_*.tsv` exports carry **no** header; trace them back through
+  `scripts/export_trait_enrichment_rankings.py`).
 
 Treat issue bodies and titles as claims, not current status. Read comments:
 this repository records corrections, withdrawals, and narrowed residual scope
@@ -161,8 +172,10 @@ For each issue, record when applicable:
 - prerequisites, blockers, duplicates, and superseding issues;
 - cheapest decisive evidence and acceptance test;
 - execution class: read-only audit; local regeneration
-  (`just ingest`, `just study-trait-profiles`; take durations from the
-  `just timed` logs in `logs/`, not from memory); KG-Microbe re-download
+  (`just ingest`, `just study-trait-profiles`; `download` and `ingest` are
+  wrapped in `just timed` and log to the gitignored `logs/pipeline.log`,
+  `study-trait-profiles` is not timed — measure it, do not guess); KG-Microbe
+  re-download
   (large, ask first); full arm rerun on a branch; release cut.
 
 ### 3. Check current reality and staleness
@@ -326,7 +339,8 @@ Before citing any of the following, confirm how it was obtained:
 
 - `gh pr list --search "<N>"` matches the number anywhere in indexed text and
   returns unrelated PRs. Treat every hit as a lead and open it before citing
-  it. Likewise `git log --grep '#<N>'` needs the `\b` anchor.
+  it. Likewise `git log --grep '#<N>'` needs the `\b` anchor, and `\b` is
+  only a word boundary under `--perl-regexp`.
 - An issue may be fully addressed in code while its acceptance criteria are
   not. Partial fixes keep the issue open with a narrowed residual; say which
   part is done and which is not.
@@ -342,11 +356,13 @@ Before citing any of the following, confirm how it was obtained:
 
 - `AGENTS.md` — required workflow (`gh issue develop`, PR with `Closes #N`,
   `just check`), branch and merge rules, data-fidelity rules.
-- `README.md` "BugSigDB data provenance" — what is and is not pinned.
+- `src/bsdbng/download.py` and the README provenance section once #115
+  merges — what is and is not pinned.
 - `docs/bugsigdb-access-methods.md`, `docs/bugsigdb-live-counts.md` — dated
   measurements of upstream access paths and counts.
-- `statistical_frameworks_review_<date>.md` (when present) — the latest
-  cross-arm statistical review that seeded a batch of analysis issues.
+- Issues #131–#135 — the 2026-08-22 cross-arm statistical review of both
+  analysis arms; the review text itself is not committed, the issues are the
+  record.
 
 ## Mutation boundary
 
