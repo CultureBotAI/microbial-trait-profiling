@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import httpx
@@ -34,16 +35,18 @@ def _seed_raw_dir(tmp_path: Path) -> None:
     (tmp_path / FULL_DUMP_NAME).write_text("existing")
 
 
-def _mock_client(monkeypatch: pytest.MonkeyPatch, handler) -> None:
+def _mock_client(
+    monkeypatch: pytest.MonkeyPatch,
+    handler: Callable[[httpx.Request], httpx.Response],
+) -> None:
     """Route download_exports' httpx.Client through a MockTransport.
 
-    Bind the real class first: dl.httpx *is* the httpx module, so patching its
-    Client attribute is global, and a lambda that called httpx.Client would
-    recurse into itself.
+    Bind the real class first: the patch is global, so a lambda that called
+    httpx.Client would recurse into itself.
     """
     real_client = httpx.Client
     monkeypatch.setattr(
-        dl.httpx,
+        httpx,
         "Client",
         lambda **_kw: real_client(transport=httpx.MockTransport(handler)),
     )
