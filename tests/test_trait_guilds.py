@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from scipy.stats import fisher_exact
 
-from bsdbng.guild_maps import build_matrix, compute_correlation
+from bsdbng.guild_maps import OTHER_LABEL, build_matrix, compute_correlation
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
     OXYGEN_GUILDS,
@@ -208,3 +208,25 @@ def test_sampled_cells_without_guild_signal_are_flagged_not_drawn_as_zero(
         assert matrix.study_counts[row][i] == 1
         assert matrix.values[row][i] is None
         assert matrix.sampled_no_signal[row][i] is True
+
+
+def test_rows_are_clustered_and_pooling_is_reported(corpus: tuple[Path, Path]) -> None:
+    """Clustering reorders conditions, and the Other bucket reports what it hides."""
+    profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
+    matrix = build_matrix(
+        profiles,
+        max_conditions=1,
+        max_body_sites=10,
+        min_studies=1,
+        n_clusters=2,
+    )
+
+    assert len(matrix.row_clusters) == len(matrix.conditions)
+    assert OTHER_LABEL in matrix.conditions
+
+    condition_pooling = next(p for p in matrix.pooled if p.kind == "condition")
+    # Two conditions survive the filters; keeping one pools the other.
+    assert condition_pooling.kept == 1
+    assert condition_pooling.pooled_labels == 1
+    assert condition_pooling.pooled_profiles == 2
+    assert "Other pools 1 labels" in condition_pooling.describe()

@@ -32,19 +32,42 @@ retained traits. Because 60.2 percent of studies contribute more than one
 experiment, profile fractions were averaged within a study before being averaged
 across the studies in a cell, and the companion count matrix reports the number
 of contributing studies rather than experiments. Conditions and body sites were
-reduced to the most frequent 25 and 8 labels respectively, with the remainder
-pooled into an Other bucket; cells supported by fewer than three studies were
+reduced to the most frequent 60 and 20 labels respectively, with the remainder
+pooled into an Other bucket. That bucket is large and its size is reported on
+every run rather than left implicit: the corpus holds 645 distinct condition
+labels and 200 distinct body-site labels, so keeping the top 60 conditions still
+pools 585 labels and 46.5 per cent of profiles, and keeping the top 20 body sites
+pools 180 labels and 15.3 per cent. The condition tail is long and shallow, with
+several hundred labels attached to two profiles each, so no practical cut makes
+Other small; the figure should be read with that in mind. Note also that BugSigDB
+records study variables such as Diet, Age, and Extraction protocol in the same
+Condition field as diseases, so the condition axis is not purely a disease axis. cells supported by fewer than three studies were
 masked rather than drawn, so that a single study is never rendered as a result.
 Rows are conditions and columns are body sites crossed with the four
 guild-by-direction combinations, so each body site contributes the two-by-two
 guild by direction table unrolled into four adjacent columns.
 
-The two guilds are drawn on separate colour scales, aerobe on a red-orange ramp
-and anaerobe on a green-yellow ramp, each with its own colour bar. A single
-shared scale invited direct comparison of an aerobe cell against an anaerobe
-cell, which is not meaningful here: the guilds contain different numbers of
-METPO terms and different numbers of annotated taxa, so only within-guild
-comparisons across conditions and sites are interpretable.
+The two guilds are drawn in separate hues, aerobe on a red-orange ramp and
+anaerobe on a green-yellow ramp, each with its own colour bar, but both ramps
+span the same range, from zero to the larger of the two observed maxima. Keeping
+the range common means a cell in one guild is directly comparable in magnitude
+to a cell in the other, while the hue still identifies which guild is being read.
+
+Condition rows are ordered by hierarchical clustering of their value vectors
+under Euclidean distance with Ward linkage, and the tree is cut into six groups
+which are separated in the figure by blank rows; no dendrogram is drawn. Masked
+cells are treated as zero for the distance calculation only, so the clustering
+responds to which body sites a condition was sampled in as well as to the guild
+fractions themselves. Average linkage was tried first and rejected: it chained,
+leaving one 52-condition group and five near-singletons. The cut assigns
+Periodontitis, Smoking behavior, and Rheumatoid arthritis to one group, and
+Gingivitis to a neighbouring one; these are the conditions sampled in saliva and
+subgingival dental plaque rather than in feces. Alzheimer disease does not join
+them. It is the only one of those conditions with faecal as well as salivary
+data, and its salivary aerobe fraction is higher on the increased side, 0.146
+against 0.101, while the oral conditions run the other way, for example
+Periodontitis at 0.081 against 0.119. The separation reflects that difference in
+sampling and direction rather than an artefact of the linkage.
 
 Cells fall into four states, recorded per cell in a companion status table so
 the distinction is machine-readable rather than only visual. A cell carries a
