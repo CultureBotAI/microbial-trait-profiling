@@ -43,7 +43,8 @@ That's it. After `just ingest`, look at `data/studies/` for the output.
 |---|---|
 | source | [waldronlab/BugSigDBExports](https://github.com/waldronlab/BugSigDBExports) release **v1.3.1** |
 | version DOI | [`10.5281/zenodo.19740674`](https://doi.org/10.5281/zenodo.19740674) |
-| tag SHA | `5815c2638d6b56134ac8db19edc2bb3c4b17f1ca` |
+| pinned by | commit SHA `5815c2638d6b56134ac8db19edc2bb3c4b17f1ca` — not the tag name, which is mutable |
+| integrity | md5 `00df5a86c684eac19fd767c029ff0130`, 16,241,290 bytes, checked on every download |
 | release published | 2026-04-24 |
 | pinned file | `full_dump.csv` |
 

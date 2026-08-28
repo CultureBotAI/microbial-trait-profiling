@@ -27,6 +27,7 @@ identified after the fact.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -50,10 +51,19 @@ FULL_DUMP_NAME = "full_dump.csv"
 # despite being a year newer. See issue #130 before changing this pin.
 BUGSIGDB_EXPORTS_VERSION = "v1.3.1"
 BUGSIGDB_EXPORTS_DOI = "10.5281/zenodo.19740674"
+# Fetch by COMMIT SHA, not by tag name (#151). Tags are mutable: if the release
+# were re-pointed, a tag-name URL would silently serve different bytes under the
+# same version and DOI -- the moving-target failure this pinning exists to
+# remove. The version and DOI stay as metadata; the SHA is what is fetched.
 BUGSIGDB_EXPORTS_TAG_SHA = "5815c2638d6b56134ac8db19edc2bb3c4b17f1ca"
+# md5 and size of full_dump.csv as published in the Zenodo record. The file
+# served from the git tag is byte-identical to the Zenodo asset, so one pair of
+# constants validates both access paths (#152).
+PINNED_FULL_DUMP_MD5 = "00df5a86c684eac19fd767c029ff0130"
+PINNED_FULL_DUMP_BYTES = 16241290
 PINNED_FULL_DUMP_URL = (
     "https://raw.githubusercontent.com/waldronlab/BugSigDBExports/"
-    f"{BUGSIGDB_EXPORTS_VERSION}/full_dump.csv"
+    f"{BUGSIGDB_EXPORTS_TAG_SHA}/full_dump.csv"
 )
 # Retained for the opt-out path only. `devel` is a moving branch: two runs on
 # different days can differ, with no way to say which vintage was used.
@@ -77,6 +87,32 @@ INITIAL_BACKOFF_SECONDS = 2.0
 
 class SourceResolutionError(RuntimeError):
     """Raised when the requested ingest source cannot be resolved."""
+
+
+class IntegrityError(RuntimeError):
+    """Raised when downloaded bytes do not match the pinned release."""
+
+
+def verify_pinned_dump(content: bytes) -> None:
+    """Check downloaded bytes against the release's published md5 and size.
+
+    The pinned path's whole value is that two runs read the same bytes. Without
+    this a truncated response or a proxy error page would be written to disk and
+    then recorded as ``"pinned": true`` with a DOI attached (#152).
+    """
+    if len(content) != PINNED_FULL_DUMP_BYTES:
+        msg = (
+            f"{FULL_DUMP_NAME} from {BUGSIGDB_EXPORTS_VERSION} is "
+            f"{len(content):,} bytes, expected {PINNED_FULL_DUMP_BYTES:,}."
+        )
+        raise IntegrityError(msg)
+    digest = hashlib.md5(content, usedforsecurity=False).hexdigest()
+    if digest != PINNED_FULL_DUMP_MD5:
+        msg = (
+            f"{FULL_DUMP_NAME} from {BUGSIGDB_EXPORTS_VERSION} has md5 {digest}, "
+            f"expected {PINNED_FULL_DUMP_MD5} (Zenodo {BUGSIGDB_EXPORTS_DOI})."
+        )
+        raise IntegrityError(msg)
 
 
 def _fetch_with_retry(
@@ -259,6 +295,9 @@ def download_exports(
                 downloaded.append(dest)
                 continue
 
+            if is_pinned_target:
+                verify_pinned_dump(resp.content)
+
             dest.write_bytes(resp.content)
 
             # Record provenance with cache headers for next conditional request
@@ -271,6 +310,9 @@ def download_exports(
                 "content_length": resp.headers.get("Content-Length"),
                 "downloaded_bytes": len(resp.content),
             }
+            if is_pinned_target:
+                file_prov["md5"] = PINNED_FULL_DUMP_MD5
+                file_prov["integrity_verified"] = True
             snapshot = parse_snapshot(resp.content)
             if snapshot:
                 # The vintage the data itself declares, as opposed to the vintage

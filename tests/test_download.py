@@ -49,6 +49,16 @@ def _mock_client(monkeypatch: pytest.MonkeyPatch, handler) -> None:
     )
 
 
+def _skip_integrity(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stub the md5/size check for tests that exercise other logic.
+
+    These tests feed synthetic payloads through the pinned path to check
+    provenance, caching and outage behaviour. The integrity check itself has
+    dedicated tests below.
+    """
+    monkeypatch.setattr(dl, "verify_pinned_dump", lambda _content: None)
+
+
 def test_download_skips_existing_files(tmp_path: Path) -> None:
     """When all target files exist, download_exports should not overwrite them."""
     _seed_raw_dir(tmp_path)
@@ -144,6 +154,7 @@ def test_pinned_run_records_the_release_and_flags_the_wiki_csvs(
         requested.append(str(request.url))
         return httpx.Response(200, content=SNAPSHOT_HEADER, headers={"ETag": '"abc"'})
 
+    _skip_integrity(monkeypatch)
     _mock_client(monkeypatch, handler)
 
     download_exports(tmp_path, source="pinned")
@@ -208,6 +219,7 @@ def test_switching_source_does_not_reuse_the_other_sources_etag(
             return httpx.Response(200, content=b"pinned-vintage", headers={"ETag": '"p"'})
         return httpx.Response(200, content=b"wiki")
 
+    _skip_integrity(monkeypatch)
     _mock_client(monkeypatch, handler)
 
     download_exports(tmp_path, source="pinned")
@@ -222,6 +234,7 @@ def test_unprovenanced_full_dump_is_refetched_when_pinning(
     """Bytes of unknown origin must not be claimed as the pinned release."""
     _seed_raw_dir(tmp_path)  # files present, no provenance at all
 
+    _skip_integrity(monkeypatch)
     _mock_client(monkeypatch, lambda _r: httpx.Response(200, content=b"pinned-vintage"))
 
     download_exports(tmp_path, source="pinned")
@@ -241,6 +254,7 @@ def test_wiki_csv_outage_does_not_abort_a_pinned_run(
             return httpx.Response(200, content=SNAPSHOT_HEADER)
         return httpx.Response(404)
 
+    _skip_integrity(monkeypatch)
     _mock_client(monkeypatch, handler)
 
     result = download_exports(tmp_path, source="pinned")
@@ -262,3 +276,51 @@ def test_full_dump_outage_is_fatal(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 
     with pytest.raises(httpx.HTTPStatusError):
         download_exports(tmp_path, source="pinned")
+
+
+# --- pin strength (#151, #152) --------------------------------------------
+
+
+def test_pinned_url_uses_the_commit_sha_not_the_mutable_tag_name() -> None:
+    """Tags can be re-pointed; a SHA cannot. See #151."""
+    assert dl.BUGSIGDB_EXPORTS_TAG_SHA in PINNED_FULL_DUMP_URL
+    assert f"/{BUGSIGDB_EXPORTS_VERSION}/" not in PINNED_FULL_DUMP_URL
+
+
+def test_verify_pinned_dump_rejects_a_truncated_download() -> None:
+    with pytest.raises(dl.IntegrityError, match="bytes, expected"):
+        dl.verify_pinned_dump(b"truncated")
+
+
+def test_verify_pinned_dump_rejects_a_wrong_payload_of_the_right_size() -> None:
+    with pytest.raises(dl.IntegrityError, match="md5"):
+        dl.verify_pinned_dump(b"x" * dl.PINNED_FULL_DUMP_BYTES)
+
+
+def test_a_corrupt_pinned_download_is_never_written_to_disk(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Bad bytes must not land on disk and then be recorded as pinned."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if str(request.url) == PINNED_FULL_DUMP_URL:
+            return httpx.Response(200, content=b"<html>proxy error</html>")
+        return httpx.Response(200, content=b"wiki")
+
+    _mock_client(monkeypatch, handler)
+
+    with pytest.raises(dl.IntegrityError):
+        download_exports(tmp_path, source="pinned")
+
+    assert not (tmp_path / FULL_DUMP_NAME).exists()
+
+
+def test_live_downloads_are_not_integrity_checked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """devel has no published checksum, so the check must not fire there."""
+    _mock_client(monkeypatch, lambda _r: httpx.Response(200, content=b"whatever devel says"))
+
+    download_exports(tmp_path, source="live")
+
+    assert (tmp_path / FULL_DUMP_NAME).read_bytes() == b"whatever devel says"
