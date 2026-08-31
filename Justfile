@@ -126,10 +126,10 @@ check: check-generated check-agent-docs lint typecheck test check-schema securit
 # --- pipeline steps (timed, logged) ---
 
 download:
-	just timed download "uv run python -c 'from bsdbng.download import download_exports; download_exports()'"
+	just timed download "uv run python -c 'from bsdbng.download import download_zenodo; download_zenodo()'"
 
 ingest:
-	just timed ingest "uv run python -c 'from bsdbng.ingest import ingest; ingest()'"
+	just timed ingest "uv run python -c 'from bsdbng.ingest import ingest; ingest(host_species=\"Homo sapiens\")'"
 
 validate-studies:
 	just timed validate-studies "uv run python -c 'from bsdbng.validate import validate_all_studies; validate_all_studies()'"

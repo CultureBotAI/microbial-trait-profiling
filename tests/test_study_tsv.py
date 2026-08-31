@@ -18,6 +18,7 @@ def _write_study_yaml(study_dir: Path) -> None:
         "experiments": [
             {
                 "id": "bsdb:99-1",
+                "host_species": "Homo sapiens",
                 "experiment_name": "Experiment 1",
                 "group_0_name": "lean",
                 "group_1_name": "obese",
@@ -97,8 +98,11 @@ def test_generate_tables_writes_flattened_outputs(tmp_path: Path) -> None:
             "study_id": "bsdb:99",
             "experiment_id": "bsdb:99-1",
             "experiment_name": "Experiment 1",
+            "body_site": "",
+            "condition": "",
             "group_0_name": "lean",
             "group_1_name": "obese",
+            "host_species": "Homo sapiens",
             "signature_count": "2",
             "taxon_count": "3",
         }

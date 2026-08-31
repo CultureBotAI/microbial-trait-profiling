@@ -1,6 +1,4 @@
-﻿#!/usr/bin/env python3
-from __future__ import annotations
-import sys
+#!/usr/bin/env python3
 """Trait enrichment using a hypergeometric test.
 
 Method summary:
@@ -11,15 +9,18 @@ Method summary:
 5. Emit a compact manuscript-style bullet list and optional structured TSV
 """
 
+from __future__ import annotations
+
 import argparse
 import csv
-from collections import defaultdict
 import gzip
 import math
+from collections import defaultdict
 from pathlib import Path
 
 try:
     from scipy.stats import hypergeom as _scipy_hypergeom  # type: ignore
+
     _HAVE_SCIPY = True
 except Exception:
     _scipy_hypergeom = None
@@ -119,7 +120,7 @@ def hypergeom_sf(x: int, population_size: int, population_successes: int, draws:
             population_size - population_successes, draws - x
         )
         numer_sum = term
-        
+
         M, K, N = population_size, population_successes, draws
         for k in range(x, max_k):
             # Calculate next term using integer math to maintain precision.
@@ -171,7 +172,7 @@ def hypergeom_sf_many(
     # where M=pop_size, K=pop_successes, N=draws.
     M, N = population_size, draws
     results = []
-    
+
     for x, K in zip(counts, population_successes, strict=True):
         if x <= 0:
             results.append(1.0)
@@ -180,20 +181,21 @@ def hypergeom_sf_many(
         if x > max_k:
             results.append(0.0)
             continue
-        
+
         # We need to calculate P(X >= x) = sum_{k=x}^{max_k} P(X=k)
         # To avoid large numbers in denom, we use floating point recurrence for P(X=k)
         # However, to avoid underflow when starting from x, we can start from the mode
         # or use a more stable approach.
         # Simple approach: use math.log (log_comb) to find P(X=x) then propagate.
-        
-        def log_comb(n, k):
-            if k < 0 or k > n: return -float('inf')
+
+        def log_comb(n: int, k: int) -> float:
+            if k < 0 or k > n:
+                return -float("inf")
             return math.lgamma(n + 1) - math.lgamma(k + 1) - math.lgamma(n - k + 1)
 
         # log P(X=x) = log_comb(K, x) + log_comb(M-K, N-x) - log_comb(M, N)
-        log_px = log_comb(K, x) + log_comb(M-K, N-x) - log_comb(M, N)
-        
+        log_px = log_comb(K, x) + log_comb(M - K, N - x) - log_comb(M, N)
+
         try:
             px = math.exp(log_px)
             p_sum = px
@@ -202,12 +204,12 @@ def hypergeom_sf_many(
                 # px(k+1) = px(k) * (K-k)(N-k) / ((k+1)(M-K-N+k+1))
                 curr_px *= (K - k) * (N - k) / ((k + 1) * (M - K - N + k + 1))
                 p_sum += curr_px
-                if curr_px < 1e-18: # Optimization: break if terms are negligible
+                if curr_px < 1e-18:  # Optimization: break if terms are negligible
                     break
             results.append(min(p_sum, 1.0))
         except (OverflowError, ZeroDivisionError):
             results.append(0.0)
-            
+
     return results
 
 
@@ -273,8 +275,7 @@ def main() -> None:
 
         exclude_cols = {"study_id", "experiment_id", "inc_dec"}
         trait_columns = [
-            col for col in fieldnames
-            if col not in exclude_cols and "mediadive.medium:" not in col
+            col for col in fieldnames if col not in exclude_cols and "mediadive.medium:" not in col
         ]
         if not trait_columns:
             raise ValueError("No trait columns found in input TSV")
@@ -288,16 +289,21 @@ def main() -> None:
             direction = row.get("inc_dec", "").strip().lower()
             if sid and eid and direction in {"inc", "dec"}:
                 experiment_directions[(sid, eid)].add(direction)
-        
+
         # Identify experiments with both 'inc' and 'dec'
         paired_experiments = {
-            key for key, dirs in experiment_directions.items()
-            if "inc" in dirs and "dec" in dirs
+            key for key, dirs in experiment_directions.items() if "inc" in dirs and "dec" in dirs
         }
-        
+
         print(f"Total experiments found: {len(experiment_directions)}")
         print(f"Paired experiments identified: {len(paired_experiments)}")
-        print(f"Dropping {len(experiment_directions) - len(paired_experiments)} unpaired experiments.")
+        print(
+            f"Dropping {len(experiment_directions) - len(paired_experiments)} unpaired experiments."
+        )
+
+        if not paired_experiments:
+            print("No paired experiments found. Exiting.")
+            return
 
         rows = []
         # Background counts for hypergeometric test
@@ -333,13 +339,15 @@ def main() -> None:
                         row_total += c
                         background_counts[t] += c
                         testable_counts[t] += 1
-            
-            rows.append({
-                "study_id": sid,
-                "experiment_id": eid,
-                "inc_dec": row.get("inc_dec", ""),
-                "traits": row_traits_data
-            })
+
+            rows.append(
+                {
+                    "study_id": sid,
+                    "experiment_id": eid,
+                    "inc_dec": row.get("inc_dec", ""),
+                    "traits": row_traits_data,
+                }
+            )
             row_totals.append(row_total)
             background_total += row_total
 
@@ -361,32 +369,34 @@ def main() -> None:
         row_successes = [int(background_counts[t]) for t in row_traits]
 
         p_values = hypergeom_sf_many(row_counts, background_total, row_successes, row_total)
-        
+
         # Per-profile FDR correction if requested
         if args.fdr and args.fdr_scope == "profile":
             q_values = benjamini_hochberg(p_values)
         else:
-            q_values = p_values # Will be corrected globally or left as p-values
+            q_values = p_values  # Will be corrected globally or left as p-values
 
         for trait, p, q, count, trait_total in zip(
             row_traits, p_values, q_values, row_counts, row_successes, strict=True
         ):
             expected = row_total * (trait_total / background_total)
             fold = (count / expected) if expected > 0 else float("inf")
-            all_hits.append({
-                "study_id": row["study_id"],
-                "experiment_id": row["experiment_id"],
-                "inc_dec": row["inc_dec"],
-                "trait": trait,
-                "p_value": p,
-                "fdr_q": q, # Preliminary q-value
-                "fold": fold,
-                "count": count,
-                "expected": expected,
-                "row_total": row_total,
-                "trait_total": trait_total,
-                "testable_profiles": testable_counts[trait]
-            })
+            all_hits.append(
+                {
+                    "study_id": row["study_id"],
+                    "experiment_id": row["experiment_id"],
+                    "inc_dec": row["inc_dec"],
+                    "trait": trait,
+                    "p_value": p,
+                    "fdr_q": q,  # Preliminary q-value
+                    "fold": fold,
+                    "count": count,
+                    "expected": expected,
+                    "row_total": row_total,
+                    "trait_total": trait_total,
+                    "testable_profiles": testable_counts[trait],
+                }
+            )
 
     # Apply global FDR correction if requested
     if args.fdr:
@@ -399,11 +409,15 @@ def main() -> None:
         else:
             # Already corrected per-profile
             for h in all_hits:
-                h["is_significant"] = (h["fdr_q"] <= args.p_threshold) and (h["fold"] >= args.min_fold)
+                h["is_significant"] = (h["fdr_q"] <= args.p_threshold) and (
+                    h["fold"] >= args.min_fold
+                )
     else:
         for h in all_hits:
             h["fdr_q"] = h["p_value"]
-            h["is_significant"] = (h["p_value"] <= args.p_threshold) and (h["fold"] >= args.min_fold)
+            h["is_significant"] = (h["p_value"] <= args.p_threshold) and (
+                h["fold"] >= args.min_fold
+            )
 
     # Filter significant hits
     significant_hits = [h for h in all_hits if h["is_significant"]]
@@ -412,7 +426,9 @@ def main() -> None:
     if args.tsv_output:
         args.tsv_output.parent.mkdir(parents=True, exist_ok=True)
         # Sort globally by significance (FDR q), then by study/experiment/direction/trait
-        significant_hits.sort(key=lambda h: (h["fdr_q"], h["study_id"], h["experiment_id"], h["trait"]))
+        significant_hits.sort(
+            key=lambda h: (h["fdr_q"], h["study_id"], h["experiment_id"], h["trait"])
+        )
         with args.tsv_output.open("w", encoding="utf-8", newline="") as out_fh:
             # Metadata header
             out_fh.write(f"# FDR: {args.fdr}\n")
@@ -421,31 +437,46 @@ def main() -> None:
             out_fh.write(f"# Min-Fold: {args.min_fold}\n")
             out_fh.write(f"# Max-Traits-Per-Row-Report: {args.max_traits_per_row}\n")
             testable_profile_count = len([rt for rt in row_totals if rt > 0])
-            mean_assertions = sum(row_totals) / testable_profile_count if testable_profile_count > 0 else 0
+            mean_assertions = (
+                sum(row_totals) / testable_profile_count if testable_profile_count > 0 else 0
+            )
             out_fh.write(f"# Total-Profiles-Input: {len(rows)}\n")
             out_fh.write(f"# Testable-Profiles: {testable_profile_count}\n")
             out_fh.write(f"# Mean-Assertions-Per-Testable-Profile: {mean_assertions:.2f}\n")
             out_fh.write(f"# Total-Tests-Performed: {len(all_hits)}\n")
-            
-            writer = csv.DictWriter(out_fh, fieldnames=[
-                "study_id", "experiment_id", "inc_dec", "trait",
-                "p_value", "fdr_q", "fold", "count", "expected",
-                "testable_profiles"
-            ], delimiter="\t")
+
+            writer = csv.DictWriter(
+                out_fh,
+                fieldnames=[
+                    "study_id",
+                    "experiment_id",
+                    "inc_dec",
+                    "trait",
+                    "p_value",
+                    "fdr_q",
+                    "fold",
+                    "count",
+                    "expected",
+                    "testable_profiles",
+                ],
+                delimiter="\t",
+            )
             writer.writeheader()
             for h in significant_hits:
-                writer.writerow({
-                    "study_id": h["study_id"],
-                    "experiment_id": h["experiment_id"],
-                    "inc_dec": h["inc_dec"],
-                    "trait": h["trait"],
-                    "p_value": h["p_value"],
-                    "fdr_q": h["fdr_q"],
-                    "fold": h["fold"],
-                    "count": h["count"],
-                    "expected": h["expected"],
-                    "testable_profiles": h["testable_profiles"]
-                })
+                writer.writerow(
+                    {
+                        "study_id": h["study_id"],
+                        "experiment_id": h["experiment_id"],
+                        "inc_dec": h["inc_dec"],
+                        "trait": h["trait"],
+                        "p_value": h["p_value"],
+                        "fdr_q": h["fdr_q"],
+                        "fold": h["fold"],
+                        "count": h["count"],
+                        "expected": h["expected"],
+                        "testable_profiles": h["testable_profiles"],
+                    }
+                )
 
     # Generate text report
     report_lines: list[str] = []
@@ -477,10 +508,10 @@ def main() -> None:
 
         report_lines.append(f"{key[0]}\t{key[1]}\t{key[2]}")
         report_lines.append("")
-        
+
         limit = args.max_traits_per_row
         subset = group if limit <= 0 else group[:limit]
-        
+
         for h in subset:
             report_lines.append(
                 "- "

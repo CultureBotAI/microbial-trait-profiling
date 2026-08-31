@@ -98,6 +98,7 @@ def ingest(
     raw_dir: Path | None = None,
     study_dir: Path | None = None,
     derived_dir: Path | None = None,
+    host_species: str | None = None,
 ) -> list[Path]:
     """Parse raw CSVs and emit per-study YAML files.
 
@@ -133,14 +134,14 @@ def ingest(
 
     written: list[Path] = []
     for study_id, study_rows in sorted(studies.items()):
-        record = _build_study_record(study_id, study_rows, log)
+        record = _build_study_record(study_id, study_rows, log, host_species=host_species)
         if not record["experiments"]:
             log.append(
                 {
                     "level": "skip",
                     "entity": "study",
                     "id": study_id,
-                    "reason": "no valid experiments/signatures",
+                    "reason": "no valid experiments/signatures after filtering",
                 }
             )
             print(f"skipped {study_id}: no valid experiments/signatures", file=sys.stderr)
@@ -205,6 +206,7 @@ def _build_study_record(
     study_id: str,
     rows: list[dict[str, str]],
     log: list[dict[str, str]],
+    host_species: str | None = None,
 ) -> dict[str, object]:
     """Build a nested study record dict from flat rows sharing a study id."""
     first = rows[0]
@@ -218,6 +220,21 @@ def _build_study_record(
     experiment_records: list[dict[str, object]] = []
     for exp_id, exp_rows in sorted(experiments.items()):
         exp_first = exp_rows[0]
+
+        # Filter by host species if requested
+        if host_species:
+            row_host = _clean(exp_first.get("Host species", ""))
+            if row_host != host_species:
+                log.append(
+                    {
+                        "level": "skip",
+                        "entity": "experiment",
+                        "id": exp_id,
+                        "reason": f"host species {row_host!r} does not match {host_species!r}",
+                    }
+                )
+                continue
+
         sig_records: list[dict[str, object]] = []
         for row in exp_rows:
             sig_id = _parse_signature_id(row.get("BSDB ID", ""))

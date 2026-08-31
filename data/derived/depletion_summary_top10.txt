@@ -1,51 +1,51 @@
 === TOP 10 MOST DEPLETED TRAITS ===
 Trait ID                                 Depletion Count      Description
 ----------------------------------------------------------------------------------------------------
-METPO:1000668                            3393                 coccus shaped
-METPO:1000430                            2948                 GC mid1
-METPO:1000871                            2884                 spore forming
-METPO:1000606                            2790                 obligately aerobic
-METPO:1000602                            2569                 aerobic
-METPO:1000608                            2449                 facultatively aerobic
-METPO:1000699                            2277                 gram negative
-METPO:1000702                            2253                 motile
-METPO:1000444                            2233                 temperature optimum mid2
-METPO:1000431                            2153                 GC mid2
+METPO:1000668                            2103                 coccus shaped
+METPO:1000430                            1808                 GC mid1
+METPO:1000606                            1721                 obligately aerobic
+METPO:1000871                            1711                 spore forming
+METPO:1000602                            1638                 aerobic
+METPO:1000608                            1515                 facultatively aerobic
+METPO:1000699                            1435                 gram negative
+METPO:1000431                            1384                 GC mid2
+METPO:1000702                            1343                 motile
+METPO:1000444                            1343                 temperature optimum mid2
 
 
 === TOP 10 CONDITIONS BY AVERAGE DEPLETION DEPTH ===
 Condition                                Avg Total       Avg Inc         Avg Dec
 ----------------------------------------------------------------------------------------------------
-Human papilloma virus infection,Cervical cancer 201.00          127.00          74.00
-Pancreatic ductal adenocarcinoma         180.00          146.50          33.50
-Environmental history                    178.00          39.00           139.00
-Cancer or benign tumor                   172.00          154.00          18.00
-Disease prognosis measurement            158.00          96.00           62.00
-Urinary schistosomiasis                  144.71          57.29           87.43
-Gastroenteritis                          140.50          125.50          15.00
-Extrahepatic cholestasis                 137.00          127.00          10.00
-Pelvic Inflammatory Disease              137.00          85.00           52.00
+Human papilloma virus infection,Cervical cancer 199.00          126.00          73.00
+Pancreatic ductal adenocarcinoma         180.00          147.00          33.00
+Cancer or benign tumor                   171.00          155.00          16.00
+Gut microbiome measurement               157.50          95.00           62.50
+Disease prognosis measurement            157.00          95.50           61.50
 Binge eating                             135.00          135.00          0.00
+Age,Human papilloma virus infection      131.00          31.00           100.00
+Allergic asthma                          130.00          99.00           31.00
+Overactive bladder                       129.00          107.50          21.50
+Cervical glandular intraepithelial neoplasia,Cervical cancer 125.00          125.00          0.00
 
 
 === TOP 10 BODY SITES BY DEPLETION DENSITY (Normalized by Sample Size) ===
 Body Site                                Losses/100 Samples   Total Losses    Total Samples
 ----------------------------------------------------------------------------------------------------
-Superior surface of tongue               320.00               96              30
-Mucosa of small intestine                268.75               129             48
+Superior surface of tongue               316.67               95              30
+Mucosa of small intestine                264.58               127             48
 Amniotic fluid                           191.18               130             68
 Ocular surface region                    181.67               109             60
-Dental pulp                              168.75               135             80
+Dental pulp                              167.50               134             80
 Mucosa                                   160.53               122             76
-Mucosa of ascending colon                144.23               75              52
-Venous blood                             122.50               49              40
+Nasal cavity mucosa                      152.78               55              36
+Skin epidermis                           152.50               122             80
+Mucosa of ascending colon                142.31               74              52
 Skin epithelium                          119.15               224             188
-Skin epidermis                           113.58               184             162
 
 
 === SCIENTIFIC FINDINGS SUMMARY ===
-Total Depleted Traits across all profiles: 163,207
+Total Depleted Traits across all profiles: 100,999
 Functional scope: 317 metabolic/physiological traits analyzed.
-Average depletion count per profile (all human): 13.41
-Top Body Site by Depletion Density: Superior surface of tongue (320.00 losses/100 samples)
-Directionality Bias: More traits depleted in 'Increased' profiles (88,317 inc vs 74,890 dec).
+Average depletion count per profile (all human): 14.45
+Top Body Site by Depletion Density: Superior surface of tongue (316.67 losses/100 samples)
+Directionality Bias: More traits depleted in 'Increased' profiles (56,508 inc vs 44,491 dec).

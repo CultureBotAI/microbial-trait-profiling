@@ -7,6 +7,7 @@ import argparse
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -54,7 +55,7 @@ def resolve_default_results(report_path: Path | None = None) -> Path:
             candidate = report_path.parent / f"{tsv_stem}.tsv"
             if candidate.exists():
                 return candidate
-    
+
     for candidate in DEFAULT_RESULTS_CANDIDATES:
         if candidate.exists():
             return candidate
@@ -74,7 +75,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--results",
         type=Path,
-        help="Input trait enrichment results TSV (used for data aggregation). Defaults to companion of --input.",
+        help=(
+            "Input trait enrichment results TSV (used for data aggregation). "
+            "Defaults to companion of --input."
+        ),
     )
     parser.add_argument(
         "--overall-output",
@@ -99,9 +103,9 @@ def _parse_summary_values(summary: str) -> tuple[float | None, float | None, flo
     return obs, exp, fold
 
 
-def detect_metadata(path: Path) -> dict[str, any]:
+def detect_metadata(path: Path) -> dict[str, Any]:
     """Detect metadata from the report or results TSV."""
-    meta = {
+    meta: dict[str, Any] = {
         "stat_type": "p_value",
         "threshold": 0.001,
         "testable_profiles": None,
@@ -156,7 +160,8 @@ def parse_results_tsv(
     # Apply filtering to match report logic
     df = df[(df[col] <= threshold) & (df["fold"] >= min_fold)]
     print(
-        f"Filtered to {len(df)} significant hits (source={path.name}, threshold={threshold}, fold={min_fold})"
+        f"Filtered to {len(df)} significant hits "
+        f"(source={path.name}, threshold={threshold}, fold={min_fold})"
     )
 
     rows = []
@@ -194,7 +199,7 @@ def parse_report(path: Path, stat_type: str = "p_value") -> list[ParsedRow]:
     with path.open("r", encoding="utf-8") as handle:
         for raw in handle:
             line = raw.strip()
-            if not line or line == "---" or line.startswith("p < ") or line.startswith("FDR q < "):
+            if not line or line == "---" or line.startswith(("p < ", "FDR q < ")):
                 continue
 
             if line.startswith("- "):
@@ -262,6 +267,8 @@ def build_overall_table(
     max_traits: int | None = None,
     fdr_scope: str = "global",
 ) -> pd.DataFrame:
+    _ = total_profiles  # Reserved for future weighting
+    _ = fdr_scope  # Stat type already implies scope
     grouped = frame.groupby("trait", dropna=False)
 
     # If we are parsing from a truncated source, identify potentially censored profiles.
@@ -281,7 +288,7 @@ def build_overall_table(
     # Multiplicity control for the per-trait "best" statistic:
     # Since we are taking the minimum over all profiles for a trait, we should
     # ideally apply a correction here. For now, we keep the naming explicit.
-    
+
     best_idx = grouped[stat_col].idxmin()
     best_rows = frame.loc[best_idx, ["trait", "inc_dec", "study_id", "experiment_id", "profile_id"]]
     best_rows = best_rows.rename(
@@ -302,7 +309,7 @@ def build_overall_table(
         "max_fold": ("fold", "max"),
         "testable_profiles": ("testable_profiles", "first"),
     }
-    
+
     # Also include the other statistic if it's available (non-1.0)
     if stat_type == "fdr_q":
         agg_map["best_pvalue"] = ("p_value", "min")
@@ -337,14 +344,14 @@ def build_overall_table(
         censored_counts = (
             frame[frame["is_censored_hit"]].groupby("trait").size().rename("n_censored_profiles")
         )
-        overall = overall.join(censored_counts, how="left")
+        overall = overall.merge(censored_counts, on="trait", how="left")
         overall["n_censored_profiles"] = overall["n_censored_profiles"].fillna(0).astype(int)
 
     # #119: Calculate prevalence fraction.
     # Denominator is the number of profiles where the trait was testable
     # (i.e., appeared at least once).
     overall["prevalence"] = overall["hit_rows"] / overall["testable_profiles"]
-    
+
     # Add human-readable prevalence summary
     overall["prevalence_summary"] = (
         overall["hit_rows"].astype(str) + " / " + overall["testable_profiles"].astype(str)
@@ -377,7 +384,7 @@ def build_pair_table(frame: pd.DataFrame, stat_type: str) -> pd.DataFrame:
     pairs = frame.copy()
     sort_col = "fdr_q" if stat_type == "fdr_q" else "p_value"
     pairs = pairs.sort_values([sort_col, "fold"], ascending=[True, False])
-    
+
     # Rename stat column for self-description
     if stat_type == "fdr_q":
         pairs = pairs.rename(columns={"fdr_q": "q_value"})
@@ -397,42 +404,47 @@ def main() -> int:
     testable_profiles = meta["testable_profiles"]
     fdr_scope = meta["fdr_scope"]
     max_traits = meta.get("max_traits")
-    is_source_truncated = False
 
     results_path = args.results or resolve_default_results(args.input)
 
     if results_path.exists():
         print(f"Loading data from results TSV: {results_path}")
         results_meta = detect_metadata(results_path)
-        
+
         # Prefer TSV metadata if available
         stat_type = results_meta.get("stat_type", stat_type)
         stat_threshold = results_meta.get("threshold", stat_threshold)
         fdr_scope = results_meta.get("fdr_scope", fdr_scope)
         testable_profiles = results_meta.get("testable_profiles") or testable_profiles
-        
+
         rows = parse_results_tsv(results_path, stat_type, stat_threshold)
         # Results TSV contains all hits regardless of the report truncation cap
         is_source_truncated = False
         max_traits = None
     else:
         print(
-            f"Warning: Results TSV not found at {results_path}. Falling back to report parser ({args.input.name})."
+            f"Warning: Results TSV not found at {results_path}. "
+            f"Falling back to report parser ({args.input.name})."
         )
         rows = parse_report(args.input, stat_type=stat_type)
-        
+
         # Check for truncation in the report metadata
         if max_traits is not None:
             is_source_truncated = True
             print(
-                f"\nCRITICAL WARNING: The source report '{args.input.name}' is truncated to {max_traits} traits per profile."
+                f"\nCRITICAL WARNING: The source report '{args.input.name}' "
+                f"is truncated to {max_traits} traits per profile."
             )
             print(
-                "Downstream rankings (hit_rows, unique_profiles, mean_fold) will be systematically biased."
+                "Downstream rankings (hit_rows, unique_profiles, mean_fold) "
+                "will be systematically biased."
             )
             print(
-                "Please regenerate the report with --max-traits-per-row 0 or ensure the results TSV is available.\n"
+                "Please regenerate the report with --max-traits-per-row 0 "
+                "or ensure the results TSV is available.\n"
             )
+        else:
+            is_source_truncated = False
 
     frame = pd.DataFrame([row.__dict__ for row in rows])
 
@@ -450,13 +462,13 @@ def main() -> int:
     method_suffix = "q" if stat_type == "fdr_q" else "p"
     if stat_type == "fdr_q" and fdr_scope == "profile":
         method_suffix = "q_profile"
-        
+
     suffix = f"_{method_suffix}{stat_threshold}"
-    
+
     overall_out = args.overall_output
     if overall_out is None:
         overall_out = Path("data/derived") / f"{DEFAULT_OVERALL_OUTPUT_STEM}{suffix}.tsv"
-        
+
     pair_out = args.pair_output
     if pair_out is None:
         pair_out = Path("data/derived") / f"{DEFAULT_PAIR_OUTPUT_STEM}{suffix}.tsv"

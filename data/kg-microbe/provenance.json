@@ -1,15 +1,15 @@
 {
   "files": {
     "merged-kg_edges.tsv": {
-      "elapsed_seconds": 15.54,
-      "fetched_at": "2026-04-21T00:21:25+00:00",
+      "elapsed_seconds": 34.65,
+      "fetched_at": "2026-08-30T18:06:23+00:00",
       "file_id": "1iIVd-FEleeRIv7CPS0l1F732p3J9JO5d",
       "md5": "555ecf5ba5d89288cdc44e368375374f",
       "size": 1034256091
     },
     "merged-kg_nodes.tsv": {
-      "elapsed_seconds": 5.0,
-      "fetched_at": "2026-04-21T00:21:08+00:00",
+      "elapsed_seconds": 9.75,
+      "fetched_at": "2026-08-30T18:05:46+00:00",
       "file_id": "1lDVjE67E82LMUdNtqWGvyczrHvNu3BdY",
       "md5": "dd76b4656f9341db25a7c4afa96cd58e",
       "size": 209545218

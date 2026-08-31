@@ -13,6 +13,7 @@ def _write_study_yaml(study_dir: Path) -> None:
         "experiments": [
             {
                 "id": "bsdb:99-1",
+                "host_species": "Homo sapiens",
                 "signatures": [
                     {
                         "id": "bsdb:99-1-1",
@@ -181,6 +182,7 @@ def test_create_study_trait_profiles_includes_all_mapped_kgmicrobe_traits(
         "experiments": [
             {
                 "id": "bsdb:100-1",
+                "host_species": "Homo sapiens",
                 "signatures": [
                     {
                         "id": "bsdb:100-1-1",

@@ -187,7 +187,9 @@ def parse_report(path: Path) -> list[ParsedHit]:
                     trait=str(row["trait"]),
                     pvalue=float(row.get("fdr_q", row["p_value"])),
                     fold=float(row["fold"]),
-                ) if "mediadive.medium:" not in str(row["trait"]) else None
+                )
+                if "mediadive.medium:" not in str(row["trait"])
+                else None
             )
         return [h for h in hits if h is not None]
 
@@ -197,7 +199,7 @@ def parse_report(path: Path) -> list[ParsedHit]:
     with path.open("r", encoding="utf-8") as handle:
         for raw_line in handle:
             line = raw_line.strip()
-            if not line or line == "---" or line.startswith("p < ") or line.startswith("FDR q < ") or line.startswith("Min Fold"):
+            if not line or line == "---" or line.startswith(("p < ", "FDR q < ", "Min Fold")):
                 continue
 
             if line.startswith("- "):
@@ -256,9 +258,7 @@ def build_matrix(
     min_profile_signal: float,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     frame = pd.DataFrame([hit.__dict__ for hit in hits])
-    frame["profile_id"] = (
-        frame["study_id"] + "|" + frame["experiment_id"] + "|" + frame["inc_dec"]
-    )
+    frame["profile_id"] = frame["study_id"] + "|" + frame["experiment_id"] + "|" + frame["inc_dec"]
     frame["neglog10p"] = frame["pvalue"].map(lambda value: -math.log10(max(value, 1e-300)))
 
     trait_prevalence = frame.groupby("trait")["profile_id"].nunique().sort_values(ascending=False)
@@ -298,9 +298,7 @@ def build_matrix(
         msg = "No data remaining after pruning empty rows/cols"
         raise ValueError(msg)
 
-    ordered_traits = (
-        selected_prevalence.loc[matrix.columns].sort_values(ascending=False).index
-    )
+    ordered_traits = selected_prevalence.loc[matrix.columns].sort_values(ascending=False).index
     matrix = matrix.loc[:, ordered_traits]
     display_columns = [trait_display_name(trait, label_lookup) for trait in matrix.columns]
     if len(set(display_columns)) != len(display_columns):
@@ -385,9 +383,9 @@ def build_matrix(
         raise ValueError(msg)
 
     if max_profiles > 0 and len(matrix) > max_profiles:
-        selected_profiles = profile_meta["signal_sum"].sort_values(ascending=False).head(
-            max_profiles
-        ).index
+        selected_profiles = (
+            profile_meta["signal_sum"].sort_values(ascending=False).head(max_profiles).index
+        )
         matrix = matrix.loc[selected_profiles]
         profile_meta = profile_meta.loc[selected_profiles]
 
@@ -402,9 +400,7 @@ def build_matrix(
             mapdf = pd.read_csv(mapping_path, sep="\t", dtype=str)
             # expected columns: METPO_ID, Description
             if "METPO_ID" in mapdf.columns and "Description" in mapdf.columns:
-                lookup = dict(
-                    zip(mapdf["METPO_ID"], mapdf["Description"], strict=False)
-                )
+                lookup = dict(zip(mapdf["METPO_ID"], mapdf["Description"], strict=False))
                 orig_cols = list(matrix.columns)
                 mapped = [lookup.get(c, c) for c in orig_cols]
 
@@ -428,9 +424,7 @@ def build_matrix(
 
 def save_heatmap(matrix: pd.DataFrame, profile_meta: pd.DataFrame, output_path: Path) -> None:
     sns.set_theme(style="white")
-    row_colors = profile_meta["inc_dec"].map({"inc": "#c0392b", "dec": "#2874a6"}).fillna(
-        "#7f8c8d"
-    )
+    row_colors = profile_meta["inc_dec"].map({"inc": "#c0392b", "dec": "#2874a6"}).fillna("#7f8c8d")
     row_count = len(matrix)
     col_count = len(matrix.columns)
     show_row_labels = row_count <= 500
