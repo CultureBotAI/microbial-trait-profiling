@@ -1247,15 +1247,20 @@ The top workflow boxes mean:
 - `4. Sankey tables`: condition-to-body-site pairs are grouped, v3 display
   rollups are applied, and edge plus audit TSVs are written.
 - `5. Sankey diagrams`: rendered condition-to-body-site maps use edge width for
-  profile support and edge color for enrichment or direction balance.
+  `n=` profile support and edge color for enrichment or direction balance.
+  Figure subtitles and legends define `s=` as unique-study support and `bg=` as
+  background or comparator-profile support where applicable.
 
 The middle of the slide branches into two Sankey products:
 
 - `Trait-enrichment guild Sankeys`: aerobe v2 maps focus on increased profiles,
   anaerobe v2 maps focus on decreased profiles, and colored edges require
-  selected guild-trait support.
+  selected guild-trait support. Their legends define `n=` as colored
+  focus-profile support and `bg=` as sampled background-profile support.
 - `All-BugSigDB direction Sankeys`: increased and decreased direction maps use
-  the full BugSigDB profile metadata corpus without guild-trait filtering.
+  the full BugSigDB profile metadata corpus without guild-trait filtering. Their
+  legends define `n=` as focus-direction profile support and `bg=` as
+  comparator-direction profile support.
 
 The bottom handoff boxes identify the shared inputs used by both Sankey paths:
 profile metadata, the clustered heatmap trait-score matrix, and the v3

@@ -35,7 +35,7 @@ Studies summarized: 1,080
 
 ## Interpretation
 
-Each row of the source profile metadata is one BugSigDB study/experiment/direction profile. Edges connect condition labels to grouped body sites. Edge width is the number of profiles in the focus direction. Edge color is the direction balance: `(focus profiles - comparator profiles) / all profiles` for that condition/body-site pair. Node labels use `n=` for focus-profile count, `s=` for unique focus-direction study count, and `focus=` for the focus-direction fraction among profiles represented by displayed edges.
+Each row of the source profile metadata is one BugSigDB study/experiment/direction profile. Edges connect condition labels to grouped body sites. Edge width is the number of profiles in the focus direction. Edge color is the direction balance: `(focus profiles - comparator profiles) / all profiles` for that condition/body-site pair. Image node labels use `n=` for focus-profile count, `s=` for unique focus-direction study count, and `focus=` for the focus-direction fraction among profiles represented by displayed edges; the plot subtitle spells out these units.
 
 The TSV preserves all sampled condition/body-site pairs. The PNG is intentionally filtered for readability: broad metadata-like condition labels and `Other`/`unknown` body-site groups are kept in the TSV but not drawn.
 
@@ -43,6 +43,6 @@ The `_v2` PNGs remove the readability caps on displayed edges, conditions, body-
 
 The `_v3_individual` PNGs keep raw condition labels and raw body-site labels. The `_v3_grouped` PNGs use the same fully grouped v3 display rollups as the guild Sankey maps. Every condition is assigned to a display group. Raw body sites are rolled up to readable display groups such as `Upper airway / nasal`, `Oral cavity / dental`, `Lower airway / lung`, `Vaginal / reproductive`, and `Miscellaneous sampled tissues`.
 
-In each v3 direction map, colored edges count the focus-direction BugSigDB profiles and parallel grey edges count comparator-direction profiles in the same condition/body-site pair for that display mode. V3 condition nodes are ordered by the colored focus-profile count reported as `n=`; `bg=` reports comparator-profile support.
+In each v3 direction map, colored edges count the focus-direction BugSigDB profiles and parallel grey edges count comparator-direction profiles in the same condition/body-site pair for that display mode. V3 condition nodes are ordered by the colored focus-profile count reported as `n=`; `bg=` reports comparator-profile support. The plot subtitle identifies these abbreviations as profile and study units.
 
 The v3 individual summary contains 567 condition/body-site pairs before PNG selection. The v3 grouped summary contains 143 display condition/body-site pairs before PNG selection.

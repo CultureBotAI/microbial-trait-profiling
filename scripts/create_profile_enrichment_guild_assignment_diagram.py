@@ -487,6 +487,17 @@ def add_sankey_preview(
         zorder=4,
     )
     ax.text(
+        x + width / 2,
+        y + height + 0.15,
+        "units: n=profiles; s=studies\nbg=background/comparator",
+        ha="center",
+        va="bottom",
+        fontsize=5.55,
+        color=SLATE_500,
+        linespacing=1.05,
+        zorder=4,
+    )
+    ax.text(
         x + width,
         y + 0.2,
         "body sites",
@@ -1210,8 +1221,9 @@ def create_workflow_diagram(
             "number": "5",
             "title": "Sankey diagrams",
             "body": (
-                "Render condition-to-body-site maps. Edge width is profile support; "
-                "color carries enrichment or direction balance."
+                "Render condition-to-body-site maps. Edge width is n=profile "
+                "support; node labels use s=unique studies and bg=background or "
+                "comparator support."
             ),
             "accent": RED_600,
             "facecolor": RED_50,
@@ -1274,7 +1286,8 @@ def create_workflow_diagram(
         title="Trait-enrichment guild Sankeys",
         body=(
             "Selected-trait maps for aerobe v2 increased profiles and anaerobe v2 "
-            "decreased profiles. Colored edges mark enriched guild-trait support."
+            "decreased profiles. Colored edge width uses n=focus profiles; grey bg "
+            "edges mark sampled background profiles."
         ),
         chips=[
             "Aerobe + anaerobe v3 grouped guild Sankey PNGs",
@@ -1293,7 +1306,8 @@ def create_workflow_diagram(
         title="All-BugSigDB direction Sankeys",
         body=(
             "Direction-support maps for the full BugSigDB profile metadata corpus. "
-            "Colored edges count the focus direction; grey edges count comparators."
+            "Colored edges count n=focus profiles; grey bg edges count comparator "
+            "profiles."
         ),
         chips=[
             "Increased + decreased all-BugSigDB Sankey PNGs",

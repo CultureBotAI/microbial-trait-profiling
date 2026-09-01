@@ -62,6 +62,11 @@ SLATE_900 = "#0f172a"
 EDGE_NEUTRAL = "#475569"
 
 
+def wrapped_plot_text(value: str, width: int = 150) -> str:
+    """Wrap long figure annotations so they do not widen the saved canvas."""
+    return "\n".join(wrap(value, width=width))
+
+
 @dataclass(frozen=True)
 class DirectionMapConfig:
     """Configuration for one all-data direction map."""
@@ -761,7 +766,7 @@ def build_sampled_site_notes(display_edges: pd.DataFrame, summary: pd.DataFrame)
         entries = [
             (
                 f"{compact_label(row.body_site_group, width=18)} "
-                f"n={int(row.profile_count)} s={int(row.study_count)}"
+                f"profiles={int(row.profile_count)} studies={int(row.study_count)}"
             )
             for row in condition_sites.head(MAX_OTHER_SITES_PER_CONDITION).itertuples()
         ]
@@ -953,11 +958,12 @@ def plot_direction_map(
     fig.text(
         0.05,
         0.927,
-        (
-            "Edges summarize all BugSigDB study/experiment/direction profiles after label "
-            f"filtering. Width = {config.focus_label}-profile support; color = "
-            f"({config.focus_label} - {config.comparator_label}) / all profiles; "
-            "s = unique studies."
+        wrapped_plot_text(
+            "Edges summarize all BugSigDB study/experiment/direction profiles "
+            f"after label filtering. Edge width = n ({config.focus_label} profile "
+            f"count); color = ({config.focus_label} - {config.comparator_label}) "
+            "/ all profiles; node key: n = focus-direction profiles, s = unique "
+            "focus-direction studies, focus = focus-direction fraction."
         ),
         ha="left",
         va="top",
@@ -1000,13 +1006,13 @@ def plot_direction_map(
             linewidth=float(width_lookup.loc[count]),
             alpha=0.72,
             solid_capstyle="round",
-            label=f"n={count}",
+            label=f"n={count} profiles",
         )
         for count in representative_counts
     ]
     legend = ax.legend(
         handles=legend_lines,
-        title=f"{config.focus_label} profiles",
+        title=f"Edge width: {config.focus_label} profiles (n)",
         loc="lower center",
         bbox_to_anchor=(0.50, -0.015),
         ncol=len(legend_lines),
@@ -1203,10 +1209,12 @@ def plot_direction_map_v3(
     fig.text(
         0.05,
         0.927,
-        (
-            f"Colored edges = {config.focus_label} BugSigDB profiles. Parallel grey "
-            f"edges = {config.comparator_label} profiles in the {pair_description}. "
-            "Conditions are ordered by colored n."
+        wrapped_plot_text(
+            f"Colored edges = {config.focus_label} BugSigDB profiles. Parallel "
+            f"grey edges = {config.comparator_label} profiles in the "
+            f"{pair_description}. Conditions are ordered by colored n. Node key: "
+            "n = focus-direction profiles, s = unique studies for n, bg = "
+            "comparator-direction profiles."
         ),
         ha="left",
         va="top",
@@ -1260,7 +1268,7 @@ def plot_direction_map_v3(
             linewidth=float(width_lookup.loc[count]),
             alpha=0.76,
             solid_capstyle="round",
-            label=f"n={count}",
+            label=f"n={count} profiles",
         )
         for count in representative_counts
     ]
@@ -1272,12 +1280,12 @@ def plot_direction_map_v3(
             linewidth=6.5,
             alpha=0.48,
             solid_capstyle="round",
-            label=f"bg={config.comparator_label} profiles",
+            label=f"bg profiles: {config.comparator_label}",
         )
     )
     legend = ax.legend(
         handles=legend_lines,
-        title=f"{config.focus_label} profiles",
+        title=f"Edge width: {config.focus_label} profiles (n)",
         loc="lower center",
         bbox_to_anchor=(0.50, -0.02),
         ncol=min(len(legend_lines), 4),
@@ -1403,9 +1411,10 @@ def write_readme(
                 "grouped body sites. Edge width is the number of profiles in the focus "
                 "direction. Edge color is the direction balance: `(focus profiles - "
                 "comparator profiles) / all profiles` for that condition/body-site pair. "
-                "Node labels use `n=` for focus-profile count, `s=` for unique "
+                "Image node labels use `n=` for focus-profile count, `s=` for unique "
                 "focus-direction study count, and `focus=` for the focus-direction "
-                "fraction among profiles represented by displayed edges."
+                "fraction among profiles represented by displayed edges; the plot "
+                "subtitle spells out these units."
             ),
             "",
             (
@@ -1437,7 +1446,8 @@ def write_readme(
                 "BugSigDB profiles and parallel grey edges count comparator-direction "
                 "profiles in the same condition/body-site pair for that display mode. "
                 "V3 condition nodes are ordered by the colored focus-profile count "
-                "reported as `n=`; `bg=` reports comparator-profile support."
+                "reported as `n=`; `bg=` reports comparator-profile support. The plot "
+                "subtitle identifies these abbreviations as profile and study units."
             ),
             "",
             (

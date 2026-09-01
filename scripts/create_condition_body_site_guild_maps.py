@@ -50,6 +50,11 @@ SLATE_900 = "#0f172a"
 EDGE_NEUTRAL = "#475569"
 
 
+def wrapped_plot_text(value: str, width: int = 150) -> str:
+    """Wrap long figure annotations so they do not widen the saved canvas."""
+    return "\n".join(wrap(value, width=width))
+
+
 @dataclass(frozen=True)
 class MapConfig:
     """Configuration for one condition/body-site guild map."""
@@ -1264,9 +1269,7 @@ def add_v3_display_rollups(
     else:
         source["body_site_group"] = source["body_site"].map(
             lambda value: (
-                "Unknown body site"
-                if clean_text(value) == "unknown"
-                else clean_text(value)
+                "Unknown body site" if clean_text(value) == "unknown" else clean_text(value)
             )
         )
         source["body_site_rollup_rule"] = "kept raw individual body-site label"
@@ -1392,12 +1395,8 @@ def summarize_v3_condition_body_site_edges_for_mode(
                 "comparator_study_ids": join_unique(comparator["study_id"]),
                 "comparator_enriched_profile_count": len(comparator_enriched),
                 "background_no_enriched_profile_count": len(background_no_enriched),
-                "background_no_enriched_study_count": background_no_enriched[
-                    "study_id"
-                ].nunique(),
-                "background_no_enriched_study_ids": join_unique(
-                    background_no_enriched["study_id"]
-                ),
+                "background_no_enriched_study_count": background_no_enriched["study_id"].nunique(),
+                "background_no_enriched_study_ids": join_unique(background_no_enriched["study_id"]),
                 "increased_profile_count": int((group["inc_dec"] == "inc").sum()),
                 "decreased_profile_count": int((group["inc_dec"] == "dec").sum()),
                 "selected_guild_enriched_profile_count": int(
@@ -1751,7 +1750,7 @@ def build_condition_sampled_site_notes(
         entries = [
             (
                 f"{compact_label(row.body_site_group, width=18)} "
-                f"n={int(row.profile_count)} s={int(row.study_count)}"
+                f"profiles={int(row.profile_count)} studies={int(row.study_count)}"
             )
             for row in condition_sites.head(MAX_OTHER_SITES_PER_CONDITION).itertuples()
         ]
@@ -1867,11 +1866,12 @@ def plot_condition_body_site_map(
     fig.text(
         0.05,
         0.925,
-        (
+        wrapped_plot_text(
             "Edges connect BugSigDB conditions to anatomical body-site groups. "
-            f"Width = {config.focus_label}-profile support; color = "
-            f"{config.focus_label} minus {config.comparator_label} mean trait z-score; "
-            "s = unique studies."
+            f"Edge width = n ({config.focus_label} profile count); color = "
+            f"{config.focus_label} minus {config.comparator_label} mean trait "
+            "z-score; node key: n = focus-direction profiles, s = unique "
+            "studies, z = focus mean trait z-score."
         ),
         ha="left",
         va="top",
@@ -1913,13 +1913,13 @@ def plot_condition_body_site_map(
             linewidth=float(scaled_line_width(pd.Series([count, max(representative_counts)]))[0]),
             alpha=0.72,
             solid_capstyle="round",
-            label=f"n={count}",
+            label=f"n={count} profiles",
         )
         for count in representative_counts
     ]
     legend = ax.legend(
         handles=legend_lines,
-        title=f"{config.focus_label} profiles",
+        title=f"Edge width: {config.focus_label} profiles (n)",
         loc="lower center",
         bbox_to_anchor=(0.50, -0.015),
         ncol=len(legend_lines),
@@ -2136,11 +2136,13 @@ def plot_condition_body_site_map_v3(
     fig.text(
         0.05,
         0.925,
-        (
-            f"Colored edges = {config.focus_label} profiles with at least one selected "
-            "guild trait above zero. Parallel grey edges = profiles in the "
-            f"{pair_description} with zero selected guild traits. Conditions are "
-            "ordered by colored n."
+        wrapped_plot_text(
+            f"Colored edges = {config.focus_label} profiles with at least one "
+            "selected guild trait above zero. Parallel grey edges = profiles in "
+            f"the {pair_description} with zero selected guild traits. Conditions "
+            "are ordered by colored n. Node key: n = colored positive-trait "
+            "profiles, s = unique studies for n, bg = background profiles with "
+            "zero selected guild traits."
         ),
         ha="left",
         va="top",
@@ -2197,7 +2199,7 @@ def plot_condition_body_site_map_v3(
             linewidth=float(width_lookup.loc[count]),
             alpha=0.76,
             solid_capstyle="round",
-            label=f"n={count}",
+            label=f"n={count} profiles",
         )
         for count in representative_counts
     ]
@@ -2209,12 +2211,12 @@ def plot_condition_body_site_map_v3(
             linewidth=6.5,
             alpha=0.48,
             solid_capstyle="round",
-            label="bg=no selected guild traits",
+            label="bg profiles: no selected guild traits",
         )
     )
     legend = ax.legend(
         handles=legend_lines,
-        title=f"{config.focus_label} enriched profiles",
+        title=f"Edge width: {config.focus_label} positive-trait profiles (n)",
         loc="lower center",
         bbox_to_anchor=(0.50, -0.02),
         ncol=min(len(legend_lines), 4),
@@ -2250,9 +2252,7 @@ def add_displayed_flag(
     output = edges.copy()
     output["displayed_in_map"] = [
         (condition, body_site) in display_keys
-        for condition, body_site in zip(
-            output["condition"], output["body_site_group"], strict=True
-        )
+        for condition, body_site in zip(output["condition"], output["body_site_group"], strict=True)
     ]
     return output
 

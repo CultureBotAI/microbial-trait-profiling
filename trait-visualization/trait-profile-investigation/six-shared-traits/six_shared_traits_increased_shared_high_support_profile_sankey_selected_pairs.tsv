@@ -1,0 +1,13 @@
+shared_pattern_rank	condition	body_site_group	shared_pattern_trait_count	shared_pattern_link_count	shared_pattern_focus_profile_count	shared_pattern_max_focus_profile_count	shared_pattern_max_rank_score
+1	Metabolic / endocrine	Feces	6	6	617	123	967.4643558569718
+2	Neurologic / cognitive disease	Feces	6	6	580	122	1099.1576986509199
+3	Infectious disease	Feces	6	6	380	82	621.1211986390164
+4	Cancer / neoplasia	Feces	6	6	288	68	466.79004812135247
+5	Colorectal neoplasia	Feces	6	6	245	55	351.03232360519667
+6	Infectious disease	Upper airway / nasal	6	6	147	36	186.1917538836909
+7	Ocular / eye disease	Ocular / eye	6	6	138	33	151.64188630914106
+8	Cancer / neoplasia	Oral cavity / dental	6	6	123	38	199.56298262902942
+9	Infectious disease	Vaginal / reproductive	6	6	123	30	148.83669979924173
+10	Cancer / neoplasia	Vaginal / reproductive	6	6	117	31	117.86876136837054
+11	Cancer / neoplasia	Stomach / esophagus	6	6	98	22	102.07746158078179
+12	Respiratory / airway disease	Feces	6	6	86	17	85.04650306568136

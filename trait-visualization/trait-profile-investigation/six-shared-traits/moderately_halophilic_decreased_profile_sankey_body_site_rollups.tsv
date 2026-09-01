@@ -1,0 +1,141 @@
+analysis	trait_id	trait_label	trait_slug	trait_color	focus_direction	raw_body_site	raw_body_site_group	body_site_group	body_site_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Feces	Feces	Feces	feces/stool rollup	3672	666	1776	1541
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	142	143
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	58	58
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	39	50
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Oral cavity	Oral cavity	Oral cavity / dental	oral/dental rollup	82	11	36	33
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Nasopharynx	Nasopharynx	Upper airway / nasal	upper-airway/nasal rollup	74	15	25	32
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Mouth	Mouth	Oral cavity / dental	oral/dental rollup	74	14	38	38
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	70	18	35	25
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	34	30
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	61	10	29	31
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Rectum	Other	Lower GI tract	lower-gi rollup	43	7	22	27
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Skin of body	Other	Skin	skin rollup	43	7	20	22
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	40	8	20	26
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Intestine	Other	Lower GI tract	lower-gi rollup	39	8	18	21
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Vagina,Uterine cervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	39	1	15	28
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Colon	Other	Lower GI tract	lower-gi rollup	38	8	19	17
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Lung	Other	Lower airway / lung	lower-airway/lung rollup	37	8	16	22
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Thyroid gland	Other	Thyroid tissue	thyroid-tissue body-site group	33	1	20	24
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Posterior fornix of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	31	8	14	20
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Ileum,Right colon,Rectum	Other	Lower GI tract	lower-gi rollup	31	1	16	9
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Tongue	Other	Oral cavity / dental	oral/dental rollup	29	8	16	12
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Nasal cavity	Other	Upper airway / nasal	upper-airway/nasal rollup	29	5	12	16
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Vaginal fluid	Other	Vaginal / reproductive	vaginal/reproductive rollup	26	6	12	9
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Meconium	Other	Birth-associated samples	birth-associated body-site group	25	8	12	15
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	25	5	12	9
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Conjunctiva	Other	Ocular / eye	ocular/eye body-site group	20	3	7	15
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Gastric juice	Other	Stomach / esophagus	stomach/esophagus body-site group	20	2	7	13
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Urine	Other	Urinary tract	urinary rollup	19	5	9	11
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Bulbar conjunctiva	Other	Ocular / eye	ocular/eye body-site group	18	4	8	11
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Colorectal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	4	6	10
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Duodenal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	3	8	11
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Bronchus	Other	Bronchial / tracheal	bronchial/tracheal body-site group	18	1	9	14
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Uterus	Other	Vaginal / reproductive	vaginal/reproductive rollup	17	6	5	9
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Sputum	Other	Lower airway / lung	lower-airway/lung rollup	17	5	6	8
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Surface of tongue	Other	Oral cavity / dental	oral/dental rollup	16	1	6	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Breast	Other	Breast / milk	breast/milk body-site group	15	3	7	8
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Colorectum	Other	Lower GI tract	lower-gi rollup	15	2	6	4
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Blood serum	Other	Blood	blood rollup	15	1	6	8
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Wall of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	14	2	6	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Endothelium of trachea	Other	Bronchial / tracheal	bronchial/tracheal body-site group	13	1	7	5
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Mouth mucosa	Other	Oral cavity / dental	oral/dental rollup	13	1	7	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Breast,Milk	Other	Breast / milk	breast/milk body-site group	12	1	6	10
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Bronchus,Mouth	Other	Oral cavity / dental	oral/dental rollup	12	1	5	6
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Nasopharynx,Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	12	1	6	5
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Colonic mucosa	Other	Lower GI tract	lower-gi rollup	10	3	5	4
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Conjunctival sac	Other	Ocular / eye	ocular/eye body-site group	10	2	5	9
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	5	10
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Endocervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	10	2	2	8
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Intestinal mucosa	Other	Lower GI tract	lower-gi rollup	10	2	5	9
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	8	8
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Margin of eyelid	Other	Ocular / eye	ocular/eye body-site group	10	1	4	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Saliva,Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	1	5	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Feces,Blood	Other	Feces	feces/stool rollup	9	2	4	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Mucosa of body of stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	9	1	3	7
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Milk	Other	Breast / milk	breast/milk body-site group	8	2	5	5
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Amniotic fluid,Feces	Other	Feces	feces/stool rollup	8	1	4	4
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Bile	Other	Hepatobiliary / pancreas	hepatobiliary/pancreas body-site group	8	1	3	4
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	External ear	Other	Ear	ear body-site group	8	1	3	4
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Internal cheek pouch	Other	Oral cavity / dental	oral/dental body-site group	8	1	4	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Lower lip,Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	8	1	3	6
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Margin of eyelid,Conjunctiva	Other	Ocular / eye	ocular/eye body-site group	8	1	4	4
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Nasopharynx,Oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	8	1	4	8
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Pancreas	Other	Hepatobiliary / pancreas	hepatobiliary/pancreas body-site group	8	1	4	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Pharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	8	1	4	5
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Mucosa of stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	7	2	2	3
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Skin of penis	Other	Skin	skin rollup	7	2	4	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Tear film	Other	Ocular / eye	ocular/eye body-site group	7	2	3	6
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Cheek,Forehead	Other	Oral cavity / dental	oral/dental body-site group	7	1	4	3
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Oral opening	Other	Oral cavity / dental	oral/dental rollup	7	1	2	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Skin epithelium	Other	Skin	skin rollup	7	1	4	3
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Small intestine	Other	Lower GI tract	lower-gi rollup	6	2	3	4
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Duodenum	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	6	1	3	6
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Meibum	Other	Ocular / eye	ocular/eye body-site group	6	1	3	6
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Posterior fornix of vagina,External cervical os	Other	Vaginal / reproductive	vaginal/reproductive rollup	6	1	3	4
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Cecum mucosa,Colonic mucosa,Mucosa of rectum,Ileal mucosa	Other	Lower GI tract	lower-gi rollup	5	1	3	3
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Colostrum	Other	Breast / milk	breast/milk body-site group	5	1	2	5
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Conjunctival fornix	Other	Ocular / eye	ocular/eye body-site group	5	1	3	5
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Endometrium	Other	Vaginal / reproductive	vaginal/reproductive rollup	5	1	2	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Female urethra	Other	Urinary tract	urinary body-site group	5	1	3	3
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Gingiva	Other	Oral cavity / dental	oral/dental body-site group	5	1	2	3
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Meconium,Feces	Other	Feces	feces/stool rollup	5	1	3	5
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Upper respiratory tract	Other	Upper airway / nasal	upper-airway/nasal rollup	5	1	3	3
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Dental pulp	Other	Oral cavity / dental	oral/dental body-site group	4	1	2	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Mucosa of ascending colon	Other	Lower GI tract	lower-gi rollup	4	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Mucosa of oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	4	1	2	3
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Renal pelvis/ureter	Other	Urinary tract	urinary body-site group	4	1	2	3
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Saliva,Dental plaque	Other	Oral cavity / dental	oral/dental rollup	4	1	2	4
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Skin of scalp	Other	Skin	skin rollup	4	1	2	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Skin sebaceous gland	Other	Skin	skin rollup	4	1	2	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Axilla skin	Other	Skin	skin rollup	3	1	2	3
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Cervical cavity	Other	Vaginal / reproductive	vaginal/reproductive rollup	3	1	0	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Feces,Saliva,Anterior naris,Posterior fornix of vagina,Epithelium of elbow	Other	Feces	feces/stool rollup	3	1	2	3
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Lower part of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	3	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Mucosa of small intestine	Other	Lower GI tract	lower-gi rollup	3	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Mucus	Other	Unlocalized mucosal samples	unlocalized-mucosal body-site group	3	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Skin of cheek	Other	Skin	skin rollup	3	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Skin of cheek,Nose	Other	Skin	skin rollup	3	1	2	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Uterine cervix,Vaginal fluid	Other	Vaginal / reproductive	vaginal/reproductive rollup	3	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Alveolus of lung	Other	Lower airway / lung	lower-airway/lung rollup	2	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Anterior fornix of vagina,Lateral fornix of vagina,Uterine cervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Blood	Other	Blood	blood rollup	2	1	1	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Cavity of pharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	2	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Cervical mucus	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Cervix epithelium	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Dental plaque,Internal cheek pouch,Saliva	Other	Oral cavity / dental	oral/dental rollup	2	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Dentine	Other	Oral cavity / dental	oral/dental body-site group	2	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Eyelid	Other	Ocular / eye	ocular/eye body-site group	2	1	0	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Feces,Urine,Blood plasma	Other	Feces	feces/stool rollup	2	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Ileum	Other	Lower GI tract	lower-gi rollup	2	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Inferior nasal concha	Other	Upper airway / nasal	upper-airway/nasal rollup	2	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Margin of eyelid,Conjunctival sac	Other	Ocular / eye	ocular/eye body-site group	2	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Mesenteric lymph node	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	2	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Middle ear	Other	Ear	ear body-site group	2	1	1	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Mucosa	Other	Unlocalized mucosal samples	unlocalized-mucosal body-site group	2	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Mucosa of oral region	Other	Oral cavity / dental	oral/dental rollup	2	1	1	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Ocular surface region	Other	Ocular / eye	ocular/eye body-site group	2	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Oral cavity,Feces	Other	Feces	feces/stool rollup	2	1	1	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Ovary	Other	Reproductive / genital	reproductive/genital body-site group	2	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Placenta	Other	Birth-associated samples	birth-associated body-site group	2	1	1	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Prostate gland secretion	Other	Reproductive / genital	reproductive/genital body-site group	2	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Right lung middle lobe bronchiole	Other	Lower airway / lung	lower-airway/lung rollup	2	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Saliva,Supragingival dental plaque,Buccal mucosa,Tongue	Other	Oral cavity / dental	oral/dental rollup	2	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Semen	Other	Reproductive / genital	reproductive/genital body-site group	2	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Sigmoid colon	Other	Lower GI tract	lower-gi rollup	2	1	1	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Skin epidermis	Other	Skin	skin rollup	2	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Skin of forearm	Other	Skin	skin rollup	2	1	0	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Skin of sole of pes	Other	Skin	skin rollup	2	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Skin of sole of pes,Interdigital space	Other	Skin	skin rollup	2	1	1	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Superior surface of tongue	Other	Oral cavity / dental	oral/dental rollup	2	1	1	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Tonsillar fossa	Other	Upper airway / nasal	upper-airway/nasal body-site group	2	1	2	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Upper part of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Urinary bladder	Other	Urinary tract	urinary rollup	2	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Uterovesical pouch	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Vaginal fluid,Feces,Endocervix	Other	Feces	feces/stool rollup	2	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Feces,Mucosa of small intestine	Other	Feces	feces/stool rollup	1	1	1	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Hypopharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	0	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Lower part of vagina,Upper part of vagina,Cervical mucus	Other	Vaginal / reproductive	vaginal/reproductive rollup	1	1	0	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	1	1	0	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Nasopharyngeal gland	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	0	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Prostate gland	Other	Reproductive / genital	reproductive/genital body-site group	1	1	0	1
