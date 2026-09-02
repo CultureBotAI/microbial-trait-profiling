@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import json
 from itertools import pairwise
 from pathlib import Path
 from textwrap import fill
@@ -13,6 +15,10 @@ from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
+RAW_FULL_DUMP = REPO_ROOT / "data" / "raw" / "full_dump.csv"
+DOWNLOAD_PROVENANCE_JSON = REPO_ROOT / "data" / "raw" / "download_provenance.json"
+STUDY_TRAIT_PROFILE_WIDE_TSV = REPO_ROOT / "data" / "derived" / "study_trait_profiles_wide.tsv"
+PAIRED_METADATA_TSV = VIS_DIR / "study_trait_profile_paired_enrichment_metadata.tsv"
 OUTPUT_PNG = INVESTIGATION_DIR / "profile_enrichment_guild_assignment_summary.png"
 OUTPUT_SVG = INVESTIGATION_DIR / "profile_enrichment_guild_assignment_summary.svg"
 ANAEROBE_GUILD_DEFINITION_TABLE_PNG = INVESTIGATION_DIR / "anaerobe_v2_guild_definition_table.png"
@@ -24,6 +30,8 @@ GRID_OUTPUT_TSV = INVESTIGATION_DIR / "profile_enrichment_guild_direction_grid.t
 ANAEROBE_GUILD_SELECTION_TSV = (
     INVESTIGATION_DIR / "anaerobe-depletion-v2" / "guild_trait_selection.tsv"
 )
+PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
+HUMAN_HOST_SPECIES = "Homo sapiens"
 
 AEROBE_GUILD_TRAITS = {
     "METPO:1000608": "facultatively aerobic",
@@ -106,10 +114,117 @@ def format_count(value: int) -> str:
     return f"{value:,}"
 
 
+def count_label(counts: dict[str, object], key: str) -> str:
+    return format_count(int(counts.get(key, 0)))
+
+
+def text_label(counts: dict[str, object], key: str) -> str:
+    return str(counts.get(key, "unknown"))
+
+
 def count_unique_conditions(path: Path) -> int:
     if not path.exists():
         return 0
     return read_tsv(path, usecols=["condition"])["condition"].nunique()
+
+
+def parsed_study_number(bsdb_id: object) -> str:
+    """Return the numeric BugSigDB study identifier from a signature-level BSDB ID."""
+    text = clean_text(bsdb_id)
+    if text == "unknown":
+        return text
+    return text.removeprefix("bsdb:").split("/", 1)[0]
+
+
+def load_download_provenance() -> dict[str, str]:
+    if not DOWNLOAD_PROVENANCE_JSON.exists():
+        return {}
+    data = json.loads(DOWNLOAD_PROVENANCE_JSON.read_text(encoding="utf-8"))
+    full_dump = data.get("full_dump.csv", {})
+    return {
+        "version": str(full_dump.get("version", "unknown")),
+        "doi": str(full_dump.get("doi", "unknown")),
+        "tag_sha": str(full_dump.get("tag_sha", "unknown")),
+    }
+
+
+def full_dump_snapshot_label() -> str:
+    if not RAW_FULL_DUMP.exists():
+        return "unknown"
+    with RAW_FULL_DUMP.open(encoding="utf-8", newline="") as handle:
+        first_line = handle.readline().strip()
+    if not first_line.startswith("#"):
+        return "unknown"
+    snapshot = first_line.removeprefix("#").strip().split(",", 1)[0]
+    return snapshot.replace("BugSigDB ", "")
+
+
+def get_full_dump_counts() -> dict[str, int]:
+    if not RAW_FULL_DUMP.exists():
+        return {
+            "full_dump_row_count": 0,
+            "full_dump_study_count": 0,
+            "full_dump_complete_row_count": 0,
+            "full_dump_homo_sapiens_row_count": 0,
+            "full_dump_homo_sapiens_study_count": 0,
+        }
+    with RAW_FULL_DUMP.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(line for line in handle if not line.startswith("#"))
+        rows = list(reader)
+
+    study_ids = {parsed_study_number(row.get("BSDB ID")) for row in rows}
+    human_rows = [row for row in rows if clean_text(row.get("Host species")) == HUMAN_HOST_SPECIES]
+    human_study_ids = {parsed_study_number(row.get("BSDB ID")) for row in human_rows}
+    return {
+        "full_dump_row_count": len(rows),
+        "full_dump_study_count": len(study_ids - {"unknown"}),
+        "full_dump_complete_row_count": sum(
+            clean_text(row.get("State")) == "Complete" for row in rows
+        ),
+        "full_dump_homo_sapiens_row_count": len(human_rows),
+        "full_dump_homo_sapiens_study_count": len(human_study_ids - {"unknown"}),
+    }
+
+
+def get_trait_profile_input_counts() -> dict[str, int]:
+    if not STUDY_TRAIT_PROFILE_WIDE_TSV.exists():
+        return {
+            "raw_profile_count": 0,
+            "raw_profile_study_count": 0,
+            "raw_profile_experiment_count": 0,
+            "raw_trait_column_count": 0,
+        }
+    header = read_tsv(STUDY_TRAIT_PROFILE_WIDE_TSV, nrows=0)
+    metadata = read_tsv(
+        STUDY_TRAIT_PROFILE_WIDE_TSV,
+        usecols=PROFILE_METADATA_COLUMNS,
+    )
+    return {
+        "raw_profile_count": len(metadata),
+        "raw_profile_study_count": metadata["study_id"].nunique(),
+        "raw_profile_experiment_count": metadata["experiment_id"].nunique(),
+        "raw_trait_column_count": len(
+            [column for column in header.columns if column not in PROFILE_METADATA_COLUMNS]
+        ),
+    }
+
+
+def get_paired_input_counts() -> dict[str, int]:
+    if not PAIRED_METADATA_TSV.exists():
+        return {
+            "paired_profile_count": 0,
+            "paired_study_count": 0,
+            "paired_condition_count": 0,
+        }
+    metadata = read_tsv(
+        PAIRED_METADATA_TSV,
+        usecols=["study_id", "condition"],
+    )
+    return {
+        "paired_profile_count": len(metadata),
+        "paired_study_count": metadata["study_id"].nunique(),
+        "paired_condition_count": metadata["condition"].nunique(),
+    }
 
 
 def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -188,14 +303,42 @@ def write_direction_grid_table() -> None:
     pd.DataFrame(records).to_csv(GRID_OUTPUT_TSV, sep="\t", index=False)
 
 
-def get_summary_counts() -> dict[str, int]:
+def get_summary_counts() -> dict[str, object]:
     metadata = read_tsv(
         VIS_DIR / "study_trait_profile_study_metadata.tsv",
-        usecols=["study_id"],
+        usecols=[
+            "study_id",
+            "experiment_id",
+            "condition",
+            "body_site",
+            "body_site_group",
+            "host_species",
+        ],
     )
-    return {
+    matrix_header = read_tsv(
+        VIS_DIR / "study_trait_profile_clustered_heatmap_matrix.tsv",
+        index_col=0,
+        nrows=0,
+    )
+    trait_metadata = read_tsv(
+        VIS_DIR / "study_trait_profile_trait_metadata.tsv",
+        index_col=0,
+        usecols=["trait_id", "display_category"],
+    )
+    provenance = load_download_provenance()
+    counts: dict[str, object] = {
+        "bugsigdb_version": provenance.get("version", "unknown"),
+        "bugsigdb_doi": provenance.get("doi", "unknown"),
+        "bugsigdb_snapshot": full_dump_snapshot_label(),
         "profile_count": len(metadata),
         "study_count": metadata["study_id"].nunique(),
+        "experiment_count": metadata["experiment_id"].nunique(),
+        "condition_count": metadata["condition"].nunique(),
+        "body_site_count": metadata["body_site"].nunique(),
+        "body_site_group_count": metadata["body_site_group"].nunique(),
+        "host_species_count": metadata["host_species"].nunique(),
+        "selected_trait_count": matrix_header.shape[1],
+        "selected_trait_category_count": trait_metadata["display_category"].nunique(),
         "direction_grid_condition_count": count_unique_conditions(GRID_OUTPUT_TSV),
         "direction_grid_row_count": count_rows(GRID_OUTPUT_TSV),
         "facultative_universe_count": count_rows(
@@ -217,6 +360,10 @@ def get_summary_counts() -> dict[str, int]:
             INVESTIGATION_DIR / "anaerobe-depletion-v2" / "candidate_taxa_trait_presence.tsv"
         ),
     }
+    counts.update(get_full_dump_counts())
+    counts.update(get_trait_profile_input_counts())
+    counts.update(get_paired_input_counts())
+    return counts
 
 
 def wrapped(text: str, width: int = 31) -> str:
@@ -489,10 +636,10 @@ def add_sankey_preview(
     ax.text(
         x + width / 2,
         y + height + 0.15,
-        "units: n=profiles; s=studies\nbg=background/comparator",
+        "lines=condition->body-site edges\nn=profiles; s=studies; bg=background/comparator",
         ha="center",
         va="bottom",
-        fontsize=5.55,
+        fontsize=5.35,
         color=SLATE_500,
         linespacing=1.05,
         zorder=4,
@@ -1134,18 +1281,21 @@ def create_workflow_diagram(
 ) -> None:
     """Create the BugSigDB-to-Sankey workflow diagram."""
     counts = get_summary_counts()
+    bugsigdb_version = text_label(counts, "bugsigdb_version")
+    bugsigdb_snapshot = text_label(counts, "bugsigdb_snapshot")
+    bugsigdb_doi = text_label(counts, "bugsigdb_doi")
     INVESTIGATION_DIR.mkdir(parents=True, exist_ok=True)
 
-    fig, ax = plt.subplots(figsize=(15.2, 8.6), dpi=180)
+    fig, ax = plt.subplots(figsize=(15.8, 9.2), dpi=180)
     fig.patch.set_facecolor(SLATE_50)
     ax.set_facecolor(SLATE_50)
     ax.set_xlim(0, 100)
-    ax.set_ylim(0, 62)
+    ax.set_ylim(0, 66)
     ax.axis("off")
 
     ax.text(
         3.5,
-        59.3,
+        63.5,
         "BugSigDB data to trait-enrichment Sankey diagrams",
         fontsize=21,
         fontweight="bold",
@@ -1155,21 +1305,27 @@ def create_workflow_diagram(
     )
     ax.text(
         3.5,
-        56.4,
-        (
-            f"{format_count(counts['profile_count'])} curated profile rows from "
-            f"{format_count(counts['study_count'])} studies are transformed into "
-            "profile-trait scores, guild calls, edge tables, and rendered "
-            "condition-to-body-site Sankey maps."
+        60.6,
+        wrapped(
+            (
+                f"Input: BugSigDBExports {bugsigdb_version} full_dump.csv "
+                f"(BugSigDB {bugsigdb_snapshot}; DOI {bugsigdb_doi}). Figures use "
+                f"{HUMAN_HOST_SPECIES} host samples only: "
+                f"{count_label(counts, 'profile_count')} profiles from "
+                f"{count_label(counts, 'study_count')} studies become profile-trait "
+                "scores, guild calls, edge tables, and condition-to-body-site Sankey maps."
+            ),
+            165,
         ),
-        fontsize=10.0,
+        fontsize=9.5,
         color=SLATE_500,
         ha="left",
         va="top",
+        linespacing=1.12,
     )
 
-    stage_y = 40.2
-    stage_h = 11.0
+    stage_y = 43.0
+    stage_h = 12.0
     stage_w = 17.4
     stage_xs = [3.0, 22.0, 41.0, 60.0, 79.0]
     stages = [
@@ -1177,8 +1333,10 @@ def create_workflow_diagram(
             "number": "1",
             "title": "BugSigDB data",
             "body": (
-                "Study profiles with taxa, condition labels, body sites, and curated "
-                "increased/decreased directions."
+                f"{bugsigdb_version} full dump: "
+                f"{count_label(counts, 'full_dump_complete_row_count')} complete rows, "
+                f"{count_label(counts, 'full_dump_study_count')} parsed studies. "
+                f"Host filter: {HUMAN_HOST_SPECIES} only."
             ),
             "accent": SLATE_700,
             "facecolor": "white",
@@ -1188,8 +1346,9 @@ def create_workflow_diagram(
             "number": "2",
             "title": "Trait profiles",
             "body": (
-                "Map profile taxa to KG-Microbe traits, then standardize trait "
-                "z-scores per profile."
+                f"{count_label(counts, 'raw_profile_count')} study/experiment/direction "
+                f"profiles x {count_label(counts, 'raw_trait_column_count')} KG-Microbe "
+                "trait columns before human-host plotting filters."
             ),
             "accent": GREEN_700,
             "facecolor": GREEN_50,
@@ -1199,8 +1358,8 @@ def create_workflow_diagram(
             "number": "3",
             "title": "Guild enrichment",
             "body": (
-                "Apply selected oxygen-tolerance trait sets and compare focus "
-                "direction against the comparator."
+                "Compute selected oxygen-tolerance mean z-scores, then contrast the "
+                "focus direction against its comparator direction."
             ),
             "accent": AMBER_600,
             "facecolor": AMBER_50,
@@ -1210,8 +1369,8 @@ def create_workflow_diagram(
             "number": "4",
             "title": "Sankey tables",
             "body": (
-                "Group condition-to-body-site pairs, apply v3 display rollups, and "
-                "write edge plus audit TSVs."
+                "Aggregate condition-to-body-site edges, apply v3 display rollups, "
+                "and write edge, node, and audit TSVs."
             ),
             "accent": BLUE_600,
             "facecolor": BLUE_50,
@@ -1221,9 +1380,8 @@ def create_workflow_diagram(
             "number": "5",
             "title": "Sankey diagrams",
             "body": (
-                "Render condition-to-body-site maps. Edge width is n=profile "
-                "support; node labels use s=unique studies and bg=background or "
-                "comparator support."
+                "Curved lines are condition-to-body-site edges. Width is n=profiles; "
+                "color shows guild signal or direction, and grey is bg support."
             ),
             "accent": RED_600,
             "facecolor": RED_50,
@@ -1257,7 +1415,7 @@ def create_workflow_diagram(
 
     ax.text(
         3.5,
-        36.5,
+        39.4,
         "The workflow branches into two Sankey products after shared metadata rollups.",
         fontsize=9.6,
         fontweight="bold",
@@ -1267,7 +1425,7 @@ def create_workflow_diagram(
     )
     ax.text(
         3.5,
-        34.6,
+        37.6,
         (
             "Guild Sankeys use selected trait-enrichment scores; all-BugSigDB direction "
             "Sankeys use the same profile metadata without guild filtering."
@@ -1280,14 +1438,14 @@ def create_workflow_diagram(
 
     add_workflow_lane(
         ax,
-        xy=(3.0, 17.2),
+        xy=(3.0, 19.0),
         width=46.0,
-        height=15.2,
+        height=16.0,
         title="Trait-enrichment guild Sankeys",
         body=(
-            "Selected-trait maps for aerobe v2 increased profiles and anaerobe v2 "
-            "decreased profiles. Colored edge width uses n=focus profiles; grey bg "
-            "edges mark sampled background profiles."
+            "Each curved line links a retained condition group to a sampled body-site "
+            "group. Colored edge width uses n=focus profiles with positive guild-trait "
+            "support; grey bg edges mark sampled background profiles."
         ),
         chips=[
             "Aerobe + anaerobe v3 grouped guild Sankey PNGs",
@@ -1300,13 +1458,13 @@ def create_workflow_diagram(
     )
     add_workflow_lane(
         ax,
-        xy=(51.0, 17.2),
+        xy=(51.0, 19.0),
         width=46.0,
-        height=15.2,
+        height=16.0,
         title="All-BugSigDB direction Sankeys",
         body=(
-            "Direction-support maps for the full BugSigDB profile metadata corpus. "
-            "Colored edges count n=focus profiles; grey bg edges count comparator "
+            "Each curved line links a condition group to a body-site group. Colored "
+            "edges count n=focus-direction profiles; grey bg edges count comparator "
             "profiles."
         ),
         chips=[
@@ -1322,48 +1480,75 @@ def create_workflow_diagram(
     add_box(
         ax,
         xy=(3.0, 5.0),
-        width=27.0,
-        height=8.2,
+        width=22.0,
+        height=9.4,
         title="Shared profile metadata",
-        body=("Metadata TSV supplies study ID, condition, body site, and direction labels."),
+        body=(
+            f"{count_label(counts, 'profile_count')} {HUMAN_HOST_SPECIES} profiles; "
+            f"{count_label(counts, 'experiment_count')} experiments; "
+            f"{count_label(counts, 'condition_count')} conditions; "
+            f"{count_label(counts, 'body_site_count')} raw body sites in "
+            f"{count_label(counts, 'body_site_group_count')} groups."
+        ),
         facecolor="white",
-        body_width=36,
-        title_size=9.4,
-        body_size=7.2,
+        body_width=30,
+        title_size=8.8,
+        body_size=6.7,
     )
     add_box(
         ax,
-        xy=(36.5, 5.0),
-        width=27.0,
-        height=8.2,
+        xy=(27.0, 5.0),
+        width=22.0,
+        height=9.4,
         title="Trait-score matrix",
-        body=("Clustered heatmap matrix TSV supplies profile-level KG-Microbe trait z-scores."),
+        body=(
+            f"{count_label(counts, 'profile_count')} rows x "
+            f"{count_label(counts, 'selected_trait_count')} selected traits. Values are "
+            "column z-scores of log1p trait fractions per 1,000 profile counts."
+        ),
         facecolor="white",
-        body_width=36,
-        title_size=9.4,
-        body_size=7.2,
+        body_width=30,
+        title_size=8.8,
+        body_size=6.7,
     )
     add_box(
         ax,
-        xy=(70.0, 5.0),
-        width=27.0,
-        height=8.2,
+        xy=(51.0, 5.0),
+        width=22.0,
+        height=9.4,
+        title="Statistical methods",
+        body=(
+            f"{count_label(counts, 'paired_profile_count')} matched inc-dec pairs. "
+            "Trait contrasts use one-sample t-tests against zero with "
+            "Benjamini-Hochberg q-values."
+        ),
+        facecolor="white",
+        body_width=30,
+        title_size=8.8,
+        body_size=6.7,
+    )
+    add_box(
+        ax,
+        xy=(75.0, 5.0),
+        width=22.0,
+        height=9.4,
         title="Display rollups",
         body=(
             "sankey_v3_rollups.py and grouped wrappers convert raw labels into "
-            "readable condition/body-site nodes."
+            "readable nodes; line width, color, s=, and bg= are defined in figure legends."
         ),
         facecolor="white",
-        body_width=36,
-        title_size=9.4,
-        body_size=7.2,
+        body_width=30,
+        title_size=8.8,
+        body_size=6.7,
     )
-    add_arrow(ax, (30.0, 9.1), (36.5, 9.1), color=SLATE_400, linewidth=1.7)
-    add_arrow(ax, (63.5, 9.1), (70.0, 9.1), color=SLATE_400, linewidth=1.7)
+    add_arrow(ax, (25.0, 9.7), (27.0, 9.7), color=SLATE_400, linewidth=1.4)
+    add_arrow(ax, (49.0, 9.7), (51.0, 9.7), color=SLATE_400, linewidth=1.4)
+    add_arrow(ax, (73.0, 9.7), (75.0, 9.7), color=SLATE_400, linewidth=1.4)
 
     ax.text(
         3.5,
-        2.0,
+        1.8,
         (
             "Summary workflow generated from the current trait-profile investigation. "
             "The PNG and SVG are reproducible from "

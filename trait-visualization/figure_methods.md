@@ -1228,6 +1228,11 @@ workflow diagram showing how BugSigDB curated profile rows become trait-profile
 scores, guild enrichment calls, Sankey edge tables, and final
 condition-to-body-site Sankey diagrams.
 
+The workflow uses `waldronlab/BugSigDBExports` `v1.3.1` `full_dump.csv`
+(`BugSigDB 2026-04-24_00:41_UTC`, DOI `10.5281/zenodo.19740674`) as the
+citable input. The plotted figure corpus is restricted to `Homo sapiens` host
+samples only: 5,829 profiles from 1,080 studies.
+
 The same script also writes
 `profile_enrichment_guild_assignment_pre_direction_grid_summary.png`. That
 supplemental diagram preserves the previous profile-enrichment-to-guild-assignment
@@ -1237,19 +1242,26 @@ and generated-output layer.
 
 The top workflow boxes mean:
 
-- `1. BugSigDB data`: the input is the BugSigDB profile set. The current plotted
-  tables contain 5,829 human-host profile rows from 1,080 studies. The
-  `increased` and `decreased` labels are curated BugSigDB direction labels.
+- `1. BugSigDB data`: the pinned `v1.3.1` full dump contains 7,425 complete
+  rows and 1,246 parsed study IDs. The Sankey workflow keeps only `Homo sapiens`
+  host samples downstream. The `increased` and `decreased` labels are curated
+  BugSigDB direction labels.
 - `2. Trait profiles`: taxon occurrences are aggregated with KG-Microbe trait
-  annotations and represented as standardized profile-level trait z-scores.
+  annotations. The upstream study-trait profile table contains 7,329
+  study/experiment/direction profile rows and 2,650 KG-Microbe trait columns
+  before the human-host plotting filters.
 - `3. Guild enrichment`: selected oxygen-tolerance trait sets are scored, and the
-  focus direction is compared with its comparator direction.
+  focus direction is compared with its comparator direction. Trait fractions are
+  log1p-scaled per 1,000 profile counts and converted to column z-scores; paired
+  trait contrasts use one-sample t-tests against zero with Benjamini-Hochberg
+  q-values.
 - `4. Sankey tables`: condition-to-body-site pairs are grouped, v3 display
   rollups are applied, and edge plus audit TSVs are written.
 - `5. Sankey diagrams`: rendered condition-to-body-site maps use edge width for
   `n=` profile support and edge color for enrichment or direction balance.
   Figure subtitles and legends define `s=` as unique-study support and `bg=` as
-  background or comparator-profile support where applicable.
+  background or comparator-profile support where applicable. The curved Sankey
+  lines are the displayed condition-to-body-site edges.
 
 The middle of the slide branches into two Sankey products:
 
@@ -1263,8 +1275,11 @@ The middle of the slide branches into two Sankey products:
   comparator-direction profile support.
 
 The bottom handoff boxes identify the shared inputs used by both Sankey paths:
-profile metadata, the clustered heatmap trait-score matrix, and the v3
-condition/body-site display rollups.
+profile metadata, the clustered heatmap trait-score matrix, the paired
+statistical summaries, and the v3 condition/body-site display rollups. The
+trait-score matrix used by the diagram has 5,829 profile rows and 60 selected
+trait columns; the paired contrast layer has 2,335 matched increased/decreased
+study-experiment pairs.
 
 The summary script also writes `profile_enrichment_guild_direction_grid.tsv`.
 This unified table has one row per `guild`, `profile_direction`, and
