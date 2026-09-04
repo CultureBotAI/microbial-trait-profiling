@@ -23,9 +23,6 @@ OUTPUT_PNG = INVESTIGATION_DIR / "profile_enrichment_guild_assignment_summary.pn
 OUTPUT_SVG = INVESTIGATION_DIR / "profile_enrichment_guild_assignment_summary.svg"
 ANAEROBE_GUILD_DEFINITION_TABLE_PNG = INVESTIGATION_DIR / "anaerobe_v2_guild_definition_table.png"
 ANAEROBE_GUILD_DEFINITION_TABLE_SVG = INVESTIGATION_DIR / "anaerobe_v2_guild_definition_table.svg"
-PRE_GRID_OUTPUT_PNG = (
-    INVESTIGATION_DIR / "profile_enrichment_guild_assignment_pre_direction_grid_summary.png"
-)
 GRID_OUTPUT_TSV = INVESTIGATION_DIR / "profile_enrichment_guild_direction_grid.tsv"
 ANAEROBE_GUILD_SELECTION_TSV = (
     INVESTIGATION_DIR / "anaerobe-depletion-v2" / "guild_trait_selection.tsv"
@@ -1862,17 +1859,11 @@ def main() -> None:
     write_direction_grid_table()
     create_workflow_diagram()
     create_anaerobe_guild_definition_table()
-    create_diagram(
-        use_direction_grid=True,
-        output_png=PRE_GRID_OUTPUT_PNG,
-        output_svg=None,
-    )
     print(f"Wrote: {GRID_OUTPUT_TSV}")
     print(f"Wrote: {OUTPUT_PNG}")
     print(f"Wrote: {OUTPUT_SVG}")
     print(f"Wrote: {ANAEROBE_GUILD_DEFINITION_TABLE_PNG}")
     print(f"Wrote: {ANAEROBE_GUILD_DEFINITION_TABLE_SVG}")
-    print(f"Wrote: {PRE_GRID_OUTPUT_PNG}")
 
 
 if __name__ == "__main__":

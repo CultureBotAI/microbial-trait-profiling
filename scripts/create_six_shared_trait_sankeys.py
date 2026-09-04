@@ -8,6 +8,7 @@ from pathlib import Path
 from textwrap import wrap
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap, Normalize, to_hex, to_rgb
 from matplotlib.lines import Line2D
@@ -26,6 +27,8 @@ from create_condition_body_site_guild_maps import (
     clean_text,
     draw_curve,
     draw_node_v3,
+    join_unique,
+    nan_mean,
     node_positions,
     scaled_line_width_from_range,
     select_v3_display_edges,
@@ -33,6 +36,8 @@ from create_condition_body_site_guild_maps import (
     weighted_v3_node_stats,
     wrap_label,
 )
+from create_six_shared_trait_graphs import HTML_FILENAME, write_six_shared_trait_graphs
+from create_six_shared_trait_static_graphs import write_six_shared_trait_static_graphs
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -54,6 +59,11 @@ LIGHTNESS_FRACTION = 0.18
 SHARED_PATTERN_MIN_TRAITS = 3
 SHARED_PATTERN_HIGH_SUPPORT_MIN_PROFILES = 30
 SHARED_PATTERN_MAX_PAIRS = 12
+PARALLEL_EDGE_SPACING = 0.004
+MAX_PARALLEL_EDGE_OFFSET = 0.010
+BODY_SITE_BUNDLE_X = 0.585
+BODY_SITE_BUNDLE_EDGE_SPACING = 0.007
+MAX_BODY_SITE_BUNDLE_EDGE_OFFSET = 0.018
 
 
 def wrapped_plot_text(value: str, width: int = 150) -> str:
@@ -111,14 +121,7 @@ SHARED_TRAITS = (
 )
 
 TRAIT_RANK_BY_ID = {trait.trait_id: index for index, trait in enumerate(SHARED_TRAITS)}
-TRAIT_OFFSETS = {
-    trait.trait_id: offset
-    for trait, offset in zip(
-        SHARED_TRAITS,
-        [-0.018, -0.011, -0.004, 0.004, 0.011, 0.018],
-        strict=True,
-    )
-}
+TRAIT_SORT_COLUMNS = ["focus_enriched_profile_count", "rank_score", "trait_rank"]
 
 
 def read_tsv(path: Path, **kwargs: object) -> pd.DataFrame:
@@ -292,6 +295,178 @@ def add_displayed_flag_by_trait(
     return output
 
 
+def summarize_rollups_from_source(
+    source: pd.DataFrame,
+    config,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Summarize condition/body-site rollups from a prepared display source table."""
+    condition_rollups = (
+        source.groupby(
+            ["raw_condition", "condition", "condition_rollup_rule"],
+            dropna=False,
+            sort=False,
+        )
+        .agg(
+            profile_count=("profile_id", "count"),
+            study_count=("study_id", "nunique"),
+            focus_profile_count=(
+                "inc_dec",
+                lambda values: int((values == config.focus_direction).sum()),
+            ),
+            selected_guild_enriched_profile_count=(
+                "has_guild_enriched_trait",
+                lambda values: int(values.sum()),
+            ),
+        )
+        .reset_index()
+        .sort_values(
+            ["profile_count", "study_count", "raw_condition"],
+            ascending=[False, False, True],
+        )
+    )
+    body_site_rollups = (
+        source.groupby(
+            [
+                "raw_body_site",
+                "raw_body_site_group",
+                "body_site_group",
+                "body_site_rollup_rule",
+            ],
+            dropna=False,
+            sort=False,
+        )
+        .agg(
+            profile_count=("profile_id", "count"),
+            study_count=("study_id", "nunique"),
+            focus_profile_count=(
+                "inc_dec",
+                lambda values: int((values == config.focus_direction).sum()),
+            ),
+            selected_guild_enriched_profile_count=(
+                "has_guild_enriched_trait",
+                lambda values: int(values.sum()),
+            ),
+        )
+        .reset_index()
+        .sort_values(
+            ["profile_count", "study_count", "raw_body_site"],
+            ascending=[False, False, True],
+        )
+    )
+    return condition_rollups, body_site_rollups
+
+
+def summarize_edges_from_source(source: pd.DataFrame, config) -> pd.DataFrame:
+    """Build condition/body-site edges from a prepared display source table."""
+    records: list[dict[str, object]] = []
+    for (condition, body_site_group), group in source.groupby(
+        ["condition", "body_site_group"],
+        sort=False,
+        dropna=False,
+    ):
+        focus = group[group["inc_dec"] == config.focus_direction]
+        comparator = group[group["inc_dec"] == config.comparator_direction]
+        focus_enriched = focus[focus["has_guild_enriched_trait"]]
+        background_no_enriched = group[~group["has_guild_enriched_trait"]]
+        focus_no_enriched = focus[~focus["has_guild_enriched_trait"]]
+        comparator_enriched = comparator[comparator["has_guild_enriched_trait"]]
+
+        focus_mean = nan_mean(focus["guild_z_mean"])
+        focus_enriched_mean = nan_mean(focus_enriched["guild_z_mean"])
+        comparator_mean = nan_mean(comparator["guild_z_mean"])
+        signal_focus_mean = focus_enriched_mean if pd.notna(focus_enriched_mean) else focus_mean
+        contrast = (
+            signal_focus_mean - comparator_mean
+            if pd.notna(signal_focus_mean) and pd.notna(comparator_mean)
+            else signal_focus_mean
+        )
+        records.append(
+            {
+                "analysis": config.key,
+                "condition": clean_text(condition),
+                "body_site_group": clean_text(body_site_group),
+                "raw_conditions": join_unique(group["raw_condition"]),
+                "raw_body_sites": join_unique(group["raw_body_site"]),
+                "raw_body_site_groups": join_unique(group["raw_body_site_group"]),
+                "profile_count": len(group),
+                "study_count": group["study_id"].nunique(),
+                "study_ids": join_unique(group["study_id"]),
+                "focus_direction": config.focus_label,
+                "comparator_direction": config.comparator_label,
+                "focus_profile_count": len(focus),
+                "focus_study_count": focus["study_id"].nunique(),
+                "focus_study_ids": join_unique(focus["study_id"]),
+                "focus_enriched_profile_count": len(focus_enriched),
+                "focus_enriched_study_count": focus_enriched["study_id"].nunique(),
+                "focus_enriched_study_ids": join_unique(focus_enriched["study_id"]),
+                "focus_no_enriched_trait_profile_count": len(focus_no_enriched),
+                "comparator_profile_count": len(comparator),
+                "comparator_study_count": comparator["study_id"].nunique(),
+                "comparator_study_ids": join_unique(comparator["study_id"]),
+                "comparator_enriched_profile_count": len(comparator_enriched),
+                "background_no_enriched_profile_count": len(background_no_enriched),
+                "background_no_enriched_study_count": background_no_enriched["study_id"].nunique(),
+                "background_no_enriched_study_ids": join_unique(background_no_enriched["study_id"]),
+                "increased_profile_count": int((group["inc_dec"] == "inc").sum()),
+                "decreased_profile_count": int((group["inc_dec"] == "dec").sum()),
+                "selected_guild_enriched_profile_count": int(
+                    group["has_guild_enriched_trait"].sum()
+                ),
+                "mean_guild_z": nan_mean(group["guild_z_mean"]),
+                "focus_mean_guild_z": focus_mean,
+                "focus_enriched_mean_guild_z": focus_enriched_mean,
+                "comparator_mean_guild_z": comparator_mean,
+                "focus_enriched_minus_comparator_guild_z": contrast,
+            }
+        )
+
+    if not records:
+        return pd.DataFrame()
+
+    edges = pd.DataFrame.from_records(records)
+    edges = edges[edges["focus_enriched_profile_count"] > 0].copy()
+    if edges.empty:
+        return edges
+    edges["rank_signal"] = edges["focus_enriched_minus_comparator_guild_z"].fillna(
+        edges["focus_enriched_mean_guild_z"]
+    )
+    edges["rank_score"] = (
+        edges["focus_enriched_profile_count"]
+        * np.log1p(edges["focus_enriched_study_count"].clip(lower=1))
+        * (1.0 + np.maximum(edges["rank_signal"], 0.0))
+    )
+    edges["displayed_in_map"] = False
+    return edges.sort_values(
+        [
+            "focus_enriched_profile_count",
+            "rank_score",
+            "rank_signal",
+            "study_count",
+        ],
+        ascending=[False, False, False, False],
+    )
+
+
+def individual_condition_grouped_body_source(
+    scored: pd.DataFrame,
+    config,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Keep raw conditions while preserving the grouped v3 body-site rollups."""
+    source, _, _ = add_v3_display_rollups(
+        scored,
+        config,
+        display_mode=V3_GROUPED_MODE,
+    )
+    source = source.copy()
+    source["condition"] = source["raw_condition"].map(clean_text)
+    source["condition_rollup_rule"] = (
+        "kept raw individual condition label; body sites use grouped v3 rollups"
+    )
+    source = source[source["condition"] != "unknown"].copy()
+    condition_rollups, body_site_rollups = summarize_rollups_from_source(source, config)
+    return source, condition_rollups, body_site_rollups
+
+
 def build_trait_direction_tables(
     metadata: pd.DataFrame,
     zscores: pd.DataFrame,
@@ -349,6 +524,57 @@ def build_trait_direction_tables(
     )
 
 
+def build_individual_condition_direction_tables(
+    metadata: pd.DataFrame,
+    zscores: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Build six-trait tables with individual conditions and grouped body sites."""
+    all_edges: list[pd.DataFrame] = []
+    all_display_edges: list[pd.DataFrame] = []
+    all_condition_rollups: list[pd.DataFrame] = []
+    all_body_site_rollups: list[pd.DataFrame] = []
+
+    for trait in SHARED_TRAITS:
+        scored = score_profiles(metadata, zscores, trait)
+        for focus_direction in ["inc", "dec"]:
+            focus_label = DIRECTION_LABELS[focus_direction]
+            analysis_key = f"{trait.slug}_{focus_label}_individual_conditions"
+            config = single_trait_map_config(trait, focus_direction)
+
+            source, condition_rollups, body_site_rollups = individual_condition_grouped_body_source(
+                scored, config
+            )
+            edges = summarize_edges_from_source(source, config)
+            edges = add_trait_fields(edges, trait, analysis_key)
+            display_edges = select_v3_display_edges(edges)
+            edge_output = add_displayed_flag_by_trait(edges, display_edges)
+
+            condition_rollups.insert(0, "analysis", analysis_key)
+            condition_rollups.insert(1, "trait_id", trait.trait_id)
+            condition_rollups.insert(2, "trait_label", trait.label)
+            condition_rollups.insert(3, "trait_slug", trait.slug)
+            condition_rollups.insert(4, "trait_color", trait.base_color)
+            condition_rollups.insert(5, "focus_direction", focus_label)
+            body_site_rollups.insert(0, "analysis", analysis_key)
+            body_site_rollups.insert(1, "trait_id", trait.trait_id)
+            body_site_rollups.insert(2, "trait_label", trait.label)
+            body_site_rollups.insert(3, "trait_slug", trait.slug)
+            body_site_rollups.insert(4, "trait_color", trait.base_color)
+            body_site_rollups.insert(5, "focus_direction", focus_label)
+
+            all_edges.append(edge_output)
+            all_display_edges.append(display_edges)
+            all_condition_rollups.append(condition_rollups)
+            all_body_site_rollups.append(body_site_rollups)
+
+    return (
+        pd.concat(all_edges, ignore_index=True),
+        pd.concat(all_display_edges, ignore_index=True),
+        pd.concat(all_condition_rollups, ignore_index=True),
+        pd.concat(all_body_site_rollups, ignore_index=True),
+    )
+
+
 def lighten_color(color: str, fraction: float = LIGHTNESS_FRACTION) -> str:
     """Return a light tint that still belongs to the same hue family."""
     rgb = to_rgb(color)
@@ -366,9 +592,103 @@ def value_for_color(edge: pd.Series) -> float:
     return max(0.0, float(value))
 
 
-def offset_node_y(y: float, trait_id: str) -> float:
+def parallel_offset_sequence(
+    count: int,
+    *,
+    spacing: float = PARALLEL_EDGE_SPACING,
+    max_offset: float = MAX_PARALLEL_EDGE_OFFSET,
+) -> list[float]:
+    """Return top-to-bottom offsets for parallel links, ordered thick to thin."""
+    if count <= 1:
+        return [0.0]
+    center = (count - 1) / 2
+    return [
+        min(
+            max_offset,
+            max(-max_offset, (center - position) * spacing),
+        )
+        for position in range(count)
+    ]
+
+
+def add_parallel_offsets(display_edges: pd.DataFrame) -> pd.DataFrame:
+    """Attach per-pair offsets ordered by edge width from largest to smallest."""
+    output = display_edges.copy()
+    output["parallel_rank"] = 1
+    output["parallel_offset"] = 0.0
+    for _key, group in output.groupby(["condition", "body_site_group"], sort=False):
+        ordered_indices = group.sort_values(
+            TRAIT_SORT_COLUMNS,
+            ascending=[False, False, True],
+        ).index.tolist()
+        offsets = parallel_offset_sequence(len(ordered_indices))
+        for rank, (index, offset) in enumerate(
+            zip(ordered_indices, offsets, strict=True),
+            start=1,
+        ):
+            output.loc[index, "parallel_rank"] = rank
+            output.loc[index, "parallel_offset"] = offset
+    return output
+
+
+def weighted_color_value(group: pd.DataFrame) -> float:
+    """Return count-weighted color intensity for a combined bundle."""
+    values = group["color_value"].astype(float)
+    weights = group["focus_enriched_profile_count"].astype(float)
+    if float(weights.sum()) <= 0:
+        return float(values.mean()) if not values.empty else 0.0
+    return float(np.average(values, weights=weights))
+
+
+def body_site_trait_bundles(display_edges: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate displayed links into one body-site-side bundle per trait color."""
+    records: list[dict[str, object]] = []
+    for (body_site_group, trait_id), group in display_edges.groupby(
+        ["body_site_group", "trait_id"],
+        sort=False,
+    ):
+        records.append(
+            {
+                "body_site_group": body_site_group,
+                "trait_id": trait_id,
+                "trait_label": group["trait_label"].iloc[0],
+                "trait_color": group["trait_color"].iloc[0],
+                "trait_rank": int(group["trait_rank"].iloc[0]),
+                "focus_enriched_profile_count": int(group["focus_enriched_profile_count"].sum()),
+                "background_no_enriched_profile_count": int(
+                    group["background_no_enriched_profile_count"].sum()
+                ),
+                "rank_score": float(group["rank_score"].max()),
+                "color_value": weighted_color_value(group),
+            }
+        )
+    bundles = pd.DataFrame.from_records(records)
+    if bundles.empty:
+        return bundles
+    bundles["body_site_bundle_rank"] = 1
+    bundles["body_site_bundle_offset"] = 0.0
+    for _body_site, group in bundles.groupby("body_site_group", sort=False):
+        ordered_indices = group.sort_values(
+            TRAIT_SORT_COLUMNS,
+            ascending=[False, False, True],
+        ).index.tolist()
+        offsets = parallel_offset_sequence(
+            len(ordered_indices),
+            spacing=BODY_SITE_BUNDLE_EDGE_SPACING,
+            max_offset=MAX_BODY_SITE_BUNDLE_EDGE_OFFSET,
+        )
+        for rank, (index, offset) in enumerate(
+            zip(ordered_indices, offsets, strict=True),
+            start=1,
+        ):
+            bundles.loc[index, "body_site_bundle_rank"] = rank
+            bundles.loc[index, "body_site_bundle_offset"] = offset
+    return bundles
+
+
+def offset_node_y(y: float, offset: float = 0.0) -> float:
     """Offset parallel trait edges while keeping them inside the plot area."""
-    return min(0.925, max(0.035, y + TRAIT_OFFSETS[trait_id]))
+    return min(0.925, max(0.035, y + offset))
 
 
 def count_joined_unique(values: pd.Series) -> int:
@@ -443,13 +763,16 @@ def draw_combined_node(
 
 def trait_color_scales(
     display_edges: pd.DataFrame,
+    *,
+    shared_vmax: float | None = None,
 ) -> dict[str, tuple[LinearSegmentedColormap, Normalize]]:
     """Build one light-to-dark monochrome scale per trait."""
     scales: dict[str, tuple[LinearSegmentedColormap, Normalize]] = {}
+    shared_vmax = max(0.4, float(shared_vmax)) if shared_vmax is not None else None
     for trait in SHARED_TRAITS:
         trait_edges = display_edges[display_edges["trait_id"] == trait.trait_id]
         values = trait_edges.apply(value_for_color, axis=1) if not trait_edges.empty else []
-        vmax = max(0.4, float(max(values) if len(values) else 0.0))
+        vmax = shared_vmax or max(0.4, float(max(values) if len(values) else 0.0))
         cmap = LinearSegmentedColormap.from_list(
             f"{trait.slug}_combined_scale",
             [lighten_color(trait.base_color), trait.base_color],
@@ -458,14 +781,24 @@ def trait_color_scales(
     return scales
 
 
+def shared_color_vmax(display_edges: pd.DataFrame) -> float:
+    """Return one color-scale maximum for the supplied displayed edges."""
+    if display_edges.empty:
+        return 0.4
+    values = display_edges.apply(value_for_color, axis=1)
+    return max(0.4, float(values.max() if len(values) else 0.0))
+
+
 def add_color_scale_legend(
     fig: plt.Figure,
     scales: dict[str, tuple[LinearSegmentedColormap, Normalize]],
+    *,
+    shared_range: bool = False,
 ) -> None:
     """Add six compact per-trait color scales to the right side of the figure."""
     fig.text(
         0.835,
-        0.85,
+        0.865,
         "Trait color scales",
         ha="left",
         va="bottom",
@@ -473,8 +806,23 @@ def add_color_scale_legend(
         fontweight="bold",
         color=SLATE_700,
     )
+    description = (
+        "Shared numeric range for all traits.\nShade = mean positive z-score."
+        if shared_range
+        else "Shade = mean positive\nfocus-profile z-score."
+    )
+    fig.text(
+        0.835,
+        0.845,
+        description,
+        ha="left",
+        va="top",
+        fontsize=7.4,
+        color=SLATE_500,
+        linespacing=1.10,
+    )
     for index, trait in enumerate(SHARED_TRAITS):
-        y = 0.815 - index * 0.071
+        y = 0.790 - index * 0.066
         fig.text(
             0.835,
             y + 0.022,
@@ -496,17 +844,6 @@ def add_color_scale_legend(
         cbar.set_ticklabels(["0", f"{vmax:.1f}"])
         cbar.ax.tick_params(labelsize=6.5, length=2, pad=1)
         cbar.outline.set_linewidth(0.3)
-
-    fig.text(
-        0.835,
-        0.365,
-        "Shade = mean positive\nfocus-profile z-score",
-        ha="left",
-        va="top",
-        fontsize=7.4,
-        color=SLATE_500,
-        linespacing=1.15,
-    )
 
 
 def plot_single_trait_sankey(
@@ -1158,6 +1495,12 @@ def plot_combined_direction_sankey(
     title_prefix: str = "Six shared traits",
     subtitle_extra: str = "",
     footer_extra: str = "",
+    condition_axis_label: str = "Condition display groups",
+    body_site_axis_label: str = "Body-site display groups",
+    display_filter_note: str | None = None,
+    color_scale_vmax: float | None = None,
+    subplot_top: float = 0.89,
+    bundle_by_trait_at_body_site: bool = False,
 ) -> None:
     """Render one combined condition-to-body-site Sankey for all six traits."""
     if display_edges.empty:
@@ -1168,6 +1511,22 @@ def plot_combined_direction_sankey(
     comparator_label = DIRECTION_LABELS[COMPARATOR_DIRECTIONS[focus_direction]]
     display_edges = display_edges.copy()
     display_edges["color_value"] = display_edges.apply(value_for_color, axis=1)
+    display_edges = add_parallel_offsets(display_edges)
+    bundles = pd.DataFrame()
+    if bundle_by_trait_at_body_site:
+        bundles = body_site_trait_bundles(display_edges)
+        display_edges = display_edges.merge(
+            bundles[
+                [
+                    "body_site_group",
+                    "trait_id",
+                    "body_site_bundle_rank",
+                    "body_site_bundle_offset",
+                ]
+            ],
+            on=["body_site_group", "trait_id"],
+            how="left",
+        )
 
     condition_order_frame = (
         display_edges.groupby("condition", sort=False)
@@ -1218,44 +1577,81 @@ def plot_combined_direction_sankey(
 
     height = max(11.0, 2.2 + 0.54 * max(len(condition_order), len(body_site_order)))
     fig, ax = plt.subplots(figsize=(17.5, height))
-    fig.subplots_adjust(left=0.04, right=0.80, top=0.89, bottom=0.105)
+    fig.subplots_adjust(left=0.04, right=0.80, top=subplot_top, bottom=0.105)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
     fig.patch.set_facecolor("white")
     ax.set_facecolor("white")
 
-    counts = pd.concat(
+    source_counts = pd.concat(
         [
             display_edges["focus_enriched_profile_count"],
             display_edges["background_no_enriched_profile_count"],
         ],
         ignore_index=True,
     )
-    positive_counts = counts[counts > 0]
-    min_count = float(positive_counts.min())
-    max_count = float(positive_counts.max())
+    source_positive_counts = source_counts[source_counts > 0]
+    source_min_count = float(source_positive_counts.min())
+    source_max_count = float(source_positive_counts.max())
+    source_max_enriched_width = 4.6 if bundle_by_trait_at_body_site else 5.7
+    source_max_background_width = 5.1 if bundle_by_trait_at_body_site else 6.6
     enriched_widths = scaled_line_width_from_range(
         display_edges["focus_enriched_profile_count"],
-        min_count=min_count,
-        max_count=max_count,
+        min_count=source_min_count,
+        max_count=source_max_count,
         min_width=0.75,
-        max_width=5.7,
+        max_width=source_max_enriched_width,
     )
     background_widths = scaled_line_width_from_range(
         display_edges["background_no_enriched_profile_count"],
-        min_count=min_count,
-        max_count=max_count,
+        min_count=source_min_count,
+        max_count=source_max_count,
         min_width=0.9,
-        max_width=6.6,
+        max_width=source_max_background_width,
     )
-    scales = trait_color_scales(display_edges)
+    bundle_enriched_widths = pd.Series(dtype=float)
+    bundle_background_widths = pd.Series(dtype=float)
+    if bundle_by_trait_at_body_site:
+        bundle_counts = pd.concat(
+            [
+                bundles["focus_enriched_profile_count"],
+                bundles["background_no_enriched_profile_count"],
+            ],
+            ignore_index=True,
+        )
+        bundle_positive_counts = bundle_counts[bundle_counts > 0]
+        bundle_min_count = float(bundle_positive_counts.min())
+        bundle_max_count = float(bundle_positive_counts.max())
+        bundle_enriched_widths = scaled_line_width_from_range(
+            bundles["focus_enriched_profile_count"],
+            min_count=bundle_min_count,
+            max_count=bundle_max_count,
+            min_width=1.6,
+            max_width=10.0,
+        )
+        bundle_background_widths = scaled_line_width_from_range(
+            bundles["background_no_enriched_profile_count"],
+            min_count=bundle_min_count,
+            max_count=bundle_max_count,
+            min_width=2.0,
+            max_width=11.0,
+        )
+    scales = trait_color_scales(display_edges, shared_vmax=color_scale_vmax)
 
     left_x = 0.33
     right_x = 0.64
+    source_end_x = BODY_SITE_BUNDLE_X if bundle_by_trait_at_body_site else right_x
     ordered = display_edges.sort_values(
-        ["trait_rank", "focus_enriched_profile_count", "rank_score"],
-        ascending=[True, False, False],
+        [
+            "condition",
+            "body_site_group",
+            "parallel_rank",
+            "focus_enriched_profile_count",
+            "rank_score",
+            "trait_rank",
+        ],
+        ascending=[True, True, True, False, False, True],
     )
     enriched_widths = enriched_widths.loc[ordered.index]
     background_widths = background_widths.loc[ordered.index]
@@ -1263,32 +1659,94 @@ def plot_combined_direction_sankey(
     for edge, linewidth in zip(ordered.itertuples(), background_widths, strict=True):
         if linewidth <= 0:
             continue
-        y0 = offset_node_y(condition_y[edge.condition], edge.trait_id)
-        y1 = offset_node_y(body_site_y[edge.body_site_group], edge.trait_id)
+        y0 = offset_node_y(condition_y[edge.condition], edge.parallel_offset)
+        body_offset = (
+            edge.body_site_bundle_offset if bundle_by_trait_at_body_site else edge.parallel_offset
+        )
+        y1 = offset_node_y(body_site_y[edge.body_site_group], body_offset)
         draw_curve(
             ax,
             start=(left_x, y0),
-            end=(right_x, y1),
+            end=(source_end_x, y1),
             color=EDGE_BACKGROUND,
             linewidth=float(linewidth),
-            alpha=0.18,
+            alpha=0.12 if bundle_by_trait_at_body_site else 0.18,
             zorder=1.0,
         )
+
+    if bundle_by_trait_at_body_site:
+        ordered_bundles = bundles.sort_values(
+            [
+                "body_site_group",
+                "body_site_bundle_rank",
+                "focus_enriched_profile_count",
+                "rank_score",
+                "trait_rank",
+            ],
+            ascending=[True, True, False, False, True],
+        )
+        bundle_background_widths = bundle_background_widths.loc[ordered_bundles.index]
+        for bundle, linewidth in zip(
+            ordered_bundles.itertuples(),
+            bundle_background_widths,
+            strict=True,
+        ):
+            if linewidth <= 0:
+                continue
+            y = offset_node_y(
+                body_site_y[bundle.body_site_group],
+                bundle.body_site_bundle_offset,
+            )
+            draw_curve(
+                ax,
+                start=(BODY_SITE_BUNDLE_X, y),
+                end=(right_x, y),
+                color=EDGE_BACKGROUND,
+                linewidth=float(linewidth),
+                alpha=0.18,
+                zorder=1.1,
+            )
 
     for edge, linewidth in zip(ordered.itertuples(), enriched_widths, strict=True):
         signal = max(0.0, float(edge.color_value))
         cmap, norm = scales[edge.trait_id]
-        y0 = offset_node_y(condition_y[edge.condition], edge.trait_id)
-        y1 = offset_node_y(body_site_y[edge.body_site_group], edge.trait_id)
+        y0 = offset_node_y(condition_y[edge.condition], edge.parallel_offset)
+        body_offset = (
+            edge.body_site_bundle_offset if bundle_by_trait_at_body_site else edge.parallel_offset
+        )
+        y1 = offset_node_y(body_site_y[edge.body_site_group], body_offset)
         draw_curve(
             ax,
             start=(left_x, y0),
-            end=(right_x, y1),
+            end=(source_end_x, y1),
             color=cmap(norm(signal)),
             linewidth=float(linewidth),
-            alpha=0.72,
-            zorder=2.0 + (edge.trait_rank * 0.05),
+            alpha=0.46 if bundle_by_trait_at_body_site else 0.72,
+            zorder=2.0 + ((len(SHARED_TRAITS) - int(edge.parallel_rank)) * 0.03),
         )
+
+    if bundle_by_trait_at_body_site:
+        bundle_enriched_widths = bundle_enriched_widths.loc[ordered_bundles.index]
+        for bundle, linewidth in zip(
+            ordered_bundles.itertuples(),
+            bundle_enriched_widths,
+            strict=True,
+        ):
+            signal = max(0.0, float(bundle.color_value))
+            cmap, norm = scales[bundle.trait_id]
+            y = offset_node_y(
+                body_site_y[bundle.body_site_group],
+                bundle.body_site_bundle_offset,
+            )
+            draw_curve(
+                ax,
+                start=(BODY_SITE_BUNDLE_X, y),
+                end=(right_x, y),
+                color=cmap(norm(signal)),
+                linewidth=float(linewidth),
+                alpha=0.88,
+                zorder=3.0 + ((len(SHARED_TRAITS) - int(bundle.body_site_bundle_rank)) * 0.04),
+            )
 
     for condition in condition_order:
         draw_combined_node(
@@ -1325,12 +1783,15 @@ def plot_combined_direction_sankey(
         wrapped_plot_text(
             f"Colored curves are {focus_label} profiles with trait z-score > 0; "
             "parallel trait colors distinguish the six q <= 0.001 traits. "
-            "Width = positive-z profile count; shade = mean positive z-score. "
+            "Width = positive-z profile count; shade = mean positive z-score "
+            "on a shared numeric scale for all six traits. Within each parallel "
+            "condition/body-site stack, curves are ordered thick-to-thin. "
             "Light grey underlays show z <= 0 background for the same "
             f"condition/body-site/trait; TSVs retain the {focus_label} - "
             f"{comparator_label} contrast. Node key: links = plotted "
             "trait-specific links, traits = distinct traits, n = positive-z "
             "profile memberships summed across displayed trait links."
+            + (" Body-site trunks sum same-color links." if bundle_by_trait_at_body_site else "")
             + (f" {subtitle_extra}" if subtitle_extra else "")
         ),
         ha="left",
@@ -1341,7 +1802,7 @@ def plot_combined_direction_sankey(
     ax.text(
         0.18,
         0.965,
-        "Condition display groups",
+        condition_axis_label,
         ha="center",
         va="center",
         fontsize=11.5,
@@ -1350,7 +1811,7 @@ def plot_combined_direction_sankey(
     ax.text(
         0.77,
         0.965,
-        "Body-site display groups",
+        body_site_axis_label,
         ha="center",
         va="center",
         fontsize=11.5,
@@ -1366,10 +1827,10 @@ def plot_combined_direction_sankey(
     )
     width_lookup = scaled_line_width_from_range(
         pd.Series(representative_counts, index=representative_counts),
-        min_count=min_count,
-        max_count=max_count,
+        min_count=source_min_count,
+        max_count=source_max_count,
         min_width=0.75,
-        max_width=5.7,
+        max_width=source_max_enriched_width,
     )
     legend_lines = [
         Line2D(
@@ -1383,6 +1844,18 @@ def plot_combined_direction_sankey(
         )
         for count in representative_counts
     ]
+    if bundle_by_trait_at_body_site:
+        legend_lines.append(
+            Line2D(
+                [0],
+                [0],
+                color=SLATE_700,
+                linewidth=8.0,
+                alpha=0.88,
+                solid_capstyle="round",
+                label="body-site trunk: summed n",
+            )
+        )
     legend_lines.append(
         Line2D(
             [0],
@@ -1396,7 +1869,11 @@ def plot_combined_direction_sankey(
     )
     legend = ax.legend(
         handles=legend_lines,
-        title=f"Edge width: {focus_label} positive-z profiles per trait link (n)",
+        title=(
+            f"Edge width: {focus_label} positive-z profiles per trait link (n)"
+            if not bundle_by_trait_at_body_site
+            else "Edge width: source n; body-site trunks sum n per trait"
+        ),
         loc="lower center",
         bbox_to_anchor=(0.49, -0.035),
         ncol=min(len(legend_lines), 4),
@@ -1405,17 +1882,27 @@ def plot_combined_direction_sankey(
         title_fontsize=9,
     )
     ax.add_artist(legend)
-    add_color_scale_legend(fig, scales)
+    add_color_scale_legend(fig, scales, shared_range=color_scale_vmax is not None)
 
+    if display_filter_note is None:
+        display_filter_note = (
+            "Display filtering uses the existing grouped v3 Sankey rules: at "
+            f"least {V3_MIN_FOCUS_ENRICHED_PROFILES} positive-z focus profiles "
+            f"and {MIN_STUDIES} studies where possible."
+        )
     fig.text(
         0.04,
         0.035,
         wrapped_plot_text(
             "Every line is trait-specific. Node counts are profile-trait "
             "memberships across displayed links, not deduplicated profile totals. "
-            "Display filtering uses the existing grouped v3 Sankey rules: at "
-            f"least {V3_MIN_FOCUS_ENRICHED_PROFILES} positive-z focus profiles "
-            f"and {MIN_STUDIES} studies where possible."
+            f"{display_filter_note}"
+            + (
+                " Body-site trunks sum all displayed condition links by trait "
+                "color; each body site can show up to six trunks."
+                if bundle_by_trait_at_body_site
+                else ""
+            )
             + (f" {footer_extra}" if footer_extra else "")
         ),
         ha="left",
@@ -1499,6 +1986,7 @@ def write_direction_outputs(
 ) -> pd.DataFrame:
     """Write the two combined Sankeys and their direction-specific TSVs."""
     output_records: list[dict[str, object]] = []
+    color_vmax = shared_color_vmax(all_display_edges)
     for focus_direction, focus_label in DIRECTION_LABELS.items():
         analysis_key = f"six_shared_traits_{focus_label}"
         stem = f"{analysis_key}_profile_sankey"
@@ -1523,7 +2011,14 @@ def write_direction_outputs(
         display_edges.to_csv(display_edges_path, sep="\t", index=False)
         condition_subset.to_csv(condition_rollups_path, sep="\t", index=False)
         body_site_subset.to_csv(body_site_rollups_path, sep="\t", index=False)
-        plot_combined_direction_sankey(display_edges, focus_direction, png_path)
+        plot_combined_direction_sankey(
+            display_edges,
+            focus_direction,
+            png_path,
+            color_scale_vmax=color_vmax,
+            subplot_top=0.855,
+            bundle_by_trait_at_body_site=True,
+        )
 
         output_records.append(
             {
@@ -1607,6 +2102,7 @@ def write_shared_high_support_outputs(
 ) -> pd.DataFrame:
     """Write two reduced overlays focused on shared/high-support links."""
     output_records: list[dict[str, object]] = []
+    color_vmax = shared_color_vmax(all_display_edges)
     for focus_direction, focus_label in DIRECTION_LABELS.items():
         analysis_key = f"six_shared_traits_{focus_label}_shared_high_support"
         stem = f"{analysis_key}_profile_sankey"
@@ -1674,6 +2170,7 @@ def write_shared_high_support_outputs(
                 f"{SHARED_PATTERN_HIGH_SUPPORT_MIN_PROFILES} positive-z profiles, "
                 f"then keeps the top {SHARED_PATTERN_MAX_PAIRS} pairs."
             ),
+            color_scale_vmax=color_vmax,
         )
 
         output_records.append(
@@ -1694,6 +2191,87 @@ def write_shared_high_support_outputs(
                 "selected_pairs_path": pair_selection_path.relative_to(REPO_ROOT).as_posix(),
                 "condition_rollups_path": "",
                 "body_site_rollups_path": "",
+            }
+        )
+    return pd.DataFrame.from_records(output_records)
+
+
+def write_individual_condition_outputs(
+    all_edges: pd.DataFrame,
+    all_display_edges: pd.DataFrame,
+    condition_rollups: pd.DataFrame,
+    body_site_rollups: pd.DataFrame,
+) -> pd.DataFrame:
+    """Write two combined Sankeys with individual conditions and grouped body sites."""
+    output_records: list[dict[str, object]] = []
+    color_vmax = shared_color_vmax(all_display_edges)
+    for focus_direction, focus_label in DIRECTION_LABELS.items():
+        analysis_key = f"six_shared_traits_{focus_label}_individual_conditions"
+        stem = f"{analysis_key}_profile_sankey"
+        edges = all_edges[all_edges["focus_direction"] == focus_label].copy()
+        display_edges = all_display_edges[
+            all_display_edges["focus_direction"] == focus_label
+        ].copy()
+        condition_subset = condition_rollups[
+            condition_rollups["focus_direction"] == focus_label
+        ].copy()
+        body_site_subset = body_site_rollups[
+            body_site_rollups["focus_direction"] == focus_label
+        ].copy()
+
+        edges_path = OUTPUT_DIR / f"{stem}_edges.tsv"
+        display_edges_path = OUTPUT_DIR / f"{stem}_display_edges.tsv"
+        condition_rollups_path = OUTPUT_DIR / f"{stem}_condition_rollups.tsv"
+        body_site_rollups_path = OUTPUT_DIR / f"{stem}_body_site_rollups.tsv"
+        png_path = OUTPUT_DIR / f"{stem}.png"
+
+        edges.to_csv(edges_path, sep="\t", index=False)
+        display_edges.to_csv(display_edges_path, sep="\t", index=False)
+        condition_subset.to_csv(condition_rollups_path, sep="\t", index=False)
+        body_site_subset.to_csv(body_site_rollups_path, sep="\t", index=False)
+        plot_combined_direction_sankey(
+            display_edges,
+            focus_direction,
+            png_path,
+            title_prefix="Six shared traits, individual conditions",
+            subtitle_extra=(
+                "Conditions use raw individual labels; body sites keep grouped v3 labels."
+            ),
+            footer_extra=(
+                "Hybrid display mode keeps individual condition labels on the "
+                "left and grouped v3 body-site labels on the right. Same-trait "
+                "profiles from one condition into the same body-site group are "
+                "summed into one colored link."
+            ),
+            condition_axis_label="Individual conditions",
+            body_site_axis_label="Body-site display groups",
+            display_filter_note=(
+                "Display filtering uses the existing v3 thresholds after "
+                "aggregating by raw condition, grouped body-site label, and trait: "
+                f"at least {V3_MIN_FOCUS_ENRICHED_PROFILES} positive-z focus "
+                f"profiles and {MIN_STUDIES} studies where possible."
+            ),
+            color_scale_vmax=color_vmax,
+            subplot_top=0.855,
+            bundle_by_trait_at_body_site=True,
+        )
+
+        output_records.append(
+            {
+                "analysis": analysis_key,
+                "figure_type": "combined_individual_conditions",
+                "trait_id": "all",
+                "trait_label": "all six shared traits",
+                "trait_slug": "all",
+                "focus_direction": focus_label,
+                "trait_count": display_edges["trait_id"].nunique(),
+                "edge_count": len(edges),
+                "display_edge_count": len(display_edges),
+                "png_path": png_path.relative_to(REPO_ROOT).as_posix(),
+                "edges_path": edges_path.relative_to(REPO_ROOT).as_posix(),
+                "display_edges_path": display_edges_path.relative_to(REPO_ROOT).as_posix(),
+                "condition_rollups_path": condition_rollups_path.relative_to(REPO_ROOT).as_posix(),
+                "body_site_rollups_path": body_site_rollups_path.relative_to(REPO_ROOT).as_posix(),
             }
         )
     return pd.DataFrame.from_records(output_records)
@@ -1769,7 +2347,8 @@ def write_readme(summary: pd.DataFrame, output_manifest: pd.DataFrame) -> None:
         "",
         "These outputs render the six pooled paired-contrast traits with "
         "`q_value <= 0.001` as two combined condition-to-body-site Sankey maps "
-        "and twelve individual trait-direction Sankey maps.",
+        "plus readability variants and twelve individual trait-direction Sankey "
+        "maps.",
         "",
         "## Inputs",
         "",
@@ -1787,7 +2366,8 @@ def write_readme(summary: pd.DataFrame, output_manifest: pd.DataFrame) -> None:
         "",
         "## Combined Readability Variants",
         "",
-        "- `combined_direction`: original all-edge overlay for one profile direction.",
+        "- `combined_direction`: all-edge overlay for one profile direction, "
+        "with same-color links bundled into one summed trunk per body site.",
         "- `combined_trait_lanes`: option 1; one figure per direction with six stacked "
         "trait lanes, preserving all displayed trait-specific links while separating "
         "line crossings by trait.",
@@ -1796,6 +2376,11 @@ def write_readme(summary: pd.DataFrame, output_manifest: pd.DataFrame) -> None:
         f"selected from pairs shared by at least {SHARED_PATTERN_MIN_TRAITS} traits "
         f"or with at least {SHARED_PATTERN_HIGH_SUPPORT_MIN_PROFILES} positive-z "
         "focus profiles.",
+        "- `combined_individual_conditions`: one figure per direction with raw "
+        "individual condition labels on the left and grouped v3 body-site labels "
+        "on the right. Same-trait records from one condition into one body-site "
+        "group are summed into a single colored link, then bundled into one "
+        "body-site trunk per trait color.",
         "- `single_trait_direction`: individual one-trait, one-direction Sankeys.",
         "",
         "The combined maps retain the individual trait-direction edge records. "
@@ -1803,9 +2388,13 @@ def write_readme(summary: pd.DataFrame, output_manifest: pd.DataFrame) -> None:
         "condition/body-site link. The individual maps show one trait and one "
         "profile direction per figure. Curve width is the focus-direction "
         "positive-z profile count for that trait and shade is the mean positive "
-        "focus-profile z-score within that trait's monochrome scale. Light grey "
-        "underlays show the z <= 0 background for the same condition/body-site/"
-        "trait link.",
+        "focus-profile z-score. The overlay maps use the same numeric color "
+        "range for all six trait-specific monochrome scales. Light grey underlays "
+        "show the z <= 0 background for the same condition/body-site/trait link. "
+        "Parallel curves sharing a condition/body-site pair are ordered by edge "
+        "width from thickest to thinnest. In `combined_direction` and "
+        "`combined_individual_conditions`, links approaching each body-site node "
+        "merge into at most six colored trunks, one per trait color scale.",
         "",
         "Image node keys spell out the compact labels used in the PNGs: `n=` is "
         "positive-z focus-profile support, `s=` is the unique study count for "
@@ -1869,6 +2458,12 @@ def main() -> None:
     all_edges, display_edges, condition_rollups, body_site_rollups = build_trait_direction_tables(
         metadata, zscores
     )
+    (
+        individual_condition_edges,
+        individual_condition_display_edges,
+        individual_condition_rollups,
+        individual_condition_body_site_rollups,
+    ) = build_individual_condition_direction_tables(metadata, zscores)
     combined_manifest = write_direction_outputs(
         all_edges,
         display_edges,
@@ -1877,6 +2472,12 @@ def main() -> None:
     )
     trait_lane_manifest = write_trait_lane_outputs(all_edges, display_edges)
     shared_high_support_manifest = write_shared_high_support_outputs(all_edges, display_edges)
+    individual_condition_manifest = write_individual_condition_outputs(
+        individual_condition_edges,
+        individual_condition_display_edges,
+        individual_condition_rollups,
+        individual_condition_body_site_rollups,
+    )
     individual_manifest = write_individual_outputs(
         all_edges,
         display_edges,
@@ -1889,6 +2490,7 @@ def main() -> None:
             combined_manifest,
             trait_lane_manifest,
             shared_high_support_manifest,
+            individual_condition_manifest,
             individual_manifest,
         ],
         ignore_index=True,
@@ -1899,10 +2501,15 @@ def main() -> None:
         index=False,
     )
     write_readme(summary, output_manifest)
+    graph_manifest = write_six_shared_trait_graphs(OUTPUT_DIR, REPO_ROOT)
+    static_graph_manifest = write_six_shared_trait_static_graphs(OUTPUT_DIR)
 
     print(f"Wrote output directory: {OUTPUT_DIR}")
     print(f"Wrote PNGs: {len(output_manifest)}")
     print(f"Wrote manifest: {OUTPUT_DIR / 'six_shared_trait_sankey_manifest.tsv'}")
+    print(f"Wrote graph explorer: {OUTPUT_DIR / HTML_FILENAME}")
+    print(f"Wrote graph views: {len(graph_manifest)}")
+    print(f"Wrote static graph PNGs: {len(static_graph_manifest)}")
 
 
 if __name__ == "__main__":

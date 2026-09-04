@@ -1,0 +1,42 @@
+node_type	label	x	y	n	s	links	traits	trait_id	condition_count	body_site_count
+condition	Parkinson's disease	0.15	0.82	347	47	6	6.0			
+condition	Obesity	0.15	0.61	146	26	5	5.0			
+condition	Human papilloma virus infection	0.15	0.73	120	18	10	6.0			
+condition	Dry eye syndrome	0.15	0.6699999999999999	77	10	6	6.0			
+condition	Gastric cancer	0.15	0.7	109	9	10	6.0			
+condition	COVID-19	0.15	0.76	161	23	12	6.0			
+condition	Cervical glandular intraepithelial neoplasia	0.15	0.55	53	9	4	4.0			
+condition	Colorectal cancer	0.15	0.7899999999999999	292	44	22	6.0			
+condition	Rheumatoid arthritis	0.15	0.52	41	9	5	3.0			
+condition	Asthma	0.15	0.58	57	8	8	4.0			
+condition	Atopic eczema	0.15	0.34	16	7	2	1.0			
+condition	Glaucoma	0.15	0.64	61	5	10	6.0			
+condition	Crohn's disease	0.15	0.49	32	5	4	2.0			
+condition	Chronic constipation	0.15	0.43	32	11	1	1.0			
+condition	Diet	0.15	0.4	24	12	1	1.0			
+condition	Chronic obstructive pulmonary disease	0.15	0.25	5	3	1	1.0			
+condition	Ovarian cancer	0.15	0.46	26	3	2	2.0			
+condition	HIV infection	0.15	0.37	20	11	2	1.0			
+condition	Air pollution	0.15	0.19000000000000006	4	2	1	1.0			
+condition	Chronic hepatitis B virus infection	0.15	0.16	3	2	1	1.0			
+condition	Squamous cell carcinoma	0.15	0.28	6	4	1	1.0			
+condition	Cesarean section	0.15	0.31000000000000005	9	6	2	1.0			
+condition	Urinary tract infection	0.15	0.22000000000000008	4	2	1	1.0			
+trait	facultatively aerobic	0.46	0.72	369	180	22		METPO:1000608	12.0	9.0
+trait	cellulose catabolic process	0.56	0.72	198	107	17		METPO:2000103|GO:0030245	12.0	7.0
+trait	coccus shaped	0.44	0.52	336	153	21		METPO:1000668	12.0	8.0
+trait	sphere shaped	0.58	0.52	266	134	19		METPO:1000683	12.0	9.0
+trait	arsenate reduction	0.46	0.32	190	109	18		METPO:2000103|pathways:arsenate_reduction	12.0	7.0
+trait	moderately halophilic	0.56	0.32	286	146	20		METPO:1000623	12.0	10.0
+body_site	Feces	0.86	0.82	849	156	40	6.0			
+body_site	Vaginal / reproductive	0.86	0.76	178	27	12	6.0			
+body_site	Ocular / eye	0.86	0.58	119	12	11	6.0			
+body_site	Stomach / esophagus	0.86	0.46	90	7	6	6.0			
+body_site	Upper airway / nasal	0.86	0.64	125	20	11	6.0			
+body_site	Oral cavity / dental	0.86	0.7	144	22	20	6.0			
+body_site	Lower GI tract	0.86	0.52	95	17	9	6.0			
+body_site	Skin	0.86	0.34	9	4	1	1.0			
+body_site	Intestinal / GI mucosa	0.86	0.4	22	2	4	4.0			
+body_site	Lower airway / lung	0.86	0.28	5	3	1	1.0			
+body_site	Birth-associated samples	0.86	0.22000000000000008	5	4	1	1.0			
+body_site	Urinary tract	0.86	0.16	4	2	1	1.0			

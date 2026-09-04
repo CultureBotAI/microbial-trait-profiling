@@ -11,7 +11,6 @@ FIGURE_ROOT = REPO_ROOT / "trait-visualization" / "trait-profile-investigation"
 FOOTER_LINE_COLOR = (203, 213, 225)
 TOP_LABEL_FOLDERS: set[str] = set()
 UNLABELED_FIGURES = {
-    Path("profile_enrichment_guild_assignment_pre_direction_grid_summary.png"),
     Path("profile_enrichment_guild_assignment_summary.png"),
     Path("trait_profile_paired_contrast_infographic.png"),
 }
