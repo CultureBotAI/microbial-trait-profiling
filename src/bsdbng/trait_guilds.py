@@ -38,6 +38,40 @@ GRAM_GUILDS: dict[str, tuple[str, ...]] = {
     "gram negative": ("METPO:1000699",),
 }
 
+# The six traits of manuscript Table 1, each its own single-member group rather
+# than pooled into a guild. Slugs, display names, and colours are taken verbatim
+# from Jed's six_shared_trait_selection.tsv on origin/clustered-heatmap-generation
+# so the same trait is the same colour in both arms' manuscript figures.
+# Two of the six are carried in the profile matrix as METPO-qualified columns
+# (METPO:2000103|GO:0030245 and METPO:2000103|pathways:arsenate_reduction), which
+# is why term lookup below also matches the segment after the final pipe.
+TABLE1_TRAITS: dict[str, tuple[str, ...]] = {
+    "facultatively_aerobic": ("METPO:1000608",),
+    "cellulose_catabolic_process": ("GO:0030245",),
+    "coccus_shaped": ("METPO:1000668",),
+    "sphere_shaped": ("METPO:1000683",),
+    "arsenate_reduction": ("pathways:arsenate_reduction",),
+    "moderately_halophilic": ("METPO:1000623",),
+}
+
+TABLE1_TRAIT_LABELS: dict[str, str] = {
+    "facultatively_aerobic": "facultatively aerobic (METPO:1000608)",
+    "cellulose_catabolic_process": "cellulose catabolic process (GO:0030245)",
+    "coccus_shaped": "coccus shaped (METPO:1000668)",
+    "sphere_shaped": "sphere shaped (METPO:1000683)",
+    "arsenate_reduction": "arsenate reduction (pathways:arsenate_reduction)",
+    "moderately_halophilic": "moderately halophilic (METPO:1000623)",
+}
+
+TABLE1_TRAIT_COLORS: dict[str, str] = {
+    "facultatively_aerobic": "#0072b2",
+    "cellulose_catabolic_process": "#d55e00",
+    "coccus_shaped": "#009e73",
+    "sphere_shaped": "#cc79a7",
+    "arsenate_reduction": "#e69f00",
+    "moderately_halophilic": "#6a3d9a",
+}
+
 DIRECTIONS = ("inc", "dec")
 
 
@@ -117,6 +151,19 @@ def read_bugsigdb_vintage(full_dump_path: Path) -> str | None:
     return head or None
 
 
+def column_term_id(column: str) -> str:
+    """Return the term a profile column stands for.
+
+    Trait columns are either a bare CURIE (``METPO:1000608``) or a METPO-qualified
+    pair (``METPO:2000103|GO:0030245``). The qualifier says how the term was
+    attached, not which term it is, so lookups key on the segment after the final
+    pipe. Only ``mediadive.medium:372`` shares a suffix with another column across
+    the whole 2,654-column header, and MediaDive columns are dropped before any
+    lookup runs.
+    """
+    return column.rsplit("|", 1)[-1]
+
+
 def _select_trait_columns(
     header: list[str], guilds: dict[str, tuple[str, ...]]
 ) -> tuple[list[int], dict[str, list[int]], int]:
@@ -124,6 +171,7 @@ def _select_trait_columns(
     wanted: dict[str, set[str]] = {g: set(ids) for g, ids in guilds.items()}
     total_positions: list[int] = []
     guild_positions: dict[str, list[int]] = {guild: [] for guild in guilds}
+    matched_columns: defaultdict[tuple[str, str], list[str]] = defaultdict(list)
     mediadive_excluded = 0
 
     for index, column in enumerate(header):
@@ -133,14 +181,26 @@ def _select_trait_columns(
             mediadive_excluded += 1
             continue
         total_positions.append(index)
+        term = column_term_id(column)
         for guild, ids in wanted.items():
-            if column in ids:
+            if column in ids or term in ids:
                 guild_positions[guild].append(index)
+                matched_columns[(guild, column if column in ids else term)].append(column)
 
     for guild, positions in guild_positions.items():
         if not positions:
             msg = f"No trait column in the profile matrix matches guild {guild!r}"
             raise ValueError(msg)
+
+    # Orthogonal check: a term that resolved to more than one column would be
+    # counted twice in the guild sum and once in the denominator.
+    ambiguous = {key: cols for key, cols in matched_columns.items() if len(cols) > 1}
+    if ambiguous:
+        detail = "; ".join(
+            f"{guild}/{term} -> {sorted(cols)}" for (guild, term), cols in sorted(ambiguous.items())
+        )
+        msg = f"Trait terms resolved to more than one profile column: {detail}"
+        raise ValueError(msg)
 
     return total_positions, guild_positions, mediadive_excluded
 

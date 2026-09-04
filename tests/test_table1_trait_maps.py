@@ -1,0 +1,221 @@
+"""Table 1 trait selection, the paired directional shift, and its FDR control."""
+
+from pathlib import Path
+
+import pytest
+from scipy.stats import binomtest, false_discovery_control
+
+from bsdbng.guild_maps import build_matrix
+from bsdbng.table1_trait_maps import TRAIT_ORDER, compute_direction_shifts, trait_colorscale
+from bsdbng.trait_guilds import (
+    TABLE1_TRAIT_COLORS,
+    TABLE1_TRAIT_LABELS,
+    TABLE1_TRAITS,
+    column_term_id,
+    load_profiles,
+)
+
+# Two of the six traits reach the profile matrix behind a METPO qualifier, so the
+# fixture uses the qualified spelling to prove the suffix lookup is what resolves
+# them. The other four are bare CURIEs, as in the real header.
+QUALIFIED_CELLULOSE = "METPO:2000103|GO:0030245"
+QUALIFIED_ARSENATE = "METPO:2000103|pathways:arsenate_reduction"
+TRAIT_COLUMNS = [
+    "METPO:1000608",
+    QUALIFIED_CELLULOSE,
+    "METPO:1000668",
+    "METPO:1000683",
+    QUALIFIED_ARSENATE,
+    "METPO:1000623",
+]
+OTHER_COLUMN = "METPO:1000615"
+MEDIA_COLUMN = "METPO:2000517|mediadive.medium:J14"
+
+
+def _write_profiles(path: Path, rows: list[tuple[str, str, str, list[int]]]) -> None:
+    header = ["study_id", "experiment_id", "inc_dec", *TRAIT_COLUMNS, OTHER_COLUMN, MEDIA_COLUMN]
+    lines = ["\t".join(header)]
+    for study_id, experiment_id, inc_dec, values in rows:
+        lines.append("\t".join([study_id, experiment_id, inc_dec, *[str(v) for v in values]]))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_experiments(path: Path, rows: list[tuple[str, str, str, str, str]]) -> None:
+    header = ["study_id", "experiment_id", "condition", "body_site", "host_species"]
+    lines = ["\t".join(header)]
+    for row in rows:
+        lines.append("\t".join(row))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+@pytest.fixture
+def corpus(tmp_path: Path) -> tuple[Path, Path]:
+    """Three paired human studies with a deliberate per-trait direction pattern.
+
+    Cells are counts and the figure works in fractions, so the balancing
+    non-guild column is set to give each study the same total on both sides.
+    Otherwise a trait with identical counts either side would still register a
+    shift, purely because the two denominators differ. That gives, per trait:
+    facultatively aerobic up in all three studies, cellulose catabolic process
+    down in all three, coccus shaped two up and one down, sphere shaped tied in
+    every study, arsenate reduction one up and two ties, moderately halophilic
+    one up, one down, and one tie.
+    """
+    profiles = tmp_path / "profiles.tsv"
+    experiments = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles,
+        [
+            # fac_aer, cellulose, coccus, sphere, arsenate, halophilic, other, media
+            ("bsdb:1", "bsdb:1-1", "inc", [8, 1, 6, 2, 0, 3, 5, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [2, 7, 2, 2, 0, 3, 9, 100]),
+            ("bsdb:2", "bsdb:2-1", "inc", [9, 0, 7, 1, 4, 2, 4, 100]),
+            ("bsdb:2", "bsdb:2-1", "dec", [3, 6, 3, 1, 1, 5, 8, 100]),
+            ("bsdb:3", "bsdb:3-1", "inc", [7, 2, 1, 3, 2, 4, 6, 100]),
+            ("bsdb:3", "bsdb:3-1", "dec", [1, 9, 5, 3, 2, 1, 4, 100]),
+            # Unpaired and non-human rows, dropped by the shared corpus filters.
+            ("bsdb:4", "bsdb:4-1", "inc", [5, 5, 5, 5, 5, 5, 5, 100]),
+            ("bsdb:5", "bsdb:5-1", "inc", [9, 0, 9, 0, 9, 0, 1, 100]),
+            ("bsdb:5", "bsdb:5-1", "dec", [0, 9, 0, 9, 0, 9, 1, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments,
+        [
+            ("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens"),
+            ("bsdb:2", "bsdb:2-1", "Colorectal cancer", "Feces", "Homo sapiens"),
+            ("bsdb:3", "bsdb:3-1", "Asthma", "Feces", "Homo sapiens"),
+            ("bsdb:4", "bsdb:4-1", "Asthma", "Feces", "Homo sapiens"),
+            ("bsdb:5", "bsdb:5-1", "Colitis", "Caecum", "Mus musculus"),
+        ],
+    )
+    return profiles, experiments
+
+
+def test_table1_definitions_cover_the_six_manuscript_traits() -> None:
+    assert TRAIT_ORDER == (
+        "facultatively_aerobic",
+        "cellulose_catabolic_process",
+        "coccus_shaped",
+        "sphere_shaped",
+        "arsenate_reduction",
+        "moderately_halophilic",
+    )
+    assert set(TABLE1_TRAIT_LABELS) == set(TRAIT_ORDER)
+    assert set(TABLE1_TRAIT_COLORS) == set(TRAIT_ORDER)
+    # Every trait is a single term: these are traits, not pooled guilds.
+    assert all(len(ids) == 1 for ids in TABLE1_TRAITS.values())
+    assert trait_colorscale("coccus_shaped") == [[0.0, "#ffffff"], [1.0, "#009e73"]]
+
+
+def test_qualified_columns_resolve_by_term_suffix(corpus: tuple[Path, Path]) -> None:
+    """GO:0030245 reaches the matrix as METPO:2000103|GO:0030245 and must still match."""
+    assert column_term_id(QUALIFIED_CELLULOSE) == "GO:0030245"
+    assert column_term_id("METPO:1000608") == "METPO:1000608"
+
+    profiles, stats = load_profiles(*corpus, TABLE1_TRAITS)
+    inc = next(p for p in profiles if p.study_id == "bsdb:2" and p.inc_dec == "inc")
+
+    assert inc.guild_counts["cellulose_catabolic_process"] == 0
+    assert inc.guild_counts["arsenate_reduction"] == 4
+    assert inc.guild_counts["facultatively_aerobic"] == 9
+    # The MediaDive column is excluded from the denominator, the other trait is not.
+    assert inc.total == 9 + 0 + 7 + 1 + 4 + 2 + 4
+    assert inc.fraction("arsenate_reduction") == pytest.approx(4 / 27)
+    assert stats.mediadive_columns_excluded == 1
+    assert stats.dropped_non_human == 2
+    assert stats.dropped_unpaired == 1
+
+
+def test_ambiguous_term_lookup_raises(tmp_path: Path) -> None:
+    """A term matching two columns would be summed twice; that must fail loudly."""
+    profiles = tmp_path / "profiles.tsv"
+    experiments = tmp_path / "experiments.tsv"
+    header = ["study_id", "experiment_id", "inc_dec", "METPO:1000608", "METPO:9999|METPO:1000608"]
+    profiles.write_text(
+        "\t".join(header) + "\nbsdb:1\tbsdb:1-1\tinc\t3\t3\n",
+        encoding="utf-8",
+    )
+    _write_experiments(experiments, [("bsdb:1", "bsdb:1-1", "Asthma", "Feces", "Homo sapiens")])
+
+    with pytest.raises(ValueError, match="more than one profile column"):
+        load_profiles(profiles, experiments, {"facultatively_aerobic": ("METPO:1000608",)})
+
+
+def test_matrix_unrolls_six_traits_per_body_site(corpus: tuple[Path, Path]) -> None:
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    matrix = build_matrix(
+        profiles,
+        max_conditions=10,
+        max_body_sites=10,
+        min_studies=1,
+        guild_order=TRAIT_ORDER,
+    )
+
+    # Two body sites survive (Feces and the Other bucket), each contributing six
+    # traits times two directions.
+    assert len(matrix.columns) == len(matrix.body_sites) * len(TRAIT_ORDER) * 2
+    assert "Feces|facultatively_aerobic_inc" in matrix.columns
+    assert "Feces|cellulose_catabolic_process_dec" in matrix.columns
+
+
+def test_direction_shift_counts_studies_and_matches_scipy(corpus: tuple[Path, Path]) -> None:
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    result = compute_direction_shifts(profiles, TRAIT_ORDER)
+    by_trait = {shift.trait: shift for shift in result.shifts}
+
+    assert result.studies == 3
+
+    aerobic = by_trait["facultatively_aerobic"]
+    assert (aerobic.studies_up, aerobic.studies_down, aerobic.studies_tied) == (3, 0, 0)
+    assert aerobic.share_up == pytest.approx(1.0)
+
+    cellulose = by_trait["cellulose_catabolic_process"]
+    assert (cellulose.studies_up, cellulose.studies_down) == (0, 3)
+    assert cellulose.share_up == pytest.approx(0.0)
+
+    coccus = by_trait["coccus_shaped"]
+    assert (coccus.studies_up, coccus.studies_down) == (2, 1)
+
+    # Sphere shaped holds the same fraction on both sides of every experiment, so
+    # every study ties and none is scored; the trait must not silently vanish.
+    sphere = by_trait["sphere_shaped"]
+    assert (sphere.studies_up, sphere.studies_down, sphere.studies_tied) == (0, 0, 3)
+    assert sphere.studies_scored == 0
+    assert sphere.p_value == 1.0
+
+    # Ties are excluded from the test rather than split between the two sides.
+    arsenate = by_trait["arsenate_reduction"]
+    assert (arsenate.studies_up, arsenate.studies_down, arsenate.studies_tied) == (1, 0, 2)
+    assert arsenate.studies_scored == 1
+    halophilic = by_trait["moderately_halophilic"]
+    assert (halophilic.studies_up, halophilic.studies_down, halophilic.studies_tied) == (1, 1, 1)
+
+    # Golden values: the p-values must equal scipy's exact binomial test, and the
+    # q-values scipy's Benjamini-Hochberg over the same six p-values in order.
+    expected_p = [
+        float(binomtest(by_trait[t].studies_up, by_trait[t].studies_scored, p=0.5).pvalue)
+        if by_trait[t].studies_scored
+        else 1.0
+        for t in TRAIT_ORDER
+    ]
+    expected_q = [float(q) for q in false_discovery_control(expected_p, method="bh")]
+    assert [by_trait[t].p_value for t in TRAIT_ORDER] == pytest.approx(expected_p)
+    assert [by_trait[t].q_value for t in TRAIT_ORDER] == pytest.approx(expected_q)
+    assert aerobic.p_value == pytest.approx(0.25)
+
+
+def test_contrast_correlation_is_computed_across_studies(corpus: tuple[Path, Path]) -> None:
+    """Trait pairs correlate over per-study contrasts, not within a profile total."""
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    result = compute_direction_shifts(profiles, TRAIT_ORDER)
+
+    key = "facultatively_aerobic~cellulose_catabolic_process"
+    assert key in result.spearman
+    rho, _, n_studies = result.spearman[key]
+    assert n_studies == 3
+    assert -1.0 <= rho <= 1.0
+
+    # Sphere shaped has the same contrast in every study, so Spearman is
+    # undefined against it; the pair is omitted rather than written as nan.
+    assert not [k for k in result.spearman if "sphere_shaped" in k]

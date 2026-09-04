@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import csv
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -133,8 +134,14 @@ def build_matrix(
     max_body_sites: int,
     min_studies: int,
     n_clusters: int = 6,
+    guild_order: Sequence[str] = GUILD_ORDER,
 ) -> GuildMatrix:
-    """Aggregate profiles into the condition x (body site x guild x direction) grid."""
+    """Aggregate profiles into the condition x (group x direction) grid per body site.
+
+    ``guild_order`` names the trait groups to unroll into columns. It is the two
+    oxygen guilds by default and the six Table 1 traits for the Table 1 figure;
+    the aggregation, masking, and clustering are identical either way.
+    """
     condition_counts: defaultdict[str, int] = defaultdict(int)
     body_site_counts: defaultdict[str, int] = defaultdict(int)
     for profile in profiles:
@@ -159,7 +166,7 @@ def build_matrix(
         body_site = _binned(profile.body_site, keep_body_sites)
         if condition is None or body_site is None:
             continue
-        for guild in GUILD_ORDER:
+        for guild in guild_order:
             key = (condition, body_site, f"{guild}_{profile.inc_dec}")
             per_study[key][profile.study_id].append(profile.fraction(guild))
 
@@ -168,7 +175,7 @@ def build_matrix(
     columns = [
         f"{site}|{guild}_{direction}"
         for site in body_sites
-        for guild in GUILD_ORDER
+        for guild in guild_order
         for direction in DIRECTIONS
     ]
 
@@ -180,7 +187,7 @@ def build_matrix(
         count_row: list[int] = []
         blank_row: list[bool] = []
         for site in body_sites:
-            for guild in GUILD_ORDER:
+            for guild in guild_order:
                 for direction in DIRECTIONS:
                     by_study: dict[str, list[float]] = per_study.get(
                         (condition, site, f"{guild}_{direction}"), {}
@@ -236,12 +243,14 @@ class CorrelationResult:
     studies: int
 
 
-def _study_direction_means(profiles: list[Profile]) -> dict[str, dict[str, float]]:
+def study_direction_means(
+    profiles: list[Profile], guild_order: Sequence[str] = GUILD_ORDER
+) -> dict[str, dict[str, float]]:
     """Mean guild fraction per study and direction, collapsing repeated experiments."""
     sums: defaultdict[str, defaultdict[str, float]] = defaultdict(lambda: defaultdict(float))
     counts: defaultdict[str, defaultdict[str, int]] = defaultdict(lambda: defaultdict(int))
     for profile in profiles:
-        for guild in GUILD_ORDER:
+        for guild in guild_order:
             key = f"{guild}_{profile.inc_dec}"
             sums[profile.study_id][key] += profile.fraction(guild)
             counts[profile.study_id][key] += 1
@@ -260,7 +269,7 @@ def compute_correlation(profiles: list[Profile], matrix: GuildMatrix) -> Correla
     Counting non-zero signal instead would put nearly every study in every cell and
     drive the odds ratio to 1 regardless of the data.
     """
-    study_means = _study_direction_means(profiles)
+    study_means = study_direction_means(profiles)
 
     table = {f"{guild}_{d}": 0 for guild in GUILD_ORDER for d in DIRECTIONS}
     for per_key in study_means.values():
@@ -318,13 +327,14 @@ def _write_matrix_tsv(path: Path, matrix: GuildMatrix, rows: list[list[str]]) ->
             writer.writerow([condition, *row])
 
 
-def write_outputs(
-    matrix: GuildMatrix,
-    correlation: CorrelationResult,
-    output_dir: Path,
-    vintage: str | None,
+def write_matrix_outputs(
+    matrix: GuildMatrix, output_dir: Path, prefix: str = "guild"
 ) -> list[Path]:
-    """Write the value matrix, the study-count matrix, and the statistics table."""
+    """Write the value matrix, the study-count matrix, cell status, and row clusters.
+
+    Shared by the oxygen guild figure and the Table 1 trait figure so the two
+    read from one implementation; only the file-name prefix differs.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     value_rows = [["" if v is None else f"{v:.6f}" for v in row] for row in matrix.values]
     count_rows = [[str(c) for c in row] for row in matrix.study_counts]
@@ -343,11 +353,10 @@ def write_outputs(
         )
     ]
 
-    values_path = output_dir / "guild_condition_body_site_matrix.tsv"
-    status_path = output_dir / "guild_condition_body_site_cell_status.tsv"
-    clusters_path = output_dir / "guild_condition_row_clusters.tsv"
-    counts_path = output_dir / "guild_condition_body_site_study_counts.tsv"
-    stats_path = output_dir / "guild_aerobe_anaerobe_correlation.tsv"
+    values_path = output_dir / f"{prefix}_condition_body_site_matrix.tsv"
+    status_path = output_dir / f"{prefix}_condition_body_site_cell_status.tsv"
+    clusters_path = output_dir / f"{prefix}_condition_row_clusters.tsv"
+    counts_path = output_dir / f"{prefix}_condition_body_site_study_counts.tsv"
 
     _write_matrix_tsv(values_path, matrix, value_rows)
     _write_matrix_tsv(counts_path, matrix, count_rows)
@@ -360,6 +369,19 @@ def write_outputs(
             zip(matrix.conditions, matrix.row_clusters, strict=True), start=1
         ):
             writer.writerow([order, condition, cluster])
+
+    return [values_path, counts_path, status_path, clusters_path]
+
+
+def write_outputs(
+    matrix: GuildMatrix,
+    correlation: CorrelationResult,
+    output_dir: Path,
+    vintage: str | None,
+) -> list[Path]:
+    """Write the value matrix, the study-count matrix, and the statistics table."""
+    written = write_matrix_outputs(matrix, output_dir)
+    stats_path = output_dir / "guild_aerobe_anaerobe_correlation.tsv"
 
     with stats_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
@@ -388,7 +410,7 @@ def write_outputs(
                 ]
             )
 
-    return [values_path, counts_path, status_path, clusters_path, stats_path]
+    return [*written, stats_path]
 
 
 GUILD_COLORSCALES = {"aerobe": "OrRd", "anaerobe": "YlGn"}
@@ -399,6 +421,29 @@ CLUSTER_GAP_ROWS = 1
 def _guild_of_column(column: str) -> str:
     """Return the guild encoded in a `site|guild_direction` column label."""
     return column.split("|", 1)[1].rsplit("_", 1)[0]
+
+
+def _site_of_column(column: str) -> str:
+    """Return the body site encoded in a `site|guild_direction` column label."""
+    return column.split("|", 1)[0]
+
+
+def _upper_range(values: list[float], quantile: float) -> float:
+    """Top of a colour range: the quantile of observed values, or their maximum.
+
+    With one heavily sampled body site and a long tail of lightly sampled ones, a
+    single extreme cell sets the maximum and flattens every other cell to nearly
+    the same pale tint. Cutting the ramp at a high quantile restores contrast in
+    the body of the distribution; cells above the cut saturate at the top colour
+    and the cut is stated on the figure.
+    """
+    if not values:
+        return 1.0
+    if quantile >= 1.0:
+        return max(values)
+    ordered = sorted(values)
+    index = min(len(ordered) - 1, max(0, round(quantile * (len(ordered) - 1))))
+    return ordered[index] or max(ordered)
 
 
 def _insert_cluster_gaps(
@@ -431,44 +476,75 @@ def _insert_cluster_gaps(
     return labels, values, blanks
 
 
-def write_figure(matrix: GuildMatrix, output_path: Path, vintage: str | None) -> Path:
-    """Render the heatmap with one colour scale per guild over a shared range.
+def write_figure(
+    matrix: GuildMatrix,
+    output_path: Path,
+    vintage: str | None,
+    *,
+    guild_order: Sequence[str] = GUILD_ORDER,
+    colorscales: dict[str, object] | None = None,
+    title: str = "Oxygen guilds by condition and body site",
+    group_noun: str = "guild",
+    value_phrase: str = "guild trait fraction",
+    shared_range: bool = True,
+    colorbar_labels: dict[str, str] | None = None,
+    range_quantile: float = 1.0,
+    separate_body_sites: bool = False,
+) -> Path:
+    """Render the heatmap with one colour scale per trait group.
 
-    Aerobe and anaerobe are drawn as two overlaid traces so each guild keeps its
-    own hue, but both use the range 0 to the larger of the two maxima, so a cell
-    in one guild is directly comparable in magnitude to a cell in the other.
-    Cells where the site was sampled but carried no guild trait are filled dark
-    grey, so an absent guild is distinguishable from a small fraction.
+    Each group is drawn as its own overlaid trace so it keeps its own hue. With
+    ``shared_range`` the traces share the range 0 to the largest observed value,
+    which makes a cell in one group directly comparable in magnitude to a cell in
+    another; that only holds where the groups are commensurable, as the two oxygen
+    guilds are. The Table 1 traits differ in corpus-wide prevalence by more than
+    an order of magnitude, so they are drawn on per-trait ranges instead and each
+    colour bar carries its own maximum.
+
+    Cells where the site was sampled but carried no trait of the group are filled
+    dark grey, so an absent trait is distinguishable from a small fraction.
     """
     import plotly.graph_objects as go
 
+    scales: dict[str, object] = dict(GUILD_COLORSCALES) if colorscales is None else colorscales
+    labels = colorbar_labels or {}
     row_labels, row_values, row_blanks = _insert_cluster_gaps(matrix)
     observed = [v for row in row_values for v in row if v is not None]
-    z_max = max(observed) if observed else 1.0
+    z_max = _upper_range(observed, range_quantile)
 
-    figure = go.Figure()
-    for position, guild in enumerate(GUILD_ORDER):
-        z_guild: list[list[float | None]] = [
+    per_group: dict[str, list[list[float | None]]] = {}
+    for guild in guild_order:
+        per_group[guild] = [
             [
                 value if _guild_of_column(column) == guild else None
                 for column, value in zip(matrix.columns, row, strict=True)
             ]
             for row in row_values
         ]
+
+    figure = go.Figure()
+    count = len(guild_order)
+    bar_len = min(0.42, 0.92 / count)
+    for position, guild in enumerate(guild_order):
+        z_guild = per_group[guild]
+        group_values = [v for row in z_guild for v in row if v is not None]
+        scale_max = z_max if shared_range else _upper_range(group_values, range_quantile)
+        # Evenly space the colour bars down the right margin, top group first.
+        centre = 0.5 + (count - 1) / 2.0 * (bar_len + 0.04) - position * (bar_len + 0.04)
         figure.add_trace(
             go.Heatmap(
                 z=z_guild,
                 x=matrix.columns,
                 y=row_labels,
-                colorscale=GUILD_COLORSCALES[guild],
+                colorscale=scales[guild],
                 zmin=0.0,
-                zmax=z_max,
+                zmax=scale_max,
                 hoverongaps=False,
                 name=guild,
                 colorbar={
-                    "title": f"{guild}<br>fraction",
-                    "len": 0.42,
-                    "y": 0.79 - 0.46 * position,
+                    "title": f"{labels.get(guild, guild)}<br>fraction",
+                    "len": bar_len,
+                    "y": centre,
                     "yanchor": "middle",
                     "thickness": 14,
                 },
@@ -493,22 +569,61 @@ def write_figure(matrix: GuildMatrix, output_path: Path, vintage: str | None) ->
         if sampled
     ]
 
+    if separate_body_sites:
+        # One rule between body-site blocks. With six traits times two directions
+        # per site the blocks otherwise run together and the x labels are the only
+        # thing telling the reader where one body site ends.
+        boundaries = [
+            index
+            for index in range(1, len(matrix.columns))
+            if _site_of_column(matrix.columns[index]) != _site_of_column(matrix.columns[index - 1])
+        ]
+        shapes.extend(
+            {
+                "type": "line",
+                "xref": "x",
+                "yref": "paper",
+                "x0": index - 0.5,
+                "x1": index - 0.5,
+                "y0": 0,
+                "y1": 1,
+                "line": {"color": "#666666", "width": 1},
+                "layer": "above",
+            }
+            for index in boundaries
+        )
+
     n_clusters = len(set(matrix.row_clusters))
-    subtitle = (
-        "Mean guild trait fraction, averaged within study then across studies. "
-        f"Both scales span 0 to {z_max:.3f}. Rows clustered by Euclidean distance into "
-        f"{n_clusters} groups, separated by blank rows. "
-        "Dark grey = site sampled for that condition but no taxon carried the guild trait. "
-        f"BugSigDB {vintage or 'vintage unknown'}."
+    range_note = (
+        f"All scales span 0 to {z_max:.3f}."
+        if shared_range
+        else f"Each {group_noun} is on its own scale; read magnitudes within a {group_noun}, "
+        "not across them."
+    )
+    if range_quantile < 1.0:
+        range_note += (
+            f" Ramps are cut at the {range_quantile:.0%} quantile of observed cells; "
+            "cells above it saturate."
+        )
+    # Broken into explicit lines: as one run the subtitle overflows the plotting
+    # area and is clipped by the right-hand colour bars.
+    subtitle = "<br>".join(
+        [
+            f"Mean {value_phrase}, averaged within study then across studies. {range_note}",
+            f"Rows clustered by Euclidean distance into {n_clusters} groups, separated by "
+            "blank rows. Dark grey = site sampled for that condition but no taxon carried "
+            f"the {group_noun}.",
+            f"BugSigDB {vintage or 'vintage unknown'}.",
+        ]
     )
     figure.update_layout(
-        title={"text": f"Oxygen guilds by condition and body site<br><sub>{subtitle}</sub>"},
-        xaxis={"title": "body site | guild _ direction", "tickangle": -60},
+        title={"text": f"{title}<br><sub>{subtitle}</sub>"},
+        xaxis={"title": f"body site | {group_noun} _ direction", "tickangle": -60},
         yaxis={"title": "condition", "autorange": "reversed"},
         shapes=shapes,
         width=max(900, 26 * len(matrix.columns)),
-        height=max(600, 26 * len(row_labels) + 300),
-        margin={"l": 300, "b": 300},
+        height=max(600, 26 * len(row_labels) + 340),
+        margin={"l": 300, "b": 300, "t": 160},
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.write_image(str(output_path), scale=2)
