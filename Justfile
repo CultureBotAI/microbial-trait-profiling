@@ -187,7 +187,19 @@ analyze-site SITE: study-trait-profiles
 	  --overall-output data/derived/sites/{{SITE}}/trait_enrichment_traits_overall_ranked.tsv \
 	  --pair-output data/derived/sites/{{SITE}}/trait_enrichment_trait_study_pairs_ranked.tsv
 
-pipeline: download ingest analyze genheatmap plot-histograms
+# Generate grouped 6-trait Sankey diagrams for decreased and increased profiles.
+six-trait-sankey: analyze
+	just timed six-trait-sankey "uv run python scripts/generate_six_trait_sankey.py --direction both"
+
+# Generate Cytoscape-inspired tripartite network diagrams for decreased and increased profiles.
+cytoscape-diagram: analyze
+	just timed cytoscape-diagram "uv run python scripts/generate_cytoscape_diagram.py --direction both"
+
+# Generate the profile enrichment guild assignment workflow infographic diagram
+workflow-diagram:
+	just timed workflow-diagram "uv run python scripts/create_profile_enrichment_guild_assignment_diagram.py"
+
+pipeline: download ingest analyze genheatmap plot-histograms six-trait-sankey cytoscape-diagram workflow-diagram
 
 # --- linkml-store over MongoDB (localhost:27017/bsdbng.studies) ---
 # Run once to populate the collection:

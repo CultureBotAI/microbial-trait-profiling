@@ -25,25 +25,32 @@ GUILDS = {
 MIN_PROFILES = 3
 MIN_STUDIES = 2
 
+# Colors
+COLOR_INC = "rgba(214, 39, 40, 0.65)"  # Red for increased
+COLOR_DEC = "rgba(31, 119, 180, 0.65)"  # Blue for decreased
+COLOR_NONE = "rgba(180, 180, 180, 0.30)"  # Gray for no enrichment
 
-def generate_guild_sankey(df, guild_name, direction, title):
-    # Filter for guild traits and direction
+
+def generate_single_guild_sankey_with_background(
+    enrich_df, total_counts_df, guild_name, direction, title
+):
     guild_traits = GUILDS[guild_name]
-    g_df = df[(df["trait"].isin(guild_traits)) & (df["inc_dec"] == direction)].copy()
+    g_df = enrich_df[
+        (enrich_df["trait"].isin(guild_traits)) & (enrich_df["inc_dec"] == direction)
+    ].copy()
 
     if g_df.empty:
         print(f"No data for {guild_name} in {direction} direction.")
         return
 
-    # Aggregate by profile to handle multiple guild hits in one profile
+    # Profile-level aggregation for enriched
     profile_level = (
         g_df.groupby(["condition", "body_site", "study_id", "profile_id"])
         .agg(max_fold=("fold", "max"))
         .reset_index()
     )
 
-    # Aggregate for the Sankey edges
-    edge_stats = (
+    enriched_edges = (
         profile_level.groupby(["condition", "body_site"])
         .agg(
             n_profiles=("profile_id", "nunique"),
@@ -53,25 +60,35 @@ def generate_guild_sankey(df, guild_name, direction, title):
         .reset_index()
     )
 
-    # Filter by support thresholds
-    edge_stats = edge_stats[
-        (edge_stats["n_profiles"] >= MIN_PROFILES) & (edge_stats["s_studies"] >= MIN_STUDIES)
-    ]
+    # Filter by support thresholds for enriched edges
+    qualifying_pairs = enriched_edges[
+        (enriched_edges["n_profiles"] >= MIN_PROFILES)
+        & (enriched_edges["s_studies"] >= MIN_STUDIES)
+    ][["condition", "body_site"]].drop_duplicates()
 
-    if edge_stats.empty:
+    if qualifying_pairs.empty:
         print(f"No edges meet thresholds for {guild_name} ({direction}).")
         return
 
-    # Order Conditions: thickest (top) to thinnest (bottom)
+    # Merge with total counts to compute non-enriched parallel edges
+    merged = pd.merge(qualifying_pairs, total_counts_df, on=["condition", "body_site"], how="left")
+    merged = pd.merge(
+        merged,
+        enriched_edges[["condition", "body_site", "n_profiles", "s_studies", "mean_fold"]],
+        on=["condition", "body_site"],
+        how="left",
+    )
+    merged["n_profiles"] = merged["n_profiles"].fillna(0).astype(int)
+    merged["n_no_enrich"] = (merged["total_profiles"] - merged["n_profiles"]).clip(lower=0)
+
     cond_order = (
-        edge_stats.groupby("condition")["n_profiles"]
+        merged.groupby("condition")["total_profiles"]
         .sum()
         .sort_values(ascending=False)
         .index.tolist()
     )
-    # Order Body Sites: thickest (top) to thinnest (bottom)
     site_order = (
-        edge_stats.groupby("body_site")["n_profiles"]
+        merged.groupby("body_site")["total_profiles"]
         .sum()
         .sort_values(ascending=False)
         .index.tolist()
@@ -80,39 +97,39 @@ def generate_guild_sankey(df, guild_name, direction, title):
     all_nodes = cond_order + site_order
     node_map = {node: i for i, node in enumerate(all_nodes)}
 
-    sources = [node_map[c] for c in edge_stats["condition"]]
-    targets = [node_map[s] for s in edge_stats["body_site"]]
-    values = edge_stats["n_profiles"].tolist()
+    sources = []
+    targets = []
+    values = []
+    edge_colors = []
 
-    # Color scale (Red-Blue)
-    max_f = edge_stats["mean_fold"].max()
-    min_f = edge_stats["mean_fold"].min()
+    for _, row in merged.iterrows():
+        c_idx = node_map[row["condition"]]
+        s_idx = node_map[row["body_site"]]
 
-    def get_color(val):
-        norm = (val - min_f) / (max_f - min_f) if max_f != min_f else 0.5
-        alpha = 0.6
-        intensity = 0.3 + (norm * 0.7)
-        r = int(180 * intensity)
-        g = int(50 * (1 - intensity))
-        b = int(50 * (1 - intensity))
-        return f"rgba({r}, {g}, {b}, {alpha})"
+        # Enriched link
+        if row["n_profiles"] > 0:
+            sources.append(c_idx)
+            targets.append(s_idx)
+            values.append(int(row["n_profiles"]))
+            edge_colors.append(COLOR_INC if direction == "inc" else COLOR_DEC)
 
-    edge_colors = [get_color(f) for f in edge_stats["mean_fold"]]
+        # Non-enriched parallel link
+        if row["n_no_enrich"] > 0:
+            sources.append(c_idx)
+            targets.append(s_idx)
+            values.append(int(row["n_no_enrich"]))
+            edge_colors.append(COLOR_NONE)
 
     # Node Labels
     node_labels = []
     for node in all_nodes:
-        n = (
-            edge_stats[edge_stats["condition"] == node]["n_profiles"].sum()
-            if node in cond_order
-            else edge_stats[edge_stats["body_site"] == node]["n_profiles"].sum()
-        )
-        s = (
-            edge_stats[edge_stats["condition"] == node]["s_studies"].sum()
-            if node in cond_order
-            else edge_stats[edge_stats["body_site"] == node]["s_studies"].sum()
-        )
-        node_labels.append(f"{node}<br>n={n}, s={s}")
+        if node in cond_order:
+            n = merged[merged["condition"] == node]["total_profiles"].sum()
+            s = merged[merged["condition"] == node]["total_studies"].max()
+        else:
+            n = merged[merged["body_site"] == node]["total_profiles"].sum()
+            s = merged[merged["body_site"] == node]["total_studies"].max()
+        node_labels.append(f"{node}<br>total n={n}, s={s}")
 
     fig = go.Figure(
         data=[
@@ -125,42 +142,291 @@ def generate_guild_sankey(df, guild_name, direction, title):
                     "color": "lightgray",
                 },
                 link={"source": sources, "target": targets, "value": values, "color": edge_colors},
-                arrangement="fixed",  # Crucial to maintain our calculated order
+                arrangement="fixed",
             )
         ]
     )
 
-    # Add custom positions to force vertical order
-    # x=0 for conditions, x=1 for sites
-    # y ranges from 0 (top) to 1 (bottom)
     node_x = [0.01] * len(cond_order) + [0.99] * len(site_order)
 
-    # Calculate spacing for y
     def get_y_pos(counts):
         total = sum(counts)
+        if total == 0:
+            return [0.5] * len(counts)
         y = []
         curr = 0
         for c in counts:
-            # Center of the block
             y.append((curr + c / 2) / total)
             curr += c
         return y
 
-    cond_y = get_y_pos(edge_stats.groupby("condition")["n_profiles"].sum().loc[cond_order].tolist())
-    site_y = get_y_pos(edge_stats.groupby("body_site")["n_profiles"].sum().loc[site_order].tolist())
-    node_y = cond_y + site_y
+    cond_y = get_y_pos(merged.groupby("condition")["total_profiles"].sum().loc[cond_order].tolist())
+    site_y = get_y_pos(merged.groupby("body_site")["total_profiles"].sum().loc[site_order].tolist())
+    fig.data[0].node.x = node_x
+    fig.data[0].node.y = cond_y + site_y
+
+    color_desc = "Red" if direction == "inc" else "Blue"
+    subtitle = (
+        f"<span style='font-size:10px'>Colored links: {direction}reased enrichment ({color_desc}). "
+        "Gray links: no enrichment.</span>"
+    )
+    fig.update_layout(
+        title_text=f"<b>{title}</b><br>{subtitle}",
+        font_size=12,
+        width=1200,
+        height=1200,
+    )
+
+    filename = OUTPUT_DIR / f"{guild_name.lower()}_sankey_{direction}_with_unenriched.png"
+    fig.write_image(str(filename), scale=2)
+    print(f"Saved {filename}")
+
+
+def generate_combined_sankey(enrich_df, total_counts_df):
+    """Generates a 3-column Sankey:
+
+    Left: Aerobe (Conditions split by Inc, Dec, None)
+    Center: Anatomy / Body Sites
+    Right: Anaerobe (Conditions split by Inc, Dec, None)
+    """
+    aerobe_traits = GUILDS["Facultative-Aerobe"]
+    anaerobe_traits = GUILDS["Anaerobe"]
+
+    # Filter enrichments
+    aero_inc_profiles = (
+        enrich_df[(enrich_df["trait"].isin(aerobe_traits)) & (enrich_df["inc_dec"] == "inc")][
+            ["condition", "body_site", "profile_id", "study_id"]
+        ]
+        .drop_duplicates()
+        .groupby(["condition", "body_site"])
+        .agg(n_inc=("profile_id", "nunique"), s_inc=("study_id", "nunique"))
+        .reset_index()
+    )
+
+    aero_dec_profiles = (
+        enrich_df[(enrich_df["trait"].isin(aerobe_traits)) & (enrich_df["inc_dec"] == "dec")][
+            ["condition", "body_site", "profile_id", "study_id"]
+        ]
+        .drop_duplicates()
+        .groupby(["condition", "body_site"])
+        .agg(n_dec=("profile_id", "nunique"), s_dec=("study_id", "nunique"))
+        .reset_index()
+    )
+
+    anaero_inc_profiles = (
+        enrich_df[(enrich_df["trait"].isin(anaerobe_traits)) & (enrich_df["inc_dec"] == "inc")][
+            ["condition", "body_site", "profile_id", "study_id"]
+        ]
+        .drop_duplicates()
+        .groupby(["condition", "body_site"])
+        .agg(n_inc=("profile_id", "nunique"), s_inc=("study_id", "nunique"))
+        .reset_index()
+    )
+
+    anaero_dec_profiles = (
+        enrich_df[(enrich_df["trait"].isin(anaerobe_traits)) & (enrich_df["inc_dec"] == "dec")][
+            ["condition", "body_site", "profile_id", "study_id"]
+        ]
+        .drop_duplicates()
+        .groupby(["condition", "body_site"])
+        .agg(n_dec=("profile_id", "nunique"), s_dec=("study_id", "nunique"))
+        .reset_index()
+    )
+
+    # Filter significant conditions based on support thresholds
+    significant_pairs = set()
+    for df in [aero_inc_profiles, aero_dec_profiles, anaero_inc_profiles, anaero_dec_profiles]:
+        hits = df[(df.get("n_inc", 0) >= MIN_PROFILES) | (df.get("n_dec", 0) >= MIN_PROFILES)]
+        for _, r in hits.iterrows():
+            significant_pairs.add((r["condition"], r["body_site"]))
+
+    if not significant_pairs:
+        print("No significant pairs for combined sankey.")
+        return
+
+    sig_df = pd.DataFrame(list(significant_pairs), columns=["condition", "body_site"])
+    base_df = pd.merge(sig_df, total_counts_df, on=["condition", "body_site"], how="left")
+
+    # Left: Aerobe conditions
+    # Center: Body sites
+    # Right: Anaerobe conditions
+    left_conditions = (
+        base_df.groupby("condition")["total_profiles"]
+        .sum()
+        .sort_values(ascending=False)
+        .index.tolist()
+    )
+    center_sites = (
+        base_df.groupby("body_site")["total_profiles"]
+        .sum()
+        .sort_values(ascending=False)
+        .index.tolist()
+    )
+    right_conditions = list(left_conditions)
+
+    # Node indexing
+    # Left nodes: 0 .. len(left_conditions)-1
+    # Center nodes: len(left_conditions) .. len(left_conditions)+len(center_sites)-1
+    # Right nodes: len(left_conditions)+len(center_sites) ..
+    left_node_map = {c: i for i, c in enumerate(left_conditions)}
+    offset_center = len(left_conditions)
+    center_node_map = {s: offset_center + i for i, s in enumerate(center_sites)}
+    offset_right = offset_center + len(center_sites)
+    right_node_map = {c: offset_right + i for i, c in enumerate(right_conditions)}
+
+    node_labels = []
+    for c in left_conditions:
+        n = base_df[base_df["condition"] == c]["total_profiles"].sum()
+        node_labels.append(f"Aerobes: {c}<br>(n={n})")
+    for s in center_sites:
+        n = base_df[base_df["body_site"] == s]["total_profiles"].sum()
+        node_labels.append(f"<b>{s}</b><br>(n={n})")
+    for c in right_conditions:
+        n = base_df[base_df["condition"] == c]["total_profiles"].sum()
+        node_labels.append(f"Anaerobes: {c}<br>(n={n})")
+
+    sources = []
+    targets = []
+    values = []
+    edge_colors = []
+
+    # Map Aerobe edges (Left -> Center)
+    for _, row in base_df.iterrows():
+        c = row["condition"]
+        s = row["body_site"]
+        c_idx = left_node_map[c]
+        s_idx = center_node_map[s]
+        tot = int(row["total_profiles"])
+
+        # Find aero inc / dec
+        a_inc = aero_inc_profiles[
+            (aero_inc_profiles["condition"] == c) & (aero_inc_profiles["body_site"] == s)
+        ]
+        a_dec = aero_dec_profiles[
+            (aero_dec_profiles["condition"] == c) & (aero_dec_profiles["body_site"] == s)
+        ]
+
+        n_inc = int(a_inc["n_inc"].iloc[0]) if not a_inc.empty else 0
+        n_dec = int(a_dec["n_dec"].iloc[0]) if not a_dec.empty else 0
+        n_none = max(0, tot - n_inc - n_dec)
+
+        if n_inc > 0:
+            sources.append(c_idx)
+            targets.append(s_idx)
+            values.append(n_inc)
+            edge_colors.append(COLOR_INC)
+
+        if n_dec > 0:
+            sources.append(c_idx)
+            targets.append(s_idx)
+            values.append(n_dec)
+            edge_colors.append(COLOR_DEC)
+
+        if n_none > 0:
+            sources.append(c_idx)
+            targets.append(s_idx)
+            values.append(n_none)
+            edge_colors.append(COLOR_NONE)
+
+    # Map Anaerobe edges (Center -> Right)
+    for _, row in base_df.iterrows():
+        c = row["condition"]
+        s = row["body_site"]
+        s_idx = center_node_map[s]
+        c_idx = right_node_map[c]
+        tot = int(row["total_profiles"])
+
+        # Find anaero inc / dec
+        an_inc = anaero_inc_profiles[
+            (anaero_inc_profiles["condition"] == c) & (anaero_inc_profiles["body_site"] == s)
+        ]
+        an_dec = anaero_dec_profiles[
+            (anaero_dec_profiles["condition"] == c) & (anaero_dec_profiles["body_site"] == s)
+        ]
+
+        n_inc = int(an_inc["n_inc"].iloc[0]) if not an_inc.empty else 0
+        n_dec = int(an_dec["n_dec"].iloc[0]) if not an_dec.empty else 0
+        n_none = max(0, tot - n_inc - n_dec)
+
+        if n_inc > 0:
+            sources.append(s_idx)
+            targets.append(c_idx)
+            values.append(n_inc)
+            edge_colors.append(COLOR_INC)
+
+        if n_dec > 0:
+            sources.append(s_idx)
+            targets.append(c_idx)
+            values.append(n_dec)
+            edge_colors.append(COLOR_DEC)
+
+        if n_none > 0:
+            sources.append(s_idx)
+            targets.append(c_idx)
+            values.append(n_none)
+            edge_colors.append(COLOR_NONE)
+
+    fig = go.Figure(
+        data=[
+            go.Sankey(
+                node={
+                    "pad": 15,
+                    "thickness": 20,
+                    "line": {"color": "black", "width": 0.5},
+                    "label": node_labels,
+                    "color": "lightgray",
+                },
+                link={"source": sources, "target": targets, "value": values, "color": edge_colors},
+                arrangement="fixed",
+            )
+        ]
+    )
+
+    # Compute positions
+    def get_y_pos(counts):
+        total = sum(counts)
+        if total == 0:
+            return [0.5] * len(counts)
+        y = []
+        curr = 0
+        for c in counts:
+            y.append((curr + c / 2) / total)
+            curr += c
+        return y
+
+    left_y = get_y_pos(
+        base_df.groupby("condition")["total_profiles"].sum().loc[left_conditions].tolist()
+    )
+    center_y = get_y_pos(
+        base_df.groupby("body_site")["total_profiles"].sum().loc[center_sites].tolist()
+    )
+    right_y = get_y_pos(
+        base_df.groupby("condition")["total_profiles"].sum().loc[right_conditions].tolist()
+    )
+
+    node_x = (
+        [0.01] * len(left_conditions) + [0.50] * len(center_sites) + [0.99] * len(right_conditions)
+    )
+    node_y = left_y + center_y + right_y
 
     fig.data[0].node.x = node_x
     fig.data[0].node.y = node_y
 
+    combined_subtitle = (
+        "<span style='font-size:11px'>Left: Aerobes & Facultative Aerobes | "
+        "Center: Anatomy / Body Sites | Right: Anaerobes<br>"
+        "Red = Increased Enrichment | Blue = Decreased Enrichment | "
+        "Gray = No Significant Enrichment</span>"
+    )
+    title = "<b>Combined Guild Enrichment Across Anatomical Sites</b>"
     fig.update_layout(
-        title_text=f"<b>{title}</b><br><span style='font-size:10px'>Edges connect BugSigDB conditions to anatomical body sites. Width = profile support; Color = mean guild fold-change; s = unique studies.</span>",
+        title_text=f"{title}<br>{combined_subtitle}",
         font_size=12,
-        width=1200,
-        height=1200,  # Increased height for more labels
+        width=1600,
+        height=1200,
     )
 
-    filename = OUTPUT_DIR / f"{guild_name.lower()}_sankey_{direction}.png"
+    filename = OUTPUT_DIR / "combined_aerobe_anaerobe_sankey.png"
     fig.write_image(str(filename), scale=2)
     print(f"Saved {filename}")
 
@@ -196,22 +462,37 @@ def main():
         (enrich_df["body_site"] != "Unknown") & (enrich_df["condition"] != "Unknown")
     ].copy()
 
-    print("Generating Sankey diagrams...")
-    # 1. Anaerobe Guild Enrichment in Decreased Profiles
-    generate_guild_sankey(
-        enrich_df,
-        "Anaerobe",
-        "dec",
-        "Condition-to-Body-Site Map: Anaerobe Guild Enrichment in Decreased Profiles",
+    # Calculate total baseline profile & study counts per (condition, body_site)
+    total_counts_df = (
+        enrich_df.groupby(["condition", "body_site"])
+        .agg(
+            total_profiles=("profile_id", "nunique"),
+            total_studies=("study_id", "nunique"),
+        )
+        .reset_index()
     )
 
-    # 2. Facultative-Aerobe Guild Enrichment in Increased Profiles
-    generate_guild_sankey(
+    print("Generating single guild Sankey diagrams with background non-enriched links...")
+    # 1. Anaerobe Guild in Decreased Profiles
+    generate_single_guild_sankey_with_background(
         enrich_df,
+        total_counts_df,
+        "Anaerobe",
+        "dec",
+        "Condition-to-Body-Site Map: Anaerobe Guild in Decreased Profiles",
+    )
+
+    # 2. Facultative-Aerobe Guild in Increased Profiles
+    generate_single_guild_sankey_with_background(
+        enrich_df,
+        total_counts_df,
         "Facultative-Aerobe",
         "inc",
-        "Condition-to-Body-Site Map: Facultative-Aerobe Guild Enrichment in Increased Profiles",
+        "Condition-to-Body-Site Map: Facultative-Aerobe Guild in Increased Profiles",
     )
+
+    print("Generating combined 3-column Sankey diagram...")
+    generate_combined_sankey(enrich_df, total_counts_df)
 
     print("Done.")
 

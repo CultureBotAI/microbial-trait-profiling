@@ -101,8 +101,18 @@ show_error_codes = true
 pretty = true
 mypy_path = "src"
 exclude = [
-  "src/bsdbng/datamodel/bsdbng_pydantic\\.py$",
+  "bsdbng_pydantic\\.py",
 ]
+
+[[tool.mypy.overrides]]
+module = "bsdbng.datamodel.bsdbng_pydantic"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+  "pandas",
+]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
