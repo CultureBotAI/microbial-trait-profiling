@@ -1,6 +1,6 @@
 # Manuscript audit
 
-**Audited:** 2026-09-04
+**Audited:** 2026-09-04 · **Last updated:** 2026-09-08 (204→261 correction family applied to the manuscript)
 **Manuscript:** *Microbiome trait profiles across health and disease* (working title), targeting mSystems.
 
 This file maps the manuscript onto this repository: where the manuscript lives, which commits and
@@ -63,23 +63,28 @@ not by disagreement between framings. The smallest significant standardized effe
 dz = t/√n = 5.008/√2335 = 0.1036 (METPO:1000623); every enrichment-only trait it measured falls
 below that value.
 
-## Known corrections not yet in the manuscript text
+## Corrections applied to the manuscript text on 2026-09-08
 
-A composite-parent keying bug in the manuscript repo's category scripts (fixed there 2026-09-03 on
-branch `fix/convergence-join-and-ora-only-count`, **not yet merged**) silently dropped 57
-`METPO:2000103|pathways:*`/`GO:*` traits from the categorisation. The Google Doc and derived md
-still carry the old values:
+A composite-parent keying bug in the manuscript repo's category scripts (fixed there 2026-09-03,
+merged 2026-09-04 as `20ce6db`) silently dropped 57 `METPO:2000103|pathways:*`/`GO:*` traits from
+the categorisation. The corrected values were **applied to the Google Doc and derived md on
+2026-09-08** (11 verified replace-all edits plus 3 adversarial-review follow-ups; edit plans,
+apply reports and pre-edit backups are committed in the manuscript repo, merge `9f5f930`):
 
-| quantity | manuscript says | corrected |
+| quantity | manuscript said (pre-2026-09-08) | manuscript now says |
 |---|---|---|
 | enrichment-only traits | 204 (203 measured by A) | **261 (260 measured by A)** |
-| below A's detection floor | 100% | 100% (claim survives) |
+| below A's detection floor | 100% of 203 | 100% — scoped to the **260 A measured** (one trait, non-spore forming METPO:1000872, is untested by A) |
 | enrichment-only median / max standardized effect (dz) | 0.022 / 0.080 | 0.022 / **0.088** |
+| pairs needed for the median enrichment-only effect | ~53,000 (23×) | **~52,000 (about 22×)** |
 | median enriched profiles, ORA-only vs convergent | 203 vs 588 | **176** vs 588 |
-| disattenuated Spearman vs unique_profiles / mean_fold | +0.24 / −0.20 | **+0.25 / −0.155** |
-| q ≤ 0.05 sweep | convergent 6→47 | **6→37**, ORA-only 261→230, comp-only 0→11 |
+| reliability of A's sub-threshold dz | 0.57 | **0.606** |
+| disattenuated Spearman vs unique_profiles / mean_fold | +0.24 / −0.20 | **+0.250 / −0.155** |
 
-Convergent membership and every Table 1 row are unchanged by the correction.
+Convergent membership and every Table 1 row were unchanged by the correction (the ORA-only
+top-10-by-profile-support block was recomputed under the corrected keying before editing —
+identical membership). The q ≤ 0.05 sweep values (6→37 convergent, 261→230 ORA-only, 0→11
+composition-only) were never in the manuscript text; the old 6→47 was buggy script output.
 
 Spearman method (so the row reproduces from the two artifacts above): correlate arm A's |t|
 (equivalently dz = |t|/√2335) against arm B's `unique_profiles` and `mean_fold` over the 260
@@ -89,7 +94,8 @@ of A's per-trait dz (sampling variance taken as 1/n).
 
 ## Open manuscript-blocking tasks (tracked in the manuscript repo's NEXT_TASKS.md)
 
-1. Apply the 204 → 261 correction family (above) to the Google Doc and derived md.
+1. ~~Apply the 204 → 261 correction family (above) to the Google Doc and derived md.~~ ✅ Done
+   2026-09-08.
 2. Corpus numbers in the text still say 12,108 profiles / 4,784 pairs. The 12,108 was a
    wide-matrix profile count, so the correction chain is: **12,108 → 5,829** profiles in the
    matrix, of which **4,670** (= 2 × **2,335** pairs, replacing 4,784) enter the paired analyses,
