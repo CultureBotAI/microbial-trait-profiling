@@ -42,19 +42,29 @@ GUILD_ORDER = ("aerobe", "anaerobe")
 
 @dataclass(frozen=True)
 class PooledLabels:
-    """How much of the corpus a top-N cut pushed into the Other bucket."""
+    """How much of the corpus a top-N cut left out of its own row or column."""
 
     kind: str
     kept: int
     pooled_labels: int
     pooled_profiles: int
     total_profiles: int
+    # Labels actually kept, which is below ``kept`` when the corpus has fewer
+    # distinct labels than the cap allows.
+    kept_labels: int = 0
+    # Whether the remainder went into an Other bucket or was dropped outright.
+    bucketed: bool = True
+
+    @property
+    def pooled_share(self) -> float:
+        """Percentage of profiles that fell outside the kept labels."""
+        return 100.0 * self.pooled_profiles / self.total_profiles if self.total_profiles else 0.0
 
     def describe(self) -> str:
-        share = 100.0 * self.pooled_profiles / self.total_profiles if self.total_profiles else 0.0
+        verb = "Other pools" if self.bucketed else "dropped"
         return (
-            f"{self.kind}: kept top {self.kept}; Other pools {self.pooled_labels} labels "
-            f"and {self.pooled_profiles} profiles ({share:.1f}%)"
+            f"{self.kind}: kept top {self.kept}; {verb} {self.pooled_labels} labels "
+            f"and {self.pooled_profiles} profiles ({self.pooled_share:.1f}%)"
         )
 
 
@@ -73,6 +83,9 @@ class GuildMatrix:
     # Conditions removed because no cell survived the study threshold and none was
     # sampled-without-signal, so the row would render entirely blank.
     dropped_empty_conditions: list[str]
+    # Body sites whose column block was backed by too few conditions to read as a
+    # site-level pattern, removed with all of their columns.
+    dropped_body_sites: list[str]
     # True where the body site was sampled for that condition but no taxon in the
     # profile carried any trait of that guild. Without this, an all-zero cell is
     # drawn in the same colour as a genuinely low fraction.
@@ -85,13 +98,18 @@ def _top_labels(counts: dict[str, int], limit: int) -> list[str]:
     return [label for label, _ in ranked[:limit]]
 
 
-def _binned(label: str, keep: set[str]) -> str | None:
+def _binned(label: str, keep: set[str], *, bucket_rest: bool = True) -> str | None:
+    """Map a label to itself, to the Other bucket, or out of the figure entirely."""
     if not label:
         return None
-    return label if label in keep else OTHER_LABEL
+    if label in keep:
+        return label
+    return OTHER_LABEL if bucket_rest else None
 
 
-def _pooling(counts: dict[str, int], keep: set[str], limit: int, kind: str) -> PooledLabels:
+def _pooling(
+    counts: dict[str, int], keep: set[str], limit: int, kind: str, *, bucketed: bool = True
+) -> PooledLabels:
     pooled = {k: v for k, v in counts.items() if k not in keep}
     return PooledLabels(
         kind=kind,
@@ -99,6 +117,8 @@ def _pooling(counts: dict[str, int], keep: set[str], limit: int, kind: str) -> P
         pooled_labels=len(pooled),
         pooled_profiles=sum(pooled.values()),
         total_profiles=sum(counts.values()),
+        kept_labels=len(keep),
+        bucketed=bucketed,
     )
 
 
@@ -135,12 +155,31 @@ def build_matrix(
     min_studies: int,
     n_clusters: int = 6,
     guild_order: Sequence[str] = GUILD_ORDER,
+    include_other_conditions: bool = True,
+    include_other_body_sites: bool = True,
+    mark_no_signal: bool = True,
+    min_site_conditions: int = 1,
 ) -> GuildMatrix:
     """Aggregate profiles into the condition x (group x direction) grid per body site.
 
     ``guild_order`` names the trait groups to unroll into columns. It is the two
     oxygen guilds by default and the six Table 1 traits for the Table 1 figure;
     the aggregation, masking, and clustering are identical either way.
+
+    The two ``include_other_*`` flags decide, per axis, what happens to the labels
+    the top-N cuts leave out: pooled into an Other row or column block, or dropped
+    from the figure. Pooling keeps the corpus total in view but the pooled row or
+    block mixes unrelated labels, so no cell in it reads as one condition or one
+    anatomical site; dropping makes every drawn cell a single label at the cost of
+    showing only part of the corpus. The axes are separate because the trade lands
+    differently on each. ``mark_no_signal`` controls whether a
+    condition kept solely because some site was sampled without any trait of the
+    group is retained; those cells are shaded dark grey by the figure, so with the
+    shading off such a row would render blank and is dropped instead.
+    ``min_site_conditions`` drops a body site's whole column block when fewer than
+    that many conditions are drawn in it: a block carrying one condition is a
+    single row, not a site-level pattern, and it still costs one column per group
+    and direction.
     """
     condition_counts: defaultdict[str, int] = defaultdict(int)
     body_site_counts: defaultdict[str, int] = defaultdict(int)
@@ -153,8 +192,20 @@ def build_matrix(
     keep_conditions = set(_top_labels(dict(condition_counts), max_conditions))
     keep_body_sites = set(_top_labels(dict(body_site_counts), max_body_sites))
     pooled = [
-        _pooling(dict(condition_counts), keep_conditions, max_conditions, "condition"),
-        _pooling(dict(body_site_counts), keep_body_sites, max_body_sites, "body_site"),
+        _pooling(
+            dict(condition_counts),
+            keep_conditions,
+            max_conditions,
+            "condition",
+            bucketed=include_other_conditions,
+        ),
+        _pooling(
+            dict(body_site_counts),
+            keep_body_sites,
+            max_body_sites,
+            "body_site",
+            bucketed=include_other_body_sites,
+        ),
     ]
 
     # study -> cell -> list of per-profile fractions, so a study is averaged once.
@@ -162,16 +213,22 @@ def build_matrix(
         lambda: defaultdict(list)
     )
     for profile in profiles:
-        condition = _binned(profile.condition, keep_conditions)
-        body_site = _binned(profile.body_site, keep_body_sites)
+        condition = _binned(
+            profile.condition, keep_conditions, bucket_rest=include_other_conditions
+        )
+        body_site = _binned(
+            profile.body_site, keep_body_sites, bucket_rest=include_other_body_sites
+        )
         if condition is None or body_site is None:
             continue
         for guild in guild_order:
             key = (condition, body_site, f"{guild}_{profile.inc_dec}")
             per_study[key][profile.study_id].append(profile.fraction(guild))
 
-    conditions = sorted(keep_conditions) + ([OTHER_LABEL] if condition_counts else [])
-    body_sites = sorted(keep_body_sites) + ([OTHER_LABEL] if body_site_counts else [])
+    other_condition = [OTHER_LABEL] if include_other_conditions and condition_counts else []
+    other_site = [OTHER_LABEL] if include_other_body_sites and body_site_counts else []
+    conditions = sorted(keep_conditions) + other_condition
+    body_sites = sorted(keep_body_sites) + other_site
     columns = [
         f"{site}|{guild}_{direction}"
         for site in body_sites
@@ -205,13 +262,40 @@ def build_matrix(
         study_counts.append(count_row)
         sampled_no_signal.append(blank_row)
 
-    # Drop rows that would render entirely blank. A row keeping only dark-grey
-    # cells is retained: "sampled, no guild trait" is a result, not an absence.
-    keep_rows = [
-        i
-        for i in range(len(conditions))
-        if any(v is not None for v in values[i]) or any(sampled_no_signal[i])
+    def drawn(row_index: int, column_indices: Sequence[int]) -> bool:
+        """Whether a row shows anything at all within the given columns."""
+        return any(values[row_index][i] is not None for i in column_indices) or (
+            mark_no_signal and any(sampled_no_signal[row_index][i] for i in column_indices)
+        )
+
+    # Drop body-site blocks that too few conditions reach. Done before the rows so
+    # a condition drawn only inside a dropped block goes with it.
+    site_columns = {
+        site: [i for i, column in enumerate(columns) if _site_of_column(column) == site]
+        for site in body_sites
+    }
+    dropped_sites = [
+        site
+        for site, indices in site_columns.items()
+        if sum(drawn(row, indices) for row in range(len(conditions))) < min_site_conditions
     ]
+    if dropped_sites:
+        keep_columns = [
+            i
+            for i, column in enumerate(columns)
+            if _site_of_column(column) not in set(dropped_sites)
+        ]
+        body_sites = [site for site in body_sites if site not in set(dropped_sites)]
+        columns = [columns[i] for i in keep_columns]
+        values = [[row[i] for i in keep_columns] for row in values]
+        study_counts = [[row[i] for i in keep_columns] for row in study_counts]
+        sampled_no_signal = [[row[i] for i in keep_columns] for row in sampled_no_signal]
+
+    # Drop rows that would render entirely blank. While the figure shades them, a
+    # row keeping only dark-grey cells is retained: "sampled, no guild trait" is a
+    # result, not an absence. With the shading off it is an invisible row.
+    all_columns = list(range(len(columns)))
+    keep_rows = [i for i in range(len(conditions)) if drawn(i, all_columns)]
     dropped = [conditions[i] for i in range(len(conditions)) if i not in set(keep_rows)]
     conditions = [conditions[i] for i in keep_rows]
     values = [values[i] for i in keep_rows]
@@ -228,6 +312,7 @@ def build_matrix(
         row_clusters=[labels[i] for i in order],
         pooled=pooled,
         dropped_empty_conditions=dropped,
+        dropped_body_sites=dropped_sites,
         sampled_no_signal=[sampled_no_signal[i] for i in order],
     )
 
@@ -414,6 +499,9 @@ def write_outputs(
 
 
 GUILD_COLORSCALES = {"aerobe": "OrRd", "anaerobe": "YlGn"}
+# Colour-bar ticks as percentages with trailing zeros trimmed, so 0.0004 reads
+# "0.04%" rather than plotly's default SI-prefixed "400u".
+PERCENT_TICKS = ".3~%"
 NO_SIGNAL_COLOR = "#4d4d4d"
 CLUSTER_GAP_ROWS = 1
 
@@ -426,6 +514,31 @@ def _guild_of_column(column: str) -> str:
 def _site_of_column(column: str) -> str:
     """Return the body site encoded in a `site|guild_direction` column label."""
     return column.split("|", 1)[0]
+
+
+def _wrapped(label: str, width: int = 16) -> str:
+    """Break a long body-site name at the space nearest its middle.
+
+    A header wider than its column block runs into the next one; the names that
+    overflow are all two or three words, so one break is enough.
+    """
+    if len(label) <= width or " " not in label:
+        return label
+    middle = len(label) / 2
+    split = min((i for i, char in enumerate(label) if char == " "), key=lambda i: abs(i - middle))
+    return f"{label[:split]}<br>{label[split + 1 :]}"
+
+
+def _site_blocks(columns: Sequence[str]) -> list[tuple[str, int, int]]:
+    """Contiguous `(site, first index, last index)` runs over the column labels."""
+    blocks: list[tuple[str, int, int]] = []
+    for index, column in enumerate(columns):
+        site = _site_of_column(column)
+        if blocks and blocks[-1][0] == site:
+            blocks[-1] = (site, blocks[-1][1], index)
+        else:
+            blocks.append((site, index, index))
+    return blocks
 
 
 def _upper_range(values: list[float], quantile: float) -> float:
@@ -476,6 +589,47 @@ def _insert_cluster_gaps(
     return labels, values, blanks
 
 
+def _coverage_note(matrix: GuildMatrix) -> list[str]:
+    """State how much of the corpus the top-N cuts left off the figure.
+
+    Without this the reader has no way to tell from the figure that the rows are
+    a heavily sampled minority of BugSigDB's conditions rather than all of them.
+    """
+    pooling = {p.kind: p for p in matrix.pooled}
+    condition = pooling.get("condition")
+    site = pooling.get("body_site")
+    if condition is None or site is None:
+        return []
+
+    total_conditions = condition.kept_labels + condition.pooled_labels
+    total_sites = site.kept_labels + site.pooled_labels
+    drawn = [c for c in matrix.conditions if c != OTHER_LABEL]
+    drawn_sites = [b for b in matrix.body_sites if b != OTHER_LABEL]
+    condition_part = f"{len(drawn)} of {total_conditions} conditions"
+    if condition.bucketed:
+        condition_part += " plus a pooled Other row"
+    site_part = f"{len(drawn_sites)} of {total_sites} body sites"
+    if site.bucketed:
+        site_part += " plus a pooled Other column block"
+
+    def fate(pool: PooledLabels) -> str:
+        verb = "pooled into Other" if pool.bucketed else "not drawn"
+        return f"{verb} ({pool.pooled_share:.0f}% of profiles)"
+
+    caveat = (
+        " A pooled Other mixes unrelated labels, so no cell in it is one condition or one "
+        "anatomical site."
+        if condition.bucketed or site.bucketed
+        else ""
+    )
+    return [
+        f"Rows and columns are a cut of the corpus: {condition_part} and {site_part}.",
+        f"The remaining {condition.pooled_labels} conditions are "
+        f"{fate(condition)} and the remaining {site.pooled_labels} body sites are "
+        f"{fate(site)}.{caveat}",
+    ]
+
+
 def write_figure(
     matrix: GuildMatrix,
     output_path: Path,
@@ -490,6 +644,7 @@ def write_figure(
     colorbar_labels: dict[str, str] | None = None,
     range_quantile: float = 1.0,
     separate_body_sites: bool = False,
+    mark_no_signal: bool = True,
 ) -> Path:
     """Render the heatmap with one colour scale per trait group.
 
@@ -502,7 +657,10 @@ def write_figure(
     colour bar carries its own maximum.
 
     Cells where the site was sampled but carried no trait of the group are filled
-    dark grey, so an absent trait is distinguishable from a small fraction.
+    dark grey, so an absent trait is distinguishable from a small fraction. With
+    ``mark_no_signal`` off they are left blank instead: the shading dominates the
+    figure where the traits are rare, and the state is still recorded in the
+    emitted cell-status table.
     """
     import plotly.graph_objects as go
 
@@ -542,11 +700,14 @@ def write_figure(
                 hoverongaps=False,
                 name=guild,
                 colorbar={
-                    "title": f"{labels.get(guild, guild)}<br>fraction",
+                    "title": f"{labels.get(guild, guild)}<br>% of taxa",
                     "len": bar_len,
                     "y": centre,
                     "yanchor": "middle",
                     "thickness": 14,
+                    # Percentages, not plotly's default SI prefixes: a tick reading
+                    # "400u" for 0.0004 looks like a unit rather than a share.
+                    "tickformat": PERCENT_TICKS,
                 },
             )
         )
@@ -566,9 +727,10 @@ def write_figure(
         }
         for row, flags in enumerate(row_blanks)
         for col, sampled in enumerate(flags)
-        if sampled
+        if sampled and mark_no_signal
     ]
 
+    annotations: list[dict[str, object]] = []
     if separate_body_sites:
         # One rule between body-site blocks. With six traits times two directions
         # per site the blocks otherwise run together and the x labels are the only
@@ -592,6 +754,24 @@ def write_figure(
             }
             for index in boundaries
         )
+        # A header per block. The rotated per-column labels are unreadable at a
+        # glance and repeat the site name twelve times; the anatomical site is the
+        # first thing a reader needs, so it is named once, large, above the block.
+        annotations.extend(
+            {
+                "x": (start + end) / 2.0,
+                "y": 1.0,
+                "xref": "x",
+                "yref": "paper",
+                "yshift": 12,
+                "text": f"<b>{_wrapped(site)}</b>",
+                "showarrow": False,
+                "font": {"size": 18},
+                "xanchor": "center",
+                "yanchor": "bottom",
+            }
+            for site, start, end in _site_blocks(matrix.columns)
+        )
 
     n_clusters = len(set(matrix.row_clusters))
     range_note = (
@@ -605,14 +785,22 @@ def write_figure(
             f" Ramps are cut at the {range_quantile:.0%} quantile of observed cells; "
             "cells above it saturate."
         )
+    cluster_note = (
+        f"Rows clustered by Euclidean distance into {n_clusters} groups, separated by blank rows."
+    )
+    if mark_no_signal:
+        cluster_note += (
+            f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
+        )
     # Broken into explicit lines: as one run the subtitle overflows the plotting
     # area and is clipped by the right-hand colour bars.
     subtitle = "<br>".join(
         [
-            f"Mean {value_phrase}, averaged within study then across studies. {range_note}",
-            f"Rows clustered by Euclidean distance into {n_clusters} groups, separated by "
-            "blank rows. Dark grey = site sampled for that condition but no taxon carried "
-            f"the {group_noun}.",
+            f"Mean {value_phrase}, averaged within study then across studies, shown as a "
+            "percentage of the taxa in a profile.",
+            range_note,
+            cluster_note,
+            *_coverage_note(matrix),
             f"BugSigDB {vintage or 'vintage unknown'}.",
         ]
     )
@@ -621,10 +809,173 @@ def write_figure(
         xaxis={"title": f"body site | {group_noun} _ direction", "tickangle": -60},
         yaxis={"title": "condition", "autorange": "reversed"},
         shapes=shapes,
+        annotations=annotations,
         width=max(900, 26 * len(matrix.columns)),
         height=max(600, 26 * len(row_labels) + 340),
-        margin={"l": 300, "b": 300, "t": 160},
+        # The site headers sit above the plotting area, so they need their own room.
+        # Six subtitle lines plus a two-line site header need the room.
+        margin={"l": 300, "b": 300, "t": 380 if separate_body_sites else 200},
     )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    figure.write_image(str(output_path), scale=2)
+    return output_path
+
+
+def write_body_site_panels(
+    matrix: GuildMatrix,
+    output_path: Path,
+    vintage: str | None,
+    *,
+    sites: Sequence[str],
+    guild_order: Sequence[str] = GUILD_ORDER,
+    colorscales: dict[str, object] | None = None,
+    title: str = "Body site detail",
+    group_noun: str = "guild",
+    value_phrase: str = "guild trait fraction",
+    colorbar_labels: dict[str, str] | None = None,
+    range_quantile: float = 1.0,
+    mark_no_signal: bool = True,
+) -> Path:
+    """Draw one panel per named body site, at a width where the labels are readable.
+
+    The combined figure fits every site by making each column narrow enough that
+    the rotated `site | trait _ direction` labels run together. This pulls a few
+    blocks out into their own panels: same rows in the same clustered order, same
+    per-trait colour ranges as the combined figure so a cell here is the same
+    colour there, but with the site named once above the panel and the columns
+    labelled by trait and direction alone.
+    """
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+
+    scales: dict[str, object] = dict(GUILD_COLORSCALES) if colorscales is None else colorscales
+    labels = colorbar_labels or {}
+    row_labels, row_values, row_blanks = _insert_cluster_gaps(matrix)
+
+    missing = [site for site in sites if site not in matrix.body_sites]
+    if missing:
+        raise ValueError(f"body sites absent from the matrix: {', '.join(missing)}")
+
+    # Colour ranges come from the whole matrix, not from the panels, so the
+    # panels are readable at the same colours as the combined figure.
+    scale_max = {
+        guild: _upper_range(
+            [
+                value
+                for row in row_values
+                for column, value in zip(matrix.columns, row, strict=True)
+                if value is not None and _guild_of_column(column) == guild
+            ],
+            range_quantile,
+        )
+        for guild in guild_order
+    }
+
+    figure = make_subplots(
+        rows=1,
+        cols=len(sites),
+        shared_yaxes=True,
+        horizontal_spacing=0.06,
+        subplot_titles=[f"<b>{site}</b>" for site in sites],
+    )
+
+    count = len(guild_order)
+    bar_len = min(0.42, 0.92 / count)
+    shapes: list[dict[str, object]] = []
+    for panel, site in enumerate(sites, start=1):
+        indices = [i for i, column in enumerate(matrix.columns) if _site_of_column(column) == site]
+        # The site is named once above the panel, so a column only has to carry its
+        # trait and direction.
+        tick_text = []
+        for i in indices:
+            guild = _guild_of_column(matrix.columns[i])
+            direction = matrix.columns[i].rsplit("_", 1)[1]
+            tick_text.append(f"{labels.get(guild, guild)} {direction}")
+        for position, guild in enumerate(guild_order):
+            z_guild = [
+                [row[i] if _guild_of_column(matrix.columns[i]) == guild else None for i in indices]
+                for row in row_values
+            ]
+            centre = 0.5 + (count - 1) / 2.0 * (bar_len + 0.04) - position * (bar_len + 0.04)
+            figure.add_trace(
+                go.Heatmap(
+                    z=z_guild,
+                    x=tick_text,
+                    y=row_labels,
+                    colorscale=scales[guild],
+                    zmin=0.0,
+                    zmax=scale_max[guild],
+                    hoverongaps=False,
+                    name=guild,
+                    # One colour bar per trait for the whole figure, not per panel.
+                    showscale=panel == len(sites),
+                    colorbar={
+                        "title": f"{labels.get(guild, guild)}<br>% of taxa",
+                        "len": bar_len,
+                        "y": centre,
+                        "yanchor": "middle",
+                        "thickness": 14,
+                        "tickformat": PERCENT_TICKS,
+                    },
+                ),
+                row=1,
+                col=panel,
+            )
+        if mark_no_signal:
+            axis = "" if panel == 1 else str(panel)
+            shapes.extend(
+                {
+                    "type": "rect",
+                    "xref": f"x{axis}",
+                    "yref": f"y{axis}",
+                    "x0": col - 0.5,
+                    "x1": col + 0.5,
+                    "y0": row - 0.5,
+                    "y1": row + 0.5,
+                    "fillcolor": NO_SIGNAL_COLOR,
+                    "line": {"color": NO_SIGNAL_COLOR, "width": 0},
+                    "layer": "above",
+                }
+                for row, flags in enumerate(row_blanks)
+                for col, i in enumerate(indices)
+                if flags[i]
+            )
+
+    range_note = f"Each {group_noun} is on its own scale, the same one the combined figure uses"
+    if range_quantile < 1.0:
+        range_note += f", cut at the {range_quantile:.0%} quantile of observed cells"
+    grey_note = (
+        f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
+        if mark_no_signal
+        else ""
+    )
+    subtitle = "<br>".join(
+        [
+            f"Mean {value_phrase}, averaged within study then across studies, shown as a "
+            "percentage of the taxa in a profile.",
+            f"{range_note}.",
+            "Rows are the conditions of the combined figure in the same clustered order, so a "
+            f"blank row here was drawn in another body site.{grey_note}",
+            *_coverage_note(matrix),
+            f"BugSigDB {vintage or 'vintage unknown'}.",
+        ]
+    )
+
+    figure.update_layout(
+        title={"text": f"{title}<br><sub>{subtitle}</sub>"},
+        shapes=shapes,
+        width=max(900, 150 + 620 * len(sites)),
+        height=max(600, 26 * len(row_labels) + 360),
+        # Six subtitle lines above the panel titles.
+        margin={"l": 300, "b": 260, "t": 360},
+        plot_bgcolor="white",
+    )
+    figure.update_xaxes(tickangle=-60)
+    figure.update_yaxes(autorange="reversed")
+    figure.update_yaxes(title_text="condition", row=1, col=1)
+    for annotation in figure.layout.annotations[: len(sites)]:
+        annotation.font = {"size": 18}
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.write_image(str(output_path), scale=2)
     return output_path
@@ -683,6 +1034,8 @@ def main() -> int:
     )
     for pooled in matrix.pooled:
         print(pooled.describe())
+    if matrix.dropped_body_sites:
+        print(f"body sites dropped as entirely blank: {', '.join(matrix.dropped_body_sites)}")
     if matrix.dropped_empty_conditions:
         print(
             f"conditions dropped as entirely blank: {len(matrix.dropped_empty_conditions)} "

@@ -241,3 +241,58 @@ def test_rows_are_clustered_and_pooling_is_reported(corpus: tuple[Path, Path]) -
     assert condition_pooling.pooled_labels == 1
     assert condition_pooling.pooled_profiles == 2
     assert "Other pools 1 labels" in condition_pooling.describe()
+
+
+def test_other_bucket_can_be_excluded_instead_of_pooled(corpus: tuple[Path, Path]) -> None:
+    """Dropping Other removes the mixed row and column instead of drawing them."""
+    profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
+    matrix = build_matrix(
+        profiles,
+        max_conditions=1,
+        max_body_sites=10,
+        min_studies=1,
+        n_clusters=2,
+        include_other_conditions=False,
+        include_other_body_sites=False,
+    )
+
+    assert OTHER_LABEL not in matrix.conditions
+    assert OTHER_LABEL not in matrix.body_sites
+    assert all(not column.startswith(f"{OTHER_LABEL}|") for column in matrix.columns)
+
+    # The pooling report still names what the cut left out, now as dropped.
+    condition_pooling = next(p for p in matrix.pooled if p.kind == "condition")
+    assert condition_pooling.pooled_labels == 1
+    assert condition_pooling.bucketed is False
+    assert "dropped 1 labels" in condition_pooling.describe()
+
+
+def test_rows_kept_only_by_no_signal_cells_go_with_the_shading(tmp_path: Path) -> None:
+    """Without the dark-grey shading such a row would be an invisible blank line."""
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [0, 0, 0, 0, 0, 7, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [0, 0, 0, 0, 0, 7, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Periodontitis", "Saliva", "Homo sapiens")],
+    )
+    profiles, _ = load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+
+    shaded = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
+    assert "Periodontitis" in shaded.conditions
+
+    unshaded = build_matrix(
+        profiles,
+        max_conditions=10,
+        max_body_sites=10,
+        min_studies=1,
+        mark_no_signal=False,
+    )
+    assert unshaded.conditions == []
+    assert "Periodontitis" in unshaded.dropped_empty_conditions

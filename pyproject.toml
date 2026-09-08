@@ -101,6 +101,14 @@ exclude = [
   "src/bsdbng/datamodel/bsdbng_pydantic\\.py$",
 ]
 
+# `exclude` only keeps the generated model out of the files mypy crawls; it is
+# still followed as an import of bsdbng.datamodel, and on a cold cache its
+# errors surface. Silencing them here keeps its types available to callers,
+# which `follow_imports = "skip"` would not.
+[[tool.mypy.overrides]]
+module = "bsdbng.datamodel.bsdbng_pydantic"
+ignore_errors = true
+
 # scipy and plotly ship no type information; the repo's own code stays strict.
 [[tool.mypy.overrides]]
 module = ["scipy.*", "plotly.*"]

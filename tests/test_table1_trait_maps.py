@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from scipy.stats import binomtest, false_discovery_control
 
-from bsdbng.guild_maps import build_matrix
+from bsdbng.guild_maps import build_matrix, write_body_site_panels
 from bsdbng.table1_trait_maps import TRAIT_ORDER, compute_direction_shifts, trait_colorscale
 from bsdbng.trait_guilds import (
     TABLE1_TRAIT_COLORS,
@@ -219,3 +219,26 @@ def test_contrast_correlation_is_computed_across_studies(corpus: tuple[Path, Pat
     # Sphere shaped has the same contrast in every study, so Spearman is
     # undefined against it; the pair is omitted rather than written as nan.
     assert not [k for k in result.spearman if "sphere_shaped" in k]
+
+
+def test_panel_figure_rejects_a_body_site_it_cannot_draw(
+    tmp_path: Path, corpus: tuple[Path, Path]
+) -> None:
+    """Naming an absent site would otherwise render a silently empty panel."""
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    matrix = build_matrix(
+        profiles,
+        max_conditions=10,
+        max_body_sites=10,
+        min_studies=1,
+        guild_order=TRAIT_ORDER,
+    )
+
+    with pytest.raises(ValueError, match="Nowhere"):
+        write_body_site_panels(
+            matrix,
+            tmp_path / "panels.png",
+            None,
+            sites=["Nowhere"],
+            guild_order=TRAIT_ORDER,
+        )

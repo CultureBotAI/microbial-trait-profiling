@@ -33,6 +33,7 @@ from scipy.stats import binomtest, false_discovery_control, spearmanr
 from bsdbng.guild_maps import (
     build_matrix,
     study_direction_means,
+    write_body_site_panels,
     write_figure,
     write_matrix_outputs,
 )
@@ -431,6 +432,43 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Keep non-human host species (issue #129 excludes them by default).",
     )
+    parser.add_argument(
+        "--min-site-conditions",
+        type=int,
+        default=2,
+        help=(
+            "Drop a body site's whole column block when fewer than this many "
+            "conditions are drawn in it. A block carrying one condition costs "
+            "twelve columns to show a single row."
+        ),
+    )
+    parser.add_argument(
+        "--include-other-conditions",
+        action="store_true",
+        help=(
+            "Pool the conditions outside the top-N cut into an Other row. Off by "
+            "default: that row mixes hundreds of unrelated conditions, so no cell in "
+            "it reads as one condition."
+        ),
+    )
+    parser.add_argument(
+        "--drop-other-body-sites",
+        action="store_true",
+        help=(
+            "Drop the Other body-site column block instead of keeping it. It is kept "
+            "by default because it carries most of the sampling outside the top few "
+            "sites, but it mixes anatomical sites and is not one of them."
+        ),
+    )
+    parser.add_argument(
+        "--mark-no-signal",
+        action="store_true",
+        help=(
+            "Shade cells sampled without any Table 1 trait dark grey. Off by default: "
+            "these traits are rare enough that the shading covers most of the figure. "
+            "The state stays in the emitted cell-status table either way."
+        ),
+    )
     return parser
 
 
@@ -452,9 +490,18 @@ def main() -> int:
         min_studies=args.min_studies,
         n_clusters=args.row_clusters,
         guild_order=TRAIT_ORDER,
+        include_other_conditions=args.include_other_conditions,
+        include_other_body_sites=not args.drop_other_body_sites,
+        mark_no_signal=args.mark_no_signal,
+        min_site_conditions=args.min_site_conditions,
     )
     for pooled in matrix.pooled:
         print(pooled.describe())
+    if matrix.dropped_body_sites:
+        print(
+            f"body sites dropped below {args.min_site_conditions} conditions: "
+            f"{', '.join(matrix.dropped_body_sites)}"
+        )
     if matrix.dropped_empty_conditions:
         print(
             f"conditions dropped as entirely blank: {len(matrix.dropped_empty_conditions)} "
@@ -479,6 +526,28 @@ def main() -> int:
             colorbar_labels={t: t.replace("_", " ") for t in TRAIT_ORDER},
             range_quantile=0.98,
             separate_body_sites=True,
+            mark_no_signal=args.mark_no_signal,
+        )
+    )
+    # The combined figure has to squeeze eight body sites in, which leaves each
+    # column too narrow to label legibly. The two end blocks are redrawn on their
+    # own so the trait-by-direction columns can be read.
+    panel_sites = [matrix.body_sites[0], matrix.body_sites[-1]]
+    print(f"detail panels: {', '.join(panel_sites)}")
+    written.append(
+        write_body_site_panels(
+            matrix,
+            args.output_dir / f"{OUTPUT_PREFIX}_first_last_body_site_panels.png",
+            vintage,
+            sites=panel_sites,
+            guild_order=TRAIT_ORDER,
+            colorscales={trait: trait_colorscale(trait) for trait in TRAIT_ORDER},
+            title=(f"Manuscript Table 1 traits: {panel_sites[0]} and {panel_sites[-1]} in detail"),
+            group_noun="trait",
+            value_phrase="trait fraction",
+            colorbar_labels={t: t.replace("_", " ") for t in TRAIT_ORDER},
+            range_quantile=0.98,
+            mark_no_signal=args.mark_no_signal,
         )
     )
     written.append(
