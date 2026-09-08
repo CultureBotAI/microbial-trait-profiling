@@ -16,7 +16,9 @@ issue listed here is closed.
   (`repo-research-writer/manuscript/bsdbng_v1`, a git repo with **no remote**), whose **source of
   truth is a shared Google Doc**; local `sections/*.md` and `full_manuscript.md` are derived
   mirrors. Its living backlog is that repo's `NEXT_TASKS.md`.
-- Main text is essentially at the 5,000-word limit (last measured 4,995/5,000). Ten figures,
+- Main text is essentially at the 5,000-word limit (last measured 4,995/5,000 on 2026-08-19; the
+  2026-09-08 edit pass net-added ~4 words, so ≈4,999 — re-measure before any further additions).
+  Ten figures,
   shape/alt-text verified 2026-08-19. Title page, funding, ethics and conflicts sections were
   still absent at the 2026-08-19 state review.
 
@@ -68,27 +70,34 @@ below that value.
 A composite-parent keying bug in the manuscript repo's category scripts (fixed there 2026-09-03,
 merged 2026-09-04 as `20ce6db`) silently dropped 57 `METPO:2000103|pathways:*`/`GO:*` traits from
 the categorisation. The corrected values were **applied to the Google Doc and derived md on
-2026-09-08** (11 verified replace-all edits plus 3 adversarial-review follow-ups; edit plans,
-apply reports and pre-edit backups are committed in the manuscript repo, merge `9f5f930`):
+2026-09-08** — 14 verified replace-all edits (11 + 3 adversarial-review follow-ups, every one
+with occurrences-changed = expected = 1); edit plans, apply reports and pre-edit backups are
+committed in the manuscript repo, merge `9f5f930`. The committed backups are pre-edit by
+construction, so the second backup independently evidences the 11 first-pass edits in the doc,
+while the 3 follow-ups are evidenced by their apply report and the md mirrors only:
 
 | quantity | manuscript said (pre-2026-09-08) | manuscript now says |
 |---|---|---|
 | enrichment-only traits | 204 (203 measured by A) | **261 (260 measured by A)** |
-| below A's detection floor | 100% of 203 | 100% — scoped to the **260 A measured** (one trait, non-spore forming METPO:1000872, is untested by A) |
+| below A's detection floor | 100% of 203 measured (the Abstract over-claimed it for all 204) | 100% — scoped to the **260 A measured** (one trait, non-spore forming METPO:1000872, is untested by A) |
 | enrichment-only median / max standardized effect (dz) | 0.022 / 0.080 | 0.022 / **0.088** |
 | pairs needed for the median enrichment-only effect | ~53,000 (23×) | **~52,000 (about 22×)** |
-| median enriched profiles, ORA-only vs convergent | 203 vs 588 | **176** vs 588 |
+| median enriched profiles, ORA-only vs convergent | 203 vs 588 | **176** vs 588 (convergent median is 587.5; 588 is its rounding, unchanged by the pass) |
 | reliability of A's sub-threshold dz | 0.57 | **0.606** |
 | disattenuated Spearman vs unique_profiles / mean_fold | +0.24 / −0.20 | **+0.250 / −0.155** |
 
-Convergent membership and every Table 1 row were unchanged by the correction (the ORA-only
+Convergent membership and every Table 1 **data** row were unchanged by the correction (the two
+Table 1 edits touched only the caption and the ORA-only section-label count; the
 top-10-by-profile-support block was recomputed under the corrected keying before editing —
 identical membership). The q ≤ 0.05 sweep values (6→37 convergent, 261→230 ORA-only, 0→11
-composition-only) were never in the manuscript text; the old 6→47 was buggy script output.
+composition-only) are not in the manuscript text; the old 6→47 was buggy script output that
+appeared in the text for ~40 minutes on 2026-09-02 (added `72b6c7b`, removed `6d922b4`) — the
+2026-09-04 version of this audit carried it as a stale row.
 
 Spearman method (so the row reproduces from the two artifacts above): correlate arm A's |t|
 (equivalently dz = |t|/√2335) against arm B's `unique_profiles` and `mean_fold` over the 260
-measured ORA-only traits — raw +0.195 / −0.121 — then divide by the attenuation factor
+measured ORA-only traits — raw +0.194 / −0.121 as the script prints them (unrounded +0.1946) —
+then divide by the attenuation factor
 √reliability = √0.606 ≈ 0.778, where reliability is the estimated true-to-observed variance ratio
 of A's per-trait dz (sampling variance taken as 1/n).
 
