@@ -10,7 +10,10 @@ and provides a foundation for trait aggregation and phenotype cross-referencing.
 
 ### Prerequisites
 
-You need two tools installed. Everything else is managed automatically.
+You need two tools installed. Everything else is managed automatically — with
+one exception: the figure recipes (`just guild-maps`, `just table1-trait-maps`)
+render PNGs through a headless Chrome, fetched version-pinned by
+`just get-chrome` (see `methods/README.md`).
 
 | Tool | What it does | Install |
 |------|-------------|---------|

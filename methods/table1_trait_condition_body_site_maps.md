@@ -198,7 +198,14 @@ are produced by `src/bsdbng/table1_trait_maps.py`, driven deterministically by
 `just table1-trait-maps`, which shares its matrix construction, masking, row
 clustering, and table writing with `src/bsdbng/guild_maps.py` rather than
 duplicating them. The BugSigDB export timestamp is read from the dump's leading
-comment line and recorded in every output table.
+comment line and recorded in every output table. PNG export runs through kaleido
+1.x, which drives a headless Chrome. For a reproducible figure run, run
+`just get-chrome` once first: it downloads (~170 MB) a version-pinned Chrome for
+Testing build that kaleido then prefers over any system Chrome, which would
+otherwise be whatever version the machine carries (plotly's `plotly_get_chrome`
+is equivalent). Without any Chrome the recipe fails only at the figure-writing
+step, with every backing table already written to disk; the corpus-cascade
+report prints to stdout either way. None of the statistics depend on Chrome.
 
 ## Vintage
 
