@@ -31,9 +31,11 @@ from pathlib import Path
 from scipy.stats import binomtest, false_discovery_control, spearmanr
 
 from bsdbng.guild_maps import (
+    OTHER_LABEL,
     SIGN_TOLERANCE,
     build_matrix,
     study_direction_means,
+    subset_matrix,
     write_body_site_panels,
     write_figure,
     write_matrix_outputs,
@@ -55,6 +57,56 @@ from bsdbng.trait_guilds import (
 TRAIT_ORDER: tuple[str, ...] = tuple(TABLE1_TRAITS)
 OUTPUT_PREFIX = "table1_traits"
 CONFIDENCE_LEVEL = 0.95
+
+
+@dataclass(frozen=True)
+class FocusPanel:
+    """One small heatmap cut from the combined figure.
+
+    Exactly one axis is fixed; the other is derived from the data by
+    `subset_matrix`, so a panel never asserts that a condition was studied in a
+    body site it was not.
+    """
+
+    slug: str
+    subtitle: str
+    sites: tuple[str, ...] | None = None
+    conditions: tuple[str, ...] | None = None
+
+
+# The combined figure shows what was measured where, but the Feces block sets
+# the eye's scale and everything beside it reads as empty. These four cuts group
+# conditions that were sampled in the same places, so each is legible on its own:
+# the gut block alone, the gut against the pooled remainder, the two cervical
+# conditions, and the oral cluster - which rheumatoid arthritis falls into,
+# alongside periodontitis and gingivitis rather than with the other systemic
+# diseases.
+FOCUS_PANELS: tuple[FocusPanel, ...] = (
+    FocusPanel(slug="feces", subtitle="Feces", sites=("Feces",)),
+    FocusPanel(
+        slug="feces_other",
+        subtitle=f"Feces and {OTHER_LABEL}",
+        sites=("Feces", OTHER_LABEL),
+    ),
+    FocusPanel(
+        slug="cervical",
+        subtitle="cervical neoplasia and papilloma virus infection",
+        conditions=(
+            "Cervical glandular intraepithelial neoplasia",
+            "Human papilloma virus infection",
+        ),
+    ),
+    FocusPanel(
+        slug="oral",
+        subtitle="the oral cluster, with rheumatoid arthritis",
+        conditions=(
+            "Gingivitis",
+            "Rheumatoid arthritis",
+            "Periodontitis",
+            "Smoking behavior",
+        ),
+    ),
+)
 
 
 def trait_colorscale(trait: str) -> list[list[float | str]]:
@@ -531,27 +583,48 @@ def main() -> int:
             mark_no_signal=args.mark_no_signal,
         )
     )
-    # The combined figure has to squeeze eight body sites in, which leaves each
-    # column too narrow to label legibly. The two end blocks are redrawn on their
-    # own so the trait-by-direction columns can be read.
-    panel_sites = [matrix.body_sites[0], matrix.body_sites[-1]]
-    print(f"detail panels: {', '.join(panel_sites)}")
-    written.append(
-        write_body_site_panels(
-            matrix,
-            args.output_dir / f"{OUTPUT_PREFIX}_first_last_body_site_panels.png",
-            vintage,
-            sites=panel_sites,
-            guild_order=TRAIT_ORDER,
-            colorscales={trait: trait_colorscale(trait) for trait in TRAIT_ORDER},
-            title=(f"Manuscript Table 1 traits: {panel_sites[0]} and {panel_sites[-1]} in detail"),
-            group_noun="trait",
-            value_phrase="trait fraction",
-            colorbar_labels={t: t.replace("_", " ") for t in TRAIT_ORDER},
-            range_quantile=0.98,
-            mark_no_signal=args.mark_no_signal,
+    # The combined figure squeezes every body site in, which leaves each column
+    # too narrow to label and the sparse blocks unreadable next to the gut. The
+    # same matrix is cut into the four smaller heatmaps of FOCUS_PANELS, all on
+    # the combined figure's colour ranges so a cell is the same colour in each.
+    for panel in FOCUS_PANELS:
+        cut = subset_matrix(matrix, conditions=panel.conditions, sites=panel.sites)
+        if not cut.conditions or not cut.body_sites:
+            print(f"focus panel {panel.slug}: nothing drawn, skipped")
+            continue
+        absent = [name for name in (panel.conditions or ()) if name not in matrix.conditions]
+        note = None
+        if absent:
+            # A panel names the conditions the cut was asked for; which of them the
+            # corpus actually holds depends on the vintage, so say so on the figure
+            # rather than quietly drawing a smaller group under the same title.
+            print(f"focus panel {panel.slug}: conditions absent, skipped: {', '.join(absent)}")
+            note = (
+                "Not drawn because this BugSigDB export does not contain them: "
+                f"{', '.join(absent)}."
+            )
+        print(
+            f"focus panel {panel.slug}: {len(cut.conditions)} conditions x "
+            f"{len(cut.body_sites)} body sites ({', '.join(cut.body_sites)})"
         )
-    )
+        written.append(
+            write_body_site_panels(
+                cut,
+                args.output_dir / f"{OUTPUT_PREFIX}_focus_{panel.slug}.png",
+                vintage,
+                sites=cut.body_sites,
+                guild_order=TRAIT_ORDER,
+                colorscales={trait: trait_colorscale(trait) for trait in TRAIT_ORDER},
+                title=f"Manuscript Table 1 traits: {panel.subtitle}",
+                group_noun="trait",
+                value_phrase="trait fraction",
+                colorbar_labels={t: t.replace("_", " ") for t in TRAIT_ORDER},
+                range_quantile=0.98,
+                mark_no_signal=args.mark_no_signal,
+                scale_reference=matrix,
+                note=note,
+            )
+        )
     written.append(
         write_shift_figure(
             result,
