@@ -16,8 +16,9 @@ Figures write to `data/derived/guild_maps/` and `data/derived/table1_traits/`
 alongside the tab-separated tables backing them, so every number quoted in a
 methods file can be checked without measuring pixels. Those outputs are
 gitignored and are meant to be regenerated from the recipe rather than committed.
-PNG export needs a local headless Chrome (kaleido 1.x); `just get-chrome`
-fetches one where none is installed.
+PNG export needs a headless Chrome (kaleido 1.x); run `just get-chrome` once —
+it fetches a version-pinned Chrome for Testing build (~170 MB) that kaleido
+then prefers over a system Chrome, which is what makes the renders reproducible.
 
 [`three_arm_statistics.md`](three_arm_statistics.md) is not about one figure. It
 records how the three analyses built on `study_trait_profiles_wide.tsv` differ,

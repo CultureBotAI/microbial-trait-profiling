@@ -13,13 +13,15 @@ authors = [
 ]
 dependencies = [
   "httpx>=0.28.0",
-  # kaleido 1.x renders figures by driving a local headless Chrome/Chromium
-  # (fetch one with `just get-chrome`); the 0.2.x line bundled its own renderer
-  # but is incompatible with plotly >= 6, so the floor must sit on the v1 line.
+  # kaleido 1.x renders figures by driving a headless Chrome/Chromium (fetch a
+  # version-pinned copy with `just get-chrome`). The 0.2.x line bundled its own
+  # renderer, but plotly 7.0 removed the kaleido-v0 code path (6.x had only
+  # deprecated it), so with the plotly floor below, kaleido must sit on the v1
+  # line; the two floors are a pair.
   "kaleido>=1.0",
   "linkml>=1.10.0",
   "linkml-runtime>=1.8.3",
-  "plotly>=6.0.0",
+  "plotly>=7.0",
   "pydantic>=2.13.0",
   "pyyaml>=6.0.2",
   "scipy>=1.17.0",

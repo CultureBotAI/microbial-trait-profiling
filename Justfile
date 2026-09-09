@@ -82,8 +82,9 @@ study-trait-profiles:
 	uv run python scripts/create_study_trait_profiles.py
 
 # PNG export (guild-maps, table1-trait-maps) runs through kaleido 1.x, which
-# drives a local headless Chrome/Chromium. On a machine without one, this fetches
-# a private copy into kaleido's cache; the figure recipes fail without it.
+# drives a headless Chrome. This downloads (~170 MB) the version-pinned Chrome
+# for Testing build into choreographer's data directory; kaleido prefers that
+# copy over a system Chrome, so run it once for reproducible figure renders.
 get-chrome:
 	uv run kaleido_get_chrome
 
