@@ -1,11 +1,12 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
+import math
 from pathlib import Path
 
 import pytest
-from scipy.stats import fisher_exact
+from scipy.stats import binomtest
 
-from bsdbng.guild_maps import OTHER_LABEL, build_matrix, compute_correlation
+from bsdbng.guild_maps import OTHER_LABEL, build_matrix, compute_correlation, study_direction_means
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
     OXYGEN_GUILDS,
@@ -154,11 +155,34 @@ def test_correlation_counts_studies_by_shift_direction(corpus: tuple[Path, Path]
     }
     assert result.studies == 2
 
-    # Golden value: the odds ratio must match scipy on the same 2x2 table.
-    expected_or, expected_p = fisher_exact([[2, 0], [0, 2]], alternative="two-sided")
-    assert result.odds_ratio == pytest.approx(float(expected_or))
-    assert result.fisher_p == pytest.approx(float(expected_p))
-    assert result.fisher_p == pytest.approx(0.3333333333333333)
+    # The same studies provide both guild signs, so the test is a paired one:
+    # both studies are discordant in the same direction (aerobe up while
+    # anaerobe down) and the exact McNemar is a two-sided binomial on the
+    # discordant studies. Fisher's exact on the marginal table would treat the
+    # two rows as independent samples and be anticonservative.
+    assert result.discordant == (2, 0)
+    assert result.mcnemar_p == pytest.approx(float(binomtest(2, 2, p=0.5).pvalue))
+    assert result.mcnemar_p == pytest.approx(0.5)
+    # The paired odds ratio is the discordant ratio; with no reverse-discordant
+    # studies it is infinite.
+    assert result.odds_ratio == math.inf
+
+
+def test_study_means_reject_an_unpaired_corpus() -> None:
+    """Pooled means only equal paired contrasts when inc and dec counts match."""
+    lonely = Profile(
+        study_id="bsdb:9",
+        experiment_id="bsdb:9-1",
+        inc_dec="inc",
+        condition="X",
+        body_site="Y",
+        guild_counts={"aerobe": 3, "anaerobe": 1},
+        total=10,
+    )
+    with pytest.raises(ValueError, match="bsdb:9"):
+        study_direction_means([lonely])
+    # An explicitly unpaired caller can still opt in.
+    assert "bsdb:9" in study_direction_means([lonely], require_paired=False)
 
 
 def test_vintage_is_read_from_the_dump_header(tmp_path: Path) -> None:

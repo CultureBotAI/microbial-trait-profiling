@@ -8,7 +8,10 @@ meets two of them in the same manuscript can tell why they disagree and why
 agreement between them is informative rather than redundant.
 
 The shared input has one row per study, experiment, and direction, and one column
-per trait; a cell is the number of taxa in that profile carrying that trait.
+per trait; a cell is the number of taxonomically rolled-up trait assertions for
+that trait in that profile — one reported taxon can contribute many counts via
+its descendant nodes, so cells are not taxon counts (the same sampling-unit
+inflation issue #131 records for the enrichment urn).
 
 ## What each arm asks
 
@@ -36,12 +39,13 @@ difference, with its magnitude deliberately discarded.
 | Paired | yes, by construction | no; increased and decreased tested separately | yes, then reduced to one sign per study |
 | Multiple testing | Benjamini-Hochberg within each output table | Benjamini-Hochberg across every test in the run | Benjamini-Hochberg across the six Table 1 traits |
 | Significance rule | none; the figure takes the top ten by p | q at most 0.001 and fold at least 1.5 | none; q reported per trait |
-| Typical n per test | hundreds to thousands of pairs | tens of thousands of assertions | roughly 950 to 1,400 studies |
+| Typical n per test | 2,335 pairs, identical for every trait | tens of thousands of assertions | 616 to 917 of the 959 studies (ties excluded) |
 
 All three restrict to human samples and to experiments carrying both directions,
 and all three drop MediaDive growth-medium columns, but they do so at different
-points in the pipeline: the enrichment arm filters host species during ingest,
-while the other two filter in the figure code. Their MediaDive tests also differ
+points in the pipeline: the enrichment arm's branch filters host species at
+ingest (its Justfile passes host_species="Homo sapiens"; this branch's ingest
+writes all hosts), while the other two filter in the figure code. Their MediaDive tests also differ
 by one character, matching `mediadive.medium` and `mediadive.medium:`
 respectively.
 
@@ -74,7 +78,7 @@ The directional-consistency arm's n is the number of studies with a non-tied
 contrast. Reducing each study to a sign throws away effect magnitude, which makes
 it the most conservative of the three and immune to compositional scaling, but it
 leaves no effect size beyond the share of studies shifting up. The observed
-shares sit within about six points of 0.5, so its significance comes from the
+shares sit within about eight points of 0.5, so its significance comes from the
 number of studies rather than from the size of the shift.
 
 ## Compositionality
@@ -92,10 +96,12 @@ other by construction.
 
 ## Vintage
 
-All three arms currently read an unpinned devel-branch BugSigDB export. Any
-comparison between them is only valid where they read the same dump, which is the
-subject of issue #115. The numbers quoted in this note come from each arm's
-committed outputs at the time of writing and will move when the dump is pinned.
+All three arms pin **BugSigDBExports v1.3.1** (Zenodo 10.5281/zenodo.19740674;
+issues #115/#130, resolved by PR #150's SHA-verified downloader). The
+directional-consistency numbers in this note are from a v1.3.1 run; the
+composition and enrichment figures come from those arms' committed v1.3.1
+regenerations (`3afeecd` and `c75744a` respectively). Any comparison between
+arms is only valid where they read the same dump, which all three now do.
 
 ## Provenance of this note
 

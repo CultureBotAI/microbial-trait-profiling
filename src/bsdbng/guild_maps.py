@@ -4,10 +4,10 @@ Rows are conditions, columns are body sites crossed with the four
 guild-by-direction combinations, so each body site contributes the 2x2
 `{aerobe, anaerobe} x {inc, dec}` table unrolled into four adjacent columns.
 
-Cell values are mean guild trait fractions. Because 60.2% of studies contribute
-more than one experiment (issue #133), profiles are averaged within a study
-before being averaged across studies, and the companion n-matrix counts studies
-rather than experiments.
+Cell values are mean guild trait fractions. Because 56.2% of studies contribute
+more than one experiment (issue #133; measured on the pinned v1.3.1 corpus),
+profiles are averaged within a study before being averaged across studies, and
+the companion n-matrix counts studies rather than experiments.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from pathlib import Path
 
 from scipy.cluster.hierarchy import fcluster, leaves_list, linkage
 from scipy.spatial.distance import pdist
-from scipy.stats import fisher_exact, spearmanr
+from scipy.stats import binomtest, spearmanr
 
 from bsdbng.paths import DERIVED_DATA_DIR
 from bsdbng.trait_guilds import (
@@ -317,21 +317,37 @@ def build_matrix(
     )
 
 
+#: Contrasts smaller than this in magnitude are floating-point residue of
+#: summing fractions in different orders, not a real direction.
+SIGN_TOLERANCE = 1e-12
+
+
 @dataclass(frozen=True)
 class CorrelationResult:
     """Guild-by-direction association and cross-cell rank correlations."""
 
     table: dict[str, int]
     odds_ratio: float
-    fisher_p: float
+    mcnemar_p: float
+    discordant: tuple[int, int]
     spearman: dict[str, tuple[float, float, int]]
     studies: int
 
 
 def study_direction_means(
-    profiles: list[Profile], guild_order: Sequence[str] = GUILD_ORDER
+    profiles: list[Profile],
+    guild_order: Sequence[str] = GUILD_ORDER,
+    *,
+    require_paired: bool = True,
 ) -> dict[str, dict[str, float]]:
-    """Mean guild fraction per study and direction, collapsing repeated experiments."""
+    """Mean guild fraction per study and direction, collapsing repeated experiments.
+
+    Pooling all increased and all decreased profiles of a study equals the mean of
+    per-experiment paired differences only when every experiment contributes both
+    sides, so by default the per-study inc and dec profile counts must match;
+    callers on unpaired corpora must pass require_paired=False and must not
+    describe the result as paired.
+    """
     sums: defaultdict[str, defaultdict[str, float]] = defaultdict(lambda: defaultdict(float))
     counts: defaultdict[str, defaultdict[str, int]] = defaultdict(lambda: defaultdict(int))
     for profile in profiles:
@@ -339,35 +355,78 @@ def study_direction_means(
             key = f"{guild}_{profile.inc_dec}"
             sums[profile.study_id][key] += profile.fraction(guild)
             counts[profile.study_id][key] += 1
+    if require_paired:
+        for study, per_key in counts.items():
+            for guild in guild_order:
+                inc, dec = per_key.get(f"{guild}_inc", 0), per_key.get(f"{guild}_dec", 0)
+                if inc != dec:
+                    raise ValueError(
+                        f"study {study} has {inc} increased vs {dec} decreased profiles; "
+                        "study means are only paired contrasts on a paired corpus "
+                        "(load_profiles(paired_only=True), the default)"
+                    )
     return {
         study: {key: total / counts[study][key] for key, total in per_key.items()}
         for study, per_key in sums.items()
     }
 
 
+def _sign(value: float) -> int:
+    if abs(value) < SIGN_TOLERANCE:
+        return 0
+    return 1 if value > 0 else -1
+
+
 def compute_correlation(profiles: list[Profile], matrix: GuildMatrix) -> CorrelationResult:
     """Test whether aerobes shift toward the increased side more often than anaerobes.
 
-    The 2x2 table counts studies, not experiments or trait assertions. A study is
+    Scoring counts studies, not experiments or trait assertions. A study is
     scored once per guild by the sign of (mean increased fraction - mean decreased
-    fraction), so the cells are `{aerobe, anaerobe} x {shifted up, shifted down}`.
-    Counting non-zero signal instead would put nearly every study in every cell and
-    drive the odds ratio to 1 regardless of the data.
+    fraction). Because the SAME studies provide both the aerobe and the anaerobe
+    sign, the two guilds form matched pairs, not independent samples: the test is
+    an exact McNemar (a binomial test on the discordant studies — aerobe up while
+    anaerobe down, versus the reverse), and the odds ratio is the discordant
+    ratio. An earlier version ran Fisher's exact on the marginal 2x2, which
+    assumes independent rows and was anticonservative here by roughly three
+    orders of magnitude. The marginal table is still reported for display.
     """
     study_means = study_direction_means(profiles)
 
     table = {f"{guild}_{d}": 0 for guild in GUILD_ORDER for d in DIRECTIONS}
-    for per_key in study_means.values():
+    signs: dict[str, dict[str, int]] = defaultdict(dict)
+    for study, per_key in study_means.items():
         for guild in GUILD_ORDER:
             inc = per_key.get(f"{guild}_inc")
             dec = per_key.get(f"{guild}_dec")
-            if inc is None or dec is None or inc == dec:
+            if inc is None or dec is None:
                 continue
-            table[f"{guild}_inc" if inc > dec else f"{guild}_dec"] += 1
+            sign = _sign(inc - dec)
+            if sign == 0:
+                continue
+            signs[study][guild] = sign
+            table[f"{guild}_inc" if sign > 0 else f"{guild}_dec"] += 1
 
-    a, b = table["aerobe_inc"], table["aerobe_dec"]
-    c, d = table["anaerobe_inc"], table["anaerobe_dec"]
-    odds_ratio, fisher_p = fisher_exact([[a, b], [c, d]], alternative="two-sided")
+    aerobe_up_anaerobe_down = anaerobe_up_aerobe_down = 0
+    for per_guild in signs.values():
+        aerobe, anaerobe = per_guild.get("aerobe"), per_guild.get("anaerobe")
+        if aerobe is None or anaerobe is None or aerobe == anaerobe:
+            continue
+        if aerobe > 0:
+            aerobe_up_anaerobe_down += 1
+        else:
+            anaerobe_up_aerobe_down += 1
+
+    n_discordant = aerobe_up_anaerobe_down + anaerobe_up_aerobe_down
+    mcnemar_p = (
+        float(binomtest(aerobe_up_anaerobe_down, n_discordant, p=0.5).pvalue)
+        if n_discordant
+        else 1.0
+    )
+    odds_ratio = (
+        aerobe_up_anaerobe_down / anaerobe_up_aerobe_down
+        if anaerobe_up_aerobe_down
+        else float("inf")
+    )
 
     # Rank correlation across condition x body-site cells. Only cells where both
     # members of a pair survived masking are used, so the series stay aligned.
@@ -397,7 +456,8 @@ def compute_correlation(profiles: list[Profile], matrix: GuildMatrix) -> Correla
     return CorrelationResult(
         table=table,
         odds_ratio=float(odds_ratio),
-        fisher_p=float(fisher_p),
+        mcnemar_p=mcnemar_p,
+        discordant=(aerobe_up_anaerobe_down, anaerobe_up_aerobe_down),
         spearman=spearman,
         studies=len(study_means),
     )
@@ -470,17 +530,38 @@ def write_outputs(
 
     with stats_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
-        writer.writerow(["statistic", "comparison", "value", "p_value", "bugsigdb_vintage"])
+        writer.writerow(["statistic", "comparison", "value", "p_value", "n", "bugsigdb_vintage"])
         for key, count in sorted(correlation.table.items()):
-            writer.writerow(["studies_shifted", key, count, "", vintage or ""])
+            writer.writerow(["studies_shifted", key, count, "", correlation.studies, vintage or ""])
+        up_down, down_up = correlation.discordant
         writer.writerow(
             [
-                "fisher_odds_ratio",
-                "aerobe_vs_anaerobe_x_inc_vs_dec",
-                f"{correlation.odds_ratio:.6f}",
-                f"{correlation.fisher_p:.6g}",
+                "discordant_studies",
+                "aerobe_up_anaerobe_down",
+                up_down,
+                "",
+                up_down + down_up,
                 vintage or "",
-                correlation.studies,
+            ]
+        )
+        writer.writerow(
+            [
+                "discordant_studies",
+                "anaerobe_up_aerobe_down",
+                down_up,
+                "",
+                up_down + down_up,
+                vintage or "",
+            ]
+        )
+        writer.writerow(
+            [
+                "mcnemar_odds_ratio",
+                "aerobe_vs_anaerobe_paired_signs",
+                f"{correlation.odds_ratio:.6f}",
+                f"{correlation.mcnemar_p:.6g}",
+                up_down + down_up,
+                vintage or "",
             ]
         )
         for pair, (rho, p_value, n_cells) in sorted(correlation.spearman.items()):
@@ -490,8 +571,8 @@ def write_outputs(
                     pair,
                     f"{rho:.6f}",
                     f"{p_value:.6g}",
-                    vintage or "",
                     n_cells,
+                    vintage or "",
                 ]
             )
 
@@ -700,7 +781,7 @@ def write_figure(
                 hoverongaps=False,
                 name=guild,
                 colorbar={
-                    "title": f"{labels.get(guild, guild)}<br>% of taxa",
+                    "title": f"{labels.get(guild, guild)}<br>% of trait assertions",
                     "len": bar_len,
                     "y": centre,
                     "yanchor": "middle",
@@ -797,7 +878,8 @@ def write_figure(
     subtitle = "<br>".join(
         [
             f"Mean {value_phrase}, averaged within study then across studies, shown as a "
-            "percentage of the taxa in a profile.",
+            "percentage of the profile's summed trait-assertion counts (taxonomic "
+            "rollups can count one reported taxon many times), not of its taxa.",
             range_note,
             cluster_note,
             *_coverage_note(matrix),
@@ -910,7 +992,7 @@ def write_body_site_panels(
                     # One colour bar per trait for the whole figure, not per panel.
                     showscale=panel == len(sites),
                     colorbar={
-                        "title": f"{labels.get(guild, guild)}<br>% of taxa",
+                        "title": f"{labels.get(guild, guild)}<br>% of trait assertions",
                         "len": bar_len,
                         "y": centre,
                         "yanchor": "middle",
@@ -952,7 +1034,8 @@ def write_body_site_panels(
     subtitle = "<br>".join(
         [
             f"Mean {value_phrase}, averaged within study then across studies, shown as a "
-            "percentage of the taxa in a profile.",
+            "percentage of the profile's summed trait-assertion counts (taxonomic "
+            "rollups can count one reported taxon many times), not of its taxa.",
             f"{range_note}.",
             "Rows are the conditions of the combined figure in the same clustered order, so a "
             f"blank row here was drawn in another body site.{grey_note}",
@@ -1047,9 +1130,11 @@ def main() -> int:
         write_figure(matrix, args.output_dir / "guild_condition_body_site_heatmap.png", vintage)
     )
 
+    up_down, down_up = correlation.discordant
     print(
-        f"\nFisher odds ratio {correlation.odds_ratio:.3f} "
-        f"(p={correlation.fisher_p:.3g}) over {correlation.studies} studies"
+        f"\nMcNemar (exact, paired signs): discordant {up_down}/{down_up}, "
+        f"odds ratio {correlation.odds_ratio:.3f} "
+        f"(p={correlation.mcnemar_p:.3g}) over {correlation.studies} studies"
     )
     for path in written:
         print(path)

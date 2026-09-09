@@ -5,12 +5,13 @@ from pathlib import Path
 import pytest
 from scipy.stats import binomtest, false_discovery_control
 
-from bsdbng.guild_maps import build_matrix, write_body_site_panels
+from bsdbng.guild_maps import SIGN_TOLERANCE, build_matrix, write_body_site_panels
 from bsdbng.table1_trait_maps import TRAIT_ORDER, compute_direction_shifts, trait_colorscale
 from bsdbng.trait_guilds import (
     TABLE1_TRAIT_COLORS,
     TABLE1_TRAIT_LABELS,
     TABLE1_TRAITS,
+    Profile,
     column_term_id,
     load_profiles,
 )
@@ -242,3 +243,51 @@ def test_panel_figure_rejects_a_body_site_it_cannot_draw(
             sites=["Nowhere"],
             guild_order=TRAIT_ORDER,
         )
+
+
+def _paired_profile(
+    study: str, experiment: str, inc_dec: str, count: int, total: int = 10
+) -> Profile:
+    counts = dict.fromkeys(TRAIT_ORDER, 0)
+    counts["facultatively_aerobic"] = count
+    return Profile(
+        study_id=study,
+        experiment_id=experiment,
+        inc_dec=inc_dec,
+        condition="X",
+        body_site="Feces",
+        guild_counts=counts,
+        total=total,
+    )
+
+
+def test_studies_are_scored_once_not_once_per_experiment() -> None:
+    """The #133 collapse itself: a multi-experiment study contributes ONE sign.
+
+    The two experiments disagree (+0.8 and -0.2), so per-experiment scoring
+    would tally 1 up + 1 down; the study-level collapse averages first
+    (mean inc 0.55, mean dec 0.25) and tallies a single up.
+    """
+    study = [
+        _paired_profile("bsdb:1", "bsdb:1-1", "inc", 9),
+        _paired_profile("bsdb:1", "bsdb:1-1", "dec", 1),
+        _paired_profile("bsdb:1", "bsdb:1-2", "inc", 2),
+        _paired_profile("bsdb:1", "bsdb:1-2", "dec", 4),
+    ]
+    result = compute_direction_shifts(study, ("facultatively_aerobic",))
+    (shift,) = result.shifts
+    assert (shift.studies_up, shift.studies_down, shift.studies_tied) == (1, 0, 0)
+    assert result.studies == 1
+
+
+def test_float_residue_contrasts_are_ties_not_signs() -> None:
+    """A contrast below SIGN_TOLERANCE is summation noise, not a direction."""
+    residue = SIGN_TOLERANCE / 10
+    study = [
+        _paired_profile("bsdb:1", "bsdb:1-1", "inc", 1, total=int(1 / residue)),
+        _paired_profile("bsdb:1", "bsdb:1-1", "dec", 0, total=10),
+    ]
+    result = compute_direction_shifts(study, ("facultatively_aerobic",))
+    (shift,) = result.shifts
+    assert (shift.studies_up, shift.studies_down, shift.studies_tied) == (0, 0, 1)
+    assert shift.p_value == 1.0

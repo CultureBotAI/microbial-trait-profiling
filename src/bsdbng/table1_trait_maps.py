@@ -31,6 +31,7 @@ from pathlib import Path
 from scipy.stats import binomtest, false_discovery_control, spearmanr
 
 from bsdbng.guild_maps import (
+    SIGN_TOLERANCE,
     build_matrix,
     study_direction_means,
     write_body_site_panels,
@@ -100,9 +101,9 @@ def _study_contrasts(
 ) -> dict[str, dict[str, float]]:
     """Per study, the increased minus decreased mean fraction for each trait.
 
-    Collapsing to one value per study first is the fix issue #133 asks for: 60.2%
-    of studies contribute more than one experiment, so treating experiments as
-    independent overstates the sample size.
+    Collapsing to one value per study first is the fix issue #133 asks for: 56.2%
+    of studies contribute more than one experiment on the pinned v1.3.1 corpus,
+    so treating experiments as independent overstates the sample size.
     """
     means = study_direction_means(profiles, trait_order)
     contrasts: dict[str, dict[str, float]] = {}
@@ -125,11 +126,12 @@ def compute_direction_shifts(
     """Score every study once per trait by the sign of its paired contrast.
 
     A study counts as shifted up for a trait when its mean increased fraction
-    exceeds its mean decreased fraction, and down when the reverse holds; exact
-    ties are recorded separately and excluded from the test. Each trait then gets
-    a two-sided exact binomial test against a half-and-half null, and the six
-    p-values are Benjamini-Hochberg corrected together because the six traits are
-    one family of tests.
+    exceeds its mean decreased fraction, and down when the reverse holds; ties
+    (including sub-tolerance float residue, see ``SIGN_TOLERANCE``) are recorded
+    separately and excluded from the test. Each trait then gets a two-sided exact
+    binomial test against a half-and-half null, and the six p-values are
+    Benjamini-Hochberg corrected together because the six traits are one family
+    of tests.
     """
     contrasts = _study_contrasts(profiles, trait_order)
 
@@ -140,9 +142,9 @@ def compute_direction_shifts(
             value = row.get(trait)
             if value is None:
                 continue
-            if value > 0:
+            if value > SIGN_TOLERANCE:
                 up += 1
-            elif value < 0:
+            elif value < -SIGN_TOLERANCE:
                 down += 1
             else:
                 tied += 1
