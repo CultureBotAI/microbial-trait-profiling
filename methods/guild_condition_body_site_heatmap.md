@@ -162,7 +162,11 @@ implementations. The figure was produced by `src/bsdbng/guild_maps.py`, driven
 deterministically by `just guild-maps`, alongside the value matrix, the
 study-count matrix, the cell-status table, the row-cluster table, and the
 statistics table as tab-separated files. The BugSigDB export timestamp is read
-from the dump's leading comment line and is recorded in every output.
+from the dump's leading comment line and is recorded in every output. PNG export
+runs through kaleido 1.x, which drives a local headless Chrome/Chromium: on a
+machine without one, run `just get-chrome` once to fetch a private copy, or the
+recipe fails at the figure-writing step (every statistic and table is computed
+before that point). None of the statistics depend on Chrome.
 
 The pipeline code and this description were drafted with the assistance of a
 coding agent (Claude Code) and reviewed by the author.

@@ -81,10 +81,17 @@ taxa-trait-matrix: study-tsvs
 study-trait-profiles:
 	uv run python scripts/create_study_trait_profiles.py
 
+# PNG export (guild-maps, table1-trait-maps) runs through kaleido 1.x, which
+# drives a local headless Chrome/Chromium. On a machine without one, this fetches
+# a private copy into kaleido's cache; the figure recipes fail without it.
+get-chrome:
+	uv run kaleido_get_chrome
+
 # Requires data/derived/study_trait_profiles_wide.tsv (`just study-trait-profiles`)
 # and data/derived/experiments.tsv (`just study-tsvs`). Human samples only, matched
 # inc/dec pairs only, MediaDive traits excluded. Writes the heatmap plus its value
 # matrix, study-count matrix, and correlation table to data/derived/guild_maps/.
+# Needs a local Chrome for the PNG (`just get-chrome`).
 guild-maps:
 	just timed guild-maps "uv run python scripts/create_guild_maps.py"
 
@@ -92,6 +99,7 @@ guild-maps:
 # traits of manuscript Table 1 instead of the two pooled oxygen guilds. Writes the
 # combined condition x body-site heatmap, the paired directional-shift figure, and
 # their backing tables to data/derived/table1_traits/.
+# Needs a local Chrome for the PNGs (`just get-chrome`).
 table1-trait-maps:
 	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py"
 

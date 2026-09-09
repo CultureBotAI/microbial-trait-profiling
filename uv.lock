@@ -175,7 +175,7 @@ qa = [
 requires-dist = [
     { name = "gdown", marker = "extra == 'kg'", specifier = ">=6.0.0" },
     { name = "httpx", specifier = ">=0.28.0" },
-    { name = "kaleido", specifier = ">=0.2.1" },
+    { name = "kaleido", specifier = ">=1.0" },
     { name = "linkml", specifier = ">=1.10.0" },
     { name = "linkml-runtime", specifier = ">=1.8.3" },
     { name = "linkml-store", extras = ["llm", "mongodb"], marker = "extra == 'mongo'", specifier = ">=0.3.0" },

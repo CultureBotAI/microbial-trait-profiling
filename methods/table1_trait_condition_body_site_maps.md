@@ -198,7 +198,10 @@ are produced by `src/bsdbng/table1_trait_maps.py`, driven deterministically by
 `just table1-trait-maps`, which shares its matrix construction, masking, row
 clustering, and table writing with `src/bsdbng/guild_maps.py` rather than
 duplicating them. The BugSigDB export timestamp is read from the dump's leading
-comment line and recorded in every output table.
+comment line and recorded in every output table. PNG export runs through kaleido
+1.x, which drives a local headless Chrome/Chromium: on a machine without one,
+run `just get-chrome` once, or the recipe fails at the figure-writing step. None
+of the statistics depend on Chrome.
 
 ## Vintage
 
