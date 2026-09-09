@@ -38,10 +38,10 @@ See `parkinsons_target_taxa_direction_bar.png` and `parkinsons_anaerobe_depletio
 
 ## Diagram Guide
 
-- `parkinsons_feces_profile_trait_score_contrast.png`: compares profile-level v2 scores between decreased and increased PD feces profiles. Each dot is one BugSigDB study/experiment/direction profile, boxes show the distribution, black diamonds show means, and the dashed line marks zero. The aerobe panel is read as higher scores in increased profiles; the anaerobe panel is read as higher scores in decreased profiles.
-- `parkinsons_feces_paired_trait_contrast.png`: keeps only study/experiment pairs that have both increased and decreased PD feces profiles. Dots are within-experiment contrasts, black diamonds are mean contrasts, and positive values mean the expected reciprocal pattern: aerobe signal higher in increased profiles and anaerobe signal higher in decreased profiles.
+- `parkinsons_feces_profile_trait_score_contrast.png`: compares profile-level v2 scores between decreased and increased PD feces profiles. Each dot is one BugSigDB study/experiment/direction profile, boxes show the distribution, and the dashed line marks zero. The aerobe panel is read as higher scores in increased profiles; the anaerobe panel is read as higher scores in decreased profiles.
+- `parkinsons_feces_paired_trait_contrast.png`: keeps only study/experiment pairs that have both increased and decreased PD feces profiles. Dots are within-experiment contrasts, and positive values mean the expected reciprocal pattern: aerobe signal higher in increased profiles and anaerobe signal higher in decreased profiles.
 - `parkinsons_target_taxa_direction_bar.png`: shows PD feces target taxa from the aerobe-enrichment and anaerobe-depletion candidate-taxa tables. Orange bars to the right count increased profiles; blue bars to the left count decreased profiles. Longer one-sided bars indicate stronger direction consistency.
-- `parkinsons_anaerobe_depletion_taxa_support.png`: focuses on anaerobe-depletion target taxa. Horizontal bars compare decreased and increased profile support, while black diamonds mark the number of decreased-supporting studies, separating repeated-study support from raw profile count.
+- `parkinsons_anaerobe_depletion_taxa_support.png`: focuses on anaerobe-depletion target taxa. Horizontal bars compare decreased and increased profile support.
 
 ## Figure Methods
 
@@ -51,7 +51,7 @@ See `parkinsons_target_taxa_direction_bar.png` and `parkinsons_anaerobe_depletio
 - Paired contrasts: matched study/experiment pairs are retained only when both increased and decreased PD feces profiles are present. Aerobe contrast is increased minus decreased; anaerobe contrast is decreased minus increased; combined reciprocal signal is their sum.
 - Statistical summaries: profile-level comparisons use two-sided Mann-Whitney U tests. Paired contrasts use two-sided Wilcoxon signed-rank tests against zero. These tests summarize recurrence patterns and are not causal models.
 - Target-taxa diagrams: candidate taxa are read from the aerobe and anaerobe v2 `candidate_taxa_condition_direction.tsv` files and filtered to PD feces rows. Counts are profile and unique-study support for increased versus decreased BugSigDB directions.
-- Rendering: diagrams are generated with Matplotlib and saved as both PNG and SVG. Orange encodes increased-profile support, blue encodes decreased-profile support, and black diamonds mark means or decreased-study support depending on the panel.
+- Rendering: diagrams are generated with Matplotlib and saved as both PNG and SVG. Orange encodes increased-profile support, blue encodes decreased-profile support.
 
 The consolidated figure-methods entry is also documented in `../../figure_methods.md`.
 

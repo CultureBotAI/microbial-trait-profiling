@@ -68,9 +68,9 @@ Node counts are profile-trait memberships across displayed links, not deduplicat
 - Inline graph data audit copy: `six_shared_traits_profile_graph_data.json`
 - Graph manifest: `six_shared_trait_graph_manifest.tsv`
 
-The graph explorer uses Cytoscape.js from jsDelivr and includes four views: increased/decreased grouped conditions and increased/decreased individual conditions. Each source condition link connects to a trait/body-site bundle node, then each bundle connects to the body-site node as one summed trait-colored trunk.
+The graph explorer uses Cytoscape.js from jsDelivr and includes four views: increased/decreased grouped conditions and increased/decreased individual conditions. Each source condition link connects to a trait/body-site bundle node adjacent to its body-site node, then each bundle connects directly to that body-site node. Source and body-site connector widths use separate scales.
 
-| view | condition nodes | body-site nodes | trait/body-site bundles | source edges | trunks |
+| view | condition nodes | body-site nodes | trait/body-site bundles | source edges | body-site connectors |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Increased, grouped conditions | 19 | 15 | 73 | 188 | 73 |
 | Decreased, grouped conditions | 17 | 14 | 71 | 185 | 71 |
@@ -81,11 +81,31 @@ The graph explorer uses Cytoscape.js from jsDelivr and includes four views: incr
 
 - Manifest: `six_shared_trait_static_graph_manifest.tsv`
 
-These PNGs are graph versions of the six shared trait Sankey views. They use six central trait hubs rather than condition-to-body-site flow bands, so they are meant to communicate the condition-trait and trait-body-site network structure in a Cytoscape-style static layout.
+These PNGs are graph versions of the six shared trait Sankey views. They use six central trait hubs rather than condition-to-body-site flow bands. Trait-to-body-site links accumulate into small colored bundle nodes adjacent to each body site, then connect directly to the corresponding body-site node. Condition-to-trait and trait-to-body-site widths use separate scales.
 
-| view | PNG | condition nodes | trait nodes | body-site nodes | graph edges |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Increased, grouped conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_grouped_cytoscape_hub_graph.png` | 19 | 6 | 15 | 145 |
-| Decreased, grouped conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_grouped_cytoscape_hub_graph.png` | 17 | 6 | 14 | 143 |
-| Increased, individual conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_individual_conditions_cytoscape_hub_graph.png` | 23 | 6 | 12 | 122 |
-| Decreased, individual conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_individual_conditions_cytoscape_hub_graph.png` | 23 | 6 | 11 | 124 |
+| view | PNG | condition nodes | trait hubs | body-site nodes | trait/body-site bundles | condition-trait edges | trait-body links | body-site connectors |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Increased, grouped conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_grouped_cytoscape_hub_graph.png` | 19 | 6 | 15 | 73 | 72 | 73 | 73 |
+| Decreased, grouped conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_grouped_cytoscape_hub_graph.png` | 17 | 6 | 14 | 71 | 72 | 71 | 71 |
+| Increased, individual conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_individual_conditions_cytoscape_hub_graph.png` | 23 | 6 | 12 | 50 | 72 | 50 | 50 |
+| Decreased, individual conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_individual_conditions_cytoscape_hub_graph.png` | 23 | 6 | 11 | 52 | 72 | 52 | 52 |
+
+## Condition-Body-Site Cytoscape Heatmaps
+
+- Manifest: `six_shared_trait_cytoscape_heatmap_manifest.tsv`
+- Pattern matrix table: `six_shared_trait_condition_body_site_trait_pattern_matrix.tsv`
+- Signed contrast table: `six_shared_trait_condition_body_site_direction_contrasts.tsv`
+
+These heatmaps reuse the same six-shared-trait display-edge TSVs that feed the Cytoscape graph views. They preserve condition/body-site/trait records instead of correlating already-collapsed condition and body-site nodes.
+
+- `trait_pattern`: Approach 2. Rows are condition/body-site pairs and columns are the six traits. Cell color is `log1p(n) * signal`, where `n` is positive-z focus-profile support and `signal` is the Cytoscape trait-specific signal, rendered with a yellow-to-blue sequential palette. Cells require Fisher p<=0.05, n>=3, and s>=2.
+- `signed_direction_contrast`: Approach 4. Rows are condition/body-site pairs and columns are traits. Cell color is the increased-profile positive-z fraction minus the decreased-profile positive-z fraction. Cells require Fisher p<=0.05 plus the same support floor.
+
+| heatmap | type | PNG | displayed cells | tested cells | rows |
+| --- | --- | --- | ---: | ---: | ---: |
+| Increased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_grouped_condition_body_site_trait_pattern_heatmap.png` | 25 | 188 | 16 |
+| Decreased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_grouped_condition_body_site_trait_pattern_heatmap.png` | 17 | 185 | 15 |
+| Increased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` | 14 | 117 | 8 |
+| Decreased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` | 7 | 105 | 7 |
+| Grouped conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap.png` | 32 | 226 | 17 |
+| Individual conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap.png` | 17 | 145 | 10 |

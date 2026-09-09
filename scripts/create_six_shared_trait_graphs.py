@@ -163,7 +163,7 @@ def color_from_signal(base_color: str, signal: float, shared_signal_max: float) 
     return rgb_to_hex(mixed)
 
 
-def parallel_offsets(count: int, *, spacing: float = 14.0, max_offset: float = 42.0) -> list[float]:
+def parallel_offsets(count: int, *, spacing: float = 16.0, max_offset: float = 40.0) -> list[float]:
     """Return top-to-bottom offsets for body-site trait bundle nodes."""
     if count <= 1:
         return [0.0]
@@ -175,7 +175,7 @@ def parallel_offsets(count: int, *, spacing: float = 14.0, max_offset: float = 4
 
 
 def weighted_signal(group: pd.DataFrame) -> float:
-    """Return count-weighted signal for a body-site trait trunk."""
+    """Return count-weighted signal for a body-site trait bundle."""
     values = group["color_value"].astype(float)
     weights = group["focus_enriched_profile_count"].astype(float)
     if float(weights.sum()) <= 0:
@@ -231,23 +231,23 @@ def trait_legend_records(frames: list[pd.DataFrame]) -> list[dict[str, object]]:
     ]
 
 
-def graph_ranges(source_counts: pd.Series, trunk_counts: pd.Series) -> dict[str, float]:
+def graph_ranges(source_counts: pd.Series, bundle_counts: pd.Series) -> dict[str, float]:
     """Return min/max ranges for Cytoscape mapData styling."""
     source_positive = source_counts[source_counts > 0]
-    trunk_positive = trunk_counts[trunk_counts > 0]
+    bundle_positive = bundle_counts[bundle_counts > 0]
     source_min = float(source_positive.min()) if not source_positive.empty else 1.0
     source_max = float(source_positive.max()) if not source_positive.empty else source_min
-    trunk_min = float(trunk_positive.min()) if not trunk_positive.empty else 1.0
-    trunk_max = float(trunk_positive.max()) if not trunk_positive.empty else trunk_min
+    bundle_min = float(bundle_positive.min()) if not bundle_positive.empty else 1.0
+    bundle_max = float(bundle_positive.max()) if not bundle_positive.empty else bundle_min
     if source_min == source_max:
         source_max = source_min + 1.0
-    if trunk_min == trunk_max:
-        trunk_max = trunk_min + 1.0
+    if bundle_min == bundle_max:
+        bundle_max = bundle_min + 1.0
     return {
         "sourceNMin": source_min,
         "sourceNMax": source_max,
-        "trunkNMin": trunk_min,
-        "trunkNMax": trunk_max,
+        "bundleNMin": bundle_min,
+        "bundleNMax": bundle_max,
     }
 
 
@@ -266,7 +266,7 @@ def build_view_payload(
     body_site_order = ordered_index(body_site_stats)
 
     condition_step = 58.0
-    body_step = 68.0
+    body_step = 88.0
     shared_span = max(
         max(0.0, (len(condition_order) - 1) * condition_step),
         max(0.0, (len(body_site_order) - 1) * body_step),
@@ -361,7 +361,7 @@ def build_view_payload(
         )
     for row in bundles.itertuples(index=False):
         y = body_site_y[row.body_site_group] + float(row.bundle_offset)
-        x = 760
+        x = 930
         elements.append(
             {
                 "data": {
@@ -457,11 +457,11 @@ def build_view_payload(
                 "data": {
                     "id": stable_id(
                         view.key,
-                        "trunk-edge",
+                        "body-site-connector",
                         row.body_site_group,
                         row.trait_id,
                     ),
-                    "edgeType": "trunk",
+                    "edgeType": "body_site_connector",
                     "source": bundle_ids[(row.body_site_group, row.trait_id)],
                     "target": body_site_ids[row.body_site_group],
                     "label": f"{row.trait_label}: summed n={int(row.n)}",
@@ -498,7 +498,8 @@ def build_view_payload(
             "bodySites": len(body_site_order),
             "traitBodyBundles": len(bundles),
             "sourceEdges": len(frame),
-            "trunkEdges": len(bundles),
+            "bundleEndpoints": len(bundles),
+            "bodySiteConnectors": len(bundles),
             "totalNodes": len([element for element in elements if "position" in element]),
             "totalEdges": len([element for element in elements if "position" not in element]),
             "displayedTraits": frame["trait_id"].nunique(),
@@ -516,7 +517,8 @@ def build_view_payload(
         "body_site_node_count": len(body_site_order),
         "trait_body_bundle_count": len(bundles),
         "source_edge_count": len(frame),
-        "trunk_edge_count": len(bundles),
+        "bundle_endpoint_count": len(bundles),
+        "body_site_connector_count": len(bundles),
         "html_path": (OUTPUT_DIR / HTML_FILENAME).relative_to(REPO_ROOT).as_posix(),
         "data_path": (OUTPUT_DIR / DATA_FILENAME).relative_to(REPO_ROOT).as_posix(),
     }
@@ -547,8 +549,8 @@ def build_graph_payload(output_dir: Path = OUTPUT_DIR) -> tuple[dict[str, object
         "title": "Six shared traits Cytoscape graph explorer",
         "description": (
             "Graph versions of the all-six-trait grouped and individual-condition "
-            "Sankey maps. Condition links fan into body-site trait bundles; each "
-            "body-site node has at most six incoming trait trunks."
+            "Sankey maps. Condition links fan into body-site trait bundles adjacent "
+            "to the body-site nodes, with short direct bundle-to-body-site connectors."
         ),
         "cytoscapePackage": CYTOSCAPE_CDN,
         "sharedSignalMax": round(shared_signal_max, 4),
@@ -774,7 +776,7 @@ def html_template() -> str:
     <div>
       <h1>Six shared traits Cytoscape graph explorer</h1>
       <p class="subtitle">
-        Condition nodes connect into trait/body-site bundle nodes, then each bundle connects to its body-site node as one summed trunk. Edge width uses <code>n=</code> positive-z focus-profile support; color shade uses the shared positive z-score scale.
+        Condition nodes connect into trait/body-site bundle nodes adjacent to the body-site nodes, then each bundle links directly to its corresponding body-site node. Source and body-site connector widths use separate scales.
       </p>
     </div>
     <div class="controls">
@@ -806,10 +808,11 @@ def html_template() -> str:
       </section>
       <section class="section">
         <h2>Legend</h2>
-        <div class="legend-item"><span class="line-sample" style="border-top-width: 2px;"></span><span>small source edge</span></div>
-        <div class="legend-item"><span class="line-sample" style="border-top-width: 7px;"></span><span>large source edge</span></div>
-        <div class="legend-item"><span class="line-sample" style="border-top-width: 12px;"></span><span>body-site trunk, summed per trait color</span></div>
-        <p class="note">Bundle nodes are the small colored diamonds before each body-site node. Each body-site can receive up to six trunks, one for each trait color scale.</p>
+        <div class="legend-item"><span class="line-sample" style="border-top-width: 3px;"></span><span>condition/source scale: small n</span></div>
+        <div class="legend-item"><span class="line-sample" style="border-top-width: 11px;"></span><span>condition/source scale: large n</span></div>
+        <div class="legend-item"><span class="line-sample" style="border-top-width: 3px;"></span><span>trait/body-site scale: small n</span></div>
+        <div class="legend-item"><span class="line-sample" style="border-top-width: 12px;"></span><span>trait/body-site scale: large n</span></div>
+        <p class="note">Bundle diamonds are borderless and adjacent to each body-site node. Each body site has at most six bundle endpoints, one for each trait color scale.</p>
       </section>
       <section class="section">
         <h2>Selected Element</h2>
@@ -839,15 +842,15 @@ def html_template() -> str:
     }
 
     function edgeWidthRange(view, edgeType) {
-      if (edgeType === "trunk") {
-        return [view.ranges.trunkNMin, view.ranges.trunkNMax, 2.2, 12.0];
+      if (edgeType === "bundle") {
+        return [view.ranges.bundleNMin, view.ranges.bundleNMax, 1.8, 12.0];
       }
-      return [view.ranges.sourceNMin, view.ranges.sourceNMax, 1.1, 7.0];
+      return [view.ranges.sourceNMin, view.ranges.sourceNMax, 2.2, 10.8];
     }
 
     function graphStyle(view) {
       const sourceRange = edgeWidthRange(view, "source");
-      const trunkRange = edgeWidthRange(view, "trunk");
+      const bundleRange = edgeWidthRange(view, "bundle");
       return [
         {
           selector: "node",
@@ -890,10 +893,9 @@ def html_template() -> str:
             "label": "",
             "shape": "diamond",
             "background-color": "data(color)",
-            "border-color": "data(baseColor)",
-            "border-width": 1,
-            "width": `mapData(n, ${trunkRange[0]}, ${trunkRange[1]}, 11, 30)`,
-            "height": `mapData(n, ${trunkRange[0]}, ${trunkRange[1]}, 11, 30)`,
+            "border-width": 0,
+            "width": `mapData(n, ${bundleRange[0]}, ${bundleRange[1]}, 11, 30)`,
+            "height": `mapData(n, ${bundleRange[0]}, ${bundleRange[1]}, 11, 30)`,
             "padding": 0
           }
         },
@@ -917,16 +919,17 @@ def html_template() -> str:
           selector: 'edge[edgeType="source"]',
           style: {
             "width": `mapData(n, ${sourceRange[0]}, ${sourceRange[1]}, ${sourceRange[2]}, ${sourceRange[3]})`,
-            "opacity": 0.48,
+            "opacity": 0.74,
             "z-index": 1
           }
         },
         {
-          selector: 'edge[edgeType="trunk"]',
+          selector: 'edge[edgeType="body_site_connector"]',
           style: {
-            "width": `mapData(n, ${trunkRange[0]}, ${trunkRange[1]}, ${trunkRange[2]}, ${trunkRange[3]})`,
-            "opacity": 0.9,
+            "width": `mapData(n, ${bundleRange[0]}, ${bundleRange[1]}, ${bundleRange[2]}, ${bundleRange[3]})`,
+            "opacity": 0.92,
             "curve-style": "straight",
+            "target-arrow-shape": "none",
             "z-index": 3
           }
         },
@@ -983,14 +986,14 @@ def html_template() -> str:
       const visibleSourceEdges = cy
         ? cy.edges('[edgeType="source"]').filter((edge) => !edge.hasClass("hidden")).length
         : view.stats.sourceEdges;
-      const visibleTrunks = cy
-        ? cy.edges('[edgeType="trunk"]').filter((edge) => !edge.hasClass("hidden")).length
-        : view.stats.trunkEdges;
+      const visibleBundles = cy
+        ? cy.nodes('[nodeType="bundle"]').filter((node) => !node.hasClass("hidden")).length
+        : view.stats.bundleEndpoints;
       document.getElementById("stats").innerHTML = `
         <div class="stat"><b>${view.stats.conditions}</b><span>condition nodes</span></div>
         <div class="stat"><b>${view.stats.bodySites}</b><span>body-site nodes</span></div>
         <div class="stat"><b>${visibleSourceEdges}</b><span>visible source edges</span></div>
-        <div class="stat"><b>${visibleTrunks}</b><span>visible trunks</span></div>
+        <div class="stat"><b>${visibleBundles}</b><span>visible bundle endpoints</span></div>
       `;
       document.getElementById("data-note").innerHTML = `
         Source TSV: <code>${escapeHtml(view.sourceFile)}</code><br />
@@ -1025,11 +1028,14 @@ def html_template() -> str:
         });
         cy.nodes('[nodeType="bundle"]').forEach((node) => {
           const hasVisibleEdge = node
-            .connectedEdges()
+            .connectedEdges('[edgeType="source"]')
             .filter((edge) => !edge.hasClass("hidden")).length > 0;
           if (!traits.has(node.data("traitId")) || !hasVisibleEdge) {
             node.addClass("hidden");
           }
+        });
+        cy.edges('[edgeType="body_site_connector"]').forEach((edge) => {
+          if (edge.source().hasClass("hidden")) edge.addClass("hidden");
         });
         cy.nodes('[nodeType="condition"]').forEach((node) => {
           const hasVisibleSource = node
@@ -1037,11 +1043,17 @@ def html_template() -> str:
             .filter((edge) => !edge.hasClass("hidden")).length > 0;
           if (!hasVisibleSource) node.addClass("hidden");
         });
+        const visibleBodySites = new Set();
+        cy.nodes('[nodeType="bundle"]').forEach((node) => {
+          if (!node.hasClass("hidden")) visibleBodySites.add(node.data("bodySite"));
+        });
         cy.nodes('[nodeType="body_site"]').forEach((node) => {
-          const hasVisibleTrunk = node
-            .connectedEdges('[edgeType="trunk"]')
+          const hasVisibleConnector = node
+            .connectedEdges('[edgeType="body_site_connector"]')
             .filter((edge) => !edge.hasClass("hidden")).length > 0;
-          if (!hasVisibleTrunk) node.addClass("hidden");
+          if (!visibleBodySites.has(node.data("label")) || !hasVisibleConnector) {
+            node.addClass("hidden");
+          }
         });
       });
       applySearch();
@@ -1186,17 +1198,21 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "The graph explorer uses Cytoscape.js from jsDelivr and includes four "
         "views: increased/decreased grouped conditions and increased/decreased "
         "individual conditions. Each source condition link connects to a "
-        "trait/body-site bundle node, then each bundle connects to the body-site "
-        "node as one summed trait-colored trunk.",
+        "trait/body-site bundle node adjacent to its body-site node, then each "
+        "bundle connects directly to that body-site node. Source and body-site "
+        "connector widths use separate scales.",
         "",
-        "| view | condition nodes | body-site nodes | trait/body-site bundles | source edges | trunks |",
+        (
+            "| view | condition nodes | body-site nodes | trait/body-site bundles | "
+            "source edges | body-site connectors |"
+        ),
         "| --- | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in manifest.itertuples(index=False):
         lines.append(
             f"| {row.view_label} | {row.condition_node_count} | "
             f"{row.body_site_node_count} | {row.trait_body_bundle_count} | "
-            f"{row.source_edge_count} | {row.trunk_edge_count} |"
+            f"{row.source_edge_count} | {row.body_site_connector_count} |"
         )
     lines.append("")
     readme_path.write_text(content + "\n".join(lines), encoding="utf-8")

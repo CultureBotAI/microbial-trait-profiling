@@ -523,14 +523,6 @@ def plot_profile_score_contrast(scores: pd.DataFrame, output_path: Path) -> None
                 color=DIRECTION_COLORS[direction],
                 edgecolors="none",
             )
-            ax.scatter(
-                [position],
-                [np.mean(values)],
-                marker="D",
-                s=44,
-                color="#111827",
-                zorder=4,
-            )
 
         ax.axhline(0, color="#94a3b8", linewidth=1.0, linestyle="--")
         ax.set_xticks([0, 1], ["Decreased", "Increased"])
@@ -573,23 +565,6 @@ def plot_paired_contrasts(paired: pd.DataFrame, output_path: Path) -> None:
             alpha=0.58,
             color=color,
             edgecolors="none",
-        )
-        ax.scatter(
-            [np.mean(values)],
-            [y_position],
-            marker="D",
-            s=70,
-            color="#111827",
-            zorder=4,
-        )
-        ax.text(
-            np.mean(values),
-            y_position + 0.2,
-            f"mean {np.mean(values):.3f}",
-            ha="center",
-            va="bottom",
-            fontsize=9,
-            color="#111827",
         )
 
     ax.axvline(0, color="#111827", linewidth=1.1)
@@ -665,17 +640,8 @@ def plot_anaerobe_taxa_support(taxa: pd.DataFrame, output_path: Path) -> None:
         alpha=0.74,
         label="Increased profiles",
     )
-    ax.scatter(
-        group["decreased_study_count"],
-        y_positions,
-        marker="D",
-        s=52,
-        color="#111827",
-        label="Decreased studies",
-        zorder=4,
-    )
     ax.set_yticks(y_positions, group["target_taxon_name"])
-    ax.set_xlabel("Profile count; black markers show decreased-study count")
+    ax.set_xlabel("Profile count")
     ax.set_title("PD feces anaerobe-depletion target taxa", fontweight="bold")
     ax.grid(axis="x", color="#e5e7eb", linewidth=0.8)
     ax.legend(loc="lower right", frameon=False)
@@ -791,16 +757,16 @@ def write_readme(
                 "- `parkinsons_feces_profile_trait_score_contrast.png`: compares "
                 "profile-level v2 scores between decreased and increased PD feces "
                 "profiles. Each dot is one BugSigDB study/experiment/direction "
-                "profile, boxes show the distribution, black diamonds show means, "
-                "and the dashed line marks zero. The aerobe panel is read as "
+                "profile, boxes show the distribution, and the dashed line marks "
+                "zero. The aerobe panel is read as "
                 "higher scores in increased profiles; the anaerobe panel is read as "
                 "higher scores in decreased profiles."
             ),
             (
                 "- `parkinsons_feces_paired_trait_contrast.png`: keeps only "
                 "study/experiment pairs that have both increased and decreased PD "
-                "feces profiles. Dots are within-experiment contrasts, black "
-                "diamonds are mean contrasts, and positive values mean the expected "
+                "feces profiles. Dots are within-experiment contrasts, and positive "
+                "values mean the expected "
                 "reciprocal pattern: aerobe signal higher in increased profiles and "
                 "anaerobe signal higher in decreased profiles."
             ),
@@ -814,9 +780,7 @@ def write_readme(
             (
                 "- `parkinsons_anaerobe_depletion_taxa_support.png`: focuses on "
                 "anaerobe-depletion target taxa. Horizontal bars compare decreased "
-                "and increased profile support, while black diamonds mark the number "
-                "of decreased-supporting studies, separating repeated-study support "
-                "from raw profile count."
+                "and increased profile support."
             ),
             "",
             "## Figure Methods",
@@ -862,8 +826,7 @@ def write_readme(
             (
                 "- Rendering: diagrams are generated with Matplotlib and saved as both "
                 "PNG and SVG. Orange encodes increased-profile support, blue encodes "
-                "decreased-profile support, and black diamonds mark means or "
-                "decreased-study support depending on the panel."
+                "decreased-profile support."
             ),
             "",
             "The consolidated figure-methods entry is also documented in "

@@ -36,6 +36,9 @@ from create_condition_body_site_guild_maps import (
     weighted_v3_node_stats,
     wrap_label,
 )
+from create_six_shared_trait_cytoscape_heatmaps import (
+    write_six_shared_trait_cytoscape_heatmaps,
+)
 from create_six_shared_trait_graphs import HTML_FILENAME, write_six_shared_trait_graphs
 from create_six_shared_trait_static_graphs import write_six_shared_trait_static_graphs
 
@@ -2503,6 +2506,10 @@ def main() -> None:
     write_readme(summary, output_manifest)
     graph_manifest = write_six_shared_trait_graphs(OUTPUT_DIR, REPO_ROOT)
     static_graph_manifest = write_six_shared_trait_static_graphs(OUTPUT_DIR)
+    cytoscape_heatmap_manifest = write_six_shared_trait_cytoscape_heatmaps(
+        OUTPUT_DIR,
+        REPO_ROOT,
+    )
 
     print(f"Wrote output directory: {OUTPUT_DIR}")
     print(f"Wrote PNGs: {len(output_manifest)}")
@@ -2510,6 +2517,7 @@ def main() -> None:
     print(f"Wrote graph explorer: {OUTPUT_DIR / HTML_FILENAME}")
     print(f"Wrote graph views: {len(graph_manifest)}")
     print(f"Wrote static graph PNGs: {len(static_graph_manifest)}")
+    print(f"Wrote Cytoscape heatmaps: {len(cytoscape_heatmap_manifest)}")
 
 
 if __name__ == "__main__":
