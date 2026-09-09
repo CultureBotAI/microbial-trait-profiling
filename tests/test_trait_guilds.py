@@ -1,11 +1,12 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
+import math
 from pathlib import Path
 
 import pytest
-from scipy.stats import fisher_exact
+from scipy.stats import binomtest
 
-from bsdbng.guild_maps import OTHER_LABEL, build_matrix, compute_correlation
+from bsdbng.guild_maps import OTHER_LABEL, build_matrix, compute_correlation, study_direction_means
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
     OXYGEN_GUILDS,
@@ -154,11 +155,34 @@ def test_correlation_counts_studies_by_shift_direction(corpus: tuple[Path, Path]
     }
     assert result.studies == 2
 
-    # Golden value: the odds ratio must match scipy on the same 2x2 table.
-    expected_or, expected_p = fisher_exact([[2, 0], [0, 2]], alternative="two-sided")
-    assert result.odds_ratio == pytest.approx(float(expected_or))
-    assert result.fisher_p == pytest.approx(float(expected_p))
-    assert result.fisher_p == pytest.approx(0.3333333333333333)
+    # The same studies provide both guild signs, so the test is a paired one:
+    # both studies are discordant in the same direction (aerobe up while
+    # anaerobe down) and the exact McNemar is a two-sided binomial on the
+    # discordant studies. Fisher's exact on the marginal table would treat the
+    # two rows as independent samples and be anticonservative.
+    assert result.discordant == (2, 0)
+    assert result.mcnemar_p == pytest.approx(float(binomtest(2, 2, p=0.5).pvalue))
+    assert result.mcnemar_p == pytest.approx(0.5)
+    # The paired odds ratio is the discordant ratio; with no reverse-discordant
+    # studies it is infinite.
+    assert result.odds_ratio == math.inf
+
+
+def test_study_means_reject_an_unpaired_corpus() -> None:
+    """Pooled means only equal paired contrasts when inc and dec counts match."""
+    lonely = Profile(
+        study_id="bsdb:9",
+        experiment_id="bsdb:9-1",
+        inc_dec="inc",
+        condition="X",
+        body_site="Y",
+        guild_counts={"aerobe": 3, "anaerobe": 1},
+        total=10,
+    )
+    with pytest.raises(ValueError, match="bsdb:9"):
+        study_direction_means([lonely])
+    # An explicitly unpaired caller can still opt in.
+    assert "bsdb:9" in study_direction_means([lonely], require_paired=False)
 
 
 def test_vintage_is_read_from_the_dump_header(tmp_path: Path) -> None:
@@ -241,3 +265,58 @@ def test_rows_are_clustered_and_pooling_is_reported(corpus: tuple[Path, Path]) -
     assert condition_pooling.pooled_labels == 1
     assert condition_pooling.pooled_profiles == 2
     assert "Other pools 1 labels" in condition_pooling.describe()
+
+
+def test_other_bucket_can_be_excluded_instead_of_pooled(corpus: tuple[Path, Path]) -> None:
+    """Dropping Other removes the mixed row and column instead of drawing them."""
+    profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
+    matrix = build_matrix(
+        profiles,
+        max_conditions=1,
+        max_body_sites=10,
+        min_studies=1,
+        n_clusters=2,
+        include_other_conditions=False,
+        include_other_body_sites=False,
+    )
+
+    assert OTHER_LABEL not in matrix.conditions
+    assert OTHER_LABEL not in matrix.body_sites
+    assert all(not column.startswith(f"{OTHER_LABEL}|") for column in matrix.columns)
+
+    # The pooling report still names what the cut left out, now as dropped.
+    condition_pooling = next(p for p in matrix.pooled if p.kind == "condition")
+    assert condition_pooling.pooled_labels == 1
+    assert condition_pooling.bucketed is False
+    assert "dropped 1 labels" in condition_pooling.describe()
+
+
+def test_rows_kept_only_by_no_signal_cells_go_with_the_shading(tmp_path: Path) -> None:
+    """Without the dark-grey shading such a row would be an invisible blank line."""
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [0, 0, 0, 0, 0, 7, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [0, 0, 0, 0, 0, 7, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Periodontitis", "Saliva", "Homo sapiens")],
+    )
+    profiles, _ = load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+
+    shaded = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
+    assert "Periodontitis" in shaded.conditions
+
+    unshaded = build_matrix(
+        profiles,
+        max_conditions=10,
+        max_body_sites=10,
+        min_studies=1,
+        mark_no_signal=False,
+    )
+    assert unshaded.conditions == []
+    assert "Periodontitis" in unshaded.dropped_empty_conditions

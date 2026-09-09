@@ -88,6 +88,13 @@ study-trait-profiles:
 guild-maps:
 	just timed guild-maps "uv run python scripts/create_guild_maps.py"
 
+# Same inputs and same corpus filters as guild-maps, but over the six individual
+# traits of manuscript Table 1 instead of the two pooled oxygen guilds. Writes the
+# combined condition x body-site heatmap, the paired directional-shift figure, and
+# their backing tables to data/derived/table1_traits/.
+table1-trait-maps:
+	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py"
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
