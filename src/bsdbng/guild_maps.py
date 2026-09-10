@@ -15,7 +15,7 @@ from __future__ import annotations
 import argparse
 import csv
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -583,9 +583,9 @@ GUILD_COLORSCALES = {"aerobe": "OrRd", "anaerobe": "YlGn"}
 # Colour-bar ticks as percentages with trailing zeros trimmed, so 0.0004 reads
 # "0.04%" rather than plotly's default SI-prefixed "400u".
 PERCENT_TICKS = ".3~%"
-# Room for the title block above a panel figure and its rotated column labels below.
-PANEL_TOP_MARGIN = 400
-PANEL_BOTTOM_MARGIN = 260
+# The title line plus the gap between the subtitle and the body-site headers. The
+# subtitle's own lines are added to this.
+PANEL_TOP_MARGIN = 110
 # A panel's colour bars lie flat under the figure, three across and two deep, in
 # the band this reserves below the column labels. Stacking them vertically ties
 # the legend's height to the number of conditions - a four-row cut would either
@@ -594,14 +594,68 @@ PANEL_BOTTOM_MARGIN = 260
 # Bars are laid out this far apart, and the band is sized from however many rows
 # of them a figure's width leaves room for.
 LEGEND_ROW_PITCH = 140
+# The band under the column labels that holds the row of colour bars and their
+# titles, and how far above the foot of the figure the bars themselves sit.
+
 # A plotting area only a few rows tall makes the renderer fail outright
-# ("axis scaling"), so a cut shorter than this keeps a little slack below it.
-MIN_PANEL_ROWS = 8
-# Every heatmap cell is this tall, in every figure, so a cell in a four-row cut
-# is the same size as a cell in the combined figure.
-ROW_HEIGHT = 26
+# ("axis scaling"), so a cut shorter than this keeps a little slack below it. Kept
+# as low as the failure allows, because every padding row is white space under a
+# two-row cut and that was the first thing anyone noticed about the small heatmaps.
+MIN_PANEL_ROWS = 5
+# Every heatmap cell is this many pixels on a side, in every figure. Both renderers
+# size the plotting area from the grid rather than fitting the grid into a fixed
+# canvas, so a cell in a two-row cut is the same square as a cell in the combined
+# figure and the eye can carry a magnitude from one to the other. Stretching cells
+# to fill their panel made two cuts of one matrix read as two different measurements.
+CELL_SIZE = 26
+ROW_HEIGHT = CELL_SIZE
+# Left room for condition names, right room for the combined figure's stacked
+# colour bars, and the gutter between two panels of the detail figure.
+LABEL_MARGIN = 300
+PANEL_GAP = 70
+# The six colour bars sit side by side in the right margin, so that margin has to
+# hold a bar, its ticks, and its wrapped title, six times over.
+COLORBAR_SLOT_PX = 112
+COLORBAR_PX = 200.0
+COLORBAR_MARGIN = 6 * COLORBAR_SLOT_PX + 60
+MIN_PANEL_WIDTH = 900
 NO_SIGNAL_COLOR = "#4d4d4d"
 CLUSTER_GAP_ROWS = 1
+
+# Significant cells are outlined rather than recoloured: the fill already carries
+# the magnitude, so the verdict has to ride on top of it without displacing it.
+SIGNIFICANCE_COLOR = "#111111"
+SIGNIFICANCE_WIDTH = {"enrichment": 2.0, "composition": 2.0, "both": 3.0}
+SIGNIFICANCE_DASH = {"enrichment": "solid", "composition": "dot", "both": "solid"}
+# Appended to a column label when the composition arm calls that trait's paired
+# contrast in that body site. The arrow points at the side carrying more of it.
+COLUMN_MARK_GLYPH = {"increased": "\u25b2", "decreased": "\u25bc"}
+# A subtitle line wider than the figure is silently clipped, so lines are broken
+# to whatever the width affords at the subtitle's font size.
+SUBTITLE_CHAR_PX = 7.3
+SUBTITLE_LINE_PX = 26
+# Column labels run straight down rather than on a slant. A slanted label needs
+# horizontal room proportional to its length, which a CELL_SIZE-wide column does
+# not have, so the labels ran into each other as soon as the cells were squared
+# off. Vertical labels need only their line height, whatever the cell width.
+COLUMN_LABEL_ANGLE = -90
+COLUMN_LABEL_CHAR_PX = 7.4
+
+
+def _panel_geometry(panels: int, columns_per_panel: int) -> tuple[float, float, float, float]:
+    """Figure width, left and right margins, and subplot spacing for square cells.
+
+    The plotting area is built up from the cells outward instead of the cells
+    being fitted into a canvas, which is what keeps one cell the same size across
+    figures with different numbers of panels. Where that leaves a figure narrower
+    than its legend needs, the shortfall goes to the margins.
+    """
+    plot_width = panels * columns_per_panel * CELL_SIZE + (panels - 1) * PANEL_GAP
+    content = LABEL_MARGIN + plot_width + COLORBAR_MARGIN
+    width = max(MIN_PANEL_WIDTH, content)
+    slack = (width - content) / 2.0
+    spacing = PANEL_GAP / plot_width if panels > 1 else 0.0
+    return width, LABEL_MARGIN + slack, COLORBAR_MARGIN + slack, spacing
 
 
 def _guild_of_column(column: str) -> str:
@@ -637,6 +691,120 @@ def _site_blocks(columns: Sequence[str]) -> list[tuple[str, int, int]]:
         else:
             blocks.append((site, index, index))
     return blocks
+
+
+def _significance_shapes(
+    row_labels: Sequence[str],
+    columns: Sequence[str],
+    values: Sequence[Sequence[float | None]],
+    marks: Mapping[tuple[str, str, str, str], str],
+    *,
+    axis: str = "",
+    column_indices: Sequence[int] | None = None,
+) -> list[dict[str, object]]:
+    """Outline every drawn cell that either arm called significant.
+
+    ``marks`` is keyed by ``(condition, body site, trait, direction)``, which is
+    what the cell means rather than where it happens to be drawn, so the same
+    mapping outlines the same cells in the combined figure and in any cut of it.
+
+    A cell the figure masked - too few studies behind it - is never outlined. The
+    two arms test profiles and pairs, which exist whether or not the figure chose
+    to draw their average, and an outline floating on blank paper reads as a
+    result rather than as a cell that was withheld.
+    """
+    indices = list(range(len(columns))) if column_indices is None else list(column_indices)
+    shapes: list[dict[str, object]] = []
+    for row, condition in enumerate(row_labels):
+        for position, index in enumerate(indices):
+            if values[row][index] is None:
+                continue
+            column = columns[index]
+            mark = marks.get(
+                (
+                    condition,
+                    _site_of_column(column),
+                    _guild_of_column(column),
+                    column.rsplit("_", 1)[1],
+                )
+            )
+            if mark is None:
+                continue
+            shapes.append(
+                {
+                    "type": "rect",
+                    "xref": f"x{axis}",
+                    "yref": f"y{axis}",
+                    "x0": position - 0.5,
+                    "x1": position + 0.5,
+                    "y0": row - 0.5,
+                    "y1": row + 0.5,
+                    "fillcolor": "rgba(0,0,0,0)",
+                    "line": {
+                        "color": SIGNIFICANCE_COLOR,
+                        "width": SIGNIFICANCE_WIDTH[mark],
+                        "dash": SIGNIFICANCE_DASH[mark],
+                    },
+                    "layer": "above",
+                }
+            )
+    return shapes
+
+
+def _significance_note(
+    marks: Mapping[tuple[str, str, str, str], str],
+    column_marks: Mapping[tuple[str, str], str],
+) -> list[str]:
+    """Say what a border means, in the terms the two arms actually resolve."""
+    if not marks and not column_marks:
+        return []
+    lines = [
+        f"Black outline ({len(marks)} cells): most of the studies behind that cell are "
+        "significantly enriched for the trait on their own, under the enrichment arm's "
+        "hypergeometric test (q <= 0.001, fold >= 1.5).",
+    ]
+    if column_marks:
+        lines.append(
+            "A triangle on a column label is the composition arm's paired "
+            "increased-minus-decreased contrast for that trait across the whole body site "
+            "(q <= 0.05), pointing to the side carrying more of it. It says nothing about "
+            "any one condition in the block."
+        )
+    return lines
+
+
+def _marked_columns(
+    columns: Sequence[str],
+    tick_text: Sequence[str],
+    column_marks: Mapping[tuple[str, str], str],
+    indices: Sequence[int] | None = None,
+) -> list[str]:
+    """Append the composition arm's arrow to the labels of the columns it calls."""
+    if not column_marks:
+        return list(tick_text)
+    positions = list(range(len(columns))) if indices is None else list(indices)
+    marked: list[str] = []
+    for label, index in zip(tick_text, positions, strict=True):
+        column = columns[index]
+        glyph = column_marks.get((_site_of_column(column), _guild_of_column(column)))
+        marked.append(f"{label} {COLUMN_MARK_GLYPH[glyph]}" if glyph else label)
+    return marked
+
+
+def _wrap_subtitle(lines: Sequence[str], width: float) -> list[str]:
+    """Break subtitle lines to the figure width, keeping their order."""
+    budget = max(60, int((width - 220) / SUBTITLE_CHAR_PX))
+    wrapped: list[str] = []
+    for line in lines:
+        remaining = line
+        while len(remaining) > budget:
+            cut = remaining.rfind(" ", 0, budget)
+            if cut <= 0:
+                break
+            wrapped.append(remaining[:cut])
+            remaining = remaining[cut + 1 :]
+        wrapped.append(remaining)
+    return wrapped
 
 
 def _upper_range(values: list[float], quantile: float) -> float:
@@ -742,6 +910,8 @@ def write_figure(
     range_quantile: float = 1.0,
     separate_body_sites: bool = False,
     mark_no_signal: bool = True,
+    significance: Mapping[tuple[str, str, str, str], str] | None = None,
+    column_marks: Mapping[tuple[str, str], str] | None = None,
 ) -> Path:
     """Render the heatmap with one colour scale per trait group.
 
@@ -766,6 +936,13 @@ def write_figure(
     row_labels, row_values, row_blanks = _insert_cluster_gaps(matrix)
     observed = [v for row in row_values for v in row if v is not None]
     z_max = _upper_range(observed, range_quantile)
+    tick_labels = _marked_columns(matrix.columns, matrix.columns, column_marks or {})
+    # One panel spanning every column, so the combined figure and the detail cuts
+    # go through the same geometry and end up with identically sized cells.
+    width, left, right, _spacing = _panel_geometry(1, len(matrix.columns))
+    combined_bottom = (
+        60 + max((len(column) for column in tick_labels), default=0) * COLUMN_LABEL_CHAR_PX
+    )
 
     per_group: dict[str, list[list[float | None]]] = {}
     for guild in guild_order:
@@ -793,7 +970,7 @@ def write_figure(
         figure.add_trace(
             go.Heatmap(
                 z=z_guild,
-                x=matrix.columns,
+                x=tick_labels,
                 y=row_labels,
                 colorscale=scales[guild],
                 zmin=0.0,
@@ -832,6 +1009,8 @@ def write_figure(
         for col, sampled in enumerate(flags)
         if sampled and mark_no_signal
     ]
+
+    shapes.extend(_significance_shapes(row_labels, matrix.columns, row_values, significance or {}))
 
     annotations: list[dict[str, object]] = []
     if separate_body_sites:
@@ -897,7 +1076,7 @@ def write_figure(
         )
     # Broken into explicit lines: as one run the subtitle overflows the plotting
     # area and is clipped by the right-hand colour bars.
-    subtitle = "<br>".join(
+    subtitle_lines = _wrap_subtitle(
         [
             f"Mean {value_phrase}, averaged within study then across studies, shown as a "
             "percentage of the profile's summed trait-assertion counts (taxonomic "
@@ -905,20 +1084,44 @@ def write_figure(
             range_note,
             cluster_note,
             *_coverage_note(matrix),
+            *_significance_note(significance or {}, column_marks or {}),
             f"BugSigDB {vintage or 'vintage unknown'}.",
-        ]
+        ],
+        width,
+    )
+    subtitle = "<br>".join(subtitle_lines)
+    # Sized to the subtitle it holds, plus room for the body-site headers when
+    # they are drawn. A fixed block walks the last lines onto the headers.
+    top = (
+        PANEL_TOP_MARGIN
+        + SUBTITLE_LINE_PX * len(subtitle_lines)
+        + (120 if separate_body_sites else 0)
     )
     figure.update_layout(
-        title={"text": f"{title}<br><sub>{subtitle}</sub>"},
-        xaxis={"title": f"body site | {group_noun} _ direction", "tickangle": -60},
+        title={
+            "text": f"{title}<br><sub>{subtitle}</sub>",
+            "y": 1.0 - 30.0 / (ROW_HEIGHT * len(row_labels) + combined_bottom + top),
+            "yanchor": "top",
+            "yref": "container",
+        },
+        xaxis={
+            "title": f"body site | {group_noun} _ direction",
+            "tickangle": COLUMN_LABEL_ANGLE,
+        },
         yaxis={"title": "condition", "autorange": "reversed"},
         shapes=shapes,
         annotations=annotations,
-        width=max(900, 26 * len(matrix.columns)),
-        height=ROW_HEIGHT * len(row_labels) + 300 + (420 if separate_body_sites else 220),
+        width=width,
+        height=ROW_HEIGHT * len(row_labels) + combined_bottom + top,
         # The site headers sit above the plotting area, so they need their own room.
         # The subtitle block plus a two-line site header need the room.
-        margin={"l": 300, "b": 300, "t": 420 if separate_body_sites else 220},
+        margin={
+            "l": left,
+            "r": right,
+            "b": combined_bottom,
+            "t": top,
+        },
+        plot_bgcolor="white",
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.write_image(str(output_path), scale=2)
@@ -1044,6 +1247,8 @@ def write_body_site_panels(
     mark_no_signal: bool = True,
     scale_reference: GuildMatrix | None = None,
     note: str | None = None,
+    significance: Mapping[tuple[str, str, str, str], str] | None = None,
+    column_marks: Mapping[tuple[str, str], str] | None = None,
 ) -> Path:
     """Draw one panel per named body site, at a width where the labels are readable.
 
@@ -1090,29 +1295,61 @@ def write_body_site_panels(
         for guild in guild_order
     }
 
+    # Every block carries the same columns, so one panel is as wide as any other
+    # and the cells come out square at exactly CELL_SIZE.
+    columns_per_panel = len(guild_order) * len(DIRECTIONS)
+    width, left, right, spacing = _panel_geometry(len(sites), columns_per_panel)
+    plot_width = width - left - right
+
     figure = make_subplots(
         rows=1,
         cols=len(sites),
         shared_yaxes=True,
-        horizontal_spacing=0.06,
+        horizontal_spacing=spacing,
         subplot_titles=[f"<b>{site}</b>" for site in sites],
     )
 
-    count = len(guild_order)
-    # All six bars on one line. Plotly places a horizontal bar's title a fixed
-    # distance below it that does not track the row spacing set here, so a second
-    # row of bars lands under the first row's titles; one row cannot collide with
-    # itself. The width floor is what a six-bar legend and the subtitle need.
-    width = max(1600, 300 + 480 * len(sites))
-    legend_columns = count
-    legend_depth = -(-count // legend_columns)
-    legend_height = 50 + legend_depth * LEGEND_ROW_PITCH
-    bottom = PANEL_BOTTOM_MARGIN + legend_height
-    height = PANEL_TOP_MARGIN + bottom + ROW_HEIGHT * len(row_labels)
-    # Bar rows measured up from the foot of the figure, top row first.
-    legend_rows = [
-        (legend_height - 80.0 - row * LEGEND_ROW_PITCH) / height for row in range(legend_depth)
-    ]
+    longest_label = max(
+        (
+            len(f"{labels.get(guild, guild)} {direction}") + 2
+            for guild in guild_order
+            for direction in DIRECTIONS
+        ),
+        default=0,
+    )
+    # Vertical column labels hang straight down out of the plotting area, so the
+    # bottom margin is just the longest of them.
+    bottom = 60 + longest_label * COLUMN_LABEL_CHAR_PX
+
+    range_note = f"Each {group_noun} is on its own scale, the same one the combined figure uses"
+    if range_quantile < 1.0:
+        range_note += f", cut at the {range_quantile:.0%} quantile of observed cells"
+    grey_note = (
+        f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
+        if mark_no_signal
+        else ""
+    )
+    subtitle_lines = _wrap_subtitle(
+        [
+            f"Mean {value_phrase}, averaged within study then across studies, shown as a "
+            "percentage of the profile's summed trait-assertion counts (taxonomic "
+            "rollups can count one reported taxon many times), not of its taxa.",
+            f"{range_note}.",
+            "Rows are the conditions of the combined figure in the same clustered order, so a "
+            f"blank row here was drawn in another body site.{grey_note}",
+            *_coverage_note(matrix),
+            *_significance_note(significance or {}, column_marks or {}),
+            *([note] if note else []),
+            f"BugSigDB {vintage or 'vintage unknown'}.",
+        ],
+        width,
+    )
+    subtitle = "<br>".join(subtitle_lines)
+    # The subtitle sits in the top margin, so the margin is measured from the lines
+    # it actually holds. A fixed block either clipped a long subtitle onto the
+    # body-site headers or left a band of white above a short one.
+    top = PANEL_TOP_MARGIN + SUBTITLE_LINE_PX * len(subtitle_lines)
+    height = top + bottom + ROW_HEIGHT * len(row_labels)
     shapes: list[dict[str, object]] = []
     for panel, site in enumerate(sites, start=1):
         indices = [i for i, column in enumerate(matrix.columns) if _site_of_column(column) == site]
@@ -1123,12 +1360,12 @@ def write_body_site_panels(
             guild = _guild_of_column(matrix.columns[i])
             direction = matrix.columns[i].rsplit("_", 1)[1]
             tick_text.append(f"{labels.get(guild, guild)} {direction}")
+        tick_text = _marked_columns(matrix.columns, tick_text, column_marks or {}, indices)
         for position, guild in enumerate(guild_order):
             z_guild = [
                 [row[i] if _guild_of_column(matrix.columns[i]) == guild else None for i in indices]
                 for row in row_values
             ]
-            column, legend_row = position % legend_columns, position // legend_columns
             figure.add_trace(
                 go.Heatmap(
                     z=z_guild,
@@ -1142,22 +1379,29 @@ def write_body_site_panels(
                     # One colour bar per trait for the whole figure, not per panel.
                     showscale=panel == len(sites),
                     colorbar={
-                        # The unit is in the subtitle: three bars across a narrow
-                        # figure leave no room to repeat it under each one.
-                        "title": {"text": labels.get(guild, guild), "side": "bottom"},
-                        "orientation": "h",
-                        "x": 0.07 + column * (0.88 / legend_columns),
+                        # The unit is in the subtitle: six bars side by side leave
+                        # no room to repeat it above each one.
+                        "title": {
+                            "text": _wrapped(labels.get(guild, guild), width=11),
+                            "side": "top",
+                        },
+                        # Placed in paper coordinates - the plotting area - because
+                        # that is the frame the renderer actually honours for a
+                        # colour bar. Against the container the bars came out
+                        # hairline-thin or in the middle of the column labels, and
+                        # left to itself the renderer stacks all six on one spot.
+                        # x > 1 is to the right of the plotting area; the length is
+                        # in pixels so a two-row cut does not collapse its bars.
+                        "x": 1.0 + (40.0 + position * COLORBAR_SLOT_PX) / plot_width,
                         "xanchor": "left",
-                        "xref": "container",
-                        "y": legend_rows[legend_row],
-                        "yanchor": "bottom",
-                        "yref": "container",
-                        "len": 0.78 / legend_columns,
-                        "lenmode": "fraction",
-                        "thickness": 12,
+                        "y": 1.0,
+                        "yanchor": "top",
+                        "thickness": 13,
+                        "len": COLORBAR_PX,
+                        "lenmode": "pixels",
                         "tickformat": PERCENT_TICKS,
-                        # Three ticks per bar; more collide at this width.
-                        "nticks": 3,
+                        # Two ticks per bar; a third collides at this width.
+                        "nticks": 2,
                     },
                 ),
                 row=1,
@@ -1182,31 +1426,27 @@ def write_body_site_panels(
                 for col, i in enumerate(indices)
                 if flags[i]
             )
-
-    range_note = f"Each {group_noun} is on its own scale, the same one the combined figure uses"
-    if range_quantile < 1.0:
-        range_note += f", cut at the {range_quantile:.0%} quantile of observed cells"
-    grey_note = (
-        f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
-        if mark_no_signal
-        else ""
-    )
-    subtitle = "<br>".join(
-        [
-            f"Mean {value_phrase}, averaged within study then across studies, shown as a "
-            "percentage of the profile's summed trait-assertion counts (taxonomic "
-            "rollups can count one reported taxon many times), not of its taxa.",
-            f"{range_note}.",
-            "Rows are the conditions of the combined figure in the same clustered order, so a "
-            f"blank row here was drawn in another body site.{grey_note}",
-            *_coverage_note(matrix),
-            *([note] if note else []),
-            f"BugSigDB {vintage or 'vintage unknown'}.",
-        ]
-    )
+        shapes.extend(
+            _significance_shapes(
+                row_labels,
+                matrix.columns,
+                row_values,
+                significance or {},
+                axis="" if panel == 1 else str(panel),
+                column_indices=indices,
+            )
+        )
 
     figure.update_layout(
-        title={"text": f"{title}<br><sub>{subtitle}</sub>"},
+        title={
+            "text": f"{title}<br><sub>{subtitle}</sub>",
+            # Pinned to the top of the figure. Left to itself the renderer centres
+            # the block in the top margin, which walks it down onto the body-site
+            # headers as soon as the subtitle grows a line.
+            "y": 1.0 - 30.0 / height,
+            "yanchor": "top",
+            "yref": "container",
+        },
         shapes=shapes,
         width=width,
         # The margins are fixed text - six subtitle lines above, rotated column
@@ -1214,10 +1454,10 @@ def write_body_site_panels(
         # carved out of a fixed total. A four-row cut would otherwise render as a
         # sliver with the colour bars stacked on each other.
         height=height,
-        margin={"l": 300, "b": bottom, "t": PANEL_TOP_MARGIN},
+        margin={"l": left, "r": right, "b": bottom, "t": top},
         plot_bgcolor="white",
     )
-    figure.update_xaxes(tickangle=-60)
+    figure.update_xaxes(tickangle=COLUMN_LABEL_ANGLE)
     figure.update_yaxes(autorange="reversed")
     figure.update_yaxes(title_text="condition", row=1, col=1)
     for annotation in figure.layout.annotations[: len(sites)]:

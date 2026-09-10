@@ -264,3 +264,126 @@ from an unpinned devel-branch export; those are superseded.
 
 The pipeline code and this description were drafted with the assistance of a
 coding agent (Claude Code) and reviewed by the author.
+
+## Third layer: outlining the cells the other two arms call significant
+
+The heatmap says how large a trait's share of a profile's signal is. It does not
+say whether that share is more than chance, and this project already has two arms
+that answer exactly that question in two different ways. At Marcin Joachimiak's
+request (issue #172), both were run over the same corpus the figure is drawn from
+and their verdicts drawn on top of it, so one figure carries all three approaches.
+
+Neither test is invented here. The **enrichment arm** (Analysis B, Ilyas
+Abdolcader, `scripts/trait_enrichment.py` on
+`origin/enrichment-analysis-heatmap-cluster`) asks, one profile at a time, whether
+that profile drew more assertions of a trait than a draw of its size from the
+corpus pool would give: a one-tailed hypergeometric test, Benjamini-Hochberg
+across every test at once, and a call at `q <= 0.001` with a fold of at least 1.5.
+The **composition arm** (Analysis A, Jed Kim-Ozaeta,
+`scripts/create_trait_profile_infographic.py` on
+`origin/clustered-heatmap-generation`) scales trait shares per 1,000,
+`log1p`-transforms them, z-scores each trait within the stratum, and tests the
+increased side of a matched pair minus its decreased side against zero with a
+one-sample t-test. Both are transcribed into `src/bsdbng/trait_significance.py`
+with their own thresholds.
+
+Marcin's prerequisite was to check whether either arm's committed output already
+resolves significance at the level of these cells. The answer differs by arm, and
+it is what decides how each one is drawn.
+
+The enrichment arm's `trait_enrichment_results.tsv` is keyed
+`(study_id, experiment_id, inc_dec, trait)`, which aggregates directly onto a cell.
+Its header records `Total-Profiles-Input: 4670` and
+`Total-Tests-Performed: 556516`; both match this corpus exactly, so the branch tip
+already applies the human-only, paired-only, and MediaDive-excluded filters of
+issues #121, #122, and #129. All six Table 1 traits are present, the two non-METPO
+ones under their METPO-qualified names (`METPO:2000103|GO:0030245`,
+`METPO:2000103|pathways:arsenate_reduction`), which is why a lookup on the bare
+`GO:0030245` finds nothing. Re-running the test here reproduces that table's
+per-trait significant-profile counts exactly - 860, 660, 864, 515, 267, and 262
+for the six traits, over the same 556,516 tests - which is asserted by
+`tests/test_trait_significance.py::test_reproduces_the_enrichment_arm_committed_counts`
+(marked `integration`, since it reads the other branch).
+
+The composition arm's `trait_profile_paired_contrast_trait_stats_<site>.tsv` is
+keyed `(body_site_group, trait)` and pools every condition in the site, so it
+cannot say which row of a block is significant. Running its test per
+`(condition, body site, trait)` on this corpus shows why it was never emitted that
+way: only 413 of the 1,836 trait cells reach the three matched study pairs the
+test needs, and after Benjamini-Hochberg exactly one survives. That is a finding
+about the corpus, not a defect in the arm - a single condition in a single body
+site rarely carries enough paired studies to support a t-test.
+
+So the two arms are drawn differently, at the grain each one actually resolves.
+
+- **A black outline on a cell** is the enrichment arm: most of the studies behind
+  that cell were individually called significant. A cell needs at least two
+  studies and a strict majority of them, so one study never speaks for a cell, and
+  a cell the figure masked for want of studies is never outlined - an outline on
+  blank paper would read as a result rather than as a withheld cell. 62 cells are
+  outlined.
+- **A triangle on a column label** is the composition arm: that trait's paired
+  contrast is significant across the whole body site, with the triangle pointing
+  at the side carrying more of it. It says nothing about any one condition in the
+  block, and the figure says so.
+
+Two departures from the arms' committed runs are deliberate. Pairs are averaged to
+one value per study before the composition t-test, which is the correction issue
+#133 asks for, and the enrichment background pool is built from the figure's own
+filtered corpus rather than an unfiltered one, so the test scores a profile
+against the pool it belongs to. Both are stated here rather than silently applied.
+
+The per-cell verdicts and the paired contrasts are written to
+`table1_traits_cell_significance.tsv` and
+`table1_traits_composition_contrasts.tsv`, so every outline in the figure can be
+traced to the studies behind it.
+
+### What the outlines show
+
+Pooled over conditions, **all six traits shift significantly between the increased
+and decreased sides of a fecal signature**, and five of the six shift the same
+way. Facultatively aerobic (mean contrast +0.311, q = 2.9e-06 over 394 studies),
+arsenate reduction (+0.291, q = 8.6e-05), sphere shaped (+0.284, q = 1.0e-05),
+moderately halophilic (+0.251, q = 6.2e-06), and coccus shaped (+0.248,
+q = 2.2e-04) all sit higher among the taxa a study reported as increased.
+Cellulose catabolic process is the exception and runs the other way (-0.249,
+q = 5.7e-04): it sits higher among the taxa reported as decreased. Read together
+that is the oxygen hypothesis stated in one line - the organisms that rise in a
+dysbiotic gut are the oxygen-tolerant ones, and the ones that fall are the fibre
+degraders. Outside the gut only one contrast survives, coccus shaped in the pooled
+Other block (+0.274, q = 0.014).
+
+The cell-level outlines concentrate in the same two traits: coccus shaped
+increased (17 cells) and facultatively aerobic increased (14) account for half of
+the 62. Several conditions carry a coherent set of them. In feces, COVID-19 is
+outlined for facultatively aerobic and coccus shaped on the increased side and
+cellulose catabolic process on the decreased side, on 13 studies; gastric cancer
+carries the same three-trait pattern on 4 studies and repeats facultatively
+aerobic increased in saliva; diarrhea is outlined for five of the six traits, all
+on the increased side except cellulose catabolism; stroke is outlined for
+facultatively aerobic, coccus shaped, and arsenate reduction on the increased
+side. Rheumatoid arthritis carries coccus shaped and sphere shaped on the
+increased side in both feces and saliva, which is the only trait pattern that
+crosses those two sites in the same condition.
+
+Two results run against the pooled pattern and are worth keeping in view rather
+than smoothing over. Chronic constipation is outlined for cellulose catabolic
+process on the **increased** side over 14 studies, the opposite of the fecal
+contrast, which is what slow transit favouring fibre degraders would look like.
+And in the cervical conditions the direction inverts: cervical glandular
+intraepithelial neoplasia is outlined for coccus shaped on the decreased side in
+both uterine cervix and vagina. A vaginal community is rod-dominated at baseline,
+so "cocci among the taxa that fell" is not the same claim as "cocci among the taxa
+that rose" in a gut, and these two rows should not be read on the gut's terms.
+
+Marcin's own reading of the earlier cuts was that a trait is rarely called in both
+directions at once. That holds and is now countable: of the 57 condition-by-body-
+site-by-trait combinations with any call, 5 carry one in both directions.
+
+One caveat limits every outline. The enrichment arm's urn still draws trait
+assertions rather than taxa, which is what issue #131 measures and expects to
+shrink the significant set substantially once fixed. An outline here therefore
+means "unusually assertion-rich in that trait", not "unusually taxon-rich", and
+the same rollup that inflates a cell's value inflates its significance. The
+outlines are a cross-arm integration of what the two arms currently say, not a
+claim that survives that fix.

@@ -33,6 +33,7 @@ from scipy.stats import binomtest, false_discovery_control, spearmanr
 from bsdbng.guild_maps import (
     OTHER_LABEL,
     SIGN_TOLERANCE,
+    GuildMatrix,
     build_matrix,
     study_direction_means,
     subset_matrix,
@@ -52,6 +53,11 @@ from bsdbng.trait_guilds import (
     load_profiles,
     read_bugsigdb_vintage,
     write_stats_report,
+)
+from bsdbng.trait_significance import (
+    SignificanceOverlay,
+    build_overlay,
+    write_significance_tables,
 )
 
 TRAIT_ORDER: tuple[str, ...] = tuple(TABLE1_TRAITS)
@@ -448,6 +454,51 @@ def write_shift_figure(
     return output_path
 
 
+def matrix_binning(
+    profiles: Sequence[Profile], matrix: GuildMatrix
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Reproduce the label binning `build_matrix` used, as raw label -> drawn label.
+
+    The significance tests run over profiles, but a heatmap cell is a drawn label,
+    which for anything outside the top-N cut is the pooled Other bucket. Without
+    this map a profile pooled into Other would be scored against a cell that is
+    not the one it was drawn in.
+    """
+    drawn_conditions = set(matrix.conditions)
+    drawn_sites = set(matrix.body_sites)
+
+    def binned(labels: set[str], drawn: set[str]) -> dict[str, str]:
+        mapping = {label: (label if label in drawn else OTHER_LABEL) for label in labels if label}
+        return {raw: cell for raw, cell in mapping.items() if cell in drawn}
+
+    return (
+        binned({p.condition for p in profiles}, drawn_conditions),
+        binned({p.body_site for p in profiles}, drawn_sites),
+    )
+
+
+def report_significance(overlay: SignificanceOverlay) -> None:
+    """Print what the two arms could and could not say about the drawn cells."""
+    outlined = len(overlay.marks)
+    print(
+        f"\nSignificance overlay: {overlay.tests_performed} hypergeometric tests over "
+        f"{overlay.profiles_tested} profiles; {outlined} cells outlined."
+    )
+    if overlay.untested_traits:
+        print(f"  traits with no enrichment call: {', '.join(overlay.untested_traits)}")
+    print(
+        f"  cells where both directions were called: {overlay.both_directions} "
+        f"of {len(overlay.enrichment_verdicts)} called cells"
+    )
+    for call in sorted(overlay.composition, key=lambda c: c.q_value):
+        if call.stratum_kind == "body_site" and call.significant:
+            print(
+                f"  composition {call.body_site} / {call.trait}: "
+                f"mean {call.mean_contrast:+.3f} over {call.studies} studies, "
+                f"q {call.q_value:.3g}, higher on the {call.direction} side"
+            )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
@@ -564,8 +615,28 @@ def main() -> int:
 
     result = compute_direction_shifts(profiles, TRAIT_ORDER)
 
+    # Both arms' verdicts for the cells this matrix draws (#172), so a cell can be
+    # outlined when either of them calls it and one figure carries all three
+    # statistical approaches.
+    bin_condition, bin_body_site = matrix_binning(profiles, matrix)
+    overlay = build_overlay(
+        profiles,
+        TABLE1_TRAITS,
+        bin_condition=bin_condition,
+        bin_body_site=bin_body_site,
+        profile_path=args.profile_input,
+    )
+    report_significance(overlay)
+
     written = write_matrix_outputs(matrix, args.output_dir, OUTPUT_PREFIX)
     written.extend(write_shift_table(result, args.output_dir, vintage))
+    written.extend(
+        write_significance_tables(
+            overlay,
+            args.output_dir / f"{OUTPUT_PREFIX}_cell_significance.tsv",
+            args.output_dir / f"{OUTPUT_PREFIX}_composition_contrasts.tsv",
+        )
+    )
     written.append(
         write_figure(
             matrix,
@@ -581,6 +652,8 @@ def main() -> int:
             range_quantile=0.98,
             separate_body_sites=True,
             mark_no_signal=args.mark_no_signal,
+            significance=overlay.marks,
+            column_marks=overlay.column_marks,
         )
     )
     # The combined figure squeezes every body site in, which leaves each column
@@ -623,6 +696,8 @@ def main() -> int:
                 mark_no_signal=args.mark_no_signal,
                 scale_reference=matrix,
                 note=note,
+                significance=overlay.marks,
+                column_marks=overlay.column_marks,
             )
         )
     written.append(
