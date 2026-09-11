@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import math
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -67,6 +68,9 @@ MAX_PARALLEL_EDGE_OFFSET = 0.010
 BODY_SITE_BUNDLE_X = 0.585
 BODY_SITE_BUNDLE_EDGE_SPACING = 0.007
 MAX_BODY_SITE_BUNDLE_EDGE_OFFSET = 0.018
+BIDIRECTIONAL_ANALYSIS = "six_shared_traits_combined_shared_high_support"
+BIDIRECTIONAL_STEM = f"{BIDIRECTIONAL_ANALYSIS}_profile_sankey"
+BIDIRECTIONAL_README_HEADING = "## Increased and Decreased High-Support Overlay"
 
 
 def wrapped_plot_text(value: str, width: int = 150) -> str:
@@ -614,7 +618,9 @@ def parallel_offset_sequence(
     ]
 
 
-def add_parallel_offsets(display_edges: pd.DataFrame) -> pd.DataFrame:
+def add_parallel_offsets(
+    display_edges: pd.DataFrame, *, separate_directions: bool = False
+) -> pd.DataFrame:
     """Attach per-pair offsets ordered by edge width from largest to smallest."""
     output = display_edges.copy()
     output["parallel_rank"] = 1
@@ -625,6 +631,19 @@ def add_parallel_offsets(display_edges: pd.DataFrame) -> pd.DataFrame:
             ascending=[False, False, True],
         ).index.tolist()
         offsets = parallel_offset_sequence(len(ordered_indices))
+        if separate_directions:
+            ordered_indices = (
+                group.assign(
+                    direction_rank=group["focus_direction"].map({"increased": 0, "decreased": 1})
+                )
+                .sort_values(["trait_rank", "direction_rank"])
+                .index.tolist()
+            )
+            offsets = (
+                np.linspace(0.070, -0.070, len(ordered_indices)).tolist()
+                if len(ordered_indices) > 1
+                else [0.0]
+            )
         for rank, (index, offset) in enumerate(
             zip(ordered_indices, offsets, strict=True),
             start=1,
@@ -1506,15 +1525,24 @@ def plot_combined_direction_sankey(
     bundle_by_trait_at_body_site: bool = False,
 ) -> None:
     """Render one combined condition-to-body-site Sankey for all six traits."""
+    both_directions = focus_direction == "both"
+    if both_directions and bundle_by_trait_at_body_site:
+        raise ValueError("The bidirectional overlay requires separate direction links.")
     if display_edges.empty:
-        msg = f"No display edges available for {DIRECTION_LABELS[focus_direction]}."
+        msg = f"No display edges available for {focus_direction}."
         raise ValueError(msg)
 
-    focus_label = DIRECTION_LABELS[focus_direction]
-    comparator_label = DIRECTION_LABELS[COMPARATOR_DIRECTIONS[focus_direction]]
+    focus_label = "increased + decreased" if both_directions else DIRECTION_LABELS[focus_direction]
+    comparator_label = (
+        "" if both_directions else DIRECTION_LABELS[COMPARATOR_DIRECTIONS[focus_direction]]
+    )
     display_edges = display_edges.copy()
-    display_edges["color_value"] = display_edges.apply(value_for_color, axis=1)
-    display_edges = add_parallel_offsets(display_edges)
+    display_edges["color_value"] = (
+        display_edges["focus_enriched_mean_guild_z"].fillna(0.0).clip(lower=0.0)
+        if both_directions
+        else display_edges.apply(value_for_color, axis=1)
+    )
+    display_edges = add_parallel_offsets(display_edges, separate_directions=both_directions)
     bundles = pd.DataFrame()
     if bundle_by_trait_at_body_site:
         bundles = body_site_trait_bundles(display_edges)
@@ -1579,6 +1607,8 @@ def plot_combined_direction_sankey(
     body_site_stats = combined_node_stats(display_edges, "body_site_group")
 
     height = max(11.0, 2.2 + 0.54 * max(len(condition_order), len(body_site_order)))
+    if both_directions:
+        height = max(13.0, height)
     fig, ax = plt.subplots(figsize=(17.5, height))
     fig.subplots_adjust(left=0.04, right=0.80, top=subplot_top, bottom=0.105)
     ax.set_xlim(0, 1)
@@ -1595,6 +1625,8 @@ def plot_combined_direction_sankey(
         ignore_index=True,
     )
     source_positive_counts = source_counts[source_counts > 0]
+    if both_directions:
+        source_positive_counts = display_edges["focus_enriched_profile_count"]
     source_min_count = float(source_positive_counts.min())
     source_max_count = float(source_positive_counts.max())
     source_max_enriched_width = 4.6 if bundle_by_trait_at_body_site else 5.7
@@ -1613,6 +1645,8 @@ def plot_combined_direction_sankey(
         min_width=0.9,
         max_width=source_max_background_width,
     )
+    if both_directions:
+        background_widths[:] = 0.0
     bundle_enriched_widths = pd.Series(dtype=float)
     bundle_background_widths = pd.Series(dtype=float)
     if bundle_by_trait_at_body_site:
@@ -1718,14 +1752,20 @@ def plot_combined_direction_sankey(
             edge.body_site_bundle_offset if bundle_by_trait_at_body_site else edge.parallel_offset
         )
         y1 = offset_node_y(body_site_y[edge.body_site_group], body_offset)
+        if both_directions:
+            y0 = condition_y[edge.condition]
+            y1 = body_site_y[edge.body_site_group]
         draw_curve(
             ax,
             start=(left_x, y0),
             end=(source_end_x, y1),
             color=cmap(norm(signal)),
             linewidth=float(linewidth),
-            alpha=0.46 if bundle_by_trait_at_body_site else 0.72,
+            alpha=0.92 if both_directions else (0.46 if bundle_by_trait_at_body_site else 0.72),
             zorder=2.0 + ((len(SHARED_TRAITS) - int(edge.parallel_rank)) * 0.03),
+            linestyle="--" if both_directions and edge.focus_direction == "decreased" else "-",
+            capstyle="butt" if both_directions else "round",
+            control_y_offset=edge.parallel_offset if both_directions else 0.0,
         )
 
     if bundle_by_trait_at_body_site:
@@ -1784,18 +1824,30 @@ def plot_combined_direction_sankey(
         0.04,
         0.925,
         wrapped_plot_text(
-            f"Colored curves are {focus_label} profiles with trait z-score > 0; "
-            "parallel trait colors distinguish the six q <= 0.001 traits. "
-            "Width = positive-z profile count; shade = mean positive z-score "
-            "on a shared numeric scale for all six traits. Within each parallel "
-            "condition/body-site stack, curves are ordered thick-to-thin. "
-            "Light grey underlays show z <= 0 background for the same "
-            f"condition/body-site/trait; TSVs retain the {focus_label} - "
-            f"{comparator_label} contrast. Node key: links = plotted "
-            "trait-specific links, traits = distinct traits, n = positive-z "
-            "profile memberships summed across displayed trait links."
-            + (" Body-site trunks sum same-color links." if bundle_by_trait_at_body_site else "")
-            + (f" {subtitle_extra}" if subtitle_extra else "")
+            "Solid = increased profiles; dashed = decreased profiles. "
+            "Color identifies the trait; width = positive-z profile count; "
+            "shade = mean positive z-score. "
+            "Each direction retains its own top-12 pair selection. "
+            "Node n sums profile-trait memberships across both directions."
+            if both_directions
+            else (
+                f"Colored curves are {focus_label} profiles with trait z-score > 0; "
+                "parallel trait colors distinguish the six q <= 0.001 traits. "
+                "Width = positive-z profile count; shade = mean positive z-score "
+                "on a shared numeric scale for all six traits. Within each parallel "
+                "condition/body-site stack, curves are ordered thick-to-thin. "
+                "Light grey underlays show z <= 0 background for the same "
+                f"condition/body-site/trait; TSVs retain the {focus_label} - "
+                f"{comparator_label} contrast. Node key: links = plotted "
+                "trait-specific links, traits = distinct traits, n = positive-z "
+                "profile memberships summed across displayed trait links."
+                + (
+                    " Body-site trunks sum same-color links."
+                    if bundle_by_trait_at_body_site
+                    else ""
+                )
+                + (f" {subtitle_extra}" if subtitle_extra else "")
+            )
         ),
         ha="left",
         va="top",
@@ -1859,17 +1911,39 @@ def plot_combined_direction_sankey(
                 label="body-site trunk: summed n",
             )
         )
-    legend_lines.append(
-        Line2D(
-            [0],
-            [0],
-            color=EDGE_BACKGROUND,
-            linewidth=5.8,
-            alpha=0.28,
-            solid_capstyle="round",
-            label="bg profiles: z <= 0",
-        )
+    background_legend = Line2D(
+        [0],
+        [0],
+        color=EDGE_BACKGROUND,
+        linewidth=5.8,
+        alpha=0.28,
+        solid_capstyle="round",
+        label="bg profiles: z <= 0",
     )
+    if not both_directions:
+        legend_lines.append(background_legend)
+    else:
+        fig.legend(
+            handles=[
+                Line2D([0], [0], color=SLATE_700, linewidth=2.5, label="Increased (solid)"),
+                Line2D(
+                    [0],
+                    [0],
+                    color=SLATE_700,
+                    linewidth=2.5,
+                    linestyle="--",
+                    dash_capstyle="butt",
+                    label="Decreased (dashed)",
+                ),
+            ],
+            title="Profile direction",
+            loc="upper left",
+            bbox_to_anchor=(0.83, 0.39),
+            frameon=False,
+            fontsize=9,
+            title_fontsize=10,
+            handlelength=3.5,
+        )
     legend = ax.legend(
         handles=legend_lines,
         title=(
@@ -2199,6 +2273,146 @@ def write_shared_high_support_outputs(
     return pd.DataFrame.from_records(output_records)
 
 
+def write_bidirectional_high_support_outputs(
+    all_edges: pd.DataFrame,
+    all_display_edges: pd.DataFrame,
+) -> pd.DataFrame:
+    """Overlay the existing per-direction selections without merging their counts."""
+    selected_frames = []
+    pair_frames = []
+    for direction in DIRECTION_LABELS.values():
+        selected, pairs = select_shared_high_support_display_edges(
+            all_display_edges[all_display_edges["focus_direction"] == direction]
+        )
+        selected_frames.append(selected)
+        pair_frames.append(pairs.assign(focus_direction=direction))
+    display_edges = pd.concat(selected_frames, ignore_index=True)
+    pair_selection = pd.concat(pair_frames, ignore_index=True)
+    direction_keys = ["condition", "body_site_group", "focus_direction"]
+    edge_keys = [*direction_keys, "trait_id"]
+    edges = all_edges.merge(pair_selection, on=direction_keys, how="inner", validate="many_to_one")
+    edges = edges.merge(
+        display_edges[edge_keys].assign(displayed_in_shared_high_support_map=True),
+        on=edge_keys,
+        how="left",
+        validate="one_to_one",
+    )
+    edges["displayed_in_shared_high_support_map"] = edges[
+        "displayed_in_shared_high_support_map"
+    ].eq(True)
+    for frame in [edges, display_edges]:
+        frame["line_style"] = frame["focus_direction"].map(
+            {"increased": "solid", "decreased": "dashed"}
+        )
+
+    png_path = OUTPUT_DIR / f"{BIDIRECTIONAL_STEM}.png"
+    edges_path = OUTPUT_DIR / f"{BIDIRECTIONAL_STEM}_edges.tsv"
+    display_path = OUTPUT_DIR / f"{BIDIRECTIONAL_STEM}_display_edges.tsv"
+    pairs_path = OUTPUT_DIR / f"{BIDIRECTIONAL_STEM}_selected_pairs.tsv"
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    edges.to_csv(edges_path, sep="\t", index=False)
+    display_edges.to_csv(display_path, sep="\t", index=False)
+    pair_selection.to_csv(pairs_path, sep="\t", index=False)
+    plot_combined_direction_sankey(
+        display_edges,
+        "both",
+        png_path,
+        title_prefix="Six shared traits, high support",
+        subplot_top=0.865,
+        color_scale_vmax=max(0.4, float(all_display_edges["focus_enriched_mean_guild_z"].max())),
+        footer_extra=(
+            f"Top {SHARED_PATTERN_MAX_PAIRS} pairs per direction, among pairs shared by "
+            f"at least {SHARED_PATTERN_MIN_TRAITS} traits or with at least "
+            f"{SHARED_PATTERN_HIGH_SUPPORT_MIN_PROFILES} positive-z profiles in one trait. "
+            "Background counts remain in the TSVs; grey underlays are omitted."
+        ),
+    )
+    return pd.DataFrame.from_records(
+        [
+            {
+                "analysis": BIDIRECTIONAL_ANALYSIS,
+                "figure_type": "bidirectional_shared_high_support",
+                "trait_id": "all",
+                "trait_label": "all six shared traits",
+                "trait_slug": "all",
+                "focus_direction": "both",
+                "trait_count": display_edges["trait_id"].nunique(),
+                "edge_count": len(edges),
+                "display_edge_count": len(display_edges),
+                "selected_pair_count": len(pair_selection[direction_keys[:2]].drop_duplicates()),
+                "png_path": png_path.relative_to(REPO_ROOT).as_posix(),
+                "edges_path": edges_path.relative_to(REPO_ROOT).as_posix(),
+                "display_edges_path": display_path.relative_to(REPO_ROOT).as_posix(),
+                "selected_pairs_path": pairs_path.relative_to(REPO_ROOT).as_posix(),
+                "condition_rollups_path": "",
+                "body_site_rollups_path": "",
+            }
+        ]
+    )
+
+
+def write_bidirectional_readme_note() -> None:
+    """Update only this variant's note, preserving the other generated analyses."""
+    path = OUTPUT_DIR / "README.md"
+    text = path.read_text(encoding="utf-8") if path.exists() else "# Six Shared Traits Sankeys\n"
+    section = (
+        f"{BIDIRECTIONAL_README_HEADING}\n\n"
+        f"![Combined high-support Sankey]({BIDIRECTIONAL_STEM}.png)\n\n"
+        "Solid colored curves show increased profiles and dashed colored curves show "
+        "decreased profiles. Both run from condition to body site; the line style "
+        "describes the profile direction, not a negative trait z-score. A colored "
+        "curve represents positive-z support for one trait in one direction. "
+        "Hue identifies the trait, width encodes its positive-z profile count, and "
+        "shade encodes its mean positive z-score on a shared numeric scale.\n\n"
+        f"The top {SHARED_PATTERN_MAX_PAIRS} pairs are selected independently for each "
+        "direction using the same rules as the separate high-support plots. Their "
+        "union is displayed without combining increased and decreased counts. "
+        "A missing direction means that link was not selected for display, not "
+        "necessarily that its support is zero. Node n sums profile-trait memberships "
+        "over both directions. Grey background underlays are omitted for readability; "
+        "background counts remain in the tables.\n\n"
+        f"- Displayed links and direction: `{BIDIRECTIONAL_STEM}_display_edges.tsv`\n"
+        f"- All edges for selected direction/pair keys: `{BIDIRECTIONAL_STEM}_edges.tsv`\n"
+        f"- Pair ranks within each direction: `{BIDIRECTIONAL_STEM}_selected_pairs.tsv`\n\n"
+        "Regenerate this overlay from the existing grouped Sankey edge tables with "
+        "`just six-shared-trait-combined-sankey`.\n"
+    )
+    before, found, after = text.partition(BIDIRECTIONAL_README_HEADING)
+    if found:
+        _, next_heading, remaining = after.partition("\n## ")
+        text = before.rstrip() + "\n\n" + section
+        if next_heading:
+            text += "\n## " + remaining
+    else:
+        text = text.rstrip() + "\n\n" + section
+    path.write_text(text, encoding="utf-8")
+
+
+def regenerate_bidirectional_high_support() -> None:
+    """Regenerate this overlay from saved tables without resetting the output folder."""
+    frames = {}
+    for table in ["edges", "display_edges"]:
+        frames[table] = pd.concat(
+            [
+                read_tsv(OUTPUT_DIR / f"six_shared_traits_{direction}_profile_sankey_{table}.tsv")
+                for direction in DIRECTION_LABELS.values()
+            ],
+            ignore_index=True,
+        )
+    new_manifest = write_bidirectional_high_support_outputs(
+        frames["edges"], frames["display_edges"]
+    )
+    manifest_path = OUTPUT_DIR / "six_shared_trait_sankey_manifest.tsv"
+    manifest = read_tsv(manifest_path)
+    manifest = manifest[manifest["analysis"] != BIDIRECTIONAL_ANALYSIS]
+    pd.concat([manifest, new_manifest], ignore_index=True).to_csv(
+        manifest_path, sep="\t", index=False
+    )
+    write_bidirectional_readme_note()
+    print(f"Wrote {OUTPUT_DIR / (BIDIRECTIONAL_STEM + '.png')}")
+    print(new_manifest[["display_edge_count", "selected_pair_count"]].to_string(index=False))
+
+
 def write_individual_condition_outputs(
     all_edges: pd.DataFrame,
     all_display_edges: pd.DataFrame,
@@ -2475,6 +2689,7 @@ def main() -> None:
     )
     trait_lane_manifest = write_trait_lane_outputs(all_edges, display_edges)
     shared_high_support_manifest = write_shared_high_support_outputs(all_edges, display_edges)
+    bidirectional_manifest = write_bidirectional_high_support_outputs(all_edges, display_edges)
     individual_condition_manifest = write_individual_condition_outputs(
         individual_condition_edges,
         individual_condition_display_edges,
@@ -2493,6 +2708,7 @@ def main() -> None:
             combined_manifest,
             trait_lane_manifest,
             shared_high_support_manifest,
+            bidirectional_manifest,
             individual_condition_manifest,
             individual_manifest,
         ],
@@ -2504,6 +2720,7 @@ def main() -> None:
         index=False,
     )
     write_readme(summary, output_manifest)
+    write_bidirectional_readme_note()
     graph_manifest = write_six_shared_trait_graphs(OUTPUT_DIR, REPO_ROOT)
     static_graph_manifest = write_six_shared_trait_static_graphs(OUTPUT_DIR)
     cytoscape_heatmap_manifest = write_six_shared_trait_cytoscape_heatmaps(
@@ -2521,4 +2738,14 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--combined-high-support-only",
+        action="store_true",
+        help="Combine directions from saved grouped tables without regenerating other figures.",
+    )
+    args = parser.parse_args()
+    if args.combined_high_support_only:
+        regenerate_bidirectional_high_support()
+    else:
+        main()

@@ -42,6 +42,22 @@ format:
 trait-profile-investigation:
 	uv run python scripts/regenerate_trait_profile_investigation.py
 
+# Regenerate six-trait pattern and full-table signed direction heatmaps.
+six-shared-trait-heatmaps:
+	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py
+
+# Trace PD lollipop traits to observed taxa and profile evidence.
+pd-trait-taxa:
+	uv run python scripts/lookup_pd_trait_taxa.py
+
+# Plot species-level carrier counts for the four positive-side PD traits.
+pd-trait-taxa-heatmap:
+	uv run python scripts/create_pd_four_trait_taxon_heatmap.py
+
+# Overlay increased (solid) and decreased (dashed) high-support Sankey links.
+six-shared-trait-combined-sankey:
+	uv run python scripts/create_six_shared_trait_sankeys.py --combined-high-support-only
+
 # Flatten per-study YAML into data/derived/*.tsv.
 study-tsvs:
 	uv run python -m bsdbng.study_tsv

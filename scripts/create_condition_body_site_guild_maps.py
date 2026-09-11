@@ -1611,6 +1611,9 @@ def draw_curve(
     linewidth: float,
     alpha: float = 0.72,
     zorder: float = 1.0,
+    linestyle: str = "-",
+    capstyle: str = "round",
+    control_y_offset: float = 0.0,
 ) -> None:
     """Draw one left-to-right Bezier edge."""
     x0, y0 = start
@@ -1619,8 +1622,8 @@ def draw_curve(
     path = MplPath(
         [
             (x0, y0),
-            (x0 + control_dx, y0),
-            (x1 - control_dx, y1),
+            (x0 + control_dx, y0 + control_y_offset),
+            (x1 - control_dx, y1 + control_y_offset),
             (x1, y1),
         ],
         [MplPath.MOVETO, MplPath.CURVE4, MplPath.CURVE4, MplPath.CURVE4],
@@ -1631,7 +1634,8 @@ def draw_curve(
         edgecolor=color,
         linewidth=linewidth,
         alpha=alpha,
-        capstyle="round",
+        linestyle=linestyle,
+        capstyle=capstyle,
         joinstyle="round",
         zorder=zorder,
     )

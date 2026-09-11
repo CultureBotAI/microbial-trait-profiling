@@ -527,7 +527,7 @@ def plot_direction_specificity(
     ax.bar_label(bars_comparator, padding=3, fontsize=9)
     ax.set_xticks(x, ["Increased\nPD feces", "Decreased\nPD feces"])
     ax.set_ylabel("Cellulose-positive profile count")
-    ax.set_title("Cytoscape edge support", fontweight="bold")
+    ax.set_title("PD fecal profiles with cellulose z > 0", fontweight="bold")
     ax.legend(
         handles=[
             Patch(facecolor=INCREASED_COLOR, label="Increased focus edge"),

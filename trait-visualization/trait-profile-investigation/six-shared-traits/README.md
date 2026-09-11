@@ -95,17 +95,49 @@ These PNGs are graph versions of the six shared trait Sankey views. They use six
 - Manifest: `six_shared_trait_cytoscape_heatmap_manifest.tsv`
 - Pattern matrix table: `six_shared_trait_condition_body_site_trait_pattern_matrix.tsv`
 - Signed contrast table: `six_shared_trait_condition_body_site_direction_contrasts.tsv`
+- BH-selected cell table: `six_shared_trait_condition_body_site_bh_selected_cells.tsv`
 
-These heatmaps reuse the same six-shared-trait display-edge TSVs that feed the Cytoscape graph views. They preserve condition/body-site/trait records instead of correlating already-collapsed condition and body-site nodes.
+Trait-pattern heatmaps use the six-shared-trait display-edge TSVs that feed the Cytoscape graph views. Signed contrasts use the full increased and decreased edge TSVs before graph display selection. They preserve condition/body-site/trait records instead of correlating already-collapsed condition and body-site nodes.
 
-- `trait_pattern`: Approach 2. Rows are condition/body-site pairs and columns are the six traits. Cell color is `log1p(n) * signal`, where `n` is positive-z focus-profile support and `signal` is the Cytoscape trait-specific signal, rendered with a yellow-to-blue sequential palette. Cells require Fisher p<=0.05, n>=3, and s>=2.
-- `signed_direction_contrast`: Approach 4. Rows are condition/body-site pairs and columns are traits. Cell color is the increased-profile positive-z fraction minus the decreased-profile positive-z fraction. Cells require Fisher p<=0.05 plus the same support floor.
+Signed contrasts display all supported, testable effects, including nonsignificant results. Gray cells are unavailable or under-supported. Trait-pattern heatmaps continue to mask cells that fail the raw p-value threshold.
 
-| heatmap | type | PNG | displayed cells | tested cells | rows |
-| --- | --- | --- | ---: | ---: | ---: |
-| Increased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_grouped_condition_body_site_trait_pattern_heatmap.png` | 25 | 188 | 16 |
-| Decreased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_grouped_condition_body_site_trait_pattern_heatmap.png` | 17 | 185 | 15 |
-| Increased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` | 14 | 117 | 8 |
-| Decreased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` | 7 | 105 | 7 |
-| Grouped conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap.png` | 32 | 226 | 17 |
-| Individual conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap.png` | 17 | 145 | 10 |
+- `trait_pattern`: Approach 2. Rows are condition/body-site pairs and columns are the six traits. Cell color is Fisher evidence, `-log10(p)`, rendered with a yellow-to-blue sequential palette so darker cells have smaller p-values. Cells require Fisher p<0.01, n>=3, and s>=2 for exploratory display.
+- `signed_direction_contrast`: Approach 4. Rows are condition/body-site pairs and columns are traits. Cell color and numbers are `increased_fraction - decreased_fraction` on a fixed -1 to +1 scale. Red favors increased profiles and blue favors decreased profiles. An asterisk marks Fisher p<0.01; unstarred cells are descriptive effects, not significant findings at that cutoff. Cells require a finite test, at least 3 positive-z profiles in either direction, and at least 2 total studies. Every condition/body-site row with a supported cell is included, without a row cap. Rows are grouped by body site and ranked by significant-trait count, coverage, and evidence within each site.
+- Readable pages contain at most 24 rows each. `six_shared_trait_signed_direction_heatmap_pages.tsv` records their paths and counts; `heatmap_page` in the contrast table locates each displayed row. The original PNGs show full overviews.
+- BH q-values are computed within each heatmap view. `selected_after_bh=True` marks supported cells with q<=0.05; those cells are also collected in the BH-selected cell table.
+
+| heatmap | type | PNG | displayed cells | BH-selected cells | tested cells | rows |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| Increased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_grouped_condition_body_site_trait_pattern_heatmap.png` | 15 | 5 | 188 | 9 |
+| Decreased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_grouped_condition_body_site_trait_pattern_heatmap.png` | 6 | 4 | 185 | 6 |
+| Increased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` | 4 | 2 | 117 | 2 |
+| Decreased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` | 5 | 4 | 105 | 5 |
+| Grouped conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap.png` | 413 | 8 | 747 | 79 |
+| Individual conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap.png` | 597 | 4 | 2379 | 125 |
+
+### Signed Direction Pages
+
+- [Grouped conditions, page 1](six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap_page_01.png) (24 rows, 140 filled cells)
+- [Grouped conditions, page 2](six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap_page_02.png) (24 rows, 128 filled cells)
+- [Grouped conditions, page 3](six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap_page_03.png) (24 rows, 116 filled cells)
+- [Grouped conditions, page 4](six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap_page_04.png) (7 rows, 29 filled cells)
+- [Individual conditions, page 1](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_01.png) (24 rows, 141 filled cells)
+- [Individual conditions, page 2](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_02.png) (24 rows, 144 filled cells)
+- [Individual conditions, page 3](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_03.png) (24 rows, 106 filled cells)
+- [Individual conditions, page 4](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_04.png) (24 rows, 100 filled cells)
+- [Individual conditions, page 5](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_05.png) (24 rows, 94 filled cells)
+- [Individual conditions, page 6](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_06.png) (5 rows, 12 filled cells)
+
+## Increased and Decreased High-Support Overlay
+
+![Combined high-support Sankey](six_shared_traits_combined_shared_high_support_profile_sankey.png)
+
+Solid colored curves show increased profiles and dashed colored curves show decreased profiles. Both run from condition to body site; the line style describes the profile direction, not a negative trait z-score. A colored curve represents positive-z support for one trait in one direction. Hue identifies the trait, width encodes its positive-z profile count, and shade encodes its mean positive z-score on a shared numeric scale.
+
+The top 12 pairs are selected independently for each direction using the same rules as the separate high-support plots. Their union is displayed without combining increased and decreased counts. A missing direction means that link was not selected for display, not necessarily that its support is zero. Node n sums profile-trait memberships over both directions. Grey background underlays are omitted for readability; background counts remain in the tables.
+
+- Displayed links and direction: `six_shared_traits_combined_shared_high_support_profile_sankey_display_edges.tsv`
+- All edges for selected direction/pair keys: `six_shared_traits_combined_shared_high_support_profile_sankey_edges.tsv`
+- Pair ranks within each direction: `six_shared_traits_combined_shared_high_support_profile_sankey_selected_pairs.tsv`
+
+Regenerate this overlay from the existing grouped Sankey edge tables with `just six-shared-trait-combined-sankey`.

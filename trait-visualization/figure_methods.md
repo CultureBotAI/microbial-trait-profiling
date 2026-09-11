@@ -1397,6 +1397,19 @@ by at least 3 traits or by at least 30 positive-z focus profiles in one trait.
 Their `*_selected_pairs.tsv` files record the pair-selection ranks and support
 statistics.
 
+The combined-direction high-support figure,
+`six_shared_traits_combined_shared_high_support_profile_sankey.png`, overlays
+the union of those independently selected pairs. Increased-profile links are
+solid and decreased-profile links are dashed. Both run from condition to body
+site. Trait hue, positive-z profile counts, and mean positive z-score shading
+retain their meanings, with a common width scale across directions. Matching
+trait/direction curves are offset so both remain visible. Direction-specific
+counts and selection ranks remain separate in the accompanying edge and pair
+TSVs; an absent direction is an unselected link, not evidence of zero support.
+Node counts sum profile-trait memberships across both directions. This variant
+omits grey background underlays for readability but retains their counts in
+the TSVs. Regenerate it with `just six-shared-trait-combined-sankey`.
+
 The individual-condition Sankeys,
 `six_shared_traits_increased_individual_conditions_profile_sankey.png` and
 `six_shared_traits_decreased_individual_conditions_profile_sankey.png`, keep raw
@@ -1444,16 +1457,18 @@ counts, background counts, color values, edge classes, and layout coordinates.
 `six_shared_trait_static_graph_manifest.tsv` records the static graph PNG paths
 and view-level node and edge counts.
 
-The condition/body-site heatmap supplements reuse the same display-edge TSVs
-that feed the Cytoscape graph views. They are intentionally not correlations
-between collapsed graph nodes; each tested cell keeps one
+The trait-pattern heatmaps reuse the display-edge TSVs that feed the Cytoscape
+graph views. Signed direction contrasts use the full increased and decreased
+`*_profile_sankey_edges.tsv` tables before graph display selection. They are
+not correlations between collapsed graph nodes; each tested cell keeps one
 condition/body-site/trait record and asks whether that trait has enough
 direction-specific positive-z support to display. Outputs are listed in
 `six_shared_trait_cytoscape_heatmap_manifest.tsv`. The long-form cell tables
 are `six_shared_trait_condition_body_site_trait_pattern_matrix.tsv` for the
 trait-pattern heatmaps and
 `six_shared_trait_condition_body_site_direction_contrasts.tsv` for the signed
-direction contrasts.
+direction contrasts. The q-value-filtered selected set is written to
+`six_shared_trait_condition_body_site_bh_selected_cells.tsv`.
 
 Four trait-pattern heatmaps are written:
 `six_shared_traits_increased_grouped_condition_body_site_trait_pattern_heatmap.png`,
@@ -1462,31 +1477,38 @@ Four trait-pattern heatmaps are written:
 and
 `six_shared_traits_decreased_individual_conditions_condition_body_site_trait_pattern_heatmap.png`.
 Rows are condition/body-site pairs and columns are the six shared traits. The
-cell value is `log1p(n) * signal`, where `n` is positive-z focus-profile support
-and `signal` is the nonnegative Cytoscape trait signal, using
-focus-minus-comparator mean z-score when available and focus mean z-score as the
-fallback. A cell is shown only when a one-sided Fisher exact test indicates that
-focus positive-z support exceeds comparator positive-z support with `p <= 0.05`,
-with at least 3 positive-z focus profiles and at least 2 positive-z focus-profile
-studies. Rows are ranked by significant trait recurrence and support, with at
-most 24 rows displayed. The trait-pattern heatmaps use the Matplotlib `YlGnBu`
-yellow-to-blue sequential palette over the nonnegative support-strength range;
-lighter yellow cells have lower displayed support-strength within that view and
-darker blue cells have higher support-strength.
+color value is Fisher evidence, `-log10(p)`, from a one-sided Fisher exact test
+asking whether focus positive-z support exceeds comparator positive-z support.
+This makes darker cells correspond to smaller p-values. A cell is shown for
+exploratory review only when `p < 0.01`, with at least 3 positive-z focus
+profiles and at least 2 positive-z focus-profile studies. Rows are ranked by
+significant trait recurrence, BH-selected recurrence, p-value evidence, and
+support, with at most 24 rows displayed. The companion table retains the
+original support-strength components as `n`, `signal`, and `strength` columns,
+and also records BH q-values computed within each heatmap view.
 
 Two signed direction contrast heatmaps are written:
 `six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap.png`
 and
 `six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap.png`.
 Rows are condition/body-site pairs and columns are the six shared traits. The
-cell value is the increased-profile positive-z fraction minus the
-decreased-profile positive-z fraction. A cell is shown only when a two-sided
-Fisher exact test detects a direction difference with `p <= 0.05`, the larger of
-the increased or decreased positive-z profile counts is at least 3, and total
-study support is at least 2. Rows are ranked by significant trait recurrence,
-positive-z support, and absolute signed effect size. These heatmaps use the same
-`RdBu_r` red-blue color scale fixed from -1 to +1: red favors increased profiles,
-blue favors decreased profiles, and pale cells are near zero.
+annotation reports the increased-profile positive-z fraction minus the
+decreased-profile positive-z fraction. Color encodes this same effect on a fixed
+-1 to +1 scale; red favors increased profiles and blue favors decreased profiles.
+All supported effects with finite two-sided Fisher exact p-values are displayed,
+including nonsignificant results. Support requires at least 3 positive-z profiles
+in either direction and at least 2 total studies. An asterisk marks `p < 0.01`;
+unstarred cells are descriptive effects that do not meet that threshold.
+Gray cells are unavailable or insufficiently supported, rather than merely
+nonsignificant. White cells with a numeric zero represent measured null effects.
+Every row with a supported, testable cell is included. Rows are grouped by body
+site, then ranked by significant-trait count, trait coverage, BH-selected count,
+evidence, support, and effect size. Full overview PNGs retain all rows; additional
+`*_page_NN.png` files contain at most 24 rows each. The page manifest is
+`six_shared_trait_signed_direction_heatmap_pages.tsv`.
+BH q-values are computed across the full cell table within each condition-label
+mode. The companion table records raw delta, raw Fisher p-value, BH q-value,
+signed `-log10(p)`, display and significance flags, and page number for each cell.
 
 ### Inferred Guild Evidence Outputs
 
