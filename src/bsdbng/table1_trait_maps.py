@@ -181,10 +181,9 @@ def compute_direction_shifts(
             )
         )
 
-    # Rank correlation between traits over the per-study contrasts. Unlike the
-    # within-profile guild correlations in the oxygen figure, this compares a
-    # trait against another trait across studies rather than two shares of one
-    # profile total, so it is not forced negative by compositionality.
+    # These descriptive correlations still depend on profile denominators.
+    # Taking differences and averaging by study does not remove that dependence;
+    # closure permits positive as well as negative component correlations.
     spearman: dict[str, tuple[float, float, int]] = {}
     for i, left in enumerate(trait_order):
         for right in trait_order[i + 1 :]:
@@ -377,6 +376,7 @@ def write_shift_figure(
         "are excluded from a trait's test, so the denominators differ between traits."
         "<br>Error bars are exact binomial 95% intervals; q is Benjamini-Hochberg across the "
         f"six traits. Correlations are between traits over those per-study contrasts. "
+        "Both fractions and their contrasts remain denominator-dependent. "
         f"BugSigDB {vintage or 'vintage unknown'}."
     )
     figure.update_layout(

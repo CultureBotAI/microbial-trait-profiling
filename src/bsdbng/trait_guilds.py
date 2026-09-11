@@ -212,6 +212,7 @@ def load_profiles(
     *,
     human_only: bool = True,
     paired_only: bool = True,
+    reject_missing_counts: bool = False,
 ) -> tuple[list[Profile], CorpusStats]:
     """Load profile rows joined to experiment metadata, with corpus filters applied."""
     guild_map = OXYGEN_GUILDS if guilds is None else guilds
@@ -252,6 +253,14 @@ def load_profiles(
                 dropped_non_human += 1
                 continue
 
+            if reject_missing_counts:
+                for i in total_positions:
+                    if i >= len(row) or not row[i].strip():
+                        msg = (
+                            f"Missing trait count for {study_id}, {experiment_id}, {inc_dec}: "
+                            f"{header[i]}; missing is not zero"
+                        )
+                        raise ValueError(msg)
             values = [int(row[i]) if row[i].strip() else 0 for i in total_positions]
             guild_counts = {
                 guild: sum(int(row[i]) if row[i].strip() else 0 for i in positions)
