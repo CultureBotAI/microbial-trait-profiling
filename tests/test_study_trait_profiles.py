@@ -85,11 +85,13 @@ def test_create_study_trait_profiles_sums_taxa_traits_by_direction(tmp_path: Pat
     assert stats.profile_taxa == 4
     assert stats.matched_profile_taxa == 3
     assert stats.unmatched_profile_taxa == 1
+    # With binary=True (default), each taxon contributes 1 if count > 0
     assert _read_tsv(output_path) == [
         {
             "study_id": "bsdb:99",
             "experiment_id": "bsdb:99-1",
             "inc_dec": "dec",
+            "taxa_count": "2",
             "METPO:1": "1",
             "METPO:2": "1",
             "METPO:3": "0",
@@ -98,8 +100,9 @@ def test_create_study_trait_profiles_sums_taxa_traits_by_direction(tmp_path: Pat
             "study_id": "bsdb:99",
             "experiment_id": "bsdb:99-1",
             "inc_dec": "inc",
-            "METPO:1": "2",
-            "METPO:2": "3",
+            "taxa_count": "2",
+            "METPO:1": "1",
+            "METPO:2": "1",
             "METPO:3": "2",
         },
     ]
@@ -135,8 +138,11 @@ def test_create_study_trait_profiles_can_count_duplicate_taxa(tmp_path: Path) ->
     assert stats.profile_taxa == 5
     rows = _read_tsv(output_path)
     assert rows[1]["inc_dec"] == "inc"
-    assert rows[1]["METPO:1"] == "4"
-    assert rows[1]["METPO:2"] == "5"
+    # When deduplicate_taxa is False and binary is True, 3 taxon observations in inc:
+    # NCBITaxon:1, NCBITaxon:2, NCBITaxon:1.
+    # Total METPO:1 = 2, METPO:2 = 3
+    assert rows[1]["METPO:1"] == "2"
+    assert rows[1]["METPO:2"] == "3"
 
 
 def test_create_study_trait_profiles_writes_long_format(tmp_path: Path) -> None:
@@ -168,7 +174,7 @@ def test_create_study_trait_profiles_writes_long_format(tmp_path: Path) -> None:
 
     assert output_path.read_text(encoding="utf-8").splitlines() == [
         "trait\tbsdb:99_bsdb:99-1_dec\tbsdb:99_bsdb:99-1_inc",
-        "METPO:1\t1\t5",
+        "METPO:1\t1\t2",
     ]
 
 
@@ -306,6 +312,7 @@ def test_create_study_trait_profiles_includes_all_mapped_kgmicrobe_traits(
         "study_id": "bsdb:100",
         "experiment_id": "bsdb:100-1",
         "inc_dec": "inc",
+        "taxa_count": "2",
         "METPO:1000001": "1",
         "METPO:1000002": "1",
         "METPO:1000003": "2",
@@ -316,6 +323,7 @@ def test_create_study_trait_profiles_includes_all_mapped_kgmicrobe_traits(
         "study_id": "bsdb:100",
         "experiment_id": "bsdb:100-1",
         "inc_dec": "dec",
+        "taxa_count": "1",
         "METPO:1000001": "0",
         "METPO:1000002": "1",
         "METPO:1000003": "1",

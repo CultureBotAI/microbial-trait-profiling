@@ -4,6 +4,9 @@
 import argparse
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.colors as mcolors
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
@@ -152,21 +155,22 @@ def compute_z_score_or_signal(df: pd.DataFrame) -> pd.Series:
     return pd.Series([1.0] * len(df), index=df.index)
 
 
-def get_cubic_bezier_path(x0: float, y0: float, x1: float, y1: float, width: float) -> MplPath:
-    """Creates a smooth horizontal cubic Bezier ribbon of specified vertical width."""
-    hw = width / 2.0
+def get_cubic_bezier_ribbon(
+    x0: float, y0_bot: float, y0_top: float, x1: float, y1_bot: float, y1_top: float
+) -> MplPath:
+    """Create a cubic Bezier ribbon with explicit top and bottom bounds at each end."""
     dx = (x1 - x0) * 0.5
 
     verts = [
-        (x0, y0 - hw),
-        (x0 + dx, y0 - hw),
-        (x1 - dx, y1 - hw),
-        (x1, y1 - hw),
-        (x1, y1 + hw),
-        (x1 - dx, y1 + hw),
-        (x0 + dx, y0 + hw),
-        (x0, y0 + hw),
-        (x0, y0 - hw),
+        (x0, y0_bot),
+        (x0 + dx, y0_bot),
+        (x1 - dx, y1_bot),
+        (x1, y1_bot),
+        (x1, y1_top),
+        (x1 - dx, y1_top),
+        (x0 + dx, y0_top),
+        (x0, y0_top),
+        (x0, y0_bot),
     ]
     codes = [
         MplPath.MOVETO,
@@ -180,6 +184,12 @@ def get_cubic_bezier_path(x0: float, y0: float, x1: float, y1: float, width: flo
         MplPath.CLOSEPOLY,
     ]
     return MplPath(verts, codes)
+
+
+def get_cubic_bezier_path(x0: float, y0: float, x1: float, y1: float, width: float) -> MplPath:
+    """Create a cubic Bezier ribbon of specified width centered at y0 and y1."""
+    hw = width / 2.0
+    return get_cubic_bezier_ribbon(x0, y0 - hw, y0 + hw, x1, y1 - hw, y1 + hw)
 
 
 def plot_grouped_six_trait_sankey(
@@ -341,19 +351,85 @@ def plot_grouped_six_trait_sankey(
     x_cond = 32.0
     x_site = 60.0
 
-    # Draw Nodes (Circles / Pills)
-    node_radius = 0.9
+    # Function to scale ribbon width proportionally to profile count
+    def calc_ribbon_width(n_profiles: int) -> float:
+        return float(np.clip(0.04 + 0.035 * np.sqrt(n_profiles), 0.05, 0.55))
+
+    # Compute stacked heights for condition nodes and body-site nodes
+    # Sort edges exiting c: order by target site position (top to bottom), then by trait
+    # Sort edges entering s: order by source condition position (top to bottom), then by trait
+    cond_index_map = {c: i for i, c in enumerate(conditions)}
+    site_index_map = {s: i for i, s in enumerate(body_sites)}
+
+    edge_agg["cond_idx"] = edge_agg["condition"].map(cond_index_map)
+    edge_agg["site_idx"] = edge_agg["display_body_site"].map(site_index_map)
+    edge_agg["ribbon_w"] = edge_agg["n_profiles"].apply(calc_ribbon_width)
+
+    # Compute total stacked height per condition and per body-site
+    cond_total_w = edge_agg.groupby("condition")["ribbon_w"].sum().to_dict()
+    site_total_w = edge_agg.groupby("display_body_site")["ribbon_w"].sum().to_dict()
+
+    # Calculate exact vertical slices on condition side
+    # Sort edges for condition: top-to-bottom target site, then trait index
+    cond_edge_sort = edge_agg.sort_values(
+        by=["cond_idx", "site_idx", "n_profiles"], ascending=[True, True, False]
+    ).copy()
+
+    # Track current offset per condition (starting from top edge down to bottom edge)
+    cond_curr_y = {c: cond_y_map[c] + cond_total_w.get(c, 0.0) / 2.0 for c in conditions}
+    edge_cond_bounds = {}
+    for edge_id, row in cond_edge_sort.iterrows():
+        c = row["condition"]
+        w = row["ribbon_w"]
+        top_y = cond_curr_y[c]
+        bot_y = top_y - w
+        cond_curr_y[c] = bot_y
+        edge_cond_bounds[edge_id] = (bot_y, top_y)
+
+    # Calculate exact vertical slices on body site side
+    site_edge_sort = edge_agg.sort_values(
+        by=["site_idx", "cond_idx", "n_profiles"], ascending=[True, True, False]
+    ).copy()
+
+    site_curr_y = {s: site_y_map[s] + site_total_w.get(s, 0.0) / 2.0 for s in body_sites}
+    edge_site_bounds = {}
+    for edge_id, row in site_edge_sort.iterrows():
+        s = row["display_body_site"]
+        w = row["ribbon_w"]
+        top_y = site_curr_y[s]
+        bot_y = top_y - w
+        site_curr_y[s] = bot_y
+        edge_site_bounds[edge_id] = (bot_y, top_y)
+
+    # Colormaps for each trait
+    trait_color_map = {
+        t: TRAIT_COLORS[i % len(TRAIT_COLORS)] for i, t in enumerate(selected_traits)
+    }
+    trait_cmaps = {}
+    for t, base_hex in trait_color_map.items():
+        base_rgb = mcolors.to_rgb(base_hex)
+        cmap = mcolors.LinearSegmentedColormap.from_list(
+            f"cmap_{t}",
+            [(0.95, 0.95, 0.95), base_rgb],
+        )
+        trait_cmaps[t] = cmap
+
+    # Draw Nodes: node height matches total connection thickness (pill/capsule shape)
+    node_w = 1.4
     for c in conditions:
         cy = cond_y_map[c]
-        circle = plt.Circle(
-            (x_cond, cy),
-            node_radius,
+        tot_h = max(cond_total_w.get(c, 0.6), 0.6)
+        c_patch = patches.FancyBboxPatch(
+            (x_cond - node_w / 2.0, cy - tot_h / 2.0),
+            node_w,
+            tot_h,
+            boxstyle=patches.BoxStyle.Round(pad=0.1, rounding_size=0.3),
             facecolor="#f4f4f4",
-            edgecolor="#666666",
+            edgecolor="#555555",
             linewidth=1.2,
             zorder=10,
         )
-        ax.add_patch(circle)
+        ax.add_patch(c_patch)
 
         # Label on left
         c_tot = cond_stats.loc[c, "total_n"]
@@ -376,15 +452,18 @@ def plot_grouped_six_trait_sankey(
 
     for s in body_sites:
         sy = site_y_map[s]
-        circle = plt.Circle(
-            (x_site, sy),
-            node_radius,
+        tot_h = max(site_total_w.get(s, 0.6), 0.6)
+        s_patch = patches.FancyBboxPatch(
+            (x_site - node_w / 2.0, sy - tot_h / 2.0),
+            node_w,
+            tot_h,
+            boxstyle=patches.BoxStyle.Round(pad=0.1, rounding_size=0.3),
             facecolor="#f4f4f4",
-            edgecolor="#666666",
+            edgecolor="#555555",
             linewidth=1.2,
             zorder=10,
         )
-        ax.add_patch(circle)
+        ax.add_patch(s_patch)
 
         # Label on right
         s_tot = site_stats.loc[s, "total_n"]
@@ -406,104 +485,45 @@ def plot_grouped_six_trait_sankey(
             fontfamily="sans-serif",
         )
 
-    # Colormaps for each trait
-    trait_color_map = {
-        t: TRAIT_COLORS[i % len(TRAIT_COLORS)] for i, t in enumerate(selected_traits)
-    }
-    trait_cmaps = {}
-    for t, base_hex in trait_color_map.items():
-        base_rgb = mcolors.to_rgb(base_hex)
-        cmap = mcolors.LinearSegmentedColormap.from_list(
-            f"cmap_{t}",
-            [(0.95, 0.95, 0.95), base_rgb],
+    # 4. Draw Stacked Non-Overlapping Bezier Ribbons
+    for edge_id, row in edge_agg.iterrows():
+        t = row["trait"]
+        mz = row["mean_z"]
+
+        c_bot, c_top = edge_cond_bounds[edge_id]
+        s_bot, s_top = edge_site_bounds[edge_id]
+
+        # Shading by z-score (0 to 3.0 scale)
+        norm_z = np.clip(mz / 2.9, 0.15, 1.0)
+        color_rgba = trait_cmaps[t](norm_z)
+
+        # Background underlay link (slight margin)
+        bg_ribbon = get_cubic_bezier_ribbon(
+            x_cond + node_w / 2.0,
+            c_bot - 0.01,
+            c_top + 0.01,
+            x_site - node_w / 2.0,
+            s_bot - 0.01,
+            s_top + 0.01,
         )
-        trait_cmaps[t] = cmap
-
-    # 4. Draw Edges
-    # Group edges by (condition, display_body_site) pair to stack ribbons thick-to-thin
-    grouped_pairs = edge_agg.groupby(["condition", "display_body_site"])
-
-    for (c, s), group in grouped_pairs:
-        cy = cond_y_map[c]
-        sy = site_y_map[s]
-
-        # Sort curves by n_profiles thick-to-thin
-        sorted_group = group.sort_values("n_profiles", ascending=False)
-        k_traits = len(sorted_group)
-
-        # Calculate ribbon offsets within the parallel bundle
-        bundle_span = 0.8
-        offsets = (
-            np.linspace(-bundle_span / 2, bundle_span / 2, k_traits)
-            if k_traits > 1
-            else np.array([0.0])
+        patch_bg = patches.PathPatch(
+            bg_ribbon, facecolor=BG_COLOR, edgecolor="none", alpha=0.35, zorder=2
         )
+        ax.add_patch(patch_bg)
 
-        for offset, (_, row) in zip(offsets, sorted_group.iterrows(), strict=False):
-            t = row["trait"]
-            n = row["n_profiles"]
-            mz = row["mean_z"]
-
-            # Width proportional to n_profiles
-            ribbon_w = np.clip(0.04 + 0.035 * np.sqrt(n), 0.05, 0.6)
-
-            # Shading by z-score (0 to 3.0 scale)
-            norm_z = np.clip(mz / 2.9, 0.15, 1.0)
-            color_rgba = trait_cmaps[t](norm_z)
-
-            # Draw background underlay link
-            bg_path = get_cubic_bezier_path(
-                x_cond + node_radius,
-                cy + offset,
-                x_site - node_radius,
-                sy + offset,
-                ribbon_w + 0.04,
-            )
-            patch_bg = patches.PathPatch(
-                bg_path, facecolor=BG_COLOR, edgecolor="none", alpha=0.35, zorder=2
-            )
-            ax.add_patch(patch_bg)
-
-            # Draw colored foreground ribbon
-            ribbon_path = get_cubic_bezier_path(
-                x_cond + node_radius,
-                cy + offset,
-                x_site - node_radius,
-                sy + offset,
-                ribbon_w,
-            )
-            patch_fg = patches.PathPatch(
-                ribbon_path, facecolor=color_rgba, edgecolor="none", alpha=0.85, zorder=4
-            )
-            ax.add_patch(patch_fg)
-
-    # 5. Draw Body-site Trunks (Horizontal summing ribbons entering right nodes)
-    for s in body_sites:
-        sy = site_y_map[s]
-        s_edges = edge_agg[edge_agg["display_body_site"] == s].groupby("trait")["n_profiles"].sum()
-
-        trunk_traits = [t for t in selected_traits if t in s_edges]
-        n_trunk = len(trunk_traits)
-        if n_trunk > 0:
-            trunk_offsets = np.linspace(-0.6, 0.6, n_trunk) if n_trunk > 1 else np.array([0.0])
-            for toffset, t in zip(trunk_offsets, trunk_traits, strict=False):
-                tn = s_edges[t]
-                trunk_w = np.clip(0.04 + 0.035 * np.sqrt(tn), 0.05, 0.6)
-                t_color = trait_color_map[t]
-
-                # Draw trunk horizontal bar just left of the node circle
-                x_start = x_site - 4.5
-                x_end = x_site - node_radius
-                rect = patches.Rectangle(
-                    (x_start, sy + toffset - trunk_w / 2.0),
-                    x_end - x_start,
-                    trunk_w,
-                    facecolor=t_color,
-                    edgecolor="none",
-                    alpha=0.75,
-                    zorder=3,
-                )
-                ax.add_patch(rect)
+        # Foreground colored ribbon
+        fg_ribbon = get_cubic_bezier_ribbon(
+            x_cond + node_w / 2.0,
+            c_bot,
+            c_top,
+            x_site - node_w / 2.0,
+            s_bot,
+            s_top,
+        )
+        patch_fg = patches.PathPatch(
+            fg_ribbon, facecolor=color_rgba, edgecolor="none", alpha=0.85, zorder=4
+        )
+        ax.add_patch(patch_fg)
 
     # 6. Draw Trait Color Scales on the Right
     x_cbar = 83.0
@@ -546,7 +566,7 @@ def plot_grouped_six_trait_sankey(
         grad = np.linspace(0.1, 1.0, 256).reshape(1, -1)
         ax.imshow(
             grad,
-            extent=[x_cbar, x_cbar + cbar_w, yc, yc + cbar_h],
+            extent=(x_cbar, x_cbar + cbar_w, yc, yc + cbar_h),
             cmap=trait_cmaps[t],
             aspect="auto",
             zorder=10,

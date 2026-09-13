@@ -39,6 +39,12 @@ def parse_args() -> argparse.Namespace:
         help="Path to write structured TSV results",
     )
     parser.add_argument(
+        "--taxa-matrix",
+        type=Path,
+        default=None,
+        help="Optional path to taxa_trait_matrix.tsv to define M and K.",
+    )
+    parser.add_argument(
         "--p-threshold",
         type=float,
         default=0.001,
@@ -273,7 +279,7 @@ def main() -> None:
         if missing:
             raise ValueError(f"Input TSV missing required columns: {sorted(missing)}")
 
-        exclude_cols = {"study_id", "experiment_id", "inc_dec"}
+        exclude_cols = {"study_id", "experiment_id", "inc_dec", "taxa_count"}
         trait_columns = [
             col for col in fieldnames if col not in exclude_cols and "mediadive.medium:" not in col
         ]
@@ -306,12 +312,12 @@ def main() -> None:
             return
 
         rows = []
-        # Background counts for hypergeometric test
+        # Background counts for hypergeometric test:
+        # K(T) = number of unique taxa carrying trait T in reference background
+        # M = total number of unique taxa in reference background
         background_counts = dict.fromkeys(trait_columns, 0)
-        # Count how many profiles each trait appeared in (denominator for prevalence)
         testable_counts = dict.fromkeys(trait_columns, 0)
-        row_totals: list[int] = []
-        background_total = 0
+        profile_taxa_counts: list[int] = []
 
         # 2. Process only paired rows
         for row in all_raw_rows:
@@ -321,8 +327,7 @@ def main() -> None:
                 continue
 
             row_traits_data = {}
-            row_total = 0
-            # Iterate only over keys present in the row to avoid looking up all 2654 columns
+            raw_taxa_count = row.get("taxa_count")
             for t, val in row.items():
                 if t not in background_counts:
                     continue
@@ -336,9 +341,16 @@ def main() -> None:
                             c = 0
                     if c > 0:
                         row_traits_data[t] = c
-                        row_total += c
-                        background_counts[t] += c
                         testable_counts[t] += 1
+
+            # Determine profile size N (number of unique taxa in profile)
+            if raw_taxa_count is not None and raw_taxa_count.strip():
+                try:
+                    n_taxa = int(raw_taxa_count.strip())
+                except ValueError:
+                    n_taxa = max(row_traits_data.values(), default=0)
+            else:
+                n_taxa = max(row_traits_data.values(), default=0)
 
             rows.append(
                 {
@@ -346,18 +358,51 @@ def main() -> None:
                     "experiment_id": eid,
                     "inc_dec": row.get("inc_dec", ""),
                     "traits": row_traits_data,
+                    "n_taxa": n_taxa,
                 }
             )
-            row_totals.append(row_total)
-            background_total += row_total
+            profile_taxa_counts.append(n_taxa)
 
     if not rows:
         raise ValueError("Input TSV contains no rows")
 
+    # Determine reference population M and background successes K
+    if args.taxa_matrix and args.taxa_matrix.exists():
+        # Exact background from taxa trait matrix
+        matrix_taxa_total = 0
+        with open_input_text(args.taxa_matrix) as m_fh:
+            m_reader = csv.DictReader(m_fh, delimiter="\t")
+            for m_row in m_reader:
+                matrix_taxa_total += 1
+                for t in trait_columns:
+                    val = m_row.get(t)
+                    if val and val != "0":
+                        try:
+                            if int(val) > 0:
+                                background_counts[t] += 1
+                        except ValueError:
+                            pass
+        background_taxa_universe = matrix_taxa_total
+    else:
+        # Background empirical approximation:
+        # Sum of profile taxa N across all testable profiles, and sum of trait presences k
+        # or max observed trait total as lower bound
+        for r in rows:
+            for t, c in r["traits"].items():
+                background_counts[t] += c
+        background_taxa_universe = sum(profile_taxa_counts)
+
+    # Prevent M < K or M < N
+    max_k_trait = max(background_counts.values(), default=0)
+    max_n_profile = max(profile_taxa_counts, default=0)
+    if background_taxa_universe < max(max_k_trait, max_n_profile):
+        background_taxa_universe = max(max_k_trait, max_n_profile)
+
     # Second pass: Collect all P-values
     all_hits: list[dict] = []
-    for row, row_total in zip(rows, row_totals, strict=True):
-        if row_total == 0:
+    for row in rows:
+        n_draws = row["n_taxa"]
+        if n_draws == 0:
             continue
 
         traits_dict = row["traits"]
@@ -368,7 +413,7 @@ def main() -> None:
         row_counts = list(traits_dict.values())
         row_successes = [int(background_counts[t]) for t in row_traits]
 
-        p_values = hypergeom_sf_many(row_counts, background_total, row_successes, row_total)
+        p_values = hypergeom_sf_many(row_counts, background_taxa_universe, row_successes, n_draws)
 
         # Per-profile FDR correction if requested
         if args.fdr and args.fdr_scope == "profile":
@@ -379,7 +424,11 @@ def main() -> None:
         for trait, p, q, count, trait_total in zip(
             row_traits, p_values, q_values, row_counts, row_successes, strict=True
         ):
-            expected = row_total * (trait_total / background_total)
+            expected = (
+                n_draws * (trait_total / background_taxa_universe)
+                if background_taxa_universe > 0
+                else 0.0
+            )
             fold = (count / expected) if expected > 0 else float("inf")
             all_hits.append(
                 {
@@ -392,7 +441,7 @@ def main() -> None:
                     "fold": fold,
                     "count": count,
                     "expected": expected,
-                    "row_total": row_total,
+                    "row_total": n_draws,
                     "trait_total": trait_total,
                     "testable_profiles": testable_counts[trait],
                 }
@@ -436,13 +485,17 @@ def main() -> None:
             out_fh.write(f"# P-Threshold: {args.p_threshold}\n")
             out_fh.write(f"# Min-Fold: {args.min_fold}\n")
             out_fh.write(f"# Max-Traits-Per-Row-Report: {args.max_traits_per_row}\n")
-            testable_profile_count = len([rt for rt in row_totals if rt > 0])
-            mean_assertions = (
-                sum(row_totals) / testable_profile_count if testable_profile_count > 0 else 0
+            testable_profile_count = len([n for n in profile_taxa_counts if n > 0])
+            mean_taxa = (
+                sum(profile_taxa_counts) / testable_profile_count
+                if testable_profile_count > 0
+                else 0
             )
             out_fh.write(f"# Total-Profiles-Input: {len(rows)}\n")
             out_fh.write(f"# Testable-Profiles: {testable_profile_count}\n")
-            out_fh.write(f"# Mean-Assertions-Per-Testable-Profile: {mean_assertions:.2f}\n")
+            out_fh.write(f"# Background-Taxa-Universe-M: {background_taxa_universe}\n")
+            out_fh.write(f"# Mean-Taxa-Per-Testable-Profile-N: {mean_taxa:.2f}\n")
+            out_fh.write(f"# Mean-Assertions-Per-Testable-Profile: {mean_taxa:.2f}\n")
             out_fh.write(f"# Total-Tests-Performed: {len(all_hits)}\n")
 
             writer = csv.DictWriter(
@@ -532,8 +585,9 @@ def main() -> None:
 
     print(f"Input rows: {len(rows)}")
     print(f"Trait columns: {len(trait_columns)}")
-    testable_profile_count = len([rt for rt in row_totals if rt > 0])
+    testable_profile_count = len([n for n in profile_taxa_counts if n > 0])
     print(f"Total testable profiles: {testable_profile_count}")
+    print(f"Background taxa universe M: {background_taxa_universe}")
     print(f"Total tests performed: {len(all_hits)}")
     print(f"Significant hits: {len(significant_hits)}")
     print(f"Rows with hits: {rows_with_hits}")

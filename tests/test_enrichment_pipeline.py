@@ -80,6 +80,66 @@ def test_enrichment_pipeline_fdr_propagation(tmp_path: Path) -> None:
         assert "q_value" in header
 
 
+def test_enrichment_hypergeometric_taxon_sampling_values(tmp_path: Path) -> None:
+    # Test specific 2x2 contingency table values
+    # TraitA: present in 1 taxon in profile s1/e1/inc out of 2 taxa (k=1, N=2)
+    # Background universe across paired profiles: M=4 taxa total, TraitA present in K=2 taxa.
+    # hypergeom_sf(1, 4, 2, 2)
+    input_tsv = tmp_path / "input_profiles.tsv"
+    input_tsv.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
+        "s1\te1\tinc\t2\t1\t0\n"
+        "s1\te1\tdec\t2\t1\t2\n",
+        encoding="utf-8",
+    )
+    report_txt = tmp_path / "report.txt"
+    results_tsv = tmp_path / "results.tsv"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(input_tsv),
+            "--output",
+            str(report_txt),
+            "--tsv-output",
+            str(results_tsv),
+            "--p-threshold",
+            "1.0",
+            "--min-fold",
+            "0",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    with results_tsv.open("r", encoding="utf-8") as f:
+        lines = f.readlines()
+        assert any("# Background-Taxa-Universe-M: 4" in line for line in lines)
+        header = next(line for line in lines if not line.startswith("#")).strip().split("\t")
+        p_idx = header.index("p_value")
+        fold_idx = header.index("fold")
+        # TraitA row in s1/e1/inc: k=1, N=2, K=2, M=4.
+        # Hypergeometric(M=4, K=2, N=2):
+        # P(X=0) = comb(2,0)*comb(2,2)/comb(4,2) = 1/6
+        # P(X=1) = comb(2,1)*comb(2,1)/comb(4,2) = 4/6 = 2/3
+        # P(X=2) = comb(2,2)*comb(2,0)/comb(4,2) = 1/6
+        # P(X >= 1) = 4/6 + 1/6 = 5/6 = 0.83333333...
+        data_rows = [line.strip().split("\t") for line in lines if not line.startswith("#")][1:]
+        trait_a_row = next(
+            r
+            for r in data_rows
+            if r[header.index("trait")] == "TraitA" and r[header.index("inc_dec")] == "inc"
+        )
+        p_val = float(trait_a_row[p_idx])
+        assert abs(p_val - 5 / 6) < 1e-4
+        # Expected = 2 * (2 / 4) = 1.0, observed = 1, fold = 1.0
+        fold_val = float(trait_a_row[fold_idx])
+        assert abs(fold_val - 1.0) < 1e-4
+
+
 def test_enrichment_pipeline_no_fdr_propagation(tmp_path: Path) -> None:
     input_tsv = tmp_path / "input_profiles.tsv"
     input_tsv.write_text(

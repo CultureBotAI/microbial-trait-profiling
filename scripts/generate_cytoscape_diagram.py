@@ -4,6 +4,9 @@
 import argparse
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.colors as mcolors
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
@@ -167,21 +170,22 @@ def load_trait_labels(trait_meta_path: Path, mapping_path: Path) -> dict[str, st
     return labels
 
 
-def get_cubic_bezier_path(x0: float, y0: float, x1: float, y1: float, width: float) -> MplPath:
-    """Create a horizontal cubic Bezier ribbon of specified vertical width."""
-    hw = width / 2.0
+def get_cubic_bezier_ribbon(
+    x0: float, y0_bot: float, y0_top: float, x1: float, y1_bot: float, y1_top: float
+) -> MplPath:
+    """Create a horizontal cubic Bezier ribbon with explicit top and bottom bounds at each end."""
     dx = (x1 - x0) * 0.5
 
     verts = [
-        (x0, y0 - hw),
-        (x0 + dx, y0 - hw),
-        (x1 - dx, y1 - hw),
-        (x1, y1 - hw),
-        (x1, y1 + hw),
-        (x1 - dx, y1 + hw),
-        (x0 + dx, y0 + hw),
-        (x0, y0 + hw),
-        (x0, y0 - hw),
+        (x0, y0_bot),
+        (x0 + dx, y0_bot),
+        (x1 - dx, y1_bot),
+        (x1, y1_bot),
+        (x1, y1_top),
+        (x1 - dx, y1_top),
+        (x0 + dx, y0_top),
+        (x0, y0_top),
+        (x0, y0_bot),
     ]
     codes = [
         MplPath.MOVETO,
@@ -195,6 +199,12 @@ def get_cubic_bezier_path(x0: float, y0: float, x1: float, y1: float, width: flo
         MplPath.CLOSEPOLY,
     ]
     return MplPath(verts, codes)
+
+
+def get_cubic_bezier_path(x0: float, y0: float, x1: float, y1: float, width: float) -> MplPath:
+    """Create a horizontal cubic Bezier ribbon of specified vertical width centered at y0 and y1."""
+    hw = width / 2.0
+    return get_cubic_bezier_ribbon(x0, y0 - hw, y0 + hw, x1, y1 - hw, y1 + hw)
 
 
 def plot_cytoscape_diagram(
@@ -323,7 +333,7 @@ def plot_cytoscape_diagram(
 
     # 4. Figure setup
     fig = plt.figure(figsize=(24, 15), facecolor="white")
-    ax = fig.add_axes([0, 0, 1, 1])
+    ax = fig.add_axes((0.0, 0.0, 1.0, 1.0))
     ax.set_xlim(0, 100)
     ax.set_ylim(0, 100)
     ax.axis("off")
@@ -429,66 +439,151 @@ def plot_cytoscape_diagram(
     )
 
     def calc_width(n_val: float) -> float:
-        # Scale width between 0.2 and 1.8 coordinate units
+        # Scale width between 0.15 and 0.9 coordinate units for stacking
         norm = np.sqrt(max(n_val, 1) / max_profile_n)
-        return float(np.clip(0.25 + norm * 1.55, 0.25, 2.0))
+        return float(np.clip(0.15 + norm * 0.75, 0.15, 0.9))
 
-    # 7. Draw Edges (Beziers)
-    # Sort edges thin-to-thick so thick edges don't completely bury thin ones
-    cond_trait_grp_sorted = cond_trait_grp.sort_values(by="n_profiles", ascending=True)
-    for _, row in cond_trait_grp_sorted.iterrows():
+    cond_trait_grp = cond_trait_grp.copy()
+    cond_trait_grp["ribbon_w"] = cond_trait_grp["n_profiles"].apply(calc_width)
+
+    trait_site_grp = trait_site_grp.copy()
+    trait_site_grp["ribbon_w"] = trait_site_grp["n_profiles"].apply(calc_width)
+
+    # 7. Stacked Offsets Computation
+    # Condition node anchor vertical stacking
+    cond_total_w = cond_trait_grp.groupby("display_condition")["ribbon_w"].sum().to_dict()
+    # Sort order exiting condition: by trait Y coordinate descending (top to bottom)
+    trait_y_map = {t: trait_coords[t][1] for t in selected_traits[:6] if t in trait_coords}
+    cond_trait_grp["trait_y"] = cond_trait_grp["trait"].map(trait_y_map).fillna(50.0)
+
+    cond_edge_sort = cond_trait_grp.sort_values(
+        by=["display_condition", "trait_y", "n_profiles"], ascending=[True, False, False]
+    ).copy()
+
+    cond_curr_y = {c: cond_coords[c][1] + cond_total_w.get(c, 0.0) / 2.0 for c in sorted_conditions}
+    cond_trait_bounds = {}
+    for edge_id, row in cond_edge_sort.iterrows():
+        c = row["display_condition"]
+        w = row["ribbon_w"]
+        top_y = cond_curr_y[c]
+        bot_y = top_y - w
+        cond_curr_y[c] = bot_y
+        cond_trait_bounds[edge_id] = (bot_y, top_y)
+
+    # Trait hub anchor vertical stacking for condition connections (left side of trait hub)
+    trait_left_total_w = cond_trait_grp.groupby("trait")["ribbon_w"].sum().to_dict()
+    cond_y_lookup = {c: cond_coords[c][1] for c in sorted_conditions if c in cond_coords}
+    cond_trait_grp["cond_y"] = cond_trait_grp["display_condition"].map(cond_y_lookup).fillna(50.0)
+
+    trait_left_edge_sort = cond_trait_grp.sort_values(
+        by=["trait", "cond_y"], ascending=[True, False]
+    ).copy()
+    trait_left_curr_y = {
+        t: trait_coords[t][1] + trait_left_total_w.get(t, 0.0) / 2.0 for t in trait_coords
+    }
+    trait_left_bounds = {}
+    for edge_id, row in trait_left_edge_sort.iterrows():
+        t = row["trait"]
+        w = row["ribbon_w"]
+        top_y = trait_left_curr_y[t]
+        bot_y = top_y - w
+        trait_left_curr_y[t] = bot_y
+        trait_left_bounds[edge_id] = (bot_y, top_y)
+
+    # Body site anchor vertical stacking
+    site_total_w = trait_site_grp.groupby("display_site")["ribbon_w"].sum().to_dict()
+    trait_site_grp["trait_y"] = trait_site_grp["trait"].map(trait_y_map).fillna(50.0)
+
+    site_edge_sort = trait_site_grp.sort_values(
+        by=["display_site", "trait_y", "n_profiles"], ascending=[True, False, False]
+    ).copy()
+
+    site_curr_y = {s: site_coords[s][1] + site_total_w.get(s, 0.0) / 2.0 for s in sorted_sites}
+    site_trait_bounds = {}
+    for edge_id, row in site_edge_sort.iterrows():
+        s = row["display_site"]
+        w = row["ribbon_w"]
+        top_y = site_curr_y[s]
+        bot_y = top_y - w
+        site_curr_y[s] = bot_y
+        site_trait_bounds[edge_id] = (bot_y, top_y)
+
+    # Trait hub anchor vertical stacking for body-site connections (right side of trait hub)
+    trait_right_total_w = trait_site_grp.groupby("trait")["ribbon_w"].sum().to_dict()
+    site_y_lookup = {s: site_coords[s][1] for s in sorted_sites if s in site_coords}
+    trait_site_grp["site_y"] = trait_site_grp["display_site"].map(site_y_lookup).fillna(50.0)
+
+    trait_right_edge_sort = trait_site_grp.sort_values(
+        by=["trait", "site_y"], ascending=[True, False]
+    ).copy()
+    trait_right_curr_y = {
+        t: trait_coords[t][1] + trait_right_total_w.get(t, 0.0) / 2.0 for t in trait_coords
+    }
+    trait_right_bounds = {}
+    for edge_id, row in trait_right_edge_sort.iterrows():
+        t = row["trait"]
+        w = row["ribbon_w"]
+        top_y = trait_right_curr_y[t]
+        bot_y = top_y - w
+        trait_right_curr_y[t] = bot_y
+        trait_right_bounds[edge_id] = (bot_y, top_y)
+
+    # 8. Draw Stacked Non-Overlapping Edges (Beziers)
+    for edge_id, row in cond_trait_grp.iterrows():
         c = row["display_condition"]
         t = row["trait"]
-        n_p = row["n_profiles"]
         if c not in cond_coords or t not in trait_coords:
             continue
-        x0, y0 = cond_coords[c]
-        x1, y1 = trait_coords[t]
-        # Start from right edge of condition oval (x0+1.8) & end at left of trait ellipse (x1-3.8)
-        w = calc_width(n_p)
+        x0, _ = cond_coords[c]
+        x1, _ = trait_coords[t]
+        c_bot, c_top = cond_trait_bounds[edge_id]
+        t_bot, t_top = trait_left_bounds[edge_id]
+
         color = trait_color_map[t]
-        bezier_p = get_cubic_bezier_path(x0 + 1.8, y0, x1 - 3.8, y1, w)
+        # Start from right edge of condition pill (x0+1.8) & end at left of trait ellipse (x1-4.0)
+        bezier_p = get_cubic_bezier_ribbon(x0 + 1.8, c_bot, c_top, x1 - 4.0, t_bot, t_top)
         patch = patches.PathPatch(
             bezier_p,
             facecolor=color,
             edgecolor=color,
-            alpha=0.35,
+            alpha=0.45,
             linewidth=0.2,
             zorder=2,
         )
         ax.add_patch(patch)
 
-    trait_site_grp_sorted = trait_site_grp.sort_values(by="n_profiles", ascending=True)
-    for _, row in trait_site_grp_sorted.iterrows():
+    for edge_id, row in trait_site_grp.iterrows():
         t = row["trait"]
         s = row["display_site"]
-        n_p = row["n_profiles"]
         if t not in trait_coords or s not in site_coords:
             continue
-        x0, y0 = trait_coords[t]
-        x1, y1 = site_coords[s]
-        # Start from right edge of trait ellipse (x0 + 3.8) and end at left of site oval (x1 - 1.8)
-        w = calc_width(n_p)
+        x0, _ = trait_coords[t]
+        x1, _ = site_coords[s]
+        t_bot, t_top = trait_right_bounds[edge_id]
+        s_bot, s_top = site_trait_bounds[edge_id]
+
         color = trait_color_map[t]
-        bezier_p = get_cubic_bezier_path(x0 + 3.8, y0, x1 - 1.8, y1, w)
+        # Start from right edge of trait ellipse (x0 + 4.0) and end at left of site pill (x1 - 1.8)
+        bezier_p = get_cubic_bezier_ribbon(x0 + 4.0, t_bot, t_top, x1 - 1.8, s_bot, s_top)
         patch = patches.PathPatch(
             bezier_p,
             facecolor=color,
             edgecolor=color,
-            alpha=0.35,
+            alpha=0.45,
             linewidth=0.2,
             zorder=2,
         )
         ax.add_patch(patch)
 
-    # 8. Render Nodes
-    # Left Condition Nodes
+    # 9. Render Nodes
+    # Left Condition Nodes (Pill shaped with dynamic height matching connection thickness)
     for c, (x, y) in cond_coords.items():
-        # Node ellipse
-        c_patch = patches.Ellipse(
-            (x, y),
-            width=3.6,
-            height=min(cond_y_spacing * 0.75, 1.8),
+        node_h = max(cond_total_w.get(c, 0.8), 0.8)
+        c_patch = patches.FancyBboxPatch(
+            (x - 1.8, y - node_h / 2.0),
+            3.6,
+            node_h,
+            boxstyle=patches.BoxStyle.Round(pad=0.05, rounding_size=0.4),
             facecolor="#fcfcfc",
             edgecolor="#555555",
             linewidth=1.2,
@@ -528,12 +623,14 @@ def plot_cytoscape_diagram(
             zorder=5,
         )
 
-    # Right Body Site Nodes
+    # Right Body Site Nodes (Pill shaped with dynamic height matching connection thickness)
     for s, (x, y) in site_coords.items():
-        s_patch = patches.Ellipse(
-            (x, y),
-            width=3.6,
-            height=min(site_y_spacing * 0.75, 1.8),
+        node_h = max(site_total_w.get(s, 0.8), 0.8)
+        s_patch = patches.FancyBboxPatch(
+            (x - 1.8, y - node_h / 2.0),
+            3.6,
+            node_h,
+            boxstyle=patches.BoxStyle.Round(pad=0.05, rounding_size=0.4),
             facecolor="#fcfcfc",
             edgecolor="#555555",
             linewidth=1.2,
