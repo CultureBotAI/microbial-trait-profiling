@@ -154,6 +154,10 @@ for directional proportions, and Benjamini-Yekutieli adjustment across the full
 pair family. These are different, conditional hypotheses, not corrected versions
 of the six original fraction hypotheses or independent replication.
 
+The [pinned-corpus validation table](table1_log_ratio_validation.md) reports all
+15 comparisons alongside the original six fraction directions, with source
+fingerprints and the study populations retained by each ratio.
+
 Reference choice, zero exclusions, shared annotations and selection of these six
 traits remain interpretation limits. The ratio cannot distinguish an absolute
 increase in its numerator from an absolute decrease in its reference. See
@@ -183,5 +187,7 @@ own code and is documented in full in
 [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md)
 and [`guild_condition_body_site_heatmap.md`](guild_condition_body_site_heatmap.md).
 
-This description was drafted with the assistance of a coding agent (Claude Code)
-and reviewed by the author.
+The original note acknowledged Claude Code assistance and author review. The
+subsequent statistical corrections and log-ratio extension are tracked in
+[PR #181](https://github.com/CultureBotAI/bsdbng/pull/181) and require confirmation
+by the method owners before manuscript use.

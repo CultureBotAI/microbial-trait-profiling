@@ -30,6 +30,10 @@ Table 1 trait pairs, with explicit references, zero exclusions, study-level
 coverage, and a separate correction family. It emits statistics and a Markdown
 report without rendering figures.
 
+[`table1_log_ratio_validation.md`](table1_log_ratio_validation.md) records the
+pinned-corpus rerun of all 15 ratios alongside the original six fraction
+directions, including study coverage, uncertainty and interpretation limits.
+
 The gram-stain directional Sankey diagrams live on the
 `147-add-gram-stain-directional-sankey-gram-positive-gram-negative-x-increased-decreased`
 branch together with their own methods file; they are not part of this branch.
