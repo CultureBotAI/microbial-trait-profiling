@@ -36,6 +36,11 @@ report without rendering figures.
 pinned-corpus rerun of all 15 ratios alongside the original six fraction
 directions, including study coverage, uncertainty and interpretation limits.
 
+The [GPT Rosalind discussion and review](../docs/rosalind-six-trait-interpretation.md)
+archives proposed biological explanations for the six traits, with a separate
+evidence review and assigned follow-up issues. It records hypotheses to evaluate;
+it is not an approved Results or Discussion section.
+
 The gram-stain directional Sankey diagrams live on the
 `147-add-gram-stain-directional-sankey-gram-positive-gram-negative-x-increased-decreased`
 branch together with their own methods file; they are not part of this branch.
