@@ -1,0 +1,11 @@
+stratum	q_cutoff	ora_family	composition_family	ora_traits	before_composition_traits	after_composition_traits	before_overlap	after_overlap	lost_overlap	gained_overlap
+pooled	0.001	global observed-trait-by-paired-profile tests; fold>=1.5	composition:pooled	278	6	6	6	6		
+pooled	0.05	global observed-trait-by-paired-profile tests; fold>=1.5	composition:pooled	310	48	50	45	47		METPO:1000473;METPO:1000679
+feces	0.001	global observed-trait-by-paired-profile tests; fold>=1.5	composition:feces	269	28	27	20	19	METPO:2000006|CHEBI:29864	
+feces	0.05	global observed-trait-by-paired-profile tests; fold>=1.5	composition:feces	306	93	90	89	86	METPO:1000450;METPO:1000466;METPO:2000006|CHEBI:28757;METPO:2000006|CHEBI:33942	METPO:1000474
+feces_excluded	0.001	global observed-trait-by-paired-profile tests; fold>=1.5	composition:feces_excluded	271	0	0	0	0		
+feces_excluded	0.05	global observed-trait-by-paired-profile tests; fold>=1.5	composition:feces_excluded	308	0	0	0	0		
+other	0.001	global observed-trait-by-paired-profile tests; fold>=1.5	composition:other	269	0	0	0	0		
+other	0.05	global observed-trait-by-paired-profile tests; fold>=1.5	composition:other	307	0	0	0	0		
+saliva	0.001	global observed-trait-by-paired-profile tests; fold>=1.5	composition:saliva	218	0	0	0	0		
+saliva	0.05	global observed-trait-by-paired-profile tests; fold>=1.5	composition:saliva	263	0	0	0	0		

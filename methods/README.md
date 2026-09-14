@@ -24,6 +24,14 @@ then prefers over a system Chrome, which is what makes the renders reproducible.
 records how the three analyses built on `study_trait_profiles_wide.tsv` differ,
 and why their p-values are not on comparable scales.
 
+The denominator correction and frozen before/after rerun for issue #174 are
+documented in [`composition_denominator_harmonization.md`](composition_denominator_harmonization.md).
+Run `just composition-denominator-audit` to reproduce the committed comparison
+tables and corrected composition figures in
+`trait-visualization/denominator-harmonization/`. This audit uses Matplotlib and
+does not need Chrome. It reuses the exact committed matrix cited in the issue,
+without replacing the active matrix in `data/derived/`.
+
 The gram-stain directional Sankey diagrams live on the
 `147-add-gram-stain-directional-sankey-gram-positive-gram-negative-x-increased-decreased`
 branch together with their own methods file; they are not part of this branch.

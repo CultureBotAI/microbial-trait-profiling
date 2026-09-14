@@ -1,0 +1,16 @@
+trait_a	trait_b	spearman_rho	p_value	studies	bugsigdb_vintage
+arsenate_reduction	moderately_halophilic	0.344875	3.59594e-28	959	BugSigDBExports v1.3.1
+cellulose_catabolic_process	arsenate_reduction	-0.007585	0.814521	959	BugSigDBExports v1.3.1
+cellulose_catabolic_process	coccus_shaped	0.024061	0.456719	959	BugSigDBExports v1.3.1
+cellulose_catabolic_process	moderately_halophilic	-0.213233	2.53043e-11	959	BugSigDBExports v1.3.1
+cellulose_catabolic_process	sphere_shaped	0.024871	0.4417	959	BugSigDBExports v1.3.1
+coccus_shaped	arsenate_reduction	0.057449	0.07537	959	BugSigDBExports v1.3.1
+coccus_shaped	moderately_halophilic	0.018950	0.557793	959	BugSigDBExports v1.3.1
+coccus_shaped	sphere_shaped	0.449522	7.03056e-49	959	BugSigDBExports v1.3.1
+facultatively_aerobic	arsenate_reduction	0.396464	1.87915e-37	959	BugSigDBExports v1.3.1
+facultatively_aerobic	cellulose_catabolic_process	-0.258495	4.18121e-16	959	BugSigDBExports v1.3.1
+facultatively_aerobic	coccus_shaped	0.445968	4.75963e-48	959	BugSigDBExports v1.3.1
+facultatively_aerobic	moderately_halophilic	0.382750	8.07947e-35	959	BugSigDBExports v1.3.1
+facultatively_aerobic	sphere_shaped	0.127378	7.63435e-05	959	BugSigDBExports v1.3.1
+sphere_shaped	arsenate_reduction	-0.052970	0.101138	959	BugSigDBExports v1.3.1
+sphere_shaped	moderately_halophilic	-0.071911	0.0259546	959	BugSigDBExports v1.3.1

@@ -1,0 +1,3 @@
+# Preserve the byte hashes of the frozen audit inputs across platforms.
+*.tsv -text
+*.json -text

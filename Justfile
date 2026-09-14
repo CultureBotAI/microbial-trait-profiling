@@ -104,6 +104,28 @@ guild-maps:
 table1-trait-maps:
 	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py"
 
+# Frozen inputs for #174; never overwrite the user's active derived matrix.
+composition-prepare:
+	mkdir -p .tmp/issue174/baseline .tmp/issue174/ora
+	git archive a2b2df98e9beec98b772c9cb5af7aa090d033a98 scripts/create_trait_profile_infographic.py scripts/create_study_trait_profile_heatmap.py trait-visualization/study_trait_profile_paired_enrichment_metadata.tsv trait-visualization/study_trait_profile_study_metadata.tsv trait-visualization/study_trait_profile_trait_metadata.tsv 'trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats*.tsv' | tar -x -C .tmp/issue174/baseline
+	git archive 3ae7ac8 scripts/trait_enrichment.py data/derived/trait_enrichment_results.tsv data/derived/trait_depletion_results.tsv | tar -x -C .tmp/issue174/ora
+	git show d837f449e7e967c478d10f92938923e57eec9a19 > .tmp/issue174/study_trait_profiles_wide.tsv
+	git rev-parse HEAD > .tmp/issue174/code_commit.txt
+	git rev-parse 3ae7ac8 > .tmp/issue174/ora_commit.txt
+
+# Keep the pre-#133 ORA model fixed; include q<=0.05 for integration comparisons.
+composition-ora-reference: composition-prepare
+	MPLBACKEND=Agg uv run python .tmp/issue174/ora/scripts/trait_enrichment.py --input .tmp/issue174/study_trait_profiles_wide.tsv --output .tmp/issue174/ora-q05.txt --tsv-output .tmp/issue174/ora-q05.tsv --p-threshold 0.05 --fdr --fdr-scope global --min-fold 1.5
+
+composition-denominator-audit: composition-ora-reference composition-compare
+
+# Reuse the already verified frozen ORA run for composition-only iterations.
+composition-compare:
+	MPLBACKEND=Agg uv run python scripts/audit_composition_denominator.py
+
+composition-test:
+	MPLBACKEND=Agg uv run pytest tests/test_trait_composition.py tests/test_trait_profile_infographic.py tests/test_study_trait_profile_heatmap.py
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
@@ -120,7 +142,7 @@ precommit:
 	uv run pre-commit run --all-files
 
 validate-schema:
-	uv run linkml validate -s {{schema}}
+	uv run linkml validate {{schema}}
 
 lint-schema:
 	uv run linkml lint --config {{lintconfig}} --validate --ignore-warnings {{schema}}

@@ -1,0 +1,3 @@
+scope	profiles	retained_trait_columns	mediadive_columns	profiles_with_mediadive	zero_retained_signal	mediadive_only_profiles	retained_total	media_total
+full_matrix	5829	317	2290	5590	206	11	121755272	14219537
+paired	4670	317	2290	4495	153	10	106993585	12434119

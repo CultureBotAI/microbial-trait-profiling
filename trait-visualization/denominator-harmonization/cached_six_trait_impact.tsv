@@ -1,0 +1,7 @@
+trait	trait_label	reference_profiles	before_positive_profiles	after_positive_profiles	profile_zscore_sign_changes	paired_contrast_sign_changes	maximum_absolute_zscore_change
+METPO:1000608	facultatively aerobic METPO:1000608	5829	2971	2992	29	19	0.4212069309112715
+METPO:2000103|GO:0030245	cellulose catabolic process GO:0030245	5829	1847	1858	21	12	0.3930500421635319
+METPO:1000668	coccus shaped METPO:1000668	5829	2689	2722	45	18	0.3982866322629318
+METPO:1000683	sphere shaped METPO:1000683	5829	2445	2464	35	15	0.3673646751717241
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction arsenate_reduction	5829	1401	1408	7	7	0.6794892463934534
+METPO:1000623	moderately halophilic METPO:1000623	5829	2648	2661	31	23	0.9918718296036904

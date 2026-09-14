@@ -1,0 +1,46 @@
+{
+  "baseline_code_commit": "a2b2df98e9beec98b772c9cb5af7aa090d033a98",
+  "implementation_base_commit": "3b733760d6a883008a5b131fbdde70d7039871a6",
+  "implementation_identification": "base commit plus SHA256 of implementation files below",
+  "ora_code_commit": "3ae7ac847d5d1ebc3bdd388bb2793d5e60bfdc81",
+  "input_git_blob": "d837f449e7e967c478d10f92938923e57eec9a19",
+  "denominator": "sum of all retained non-MediaDive trait columns before selection",
+  "inputs": {
+    ".tmp/issue174/study_trait_profiles_wide.tsv": "c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f",
+    ".tmp/issue174/baseline/trait-visualization/study_trait_profile_paired_enrichment_metadata.tsv": "6556a31104fcfa479caadb5c8e8262cd3249a8bae81fb2eb3654d5c61d26f429",
+    ".tmp/issue174/baseline/trait-visualization/study_trait_profile_study_metadata.tsv": "399ca05373bd29b31a265e2b50499fa0a7d56156c45dc9f55d68c1eb8c437d3a",
+    "trait-visualization/denominator-harmonization/inputs/taxa_trait_matrix_columns.tsv": "70b8bc1c2889d0e451bcaf604e0a986d4c29ffb802efeae5bdc64b67fc446ed3",
+    "trait-visualization/denominator-harmonization/inputs/download_provenance.json": "3ed6e277a0ce1a5279d5dabf77d9c2b832da4a1523ae3a6ded1eedfdd597ed08",
+    "data/kg-microbe/provenance.json": "fa0dc21dce1c581b694582a2a7438b4ce12b642f6731da185846f0db763cc946",
+    ".tmp/issue174/baseline/scripts/create_trait_profile_infographic.py": "d1d489cf3b01c407460215855d643fe0a02eb4dfea23fef9287960eb9a727944",
+    ".tmp/issue174/baseline/scripts/create_study_trait_profile_heatmap.py": "cd4a262b71a9028d818cb619df999d0aeb6ee6fad4a35ae2f4960b9c2621ac35",
+    ".tmp/issue174/ora/scripts/trait_enrichment.py": "eaa9b925225b6b346a5357c1326fd80476b4fec30a9d5251595f9bed3bf500a0",
+    ".tmp/issue174/ora-q05.tsv": "c6263937e19d3fa92d25ceeb37c728d46a4ed166932e6be8d162d5467f905c18"
+  },
+  "original_full_dump_sha256": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788",
+  "original_full_dump_usage": "recorded source lineage; frozen metadata used in rerun",
+  "ora_test_count": 556516,
+  "ora_nonzero_profiles": 4517,
+  "implementation_sha256": {
+    "src/bsdbng/trait_composition.py": "9a2736af58386d1e9a5b5861a0281031e71c3c2a1ab0b024ae18ac63f3a164ba",
+    "src/bsdbng/trait_guilds.py": "292d0425dffd25a6535414c05344bbdcb691fcb7e650ff24d9fef332cad3e52e",
+    "src/bsdbng/table1_trait_maps.py": "52cee340bd941eb53cf9a5e617b3de4c09ca9692798aaa850a9f907747675aff",
+    "scripts/audit_composition_denominator.py": "964dfea05687ce81dc56f4bd96d84555807473d2040e0aa7d3066e0cff2030fb",
+    "scripts/create_trait_profile_infographic.py": "4a444aaa1824849d03f929dc53ac71ee302d2c4b985ab8775ec1d14e138c726c",
+    "scripts/create_study_trait_profile_heatmap.py": "ef83268d4dec7c59a245b7b7d99adc572c899ce89db6e5bd9fec88558ad43faf",
+    "uv.lock": "a9b1b48dcf9ec06baea80a314bc9ba97d6c59e981cd15932790c78d0946c4a47",
+    "Justfile": "f7940d261d6e82009c256bc0baa32b44e1c55bd75dddcc4ed17964fae74f522f"
+  },
+  "runtime": {
+    "numpy": "2.4.4",
+    "pandas": "3.0.2",
+    "scipy": "1.17.1",
+    "matplotlib": "3.11.2"
+  },
+  "pairing": "frozen human-host study/experiment inc-dec pairs; no study reweighting; original study-level display labels",
+  "zero_signal_policy": "retain rows; zero fractions/log1p inputs; standardize with all rows",
+  "noel_matched_profiles": 4670,
+  "baseline_validation": "all emitted stratum eligibility, effects, p and q match published tables at rtol=1e-9, atol=1e-12",
+  "ora_validation": "q<=0.001 membership and q match frozen global-BH/fold>=1.5 output",
+  "kg_inputs": "reuse the cited committed matrix; original KG TSVs unavailable locally; their recorded MD5 hashes remain in provenance.json"
+}

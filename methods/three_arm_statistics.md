@@ -41,9 +41,15 @@ difference, with its magnitude deliberately discarded.
 | Significance rule | none; the figure takes the top ten by p | q at most 0.001 and fold at least 1.5 | none; q reported per trait |
 | Typical n per test | 2,335 pairs, identical for every trait | tens of thousands of assertions | 616 to 917 of the 959 studies (ties excluded) |
 
-All three restrict to human samples and to experiments carrying both directions,
-and all three drop MediaDive growth-medium columns, but they do so at different
-points in the pipeline: the enrichment arm's branch filters host species at
+All three restrict to human samples and to experiments carrying both directions.
+After the correction in issue #174, all three use the sum of all retained
+non-MediaDive columns as the fraction denominator. Previously, composition
+excluded MediaDive only from selected outputs, not from its denominator; sharing
+a matrix therefore did not imply sharing trait fractions. The corrected pooled
+and stratified calculations exclude MediaDive before selection variance, ranking,
+or transformations, without restricting the denominator to tested traits.
+
+The enrichment arm's branch filters host species at
 ingest (its Justfile passes host_species="Homo sapiens"; this branch's ingest
 writes all hosts), while the other two filter in the figure code. Their MediaDive tests also differ
 by one character, matching `mediadive.medium` and `mediadive.medium:`
@@ -76,10 +82,12 @@ independently and no correction spans them.
 
 The directional-consistency arm's n is the number of studies with a non-tied
 contrast. Reducing each study to a sign throws away effect magnitude, which makes
-it the most conservative of the three and immune to compositional scaling, but it
+it less sensitive to large effect magnitudes, but it
 leaves no effect size beyond the share of studies shifting up. The observed
 shares sit within about eight points of 0.5, so its significance comes from the
 number of studies rather than from the size of the shift.
+The sign is invariant to a common positive rescaling of a study's final contrast,
+not to arbitrary profile-specific denominator changes before averaging.
 
 ## Compositionality
 
@@ -90,7 +98,9 @@ which is why that correlation is described there as partly structural and is not
 offered as independent support for the oxygen hypothesis. The composition arm's
 paired contrast and the directional-consistency arm's sign test both compare a
 trait against itself across the two directions rather than against another trait
-within one profile, and so do not share the artefact. Issue #132 records the
+within one profile, so the same within-profile correlation constraint is not
+their test statistic. They remain sensitive to changes in the other traits that
+contribute to each profile's denominator. Issue #132 records the
 related effect in the enrichment arm, where enrichment and depletion mirror each
 other by construction.
 
@@ -100,8 +110,19 @@ All three arms pin **BugSigDBExports v1.3.1** (Zenodo 10.5281/zenodo.19740674;
 issues #115/#130, resolved by PR #150's SHA-verified downloader). The
 directional-consistency numbers in this note are from a v1.3.1 run; the
 composition and enrichment figures come from those arms' committed v1.3.1
-regenerations (`3afeecd` and `c75744a` respectively). Any comparison between
-arms is only valid where they read the same dump, which all three now do.
+regenerations (`3afeecd` and `c75744a` respectively).
+
+The controlled #174 comparison instead fixes composition at `a2b2df98` and ORA
+at `3ae7ac8`, with matrix blob `d837f449e7e967c478d10f92938923e57eec9a19`.
+It reproduces the published baseline before changing the denominator. On matched
+keys, retained totals agree exactly across arms and all 28,020 Table 1
+profile/trait fractions agree with Noel's loader. The pooled six-trait overlap
+at q <= 0.001 is unchanged; pooled q <= 0.05 overlap rises from 45 to 47, and
+fecal overlap falls from 89 to 86. Each arm retains its own correction family.
+See [the measured report](../trait-visualization/denominator-harmonization/README.md).
+Matching dump vintage alone does not establish comparable denominators, pairing,
+backgrounds, transformations, or correction families. Later ORA sampling-unit
+changes are deliberately excluded from this denominator-only comparison.
 
 ## Provenance of this note
 

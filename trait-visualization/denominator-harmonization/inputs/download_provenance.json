@@ -1,0 +1,38 @@
+{
+  "studies.csv": {
+    "downloaded_at": "2026-08-26T19:35:01.093555+00:00",
+    "url": "https://bugsigdb-csv.s3.us-east-va.perf.cloud.ovh.us/studies.csv",
+    "etag": "\"7f54afa5bef4987581d5dbd4a196f225\"",
+    "last_modified": "Wed, 26 Aug 2026 19:06:10 GMT",
+    "content_length": "4898353",
+    "downloaded_bytes": 4898353
+  },
+  "experiments.csv": {
+    "downloaded_at": "2026-08-26T19:35:02.126081+00:00",
+    "url": "https://bugsigdb-csv.s3.us-east-va.perf.cloud.ovh.us/experiments.csv",
+    "etag": "\"e21a798980f2562a209e004234dd0530\"",
+    "last_modified": "Wed, 26 Aug 2026 19:06:11 GMT",
+    "content_length": "3885500",
+    "downloaded_bytes": 3885500
+  },
+  "signatures.csv": {
+    "downloaded_at": "2026-08-26T19:35:04.700714+00:00",
+    "url": "https://bugsigdb-csv.s3.us-east-va.perf.cloud.ovh.us/signatures.csv",
+    "etag": "\"d5def7f67aee2dd89f3da6a97d7d2644\"",
+    "last_modified": "Wed, 26 Aug 2026 19:06:09 GMT",
+    "content_length": "19986033",
+    "downloaded_bytes": 19986033
+  },
+  "full_dump.csv": {
+    "downloaded_at": "2026-08-26T19:35:04.990887+00:00",
+    "url": "https://raw.githubusercontent.com/waldronlab/BugSigDBExports/v1.3.1/full_dump.csv",
+    "etag": "W/\"49d93db550f5055a880df0ba0a560fcd919e505390fdd0933628574045e3f98c\"",
+    "last_modified": null,
+    "content_length": "1708429",
+    "downloaded_bytes": 16241290,
+    "source": "waldronlab/BugSigDBExports",
+    "version": "v1.3.1",
+    "doi": "10.5281/zenodo.19740674",
+    "tag_sha": "5815c2638d6b56134ac8db19edc2bb3c4b17f1ca"
+  }
+}

@@ -1,0 +1,7 @@
+trait	trait_label	studies_up	studies_down	studies_tied	studies_scored	share_up	ci_low	ci_high	binomial_p	bh_q	bugsigdb_vintage
+facultatively_aerobic	facultatively aerobic (METPO:1000608)	534	383	42	917	0.582334	0.549646	0.614491	6.90079e-07	4.14047e-06	BugSigDBExports v1.3.1
+cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	334	440	185	774	0.431525	0.396304	0.467269	0.000157103	0.000314205	BugSigDBExports v1.3.1
+coccus_shaped	coccus shaped (METPO:1000668)	499	416	44	915	0.545355	0.512443	0.577975	0.00667963	0.00667963	BugSigDBExports v1.3.1
+sphere_shaped	sphere shaped (METPO:1000683)	467	377	115	844	0.553318	0.519048	0.587213	0.00216905	0.00298184	BugSigDBExports v1.3.1
+arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	346	270	343	616	0.561688	0.521477	0.601306	0.00248487	0.00298184	BugSigDBExports v1.3.1
+moderately_halophilic	moderately halophilic (METPO:1000623)	485	360	114	845	0.573964	0.539822	0.607590	1.92842e-05	5.78527e-05	BugSigDBExports v1.3.1

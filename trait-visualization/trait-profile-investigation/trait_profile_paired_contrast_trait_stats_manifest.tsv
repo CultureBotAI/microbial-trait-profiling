@@ -1,0 +1,6 @@
+stratum_kind	stratum	filename_token	analysis_role	pair_count	study_count	selected_trait_count	correction_family	path
+pooled	pooled	pooled	pooled	2335	959	315	composition:pooled	trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_pooled.tsv
+body_site_group	Feces	feces	primary-analysis	1485	594	314	composition:feces	trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_feces.tsv
+body_site_group_excluded	Feces excluded	feces_excluded	robustness-feces-excluded	850	365	298	composition:feces_excluded	trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_feces_excluded.tsv
+body_site_group	Other	other	body-site	521	223	299	composition:other	trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_other.tsv
+body_site_group	Saliva	saliva	body-site	129	55	285	composition:saliva	trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_saliva.tsv
