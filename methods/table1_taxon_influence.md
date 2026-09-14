@@ -1,6 +1,8 @@
 # Table 1 taxon contributions and lineage influence
 
 Issue [#190](https://github.com/CultureBotAI/microbial-trait-profiling/issues/190).
+The [measured run summary](table1_taxon_influence_results.md) records the reconciled
+corpus, observed contribution patterns, conditional uncertainty and remaining work.
 Run `just table1-taxon-influence`, or pass a directory containing the **same pinned**
 KG files: `just table1-taxon-influence C:/path/to/pinned-kg`.
 The recipe writes TSVs, compressed TSVs, `manifest.json` and
@@ -56,6 +58,10 @@ into an inferred gene, phenotype measurement, or independent evidence source.
 The following joins are intentional: expanding every signature × source × supporting
 edge into a flat table would incorrectly invite counting supporting edges repeatedly.
 All tables in a run share the KG and input revisions in `manifest.json`.
+The source-contribution and supporting-edge reference tables include the full
+matrix/KG supersets. Restrict them through `profile_reported_taxa.tsv.gz` when
+interpreting the retained human corpus; summing the reference tables directly
+does not recover a human profile count.
 
 | File | Key and interpretation |
 | --- | --- |
