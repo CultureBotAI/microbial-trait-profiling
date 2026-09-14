@@ -40,6 +40,10 @@ The [GPT Rosalind discussion and review](../docs/rosalind-six-trait-interpretati
 archives proposed biological explanations for the six traits, with a separate
 evidence review and assigned follow-up issues. It records hypotheses to evaluate;
 it is not an approved Results or Discussion section.
+The [second exchange](../docs/rosalind-six-trait-interpretation-response-2.md)
+preserves the follow-up questions and Rosalind's revised response, including its
+prediction and discriminating-evidence tables. It is archived without a separate
+evidence review.
 
 The gram-stain directional Sankey diagrams live on the
 `147-add-gram-stain-directional-sankey-gram-positive-gram-negative-x-increased-decreased`

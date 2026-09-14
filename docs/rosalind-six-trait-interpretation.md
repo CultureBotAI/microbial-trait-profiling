@@ -11,6 +11,10 @@ repository review. The transcript is not an approved interpretation of the resul
 The review begins at [Repository review](#repository-review).
 Tracking issue: [#187](https://github.com/CultureBotAI/microbial-trait-profiling/issues/187).
 
+Follow-up: [second prompt and Rosalind response](rosalind-six-trait-interpretation-response-2.md),
+which develops competing explanations and predictions after the measurement limits
+were clarified. The review below concerns this first response.
+
 ## Supplied conversation
 
 ### User
