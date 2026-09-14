@@ -1,4 +1,4 @@
-"""Disease-by-body-site oxygen guild heatmap and aerobe/anaerobe correlation.
+"""Condition-by-body-site oxygen annotation guild heatmap and correlation.
 
 Rows are conditions, columns are body sites crossed with the four
 guild-by-direction combinations, so each body site contributes the 2x2
@@ -86,8 +86,8 @@ class GuildMatrix:
     # Body sites whose column block was backed by too few conditions to read as a
     # site-level pattern, removed with all of their columns.
     dropped_body_sites: list[str]
-    # True where the body site was sampled for that condition but no taxon in the
-    # profile carried any trait of that guild. Without this, an all-zero cell is
+    # True where the body site was sampled but profiles have no recorded guild
+    # annotation signal. Without this, an all-zero cell is
     # drawn in the same colour as a genuinely low fraction.
     sampled_no_signal: list[list[bool]]
 
@@ -698,7 +698,7 @@ def _coverage_note(matrix: GuildMatrix) -> list[str]:
         return f"{verb} ({pool.pooled_share:.0f}% of profiles)"
 
     caveat = (
-        " A pooled Other mixes unrelated labels, so no cell in it is one condition or one "
+        "A pooled Other mixes unrelated labels, so no cell in it is one condition or one "
         "anatomical site."
         if condition.bucketed or site.bucketed
         else ""
@@ -707,7 +707,8 @@ def _coverage_note(matrix: GuildMatrix) -> list[str]:
         f"Rows and columns are a cut of the corpus: {condition_part} and {site_part}.",
         f"The remaining {condition.pooled_labels} conditions are "
         f"{fate(condition)} and the remaining {site.pooled_labels} body sites are "
-        f"{fate(site)}.{caveat}",
+        f"{fate(site)}.",
+        *([caveat] if caveat else []),
     ]
 
 
@@ -737,8 +738,8 @@ def write_figure(
     an order of magnitude, so they are drawn on per-trait ranges instead and each
     colour bar carries its own maximum.
 
-    Cells where the site was sampled but carried no trait of the group are filled
-    dark grey, so an absent trait is distinguishable from a small fraction. With
+    Cells where the site was sampled but no group annotations were recorded are filled
+    dark grey, so zero mapped signal is distinguishable from a small fraction. With
     ``mark_no_signal`` off they are left blank instead: the shading dominates the
     figure where the traits are rare, and the state is still recorded in the
     emitted cell-status table.
@@ -870,19 +871,20 @@ def write_figure(
         f"Rows clustered by Euclidean distance into {n_clusters} groups, separated by blank rows."
     )
     if mark_no_signal:
-        cluster_note += (
-            f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
-        )
+        cluster_note += " Dark grey = sampled, with no recorded annotation signal."
     # Broken into explicit lines: as one run the subtitle overflows the plotting
     # area and is clipped by the right-hand colour bars.
     subtitle = "<br>".join(
         [
-            f"Mean {value_phrase}, averaged within study then across studies, shown as a "
-            "percentage of the profile's summed trait-assertion counts (taxonomic "
-            "rollups can count one reported taxon many times), not of its taxa.",
+            f"Mean {value_phrase}: % of retained annotation counts; averaged within studies, "
+            "then across studies.",
+            "Taxonomic rollup can count one reported taxon many times; values are not "
+            "percentages of taxa or patients.",
             range_note,
             cluster_note,
             *_coverage_note(matrix),
+            "Directions are curated signature labels; annotation shares do not measure "
+            "patient traits or exposure. See methods/biological_interpretation.md.",
             f"BugSigDB {vintage or 'vintage unknown'}.",
         ]
     )
@@ -893,10 +895,10 @@ def write_figure(
         shapes=shapes,
         annotations=annotations,
         width=max(900, 26 * len(matrix.columns)),
-        height=max(600, 26 * len(row_labels) + 340),
+        height=max(600, 26 * len(row_labels) + 380),
         # The site headers sit above the plotting area, so they need their own room.
-        # Six subtitle lines plus a two-line site header need the room.
-        margin={"l": 300, "b": 300, "t": 380 if separate_body_sites else 200},
+        # Caption lines plus a two-line site header need the room.
+        margin={"l": 300, "b": 300, "t": 445},
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.write_image(str(output_path), scale=2)
@@ -1027,19 +1029,20 @@ def write_body_site_panels(
     if range_quantile < 1.0:
         range_note += f", cut at the {range_quantile:.0%} quantile of observed cells"
     grey_note = (
-        f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
-        if mark_no_signal
-        else ""
+        " Dark grey = sampled, with no recorded annotation signal." if mark_no_signal else ""
     )
     subtitle = "<br>".join(
         [
-            f"Mean {value_phrase}, averaged within study then across studies, shown as a "
-            "percentage of the profile's summed trait-assertion counts (taxonomic "
-            "rollups can count one reported taxon many times), not of its taxa.",
+            f"Mean {value_phrase}: % of retained annotation counts; averaged within studies, "
+            "then across studies.",
+            "Taxonomic rollup can count one reported taxon many times; values are not "
+            "percentages of taxa or patients.",
             f"{range_note}.",
             "Rows are the conditions of the combined figure in the same clustered order, so a "
             f"blank row here was drawn in another body site.{grey_note}",
             *_coverage_note(matrix),
+            "Directions are curated signature labels; annotation shares do not measure "
+            "patient traits or exposure. See methods/biological_interpretation.md.",
             f"BugSigDB {vintage or 'vintage unknown'}.",
         ]
     )
@@ -1048,9 +1051,9 @@ def write_body_site_panels(
         title={"text": f"{title}<br><sub>{subtitle}</sub>"},
         shapes=shapes,
         width=max(900, 150 + 620 * len(sites)),
-        height=max(600, 26 * len(row_labels) + 360),
-        # Six subtitle lines above the panel titles.
-        margin={"l": 300, "b": 260, "t": 360},
+        height=max(600, 26 * len(row_labels) + 400),
+        # Caption lines above the panel titles.
+        margin={"l": 300, "b": 260, "t": 425},
         plot_bgcolor="white",
     )
     figure.update_xaxes(tickangle=-60)

@@ -30,6 +30,11 @@ repos:
     hooks:
       - id: detect-secrets
         exclude: ^data/.*/provenance\.json$
+        # These two named constants are public release identifiers, not credentials.
+        # Other lines in the downloader and other files remain scanned.
+        args:
+          - --exclude-lines
+          - '^(BUGSIGDB_EXPORTS_TAG_SHA|PINNED_FULL_DUMP_MD5) = "[0-9a-f]+"$'
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.13
     hooks:

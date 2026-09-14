@@ -5,6 +5,13 @@ that the text can be used directly in the Methods section of the paper. Each fil
 names the script that produced the figure, the `just` recipe that runs it, and the
 BugSigDB vintage the numbers came from.
 
+Start with the shared [biological interpretation guide](biological_interpretation.md)
+for measurement units, evidence provenance, defensible wording and caption/review
+requirements across every analysis. The companion
+[claim audit](biological_interpretation_audit.md) covers current prose and
+generators, PR #173's overlays and PR #192's archived Rosalind discussion/review.
+These rules apply to manuscript and public descriptions as well as methods.
+
 | Figure | Produced by | Recipe | Methods |
 | --- | --- | --- | --- |
 | `guild_condition_body_site_heatmap.png` | `src/bsdbng/guild_maps.py` | `just guild-maps` | [`guild_condition_body_site_heatmap.md`](guild_condition_body_site_heatmap.md) |

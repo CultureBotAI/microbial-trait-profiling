@@ -1,5 +1,9 @@
 # Three statistics on one matrix
 
+All arms follow the [shared biological interpretation guide](biological_interpretation.md).
+Their effects describe annotation representation; neither agreement nor a
+statistical implementation fix supplies missing biological measurements.
+
 Three analyses in this project consume the same table,
 `data/derived/study_trait_profiles_wide.tsv`, and report significance for
 traits. They are not three attempts at the same test, and their p-values are not
@@ -83,14 +87,16 @@ number of studies rather than from the size of the shift.
 
 ## Compositionality
 
-Trait fractions within a profile sum to a constant, so two traits compared within
-the same profile are negatively correlated by construction. This affects the
+Trait fractions within a profile sum to a constant, constraining their dependence;
+this does not force every pair of traits to correlate negatively. This affects the
 guild-against-guild correlation reported alongside the oxygen guild heatmap,
 which is why that correlation is described there as partly structural and is not
 offered as independent support for the oxygen hypothesis. The composition arm's
 paired contrast and the directional-consistency arm's sign test both compare a
 trait against itself across the two directions rather than against another trait
-within one profile, and so do not share the artefact. Issue #132 records the
+within one profile. They remain sensitive to the other traits contributing to
+the denominator; correlations between their contrasts can retain shared-taxon,
+denominator and selection dependence. Issue #132 records the
 related effect in the enrichment arm, where enrichment and depletion mirror each
 other by construction.
 
@@ -100,8 +106,12 @@ All three arms pin **BugSigDBExports v1.3.1** (Zenodo 10.5281/zenodo.19740674;
 issues #115/#130, resolved by PR #150's SHA-verified downloader). The
 directional-consistency numbers in this note are from a v1.3.1 run; the
 composition and enrichment figures come from those arms' committed v1.3.1
-regenerations (`3afeecd` and `c75744a` respectively). Any comparison between
-arms is only valid where they read the same dump, which all three now do.
+regenerations (`3afeecd` and `c75744a` respectively). A shared dump is necessary
+but insufficient for a comparable analysis: verify eligible populations,
+denominators, transformations, backgrounds and correction families. In particular,
+the denominator harmonization in #174 is separate from this interpretation guide;
+historical composition results below that correction must not be described as
+sharing fractions solely because they share a matrix.
 
 ## Provenance of this note
 
