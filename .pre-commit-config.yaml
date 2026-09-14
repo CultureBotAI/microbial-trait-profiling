@@ -30,6 +30,12 @@ repos:
     hooks:
       - id: detect-secrets
         exclude: ^data/.*/provenance\.json$
+        # Named release identifiers and the two pinned KG file checksums are public.
+        # Other lines and values remain scanned.
+        args:
+          - --exclude-lines
+          - >-
+            ^(BUGSIGDB_EXPORTS_TAG_SHA|PINNED_FULL_DUMP_MD5) = "[0-9a-f]+"$|^    "merged-kg_nodes.tsv": "dd76b4656f9341db25a7c4afa96cd58e",?$|^    "merged-kg_edges.tsv": "555ecf5ba5d89288cdc44e368375374f",?$
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.13
     hooks:

@@ -81,6 +81,10 @@ taxa-trait-matrix: study-tsvs
 study-trait-profiles:
 	uv run python scripts/create_study_trait_profiles.py
 
+# Source-count reconciliation and predeclared genus/family influence (#190).
+table1-taxon-influence kg_dir="data/kg-microbe":
+	uv run python -m bsdbng.taxon_contributions --kg-dir "{{kg_dir}}"
+
 # PNG export (guild-maps, table1-trait-maps) runs through kaleido 1.x, which
 # drives a headless Chrome. This downloads (~170 MB) the version-pinned Chrome
 # for Testing build into choreographer's data directory; kaleido prefers that
@@ -100,7 +104,7 @@ guild-maps:
 # traits of manuscript Table 1 instead of the two pooled oxygen guilds. Writes the
 # combined condition x body-site heatmap, the paired directional-shift figure, and
 # their backing tables to data/derived/table1_traits/.
-# Needs a local Chrome for the PNGs (`just get-chrome`).
+# Needs a local Chrome for the PNG files (`just get-chrome`).
 table1-trait-maps:
 	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py"
 
@@ -120,7 +124,7 @@ precommit:
 	uv run pre-commit run --all-files
 
 validate-schema:
-	uv run linkml validate -s {{schema}}
+	uv run linkml validate {{schema}}
 
 lint-schema:
 	uv run linkml lint --config {{lintconfig}} --validate --ignore-warnings {{schema}}
