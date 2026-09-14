@@ -1,17 +1,18 @@
-# Where bsdbng came from
+# Project origins
 
 ## The short version
 
-bsdbng is a clean-room reimplementation of work that was prototyped in
+`microbial-trait-profiling`, originally named `bsdbng`, is a clean-room
+reimplementation of work that was prototyped in
 [CultureBotAI/KG-Microbe-search](https://github.com/CultureBotAI/KG-Microbe-search).
 The prototyping was done by undergraduate researchers. Their exploratory
-work proved the concept and revealed the data structure; bsdbng packages
-those findings into a schema-first, guardrails-first pipeline.
+work proved the concept and revealed the data structure; this project packages
+those findings into a pipeline with a formal schema and automated validation.
 
 ## What the prototyping proved
 
 Each finding below links to the specific prototype artifact that
-demonstrated it, and the bsdbng code that builds on it.
+demonstrated it, and the current project's code that builds on it.
 
 ### 1. BugSigDB data can be structured into per-study records
 
@@ -21,7 +22,7 @@ hands-on data exploration.
 
 - Prototype: [colorectal-cancer-studies/](https://github.com/CultureBotAI/KG-Microbe-search/tree/main/colorectal-cancer-studies) —
   per-study folders with `analysis_results.yaml`, metadata, and taxa files
-- bsdbng: `schema/bsdbng.yaml` — the Study → Experiment → Signature → Taxon
+- This project: `schema/bsdbng.yaml` — the Study → Experiment → Signature → Taxon
   hierarchy formalized as a LinkML schema
 
 ### 2. LinkML schemas can validate BugSigDB data
@@ -35,7 +36,7 @@ were created to test the schema.
 - Prototype: [schema/valid example output yaml/](https://github.com/CultureBotAI/KG-Microbe-search/tree/main/schema/valid%20example%20output%20yaml) and
   [schema/invalid example output yaml/](https://github.com/CultureBotAI/KG-Microbe-search/tree/main/schema/invalid%20example%20output%20yaml) —
   test data files
-- bsdbng: `schema/bsdbng.yaml` — refined schema with NamedThing inheritance,
+- This project: `schema/bsdbng.yaml` — refined schema with NamedThing inheritance,
   id_prefixes, per-class patterns, and Pydantic validation on write
 
 ### 3. Trait profile tables can be generated from structured study data
@@ -46,7 +47,7 @@ taxa and their abundance directions across studies.
 - Prototype: [Studies/reshape_trait_profiles.py](https://github.com/CultureBotAI/KG-Microbe-search/blob/main/Studies/reshape_trait_profiles.py)
   and the universal generator on branch
   [updated-noel-tsv](https://github.com/CultureBotAI/KG-Microbe-search/tree/updated-noel-tsv)
-- bsdbng: issue [#30](https://github.com/turbomam/bsdbng/issues/30) —
+- This project: issue [#30](https://github.com/CultureBotAI/microbial-trait-profiling/issues/30) —
   the same capability, reading from schema-validated YAML
 
 ### 4. KG-Microbe phenotype data can be cross-referenced with BugSigDB taxa
@@ -58,7 +59,7 @@ to find phenotypic traits associated with differentially abundant organisms.
   taxa lookup against KG-Microbe edges.tsv and nodes.tsv
 - Prototype: [bugsigdb-analysis-prompt-template.md](https://github.com/CultureBotAI/KG-Microbe-search/blob/main/bugsigdb-analysis-prompt-template.md) —
   LLM prompt for BugSigDB taxa extraction and KG-Microbe analysis
-- bsdbng: issue [#31](https://github.com/turbomam/bsdbng/issues/31) —
+- This project: issue [#31](https://github.com/CultureBotAI/microbial-trait-profiling/issues/31) —
   deterministic version of the same cross-referencing
 
 ### 5. BugSigDB uses MetaPhlAn lineage encoding
@@ -69,7 +70,7 @@ learned through data exploration.
 
 - Prototype: discovered through analysis of the CSV data and the
   [MetaPhlAn taxon names column](https://github.com/CultureBotAI/KG-Microbe-search/blob/main/schema/YAML_CONVERSION_GUIDE.md)
-- bsdbng: `src/bsdbng/ingest.py`, function `_parse_taxa` — implements
+- This project: `src/bsdbng/ingest.py`, function `_parse_taxa` — implements
   correct semicolon/pipe parsing with the `METAPHLAN_RANK_MAP`
 
 ### 6. 1,743 BugSigDB studies were successfully analyzed
@@ -78,7 +79,7 @@ The prototype validated the approach at scale using LLM-driven analysis.
 
 - Prototype: [PR #41](https://github.com/CultureBotAI/KG-Microbe-search/pull/41) —
   1,743 study analysis YAML files validated against the schema
-- bsdbng: `just pipeline` produces 1,923 studies deterministically in ~22s
+- This project: `just pipeline` produces 1,923 studies deterministically in ~22s
 
 ## Archived prototype branches
 
@@ -107,9 +108,9 @@ git show archive/updated-noel-tsv:generate_trait_tsv_from_yaml.py
 | `archive/updated-noel-tsv` | `updated-noel-tsv` | YAML-based trait profile TSV generator (PR #51) |
 | `archive/noel-trait-tsv-orphan` | `noel_trait_tsv` | Early exploratory work: trait profiles, GTDB/NCBI tables |
 
-## What bsdbng adds
+## What this project adds
 
-bsdbng takes the proven concepts and packages them with:
+`microbial-trait-profiling` takes the proven concepts and packages them with:
 
 - **A single LinkML schema** as the source of truth, with generated Pydantic
   models enforcing validation on every write
