@@ -528,7 +528,10 @@ def export_native(base: Base, audit: Record, protocol: Record, output: Path) -> 
                             trait_key=trait,
                             reference=reference,
                             **{f"native_{k}": v for k, v in native.items()},
-                            **comparison(bpairs[trait] if bscales[trait] else {}, values),
+                            **comparison(
+                                bpairs[trait] if reference == "refitted" or bscales[trait] else {},
+                                values,
+                            ),
                         )
                     )
             for treatment in protocol["ora"]["backgrounds"]:

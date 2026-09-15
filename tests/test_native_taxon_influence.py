@@ -257,3 +257,14 @@ def test_native_exports_end_to_end_with_an_empty_stratum(tmp_path: Path) -> None
     comparisons = list(rows(tmp_path / "native_composition_comparison.tsv"))
     assert {r["shared_correction"] for r in comparisons} == {"BH2_directional_sign_test"}
     assert all(r["before_p"] == "" for r in comparisons if r["scope"] == "empty")
+    zero_reference = {
+        r["reference"]: r for r in comparisons if r["scope"] == "pooled" and r["trait_key"] == "C"
+    }
+    refitted = zero_reference["refitted"]
+    assert refitted["before_pairs"] == refitted["after_pairs"] == "4"
+    assert refitted["lost_pairs"] == refitted["gained_pairs"] == "0"
+    assert float(refitted["before_effect"]) == float(refitted["after_effect"]) == 0
+    assert refitted["before_p"] == refitted["after_p"] == ""
+    fixed = zero_reference["fixed_baseline_sd"]
+    assert fixed["before_pairs"] == fixed["after_pairs"] == "0"
+    assert fixed["before_effect"] == fixed["after_effect"] == ""

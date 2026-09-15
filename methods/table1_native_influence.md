@@ -65,7 +65,9 @@ before/after/matched/change population.
 Two reference policies are exported: refitted z-scores and contrasts divided by
 the fixed baseline SD. The latter isolates change on a common scale; a change in
 refitted SD is not itself removed biological signal. If the baseline SD is zero,
-the fixed-scale comparison is unavailable. Native test columns always refer to
+the fixed-scale comparison is unavailable. Refitted comparisons retain the native
+zero-column-SD convention (zero contrasts) symmetrically before and after, so a
+constant baseline does not create artificial pair gains. Native test columns always refer to
 the native refitted model, even on the fixed-reference comparison row.
 
 ## ORA Contract

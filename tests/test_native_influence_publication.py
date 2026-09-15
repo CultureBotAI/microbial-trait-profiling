@@ -33,12 +33,23 @@ def run_directory(tmp_path: Path) -> Path:
         output_hashes[filename] = digest(source / filename)
     (source / "native_summary.md").write_text("# Native summary\n")
     output_hashes["native_summary.md"] = digest(source / "native_summary.md")
+    write_table(
+        source / "scenarios.tsv",
+        ["scenario", "name", "status"],
+        [
+            {"scenario": "exclude_A", "name": "Genus A", "status": "run"},
+            {"scenario": "exclude_B", "name": "Genus B", "status": "outside_predeclared_panel"},
+        ],
+    )
     (source / "native_manifest.json").write_text(
         json.dumps(
             {
                 "completed": True,
                 "contribution_manifest_sha256": digest(source / "manifest.json"),
-                "results": {"input_sha256": {}, "output_sha256": output_hashes},
+                "results": {
+                    "input_sha256": {"scenarios.tsv": digest(source / "scenarios.tsv")},
+                    "output_sha256": output_hashes,
+                },
             }
         )
     )
@@ -50,7 +61,10 @@ def test_publication_preserves_comparisons_and_full_family_metadata(run_director
     result = publish(run_directory, destination)
     tables = result["tables"]
     assert isinstance(tables, dict)
-    assert len(tables) == 4
+    assert len(tables) == 5
+    assert (destination / "scenarios.tsv").read_bytes() == (
+        run_directory / "scenarios.tsv"
+    ).read_bytes()
     selected = list(compressed_rows(destination / "native_table1_stats.tsv.gz"))
     assert selected == [{"trait_key": "A", "value": "1"}]
     comparisons = list(compressed_rows(destination / "native_composition_comparison.tsv.gz"))
