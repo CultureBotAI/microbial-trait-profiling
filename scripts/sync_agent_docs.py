@@ -38,9 +38,9 @@ PROJECT_CONVENTIONS = """
 
 
 def main() -> None:
-    agents_content = AGENTS_MD.read_text()
+    agents_content = AGENTS_MD.read_text(encoding="utf-8")
     copilot_content = COPILOT_HEADER + agents_content + PROJECT_CONVENTIONS
-    COPILOT_MD.write_text(copilot_content)
+    COPILOT_MD.write_text(copilot_content, encoding="utf-8")
     print(f"wrote {COPILOT_MD}")
 
 
