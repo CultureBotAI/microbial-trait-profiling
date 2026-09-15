@@ -893,9 +893,9 @@ def build_signal_coverage_table(
         table["focus_positive_signal_profiles"] + table["comparator_positive_signal_profiles"]
     )
     table["focus_mean_positive_selected_trait_count"] = table[focus_mean_column].astype(float)
-    table["comparator_mean_positive_selected_trait_count"] = table[
-        comparator_mean_column
-    ].astype(float)
+    table["comparator_mean_positive_selected_trait_count"] = table[comparator_mean_column].astype(
+        float
+    )
     table["focus_profile_count"] = table[focus_profile_column].astype(int)
     table["comparator_profile_count"] = table[comparator_profile_column].astype(int)
     table["limited_study_support"] = table["study_count"] <= LOW_COVERAGE_STUDY_THRESHOLD
@@ -1026,9 +1026,7 @@ def build_condition_trait_signal_heatmap(
         ].index.intersection(positive_matrix.index)
 
         focus_mean = (
-            positive_matrix.loc[focus_ids].mean(axis=0)
-            if len(focus_ids)
-            else zero_trait_signal
+            positive_matrix.loc[focus_ids].mean(axis=0) if len(focus_ids) else zero_trait_signal
         )
         comparator_mean = (
             positive_matrix.loc[comparator_ids].mean(axis=0)

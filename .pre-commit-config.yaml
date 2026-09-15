@@ -10,6 +10,8 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
+        # Trailing TSV fields and generated vector output must remain intact.
+        exclude: '\.(tsv|csv|svg)$'
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.37.0
     hooks:
@@ -19,19 +21,22 @@ repos:
     rev: v2.4.1
     hooks:
       - id: codespell
+        # Preserve source labels and opaque IDs in generated scientific artifacts.
+        exclude: '^trait-visualization/.*\.(tsv|csv|svg|json|html)$'
         additional_dependencies:
           - tomli
   - repo: https://github.com/crate-ci/typos
     rev: v1.31.1
     hooks:
       - id: typos
+        exclude: '^trait-visualization/.*\.(tsv|csv|svg|json|html)$'
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
       - id: detect-secrets
         exclude: ^data/.*/provenance\.json$
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.13
+    rev: v0.15.10
     hooks:
       - id: ruff-check
       - id: ruff-format

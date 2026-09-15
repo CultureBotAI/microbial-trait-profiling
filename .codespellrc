@@ -1,3 +1,5 @@
 [codespell]
 skip = .venv,uv.lock
 quiet-level = 3
+# Medical term and spelling preserved in a quoted source-study title.
+ignore-words-list = infarction,homogenous

@@ -27,4 +27,3 @@ Generated at: `2026-08-26T19:42:10+00:00`
 - `bugsigdbexports_v1_3_1_full_dump` is the citable convenience single-file path currently used by bsdbng.
 - `bugsigdbexports_v1_3_1_gmt_bundle` is the heaviest path and is optimized for set-based analysis, not canonical ingestion.
 - `zenodo_release_v1_3_1` is the reproducible pinned-release path (10.5281/zenodo.19740674).
-

@@ -104,7 +104,7 @@ def short_label(value: object, *, max_length: int = 34) -> str:
 def stable_id(view_key: str, kind: str, *parts: object) -> str:
     """Return a compact, deterministic Cytoscape element id."""
     raw = "\x1f".join(str(part) for part in parts)
-    digest = hashlib.sha1(raw.encode("utf-8")).hexdigest()[:14]
+    digest = hashlib.sha1(raw.encode("utf-8"), usedforsecurity=False).hexdigest()[:14]
     return f"{view_key}-{kind}-{digest}"
 
 

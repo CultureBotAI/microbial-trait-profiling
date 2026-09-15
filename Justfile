@@ -58,6 +58,10 @@ pd-trait-taxa-heatmap:
 six-shared-trait-combined-sankey:
 	uv run python scripts/create_six_shared_trait_sankeys.py --combined-high-support-only
 
+# Redraw the saved increased, decreased and combined high-support selections.
+six-shared-trait-high-support-sankeys:
+	uv run python scripts/create_six_shared_trait_sankeys.py --high-support-layouts-only
+
 # Flatten per-study YAML into data/derived/*.tsv.
 study-tsvs:
 	uv run python -m bsdbng.study_tsv
@@ -127,7 +131,7 @@ precommit:
 	uv run pre-commit run --all-files
 
 validate-schema:
-	uv run linkml validate -s {{schema}}
+	uv run linkml validate {{schema}}
 
 lint-schema:
 	uv run linkml lint --config {{lintconfig}} --validate --ignore-warnings {{schema}}

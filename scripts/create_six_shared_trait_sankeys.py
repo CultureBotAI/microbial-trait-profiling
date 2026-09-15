@@ -68,6 +68,8 @@ MAX_PARALLEL_EDGE_OFFSET = 0.010
 BODY_SITE_BUNDLE_X = 0.585
 BODY_SITE_BUNDLE_EDGE_SPACING = 0.007
 MAX_BODY_SITE_BUNDLE_EDGE_OFFSET = 0.018
+HIGH_SUPPORT_LEFT_X = 0.27
+HIGH_SUPPORT_RIGHT_X = 0.70
 BIDIRECTIONAL_ANALYSIS = "six_shared_traits_combined_shared_high_support"
 BIDIRECTIONAL_STEM = f"{BIDIRECTIONAL_ANALYSIS}_profile_sankey"
 BIDIRECTIONAL_README_HEADING = "## Increased and Decreased High-Support Overlay"
@@ -724,7 +726,9 @@ def count_joined_unique(values: pd.Series) -> int:
     return len(unique_values)
 
 
-def combined_node_stats(display_edges: pd.DataFrame, node_column: str) -> pd.DataFrame:
+def combined_node_stats(
+    display_edges: pd.DataFrame, node_column: str, *, count_profiles: bool = False
+) -> pd.DataFrame:
     """Summarize combined Sankey node support over displayed trait-specific edges."""
     records: list[dict[str, object]] = []
     for label, group in display_edges.groupby(node_column, sort=False):
@@ -739,7 +743,77 @@ def combined_node_stats(display_edges: pd.DataFrame, node_column: str) -> pd.Dat
                 ),
             }
         )
-    return pd.DataFrame.from_records(records).set_index(node_column)
+    result = pd.DataFrame.from_records(records).set_index(node_column)
+    if count_profiles:
+        keys = ["condition", "body_site_group", "focus_direction"]
+        if (display_edges.groupby(keys)["focus_profile_count"].nunique() != 1).any():
+            raise ValueError("Trait rows disagree on the profile total for a displayed pair.")
+        # Each profile belongs to one condition/site/direction cell. Collapse the
+        # repeated trait rows before summing cells; include non-positive-z profiles.
+        cells = display_edges.drop_duplicates(keys)
+        result["profile_count"] = cells.groupby(node_column)["focus_profile_count"].sum()
+    return result
+
+
+def high_support_node_scale(
+    all_display_edges: pd.DataFrame, *, already_selected: bool = False
+) -> float:
+    """One area scale for the separate and combined selected-direction views."""
+    selected = (
+        all_display_edges
+        if already_selected
+        else pd.concat(
+            [
+                select_shared_high_support_display_edges(group)[0]
+                for _, group in all_display_edges.groupby("focus_direction")
+            ],
+            ignore_index=True,
+        )
+    )
+    return max(
+        float(combined_node_stats(selected, column, count_profiles=True)["profile_count"].max())
+        for column in ("condition", "body_site_group")
+    )
+
+
+def profile_node_radius(count: float, scale: float) -> float:
+    """Fixed-shape oval area is proportional to profiles, with no minimum-area offset."""
+    return 0.034 * math.sqrt(count / scale)
+
+
+def spaced_bundle_offsets(
+    edges: pd.DataFrame,
+    widths: pd.Series,
+    ax: plt.Axes,
+    condition_y: dict[str, float],
+    body_site_y: dict[str, float],
+) -> pd.DataFrame:
+    """Pack strokes with a physical gap normal to each pair's midpoint tangent."""
+    result = edges.copy()
+    result["bundle_dx"] = 0.0
+    result["bundle_dy"] = 0.0
+    x_points = ax.get_position().width * ax.figure.get_figwidth() * 72
+    y_points = ax.get_position().height * ax.figure.get_figheight() * 72
+    for (condition, site), group in result.groupby(["condition", "body_site_group"]):
+        indices = group.sort_values("parallel_rank").index.tolist()
+        strokes = [float(widths.loc[index]) for index in indices]
+        total = sum(strokes) + 3.5 * (len(strokes) - 1)
+        position = total / 2
+        tangent_x = 0.81 * (HIGH_SUPPORT_RIGHT_X - HIGH_SUPPORT_LEFT_X) * x_points
+        tangent_y = 1.5 * (body_site_y[site] - condition_y[condition]) * y_points
+        length = math.hypot(tangent_x, tangent_y)
+        for index, stroke in zip(indices, strokes, strict=True):
+            center = position - stroke / 2
+            # Equal offsets at both Bezier control points contribute 3/4 at t=1/2.
+            result.loc[index, "bundle_dx"] = -tangent_y / length * center / (0.75 * x_points)
+            result.loc[index, "bundle_dy"] = tangent_x / length * center / (0.75 * y_points)
+            position -= stroke + 3.5
+    return result
+
+
+def decreased_dash_style(linewidth: float) -> tuple[float, tuple[float, ...]]:
+    """Seven-point strokes and nine-point gaps regardless of line width."""
+    return (0.0, (7.0 / linewidth, 9.0 / linewidth))
 
 
 def draw_combined_node(
@@ -750,25 +824,27 @@ def draw_combined_node(
     label: str,
     stats_row: pd.Series,
     align: str,
+    radius: float = 0.012,
 ) -> None:
     """Draw one combined Sankey node with trait-edge membership support."""
     ax.add_patch(
         Circle(
             (x, y),
-            0.012,
+            radius,
             facecolor=NODE_FILL,
             edgecolor=NODE_EDGE,
             linewidth=1.0,
             zorder=5,
         )
     )
-    text_x = x - 0.025 if align == "right" else x + 0.025
+    text_x = x - radius - 0.013 if align == "right" else x + radius + 0.013
+    profile_count = stats_row.get("profile_count", stats_row.focus_enriched_profile_count)
     label_lines = [
         wrap_label(label),
         (
             f"links={int(stats_row.display_trait_edge_count)}, "
             f"traits={int(stats_row.display_trait_count)}, "
-            f"n={int(stats_row.focus_enriched_profile_count):,}"
+            f"n={int(profile_count):,}"
         ),
     ]
     ax.text(
@@ -1523,9 +1599,11 @@ def plot_combined_direction_sankey(
     color_scale_vmax: float | None = None,
     subplot_top: float = 0.89,
     bundle_by_trait_at_body_site: bool = False,
+    profile_node_scale: float | None = None,
 ) -> None:
     """Render one combined condition-to-body-site Sankey for all six traits."""
     both_directions = focus_direction == "both"
+    high_support_layout = profile_node_scale is not None
     if both_directions and bundle_by_trait_at_body_site:
         raise ValueError("The bidirectional overlay requires separate direction links.")
     if display_edges.empty:
@@ -1603,12 +1681,18 @@ def plot_combined_direction_sankey(
 
     condition_y = node_positions(condition_order, top=0.89, bottom=0.06)
     body_site_y = node_positions(body_site_order, top=0.89, bottom=0.06)
-    condition_stats = combined_node_stats(display_edges, "condition")
-    body_site_stats = combined_node_stats(display_edges, "body_site_group")
+    condition_stats = combined_node_stats(
+        display_edges, "condition", count_profiles=high_support_layout
+    )
+    body_site_stats = combined_node_stats(
+        display_edges, "body_site_group", count_profiles=high_support_layout
+    )
 
     height = max(11.0, 2.2 + 0.54 * max(len(condition_order), len(body_site_order)))
     if both_directions:
         height = max(13.0, height)
+    if high_support_layout:
+        height = max(14.5, height)
     fig, ax = plt.subplots(figsize=(17.5, height))
     fig.subplots_adjust(left=0.04, right=0.80, top=subplot_top, bottom=0.105)
     ax.set_xlim(0, 1)
@@ -1676,8 +1760,8 @@ def plot_combined_direction_sankey(
         )
     scales = trait_color_scales(display_edges, shared_vmax=color_scale_vmax)
 
-    left_x = 0.33
-    right_x = 0.64
+    left_x = HIGH_SUPPORT_LEFT_X if high_support_layout else 0.33
+    right_x = HIGH_SUPPORT_RIGHT_X if high_support_layout else 0.64
     source_end_x = BODY_SITE_BUNDLE_X if bundle_by_trait_at_body_site else right_x
     ordered = display_edges.sort_values(
         [
@@ -1692,6 +1776,10 @@ def plot_combined_direction_sankey(
     )
     enriched_widths = enriched_widths.loc[ordered.index]
     background_widths = background_widths.loc[ordered.index]
+    if high_support_layout:
+        # Include background stroke thickness when packing single-direction views.
+        packing_widths = pd.concat([enriched_widths, background_widths], axis=1).max(axis=1)
+        ordered = spaced_bundle_offsets(ordered, packing_widths, ax, condition_y, body_site_y)
 
     for edge, linewidth in zip(ordered.itertuples(), background_widths, strict=True):
         if linewidth <= 0:
@@ -1703,12 +1791,14 @@ def plot_combined_direction_sankey(
         y1 = offset_node_y(body_site_y[edge.body_site_group], body_offset)
         draw_curve(
             ax,
-            start=(left_x, y0),
-            end=(source_end_x, y1),
+            start=(left_x, condition_y[edge.condition] if high_support_layout else y0),
+            end=(source_end_x, body_site_y[edge.body_site_group] if high_support_layout else y1),
             color=EDGE_BACKGROUND,
             linewidth=float(linewidth),
             alpha=0.12 if bundle_by_trait_at_body_site else 0.18,
             zorder=1.0,
+            control_x_offset=edge.bundle_dx if high_support_layout else 0.0,
+            control_y_offset=edge.bundle_dy if high_support_layout else 0.0,
         )
 
     if bundle_by_trait_at_body_site:
@@ -1752,7 +1842,7 @@ def plot_combined_direction_sankey(
             edge.body_site_bundle_offset if bundle_by_trait_at_body_site else edge.parallel_offset
         )
         y1 = offset_node_y(body_site_y[edge.body_site_group], body_offset)
-        if both_directions:
+        if both_directions or high_support_layout:
             y0 = condition_y[edge.condition]
             y1 = body_site_y[edge.body_site_group]
         draw_curve(
@@ -1763,9 +1853,14 @@ def plot_combined_direction_sankey(
             linewidth=float(linewidth),
             alpha=0.92 if both_directions else (0.46 if bundle_by_trait_at_body_site else 0.72),
             zorder=2.0 + ((len(SHARED_TRAITS) - int(edge.parallel_rank)) * 0.03),
-            linestyle="--" if both_directions and edge.focus_direction == "decreased" else "-",
+            linestyle=decreased_dash_style(float(linewidth))
+            if both_directions and edge.focus_direction == "decreased"
+            else "-",
             capstyle="butt" if both_directions else "round",
-            control_y_offset=edge.parallel_offset if both_directions else 0.0,
+            control_y_offset=edge.bundle_dy
+            if high_support_layout
+            else (edge.parallel_offset if both_directions else 0.0),
+            control_x_offset=edge.bundle_dx if high_support_layout else 0.0,
         )
 
     if bundle_by_trait_at_body_site:
@@ -1799,6 +1894,11 @@ def plot_combined_direction_sankey(
             label=condition,
             stats_row=condition_stats.loc[condition],
             align="right",
+            radius=profile_node_radius(
+                condition_stats.loc[condition, "profile_count"], profile_node_scale
+            )
+            if high_support_layout
+            else 0.012,
         )
     for body_site in body_site_order:
         draw_combined_node(
@@ -1808,6 +1908,11 @@ def plot_combined_direction_sankey(
             label=body_site,
             stats_row=body_site_stats.loc[body_site],
             align="left",
+            radius=profile_node_radius(
+                body_site_stats.loc[body_site, "profile_count"], profile_node_scale
+            )
+            if high_support_layout
+            else 0.012,
         )
 
     fig.text(
@@ -1828,7 +1933,9 @@ def plot_combined_direction_sankey(
             "Color identifies the trait; width = positive-z profile count; "
             "shade = mean positive z-score. "
             "Each direction retains its own top-12 pair selection. "
-            "Node n sums profile-trait memberships across both directions."
+            "Oval area and n count profiles once per selected condition/site/direction."
+            if both_directions and high_support_layout
+            else "Solid = increased; dashed = decreased. Node n sums profile-trait memberships."
             if both_directions
             else (
                 f"Colored curves are {focus_label} profiles with trait z-score > 0; "
@@ -1839,8 +1946,12 @@ def plot_combined_direction_sankey(
                 "Light grey underlays show z <= 0 background for the same "
                 f"condition/body-site/trait; TSVs retain the {focus_label} - "
                 f"{comparator_label} contrast. Node key: links = plotted "
-                "trait-specific links, traits = distinct traits, n = positive-z "
-                "profile memberships summed across displayed trait links."
+                "trait-specific links, traits = distinct traits. "
+                + (
+                    "Oval area and n = profiles counted once across traits, including z <= 0."
+                    if high_support_layout
+                    else "Node n = positive-z memberships summed over displayed trait links."
+                )
                 + (
                     " Body-site trunks sum same-color links."
                     if bundle_by_trait_at_body_site
@@ -1931,7 +2042,7 @@ def plot_combined_direction_sankey(
                     [0],
                     color=SLATE_700,
                     linewidth=2.5,
-                    linestyle="--",
+                    linestyle=decreased_dash_style(2.5),
                     dash_capstyle="butt",
                     label="Decreased (dashed)",
                 ),
@@ -1971,9 +2082,14 @@ def plot_combined_direction_sankey(
         0.04,
         0.035,
         wrapped_plot_text(
-            "Every line is trait-specific. Node counts are profile-trait "
-            "memberships across displayed links, not deduplicated profile totals. "
-            f"{display_filter_note}"
+            (
+                "Oval area and n = profiles in displayed pairs, including z <= 0, counted once "
+                "across traits; a shared area scale is used for all three high-support views. "
+                if high_support_layout
+                else "Every line is trait-specific. Node counts are profile-trait memberships "
+                "across displayed links, not deduplicated profile totals. "
+            )
+            + f"{display_filter_note}"
             + (
                 " Body-site trunks sum all displayed condition links by trait "
                 "color; each body site can show up to six trunks."
@@ -2248,6 +2364,7 @@ def write_shared_high_support_outputs(
                 f"then keeps the top {SHARED_PATTERN_MAX_PAIRS} pairs."
             ),
             color_scale_vmax=color_vmax,
+            profile_node_scale=high_support_node_scale(all_display_edges),
         )
 
         output_records.append(
@@ -2318,7 +2435,8 @@ def write_bidirectional_high_support_outputs(
         "both",
         png_path,
         title_prefix="Six shared traits, high support",
-        subplot_top=0.865,
+        profile_node_scale=high_support_node_scale(all_display_edges),
+        subplot_top=0.89,
         color_scale_vmax=max(0.4, float(all_display_edges["focus_enriched_mean_guild_z"].max())),
         footer_extra=(
             f"Top {SHARED_PATTERN_MAX_PAIRS} pairs per direction, among pairs shared by "
@@ -2368,14 +2486,20 @@ def write_bidirectional_readme_note() -> None:
         "direction using the same rules as the separate high-support plots. Their "
         "union is displayed without combining increased and decreased counts. "
         "A missing direction means that link was not selected for display, not "
-        "necessarily that its support is zero. Node n sums profile-trait memberships "
-        "over both directions. Grey background underlays are omitted for readability; "
+        "necessarily that its support is zero. Oval area and node n count all profiles "
+        "in selected condition/site/direction cells once across traits, including z <= 0. "
+        "The three high-support views share one area scale. Curves within each pair "
+        "are spaced by stroke width, and decreased curves have seven-point strokes "
+        "separated by nine-point gaps. Grey background underlays are omitted for readability; "
         "background counts remain in the tables.\n\n"
         f"- Displayed links and direction: `{BIDIRECTIONAL_STEM}_display_edges.tsv`\n"
         f"- All edges for selected direction/pair keys: `{BIDIRECTIONAL_STEM}_edges.tsv`\n"
         f"- Pair ranks within each direction: `{BIDIRECTIONAL_STEM}_selected_pairs.tsv`\n\n"
         "Regenerate this overlay from the existing grouped Sankey edge tables with "
-        "`just six-shared-trait-combined-sankey`.\n"
+        "`just six-shared-trait-combined-sankey`. Redraw all three saved high-support "
+        "selections with `just six-shared-trait-high-support-sankeys`; that recipe "
+        "also exports `_nodes.tsv` tables recording profile totals and oval radii. "
+        "Analytical edge and pair-selection tables are preserved.\n"
     )
     before, found, after = text.partition(BIDIRECTIONAL_README_HEADING)
     if found:
@@ -2411,6 +2535,67 @@ def regenerate_bidirectional_high_support() -> None:
     write_bidirectional_readme_note()
     print(f"Wrote {OUTPUT_DIR / (BIDIRECTIONAL_STEM + '.png')}")
     print(new_manifest[["display_edge_count", "selected_pair_count"]].to_string(index=False))
+
+
+def regenerate_high_support_layouts() -> None:
+    """Redraw the three saved selections without changing analytical edge tables."""
+    frames = {
+        direction: read_tsv(
+            OUTPUT_DIR
+            / f"six_shared_traits_{label}_shared_high_support_profile_sankey_display_edges.tsv"
+        )
+        for direction, label in DIRECTION_LABELS.items()
+    }
+    frames["both"] = read_tsv(OUTPUT_DIR / f"{BIDIRECTIONAL_STEM}_display_edges.tsv")
+    scale = high_support_node_scale(frames["both"], already_selected=True)
+    # Preserve the established global color range rather than refitting to the
+    # smaller displayed high-support subset.
+    color_reference = pd.concat(
+        [
+            read_tsv(OUTPUT_DIR / f"six_shared_traits_{label}_profile_sankey_display_edges.tsv")
+            for label in DIRECTION_LABELS.values()
+        ],
+        ignore_index=True,
+    )
+    vmax = shared_color_vmax(color_reference)
+    for direction, edges in frames.items():
+        stem = (
+            BIDIRECTIONAL_STEM
+            if direction == "both"
+            else (
+                f"six_shared_traits_{DIRECTION_LABELS[direction]}_shared_high_support_profile_sankey"
+            )
+        )
+        plot_combined_direction_sankey(
+            edges,
+            direction,
+            OUTPUT_DIR / f"{stem}.png",
+            title_prefix="Six shared traits, high support",
+            color_scale_vmax=(
+                max(0.4, float(color_reference["focus_enriched_mean_guild_z"].max()))
+                if direction == "both"
+                else vmax
+            ),
+            profile_node_scale=scale,
+            footer_extra="Each direction retains its top-12 condition/site pair selection.",
+        )
+        nodes = pd.concat(
+            [
+                combined_node_stats(edges, column, count_profiles=True)
+                .rename_axis("label")
+                .reset_index()
+                .assign(node_type=column)
+                for column in ("condition", "body_site_group")
+            ],
+            ignore_index=True,
+        )
+        nodes["area_scale_max_profiles"] = scale
+        nodes["radius_axis_units"] = nodes["profile_count"].map(
+            lambda n: profile_node_radius(n, scale)
+        )
+        nodes.to_csv(OUTPUT_DIR / f"{stem}_nodes.tsv", sep="\t", index=False)
+        print(f"Wrote {OUTPUT_DIR / (stem + '.png')}")
+    write_bidirectional_readme_note()
 
 
 def write_individual_condition_outputs(
@@ -2740,12 +2925,19 @@ def main() -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--high-support-layouts-only",
+        action="store_true",
+        help="Redraw all three saved high-support views; preserve selections and edge tables.",
+    )
+    parser.add_argument(
         "--combined-high-support-only",
         action="store_true",
         help="Combine directions from saved grouped tables without regenerating other figures.",
     )
     args = parser.parse_args()
-    if args.combined_high_support_only:
+    if args.high_support_layouts_only:
+        regenerate_high_support_layouts()
+    elif args.combined_high_support_only:
         regenerate_bidirectional_high_support()
     else:
         main()

@@ -30,6 +30,7 @@ def direction_edges() -> pd.DataFrame:
                     "trait_id": trait.trait_id,
                     "trait_rank": rank,
                     "focus_enriched_profile_count": count,
+                    "focus_profile_count": count + 10,
                     "focus_enriched_study_ids": "study1;study2",
                     "background_no_enriched_profile_count": 10,
                     "focus_enriched_mean_guild_z": 1.0,
@@ -74,12 +75,16 @@ def test_bidirectional_paths_have_distinct_offsets_and_correct_styles(tmp_path: 
     edges = direction_edges().query("condition == 'Shared condition'").copy()
     with patch.object(Figure, "savefig", autospec=True) as save:
         sankeys.plot_combined_direction_sankey(
-            edges, "both", tmp_path / "test.png", color_scale_vmax=2.0
+            edges,
+            "both",
+            tmp_path / "test.png",
+            color_scale_vmax=2.0,
+            profile_node_scale=95,
         )
     figure = save.call_args.args[0]
     paths = [p for p in figure.axes[0].patches if isinstance(p, PathPatch)]
     assert len(paths) == 12  # No background underlays obscure the gaps.
-    assert sum(p.get_linestyle() == "--" for p in paths) == 6
+    assert sum(p.get_linestyle() != "-" for p in paths) == 6
     assert sum(p.get_linestyle() == "-" for p in paths) == 6
     vertices = [np.asarray(p.get_path().vertices) for p in paths]
     assert len({tuple(v[1]) for v in vertices}) == 12
@@ -93,8 +98,31 @@ def test_bidirectional_paths_have_distinct_offsets_and_correct_styles(tmp_path: 
         cmap, norm = scales[edge.trait_id]
         # Shade reflects the mean positive z-score, even when the contrast is negative.
         assert curve.get_edgecolor()[:3] == pytest.approx(cmap(norm(1.0))[:3])
-        expected_style = "--" if edge.focus_direction == "decreased" else "-"
+        expected_style = (
+            sankeys.decreased_dash_style(curve.get_linewidth())
+            if edge.focus_direction == "decreased"
+            else "-"
+        )
         assert curve.get_linestyle() == expected_style
+    axis_points = figure.axes[0].get_position().height * figure.get_figheight() * 72
+    midpoints = [(v[0, 1] + 3 * v[1, 1] + 3 * v[2, 1] + v[3, 1]) / 8 for v in vertices]
+    for index in range(len(paths) - 1):
+        separation = abs(midpoints[index] - midpoints[index + 1]) * axis_points
+        half_widths = (paths[index].get_linewidth() + paths[index + 1].get_linewidth()) / 2
+        assert separation - half_widths == pytest.approx(3.5)
+
+
+def test_node_profiles_are_not_multiplied_by_traits() -> None:
+    edges = direction_edges().query("condition == 'Shared condition'").copy()
+    stats = sankeys.combined_node_stats(edges, "condition", count_profiles=True)
+    assert stats.iloc[0]["profile_count"] == 95
+    assert stats.iloc[0]["focus_enriched_profile_count"] == 6 * (40 + 35)
+    small = sankeys.profile_node_radius(25, 100)
+    large = sankeys.profile_node_radius(100, 100)
+    assert small**2 / large**2 == pytest.approx(0.25)
+    edges.loc[edges.index[0], "focus_profile_count"] = 99
+    with pytest.raises(ValueError, match="disagree"):
+        sankeys.combined_node_stats(edges, "condition", count_profiles=True)
 
 
 def test_single_direction_curves_keep_solid_backgrounds(tmp_path: Path) -> None:

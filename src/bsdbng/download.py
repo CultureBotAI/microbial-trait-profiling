@@ -16,7 +16,8 @@ EXPORT_BASE = "https://bugsigdb-csv.s3.us-east-va.perf.cloud.ovh.us"
 EXPORT_FILES = ("studies.csv", "experiments.csv", "signatures.csv")
 BUGSIGDB_EXPORTS_VERSION = "v1.3.1"
 BUGSIGDB_EXPORTS_DOI = "10.5281/zenodo.19740674"
-BUGSIGDB_EXPORTS_TAG_SHA = "5815c2638d6b56134ac8db19edc2bb3c4b17f1ca"
+# Public Git revision identifying the pinned export, not a credential.
+BUGSIGDB_EXPORTS_TAG_SHA = "5815c2638d6b56134ac8db19edc2bb3c4b17f1ca"  # pragma: allowlist secret
 FULL_DUMP_URL = (
     "https://raw.githubusercontent.com/waldronlab/BugSigDBExports/"
     f"{BUGSIGDB_EXPORTS_VERSION}/full_dump.csv"

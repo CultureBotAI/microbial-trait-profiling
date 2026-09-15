@@ -1,0 +1,13 @@
+label	display_trait_edge_count	display_trait_count	focus_enriched_profile_count	focus_enriched_study_count	profile_count	node_type	area_scale_max_profiles	radius_axis_units
+Metabolic / endocrine	6	6	561	62	272	condition	1659.0	0.013767027376920031
+Neurologic / cognitive disease	6	6	479	74	199	condition	1659.0	0.011775578778796736
+Infectious disease	18	6	595	88	233	condition	1659.0	0.012741885100928206
+Cancer / neoplasia	18	6	508	72	199	condition	1659.0	0.011775578778796736
+Colorectal neoplasia	12	6	295	47	112	condition	1659.0	0.00883414931347818
+Reproductive / hormonal health	6	6	142	21	59	condition	1659.0	0.006411826023810551
+Respiratory / airway disease	6	6	77	13	28	condition	1659.0	0.00441707465673909
+Feces	36	6	1881	266	803	body_site_group	1659.0	0.023654484975018875
+Oral cavity / dental	6	6	177	27	73	body_site_group	1659.0	0.007132095570112448
+Upper airway / nasal	6	6	160	20	58	body_site_group	1659.0	0.0063572562993176535
+Vaginal / reproductive	18	6	362	50	133	body_site_group	1659.0	0.009626791027400152
+Lower GI tract	6	6	77	14	35	body_site_group	1659.0	0.004938439597080078

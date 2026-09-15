@@ -11,7 +11,7 @@ Studies summarized: 1,080
 - `all_bugsigdb_condition_body_site_direction_summary_v3_individual.tsv`: all condition/body-site pairs after v3 raw-label display mapping.
 - `all_bugsigdb_condition_body_site_direction_summary_v3_grouped.tsv`: all condition/body-site pairs after fully grouped v3 display rollups.
 - `all_bugsigdb_increased_profile_condition_body_site_map.png`: displayed increased-profile map.
-- `all_bugsigdb_increased_profile_condition_body_site_map_edges.tsv`: display-candidate edge table 
+- `all_bugsigdb_increased_profile_condition_body_site_map_edges.tsv`: display-candidate edge table
   for the increased-profile map; 24 rows are drawn.
 - `all_bugsigdb_increased_profile_condition_body_site_map_v2.png`: uncapped v2 increased-profile map.
 - `all_bugsigdb_increased_profile_condition_body_site_map_v2_edges.tsv`: uncapped v2 edge table for the increased-profile map.
@@ -22,7 +22,7 @@ Studies summarized: 1,080
 - `all_bugsigdb_increased_profile_condition_body_site_map_v3_grouped_condition_rollups.tsv`: raw-to-display condition-label audit table.
 - `all_bugsigdb_increased_profile_condition_body_site_map_v3_grouped_body_site_rollups.tsv`: raw-to-display body-site audit table.
 - `all_bugsigdb_decreased_profile_condition_body_site_map.png`: displayed decreased-profile map.
-- `all_bugsigdb_decreased_profile_condition_body_site_map_edges.tsv`: display-candidate edge table 
+- `all_bugsigdb_decreased_profile_condition_body_site_map_edges.tsv`: display-candidate edge table
   for the decreased-profile map; 22 rows are drawn.
 - `all_bugsigdb_decreased_profile_condition_body_site_map_v2.png`: uncapped v2 decreased-profile map.
 - `all_bugsigdb_decreased_profile_condition_body_site_map_v2_edges.tsv`: uncapped v2 edge table for the decreased-profile map.
