@@ -5,6 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 
 MODULE_PATH = (
@@ -208,8 +209,144 @@ def test_contrasts_show_supported_effects_and_mark_strict_significance() -> None
         pd.DataFrame({"trait_id": ["trait1"]}),
         mode="contrast",
     )
-    assert annotations["trait1"].tolist() == ["+0.50*", "+0.50", "", ""]
+    assert annotations["trait1"].tolist() == ["+0.50", "+0.50", "", ""]
     assert heatmaps.format_p_value(0.0099) == "<0.01"
+
+
+def test_spearman_clustering_uses_pairwise_overlap_and_neutral_undefined_distance() -> None:
+    matrix = pd.DataFrame(
+        [
+            [1.0, 2.0, 3.0, math.nan],
+            [10.0, 20.0, 30.0, math.nan],
+            [3.0, 2.0, 1.0, math.nan],
+            [1.0, math.nan, math.nan, math.nan],
+        ],
+        index=["A | Feces", "B | Feces", "C | Feces", "D | Feces"],
+        columns=["t1", "t2", "t3", "t4"],
+    )
+    cells = pd.DataFrame(
+        {
+            "condition_body_site_pair": matrix.index,
+            "condition": ["A", "B", "C", "D"],
+            "body_site_group": ["Feces"] * 4,
+        }
+    )
+
+    clustering = heatmaps.build_spearman_clustering(
+        matrix,
+        cells,
+        view_key="test",
+        view_label="Test",
+    )
+
+    assert math.isclose(clustering.distances.loc["A | Feces", "B | Feces"], 0.0)
+    assert math.isclose(clustering.distances.loc["A | Feces", "C | Feces"], 2.0)
+    assert (
+        clustering.distances.loc["A | Feces", "D | Feces"] == heatmaps.UNDEFINED_SPEARMAN_DISTANCE
+    )
+    assert bool(clustering.defined_correlations.loc["A | Feces", "D | Feces"]) is False
+    assert sorted(clustering.clustered_row_labels) == sorted(matrix.index)
+    low_information = clustering.tree_leaves.set_index("condition_body_site_pair")[
+        "low_information_for_clustering"
+    ]
+    assert bool(low_information.loc["D | Feces"]) is True
+    assert len(clustering.tree_nodes) == len(matrix) - 1
+
+
+def test_cluster_comparison_flags_inverse_individual_pattern_as_outlier() -> None:
+    grouped_matrix = pd.DataFrame(
+        [[1.0, 2.0, 3.0]],
+        index=["Group A | Feces"],
+        columns=["t1", "t2", "t3"],
+    )
+    individual_matrix = pd.DataFrame(
+        [
+            [1.0, 2.0, 3.0],
+            [3.0, 2.0, 1.0],
+            [2.0, 4.0, 6.0],
+            [4.0, 5.0, 8.0],
+        ],
+        index=["A1 | Feces", "A2 | Feces", "A3 | Feces", "A4 | Feces"],
+        columns=["t1", "t2", "t3"],
+    )
+    grouped_cells = pd.DataFrame(
+        {
+            "condition_body_site_pair": grouped_matrix.index,
+            "condition": ["Group A"],
+            "body_site_group": ["Feces"],
+        }
+    )
+    individual_cells = pd.DataFrame(
+        {
+            "condition_body_site_pair": individual_matrix.index,
+            "condition": ["A1", "A2", "A3", "A4"],
+            "body_site_group": ["Feces"] * 4,
+        }
+    )
+    grouped = heatmaps.build_spearman_clustering(
+        grouped_matrix,
+        grouped_cells,
+        view_key="grouped",
+        view_label="Grouped",
+    )
+    individual = heatmaps.build_spearman_clustering(
+        individual_matrix,
+        individual_cells,
+        view_key="individual",
+        view_label="Individual",
+    )
+    rollup_map = pd.DataFrame(
+        {
+            "raw_condition": ["A1", "A2", "A3", "A4"],
+            "body_site_group": ["Feces"] * 4,
+            "grouped_condition": ["Group A"] * 4,
+            "grouped_condition_body_site_pair": ["Group A | Feces"] * 4,
+        }
+    )
+
+    comparison = heatmaps.compare_grouped_and_individual_clusters(
+        grouped,
+        individual,
+        rollup_map,
+    ).set_index("individual_condition")
+
+    assert math.isclose(comparison.loc["A1", "individual_vs_grouped_spearman_rho"], 1.0)
+    assert math.isclose(comparison.loc["A2", "individual_vs_grouped_spearman_rho"], -1.0)
+    assert bool(comparison.loc["A2", "discordant_or_inverse_pattern"]) is True
+    assert bool(comparison.loc["A2", "within_group_iqr_outlier"]) is True
+    assert comparison.loc["A2", "global_difference_rank"] == 1
+
+
+def test_readme_replacement_preserves_following_sections(tmp_path: Path) -> None:
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text(
+        "# Outputs\n\n"
+        "## Condition-Body-Site Cytoscape Heatmaps\n\n"
+        "old generated text\n\n"
+        "## Following Section\n\n"
+        "must remain\n",
+        encoding="utf-8",
+    )
+    manifest = pd.DataFrame(
+        [
+            {
+                "view_label": "Pattern",
+                "heatmap_type": "trait_pattern",
+                "png_path": "pattern.png",
+                "clustered_png_path": pd.NA,
+                "displayed_cell_count": 1,
+                "bh_selected_cell_count": 0,
+                "tested_cell_count": 2,
+                "row_count": 1,
+            }
+        ]
+    )
+
+    heatmaps.append_readme_section(tmp_path, manifest)
+
+    content = readme_path.read_text(encoding="utf-8")
+    assert "old generated text" not in content
+    assert "## Following Section\n\nmust remain" in content
 
 
 def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Path) -> None:
@@ -265,7 +402,10 @@ def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Pa
             edges.iloc[:1].to_csv(tmp_path / display_filename, sep="\t", index=False)
     pd.DataFrame(views).to_csv(tmp_path / heatmaps.GRAPH_MANIFEST_FILENAME, sep="\t", index=False)
 
-    with patch.object(heatmaps, "plot_matrix_heatmap") as plot:
+    with (
+        patch.object(heatmaps, "plot_matrix_heatmap") as plot,
+        patch.object(heatmaps, "plot_clustered_contrast_heatmap") as clustered_plot,
+    ):
         manifest = heatmaps.write_six_shared_trait_cytoscape_heatmaps(tmp_path, tmp_path)
 
     contrasts = manifest[manifest["heatmap_type"] == "signed_direction_contrast"]
@@ -287,6 +427,10 @@ def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Pa
         assert matrix.notna().all().all()
         assert call.kwargs["vmin"] == -1.0
         assert call.kwargs["vmax"] == 1.0
+        assert call.kwargs["significance_borders"].to_numpy(dtype=bool).all()
+        assert (np.char.find(call.args[1].to_numpy(dtype=str), "*") == -1).all()
+    assert clustered_plot.call_count == 2
+    assert contrasts["clustered_png_path"].str.endswith("_clustered_heatmap.png").all()
     table = pd.read_csv(tmp_path / heatmaps.CONTRAST_TABLE_FILENAME, sep="\t")
     assert len(table) == 60
     assert not table.duplicated(["view_key", "condition_body_site_pair", "trait_id"]).any()
@@ -296,3 +440,10 @@ def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Pa
     assert pages["displayed_cell_count"].sum() == len(table)
     for _view, rows in table.groupby("view_key"):
         assert rows["heatmap_page"].value_counts().to_dict() == {1: 24, 2: 6}
+        assert sorted(rows["clustered_heatmap_order"].tolist()) == list(range(1, 31))
+    tree_nodes = pd.read_csv(tmp_path / heatmaps.CLUSTER_TREE_NODES_FILENAME, sep="\t")
+    tree_leaves = pd.read_csv(tmp_path / heatmaps.CLUSTER_TREE_LEAVES_FILENAME, sep="\t")
+    comparison = pd.read_csv(tmp_path / heatmaps.CLUSTER_COMPARISON_FILENAME, sep="\t")
+    assert len(tree_nodes) == 58
+    assert len(tree_leaves) == 60
+    assert len(comparison) == 30

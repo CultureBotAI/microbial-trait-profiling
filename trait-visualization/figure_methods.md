@@ -1487,7 +1487,7 @@ support, with at most 24 rows displayed. The companion table retains the
 original support-strength components as `n`, `signal`, and `strength` columns,
 and also records BH q-values computed within each heatmap view.
 
-Two signed direction contrast heatmaps are written:
+Two ranked signed direction contrast heatmaps are written:
 `six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap.png`
 and
 `six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap.png`.
@@ -1497,18 +1497,52 @@ decreased-profile positive-z fraction. Color encodes this same effect on a fixed
 -1 to +1 scale; red favors increased profiles and blue favors decreased profiles.
 All supported effects with finite two-sided Fisher exact p-values are displayed,
 including nonsignificant results. Support requires at least 3 positive-z profiles
-in either direction and at least 2 total studies. An asterisk marks `p < 0.01`;
-unstarred cells are descriptive effects that do not meet that threshold.
-Gray cells are unavailable or insufficiently supported, rather than merely
-nonsignificant. White cells with a numeric zero represent measured null effects.
-Every row with a supported, testable cell is included. Rows are grouped by body
-site, then ranked by significant-trait count, trait coverage, BH-selected count,
-evidence, support, and effect size. Full overview PNGs retain all rows; additional
+in either direction and at least 2 total studies. A dark cell border marks
+`p < 0.01`; unbordered cells are descriptive effects that do not meet that
+threshold. Gray cells are unavailable or insufficiently supported, rather than
+merely nonsignificant. Specifically, a gray cell can indicate that one profile
+direction is absent, both directions have fewer than 3 positive-z profiles,
+fewer than 2 studies are available, or neither direction produced a candidate
+edge. White cells with a numeric `+0.00` represent measured null effects.
+
+Conditions are not selected with a top-N disease filter. Signed contrasts read
+the full increased and decreased Sankey edge tables before graph display
+selection, after upstream removal of unknown raw condition labels. Every
+condition/body-site row with at least one supported, finite cell is included.
+The grouped view applies the v3 clinical condition rollup rules; the individual
+view retains the original curated BugSigDB condition label. Both use the same
+grouped v3 body-site labels. Ranked rows are grouped by body site, then ordered
+by significant-trait count, trait coverage, BH-selected count, evidence,
+support, and effect size. Full overview PNGs retain all rows; additional
 `*_page_NN.png` files contain at most 24 rows each. The page manifest is
 `six_shared_trait_signed_direction_heatmap_pages.tsv`.
+
+Separate compact clustered versions are written with
+`_signed_direction_contrast_clustered_heatmap.png` suffixes. Rows are clustered
+with average-linkage hierarchical clustering on pairwise-complete Spearman
+distance, `1 - rho`; columns remain in the fixed six-trait order. At least 3
+shared supported traits are required to define a pairwise correlation. Missing
+cells are not filled with zero. A row pair with too little overlap or constant
+ranks receives neutral clustering distance 1, and low-information leaves are
+flagged in `six_shared_trait_signed_direction_cluster_tree_leaves.tsv`. The
+complete linkage merges are exported in
+`six_shared_trait_signed_direction_cluster_tree_nodes.tsv`.
+
+The raw individual-condition tree is compared with the grouped-condition tree
+in `six_shared_trait_signed_direction_cluster_comparison.tsv`. Each individual
+condition/body-site vector is mapped to its grouped aggregate using the grouped
+edge table's `raw_conditions` field. The table reports their Spearman
+correlation and distance, cluster orders, the nearest individual-condition
+neighbor, a within-group distance rank, a 1.5-IQR within-group outlier flag when
+at least 4 comparable individuals exist, and a flag for nonpositive
+individual-versus-grouped correlation. These are exploratory pattern diagnostics,
+not formal biological outlier tests. The six-shared-traits README embeds smaller
+clickable previews that link to the full-resolution clustered PNGs.
+
 BH q-values are computed across the full cell table within each condition-label
 mode. The companion table records raw delta, raw Fisher p-value, BH q-value,
-signed `-log10(p)`, display and significance flags, and page number for each cell.
+signed `-log10(p)`, display and significance flags, ranked page number, and
+clustered row order for each cell.
 
 ### Inferred Guild Evidence Outputs
 

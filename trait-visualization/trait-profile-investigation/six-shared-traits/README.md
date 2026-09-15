@@ -96,24 +96,47 @@ These PNGs are graph versions of the six shared trait Sankey views. They use six
 - Pattern matrix table: `six_shared_trait_condition_body_site_trait_pattern_matrix.tsv`
 - Signed contrast table: `six_shared_trait_condition_body_site_direction_contrasts.tsv`
 - BH-selected cell table: `six_shared_trait_condition_body_site_bh_selected_cells.tsv`
+- Cluster-tree nodes: `six_shared_trait_signed_direction_cluster_tree_nodes.tsv`
+- Cluster-tree leaves and row order: `six_shared_trait_signed_direction_cluster_tree_leaves.tsv`
+- Individual-versus-grouped comparison: `six_shared_trait_signed_direction_cluster_comparison.tsv`
 
 Trait-pattern heatmaps use the six-shared-trait display-edge TSVs that feed the Cytoscape graph views. Signed contrasts use the full increased and decreased edge TSVs before graph display selection. They preserve condition/body-site/trait records instead of correlating already-collapsed condition and body-site nodes.
 
 Signed contrasts display all supported, testable effects, including nonsignificant results. Gray cells are unavailable or under-supported. Trait-pattern heatmaps continue to mask cells that fail the raw p-value threshold.
 
+### How Conditions and Blank Cells Are Chosen
+
+The signed heatmaps do not choose a top-N list of diseases. They read the full increased and decreased Sankey edge tables before graph display selection, discard unknown raw condition labels upstream, and include every condition/body-site row with at least one supported, finite cell. The grouped view applies the v3 clinical condition rollup rules; the individual view keeps the original curated condition label. Both views use the same grouped v3 body-site labels.
+
+In a signed heatmap, a gray blank means the condition/body-site/trait combination could not support the displayed contrast: one direction had no profiles, both directions had fewer than three positive-z profiles, fewer than two studies were available, or neither direction produced a candidate edge. Nonsignificant finite tests are still colored and numbered. A white cell containing `+0.00` is a measured null contrast, not missing data. In trait-pattern heatmaps only, gray can also mean that the raw one-sided Fisher test did not pass p<0.01.
+
 - `trait_pattern`: Approach 2. Rows are condition/body-site pairs and columns are the six traits. Cell color is Fisher evidence, `-log10(p)`, rendered with a yellow-to-blue sequential palette so darker cells have smaller p-values. Cells require Fisher p<0.01, n>=3, and s>=2 for exploratory display.
-- `signed_direction_contrast`: Approach 4. Rows are condition/body-site pairs and columns are traits. Cell color and numbers are `increased_fraction - decreased_fraction` on a fixed -1 to +1 scale. Red favors increased profiles and blue favors decreased profiles. An asterisk marks Fisher p<0.01; unstarred cells are descriptive effects, not significant findings at that cutoff. Cells require a finite test, at least 3 positive-z profiles in either direction, and at least 2 total studies. Every condition/body-site row with a supported cell is included, without a row cap. Rows are grouped by body site and ranked by significant-trait count, coverage, and evidence within each site.
+- `signed_direction_contrast`: Approach 4. Rows are condition/body-site pairs and columns are traits. Cell color and numbers are `increased_fraction - decreased_fraction` on a fixed -1 to +1 scale. Red favors increased profiles and blue favors decreased profiles. A dark border marks Fisher p<0.01; unbordered cells are descriptive effects that do not meet that cutoff. Cells require a finite test, at least 3 positive-z profiles in either direction, and at least 2 total studies. Every condition/body-site row with a supported cell is included, without a row cap. Rows are grouped by body site and ranked by significant-trait count, coverage, and evidence within each site.
+- `signed_direction_contrast_clustered`: A separate compact overview clusters rows with average linkage on pairwise-complete Spearman distance (`1 - rho`). A pairwise correlation requires at least 3 shared supported traits. Blank cells are never filled with zero; when a row pair has too little overlap or constant ranks, clustering uses neutral distance 1 and records the limitation in the leaf table. Trait columns remain in the fixed six-trait order.
 - Readable pages contain at most 24 rows each. `six_shared_trait_signed_direction_heatmap_pages.tsv` records their paths and counts; `heatmap_page` in the contrast table locates each displayed row. The original PNGs show full overviews.
 - BH q-values are computed within each heatmap view. `selected_after_bh=True` marks supported cells with q<=0.05; those cells are also collected in the BH-selected cell table.
 
-| heatmap | type | PNG | displayed cells | BH-selected cells | tested cells | rows |
-| --- | --- | --- | ---: | ---: | ---: | ---: |
-| Increased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_grouped_condition_body_site_trait_pattern_heatmap.png` | 15 | 5 | 188 | 9 |
-| Decreased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_grouped_condition_body_site_trait_pattern_heatmap.png` | 6 | 4 | 185 | 6 |
-| Increased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` | 4 | 2 | 117 | 2 |
-| Decreased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` | 5 | 4 | 105 | 5 |
-| Grouped conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap.png` | 413 | 8 | 747 | 79 |
-| Individual conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap.png` | 597 | 4 | 2379 | 125 |
+| heatmap | type | full/ranked PNG | clustered PNG | displayed cells | BH-selected cells | tested cells | rows |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: |
+| Increased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_grouped_condition_body_site_trait_pattern_heatmap.png` |  | 15 | 5 | 188 | 9 |
+| Decreased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_grouped_condition_body_site_trait_pattern_heatmap.png` |  | 6 | 4 | 185 | 6 |
+| Increased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` |  | 4 | 2 | 117 | 2 |
+| Decreased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` |  | 5 | 4 | 105 | 5 |
+| Grouped conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap.png` | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_grouped_condition_body_site_signed_direction_contrast_clustered_heatmap.png` | 413 | 8 | 747 | 79 |
+| Individual conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap.png` | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_clustered_heatmap.png` | 597 | 4 | 2379 | 125 |
+
+### Clustered Direction Overviews
+
+Click either compact preview to open the full-resolution clustered heatmap. Use the ranked pages below when numeric annotations need to be read.
+
+#### Grouped conditions: signed direction contrast
+
+<a href="six_shared_traits_grouped_condition_body_site_signed_direction_contrast_clustered_heatmap.png"><img src="six_shared_traits_grouped_condition_body_site_signed_direction_contrast_clustered_heatmap.png" alt="Grouped conditions: signed direction contrast" width="560"></a>
+
+#### Individual conditions: signed direction contrast
+
+<a href="six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_clustered_heatmap.png"><img src="six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_clustered_heatmap.png" alt="Individual conditions: signed direction contrast" width="560"></a>
+
 
 ### Signed Direction Pages
 
@@ -127,6 +150,23 @@ Signed contrasts display all supported, testable effects, including nonsignifica
 - [Individual conditions, page 4](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_04.png) (24 rows, 100 filled cells)
 - [Individual conditions, page 5](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_05.png) (24 rows, 94 filled cells)
 - [Individual conditions, page 6](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_06.png) (5 rows, 12 filled cells)
+
+### Largest Individual-versus-Grouped Pattern Differences
+
+These are the ten largest finite `1 - rho` distances, not a formal biological outlier test. The complete table also reports within-group IQR flags and each individual row's nearest Spearman neighbor.
+
+| individual condition | grouped condition | body site | rho | distance | discordant | IQR outlier |
+| --- | --- | --- | ---: | ---: | --- | --- |
+| Milk allergic reaction | Autoimmune / inflammatory disease | Feces | -0.949 | 1.949 | True | False |
+| Rheumatoid arthritis | Autoimmune / inflammatory disease | Feces | -0.866 | 1.866 | True | False |
+| Chronic hepatitis B virus infection | Infectious disease | Oral cavity / dental | -0.738 | 1.738 | True | False |
+| Polycystic ovary syndrome | Metabolic / endocrine | Feces | -0.657 | 1.657 | True | False |
+| Food allergy | Autoimmune / inflammatory disease | Feces | -0.600 | 1.600 | True | False |
+| Diabetic nephropathy | Renal / urinary disease | Feces | -0.500 | 1.500 | True | False |
+| Fasting blood glucose measurement | Metabolic / endocrine | Feces | -0.500 | 1.500 | True | False |
+| Major depressive disorder | Psychiatric / behavioral health | Feces | -0.500 | 1.500 | True | False |
+| Obsessive-compulsive disorder | Psychiatric / behavioral health | Feces | -0.500 | 1.500 | True | False |
+| Cesarean section | Pregnancy / neonatal | Feces | -0.410 | 1.410 | True | False |
 
 ## Increased and Decreased High-Support Overlay
 

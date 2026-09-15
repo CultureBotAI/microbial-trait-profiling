@@ -1,0 +1,205 @@
+view_key	view_label	leaf_id	ranked_heatmap_order	clustered_heatmap_order	condition_body_site_pair	condition	body_site_group	supported_trait_count	defined_spearman_neighbor_count	low_information_for_clustering	nearest_defined_neighbor	nearest_defined_neighbor_distance
+grouped_direction_contrast	Grouped conditions	32	33	1	Sampling site / time protocol | Feces	Sampling site / time protocol	Feces	4	72	False	Autoimmune / inflammatory disease | Oral cavity / dental	0.18350341907227385
+grouped_direction_contrast	Grouped conditions	52	53	2	Ocular / eye disease | Oral cavity / dental	Ocular / eye disease	Oral cavity / dental	6	77	False	GI / digestive disease | Lower GI tract	0.05131670194948612
+grouped_direction_contrast	Grouped conditions	59	60	3	Neurologic / cognitive disease | Oral cavity / dental	Neurologic / cognitive disease	Oral cavity / dental	3	66	False	Pregnancy / neonatal | Feces	0.1339745962155613
+grouped_direction_contrast	Grouped conditions	53	54	4	Metabolic / endocrine | Oral cavity / dental	Metabolic / endocrine	Oral cavity / dental	5	76	False	Ocular / eye disease | Feces	1.1102230246251565e-16
+grouped_direction_contrast	Grouped conditions	18	19	5	Ocular / eye disease | Feces	Ocular / eye disease	Feces	6	77	False	Metabolic / endocrine | Oral cavity / dental	1.1102230246251565e-16
+grouped_direction_contrast	Grouped conditions	38	39	6	Colorectal neoplasia | Lower GI tract	Colorectal neoplasia	Lower GI tract	6	77	False	Metabolic / endocrine | Oral cavity / dental	1.1102230246251565e-16
+grouped_direction_contrast	Grouped conditions	70	71	7	Smoking / alcohol / drug use | Upper airway / nasal	Smoking / alcohol / drug use	Upper airway / nasal	4	75	False	Pregnancy / neonatal | Feces	0.05131670194948612
+grouped_direction_contrast	Grouped conditions	21	22	8	Metabolic / endocrine | Feces	Metabolic / endocrine	Feces	6	77	False	Smoking / alcohol / drug use | Upper airway / nasal	0.05131670194948612
+grouped_direction_contrast	Grouped conditions	6	7	9	Pregnancy / neonatal | Feces	Pregnancy / neonatal	Feces	6	77	False	Pregnancy / neonatal | Vaginal / reproductive	0.0
+grouped_direction_contrast	Grouped conditions	77	78	10	Pregnancy / neonatal | Vaginal / reproductive	Pregnancy / neonatal	Vaginal / reproductive	4	75	False	Pregnancy / neonatal | Feces	0.0
+grouped_direction_contrast	Grouped conditions	68	69	11	Neurologic / cognitive disease | Upper airway / nasal	Neurologic / cognitive disease	Upper airway / nasal	5	76	False	Pregnancy / neonatal | Vaginal / reproductive	0.0
+grouped_direction_contrast	Grouped conditions	0	1	12	Pregnancy / neonatal | Birth-associated samples	Pregnancy / neonatal	Birth-associated samples	5	76	False	Pregnancy / neonatal | Vaginal / reproductive	0.05131670194948612
+grouped_direction_contrast	Grouped conditions	72	73	13	Cancer / neoplasia | Urinary tract	Cancer / neoplasia	Urinary tract	3	49	False	ENT / oral mucosal disease | Oral cavity / dental	0.0
+grouped_direction_contrast	Grouped conditions	48	49	14	ENT / oral mucosal disease | Oral cavity / dental	ENT / oral mucosal disease	Oral cavity / dental	6	77	False	Cancer / neoplasia | Urinary tract	0.0
+grouped_direction_contrast	Grouped conditions	43	44	15	Infectious disease | Lower airway / lung	Infectious disease	Lower airway / lung	5	74	False	Respiratory / airway disease | Upper airway / nasal	0.0
+grouped_direction_contrast	Grouped conditions	69	70	16	Respiratory / airway disease | Upper airway / nasal	Respiratory / airway disease	Upper airway / nasal	5	76	False	Infectious disease | Lower airway / lung	0.0
+grouped_direction_contrast	Grouped conditions	55	56	17	Oral / periodontal disease | Oral cavity / dental	Oral / periodontal disease	Oral cavity / dental	5	76	False	Age / development / sex | Vaginal / reproductive	0.0
+grouped_direction_contrast	Grouped conditions	78	79	18	Age / development / sex | Vaginal / reproductive	Age / development / sex	Vaginal / reproductive	3	68	False	Activity / lifestyle score | Feces	0.0
+grouped_direction_contrast	Grouped conditions	24	25	19	Activity / lifestyle score | Feces	Activity / lifestyle score	Feces	6	77	False	Age / development / sex | Vaginal / reproductive	0.0
+grouped_direction_contrast	Grouped conditions	29	30	20	Cardiovascular disease | Feces	Cardiovascular disease	Feces	6	77	False	Age / development / sex | Vaginal / reproductive	0.0
+grouped_direction_contrast	Grouped conditions	22	23	21	Body composition / growth | Feces	Body composition / growth	Feces	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	45	46	22	Smoking / alcohol / drug use | Oral cavity / dental	Smoking / alcohol / drug use	Oral cavity / dental	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	1	2	23	Cancer / neoplasia | Breast / milk	Cancer / neoplasia	Breast / milk	3	59	False	Stroke | Feces	0.0
+grouped_direction_contrast	Grouped conditions	64	65	24	Cancer / neoplasia | Stomach / esophagus	Cancer / neoplasia	Stomach / esophagus	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	3	4	25	Infectious disease | Feces	Infectious disease	Feces	6	77	False	GI / digestive disease | Lower GI tract	0.0
+grouped_direction_contrast	Grouped conditions	40	41	26	GI / digestive disease | Lower GI tract	GI / digestive disease	Lower GI tract	4	75	False	Infectious disease | Feces	0.0
+grouped_direction_contrast	Grouped conditions	65	66	27	Infectious disease | Stomach / esophagus	Infectious disease	Stomach / esophagus	6	77	False	GI / digestive disease | Lower GI tract	0.0
+grouped_direction_contrast	Grouped conditions	44	45	28	Ocular / eye disease | Ocular / eye	Ocular / eye disease	Ocular / eye	6	77	False	GI / digestive disease | Lower GI tract	0.0
+grouped_direction_contrast	Grouped conditions	58	59	29	GI / digestive disease | Oral cavity / dental	GI / digestive disease	Oral cavity / dental	3	66	False	Autoimmune / inflammatory disease | Oral cavity / dental	0.0
+grouped_direction_contrast	Grouped conditions	49	50	30	Autoimmune / inflammatory disease | Oral cavity / dental	Autoimmune / inflammatory disease	Oral cavity / dental	6	77	False	GI / digestive disease | Oral cavity / dental	0.0
+grouped_direction_contrast	Grouped conditions	57	58	31	Musculoskeletal / connective tissue | Oral cavity / dental	Musculoskeletal / connective tissue	Oral cavity / dental	4	75	False	Autoimmune / inflammatory disease | Oral cavity / dental	0.05131670194948612
+grouped_direction_contrast	Grouped conditions	74	75	32	Infectious disease | Vaginal / reproductive	Infectious disease	Vaginal / reproductive	6	77	False	Infectious disease | Skin	0.0
+grouped_direction_contrast	Grouped conditions	14	15	33	Population / social covariates | Feces	Population / social covariates	Feces	6	77	False	Infectious disease | Upper airway / nasal	0.05714285714285705
+grouped_direction_contrast	Grouped conditions	67	68	34	Infectious disease | Upper airway / nasal	Infectious disease	Upper airway / nasal	6	77	False	Population / social covariates | Feces	0.05714285714285705
+grouped_direction_contrast	Grouped conditions	37	38	35	Inflammatory bowel disease | Lower GI tract	Inflammatory bowel disease	Lower GI tract	6	77	False	Pregnancy / neonatal | Vaginal / reproductive	0.0
+grouped_direction_contrast	Grouped conditions	25	26	36	Respiratory / airway disease | Feces	Respiratory / airway disease	Feces	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	15	16	37	Diet / nutrition / supplements | Feces	Diet / nutrition / supplements	Feces	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	9	10	38	Blood / immune deficiency | Feces	Blood / immune deficiency	Feces	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	61	62	39	Skin / hair disease | Skin	Skin / hair disease	Skin	5	75	False	Blood / immune deficiency | Feces	0.1000000000000002
+grouped_direction_contrast	Grouped conditions	31	32	40	Experimental phenotype labels | Feces	Experimental phenotype labels	Feces	5	75	False	Colorectal neoplasia | Intestinal / GI mucosa	0.10557280900008414
+grouped_direction_contrast	Grouped conditions	76	77	41	Reproductive / hormonal health | Vaginal / reproductive	Reproductive / hormonal health	Vaginal / reproductive	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	35	36	42	Colorectal neoplasia | Intestinal / GI mucosa	Colorectal neoplasia	Intestinal / GI mucosa	5	76	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	28	29	43	Disease activity / severity | Feces	Disease activity / severity	Feces	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	50	51	44	Colorectal neoplasia | Oral cavity / dental	Colorectal neoplasia	Oral cavity / dental	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	26	27	45	Skin / hair disease | Feces	Skin / hair disease	Feces	6	77	False	Environmental / chemical exposure | Feces	0.0
+grouped_direction_contrast	Grouped conditions	33	34	46	Environmental / chemical exposure | Feces	Environmental / chemical exposure	Feces	4	67	False	Respiratory / airway disease | Bronchial / tracheal	0.0
+grouped_direction_contrast	Grouped conditions	62	63	47	Infectious disease | Skin	Infectious disease	Skin	4	75	False	Environmental / chemical exposure | Feces	0.0
+grouped_direction_contrast	Grouped conditions	75	76	48	Cancer / neoplasia | Vaginal / reproductive	Cancer / neoplasia	Vaginal / reproductive	6	77	False	Environmental / chemical exposure | Feces	0.0
+grouped_direction_contrast	Grouped conditions	2	3	49	Respiratory / airway disease | Bronchial / tracheal	Respiratory / airway disease	Bronchial / tracheal	6	77	False	Environmental / chemical exposure | Feces	0.0
+grouped_direction_contrast	Grouped conditions	39	40	50	Age / development / sex | Lower GI tract	Age / development / sex	Lower GI tract	4	69	False	Respiratory / airway disease | Bronchial / tracheal	0.0
+grouped_direction_contrast	Grouped conditions	23	24	51	Reproductive / hormonal health | Feces	Reproductive / hormonal health	Feces	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	42	43	52	Respiratory / airway disease | Lower airway / lung	Respiratory / airway disease	Lower airway / lung	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	16	17	53	Transplant / graft response | Feces	Transplant / graft response	Feces	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	30	31	54	Musculoskeletal / connective tissue | Feces	Musculoskeletal / connective tissue	Feces	5	69	False	Transplant / graft response | Feces	1.1102230246251565e-16
+grouped_direction_contrast	Grouped conditions	19	20	55	Psychiatric / behavioral health | Feces	Psychiatric / behavioral health	Feces	6	77	False	Infectious disease | Urinary tract	0.0
+grouped_direction_contrast	Grouped conditions	71	72	56	Infectious disease | Urinary tract	Infectious disease	Urinary tract	3	68	False	Neurologic / cognitive disease | Feces	0.0
+grouped_direction_contrast	Grouped conditions	10	11	57	Colorectal neoplasia | Feces	Colorectal neoplasia	Feces	6	77	False	Infectious disease | Urinary tract	0.0
+grouped_direction_contrast	Grouped conditions	13	14	58	GI / digestive disease | Feces	GI / digestive disease	Feces	6	77	False	Infectious disease | Urinary tract	0.0
+grouped_direction_contrast	Grouped conditions	47	48	59	Population / social covariates | Oral cavity / dental	Population / social covariates	Oral cavity / dental	6	77	False	Smoking / alcohol / drug use | Lower GI tract	0.0
+grouped_direction_contrast	Grouped conditions	17	18	60	Renal / urinary disease | Feces	Renal / urinary disease	Feces	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	63	64	61	Autoimmune / inflammatory disease | Skin	Autoimmune / inflammatory disease	Skin	4	69	False	Neurologic / cognitive disease | Feces	0.10557280900008414
+grouped_direction_contrast	Grouped conditions	20	21	62	Antibiotic / antimicrobial exposure | Feces	Antibiotic / antimicrobial exposure	Feces	6	77	False	Infectious disease | Urinary tract	0.0
+grouped_direction_contrast	Grouped conditions	4	5	63	Neurologic / cognitive disease | Feces	Neurologic / cognitive disease	Feces	6	77	False	Autoimmune / inflammatory disease | Feces	0.0
+grouped_direction_contrast	Grouped conditions	27	28	64	Autoimmune / inflammatory disease | Feces	Autoimmune / inflammatory disease	Feces	6	77	False	Neurologic / cognitive disease | Feces	0.0
+grouped_direction_contrast	Grouped conditions	11	12	65	Age / development / sex | Feces	Age / development / sex	Feces	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	7	8	66	Cancer / neoplasia | Feces	Cancer / neoplasia	Feces	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	5	6	67	Stroke | Feces	Stroke	Feces	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	12	13	68	Medication / clinical treatment | Feces	Medication / clinical treatment	Feces	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	36	37	69	Infectious disease | Lower GI tract	Infectious disease	Lower GI tract	6	77	False	Inflammatory bowel disease | Feces	0.0
+grouped_direction_contrast	Grouped conditions	8	9	70	Inflammatory bowel disease | Feces	Inflammatory bowel disease	Feces	6	77	False	Infectious disease | Lower GI tract	0.0
+grouped_direction_contrast	Grouped conditions	34	35	71	GI / digestive disease | Intestinal / GI mucosa	GI / digestive disease	Intestinal / GI mucosa	5	76	False	Age / development / sex | Lower GI tract	0.0
+grouped_direction_contrast	Grouped conditions	54	55	72	Blood / immune deficiency | Oral cavity / dental	Blood / immune deficiency	Oral cavity / dental	5	76	False	Age / development / sex | Lower GI tract	0.0
+grouped_direction_contrast	Grouped conditions	60	61	73	Cancer / neoplasia | Reproductive / genital	Cancer / neoplasia	Reproductive / genital	3	68	False	Blood / immune deficiency | Oral cavity / dental	0.0
+grouped_direction_contrast	Grouped conditions	46	47	74	Cancer / neoplasia | Oral cavity / dental	Cancer / neoplasia	Oral cavity / dental	6	77	False	Cancer / neoplasia | Breast / milk	0.0
+grouped_direction_contrast	Grouped conditions	51	52	75	Infectious disease | Oral cavity / dental	Infectious disease	Oral cavity / dental	6	77	False	Neurologic / cognitive disease | Oral cavity / dental	0.1339745962155613
+grouped_direction_contrast	Grouped conditions	41	42	76	Smoking / alcohol / drug use | Lower GI tract	Smoking / alcohol / drug use	Lower GI tract	3	66	False	Neurologic / cognitive disease | Feces	0.0
+grouped_direction_contrast	Grouped conditions	56	57	77	Respiratory / airway disease | Oral cavity / dental	Respiratory / airway disease	Oral cavity / dental	4	75	False	Smoking / alcohol / drug use | Lower GI tract	0.0
+grouped_direction_contrast	Grouped conditions	66	67	78	Environmental / chemical exposure | Upper airway / nasal	Environmental / chemical exposure	Upper airway / nasal	6	77	False	Respiratory / airway disease | Oral cavity / dental	0.05131670194948612
+grouped_direction_contrast	Grouped conditions	73	74	79	Renal / urinary disease | Urinary tract	Renal / urinary disease	Urinary tract	1	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	123	124	1	Endometrial cancer | Vaginal / reproductive	Endometrial cancer	Vaginal / reproductive	1	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	37	38	2	Antimicrobial agent | Feces	Antimicrobial agent	Feces	6	110	False	Biliary atresia | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	1	2	3	Parkinson's disease | Feces	Parkinson's disease	Feces	6	110	False	Biliary atresia | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	74	75	4	Biliary atresia | Feces	Biliary atresia	Feces	3	70	False	Parkinson's disease | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	14	15	5	Irritable bowel syndrome | Feces	Irritable bowel syndrome	Feces	6	110	False	Biliary atresia | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	53	54	6	Diet measurement | Feces	Diet measurement	Feces	5	109	False	Autism spectrum disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	65	66	7	Autism spectrum disorder | Feces	Autism spectrum disorder	Feces	4	96	False	Autism | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	48	49	8	Gastric cancer | Feces	Gastric cancer	Feces	5	107	False	Autism | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	10	11	9	Autism | Feces	Autism	Feces	6	110	False	Gastric cancer | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	32	33	10	Polycystic ovary syndrome | Feces	Polycystic ovary syndrome	Feces	6	110	False	Ulcerative colitis | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	36	37	11	Ulcerative colitis | Feces	Ulcerative colitis	Feces	6	110	False	Polycystic ovary syndrome | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	20	21	12	Response to diet | Feces	Response to diet	Feces	6	110	False	Biliary atresia | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	58	59	13	Clinical treatment | Feces	Clinical treatment	Feces	5	109	False	Urinary tract infection | Urinary tract	0.0
+individual_conditions_direction_contrast	Individual conditions	2	3	14	Stroke | Feces	Stroke	Feces	6	110	False	Fasting blood glucose measurement | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	70	71	15	Fasting blood glucose measurement | Feces	Fasting blood glucose measurement	Feces	3	98	False	Stroke | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	12	13	16	Lung cancer | Feces	Lung cancer	Feces	5	109	False	Graft versus host disease | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	50	51	17	Graft versus host disease | Feces	Graft versus host disease	Feces	5	107	False	Lung cancer | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	33	34	18	Chronic kidney disease | Feces	Chronic kidney disease	Feces	6	110	False	Fasting blood glucose measurement | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	61	62	19	Gastric adenocarcinoma | Feces	Gastric adenocarcinoma	Feces	5	108	False	Lung cancer | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	9	10	20	Colorectal carcinoma | Feces	Colorectal carcinoma	Feces	6	110	False	Lung cancer | Feces	0.05263157894736825
+individual_conditions_direction_contrast	Individual conditions	28	29	21	Ischemic stroke | Feces	Ischemic stroke	Feces	6	110	False	Fasting blood glucose measurement | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	119	120	22	Endometriosis | Vaginal / reproductive	Endometriosis	Vaginal / reproductive	5	108	False	Gingivitis | Oral cavity / dental	0.0
+individual_conditions_direction_contrast	Individual conditions	54	55	23	Socioeconomic status | Feces	Socioeconomic status	Feces	5	107	False	Chronic hepatitis B virus infection | Oral cavity / dental	0.0
+individual_conditions_direction_contrast	Individual conditions	100	101	24	Chronic hepatitis B virus infection | Oral cavity / dental	Chronic hepatitis B virus infection	Oral cavity / dental	4	94	False	Socioeconomic status | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	38	39	25	Chronic constipation | Feces	Chronic constipation	Feces	6	110	False	Obsessive-compulsive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	55	56	26	Eczema | Feces	Eczema	Feces	5	109	False	Obsessive-compulsive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	44	45	27	Response to immunochemotherapy | Feces	Response to immunochemotherapy	Feces	6	110	False	Fasting blood glucose measurement | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	83	84	28	Chronic obstructive pulmonary disease | Lower airway / lung	Chronic obstructive pulmonary disease	Lower airway / lung	5	108	False	Colorectal cancer | Feces	0.025320565519103666
+individual_conditions_direction_contrast	Individual conditions	95	96	29	Esophageal squamous cell carcinoma | Oral cavity / dental	Esophageal squamous cell carcinoma	Oral cavity / dental	4	106	False	Urinary tract infection | Urinary tract	0.0
+individual_conditions_direction_contrast	Individual conditions	114	115	30	Urinary tract infection | Urinary tract	Urinary tract infection	Urinary tract	3	98	False	Parkinson's disease | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	6	7	31	Colorectal cancer | Feces	Colorectal cancer	Feces	6	110	False	Urinary tract infection | Urinary tract	0.0
+individual_conditions_direction_contrast	Individual conditions	96	97	32	Periodontitis | Oral cavity / dental	Periodontitis	Oral cavity / dental	4	106	False	Autism spectrum disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	88	89	33	Squamous cell carcinoma | Oral cavity / dental	Squamous cell carcinoma	Oral cavity / dental	5	108	False	Autism spectrum disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	7	8	34	Diarrhea | Feces	Diarrhea	Feces	6	110	False	Gingivitis | Oral cavity / dental	0.0
+individual_conditions_direction_contrast	Individual conditions	102	103	35	Gingivitis | Oral cavity / dental	Gingivitis	Oral cavity / dental	3	98	False	Diarrhea | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	60	61	36	Alzheimer's disease | Feces	Alzheimer's disease	Feces	5	109	False	Gingivitis | Oral cavity / dental	0.0
+individual_conditions_direction_contrast	Individual conditions	13	14	37	Hypertension | Feces	Hypertension	Feces	6	110	False	Birth measurement | Vaginal / reproductive	0.0
+individual_conditions_direction_contrast	Individual conditions	121	122	38	Birth measurement | Vaginal / reproductive	Birth measurement	Vaginal / reproductive	3	98	False	HIV infection | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	112	113	39	Asthma | Upper airway / nasal	Asthma	Upper airway / nasal	5	108	False	Socioeconomic status | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	49	50	40	Bipolar disorder | Feces	Bipolar disorder	Feces	5	109	False	Birth measurement | Vaginal / reproductive	0.0
+individual_conditions_direction_contrast	Individual conditions	17	18	41	Inflammatory bowel disease | Feces	Inflammatory bowel disease	Feces	6	110	False	Depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	73	74	42	Depressive disorder | Feces	Depressive disorder	Feces	3	77	False	HIV infection | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	5	6	43	HIV infection | Feces	HIV infection	Feces	6	110	False	Depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	39	40	44	Breast cancer | Feces	Breast cancer	Feces	6	110	False	Birth measurement | Vaginal / reproductive	0.0
+individual_conditions_direction_contrast	Individual conditions	40	41	45	Psoriasis | Feces	Psoriasis	Feces	6	110	False	Birth measurement | Vaginal / reproductive	0.0
+individual_conditions_direction_contrast	Individual conditions	82	83	46	Crohn's disease | Lower GI tract	Crohn's disease	Lower GI tract	5	109	False	Pancreatic carcinoma | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	25	26	47	Atopic eczema | Feces	Atopic eczema	Feces	6	110	False	Pancreatic carcinoma | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	120	121	48	Cervical cancer | Vaginal / reproductive	Cervical cancer	Vaginal / reproductive	5	108	False	Multiple sclerosis | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	64	65	49	Multiple sclerosis | Feces	Multiple sclerosis	Feces	4	106	False	Depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	30	31	50	Unipolar depression | Feces	Unipolar depression	Feces	6	110	False	Depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	47	48	51	Autoimmune disease | Feces	Autoimmune disease	Feces	6	93	False	Unipolar depression | Feces	0.12961172022151102
+individual_conditions_direction_contrast	Individual conditions	122	123	52	Chlamydia trachomatis infectious disease | Vaginal / reproductive	Chlamydia trachomatis infectious disease	Vaginal / reproductive	2	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	108	109	53	Type II diabetes mellitus | Oral cavity / dental	Type II diabetes mellitus	Oral cavity / dental	1	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	106	107	54	Dental caries | Oral cavity / dental	Dental caries	Oral cavity / dental	2	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	104	105	55	Arthritis | Oral cavity / dental	Arthritis	Oral cavity / dental	2	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	84	85	56	Asthma | Lower airway / lung	Asthma	Lower airway / lung	1	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	77	78	57	Chronic fatigue syndrome | Feces	Chronic fatigue syndrome	Feces	2	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	76	77	58	Response to antiviral drug | Feces	Response to antiviral drug	Feces	2	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	75	76	59	High fat diet | Feces	High fat diet	Feces	2	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	78	79	60	Cognitive impairment | Feces	Cognitive impairment	Feces	2	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	85	86	61	Pulmonary non-tuberculous mycobacterial infection | Lower airway / lung	Pulmonary non-tuberculous mycobacterial infection	Lower airway / lung	1	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	105	106	62	Gastric cancer | Oral cavity / dental	Gastric cancer	Oral cavity / dental	2	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	107	108	63	Head and neck carcinoma | Oral cavity / dental	Head and neck carcinoma	Oral cavity / dental	1	0	True	NA	NA
+individual_conditions_direction_contrast	Individual conditions	46	47	64	Non-alcoholic fatty liver disease | Feces	Non-alcoholic fatty liver disease	Feces	6	110	False	Cervical cancer | Feces	0.10557280900008414
+individual_conditions_direction_contrast	Individual conditions	27	28	65	Endometriosis | Feces	Endometriosis	Feces	6	110	False	Cervical cancer | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	66	67	66	Cervical cancer | Feces	Cervical cancer	Feces	4	106	False	Gestational diabetes | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	101	102	67	Head and neck squamous cell carcinoma | Oral cavity / dental	Head and neck squamous cell carcinoma	Oral cavity / dental	3	98	False	Response to allogeneic hematopoietic stem cell transplant | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	69	70	68	Obsessive-compulsive disorder | Feces	Obsessive-compulsive disorder	Feces	3	77	False	Gestational diabetes | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	23	24	69	Gestational diabetes | Feces	Gestational diabetes	Feces	6	110	False	Cervical cancer | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	29	30	70	Colorectal adenoma | Feces	Colorectal adenoma	Feces	6	110	False	Rheumatoid arthritis | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	52	53	71	Attention deficit-hyperactivity disorder | Feces	Attention deficit-hyperactivity disorder	Feces	5	109	False	Depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	115	116	72	Ovarian cancer | Vaginal / reproductive	Ovarian cancer	Vaginal / reproductive	6	110	False	Depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	8	9	73	COVID-19 | Feces	COVID-19	Feces	6	110	False	Depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	79	80	74	Colorectal cancer | Intestinal / GI mucosa	Colorectal cancer	Intestinal / GI mucosa	5	108	False	Rheumatoid arthritis | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	72	73	75	Rheumatoid arthritis | Feces	Rheumatoid arthritis	Feces	3	98	False	Cesarean section | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	35	36	76	Response to transplant | Feces	Response to transplant	Feces	6	110	False	Depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	21	22	77	Diet | Feces	Diet	Feces	6	110	False	Head and neck squamous cell carcinoma | Oral cavity / dental	0.0
+individual_conditions_direction_contrast	Individual conditions	56	57	78	Response to ketogenic diet | Feces	Response to ketogenic diet	Feces	5	109	False	Stroke | Feces	0.025320565519103666
+individual_conditions_direction_contrast	Individual conditions	18	19	79	Acute lymphoblastic leukemia | Feces	Acute lymphoblastic leukemia	Feces	6	110	False	Head and neck squamous cell carcinoma | Oral cavity / dental	0.0
+individual_conditions_direction_contrast	Individual conditions	109	110	80	Atopic eczema | Skin	Atopic eczema	Skin	3	98	False	Response to allogeneic hematopoietic stem cell transplant | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	98	99	81	Human papilloma virus infection | Oral cavity / dental	Human papilloma virus infection	Oral cavity / dental	4	106	False	Head and neck squamous cell carcinoma | Oral cavity / dental	0.0
+individual_conditions_direction_contrast	Individual conditions	111	112	82	COVID-19 | Upper airway / nasal	COVID-19	Upper airway / nasal	6	110	False	Diabetic nephropathy | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	4	5	83	Cesarean section | Feces	Cesarean section	Feces	5	109	False	Diabetic nephropathy | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	71	72	84	Diabetic nephropathy | Feces	Diabetic nephropathy	Feces	3	91	False	Response to allogeneic hematopoietic stem cell transplant | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	86	87	85	Glaucoma | Ocular / eye	Glaucoma	Ocular / eye	6	110	False	Cesarean section | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	24	25	86	Age | Feces	Age	Feces	6	110	False	Head and neck squamous cell carcinoma | Oral cavity / dental	0.0
+individual_conditions_direction_contrast	Individual conditions	26	27	87	Epilepsy | Feces	Epilepsy	Feces	6	110	False	Pancreatic carcinoma | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	80	81	88	HIV infection | Lower GI tract	HIV infection	Lower GI tract	6	110	False	Multiple myeloma | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	51	52	89	Multiple myeloma | Feces	Multiple myeloma	Feces	5	109	False	HIV infection | Lower GI tract	0.0
+individual_conditions_direction_contrast	Individual conditions	22	23	90	Schizophrenia | Feces	Schizophrenia	Feces	6	110	False	Response to allogeneic hematopoietic stem cell transplant | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	3	4	91	Response to allogeneic hematopoietic stem cell transplant | Feces	Response to allogeneic hematopoietic stem cell transplant	Feces	6	110	False	Schizophrenia | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	113	114	92	Air pollution | Upper airway / nasal	Air pollution	Upper airway / nasal	5	108	False	Multiple myeloma | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	19	20	93	Crohn's disease | Feces	Crohn's disease	Feces	6	110	False	Pancreatic carcinoma | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	62	63	94	Pancreatic carcinoma | Feces	Pancreatic carcinoma	Feces	4	96	False	Crohn's disease | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	93	94	95	Oral squamous cell carcinoma | Oral cavity / dental	Oral squamous cell carcinoma	Oral cavity / dental	5	109	False	Pancreatic carcinoma | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	16	17	96	Obesity | Feces	Obesity	Feces	6	110	False	Depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	103	104	97	COVID-19 | Oral cavity / dental	COVID-19	Oral cavity / dental	3	98	False	Unipolar depression | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	87	88	98	Dry eye syndrome | Ocular / eye	Dry eye syndrome	Ocular / eye	6	110	False	Major depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	43	44	99	Asthma | Feces	Asthma	Feces	6	110	False	Health study participation | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	94	95	100	Smoking behavior | Oral cavity / dental	Smoking behavior	Oral cavity / dental	5	108	False	Milk allergic reaction | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	63	64	101	Health study participation | Feces	Health study participation	Feces	4	106	False	Asthma | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	92	93	102	Rheumatoid arthritis | Oral cavity / dental	Rheumatoid arthritis	Oral cavity / dental	5	108	False	Health study participation | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	99	100	103	Esophageal cancer | Oral cavity / dental	Esophageal cancer	Oral cavity / dental	4	106	False	Asthma | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	110	111	104	Gastric cancer | Stomach / esophagus	Gastric cancer	Stomach / esophagus	6	110	False	Health study participation | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	59	60	105	Age-related macular degeneration | Feces	Age-related macular degeneration	Feces	5	109	False	Diabetic nephropathy | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	41	42	106	Diabetes mellitus | Feces	Diabetes mellitus	Feces	6	110	False	Depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	11	12	107	Ethnic group | Feces	Ethnic group	Feces	6	110	False	Major depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	68	69	108	Major depressive disorder | Feces	Major depressive disorder	Feces	3	89	False	Ethnic group | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	97	98	109	Oral mucositis | Oral cavity / dental	Oral mucositis	Oral cavity / dental	4	106	False	Ethnic group | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	116	117	110	Human papilloma virus infection | Vaginal / reproductive	Human papilloma virus infection	Vaginal / reproductive	6	110	False	Major depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	15	16	111	Constipation | Feces	Constipation	Feces	6	110	False	Smoking status measurement | Oral cavity / dental	0.02941176470588225
+individual_conditions_direction_contrast	Individual conditions	89	90	112	Smoking status measurement | Oral cavity / dental	Smoking status measurement	Oral cavity / dental	6	110	False	Constipation | Feces	0.02941176470588225
+individual_conditions_direction_contrast	Individual conditions	31	32	113	Delivery method | Feces	Delivery method	Feces	6	110	False	Milk allergic reaction | Feces	0.05131670194948612
+individual_conditions_direction_contrast	Individual conditions	34	35	114	Type II diabetes mellitus | Feces	Type II diabetes mellitus	Feces	6	110	False	Major depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	81	82	115	Colorectal cancer | Lower GI tract	Colorectal cancer	Lower GI tract	6	110	False	Major depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	118	119	116	Bacterial vaginosis | Vaginal / reproductive	Bacterial vaginosis	Vaginal / reproductive	6	110	False	Type I diabetes mellitus | Feces	0.031754163448145856
+individual_conditions_direction_contrast	Individual conditions	57	58	117	Type I diabetes mellitus | Feces	Type I diabetes mellitus	Feces	5	97	False	Bacterial vaginosis | Vaginal / reproductive	0.031754163448145856
+individual_conditions_direction_contrast	Individual conditions	0	1	118	Cesarean section | Birth-associated samples	Cesarean section	Birth-associated samples	5	108	False	Milk allergic reaction | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	67	68	119	Milk allergic reaction | Feces	Milk allergic reaction	Feces	4	96	False	Cesarean section | Birth-associated samples	0.0
+individual_conditions_direction_contrast	Individual conditions	91	92	120	Glaucoma | Oral cavity / dental	Glaucoma	Oral cavity / dental	6	110	False	Health study participation | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	45	46	121	Lifestyle measurement | Feces	Lifestyle measurement	Feces	6	102	False	Socioeconomic status | Feces	0.10557280900008426
+individual_conditions_direction_contrast	Individual conditions	42	43	122	Food allergy | Feces	Food allergy	Feces	6	110	False	Major depressive disorder | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	117	118	123	Cervical glandular intraepithelial neoplasia | Vaginal / reproductive	Cervical glandular intraepithelial neoplasia	Vaginal / reproductive	6	110	False	Biliary atresia | Feces	0.0
+individual_conditions_direction_contrast	Individual conditions	90	91	124	Colorectal cancer | Oral cavity / dental	Colorectal cancer	Oral cavity / dental	6	110	False	Cervical glandular intraepithelial neoplasia | Vaginal / reproductive	0.05714285714285705
+individual_conditions_direction_contrast	Individual conditions	124	125	125	Spontaneous preterm birth | Vaginal / reproductive	Spontaneous preterm birth	Vaginal / reproductive	1	0	True	NA	NA
