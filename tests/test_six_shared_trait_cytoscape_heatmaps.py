@@ -252,6 +252,47 @@ def test_spearman_clustering_uses_pairwise_overlap_and_neutral_undefined_distanc
     assert bool(low_information.loc["D | Feces"]) is True
     assert len(clustering.tree_nodes) == len(matrix) - 1
 
+    membership = heatmaps.cut_grouped_dendrogram(clustering)
+    assert membership["cluster_cut_fraction"].eq(heatmaps.GROUPED_CLUSTER_CUT_FRACTION).all()
+    assert membership["cluster_id"].str.fullmatch(r"C\d+").all()
+    top_cluster = membership.loc[membership["clustered_heatmap_order"].idxmax(), "cluster_id"]
+    assert top_cluster == "C1"
+
+
+def test_grouped_cluster_enrichment_labels_anatomy_and_condition() -> None:
+    records = []
+    for cluster_rank, (cluster_id, anatomy, condition) in enumerate(
+        [("C1", "Feces", "Condition A"), ("C2", "Oral", "Condition B")],
+        start=1,
+    ):
+        for offset in range(12):
+            records.append(
+                {
+                    "view_key": "grouped_direction_contrast",
+                    "cluster_id": cluster_id,
+                    "cluster_rank": cluster_rank,
+                    "cluster_size": 12,
+                    "clustered_heatmap_order": (cluster_rank - 1) * 12 + offset + 1,
+                    "condition_body_site_pair": f"{condition} {offset} | {anatomy}",
+                    "condition": condition,
+                    "body_site_group": anatomy,
+                    "cluster_color": heatmaps.CLUSTER_COLORS[cluster_rank - 1],
+                    "cluster_cut_fraction": heatmaps.GROUPED_CLUSTER_CUT_FRACTION,
+                    "cluster_cut_distance": 0.7,
+                }
+            )
+    membership = pd.DataFrame.from_records(records)
+
+    enrichment = heatmaps.build_grouped_cluster_enrichment(membership)
+    selected = enrichment[enrichment["selected_for_dendrogram_label"]]
+
+    assert set(selected["label_type"]) == {"anatomy", "grouped_condition"}
+    assert set(selected["cluster_id"]) == {"C1", "C2"}
+    assert selected["fisher_q_value"].le(heatmaps.CLUSTER_LABEL_Q_CUTOFF).all()
+    labels = heatmaps.dendrogram_cluster_labels(membership, enrichment)
+    assert "Anatomy: Feces" in labels["C1"]
+    assert "Condition: Condition A" in labels["C1"]
+
 
 def test_cluster_comparison_flags_inverse_individual_pattern_as_outlier() -> None:
     grouped_matrix = pd.DataFrame(
@@ -430,6 +471,10 @@ def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Pa
         assert call.kwargs["significance_borders"].to_numpy(dtype=bool).all()
         assert (np.char.find(call.args[1].to_numpy(dtype=str), "*") == -1).all()
     assert clustered_plot.call_count == 2
+    grouped_cluster_call, individual_cluster_call = clustered_plot.call_args_list
+    assert not grouped_cluster_call.kwargs["cluster_membership"].empty
+    assert not grouped_cluster_call.kwargs["cluster_enrichment"].empty
+    assert individual_cluster_call.kwargs["cluster_membership"].empty
     assert contrasts["clustered_png_path"].str.endswith("_clustered_heatmap.png").all()
     table = pd.read_csv(tmp_path / heatmaps.CONTRAST_TABLE_FILENAME, sep="\t")
     assert len(table) == 60
@@ -447,3 +492,14 @@ def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Pa
     assert len(tree_nodes) == 58
     assert len(tree_leaves) == 60
     assert len(comparison) == 30
+    membership = pd.read_csv(
+        tmp_path / heatmaps.GROUPED_CLUSTER_MEMBERSHIP_FILENAME,
+        sep="\t",
+    )
+    enrichment = pd.read_csv(
+        tmp_path / heatmaps.GROUPED_CLUSTER_ENRICHMENT_FILENAME,
+        sep="\t",
+    )
+    assert len(membership) == 30
+    assert membership["cluster_id"].nunique() == 30
+    assert set(enrichment["label_type"]) == {"anatomy", "grouped_condition"}

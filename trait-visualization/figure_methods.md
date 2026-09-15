@@ -1528,6 +1528,23 @@ flagged in `six_shared_trait_signed_direction_cluster_tree_leaves.tsv`. The
 complete linkage merges are exported in
 `six_shared_trait_signed_direction_cluster_tree_nodes.tsv`.
 
+For the grouped-condition clustered heatmap, the row dendrogram is additionally
+cut at 70% of its maximum merge distance (the conventional SciPy dendrogram
+color-threshold fraction). The resulting contiguous branches are assigned
+cluster IDs from top to bottom and exported in
+`six_shared_trait_grouped_signed_direction_cluster_membership.tsv`. For every
+cluster, anatomy label, and grouped-condition label, a one-sided Fisher exact
+test compares the label frequency inside the cluster with the frequency among
+all rows outside it. Benjamini-Hochberg correction is applied separately across
+all anatomy tests and all grouped-condition tests. The dendrogram label shows
+the strongest result of each type only when at least 2 cluster rows carry that
+label and `q <= 0.05`; otherwise it explicitly reports that no BH-enriched label
+was detected. All tested contingency counts, odds ratios, p-values, q-values,
+fold enrichment, and label decisions are exported in
+`six_shared_trait_grouped_signed_direction_cluster_enrichment.tsv`. These
+labels are exploratory annotations of clustering structure, not confirmatory
+biological claims.
+
 The raw individual-condition tree is compared with the grouped-condition tree
 in `six_shared_trait_signed_direction_cluster_comparison.tsv`. Each individual
 condition/body-site vector is mapped to its grouped aggregate using the grouped
