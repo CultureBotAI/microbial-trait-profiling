@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from scipy.stats import binomtest
 
+from bsdbng.count_inputs import COVERAGE_COLUMNS
 from bsdbng.guild_maps import OTHER_LABEL, build_matrix, compute_correlation, study_direction_means
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
@@ -44,6 +45,28 @@ def _write_experiments(path: Path, rows: list[tuple[str, str, str, str, str]]) -
     lines = ["\t".join(header)]
     for row in rows:
         lines.append("\t".join(row))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_coverage(path: Path, keys: list[tuple[str, str, str]]) -> None:
+    lines = ["\t".join(COVERAGE_COLUMNS)]
+    for key in keys:
+        lines.append(
+            "\t".join(
+                [
+                    *key,
+                    "1",
+                    "1",
+                    "0",
+                    "1",
+                    "0",
+                    "complete_annotation_coverage",
+                    "[]",
+                    "[]",
+                    "columns:6:sha256:test",
+                ]
+            )
+        )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -119,6 +142,68 @@ def test_missing_guild_column_raises(corpus: tuple[Path, Path]) -> None:
     profiles_path, experiments_path = corpus
     with pytest.raises(ValueError, match="gram positive"):
         load_profiles(profiles_path, experiments_path, GRAM_GUILDS)
+
+
+@pytest.mark.parametrize("bad_count", ["", "-1", "1.5", "NaN", "not-a-count"])
+def test_method_loader_rejects_invalid_counts_before_filtering(
+    tmp_path: Path, corpus: tuple[Path, Path], bad_count: str
+) -> None:
+    profiles_path, experiments_path = corpus
+    text = profiles_path.read_text(encoding="utf-8")
+    profiles_path = tmp_path / f"bad-{bad_count or 'blank'}.tsv"
+    profiles_path.write_text(text.replace("\t6\t0\t0", f"\t{bad_count}\t0\t0", 1), encoding="utf-8")
+    with pytest.raises(ValueError, match="count"):
+        load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+
+
+def test_method_loader_joins_coverage_without_turning_it_into_zero(tmp_path: Path) -> None:
+    profiles = tmp_path / "profiles.tsv"
+    experiments = tmp_path / "experiments.tsv"
+    coverage = tmp_path / "coverage.tsv"
+    keys = [("s1", "e1", "inc"), ("s1", "e1", "dec")]
+    _write_profiles(
+        profiles,
+        [
+            (*keys[0], [0, 0, 0, 0, 0, 0, 0]),
+            (*keys[1], [0, 0, 0, 0, 0, 0, 0]),
+        ],
+    )
+    _write_experiments(experiments, [("s1", "e1", "X", "Feces", "Homo sapiens")])
+    _write_coverage(coverage, keys)
+
+    loaded, stats = load_profiles(
+        profiles,
+        experiments,
+        OXYGEN_GUILDS,
+        coverage_path=coverage,
+        require_coverage=True,
+    )
+
+    assert len(loaded) == 2
+    assert all(profile.total == 0 for profile in loaded)
+    assert all(profile.source_coverage is not None for profile in loaded)
+    assert all(profile.source_coverage.is_complete for profile in loaded if profile.source_coverage)
+    assert stats.coverage_rows == 2
+    assert stats.incomplete_coverage_profiles == 0
+    assert stats.coverage_not_provided_profiles == 0
+
+
+def test_method_loader_rejects_profile_coverage_key_mismatch(tmp_path: Path) -> None:
+    profiles = tmp_path / "profiles.tsv"
+    experiments = tmp_path / "experiments.tsv"
+    coverage = tmp_path / "coverage.tsv"
+    keys = [("s1", "e1", "inc"), ("s1", "e1", "dec")]
+    _write_profiles(
+        profiles,
+        [
+            (*keys[0], [1, 0, 0, 0, 0, 0, 0]),
+            (*keys[1], [1, 0, 0, 0, 0, 0, 0]),
+        ],
+    )
+    _write_experiments(experiments, [("s1", "e1", "X", "Feces", "Homo sapiens")])
+    _write_coverage(coverage, [keys[0]])
+    with pytest.raises(ValueError, match="Profile/coverage key mismatch"):
+        load_profiles(profiles, experiments, OXYGEN_GUILDS, coverage_path=coverage)
 
 
 def test_rows_with_no_surviving_cells_are_dropped(corpus: tuple[Path, Path]) -> None:

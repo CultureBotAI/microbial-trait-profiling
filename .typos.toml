@@ -1,5 +1,9 @@
 [default]
 extend-ignore-re = []
 
+[default.extend-identifiers]
+PNGs = "PNGs"
+fac_aer = "fac_aer"
+
 [files]
 extend-exclude = ["uv.lock", ".venv"]

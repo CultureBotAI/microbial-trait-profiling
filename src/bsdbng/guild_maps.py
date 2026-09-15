@@ -1072,6 +1072,19 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
     parser.add_argument("--profile-input", type=Path, default=DEFAULT_PROFILE_PATH)
+    parser.add_argument(
+        "--coverage-input",
+        type=Path,
+        help=(
+            "Optional profile annotation-coverage sidecar. When supplied, its keys "
+            "and internal count reconciliation are validated before analysis."
+        ),
+    )
+    parser.add_argument(
+        "--require-coverage",
+        action="store_true",
+        help="Fail unless --coverage-input is supplied.",
+    )
     parser.add_argument("--experiments-input", type=Path, default=DEFAULT_EXPERIMENTS_PATH)
     parser.add_argument("--full-dump-input", type=Path, default=DEFAULT_FULL_DUMP_PATH)
     parser.add_argument("--output-dir", type=Path, default=DERIVED_DATA_DIR / "guild_maps")
@@ -1104,6 +1117,8 @@ def main() -> int:
         args.experiments_input,
         OXYGEN_GUILDS,
         human_only=not args.include_non_human,
+        coverage_path=args.coverage_input,
+        require_coverage=args.require_coverage,
     )
     vintage = read_bugsigdb_vintage(args.full_dump_input)
     write_stats_report(stats, vintage)

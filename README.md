@@ -135,6 +135,8 @@ All commands go through the Justfile. Run `just --list` to see them all.
 | `just ingest` | Parse CSVs into per-study YAML |
 | `just taxa-trait-matrix` | Build the taxon x trait matrix from BugSigDB taxa and KG-Microbe |
 | `just study-trait-profiles` | Sum taxon trait vectors by study, experiment, and increased/decreased direction |
+| `just validate-profile-counts` | Strictly validate the committed or generated profile count matrix |
+| `just validate-taxa-counts` | Strictly validate a generated taxon-by-trait count matrix |
 | `just pipeline` | Run download + ingest |
 | `just clean-all` | Remove all generated artifacts |
 | `just format` | Auto-fix lint and formatting |
@@ -142,6 +144,11 @@ All commands go through the Justfile. Run `just --list` to see them all.
 | `just lint` | Run linter only |
 
 Every pipeline step is timed and logged to `logs/pipeline.log`.
+
+`just study-trait-profiles` also writes a keyed annotation-coverage sidecar and
+count-input provenance JSON. See
+[`methods/count_input_contract.md`](methods/count_input_contract.md) for the
+strict integer format, explicit legacy sparse mode, and coverage-state meanings.
 
 ### Downloading KG-Microbe for trait enrichment
 
