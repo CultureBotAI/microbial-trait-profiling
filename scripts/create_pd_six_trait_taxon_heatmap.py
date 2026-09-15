@@ -486,13 +486,14 @@ def plot_heatmap(
     plt.close(fig)
 
 
-def sha256(path: Path) -> str:
-    """Return a streamed SHA-256 digest."""
+def sha256_chunks(path: Path) -> list[str]:
+    """Return a streamed SHA-256 digest in unambiguous eight-character chunks."""
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
-    return digest.hexdigest()
+    value = digest.hexdigest()
+    return [value[offset : offset + 8] for offset in range(0, len(value), 8)]
 
 
 def main() -> None:
@@ -521,15 +522,18 @@ def main() -> None:
         "cells": len(cells),
         "non_mediadive_columns": len(trait_columns),
         "minimum_support_studies": MIN_SUPPORT_STUDIES,
-        "inputs": {
-            str(PROFILE_MATRIX_PATH.relative_to(PROFILE_MATRIX_PATH.parents[2])): sha256(
-                PROFILE_MATRIX_PATH
+        "input_sha256_chunks": {
+            PROFILE_MATRIX_PATH.relative_to(PROFILE_MATRIX_PATH.parents[2]).as_posix(): (
+                sha256_chunks(PROFILE_MATRIX_PATH)
             ),
-            str(TAXA_TRAIT_MATRIX_PATH.relative_to(TAXA_TRAIT_MATRIX_PATH.parents[2])): sha256(
-                TAXA_TRAIT_MATRIX_PATH
+            TAXA_TRAIT_MATRIX_PATH.relative_to(
+                TAXA_TRAIT_MATRIX_PATH.parents[2]
+            ).as_posix(): sha256_chunks(TAXA_TRAIT_MATRIX_PATH),
+            evidence_path.relative_to(evidence_path.parents[3]).as_posix(): sha256_chunks(
+                evidence_path
             ),
-            str(evidence_path.relative_to(evidence_path.parents[3])): sha256(evidence_path),
         },
+        "sha256_chunk_encoding": "concatenate each path's eight chunks in order",
     }
     (OUTPUT_DIR / f"{STEM}_manifest.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
