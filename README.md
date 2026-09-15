@@ -131,10 +131,14 @@ All commands go through the Justfile. Run `just --list` to see them all.
 | Command | What it does |
 |---------|-------------|
 | `just check` | Run all checks (ruff, mypy, pytest, linkml, bandit, deptry, pip-audit) |
+| `just precommit` | Run the full pre-commit stack, including the installed-environment dependency audit |
+| `just lock --upgrade-package PACKAGE` | Update a dependency with the declared uv version; run `just sync` first |
+| `just secrets-scan` / `just secrets-audit` | Print candidate secret findings / review the committed baseline |
 | `just download` | Download BugSigDB CSVs (with caching and retry) |
 | `just ingest` | Parse CSVs into per-study YAML |
 | `just taxa-trait-matrix` | Build the taxon x trait matrix from BugSigDB taxa and KG-Microbe |
 | `just study-trait-profiles` | Sum taxon trait vectors by study, experiment, and increased/decreased direction |
+| `just table1-compositional-stats` | Paired log-ratio tests for all 15 Table 1 trait pairs; `--body-site LABEL` for one exact stratum |
 | `just pipeline` | Run download + ingest |
 | `just clean-all` | Remove all generated artifacts |
 | `just format` | Auto-fix lint and formatting |
@@ -142,6 +146,12 @@ All commands go through the Justfile. Run `just --list` to see them all.
 | `just lint` | Run linter only |
 
 Every pipeline step is timed and logged to `logs/pipeline.log`.
+
+The audited `.secrets.baseline` contains only the public BugSigDB source revision
+and dump checksum in `src/bsdbng/download.py`. It records those exact values as
+false positives; it does not exempt the file or new values from detection. Review
+candidate findings before updating the baseline. The lock and secret-audit CLIs
+are declared in the QA group at the same versions as their pre-commit hooks.
 
 ### Downloading KG-Microbe for trait enrichment
 

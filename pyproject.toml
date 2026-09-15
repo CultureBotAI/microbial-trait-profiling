@@ -56,9 +56,12 @@ dev = [
 qa = [
   "bandit[toml]>=1.8.3",
   "deptry>=0.21.1",
+  # Keep these maintenance CLIs aligned with .pre-commit-config.yaml.
+  "detect-secrets==1.5.0",
   "pip-audit>=2.10.0",
   "pytest-cov>=6.0.0",
   "types-PyYAML>=6.0.12.20260408",
+  "uv==0.11.15",
 ]
 
 [tool.setuptools]

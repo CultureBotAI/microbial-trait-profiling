@@ -22,7 +22,19 @@ then prefers over a system Chrome, which is what makes the renders reproducible.
 
 [`three_arm_statistics.md`](three_arm_statistics.md) is not about one figure. It
 records how the three analyses built on `study_trait_profiles_wide.tsv` differ,
-and why their p-values are not on comparable scales.
+and defines the shared corpus, paired quantities and evidence levels required
+before choosing comparison thresholds or ranking scores. It also explains why
+the native p-values are not on comparable scales.
+
+[`table1_paired_log_ratios.md`](table1_paired_log_ratios.md) documents
+`just table1-compositional-stats`: paired log-ratio direction tests for all 15
+Table 1 trait pairs, with explicit references, zero exclusions, study-level
+coverage, and a separate correction family. It emits statistics and a Markdown
+report without rendering figures.
+
+[`table1_log_ratio_validation.md`](table1_log_ratio_validation.md) records the
+pinned-corpus rerun of all 15 ratios alongside the original six fraction
+directions, including study coverage, uncertainty and interpretation limits.
 
 The gram-stain directional Sankey diagrams live on the
 `147-add-gram-stain-directional-sankey-gram-positive-gram-negative-x-increased-decreased`
