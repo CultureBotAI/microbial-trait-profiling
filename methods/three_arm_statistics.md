@@ -41,7 +41,7 @@ its own evidence record. Computing the same descriptive estimate through three
 exporters is a consistency check, not three independent findings.
 
 This section specifies the harmonized comparison to implement in
-[#178](https://github.com/CultureBotAI/bsdbng/issues/178). It does not certify that
+[#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178). It does not certify that
 the historical runs below already meet the specification. No new significance
 cutoff, minimum effect, support cutoff, ranking score or top-k value is selected
 here; the first comparison displays every declared candidate in manifest order.
@@ -60,7 +60,7 @@ here; the first comparison displays every declared candidate in manifest order.
 | Weighting | Average eligible experiment contrasts within a study, then give each eligible study equal weight within the declared scope. Pool a study's experiments directly across conditions; do not count each condition-study group as another study. Identify shared cohorts where known when assessing independence and uncertainty. |
 
 Source validity and annotation coverage are tracked in
-[#184](https://github.com/CultureBotAI/bsdbng/issues/184). A numeric zero can be a
+[#184](https://github.com/CultureBotAI/microbial-trait-profiling/issues/184). A numeric zero can be a
 valid observed annotation count without proving biological absence. A profile
 with zero total annotations remains a documented base record, but its fraction
 and enrichment fold are undefined. If the entire ORA background total is zero,
@@ -69,7 +69,7 @@ enrichment is undefined. Preserve these states rather than substituting a fold.
 The background remains weighted by profiles and their assertion counts, while
 the descriptive comparison weights studies equally. Fixing that definition does
 not validate the assertion-level urn model in
-[#131](https://github.com/CultureBotAI/bsdbng/issues/131).
+[#131](https://github.com/CultureBotAI/microbial-trait-profiling/issues/131).
 
 ### Common paired quantities and eligibility
 
@@ -111,7 +111,7 @@ fractions with A/B then exposes the changed estimand. Different ratio population
 must not be collapsed into a common ordering of individual traits. A comparison
 across references requires a declared common-support scenario using the same
 experiment pairs for every included reference, with its coverage reported.
-[#183](https://github.com/CultureBotAI/bsdbng/issues/183) tracks this planned
+[#183](https://github.com/CultureBotAI/microbial-trait-profiling/issues/183) tracks this planned
 sensitivity analysis. Neither fraction contrasts nor ratios establish absolute
 trait abundance changes.
 
@@ -128,7 +128,7 @@ unresolved population or identity mismatch remains explicitly non-comparable.
 Jed's transformed experiment-level mean is not the shared raw fraction effect.
 His source counts supply that common effect, while his native effect and test
 retain their own units until the study-dependence work in
-[#133](https://github.com/CultureBotAI/bsdbng/issues/133) is completed. Noel's
+[#133](https://github.com/CultureBotAI/microbial-trait-profiling/issues/133) is completed. Noel's
 study contrasts can match the shared quantities after eligibility is reconciled.
 Their tests still target directional consistency rather than a nonzero mean.
 
@@ -146,7 +146,7 @@ the minimum profile p-value or an any-significant-profile indicator as a shared
 effect. This descriptive aggregation creates no study-, site- or condition-level
 p-value. Native profile p/q values remain linked evidence at their tested level;
 they must not be inserted as q-values for a pooled trait or an A/B contrast.
-[#177](https://github.com/CultureBotAI/bsdbng/issues/177) tracks formal support
+[#177](https://github.com/CultureBotAI/microbial-trait-profiling/issues/177) tracks formal support
 aggregation. Enrichment on both sides can coexist with a small paired contrast.
 
 ## Side by side
@@ -178,7 +178,7 @@ host species at ingest; the other analyses filter downstream. The same retained
 rows do not guarantee the same normalization: Ilyas and Noel remove MediaDive
 before computing totals, whereas Jed's inspected paired-screen code excludes
 MediaDive from trait selection but includes it in the denominator. Issue
-[#174](https://github.com/CultureBotAI/bsdbng/issues/174) tracks harmonization and
+[#174](https://github.com/CultureBotAI/microbial-trait-profiling/issues/174) tracks harmonization and
 the numerical rerun; the historical results below must retain their original
 denominator definitions until that work is complete.
 
@@ -216,7 +216,7 @@ blocks where appropriate, retaining their paired annotation vectors and rerunnin
 the relevant filtering, background and analysis steps. This assesses stability;
 formal error-rate claims for a threshold, rank-overlap statistic or combined
 decision require the method-appropriate nulls and selection-aware calibration in
-[#182](https://github.com/CultureBotAI/bsdbng/issues/182).
+[#182](https://github.com/CultureBotAI/microbial-trait-profiling/issues/182).
 
 ## Why the p-values are not comparable
 
@@ -272,12 +272,12 @@ each original hypothesis as well as expose differences in normalization.
 Significance retains its tested level: a body-site result does not establish a
 result for every condition within it. A majority of studies containing at least
 one significant profile is a descriptive support rule unless a cell-level test
-has been calibrated. [#176](https://github.com/CultureBotAI/bsdbng/issues/176) and
-[#177](https://github.com/CultureBotAI/bsdbng/issues/177) track the grouping,
+has been calibrated. [#176](https://github.com/CultureBotAI/microbial-trait-profiling/issues/176) and
+[#177](https://github.com/CultureBotAI/microbial-trait-profiling/issues/177) track the grouping,
 display-selection and profile-support questions in PR #173.
 
 Noel owns the integrated evidence table in
-[#178](https://github.com/CultureBotAI/bsdbng/issues/178). Each method's result
+[#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178). Each method's result
 must retain trait identity, tested condition/site and level, version/input hash,
 denominator/background, selection rules, study/pair/profile counts, effect units
 and uncertainty type, p/q and correction family, thresholds, and separate
@@ -289,7 +289,7 @@ results must survive joins and exports as distinguishable states.
 
 All arms measure annotations attached to curated taxon signatures. They do not
 directly measure patient-level trait abundance, pathway activity, oxygen exposure
-or causation. [#179](https://github.com/CultureBotAI/bsdbng/issues/179) tracks the
+or causation. [#179](https://github.com/CultureBotAI/microbial-trait-profiling/issues/179) tracks the
 shared biological-interpretation guidance for all contributors.
 
 ## Compositionality
@@ -354,5 +354,5 @@ and [`guild_condition_body_site_heatmap.md`](guild_condition_body_site_heatmap.m
 The original note acknowledged Claude Code assistance and author review. The
 statistical corrections, log-ratio extension and shared comparison specification
 are tracked in
-[PR #181](https://github.com/CultureBotAI/bsdbng/pull/181) and require confirmation
+[PR #181](https://github.com/CultureBotAI/microbial-trait-profiling/pull/181) and require confirmation
 by the method owners before manuscript use.

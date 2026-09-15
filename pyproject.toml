@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bsdbng"
 version = "0.1.0"
-description = "Strict BugSigDB ingestion and normalization"
+description = "Integration and comparative analysis of microbial trait annotations"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [

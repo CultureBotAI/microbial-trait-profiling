@@ -6,7 +6,7 @@ relative annotation comparisons conditional on positive counts. Both cutoffs
 are reported for transparency; no cutoff was selected to define a preferred set.
 
 This snapshot compares Noel's original fraction-direction analysis with the
-paired log-ratio extension in [PR #181](https://github.com/CultureBotAI/bsdbng/pull/181).
+paired log-ratio extension in [PR #181](https://github.com/CultureBotAI/microbial-trait-profiling/pull/181).
 The [three-framework comparison](three_arm_statistics.md) describes Jed's and
 Ilyas's different hypotheses. The [log-ratio methods](table1_paired_log_ratios.md)
 define eligibility, study weighting, ties and the correction family.
@@ -22,7 +22,7 @@ contrast uses only its named numerator and reference counts.
 | Provenance field | Value |
 | --- | --- |
 | BugSigDB vintage | `2026-04-24_00:41_UTC` (BugSigDBExports v1.3.1) |
-| Analysis source revision | [`b1f66ea`](https://github.com/CultureBotAI/bsdbng/commit/b1f66ea4efcad88c82af06ce1561674f5dda5f5d) |
+| Analysis source revision | [`b1f66ea`](https://github.com/CultureBotAI/microbial-trait-profiling/commit/b1f66ea4efcad88c82af06ce1561674f5dda5f5d) |
 | Log-ratio version | `paired-log-ratio-sign-v1` |
 | Profile matrix SHA256 | `c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f` |
 | Experiment metadata SHA256 | `403afea98d9b0a5b56939f68bcc9aace56a8eda350232a586806fe7bf30ad230` |
@@ -145,15 +145,15 @@ eligible population and multiplicity procedure. They cannot quantify the
 denominator mismatch in Jed's code or isolate the effect of normalization.
 
 Before interpreting stability across references, Noel's
-[#183](https://github.com/CultureBotAI/bsdbng/issues/183) will compare the full
+[#183](https://github.com/CultureBotAI/microbial-trait-profiling/issues/183) will compare the full
 fraction sample with fractions and ratios on identical eligible pairs, and
 assess common support and study influence. Jed's denominator harmonization is
-tracked separately in [#174](https://github.com/CultureBotAI/bsdbng/issues/174).
+tracked separately in [#174](https://github.com/CultureBotAI/microbial-trait-profiling/issues/174).
 Calibration and selection remain follow-up work in
-[#182](https://github.com/CultureBotAI/bsdbng/issues/182).
+[#182](https://github.com/CultureBotAI/microbial-trait-profiling/issues/182).
 
 The integrated evidence table in
-[#178](https://github.com/CultureBotAI/bsdbng/issues/178) must preserve these
+[#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178) must preserve these
 results as separate hypotheses, with their references, denominators, populations,
 uncertainty types and families. BY adjustment within the 15 ratios does not
 establish FDR control for a union with the fraction or enrichment discoveries.

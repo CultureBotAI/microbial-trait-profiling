@@ -73,7 +73,7 @@ a changed conclusion cannot automatically be attributed to normalization alone.
 The [pinned-corpus validation table](table1_log_ratio_validation.md) records all
 15 ratio results and the original fraction directions from the same input files.
 Matched-population sensitivity analysis is tracked in
-[#183](https://github.com/CultureBotAI/bsdbng/issues/183).
+[#183](https://github.com/CultureBotAI/microbial-trait-profiling/issues/183).
 
 For an exact body-site stratum, use a separate output directory:
 
