@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -38,14 +39,35 @@ from bsdbng.trait_guilds import (
 
 OTHER_LABEL = "Other"
 GUILD_ORDER = ("aerobe", "anaerobe")
-ROW_HEIGHT_PX = 26
-MIN_PLOT_HEIGHT_PX = 120
+CELL_SIZE_PX = 26
 
 
 def _figure_height(row_count: int, *, top_margin: int, bottom_margin: int) -> int:
     """Reserve margins plus enough plotting area for every heatmap row."""
-    plot_height = max(MIN_PLOT_HEIGHT_PX, ROW_HEIGHT_PX * row_count)
+    plot_height = CELL_SIZE_PX * max(1, row_count)
     return top_margin + bottom_margin + plot_height
+
+
+def _figure_width(column_count: int, *, left_margin: int, right_margin: int) -> int:
+    """Reserve horizontal margins without taking width from heatmap cells."""
+    return left_margin + right_margin + CELL_SIZE_PX * column_count
+
+
+def _panel_figure_width(
+    columns_per_panel: int,
+    panel_count: int,
+    *,
+    horizontal_spacing: float,
+    left_margin: int,
+    right_margin: int,
+) -> int:
+    """Account for subplot gaps while preserving cell width in every panel."""
+    panel_domain_share = 1.0 - horizontal_spacing * (panel_count - 1)
+    if panel_domain_share <= 0:
+        raise ValueError("horizontal spacing leaves no room for subplot panels")
+    cell_area_width = CELL_SIZE_PX * columns_per_panel * panel_count
+    plot_width = math.ceil(cell_area_width / panel_domain_share)
+    return left_margin + right_margin + plot_width
 
 
 @dataclass(frozen=True)
@@ -896,6 +918,8 @@ def write_figure(
             f"BugSigDB {vintage or 'vintage unknown'}.",
         ]
     )
+    left_margin = 300
+    right_margin = 180
     top_margin = 445
     bottom_margin = 300
     figure.update_layout(
@@ -904,11 +928,13 @@ def write_figure(
         yaxis={"title": "condition", "autorange": "reversed"},
         shapes=shapes,
         annotations=annotations,
-        width=max(900, 26 * len(matrix.columns)),
+        width=_figure_width(
+            len(matrix.columns), left_margin=left_margin, right_margin=right_margin
+        ),
         height=_figure_height(len(row_labels), top_margin=top_margin, bottom_margin=bottom_margin),
         # The site headers sit above the plotting area, so they need their own room.
         # Caption lines plus a two-line site header need the room.
-        margin={"l": 300, "b": bottom_margin, "t": top_margin},
+        margin={"l": left_margin, "r": right_margin, "b": bottom_margin, "t": top_margin},
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.write_image(str(output_path), scale=2)
@@ -949,6 +975,10 @@ def write_body_site_panels(
     missing = [site for site in sites if site not in matrix.body_sites]
     if missing:
         raise ValueError(f"body sites absent from the matrix: {', '.join(missing)}")
+    site_indices = {
+        site: [i for i, column in enumerate(matrix.columns) if _site_of_column(column) == site]
+        for site in sites
+    }
 
     # Colour ranges come from the whole matrix, not from the panels, so the
     # panels are readable at the same colours as the combined figure.
@@ -965,11 +995,12 @@ def write_body_site_panels(
         for guild in guild_order
     }
 
+    horizontal_spacing = 0.06
     figure = make_subplots(
         rows=1,
         cols=len(sites),
         shared_yaxes=True,
-        horizontal_spacing=0.06,
+        horizontal_spacing=horizontal_spacing,
         subplot_titles=[f"<b>{site}</b>" for site in sites],
     )
 
@@ -977,7 +1008,7 @@ def write_body_site_panels(
     bar_len = min(0.42, 0.92 / count)
     shapes: list[dict[str, object]] = []
     for panel, site in enumerate(sites, start=1):
-        indices = [i for i, column in enumerate(matrix.columns) if _site_of_column(column) == site]
+        indices = site_indices[site]
         # The site is named once above the panel, so a column only has to carry its
         # trait and direction.
         tick_text = []
@@ -1057,15 +1088,23 @@ def write_body_site_panels(
         ]
     )
 
+    left_margin = 300
+    right_margin = 180
     top_margin = 425
     bottom_margin = 260
     figure.update_layout(
         title={"text": f"{title}<br><sub>{subtitle}</sub>"},
         shapes=shapes,
-        width=max(900, 150 + 620 * len(sites)),
+        width=_panel_figure_width(
+            max(len(indices) for indices in site_indices.values()),
+            len(sites),
+            horizontal_spacing=horizontal_spacing,
+            left_margin=left_margin,
+            right_margin=right_margin,
+        ),
         height=_figure_height(len(row_labels), top_margin=top_margin, bottom_margin=bottom_margin),
         # Caption lines above the panel titles.
-        margin={"l": 300, "b": bottom_margin, "t": top_margin},
+        margin={"l": left_margin, "r": right_margin, "b": bottom_margin, "t": top_margin},
         plot_bgcolor="white",
     )
     figure.update_xaxes(tickangle=-60)

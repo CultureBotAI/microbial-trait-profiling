@@ -7,10 +7,11 @@ import pytest
 from scipy.stats import binomtest
 
 from bsdbng.guild_maps import (
-    MIN_PLOT_HEIGHT_PX,
+    CELL_SIZE_PX,
     OTHER_LABEL,
-    ROW_HEIGHT_PX,
     _figure_height,
+    _figure_width,
+    _panel_figure_width,
     build_matrix,
     compute_correlation,
     study_direction_means,
@@ -39,8 +40,42 @@ def test_figure_height_keeps_plot_area_outside_margins(row_count: int) -> None:
         - bottom_margin
     )
 
-    assert plot_height >= MIN_PLOT_HEIGHT_PX
-    assert plot_height >= ROW_HEIGHT_PX * row_count
+    assert plot_height == CELL_SIZE_PX * max(1, row_count)
+
+
+def test_figure_width_keeps_margins_outside_cell_area() -> None:
+    left_margin = 300
+    right_margin = 180
+    columns = 60
+    plot_width = (
+        _figure_width(columns, left_margin=left_margin, right_margin=right_margin)
+        - left_margin
+        - right_margin
+    )
+
+    assert plot_width == CELL_SIZE_PX * columns
+
+
+def test_panel_width_accounts_for_subplot_spacing() -> None:
+    left_margin = 300
+    right_margin = 180
+    columns_per_panel = 12
+    panel_count = 2
+    horizontal_spacing = 0.06
+    plot_width = (
+        _panel_figure_width(
+            columns_per_panel,
+            panel_count,
+            horizontal_spacing=horizontal_spacing,
+            left_margin=left_margin,
+            right_margin=right_margin,
+        )
+        - left_margin
+        - right_margin
+    )
+    cell_domains_width = plot_width * (1.0 - horizontal_spacing * (panel_count - 1))
+
+    assert cell_domains_width >= CELL_SIZE_PX * columns_per_panel * panel_count
 
 
 def _write_profiles(path: Path, rows: list[tuple[str, str, str, list[int]]]) -> None:
