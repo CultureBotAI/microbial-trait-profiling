@@ -74,6 +74,10 @@ The tighter version is:
 
 ### Predictions Beyond These Six
 
+*Archivist note: the tables in this section and below are part of the attributed
+transcript. They have not received a repository evidence review, and no row here
+is a measured result of this project.*
+
 | explanation | traits expected to increase outside the selected six | traits expected to decrease | traits expected to remain flat, or flat after site controls |
 | --- | --- | --- | --- |
 | Distal-gut oxygenation | aerobic respiration, low-O2 terminal oxidases such as cytochrome bd, oxidative-stress tolerance, catalase/peroxidase/SOD, facultative anaerobiosis, Enterobacteriaceae-associated nitrate use | obligate anaerobiosis, butyrate production, cellulosome / xylan / pectin / resistant-starch degradation, secondary fermentation | skin salt tolerance and coccus morphology should not be forced upward in stool-only inflammatory contrasts |
