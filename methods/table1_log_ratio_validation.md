@@ -26,8 +26,14 @@ contrast uses only its named numerator and reference counts.
 | Log-ratio version | `paired-log-ratio-sign-v1` |
 | Profile matrix SHA256 | `c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f` |
 | Experiment metadata SHA256 | `403afea98d9b0a5b56939f68bcc9aace56a8eda350232a586806fe7bf30ad230` |
-| Log-ratio module SHA256 | `392c8dfc0a685f0795293b27804bc7d1ba884ff3c88bcfe5ee2177b431ca24b0` |
+| Log-ratio module SHA256 | `df664a9dade43092d7d5b03df70554b6b29340ef8af335ecd7547736bf3515cf` |
+| Shared loader SHA256 | `70ecbb78e03f1b34649fd8dc84cd486fb9e0817c59d31fadcd2d00cdae794683` |
 | Tested level | All body sites and conditions pooled; one contrast per study |
+
+The module hash moved after `b1f66ea` because the provenance block gained the
+shared-loader hash; the statistics are untouched. Rerunning on the same pinned
+inputs reproduces `trait_log_ratio_stats.tsv`, `trait_log_ratio_studies.tsv` and
+`trait_log_ratio_report.md` byte-identically, so the table below still holds.
 
 Regenerate with the existing recipes on these input files:
 

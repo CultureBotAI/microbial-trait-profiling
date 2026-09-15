@@ -84,8 +84,10 @@ let `T(e,d)` be the full non-MediaDive total. Define two comparison types:
 For either type, compute `D(s) = mean(D(e))` over that study's eligible
 experiments in the scope. Report the mean and median of `D(s)` across studies,
 plus the proportion of non-tied studies with `D(s) > 0`. Score ties before
-display conversion, using the existing tolerances: 1e-12 in fraction units or
-1e-12 in log2 units. Tied eligible studies stay in the mean/median and coverage
+display conversion, using two separate absolute tolerances of 1e-12: one in
+fraction units for `D_F`, one in log2 units for `D_R`. These are not one shared
+rule — fraction contrasts are of order 1e-3 and log2 contrasts of order 1e-1, so
+the same constant sits a different distance below each scale. Tied eligible studies stay in the mean/median and coverage
 counts. If all eligible studies tie, the directional proportion is undefined;
 if there are no eligible pairs, both the effect and directional proportion are
 undefined. An interval must identify its parameter: the existing exact 95%

@@ -120,7 +120,7 @@ table1-trait-maps:
 # coverage/provenance and a Markdown report. No figure renderer is needed.
 [positional-arguments]
 table1-compositional-stats *ARGS:
-	uv run python -m bsdbng.trait_composition --code-commit "$(git rev-parse HEAD)" "$@"
+	uv run python -m bsdbng.trait_composition --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
 
 security:
 	uv run bandit -c pyproject.toml -r src scripts

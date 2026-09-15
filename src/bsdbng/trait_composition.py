@@ -273,6 +273,7 @@ def write_log_ratio_outputs(
         "experiments_path": str(experiments_path),
         "experiments_sha256": _sha256(experiments_path),
         "analysis_source_sha256": _sha256(Path(__file__)),
+        "shared_loader_source_sha256": _sha256(Path(__file__).with_name("trait_guilds.py")),
         "code_commit": code_commit,
         "bugsigdb_vintage": read_bugsigdb_vintage(full_dump_path),
         "input_filter_counts_before_site_selection": asdict(corpus_stats) if corpus_stats else None,

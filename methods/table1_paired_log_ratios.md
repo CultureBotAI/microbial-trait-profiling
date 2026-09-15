@@ -59,9 +59,13 @@ does not establish FDR control across the union of those separate runs.
 
 ## Reproduction and interpretation
 
-The provenance file records input hashes, the supplied Git revision, the analysis
-source hash (including uncommitted changes), the BugSigDB timestamp, input filter
-counts, trait IDs, study weighting, zero policy, and testing family. Original
+The provenance file records input hashes, the supplied Git revision, separate
+hashes of the analysis module and of the shared loader `trait_guilds.py` (both
+taken from the working files, so they reflect uncommitted changes), the BugSigDB
+timestamp, input filter counts, trait IDs, study weighting, zero policy, and
+testing family. The recipe appends `+dirty` to the recorded Git revision when the
+tracked tree has uncommitted changes, because the revision alone would otherwise
+describe code that was not the code that ran. Original
 fraction-based outputs are retained for their original hypotheses. Comparing a
 ratio result with them requires both the reference and its coverage exclusions;
 a changed conclusion cannot automatically be attributed to normalization alone.
@@ -78,7 +82,13 @@ just table1-compositional-stats --body-site Feces --output-dir data/derived/tabl
 ```
 
 No top-N condition selection, display masking or Other pooling defines that
-inference corpus. This recipe rejects missing trait columns and blank/truncated
+inference corpus. `--body-site` matches the source label exactly, which also
+excludes composite labels: of 221 distinct labels over 4,435 experiments, 59 are
+comma-joined composites covering 141 experiments, and 18 of those name Feces
+alongside another site (37 experiments) against 2,778 experiments labelled
+exactly `Feces`. Those composite experiments are absent from every single-site
+stratum rather than assigned to one, so a stratum is a clean subset, not a
+partition of the corpus. This recipe rejects missing trait columns and blank/truncated
 counts in retained trait columns instead of treating them as observed zeros. The analysis
 rejects duplicate profile keys, incomplete pairs, mismatched pair metadata and
 negative counts. The output is data and Markdown, so no figure renderer is needed.
