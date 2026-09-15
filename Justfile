@@ -89,6 +89,10 @@ table1-taxon-influence kg_dir="data/kg-microbe" inputs="data/derived" output="da
 # Requires an unchanged, completed contribution ledger; no KG reload is needed.
 table1-native-influence inputs="data/derived" output="data/derived/table1_taxon_influence":
 	uv run python -m bsdbng.native_taxon_influence --inputs "{{inputs}}" --output "{{output}}" --code-commit "$(git rev-parse HEAD)"
+	just table1-native-summary "{{output}}"
+
+table1-native-summary output="data/derived/table1_taxon_influence":
+	uv run python -m bsdbng.native_influence_publication --source "{{output}}"
 
 # PNG export (guild-maps, table1-trait-maps) runs through kaleido 1.x, which
 # drives a headless Chrome. This downloads (~170 MB) the version-pinned Chrome

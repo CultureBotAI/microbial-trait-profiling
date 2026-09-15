@@ -59,8 +59,15 @@ def hypergeom_probabilities(
 
     if len(triples) < 4096 or workers == 1:
         return evaluate(triples)
+    # np.unique sorts by count: contiguous chunks concentrate the expensive tail
+    # in one worker. Striding balances those cases without changing cell order.
+    result = np.empty(len(triples), dtype=np.float64)
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        return np.concatenate(list(pool.map(evaluate, np.array_split(triples, workers))))
+        for index, values in enumerate(
+            pool.map(evaluate, [triples[i::workers] for i in range(workers)])
+        ):
+            result[index::workers] = values
+    return result
 
 
 def compressed_rows(path: Path) -> Iterator[dict[str, str]]:

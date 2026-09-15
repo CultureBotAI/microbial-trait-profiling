@@ -6,7 +6,7 @@ The original source ledger and shared-fraction results are unchanged. The
 native rerun: it fixes the same 22 exclusions, four exact scopes, 317 retained
 columns and 4,670 human paired profiles from 959 studies. Nothing is selected by
 the new effects, directions or p-values. See the generated
-[native summary](../data/derived/table1_taxon_influence/native_summary.md) for results.
+[native summary and review tables](table1-native-results/README.md) for results.
 
 ## Reproduction
 
@@ -27,6 +27,13 @@ It starts with `completed: false`; a failed/interrupted run must not be integrat
 The historical contribution manifest's `not_rerun` statements describe that earlier
 stage, not the native extension. Only a completed native manifest establishes that
 the native files exist and match the recorded inputs.
+
+`just table1-native-summary <audit-output-directory>` verifies all native input and
+output artifact hashes and publishes the compact review bundle in
+`methods/table1-native-results/`. This is also the final step of the native recipe.
+The bundle contains every six-trait comparison, native Table 1 statistics, full
+native family sizes and run manifests. Large full-profile data remain in the
+generated-data directory under the repository's existing convention.
 
 ## Composition Contract
 
