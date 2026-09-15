@@ -11,9 +11,10 @@ import math
 import platform
 from collections import Counter
 from collections.abc import Iterator
+from functools import lru_cache
 from pathlib import Path
-from statistics import mean, pstdev, stdev, variance
 
+import numpy as np
 from scipy.stats import hypergeom, ttest_1samp
 
 from bsdbng.contribution_inputs import Base, Key, Pair, digest, load_base, rows
@@ -27,6 +28,12 @@ INPUT_NAMES = (
     "bugsigdb_taxa.tsv",
     "taxa_trait_matrix.tsv",
 )
+
+
+@lru_cache(maxsize=100000)
+def null_count_interval(total: int, success: int, draws: int) -> tuple[int, int]:
+    values = hypergeom.ppf([0.025, 0.975], total, success, draws)
+    return int(values[0]), int(values[1])
 
 
 def compressed_rows(path: Path) -> Iterator[dict[str, str]]:
@@ -96,7 +103,7 @@ def transformed(
         values = list(fractions.values())
         support = sum(profiles[key][trait] > 0 for key in keys)
         signal = sum(profiles[key][trait] for key in keys)
-        var = variance(values) if len(values) > 1 else 0.0
+        var = float(np.var(values, ddof=1)) if len(values) > 1 else 0.0
         eligible = (
             support >= policy["minimum_profile_support"]
             and support <= max(2, int(len(keys) * policy["maximum_profile_support_fraction"]))
@@ -106,7 +113,7 @@ def transformed(
             key: math.log1p(policy["transform_multiplier"] * value)
             for key, value in fractions.items()
         }
-        scale = pstdev(logs.values()) if logs else 0.0
+        scale = float(np.std(list(logs.values()), ddof=0)) if logs else 0.0
         scales[trait] = scale
         # Centering cancels in a pair difference; use population SD (ddof=0).
         paired = {
@@ -116,9 +123,9 @@ def transformed(
         }
         contrasts[trait] = paired
         items = list(paired.values())
-        sd = stdev(items) if len(items) > 1 else 0.0
+        sd = float(np.std(items, ddof=1)) if len(items) > 1 else 0.0
         valid = eligible and len(items) >= policy["minimum_pairs"] and sd > 1e-8
-        effect = mean(items) if items else 0.0
+        effect = float(np.mean(items)) if items else 0.0
         radius = critical_t(len(items) - 1) * sd / math.sqrt(len(items)) if len(items) > 1 else None
         positive, negative = sum(v > 0 for v in items), sum(v < 0 for v in items)
         share = directional_test(positive, negative) if positive + negative else None
@@ -228,12 +235,22 @@ def ora_cells(
             for x, k, n in zip(observed, successes, draws, strict=True)
         ):
             raise ValueError("ORA counts do not fit the declared finite population")
+        print(f"    ORA {tail}: {len(identities):,} tests", flush=True)
+        # Repeated count/success/draw triples have identical native probabilities.
+        # Expand back before BH so multiplicity still counts EVERY original test.
+        triples, inverse = np.unique(
+            np.asarray(list(zip(observed, successes, draws, strict=True)), dtype=np.int64).reshape(
+                -1, 3
+            ),
+            axis=0,
+            return_inverse=True,
+        )
         pvalues: list[float] = (
             (
-                hypergeom.sf([v - 1 for v in observed], total, successes, draws)
+                hypergeom.sf(triples[:, 0] - 1, total, triples[:, 1], triples[:, 2])
                 if tail == "enrichment"
-                else hypergeom.cdf(observed, total, successes, draws)
-            ).tolist()
+                else hypergeom.cdf(triples[:, 0], total, triples[:, 1], triples[:, 2])
+            )[inverse].tolist()
             if identities
             else []
         )
@@ -245,16 +262,11 @@ def ora_cells(
             if trait in six:
                 row = selected[(key, trait)]
                 row[f"{tail}_p"], row[f"{tail}_q"] = p, q
-    intervals = [(key, trait) for key in active for trait in base.traits.values()]
-    if intervals:
-        successes = [background[trait] for _, trait in intervals]
-        draws = [totals[key] for key, _ in intervals]
-        low, high = (
-            hypergeom.ppf(0.025, total, successes, draws),
-            hypergeom.ppf(0.975, total, successes, draws),
-        )
-        for identity, lo, hi in zip(intervals, low, high, strict=True):
-            selected[identity].update(null_count_low=int(lo), null_count_high=int(hi))
+    print("    ORA null count intervals", flush=True)
+    for key in active:
+        for trait in base.traits.values():
+            lo, hi = null_count_interval(total, background[trait], totals[key])
+            selected[(key, trait)].update(null_count_low=lo, null_count_high=hi)
     for row in selected.values():
         for tail in ("enrichment", "depletion"):
             row[f"{tail}_status"] = (
