@@ -6,6 +6,7 @@ from collections import Counter
 from pathlib import Path
 from statistics import mean, pstdev, stdev
 
+import numpy as np
 import pytest
 from scipy.stats import hypergeom, ttest_1samp
 
@@ -13,6 +14,7 @@ from bsdbng.contribution_inputs import Base
 from bsdbng.native_taxon_influence import (
     export_native,
     fold_pairs,
+    hypergeom_probabilities,
     ora_cells,
     reconstruct,
     run,
@@ -27,6 +29,14 @@ POLICY = {
     "minimum_pairs": 3,
     "transform_multiplier": 1000,
 }
+
+
+@pytest.mark.parametrize("tail", ["enrichment", "depletion"])
+def test_parallel_native_probabilities_are_identical(tail: str) -> None:
+    triples = np.asarray([(i % 9, 25 + i % 7, 10 + i % 3) for i in range(5000)], dtype=np.int64)
+    serial = hypergeom_probabilities(triples, 60, tail, workers=1)
+    parallel = hypergeom_probabilities(triples, 60, tail, workers=4)
+    assert np.array_equal(serial, parallel)
 
 
 def corpus() -> Base:

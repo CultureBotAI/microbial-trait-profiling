@@ -11,10 +11,13 @@ import math
 import platform
 from collections import Counter
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from pathlib import Path
+from time import perf_counter
 
 import numpy as np
+from numpy.typing import NDArray
 from scipy.stats import hypergeom, ttest_1samp
 
 from bsdbng.contribution_inputs import Base, Key, Pair, digest, load_base, rows
@@ -34,6 +37,30 @@ INPUT_NAMES = (
 def null_count_interval(total: int, success: int, draws: int) -> tuple[int, int]:
     values = hypergeom.ppf([0.025, 0.975], total, success, draws)
     return int(values[0]), int(values[1])
+
+
+def hypergeom_probabilities(
+    triples: NDArray[np.int64],
+    total: int,
+    tail: str,
+    workers: int = 8,
+) -> NDArray[np.float64]:
+    """Independent Boost-backed evaluations keep exact values and original order."""
+    if tail not in {"enrichment", "depletion"}:
+        raise ValueError(f"Unknown ORA tail: {tail}")
+
+    def evaluate(block: NDArray[np.int64]) -> NDArray[np.float64]:
+        values = (
+            hypergeom.sf(block[:, 0] - 1, total, block[:, 1], block[:, 2])
+            if tail == "enrichment"
+            else hypergeom.cdf(block[:, 0], total, block[:, 1], block[:, 2])
+        )
+        return np.asarray(values, dtype=np.float64)
+
+    if len(triples) < 4096 or workers == 1:
+        return evaluate(triples)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        return np.concatenate(list(pool.map(evaluate, np.array_split(triples, workers))))
 
 
 def compressed_rows(path: Path) -> Iterator[dict[str, str]]:
@@ -236,6 +263,7 @@ def ora_cells(
         ):
             raise ValueError("ORA counts do not fit the declared finite population")
         print(f"    ORA {tail}: {len(identities):,} tests", flush=True)
+        started = perf_counter()
         # Repeated count/success/draw triples have identical native probabilities.
         # Expand back before BH so multiplicity still counts EVERY original test.
         triples, inverse = np.unique(
@@ -246,17 +274,16 @@ def ora_cells(
             return_inverse=True,
         )
         pvalues: list[float] = (
-            (
-                hypergeom.sf(triples[:, 0] - 1, total, triples[:, 1], triples[:, 2])
-                if tail == "enrichment"
-                else hypergeom.cdf(triples[:, 0], total, triples[:, 1], triples[:, 2])
-            )[inverse].tolist()
-            if identities
-            else []
+            hypergeom_probabilities(triples, total, tail)[inverse].tolist() if identities else []
         )
         if not all(math.isfinite(p) and 0 <= p <= 1 for p in pvalues):
             raise ValueError("Nonfinite native ORA p-value")
         qvalues = adjust(list(pvalues))
+        print(
+            f"    {len(triples):,} unique probabilities and full BH "
+            f"in {perf_counter() - started:.1f}s",
+            flush=True,
+        )
         family[f"{tail}_tests"] = len(identities)
         for (key, trait), p, q in zip(identities, pvalues, qvalues, strict=True):
             if trait in six:
