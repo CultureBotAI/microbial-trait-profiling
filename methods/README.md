@@ -24,6 +24,10 @@ then prefers over a system Chrome, which is what makes the renders reproducible.
 records how the three analyses built on `study_trait_profiles_wide.tsv` differ,
 and why their p-values are not on comparable scales.
 
+[`count_input_contract.md`](count_input_contract.md) defines the strict shared
+integer-count format and the per-profile source-coverage sidecar required before
+those three statistical frameworks consume the profile matrix.
+
 The gram-stain directional Sankey diagrams live on the
 `147-add-gram-stain-directional-sankey-gram-positive-gram-negative-x-increased-decreased`
 branch together with their own methods file; they are not part of this branch.

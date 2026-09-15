@@ -1,6 +1,8 @@
 import csv
+import json
 from pathlib import Path
 
+import pytest
 import yaml
 
 from bsdbng.study_trait_profiles import create_study_trait_profiles
@@ -84,6 +86,11 @@ def test_create_study_trait_profiles_sums_taxa_traits_by_direction(tmp_path: Pat
     assert stats.profile_taxa == 4
     assert stats.matched_profile_taxa == 3
     assert stats.unmatched_profile_taxa == 1
+    assert stats.coverage_reported_distinct_taxa == 4
+    assert stats.coverage_lookup_matched_taxa == 3
+    assert stats.coverage_lookup_unmatched_taxa == 1
+    assert stats.coverage_matched_taxa_with_annotations == 3
+    assert stats.coverage_matched_taxa_without_annotations == 0
     assert _read_tsv(output_path) == [
         {
             "study_id": "bsdb:99",
@@ -102,6 +109,15 @@ def test_create_study_trait_profiles_sums_taxa_traits_by_direction(tmp_path: Pat
             "METPO:3": "2",
         },
     ]
+    coverage = {row["inc_dec"]: row for row in _read_tsv(stats.coverage_output_path)}
+    assert coverage["inc"]["coverage_status"] == "complete_annotation_coverage"
+    assert coverage["dec"]["coverage_status"] == "partial_lookup_coverage"
+    assert json.loads(coverage["dec"]["unmatched_taxon_ids"]) == ["NCBITaxon:999"]
+    provenance = json.loads(stats.provenance_output_path.read_text(encoding="utf-8"))
+    assert provenance["count_input_contract"] == "count-input-v1"
+    assert provenance["taxa_trait_matrix"]["count_input_mode"] == "complete"
+    assert provenance["taxa_trait_matrix"]["blank_counts_interpreted_as_zero"] == 0
+    assert provenance["coverage_output"]["totals"]["reported_distinct_taxa"] == 4
 
 
 def test_create_study_trait_profiles_can_count_duplicate_taxa(tmp_path: Path) -> None:
@@ -169,6 +185,84 @@ def test_create_study_trait_profiles_writes_long_format(tmp_path: Path) -> None:
         "trait\tbsdb:99_bsdb:99-1_dec\tbsdb:99_bsdb:99-1_inc",
         "METPO:1\t1\t5",
     ]
+
+
+def test_coverage_distinguishes_unannotated_match_from_missing_lookup(tmp_path: Path) -> None:
+    study_dir = tmp_path / "studies"
+    study_dir.mkdir()
+    study = {
+        "id": "bsdb:coverage",
+        "experiments": [
+            {
+                "id": "bsdb:coverage-1",
+                "signatures": [
+                    {
+                        "direction": "increased",
+                        "taxa": [{"id": "NCBITaxon:1"}],
+                    },
+                    {
+                        "direction": "decreased",
+                        "taxa": [{"id": "NCBITaxon:999"}],
+                    },
+                ],
+            }
+        ],
+    }
+    (study_dir / "coverage.yaml").write_text(
+        yaml.dump(study, default_flow_style=False, sort_keys=False), encoding="utf-8"
+    )
+    matrix_path = tmp_path / "taxa.tsv"
+    matrix_path.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1\n"
+        "NCBITaxon:1\tKnown but unannotated\tspecies\t0\n",
+        encoding="utf-8",
+    )
+
+    stats = create_study_trait_profiles(
+        study_dir=study_dir,
+        taxa_trait_matrix_path=matrix_path,
+        output_path=tmp_path / "profiles.tsv",
+    )
+
+    coverage = {row["inc_dec"]: row for row in _read_tsv(stats.coverage_output_path)}
+    assert coverage["inc"]["coverage_status"] == "matched_without_annotations"
+    assert coverage["inc"]["matched_taxa_without_annotations"] == "1"
+    assert json.loads(coverage["inc"]["matched_without_annotation_taxon_ids"]) == ["NCBITaxon:1"]
+    assert coverage["dec"]["coverage_status"] == "no_lookup_matches"
+    assert coverage["dec"]["lookup_unmatched_taxa"] == "1"
+    assert json.loads(coverage["dec"]["unmatched_taxon_ids"]) == ["NCBITaxon:999"]
+
+
+def test_sparse_blank_zero_requires_explicit_mode_and_is_recorded(tmp_path: Path) -> None:
+    study_dir = tmp_path / "studies"
+    study_dir.mkdir()
+    _write_study_yaml(study_dir)
+    matrix_path = tmp_path / "taxa.tsv"
+    matrix_path.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1\n"
+        "NCBITaxon:1\tTaxon one\tspecies\t\n"
+        "NCBITaxon:2\tTaxon two\tspecies\t2\n"
+        "NCBITaxon:3\tTaxon three\tspecies\t1\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="Missing count"):
+        create_study_trait_profiles(
+            study_dir=study_dir,
+            taxa_trait_matrix_path=matrix_path,
+            output_path=tmp_path / "strict.tsv",
+        )
+
+    stats = create_study_trait_profiles(
+        study_dir=study_dir,
+        taxa_trait_matrix_path=matrix_path,
+        output_path=tmp_path / "legacy.tsv",
+        count_input_mode="legacy_sparse_zero",
+    )
+
+    assert stats.blank_counts_interpreted_as_zero == 1
+    provenance = json.loads(stats.provenance_output_path.read_text(encoding="utf-8"))
+    assert provenance["taxa_trait_matrix"]["count_input_mode"] == "legacy_sparse_zero"
+    assert provenance["taxa_trait_matrix"]["blank_counts_interpreted_as_zero"] == 1
 
 
 def test_create_study_trait_profiles_includes_all_mapped_kgmicrobe_traits(

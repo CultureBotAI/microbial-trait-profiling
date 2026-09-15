@@ -81,6 +81,15 @@ taxa-trait-matrix: study-tsvs
 study-trait-profiles:
 	uv run python scripts/create_study_trait_profiles.py
 
+# Strict preflight shared by composition, enrichment, and depletion inputs.
+# The committed profile artifact is gzip-compressed; generated local files may
+# be passed with `just validate-profile-counts path/to/profiles.tsv`.
+validate-profile-counts profile="data/derived/study_trait_profiles_wide.tsv.gz" mode="complete":
+	uv run python scripts/validate_count_inputs.py profile "{{profile}}" --count-input-mode "{{mode}}"
+
+validate-taxa-counts matrix="data/derived/taxa_trait_matrix.tsv" mode="complete":
+	uv run python scripts/validate_count_inputs.py taxa "{{matrix}}" --count-input-mode "{{mode}}"
+
 # PNG export (guild-maps, table1-trait-maps) runs through kaleido 1.x, which
 # drives a headless Chrome. This downloads (~170 MB) the version-pinned Chrome
 # for Testing build into choreographer's data directory; kaleido prefers that
@@ -120,10 +129,9 @@ precommit:
 	uv run pre-commit run --all-files
 
 validate-schema:
-	uv run linkml validate -s {{schema}}
+	uv run linkml validate {{schema}}
 
 lint-schema:
-	uv run linkml lint --config {{lintconfig}} --validate --ignore-warnings {{schema}}
 	uv run linkml lint --config {{lintconfig}} --ignore-warnings {{schema}}
 
 check-schema: validate-schema lint-schema

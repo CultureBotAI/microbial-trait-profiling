@@ -14,9 +14,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TextIO
 
+from bsdbng.count_inputs import (
+    COMPLETE_COUNT_MODE,
+    CountInputMode,
+    ProfileCoverage,
+    profile_count_reader,
+    read_profile_coverage,
+)
 from bsdbng.paths import DERIVED_DATA_DIR, RAW_DATA_DIR
 
 DEFAULT_PROFILE_PATH = DERIVED_DATA_DIR / "study_trait_profiles_wide.tsv"
+DEFAULT_PROFILE_COVERAGE_PATH = DERIVED_DATA_DIR / "study_trait_profiles_wide_coverage.tsv"
 DEFAULT_EXPERIMENTS_PATH = DERIVED_DATA_DIR / "experiments.tsv"
 DEFAULT_FULL_DUMP_PATH = RAW_DATA_DIR / "full_dump.csv"
 
@@ -86,6 +94,7 @@ class Profile:
     body_site: str
     guild_counts: dict[str, int]
     total: int
+    source_coverage: ProfileCoverage | None = None
 
     def fraction(self, guild: str) -> float:
         """Return this guild's share of the profile's total trait signal."""
@@ -107,6 +116,11 @@ class CorpusStats:
     trait_columns_used: int
     kept_experiments: int
     kept_profiles: int
+    coverage_rows: int
+    incomplete_coverage_profiles: int
+    coverage_not_provided_profiles: int
+    count_input_mode: CountInputMode
+    blank_counts_interpreted_as_zero: int
 
 
 class ExperimentMetadata:
@@ -165,7 +179,7 @@ def column_term_id(column: str) -> str:
 
 
 def _select_trait_columns(
-    header: list[str], guilds: dict[str, tuple[str, ...]]
+    trait_columns: list[str], guilds: dict[str, tuple[str, ...]]
 ) -> tuple[list[int], dict[str, list[int]], int]:
     """Map trait columns to positions, dropping MediaDive growth-medium columns."""
     wanted: dict[str, set[str]] = {g: set(ids) for g, ids in guilds.items()}
@@ -174,9 +188,7 @@ def _select_trait_columns(
     matched_columns: defaultdict[tuple[str, str], list[str]] = defaultdict(list)
     mediadive_excluded = 0
 
-    for index, column in enumerate(header):
-        if column in PROFILE_ID_COLUMNS:
-            continue
+    for index, column in enumerate(trait_columns):
         if MEDIADIVE_MARKER in column.lower():
             mediadive_excluded += 1
             continue
@@ -212,67 +224,74 @@ def load_profiles(
     *,
     human_only: bool = True,
     paired_only: bool = True,
+    count_input_mode: CountInputMode = COMPLETE_COUNT_MODE,
+    coverage_path: Path | None = None,
+    require_coverage: bool = False,
 ) -> tuple[list[Profile], CorpusStats]:
-    """Load profile rows joined to experiment metadata, with corpus filters applied."""
+    """Load strictly validated profile counts and optional source coverage."""
     guild_map = OXYGEN_GUILDS if guilds is None else guilds
     metadata = ExperimentMetadata.load(experiments_path)
+    if require_coverage and coverage_path is None:
+        raise ValueError("A profile coverage sidecar is required but was not provided")
+    coverage = read_profile_coverage(coverage_path) if coverage_path is not None else {}
 
-    with profile_path.open(encoding="utf-8", newline="") as handle:
-        reader = csv.reader(handle, delimiter="\t")
-        header = next(reader, None)
-        if header is None:
-            msg = f"{profile_path} is empty"
-            raise ValueError(msg)
-        if header[:3] != list(PROFILE_ID_COLUMNS):
-            msg = f"{profile_path} must start with {PROFILE_ID_COLUMNS}"
-            raise ValueError(msg)
+    count_reader = profile_count_reader(profile_path, mode=count_input_mode)
+    trait_columns = list(count_reader.count_columns)
+    total_positions, guild_positions, mediadive_excluded = _select_trait_columns(
+        trait_columns, guild_map
+    )
 
-        total_positions, guild_positions, mediadive_excluded = _select_trait_columns(
-            header, guild_map
+    unmatched = 0
+    dropped_non_human = 0
+    candidates: list[Profile] = []
+    profile_keys: set[tuple[str, str, str]] = set()
+    for row in count_reader:
+        study_id, experiment_id, inc_dec = row.key
+        profile_keys.add((study_id, experiment_id, inc_dec))
+        if inc_dec not in DIRECTIONS:
+            raise ValueError(
+                f"Invalid profile direction in {profile_path}:{row.line_number}: {inc_dec!r}"
+            )
+
+        meta = metadata.get(study_id, experiment_id)
+        if meta is None:
+            unmatched += 1
+            continue
+        if human_only and meta["host_species"].strip() != HUMAN_HOST_SPECIES:
+            dropped_non_human += 1
+            continue
+
+        values = [row.counts[i] for i in total_positions]
+        guild_counts = {
+            guild: sum(row.counts[i] for i in positions)
+            for guild, positions in guild_positions.items()
+        }
+        candidates.append(
+            Profile(
+                study_id=study_id,
+                experiment_id=experiment_id,
+                inc_dec=inc_dec,
+                condition=meta["condition"].strip(),
+                body_site=meta["body_site"].strip(),
+                guild_counts=guild_counts,
+                total=sum(values),
+                source_coverage=coverage.get((study_id, experiment_id, inc_dec)),
+            )
         )
 
-        profile_rows = 0
-        unmatched = 0
-        dropped_non_human = 0
-        candidates: list[Profile] = []
-
-        for row in reader:
-            if not row:
-                continue
-            profile_rows += 1
-            study_id, experiment_id, inc_dec = row[0], row[1], row[2]
-            if inc_dec not in DIRECTIONS:
-                continue
-
-            meta = metadata.get(study_id, experiment_id)
-            if meta is None:
-                unmatched += 1
-                continue
-            if human_only and meta["host_species"].strip() != HUMAN_HOST_SPECIES:
-                dropped_non_human += 1
-                continue
-
-            values = [int(row[i]) if row[i].strip() else 0 for i in total_positions]
-            guild_counts = {
-                guild: sum(int(row[i]) if row[i].strip() else 0 for i in positions)
-                for guild, positions in guild_positions.items()
-            }
-            candidates.append(
-                Profile(
-                    study_id=study_id,
-                    experiment_id=experiment_id,
-                    inc_dec=inc_dec,
-                    condition=meta["condition"].strip(),
-                    body_site=meta["body_site"].strip(),
-                    guild_counts=guild_counts,
-                    total=sum(values),
-                )
+    if coverage:
+        missing_coverage = sorted(profile_keys.difference(coverage))
+        extra_coverage = sorted(set(coverage).difference(profile_keys))
+        if missing_coverage or extra_coverage:
+            raise ValueError(
+                "Profile/coverage key mismatch: "
+                f"missing coverage={missing_coverage[:5]}, extra coverage={extra_coverage[:5]}"
             )
 
     kept, dropped_unpaired = _apply_pair_filter(candidates, paired_only=paired_only)
     experiments_seen = len({(p.study_id, p.experiment_id) for p in candidates})
     stats = CorpusStats(
-        profile_rows=profile_rows,
+        profile_rows=count_reader.summary.rows,
         experiments_seen=experiments_seen,
         unmatched_experiments=unmatched,
         dropped_non_human=dropped_non_human,
@@ -281,6 +300,11 @@ def load_profiles(
         trait_columns_used=len(total_positions),
         kept_experiments=len({(p.study_id, p.experiment_id) for p in kept}),
         kept_profiles=len(kept),
+        coverage_rows=len(coverage),
+        incomplete_coverage_profiles=sum(not row.is_complete for row in coverage.values()),
+        coverage_not_provided_profiles=0 if coverage else len(profile_keys),
+        count_input_mode=count_input_mode,
+        blank_counts_interpreted_as_zero=(count_reader.summary.blank_counts_interpreted_as_zero),
     )
     return kept, stats
 
@@ -310,6 +334,11 @@ def format_stats_report(stats: CorpusStats, vintage: str | None) -> str:
         f"Trait columns used:          {stats.trait_columns_used}",
         f"Experiments kept:            {stats.kept_experiments}",
         f"Profiles kept:               {stats.kept_profiles}",
+        f"Count input mode:             {stats.count_input_mode}",
+        f"Blank counts used as zero:    {stats.blank_counts_interpreted_as_zero}",
+        f"Coverage rows joined:         {stats.coverage_rows}",
+        f"Incomplete source coverage:   {stats.incomplete_coverage_profiles}",
+        f"Coverage not provided:        {stats.coverage_not_provided_profiles}",
     ]
     return "\n".join(lines)
 
