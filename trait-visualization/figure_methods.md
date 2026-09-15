@@ -1750,3 +1750,35 @@ This figure uses the same target-taxon/profile occurrence table and broad-label 
 #### Inferred Guild Evidence TSVs
 
 `kg_microbe_candidate_taxon_universe.tsv`, `condition_inferred_guild_summary.tsv`, `condition_inferred_guild_trait_evidence.tsv`, and `condition_inferred_guild_taxa_evidence.tsv` provide the anaerobe-side match to the aerobe v2 inferred evidence outputs. The taxon universe is first defined across all taxa in `data/derived/taxa_trait_matrix.tsv`: a taxon is included when it has at least one core oxygen-tolerance annotation among anaerobic or obligately anaerobic. For each top decreased-profile condition, the script intersects that KG-Microbe-wide universe with taxa actually observed in the condition's decreased profiles, identifies v2 traits whose z-score is above zero in the decreased direction and whose decreased-minus-increased condition contrast is positive, and reports which universe taxa carry those enriched trait annotations.
+
+### PD species-by-six-trait influence heatmap
+
+`trait-profile-investigation/PD-cellulose/pd_species_six_traits_influence_heatmap.png`
+replaces the earlier four-positive-trait carrier-ratio heatmap. It includes all
+six Parkinson's disease lollipop traits and retains reported species, the lowest
+reliable rank in the local PD carrier evidence. A non-gray cell requires an
+annotation for that trait at or below the reported species label in the local
+taxa-trait matrix.
+
+The generator removes each reported species label's complete non-MediaDive
+taxa-trait vector from every PD fecal profile where it occurs. It then recomputes
+the selected trait fractions, applies the original `log1p(1000 * fraction)`
+transform and the unchanged human-corpus mean and standard deviation, and forms
+increased-minus-decreased contrasts for complete experiment pairs. Experiments
+are averaged within study before studies receive equal weight. Thus the cell
+value is specific to both the species and trait; it is not the species's raw
+increased/decreased occurrence ratio repeated across traits.
+
+Cells with at least three supporting studies are `inc` or `dec` only when their
+two-sided 95% Student t interval lies wholly above or below zero. Supported
+intervals crossing zero are `mixed`, and sparser estimates are hatched `low
+support`. Gray is unannotated. The optional right-hand row annotation displays
+raw increased/decreased PD fecal profile occurrence counts and a capped color
+encoding of their log2 ratio. It is visually and analytically separate from the
+six trait cells.
+
+The companion cell, taxon, trait, and manifest files preserve numeric estimates,
+intervals, support, input hashes, and row annotations. This leave-one-reported-
+species-out result is an influence diagnostic, not a causal or strain-level
+attribution; descendant propagation and unresolved source-assertion limitations
+remain as documented in issue #190.

@@ -50,9 +50,9 @@ six-shared-trait-heatmaps:
 pd-trait-taxa:
 	uv run python scripts/lookup_pd_trait_taxa.py
 
-# Plot species-level carrier counts for the four positive-side PD traits.
+# Plot species-level influence contrasts for all six PD traits.
 pd-trait-taxa-heatmap:
-	uv run python scripts/create_pd_four_trait_taxon_heatmap.py
+	uv run python scripts/create_pd_six_trait_taxon_heatmap.py
 
 # Overlay increased (solid) and decreased (dashed) high-support Sankey links.
 six-shared-trait-combined-sankey:

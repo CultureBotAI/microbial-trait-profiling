@@ -59,6 +59,7 @@ The top-level summary files are also current outputs:
 - `anaerobe_v2_guild_definition_table.png`
 - `anaerobe_v2_guild_definition_table.svg`
 - `parkinsons-disease/`
+- `PD-cellulose/pd_species_six_traits_influence_heatmap.png`
 - `profile_enrichment_guild_direction_grid.tsv`
 - `trait_profile_paired_contrast_infographic.png`
 - `trait_profile_paired_contrast_trait_stats.tsv`
@@ -89,6 +90,13 @@ against the opposite profile direction, and the subtitles/legends define `n=`,
 `scripts/analyze_parkinsons_disease_trait_profiles.py` as part of the current
 orchestrated refresh. It uses the same human-host study trait-profile heatmap
 outputs as the v2 investigation scripts.
+
+`PD-cellulose/pd_species_six_traits_influence_heatmap.png` is the species-level
+follow-up for all six Parkinson's disease traits. Unlike the adjacent raw
+carrier lookup, its cells are trait-specific fixed-reference leave-one-species-
+out influence contrasts. The separate right-hand annotation shows the raw
+increased/decreased profile occurrence counts and does not supply the trait-cell
+values. Regenerate it with `just pd-trait-taxa-heatmap`.
 
 ## Cleanup Note
 

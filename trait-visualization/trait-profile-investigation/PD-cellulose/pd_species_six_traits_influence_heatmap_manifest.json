@@ -1,0 +1,13 @@
+{
+  "method": "fixed-reference leave-one-reported-species-out influence",
+  "traits": 6,
+  "species": 60,
+  "cells": 360,
+  "non_mediadive_columns": 317,
+  "minimum_support_studies": 3,
+  "inputs": {
+    "data\\derived\\study_trait_profiles_wide.tsv": "6e70724ee807cf24e9c1f371a51421fa5b09d6283fa7f3abcd6620e5492c6a73",
+    "data\\derived\\taxa_trait_matrix.tsv": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178",
+    "trait-visualization\\trait-profile-investigation\\PD-cellulose\\pd_six_trait_taxon_profile_evidence.tsv": "ebf128f173c658b7115d5fd444e00fbcb677afa20d8842b7ffa5bb3c4ad89fce"
+  }
+}
