@@ -113,9 +113,7 @@ guild-maps:
 table1-trait-maps:
 	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py"
 
-security:
-	uv run bandit -c pyproject.toml -r src scripts
-	uv run deptry src
+audit:
 	tmpdir="$(mktemp -d)" && \
 	trap 'rm -rf "$tmpdir"' EXIT && \
 	reqfile="$tmpdir/requirements.txt" && \
@@ -124,6 +122,11 @@ security:
 	  --output-file "$reqfile" && \
 	uv run pip-audit -r "$reqfile" --disable-pip \
 	  --cache-dir "$tmpdir/pip-audit-cache"
+
+security:
+	uv run bandit -c pyproject.toml -r src scripts
+	uv run deptry src
+	just audit
 
 precommit:
 	uv run pre-commit run --all-files
