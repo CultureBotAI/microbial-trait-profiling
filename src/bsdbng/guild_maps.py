@@ -94,8 +94,8 @@ class GuildMatrix:
     # Body sites whose column block was backed by too few conditions to read as a
     # site-level pattern, removed with all of their columns.
     dropped_body_sites: list[str]
-    # True where the body site was sampled but profiles have no recorded guild
-    # annotation signal. Without this, an all-zero cell is
+    # True where the body site was sampled but profiles have no recorded annotation
+    # signal for the selected guild or trait. Without this, an all-zero cell is
     # drawn in the same colour as a genuinely low fraction.
     sampled_no_signal: list[list[bool]]
 
@@ -496,7 +496,7 @@ def write_matrix_outputs(
         [
             "value"
             if value is not None
-            else "no_guild_signal"
+            else "no_annotation_signal"
             if blank
             else ("below_min_studies" if count else "not_sampled")
             for value, blank, count in zip(v_row, b_row, c_row, strict=True)

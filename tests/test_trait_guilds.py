@@ -14,6 +14,7 @@ from bsdbng.guild_maps import (
     build_matrix,
     compute_correlation,
     study_direction_means,
+    write_matrix_outputs,
 )
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
@@ -265,6 +266,13 @@ def test_sampled_cells_without_guild_signal_are_flagged_not_drawn_as_zero(
         assert matrix.study_counts[row][i] == 1
         assert matrix.values[row][i] is None
         assert matrix.sampled_no_signal[row][i] is True
+
+    write_matrix_outputs(matrix, tmp_path, prefix="table1_traits")
+    status = (tmp_path / "table1_traits_condition_body_site_cell_status.tsv").read_text(
+        encoding="utf-8"
+    )
+    assert "no_annotation_signal" in status
+    assert "no_guild_signal" not in status
 
 
 def test_rows_are_clustered_and_pooling_is_reported(corpus: tuple[Path, Path]) -> None:
