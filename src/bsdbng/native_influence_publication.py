@@ -55,6 +55,11 @@ def publish(source: Path, destination: Path) -> dict[str, object]:
         number = write_table(path, list(records[0]), records)
         published[filename] = {"rows": number, "sha256": digest(path)}
     summary = (source / "native_summary.md").read_text(encoding="utf-8")
+    for original, review in (
+        ("native_manifest.json", "run_manifest.json"),
+        ("native_composition_comparison.tsv", "native_composition_comparison.tsv.gz"),
+    ):
+        summary = summary.replace(original, review)
     summary += (
         "\n## Review Bundle\n\n"
         "The `.tsv.gz` comparison files contain all six traits, scenarios and scopes, "

@@ -31,7 +31,9 @@ def run_directory(tmp_path: Path) -> Path:
             [{"trait_key": "A", "value": 1}, {"trait_key": "OTHER", "value": 2}],
         )
         output_hashes[filename] = digest(source / filename)
-    (source / "native_summary.md").write_text("# Native summary\n")
+    (source / "native_summary.md").write_text(
+        "# Native summary\nSee native_manifest.json and native_composition_comparison.tsv.\n"
+    )
     output_hashes["native_summary.md"] = digest(source / "native_summary.md")
     write_table(
         source / "scenarios.tsv",
@@ -70,6 +72,8 @@ def test_publication_preserves_comparisons_and_full_family_metadata(run_director
     comparisons = list(compressed_rows(destination / "native_composition_comparison.tsv.gz"))
     assert len(comparisons) == 2
     assert "FULL native families" in (destination / "README.md").read_text()
+    summary = (destination / "README.md").read_text()
+    assert "See run_manifest.json and native_composition_comparison.tsv.gz." in summary
 
 
 def test_publication_rejects_changed_outputs_before_writing(run_directory: Path) -> None:

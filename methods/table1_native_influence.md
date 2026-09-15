@@ -34,6 +34,8 @@ output artifact hashes and publishes the compact review bundle in
 The bundle contains every six-trait comparison, native Table 1 statistics, full
 native family sizes and run manifests. Large full-profile data remain in the
 generated-data directory under the repository's existing convention.
+The bundle also includes the complete `scenarios.tsv` inventory, with lineage
+names and selection/support status for candidates outside the declared panel.
 
 ## Composition Contract
 
