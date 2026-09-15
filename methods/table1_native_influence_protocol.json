@@ -1,0 +1,28 @@
+{
+  "version": "190-native-v1",
+  "composition_source_commit": "b931b3abb70f850d1c7318433557169286f6c64d",
+  "ora_source_commit": "3ae7ac847d5d1ebc3bdd388bb2793d5e60bfdc81",
+  "corpus": "Reuse the reconciled 190-v1 human paired corpus and exact scopes; not a reproduction of differently filtered published outputs",
+  "composition": {
+    "minimum_profile_support": 6,
+    "maximum_profile_support_fraction": 0.95,
+    "minimum_pairs": 3,
+    "transform_multiplier": 1000,
+    "selection": "All supported variable non-MediaDive traits, independently selected before and after; no top-N cutoff",
+    "reference": "Refit population mean and population SD of log1p(1000*fraction) within each scope and scenario; export fixed baseline SD comparison separately",
+    "test": "Two-sided one-sample t test across experiment contrasts; fewer than three pairs or contrast SD close to zero (absolute tolerance 1e-8) is untestable",
+    "family": "BH over finite p-values of all selected traits per scenario/scope; preserve native q=1 for untestable selected traits, missing p and explicit status",
+    "weighting": "Native: equal experiments. Shared transformed comparison: equal experiments within study then equal studies, separately labeled"
+  },
+  "ora": {
+    "backgrounds": ["fixed_baseline", "recomputed_remaining"],
+    "background_scope": "Both directions of every retained profile within each declared scope, including zeros; all non-MediaDive columns",
+    "enrichment": "Hypergeometric upper tail inclusive of observed count; test positive cells only; fold >= 1.5",
+    "depletion": "Hypergeometric lower tail inclusive of observed count; test all retained columns including zero cells, for nonzero-total profiles; fold <= 0.67",
+    "family": "Separate global BH over all eligible profile/trait tests within scenario/scope/background/tail, not only six traits; no pooling of backgrounds or tails",
+    "q_thresholds": [0.001, 0.05],
+    "uncertainty": "Export exact central 95% hypergeometric null count intervals, NOT fold confidence intervals. Study-averaged fold contrasts have separate conditional mean and directional-share intervals",
+    "zero_expected": "Retain native depletion p=q=1 for zero background traits, but undefined fold is missing; no significance membership",
+    "interpretation": "Native count-model diagnostic only; dependent propagated counts and selection prevent a validated full-pipeline error-rate or causal claim (#182/#184)"
+  }
+}

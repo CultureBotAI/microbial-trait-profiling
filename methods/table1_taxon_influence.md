@@ -3,6 +3,10 @@
 Issue [#190](https://github.com/CultureBotAI/microbial-trait-profiling/issues/190).
 The [measured run summary](table1_taxon_influence_results.md) records the reconciled
 corpus, observed contribution patterns, conditional uncertainty and remaining work.
+The [native rerun extension](table1_native_influence.md) now adds composition and
+both ORA background treatments. Statements below about missing native results
+describe the original contribution/shared-effect stage; consult the completed
+`native_manifest.json` and native summary for the extension and its review limits.
 Run `just table1-taxon-influence`, or pass a directory containing the **same pinned**
 KG files: `just table1-taxon-influence C:/path/to/pinned-kg`.
 The recipe writes TSVs, compressed TSVs, `manifest.json` and

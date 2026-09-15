@@ -1,5 +1,10 @@
 # Table 1 source contributions and lineage influence
 
+Historical contribution/shared-effect run. The [native extension](table1_native_influence.md)
+adds the previously missing native reruns without changing this source ledger or
+its measured shared effects. Native outputs and review limitations are recorded
+separately; the original missing-native statements below are retained as run history.
+
 Reconciled 4,670 human paired profiles from 959 studies across all 317 non-MediaDive traits. Enumerated 1233 resolved genus/family lineages; 22 entered the predeclared panel with at least three supporting studies. See manifest.json for hashes, exact scopes and protocol.
 
 The full contributing universe, concentration and all 15 cross-trait overlaps precede any display cutoff. Effects include all six raw annotation keys, both curated directions, shared fractions, all 15 log ratios and Noel's native zero-total convention. Each scenario preserves matched-pair changes and eligibility changes separately.
