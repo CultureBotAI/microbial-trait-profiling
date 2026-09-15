@@ -919,27 +919,54 @@ def dendrogram_cluster_labels(
     membership: pd.DataFrame,
     enrichment: pd.DataFrame,
 ) -> dict[str, str]:
-    """Build concise labels for grouped dendrogram cluster annotations."""
+    """Label grouped dendrogram branches with their strongest data trends."""
     labels: dict[str, str] = {}
     for cluster_id, cluster in membership.groupby("cluster_id", sort=False):
-        parts = [f"{cluster_id} (n={len(cluster)})"]
-        selected = enrichment[
-            (enrichment["cluster_id"] == cluster_id)
-            & enrichment["selected_for_dendrogram_label"].astype(bool)
-        ]
+        cluster_results = enrichment[enrichment["cluster_id"] == cluster_id]
+        parts: list[str] = []
+        selected_any = False
         for label_type, heading in (
             ("anatomy", "Anatomy"),
             ("grouped_condition", "Condition"),
         ):
-            matches = selected[selected["label_type"] == label_type]
-            if matches.empty:
-                continue
-            strongest = matches.iloc[0]
-            q_value = float(strongest["fisher_q_value"])
-            q_text = "<0.001" if q_value < 0.001 else f"{q_value:.3f}"
-            parts.append(f"{heading}: {strongest['label']} (q={q_text})")
-        if len(parts) == 1:
-            parts.append("No BH-enriched label")
+            matches = cluster_results[cluster_results["label_type"] == label_type]
+            selected = matches[matches["selected_for_dendrogram_label"].astype(bool)]
+            if not selected.empty:
+                strongest = selected.iloc[0]
+                selected_any = True
+                prefix = f"{heading} enriched"
+            else:
+                supported_trends = matches[
+                    (matches["cluster_label_count"] >= CLUSTER_LABEL_MIN_COUNT)
+                    & (matches["observed_expected_ratio"] > 1.0)
+                ]
+                positive_trends = matches[
+                    (matches["cluster_label_count"] > 0)
+                    & (matches["observed_expected_ratio"] > 1.0)
+                ]
+                present_labels = matches[matches["cluster_label_count"] > 0].sort_values(
+                    ["cluster_label_count", "fisher_p_value", "label"],
+                    ascending=[False, True, True],
+                )
+                if not supported_trends.empty:
+                    strongest = supported_trends.iloc[0]
+                    prefix = f"{heading} trend"
+                elif not positive_trends.empty:
+                    strongest = positive_trends.iloc[0]
+                    prefix = f"{heading} trend"
+                elif not present_labels.empty:
+                    strongest = present_labels.iloc[0]
+                    prefix = f"{heading} most common"
+                else:
+                    continue
+            parts.append(f"{prefix}: {strongest['label']}")
+
+        if len(cluster) == 1:
+            parts.append("Singleton branch (descriptive label)")
+        elif selected_any:
+            parts.append(f"BH-supported enrichment (n={len(cluster)})")
+        else:
+            parts.append(f"Trends only; no BH enrichment (n={len(cluster)})")
         labels[cluster_id] = "\n".join(parts)
     return labels
 
@@ -1632,13 +1659,20 @@ def write_contrast_heatmap(
     if mode.key == "grouped":
         cluster_membership = cut_grouped_dendrogram(clustering)
         cluster_enrichment = build_grouped_cluster_enrichment(cluster_membership)
+        display_labels = dendrogram_cluster_labels(
+            cluster_membership,
+            cluster_enrichment,
+        )
+        cluster_membership["cluster_display_label"] = cluster_membership["cluster_id"].map(
+            lambda cluster_id: display_labels[str(cluster_id)].replace("\n", "; ")
+        )
         cluster_count = cluster_membership["cluster_id"].nunique()
         cluster_cut_note = (
             f" The tree is cut at {GROUPED_CLUSTER_CUT_FRACTION:.0%} of its maximum "
-            f"merge distance into {cluster_count} clusters. Left labels report the strongest "
-            "anatomy and grouped-condition overrepresentations supported by one-sided Fisher "
-            f"tests (BH q<={CLUSTER_LABEL_Q_CUTOFF:g}, count>={CLUSTER_LABEL_MIN_COUNT}); "
-            "the dashed line marks the cut."
+            f"merge distance into {cluster_count} clusters. Left labels use the strongest "
+            "anatomy and grouped-condition trends rather than numeric cluster IDs and state "
+            f"whether enrichment passed BH q<={CLUSTER_LABEL_Q_CUTOFF:g} with count>="
+            f"{CLUSTER_LABEL_MIN_COUNT}; the dashed line marks the cut."
         )
     else:
         cluster_membership = pd.DataFrame()
@@ -1762,10 +1796,11 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         f"ranks, clustering uses neutral distance {UNDEFINED_SPEARMAN_DISTANCE:g} and records "
         "the limitation in the leaf table. Trait columns remain in the fixed six-trait order. "
         f"The grouped tree is cut at {GROUPED_CLUSTER_CUT_FRACTION:.0%} of its maximum merge "
-        "distance. Cluster labels summarize overrepresented anatomy and grouped-condition "
-        "labels using one-sided Fisher tests, with BH correction performed separately for "
-        f"each label type; a label requires q<={CLUSTER_LABEL_Q_CUTOFF:g} and at least "
-        f"{CLUSTER_LABEL_MIN_COUNT} rows in the cluster.",
+        "distance. Visible branch names use the strongest anatomy and grouped-condition "
+        "trends instead of numeric cluster IDs. One-sided Fisher tests evaluate those trends, "
+        "with BH correction performed separately for each label type; each annotation states "
+        f"whether any trend met q<={CLUSTER_LABEL_Q_CUTOFF:g} with count>="
+        f"{CLUSTER_LABEL_MIN_COUNT}.",
         f"- Readable pages contain at most {CONTRAST_ROWS_PER_PAGE} rows each. "
         f"`{CONTRAST_PAGES_FILENAME}` records their paths and counts; `heatmap_page` in "
         "the contrast table locates each displayed row. The original PNGs show full overviews.",
@@ -1815,47 +1850,58 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         membership = read_tsv(membership_path)
         enrichment = read_tsv(enrichment_path)
         if not membership.empty:
-            selected = enrichment[
-                enrichment["selected_for_dendrogram_label"].astype(str).str.lower().eq("true")
-            ]
             lines.extend(
                 [
                     "### Grouped Dendrogram Labels",
                     "",
                     f"The dashed cut is {GROUPED_CLUSTER_CUT_FRACTION:.0%} of the maximum "
-                    "merge distance. Cluster IDs run from top to bottom. `None` means that "
-                    "no label of that type passed both the BH and minimum-count criteria; it "
-                    "does not mean the cluster lacks that anatomy or condition.",
+                    "merge distance. From top to bottom, branches are named with their "
+                    "strongest anatomy and grouped-condition trends rather than numeric "
+                    "cluster IDs. A trend is descriptive unless the annotation explicitly "
+                    "says it has BH-supported enrichment.",
                     "",
-                    "| cluster | rows | enriched anatomy | enriched grouped condition |",
+                    "| top-to-bottom branch label | rows | strongest anatomy test | "
+                    "strongest grouped-condition test |",
                     "| --- | ---: | --- | --- |",
                 ]
             )
             cluster_summaries = (
-                membership[["cluster_id", "cluster_rank", "cluster_size"]]
+                membership[["cluster_id", "cluster_rank", "cluster_size", "cluster_display_label"]]
                 .drop_duplicates()
                 .sort_values("cluster_rank")
             )
             for cluster in cluster_summaries.itertuples(index=False):
-                cluster_selected = selected[selected["cluster_id"] == cluster.cluster_id]
                 cells: list[str] = []
                 for label_type in ("anatomy", "grouped_condition"):
-                    matches = cluster_selected[cluster_selected["label_type"] == label_type].head(3)
+                    matches = enrichment[
+                        (enrichment["cluster_id"] == cluster.cluster_id)
+                        & (enrichment["label_type"] == label_type)
+                        & (enrichment["cluster_label_count"] > 0)
+                    ]
+                    positive = matches[matches["observed_expected_ratio"] > 1.0]
+                    if not positive.empty:
+                        matches = positive
+                    else:
+                        matches = matches.sort_values(
+                            ["cluster_label_count", "fisher_p_value", "label"],
+                            ascending=[False, True, True],
+                        )
                     if matches.empty:
                         cells.append("None")
                         continue
-                    label_parts = []
-                    for match in matches.itertuples(index=False):
-                        q_value = float(match.fisher_q_value)
-                        q_text = "<0.001" if q_value < 0.001 else f"{q_value:.3f}"
-                        safe_label = str(match.label).replace("|", "\\|")
-                        label_parts.append(
-                            f"{safe_label} ({match.cluster_label_count}/{cluster.cluster_size}, "
-                            f"q={q_text})"
-                        )
-                    cells.append("<br>".join(label_parts))
+                    match = matches.iloc[0]
+                    p_value = float(match["fisher_p_value"])
+                    q_value = float(match["fisher_q_value"])
+                    p_text = "<0.001" if p_value < 0.001 else f"{p_value:.3f}"
+                    q_text = "<0.001" if q_value < 0.001 else f"{q_value:.3f}"
+                    safe_label = str(match["label"]).replace("|", "\\|")
+                    cells.append(
+                        f"{safe_label} ({match['cluster_label_count']}/{cluster.cluster_size}, "
+                        f"p={p_text}, q={q_text})"
+                    )
+                display_label = str(cluster.cluster_display_label).replace("; ", "<br>")
                 lines.append(
-                    f"| {cluster.cluster_id} | {cluster.cluster_size} | {cells[0]} | {cells[1]} |"
+                    f"| {display_label} | {cluster.cluster_size} | {cells[0]} | {cells[1]} |"
                 )
             lines.append("")
     lines.append("")

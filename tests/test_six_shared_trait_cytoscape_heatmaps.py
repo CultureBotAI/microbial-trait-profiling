@@ -290,8 +290,10 @@ def test_grouped_cluster_enrichment_labels_anatomy_and_condition() -> None:
     assert set(selected["cluster_id"]) == {"C1", "C2"}
     assert selected["fisher_q_value"].le(heatmaps.CLUSTER_LABEL_Q_CUTOFF).all()
     labels = heatmaps.dendrogram_cluster_labels(membership, enrichment)
-    assert "Anatomy: Feces" in labels["C1"]
-    assert "Condition: Condition A" in labels["C1"]
+    assert "Anatomy enriched: Feces" in labels["C1"]
+    assert "Condition enriched: Condition A" in labels["C1"]
+    assert "C1" not in labels["C1"]
+    assert "BH-supported enrichment" in labels["C1"]
 
 
 def test_cluster_comparison_flags_inverse_individual_pattern_as_outlier() -> None:
@@ -502,4 +504,6 @@ def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Pa
     )
     assert len(membership) == 30
     assert membership["cluster_id"].nunique() == 30
+    assert membership["cluster_display_label"].notna().all()
+    assert not membership["cluster_display_label"].str.startswith("C").any()
     assert set(enrichment["label_type"]) == {"anatomy", "grouped_condition"}

@@ -114,7 +114,7 @@ In a signed heatmap, a gray blank means the condition/body-site/trait combinatio
 
 - `trait_pattern`: Approach 2. Rows are condition/body-site pairs and columns are the six traits. Cell color is Fisher evidence, `-log10(p)`, rendered with a yellow-to-blue sequential palette so darker cells have smaller p-values. Cells require Fisher p<0.01, n>=3, and s>=2 for exploratory display.
 - `signed_direction_contrast`: Approach 4. Rows are condition/body-site pairs and columns are traits. Cell color and numbers are `increased_fraction - decreased_fraction` on a fixed -1 to +1 scale. Red favors increased profiles and blue favors decreased profiles. A dark border marks Fisher p<0.01; unbordered cells are descriptive effects that do not meet that cutoff. Cells require a finite test, at least 3 positive-z profiles in either direction, and at least 2 total studies. Every condition/body-site row with a supported cell is included, without a row cap. Rows are grouped by body site and ranked by significant-trait count, coverage, and evidence within each site.
-- `signed_direction_contrast_clustered`: A separate compact overview clusters rows with average linkage on pairwise-complete Spearman distance (`1 - rho`). A pairwise correlation requires at least 3 shared supported traits. Blank cells are never filled with zero; when a row pair has too little overlap or constant ranks, clustering uses neutral distance 1 and records the limitation in the leaf table. Trait columns remain in the fixed six-trait order. The grouped tree is cut at 70% of its maximum merge distance. Cluster labels summarize overrepresented anatomy and grouped-condition labels using one-sided Fisher tests, with BH correction performed separately for each label type; a label requires q<=0.05 and at least 2 rows in the cluster.
+- `signed_direction_contrast_clustered`: A separate compact overview clusters rows with average linkage on pairwise-complete Spearman distance (`1 - rho`). A pairwise correlation requires at least 3 shared supported traits. Blank cells are never filled with zero; when a row pair has too little overlap or constant ranks, clustering uses neutral distance 1 and records the limitation in the leaf table. Trait columns remain in the fixed six-trait order. The grouped tree is cut at 70% of its maximum merge distance. Visible branch names use the strongest anatomy and grouped-condition trends instead of numeric cluster IDs. One-sided Fisher tests evaluate those trends, with BH correction performed separately for each label type; each annotation states whether any trend met q<=0.05 with count>=2.
 - Readable pages contain at most 24 rows each. `six_shared_trait_signed_direction_heatmap_pages.tsv` records their paths and counts; `heatmap_page` in the contrast table locates each displayed row. The original PNGs show full overviews.
 - BH q-values are computed within each heatmap view. `selected_after_bh=True` marks supported cells with q<=0.05; those cells are also collected in the BH-selected cell table.
 
@@ -141,14 +141,14 @@ Click either compact preview to open the full-resolution clustered heatmap. Use 
 
 ### Grouped Dendrogram Labels
 
-The dashed cut is 70% of the maximum merge distance. Cluster IDs run from top to bottom. `None` means that no label of that type passed both the BH and minimum-count criteria; it does not mean the cluster lacks that anatomy or condition.
+The dashed cut is 70% of the maximum merge distance. From top to bottom, branches are named with their strongest anatomy and grouped-condition trends rather than numeric cluster IDs. A trend is descriptive unless the annotation explicitly says it has BH-supported enrichment.
 
-| cluster | rows | enriched anatomy | enriched grouped condition |
+| top-to-bottom branch label | rows | strongest anatomy test | strongest grouped-condition test |
 | --- | ---: | --- | --- |
-| C1 | 1 | None | None |
-| C2 | 28 | None | None |
-| C3 | 30 | None | None |
-| C4 | 20 | None | None |
+| Anatomy trend: Urinary tract<br>Condition trend: Renal / urinary disease<br>Singleton branch (descriptive label) | 1 | Urinary tract (1/1, p=0.038, q=1.000) | Renal / urinary disease (1/1, p=0.025, q=1.000) |
+| Anatomy trend: Feces<br>Condition trend: Autoimmune / inflammatory disease<br>Trends only<br>no BH enrichment (n=28) | 28 | Feces (15/28, p=0.046, q=1.000) | Autoimmune / inflammatory disease (2/28, p=0.285, q=1.000) |
+| Anatomy trend: Stomach / esophagus<br>Condition trend: Skin / hair disease<br>Trends only<br>no BH enrichment (n=30) | 30 | Stomach / esophagus (2/30, p=0.141, q=1.000) | Skin / hair disease (2/30, p=0.141, q=1.000) |
+| Anatomy trend: Upper airway / nasal<br>Condition trend: Pregnancy / neonatal<br>Trends only<br>no BH enrichment (n=20) | 20 | Upper airway / nasal (3/20, p=0.100, q=1.000) | Pregnancy / neonatal (3/20, p=0.014, q=1.000) |
 
 
 ### Signed Direction Pages
