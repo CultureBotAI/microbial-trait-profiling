@@ -192,7 +192,7 @@ output is not implicitly approved by this guide.
 | --- | --- | --- |
 | #188 | Contrast eligibility/orientation manifest; Noel with Jed | Required before disease/control language; host filtering alone is insufficient |
 | #189 | Trait semantics, source evidence and justified grouping; Ilyas with Jed | Required before label translations, gene claims or merging features |
-| #190 | Reconciled contributions and genus/family influence; Jed with Noel and Ilyas | Depends on definitions and the harmonized input contract; sensitivity is not causal validation |
+| #190 | Reconciled contributions and genus/family influence; Jed with Noel and Ilyas | Draft PR #194 supplies provisional contribution/influence artifacts; orientation, semantics, native Jed/ORA integration and calibration remain unresolved, and sensitivity is not causal validation |
 | #191 | Inventory of measured inflammation/SCFA evidence and feasible independent validation; Noel with Ilyas | Starts with feasibility and protocol; does not assume measured markers or successful validation |
 
 These deliverables feed #178 and #179; none marks mechanisms validated. Preserve

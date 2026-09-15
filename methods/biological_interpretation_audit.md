@@ -1,6 +1,6 @@
 # Biological interpretation claim audit (#179)
 
-Audit date: 2026-09-13. Policy: [shared interpretation guide](biological_interpretation.md).
+Audit date: 2026-09-14. Policy: [shared interpretation guide](biological_interpretation.md).
 This is a wording/provenance audit, not a reanalysis or validation of mechanisms.
 `Corrected here` means the source prose/template on this branch is changed;
 previously exported images still require regeneration. `Proposed correction`
@@ -14,6 +14,7 @@ has applied it. `Retain` means the scoped wording/evidence limit is appropriate.
 | Current checkout | `3b73376` before #179 edits: README, CONTRIBUTING, AGENTS, generated Copilot instructions, PR template, all methods, MANUSCRIPT_AUDIT, docs, profile aggregation and guild/Table 1 plot generators | All contributors; Noel for current guild/Table 1 methods and figures; manuscript/public-description owners to be identified by coordinators |
 | Proposed overlay, PR #173 | `85f97ac714c6d7c580c3a548b7f428229d58b634`: Table 1 methods, `guild_maps.py::_significance_note`, overlay source and output schema; figure captions inspected in generator source | Noel, with Jed and Ilyas for their statistical labels |
 | Rosalind archive/review, PR #192 | `593f3c88100c915187c8bc06e2cbdbedef7730c3`: `docs/rosalind-six-trait-interpretation.md`; also supplied in the issue request. The archived review describes its own evidence at `f22b31bd4bdef6e6e55bb5830ca631b81e3d4319` | All narrative authors; follow-up leads below |
+| Taxon contribution/influence audit, PR #194 | `021e5b449080c4a4f2f22a2ae329fccffc7eb367`: `methods/table1_taxon_influence.md` and `methods/table1_taxon_influence_results.md`; inspected the measured contribution, concentration, shared-fraction and bounded lineage-exclusion summaries | Jed with Noel and Ilyas; retain the provisional annotation-level limits and integrate the missing native results before closing #190 |
 | Composition branch | `a2b2df98e9beec98b772c9cb5af7aa090d033a98`: targeted review of generated narrative/title sites in `analyze_parkinsons_disease_trait_profiles.py`, `investigate_facultative_aerobe_expansion.py`, `investigate_gut_anaerobe_depletion.py`, and figure annotation templates | Jed; remaining branch artifact owners to inventory |
 | Enrichment branch | `782a33816193c60d5506d9c9934afcac0101f8bf`: `scripts/generate_enrichment_summary.py`, `scripts/generate_depletion_summary.py`, including text output, titles, axes and infographic narrative | Ilyas |
 
@@ -106,13 +107,15 @@ owner review. This issue does not silently import or change their statistics.
 | G08 same notes, interpretation/integration grids | Positive mean z means “enriched”; single-trait enrichment treated as prevalence; “High enrichment” implies “Common trait” | Replace with “above-average transformed annotation signal” for z-scores. Define ORA as a comparison against its background; a large fold need not mean common/high-prevalence. Keep prevalence, background enrichment and paired contrast in separate columns. | Jed with Ilyas |
 | G09 `trait-visualization/trait-profile-investigation/six-shared-traits/interpretations.md`, Overall/Cross-Disease Patterns | Traits “are not disease-specific”; “shared microbial phenotype axis” including “aerotolerance/oxygen exposure” and “halophily/osmotic tolerance” | “Selected annotation signals recur across the displayed condition/site groups.” Display recurrence does not test disease specificity, measure oxygen exposure or justify salt-label translation. Keep native semantics, eligible orientation and anatomical limits (#188/#189). | Jed |
 | G10 `trait-visualization/figure_methods.md`, taxon heatmap legend | Zero “cells indicate absence/no annotation” | “Zero cells indicate no recorded annotation under the selected mappings.” Distinguish missing mapping/coverage and biological absence; update the generator and rendered legend too. | Jed |
+| G11 PR #194 contribution/influence results | Largest contributing genera, pooled baseline contrasts and largest changes in a predeclared 22-exclusion panel | **Retain as provisional annotation influence diagnostics:** carry resolved-rank coverage, exact corpus/denominator, pairs/studies, effect units, conditional intervals, ambiguity and selection limits. Count concentration is not an additive fraction-effect contribution, and an exclusion is not a causal intervention. Do not infer patient abundance, oxygen exposure, SCFA production or a mechanism. Orientation (#188), semantics/source identity (#189), native Jed/ORA integration and calibration (#182) remain unresolved. | Jed with Noel/Ilyas; PR #194 / #190 |
 
 ## Adoption record
 
 The repository guide, current prose/caption corrections and workflow are delivered
-on #179. PR #173, separate analysis branches, unpublished manuscript sections and
-public outputs still require their owners to apply the proposed corrections and
-record artifact revisions. No coordinator sign-off or outside-branch modification
-is asserted here. Add each newly identified output to this ledger; record its
-owner, source revision, exact claim, evidence or replacement, and completion
-revision. #188–#191 complement this guide and do not close biological validation.
+on #179. PR #173, PR #194's pending native integrations, separate analysis branches,
+unpublished manuscript sections and public outputs still require their owners to
+apply the proposed corrections and record artifact revisions. No coordinator sign-off
+or outside-branch modification is asserted here. Add each newly identified output
+to this ledger; record its owner, source revision, exact claim, evidence or replacement,
+and completion revision. #188–#191 complement this guide and do not close biological
+validation.
