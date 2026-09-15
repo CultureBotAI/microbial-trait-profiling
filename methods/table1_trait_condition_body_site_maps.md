@@ -7,6 +7,14 @@ Figures: `table1_traits_condition_body_site_heatmap.png`,
 analysis differs from the composition and enrichment arms is set out in
 [`three_arm_statistics.md`](three_arm_statistics.md).
 
+Apply the [shared biological interpretation guide](biological_interpretation.md)
+to these figures and their captions. Fractions and shifts describe annotation
+representation, not patient-level trait abundance or pathway activity. `inc`/`dec`
+preserve curated direction; disease/control eligibility and orientation require
+#188. Heatmap means have no cell-level confidence intervals; supporting study
+counts and zero-signal/masking states are in the backing tables. The shift
+figure's intervals concern the share of studies with a positive contrast.
+
 The figures described here repeat the oxygen guild analysis
 ([`guild_condition_body_site_heatmap.md`](guild_condition_body_site_heatmap.md))
 over the six individual traits of manuscript Table 1 rather than over the two
@@ -86,9 +94,10 @@ dropped, because twelve columns to show a single row is not worth the width;
 cavity, Subgingival dental plaque, and Throat, leaving Feces, Saliva, Uterine
 cervix, Vagina, and Other.
 
-Third, cells where a site was sampled for a condition but no taxon carried the
-trait are **left blank by default rather than shaded dark grey**. The guild figure
-shades them, because a guild is absent rarely enough that the shading marks an
+Third, cells where a site was sampled for a condition but no trait annotation
+signal was recorded are **left blank by default rather than shaded dark grey**.
+The guild figure shades them, because a guild has zero mapped signal rarely
+enough that the shading marks an
 exception. Four of the six Table 1 traits are rare enough that the shading would
 cover most of the figure and read as the dominant signal. The state is still
 recorded per cell in the companion status table either way, and `--mark-no-signal`
@@ -142,13 +151,15 @@ direction (exactly one study crosses that line on this corpus). Ties are recorde
 in the output table and excluded from the test rather than split between the
 sides, which is why the denominator differs between traits: ties are common for
 the rarer traits, 343 studies for arsenate reduction against 42 for facultatively
-aerobic, and almost all of them are studies where the trait is absent from both
-sides. Each trait then gets a two-sided exact binomial test against a half-and-half
+aerobic, and almost all of them are studies with zero recorded trait annotations
+on both sides. This does not establish biological absence. Each trait then gets
+a two-sided exact binomial test against a half-and-half
 null with an exact binomial 95 per cent interval, and the six p-values are
 Benjamini-Hochberg corrected together as one family.
 
-One boundary case is scored rather than dropped: a profile whose taxa carry none
-of the retained traits enters with fraction 0 instead of as missing. 24
+One boundary case is scored rather than dropped: a profile with no recorded counts
+for the retained traits enters with fraction 0 instead of as missing. This is an
+analytical zero-denominator policy, not evidence of biological absence. 24
 experiments have such an empty decreased side against 11 with an empty increased
 side, a small net push toward "up". A sensitivity run dropping every experiment
 with an empty side (2,241 experiments, 939 studies) changes no conclusion — the
@@ -177,11 +188,12 @@ The right panel reports Spearman rank correlations between traits across those
 per-study contrasts. This is deliberately not the same quantity as the guild
 figure's within-profile correlation, which compares two shares of one profile
 total and is therefore pushed negative by compositionality; correlating one
-trait's contrast against another trait's contrast across studies does not share
-that artefact. Coccus shaped and sphere shaped correlate at rho = 0.45 over 959
-studies, which is high enough to treat them as overlapping evidence rather than
-two independent lines of it, but well short of the near-identity their names
-suggest. Facultatively aerobic correlates positively with coccus shaped (0.45),
+trait's contrast against another trait's contrast across studies still shares
+denominators, taxa and selection, and can retain induced dependence. Coccus shaped
+and sphere shaped correlate at rho = 0.45 over 959 studies; this is descriptive
+overlap, not proof of semantic equivalence or independent mechanisms. Keep their
+distinct IDs unless source evidence justifies a separately defined grouping
+(#189). Facultatively aerobic correlates positively with coccus shaped (0.45),
 arsenate reduction (0.40), and moderately halophilic (0.38), and negatively with
 cellulose catabolic process (-0.26); arsenate reduction and moderately halophilic
 correlate at 0.34. A pair is omitted rather than written as a

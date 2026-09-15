@@ -1,5 +1,9 @@
 [default]
 extend-ignore-re = []
 
+# Aerobe abbreviation used in trait fixtures.
+[default.extend-words]
+aer = "aer"
+
 [files]
 extend-exclude = ["uv.lock", ".venv"]

@@ -6,7 +6,17 @@ from pathlib import Path
 import pytest
 from scipy.stats import binomtest
 
-from bsdbng.guild_maps import OTHER_LABEL, build_matrix, compute_correlation, study_direction_means
+from bsdbng.guild_maps import (
+    CELL_SIZE_PX,
+    OTHER_LABEL,
+    _figure_height,
+    _figure_width,
+    _panel_figure_width,
+    build_matrix,
+    compute_correlation,
+    study_direction_means,
+    write_matrix_outputs,
+)
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
     OXYGEN_GUILDS,
@@ -18,6 +28,54 @@ from bsdbng.trait_guilds import (
 AEROBE_A, AEROBE_B, AEROBE_C = OXYGEN_GUILDS["aerobe"]
 ANAEROBE_A, ANAEROBE_B = OXYGEN_GUILDS["anaerobe"]
 MEDIA_COLUMN = "METPO:2000517|mediadive.medium:J14"
+
+
+@pytest.mark.parametrize("row_count", [0, 1, 40])
+def test_figure_height_keeps_plot_area_outside_margins(row_count: int) -> None:
+    top_margin = 445
+    bottom_margin = 300
+    plot_height = (
+        _figure_height(row_count, top_margin=top_margin, bottom_margin=bottom_margin)
+        - top_margin
+        - bottom_margin
+    )
+
+    assert plot_height == CELL_SIZE_PX * max(1, row_count)
+
+
+def test_figure_width_keeps_margins_outside_cell_area() -> None:
+    left_margin = 300
+    right_margin = 180
+    columns = 60
+    plot_width = (
+        _figure_width(columns, left_margin=left_margin, right_margin=right_margin)
+        - left_margin
+        - right_margin
+    )
+
+    assert plot_width == CELL_SIZE_PX * columns
+
+
+def test_panel_width_accounts_for_subplot_spacing() -> None:
+    left_margin = 300
+    right_margin = 180
+    columns_per_panel = 12
+    panel_count = 2
+    horizontal_spacing = 0.06
+    plot_width = (
+        _panel_figure_width(
+            columns_per_panel,
+            panel_count,
+            horizontal_spacing=horizontal_spacing,
+            left_margin=left_margin,
+            right_margin=right_margin,
+        )
+        - left_margin
+        - right_margin
+    )
+    cell_domains_width = plot_width * (1.0 - horizontal_spacing * (panel_count - 1))
+
+    assert cell_domains_width >= CELL_SIZE_PX * columns_per_panel * panel_count
 
 
 def _write_profiles(path: Path, rows: list[tuple[str, str, str, list[int]]]) -> None:
@@ -243,6 +301,13 @@ def test_sampled_cells_without_guild_signal_are_flagged_not_drawn_as_zero(
         assert matrix.study_counts[row][i] == 1
         assert matrix.values[row][i] is None
         assert matrix.sampled_no_signal[row][i] is True
+
+    write_matrix_outputs(matrix, tmp_path, prefix="table1_traits")
+    status = (tmp_path / "table1_traits_condition_body_site_cell_status.tsv").read_text(
+        encoding="utf-8"
+    )
+    assert "no_annotation_signal" in status
+    assert "no_guild_signal" not in status
 
 
 def test_rows_are_clustered_and_pooling_is_reported(corpus: tuple[Path, Path]) -> None:

@@ -1,4 +1,4 @@
-"""Disease-by-body-site oxygen guild heatmap and aerobe/anaerobe correlation.
+"""Condition-by-body-site oxygen annotation guild heatmap and correlation.
 
 Rows are conditions, columns are body sites crossed with the four
 guild-by-direction combinations, so each body site contributes the 2x2
@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -38,6 +39,35 @@ from bsdbng.trait_guilds import (
 
 OTHER_LABEL = "Other"
 GUILD_ORDER = ("aerobe", "anaerobe")
+CELL_SIZE_PX = 26
+
+
+def _figure_height(row_count: int, *, top_margin: int, bottom_margin: int) -> int:
+    """Reserve margins plus enough plotting area for every heatmap row."""
+    plot_height = CELL_SIZE_PX * max(1, row_count)
+    return top_margin + bottom_margin + plot_height
+
+
+def _figure_width(column_count: int, *, left_margin: int, right_margin: int) -> int:
+    """Reserve horizontal margins without taking width from heatmap cells."""
+    return left_margin + right_margin + CELL_SIZE_PX * column_count
+
+
+def _panel_figure_width(
+    columns_per_panel: int,
+    panel_count: int,
+    *,
+    horizontal_spacing: float,
+    left_margin: int,
+    right_margin: int,
+) -> int:
+    """Account for subplot gaps while preserving cell width in every panel."""
+    panel_domain_share = 1.0 - horizontal_spacing * (panel_count - 1)
+    if panel_domain_share <= 0:
+        raise ValueError("horizontal spacing leaves no room for subplot panels")
+    cell_area_width = CELL_SIZE_PX * columns_per_panel * panel_count
+    plot_width = math.ceil(cell_area_width / panel_domain_share)
+    return left_margin + right_margin + plot_width
 
 
 @dataclass(frozen=True)
@@ -86,8 +116,8 @@ class GuildMatrix:
     # Body sites whose column block was backed by too few conditions to read as a
     # site-level pattern, removed with all of their columns.
     dropped_body_sites: list[str]
-    # True where the body site was sampled for that condition but no taxon in the
-    # profile carried any trait of that guild. Without this, an all-zero cell is
+    # True where the body site was sampled but profiles have no recorded annotation
+    # signal for the selected guild or trait. Without this, an all-zero cell is
     # drawn in the same colour as a genuinely low fraction.
     sampled_no_signal: list[list[bool]]
 
@@ -488,7 +518,7 @@ def write_matrix_outputs(
         [
             "value"
             if value is not None
-            else "no_guild_signal"
+            else "no_annotation_signal"
             if blank
             else ("below_min_studies" if count else "not_sampled")
             for value, blank, count in zip(v_row, b_row, c_row, strict=True)
@@ -698,7 +728,7 @@ def _coverage_note(matrix: GuildMatrix) -> list[str]:
         return f"{verb} ({pool.pooled_share:.0f}% of profiles)"
 
     caveat = (
-        " A pooled Other mixes unrelated labels, so no cell in it is one condition or one "
+        "A pooled Other mixes unrelated labels, so no cell in it is one condition or one "
         "anatomical site."
         if condition.bucketed or site.bucketed
         else ""
@@ -707,7 +737,8 @@ def _coverage_note(matrix: GuildMatrix) -> list[str]:
         f"Rows and columns are a cut of the corpus: {condition_part} and {site_part}.",
         f"The remaining {condition.pooled_labels} conditions are "
         f"{fate(condition)} and the remaining {site.pooled_labels} body sites are "
-        f"{fate(site)}.{caveat}",
+        f"{fate(site)}.",
+        *([caveat] if caveat else []),
     ]
 
 
@@ -737,8 +768,8 @@ def write_figure(
     an order of magnitude, so they are drawn on per-trait ranges instead and each
     colour bar carries its own maximum.
 
-    Cells where the site was sampled but carried no trait of the group are filled
-    dark grey, so an absent trait is distinguishable from a small fraction. With
+    Cells where the site was sampled but no group annotations were recorded are filled
+    dark grey, so zero mapped signal is distinguishable from a small fraction. With
     ``mark_no_signal`` off they are left blank instead: the shading dominates the
     figure where the traits are rare, and the state is still recorded in the
     emitted cell-status table.
@@ -870,33 +901,40 @@ def write_figure(
         f"Rows clustered by Euclidean distance into {n_clusters} groups, separated by blank rows."
     )
     if mark_no_signal:
-        cluster_note += (
-            f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
-        )
+        cluster_note += " Dark grey = sampled, with no recorded annotation signal."
     # Broken into explicit lines: as one run the subtitle overflows the plotting
     # area and is clipped by the right-hand colour bars.
     subtitle = "<br>".join(
         [
-            f"Mean {value_phrase}, averaged within study then across studies, shown as a "
-            "percentage of the profile's summed trait-assertion counts (taxonomic "
-            "rollups can count one reported taxon many times), not of its taxa.",
+            f"Mean {value_phrase}: % of retained annotation counts; averaged within studies, "
+            "then across studies.",
+            "Taxonomic rollup can count one reported taxon many times; values are not "
+            "percentages of taxa or patients.",
             range_note,
             cluster_note,
             *_coverage_note(matrix),
+            "Directions are curated signature labels; annotation shares do not measure "
+            "patient traits or exposure. See methods/biological_interpretation.md.",
             f"BugSigDB {vintage or 'vintage unknown'}.",
         ]
     )
+    left_margin = 300
+    right_margin = 180
+    top_margin = 445
+    bottom_margin = 300
     figure.update_layout(
         title={"text": f"{title}<br><sub>{subtitle}</sub>"},
         xaxis={"title": f"body site | {group_noun} _ direction", "tickangle": -60},
         yaxis={"title": "condition", "autorange": "reversed"},
         shapes=shapes,
         annotations=annotations,
-        width=max(900, 26 * len(matrix.columns)),
-        height=max(600, 26 * len(row_labels) + 340),
+        width=_figure_width(
+            len(matrix.columns), left_margin=left_margin, right_margin=right_margin
+        ),
+        height=_figure_height(len(row_labels), top_margin=top_margin, bottom_margin=bottom_margin),
         # The site headers sit above the plotting area, so they need their own room.
-        # Six subtitle lines plus a two-line site header need the room.
-        margin={"l": 300, "b": 300, "t": 380 if separate_body_sites else 200},
+        # Caption lines plus a two-line site header need the room.
+        margin={"l": left_margin, "r": right_margin, "b": bottom_margin, "t": top_margin},
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.write_image(str(output_path), scale=2)
@@ -937,6 +975,10 @@ def write_body_site_panels(
     missing = [site for site in sites if site not in matrix.body_sites]
     if missing:
         raise ValueError(f"body sites absent from the matrix: {', '.join(missing)}")
+    site_indices = {
+        site: [i for i, column in enumerate(matrix.columns) if _site_of_column(column) == site]
+        for site in sites
+    }
 
     # Colour ranges come from the whole matrix, not from the panels, so the
     # panels are readable at the same colours as the combined figure.
@@ -953,11 +995,12 @@ def write_body_site_panels(
         for guild in guild_order
     }
 
+    horizontal_spacing = 0.06
     figure = make_subplots(
         rows=1,
         cols=len(sites),
         shared_yaxes=True,
-        horizontal_spacing=0.06,
+        horizontal_spacing=horizontal_spacing,
         subplot_titles=[f"<b>{site}</b>" for site in sites],
     )
 
@@ -965,7 +1008,7 @@ def write_body_site_panels(
     bar_len = min(0.42, 0.92 / count)
     shapes: list[dict[str, object]] = []
     for panel, site in enumerate(sites, start=1):
-        indices = [i for i, column in enumerate(matrix.columns) if _site_of_column(column) == site]
+        indices = site_indices[site]
         # The site is named once above the panel, so a column only has to carry its
         # trait and direction.
         tick_text = []
@@ -1027,30 +1070,41 @@ def write_body_site_panels(
     if range_quantile < 1.0:
         range_note += f", cut at the {range_quantile:.0%} quantile of observed cells"
     grey_note = (
-        f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
-        if mark_no_signal
-        else ""
+        " Dark grey = sampled, with no recorded annotation signal." if mark_no_signal else ""
     )
     subtitle = "<br>".join(
         [
-            f"Mean {value_phrase}, averaged within study then across studies, shown as a "
-            "percentage of the profile's summed trait-assertion counts (taxonomic "
-            "rollups can count one reported taxon many times), not of its taxa.",
+            f"Mean {value_phrase}: % of retained annotation counts; averaged within studies, "
+            "then across studies.",
+            "Taxonomic rollup can count one reported taxon many times; values are not "
+            "percentages of taxa or patients.",
             f"{range_note}.",
             "Rows are the conditions of the combined figure in the same clustered order, so a "
             f"blank row here was drawn in another body site.{grey_note}",
             *_coverage_note(matrix),
+            "Directions are curated signature labels; annotation shares do not measure "
+            "patient traits or exposure. See methods/biological_interpretation.md.",
             f"BugSigDB {vintage or 'vintage unknown'}.",
         ]
     )
 
+    left_margin = 300
+    right_margin = 180
+    top_margin = 425
+    bottom_margin = 260
     figure.update_layout(
         title={"text": f"{title}<br><sub>{subtitle}</sub>"},
         shapes=shapes,
-        width=max(900, 150 + 620 * len(sites)),
-        height=max(600, 26 * len(row_labels) + 360),
-        # Six subtitle lines above the panel titles.
-        margin={"l": 300, "b": 260, "t": 360},
+        width=_panel_figure_width(
+            max(len(indices) for indices in site_indices.values()),
+            len(sites),
+            horizontal_spacing=horizontal_spacing,
+            left_margin=left_margin,
+            right_margin=right_margin,
+        ),
+        height=_figure_height(len(row_labels), top_margin=top_margin, bottom_margin=bottom_margin),
+        # Caption lines above the panel titles.
+        margin={"l": left_margin, "r": right_margin, "b": bottom_margin, "t": top_margin},
         plot_bgcolor="white",
     )
     figure.update_xaxes(tickangle=-60)

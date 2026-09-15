@@ -6,13 +6,20 @@ It downloads [BugSigDB](https://bugsigdb.org) data, parses it into
 per-study YAML files validated against a [LinkML](https://linkml.io) schema,
 and provides a foundation for trait aggregation and phenotype cross-referencing.
 
+Trait results describe KG-Microbe annotation representation among taxa in curated
+BugSigDB signatures. They do not directly measure patient-level trait abundance,
+pathway activity, environmental exposure or causation. The
+[biological interpretation guide](methods/biological_interpretation.md) governs
+result descriptions; the [claim audit](methods/biological_interpretation_audit.md)
+distinguishes applied corrections from proposed changes and outstanding evidence.
+
 ## Quick start
 
 ### Prerequisites
 
 You need two tools installed. Everything else is managed automatically — with
 one exception: the figure recipes (`just guild-maps`, `just table1-trait-maps`)
-render PNGs through a headless Chrome, fetched version-pinned by
+render PNG files through a headless Chrome, fetched version-pinned by
 `just get-chrome` (see `methods/README.md`).
 
 | Tool | What it does | Install |

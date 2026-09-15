@@ -181,10 +181,9 @@ def compute_direction_shifts(
             )
         )
 
-    # Rank correlation between traits over the per-study contrasts. Unlike the
-    # within-profile guild correlations in the oxygen figure, this compares a
-    # trait against another trait across studies rather than two shares of one
-    # profile total, so it is not forced negative by compositionality.
+    # Rank correlation between traits over per-study contrasts. Shared taxa,
+    # denominators and selection can still induce dependence; these correlations
+    # do not establish independent evidence or semantic equivalence of traits.
     spearman: dict[str, tuple[float, float, int]] = {}
     for i, left in enumerate(trait_order):
         for right in trait_order[i + 1 :]:
@@ -273,7 +272,7 @@ def write_shift_figure(
     Left panel: the share of studies whose paired contrast is positive, with an
     exact binomial 95% interval, against the half-and-half null. Right panel: the
     rank correlation between traits across per-study contrasts, which is what
-    shows that coccus shaped and sphere shaped are close to the same measurement.
+    describes numerical overlap, not semantic equivalence or independent evidence.
     """
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
@@ -289,7 +288,7 @@ def write_shift_figure(
         column_widths=[0.56, 0.44],
         horizontal_spacing=0.18,
         subplot_titles=(
-            "Share of studies shifted toward the increased side",
+            "Share of studies with positive annotation contrast",
             "Rank correlation between per-study trait contrasts",
         ),
     )
@@ -372,21 +371,23 @@ def write_shift_figure(
     )
 
     subtitle = (
-        "Each study contributes one value per trait: the mean increased fraction minus the "
+        "Each study contributes one value per trait: the mean increased annotation share minus the "
         f"mean decreased fraction over its paired experiments. {result.studies} studies; ties "
         "are excluded from a trait's test, so the denominators differ between traits."
         "<br>Error bars are exact binomial 95% intervals; q is Benjamini-Hochberg across the "
         f"six traits. Correlations are between traits over those per-study contrasts. "
         f"BugSigDB {vintage or 'vintage unknown'}."
+        "<br>Curated signature directions; human paired corpus, MediaDive excluded. "
+        "Shared annotations do not establish patient-level change or independent validation."
     )
     figure.update_layout(
-        title={"text": f"Table 1 traits: paired directional shift<br><sub>{subtitle}</sub>"},
+        title={"text": f"Table 1 traits: paired annotation contrast<br><sub>{subtitle}</sub>"},
         width=1650,
         height=640,
-        margin={"l": 290, "r": 120, "t": 170, "b": 90},
+        margin={"l": 290, "r": 120, "t": 195, "b": 90},
         plot_bgcolor="white",
     )
-    figure.update_xaxes(title_text="share of studies with increased > decreased", row=1, col=1)
+    figure.update_xaxes(title_text="study share: annotation fraction inc > dec", row=1, col=1)
     figure.update_yaxes(autorange="reversed", row=1, col=1)
     figure.update_xaxes(tickangle=-40, row=1, col=2)
     figure.update_yaxes(autorange="reversed", row=1, col=2)
