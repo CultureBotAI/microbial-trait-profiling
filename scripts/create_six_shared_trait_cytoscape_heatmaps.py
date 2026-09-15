@@ -1443,8 +1443,9 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "In a signed heatmap, a gray blank means the condition/body-site/trait combination "
         "could not support the displayed contrast: one direction had no profiles, both "
         "directions had fewer than three positive-z profiles, fewer than two studies were "
-        "available, or neither direction produced a candidate edge. Nonsignificant finite "
-        "tests are still colored and numbered. A white cell containing `+0.00` is a measured "
+        "available, or neither direction produced a candidate edge. Finite tests that do not "
+        "meet the significance threshold are still colored and numbered. A white cell "
+        "containing `+0.00` is a measured "
         "null contrast, not missing data. In trait-pattern heatmaps only, gray can also mean "
         f"that the raw one-sided Fisher test did not pass p<{P_VALUE_CUTOFF:g}.",
         "",
