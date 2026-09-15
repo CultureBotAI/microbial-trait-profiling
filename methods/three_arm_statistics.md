@@ -87,9 +87,11 @@ number of studies rather than from the size of the shift.
 
 ## Compositionality
 
-Trait fractions within a profile sum to a constant, constraining their dependence;
-this does not force every pair of traits to correlate negatively. This affects the
-guild-against-guild correlation reported alongside the oxygen guild heatmap,
+Within profiles with a positive retained total, trait fractions sum to one,
+constraining their dependence; this does not force every pair of traits to correlate
+negatively. The implemented zero-denominator policy instead assigns every fraction
+zero, so those profiles sum to zero and must be identified separately. This affects
+the guild-against-guild correlation reported alongside the oxygen guild heatmap,
 which is why that correlation is described there as partly structural and is not
 offered as independent support for the oxygen hypothesis. The composition arm's
 paired contrast and the directional-consistency arm's sign test both compare a

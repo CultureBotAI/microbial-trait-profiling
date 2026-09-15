@@ -38,6 +38,14 @@ from bsdbng.trait_guilds import (
 
 OTHER_LABEL = "Other"
 GUILD_ORDER = ("aerobe", "anaerobe")
+ROW_HEIGHT_PX = 26
+MIN_PLOT_HEIGHT_PX = 120
+
+
+def _figure_height(row_count: int, *, top_margin: int, bottom_margin: int) -> int:
+    """Reserve margins plus enough plotting area for every heatmap row."""
+    plot_height = max(MIN_PLOT_HEIGHT_PX, ROW_HEIGHT_PX * row_count)
+    return top_margin + bottom_margin + plot_height
 
 
 @dataclass(frozen=True)
@@ -888,6 +896,8 @@ def write_figure(
             f"BugSigDB {vintage or 'vintage unknown'}.",
         ]
     )
+    top_margin = 445
+    bottom_margin = 300
     figure.update_layout(
         title={"text": f"{title}<br><sub>{subtitle}</sub>"},
         xaxis={"title": f"body site | {group_noun} _ direction", "tickangle": -60},
@@ -895,10 +905,10 @@ def write_figure(
         shapes=shapes,
         annotations=annotations,
         width=max(900, 26 * len(matrix.columns)),
-        height=max(600, 26 * len(row_labels) + 380),
+        height=_figure_height(len(row_labels), top_margin=top_margin, bottom_margin=bottom_margin),
         # The site headers sit above the plotting area, so they need their own room.
         # Caption lines plus a two-line site header need the room.
-        margin={"l": 300, "b": 300, "t": 445},
+        margin={"l": 300, "b": bottom_margin, "t": top_margin},
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.write_image(str(output_path), scale=2)
@@ -1047,13 +1057,15 @@ def write_body_site_panels(
         ]
     )
 
+    top_margin = 425
+    bottom_margin = 260
     figure.update_layout(
         title={"text": f"{title}<br><sub>{subtitle}</sub>"},
         shapes=shapes,
         width=max(900, 150 + 620 * len(sites)),
-        height=max(600, 26 * len(row_labels) + 400),
+        height=_figure_height(len(row_labels), top_margin=top_margin, bottom_margin=bottom_margin),
         # Caption lines above the panel titles.
-        margin={"l": 300, "b": 260, "t": 425},
+        margin={"l": 300, "b": bottom_margin, "t": top_margin},
         plot_bgcolor="white",
     )
     figure.update_xaxes(tickangle=-60)

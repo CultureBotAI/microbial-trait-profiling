@@ -6,7 +6,15 @@ from pathlib import Path
 import pytest
 from scipy.stats import binomtest
 
-from bsdbng.guild_maps import OTHER_LABEL, build_matrix, compute_correlation, study_direction_means
+from bsdbng.guild_maps import (
+    MIN_PLOT_HEIGHT_PX,
+    OTHER_LABEL,
+    ROW_HEIGHT_PX,
+    _figure_height,
+    build_matrix,
+    compute_correlation,
+    study_direction_means,
+)
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
     OXYGEN_GUILDS,
@@ -18,6 +26,20 @@ from bsdbng.trait_guilds import (
 AEROBE_A, AEROBE_B, AEROBE_C = OXYGEN_GUILDS["aerobe"]
 ANAEROBE_A, ANAEROBE_B = OXYGEN_GUILDS["anaerobe"]
 MEDIA_COLUMN = "METPO:2000517|mediadive.medium:J14"
+
+
+@pytest.mark.parametrize("row_count", [0, 1, 40])
+def test_figure_height_keeps_plot_area_outside_margins(row_count: int) -> None:
+    top_margin = 445
+    bottom_margin = 300
+    plot_height = (
+        _figure_height(row_count, top_margin=top_margin, bottom_margin=bottom_margin)
+        - top_margin
+        - bottom_margin
+    )
+
+    assert plot_height >= MIN_PLOT_HEIGHT_PX
+    assert plot_height >= ROW_HEIGHT_PX * row_count
 
 
 def _write_profiles(path: Path, rows: list[tuple[str, str, str, list[int]]]) -> None:

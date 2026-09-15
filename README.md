@@ -8,10 +8,10 @@ and provides a foundation for trait aggregation and phenotype cross-referencing.
 
 Trait results describe KG-Microbe annotation representation among taxa in curated
 BugSigDB signatures. They do not directly measure patient-level trait abundance,
-pathway activity, environmental exposure or causation. All result descriptions
-follow the [biological interpretation guide](methods/biological_interpretation.md);
-the [claim audit](methods/biological_interpretation_audit.md) records corrections
-and outstanding evidence needs across current and proposed outputs.
+pathway activity, environmental exposure or causation. The
+[biological interpretation guide](methods/biological_interpretation.md) governs
+result descriptions; the [claim audit](methods/biological_interpretation_audit.md)
+distinguishes applied corrections from proposed changes and outstanding evidence.
 
 ## Quick start
 
