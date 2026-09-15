@@ -1,0 +1,23 @@
+{
+  "code_commit": "b931b3abb70f850d1c7318433557169286f6c64d",
+  "source_sha256": {
+    "scripts/replay_composition_inputs.py": "4bbe7dfa7087b0db44440f375714ba73cd4975ccb75f6f023139f6b668fde86e",
+    "src/bsdbng/contribution_inputs.py": "1a3586b3a8ce010c3bc3ac4b7d74c5106358f330ff0b78f3b0bc2acd829624f7"
+  },
+  "kg_sha256": {
+    "merged-kg_edges.tsv": "d13812a436bd0b1c51cfe20c97076912a131f72b2b8e8ca3bb2db15095ab9ebb",
+    "merged-kg_nodes.tsv": "8b4cda73ca7e9d021a05277863446e13d065b8a1e8e22db58d42600923d595e5"
+  },
+  "full_dump_sha256": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788",
+  "profile_matrix_sha256": "c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f",
+  "denominator": "sum of all retained non-MediaDive trait columns before selection",
+  "profile_count": 5829,
+  "paired_profile_count": 4670,
+  "retained_trait_count": 317,
+  "mismatching_cells": 0,
+  "profiles_with_mismatches": 0,
+  "paired_profiles_with_mismatches": 0,
+  "kg_header_continuation_repaired": true,
+  "kg_agent_field_continuations_repaired": 190505,
+  "contract": "Deduplicate reported taxa within each study/experiment/direction. Each distinct KG trait-bearing taxon contributes once to each reported ancestor. Preserve nested reported taxa and original multiplicity; no influence model change."
+}

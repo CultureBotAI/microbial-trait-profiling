@@ -22,6 +22,7 @@ data/derived/*
 data/benchmarks/*
 data/kg-microbe/*.tsv
 logs/
+.tmp/issue174/
 
 .env
 .DS_Store

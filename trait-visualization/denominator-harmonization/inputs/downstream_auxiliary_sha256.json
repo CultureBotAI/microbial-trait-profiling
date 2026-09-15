@@ -1,0 +1,7 @@
+{
+  "raw/full_dump.csv": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788",
+  "raw/experiments.csv": "6c2b5c11628a8dd67b970db24b8b38d47c36d2cf1f75faaa2643a0ca34ae4c7d",
+  "derived/studies.tsv": "410b60f438d22c203b312bc37b22649c381fa7a0b09dc439d6321c76e044e69c",
+  "derived/taxa.tsv": "e7fa982b23ea82456247bcd841fd97d4fe71518e09eaaa27aee65d9adb271c59",
+  "derived/taxa_trait_matrix.tsv": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178"
+}

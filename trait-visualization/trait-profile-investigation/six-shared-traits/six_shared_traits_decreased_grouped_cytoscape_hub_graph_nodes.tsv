@@ -1,0 +1,110 @@
+node_type	label	body_site_group	trait_id	trait_label	condition_count	body_site_count	bundle_rank	traits	x	y	n	s	links
+condition	Metabolic / endocrine							6.0	0.15	0.7787499999999999	611	68	10
+condition	Neurologic / cognitive disease							6.0	0.15	0.6962499999999999	518	76	10
+condition	Cancer / neoplasia							6.0	0.15	0.7374999999999999	589	83	29
+condition	Infectious disease							6.0	0.15	0.82	741	115	39
+condition	Reproductive / hormonal health							6.0	0.15	0.5725	149	26	7
+condition	Oral / periodontal disease							2.0	0.15	0.28375000000000006	62	16	2
+condition	Ocular / eye disease							6.0	0.15	0.53125	117	23	13
+condition	Colorectal neoplasia							6.0	0.15	0.655	334	53	18
+condition	Respiratory / airway disease							6.0	0.15	0.61375	184	28	19
+condition	Pregnancy / neonatal							5.0	0.15	0.44875	76	15	10
+condition	Skin / hair disease							5.0	0.15	0.49	87	14	10
+condition	Renal / urinary disease							1.0	0.15	0.16	3	2	1
+condition	Smoking / alcohol / drug use							4.0	0.15	0.4075	62	12	5
+condition	GI / digestive disease							3.0	0.15	0.36625	149	38	4
+condition	Diet / nutrition / supplements							1.0	0.15	0.24250000000000005	44	15	1
+condition	Inflammatory bowel disease							1.0	0.15	0.20125000000000004	27	10	2
+condition	Autoimmune / inflammatory disease							2.0	0.15	0.325	74	31	6
+trait	facultatively aerobic		METPO:1000608		12.0	13.0			0.51	0.82	731	365	32
+trait	cellulose catabolic process		METPO:2000103|GO:0030245		12.0	10.0			0.51	0.692	635	338	27
+trait	coccus shaped		METPO:1000668		12.0	13.0			0.51	0.5640000000000001	691	361	32
+trait	sphere shaped		METPO:1000683		12.0	12.0			0.51	0.43600000000000005	644	335	32
+trait	arsenate reduction		METPO:2000103|pathways:arsenate_reduction		12.0	11.0			0.51	0.30800000000000005	410	258	31
+trait	moderately halophilic		METPO:1000623		12.0	13.0			0.51	0.18	716	375	32
+trait_body_bundle	facultatively aerobic -> Feces	Feces	METPO:1000608	facultatively aerobic			1.0		0.84	0.8424999999999999	362	188	8
+trait_body_bundle	facultatively aerobic -> Oral cavity / dental	Oral cavity / dental	METPO:1000608	facultatively aerobic			1.0		0.84	0.7917307692307691	120	54	5
+trait_body_bundle	facultatively aerobic -> Upper airway / nasal	Upper airway / nasal	METPO:1000608	facultatively aerobic			1.0		0.84	0.6901923076923077	47	20	2
+trait_body_bundle	facultatively aerobic -> Vaginal / reproductive	Vaginal / reproductive	METPO:1000608	facultatively aerobic			1.0		0.84	0.7409615384615384	83	45	3
+trait_body_bundle	facultatively aerobic -> Ocular / eye	Ocular / eye	METPO:1000608	facultatively aerobic			1.0		0.84	0.5378846153846153	21	9	1
+trait_body_bundle	facultatively aerobic -> Lower GI tract	Lower GI tract	METPO:1000608	facultatively aerobic			1.0		0.84	0.6394230769230769	25	13	2
+trait_body_bundle	facultatively aerobic -> Stomach / esophagus	Stomach / esophagus	METPO:1000608	facultatively aerobic			1.0		0.84	0.5886538461538461	17	8	2
+trait_body_bundle	facultatively aerobic -> Bronchial / tracheal	Bronchial / tracheal	METPO:1000608	facultatively aerobic			1.0		0.84	0.3258076923076923	12	2	1
+trait_body_bundle	facultatively aerobic -> Birth-associated samples	Birth-associated samples	METPO:1000608	facultatively aerobic			1.0		0.84	0.3810769230769231	10	6	1
+trait_body_bundle	facultatively aerobic -> Lower airway / lung	Lower airway / lung	METPO:1000608	facultatively aerobic			1.0		0.84	0.4871153846153847	13	8	2
+trait_body_bundle	facultatively aerobic -> Skin	Skin	METPO:1000608	facultatively aerobic			1.0		0.84	0.4363461538461539	11	6	2
+trait_body_bundle	facultatively aerobic -> Breast / milk	Breast / milk	METPO:1000608	facultatively aerobic			1.0		0.84	0.21976923076923083	4	2	1
+trait_body_bundle	facultatively aerobic -> Urinary tract	Urinary tract	METPO:1000608	facultatively aerobic			1.0		0.84	0.2705384615384616	6	4	2
+trait_body_bundle	cellulose catabolic process -> Feces	Feces	METPO:2000103|GO:0030245	cellulose catabolic process			2.0		0.84	0.8334999999999999	517	259	11
+trait_body_bundle	cellulose catabolic process -> Vaginal / reproductive	Vaginal / reproductive	METPO:2000103|GO:0030245	cellulose catabolic process			2.0		0.84	0.7319615384615384	37	24	3
+trait_body_bundle	cellulose catabolic process -> Upper airway / nasal	Upper airway / nasal	METPO:2000103|GO:0030245	cellulose catabolic process			2.0		0.84	0.6811923076923077	13	7	1
+trait_body_bundle	cellulose catabolic process -> Oral cavity / dental	Oral cavity / dental	METPO:2000103|GO:0030245	cellulose catabolic process			2.0		0.84	0.7827307692307691	24	19	4
+trait_body_bundle	cellulose catabolic process -> Lower GI tract	Lower GI tract	METPO:2000103|GO:0030245	cellulose catabolic process			2.0		0.84	0.6304230769230769	15	11	2
+trait_body_bundle	cellulose catabolic process -> Stomach / esophagus	Stomach / esophagus	METPO:2000103|GO:0030245	cellulose catabolic process			2.0		0.84	0.5796538461538461	10	6	2
+trait_body_bundle	cellulose catabolic process -> Ocular / eye	Ocular / eye	METPO:2000103|GO:0030245	cellulose catabolic process			2.0		0.84	0.5288846153846153	7	4	1
+trait_body_bundle	cellulose catabolic process -> Lower airway / lung	Lower airway / lung	METPO:2000103|GO:0030245	cellulose catabolic process			2.0		0.84	0.47811538461538466	5	4	1
+trait_body_bundle	cellulose catabolic process -> Skin	Skin	METPO:2000103|GO:0030245	cellulose catabolic process			2.0		0.84	0.4273461538461539	4	2	1
+trait_body_bundle	cellulose catabolic process -> Urinary tract	Urinary tract	METPO:2000103|GO:0030245	cellulose catabolic process			2.0		0.84	0.2615384615384616	3	2	1
+trait_body_bundle	coccus shaped -> Feces	Feces	METPO:1000668	coccus shaped			3.0		0.84	0.8244999999999999	391	206	10
+trait_body_bundle	coccus shaped -> Oral cavity / dental	Oral cavity / dental	METPO:1000668	coccus shaped			3.0		0.84	0.7737307692307691	107	50	5
+trait_body_bundle	coccus shaped -> Upper airway / nasal	Upper airway / nasal	METPO:1000668	coccus shaped			3.0		0.84	0.6721923076923076	51	22	3
+trait_body_bundle	coccus shaped -> Vaginal / reproductive	Vaginal / reproductive	METPO:1000668	coccus shaped			3.0		0.84	0.7229615384615384	60	36	3
+trait_body_bundle	coccus shaped -> Lower GI tract	Lower GI tract	METPO:1000668	coccus shaped			3.0		0.84	0.6214230769230769	27	14	2
+trait_body_bundle	coccus shaped -> Lower airway / lung	Lower airway / lung	METPO:1000668	coccus shaped			3.0		0.84	0.46911538461538466	13	9	2
+trait_body_bundle	coccus shaped -> Skin	Skin	METPO:1000668	coccus shaped			3.0		0.84	0.41834615384615387	8	5	1
+trait_body_bundle	coccus shaped -> Bronchial / tracheal	Bronchial / tracheal	METPO:1000668	coccus shaped			2.0		0.84	0.3168076923076923	8	2	1
+trait_body_bundle	coccus shaped -> Ocular / eye	Ocular / eye	METPO:1000668	coccus shaped			3.0		0.84	0.5198846153846153	7	5	1
+trait_body_bundle	coccus shaped -> Stomach / esophagus	Stomach / esophagus	METPO:1000668	coccus shaped			3.0		0.84	0.5706538461538461	7	4	1
+trait_body_bundle	coccus shaped -> Birth-associated samples	Birth-associated samples	METPO:1000668	coccus shaped			2.0		0.84	0.3720769230769231	6	4	1
+trait_body_bundle	coccus shaped -> Urinary tract	Urinary tract	METPO:1000668	coccus shaped			3.0		0.84	0.2525384615384616	3	2	1
+trait_body_bundle	coccus shaped -> Intestinal / GI mucosa	Intestinal / GI mucosa	METPO:1000668	coccus shaped			1.0		0.84	0.169	3	2	1
+trait_body_bundle	sphere shaped -> Feces	Feces	METPO:1000683	sphere shaped			4.0		0.84	0.8155	388	192	10
+trait_body_bundle	sphere shaped -> Upper airway / nasal	Upper airway / nasal	METPO:1000683	sphere shaped			4.0		0.84	0.6631923076923077	37	17	2
+trait_body_bundle	sphere shaped -> Oral cavity / dental	Oral cavity / dental	METPO:1000683	sphere shaped			4.0		0.84	0.7647307692307692	79	48	7
+trait_body_bundle	sphere shaped -> Vaginal / reproductive	Vaginal / reproductive	METPO:1000683	sphere shaped			4.0		0.84	0.7139615384615385	66	35	3
+trait_body_bundle	sphere shaped -> Lower GI tract	Lower GI tract	METPO:1000683	sphere shaped			4.0		0.84	0.612423076923077	17	14	2
+trait_body_bundle	sphere shaped -> Ocular / eye	Ocular / eye	METPO:1000683	sphere shaped			4.0		0.84	0.5108846153846154	11	6	1
+trait_body_bundle	sphere shaped -> Bronchial / tracheal	Bronchial / tracheal	METPO:1000683	sphere shaped			3.0		0.84	0.3078076923076923	9	2	1
+trait_body_bundle	sphere shaped -> Stomach / esophagus	Stomach / esophagus	METPO:1000683	sphere shaped			4.0		0.84	0.5616538461538462	8	4	1
+trait_body_bundle	sphere shaped -> Lower airway / lung	Lower airway / lung	METPO:1000683	sphere shaped			4.0		0.84	0.46011538461538465	7	4	1
+trait_body_bundle	sphere shaped -> Skin	Skin	METPO:1000683	sphere shaped			4.0		0.84	0.40934615384615386	11	6	2
+trait_body_bundle	sphere shaped -> Birth-associated samples	Birth-associated samples	METPO:1000683	sphere shaped			3.0		0.84	0.3630769230769231	6	5	1
+trait_body_bundle	sphere shaped -> Intestinal / GI mucosa	Intestinal / GI mucosa	METPO:1000683	sphere shaped			2.0		0.84	0.16	5	2	1
+trait_body_bundle	arsenate reduction -> Feces	Feces	METPO:2000103|pathways:arsenate_reduction	arsenate reduction			5.0		0.84	0.8065	244	155	10
+trait_body_bundle	arsenate reduction -> Vaginal / reproductive	Vaginal / reproductive	METPO:2000103|pathways:arsenate_reduction	arsenate reduction			5.0		0.84	0.7049615384615385	39	28	3
+trait_body_bundle	arsenate reduction -> Oral cavity / dental	Oral cavity / dental	METPO:2000103|pathways:arsenate_reduction	arsenate reduction			5.0		0.84	0.7557307692307692	51	32	7
+trait_body_bundle	arsenate reduction -> Upper airway / nasal	Upper airway / nasal	METPO:2000103|pathways:arsenate_reduction	arsenate reduction			5.0		0.84	0.6541923076923077	17	10	2
+trait_body_bundle	arsenate reduction -> Stomach / esophagus	Stomach / esophagus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction			5.0		0.84	0.5526538461538462	15	7	2
+trait_body_bundle	arsenate reduction -> Ocular / eye	Ocular / eye	METPO:2000103|pathways:arsenate_reduction	arsenate reduction			5.0		0.84	0.5018846153846154	10	5	1
+trait_body_bundle	arsenate reduction -> Lower GI tract	Lower GI tract	METPO:2000103|pathways:arsenate_reduction	arsenate reduction			5.0		0.84	0.603423076923077	15	9	2
+trait_body_bundle	arsenate reduction -> Lower airway / lung	Lower airway / lung	METPO:2000103|pathways:arsenate_reduction	arsenate reduction			5.0		0.84	0.45111538461538464	8	5	1
+trait_body_bundle	arsenate reduction -> Birth-associated samples	Birth-associated samples	METPO:2000103|pathways:arsenate_reduction	arsenate reduction			4.0		0.84	0.35407692307692307	4	3	1
+trait_body_bundle	arsenate reduction -> Skin	Skin	METPO:2000103|pathways:arsenate_reduction	arsenate reduction			5.0		0.84	0.40034615384615385	4	2	1
+trait_body_bundle	arsenate reduction -> Breast / milk	Breast / milk	METPO:2000103|pathways:arsenate_reduction	arsenate reduction			2.0		0.84	0.21076923076923082	3	2	1
+trait_body_bundle	moderately halophilic -> Feces	Feces	METPO:1000623	moderately halophilic			6.0		0.84	0.7975	377	209	9
+trait_body_bundle	moderately halophilic -> Oral cavity / dental	Oral cavity / dental	METPO:1000623	moderately halophilic			6.0		0.84	0.7467307692307692	102	50	5
+trait_body_bundle	moderately halophilic -> Vaginal / reproductive	Vaginal / reproductive	METPO:1000623	moderately halophilic			6.0		0.84	0.6959615384615385	80	40	3
+trait_body_bundle	moderately halophilic -> Upper airway / nasal	Upper airway / nasal	METPO:1000623	moderately halophilic			6.0		0.84	0.6451923076923077	39	18	2
+trait_body_bundle	moderately halophilic -> Ocular / eye	Ocular / eye	METPO:1000623	moderately halophilic			6.0		0.84	0.4928846153846153	20	10	1
+trait_body_bundle	moderately halophilic -> Lower GI tract	Lower GI tract	METPO:1000623	moderately halophilic			6.0		0.84	0.5944230769230769	29	13	2
+trait_body_bundle	moderately halophilic -> Stomach / esophagus	Stomach / esophagus	METPO:1000623	moderately halophilic			6.0		0.84	0.5436538461538462	21	9	2
+trait_body_bundle	moderately halophilic -> Bronchial / tracheal	Bronchial / tracheal	METPO:1000623	moderately halophilic			4.0		0.84	0.2988076923076923	9	2	1
+trait_body_bundle	moderately halophilic -> Birth-associated samples	Birth-associated samples	METPO:1000623	moderately halophilic			5.0		0.84	0.34507692307692306	8	6	1
+trait_body_bundle	moderately halophilic -> Lower airway / lung	Lower airway / lung	METPO:1000623	moderately halophilic			6.0		0.84	0.44211538461538463	14	8	2
+trait_body_bundle	moderately halophilic -> Skin	Skin	METPO:1000623	moderately halophilic			6.0		0.84	0.39134615384615384	10	6	2
+trait_body_bundle	moderately halophilic -> Breast / milk	Breast / milk	METPO:1000623	moderately halophilic			3.0		0.84	0.2017692307692308	4	2	1
+trait_body_bundle	moderately halophilic -> Intestinal / GI mucosa	Intestinal / GI mucosa	METPO:1000623	moderately halophilic			3.0		0.84	0.151	3	2	1
+body_site	Feces							6.0	0.88	0.82	2279	373	58
+body_site	Oral cavity / dental							6.0	0.88	0.7692307692307692	483	91	33
+body_site	Upper airway / nasal							6.0	0.88	0.6676923076923077	204	28	12
+body_site	Vaginal / reproductive							6.0	0.88	0.7184615384615385	365	50	18
+body_site	Ocular / eye							6.0	0.88	0.5153846153846153	76	12	6
+body_site	Lower GI tract							6.0	0.88	0.6169230769230769	128	20	12
+body_site	Stomach / esophagus							6.0	0.88	0.5661538461538461	78	9	10
+body_site	Bronchial / tracheal							4.0	0.88	0.3123076923076923	38	2	4
+body_site	Birth-associated samples							5.0	0.88	0.3630769230769231	34	6	5
+body_site	Lower airway / lung							6.0	0.88	0.46461538461538465	60	12	9
+body_site	Skin							6.0	0.88	0.41384615384615386	48	10	9
+body_site	Breast / milk							3.0	0.88	0.21076923076923082	11	2	3
+body_site	Urinary tract							3.0	0.88	0.2615384615384616	12	6	4
+body_site	Intestinal / GI mucosa							3.0	0.88	0.16	11	4	3

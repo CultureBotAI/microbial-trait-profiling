@@ -1,0 +1,7 @@
+view_key	tested_cell_count_before	displayed_cell_count_before	bh_selected_cell_count_before	tested_cell_count_after	displayed_cell_count_after	bh_selected_cell_count_after	family_definition	q_cutoff
+decreased_grouped	185	6	4	186	6	4	all emitted Fisher cells within this view, before p/q selection	0.05
+decreased_individual_conditions	105	5	4	105	5	4	all emitted Fisher cells within this view, before p/q selection	0.05
+grouped_direction_contrast	747	413	8	747	414	8	all emitted Fisher cells within this view, before p/q selection	0.05
+increased_grouped	188	15	5	190	15	5	all emitted Fisher cells within this view, before p/q selection	0.05
+increased_individual_conditions	117	4	2	117	4	2	all emitted Fisher cells within this view, before p/q selection	0.05
+individual_conditions_direction_contrast	2379	597	4	2388	599	4	all emitted Fisher cells within this view, before p/q selection	0.05

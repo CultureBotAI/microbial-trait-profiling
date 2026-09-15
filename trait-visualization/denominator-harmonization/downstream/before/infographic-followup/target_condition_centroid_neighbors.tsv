@@ -1,0 +1,11 @@
+query_condition	rank	neighbor_condition	neighbor_is_other_target_condition	cosine_similarity	neighbor_profile_count	neighbor_study_count	neighbor_experiment_count
+Sleep Disorder	1	Type I diabetes mellitus	False	0.9497717618942261	16	5	9
+Sleep Disorder	2	Response to antiviral drug	False	0.9437268376350403	32	6	18
+Sleep Disorder	3	HIV-1 infection	False	0.9419705867767334	3	1	2
+Sleep Disorder	4	Milk allergic reaction	False	0.9389183521270752	14	4	9
+Sleep Disorder	5	Diabetic nephropathy	False	0.9342148303985596	4	2	3
+Head and neck squamous cell carcinoma	1	Response to diet	False	0.9712673425674438	27	6	16
+Head and neck squamous cell carcinoma	2	Squamous cell carcinoma	False	0.9623507857322693	20	5	11
+Head and neck squamous cell carcinoma	3	Crohn's disease	False	0.9612996578216553	45	13	26
+Head and neck squamous cell carcinoma	4	Oral squamous cell carcinoma	False	0.9611002206802368	25	7	13
+Head and neck squamous cell carcinoma	5	Asthma	False	0.9609941840171814	54	12	32

@@ -1,0 +1,109 @@
+taxon_id	taxon_name	taxonomic_rank	trait_id	trait	annotation_count	present	increased_profile_count	decreased_profile_count	net_decreased_minus_increased_profiles
+NCBITaxon:186803	Lachnospiraceae	family	METPO:1000608	facultatively aerobic	5	True	10	39	29
+NCBITaxon:186803	Lachnospiraceae	family	METPO:2000103|GO:0030245	cellulose catabolic process	17	True	10	39	29
+NCBITaxon:186803	Lachnospiraceae	family	METPO:1000668	coccus shaped	17	True	10	39	29
+NCBITaxon:186803	Lachnospiraceae	family	METPO:1000683	sphere shaped	1	True	10	39	29
+NCBITaxon:186803	Lachnospiraceae	family	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	10	39	29
+NCBITaxon:186803	Lachnospiraceae	family	METPO:1000623	moderately halophilic	0	False	10	39	29
+NCBITaxon:841	Roseburia	genus	METPO:1000608	facultatively aerobic	0	False	4	31	27
+NCBITaxon:841	Roseburia	genus	METPO:2000103|GO:0030245	cellulose catabolic process	1	True	4	31	27
+NCBITaxon:841	Roseburia	genus	METPO:1000668	coccus shaped	0	False	4	31	27
+NCBITaxon:841	Roseburia	genus	METPO:1000683	sphere shaped	0	False	4	31	27
+NCBITaxon:841	Roseburia	genus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	4	31	27
+NCBITaxon:841	Roseburia	genus	METPO:1000623	moderately halophilic	0	False	4	31	27
+NCBITaxon:216572	Oscillospiraceae	family	METPO:1000608	facultatively aerobic	2	True	15	13	-2
+NCBITaxon:216572	Oscillospiraceae	family	METPO:2000103|GO:0030245	cellulose catabolic process	33	True	15	13	-2
+NCBITaxon:216572	Oscillospiraceae	family	METPO:1000668	coccus shaped	18	True	15	13	-2
+NCBITaxon:216572	Oscillospiraceae	family	METPO:1000683	sphere shaped	3	True	15	13	-2
+NCBITaxon:216572	Oscillospiraceae	family	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	15	13	-2
+NCBITaxon:216572	Oscillospiraceae	family	METPO:1000623	moderately halophilic	0	False	15	13	-2
+NCBITaxon:1239	Bacillota	phylum	METPO:1000608	facultatively aerobic	2377	True	5	14	9
+NCBITaxon:1239	Bacillota	phylum	METPO:2000103|GO:0030245	cellulose catabolic process	86	True	5	14	9
+NCBITaxon:1239	Bacillota	phylum	METPO:1000668	coccus shaped	4478	True	5	14	9
+NCBITaxon:1239	Bacillota	phylum	METPO:1000683	sphere shaped	126	True	5	14	9
+NCBITaxon:1239	Bacillota	phylum	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	14	True	5	14	9
+NCBITaxon:1239	Bacillota	phylum	METPO:1000623	moderately halophilic	78	True	5	14	9
+NCBITaxon:572511	Blautia	genus	METPO:1000608	facultatively aerobic	0	False	2	15	13
+NCBITaxon:572511	Blautia	genus	METPO:2000103|GO:0030245	cellulose catabolic process	1	True	2	15	13
+NCBITaxon:572511	Blautia	genus	METPO:1000668	coccus shaped	7	True	2	15	13
+NCBITaxon:572511	Blautia	genus	METPO:1000683	sphere shaped	0	False	2	15	13
+NCBITaxon:572511	Blautia	genus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	2	15	13
+NCBITaxon:572511	Blautia	genus	METPO:1000623	moderately halophilic	0	False	2	15	13
+NCBITaxon:1224	Pseudomonadota	phylum	METPO:1000608	facultatively aerobic	2507	True	15	1	-14
+NCBITaxon:1224	Pseudomonadota	phylum	METPO:2000103|GO:0030245	cellulose catabolic process	18	True	15	1	-14
+NCBITaxon:1224	Pseudomonadota	phylum	METPO:1000668	coccus shaped	322	True	15	1	-14
+NCBITaxon:1224	Pseudomonadota	phylum	METPO:1000683	sphere shaped	76	True	15	1	-14
+NCBITaxon:1224	Pseudomonadota	phylum	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	20	True	15	1	-14
+NCBITaxon:1224	Pseudomonadota	phylum	METPO:1000623	moderately halophilic	211	True	15	1	-14
+NCBITaxon:31979	Clostridiaceae	family	METPO:1000608	facultatively aerobic	0	False	1	13	12
+NCBITaxon:31979	Clostridiaceae	family	METPO:2000103|GO:0030245	cellulose catabolic process	7	True	1	13	12
+NCBITaxon:31979	Clostridiaceae	family	METPO:1000668	coccus shaped	0	False	1	13	12
+NCBITaxon:31979	Clostridiaceae	family	METPO:1000683	sphere shaped	0	False	1	13	12
+NCBITaxon:31979	Clostridiaceae	family	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	1	13	12
+NCBITaxon:31979	Clostridiaceae	family	METPO:1000623	moderately halophilic	0	False	1	13	12
+NCBITaxon:186802	Eubacteriales	order	METPO:1000608	facultatively aerobic	6	True	7	7	0
+NCBITaxon:186802	Eubacteriales	order	METPO:2000103|GO:0030245	cellulose catabolic process	44	True	7	7	0
+NCBITaxon:186802	Eubacteriales	order	METPO:1000668	coccus shaped	23	True	7	7	0
+NCBITaxon:186802	Eubacteriales	order	METPO:1000683	sphere shaped	6	True	7	7	0
+NCBITaxon:186802	Eubacteriales	order	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	True	7	7	0
+NCBITaxon:186802	Eubacteriales	order	METPO:1000623	moderately halophilic	4	True	7	7	0
+NCBITaxon:186801	Clostridia	class	METPO:1000608	facultatively aerobic	15	True	8	6	-2
+NCBITaxon:186801	Clostridia	class	METPO:2000103|GO:0030245	cellulose catabolic process	65	True	8	6	-2
+NCBITaxon:186801	Clostridia	class	METPO:1000668	coccus shaped	45	True	8	6	-2
+NCBITaxon:186801	Clostridia	class	METPO:1000683	sphere shaped	8	True	8	6	-2
+NCBITaxon:186801	Clostridia	class	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	5	True	8	6	-2
+NCBITaxon:186801	Clostridia	class	METPO:1000623	moderately halophilic	12	True	8	6	-2
+NCBITaxon:1485	Clostridium	genus	METPO:1000608	facultatively aerobic	0	False	3	10	7
+NCBITaxon:1485	Clostridium	genus	METPO:2000103|GO:0030245	cellulose catabolic process	7	True	3	10	7
+NCBITaxon:1485	Clostridium	genus	METPO:1000668	coccus shaped	0	False	3	10	7
+NCBITaxon:1485	Clostridium	genus	METPO:1000683	sphere shaped	0	False	3	10	7
+NCBITaxon:1485	Clostridium	genus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	3	10	7
+NCBITaxon:1485	Clostridium	genus	METPO:1000623	moderately halophilic	0	False	3	10	7
+NCBITaxon:1263	Ruminococcus	genus	METPO:1000608	facultatively aerobic	0	False	2	9	7
+NCBITaxon:1263	Ruminococcus	genus	METPO:2000103|GO:0030245	cellulose catabolic process	10	True	2	9	7
+NCBITaxon:1263	Ruminococcus	genus	METPO:1000668	coccus shaped	15	True	2	9	7
+NCBITaxon:1263	Ruminococcus	genus	METPO:1000683	sphere shaped	2	True	2	9	7
+NCBITaxon:1263	Ruminococcus	genus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	2	9	7
+NCBITaxon:1263	Ruminococcus	genus	METPO:1000623	moderately halophilic	0	False	2	9	7
+NCBITaxon:28050	Lachnospira	genus	METPO:1000608	facultatively aerobic	0	False	2	9	7
+NCBITaxon:28050	Lachnospira	genus	METPO:2000103|GO:0030245	cellulose catabolic process	1	True	2	9	7
+NCBITaxon:28050	Lachnospira	genus	METPO:1000668	coccus shaped	0	False	2	9	7
+NCBITaxon:28050	Lachnospira	genus	METPO:1000683	sphere shaped	0	False	2	9	7
+NCBITaxon:28050	Lachnospira	genus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	2	9	7
+NCBITaxon:28050	Lachnospira	genus	METPO:1000623	moderately halophilic	0	False	2	9	7
+NCBITaxon:816	Bacteroides	genus	METPO:1000608	facultatively aerobic	2	True	3	6	3
+NCBITaxon:816	Bacteroides	genus	METPO:2000103|GO:0030245	cellulose catabolic process	1	True	3	6	3
+NCBITaxon:816	Bacteroides	genus	METPO:1000668	coccus shaped	0	False	3	6	3
+NCBITaxon:816	Bacteroides	genus	METPO:1000683	sphere shaped	0	False	3	6	3
+NCBITaxon:816	Bacteroides	genus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	3	6	3
+NCBITaxon:816	Bacteroides	genus	METPO:1000623	moderately halophilic	0	False	3	6	3
+NCBITaxon:201174	Actinomycetota	phylum	METPO:1000608	facultatively aerobic	197	True	8	0	-8
+NCBITaxon:201174	Actinomycetota	phylum	METPO:2000103|GO:0030245	cellulose catabolic process	51	True	8	0	-8
+NCBITaxon:201174	Actinomycetota	phylum	METPO:1000668	coccus shaped	238	True	8	0	-8
+NCBITaxon:201174	Actinomycetota	phylum	METPO:1000683	sphere shaped	140	True	8	0	-8
+NCBITaxon:201174	Actinomycetota	phylum	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	True	8	0	-8
+NCBITaxon:201174	Actinomycetota	phylum	METPO:1000623	moderately halophilic	47	True	8	0	-8
+NCBITaxon:200643	Bacteroidia	class	METPO:1000608	facultatively aerobic	12	True	1	6	5
+NCBITaxon:200643	Bacteroidia	class	METPO:2000103|GO:0030245	cellulose catabolic process	2	True	1	6	5
+NCBITaxon:200643	Bacteroidia	class	METPO:1000668	coccus shaped	4	True	1	6	5
+NCBITaxon:200643	Bacteroidia	class	METPO:1000683	sphere shaped	2	True	1	6	5
+NCBITaxon:200643	Bacteroidia	class	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	1	6	5
+NCBITaxon:200643	Bacteroidia	class	METPO:1000623	moderately halophilic	1	True	1	6	5
+NCBITaxon:91061	Bacilli	class	METPO:1000608	facultatively aerobic	2357	True	4	3	-1
+NCBITaxon:91061	Bacilli	class	METPO:2000103|GO:0030245	cellulose catabolic process	16	True	4	3	-1
+NCBITaxon:91061	Bacilli	class	METPO:1000668	coccus shaped	4362	True	4	3	-1
+NCBITaxon:91061	Bacilli	class	METPO:1000683	sphere shaped	102	True	4	3	-1
+NCBITaxon:91061	Bacilli	class	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	8	True	4	3	-1
+NCBITaxon:91061	Bacilli	class	METPO:1000623	moderately halophilic	62	True	4	3	-1
+NCBITaxon:301302	Roseburia faecis	species	METPO:1000608	facultatively aerobic	0	False	0	6	6
+NCBITaxon:301302	Roseburia faecis	species	METPO:2000103|GO:0030245	cellulose catabolic process	1	True	0	6	6
+NCBITaxon:301302	Roseburia faecis	species	METPO:1000668	coccus shaped	0	False	0	6	6
+NCBITaxon:301302	Roseburia faecis	species	METPO:1000683	sphere shaped	0	False	0	6	6
+NCBITaxon:301302	Roseburia faecis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	0	6	6
+NCBITaxon:301302	Roseburia faecis	species	METPO:1000623	moderately halophilic	0	False	0	6	6
+NCBITaxon:186826	Lactobacillales	order	METPO:1000608	facultatively aerobic	1138	True	3	3	0
+NCBITaxon:186826	Lactobacillales	order	METPO:2000103|GO:0030245	cellulose catabolic process	1	True	3	3	0
+NCBITaxon:186826	Lactobacillales	order	METPO:1000668	coccus shaped	1184	True	3	3	0
+NCBITaxon:186826	Lactobacillales	order	METPO:1000683	sphere shaped	61	True	3	3	0
+NCBITaxon:186826	Lactobacillales	order	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	3	3	0
+NCBITaxon:186826	Lactobacillales	order	METPO:1000623	moderately halophilic	22	True	3	3	0

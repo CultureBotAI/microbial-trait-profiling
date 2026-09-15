@@ -1,0 +1,5 @@
+guild	guild_traits	condition	profile_count	study_count	experiment_count	mean_guild_trait_signal	mean_relative_guild_signal	increased_mean_guild_trait_signal	decreased_mean_guild_trait_signal
+aerobe_v2	aerobic; microaerophilic; facultatively aerobic	Head and neck squamous cell carcinoma	25	4	13	181.36	0.02075923	79.79487	291.3889
+aerobe_v2	aerobic; microaerophilic; facultatively aerobic	Sleep Disorder	7	2	5	564.5714	0.011465038	691.8	246.5
+anaerobe_v2_depletion	anaerobic; obligately anaerobic	Head and neck squamous cell carcinoma	25	4	13	45.64	0.030193485	22.26923	70.958336
+anaerobe_v2_depletion	anaerobic; obligately anaerobic	Sleep Disorder	7	2	5	230.71428	0.046374816	127.6	488.5

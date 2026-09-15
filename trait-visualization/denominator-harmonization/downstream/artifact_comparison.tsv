@@ -1,0 +1,139 @@
+artifact	rows_before	rows_after	exactly_equal	comparison_keys	rows_removed	rows_added
+aerobe-enrichment-v2/condition_body_site_guild_map_edges.tsv	309	309	False	analysis;focus_direction;condition;body_site_group	0.0	0.0
+aerobe-enrichment-v2/condition_body_site_guild_map_sampled_body_sites.tsv	314	314	False	analysis;focus_direction;condition;body_site_group	0.0	0.0
+aerobe-enrichment-v2/condition_body_site_guild_map_v2_edges.tsv	309	309	False	analysis;focus_direction;condition;body_site_group	0.0	0.0
+aerobe-enrichment-v2/condition_body_site_guild_map_v2_sampled_body_sites.tsv	314	314	False	analysis;focus_direction;condition;body_site_group	0.0	0.0
+aerobe-enrichment-v2/condition_body_site_guild_map_v3_grouped_body_site_rollups.tsv	140	140	False	raw_body_site	0.0	0.0
+aerobe-enrichment-v2/condition_body_site_guild_map_v3_grouped_condition_rollups.tsv	365	365	False	raw_condition	0.0	0.0
+aerobe-enrichment-v2/condition_body_site_guild_map_v3_grouped_edges.tsv	135	135	False	analysis;focus_direction;condition;body_site_group	0.0	0.0
+aerobe-enrichment-v2/condition_body_site_guild_map_v3_individual_edges.tsv	512	512	False	analysis;focus_direction;condition;body_site_group	0.0	0.0
+aerobe-enrichment-v2/guild_trait_selection.tsv	3	3	True	trait_id;focus_direction;guild	0.0	0.0
+anaerobe-depletion-v2/condition_body_site_guild_map_edges.tsv	304	304	False	analysis;focus_direction;condition;body_site_group	0.0	0.0
+anaerobe-depletion-v2/condition_body_site_guild_map_sampled_body_sites.tsv	310	310	False	analysis;focus_direction;condition;body_site_group	0.0	0.0
+anaerobe-depletion-v2/condition_body_site_guild_map_v2_edges.tsv	304	304	False	analysis;focus_direction;condition;body_site_group	0.0	0.0
+anaerobe-depletion-v2/condition_body_site_guild_map_v2_sampled_body_sites.tsv	310	310	False	analysis;focus_direction;condition;body_site_group	0.0	0.0
+anaerobe-depletion-v2/condition_body_site_guild_map_v3_grouped_body_site_rollups.tsv	140	140	False	raw_body_site	0.0	0.0
+anaerobe-depletion-v2/condition_body_site_guild_map_v3_grouped_condition_rollups.tsv	365	365	False	raw_condition	0.0	0.0
+anaerobe-depletion-v2/condition_body_site_guild_map_v3_grouped_edges.tsv	119	120	False	analysis;focus_direction;condition;body_site_group	0.0	1.0
+anaerobe-depletion-v2/condition_body_site_guild_map_v3_individual_edges.tsv	433	433	False	analysis;focus_direction;condition;body_site_group	1.0	1.0
+anaerobe-depletion-v2/guild_trait_selection.tsv	2	2	True	trait_id;focus_direction;guild	0.0	0.0
+condition-modules/condition_trait_module_clustered_heatmap_matrix.tsv	80	80	False	Unnamed: 0	0.0	0.0
+condition-modules/condition_trait_module_group_metadata.tsv	80	80	False	condition;body_site_group;body_site	0.0	0.0
+condition-modules/condition_trait_module_trait_metadata.tsv	60	60	False	trait_id	0.0	0.0
+infographic-followup/autism_condition_label_check.tsv	2	2	False	exact_condition_label	0.0	0.0
+infographic-followup/guild_profile_connection_summary.tsv	4	4	False	condition;guild	0.0	0.0
+infographic-followup/outlier_condition_depth_summary.tsv	481	481	False	condition	0.0	0.0
+infographic-followup/outlier_condition_neighbor_crosscheck.tsv	3	3	True	query_condition	0.0	0.0
+infographic-followup/outlier_condition_profile_neighbors.tsv	10	10	False	body_site;neighbor_profile_id	5.0	5.0
+infographic-followup/outlier_condition_study_experiment_titles.tsv	25	25	False			
+infographic-followup/target_condition_centroid_neighbors.tsv	10	10	False			
+infographic-followup/traits_vs_organisms_heatmap_matrix.tsv	45	45	True	Unnamed: 0	0.0	0.0
+infographic-followup/traits_vs_organisms_taxa_metadata.tsv	45	45	True	taxon_id	0.0	0.0
+infographic-followup/traits_vs_organisms_trait_metadata.tsv	34	34	True	column_id	0.0	0.0
+PD-cellulose/pd_cellulose_all_edge_summary.tsv	12	12	False			
+PD-cellulose/pd_cellulose_display_edge_summary.tsv	12	12	False			
+PD-cellulose/pd_cellulose_interaction_model.tsv	8	8	False	outcome;term	0.0	0.0
+PD-cellulose/pd_cellulose_model_group_summary.tsv	4	4	False			
+PD-cellulose/pd_cellulose_taxon_drivers.tsv	60	60	True	taxon_id	0.0	0.0
+PD-cellulose/pd_cellulose_taxon_trait_presence.tsv	108	108	True	trait_id;taxon_id	0.0	0.0
+PD-cellulose/pd_cellulose_vs_other_feces_summary.tsv	4	4	False			
+PD-cellulose/pd_six_trait_direction_summary.tsv	6	6	False	trait_id	0.0	0.0
+six-shared-traits/arsenate_reduction_decreased_profile_sankey_body_site_rollups.tsv	140	140	False			
+six-shared-traits/arsenate_reduction_decreased_profile_sankey_condition_rollups.tsv	365	365	False			
+six-shared-traits/arsenate_reduction_decreased_profile_sankey_display_edges.tsv	31	31	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/arsenate_reduction_decreased_profile_sankey_edges.tsv	90	90	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/arsenate_reduction_increased_profile_sankey_body_site_rollups.tsv	140	140	False			
+six-shared-traits/arsenate_reduction_increased_profile_sankey_condition_rollups.tsv	365	365	False			
+six-shared-traits/arsenate_reduction_increased_profile_sankey_display_edges.tsv	31	32	False	analysis;trait_id;focus_direction;condition;body_site_group	2.0	3.0
+six-shared-traits/arsenate_reduction_increased_profile_sankey_edges.tsv	99	100	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	1.0
+six-shared-traits/arsenate_reduction_trait_selection.tsv	1	1	False	trait_id	0.0	0.0
+six-shared-traits/cellulose_catabolic_process_decreased_profile_sankey_body_site_rollups.tsv	140	140	False			
+six-shared-traits/cellulose_catabolic_process_decreased_profile_sankey_condition_rollups.tsv	365	365	False			
+six-shared-traits/cellulose_catabolic_process_decreased_profile_sankey_display_edges.tsv	26	27	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	1.0
+six-shared-traits/cellulose_catabolic_process_decreased_profile_sankey_edges.tsv	87	88	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	1.0
+six-shared-traits/cellulose_catabolic_process_increased_profile_sankey_body_site_rollups.tsv	140	140	False			
+six-shared-traits/cellulose_catabolic_process_increased_profile_sankey_condition_rollups.tsv	365	365	False			
+six-shared-traits/cellulose_catabolic_process_increased_profile_sankey_display_edges.tsv	29	30	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	1.0
+six-shared-traits/cellulose_catabolic_process_increased_profile_sankey_edges.tsv	89	89	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/cellulose_catabolic_process_trait_selection.tsv	1	1	False	trait_id	0.0	0.0
+six-shared-traits/coccus_shaped_decreased_profile_sankey_body_site_rollups.tsv	140	140	False			
+six-shared-traits/coccus_shaped_decreased_profile_sankey_condition_rollups.tsv	365	365	False			
+six-shared-traits/coccus_shaped_decreased_profile_sankey_display_edges.tsv	32	32	False	analysis;trait_id;focus_direction;condition;body_site_group	1.0	1.0
+six-shared-traits/coccus_shaped_decreased_profile_sankey_edges.tsv	118	118	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/coccus_shaped_increased_profile_sankey_body_site_rollups.tsv	140	140	False			
+six-shared-traits/coccus_shaped_increased_profile_sankey_condition_rollups.tsv	365	365	False			
+six-shared-traits/coccus_shaped_increased_profile_sankey_display_edges.tsv	32	32	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/coccus_shaped_increased_profile_sankey_edges.tsv	123	123	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/coccus_shaped_trait_selection.tsv	1	1	False	trait_id	0.0	0.0
+six-shared-traits/facultatively_aerobic_decreased_profile_sankey_body_site_rollups.tsv	140	140	False			
+six-shared-traits/facultatively_aerobic_decreased_profile_sankey_condition_rollups.tsv	365	365	False			
+six-shared-traits/facultatively_aerobic_decreased_profile_sankey_display_edges.tsv	32	32	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/facultatively_aerobic_decreased_profile_sankey_edges.tsv	123	123	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/facultatively_aerobic_increased_profile_sankey_body_site_rollups.tsv	140	140	False			
+six-shared-traits/facultatively_aerobic_increased_profile_sankey_condition_rollups.tsv	365	365	False			
+six-shared-traits/facultatively_aerobic_increased_profile_sankey_display_edges.tsv	32	32	False	analysis;trait_id;focus_direction;condition;body_site_group	2.0	2.0
+six-shared-traits/facultatively_aerobic_increased_profile_sankey_edges.tsv	126	126	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/facultatively_aerobic_trait_selection.tsv	1	1	False	trait_id	0.0	0.0
+six-shared-traits/moderately_halophilic_decreased_profile_sankey_body_site_rollups.tsv	140	140	False			
+six-shared-traits/moderately_halophilic_decreased_profile_sankey_condition_rollups.tsv	365	365	False			
+six-shared-traits/moderately_halophilic_decreased_profile_sankey_display_edges.tsv	32	32	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/moderately_halophilic_decreased_profile_sankey_edges.tsv	121	121	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/moderately_halophilic_increased_profile_sankey_body_site_rollups.tsv	140	140	False			
+six-shared-traits/moderately_halophilic_increased_profile_sankey_condition_rollups.tsv	365	365	False			
+six-shared-traits/moderately_halophilic_increased_profile_sankey_display_edges.tsv	32	32	False	analysis;trait_id;focus_direction;condition;body_site_group	2.0	2.0
+six-shared-traits/moderately_halophilic_increased_profile_sankey_edges.tsv	124	124	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/moderately_halophilic_trait_selection.tsv	1	1	False	trait_id	0.0	0.0
+six-shared-traits/six_shared_trait_condition_body_site_bh_selected_cells.tsv	27	27	False	view_key;trait_id;focus_direction;condition;body_site_group;condition_body_site_pair	0.0	0.0
+six-shared-traits/six_shared_trait_condition_body_site_direction_contrasts.tsv	3126	3135	False	view_key;trait_id;focus_direction;condition;body_site_group;condition_body_site_pair	2.0	11.0
+six-shared-traits/six_shared_trait_condition_body_site_trait_pattern_matrix.tsv	595	598	False	view_key;trait_id;focus_direction;condition;body_site_group;condition_body_site_pair	10.0	13.0
+six-shared-traits/six_shared_trait_cytoscape_heatmap_manifest.tsv	6	6	False	view_key;focus_direction	0.0	0.0
+six-shared-traits/six_shared_trait_graph_manifest.tsv	4	4	False	view_key;focus_direction	0.0	0.0
+six-shared-traits/six_shared_trait_sankey_manifest.tsv	21	21	False	analysis;trait_id;focus_direction	0.0	0.0
+six-shared-traits/six_shared_trait_selection.tsv	6	6	False	trait_id	0.0	0.0
+six-shared-traits/six_shared_trait_signed_direction_heatmap_pages.tsv	10	10	False			
+six-shared-traits/six_shared_trait_static_graph_manifest.tsv	4	4	False	view_key;focus_direction	0.0	0.0
+six-shared-traits/six_shared_trait_summary.tsv	6	6	False	trait_id	0.0	0.0
+six-shared-traits/six_shared_traits_combined_shared_high_support_profile_sankey_display_edges.tsv	144	144	False	analysis;trait_id;focus_direction;condition;body_site_group	6.0	6.0
+six-shared-traits/six_shared_traits_combined_shared_high_support_profile_sankey_edges.tsv	144	144	False	analysis;trait_id;focus_direction;condition;body_site_group	6.0	6.0
+six-shared-traits/six_shared_traits_combined_shared_high_support_profile_sankey_selected_pairs.tsv	24	24	False	focus_direction;condition;body_site_group	1.0	1.0
+six-shared-traits/six_shared_traits_decreased_grouped_cytoscape_hub_graph_edges.tsv	214	216	False			
+six-shared-traits/six_shared_traits_decreased_grouped_cytoscape_hub_graph_nodes.tsv	108	109	False			
+six-shared-traits/six_shared_traits_decreased_individual_conditions_cytoscape_hub_graph_edges.tsv	176	178	False			
+six-shared-traits/six_shared_traits_decreased_individual_conditions_cytoscape_hub_graph_nodes.tsv	92	93	False			
+six-shared-traits/six_shared_traits_decreased_individual_conditions_profile_sankey_body_site_rollups.tsv	840	840	False			
+six-shared-traits/six_shared_traits_decreased_individual_conditions_profile_sankey_condition_rollups.tsv	2190	2190	False	analysis;trait_id;focus_direction;condition	0.0	0.0
+six-shared-traits/six_shared_traits_decreased_individual_conditions_profile_sankey_display_edges.tsv	105	105	False	analysis;trait_id;focus_direction;condition;body_site_group	3.0	3.0
+six-shared-traits/six_shared_traits_decreased_individual_conditions_profile_sankey_edges.tsv	1893	1904	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	11.0
+six-shared-traits/six_shared_traits_decreased_profile_sankey_body_site_rollups.tsv	840	840	False			
+six-shared-traits/six_shared_traits_decreased_profile_sankey_condition_rollups.tsv	2190	2190	False			
+six-shared-traits/six_shared_traits_decreased_profile_sankey_display_edges.tsv	185	186	False	analysis;trait_id;focus_direction;condition;body_site_group	1.0	2.0
+six-shared-traits/six_shared_traits_decreased_profile_sankey_edges.tsv	652	655	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	3.0
+six-shared-traits/six_shared_traits_decreased_shared_high_support_profile_sankey_display_edges.tsv	72	72	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/six_shared_traits_decreased_shared_high_support_profile_sankey_edges.tsv	72	72	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/six_shared_traits_decreased_shared_high_support_profile_sankey_selected_pairs.tsv	12	12	False	condition;body_site_group	0.0	0.0
+six-shared-traits/six_shared_traits_decreased_trait_lanes_profile_sankey_display_edges.tsv	185	186	False	analysis;trait_id;focus_direction;condition;body_site_group	1.0	2.0
+six-shared-traits/six_shared_traits_increased_grouped_cytoscape_hub_graph_edges.tsv	218	220	False			
+six-shared-traits/six_shared_traits_increased_grouped_cytoscape_hub_graph_nodes.tsv	113	114	False			
+six-shared-traits/six_shared_traits_increased_individual_conditions_cytoscape_hub_graph_edges.tsv	172	172	False			
+six-shared-traits/six_shared_traits_increased_individual_conditions_cytoscape_hub_graph_nodes.tsv	91	91	False			
+six-shared-traits/six_shared_traits_increased_individual_conditions_profile_sankey_body_site_rollups.tsv	840	840	False			
+six-shared-traits/six_shared_traits_increased_individual_conditions_profile_sankey_condition_rollups.tsv	2190	2190	False	analysis;trait_id;focus_direction;condition	0.0	0.0
+six-shared-traits/six_shared_traits_increased_individual_conditions_profile_sankey_display_edges.tsv	117	117	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/six_shared_traits_increased_individual_conditions_profile_sankey_edges.tsv	2001	2010	False	analysis;trait_id;focus_direction;condition;body_site_group	1.0	10.0
+six-shared-traits/six_shared_traits_increased_profile_sankey_body_site_rollups.tsv	840	840	False			
+six-shared-traits/six_shared_traits_increased_profile_sankey_condition_rollups.tsv	2190	2190	False			
+six-shared-traits/six_shared_traits_increased_profile_sankey_display_edges.tsv	188	190	False	analysis;trait_id;focus_direction;condition;body_site_group	6.0	8.0
+six-shared-traits/six_shared_traits_increased_profile_sankey_edges.tsv	682	683	False	analysis;trait_id;focus_direction;condition;body_site_group	1.0	2.0
+six-shared-traits/six_shared_traits_increased_shared_high_support_profile_sankey_display_edges.tsv	72	72	False	analysis;trait_id;focus_direction;condition;body_site_group	6.0	6.0
+six-shared-traits/six_shared_traits_increased_shared_high_support_profile_sankey_edges.tsv	72	72	False	analysis;trait_id;focus_direction;condition;body_site_group	6.0	6.0
+six-shared-traits/six_shared_traits_increased_shared_high_support_profile_sankey_selected_pairs.tsv	12	12	False	condition;body_site_group	1.0	1.0
+six-shared-traits/six_shared_traits_increased_trait_lanes_profile_sankey_display_edges.tsv	188	190	False	analysis;trait_id;focus_direction;condition;body_site_group	6.0	8.0
+six-shared-traits/sphere_shaped_decreased_profile_sankey_body_site_rollups.tsv	140	140	False			
+six-shared-traits/sphere_shaped_decreased_profile_sankey_condition_rollups.tsv	365	365	False			
+six-shared-traits/sphere_shaped_decreased_profile_sankey_display_edges.tsv	32	32	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/sphere_shaped_decreased_profile_sankey_edges.tsv	113	115	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	2.0
+six-shared-traits/sphere_shaped_increased_profile_sankey_body_site_rollups.tsv	140	140	False			
+six-shared-traits/sphere_shaped_increased_profile_sankey_condition_rollups.tsv	365	365	False			
+six-shared-traits/sphere_shaped_increased_profile_sankey_display_edges.tsv	32	32	False	analysis;trait_id;focus_direction;condition;body_site_group	0.0	0.0
+six-shared-traits/sphere_shaped_increased_profile_sankey_edges.tsv	121	121	False	analysis;trait_id;focus_direction;condition;body_site_group	1.0	1.0
+six-shared-traits/sphere_shaped_trait_selection.tsv	1	1	False	trait_id	0.0	0.0

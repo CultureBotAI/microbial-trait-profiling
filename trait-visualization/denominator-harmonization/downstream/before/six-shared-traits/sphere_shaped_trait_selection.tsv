@@ -1,0 +1,2 @@
+trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction
+METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	1.9473485986294815e-05	2.480982857010877e-07	0.1438191971504786	trait enriched in increased profiles

@@ -1,0 +1,33 @@
+{
+  "stage": "before",
+  "code_commit": "b931b3abb70f850d1c7318433557169286f6c64d",
+  "baseline_commit": "a2b2df98e9beec98b772c9cb5af7aa090d033a98",
+  "denominator": "all loaded trait columns",
+  "inputs_sha256": {
+    "C:\\Users\\kimoz\\bsdbng-issue174\\.tmp\\issue174\\study_trait_profiles_wide.tsv": "c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f",
+    "C:\\Users\\kimoz\\bsdbng\\data\\raw\\full_dump.csv": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788",
+    "C:\\Users\\kimoz\\bsdbng\\data\\raw\\experiments.csv": "6c2b5c11628a8dd67b970db24b8b38d47c36d2cf1f75faaa2643a0ca34ae4c7d",
+    "C:\\Users\\kimoz\\bsdbng\\data\\derived\\studies.tsv": "410b60f438d22c203b312bc37b22649c381fa7a0b09dc439d6321c76e044e69c",
+    "C:\\Users\\kimoz\\bsdbng\\data\\derived\\taxa.tsv": "e7fa982b23ea82456247bcd841fd97d4fe71518e09eaaa27aee65d9adb271c59",
+    "C:\\Users\\kimoz\\bsdbng\\data\\derived\\taxa_trait_matrix.tsv": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178",
+    "C:\\Users\\kimoz\\bsdbng-issue174\\trait-visualization\\denominator-harmonization\\inputs\\taxa_trait_matrix_columns.tsv": "70b8bc1c2889d0e451bcaf604e0a986d4c29ffb802efeae5bdc64b67fc446ed3",
+    "C:\\Users\\kimoz\\bsdbng-issue174\\.tmp\\issue174\\baseline\\trait-visualization\\study_trait_profile_study_metadata.tsv": "399ca05373bd29b31a265e2b50499fa0a7d56156c45dc9f55d68c1eb8c437d3a",
+    "C:\\Users\\kimoz\\bsdbng-issue174\\.tmp\\issue174\\baseline\\trait-visualization\\trait-profile-investigation\\trait_profile_paired_contrast_trait_stats.tsv": "9b02eead5c42324b19a7df227678f6c570fc2449b9500f988a9b24b869bd3952",
+    "C:\\Users\\kimoz\\bsdbng-issue174\\.tmp\\issue174\\baseline\\trait-visualization\\study_trait_profile_clustered_heatmap_matrix.tsv": "6006a4b8e39268cec2966ff81f8e6207a8f16c13b524d0f8f3db9f8b509a06cd",
+    "C:\\Users\\kimoz\\bsdbng-issue174\\.tmp\\issue174\\baseline\\trait-visualization\\study_trait_profile_trait_metadata.tsv": "566949ec5509c55184a607c17e42c7a55893f276d9b50042956a41a89053e682"
+  },
+  "source_sha256": {
+    "scripts\\analyze_enrichment_infographic_followup.py": "a902e2149e0cbde38303c04c533c53042569f3ea706888dca40f7e987de4ac52",
+    "scripts\\create_condition_body_site_guild_maps.py": "c439fc739d39131ce9deb8a7e76bbb57874fb6bc672dbf4993c4e44a430ec341",
+    "scripts\\create_condition_trait_module_heatmap.py": "f3194c6dd0ba5fd2785d6183b2e79554309cc1ca056489c4489cebaf7e11c68d",
+    "scripts\\create_pd_cellulose_analysis.py": "2c6169268e1d2c2db53b2c013835a55bbafb1721ada3c853ce46818635a2dceb",
+    "scripts\\create_six_shared_trait_cytoscape_heatmaps.py": "4baa799d7b01a813fd1a0837b8e4ec2c67beb837c03f10f21b24c7e8a6ea6116",
+    "scripts\\create_six_shared_trait_graphs.py": "a88f7cfd6389f895e223c0d7e4d3900ac9e97630e80ae50654491f78fab2f53e",
+    "scripts\\create_six_shared_trait_sankeys.py": "3dd677c3ef07f899a72ea9f76495cd870e86d325e9b920d2fd4523726e518dc5",
+    "scripts\\create_six_shared_trait_static_graphs.py": "de69fa590ae79d05ab265f07e160e3b6e2b80fb548694588db8864e44c8c3176",
+    "scripts\\create_study_trait_profile_heatmap.py": "cd4a262b71a9028d818cb619df999d0aeb6ee6fad4a35ae2f4960b9c2621ac35",
+    "scripts\\create_trait_profile_infographic.py": "d1d489cf3b01c407460215855d643fe0a02eb4dfea23fef9287960eb9a727944",
+    "scripts\\sankey_v3_rollups.py": "67095da94ea5612a1a93515e242855afa46637eb1141cd17b0e58be5fd82669a"
+  },
+  "settings": "Baseline defaults; frozen guilds, paired metadata and Table 1 selection. Condition modules use the human-study aggregate; follow-up uses the full matrix. Core pairing, z-score ddof, significance families and support thresholds are unchanged."
+}

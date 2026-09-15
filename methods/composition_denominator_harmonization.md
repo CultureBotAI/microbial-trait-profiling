@@ -61,9 +61,38 @@ sizes are in `correction_families.tsv`. The original BugSigDB provenance
 records v1.3.1, tag commit `5815c2638d6b56134ac8db19edc2bb3c4b17f1ca`.
 The KG-Microbe provenance records edges MD5
 `555ecf5ba5d89288cdc44e368375374f` and nodes MD5
-`dd76b4656f9341db25a7c4afa96cd58e`. This is a rerun from the exact derived
-matrix, not a new raw-KG ingestion: the original large KG TSVs were not
-available locally. Source lineage is recorded, not independently rederived.
+`dd76b4656f9341db25a7c4afa96cd58e`. A subsequent raw-input replay verifies
+both KG hashes and the v1.3.1 export hash, then independently reconstructs
+all 317 retained columns across all 5,829 profiles with zero discrepancies.
+The original descendant-to-reported-taxon counting and within-profile
+deduplication rules are preserved. Known physical line continuations in the
+pinned KG are parsed explicitly; unexpected malformed records are errors.
+See `raw_input_replay_provenance.json` and `raw_input_replay_profiles.tsv`
+in the denominator-harmonization report directory.
+
+With the original auxiliary exports under a data directory and the pinned
+KG files under a KG directory, also run:
+
+```bash
+just composition-input-replay /path/to/data /path/to/kg
+just composition-downstream /path/to/data
+```
+
+The downstream recipe isolates before/after outputs, hashes auxiliary
+inputs, and leaves the active derived matrix untouched. Sankey and PD
+loaders validate cached totals against all retained raw columns on matched
+keys. Guild-map loaders align readable row keys explicitly and verify the
+cached z-scores against the full retained raw matrix. Mismatches require
+regenerating the producer caches; they are not silently coerced or reordered
+by position.
+
+The independent condition-module view removes MediaDive before study and
+condition aggregation, support filters, and trait selection. Its original
+sample standard deviation (ddof=1) and display clipping remain unchanged.
+The infographic follow-up removes MediaDive before trait-depth counts,
+guild fractions, and log-count cosine-neighbor vectors. These are descriptive
+workflows with their own selection rules, not additional pooled t-test or
+ORA correction families.
 
 Before accepting the corrected results, the audit reproduces baseline
 eligibility, effects, p-values, and q-values in all five strata within
@@ -105,5 +134,16 @@ units are not interchangeable across the three frameworks.
 Regenerated producer caches replace their conventional paths under
 `trait-visualization/`. Old Sankey, PD, guild, and integration figures on
 other branches must not be represented as harmonized merely because their
-six trait identifiers are unchanged. See the report's downstream audit for
-the caches rebuilt here and the separate renderers still requiring reruns.
+six trait identifiers are unchanged. This branch also regenerates the
+baseline downstream renderers; see the report's downstream comparison for
+changed edges, p-values, and view-specific correction-family counts.
+
+The PD-versus-other-feces increased-profile Fisher p-value changes from
+0.0367 to 0.0576; the decreased-profile value changes from 0.0391 to 0.0309.
+These are exploratory, unadjusted tests of positive-z profile counts.
+The study-clustered PD-by-direction interaction remains above p=.05 for
+both the continuous z-score and positive-z outcomes. Neither denominator
+parity nor a positive-z count demonstrates a disease-specific mechanism.
+The six view-specific BH-selected heatmap sets remain identical, but their
+q-values and some family sizes change. Preserve each view's full emitted
+cell family; do not correct only the displayed or selected cells.

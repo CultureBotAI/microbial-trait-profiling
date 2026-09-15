@@ -128,18 +128,21 @@ Noel's six-trait q-values with composition's 315-trait q-values, or vice versa.
   profile z-scores and pair-contrast signs using the full-profile reference.
   These are cache-impact diagnostics, not p-values or graph-edge counts.
 
-The inspected composition branch has additional downstream renderers that are
-not present on this issue branch. The cache audit identified:
+The follow-up on this issue branch ports the baseline downstream renderers,
+applies the retained-column definition, and replays their outputs with the
+same frozen matrix and auxiliary inputs. See the
+[downstream comparison](downstream/README.md) for measured changes.
 
 | Consumer at baseline commit | Dependency | Status / required action |
 | --- | --- | --- |
-| `create_six_shared_trait_sankeys.py` | `total_trait_signal` divides selected raw counts, then standardizes | Cached totals and six-trait reference rebuilt; rerender Sankeys on their owning branch with the pinned raw matrix |
-| `create_pd_cellulose_analysis.py` | Same cached totals with selected raw columns | Corrected totals available; rerun PD summaries/figures before quoting numeric contrasts |
-| `create_condition_body_site_guild_maps.py` and related follow-ups | Full transformed profile cache and selected-trait metadata | Both producer caches rebuilt together; rerender branch-specific views |
-| `create_condition_trait_module_heatmap.py` | Independently sums the raw matrix before selection and transformation | Not a cache-only consumer; apply the shared retained-column/fraction helper before study/module aggregation and rerun separately |
-| `analyze_enrichment_infographic_followup.py` | Independently computes raw totals and a guild-fraction denominator | Not a cache-only consumer; filter raw columns before its totals and fraction calculations, then rerun separately |
+| `create_six_shared_trait_sankeys.py` | Cached totals and all raw retained columns | Rebuilt Sankeys, graph exports, and p/q heatmaps; mismatched totals now fail |
+| `create_pd_cellulose_analysis.py` | Cached totals and all raw retained columns | Rebuilt PD summaries/figures; one exploratory Fisher test crosses raw p=.05 |
+| `create_condition_body_site_guild_maps.py` | Transformed profile cache and trait metadata | Rebuilt both guilds; row keys, totals, and transformed values are checked against raw data |
+| `create_condition_trait_module_heatmap.py` | Independent study/module aggregation | Shared retained-column/fraction helpers applied before aggregation and selection; rerun complete |
+| `analyze_enrichment_infographic_followup.py` | Independent totals, guild fractions, cosine vectors | MediaDive excluded before those calculations; rerun complete |
 
-This change does **not** claim those absent downstream PNGs were regenerated.
+The corrected downstream PNGs, SVGs, graph HTML, and backing tables are now
+under `trait-visualization/trait-profile-investigation/` on this branch.
 Across the full-profile six-trait cache, 168 profile/trait z-score signs and
 94 experiment-pair/trait contrast signs change (strict sign comparison,
 including zero-to-nonzero changes). Counts are summed across traits, not unique
@@ -154,17 +157,26 @@ families; consume the corrected manifest, not every matching filename.
 
 ## Reproduction and limits
 
-Run `just sync`, `just composition-denominator-audit`, then `just check`.
+Run `just sync`, `just composition-denominator-audit`,
+`just composition-input-replay /path/to/data /path/to/kg`,
+`just composition-downstream /path/to/data`, then `just check`.
 See [methods and captions](../../methods/composition_denominator_harmonization.md)
 and [provenance.json](provenance.json) for the exact matrix, metadata, source
 hashes, package versions, and fixed modeling choices. The baseline numerical
 validation is enforced by the recipe, not just asserted in this report.
 
 The matrix is the exact Git blob cited in #174, not the newer local active
-matrix. Original BugSigDBExports v1.3.1 and KG-Microbe lineage is recorded;
-the large raw KG TSVs were unavailable, so raw-ingestion equivalence was not
-reverified. This branch ports the two composition producer scripts from the
-inspected baseline because they were absent from its starting `main` commit.
-Other branch-specific renderers and raw-input replay remain separate rollout
-work; the issue should not be closed as an all-figures rerun until those are
-handled. GitHub branch-link/PR completion requires authenticated GitHub access.
+matrix. The raw-input replay now verifies the original BugSigDBExports
+v1.3.1 and KG-Microbe hashes and reconstructs all 1,847,793 retained
+profile/trait counts exactly (5,829 x 317), including all 4,670 paired
+profiles. See [raw_input_replay_provenance.json](raw_input_replay_provenance.json).
+The two producers and downstream renderers are ported from the inspected
+baseline because they were absent from this branch's starting `main`.
+
+Remaining work is review and adoption: inspect the linked PR/CI, replace
+manuscript and integration figure references with the corrected artifacts,
+and apply any separately agreed interpretation (#179), study-dependence
+(#133), taxon-influence (#190), or Sankey-layout (#195) changes independently.
+Those modeling and presentation questions are not resolved by denominator
+parity. Do not combine their numerical changes into the denominator-only
+comparison above.

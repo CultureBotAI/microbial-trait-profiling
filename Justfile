@@ -124,7 +124,20 @@ composition-compare:
 	MPLBACKEND=Agg uv run python scripts/audit_composition_denominator.py
 
 composition-test:
-	MPLBACKEND=Agg uv run pytest tests/test_trait_composition.py tests/test_trait_profile_infographic.py tests/test_study_trait_profile_heatmap.py
+	MPLBACKEND=Agg uv run pytest tests/test_trait_composition.py tests/test_trait_profile_infographic.py tests/test_study_trait_profile_heatmap.py tests/test_composition_consumers.py
+
+# Frozen downstream code, caches, and guild definitions. Does not change active data.
+composition-downstream-prepare: composition-prepare
+	git archive a2b2df98e9beec98b772c9cb5af7aa090d033a98 scripts/create_condition_trait_module_heatmap.py scripts/analyze_enrichment_infographic_followup.py scripts/create_condition_body_site_guild_maps.py scripts/sankey_v3_rollups.py scripts/create_six_shared_trait_sankeys.py scripts/create_six_shared_trait_cytoscape_heatmaps.py scripts/create_six_shared_trait_graphs.py scripts/create_six_shared_trait_static_graphs.py scripts/create_pd_cellulose_analysis.py trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv trait-visualization/trait-profile-investigation/aerobe-enrichment-v2/guild_trait_selection.tsv trait-visualization/trait-profile-investigation/anaerobe-depletion-v2/guild_trait_selection.tsv | tar -x -C .tmp/issue174/baseline
+
+# Both stages use the identical frozen matrix; data-root supplies auxiliary inputs only.
+composition-downstream data-root="data": composition-downstream-prepare
+	MPLBACKEND=Agg uv run python scripts/audit_composition_downstream.py --data-root "{{data-root}}" --stage before
+	MPLBACKEND=Agg uv run python scripts/audit_composition_downstream.py --data-root "{{data-root}}" --stage after
+	MPLBACKEND=Agg uv run python scripts/audit_composition_downstream.py --data-root "{{data-root}}" --stage compare
+
+composition-input-replay data-root="data" kg-dir="data/kg-microbe": composition-prepare
+	uv run python scripts/replay_composition_inputs.py --data-root "{{data-root}}" --kg-dir "{{kg-dir}}"
 
 security:
 	uv run bandit -c pyproject.toml -r src scripts

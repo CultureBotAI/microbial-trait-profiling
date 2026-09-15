@@ -1,0 +1,7 @@
+trait_id	trait_label	slug	base_color	paired_q_value	paired_mean_increased_minus_decreased	paired_direction	profile_count	increased_profile_count	decreased_profile_count	annotated_profile_count	increased_annotated_profile_count	decreased_annotated_profile_count	positive_z_profile_count	increased_positive_z_profile_count	decreased_positive_z_profile_count
+METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	2.780371580274397e-10	0.1937720383281355	trait enriched in increased profiles	5829	3050	2779	4491	2398	2093	2971	1680	1291
+METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	6.901231973484597e-07	-0.1619379973065473	trait enriched in decreased profiles	5829	3050	2779	2963	1485	1478	1847	844	1003
+METPO:1000668	coccus shaped	coccus_shaped	#009e73	1.128868098086022e-06	0.1610708721976063	trait enriched in increased profiles	5829	3050	2779	4409	2368	2041	2689	1492	1197
+METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	1.9473485986294815e-05	0.1438191971504786	trait enriched in increased profiles	5829	3050	2779	3541	1934	1607	2445	1384	1061
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	1.9473485986294815e-05	0.1514114815413904	trait enriched in increased profiles	5829	3050	2779	1770	990	780	1401	789	612
+METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	3.107093678754347e-05	0.1381245355100493	trait enriched in increased profiles	5829	3050	2779	3424	1892	1532	2648	1457	1191

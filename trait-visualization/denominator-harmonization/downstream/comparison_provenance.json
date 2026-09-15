@@ -1,0 +1,24 @@
+{
+  "implementation_base_commit": "b931b3abb70f850d1c7318433557169286f6c64d",
+  "denominator": "sum of all retained non-MediaDive trait columns before selection",
+  "comparison_source_sha256": "f3104be50e69332e1f1e838ebbb0b3b3392d793f95287f49fcce4852bb870d3d",
+  "shared_source_sha256": {
+    "trait_composition.py": "98ecbc700695ebd5d175f55057f7b3c5c19ce53b02bf8154efae1e0cb4502155",
+    "contribution_inputs.py": "1a3586b3a8ce010c3bc3ac4b7d74c5106358f330ff0b78f3b0bc2acd829624f7"
+  },
+  "package_versions": {
+    "pandas": "3.0.2",
+    "numpy": "2.4.4",
+    "scipy": "1.17.1",
+    "matplotlib": "3.11.2",
+    "seaborn": "0.13.2"
+  },
+  "stage_provenance_sha256": {
+    "before": "51b2a8b1dcd37d232fcfc31335b559a280414d83f1e03f26ee726de25a030e35",
+    "after": "7396da632363cec64633728cebef69a2acda225bcd59209892e26f9448b5efce"
+  },
+  "compared_tables": 138,
+  "exactly_equal_tables": 8,
+  "transformed_cache_verified_against_raw_counts": true,
+  "source_commit_note": "Base commit and source hashes identify the rerun implementation."
+}
