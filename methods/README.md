@@ -36,6 +36,11 @@ report without rendering figures.
 pinned-corpus rerun of all 15 ratios alongside the original six fraction
 directions, including study coverage, uncertainty and interpretation limits.
 
+[`table1_log_ratio_sensitivity.md`](table1_log_ratio_sensitivity.md) documents
+`just table1-log-ratio-sensitivity`: predeclared scenarios separating population,
+estimand, reference, stratum and single-study effects on the 15 ratios, with the
+protocol in [`table1_log_ratio_sensitivity_protocol.json`](table1_log_ratio_sensitivity_protocol.json).
+
 The [GPT Rosalind discussion and review](../docs/rosalind-six-trait-interpretation.md)
 archives proposed biological explanations for the six traits, with a separate
 evidence review and assigned follow-up issues. It records hypotheses to evaluate;

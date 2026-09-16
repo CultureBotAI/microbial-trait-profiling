@@ -1,0 +1,83 @@
+{
+  "protocol": "log-ratio-sensitivity-v1",
+  "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/183",
+  "declared_before_first_run": true,
+  "declared_by": "drafted by a coding agent (Claude Code) before any sensitivity result was computed; not revised after seeing results",
+  "base_population": "human experiments with exactly one increased and one decreased profile (load_profiles, paired, human, blank counts rejected)",
+  "study_weighting": "mean of eligible experiment contrasts within study; each eligible study weighted equally",
+  "tie_tolerance": {"fraction": 1e-12, "log2_ratio": 1e-12},
+  "test": "two-sided exact binomial test of non-tied studies shifting up against 0.5, with an exact 95% Clopper-Pearson interval for that share",
+  "min_studies_for_a_test": 30,
+  "min_studies_note": "a scenario row with fewer eligible studies is reported descriptively with status insufficient_support and no p or q",
+  "scenarios": [
+    {
+      "id": "S0_historical_fraction",
+      "comparison": "fraction",
+      "population": "all complete pairs; a zero-total profile scores fraction 0 (the historical rule)",
+      "family": "BH over the six Table 1 traits",
+      "purpose": "reproduce the published six-trait directions exactly"
+    },
+    {
+      "id": "S1_fraction_baseline",
+      "comparison": "fraction",
+      "population": "complete pairs with a positive non-MediaDive total on both sides (shared comparison basis)",
+      "family": "BH over the six Table 1 traits",
+      "purpose": "effect of excluding zero-total pairs"
+    },
+    {
+      "id": "S2_ratio_complete_case",
+      "comparison": "log_ratio",
+      "population": "per ratio, pairs with all four named counts positive",
+      "family": "BY over the 15 ratios",
+      "purpose": "the existing complete-case analysis, retained as one labelled scenario"
+    },
+    {
+      "id": "S3_ratio_matched_fractions",
+      "comparison": "fraction",
+      "population": "per ratio, the numerator's and the reference's fractions on exactly that ratio's S2 pairs",
+      "family": "BY over the 30 matched fraction rows",
+      "purpose": "separate population change (S1 vs S3) from estimand change (S3 vs S2)"
+    },
+    {
+      "id": "S4_six_trait_common_support",
+      "comparison": "fraction and log_ratio",
+      "population": "pairs with all six traits positive on both sides",
+      "family": "BH over the six fractions; BY over the 15 ratios",
+      "purpose": "one population for every reference, so ratio orderings can be compared"
+    },
+    {
+      "id": "S5_triple_common_support",
+      "comparison": "log_ratio",
+      "population": "for each of the 20 trait triples, pairs with all three traits positive on both sides; A/B, B/C and A/C on that set",
+      "family": "BY over all 60 triple rows",
+      "purpose": "reference consistency within a triple on a shared population"
+    },
+    {
+      "id": "S6_feces_only",
+      "comparison": "log_ratio",
+      "population": "S2 restricted to the exact body-site label Feces",
+      "family": "BY over the 15 ratios",
+      "purpose": "stratum dependence"
+    },
+    {
+      "id": "S7_excluding_feces",
+      "comparison": "log_ratio",
+      "population": "S2 restricted to every exact body-site label other than Feces",
+      "family": "BY over the 15 ratios",
+      "purpose": "stratum dependence"
+    },
+    {
+      "id": "S8_leave_one_study_out",
+      "comparison": "log_ratio",
+      "population": "S2 with each eligible study removed in turn",
+      "family": "BY over the 15 ratios, the other 14 p-values held at their S2 values",
+      "purpose": "influence: share and p ranges, and the studies whose removal moves BY q across 0.05"
+    }
+  ],
+  "decision_threshold_for_reporting": "q <= 0.05 is used only to count which rows would change status; no preferred scenario or cutoff is selected",
+  "not_done": [
+    "no pseudocounts or zero replacement",
+    "no scenario is chosen by its q-value",
+    "no claim of absolute abundance, independent replication, or generalisation to excluded studies"
+  ]
+}
