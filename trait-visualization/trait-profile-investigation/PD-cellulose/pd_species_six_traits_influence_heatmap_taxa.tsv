@@ -1,61 +1,91 @@
-taxon_id	taxon_name	taxonomic_rank	annotated_trait_count	increased_profiles	decreased_profiles	inc_dec_counts	inc_dec_ratio	log2_inc_dec_ratio	paired_support_studies	max_absolute_influence_z
-NCBITaxon:562	Escherichia coli	species	4	1	2	1/2	0.5	-1.0	3	0.10117464208444153
-NCBITaxon:1309	Streptococcus mutans	species	3	5	0	5/0	inf	inf	2	0.04971931078443918
-NCBITaxon:1280	Staphylococcus aureus	species	3	0	1	0/1	0.0	-inf	1	0.011605308770729659
-NCBITaxon:1328	Streptococcus anginosus	species	3	1	0	1/0	inf	inf	0	0.0
-NCBITaxon:1304	Streptococcus salivarius	species	2	4	0	4/0	inf	inf	3	0.01119239290300912
-NCBITaxon:40518	Ruminococcus bromii	species	2	2	2	2/2	1.0	0.0	3	0.005895553285936382
-NCBITaxon:33039	Mediterraneibacter torques	species	2	3	1	3/1	3.0	1.584962500721156	3	0.002253203482915784
-NCBITaxon:40520	Blautia obeum	species	2	5	0	5/0	inf	inf	2	0.11905529978714521
-NCBITaxon:39492	[Eubacterium] siraeum	species	2	1	1	1/1	1.0	0.0	2	0.013435745872629292
-NCBITaxon:573	Klebsiella pneumoniae	species	2	4	0	4/0	inf	inf	2	0.007931796346220939
-NCBITaxon:1596	Lactobacillus gasseri	species	2	1	1	1/1	1.0	0.0	2	0.0031616238230484798
-NCBITaxon:438033	Ruminococcus gauvreauii	species	2	0	2	0/2	0.0	-inf	1	0.028926300929024363
-NCBITaxon:649756	Anaerostipes hadrus	species	2	0	1	0/1	0.0	-inf	1	0.014614314579201324
-NCBITaxon:68892	Streptococcus infantis	species	2	0	2	0/2	0.0	-inf	1	0.007275734460515488
-NCBITaxon:187327	Acidaminococcus intestini	species	2	1	0	1/0	inf	inf	1	0.004158199995701169
-NCBITaxon:1379	Gemella haemolysans	species	2	0	1	0/1	0.0	-inf	1	0.0024465521574717395
-NCBITaxon:197614	Streptococcus pasteurianus	species	2	0	1	0/1	0.0	-inf	1	0.0007598628733524917
-NCBITaxon:84135	Gemella sanguinis	species	2	0	1	0/1	0.0	-inf	1	0.0007440285989743093
-NCBITaxon:1265	Ruminococcus flavefaciens	species	2	0	1	0/1	0.0	-inf	1	0.00024580600776659596
-NCBITaxon:1305	Streptococcus sanguinis	species	2	1	0	1/0	inf	inf	1	2.3649516696822545e-05
-NCBITaxon:1308	Streptococcus thermophilus	species	2	1	1	1/1	1.0	0.0	1	1.2571599974993724e-05
-NCBITaxon:435842	Streptococcus sp. C150	species	2	1	0	1/0	inf	inf	1	1.551403165822223e-06
-NCBITaxon:550	Enterobacter cloacae	species	2	1	0	1/0	inf	inf	0	0.0
-NCBITaxon:853	Faecalibacterium prausnitzii	species	1	0	13	0/13	0.0	-inf	8	0.10330735105758505
-NCBITaxon:301302	Roseburia faecis	species	1	0	6	0/6	0.0	-inf	5	0.03018101317232712
-NCBITaxon:2173	Methanobrevibacter smithii	species	1	3	0	3/0	inf	inf	3	0.028315447141027832
-NCBITaxon:216816	Bifidobacterium longum	species	1	5	0	5/0	inf	inf	3	0.004653467847371494
-NCBITaxon:246787	Bacteroides cellulosilyticus	species	1	1	2	1/2	0.5	-1.0	2	0.012324409836905293
-NCBITaxon:821	Phocaeicola vulgatus	species	1	0	2	0/2	0.0	-inf	2	0.004752526859047993
-NCBITaxon:1322	Blautia hansenii	species	1	0	3	0/3	0.0	-inf	2	0.002982767693597501
-NCBITaxon:33038	Mediterraneibacter gnavus	species	1	1	1	1/1	1.0	0.0	2	0.0005921338065939073
-NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	1	4	0	4/0	inf	inf	1	0.018477660758398178
-NCBITaxon:113107	Streptococcus australis	species	1	0	4	0/4	0.0	-inf	1	0.007794512676937317
-NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	1	0	1	0/1	0.0	-inf	1	0.003443120027374989
-NCBITaxon:46228	[Ruminococcus] lactaris	species	1	0	1	0/1	0.0	-inf	1	0.0029033165397224546
-NCBITaxon:1624	Ligilactobacillus salivarius	species	1	2	0	2/0	inf	inf	1	0.0024379981532377526
-NCBITaxon:78259	Scardovia inopinata	species	1	1	0	1/0	inf	inf	1	0.0009308313636086921
-NCBITaxon:1203590	Streptococcus sp. HPH0090	species	1	0	3	0/3	0.0	-inf	1	0.0008594908824419298
-NCBITaxon:2047	Rothia dentocariosa	species	1	1	0	1/0	inf	inf	1	0.0008327973850037864
-NCBITaxon:469592	Bacteroides sp. 3_1_19	species	1	0	1	0/1	0.0	-inf	1	0.0007598628733524917
-NCBITaxon:31973	Eggerthia catenaformis	species	1	0	1	0/1	0.0	-inf	1	0.0007362958892984473
-NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	1	1	0	1/0	inf	inf	1	0.00042973794570895664
-NCBITaxon:53443	Blautia hydrogenotrophica	species	1	1	0	1/0	inf	inf	1	0.00040258707434146895
-NCBITaxon:729	Haemophilus parainfluenzae	species	1	0	1	0/1	0.0	-inf	1	0.00024321591682509964
-NCBITaxon:84030	Lacrimispora saccharolytica	species	1	1	0	1/0	inf	inf	1	0.00011224381598948182
-NCBITaxon:68891	Streptococcus peroris	species	1	0	1	0/1	0.0	-inf	1	7.277405227612713e-05
-NCBITaxon:39778	Veillonella dispar	species	1	0	1	0/1	0.0	-inf	1	7.277405227612713e-05
-NCBITaxon:43995	Johnsonella ignava	species	1	0	1	0/1	0.0	-inf	1	4.0787160915372906e-05
-NCBITaxon:43948	Tolumonas auensis	species	1	1	1	1/1	1.0	0.0	1	3.987135283764214e-05
-NCBITaxon:46124	Granulicatella adiacens	species	1	0	1	0/1	0.0	-inf	1	3.641272758555062e-05
-NCBITaxon:40519	Ruminococcus callidus	species	1	2	0	2/0	inf	inf	1	2.5304599782898064e-05
-NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	1	4	0	4/0	inf	inf	1	1.375366315213871e-05
-NCBITaxon:1343	Streptococcus vestibularis	species	1	3	0	3/0	inf	inf	1	6.6825149933538874e-06
-NCBITaxon:39777	Veillonella atypica	species	1	0	1	0/1	0.0	-inf	1	4.462245053412376e-06
-NCBITaxon:457416	Veillonella sp. 3_1_44	species	1	1	0	1/0	inf	inf	1	1.551403165822223e-06
-NCBITaxon:450749	Veillonella sp. 6_1_27	species	1	1	0	1/0	inf	inf	1	1.551403165822223e-06
-NCBITaxon:44008	Enterococcus cecorum	species	1	0	1	0/1	0.0	-inf	1	1.4985351036410664e-06
-NCBITaxon:244366	Klebsiella variicola	species	1	2	0	2/0	inf	inf	1	7.540810353786221e-07
-NCBITaxon:33035	Blautia producta	species	1	1	0	1/0	inf	inf	0	0.0
-NCBITaxon:187326	Megasphaera micronuciformis	species	1	0	1	0/1	0.0	-inf	0	0.0
+taxon_id	taxon_name	taxonomic_rank	trait_matrix_available	local_pd_evidence	local_pd_profiles	annotated_trait_count	increased_profiles	decreased_profiles	inc_dec_counts	inc_dec_ratio	log2_inc_dec_ratio	paired_support_studies	max_absolute_influence_z	literature_cited	literature_direction	literature_sources	literature_dois	literature_reported_names	literature_evidence_scopes	literature_notes	literature_evidence_count
+NCBITaxon:649756	Anaerostipes hadrus	species	True	True	1	2	0	1	0/1	0.0	-inf	1	0.014614314579201324	True	dec	W22	10.1038/s41467-022-34667-x	Anaerostipes hadrus	single large shotgun cohort	PD-depleted species in the Wallen metagenome-wide association study.	1
+NCBITaxon:853	Faecalibacterium prausnitzii	species	True	True	13	1	0	13	0/13	0.0	-inf	8	0.10330735105758505	True	dec	W22,N24,M26	10.1038/s41467-022-34667-x;10.1038/s41531-024-00724-z;10.1038/s41591-026-04318-5	Faecalibacterium prausnitzii	single large shotgun cohort | shotgun meta-analysis | shotgun cohort with genetic-risk comparison	PD-depleted species in the Wallen metagenome-wide association study. | Species-level decrease supported across shotgun cohorts. | PD depletion consistent with the broader Faecalibacterium signal.	3
+NCBITaxon:301302	Roseburia faecis	species	True	True	6	1	0	6	0/6	0.0	-inf	5	0.03018101317232712	True	dec	W22	10.1038/s41467-022-34667-x	Roseburia faecis	single large shotgun cohort	PD-depleted species in the Wallen metagenome-wide association study.	1
+NCBITaxon:1322	Blautia hansenii	species	True	True	3	1	0	3	0/3	0.0	-inf	2	0.002982767693597501	True	dec	W22	10.1038/s41467-022-34667-x	Blautia hansenii	single large shotgun cohort	PD-depleted species in the Wallen metagenome-wide association study.	1
+NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	True	True	1	1	0	1	0/1	0.0	-inf	1	0.003443120027374989	True	dec	W22	10.1038/s41467-022-34667-x	Ruminococcus bicirculans	single large shotgun cohort	Mapped to the R. bicirculans concept already used by the local PD profiles.	1
+NCBITaxon:46228	[Ruminococcus] lactaris	species	True	True	1	1	0	1	0/1	0.0	-inf	1	0.0029033165397224546	True	dec	W22	10.1038/s41467-022-34667-x	Ruminococcus lactaris	single large shotgun cohort	Current matrix name is used; source nomenclature is retained separately.	1
+NCBITaxon:39491	Agathobacter rectalis	species	True	False	0	0	0	0	0/0			0	0.0	True	dec	W22	10.1038/s41467-022-34667-x	Eubacterium rectale	single large shotgun cohort	Current matrix name is used; the source used the older Eubacterium rectale name.	1
+NCBITaxon:418240	Blautia wexlerae	species	True	False	0	0	0	0	0/0			0	0.0	True	dec	W22	10.1038/s41467-022-34667-x	Blautia wexlerae	single large shotgun cohort	PD-depleted species in the Wallen metagenome-wide association study.	1
+NCBITaxon:1262792	Clostridium sp. CAG:299	species	True	False	0	0	0	0	0/0			0	0.0	True	dec	W22	10.1038/s41467-022-34667-x	Clostridium sp. CAG:299	single large shotgun cohort	PD-depleted species in the Wallen metagenome-wide association study.	1
+NCBITaxon:1262824	Clostridium sp. CAG:58	species	True	False	0	0	0	0	0/0			0	0.0	True	dec	W22	10.1038/s41467-022-34667-x	Clostridium sp. CAG:58	single large shotgun cohort	PD-depleted species in the Wallen metagenome-wide association study.	1
+NCBITaxon:218538	Dialister invisus	species	True	False	0	0	0	0	0/0			0	0.0	True	dec	W22	10.1038/s41467-022-34667-x	Dialister invisus	single large shotgun cohort	PD-depleted species in the Wallen metagenome-wide association study.	1
+NCBITaxon:39490	Eubacterium ramulus	species	True	False	0	0	0	0	0/0			0	0.0	True	dec	W22	10.1038/s41467-022-34667-x	Eubacterium ramulus	single large shotgun cohort	PD-depleted species in the Wallen metagenome-wide association study.	1
+NCBITaxon:1262889	Eubacterium sp. CAG:38	species	True	False	0	0	0	0	0/0			0	0.0	True	dec	W22	10.1038/s41467-022-34667-x	Eubacterium sp. CAG:38	single large shotgun cohort	PD-depleted species in the Wallen metagenome-wide association study.	1
+NCBITaxon:1150298	Fusicatenibacter saccharivorans	species	True	False	0	0	0	0	0/0			0	0.0	True	dec	W22	10.1038/s41467-022-34667-x	Fusicatenibacter saccharivorans	single large shotgun cohort	PD-depleted species in the Wallen metagenome-wide association study.	1
+NCBITaxon:39485	Lachnospira eligens	species	True	False	0	0	0	0	0/0			0	0.0	True	dec	W22	10.1038/s41467-022-34667-x	Eubacterium eligens	single large shotgun cohort	Current matrix name is used; the source used the older Eubacterium eligens name.	1
+NCBITaxon:1981510	Monoglobus pectinilyticus	species	True	False	0	0	0	0	0/0			0	0.0	True	dec	W22	10.1038/s41467-022-34667-x	Monoglobus pectinilyticus	single large shotgun cohort	PD-depleted species in the Wallen metagenome-wide association study.	1
+NCBITaxon:166486	Roseburia intestinalis	species	True	False	0	0	0	0	0/0			0	0.0	True	dec	W22,N24,M26	10.1038/s41467-022-34667-x;10.1038/s41531-024-00724-z;10.1038/s41591-026-04318-5	Roseburia intestinalis	single large shotgun cohort | shotgun meta-analysis | shotgun cohort with genetic-risk comparison	PD-depleted species in the Wallen metagenome-wide association study. | Species-level decrease supported across shotgun cohorts. | Among the largest PD depletions and directionally coherent in the genetic-risk comparison.	3
+NCBITaxon:360807	Roseburia inulinivorans	species	True	False	0	0	0	0	0/0			0	0.0	True	dec	W22,M26	10.1038/s41467-022-34667-x;10.1038/s41591-026-04318-5	Roseburia inulinivorans	single large shotgun cohort | shotgun cohort with genetic-risk comparison	PD-depleted species in the Wallen metagenome-wide association study. | Directionally coherent PD depletion in the genetic-risk comparison.	2
+NCBITaxon:165179	Segatella copri	species	True	False	0	0	0	0	0/0			0	0.0	True	dec	W22	10.1038/s41467-022-34667-x	Prevotella copri	single large shotgun cohort	Current matrix name is used; this species result must not be generalized to all Prevotella.	1
+NCBITaxon:562	Escherichia coli	species	True	True	3	4	1	2	1/2	0.5	-1.0	3	0.10117464208444153	True	inc	W22	10.1038/s41467-022-34667-x	Escherichia coli	single large shotgun cohort	PD-enriched facultative Enterobacteriaceae signal in the Wallen cohort.	1
+NCBITaxon:1309	Streptococcus mutans	species	True	True	5	3	5	0	5/0	inf	inf	2	0.04971931078443918	True	inc	W22,M26	10.1038/s41467-022-34667-x;10.1038/s41591-026-04318-5	Streptococcus mutans	single large shotgun cohort | shotgun cohort with genetic-risk comparison	PD-enriched species; the source also reports other Streptococcus species with the opposite direction. | Among the largest PD increases and directionally coherent in the genetic-risk comparison.	2
+NCBITaxon:1328	Streptococcus anginosus	species	True	True	1	3	1	0	1/0	inf	inf	0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Streptococcus anginosus group	single large shotgun cohort	Mapped to the local species label while retaining the source's group wording.	1
+NCBITaxon:573	Klebsiella pneumoniae	species	True	True	4	2	4	0	4/0	inf	inf	2	0.007931796346220939	True	inc	W22	10.1038/s41467-022-34667-x	Klebsiella pneumoniae	single large shotgun cohort	PD-enriched facultative Enterobacteriaceae signal in the Wallen cohort.	1
+NCBITaxon:187327	Acidaminococcus intestini	species	True	True	1	2	1	0	1/0	inf	inf	1	0.004158199995701169	True	inc	W22	10.1038/s41467-022-34667-x	Acidaminococcus intestini	single large shotgun cohort	PD-enriched species in the Wallen metagenome-wide association study.	1
+NCBITaxon:2173	Methanobrevibacter smithii	species	True	True	3	1	3	0	3/0	inf	inf	3	0.028315447141027832	True	inc	W22	10.1038/s41467-022-34667-x	Methanobrevibacter smithii	single large shotgun cohort	PD-enriched methanogenesis/constipation-associated signal in the Wallen cohort.	1
+NCBITaxon:216816	Bifidobacterium longum	species	True	True	5	1	5	0	5/0	inf	inf	3	0.004653467847371494	True	inc	W22,M26	10.1038/s41467-022-34667-x;10.1038/s41591-026-04318-5	Bifidobacterium longum	single large shotgun cohort | shotgun cohort with genetic-risk comparison	PD-enriched species in the Wallen metagenome-wide association study. | Among the largest PD increases in the cohort.	2
+NCBITaxon:33038	Mediterraneibacter gnavus	species	True	True	2	1	1	1	1/1	1.0	0.0	2	0.0005921338065939073	True	inc	M26	10.1038/s41591-026-04318-5	Ruminococcus gnavus	shotgun cohort with genetic-risk comparison	Current matrix name is used; the species-level signal must not be generalized to all Ruminococcus.	1
+NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	True	True	4	1	4	0	4/0	inf	inf	1	1.375366315213871e-05	True	inc	W22	10.1038/s41467-022-34667-x	Actinomyces sp. oral taxon 448	single large shotgun cohort	PD-enriched oral-resident signal in the Wallen cohort.	1
+NCBITaxon:1343	Streptococcus vestibularis	species	True	True	3	1	3	0	3/0	inf	inf	1	6.6825149933538874e-06	True	inc	W22	10.1038/s41467-022-34667-x	Streptococcus vestibularis	single large shotgun cohort	PD-enriched species; the source also reports other Streptococcus species with the opposite direction.	1
+NCBITaxon:1352	Enterococcus faecium	species	True	False	0	3	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Enterococcus faecium	single large shotgun cohort	PD-enriched species in the Wallen metagenome-wide association study.	1
+NCBITaxon:33945	Enterococcus avium	species	True	False	0	2	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Enterococcus avium	single large shotgun cohort	PD-enriched species in the Wallen metagenome-wide association study.	1
+NCBITaxon:150055	Streptococcus lutetiensis	species	True	False	0	2	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Streptococcus lutetiensis	single large shotgun cohort	PD-enriched species; the source also reports other Streptococcus species with the opposite direction.	1
+NCBITaxon:1655	Actinomyces naeslundii	species	True	False	0	0	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Actinomyces naeslundii	single large shotgun cohort	PD-enriched oral-resident signal in the Wallen cohort.	1
+NCBITaxon:544580	Actinomyces oris	species	True	False	0	0	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Actinomyces oris	single large shotgun cohort	PD-enriched oral-resident signal in the Wallen cohort.	1
+NCBITaxon:1203556	Actinomyces sp. HPA0247	species	True	False	0	0	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Actinomyces sp. HPA0247	single large shotgun cohort	PD-enriched oral-resident signal in the Wallen cohort.	1
+NCBITaxon:239935	Akkermansia muciniphila	species	True	False	0	0	0	0	0/0			0	0.0	True	inc	N24	10.1038/s41531-024-00724-z	Akkermansia muciniphila	shotgun meta-analysis	Species-level increase supported across shotgun cohorts.	1
+NCBITaxon:1681	Bifidobacterium bifidum	species	True	False	0	0	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Bifidobacterium bifidum	single large shotgun cohort	PD-enriched species in the Wallen metagenome-wide association study.	1
+NCBITaxon:1685	Bifidobacterium breve	species	True	False	0	0	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Bifidobacterium breve	single large shotgun cohort	PD-enriched species in the Wallen metagenome-wide association study.	1
+NCBITaxon:1689	Bifidobacterium dentium	species	True	False	0	0	0	0	0/0			0	0.0	True	inc	W22,M26	10.1038/s41467-022-34667-x;10.1038/s41591-026-04318-5	Bifidobacterium dentium	single large shotgun cohort | shotgun cohort with genetic-risk comparison	PD-enriched species in the Wallen metagenome-wide association study. | Among the largest PD increases in the cohort.	2
+NCBITaxon:1406512	Candidatus Methanomassiliicoccus intestinalis	species	True	False	0	0	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Candidatus Methanomassiliicoccus intestinalis	single large shotgun cohort	PD-enriched methanogenesis-associated signal in the Wallen cohort.	1
+NCBITaxon:1463165	Klebsiella quasipneumoniae	species	True	False	0	0	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Klebsiella quasipneumoniae	single large shotgun cohort	PD-enriched facultative Enterobacteriaceae signal in the Wallen cohort.	1
+NCBITaxon:2107999	Lactobacillus paragasseri	species	False	False	0	0	0	0	0/0			0	0.0	True	inc	M26	10.1038/s41591-026-04318-5	Lactobacillus paragasseri	shotgun cohort with genetic-risk comparison	Literature-only row because this exact taxon is absent from the local trait matrix.	1
+NCBITaxon:1776081	Megasphaera sp. DISK 18	species	False	False	0	0	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Megasphaera sp. DISK 18	single large shotgun cohort	Literature-only row because this exact taxon is absent from the local trait matrix.	1
+NCBITaxon:1603888	Megasphaera sp. MJR8396C	species	True	False	0	0	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Megasphaera sp. MJR8396	single large shotgun cohort	Mapped to the current NCBI/local MJR8396C label.	1
+NCBITaxon:28123	Porphyromonas asaccharolytica	species	True	False	0	0	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Porphyromonas asaccharolytica	single large shotgun cohort	PD-enriched pathobiont signal in the Wallen cohort.	1
+NCBITaxon:230143	Scardovia wiggsiae	species	True	False	0	0	0	0	0/0			0	0.0	True	inc	W22	10.1038/s41467-022-34667-x	Scardovia wiggsiae	single large shotgun cohort	PD-enriched oral-resident signal in the Wallen cohort.	1
+NCBITaxon:1280	Staphylococcus aureus	species	True	True	1	3	0	1	0/1	0.0	-inf	1	0.011605308770729659	False							0
+NCBITaxon:1304	Streptococcus salivarius	species	True	True	4	2	4	0	4/0	inf	inf	3	0.01119239290300912	False							0
+NCBITaxon:40518	Ruminococcus bromii	species	True	True	4	2	2	2	2/2	1.0	0.0	3	0.005895553285936382	False							0
+NCBITaxon:33039	Mediterraneibacter torques	species	True	True	4	2	3	1	3/1	3.0	1.584962500721156	3	0.002253203482915784	False							0
+NCBITaxon:40520	Blautia obeum	species	True	True	5	2	5	0	5/0	inf	inf	2	0.11905529978714521	False							0
+NCBITaxon:39492	[Eubacterium] siraeum	species	True	True	2	2	1	1	1/1	1.0	0.0	2	0.013435745872629292	False							0
+NCBITaxon:1596	Lactobacillus gasseri	species	True	True	2	2	1	1	1/1	1.0	0.0	2	0.0031616238230484798	False							0
+NCBITaxon:438033	Ruminococcus gauvreauii	species	True	True	2	2	0	2	0/2	0.0	-inf	1	0.028926300929024363	False							0
+NCBITaxon:68892	Streptococcus infantis	species	True	True	2	2	0	2	0/2	0.0	-inf	1	0.007275734460515488	False							0
+NCBITaxon:1379	Gemella haemolysans	species	True	True	1	2	0	1	0/1	0.0	-inf	1	0.0024465521574717395	False							0
+NCBITaxon:197614	Streptococcus pasteurianus	species	True	True	1	2	0	1	0/1	0.0	-inf	1	0.0007598628733524917	False							0
+NCBITaxon:84135	Gemella sanguinis	species	True	True	1	2	0	1	0/1	0.0	-inf	1	0.0007440285989743093	False							0
+NCBITaxon:1265	Ruminococcus flavefaciens	species	True	True	1	2	0	1	0/1	0.0	-inf	1	0.00024580600776659596	False							0
+NCBITaxon:1305	Streptococcus sanguinis	species	True	True	1	2	1	0	1/0	inf	inf	1	2.3649516696822545e-05	False							0
+NCBITaxon:1308	Streptococcus thermophilus	species	True	True	2	2	1	1	1/1	1.0	0.0	1	1.2571599974993724e-05	False							0
+NCBITaxon:435842	Streptococcus sp. C150	species	True	True	1	2	1	0	1/0	inf	inf	1	1.551403165822223e-06	False							0
+NCBITaxon:550	Enterobacter cloacae	species	True	True	1	2	1	0	1/0	inf	inf	0	0.0	False							0
+NCBITaxon:246787	Bacteroides cellulosilyticus	species	True	True	3	1	1	2	1/2	0.5	-1.0	2	0.012324409836905293	False							0
+NCBITaxon:821	Phocaeicola vulgatus	species	True	True	2	1	0	2	0/2	0.0	-inf	2	0.004752526859047993	False							0
+NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	True	True	4	1	4	0	4/0	inf	inf	1	0.018477660758398178	False							0
+NCBITaxon:113107	Streptococcus australis	species	True	True	4	1	0	4	0/4	0.0	-inf	1	0.007794512676937317	False							0
+NCBITaxon:1624	Ligilactobacillus salivarius	species	True	True	2	1	2	0	2/0	inf	inf	1	0.0024379981532377526	False							0
+NCBITaxon:78259	Scardovia inopinata	species	True	True	1	1	1	0	1/0	inf	inf	1	0.0009308313636086921	False							0
+NCBITaxon:1203590	Streptococcus sp. HPH0090	species	True	True	3	1	0	3	0/3	0.0	-inf	1	0.0008594908824419298	False							0
+NCBITaxon:2047	Rothia dentocariosa	species	True	True	1	1	1	0	1/0	inf	inf	1	0.0008327973850037864	False							0
+NCBITaxon:469592	Bacteroides sp. 3_1_19	species	True	True	1	1	0	1	0/1	0.0	-inf	1	0.0007598628733524917	False							0
+NCBITaxon:31973	Eggerthia catenaformis	species	True	True	1	1	0	1	0/1	0.0	-inf	1	0.0007362958892984473	False							0
+NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	True	True	1	1	1	0	1/0	inf	inf	1	0.00042973794570895664	False							0
+NCBITaxon:53443	Blautia hydrogenotrophica	species	True	True	1	1	1	0	1/0	inf	inf	1	0.00040258707434146895	False							0
+NCBITaxon:729	Haemophilus parainfluenzae	species	True	True	1	1	0	1	0/1	0.0	-inf	1	0.00024321591682509964	False							0
+NCBITaxon:84030	Lacrimispora saccharolytica	species	True	True	1	1	1	0	1/0	inf	inf	1	0.00011224381598948182	False							0
+NCBITaxon:68891	Streptococcus peroris	species	True	True	1	1	0	1	0/1	0.0	-inf	1	7.277405227612713e-05	False							0
+NCBITaxon:39778	Veillonella dispar	species	True	True	1	1	0	1	0/1	0.0	-inf	1	7.277405227612713e-05	False							0
+NCBITaxon:43995	Johnsonella ignava	species	True	True	1	1	0	1	0/1	0.0	-inf	1	4.0787160915372906e-05	False							0
+NCBITaxon:43948	Tolumonas auensis	species	True	True	2	1	1	1	1/1	1.0	0.0	1	3.987135283764214e-05	False							0
+NCBITaxon:46124	Granulicatella adiacens	species	True	True	1	1	0	1	0/1	0.0	-inf	1	3.641272758555062e-05	False							0
+NCBITaxon:40519	Ruminococcus callidus	species	True	True	2	1	2	0	2/0	inf	inf	1	2.5304599782898064e-05	False							0
+NCBITaxon:39777	Veillonella atypica	species	True	True	1	1	0	1	0/1	0.0	-inf	1	4.462245053412376e-06	False							0
+NCBITaxon:457416	Veillonella sp. 3_1_44	species	True	True	1	1	1	0	1/0	inf	inf	1	1.551403165822223e-06	False							0
+NCBITaxon:450749	Veillonella sp. 6_1_27	species	True	True	1	1	1	0	1/0	inf	inf	1	1.551403165822223e-06	False							0
+NCBITaxon:44008	Enterococcus cecorum	species	True	True	1	1	0	1	0/1	0.0	-inf	1	1.4985351036410664e-06	False							0
+NCBITaxon:244366	Klebsiella variicola	species	True	True	2	1	2	0	2/0	inf	inf	1	7.540810353786221e-07	False							0
+NCBITaxon:33035	Blautia producta	species	True	True	1	1	1	0	1/0	inf	inf	0	0.0	False							0
+NCBITaxon:187326	Megasphaera micronuciformis	species	True	True	1	1	0	1	0/1	0.0	-inf	0	0.0	False							0
