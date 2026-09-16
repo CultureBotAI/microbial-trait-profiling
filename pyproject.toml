@@ -146,7 +146,11 @@ quiet-level = 3
 
 [tool.bandit]
 exclude_dirs = ["tests", ".venv"]
-skips = []
+# B311 warns that `random` is not cryptographically secure. The only use here is
+# `bsdbng.calibration`, whose generator is seeded so a calibration run reproduces
+# exactly; a cryptographic generator would make the report unrepeatable. Nothing in
+# this repository uses randomness for a security purpose.
+skips = ["B311"]
 
 [tool.deptry]
 exclude = [

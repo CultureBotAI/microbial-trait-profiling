@@ -1,0 +1,124 @@
+{
+  "protocol": "calibration-v1",
+  "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/182",
+  "declared_before_first_run": true,
+  "declared_by": "drafted by a coding agent (Claude Code) before any calibration result was computed; acceptance criteria not revised after seeing results",
+  "scope": "procedures owned by this repository's directional-consistency framework. The composition arm's and the enrichment arm's native procedures are not evaluated here; their adapters belong to their owners (#182 assigns them), and the assertion-level urn of #131 is a separate model question.",
+  "procedures": [
+    {
+      "id": "fraction_sign_test",
+      "null": "for each Table 1 trait, a study is equally likely to shift its annotation share up or down between the increased and decreased signatures",
+      "estimand": "share of non-tied studies shifting up",
+      "unit": "study",
+      "family": "Benjamini-Hochberg over the six Table 1 traits",
+      "claimed_error_rate": "per-test level 0.05 for the exact binomial; BH false discovery rate 0.05 over the six"
+    },
+    {
+      "id": "log_ratio_sign_test",
+      "null": "for each ordered trait pair, a study's paired log2(A/B) change is equally likely to be positive or negative",
+      "estimand": "share of non-tied eligible studies shifting up",
+      "unit": "study",
+      "family": "Benjamini-Yekutieli over the 15 pairs",
+      "claimed_error_rate": "per-test level 0.05; BY false discovery rate 0.05 under arbitrary dependence"
+    },
+    {
+      "id": "guild_mcnemar",
+      "null": "among studies whose aerobe and anaerobe signs disagree, either direction of disagreement is equally likely",
+      "estimand": "odds ratio of discordant study signs",
+      "unit": "study",
+      "family": "a single test",
+      "claimed_error_rate": "level 0.05"
+    },
+    {
+      "id": "screened_fraction_sign_test",
+      "null": "as fraction_sign_test, but the traits tested are chosen inside the replicate as the three with the largest absolute deviation from a half-and-half split, and corrected over those three only",
+      "estimand": "as fraction_sign_test, on the selected traits",
+      "unit": "study",
+      "family": "Benjamini-Hochberg over the three selected traits",
+      "claimed_error_rate": "none claimed; this procedure is expected to be anticonservative and is measured to quantify by how much"
+    }
+  ],
+  "null_generation": {
+    "design": "paired direction flip on the real corpus: for a sampled half of the units, the increased and decreased labels of every profile in that unit are exchanged",
+    "exchangeability": "under each procedure's null the two sides of a pair are exchangeable, so flipping their labels leaves the distribution unchanged. Flipping whole studies also preserves the dependence between a study's experiments; flipping whole experiments is reported beside it because the choice of unit changes the null.",
+    "preserved_by_construction": [
+      "whole annotation vectors, including correlations between traits",
+      "unequal experiment counts per study",
+      "zeros and heterogeneous annotation coverage",
+      "unequal body-site and condition representation"
+    ],
+    "units": [
+      "study",
+      "experiment"
+    ]
+  },
+  "signal_injection": {
+    "design": "multiply one trait's counts on the increased side by a factor for a random share of studies, adding the difference to that profile's total so the remaining shares stay coherent",
+    "purpose": "power for the injected trait, and the false-discovery proportion among the traits left untouched",
+    "multipliers": [
+      1.1,
+      1.3,
+      2.0,
+      4.0
+    ],
+    "study_share": 0.5,
+    "injected_trait": "coccus_shaped"
+  },
+  "replicates": {
+    "report": 200,
+    "ci_check": 5,
+    "seed": 182
+  },
+  "acceptance_criteria": [
+    {
+      "id": "per_test_level",
+      "applies_to": [
+        "fraction_sign_test",
+        "log_ratio_sign_test",
+        "guild_mcnemar"
+      ],
+      "criterion": "under the complete null, the 95% Monte Carlo interval for the per-test rejection rate at p <= 0.05 includes 0.05, or lies below it"
+    },
+    {
+      "id": "family_error",
+      "applies_to": [
+        "fraction_sign_test",
+        "log_ratio_sign_test"
+      ],
+      "criterion": "under the complete null, the rate of replicates with at least one q <= 0.05 is at most 0.10"
+    },
+    {
+      "id": "power_reported",
+      "applies_to": [
+        "fraction_sign_test",
+        "log_ratio_sign_test"
+      ],
+      "criterion": "under injected signal, power for the injected trait is reported with its Monte Carlo interval; no threshold is set"
+    },
+    {
+      "id": "selection_inflation_measured",
+      "applies_to": [
+        "screened_fraction_sign_test"
+      ],
+      "criterion": "reported, not judged: the rejection rate under the complete null is expected to exceed the nominal level"
+    }
+  ],
+  "reporting_rules": [
+    "discrete test statistics make the attainable p-values a finite set; uniformity of p is not required and the attainable resolution is reported",
+    "Monte Carlo uncertainty is reported as an exact binomial interval over replicates",
+    "a failed criterion is reported as failed; no procedure is tuned against these simulations"
+  ],
+  "not_covered": [
+    "the enrichment arm's hypergeometric urn (#131) and the composition arm's native transform (owners' adapters)",
+    "the aggregated profile-support rule of #177, whose code is not on main",
+    "any claim that a calibrated procedure makes its biological interpretation valid"
+  ],
+  "amendments": [
+    {
+      "date": "2026-09-16",
+      "change": "the single injected multiplier of 1.3 was replaced by a declared curve of 1.1, 1.3, 2.0 and 4.0",
+      "reason": "the first run showed a 1.3x lift moves almost no study signs, so power was ~0 and the scenario was uninformative; a curve reports where the procedures start to detect an effect",
+      "unchanged": "the null scenarios, the acceptance criteria and every threshold"
+    }
+  ]
+}

@@ -172,6 +172,13 @@ validate-studies-linkml:
 stats:
 	@uv run python -c "from bsdbng.stats import print_stats; print_stats()"
 
+# Empirical calibration of this repository's directional tests (#182): rejection
+# rates when their own nulls are true, power under a declared injected effect, and
+# the cost of selecting traits on the data. Scenarios and acceptance criteria are
+# fixed in methods/calibration_protocol.json. Takes a few minutes at 200 replicates.
+[positional-arguments]
+calibration-report *ARGS:
+	uv run python -m bsdbng.calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
 pipeline: download ingest
 
 # --- linkml-store over MongoDB (localhost:27017/bsdbng.studies) ---
