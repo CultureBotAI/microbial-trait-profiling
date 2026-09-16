@@ -40,6 +40,12 @@ The [GPT Rosalind discussion and review](../docs/rosalind-six-trait-interpretati
 archives proposed biological explanations for the six traits, with a separate
 evidence review and assigned follow-up issues. It records hypotheses to evaluate;
 it is not an approved Results or Discussion section.
+
+[`validation_feasibility.md`](validation_feasibility.md) documents
+`just validation-evidence`: what measured inflammation, SCFA, redox, exposure and
+covariate evidence is reachable, which BugSigDB experiments are stratified by a
+measured marker, what the SCFA-related annotations actually assert, which external
+cohorts overlap the discovery corpus, and the protocol a real validation would need.
 The [second exchange](../docs/rosalind-six-trait-interpretation-response-2.md)
 preserves the follow-up questions and Rosalind's revised response, including its
 prediction and discriminating-evidence tables. It is archived without a separate
