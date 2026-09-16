@@ -1,11 +1,18 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
+import math
 from pathlib import Path
 
 import pytest
-from scipy.stats import fisher_exact
+from scipy.stats import binomtest
 
-from bsdbng.guild_maps import build_matrix, compute_correlation
+from bsdbng.guild_maps import (
+    OTHER_LABEL,
+    build_matrix,
+    compute_correlation,
+    study_direction_means,
+    subset_matrix,
+)
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
     OXYGEN_GUILDS,
@@ -120,16 +127,23 @@ def test_missing_guild_column_raises(corpus: tuple[Path, Path]) -> None:
         load_profiles(profiles_path, experiments_path, GRAM_GUILDS)
 
 
-def test_matrix_masks_cells_below_the_study_threshold(corpus: tuple[Path, Path]) -> None:
+def test_rows_with_no_surviving_cells_are_dropped(corpus: tuple[Path, Path]) -> None:
+    """A condition whose every cell is masked would render as a blank row."""
     profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
-    matrix = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=2)
 
-    # Each condition here is backed by a single study, so every cell is masked.
-    assert all(value is None for row in matrix.values for value in row)
-    assert any(count == 1 for row in matrix.study_counts for count in row)
+    # Each condition here is backed by a single study, so at a threshold of two
+    # nothing survives and every row is dropped rather than drawn empty.
+    masked = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=2)
+    assert masked.conditions == []
+    assert set(masked.dropped_empty_conditions) == {"Colorectal cancer", "Asthma", OTHER_LABEL}
 
-    unmasked = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
-    assert any(value is not None for row in unmasked.values for value in row)
+    # At a threshold of one the same conditions carry values and are kept. Other
+    # is still dropped: the cap is above the number of conditions, so it pooled
+    # nothing and its row would be blank.
+    kept = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
+    assert set(kept.conditions) == {"Colorectal cancer", "Asthma"}
+    assert kept.dropped_empty_conditions == [OTHER_LABEL]
+    assert any(value is not None for row in kept.values for value in row)
 
 
 def test_correlation_counts_studies_by_shift_direction(corpus: tuple[Path, Path]) -> None:
@@ -147,11 +161,34 @@ def test_correlation_counts_studies_by_shift_direction(corpus: tuple[Path, Path]
     }
     assert result.studies == 2
 
-    # Golden value: the odds ratio must match scipy on the same 2x2 table.
-    expected_or, expected_p = fisher_exact([[2, 0], [0, 2]], alternative="two-sided")
-    assert result.odds_ratio == pytest.approx(float(expected_or))
-    assert result.fisher_p == pytest.approx(float(expected_p))
-    assert result.fisher_p == pytest.approx(0.3333333333333333)
+    # The same studies provide both guild signs, so the test is a paired one:
+    # both studies are discordant in the same direction (aerobe up while
+    # anaerobe down) and the exact McNemar is a two-sided binomial on the
+    # discordant studies. Fisher's exact on the marginal table would treat the
+    # two rows as independent samples and be anticonservative.
+    assert result.discordant == (2, 0)
+    assert result.mcnemar_p == pytest.approx(float(binomtest(2, 2, p=0.5).pvalue))
+    assert result.mcnemar_p == pytest.approx(0.5)
+    # The paired odds ratio is the discordant ratio; with no reverse-discordant
+    # studies it is infinite.
+    assert result.odds_ratio == math.inf
+
+
+def test_study_means_reject_an_unpaired_corpus() -> None:
+    """Pooled means only equal paired contrasts when inc and dec counts match."""
+    lonely = Profile(
+        study_id="bsdb:9",
+        experiment_id="bsdb:9-1",
+        inc_dec="inc",
+        condition="X",
+        body_site="Y",
+        guild_counts={"aerobe": 3, "anaerobe": 1},
+        total=10,
+    )
+    with pytest.raises(ValueError, match="bsdb:9"):
+        study_direction_means([lonely])
+    # An explicitly unpaired caller can still opt in.
+    assert "bsdb:9" in study_direction_means([lonely], require_paired=False)
 
 
 def test_vintage_is_read_from_the_dump_header(tmp_path: Path) -> None:
@@ -175,3 +212,143 @@ def test_fraction_is_zero_when_a_profile_has_no_signal() -> None:
         total=0,
     )
     assert empty.fraction("aerobe") == 0.0
+
+
+def test_sampled_cells_without_guild_signal_are_flagged_not_drawn_as_zero(
+    tmp_path: Path,
+) -> None:
+    """A site sampled for a condition but carrying no guild trait is its own state."""
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    # Both guilds are absent; only the non-guild trait carries any count.
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [0, 0, 0, 0, 0, 7, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [0, 0, 0, 0, 0, 7, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Periodontitis", "Saliva", "Homo sapiens")],
+    )
+    profiles, _ = load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+    matrix = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
+
+    saliva = [i for i, c in enumerate(matrix.columns) if c.startswith("Saliva|")]
+    assert saliva, "expected Saliva columns"
+    # The row has no values at all, but is kept: "sampled, no guild trait" is a
+    # result, so only entirely blank rows are dropped.
+    assert "Periodontitis" in matrix.conditions
+    assert "Periodontitis" not in matrix.dropped_empty_conditions
+    row = matrix.conditions.index("Periodontitis")
+
+    for i in saliva:
+        # Sampled, so a study is counted, but no value is drawn and the cell is
+        # flagged so the figure can shade it distinctly from a small fraction.
+        assert matrix.study_counts[row][i] == 1
+        assert matrix.values[row][i] is None
+        assert matrix.sampled_no_signal[row][i] is True
+
+
+def test_rows_are_clustered_and_pooling_is_reported(corpus: tuple[Path, Path]) -> None:
+    """Clustering reorders conditions, and the Other bucket reports what it hides."""
+    profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
+    matrix = build_matrix(
+        profiles,
+        max_conditions=1,
+        max_body_sites=10,
+        min_studies=1,
+        n_clusters=2,
+    )
+
+    assert len(matrix.row_clusters) == len(matrix.conditions)
+    assert OTHER_LABEL in matrix.conditions
+
+    condition_pooling = next(p for p in matrix.pooled if p.kind == "condition")
+    # Two conditions survive the filters; keeping one pools the other.
+    assert condition_pooling.kept == 1
+    assert condition_pooling.pooled_labels == 1
+    assert condition_pooling.pooled_profiles == 2
+    assert "Other pools 1 labels" in condition_pooling.describe()
+
+
+def test_other_bucket_can_be_excluded_instead_of_pooled(corpus: tuple[Path, Path]) -> None:
+    """Dropping Other removes the mixed row and column instead of drawing them."""
+    profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
+    matrix = build_matrix(
+        profiles,
+        max_conditions=1,
+        max_body_sites=10,
+        min_studies=1,
+        n_clusters=2,
+        include_other_conditions=False,
+        include_other_body_sites=False,
+    )
+
+    assert OTHER_LABEL not in matrix.conditions
+    assert OTHER_LABEL not in matrix.body_sites
+    assert all(not column.startswith(f"{OTHER_LABEL}|") for column in matrix.columns)
+
+    # The pooling report still names what the cut left out, now as dropped.
+    condition_pooling = next(p for p in matrix.pooled if p.kind == "condition")
+    assert condition_pooling.pooled_labels == 1
+    assert condition_pooling.bucketed is False
+    assert "dropped 1 labels" in condition_pooling.describe()
+
+
+def test_rows_kept_only_by_no_signal_cells_go_with_the_shading(tmp_path: Path) -> None:
+    """Without the dark-grey shading such a row would be an invisible blank line."""
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [0, 0, 0, 0, 0, 7, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [0, 0, 0, 0, 0, 7, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Periodontitis", "Saliva", "Homo sapiens")],
+    )
+    profiles, _ = load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+
+    shaded = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
+    assert "Periodontitis" in shaded.conditions
+
+    unshaded = build_matrix(
+        profiles,
+        max_conditions=10,
+        max_body_sites=10,
+        min_studies=1,
+        mark_no_signal=False,
+    )
+    assert unshaded.conditions == []
+    assert "Periodontitis" in unshaded.dropped_empty_conditions
+
+
+def test_subset_derives_the_other_axis_and_drops_blank_bands(corpus: tuple[Path, Path]) -> None:
+    """A cut named on one axis takes the other axis from where values were drawn."""
+    profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
+    matrix = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
+
+    by_condition = subset_matrix(matrix, conditions=["Asthma"])
+    assert by_condition.conditions == ["Asthma"]
+    # Only the sites Asthma was actually drawn in survive, and every column that
+    # remains belongs to one of them.
+    assert by_condition.body_sites
+    assert set(by_condition.body_sites) <= set(matrix.body_sites)
+    assert all(
+        column.split("|", 1)[0] in by_condition.body_sites for column in by_condition.columns
+    )
+    assert any(value is not None for row in by_condition.values for value in row)
+
+    # Naming the axis the other way round drops the conditions with nothing in it.
+    by_site = subset_matrix(matrix, sites=by_condition.body_sites)
+    assert by_site.body_sites == by_condition.body_sites
+    assert "Asthma" in by_site.conditions
+    assert all(any(v is not None for v in row) for row in by_site.values)
+
+    with pytest.raises(ValueError, match="Nowhere"):
+        subset_matrix(matrix, sites=["Nowhere"])
