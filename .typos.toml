@@ -8,6 +8,7 @@ PNGs = "PNGs"
 nonsignificant = "nonsignificant"
 # Without this, typos rewrites the `fac_aer` fixture prefix in
 # tests/test_table1_trait_maps.py to `fac_are`.
+# Aerobe abbreviation used in trait fixtures.
 aer = "aer"
 
 [files]

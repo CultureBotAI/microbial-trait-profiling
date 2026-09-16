@@ -93,6 +93,19 @@ taxa-trait-matrix: study-tsvs
 study-trait-profiles:
 	uv run python scripts/create_study_trait_profiles.py
 
+# Source-count reconciliation and predeclared genus/family influence (#190).
+table1-taxon-influence kg_dir="data/kg-microbe" inputs="data/derived" output="data/derived/table1_taxon_influence":
+	uv run python -m bsdbng.taxon_contributions --kg-dir "{{kg_dir}}" --inputs "{{inputs}}" --output "{{output}}"
+	just table1-native-influence "{{inputs}}" "{{output}}"
+
+# Requires an unchanged, completed contribution ledger; no KG reload is needed.
+table1-native-influence inputs="data/derived" output="data/derived/table1_taxon_influence":
+	uv run python -m bsdbng.native_taxon_influence --inputs "{{inputs}}" --output "{{output}}" --code-commit "$(git rev-parse HEAD)"
+	just table1-native-summary "{{output}}"
+
+table1-native-summary output="data/derived/table1_taxon_influence":
+	uv run python -m bsdbng.native_influence_publication --source "{{output}}"
+
 # PNG export (guild-maps, table1-trait-maps) runs through kaleido 1.x, which
 # drives a headless Chrome. This downloads (~170 MB) the version-pinned Chrome
 # for Testing build into choreographer's data directory; kaleido prefers that
@@ -112,7 +125,7 @@ guild-maps:
 # traits of manuscript Table 1 instead of the two pooled oxygen guilds. Writes the
 # combined condition x body-site heatmap, the paired directional-shift figure, and
 # their backing tables to data/derived/table1_traits/.
-# Needs a local Chrome for the PNGs (`just get-chrome`).
+# Needs a local Chrome for the PNG files (`just get-chrome`).
 table1-trait-maps:
 	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py"
 

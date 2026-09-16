@@ -1,0 +1,27 @@
+{
+  "version": "190-v1",
+  "kg_build": "20260120",
+  "kg_md5": {
+    "merged-kg_nodes.tsv": "dd76b4656f9341db25a7c4afa96cd58e",
+    "merged-kg_edges.tsv": "555ecf5ba5d89288cdc44e368375374f"
+  },
+  "scope_rule": "All retained records keep exact condition and site; inference uses the following declared scopes without semantic grouping",
+  "scopes": [
+    {"id": "pooled", "condition": "*", "body_site": "*"},
+    {"id": "feces", "condition": "*", "body_site": "Feces"},
+    {"id": "saliva", "condition": "*", "body_site": "Saliva"},
+    {"id": "parkinsons_feces", "condition": "Parkinson's disease", "body_site": "Feces"}
+  ],
+  "minimum_lineage_studies": 3,
+  "top_lineages_per_rank": 10,
+  "scenario_rule": "inventory every resolved genus/family; run the ten largest per rank by propagated full non-MediaDive contribution count plus the four predicted genera and their resolved families, each requiring three supporting studies; ties by taxon ID; no effect or significance selection",
+  "predicted_genera": ["Streptococcus", "Enterococcus", "Staphylococcus", "Veillonella"],
+  "orientation_status": "unreviewed_pending_188",
+  "semantics_status": "raw_keys_only_pending_189",
+  "ora": "no_native_rerun; export separately labeled fixed_baseline and recomputed_remaining count backgrounds for Ilyas",
+  "weighting": "equal experiments within study, equal eligible studies",
+  "uncertainty": "conditional 95% Student t interval on study means; exact binomial interval on directional share; no full-pipeline error-rate guarantee (#182)",
+  "families": "six directional trait tests BH and fifteen directional log-ratio tests BY, separately per scenario/scope/population/representation",
+  "zero_rule": "shared fractions require both full totals positive; log ratios additionally require all four numerator/denominator trait counts positive; no pseudocount",
+  "higher_rank_rule": "retain and flag direct source assertions above excluded lineage; remove known lineage sources even when rolled into higher-rank reported taxa"
+}
