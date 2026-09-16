@@ -8,12 +8,14 @@ BugSigDB vintage the numbers came from.
 | Figure | Produced by | Recipe | Methods |
 | --- | --- | --- | --- |
 | `guild_condition_body_site_heatmap.png` | `src/bsdbng/guild_maps.py` | `just guild-maps` | [`guild_condition_body_site_heatmap.md`](guild_condition_body_site_heatmap.md) |
-| `table1_traits_condition_body_site_heatmap.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
-| `table1_traits_first_last_body_site_panels.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
+| `table1_traits_condition_body_site_heatmap.png`, with evidence marks from `src/bsdbng/trait_significance.py` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
+| `table1_traits_focus_{feces,feces_other,cervical,oral}.png` (four overlapping cuts) | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | `table1_traits_direction_shift.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 
 Figures write to `data/derived/guild_maps/` and `data/derived/table1_traits/`
-alongside the tab-separated tables backing them, so every number quoted in a
+alongside the tab-separated tables backing them (for the Table 1 evidence marks:
+`table1_traits_cell_support.tsv`, `table1_traits_composition_contrasts.tsv`,
+`table1_traits_composition_screen.tsv` and `table1_traits_evidence_provenance.json`), so every number quoted in a
 methods file can be checked without measuring pixels. Those outputs are
 gitignored and are meant to be regenerated from the recipe rather than committed.
 PNG export needs a headless Chrome (kaleido 1.x); run `just get-chrome` once —

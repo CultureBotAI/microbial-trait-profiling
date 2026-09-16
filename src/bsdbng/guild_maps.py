@@ -14,10 +14,12 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from scipy.cluster.hierarchy import fcluster, leaves_list, linkage
 from scipy.spatial.distance import pdist
@@ -35,6 +37,9 @@ from bsdbng.trait_guilds import (
     read_bugsigdb_vintage,
     write_stats_report,
 )
+
+if TYPE_CHECKING:
+    import plotly.graph_objects as go
 
 OTHER_LABEL = "Other"
 GUILD_ORDER = ("aerobe", "anaerobe")
@@ -580,28 +585,12 @@ def write_outputs(
 
 
 GUILD_COLORSCALES = {"aerobe": "OrRd", "anaerobe": "YlGn"}
-# Colour-bar ticks as percentages with trailing zeros trimmed, so 0.0004 reads
-# "0.04%" rather than plotly's default SI-prefixed "400u".
-PERCENT_TICKS = ".3~%"
 # The title line plus the gap between the subtitle and the body-site headers. The
 # subtitle's own lines are added to this.
 PANEL_TOP_MARGIN = 110
-# A panel's colour bars lie flat under the figure, three across and two deep, in
-# the band this reserves below the column labels. Stacking them vertically ties
-# the legend's height to the number of conditions - a four-row cut would either
-# pad itself out with empty rows or collapse its bars - and measuring them against
-# the figure rather than the plotting area breaks that tie.
-# Bars are laid out this far apart, and the band is sized from however many rows
-# of them a figure's width leaves room for.
-LEGEND_ROW_PITCH = 140
-# The band under the column labels that holds the row of colour bars and their
-# titles, and how far above the foot of the figure the bars themselves sit.
-
-# A plotting area only a few rows tall makes the renderer fail outright
-# ("axis scaling"), so a cut shorter than this keeps a little slack below it. Kept
-# as low as the failure allows, because every padding row is white space under a
-# two-row cut and that was the first thing anyone noticed about the small heatmaps.
-MIN_PANEL_ROWS = 5
+# Room above the plotting area for the site-level composition glyphs, which sit
+# between the body-site headers and the first row.
+GLYPH_BAND_PX = 26
 # Every heatmap cell is this many pixels on a side, in every figure. Both renderers
 # size the plotting area from the grid rather than fitting the grid into a fixed
 # canvas, so a cell in a two-row cut is the same square as a cell in the combined
@@ -618,17 +607,30 @@ PANEL_GAP = 70
 COLORBAR_SLOT_PX = 112
 COLORBAR_PX = 200.0
 COLORBAR_MARGIN = 6 * COLORBAR_SLOT_PX + 60
+# A colour-bar title line longer than this runs into the next bar's slot.
+COLORBAR_TITLE_CHARS = 13
+# The top labelled tick stays below this share of the range, so its label cannot
+# rise into the bar's title.
+COLORBAR_TOP_TICK_SHARE = 0.85
+# Wide enough for the subtitle to wrap legibly on a figure only a few columns wide.
 MIN_PANEL_WIDTH = 900
 NO_SIGNAL_COLOR = "#4d4d4d"
 CLUSTER_GAP_ROWS = 1
 
-# Significant cells are outlined rather than recoloured: the fill already carries
-# the magnitude, so the verdict has to ride on top of it without displacing it.
-SIGNIFICANCE_COLOR = "#111111"
-SIGNIFICANCE_WIDTH = {"enrichment": 2.0, "composition": 2.0, "both": 3.0}
-SIGNIFICANCE_DASH = {"enrichment": "solid", "composition": "dot", "both": "solid"}
-# Appended to a column label when the composition arm calls that trait's paired
-# contrast in that body site. The arrow points at the side carrying more of it.
+# Evidence marks are outlines rather than recolouring: the fill already carries the
+# magnitude. Each evidence type has its own style, and a cell carrying two types
+# draws both, the second inset so neither hides the other. Unknown types are an
+# error rather than a silent default, so a mark can never be drawn in a style the
+# legend does not describe.
+MARK_COLOR = "#111111"
+MARK_STYLES: dict[str, dict[str, float | str]] = {
+    "aggregated_profile_support": {"width": 2.0, "dash": "solid", "inset": 0.0},
+    "condition_site_composition": {"width": 2.0, "dash": "dot", "inset": 0.2},
+}
+# Drawn once above a trait's pair of columns when the body-site composition
+# contrast for that trait is significant, pointing at the direction it favours.
+# Kept out of the rotated column labels, where an upward triangle reads as a
+# leftward one.
 COLUMN_MARK_GLYPH = {"increased": "\u25b2", "decreased": "\u25bc"}
 # A subtitle line wider than the figure is silently clipped, so lines are broken
 # to whatever the width affords at the subtitle's font size.
@@ -693,34 +695,51 @@ def _site_blocks(columns: Sequence[str]) -> list[tuple[str, int, int]]:
     return blocks
 
 
+@dataclass(frozen=True)
+class EvidenceMarks:
+    """What to draw on top of a heatmap, and how to explain it.
+
+    ``cells`` is keyed by ``(condition, body site, trait, direction)`` in exact
+    source labels, so the same mapping marks the same cells in the combined
+    figure and in every cut of it, and a pooled Other row or column never matches.
+    ``totals`` counts cells meeting each rule across the whole corpus, drawn or
+    not, so each figure can say how many of them it actually shows. ``legend``
+    and ``column_legend`` are the caller's words for each evidence type.
+    """
+
+    cells: Mapping[tuple[str, str, str, str], Collection[str]]
+    totals: Mapping[str, int]
+    legend: Mapping[str, str]
+    columns: Mapping[tuple[str, str], str]
+    column_legend: str | None = None
+    notes: Sequence[str] = ()
+
+
 def _significance_shapes(
     row_labels: Sequence[str],
     columns: Sequence[str],
     values: Sequence[Sequence[float | None]],
-    marks: Mapping[tuple[str, str, str, str], str],
+    marks: Mapping[tuple[str, str, str, str], Collection[str]],
     *,
     axis: str = "",
     column_indices: Sequence[int] | None = None,
-) -> list[dict[str, object]]:
-    """Outline every drawn cell that either arm called significant.
+) -> tuple[list[dict[str, object]], dict[str, int]]:
+    """Outline every drawn cell carrying evidence, and count what was drawn.
 
-    ``marks`` is keyed by ``(condition, body site, trait, direction)``, which is
-    what the cell means rather than where it happens to be drawn, so the same
-    mapping outlines the same cells in the combined figure and in any cut of it.
-
-    A cell the figure masked - too few studies behind it - is never outlined. The
-    two arms test profiles and pairs, which exist whether or not the figure chose
-    to draw their average, and an outline floating on blank paper reads as a
-    result rather than as a cell that was withheld.
+    A cell the figure masked - too few studies behind it - is never outlined: an
+    outline floating on blank paper reads as a result rather than as a cell that
+    was withheld. The returned counts are of outlines actually drawn, which is
+    what the legend reports.
     """
     indices = list(range(len(columns))) if column_indices is None else list(column_indices)
     shapes: list[dict[str, object]] = []
+    drawn: defaultdict[str, int] = defaultdict(int)
     for row, condition in enumerate(row_labels):
         for position, index in enumerate(indices):
             if values[row][index] is None:
                 continue
             column = columns[index]
-            mark = marks.get(
+            kinds = marks.get(
                 (
                     condition,
                     _site_of_column(column),
@@ -728,67 +747,126 @@ def _significance_shapes(
                     column.rsplit("_", 1)[1],
                 )
             )
-            if mark is None:
-                continue
-            shapes.append(
-                {
-                    "type": "rect",
-                    "xref": f"x{axis}",
-                    "yref": f"y{axis}",
-                    "x0": position - 0.5,
-                    "x1": position + 0.5,
-                    "y0": row - 0.5,
-                    "y1": row + 0.5,
-                    "fillcolor": "rgba(0,0,0,0)",
-                    "line": {
-                        "color": SIGNIFICANCE_COLOR,
-                        "width": SIGNIFICANCE_WIDTH[mark],
-                        "dash": SIGNIFICANCE_DASH[mark],
-                    },
-                    "layer": "above",
-                }
-            )
-    return shapes
+            for kind in sorted(kinds or ()):
+                style = MARK_STYLES[kind]
+                inset = float(style["inset"])
+                drawn[kind] += 1
+                shapes.append(
+                    {
+                        "type": "rect",
+                        "xref": f"x{axis}",
+                        "yref": f"y{axis}",
+                        "x0": position - 0.5 + inset,
+                        "x1": position + 0.5 - inset,
+                        "y0": row - 0.5 + inset,
+                        "y1": row + 0.5 - inset,
+                        "fillcolor": "rgba(0,0,0,0)",
+                        "line": {
+                            "color": MARK_COLOR,
+                            "width": style["width"],
+                            "dash": style["dash"],
+                        },
+                        "layer": "above",
+                    }
+                )
+    return shapes, dict(drawn)
 
 
 def _significance_note(
-    marks: Mapping[tuple[str, str, str, str], str],
-    column_marks: Mapping[tuple[str, str], str],
+    evidence: EvidenceMarks | None, drawn: Mapping[str, int], glyphs: int
 ) -> list[str]:
-    """Say what a border means, in the terms the two arms actually resolve."""
-    if not marks and not column_marks:
+    """Explain every mark type that exists, with the counts this figure draws.
+
+    A type is described whenever any cell in the corpus meets its rule, even if
+    this figure draws none of them, so a style can never appear unexplained.
+    """
+    if evidence is None:
         return []
-    lines = [
-        f"Black outline ({len(marks)} cells): most of the studies behind that cell are "
-        "significantly enriched for the trait on their own, under the enrichment arm's "
-        "hypergeometric test (q <= 0.001, fold >= 1.5).",
-    ]
-    if column_marks:
+    lines: list[str] = []
+    for kind in MARK_STYLES:
+        total = evidence.totals.get(kind, 0)
+        if not total:
+            continue
+        here = drawn.get(kind, 0)
         lines.append(
-            "A triangle on a column label is the composition arm's paired "
-            "increased-minus-decreased contrast for that trait across the whole body site "
-            "(q <= 0.05), pointing to the side carrying more of it. It says nothing about "
-            "any one condition in the block."
+            f"{evidence.legend[kind]} Drawn here: {here} cells. Across the corpus {total} cells "
+            "meet the rule; the rest are masked, outside this figure's rows and columns, or "
+            "in a pooled Other block, which is not one site or condition and is never marked."
         )
+    if evidence.column_legend and (evidence.columns or glyphs):
+        lines.append(f"{evidence.column_legend} Drawn here: {glyphs}.")
+    lines.extend(evidence.notes)
     return lines
 
 
-def _marked_columns(
+def _glyph_annotations(
     columns: Sequence[str],
-    tick_text: Sequence[str],
     column_marks: Mapping[tuple[str, str], str],
-    indices: Sequence[int] | None = None,
-) -> list[str]:
-    """Append the composition arm's arrow to the labels of the columns it calls."""
-    if not column_marks:
-        return list(tick_text)
-    positions = list(range(len(columns))) if indices is None else list(indices)
-    marked: list[str] = []
-    for label, index in zip(tick_text, positions, strict=True):
+    *,
+    axis: str = "",
+    column_indices: Sequence[int] | None = None,
+) -> list[dict[str, object]]:
+    """One glyph per (body site, trait) above that trait's two columns.
+
+    The site-level contrast is one statement about the trait in that site, so it
+    is drawn once, centred over the increased and decreased columns together,
+    rather than repeated on each.
+    """
+    indices = list(range(len(columns))) if column_indices is None else list(column_indices)
+    positions: defaultdict[tuple[str, str], list[int]] = defaultdict(list)
+    for position, index in enumerate(indices):
         column = columns[index]
-        glyph = column_marks.get((_site_of_column(column), _guild_of_column(column)))
-        marked.append(f"{label} {COLUMN_MARK_GLYPH[glyph]}" if glyph else label)
-    return marked
+        positions[(_site_of_column(column), _guild_of_column(column))].append(position)
+    annotations: list[dict[str, object]] = []
+    for key, direction in sorted(column_marks.items()):
+        where = positions.get(key)
+        if not where:
+            continue
+        annotations.append(
+            {
+                "x": (min(where) + max(where)) / 2.0,
+                "y": 1.0,
+                "xref": f"x{axis}",
+                "yref": f"y{axis} domain",
+                "yanchor": "bottom",
+                "yshift": 2,
+                "text": COLUMN_MARK_GLYPH[direction],
+                "showarrow": False,
+                "font": {"size": 15, "color": MARK_COLOR},
+            }
+        )
+    return annotations
+
+
+def _wrap_words(label: str, width: int) -> str:
+    """Break a label into lines of at most ``width`` characters, at spaces.
+
+    Underscores count as spaces, so a slug such as ``facultatively_aerobic`` wraps
+    too. A single word longer than ``width`` stays whole on its own line.
+    """
+    lines: list[str] = []
+    for word in label.replace("_", " ").split():
+        if lines and len(lines[-1]) + 1 + len(word) <= width:
+            lines[-1] = f"{lines[-1]} {word}"
+        else:
+            lines.append(word)
+    return "<br>".join(lines)
+
+
+def _colorbar_ticks(upper: float) -> dict[str, object]:
+    """Ticks at 0 and one round share safely below the top of the bar.
+
+    Left to the renderer the top tick can land on the bar's end, where its label
+    rises into the title above it.
+    """
+    if upper <= 0:
+        return {"tickvals": [0.0], "ticktext": ["0%"], "tickmode": "array"}
+    ceiling = upper * COLORBAR_TOP_TICK_SHARE
+    magnitude = 10.0 ** math.floor(math.log10(ceiling))
+    step = max(m * magnitude for m in (1.0, 2.0, 2.5, 5.0) if m * magnitude <= ceiling)
+    percent = step * 100.0
+    text = f"{percent:.3g}%"
+    return {"tickmode": "array", "tickvals": [0.0, step], "ticktext": ["0%", text]}
 
 
 def _wrap_subtitle(lines: Sequence[str], width: float) -> list[str]:
@@ -895,9 +973,15 @@ def _coverage_note(matrix: GuildMatrix) -> list[str]:
     return lines
 
 
-def write_figure(
+def save_figure(figure: go.Figure, output_path: Path) -> Path:
+    """Write a built figure as a PNG. This is the only step that needs Chrome."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    figure.write_image(str(output_path), scale=2)
+    return output_path
+
+
+def condition_body_site_figure(
     matrix: GuildMatrix,
-    output_path: Path,
     vintage: str | None,
     *,
     guild_order: Sequence[str] = GUILD_ORDER,
@@ -910,10 +994,9 @@ def write_figure(
     range_quantile: float = 1.0,
     separate_body_sites: bool = False,
     mark_no_signal: bool = True,
-    significance: Mapping[tuple[str, str, str, str], str] | None = None,
-    column_marks: Mapping[tuple[str, str], str] | None = None,
-) -> Path:
-    """Render the heatmap with one colour scale per trait group.
+    evidence: EvidenceMarks | None = None,
+) -> go.Figure:
+    """Build the heatmap with one colour scale per trait group.
 
     Each group is drawn as its own overlaid trace so it keeps its own hue. With
     ``shared_range`` the traces share the range 0 to the largest observed value,
@@ -936,7 +1019,7 @@ def write_figure(
     row_labels, row_values, row_blanks = _insert_cluster_gaps(matrix)
     observed = [v for row in row_values for v in row if v is not None]
     z_max = _upper_range(observed, range_quantile)
-    tick_labels = _marked_columns(matrix.columns, matrix.columns, column_marks or {})
+    tick_labels = list(matrix.columns)
     # One panel spanning every column, so the combined figure and the detail cuts
     # go through the same geometry and end up with identically sized cells.
     width, left, right, _spacing = _panel_geometry(1, len(matrix.columns))
@@ -983,11 +1066,9 @@ def write_figure(
                     "y": centre,
                     "yanchor": "middle",
                     "thickness": 14,
-                    # Percentages, not plotly's default SI prefixes: a tick reading
-                    # "400u" for 0.0004 looks like a unit rather than a share.
-                    "tickformat": PERCENT_TICKS,
-                    # Six bars share the height; without a cap their ticks collide.
-                    "nticks": 3,
+                    # Two explicit percentage ticks, the upper one clear of the bar's
+                    # end: an automatic top tick can sit under the title.
+                    **_colorbar_ticks(scale_max),
                 },
             )
         )
@@ -1010,9 +1091,16 @@ def write_figure(
         if sampled and mark_no_signal
     ]
 
-    shapes.extend(_significance_shapes(row_labels, matrix.columns, row_values, significance or {}))
+    mark_shapes, drawn = _significance_shapes(
+        row_labels, matrix.columns, row_values, evidence.cells if evidence else {}
+    )
+    shapes.extend(mark_shapes)
 
-    annotations: list[dict[str, object]] = []
+    annotations: list[dict[str, object]] = _glyph_annotations(
+        matrix.columns, evidence.columns if evidence else {}
+    )
+    glyphs = len(annotations)
+    glyph_band = GLYPH_BAND_PX if glyphs else 0
     if separate_body_sites:
         # One rule between body-site blocks. With six traits times two directions
         # per site the blocks otherwise run together and the x labels are the only
@@ -1045,7 +1133,7 @@ def write_figure(
                 "y": 1.0,
                 "xref": "x",
                 "yref": "paper",
-                "yshift": 12,
+                "yshift": 12 + glyph_band,
                 "text": f"<b>{_wrapped(site)}</b>",
                 "showarrow": False,
                 "font": {"size": 18},
@@ -1084,18 +1172,19 @@ def write_figure(
             range_note,
             cluster_note,
             *_coverage_note(matrix),
-            *_significance_note(significance or {}, column_marks or {}),
+            *_significance_note(evidence, drawn, glyphs),
             f"BugSigDB {vintage or 'vintage unknown'}.",
         ],
         width,
     )
     subtitle = "<br>".join(subtitle_lines)
-    # Sized to the subtitle it holds, plus room for the body-site headers when
-    # they are drawn. A fixed block walks the last lines onto the headers.
+    # Sized to the subtitle it holds, plus room for the body-site headers and any
+    # glyph band when they are drawn. A fixed block walks the last lines onto them.
     top = (
         PANEL_TOP_MARGIN
         + SUBTITLE_LINE_PX * len(subtitle_lines)
         + (120 if separate_body_sites else 0)
+        + glyph_band
     )
     figure.update_layout(
         title={
@@ -1123,9 +1212,7 @@ def write_figure(
         },
         plot_bgcolor="white",
     )
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    figure.write_image(str(output_path), scale=2)
-    return output_path
+    return figure
 
 
 def subset_matrix(
@@ -1146,10 +1233,13 @@ def subset_matrix(
     ``conditions`` given the body sites become the ones those conditions were
     actually drawn in, and with only ``sites`` given the conditions become the
     ones drawn in those sites. Rows and column blocks that end up carrying no
-    value are dropped either way, so a subset never renders a blank band. A
-    named condition absent from the matrix is skipped and recorded in
-    ``dropped_empty_conditions``; the row order and cluster ids are the ones the
-    full matrix was clustered into, so a subset stays comparable to it.
+    value are dropped either way, so a subset never renders a blank band.
+    ``dropped_empty_conditions`` on the result lists only candidates for this
+    cut that are not drawn in it - named conditions absent from the matrix or
+    blank in its sites, or, when no conditions are named, rows blank in the named
+    sites. Conditions that were never asked for are not recorded as dropped. The
+    row order and cluster ids are the ones the full matrix was clustered into, so a
+    subset stays comparable to it.
     """
     if conditions is None and sites is None:
         return matrix
@@ -1199,7 +1289,12 @@ def subset_matrix(
 
     dropped_sites = [site for site in matrix.body_sites if site not in set(requested_sites)]
     kept = {matrix.conditions[i] for i in row_indices}
-    dropped_conditions = missing + [name for name in matrix.conditions if name not in kept]
+    candidates = (
+        matrix.conditions
+        if conditions is None
+        else [name for name in conditions if name in matrix.conditions]
+    )
+    dropped_conditions = missing + [name for name in candidates if name not in kept]
 
     # A cut that leaves the Other row or column behind must stop claiming to pool
     # into it, or its subtitle describes the figure it was cut from.
@@ -1231,9 +1326,8 @@ def subset_matrix(
     )
 
 
-def write_body_site_panels(
+def body_site_panels_figure(
     matrix: GuildMatrix,
-    output_path: Path,
     vintage: str | None,
     *,
     sites: Sequence[str],
@@ -1247,10 +1341,9 @@ def write_body_site_panels(
     mark_no_signal: bool = True,
     scale_reference: GuildMatrix | None = None,
     note: str | None = None,
-    significance: Mapping[tuple[str, str, str, str], str] | None = None,
-    column_marks: Mapping[tuple[str, str], str] | None = None,
-) -> Path:
-    """Draw one panel per named body site, at a width where the labels are readable.
+    evidence: EvidenceMarks | None = None,
+) -> go.Figure:
+    """Build one panel per named body site, at a width where the labels are readable.
 
     The combined figure fits every site by making each column narrow enough that
     the rotated `site | trait _ direction` labels run together. This pulls a few
@@ -1258,6 +1351,10 @@ def write_body_site_panels(
     per-trait colour ranges as the combined figure so a cell here is the same
     colour there, but with the site named once above the panel and the columns
     labelled by trait and direction alone.
+
+    A cut is exactly as tall as its rows. An earlier version padded short cuts
+    with blank rows on the belief that the renderer failed below five rows; a
+    one-row cut renders, so the padding only added white space.
     """
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
@@ -1265,14 +1362,6 @@ def write_body_site_panels(
     scales: dict[str, object] = dict(GUILD_COLORSCALES) if colorscales is None else colorscales
     labels = colorbar_labels or {}
     row_labels, row_values, row_blanks = _insert_cluster_gaps(matrix)
-    # Slack under a very short cut is added as blank rows, not by stretching the
-    # cells: every cell is ROW_HEIGHT tall in every figure. A distinct invisible
-    # character keeps each label unique without colliding with the cluster spacers.
-    blank_width = len(matrix.columns)
-    for index in range(MIN_PANEL_ROWS - len(row_labels)):
-        row_labels.append("\u2008" * (index + 1))
-        row_values.append([None] * blank_width)
-        row_blanks.append([False] * blank_width)
 
     missing = [site for site in sites if site not in matrix.body_sites]
     if missing:
@@ -1311,47 +1400,23 @@ def write_body_site_panels(
 
     longest_label = max(
         (
-            len(f"{labels.get(guild, guild)} {direction}") + 2
+            len(f"{labels.get(guild, guild)} {direction}")
             for guild in guild_order
             for direction in DIRECTIONS
         ),
         default=0,
     )
     # Vertical column labels hang straight down out of the plotting area, so the
-    # bottom margin is just the longest of them.
+    # bottom margin is just the longest of them. The colour bars hang down the
+    # right margin from the top of the plotting area, so the figure is at least as
+    # tall as the longest bar and its title.
     bottom = 60 + longest_label * COLUMN_LABEL_CHAR_PX
 
-    range_note = f"Each {group_noun} is on its own scale, the same one the combined figure uses"
-    if range_quantile < 1.0:
-        range_note += f", cut at the {range_quantile:.0%} quantile of observed cells"
-    grey_note = (
-        f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
-        if mark_no_signal
-        else ""
-    )
-    subtitle_lines = _wrap_subtitle(
-        [
-            f"Mean {value_phrase}, averaged within study then across studies, shown as a "
-            "percentage of the profile's summed trait-assertion counts (taxonomic "
-            "rollups can count one reported taxon many times), not of its taxa.",
-            f"{range_note}.",
-            "Rows are the conditions of the combined figure in the same clustered order, so a "
-            f"blank row here was drawn in another body site.{grey_note}",
-            *_coverage_note(matrix),
-            *_significance_note(significance or {}, column_marks or {}),
-            *([note] if note else []),
-            f"BugSigDB {vintage or 'vintage unknown'}.",
-        ],
-        width,
-    )
-    subtitle = "<br>".join(subtitle_lines)
-    # The subtitle sits in the top margin, so the margin is measured from the lines
-    # it actually holds. A fixed block either clipped a long subtitle onto the
-    # body-site headers or left a band of white above a short one.
-    top = PANEL_TOP_MARGIN + SUBTITLE_LINE_PX * len(subtitle_lines)
-    height = top + bottom + ROW_HEIGHT * len(row_labels)
     shapes: list[dict[str, object]] = []
+    annotations: list[dict[str, object]] = []
+    drawn: defaultdict[str, int] = defaultdict(int)
     for panel, site in enumerate(sites, start=1):
+        axis = "" if panel == 1 else str(panel)
         indices = [i for i, column in enumerate(matrix.columns) if _site_of_column(column) == site]
         # The site is named once above the panel, so a column only has to carry its
         # trait and direction.
@@ -1360,8 +1425,7 @@ def write_body_site_panels(
             guild = _guild_of_column(matrix.columns[i])
             direction = matrix.columns[i].rsplit("_", 1)[1]
             tick_text.append(f"{labels.get(guild, guild)} {direction}")
-        tick_text = _marked_columns(matrix.columns, tick_text, column_marks or {}, indices)
-        for position, guild in enumerate(guild_order):
+        for guild in guild_order:
             z_guild = [
                 [row[i] if _guild_of_column(matrix.columns[i]) == guild else None for i in indices]
                 for row in row_values
@@ -1376,39 +1440,12 @@ def write_body_site_panels(
                     zmax=scale_max[guild],
                     hoverongaps=False,
                     name=guild,
-                    # One colour bar per trait for the whole figure, not per panel.
-                    showscale=panel == len(sites),
-                    colorbar={
-                        # The unit is in the subtitle: six bars side by side leave
-                        # no room to repeat it above each one.
-                        "title": {
-                            "text": _wrapped(labels.get(guild, guild), width=11),
-                            "side": "top",
-                        },
-                        # Placed in paper coordinates - the plotting area - because
-                        # that is the frame the renderer actually honours for a
-                        # colour bar. Against the container the bars came out
-                        # hairline-thin or in the middle of the column labels, and
-                        # left to itself the renderer stacks all six on one spot.
-                        # x > 1 is to the right of the plotting area; the length is
-                        # in pixels so a two-row cut does not collapse its bars.
-                        "x": 1.0 + (40.0 + position * COLORBAR_SLOT_PX) / plot_width,
-                        "xanchor": "left",
-                        "y": 1.0,
-                        "yanchor": "top",
-                        "thickness": 13,
-                        "len": COLORBAR_PX,
-                        "lenmode": "pixels",
-                        "tickformat": PERCENT_TICKS,
-                        # Two ticks per bar; a third collides at this width.
-                        "nticks": 2,
-                    },
+                    showscale=False,
                 ),
                 row=1,
                 col=panel,
             )
         if mark_no_signal:
-            axis = "" if panel == 1 else str(panel)
             shapes.extend(
                 {
                     "type": "rect",
@@ -1426,17 +1463,102 @@ def write_body_site_panels(
                 for col, i in enumerate(indices)
                 if flags[i]
             )
-        shapes.extend(
-            _significance_shapes(
-                row_labels,
+        panel_shapes, panel_drawn = _significance_shapes(
+            row_labels,
+            matrix.columns,
+            row_values,
+            evidence.cells if evidence else {},
+            axis=axis,
+            column_indices=indices,
+        )
+        shapes.extend(panel_shapes)
+        for kind, count in panel_drawn.items():
+            drawn[kind] += count
+        annotations.extend(
+            _glyph_annotations(
                 matrix.columns,
-                row_values,
-                significance or {},
-                axis="" if panel == 1 else str(panel),
+                evidence.columns if evidence else {},
+                axis=axis,
                 column_indices=indices,
             )
         )
 
+    # One colour bar per trait, each on its own invisible trace. A bar carried by a
+    # data trace disappears whenever that trace has no drawn cell in the panel
+    # holding it, which is how a cut lost its arsenate reduction bar.
+    first_x = f"{labels.get(guild_order[0], guild_order[0])} {DIRECTIONS[0]}" if guild_order else ""
+    for position, guild in enumerate(guild_order):
+        figure.add_trace(
+            go.Heatmap(
+                z=[[0.0]],
+                x=[first_x],
+                y=[row_labels[0]] if row_labels else [""],
+                colorscale=scales[guild],
+                zmin=0.0,
+                zmax=scale_max[guild],
+                opacity=0.0,
+                hoverinfo="skip",
+                name=f"{guild} scale",
+                showscale=True,
+                colorbar={
+                    # The unit is in the subtitle: six bars side by side leave no
+                    # room to repeat it above each one.
+                    "title": {
+                        "text": _wrap_words(labels.get(guild, guild), COLORBAR_TITLE_CHARS),
+                        "side": "top",
+                    },
+                    # Placed in paper coordinates - the plotting area - because
+                    # that is the frame the renderer actually honours for a colour
+                    # bar. x > 1 is to the right of the plotting area; the length is
+                    # in pixels so a short cut does not collapse its bars.
+                    "x": 1.0 + (40.0 + position * COLORBAR_SLOT_PX) / plot_width,
+                    "xanchor": "left",
+                    "y": 1.0,
+                    "yanchor": "top",
+                    "thickness": 13,
+                    "len": COLORBAR_PX,
+                    "lenmode": "pixels",
+                    **_colorbar_ticks(scale_max[guild]),
+                },
+            ),
+            row=1,
+            col=1,
+        )
+
+    glyphs = sum(
+        1 for annotation in annotations if annotation["text"] in COLUMN_MARK_GLYPH.values()
+    )
+    glyph_band = GLYPH_BAND_PX if glyphs else 0
+    range_note = f"Each {group_noun} is on its own scale, the same one the combined figure uses"
+    if range_quantile < 1.0:
+        range_note += f", cut at the {range_quantile:.0%} quantile of observed cells"
+    grey_note = (
+        f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
+        if mark_no_signal
+        else ""
+    )
+    subtitle_lines = _wrap_subtitle(
+        [
+            f"Mean {value_phrase}, averaged within study then across studies, shown as a "
+            "percentage of the profile's summed trait-assertion counts (taxonomic "
+            "rollups can count one reported taxon many times), not of its taxa.",
+            f"{range_note}.",
+            "Rows are the conditions of the combined figure in the same clustered order, so a "
+            f"blank row here was drawn in another body site.{grey_note}",
+            *_coverage_note(matrix),
+            *_significance_note(evidence, drawn, glyphs),
+            *([note] if note else []),
+            f"BugSigDB {vintage or 'vintage unknown'}.",
+        ],
+        width,
+    )
+    subtitle = "<br>".join(subtitle_lines)
+    # The subtitle sits in the top margin, so the margin is measured from the lines
+    # it actually holds. A fixed block either clipped a long subtitle onto the
+    # body-site headers or left a band of white above a short one.
+    top = PANEL_TOP_MARGIN + SUBTITLE_LINE_PX * len(subtitle_lines) + glyph_band
+    legend_height = COLORBAR_PX + 80.0
+    height = top + max(bottom + ROW_HEIGHT * len(row_labels), legend_height)
     figure.update_layout(
         title={
             "text": f"{title}<br><sub>{subtitle}</sub>",
@@ -1449,12 +1571,8 @@ def write_body_site_panels(
         },
         shapes=shapes,
         width=width,
-        # The margins are fixed text - six subtitle lines above, rotated column
-        # labels below - so the plotting area has to be sized on top of them, not
-        # carved out of a fixed total. A four-row cut would otherwise render as a
-        # sliver with the colour bars stacked on each other.
         height=height,
-        margin={"l": left, "r": right, "b": bottom, "t": top},
+        margin={"l": left, "r": right, "b": height - top - ROW_HEIGHT * len(row_labels), "t": top},
         plot_bgcolor="white",
     )
     figure.update_xaxes(tickangle=COLUMN_LABEL_ANGLE)
@@ -1462,10 +1580,10 @@ def write_body_site_panels(
     figure.update_yaxes(title_text="condition", row=1, col=1)
     for annotation in figure.layout.annotations[: len(sites)]:
         annotation.font = {"size": 18}
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    figure.write_image(str(output_path), scale=2)
-    return output_path
+        annotation.yshift = 4 + glyph_band
+    for annotation in annotations:
+        figure.add_annotation(annotation)
+    return figure
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1531,7 +1649,10 @@ def main() -> int:
     correlation = compute_correlation(profiles, matrix)
     written = write_outputs(matrix, correlation, args.output_dir, vintage)
     written.append(
-        write_figure(matrix, args.output_dir / "guild_condition_body_site_heatmap.png", vintage)
+        save_figure(
+            condition_body_site_figure(matrix, vintage),
+            args.output_dir / "guild_condition_body_site_heatmap.png",
+        )
     )
 
     up_down, down_up = correlation.discordant

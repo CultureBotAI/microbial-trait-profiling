@@ -33,12 +33,14 @@ from scipy.stats import binomtest, false_discovery_control, spearmanr
 from bsdbng.guild_maps import (
     OTHER_LABEL,
     SIGN_TOLERANCE,
+    EvidenceMarks,
     GuildMatrix,
+    body_site_panels_figure,
     build_matrix,
+    condition_body_site_figure,
+    save_figure,
     study_direction_means,
     subset_matrix,
-    write_body_site_panels,
-    write_figure,
     write_matrix_outputs,
 )
 from bsdbng.paths import DERIVED_DATA_DIR
@@ -55,9 +57,19 @@ from bsdbng.trait_guilds import (
     write_stats_report,
 )
 from bsdbng.trait_significance import (
-    SignificanceOverlay,
+    CELL_COMPOSITION,
+    COMPOSITION_Q,
+    ENRICHMENT_MIN_FOLD,
+    ENRICHMENT_Q,
+    MIN_SITE_PAIRS,
+    SITE_COMPOSITION,
+    SUPPORT,
+    CellKey,
+    EvidenceOverlay,
     build_overlay,
-    write_significance_tables,
+    sha256,
+    support_summary,
+    write_evidence_tables,
 )
 
 TRAIT_ORDER: tuple[str, ...] = tuple(TABLE1_TRAITS)
@@ -81,15 +93,16 @@ class FocusPanel:
 
 
 # The combined figure shows what was measured where, but the Feces block sets
-# the eye's scale and everything beside it reads as empty. These four cuts group
-# conditions that were sampled in the same places, so each is legible on its own:
-# the gut block alone, the gut against the pooled remainder, the two cervical
-# conditions, and the oral cluster the fourth cut was asked for. On v1.3.1 that
-# last panel draws rheumatoid arthritis and smoking behavior only. Gingivitis and
-# periodontitis are both in the corpus but fail different display rules:
-# periodontitis falls just outside the top-60 cut, while gingivitis has at most
-# one study per cell and is dropped as blank at any cut width. The figure names
-# each with its own reason rather than redrawing the group under the same title.
+# the eye's scale and everything beside it reads as empty. These four cuts are
+# overlapping views of it, not a partition: the Feces cut is contained in the
+# Feces-and-Other cut, and the Other block appears in three of the four. Together
+# they cover every drawn condition, which `uncovered_conditions` checks on each
+# run. The oral cut was asked for as gingivitis, periodontitis, smoking behavior
+# and rheumatoid arthritis; on v1.3.1 gingivitis and periodontitis are in the
+# corpus but fail different display rules (periodontitis is outside the top-60
+# cut, gingivitis has at most one study per cell), so the figure names each with
+# its own reason. Oral squamous cell carcinoma, the one drawn condition sampled
+# only in an oral site, is added so that the "oral" cut holds an oral condition.
 FOCUS_PANELS: tuple[FocusPanel, ...] = (
     FocusPanel(slug="feces", subtitle="Feces", sites=("Feces",)),
     FocusPanel(
@@ -107,12 +120,13 @@ FOCUS_PANELS: tuple[FocusPanel, ...] = (
     ),
     FocusPanel(
         slug="oral",
-        subtitle="the oral cluster, with rheumatoid arthritis",
+        subtitle="the requested oral-cluster conditions and oral squamous cell carcinoma",
         conditions=(
             "Gingivitis",
             "Rheumatoid arthritis",
             "Periodontitis",
             "Smoking behavior",
+            "Oral squamous cell carcinoma",
         ),
     ),
 )
@@ -162,8 +176,8 @@ def missing_condition_note(
     parts = []
     if missing.absent_from_corpus:
         parts.append(
-            "Not drawn because this BugSigDB export does not contain them: "
-            f"{', '.join(missing.absent_from_corpus)}."
+            "Not drawn because the analysed corpus (human, paired experiments of this "
+            f"BugSigDB export) does not contain them: {', '.join(missing.absent_from_corpus)}."
         )
     if missing.blank_after_masking:
         parts.append(
@@ -518,49 +532,122 @@ def write_shift_figure(
     return output_path
 
 
-def matrix_binning(
-    profiles: Sequence[Profile], matrix: GuildMatrix
-) -> tuple[dict[str, str], dict[str, str]]:
-    """Reproduce the label binning `build_matrix` used, as raw label -> drawn label.
+def uncovered_conditions(
+    matrix: GuildMatrix, panels: Sequence[FocusPanel] = FOCUS_PANELS
+) -> list[str]:
+    """Drawn conditions that appear in none of the focus cuts."""
+    covered: set[str] = set()
+    for panel in panels:
+        covered.update(
+            subset_matrix(matrix, conditions=panel.conditions, sites=panel.sites).conditions
+        )
+    return [name for name in matrix.conditions if name not in covered]
 
-    The significance tests run over profiles, but a heatmap cell is a drawn label,
-    which for anything outside the top-N cut is the pooled Other bucket. Without
-    this map a profile pooled into Other would be scored against a cell that is
-    not the one it was drawn in.
+
+def cell_display_status(matrix: GuildMatrix, cell: CellKey) -> str:
+    """Where an evidence cell, in exact source labels, lands in the combined figure.
+
+    A pooled Other row or column is never a match, because it is not one label.
     """
-    drawn_conditions = set(matrix.conditions)
-    drawn_sites = set(matrix.body_sites)
+    condition, site, trait, direction = cell
+    column = f"{site}|{trait}_{direction}"
+    if site == OTHER_LABEL or column not in matrix.columns:
+        return "site_not_drawn"
+    if condition == OTHER_LABEL or condition not in matrix.conditions:
+        return "condition_not_drawn"
+    row = matrix.conditions.index(condition)
+    index = matrix.columns.index(column)
+    if matrix.values[row][index] is not None:
+        return "drawn"
+    if matrix.sampled_no_signal[row][index]:
+        return "no_signal"
+    return "below_min_studies" if matrix.study_counts[row][index] else "not_sampled"
 
-    def binned(labels: set[str], drawn: set[str]) -> dict[str, str]:
-        mapping = {label: (label if label in drawn else OTHER_LABEL) for label in labels if label}
-        return {raw: cell for raw, cell in mapping.items() if cell in drawn}
 
-    return (
-        binned({p.condition for p in profiles}, drawn_conditions),
-        binned({p.body_site for p in profiles}, drawn_sites),
+def evidence_marks(overlay: EvidenceOverlay, tests_performed: int) -> EvidenceMarks:
+    """The figure's view of the evidence, with a legend in the audit's wording (#179).
+
+    Every string says which evidence type it describes, what rule produced it and
+    what it does not establish, so no mark can be read as a calibrated cell test.
+    """
+    cells = overlay.cell_marks()
+    totals: dict[str, int] = {}
+    for kinds in cells.values():
+        for kind in kinds:
+            totals[kind] = totals.get(kind, 0) + 1
+    return EvidenceMarks(
+        cells=cells,
+        totals=totals,
+        columns=overlay.site_marks(),
+        legend={
+            SUPPORT: (
+                "Solid outline - aggregated profile-level support: a strict majority of the "
+                "(at least two) studies contributing to the cell have at least one profile whose "
+                "trait annotations are enriched against the analysed corpus (one-tailed "
+                f"hypergeometric, Benjamini-Hochberg across all {tests_performed:,} profile-trait "
+                f"tests, q <= {ENRICHMENT_Q}, fold >= {ENRICHMENT_MIN_FOLD}). A descriptive "
+                "support rule with no cell-level p- or q-value; the urn counts trait-annotation "
+                "assertions, not taxa (#131)."
+            ),
+            CELL_COMPOSITION: (
+                "Dotted inner outline - condition-by-body-site paired composition contrast "
+                f"(q <= {COMPOSITION_Q}, one family over every tested condition, site and "
+                "trait), on the side it favours."
+            ),
+        },
+        column_legend=(
+            "Triangle above a trait's two columns - body-site paired composition contrast: "
+            "significant increased-minus-decreased transformed annotation-share contrast "
+            f"pooled across every condition in that exact body site (q <= {COMPOSITION_Q} "
+            "within the site's family), pointing to the higher-share direction. It does not "
+            "test any one condition in the column."
+        ),
+        notes=(
+            "Composition marks reimplement the composition arm with stated departures: one "
+            "value per study, exact body-site labels with at least "
+            f"{MIN_SITE_PAIRS} pairs, a non-MediaDive denominator, zero-total pairs excluded, "
+            f"and a q <= {COMPOSITION_Q} display cut chosen here. The six traits were selected "
+            "on this corpus, so no mark confirms them independently.",
+        ),
     )
 
 
-def report_significance(overlay: SignificanceOverlay) -> None:
-    """Print what the two arms could and could not say about the drawn cells."""
-    outlined = len(overlay.marks)
+def report_evidence(overlay: EvidenceOverlay, matrix: GuildMatrix) -> None:
+    """Print each evidence type separately, with drawn and undrawn counts."""
+    run = overlay.enrichment
     print(
-        f"\nSignificance overlay: {overlay.tests_performed} hypergeometric tests over "
-        f"{overlay.profiles_tested} profiles; {outlined} cells outlined."
+        f"\nProfile-level enrichment: {run.tests_performed} tests over {run.profiles_tested} "
+        "profiles."
     )
-    if overlay.untested_traits:
-        print(f"  traits with no enrichment call: {', '.join(overlay.untested_traits)}")
+    if run.untested_traits:
+        print(f"  traits with no profile test: {', '.join(run.untested_traits)}")
+    summary = support_summary(overlay.support.values())
+    print(f"Aggregated profile support over {len(overlay.support)} exact cells: {summary}")
+    marks = overlay.cell_marks()
+    drawn = [cell for cell in marks if cell_display_status(matrix, cell) == "drawn"]
+    print(f"  cells meeting a mark rule: {len(marks)}; drawn in the combined figure: {len(drawn)}")
+    both: dict[tuple[str, str, str], int] = {}
+    for condition, site, trait, direction in drawn:
+        if SUPPORT in marks[(condition, site, trait, direction)]:
+            both[(condition, site, trait)] = both.get((condition, site, trait), 0) + 1
     print(
-        f"  cells where both directions were called: {overlay.both_directions} "
-        f"of {len(overlay.enrichment_verdicts)} called cells"
+        "  drawn condition-site-trait combinations supported in both directions: "
+        f"{sum(1 for n in both.values() if n == 2)} of {len(both)}"
     )
-    for call in sorted(overlay.composition, key=lambda c: c.q_value):
-        if call.stratum_kind == "body_site" and call.significant:
+    for result in sorted(overlay.table1_composition(), key=lambda r: r.q_value or 2.0):
+        if result.evidence_type == SITE_COMPOSITION and result.significant:
             print(
-                f"  composition {call.body_site} / {call.trait}: "
-                f"mean {call.mean_contrast:+.3f} over {call.studies} studies, "
-                f"q {call.q_value:.3g}, higher on the {call.direction} side"
+                f"  site composition {result.body_site} / {result.trait}: mean "
+                f"{result.mean_contrast_z:+.3f} z over {result.studies} studies "
+                f"({result.paired_experiments} pairs, {result.conditions} conditions), "
+                f"q {result.q_value:.3g} in {result.family} (n={result.family_size}), "
+                f"six-trait q {result.table1_q_value:.3g}"
             )
+    cells = [r for r in overlay.composition if r.evidence_type == CELL_COMPOSITION]
+    print(
+        f"Condition-site composition: {sum(r.p_value is not None for r in cells)} tested, "
+        f"{sum(r.significant for r in cells)} at q <= {COMPOSITION_Q}"
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -648,9 +735,16 @@ def main() -> int:
         args.experiments_input,
         TABLE1_TRAITS,
         human_only=not args.include_non_human,
+        reject_missing_counts=True,
     )
     vintage = read_bugsigdb_vintage(args.full_dump_input)
     write_stats_report(stats, vintage)
+    # Evidence is keyed by exact source labels and the figure's pooled rows and
+    # columns are called Other, so a source label spelled that way would be
+    # silently confused with the pool.
+    literal_other = {p.condition for p in profiles} | {p.body_site for p in profiles}
+    if OTHER_LABEL in literal_other:
+        raise ValueError(f"a source condition or body site is literally {OTHER_LABEL!r}")
 
     matrix = build_matrix(
         profiles,
@@ -681,51 +775,76 @@ def main() -> int:
 
     result = compute_direction_shifts(profiles, TRAIT_ORDER)
 
-    # Both arms' verdicts for the cells this matrix draws (#172), so a cell can be
-    # outlined when either of them calls it and one figure carries all three
-    # statistical approaches.
-    bin_condition, bin_body_site = matrix_binning(profiles, matrix)
-    overlay = build_overlay(
-        profiles,
-        TABLE1_TRAITS,
-        bin_condition=bin_condition,
-        bin_body_site=bin_body_site,
-        profile_path=args.profile_input,
-    )
-    report_significance(overlay)
+    # Evidence is computed on the analysed corpus before any display choice (#176)
+    # and only then placed on the figure.
+    overlay = build_overlay(profiles, TABLE1_TRAITS, args.profile_input)
+    report_evidence(overlay, matrix)
+    evidence = evidence_marks(overlay, overlay.enrichment.tests_performed)
 
     written = write_matrix_outputs(matrix, args.output_dir, OUTPUT_PREFIX)
     written.extend(write_shift_table(result, args.output_dir, vintage))
     written.extend(
-        write_significance_tables(
+        write_evidence_tables(
             overlay,
-            args.output_dir / f"{OUTPUT_PREFIX}_cell_significance.tsv",
-            args.output_dir / f"{OUTPUT_PREFIX}_composition_contrasts.tsv",
+            args.output_dir,
+            OUTPUT_PREFIX,
+            display_status=lambda cell: cell_display_status(matrix, cell),
+            site_drawn=lambda site: site in matrix.body_sites and site != OTHER_LABEL,
+            provenance={
+                "bugsigdb_vintage": vintage,
+                "profile_path": str(args.profile_input),
+                "profile_sha256": sha256(args.profile_input),
+                "experiments_path": str(args.experiments_input),
+                "experiments_sha256": sha256(args.experiments_input),
+                "analysis_source_sha256": sha256(Path(__file__).with_name("trait_significance.py")),
+                "corpus": {
+                    "human_only": not args.include_non_human,
+                    "paired_only": True,
+                    "kept_profiles": stats.kept_profiles,
+                    "kept_experiments": stats.kept_experiments,
+                    "trait_columns_used": stats.trait_columns_used,
+                },
+                "display": {
+                    "max_conditions": args.max_conditions,
+                    "max_body_sites": args.max_body_sites,
+                    "min_studies": args.min_studies,
+                    "note": "display settings decide where evidence is drawn, never what is tested",
+                },
+            },
         )
     )
+    colorscales: dict[str, object] = {trait: trait_colorscale(trait) for trait in TRAIT_ORDER}
+    colorbar_labels = {t: t.replace("_", " ") for t in TRAIT_ORDER}
     written.append(
-        write_figure(
-            matrix,
+        save_figure(
+            condition_body_site_figure(
+                matrix,
+                vintage,
+                guild_order=TRAIT_ORDER,
+                colorscales=colorscales,
+                title="Manuscript Table 1 traits by condition and body site",
+                group_noun="trait",
+                value_phrase="trait fraction",
+                shared_range=False,
+                colorbar_labels=colorbar_labels,
+                range_quantile=0.98,
+                separate_body_sites=True,
+                mark_no_signal=args.mark_no_signal,
+                evidence=evidence,
+            ),
             args.output_dir / f"{OUTPUT_PREFIX}_condition_body_site_heatmap.png",
-            vintage,
-            guild_order=TRAIT_ORDER,
-            colorscales={trait: trait_colorscale(trait) for trait in TRAIT_ORDER},
-            title="Manuscript Table 1 traits by condition and body site",
-            group_noun="trait",
-            value_phrase="trait fraction",
-            shared_range=False,
-            colorbar_labels={t: t.replace("_", " ") for t in TRAIT_ORDER},
-            range_quantile=0.98,
-            separate_body_sites=True,
-            mark_no_signal=args.mark_no_signal,
-            significance=overlay.marks,
-            column_marks=overlay.column_marks,
         )
     )
     # The combined figure squeezes every body site in, which leaves each column
     # too narrow to label and the sparse blocks unreadable next to the gut. The
-    # same matrix is cut into the four smaller heatmaps of FOCUS_PANELS, all on
+    # same matrix is redrawn as the four overlapping cuts of FOCUS_PANELS, all on
     # the combined figure's colour ranges so a cell is the same colour in each.
+    uncovered = uncovered_conditions(matrix)
+    print(
+        "focus panels cover every drawn condition"
+        if not uncovered
+        else f"drawn conditions in no focus panel: {', '.join(uncovered)}"
+    )
     for panel in FOCUS_PANELS:
         cut = subset_matrix(matrix, conditions=panel.conditions, sites=panel.sites)
         if not cut.conditions or not cut.body_sites:
@@ -760,23 +879,24 @@ def main() -> int:
             f"{len(cut.body_sites)} body sites ({', '.join(cut.body_sites)})"
         )
         written.append(
-            write_body_site_panels(
-                cut,
+            save_figure(
+                body_site_panels_figure(
+                    cut,
+                    vintage,
+                    sites=cut.body_sites,
+                    guild_order=TRAIT_ORDER,
+                    colorscales=colorscales,
+                    title=f"Manuscript Table 1 traits: {panel.subtitle}",
+                    group_noun="trait",
+                    value_phrase="trait fraction",
+                    colorbar_labels=colorbar_labels,
+                    range_quantile=0.98,
+                    mark_no_signal=args.mark_no_signal,
+                    scale_reference=matrix,
+                    note=note,
+                    evidence=evidence,
+                ),
                 args.output_dir / f"{OUTPUT_PREFIX}_focus_{panel.slug}.png",
-                vintage,
-                sites=cut.body_sites,
-                guild_order=TRAIT_ORDER,
-                colorscales={trait: trait_colorscale(trait) for trait in TRAIT_ORDER},
-                title=f"Manuscript Table 1 traits: {panel.subtitle}",
-                group_noun="trait",
-                value_phrase="trait fraction",
-                colorbar_labels={t: t.replace("_", " ") for t in TRAIT_ORDER},
-                range_quantile=0.98,
-                mark_no_signal=args.mark_no_signal,
-                scale_reference=matrix,
-                note=note,
-                significance=overlay.marks,
-                column_marks=overlay.column_marks,
             )
         )
     written.append(
