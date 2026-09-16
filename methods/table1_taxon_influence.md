@@ -77,7 +77,7 @@ does not recover a human profile count.
 | `contributing_universe.tsv` | Full positive contribution universe for each declared scope, trait, direction and resolution level; no display cutoff. |
 | `concentration.tsv` | All six traits and both directions; resolved/unresolved mass, resolved taxon count, HHI and largest share conditional on resolved mass. |
 | `cross_trait_overlap.tsv` | All 15 trait pairs at species/genus/family, separately by curated direction and scope. |
-| `scenarios.tsv`, `predictions.tsv` | Full lineage inventory, support, selection/status and the four predicted genera, whether or not resolved. |
+| `scenarios.tsv`, `predictions.tsv` | Full lineage inventory, support, selection reasons/status and the four predicted genera, whether or not resolved. |
 | `effects.tsv.gz` | Scenario/scope/representation/feature effects, uncertainty, directional support, eligibility changes and separate correction families. |
 
 `distinct_source_taxa` includes directly reported source taxa; `descendant_source_taxa`

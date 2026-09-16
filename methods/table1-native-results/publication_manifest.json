@@ -1,0 +1,26 @@
+{
+  "native_manifest_sha256": "4a2bd760d43dc123adb94489e684f426321f22251e7f586271d9d877dad37165",
+  "publisher_sha256": "46eb9a40c3e233a2f5f48308c2cddc1fe51f178842f674d66589aa0e1461d331",
+  "tables": {
+    "native_table1_stats.tsv.gz": {
+      "rows": 600,
+      "sha256": "769547aa0aeb03a9a94d813b52b09d3bbd55f224a8c06420a8b6117543f30871"
+    },
+    "native_composition_comparison.tsv.gz": {
+      "rows": 1200,
+      "sha256": "ae693626a59366259e56df0be0535e79f158633a032e9d75eef4b222bad307d1"
+    },
+    "native_ora_fold_comparison.tsv.gz": {
+      "rows": 1200,
+      "sha256": "7ff73922354b9a48dbd2b5d83b238052ba63bbb287d1fb15ce8eb0eb89adf973"
+    },
+    "native_ora_families.tsv": {
+      "rows": 200,
+      "sha256": "cb2d2a2a080df2fb11b7c690c6936ad8b5afc941ba2df2b5613bc828535250f4"
+    },
+    "scenarios.tsv": {
+      "rows": 1233,
+      "sha256": "9b02a54e78262a79c1f2e72ea11aac10cb986fe07f2d56611fdb365b23919cdb"
+    }
+  }
+}
