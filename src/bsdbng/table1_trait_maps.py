@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import argparse
 import csv
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -84,9 +84,12 @@ class FocusPanel:
 # the eye's scale and everything beside it reads as empty. These four cuts group
 # conditions that were sampled in the same places, so each is legible on its own:
 # the gut block alone, the gut against the pooled remainder, the two cervical
-# conditions, and the oral cluster - which rheumatoid arthritis falls into,
-# alongside periodontitis and gingivitis rather than with the other systemic
-# diseases.
+# conditions, and the oral cluster the fourth cut was asked for. On v1.3.1 that
+# last panel draws rheumatoid arthritis and smoking behavior only. Gingivitis and
+# periodontitis are both in the corpus but fail different display rules:
+# periodontitis falls just outside the top-60 cut, while gingivitis has at most
+# one study per cell and is dropped as blank at any cut width. The figure names
+# each with its own reason rather than redrawing the group under the same title.
 FOCUS_PANELS: tuple[FocusPanel, ...] = (
     FocusPanel(slug="feces", subtitle="Feces", sites=("Feces",)),
     FocusPanel(
@@ -113,6 +116,67 @@ FOCUS_PANELS: tuple[FocusPanel, ...] = (
         ),
     ),
 )
+
+
+@dataclass(frozen=True)
+class MissingConditions:
+    """Requested panel conditions that are not drawn, split by cause."""
+
+    absent_from_corpus: tuple[str, ...]
+    blank_after_masking: tuple[str, ...]
+    cut_by_display: tuple[str, ...]
+
+
+def missing_conditions(
+    requested: Sequence[str],
+    *,
+    corpus_conditions: Collection[str],
+    drawn_conditions: Sequence[str],
+    blank_conditions: Collection[str] = (),
+) -> MissingConditions:
+    """Split undrawn panel conditions into the three causes that look alike.
+
+    A requested condition can be undrawn because the export does not hold it,
+    because it is held and every cell fell below the min-studies threshold so the
+    row was dropped as blank, or because the top-N cut never selected it. Testing
+    membership of the drawn conditions alone cannot tell these apart, since that
+    set is already the cut one — and naming the wrong cause states something
+    false about the data. `blank_conditions` is the matrix's own record of rows it
+    dropped as entirely blank, so the second case is read from the build rather
+    than guessed at.
+    """
+    drawn = set(drawn_conditions)
+    blank = set(blank_conditions)
+    held = [name for name in requested if name in corpus_conditions and name not in drawn]
+    return MissingConditions(
+        absent_from_corpus=tuple(name for name in requested if name not in corpus_conditions),
+        blank_after_masking=tuple(name for name in held if name in blank),
+        cut_by_display=tuple(name for name in held if name not in blank),
+    )
+
+
+def missing_condition_note(
+    missing: MissingConditions, *, max_conditions: int, min_studies: int
+) -> str | None:
+    """Phrase each cause separately, or return None when everything is drawn."""
+    parts = []
+    if missing.absent_from_corpus:
+        parts.append(
+            "Not drawn because this BugSigDB export does not contain them: "
+            f"{', '.join(missing.absent_from_corpus)}."
+        )
+    if missing.blank_after_masking:
+        parts.append(
+            "Sampled in this export, but every cell is backed by fewer than "
+            f"{min_studies} studies, so the row is blank and not drawn: "
+            f"{', '.join(missing.blank_after_masking)}."
+        )
+    if missing.cut_by_display:
+        parts.append(
+            f"Sampled in this export but outside the top-{max_conditions} condition "
+            f"cut, so not drawn: {', '.join(missing.cut_by_display)}."
+        )
+    return " ".join(parts) if parts else None
 
 
 def trait_colorscale(trait: str) -> list[list[float | str]]:
@@ -239,10 +303,9 @@ def compute_direction_shifts(
             )
         )
 
-    # Rank correlation between traits over the per-study contrasts. Unlike the
-    # within-profile guild correlations in the oxygen figure, this compares a
-    # trait against another trait across studies rather than two shares of one
-    # profile total, so it is not forced negative by compositionality.
+    # These descriptive correlations still depend on profile denominators.
+    # Taking differences and averaging by study does not remove that dependence;
+    # closure permits positive as well as negative component correlations.
     spearman: dict[str, tuple[float, float, int]] = {}
     for i, left in enumerate(trait_order):
         for right in trait_order[i + 1 :]:
@@ -435,6 +498,7 @@ def write_shift_figure(
         "are excluded from a trait's test, so the denominators differ between traits."
         "<br>Error bars are exact binomial 95% intervals; q is Benjamini-Hochberg across the "
         f"six traits. Correlations are between traits over those per-study contrasts. "
+        "Both fractions and their contrasts remain denominator-dependent. "
         f"BugSigDB {vintage or 'vintage unknown'}."
     )
     figure.update_layout(
@@ -613,6 +677,8 @@ def main() -> int:
             f"({', '.join(sorted(matrix.dropped_empty_conditions))})"
         )
 
+    corpus_conditions = {profile.condition for profile in profiles if profile.condition}
+
     result = compute_direction_shifts(profiles, TRAIT_ORDER)
 
     # Both arms' verdicts for the cells this matrix draws (#172), so a cell can be
@@ -665,16 +731,29 @@ def main() -> int:
         if not cut.conditions or not cut.body_sites:
             print(f"focus panel {panel.slug}: nothing drawn, skipped")
             continue
-        absent = [name for name in (panel.conditions or ()) if name not in matrix.conditions]
-        note = None
-        if absent:
-            # A panel names the conditions the cut was asked for; which of them the
-            # corpus actually holds depends on the vintage, so say so on the figure
-            # rather than quietly drawing a smaller group under the same title.
-            print(f"focus panel {panel.slug}: conditions absent, skipped: {', '.join(absent)}")
-            note = (
-                "Not drawn because this BugSigDB export does not contain them: "
-                f"{', '.join(absent)}."
+        missing = missing_conditions(
+            panel.conditions or (),
+            corpus_conditions=corpus_conditions,
+            drawn_conditions=matrix.conditions,
+            blank_conditions=matrix.dropped_empty_conditions,
+        )
+        note = missing_condition_note(
+            missing, max_conditions=args.max_conditions, min_studies=args.min_studies
+        )
+        if missing.absent_from_corpus:
+            print(
+                f"focus panel {panel.slug}: absent from the corpus: "
+                f"{', '.join(missing.absent_from_corpus)}"
+            )
+        if missing.blank_after_masking:
+            print(
+                f"focus panel {panel.slug}: sampled but blank below "
+                f"{args.min_studies} studies: {', '.join(missing.blank_after_masking)}"
+            )
+        if missing.cut_by_display:
+            print(
+                f"focus panel {panel.slug}: in the corpus but outside the top-"
+                f"{args.max_conditions} cut: {', '.join(missing.cut_by_display)}"
             )
         print(
             f"focus panel {panel.slug}: {len(cut.conditions)} conditions x "

@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: bsdbng
+title: microbial-trait-profiling
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
@@ -9,5 +9,5 @@ authors:
     family-names: Miller
     email: MAM@lbl.gov
     affiliation: Lawrence Berkeley National Laboratory
-repository-code: https://github.com/turbomam/bsdbng
+repository-code: https://github.com/CultureBotAI/microbial-trait-profiling
 license: MIT

@@ -1,7 +1,7 @@
 # BugSigDB Data Access Methods
 
 This note documents the available ways to access BugSigDB data, what we
-learned about each, and the criteria for choosing among them in `bsdbng`.
+learned about each, and the criteria for choosing among them in `microbial-trait-profiling`.
 
 ## BugSigDB is a structured database
 
@@ -24,7 +24,7 @@ we had access to the structured data directly.
 | BugSigDB main page (live) | 2,010 | Authoritative count |
 | studies.csv (Help:Export) | 2,009 | 1,993 Complete, 10 Incomplete, 6 blank State |
 | full_dump.csv (BugSigDBExports) | 1,949 | 60 studies lost to upstream filtering |
-| bsdbng output | 1,923 | After our filtering (NA direction/taxa) |
+| This project's output | 1,923 | After our filtering (NA direction/taxa) |
 
 The 60-study gap between studies.csv and full_dump.csv is caused by
 BugSigDBExports' `dump_release.R` filtering. We don't control that filter.
@@ -88,14 +88,14 @@ These are properties of the CSV flattening, not of the underlying data:
 
 ## Column coverage (51 columns in full_dump.csv)
 
-- **45 captured** in bsdbng schema (study, experiment, signature, taxon levels)
+- **45 captured** in `schema/bsdbng.yaml` (study, experiment, signature, taxon levels)
 - **6 not captured** (curatorial metadata): Signature page name, Curated date, Curator, Revision editor, State, Reviewer
 - **State column** should be used to filter: only ingest Complete records
   (not yet implemented — tracked in issue #64)
 
-## Current approach in bsdbng
+## Current approach in microbial-trait-profiling
 
-bsdbng currently uses `full_dump.csv` (from BugSigDBExports) as the
+`microbial-trait-profiling` currently uses `full_dump.csv` (from BugSigDBExports) as the
 primary input, with the three raw CSVs downloaded but unused. The merge
 from separate CSVs is a `NotImplementedError` stub.
 

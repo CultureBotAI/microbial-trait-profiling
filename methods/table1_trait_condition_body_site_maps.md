@@ -128,23 +128,40 @@ sampled in the same places:
 
 - `focus_feces`, the 43 conditions drawn in Feces, on that block alone.
 - `focus_feces_other`, the same conditions plus those drawn only in the pooled
-  Other block, 49 in total, over the two blocks. This is the cut that carries
-  every condition the combined figure draws.
+  Other block, 49 in total, over the two blocks. That is 49 of the combined
+  figure's 51 conditions: cervical glandular intraepithelial neoplasia and oral
+  squamous cell carcinoma carry no Feces or Other cell, so neither appears here.
 - `focus_cervical`, cervical glandular intraepithelial neoplasia and human
   papilloma virus infection, over Uterine cervix, Vagina, and Other.
 - `focus_oral`, asked for as the cluster of gingivitis, periodontitis, smoking
-  behavior, and rheumatoid arthritis. On this corpus it draws two of those four:
-  the pinned v1.3.1 export contains no gingivitis or periodontitis study, so
-  those rows do not exist to cut. The figure names them as absent rather than
-  drawing a smaller group under the same title.
+  behavior, and rheumatoid arthritis. On this corpus it draws two of those four.
+  Gingivitis and periodontitis are both in the pinned v1.3.1 export — 2 and 7
+  human paired studies respectively, 9 studies in all under those exact condition
+  labels — but neither reaches the drawn matrix, for two different reasons given
+  below. The figure names each with its own reason rather than drawing a smaller
+  group under the same title.
 
 That last cut is worth stating plainly, because it was proposed from a figure
 built on the unpinned devel export. There, gingivitis, periodontitis, smoking
 behavior, and rheumatoid arthritis clustered together, and rheumatoid arthritis
 grouping with three oral conditions rather than with the other systemic diseases
-was the observation the cut was meant to show. It is an artefact of vintage, not
-a result: v1.3.1 is a reviewed-only export and the oral studies are not in it.
-Any reading of that cluster has to wait for a corpus that contains it.
+was the observation the cut was meant to show. That observation cannot be checked
+here, but the reason is the display rules, not the vintage, and the two conditions
+fail different rules:
+
+- **Periodontitis is cut by width.** Of 451 distinct conditions it ranks 62nd on
+  20 profiles — the same profile count as the 60th-ranked condition, losing its
+  place only to the deterministic alphabetical tiebreak in `_top_labels`. Raising
+  `--max-conditions` to 62 draws it, which is measured, not inferred.
+- **Gingivitis is cut by support, so no width draws it.** It ranks 212nd on 4
+  profiles, and its two studies sit in different body sites, leaving at most one
+  study per cell against `--min-studies 3`. Widening the cut to 250 or beyond
+  admits the row and then drops it again as entirely blank. Only lowering
+  `--min-studies`, which would weaken every other cell in the figure, would draw
+  it.
+
+So drawing all four together is not a matter of widening the cut. It needs a
+corpus where gingivitis carries at least three studies in one body site.
 
 Each cut fixes one axis and derives the other from the data: naming conditions
 keeps the body sites those conditions were actually drawn in, naming body sites
@@ -219,12 +236,12 @@ effect sizes are small: every trait sits within about eight points of 0.5, and
 the significance comes from the number of studies rather than from the size of
 the shift, which is worth stating explicitly next to the q-values.
 
-The right panel reports Spearman rank correlations between traits across those
-per-study contrasts. This is deliberately not the same quantity as the guild
-figure's within-profile correlation, which compares two shares of one profile
-total and is therefore pushed negative by compositionality; correlating one
-trait's contrast against another trait's contrast across studies does not share
-that artefact. Coccus shaped and sphere shaped correlate at rho = 0.45 over 959
+The right panel reports descriptive Spearman rank correlations between traits
+across those per-study contrasts. These still depend on the profile totals:
+differencing and study-level averaging do not remove compositional effects.
+Closure can produce positive as well as negative component correlations, so
+neither sign alone establishes biological association. Coccus shaped and sphere
+shaped correlate at rho = 0.45 over 959
 studies, which is high enough to treat them as overlapping evidence rather than
 two independent lines of it, but well short of the near-identity their names
 suggest. Facultatively aerobic correlates positively with coccus shaped (0.45),
@@ -235,6 +252,11 @@ missing value if either series is constant, since Spearman is undefined there.
 The fifteen pairwise Spearman p-values are reported uncorrected, unlike the six
 binomial p-values; they describe the redundancy between traits rather than
 supporting a claim of their own.
+
+The separate [paired log-ratio analysis](table1_paired_log_ratios.md) tests
+reference-explicit relative contrasts for all 15 trait pairs. It reports zero
+exclusions and the resulting conditional study populations. It does not replace
+these historical fraction results or turn them into absolute abundance claims.
 
 ## Reproducing
 
