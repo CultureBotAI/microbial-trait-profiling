@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import argparse
 import csv
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -78,9 +78,10 @@ class FocusPanel:
 # the eye's scale and everything beside it reads as empty. These four cuts group
 # conditions that were sampled in the same places, so each is legible on its own:
 # the gut block alone, the gut against the pooled remainder, the two cervical
-# conditions, and the oral cluster - which rheumatoid arthritis falls into,
-# alongside periodontitis and gingivitis rather than with the other systemic
-# diseases.
+# conditions, and the oral cluster the fourth cut was asked for. On v1.3.1 that
+# last panel draws rheumatoid arthritis and smoking behavior only: gingivitis
+# and periodontitis are in the corpus but fall outside the top-60 condition cut,
+# so the figure names them rather than redrawing the group under the same title.
 FOCUS_PANELS: tuple[FocusPanel, ...] = (
     FocusPanel(slug="feces", subtitle="Feces", sites=("Feces",)),
     FocusPanel(
@@ -107,6 +108,53 @@ FOCUS_PANELS: tuple[FocusPanel, ...] = (
         ),
     ),
 )
+
+
+@dataclass(frozen=True)
+class MissingConditions:
+    """Requested panel conditions that are not drawn, split by cause."""
+
+    absent_from_corpus: tuple[str, ...]
+    cut_by_display: tuple[str, ...]
+
+
+def missing_conditions(
+    requested: Sequence[str],
+    *,
+    corpus_conditions: Collection[str],
+    drawn_conditions: Sequence[str],
+) -> MissingConditions:
+    """Split undrawn panel conditions into the two causes that look alike.
+
+    A requested condition can be missing because the export does not hold it, or
+    because it is held and the top-N cut dropped it. Testing membership of the
+    drawn conditions alone cannot tell those apart, since that set is already the
+    cut one — and reporting the second as the first states something false about
+    the export.
+    """
+    drawn = set(drawn_conditions)
+    return MissingConditions(
+        absent_from_corpus=tuple(name for name in requested if name not in corpus_conditions),
+        cut_by_display=tuple(
+            name for name in requested if name in corpus_conditions and name not in drawn
+        ),
+    )
+
+
+def missing_condition_note(missing: MissingConditions, *, max_conditions: int) -> str | None:
+    """Phrase each cause separately, or return None when everything is drawn."""
+    parts = []
+    if missing.absent_from_corpus:
+        parts.append(
+            "Not drawn because this BugSigDB export does not contain them: "
+            f"{', '.join(missing.absent_from_corpus)}."
+        )
+    if missing.cut_by_display:
+        parts.append(
+            f"Sampled in this export but outside the top-{max_conditions} condition "
+            f"cut, so not drawn: {', '.join(missing.cut_by_display)}."
+        )
+    return " ".join(parts) if parts else None
 
 
 def trait_colorscale(trait: str) -> list[list[float | str]]:
@@ -562,6 +610,8 @@ def main() -> int:
             f"({', '.join(sorted(matrix.dropped_empty_conditions))})"
         )
 
+    corpus_conditions = {profile.condition for profile in profiles if profile.condition}
+
     result = compute_direction_shifts(profiles, TRAIT_ORDER)
 
     written = write_matrix_outputs(matrix, args.output_dir, OUTPUT_PREFIX)
@@ -592,16 +642,21 @@ def main() -> int:
         if not cut.conditions or not cut.body_sites:
             print(f"focus panel {panel.slug}: nothing drawn, skipped")
             continue
-        absent = [name for name in (panel.conditions or ()) if name not in matrix.conditions]
-        note = None
-        if absent:
-            # A panel names the conditions the cut was asked for; which of them the
-            # corpus actually holds depends on the vintage, so say so on the figure
-            # rather than quietly drawing a smaller group under the same title.
-            print(f"focus panel {panel.slug}: conditions absent, skipped: {', '.join(absent)}")
-            note = (
-                "Not drawn because this BugSigDB export does not contain them: "
-                f"{', '.join(absent)}."
+        missing = missing_conditions(
+            panel.conditions or (),
+            corpus_conditions=corpus_conditions,
+            drawn_conditions=matrix.conditions,
+        )
+        note = missing_condition_note(missing, max_conditions=args.max_conditions)
+        if missing.absent_from_corpus:
+            print(
+                f"focus panel {panel.slug}: absent from the corpus: "
+                f"{', '.join(missing.absent_from_corpus)}"
+            )
+        if missing.cut_by_display:
+            print(
+                f"focus panel {panel.slug}: in the corpus but outside the top-"
+                f"{args.max_conditions} cut: {', '.join(missing.cut_by_display)}"
             )
         print(
             f"focus panel {panel.slug}: {len(cut.conditions)} conditions x "

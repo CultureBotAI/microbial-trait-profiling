@@ -133,18 +133,23 @@ sampled in the same places:
 - `focus_cervical`, cervical glandular intraepithelial neoplasia and human
   papilloma virus infection, over Uterine cervix, Vagina, and Other.
 - `focus_oral`, asked for as the cluster of gingivitis, periodontitis, smoking
-  behavior, and rheumatoid arthritis. On this corpus it draws two of those four:
-  the pinned v1.3.1 export contains no gingivitis or periodontitis study, so
-  those rows do not exist to cut. The figure names them as absent rather than
-  drawing a smaller group under the same title.
+  behavior, and rheumatoid arthritis. On this corpus it draws two of those four.
+  Gingivitis and periodontitis are in the pinned v1.3.1 export — twelve studies
+  carry one of those conditions — but neither survives the top-60 condition cut,
+  so those rows are not in the matrix to cut. The figure names them as cut rather
+  than drawing a smaller group under the same title.
 
 That last cut is worth stating plainly, because it was proposed from a figure
 built on the unpinned devel export. There, gingivitis, periodontitis, smoking
 behavior, and rheumatoid arthritis clustered together, and rheumatoid arthritis
 grouping with three oral conditions rather than with the other systemic diseases
-was the observation the cut was meant to show. It is an artefact of vintage, not
-a result: v1.3.1 is a reviewed-only export and the oral studies are not in it.
-Any reading of that cluster has to wait for a corpus that contains it.
+was the observation the cut was meant to show. That observation cannot be checked
+here, but the reason is the display rule, not the vintage. Of 451 distinct
+conditions, periodontitis ranks 62nd on 20 profiles — the same profile count as
+the 60th-ranked condition, losing its place only to the deterministic
+alphabetical tiebreak — and gingivitis ranks 212nd on 4 profiles. Raising
+`--max-conditions` past that tie draws periodontitis; drawing all four together
+needs a cut wide enough to reach gingivitis as well.
 
 Each cut fixes one axis and derives the other from the data: naming conditions
 keeps the body sites those conditions were actually drawn in, naming body sites

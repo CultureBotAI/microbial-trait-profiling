@@ -6,7 +6,14 @@ import pytest
 from scipy.stats import binomtest, false_discovery_control
 
 from bsdbng.guild_maps import SIGN_TOLERANCE, build_matrix, write_body_site_panels
-from bsdbng.table1_trait_maps import TRAIT_ORDER, compute_direction_shifts, trait_colorscale
+from bsdbng.table1_trait_maps import (
+    TRAIT_ORDER,
+    MissingConditions,
+    compute_direction_shifts,
+    missing_condition_note,
+    missing_conditions,
+    trait_colorscale,
+)
 from bsdbng.trait_guilds import (
     TABLE1_TRAIT_COLORS,
     TABLE1_TRAIT_LABELS,
@@ -291,3 +298,57 @@ def test_float_residue_contrasts_are_ties_not_signs() -> None:
     (shift,) = result.shifts
     assert (shift.studies_up, shift.studies_down, shift.studies_tied) == (0, 0, 1)
     assert shift.p_value == 1.0
+
+
+def test_undrawn_panel_conditions_separate_absent_from_cut() -> None:
+    missing = missing_conditions(
+        ("Gingivitis", "Periodontitis", "Rheumatoid arthritis", "Never studied"),
+        corpus_conditions={"Gingivitis", "Periodontitis", "Rheumatoid arthritis"},
+        drawn_conditions=["Rheumatoid arthritis"],
+    )
+    assert missing.absent_from_corpus == ("Never studied",)
+    assert missing.cut_by_display == ("Gingivitis", "Periodontitis")
+
+
+def test_a_cut_condition_is_never_reported_as_missing_from_the_export() -> None:
+    # v1.3.1 holds periodontitis; only the top-N cut drops it. Reporting that as
+    # an absent condition states something false about the export, which is the
+    # defect this pair of helpers exists to prevent.
+    note = missing_condition_note(
+        missing_conditions(
+            ("Periodontitis",),
+            corpus_conditions={"Periodontitis"},
+            drawn_conditions=[],
+        ),
+        max_conditions=60,
+    )
+    assert note is not None
+    assert "does not contain" not in note
+    assert "outside the top-60 condition cut, so not drawn: Periodontitis" in note
+
+
+def test_the_note_states_both_causes_in_their_own_words() -> None:
+    note = missing_condition_note(
+        MissingConditions(
+            absent_from_corpus=("Never studied",),
+            cut_by_display=("Gingivitis",),
+        ),
+        max_conditions=60,
+    )
+    assert note is not None
+    assert "does not contain them: Never studied" in note
+    assert "outside the top-60 condition cut, so not drawn: Gingivitis" in note
+
+
+def test_no_note_when_every_requested_condition_is_drawn() -> None:
+    assert (
+        missing_condition_note(
+            missing_conditions(
+                ("Rheumatoid arthritis",),
+                corpus_conditions={"Rheumatoid arthritis"},
+                drawn_conditions=["Rheumatoid arthritis"],
+            ),
+            max_conditions=60,
+        )
+        is None
+    )
