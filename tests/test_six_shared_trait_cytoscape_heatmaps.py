@@ -208,7 +208,14 @@ def test_contrasts_show_supported_effects_and_mark_strict_significance() -> None
         pd.DataFrame({"trait_id": ["trait1"]}),
         mode="contrast",
     )
-    assert annotations["trait1"].tolist() == ["+0.50*", "+0.50", "", ""]
+    assert annotations["trait1"].tolist() == ["+0.50", "+0.50", "", ""]
+    border_mask = heatmaps.flag_matrix(
+        finalized,
+        cells["condition_body_site_pair"].tolist(),
+        pd.DataFrame({"trait_id": ["trait1"]}),
+        flag_column="significant_in_heatmap",
+    )
+    assert border_mask["trait1"].tolist() == [True, False, False, False]
     assert heatmaps.format_p_value(0.0099) == "<0.01"
 
 
@@ -281,18 +288,31 @@ def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Pa
         for call in plot.call_args_list
         if call.kwargs["title"].startswith("Signed direction contrast:")
     ]
-    assert [len(call.args[0]) for call in contrast_calls] == [30, 24, 6, 30, 24, 6]
+    assert [len(call.args[0]) for call in contrast_calls] == [30, 24, 6]
     for call in contrast_calls:
         matrix = call.args[0]
         assert matrix.notna().all().all()
         assert call.kwargs["vmin"] == -1.0
         assert call.kwargs["vmax"] == 1.0
+        assert call.kwargs["border_mask"].any().all()
     table = pd.read_csv(tmp_path / heatmaps.CONTRAST_TABLE_FILENAME, sep="\t")
     assert len(table) == 60
     assert not table.duplicated(["view_key", "condition_body_site_pair", "trait_id"]).any()
     assert table["displayed_in_heatmap"].all()
+    grouped = table[table["view_key"].eq("grouped_direction_contrast")]
+    assert grouped["spearman_cluster"].notna().all()
+    assert grouped["spearman_cluster_label"].notna().all()
+    assert (tmp_path / heatmaps.GROUPED_CONTRAST_CLUSTER_ROWS_FILENAME).exists()
+    assert (tmp_path / heatmaps.GROUPED_CONTRAST_CLUSTER_SUMMARY_FILENAME).exists()
     pages = pd.read_csv(tmp_path / heatmaps.CONTRAST_PAGES_FILENAME, sep="\t")
-    assert pages["row_count"].tolist() == [24, 6, 24, 6]
-    assert pages["displayed_cell_count"].sum() == len(table)
-    for _view, rows in table.groupby("view_key"):
-        assert rows["heatmap_page"].value_counts().to_dict() == {1: 24, 2: 6}
+    assert pages["view_key"].tolist() == [
+        "individual_conditions_direction_contrast",
+        "individual_conditions_direction_contrast",
+    ]
+    assert pages["row_count"].tolist() == [24, 6]
+    assert pages["displayed_cell_count"].sum() == len(
+        table[table["view_key"].eq("individual_conditions_direction_contrast")]
+    )
+    individual = table[table["view_key"].eq("individual_conditions_direction_contrast")]
+    assert individual["heatmap_page"].value_counts().to_dict() == {1: 24, 2: 6}
+    assert table[table["view_key"].eq("grouped_direction_contrast")]["heatmap_page"].isna().all()

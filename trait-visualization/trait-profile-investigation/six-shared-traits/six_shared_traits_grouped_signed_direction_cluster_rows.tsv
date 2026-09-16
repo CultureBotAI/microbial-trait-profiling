@@ -1,0 +1,80 @@
+row_order	spearman_cluster	row_label	condition	body_site_group	displayed_trait_count	significant_trait_count	bh_selected_trait_count	positive_support	total_abs_delta	max_abs_delta	total_evidence	max_evidence	cluster_label
+1	1	Sampling site / time protocol | Feces	Sampling site / time protocol	Feces	4	0	0	16	1.1964285714285716	0.5	1.848078250034419	1.113943352306837	Oral cavity / dental; Sampling site / time protocol
+2	1	Pregnancy / neonatal | Birth-associated samples	Pregnancy / neonatal	Birth-associated samples	5	0	0	64	0.5909090909090908	0.24242424242424243	0.8968450940966739	0.4992556999339134	Oral cavity / dental; Sampling site / time protocol
+3	1	Ocular / eye disease | Oral cavity / dental	Ocular / eye disease	Oral cavity / dental	6	0	0	64	1.0	0.5	1.6160668759965549	1.1139433523068367	Oral cavity / dental; Sampling site / time protocol
+4	1	GI / digestive disease | Oral cavity / dental	GI / digestive disease	Oral cavity / dental	3	0	0	13	1.666666666666667	0.6666666666666667	0.7958800173440751	0.39794000867203755	Oral cavity / dental; Sampling site / time protocol
+5	1	Neurologic / cognitive disease | Oral cavity / dental	Neurologic / cognitive disease	Oral cavity / dental	3	0	0	19	0.6000000000000001	0.20000000000000007	0.0	0.0	Oral cavity / dental; Sampling site / time protocol
+6	1	Infectious disease | Lower airway / lung	Infectious disease	Lower airway / lung	5	0	0	33	1.2083333333333335	0.4305555555555556	1.9682317838818268	0.8819942757861546	Oral cavity / dental; Sampling site / time protocol
+7	1	ENT / oral mucosal disease | Oral cavity / dental	ENT / oral mucosal disease	Oral cavity / dental	6	0	0	44	1.9	0.5	3.5345023502317794	1.3553876579865738	Oral cavity / dental; Sampling site / time protocol
+8	2	Age / development / sex | Vaginal / reproductive	Age / development / sex	Vaginal / reproductive	3	0	0	18	0.55	0.35	0.2808266095756943	0.2808266095756943	Vaginal / reproductive; Infectious disease
+9	2	Infectious disease | Skin	Infectious disease	Skin	4	0	0	28	1.2	0.4	0.9138357372627509	0.3521825181113625	Vaginal / reproductive; Infectious disease
+10	2	Infectious disease | Vaginal / reproductive	Infectious disease	Vaginal / reproductive	6	0	0	245	0.6683982683982685	0.19264069264069272	3.967791719597296	1.2270797227432473	Vaginal / reproductive; Infectious disease
+11	2	Cancer / neoplasia | Urinary tract	Cancer / neoplasia	Urinary tract	3	0	0	11	1.75	0.75	1.4723362859582605	0.8450980400142568	Vaginal / reproductive; Infectious disease
+12	2	Oral / periodontal disease | Oral cavity / dental	Oral / periodontal disease	Oral cavity / dental	5	0	0	191	0.34226190476190477	0.09056122448979587	1.714142582220496	0.5714952656288228	Vaginal / reproductive; Infectious disease
+13	2	GI / digestive disease | Feces	GI / digestive disease	Feces	6	1	0	708	0.5170791216451727	0.13493377483443714	6.118648935389277	2.091234108579594	Vaginal / reproductive; Infectious disease
+14	2	Respiratory / airway disease | Upper airway / nasal	Respiratory / airway disease	Upper airway / nasal	5	0	0	69	1.0723981900452488	0.3936651583710407	3.6153417340197156	1.3800810379984727	Vaginal / reproductive; Infectious disease
+15	3	Cancer / neoplasia | Reproductive / genital	Cancer / neoplasia	Reproductive / genital	3	0	0	14	0.5	0.5	0.39794000867203755	0.39794000867203755	Oral cavity / dental; Cancer / neoplasia
+16	3	Environmental / chemical exposure | Upper airway / nasal	Environmental / chemical exposure	Upper airway / nasal	6	0	0	37	2.45	0.75	3.440175014652595	1.3222192947339193	Oral cavity / dental; Cancer / neoplasia
+17	3	Cancer / neoplasia | Oral cavity / dental	Cancer / neoplasia	Oral cavity / dental	6	0	0	300	0.5888366387241873	0.19852790840318957	4.806573532852866	1.790860228524309	Oral cavity / dental; Cancer / neoplasia
+18	3	Infectious disease | Oral cavity / dental	Infectious disease	Oral cavity / dental	6	0	0	135	0.475	0.20757575757575758	2.011980364878227	1.0603691057501918	Oral cavity / dental; Cancer / neoplasia
+19	3	Respiratory / airway disease | Oral cavity / dental	Respiratory / airway disease	Oral cavity / dental	4	0	0	61	0.7833333333333334	0.30000000000000004	1.7079462288606904	1.1083394747888382	Oral cavity / dental; Cancer / neoplasia
+20	4	Activity / lifestyle score | Feces	Activity / lifestyle score	Feces	6	0	0	65	0.6196581196581197	0.20085470085470086	1.7896238298301035	0.6812737001327169	Feces; Smoking / alcohol / drug use
+21	4	Pregnancy / neonatal | Feces	Pregnancy / neonatal	Feces	6	2	1	143	1.7912087912087913	0.47527472527472525	9.481456574156402	3.14691301385473	Feces; Smoking / alcohol / drug use
+22	4	Neurologic / cognitive disease | Upper airway / nasal	Neurologic / cognitive disease	Upper airway / nasal	5	0	0	75	1.4958333333333333	0.4291666666666667	5.131735476219208	1.6320202141804492	Feces; Smoking / alcohol / drug use
+23	4	Metabolic / endocrine | Feces	Metabolic / endocrine	Feces	6	0	0	1178	0.232040837917901	0.08238997037663987	2.8625235989484614	1.2634253100750619	Feces; Smoking / alcohol / drug use
+24	4	Colorectal neoplasia | Lower GI tract	Colorectal neoplasia	Lower GI tract	6	0	0	162	0.37342192691029896	0.11893687707641193	1.3239192390871677	0.44189053933051503	Feces; Smoking / alcohol / drug use
+25	4	Cancer / neoplasia | Breast / milk	Cancer / neoplasia	Breast / milk	3	0	0	16	1.5	0.75	1.2130748253088512	0.8450980400142568	Feces; Smoking / alcohol / drug use
+26	4	Body composition / growth | Feces	Body composition / growth	Feces	6	0	0	156	0.6555555555555554	0.24166666666666664	2.8126647560308062	1.387052455982803	Feces; Smoking / alcohol / drug use
+27	4	Smoking / alcohol / drug use | Oral cavity / dental	Smoking / alcohol / drug use	Oral cavity / dental	6	1	0	206	0.8676368676368678	0.30145530145530147	4.909124361423061	2.6713902011435318	Feces; Smoking / alcohol / drug use
+28	4	Skin / hair disease | Skin	Skin / hair disease	Skin	5	0	0	65	0.7683823529411765	0.3308823529411765	2.7054032525626477	1.3518642370550478	Feces; Smoking / alcohol / drug use
+29	4	Experimental phenotype labels | Feces	Experimental phenotype labels	Feces	5	0	0	31	1.4000000000000001	0.4	0.5616532191513884	0.2808266095756942	Feces; Smoking / alcohol / drug use
+30	4	Musculoskeletal / connective tissue | Oral cavity / dental	Musculoskeletal / connective tissue	Oral cavity / dental	4	0	0	23	1.4000000000000001	0.6000000000000001	1.3184063248338016	0.6853971971467449	Feces; Smoking / alcohol / drug use
+31	4	Smoking / alcohol / drug use | Lower GI tract	Smoking / alcohol / drug use	Lower GI tract	3	0	0	19	0.9666666666666666	0.6333333333333333	1.3427809357255105	1.0964402514891305	Feces; Smoking / alcohol / drug use
+32	4	Autoimmune / inflammatory disease | Oral cavity / dental	Autoimmune / inflammatory disease	Oral cavity / dental	6	0	0	130	0.7685185185185186	0.2698412698412699	3.355103782946115	1.2387270489860422	Feces; Smoking / alcohol / drug use
+33	4	Infectious disease | Stomach / esophagus	Infectious disease	Stomach / esophagus	6	0	0	50	1.75	0.5833333333333333	3.0642649646363536	1.4235735197327355	Feces; Smoking / alcohol / drug use
+34	4	Ocular / eye disease | Ocular / eye	Ocular / eye disease	Ocular / eye	6	1	0	214	0.8341013824884793	0.3932411674347158	4.596741202320328	3.007943121974872	Feces; Smoking / alcohol / drug use
+35	4	Cancer / neoplasia | Stomach / esophagus	Cancer / neoplasia	Stomach / esophagus	6	0	0	160	1.2228571428571429	0.3628571428571429	5.131991377788642	1.8873760124322665	Feces; Smoking / alcohol / drug use
+36	4	Inflammatory bowel disease | Lower GI tract	Inflammatory bowel disease	Lower GI tract	6	0	0	80	0.6666666666666665	0.3	1.8033336073611053	1.0608704054140548	Feces; Smoking / alcohol / drug use
+37	4	Population / social covariates | Feces	Population / social covariates	Feces	6	1	0	298	0.6641757246376812	0.24162137681159424	4.71791368453485	2.3202908874571815	Feces; Smoking / alcohol / drug use
+38	4	Infectious disease | Upper airway / nasal	Infectious disease	Upper airway / nasal	6	0	0	307	0.36494252873563227	0.17471264367816092	2.6836690062207227	1.9896019831473066	Feces; Smoking / alcohol / drug use
+39	4	Infectious disease | Feces	Infectious disease	Feces	6	5	2	693	1.106672932330827	0.25716635338345867	16.48119300434498	4.386305594718968	Feces; Smoking / alcohol / drug use
+40	4	GI / digestive disease | Lower GI tract	GI / digestive disease	Lower GI tract	4	0	0	24	1.0285714285714285	0.4571428571428571	1.146275764940804	0.6532125137753437	Feces; Smoking / alcohol / drug use
+41	4	Pregnancy / neonatal | Vaginal / reproductive	Pregnancy / neonatal	Vaginal / reproductive	4	0	0	43	0.811111111111111	0.37777777777777777	1.2261804236337572	0.7700563447860741	Feces; Smoking / alcohol / drug use
+42	4	Smoking / alcohol / drug use | Upper airway / nasal	Smoking / alcohol / drug use	Upper airway / nasal	4	0	0	35	0.625	0.375	0.7179403085361614	0.5021235236897181	Feces; Smoking / alcohol / drug use
+43	4	Ocular / eye disease | Feces	Ocular / eye disease	Feces	6	0	0	94	1.4666666666666666	0.4666666666666666	3.825080166153331	1.5712542331472343	Feces; Smoking / alcohol / drug use
+44	4	Metabolic / endocrine | Oral cavity / dental	Metabolic / endocrine	Oral cavity / dental	5	0	0	97	1.225877192982456	0.42324561403508765	5.015988494868994	1.9623641245034391	Feces; Smoking / alcohol / drug use
+45	5	Renal / urinary disease | Urinary tract	Renal / urinary disease	Urinary tract	1	0	0	6	0.0	0.0	0.0	0.0	Urinary tract; Renal / urinary disease
+46	6	Skin / hair disease | Feces	Skin / hair disease	Feces	6	0	0	129	0.5288461538461539	0.1891025641025641	1.4311876745358538	0.6207302469408231	Feces; Colorectal neoplasia
+47	6	Autoimmune / inflammatory disease | Skin	Autoimmune / inflammatory disease	Skin	4	0	0	28	1.0	0.5	0.7359535705891889	0.36797678529459443	Feces; Colorectal neoplasia
+48	6	Colorectal neoplasia | Oral cavity / dental	Colorectal neoplasia	Oral cavity / dental	6	0	0	101	0.988095238095238	0.34523809523809523	2.687715953584039	1.1856365769619117	Feces; Colorectal neoplasia
+49	6	Disease activity / severity | Feces	Disease activity / severity	Feces	6	0	0	112	0.31538461538461526	0.07692307692307687	0.36995505967851094	0.1388498138778639	Feces; Colorectal neoplasia
+50	6	Reproductive / hormonal health | Vaginal / reproductive	Reproductive / hormonal health	Vaginal / reproductive	6	0	0	308	0.38618322248444537	0.11070585711220768	2.2711240310791325	0.9466274474689843	Feces; Colorectal neoplasia
+51	6	Environmental / chemical exposure | Feces	Environmental / chemical exposure	Feces	4	0	0	35	0.4017094017094018	0.23931623931623935	0.4200041555259539	0.4200041555259539	Feces; Colorectal neoplasia
+52	6	Respiratory / airway disease | Bronchial / tracheal	Respiratory / airway disease	Bronchial / tracheal	6	0	0	92	0.6375	0.23333333333333328	1.296884115710074	0.563249517817089	Feces; Colorectal neoplasia
+53	6	Cancer / neoplasia | Vaginal / reproductive	Cancer / neoplasia	Vaginal / reproductive	6	0	0	215	0.5828488372093024	0.2296511627906977	2.5109240043568986	1.1981205103285393	Feces; Colorectal neoplasia
+54	6	Antibiotic / antimicrobial exposure | Feces	Antibiotic / antimicrobial exposure	Feces	6	0	0	266	0.6254569624459954	0.1708208707211698	3.320089980396922	1.080692513021302	Feces; Colorectal neoplasia
+55	6	Respiratory / airway disease | Feces	Respiratory / airway disease	Feces	6	0	0	163	0.6785714285714284	0.17857142857142855	1.6964883239285604	0.5455644626777002	Feces; Colorectal neoplasia
+56	6	Colorectal neoplasia | Intestinal / GI mucosa	Colorectal neoplasia	Intestinal / GI mucosa	5	0	0	39	0.7500000000000002	0.25000000000000006	0.41534341305740785	0.20767170652870393	Feces; Colorectal neoplasia
+57	6	Blood / immune deficiency | Feces	Blood / immune deficiency	Feces	6	2	0	137	1.456140350877193	0.5087719298245614	6.433207758520394	2.7854500145446703	Feces; Colorectal neoplasia
+58	6	Diet / nutrition / supplements | Feces	Diet / nutrition / supplements	Feces	6	1	0	292	0.4481372286250335	0.19123559367461807	3.9508946805563916	2.193365111997794	Feces; Colorectal neoplasia
+59	6	Cardiovascular disease | Feces	Cardiovascular disease	Feces	6	0	0	63	0.4375	0.1875	0.339330203597505	0.339330203597505	Feces; Colorectal neoplasia
+60	6	Colorectal neoplasia | Feces	Colorectal neoplasia	Feces	6	2	0	463	0.6294789547801598	0.254420278516664	6.010722847423034	2.9330827913485975	Feces; Colorectal neoplasia
+61	6	Psychiatric / behavioral health | Feces	Psychiatric / behavioral health	Feces	6	0	0	361	0.5696202531645569	0.13924050632911394	3.7365965252210884	0.9701006660617361	Feces; Colorectal neoplasia
+62	6	Musculoskeletal / connective tissue | Feces	Musculoskeletal / connective tissue	Feces	5	0	0	30	0.7916666666666667	0.4166666666666667	0.7931682758811813	0.5569103307921935	Feces; Colorectal neoplasia
+63	6	Reproductive / hormonal health | Feces	Reproductive / hormonal health	Feces	6	0	0	90	0.8449074074074072	0.23148148148148145	2.234878719169675	0.7001749468674949	Feces; Colorectal neoplasia
+64	6	Transplant / graft response | Feces	Transplant / graft response	Feces	6	0	0	125	1.1919040479760121	0.2998500749625188	4.603392356981596	1.3560519343570707	Feces; Colorectal neoplasia
+65	6	Respiratory / airway disease | Lower airway / lung	Respiratory / airway disease	Lower airway / lung	6	0	0	94	0.7333333333333334	0.25000000000000006	1.1684137178777123	0.5891208058173992	Feces; Colorectal neoplasia
+66	6	Population / social covariates | Oral cavity / dental	Population / social covariates	Oral cavity / dental	6	0	0	132	0.7338638373121131	0.1954022988505747	3.7747172795754955	1.0415580737346166	Feces; Colorectal neoplasia
+67	6	GI / digestive disease | Intestinal / GI mucosa	GI / digestive disease	Intestinal / GI mucosa	5	0	0	36	0.9166666666666666	0.33333333333333337	1.1635355513390957	0.5218675818854753	Feces; Colorectal neoplasia
+68	6	Age / development / sex | Lower GI tract	Age / development / sex	Lower GI tract	4	0	0	17	2.416666666666667	1.0	2.702785207336534	1.5440680443502757	Feces; Colorectal neoplasia
+69	6	Blood / immune deficiency | Oral cavity / dental	Blood / immune deficiency	Oral cavity / dental	5	0	0	35	1.2857142857142858	0.5	1.8628292390677526	1.1553360374650619	Feces; Colorectal neoplasia
+70	6	Inflammatory bowel disease | Feces	Inflammatory bowel disease	Feces	6	2	0	193	1.237250554323725	0.3176274944567627	8.326033548487548	2.6159875876188354	Feces; Colorectal neoplasia
+71	6	Infectious disease | Lower GI tract	Infectious disease	Lower GI tract	6	0	0	95	1.1733746130030962	0.24458204334365322	3.1153827775209426	0.8069920107499046	Feces; Colorectal neoplasia
+72	6	Neurologic / cognitive disease | Feces	Neurologic / cognitive disease	Feces	6	4	2	1059	0.7346119242500712	0.23069495951372576	14.429589337254003	5.890137623695896	Feces; Colorectal neoplasia
+73	6	Autoimmune / inflammatory disease | Feces	Autoimmune / inflammatory disease	Feces	6	0	0	296	0.22060801721818674	0.08931934355663174	0.9183359633291106	0.4581214971083478	Feces; Colorectal neoplasia
+74	6	Medication / clinical treatment | Feces	Medication / clinical treatment	Feces	6	1	0	298	0.7671232876712328	0.2328767123287671	6.366469481819985	2.1378933757270997	Feces; Colorectal neoplasia
+75	6	Age / development / sex | Feces	Age / development / sex	Feces	6	1	1	315	1.0450191570881227	0.3146551724137931	8.466080387156575	3.373813170052727	Feces; Colorectal neoplasia
+76	6	Stroke | Feces	Stroke	Feces	6	3	1	154	2.2	0.5555555555555556	12.549530734002264	3.9253266590528284	Feces; Colorectal neoplasia
+77	6	Cancer / neoplasia | Feces	Cancer / neoplasia	Feces	6	2	1	521	0.7	0.24700193423597677	7.590460509734735	3.328935192908443	Feces; Colorectal neoplasia
+78	6	Renal / urinary disease | Feces	Renal / urinary disease	Feces	6	0	0	121	1.2285714285714286	0.33904761904761904	4.514933219905535	1.4437932535826414	Feces; Colorectal neoplasia
+79	6	Infectious disease | Urinary tract	Infectious disease	Urinary tract	3	0	0	14	1.5499999999999998	0.6	1.8371291103429814	0.7781512503836436	Feces; Colorectal neoplasia

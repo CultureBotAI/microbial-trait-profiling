@@ -1,0 +1,7 @@
+spearman_cluster	cluster_label	row_count	displayed_cell_count	significant_cell_count	bh_selected_cell_count	dominant_body_site_group	dominant_grouped_condition	top_body_site_groups	top_grouped_conditions
+1	Oral cavity / dental; Sampling site / time protocol	7	32	0	0	Oral cavity / dental	Sampling site / time protocol	Oral cavity / dental (4); Feces (1); Birth-associated samples (1)	Sampling site / time protocol (1); Pregnancy / neonatal (1); Ocular / eye disease (1)
+2	Vaginal / reproductive; Infectious disease	7	32	1	0	Vaginal / reproductive	Infectious disease	Vaginal / reproductive (2); Skin (1); Urinary tract (1)	Infectious disease (2); Age / development / sex (1); Cancer / neoplasia (1)
+3	Oral cavity / dental; Cancer / neoplasia	5	25	0	0	Oral cavity / dental	Cancer / neoplasia	Oral cavity / dental (3); Reproductive / genital (1); Upper airway / nasal (1)	Cancer / neoplasia (2); Environmental / chemical exposure (1); Infectious disease (1)
+4	Feces; Smoking / alcohol / drug use	25	132	10	3	Feces	Smoking / alcohol / drug use	Feces (8); Lower GI tract (4); Oral cavity / dental (4)	Smoking / alcohol / drug use (3); Infectious disease (3); Pregnancy / neonatal (2)
+5	Urinary tract; Renal / urinary disease	1	1	0	0	Urinary tract	Renal / urinary disease	Urinary tract (1)	Renal / urinary disease (1)
+6	Feces; Colorectal neoplasia	34	191	18	5	Feces	Colorectal neoplasia	Feces (21); Oral cavity / dental (3); Vaginal / reproductive (2)	Colorectal neoplasia (3); Respiratory / airway disease (3); Autoimmune / inflammatory disease (2)

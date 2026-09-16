@@ -1497,18 +1497,30 @@ decreased-profile positive-z fraction. Color encodes this same effect on a fixed
 -1 to +1 scale; red favors increased profiles and blue favors decreased profiles.
 All supported effects with finite two-sided Fisher exact p-values are displayed,
 including nonsignificant results. Support requires at least 3 positive-z profiles
-in either direction and at least 2 total studies. An asterisk marks `p < 0.01`;
-unstarred cells are descriptive effects that do not meet that threshold.
-Gray cells are unavailable or insufficiently supported, rather than merely
+in either direction and at least 2 total studies. A dark border marks `p < 0.01`;
+unbordered cells are descriptive effects that do not meet that threshold. Gray
+cells are unavailable or insufficiently supported, rather than merely
 nonsignificant. White cells with a numeric zero represent measured null effects.
-Every row with a supported, testable cell is included. Rows are grouped by body
-site, then ranked by significant-trait count, trait coverage, BH-selected count,
-evidence, support, and effect size. Full overview PNGs retain all rows; additional
-`*_page_NN.png` files contain at most 24 rows each. The page manifest is
-`six_shared_trait_signed_direction_heatmap_pages.tsv`.
+Conditions are chosen from the full increased and decreased
+`*_profile_sankey_edges.tsv` tables before graph display selection: every
+condition/body-site row with at least one supported, testable six-trait cell is
+included. The grouped-condition signed direction heatmap is now one clustered
+diagram, not a paged set. Its rows use average linkage on Spearman-correlation
+distance across the six signed trait deltas, with unavailable cells treated as
+neutral zero for clustering. The left dendrogram clusters the condition/anatomy
+rows, the adjacent color strip marks row-cluster membership, and
+`six_shared_traits_grouped_signed_direction_cluster_rows.tsv` plus
+`six_shared_traits_grouped_signed_direction_cluster_summary.tsv` record the row
+order and dominant anatomy/condition labels for each cluster. A small preview
+PNG links to the larger clustered PNG in the six-shared-traits README. The
+individual-condition signed direction heatmap still receives additional readable
+`*_page_NN.png` files with at most 24 rows each. The page manifest is
+`six_shared_trait_signed_direction_heatmap_pages.tsv` and records only those
+individual-condition pages.
 BH q-values are computed across the full cell table within each condition-label
 mode. The companion table records raw delta, raw Fisher p-value, BH q-value,
-signed `-log10(p)`, display and significance flags, and page number for each cell.
+signed `-log10(p)`, display and significance flags, grouped Spearman-cluster
+metadata, and page number for each cell.
 
 ### Inferred Guild Evidence Outputs
 
