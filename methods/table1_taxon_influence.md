@@ -95,7 +95,7 @@ Neither statistic tests independence. Source concentration uses provenance-cell
 incidence: multiple provenance cells can support one deduplicated count unit, so its
 denominator differs from the taxonomic count denominator.
 
-## Predeclared exclusions and scope
+## Rule-declared exclusions and scope
 
 [`table1_taxon_influence_protocol.json`](table1_taxon_influence_protocol.json) is an
 input, hashed before effects are calculated. It declares pooled human paired profiles,
@@ -106,11 +106,15 @@ even outside those three strata. An empty stratum produces untestable results.
 The full genus/family inventory is retained. The exclusion panel comprises the ten
 largest genera and ten largest families by **full non-MediaDive propagated contribution
 count**, plus Streptococcus, Enterococcus, Staphylococcus, Veillonella and their resolved
-families. A lineage needs contributions in at least three retained studies. Ties are
-broken by taxon ID; signs, effects and p-values do not select scenarios. This bounded
-panel tests the named predictions alongside other large contributors. It does not
-claim exhaustive influence testing of every lineage or freedom from data selection.
-Unselected and unsupported lineages remain explicitly recorded.
+families. The rule-declared extension adds the leading genus for each of the six Table 1
+trait keys by propagated contribution count summed across both directions. A lineage
+needs contributions in at least three retained studies. Ties are broken by taxon ID;
+signs, effects and p-values do not select scenarios. The extension was recorded on
+[#190](https://github.com/CultureBotAI/microbial-trait-profiling/issues/190#issuecomment-5703892447)
+before the extended run. This bounded panel tests the named predictions alongside large
+overall and per-trait contributors. It does not claim exhaustive influence testing of
+every lineage or freedom from data selection. Unselected and unsupported lineages
+remain explicitly recorded.
 
 For each lineage, removal deletes all known source-taxon/trait units whose source
 falls within that lineage, wherever they propagate, including into higher-rank

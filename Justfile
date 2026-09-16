@@ -81,7 +81,7 @@ taxa-trait-matrix: study-tsvs
 study-trait-profiles:
 	uv run python scripts/create_study_trait_profiles.py
 
-# Source-count reconciliation and predeclared genus/family influence (#190).
+# Source-count reconciliation and rule-declared genus/family influence (#190).
 table1-taxon-influence kg_dir="data/kg-microbe" inputs="data/derived" output="data/derived/table1_taxon_influence":
 	uv run python -m bsdbng.taxon_contributions --kg-dir "{{kg_dir}}" --inputs "{{inputs}}" --output "{{output}}"
 	just table1-native-influence "{{inputs}}" "{{output}}"

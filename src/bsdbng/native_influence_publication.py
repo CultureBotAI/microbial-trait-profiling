@@ -68,7 +68,7 @@ def publish(source: Path, destination: Path) -> dict[str, object]:
         "over the FULL native families, whose sizes remain attached. The separate ORA "
         "family table includes both backgrounds and both tail-family sizes. "
         "`scenarios.tsv` supplies lineage names, support and selection status for "
-        "the full genus/family inventory, including lineages outside the panel.\n\n"
+        "the full genus/family inventory, including lineages outside the rule-declared panel.\n\n"
         "The full 317-trait composition table, profile-level ORA results and source "
         "ledger are generated under `data/derived/table1_taxon_influence/`, following "
         "the repository's untracked generated-data convention. Regenerate them with "

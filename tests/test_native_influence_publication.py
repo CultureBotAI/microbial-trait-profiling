@@ -40,7 +40,11 @@ def run_directory(tmp_path: Path) -> Path:
         ["scenario", "name", "status"],
         [
             {"scenario": "exclude_A", "name": "Genus A", "status": "run"},
-            {"scenario": "exclude_B", "name": "Genus B", "status": "outside_predeclared_panel"},
+            {
+                "scenario": "exclude_B",
+                "name": "Genus B",
+                "status": "outside_rule_declared_panel",
+            },
         ],
     )
     (source / "native_manifest.json").write_text(

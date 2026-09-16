@@ -347,11 +347,13 @@ def correct_shared_comparisons(records: list[Record], dimensions: tuple[str, ...
 
 
 def native_summary(base: Base, composition: list[Record], ora: list[Record]) -> str:
+    scenario_count = len({r["scenario"] for r in composition if r["scenario"] != "baseline"})
     lines = [
         "# Native lineage influence completion",
         "",
-        "These reruns extend the reconciled 190-v1 audit using protocol 190-native-v1. "
-        "The 22 exclusion scenarios, four scopes, raw trait keys and human paired corpus "
+        "These reruns extend the reconciled 190-v2 audit using protocol 190-native-v2. "
+        f"The {scenario_count} rule-declared exclusion scenarios, four scopes, raw trait keys "
+        "and human paired corpus "
         "are unchanged. This is matched-corpus sensitivity analysis, not a reproduction "
         "of published results with other filters. See native_manifest.json for hashes, "
         "the implementation revision, model policies and result files.",
@@ -399,7 +401,7 @@ def native_summary(base: Base, composition: list[Record], ora: list[Record]) -> 
     lines.extend(
         [
             "",
-            "The displayed maximum is descriptive selection within the predeclared panel, "
+            "The displayed maximum is descriptive selection within the rule-declared panel, "
             "not an explanation or causal attribution. The TSV retains all opposite, null and "
             "untestable results, eligibility components, intervals and family membership.",
             "",
@@ -618,7 +620,7 @@ def run(inputs: Path, output: Path, protocol_path: Path, code_commit: str = "") 
             raise ValueError(f"Audit input changed: {name}")
     base = load_base(*(inputs / name for name in INPUT_NAMES))
     protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
-    if protocol["version"] != "190-native-v1":
+    if protocol["version"] != "190-native-v2":
         raise ValueError("Unsupported native protocol")
     if len(code_commit) != 40 or any(c not in "0123456789abcdef" for c in code_commit):
         raise ValueError("The Justfile recipe must supply the full code commit")

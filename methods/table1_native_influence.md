@@ -1,11 +1,11 @@
 # Native Table 1 lineage influence
 
 This completes the statistical rerun extension to [#190's contribution audit](table1_taxon_influence.md).
-The original source ledger and shared-fraction results are unchanged. The
-[native protocol](table1_native_influence_protocol.json) was declared before the
-native rerun: it fixes the same 22 exclusions, four exact scopes, 317 retained
-columns and 4,670 human paired profiles from 959 studies. Nothing is selected by
-the new effects, directions or p-values. See the generated
+The source ledger is unchanged. The
+[native protocol](table1_native_influence_protocol.json) applies the same rule-declared
+exclusions as the shared-fraction rerun, with four exact scopes, 317 retained columns
+and 4,670 human paired profiles from 959 studies. Nothing is selected by the new effects,
+directions or p-values. See the generated
 [native summary and review tables](table1-native-results/README.md) for results.
 
 ## Reproduction

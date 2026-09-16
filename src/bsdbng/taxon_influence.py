@@ -92,7 +92,7 @@ def describe(values: dict[Pair, float]) -> Record:
 
 
 def adjust(pvalues: list[float | None], by: bool = False) -> list[float | None]:
-    """Keep the full predeclared family, including untestable members."""
+    """Keep the full correction family, including untestable members."""
     size = len(pvalues)
     factor = sum(1 / i for i in range(1, size + 1)) if by else 1.0
     ranked = sorted((p, i) for i, p in enumerate(pvalues) if p is not None)
@@ -336,6 +336,34 @@ def scenarios(base: Base, graph: Graph, ledger: Ledger, minimum: int) -> list[Re
     ]
 
 
+def trait_leading_genera(base: Base, graph: Graph, ledger: Ledger, minimum: int) -> dict[str, str]:
+    """Select each Table 1 trait's supported leading genus without using effects."""
+    occurrences, study_support = source_occurrences(base, ledger, list(base.profiles))
+    counts: Counter[tuple[str, str]] = Counter()
+    studies: defaultdict[tuple[str, str], set[str]] = defaultdict(set)
+    six = set(base.traits.values())
+    for (direction, source), number in occurrences.items():
+        genus, _ = graph.ranked(source, "genus", base.ranks)
+        if not genus:
+            continue
+        for trait in graph.traits[source] & six:
+            counts[(trait, genus)] += number
+            studies[(trait, genus)].update(study_support[(direction, source)])
+    leaders = {}
+    for trait in base.traits.values():
+        candidates = sorted(
+            (
+                (lineage, count)
+                for (candidate_trait, lineage), count in counts.items()
+                if candidate_trait == trait and len(studies[(trait, lineage)]) >= minimum
+            ),
+            key=lambda item: (-item[1], item[0]),
+        )
+        if candidates:
+            leaders[trait] = candidates[0][0]
+    return leaders
+
+
 def comparison(before: dict[Pair, float], after: dict[Pair, float]) -> Record:
     common = before.keys() & after.keys()
     bm = {k: before[k] for k in common}
@@ -454,22 +482,31 @@ def run_influence(
     base: Base, graph: Graph, ledger: Ledger, protocol: Record, output: Path
 ) -> Record:
     all_scenarios = scenarios(base, graph, ledger, protocol["minimum_lineage_studies"])
-    selected: set[str] = set()
+    selection_reasons: defaultdict[str, set[str]] = defaultdict(set)
     for rank in ("genus", "family"):
         ranked = sorted(
             (r for r in all_scenarios if r["rank"] == rank and r["status"] == "run"),
             key=lambda r: (-r["propagated_non_mediadive_count"], r["lineage"]),
         )
-        selected.update(r["lineage"] for r in ranked[: protocol["top_lineages_per_rank"]])
+        for scenario in ranked[: protocol["top_lineages_per_rank"]]:
+            selection_reasons[scenario["lineage"]].add(f"overall_top_{rank}")
     for scenario in all_scenarios:
         if scenario["rank"] == "genus" and scenario["name"] in protocol["predicted_genera"]:
-            selected.add(scenario["lineage"])
+            selection_reasons[scenario["lineage"]].add("named_prediction_genus")
             family, _ = graph.ranked(scenario["lineage"], "family", base.ranks)
             if family:
-                selected.add(family)
+                selection_reasons[family].add("named_prediction_family")
+    if protocol["include_trait_leading_genus"]:
+        for trait, lineage in trait_leading_genera(
+            base, graph, ledger, protocol["minimum_lineage_studies"]
+        ).items():
+            selection_reasons[lineage].add(f"trait_leader:{trait}")
     for scenario in all_scenarios:
-        if scenario["status"] == "run" and scenario["lineage"] not in selected:
-            scenario["status"] = "outside_predeclared_panel"
+        scenario["selection_reasons"] = encoded(
+            sorted(selection_reasons.get(scenario["lineage"], set()))
+        )
+        if scenario["status"] == "run" and scenario["lineage"] not in selection_reasons:
+            scenario["status"] = "outside_rule_declared_panel"
     write_table(
         output / "scenarios.tsv",
         [
@@ -479,6 +516,7 @@ def run_influence(
             "name",
             "studies",
             "propagated_non_mediadive_count",
+            "selection_reasons",
             "status",
         ],
         all_scenarios,
@@ -651,7 +689,8 @@ def run_influence(
         f"{len(base.columns)} non-MediaDive traits. "
         f"Enumerated {len(all_scenarios)} resolved genus/family lineages; "
         f"{len(active)} entered the "
-        "predeclared panel with at least three supporting studies. See manifest.json for hashes, "
+        "rule-declared panel with at least three supporting studies. See manifest.json for "
+        "hashes, "
         "exact scopes and protocol.\n\n"
         "The full contributing universe, concentration and all 15 cross-trait overlaps precede any "
         "display cutoff. Effects include all six raw annotation keys, both curated directions, "
@@ -702,7 +741,8 @@ def run_influence(
                 )
     summary += (
         "\nPooled shared fraction effects, in percentage points. The displayed exclusion is "
-        "the largest absolute matched change within the predeclared panel; this is a descriptive "
+        "the largest absolute matched change within the rule-declared panel; this is a "
+        "descriptive "
         "ranking, not evidence that the lineage explains the association. All scenarios remain "
         "in `pooled_fraction_effects.tsv`, with uncertainty and eligibility components.\n\n"
         "| Trait key | Baseline effect | Exclusion | Matched change | "
