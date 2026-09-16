@@ -31,6 +31,18 @@ check-generated:
 sync:
 	uv sync --all-extras --group dev --group qa
 
+# Use the same declared uv version as the lock hook; run `just sync` first.
+[positional-arguments]
+lock *ARGS:
+	uv run --frozen --group qa uv lock "$@"
+
+# Print a candidate baseline for review; never overwrite the audited file here.
+secrets-scan:
+	uv run --group qa detect-secrets scan
+
+secrets-audit:
+	uv run --group qa detect-secrets audit .secrets.baseline
+
 lint:
 	uv run ruff check src tests scripts
 	uv run ruff format --check src tests scripts
@@ -81,14 +93,43 @@ taxa-trait-matrix: study-tsvs
 study-trait-profiles:
 	uv run python scripts/create_study_trait_profiles.py
 
+# PNG export (guild-maps, table1-trait-maps) runs through kaleido 1.x, which
+# drives a headless Chrome. This downloads (~170 MB) the version-pinned Chrome
+# for Testing build into choreographer's data directory; kaleido prefers that
+# copy over a system Chrome, so run it once for reproducible figure renders.
+get-chrome:
+	uv run kaleido_get_chrome
+
+# Requires data/derived/study_trait_profiles_wide.tsv (`just study-trait-profiles`)
+# and data/derived/experiments.tsv (`just study-tsvs`). Human samples only, matched
+# inc/dec pairs only, MediaDive traits excluded. Writes the heatmap plus its value
+# matrix, study-count matrix, and correlation table to data/derived/guild_maps/.
+# Needs a local Chrome for the PNG (`just get-chrome`).
+guild-maps:
+	just timed guild-maps "uv run python scripts/create_guild_maps.py"
+
+# Same inputs and same corpus filters as guild-maps, but over the six individual
+# traits of manuscript Table 1 instead of the two pooled oxygen guilds. Writes the
+# combined condition x body-site heatmap, the paired directional-shift figure, and
+# their backing tables to data/derived/table1_traits/.
+# Needs a local Chrome for the PNGs (`just get-chrome`).
+table1-trait-maps:
+	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py"
+
+# Study-level paired log-ratios for all 15 Table 1 trait pairs; writes tables,
+# coverage/provenance and a Markdown report. No figure renderer is needed.
+[positional-arguments]
+table1-compositional-stats *ARGS:
+	uv run python -m bsdbng.trait_composition --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
 	tmpdir="$(mktemp -d)" && \
 	trap 'rm -rf "$tmpdir"' EXIT && \
 	reqfile="$tmpdir/requirements.txt" && \
-	uv export --quiet --frozen --no-dev --format requirements.txt \
-	  --no-emit-project --no-emit-workspace --no-emit-local \
+	uv export --quiet --frozen --no-dev --format requirements-txt \
+	  --no-emit-project --no-emit-workspace \
 	  --output-file "$reqfile" && \
 	uv run pip-audit -r "$reqfile" --disable-pip \
 	  --cache-dir "$tmpdir/pip-audit-cache"
@@ -97,7 +138,7 @@ precommit:
 	uv run pre-commit run --all-files
 
 validate-schema:
-	uv run linkml validate -s {{schema}}
+	uv run linkml validate {{schema}}
 
 lint-schema:
 	uv run linkml lint --config {{lintconfig}} --validate --ignore-warnings {{schema}}

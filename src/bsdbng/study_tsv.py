@@ -20,6 +20,7 @@ class GeneratedTables:
 
     studies: Path
     experiments: Path
+    experiment_ontology_terms: Path
     signatures: Path
     taxa: Path
     taxon_profiles_wide: Path
@@ -30,6 +31,14 @@ def _as_text(value: Any) -> str:
     if value is None:
         return ""
     return str(value)
+
+
+def _ontology_terms(value: Any) -> list[str]:
+    """Return the non-empty CURIEs held by a multivalued ontology-id slot."""
+    if value is None:
+        return []
+    values = value if isinstance(value, list) else [value]
+    return [text for item in values if (text := _as_text(item).strip())]
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -110,6 +119,7 @@ def generate_tables(
 
     study_rows: list[dict[str, Any]] = []
     experiment_rows: list[dict[str, Any]] = []
+    experiment_ontology_rows: list[dict[str, Any]] = []
     signature_rows: list[dict[str, Any]] = []
     taxon_rows: list[dict[str, Any]] = []
     profile_rows: dict[tuple[str, str, str], dict[str, int]] = defaultdict(lambda: defaultdict(int))
@@ -189,12 +199,27 @@ def generate_tables(
                     "study_id": study_id,
                     "experiment_id": experiment_id,
                     "experiment_name": _as_text(experiment.get("experiment_name")),
+                    "condition": _as_text(experiment.get("condition")),
+                    "body_site": _as_text(experiment.get("body_site")),
+                    "host_species": _as_text(experiment.get("host_species")),
+                    "location_of_subjects": _as_text(experiment.get("location_of_subjects")),
                     "group_0_name": _as_text(experiment.get("group_0_name")),
                     "group_1_name": _as_text(experiment.get("group_1_name")),
                     "signature_count": experiment_signature_count,
                     "taxon_count": experiment_taxon_count,
                 }
             )
+
+            for slot in ("condition_ontology_id", "body_site_ontology_id"):
+                for term_id in _ontology_terms(experiment.get(slot)):
+                    experiment_ontology_rows.append(
+                        {
+                            "study_id": study_id,
+                            "experiment_id": experiment_id,
+                            "slot": slot,
+                            "term_id": term_id,
+                        }
+                    )
 
         study_rows.append(
             {
@@ -216,6 +241,7 @@ def generate_tables(
     tables = GeneratedTables(
         studies=output_dir / "studies.tsv",
         experiments=output_dir / "experiments.tsv",
+        experiment_ontology_terms=output_dir / "experiment_ontology_terms.tsv",
         signatures=output_dir / "signatures.tsv",
         taxa=output_dir / "bugsigdb_taxa.tsv",
         taxon_profiles_wide=output_dir / "taxon_profiles_wide.tsv",
@@ -245,12 +271,21 @@ def generate_tables(
             "study_id",
             "experiment_id",
             "experiment_name",
+            "condition",
+            "body_site",
+            "host_species",
+            "location_of_subjects",
             "group_0_name",
             "group_1_name",
             "signature_count",
             "taxon_count",
         ],
         experiment_rows,
+    )
+    _write_dict_rows(
+        tables.experiment_ontology_terms,
+        ["study_id", "experiment_id", "slot", "term_id"],
+        experiment_ontology_rows,
     )
     _write_dict_rows(
         tables.signatures,
@@ -306,6 +341,7 @@ def main() -> None:
     for path in (
         tables.studies,
         tables.experiments,
+        tables.experiment_ontology_terms,
         tables.signatures,
         tables.taxa,
         tables.taxon_profiles_wide,
