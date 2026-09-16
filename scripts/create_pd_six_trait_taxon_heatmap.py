@@ -19,6 +19,8 @@ from create_pd_cellulose_analysis import (
     OUTPUT_DIR,
     PD_CONDITION,
     PROFILE_MATRIX_PATH,
+    TAXA_DIRECTION_TO_PROFILE,
+    TAXA_PATH,
     TAXA_TRAIT_MATRIX_PATH,
     load_profile_metadata,
     read_tsv,
@@ -33,6 +35,7 @@ ROW_COLOR_LIMIT = 3.0
 INCREASED_COLOR = "#b91c1c"
 DECREASED_COLOR = "#1d4ed8"
 MISSING_COLOR = "#e5e7eb"
+SPECIFICITY_COLOR_LIMIT = 3.0
 
 
 def profile_id(study_id: object, experiment_id: object, inc_dec: object) -> str:
@@ -63,6 +66,84 @@ def read_taxon_vectors(path: Path, trait_columns: list[str]) -> pd.DataFrame:
         raise ValueError("Duplicate taxon IDs in taxa-trait matrix")
     matrix[trait_columns] = matrix[trait_columns].apply(pd.to_numeric, errors="coerce").fillna(0.0)
     return matrix.set_index("taxon_id")
+
+
+def taxon_specificity_from_occurrences(
+    taxa: pd.DataFrame,
+    metadata: pd.DataFrame,
+    taxon_ids: pd.Index,
+) -> pd.DataFrame:
+    """Count each selected reported taxon label in PD feces versus other feces."""
+    required_taxa = {"study_id", "experiment_id", "direction", "taxon_id"}
+    required_metadata = {
+        "profile_id",
+        "study_id",
+        "experiment_id",
+        "inc_dec",
+        "condition",
+        "body_site_group",
+    }
+    missing_taxa = sorted(required_taxa.difference(taxa.columns))
+    missing_metadata = sorted(required_metadata.difference(metadata.columns))
+    if missing_taxa:
+        raise ValueError(f"Missing taxa columns for specificity: {missing_taxa}")
+    if missing_metadata:
+        raise ValueError(f"Missing metadata columns for specificity: {missing_metadata}")
+
+    feces = metadata[
+        metadata["body_site_group"].eq(FECES) & metadata["inc_dec"].isin(["inc", "dec"])
+    ][["profile_id", "study_id", "experiment_id", "inc_dec", "condition"]].copy()
+
+    reported = taxa[taxa["taxon_id"].isin(taxon_ids)].copy()
+    reported["inc_dec"] = reported["direction"].map(TAXA_DIRECTION_TO_PROFILE)
+    occurrences = reported.merge(
+        feces,
+        on=["study_id", "experiment_id", "inc_dec"],
+        how="inner",
+        suffixes=("_reported", ""),
+    )
+    occurrences = occurrences.drop_duplicates(["profile_id", "taxon_id"])
+
+    records: list[dict[str, object]] = []
+    for taxon_id in taxon_ids:
+        group = occurrences[occurrences["taxon_id"].eq(taxon_id)]
+        pd_group = group[group["condition"].eq(PD_CONDITION)]
+        other_group = group[~group["condition"].eq(PD_CONDITION)]
+        pd_profiles = int(pd_group["profile_id"].nunique())
+        other_profiles = int(other_group["profile_id"].nunique())
+        total_profiles = pd_profiles + other_profiles
+        log2_ratio = math.log2((pd_profiles + 0.5) / (other_profiles + 0.5))
+        records.append(
+            {
+                "taxon_id": taxon_id,
+                "pd_feces_profiles": pd_profiles,
+                "other_feces_profiles": other_profiles,
+                "pd_other_feces_counts": f"{pd_profiles}/{other_profiles}",
+                "pd_feces_studies": int(pd_group["study_id"].nunique()),
+                "other_feces_studies": int(other_group["study_id"].nunique()),
+                "pd_specificity_fraction": (
+                    pd_profiles / total_profiles if total_profiles else math.nan
+                ),
+                "pd_vs_other_feces_log2_ratio": log2_ratio,
+            }
+        )
+    return pd.DataFrame.from_records(records)
+
+
+def load_taxon_specificity(taxon_ids: pd.Index, metadata: pd.DataFrame) -> pd.DataFrame:
+    """Load the full taxon occurrence table and build PD-vs-other feces specificity."""
+    taxa = read_tsv(
+        TAXA_PATH,
+        usecols=[
+            "study_id",
+            "experiment_id",
+            "direction",
+            "taxon_id",
+            "taxon_name",
+            "taxonomic_rank",
+        ],
+    )
+    return taxon_specificity_from_occurrences(taxa, metadata, taxon_ids)
 
 
 def fixed_reference(
@@ -326,6 +407,8 @@ def build_influence_cells(
         ],
         ascending=[False, False, False, True],
     )
+    specificity = load_taxon_specificity(pd.Index(row_metadata["taxon_id"]), metadata)
+    row_metadata = row_metadata.merge(specificity, on="taxon_id", how="left")
     return pd.DataFrame(cells), row_metadata, trait_metadata
 
 
@@ -335,7 +418,7 @@ def plot_heatmap(
     traits: pd.DataFrame,
     output_path: Path,
 ) -> None:
-    """Plot trait-specific influence cells with a separate taxon occurrence annotation."""
+    """Plot trait-specific influence cells with occurrence and PD-specificity annotations."""
     row_ids = rows["taxon_id"].tolist()
     trait_ids = traits["trait_id"].tolist()
     values = cells.pivot(index="taxon_id", columns="trait_id", values="mean_influence_contrast_z")
@@ -349,16 +432,17 @@ def plot_heatmap(
     fig = plt.figure(figsize=(15.5, height), facecolor="white")
     grid = fig.add_gridspec(
         1,
-        2,
-        width_ratios=[6.0, 0.85],
+        3,
+        width_ratios=[6.0, 0.85, 0.95],
         left=0.29,
-        right=0.92,
+        right=0.94,
         top=1 - 1.65 / height,
         bottom=1.15 / height,
-        wspace=0.08,
+        wspace=0.10,
     )
     ax = fig.add_subplot(grid[0, 0])
     row_ax = fig.add_subplot(grid[0, 1], sharey=ax)
+    specificity_ax = fig.add_subplot(grid[0, 2], sharey=ax)
     cmap = plt.get_cmap("RdBu_r").copy()
     cmap.set_bad(MISSING_COLOR)
     image = ax.imshow(
@@ -434,7 +518,53 @@ def plot_heatmap(
     for spine in row_ax.spines.values():
         spine.set_visible(False)
 
-    bar = fig.colorbar(image, ax=[ax, row_ax], pad=0.02, fraction=0.035, shrink=0.58, extend="both")
+    specificity_cmap = plt.get_cmap("YlOrBr").copy()
+    specificity_cmap.set_bad("#f3f4f6")
+    specificity_values = (
+        rows["pd_vs_other_feces_log2_ratio"]
+        .replace([np.inf, -np.inf], np.nan)
+        .clip(-SPECIFICITY_COLOR_LIMIT, SPECIFICITY_COLOR_LIMIT)
+        .to_numpy(dtype=float, copy=True)
+    )
+    total_specificity_profiles = rows["pd_feces_profiles"].astype(float) + rows[
+        "other_feces_profiles"
+    ].astype(float)
+    specificity_values[total_specificity_profiles.eq(0).to_numpy()] = np.nan
+    specificity_ax.imshow(
+        np.ma.masked_invalid(specificity_values[:, None]),
+        cmap=specificity_cmap,
+        vmin=-SPECIFICITY_COLOR_LIMIT,
+        vmax=SPECIFICITY_COLOR_LIMIT,
+        aspect="auto",
+    )
+    specificity_ax.set_xticks([0], ["PD specificity\nPD/other feces"], fontsize=9)
+    specificity_ax.tick_params(left=False, labelleft=False, length=0, pad=6)
+    specificity_ax.set_xticks([-0.5, 0.5], minor=True)
+    specificity_ax.set_yticks(np.arange(-0.5, len(rows), 1), minor=True)
+    specificity_ax.grid(which="minor", color="white", linewidth=1)
+    specificity_ax.tick_params(which="minor", length=0)
+    for y, label in enumerate(rows["pd_other_feces_counts"]):
+        value = specificity_values[y]
+        specificity_ax.text(
+            0,
+            y,
+            label,
+            ha="center",
+            va="center",
+            fontsize=8,
+            color="white" if np.isfinite(value) and value >= 1.8 else "#111827",
+        )
+    for spine in specificity_ax.spines.values():
+        spine.set_visible(False)
+
+    bar = fig.colorbar(
+        image,
+        ax=[ax, row_ax, specificity_ax],
+        pad=0.02,
+        fraction=0.032,
+        shrink=0.58,
+        extend="both",
+    )
     bar.set_label("Species influence on paired PD inc-dec trait contrast (fixed-reference z)")
     fig.text(
         0.03,
@@ -450,8 +580,8 @@ def plot_heatmap(
         f"profile denominator. Inc/dec requires a 95% interval entirely above/below zero and at "
         f"least {MIN_SUPPORT_STUDIES} supporting studies; otherwise cells are mixed or hatched "
         "low support. Gray = no trait annotation at or below the reported species label. Right "
-        "column = raw species occurrence "
-        "counts in all PD fecal profiles, shown separately from trait-specific influence."
+        "columns separate raw PD inc/dec occurrence from a PD specificity check: exact reported "
+        "species-label profiles in PD feces versus all other fecal profiles."
     )
     fig.text(
         0.03,
@@ -514,6 +644,19 @@ def main() -> None:
     plot_heatmap(cells, rows, traits, OUTPUT_DIR / f"{STEM}.png")
     write_tsv(cells, OUTPUT_DIR / f"{STEM}_cells.tsv")
     write_tsv(rows, OUTPUT_DIR / f"{STEM}_taxa.tsv")
+    specificity_columns = [
+        "taxon_id",
+        "taxon_name",
+        "taxonomic_rank",
+        "pd_feces_profiles",
+        "other_feces_profiles",
+        "pd_other_feces_counts",
+        "pd_feces_studies",
+        "other_feces_studies",
+        "pd_specificity_fraction",
+        "pd_vs_other_feces_log2_ratio",
+    ]
+    write_tsv(rows[specificity_columns], OUTPUT_DIR / f"{STEM}_specificity.tsv")
     write_tsv(traits, OUTPUT_DIR / f"{STEM}_traits.tsv")
     manifest = {
         "method": "fixed-reference leave-one-reported-species-out influence",
@@ -529,6 +672,7 @@ def main() -> None:
             TAXA_TRAIT_MATRIX_PATH.relative_to(
                 TAXA_TRAIT_MATRIX_PATH.parents[2]
             ).as_posix(): sha256_chunks(TAXA_TRAIT_MATRIX_PATH),
+            TAXA_PATH.relative_to(TAXA_PATH.parents[2]).as_posix(): sha256_chunks(TAXA_PATH),
             evidence_path.relative_to(evidence_path.parents[3]).as_posix(): sha256_chunks(
                 evidence_path
             ),
@@ -551,15 +695,18 @@ def main() -> None:
         "Student t interval entirely above or below zero. `mixed` retains supported estimates "
         "whose interval crosses zero; hatched `low support` cells do not receive a forced "
         "direction. Gray means the trait matrix has no annotation at or below that reported "
-        "species label. The separate right-hand annotation retains the raw increased/decreased "
-        "profile occurrence counts.\n\n"
+        "species label. The first right-hand annotation retains the raw increased/decreased "
+        "profile occurrence counts in PD feces. The second right-hand annotation is a PD "
+        "specificity check: exact reported species-label profiles in PD feces versus all other "
+        "fecal profiles in the same full occurrence table.\n\n"
         "This is a reported-species influence diagnostic, not a causal attribution or strain-level "
         "measurement. Removing a reported species changes both trait numerators and the nonlinear "
         "full denominator. Parent/child propagation and unresolved source assertions remain the "
         "limitations documented in #190; contrast orientation and trait semantics remain bounded "
         "by #188 and #189.\n\n"
         f"[Cell statistics]({STEM}_cells.tsv) | [Taxon row annotations]({STEM}_taxa.tsv) | "
-        f"[Trait summary]({STEM}_traits.tsv) | [Manifest]({STEM}_manifest.json) | "
+        f"[PD specificity]({STEM}_specificity.tsv) | [Trait summary]({STEM}_traits.tsv) | "
+        f"[Manifest]({STEM}_manifest.json) | "
         f"[Vector figure]({STEM}.svg)\n"
     )
     (OUTPUT_DIR / f"{STEM}.md").write_text(note, encoding="utf-8")

@@ -76,3 +76,44 @@ def test_classification_preserves_uncertainty_and_low_support() -> None:
     assert heatmap.classify_effect(-0.4, -0.7, -0.1, 3) == "dec"
     assert heatmap.classify_effect(0.1, -0.2, 0.4, 3) == "mixed"
     assert heatmap.classify_effect(0.4, 0.1, 0.7, 2) == "low support"
+
+
+def test_taxon_specificity_compares_pd_feces_to_other_feces() -> None:
+    metadata = pd.DataFrame(
+        [
+            ["s1|e1|inc", "s1", "e1", "inc", heatmap.PD_CONDITION, heatmap.FECES],
+            ["s1|e1|dec", "s1", "e1", "dec", heatmap.PD_CONDITION, heatmap.FECES],
+            ["s2|e1|inc", "s2", "e1", "inc", "Colorectal cancer", heatmap.FECES],
+            ["s3|e1|inc", "s3", "e1", "inc", heatmap.PD_CONDITION, "Oral cavity"],
+        ],
+        columns=[
+            "profile_id",
+            "study_id",
+            "experiment_id",
+            "inc_dec",
+            "condition",
+            "body_site_group",
+        ],
+    ).set_index("profile_id", drop=False)
+    taxa = pd.DataFrame(
+        [
+            ["s1", "e1", "increased", "taxon-a"],
+            ["s1", "e1", "decreased", "taxon-a"],
+            ["s2", "e1", "increased", "taxon-a"],
+            ["s3", "e1", "increased", "taxon-a"],
+            ["s2", "e1", "increased", "taxon-b"],
+        ],
+        columns=["study_id", "experiment_id", "direction", "taxon_id"],
+    )
+
+    specificity = heatmap.taxon_specificity_from_occurrences(
+        taxa,
+        metadata,
+        pd.Index(["taxon-a", "taxon-b"]),
+    ).set_index("taxon_id")
+
+    assert specificity.loc["taxon-a", "pd_other_feces_counts"] == "2/1"
+    assert specificity.loc["taxon-a", "pd_feces_studies"] == 1
+    assert specificity.loc["taxon-a", "other_feces_studies"] == 1
+    assert specificity.loc["taxon-a", "pd_specificity_fraction"] == 2 / 3
+    assert specificity.loc["taxon-b", "pd_other_feces_counts"] == "0/1"

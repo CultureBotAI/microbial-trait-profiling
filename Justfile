@@ -54,6 +54,10 @@ pd-trait-taxa:
 pd-trait-taxa-heatmap:
 	uv run python scripts/create_pd_six_trait_taxon_heatmap.py
 
+# Refresh PD trait contributor dot heatmap with specificity and co-carriage checks.
+pd-trait-contributors:
+	uv run python scripts/create_pd_trait_contributors.py
+
 # Overlay increased (solid) and decreased (dashed) high-support Sankey links.
 six-shared-trait-combined-sankey:
 	uv run python scripts/create_six_shared_trait_sankeys.py --combined-high-support-only

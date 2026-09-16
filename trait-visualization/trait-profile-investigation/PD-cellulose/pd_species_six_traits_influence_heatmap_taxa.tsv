@@ -1,61 +1,61 @@
-taxon_id	taxon_name	taxonomic_rank	annotated_trait_count	increased_profiles	decreased_profiles	inc_dec_counts	inc_dec_ratio	log2_inc_dec_ratio	paired_support_studies	max_absolute_influence_z
-NCBITaxon:562	Escherichia coli	species	4	1	2	1/2	0.5	-1.0	3	0.10117464208444153
-NCBITaxon:1309	Streptococcus mutans	species	3	5	0	5/0	inf	inf	2	0.04971931078443918
-NCBITaxon:1280	Staphylococcus aureus	species	3	0	1	0/1	0.0	-inf	1	0.011605308770729659
-NCBITaxon:1328	Streptococcus anginosus	species	3	1	0	1/0	inf	inf	0	0.0
-NCBITaxon:1304	Streptococcus salivarius	species	2	4	0	4/0	inf	inf	3	0.01119239290300912
-NCBITaxon:40518	Ruminococcus bromii	species	2	2	2	2/2	1.0	0.0	3	0.005895553285936382
-NCBITaxon:33039	Mediterraneibacter torques	species	2	3	1	3/1	3.0	1.584962500721156	3	0.002253203482915784
-NCBITaxon:40520	Blautia obeum	species	2	5	0	5/0	inf	inf	2	0.11905529978714521
-NCBITaxon:39492	[Eubacterium] siraeum	species	2	1	1	1/1	1.0	0.0	2	0.013435745872629292
-NCBITaxon:573	Klebsiella pneumoniae	species	2	4	0	4/0	inf	inf	2	0.007931796346220939
-NCBITaxon:1596	Lactobacillus gasseri	species	2	1	1	1/1	1.0	0.0	2	0.0031616238230484798
-NCBITaxon:438033	Ruminococcus gauvreauii	species	2	0	2	0/2	0.0	-inf	1	0.028926300929024363
-NCBITaxon:649756	Anaerostipes hadrus	species	2	0	1	0/1	0.0	-inf	1	0.014614314579201324
-NCBITaxon:68892	Streptococcus infantis	species	2	0	2	0/2	0.0	-inf	1	0.007275734460515488
-NCBITaxon:187327	Acidaminococcus intestini	species	2	1	0	1/0	inf	inf	1	0.004158199995701169
-NCBITaxon:1379	Gemella haemolysans	species	2	0	1	0/1	0.0	-inf	1	0.0024465521574717395
-NCBITaxon:197614	Streptococcus pasteurianus	species	2	0	1	0/1	0.0	-inf	1	0.0007598628733524917
-NCBITaxon:84135	Gemella sanguinis	species	2	0	1	0/1	0.0	-inf	1	0.0007440285989743093
-NCBITaxon:1265	Ruminococcus flavefaciens	species	2	0	1	0/1	0.0	-inf	1	0.00024580600776659596
-NCBITaxon:1305	Streptococcus sanguinis	species	2	1	0	1/0	inf	inf	1	2.3649516696822545e-05
-NCBITaxon:1308	Streptococcus thermophilus	species	2	1	1	1/1	1.0	0.0	1	1.2571599974993724e-05
-NCBITaxon:435842	Streptococcus sp. C150	species	2	1	0	1/0	inf	inf	1	1.551403165822223e-06
-NCBITaxon:550	Enterobacter cloacae	species	2	1	0	1/0	inf	inf	0	0.0
-NCBITaxon:853	Faecalibacterium prausnitzii	species	1	0	13	0/13	0.0	-inf	8	0.10330735105758505
-NCBITaxon:301302	Roseburia faecis	species	1	0	6	0/6	0.0	-inf	5	0.03018101317232712
-NCBITaxon:2173	Methanobrevibacter smithii	species	1	3	0	3/0	inf	inf	3	0.028315447141027832
-NCBITaxon:216816	Bifidobacterium longum	species	1	5	0	5/0	inf	inf	3	0.004653467847371494
-NCBITaxon:246787	Bacteroides cellulosilyticus	species	1	1	2	1/2	0.5	-1.0	2	0.012324409836905293
-NCBITaxon:821	Phocaeicola vulgatus	species	1	0	2	0/2	0.0	-inf	2	0.004752526859047993
-NCBITaxon:1322	Blautia hansenii	species	1	0	3	0/3	0.0	-inf	2	0.002982767693597501
-NCBITaxon:33038	Mediterraneibacter gnavus	species	1	1	1	1/1	1.0	0.0	2	0.0005921338065939073
-NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	1	4	0	4/0	inf	inf	1	0.018477660758398178
-NCBITaxon:113107	Streptococcus australis	species	1	0	4	0/4	0.0	-inf	1	0.007794512676937317
-NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	1	0	1	0/1	0.0	-inf	1	0.003443120027374989
-NCBITaxon:46228	[Ruminococcus] lactaris	species	1	0	1	0/1	0.0	-inf	1	0.0029033165397224546
-NCBITaxon:1624	Ligilactobacillus salivarius	species	1	2	0	2/0	inf	inf	1	0.0024379981532377526
-NCBITaxon:78259	Scardovia inopinata	species	1	1	0	1/0	inf	inf	1	0.0009308313636086921
-NCBITaxon:1203590	Streptococcus sp. HPH0090	species	1	0	3	0/3	0.0	-inf	1	0.0008594908824419298
-NCBITaxon:2047	Rothia dentocariosa	species	1	1	0	1/0	inf	inf	1	0.0008327973850037864
-NCBITaxon:469592	Bacteroides sp. 3_1_19	species	1	0	1	0/1	0.0	-inf	1	0.0007598628733524917
-NCBITaxon:31973	Eggerthia catenaformis	species	1	0	1	0/1	0.0	-inf	1	0.0007362958892984473
-NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	1	1	0	1/0	inf	inf	1	0.00042973794570895664
-NCBITaxon:53443	Blautia hydrogenotrophica	species	1	1	0	1/0	inf	inf	1	0.00040258707434146895
-NCBITaxon:729	Haemophilus parainfluenzae	species	1	0	1	0/1	0.0	-inf	1	0.00024321591682509964
-NCBITaxon:84030	Lacrimispora saccharolytica	species	1	1	0	1/0	inf	inf	1	0.00011224381598948182
-NCBITaxon:68891	Streptococcus peroris	species	1	0	1	0/1	0.0	-inf	1	7.277405227612713e-05
-NCBITaxon:39778	Veillonella dispar	species	1	0	1	0/1	0.0	-inf	1	7.277405227612713e-05
-NCBITaxon:43995	Johnsonella ignava	species	1	0	1	0/1	0.0	-inf	1	4.0787160915372906e-05
-NCBITaxon:43948	Tolumonas auensis	species	1	1	1	1/1	1.0	0.0	1	3.987135283764214e-05
-NCBITaxon:46124	Granulicatella adiacens	species	1	0	1	0/1	0.0	-inf	1	3.641272758555062e-05
-NCBITaxon:40519	Ruminococcus callidus	species	1	2	0	2/0	inf	inf	1	2.5304599782898064e-05
-NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	1	4	0	4/0	inf	inf	1	1.375366315213871e-05
-NCBITaxon:1343	Streptococcus vestibularis	species	1	3	0	3/0	inf	inf	1	6.6825149933538874e-06
-NCBITaxon:39777	Veillonella atypica	species	1	0	1	0/1	0.0	-inf	1	4.462245053412376e-06
-NCBITaxon:457416	Veillonella sp. 3_1_44	species	1	1	0	1/0	inf	inf	1	1.551403165822223e-06
-NCBITaxon:450749	Veillonella sp. 6_1_27	species	1	1	0	1/0	inf	inf	1	1.551403165822223e-06
-NCBITaxon:44008	Enterococcus cecorum	species	1	0	1	0/1	0.0	-inf	1	1.4985351036410664e-06
-NCBITaxon:244366	Klebsiella variicola	species	1	2	0	2/0	inf	inf	1	7.540810353786221e-07
-NCBITaxon:33035	Blautia producta	species	1	1	0	1/0	inf	inf	0	0.0
-NCBITaxon:187326	Megasphaera micronuciformis	species	1	0	1	0/1	0.0	-inf	0	0.0
+taxon_id	taxon_name	taxonomic_rank	annotated_trait_count	increased_profiles	decreased_profiles	inc_dec_counts	inc_dec_ratio	log2_inc_dec_ratio	paired_support_studies	max_absolute_influence_z	pd_feces_profiles	other_feces_profiles	pd_other_feces_counts	pd_feces_studies	other_feces_studies	pd_specificity_fraction	pd_vs_other_feces_log2_ratio
+NCBITaxon:562	Escherichia coli	species	4	1	2	1/2	0.5	-1.0	3	0.10117464208444153	3	84	3/84	3	51	0.034482758620689655	-4.59352451422458
+NCBITaxon:1309	Streptococcus mutans	species	3	5	0	5/0	inf	inf	2	0.04971931078443918	5	5	5/5	2	4	0.5	0.0
+NCBITaxon:1280	Staphylococcus aureus	species	3	0	1	0/1	0.0	-inf	1	0.011605308770729659	1	6	1/6	1	5	0.14285714285714285	-2.115477217419936
+NCBITaxon:1328	Streptococcus anginosus	species	3	1	0	1/0	inf	inf	0	0.0	1	13	1/13	1	11	0.07142857142857142	-3.1699250014423126
+NCBITaxon:1304	Streptococcus salivarius	species	2	4	0	4/0	inf	inf	3	0.01119239290300912	4	51	4/51	4	36	0.07272727272727272	-3.516575525740906
+NCBITaxon:40518	Ruminococcus bromii	species	2	2	2	2/2	1.0	0.0	3	0.005895553285936382	4	64	4/64	3	37	0.058823529411764705	-3.841302253980942
+NCBITaxon:33039	Mediterraneibacter torques	species	2	3	1	3/1	3.0	1.584962500721156	3	0.002253203482915784	4	98	4/98	4	47	0.0392156862745098	-4.452126818014064
+NCBITaxon:40520	Blautia obeum	species	2	5	0	5/0	inf	inf	2	0.11905529978714521	5	57	5/57	2	32	0.08064516129032258	-3.386058432307078
+NCBITaxon:39492	[Eubacterium] siraeum	species	2	1	1	1/1	1.0	0.0	2	0.013435745872629292	2	30	2/30	2	22	0.0625	-3.608809242675524
+NCBITaxon:573	Klebsiella pneumoniae	species	2	4	0	4/0	inf	inf	2	0.007931796346220939	4	30	4/30	3	17	0.11764705882352941	-2.7608123361205736
+NCBITaxon:1596	Lactobacillus gasseri	species	2	1	1	1/1	1.0	0.0	2	0.0031616238230484798	2	10	2/10	2	8	0.16666666666666666	-2.070389327891398
+NCBITaxon:438033	Ruminococcus gauvreauii	species	2	0	2	0/2	0.0	-inf	1	0.028926300929024363	2	16	2/16	1	14	0.1111111111111111	-2.722466024471091
+NCBITaxon:649756	Anaerostipes hadrus	species	2	0	1	0/1	0.0	-inf	1	0.014614314579201324	1	50	1/50	1	27	0.0196078431372549	-5.073248982030639
+NCBITaxon:68892	Streptococcus infantis	species	2	0	2	0/2	0.0	-inf	1	0.007275734460515488	2	7	2/7	1	5	0.2222222222222222	-1.5849625007211563
+NCBITaxon:187327	Acidaminococcus intestini	species	2	1	0	1/0	inf	inf	1	0.004158199995701169	1	8	1/8	1	7	0.1111111111111111	-2.502500340529183
+NCBITaxon:1379	Gemella haemolysans	species	2	0	1	0/1	0.0	-inf	1	0.0024465521574717395	1	3	1/3	1	2	0.25	-1.222392421336448
+NCBITaxon:197614	Streptococcus pasteurianus	species	2	0	1	0/1	0.0	-inf	1	0.0007598628733524917	1	3	1/3	1	3	0.25	-1.222392421336448
+NCBITaxon:84135	Gemella sanguinis	species	2	0	1	0/1	0.0	-inf	1	0.0007440285989743093	1	7	1/7	1	5	0.125	-2.321928094887362
+NCBITaxon:1265	Ruminococcus flavefaciens	species	2	0	1	0/1	0.0	-inf	1	0.00024580600776659596	1	8	1/8	1	6	0.1111111111111111	-2.502500340529183
+NCBITaxon:1305	Streptococcus sanguinis	species	2	1	0	1/0	inf	inf	1	2.3649516696822545e-05	1	7	1/7	1	6	0.125	-2.321928094887362
+NCBITaxon:1308	Streptococcus thermophilus	species	2	1	1	1/1	1.0	0.0	1	1.2571599974993724e-05	2	36	2/36	2	22	0.05263157894736842	-3.867896463992655
+NCBITaxon:435842	Streptococcus sp. C150	species	2	1	0	1/0	inf	inf	1	1.551403165822223e-06	1	1	1/1	1	1	0.5	0.0
+NCBITaxon:550	Enterobacter cloacae	species	2	1	0	1/0	inf	inf	0	0.0	1	12	1/12	1	8	0.07692307692307693	-3.0588936890535687
+NCBITaxon:853	Faecalibacterium prausnitzii	species	1	0	13	0/13	0.0	-inf	8	0.10330735105758505	13	137	13/137	8	74	0.08666666666666667	-3.3484003062485534
+NCBITaxon:301302	Roseburia faecis	species	1	0	6	0/6	0.0	-inf	5	0.03018101317232712	6	18	6/18	5	17	0.25	-1.5090136474878575
+NCBITaxon:2173	Methanobrevibacter smithii	species	1	3	0	3/0	inf	inf	3	0.028315447141027832	3	13	3/13	3	9	0.1875	-1.9475325801058645
+NCBITaxon:216816	Bifidobacterium longum	species	1	5	0	5/0	inf	inf	3	0.004653467847371494	5	54	5/54	4	32	0.0847457627118644	-3.308752706139629
+NCBITaxon:246787	Bacteroides cellulosilyticus	species	1	1	2	1/2	0.5	-1.0	2	0.012324409836905293	3	24	3/24	2	18	0.1111111111111111	-2.807354922057604
+NCBITaxon:821	Phocaeicola vulgatus	species	1	0	2	0/2	0.0	-inf	2	0.004752526859047993	2	65	2/65	2	40	0.029850746268656716	-4.711494906650088
+NCBITaxon:1322	Blautia hansenii	species	1	0	3	0/3	0.0	-inf	2	0.002982767693597501	3	7	3/7	2	6	0.3	-1.0995356735509143
+NCBITaxon:33038	Mediterraneibacter gnavus	species	1	1	1	1/1	1.0	0.0	2	0.0005921338065939073	2	91	2/91	2	58	0.021505376344086023	-5.19377174339668
+NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	1	4	0	4/0	inf	inf	1	0.018477660758398178	4	9	4/9	1	7	0.3076923076923077	-1.0780025120012733
+NCBITaxon:113107	Streptococcus australis	species	1	0	4	0/4	0.0	-inf	1	0.007794512676937317	4	4	4/4	1	3	0.5	0.0
+NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	1	0	1	0/1	0.0	-inf	1	0.003443120027374989	1	5	1/5	1	4	0.16666666666666666	-1.8744691179161412
+NCBITaxon:46228	[Ruminococcus] lactaris	species	1	0	1	0/1	0.0	-inf	1	0.0029033165397224546	1	31	1/31	1	18	0.03125	-4.392317422778761
+NCBITaxon:1624	Ligilactobacillus salivarius	species	1	2	0	2/0	inf	inf	1	0.0024379981532377526	2	8	2/8	2	6	0.2	-1.765534746362977
+NCBITaxon:78259	Scardovia inopinata	species	1	1	0	1/0	inf	inf	1	0.0009308313636086921	1	1	1/1	1	1	0.5	0.0
+NCBITaxon:1203590	Streptococcus sp. HPH0090	species	1	0	3	0/3	0.0	-inf	1	0.0008594908824419298	3	0	3/0	1	0	1.0	2.807354922057604
+NCBITaxon:2047	Rothia dentocariosa	species	1	1	0	1/0	inf	inf	1	0.0008327973850037864	1	3	1/3	1	3	0.25	-1.222392421336448
+NCBITaxon:469592	Bacteroides sp. 3_1_19	species	1	0	1	0/1	0.0	-inf	1	0.0007598628733524917	1	3	1/3	1	2	0.25	-1.222392421336448
+NCBITaxon:31973	Eggerthia catenaformis	species	1	0	1	0/1	0.0	-inf	1	0.0007362958892984473	1	0	1/0	1	0	1.0	1.584962500721156
+NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	1	1	0	1/0	inf	inf	1	0.00042973794570895664	1	0	1/0	1	0	1.0	1.584962500721156
+NCBITaxon:53443	Blautia hydrogenotrophica	species	1	1	0	1/0	inf	inf	1	0.00040258707434146895	1	8	1/8	1	6	0.1111111111111111	-2.502500340529183
+NCBITaxon:729	Haemophilus parainfluenzae	species	1	0	1	0/1	0.0	-inf	1	0.00024321591682509964	1	48	1/48	1	30	0.02040816326530612	-5.014950341465972
+NCBITaxon:84030	Lacrimispora saccharolytica	species	1	1	0	1/0	inf	inf	1	0.00011224381598948182	1	6	1/6	1	5	0.14285714285714285	-2.115477217419936
+NCBITaxon:68891	Streptococcus peroris	species	1	0	1	0/1	0.0	-inf	1	7.277405227612713e-05	1	2	1/2	1	2	0.3333333333333333	-0.7369655941662062
+NCBITaxon:39778	Veillonella dispar	species	1	0	1	0/1	0.0	-inf	1	7.277405227612713e-05	1	32	1/32	1	20	0.030303030303030304	-4.437405312307298
+NCBITaxon:43995	Johnsonella ignava	species	1	0	1	0/1	0.0	-inf	1	4.0787160915372906e-05	1	2	1/2	1	1	0.3333333333333333	-0.7369655941662062
+NCBITaxon:43948	Tolumonas auensis	species	1	1	1	1/1	1.0	0.0	1	3.987135283764214e-05	2	0	2/0	1	0	1.0	2.321928094887362
+NCBITaxon:46124	Granulicatella adiacens	species	1	0	1	0/1	0.0	-inf	1	3.641272758555062e-05	1	4	1/4	1	4	0.2	-1.5849625007211563
+NCBITaxon:40519	Ruminococcus callidus	species	1	2	0	2/0	inf	inf	1	2.5304599782898064e-05	2	35	2/35	2	16	0.05405405405405406	-3.8278190246173196
+NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	1	4	0	4/0	inf	inf	1	1.375366315213871e-05	4	0	4/0	1	0	1.0	3.169925001442312
+NCBITaxon:1343	Streptococcus vestibularis	species	1	3	0	3/0	inf	inf	1	6.6825149933538874e-06	3	13	3/13	1	10	0.1875	-1.9475325801058645
+NCBITaxon:39777	Veillonella atypica	species	1	0	1	0/1	0.0	-inf	1	4.462245053412376e-06	1	22	1/22	1	12	0.043478260869565216	-3.9068905956085187
+NCBITaxon:457416	Veillonella sp. 3_1_44	species	1	1	0	1/0	inf	inf	1	1.551403165822223e-06	1	0	1/0	1	0	1.0	1.584962500721156
+NCBITaxon:450749	Veillonella sp. 6_1_27	species	1	1	0	1/0	inf	inf	1	1.551403165822223e-06	1	0	1/0	1	0	1.0	1.584962500721156
+NCBITaxon:44008	Enterococcus cecorum	species	1	0	1	0/1	0.0	-inf	1	1.4985351036410664e-06	1	2	1/2	1	2	0.3333333333333333	-0.7369655941662062
+NCBITaxon:244366	Klebsiella variicola	species	1	2	0	2/0	inf	inf	1	7.540810353786221e-07	2	10	2/10	1	9	0.16666666666666666	-2.070389327891398
+NCBITaxon:33035	Blautia producta	species	1	1	0	1/0	inf	inf	0	0.0	1	13	1/13	1	10	0.07142857142857142	-3.1699250014423126
+NCBITaxon:187326	Megasphaera micronuciformis	species	1	0	1	0/1	0.0	-inf	0	0.0	1	11	1/11	1	5	0.08333333333333333	-2.938599455335857
