@@ -20,9 +20,17 @@ assertion counts).
 Two oxygen guilds were defined a priori and were not selected from the data. The
 aerobe guild is METPO:1000602 (aerobic), METPO:1000604 (microaerophilic), and
 METPO:1000608 (facultatively aerobic); the anaerobe guild is METPO:1000603
-(anaerobic) and METPO:1000607 (obligately anaerobic). Guild membership and the
-term labels were verified against the merged KG-Microbe node table rather than
-taken from prior analysis code.
+(anaerobic) and METPO:1000607 (obligately anaerobic). The term labels were
+checked against the merged KG-Microbe node table rather than taken from prior
+analysis code, and the check is re-runnable: `just verify-trait-terms` looks every
+grouped identifier up in `data/kg-microbe/merged-kg_nodes.tsv` (MD5 recorded in
+`data/kg-microbe/provenance.json`) and fails on a missing or changed label. A label
+check cannot validate the grouping itself. Placing microaerophilic and
+facultatively aerobic organisms in the aerobe guild is an a priori decision: both
+tolerate oxygen, but neither is an obligate aerobe, and a guild of strict aerobes
+alone would be a different quantity. METPO:1000608 (facultatively aerobic) is also
+one of the six Table 1 traits, so this figure and the Table 1 figures share
+evidence and are not independent of each other.
 
 Three input filters were applied once, upstream, so that the figure operates on a
 single corpus definition. Non-human samples were excluded on the per-experiment
@@ -145,18 +153,22 @@ same profile denominators. The [paired log-ratio analysis](table1_paired_log_rat
 illustrates reference-explicit tests over the individual Table 1 traits; it does
 not independently validate the oxygen guild hypothesis.
 
-Rank correlations were computed across the 86 condition-by-body-site cells that
-survived masking, using only cells where both members of a pair were present so
-that the series remain aligned. Aerobe and anaerobe fractions correlate
-negatively within the same direction, rho = -0.630 on the increased side and
--0.755 on the decreased side — partly the same structural artefact, and not to
-be read as support. Note the cell-level n is not a count of independent
-observations: one study contributes to many cells.
+Rank correlations are computed across studies, one observation per study, using
+each study's mean guild fraction per direction and its paired contrast (the mean
+increased minus mean decreased fraction). An earlier version correlated the 86
+condition-by-body-site cells that survived masking; one study reaches many cells,
+so that counted dependent cells as independent observations, and it is replaced
+here by the per-study template the Table 1 figure already uses (#165). Over 959
+studies, aerobe and anaerobe fractions correlate negatively within the same
+direction, rho = -0.635 on the increased side and -0.630 on the decreased side,
+and the two guilds' per-study contrasts correlate at rho = -0.725. These are
+largely the structural artefact described above - two shares of one denominator -
+and are not to be read as support. Studies are still not fully independent where
+they share cohorts, which this computation does not model.
 
-The McNemar test is a single test and needs no correction. The six pairwise
-Spearman p-values are reported uncorrected, and should be read as descriptive
-rather than as a screened set; they are not the basis of any claim in the
-manuscript.
+The McNemar test is a single test and needs no correction. The seven Spearman
+p-values are reported uncorrected, and should be read as descriptive rather than
+as a screened set; they are not the basis of any claim in the manuscript.
 
 ## Reproducing
 

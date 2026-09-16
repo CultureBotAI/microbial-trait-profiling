@@ -148,8 +148,7 @@ def test_rows_with_no_surviving_cells_are_dropped(corpus: tuple[Path, Path]) -> 
 
 def test_correlation_counts_studies_by_shift_direction(corpus: tuple[Path, Path]) -> None:
     profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
-    matrix = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
-    result = compute_correlation(profiles, matrix)
+    result = compute_correlation(profiles)
 
     # Both surviving studies put aerobes higher on the increased side and
     # anaerobes higher on the decreased side.
@@ -352,3 +351,46 @@ def test_subset_derives_the_other_axis_and_drops_blank_bands(corpus: tuple[Path,
 
     with pytest.raises(ValueError, match="Nowhere"):
         subset_matrix(matrix, sites=["Nowhere"])
+
+
+def _guild_profile(
+    study: str, experiment: str, direction: str, aerobe: int, anaerobe: int, condition: str
+) -> Profile:
+    return Profile(
+        study_id=study,
+        experiment_id=experiment,
+        inc_dec=direction,
+        condition=condition,
+        body_site="Feces",
+        guild_counts={"aerobe": aerobe, "anaerobe": anaerobe},
+        total=aerobe + anaerobe + 10,
+    )
+
+
+def test_rank_correlations_count_each_study_once_across_its_cells() -> None:
+    """#165: a study reaching several condition cells is one observation, not several."""
+    profiles: list[Profile] = []
+    # bsdb:1 spans three conditions; a cell-level correlation would count it three times.
+    for index, condition in enumerate(("A", "B", "C")):
+        profiles += [
+            _guild_profile("bsdb:1", f"bsdb:1-{index}", "inc", 9, 1, condition),
+            _guild_profile("bsdb:1", f"bsdb:1-{index}", "dec", 1, 9, condition),
+        ]
+    for study, (up, down) in {"bsdb:2": (6, 3), "bsdb:3": (2, 7), "bsdb:4": (5, 5)}.items():
+        profiles += [
+            _guild_profile(study, f"{study}-1", "inc", up, down, "A"),
+            _guild_profile(study, f"{study}-1", "dec", down, up, "A"),
+        ]
+    result = compute_correlation(profiles)
+    assert {n for _rho, _p, n in result.spearman.values()} == {4}
+    rho, _p, _n = result.spearman["aerobe_contrast~anaerobe_contrast"]
+    assert rho == pytest.approx(-1.0)
+
+
+def test_a_body_site_containing_the_column_separator_is_rejected() -> None:
+    profiles = [
+        Profile("bsdb:1", "bsdb:1-1", "inc", "A", "Plaque | saliva", {"aerobe": 1}, 2),
+        Profile("bsdb:1", "bsdb:1-1", "dec", "A", "Plaque | saliva", {"aerobe": 1}, 2),
+    ]
+    with pytest.raises(ValueError, match="Plaque"):
+        build_matrix(profiles, max_conditions=5, max_body_sites=5, min_studies=1)

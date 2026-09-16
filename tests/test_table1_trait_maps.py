@@ -190,7 +190,11 @@ def test_direction_shift_counts_studies_and_matches_scipy(corpus: tuple[Path, Pa
     sphere = by_trait["sphere_shaped"]
     assert (sphere.studies_up, sphere.studies_down, sphere.studies_tied) == (0, 0, 3)
     assert sphere.studies_scored == 0
-    assert sphere.p_value == 1.0
+    assert sphere.status == "all_tied"
+    # Undefined, not a share of zero (which would read as every study down).
+    assert sphere.share_up is None
+    assert sphere.p_value is None
+    assert sphere.q_value is None
 
     # Ties are excluded from the test rather than split between the two sides.
     arsenate = by_trait["arsenate_reduction"]
@@ -208,9 +212,37 @@ def test_direction_shift_counts_studies_and_matches_scipy(corpus: tuple[Path, Pa
         for t in TRAIT_ORDER
     ]
     expected_q = [float(q) for q in false_discovery_control(expected_p, method="bh")]
-    assert [by_trait[t].p_value for t in TRAIT_ORDER] == pytest.approx(expected_p)
-    assert [by_trait[t].q_value for t in TRAIT_ORDER] == pytest.approx(expected_q)
+    # The untested trait holds its place in the family at p = 1 but reports neither.
+    tested = [i for i, t in enumerate(TRAIT_ORDER) if by_trait[t].studies_scored]
+    assert [by_trait[TRAIT_ORDER[i]].p_value for i in tested] == pytest.approx(
+        [expected_p[i] for i in tested]
+    )
+    assert [by_trait[TRAIT_ORDER[i]].q_value for i in tested] == pytest.approx(
+        [expected_q[i] for i in tested]
+    )
     assert aerobic.p_value == pytest.approx(0.25)
+
+
+def test_the_shift_table_leaves_undefined_values_blank(
+    tmp_path: Path, corpus: tuple[Path, Path]
+) -> None:
+    """#165: an all-tied trait is written as blank with its status, not as share 0."""
+    from bsdbng.table1_trait_maps import write_shift_table
+
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    shifts_path, _ = write_shift_table(
+        compute_direction_shifts(profiles, TRAIT_ORDER), tmp_path, "v"
+    )
+    header, *rows = shifts_path.read_text(encoding="utf-8").splitlines()
+    columns = header.split("\t")
+    sphere = dict(
+        zip(
+            columns, next(r for r in rows if r.startswith("sphere_shaped")).split("\t"), strict=True
+        )
+    )
+    assert sphere["share_up"] == ""
+    assert sphere["bh_q"] == ""
+    assert sphere["status"] == "all_tied"
 
 
 def test_contrast_correlation_is_computed_across_studies(corpus: tuple[Path, Path]) -> None:
@@ -297,7 +329,8 @@ def test_float_residue_contrasts_are_ties_not_signs() -> None:
     result = compute_direction_shifts(study, ("facultatively_aerobic",))
     (shift,) = result.shifts
     assert (shift.studies_up, shift.studies_down, shift.studies_tied) == (0, 0, 1)
-    assert shift.p_value == 1.0
+    assert shift.p_value is None
+    assert shift.status == "all_tied"
 
 
 def test_undrawn_panel_conditions_separate_all_three_causes() -> None:

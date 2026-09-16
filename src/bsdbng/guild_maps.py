@@ -181,6 +181,12 @@ def build_matrix(
     single row, not a site-level pattern, and it still costs one column per group
     and direction.
     """
+    # Columns are encoded as "site|group_direction", so a body site containing the
+    # separator would be split in the wrong place and silently mislabel its cells.
+    unsafe = sorted({p.body_site for p in profiles if "|" in p.body_site})
+    if unsafe:
+        raise ValueError(f"body-site labels contain '|': {', '.join(unsafe)}")
+
     condition_counts: defaultdict[str, int] = defaultdict(int)
     body_site_counts: defaultdict[str, int] = defaultdict(int)
     for profile in profiles:
@@ -377,7 +383,7 @@ def _sign(value: float) -> int:
     return 1 if value > 0 else -1
 
 
-def compute_correlation(profiles: list[Profile], matrix: GuildMatrix) -> CorrelationResult:
+def compute_correlation(profiles: list[Profile]) -> CorrelationResult:
     """Test whether aerobes shift toward the increased side more often than anaerobes.
 
     Scoring counts studies, not experiments or trait assertions. A study is
@@ -428,30 +434,37 @@ def compute_correlation(profiles: list[Profile], matrix: GuildMatrix) -> Correla
         else float("inf")
     )
 
-    # Rank correlation across condition x body-site cells. Only cells where both
-    # members of a pair survived masking are used, so the series stay aligned.
-    per_cell: defaultdict[tuple[str, str], dict[str, float]] = defaultdict(dict)
-    for row_index, row in enumerate(matrix.values):
-        condition = matrix.conditions[row_index]
-        for index, column in enumerate(matrix.columns):
-            site, suffix = column.split("|", 1)
-            value = row[index]
-            if value is not None:
-                per_cell[(condition, site)][suffix] = value
+    # Rank correlations across studies, one observation per study (#165). An
+    # earlier version correlated condition x body-site cells, which counted a
+    # study once per cell it reached and so treated dependent cells as independent.
+    # Each pair uses the studies carrying both series; a constant series has no
+    # defined rank correlation and its pair is omitted rather than written as nan.
+    per_study: dict[str, dict[str, float]] = {}
+    for study, per_key in study_means.items():
+        row = dict(per_key)
+        for guild in GUILD_ORDER:
+            inc, dec = per_key.get(f"{guild}_inc"), per_key.get(f"{guild}_dec")
+            if inc is not None and dec is not None:
+                row[f"{guild}_contrast"] = inc - dec
+        per_study[study] = row
 
-    suffixes = [f"{guild}_{d}" for guild in GUILD_ORDER for d in DIRECTIONS]
+    directions = [f"{guild}_{d}" for guild in GUILD_ORDER for d in DIRECTIONS]
+    pairs = [(left, right) for i, left in enumerate(directions) for right in directions[i + 1 :]]
+    # The Table 1 template: the two guilds' per-study contrasts against each other.
+    pairs.append(("aerobe_contrast", "anaerobe_contrast"))
     spearman: dict[str, tuple[float, float, int]] = {}
-    for i, left in enumerate(suffixes):
-        for right in suffixes[i + 1 :]:
-            paired = [
-                (cell[left], cell[right])
-                for cell in per_cell.values()
-                if left in cell and right in cell
-            ]
-            if len(paired) < 3:
-                continue
-            rho, p_value = spearmanr([x for x, _ in paired], [y for _, y in paired])
-            spearman[f"{left}~{right}"] = (float(rho), float(p_value), len(paired))
+    for left, right in pairs:
+        paired = [
+            (row[left], row[right]) for row in per_study.values() if left in row and right in row
+        ]
+        if len(paired) < 3:
+            continue
+        left_values = [x for x, _ in paired]
+        right_values = [y for _, y in paired]
+        if len(set(left_values)) < 2 or len(set(right_values)) < 2:
+            continue
+        rho, p_value = spearmanr(left_values, right_values)
+        spearman[f"{left}~{right}"] = (float(rho), float(p_value), len(paired))
 
     return CorrelationResult(
         table=table,
@@ -564,14 +577,14 @@ def write_outputs(
                 vintage or "",
             ]
         )
-        for pair, (rho, p_value, n_cells) in sorted(correlation.spearman.items()):
+        for pair, (rho, p_value, n_studies) in sorted(correlation.spearman.items()):
             writer.writerow(
                 [
-                    "spearman_rho",
+                    "spearman_rho_across_studies",
                     pair,
                     f"{rho:.6f}",
                     f"{p_value:.6g}",
-                    n_cells,
+                    n_studies,
                     vintage or "",
                 ]
             )
@@ -1288,7 +1301,7 @@ def main() -> int:
             f"conditions dropped as entirely blank: {len(matrix.dropped_empty_conditions)} "
             f"({', '.join(sorted(matrix.dropped_empty_conditions))})"
         )
-    correlation = compute_correlation(profiles, matrix)
+    correlation = compute_correlation(profiles)
     written = write_outputs(matrix, correlation, args.output_dir, vintage)
     written.append(
         write_figure(matrix, args.output_dir / "guild_condition_body_site_heatmap.png", vintage)

@@ -203,7 +203,11 @@ when it is negative; a difference within 1e-12 of zero is treated as a tie, sinc
 at that magnitude it is floating-point residue of summing fractions rather than a
 direction (exactly one study crosses that line on this corpus). Ties are recorded
 in the output table and excluded from the test rather than split between the
-sides, which is why the denominator differs between traits: ties are common for
+sides, which is why the denominator differs between traits. A trait whose every
+study ties has no defined share: its share, interval, p and q are written blank
+with status `all_tied`, it keeps its place in the six-trait family at p = 1, and
+the figure draws no marker for it rather than a point at 0 that would read as
+every study shifting down: ties are common for
 the rarer traits, 343 studies for arsenate reduction against 42 for facultatively
 aerobic, and almost all of them are studies where the trait is absent from both
 sides. Each trait then gets a two-sided exact binomial test against a half-and-half

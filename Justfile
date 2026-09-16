@@ -78,6 +78,11 @@ download-kg:
 download-kg-force:
 	uv run --extra kg python scripts/download_kg_microbe.py --force
 
+# Check that every identifier the guild, gram-stain and Table 1 figures group exists
+# in data/kg-microbe/merged-kg_nodes.tsv with its expected label (run `just download-kg` first).
+verify-trait-terms:
+	uv run python scripts/verify_trait_terms.py
+
 # Requires BugSigDB CSVs from `just download`; `just ingest` creates the data/studies/*.yaml inputs.
 # Flatten per-study YAML into data/derived/*.tsv, including bugsigdb_taxa.tsv.
 study-tsvs: ingest
