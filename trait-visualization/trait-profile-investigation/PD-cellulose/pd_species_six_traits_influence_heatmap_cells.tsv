@@ -1,361 +1,361 @@
-taxon_id	taxon_name	taxonomic_rank	trait_id	trait	trait_overall_direction	trait_overall_mean_z_contrast	annotation_count	has_trait_annotation	paired_profiles	paired_studies	taxon_support_profiles	taxon_support_studies	mean_influence_contrast_z	ci95_low	ci95_high	status
-NCBITaxon:113107	Streptococcus australis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	4	1				not annotated
-NCBITaxon:113107	Streptococcus australis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	4	1				not annotated
-NCBITaxon:113107	Streptococcus australis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	4	1				not annotated
-NCBITaxon:113107	Streptococcus australis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	204	42	4	1	-0.007794512676937317	-0.02353585037263691	0.00794682501876228	low support
-NCBITaxon:113107	Streptococcus australis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	4	1				not annotated
-NCBITaxon:113107	Streptococcus australis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	4	1				not annotated
-NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	-0.003443120027374989	-0.010396641988806011	0.0035104019340560333	low support
-NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:1203590	Streptococcus sp. HPH0090	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	3	1				not annotated
-NCBITaxon:1203590	Streptococcus sp. HPH0090	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	3	1				not annotated
-NCBITaxon:1203590	Streptococcus sp. HPH0090	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	3	1				not annotated
-NCBITaxon:1203590	Streptococcus sp. HPH0090	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	3	1	-0.0008594908824419298	-0.002595267933254219	0.0008762861683703596	low support
-NCBITaxon:1203590	Streptococcus sp. HPH0090	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	3	1				not annotated
-NCBITaxon:1203590	Streptococcus sp. HPH0090	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	3	1				not annotated
-NCBITaxon:1265	Ruminococcus flavefaciens	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:1265	Ruminococcus flavefaciens	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:1265	Ruminococcus flavefaciens	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:1265	Ruminococcus flavefaciens	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	1.901413782943061e-06	-1.938569253472376e-06	5.7413968193584984e-06	low support
-NCBITaxon:1265	Ruminococcus flavefaciens	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:1265	Ruminococcus flavefaciens	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	2	True	204	42	1	1	-0.00024580600776659596	-0.0007422213112318675	0.00025060929569867556	low support
-NCBITaxon:1280	Staphylococcus aureus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	2	True	204	42	1	1	-0.0010793787623165243	-0.0032592283954390494	0.0011004708708060008	low support
-NCBITaxon:1280	Staphylococcus aureus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	717	True	204	42	1	1	-0.010859916658009708	-0.0327919632844391	0.01107212996841968	low support
-NCBITaxon:1280	Staphylococcus aureus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:1280	Staphylococcus aureus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	3003	True	204	42	1	1	-0.011605308770729659	-0.035042705307840843	0.011832087766381526	low support
-NCBITaxon:1280	Staphylococcus aureus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:1280	Staphylococcus aureus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:1304	Streptococcus salivarius	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	3	3				not annotated
-NCBITaxon:1304	Streptococcus salivarius	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	6	True	204	42	3	3	0.01119239290300912	-0.011423783514043476	0.03380856932006172	mixed
-NCBITaxon:1304	Streptococcus salivarius	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	3	3				not annotated
-NCBITaxon:1304	Streptococcus salivarius	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	7	True	204	42	3	3	0.008409906179069452	-0.008595554691166078	0.02541536704930498	mixed
-NCBITaxon:1304	Streptococcus salivarius	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	3	3				not annotated
-NCBITaxon:1304	Streptococcus salivarius	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	3	3				not annotated
-NCBITaxon:1305	Streptococcus sanguinis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:1305	Streptococcus sanguinis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	22	True	204	42	1	1	2.3649516696822545e-05	-2.411165120354798e-05	7.141068459719307e-05	low support
-NCBITaxon:1305	Streptococcus sanguinis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:1305	Streptococcus sanguinis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	22	True	204	42	1	1	-1.596843877748726e-05	-4.821735512260759e-05	1.6280477567633066e-05	low support
-NCBITaxon:1305	Streptococcus sanguinis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:1305	Streptococcus sanguinis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:1308	Streptococcus thermophilus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:1308	Streptococcus thermophilus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	5	True	204	42	1	1	-2.646393429541147e-07	-7.990893384406355e-07	2.698106525324061e-07	low support
-NCBITaxon:1308	Streptococcus thermophilus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:1308	Streptococcus thermophilus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	12	True	204	42	1	1	-1.2571599974993724e-05	-3.796046118849333e-05	1.281726123850588e-05	low support
-NCBITaxon:1308	Streptococcus thermophilus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:1308	Streptococcus thermophilus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:1309	Streptococcus mutans	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	1	True	204	42	5	2	0.01680364378303434	-0.016419682983477263	0.05002697054954594	low support
-NCBITaxon:1309	Streptococcus mutans	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	138	True	204	42	5	2	0.011014954085012501	-0.00973692510873262	0.03176683327875762	low support
-NCBITaxon:1309	Streptococcus mutans	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	5	2				not annotated
-NCBITaxon:1309	Streptococcus mutans	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	164	True	204	42	5	2	0.04971931078443918	-0.025429836693851918	0.12486845826273028	low support
-NCBITaxon:1309	Streptococcus mutans	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	5	2				not annotated
-NCBITaxon:1309	Streptococcus mutans	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	5	2				not annotated
-NCBITaxon:1322	Blautia hansenii	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	3	2				not annotated
-NCBITaxon:1322	Blautia hansenii	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	3	2				not annotated
-NCBITaxon:1322	Blautia hansenii	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	3	2				not annotated
-NCBITaxon:1322	Blautia hansenii	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	3	2	-0.002982767693597501	-0.009004848371065872	0.0030393129838708704	low support
-NCBITaxon:1322	Blautia hansenii	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	3	2				not annotated
-NCBITaxon:1322	Blautia hansenii	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	3	2				not annotated
-NCBITaxon:1328	Streptococcus anginosus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	0	0				not annotated
-NCBITaxon:1328	Streptococcus anginosus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	204	42	0	0	0.0	0.0	0.0	low support
-NCBITaxon:1328	Streptococcus anginosus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	0	0				not annotated
-NCBITaxon:1328	Streptococcus anginosus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	6	True	204	42	0	0	0.0	0.0	0.0	low support
-NCBITaxon:1328	Streptococcus anginosus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	1	True	204	42	0	0	0.0	0.0	0.0	low support
-NCBITaxon:1328	Streptococcus anginosus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	0	0				not annotated
-NCBITaxon:1343	Streptococcus vestibularis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	3	1				not annotated
-NCBITaxon:1343	Streptococcus vestibularis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	3	1				not annotated
-NCBITaxon:1343	Streptococcus vestibularis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	3	1				not annotated
-NCBITaxon:1343	Streptococcus vestibularis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	3	True	204	42	3	1	6.6825149933538874e-06	-6.813097821313066e-06	2.0178127808020842e-05	low support
-NCBITaxon:1343	Streptococcus vestibularis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	3	1				not annotated
-NCBITaxon:1343	Streptococcus vestibularis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	3	1				not annotated
-NCBITaxon:1379	Gemella haemolysans	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:1379	Gemella haemolysans	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	3	True	204	42	1	1	-0.0024465521574717395	-0.007387464475807657	0.0024943601608641785	low support
-NCBITaxon:1379	Gemella haemolysans	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:1379	Gemella haemolysans	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	3	True	204	42	1	1	-0.0012924233599230675	-0.003902525286443203	0.001317678566597068	low support
-NCBITaxon:1379	Gemella haemolysans	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:1379	Gemella haemolysans	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:1596	Lactobacillus gasseri	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	1	True	204	42	2	2	0.0031616238230484798	-0.003468886586860934	0.009792134232957894	low support
-NCBITaxon:1596	Lactobacillus gasseri	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	5	True	204	42	2	2	0.0024289773795651156	-0.0024810052360801312	0.007338959995210363	low support
-NCBITaxon:1596	Lactobacillus gasseri	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	2	2				not annotated
-NCBITaxon:1596	Lactobacillus gasseri	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	2	2				not annotated
-NCBITaxon:1596	Lactobacillus gasseri	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	2	2				not annotated
-NCBITaxon:1596	Lactobacillus gasseri	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	2	2				not annotated
-NCBITaxon:1624	Ligilactobacillus salivarius	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:1624	Ligilactobacillus salivarius	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	5	True	204	42	1	1	0.0024379981532377526	-0.0024856390030863	0.007361635309561805	low support
-NCBITaxon:1624	Ligilactobacillus salivarius	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:1624	Ligilactobacillus salivarius	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	1	1				not annotated
-NCBITaxon:1624	Ligilactobacillus salivarius	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:1624	Ligilactobacillus salivarius	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:187326	Megasphaera micronuciformis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	0	0				not annotated
-NCBITaxon:187326	Megasphaera micronuciformis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	0	0				not annotated
-NCBITaxon:187326	Megasphaera micronuciformis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	0	0				not annotated
-NCBITaxon:187326	Megasphaera micronuciformis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	0	0	0.0	0.0	0.0	low support
-NCBITaxon:187326	Megasphaera micronuciformis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	0	0				not annotated
-NCBITaxon:187326	Megasphaera micronuciformis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	0	0				not annotated
-NCBITaxon:187327	Acidaminococcus intestini	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:187327	Acidaminococcus intestini	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:187327	Acidaminococcus intestini	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:187327	Acidaminococcus intestini	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	204	42	1	1	0.00011207372633568853	-0.00011426375570926909	0.0003384112083806461	low support
-NCBITaxon:187327	Acidaminococcus intestini	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	1	True	204	42	1	1	0.004158199995701169	-0.004239455258906495	0.012555855250308832	low support
-NCBITaxon:187327	Acidaminococcus intestini	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:197614	Streptococcus pasteurianus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:197614	Streptococcus pasteurianus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	204	42	1	1	-0.0007598628733524917	-0.002294437078005155	0.0007747113313001717	low support
-NCBITaxon:197614	Streptococcus pasteurianus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:197614	Streptococcus pasteurianus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	-0.0004087370023270839	-0.0012341981246620217	0.00041672412000785407	low support
-NCBITaxon:197614	Streptococcus pasteurianus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:197614	Streptococcus pasteurianus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:2047	Rothia dentocariosa	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:2047	Rothia dentocariosa	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:2047	Rothia dentocariosa	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:2047	Rothia dentocariosa	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	204	42	1	1	0.0008327973850037864	-0.0008490710540878003	0.002514665824095373	low support
-NCBITaxon:2047	Rothia dentocariosa	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:2047	Rothia dentocariosa	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:216816	Bifidobacterium longum	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	4	3				not annotated
-NCBITaxon:216816	Bifidobacterium longum	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	204	42	4	3	-0.004653467847371494	-0.013359464311487112	0.004052528616744124	mixed
-NCBITaxon:216816	Bifidobacterium longum	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	4	3				not annotated
-NCBITaxon:216816	Bifidobacterium longum	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	4	3				not annotated
-NCBITaxon:216816	Bifidobacterium longum	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	4	3				not annotated
-NCBITaxon:216816	Bifidobacterium longum	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	4	3				not annotated
-NCBITaxon:2173	Methanobrevibacter smithii	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	3	3				not annotated
-NCBITaxon:2173	Methanobrevibacter smithii	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	3	3				not annotated
-NCBITaxon:2173	Methanobrevibacter smithii	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	3	3				not annotated
-NCBITaxon:2173	Methanobrevibacter smithii	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	3	3	0.028315447141027832	-0.029220583712677235	0.0858514779947329	mixed
-NCBITaxon:2173	Methanobrevibacter smithii	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	3	3				not annotated
-NCBITaxon:2173	Methanobrevibacter smithii	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	3	3				not annotated
-NCBITaxon:244366	Klebsiella variicola	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	2	1				not annotated
-NCBITaxon:244366	Klebsiella variicola	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	204	42	2	1	7.540810353786221e-07	-7.688165106013575e-07	2.2769785813586017e-06	low support
-NCBITaxon:244366	Klebsiella variicola	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	2	1				not annotated
-NCBITaxon:244366	Klebsiella variicola	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	2	1				not annotated
-NCBITaxon:244366	Klebsiella variicola	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	2	1				not annotated
-NCBITaxon:244366	Klebsiella variicola	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	2	1				not annotated
-NCBITaxon:246787	Bacteroides cellulosilyticus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	3	2				not annotated
-NCBITaxon:246787	Bacteroides cellulosilyticus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	3	2				not annotated
-NCBITaxon:246787	Bacteroides cellulosilyticus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	3	2				not annotated
-NCBITaxon:246787	Bacteroides cellulosilyticus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	3	2				not annotated
-NCBITaxon:246787	Bacteroides cellulosilyticus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	3	2				not annotated
-NCBITaxon:246787	Bacteroides cellulosilyticus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	204	42	3	2	-0.012324409836905293	-0.03734982972923172	0.012701010055421132	low support
-NCBITaxon:301302	Roseburia faecis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	6	5				not annotated
-NCBITaxon:301302	Roseburia faecis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	6	5				not annotated
-NCBITaxon:301302	Roseburia faecis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	6	5				not annotated
-NCBITaxon:301302	Roseburia faecis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	6	5				not annotated
-NCBITaxon:301302	Roseburia faecis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	6	5				not annotated
-NCBITaxon:301302	Roseburia faecis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	204	42	6	5	-0.03018101317232712	-0.06622547054623099	0.00586344420157674	mixed
-NCBITaxon:31973	Eggerthia catenaformis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:31973	Eggerthia catenaformis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	204	42	1	1	-0.0007362958892984473	-0.0022232756041042296	0.0007506838255073348	low support
-NCBITaxon:31973	Eggerthia catenaformis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:31973	Eggerthia catenaformis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	1	1				not annotated
-NCBITaxon:31973	Eggerthia catenaformis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:31973	Eggerthia catenaformis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:33035	Blautia producta	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	0	0				not annotated
-NCBITaxon:33035	Blautia producta	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	0	0				not annotated
-NCBITaxon:33035	Blautia producta	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	0	0				not annotated
-NCBITaxon:33035	Blautia producta	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	0	0	0.0	0.0	0.0	low support
-NCBITaxon:33035	Blautia producta	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	0	0				not annotated
-NCBITaxon:33035	Blautia producta	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	0	0				not annotated
-NCBITaxon:33038	Mediterraneibacter gnavus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	2	2				not annotated
-NCBITaxon:33038	Mediterraneibacter gnavus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	2	2				not annotated
-NCBITaxon:33038	Mediterraneibacter gnavus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	2	2				not annotated
-NCBITaxon:33038	Mediterraneibacter gnavus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	204	42	2	2	0.0005921338065939073	-0.0023499602523153287	0.0035342278655031436	low support
-NCBITaxon:33038	Mediterraneibacter gnavus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	2	2				not annotated
-NCBITaxon:33038	Mediterraneibacter gnavus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	2	2				not annotated
-NCBITaxon:33039	Mediterraneibacter torques	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	3	3				not annotated
-NCBITaxon:33039	Mediterraneibacter torques	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	3	3				not annotated
-NCBITaxon:33039	Mediterraneibacter torques	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	3	3				not annotated
-NCBITaxon:33039	Mediterraneibacter torques	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	204	42	3	3	-0.0004696789767829207	-0.0015275226954109637	0.0005881647418451224	mixed
-NCBITaxon:33039	Mediterraneibacter torques	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	3	3				not annotated
-NCBITaxon:33039	Mediterraneibacter torques	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	204	42	3	3	0.002253203482915784	-0.003642222462411865	0.008148629428243433	mixed
-NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	204	42	1	1	0.00042973794570895664	-0.0004381354422035929	0.0012976113336215062	low support
-NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	1	1				not annotated
-NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:39492	[Eubacterium] siraeum	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	2	2				not annotated
-NCBITaxon:39492	[Eubacterium] siraeum	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	2	2				not annotated
-NCBITaxon:39492	[Eubacterium] siraeum	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	2	2				not annotated
-NCBITaxon:39492	[Eubacterium] siraeum	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	2	2	-0.013435745872629292	-0.04056871603439255	0.013697224289133966	low support
-NCBITaxon:39492	[Eubacterium] siraeum	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	2	2				not annotated
-NCBITaxon:39492	[Eubacterium] siraeum	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	204	42	2	2	-0.006640412284568984	-0.020195178914306014	0.006914354345168045	low support
-NCBITaxon:39777	Veillonella atypica	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:39777	Veillonella atypica	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:39777	Veillonella atypica	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:39777	Veillonella atypica	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	4	True	204	42	1	1	-4.462245053412376e-06	-1.3473931758928037e-05	4.549441652103284e-06	low support
-NCBITaxon:39777	Veillonella atypica	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:39777	Veillonella atypica	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:39778	Veillonella dispar	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:39778	Veillonella dispar	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:39778	Veillonella dispar	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:39778	Veillonella dispar	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	-7.277405227612713e-05	-0.0002197442324328083	7.419612788055407e-05	low support
-NCBITaxon:39778	Veillonella dispar	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:39778	Veillonella dispar	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:40518	Ruminococcus bromii	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	4	3				not annotated
-NCBITaxon:40518	Ruminococcus bromii	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	4	3				not annotated
-NCBITaxon:40518	Ruminococcus bromii	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	4	3				not annotated
-NCBITaxon:40518	Ruminococcus bromii	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	204	42	4	3	4.8114474998985065e-05	-0.0006321850587834659	0.000728414008781436	mixed
-NCBITaxon:40518	Ruminococcus bromii	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	4	3				not annotated
-NCBITaxon:40518	Ruminococcus bromii	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	2	True	204	42	4	3	0.005895553285936382	-0.006327769329853083	0.018118875901725846	mixed
-NCBITaxon:40519	Ruminococcus callidus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:40519	Ruminococcus callidus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:40519	Ruminococcus callidus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:40519	Ruminococcus callidus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	2.5304599782898064e-05	-2.5799076219286526e-05	7.640827578508265e-05	low support
-NCBITaxon:40519	Ruminococcus callidus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:40519	Ruminococcus callidus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:40520	Blautia obeum	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	5	2				not annotated
-NCBITaxon:40520	Blautia obeum	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	5	2				not annotated
-NCBITaxon:40520	Blautia obeum	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	5	2				not annotated
-NCBITaxon:40520	Blautia obeum	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	204	42	5	2	0.07386099871802607	-0.034347628897988924	0.18206962633404106	low support
-NCBITaxon:40520	Blautia obeum	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	5	2				not annotated
-NCBITaxon:40520	Blautia obeum	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	204	42	5	2	0.11905529978714521	-0.054847172132634014	0.29295777170692444	low support
-NCBITaxon:435842	Streptococcus sp. C150	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:435842	Streptococcus sp. C150	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	204	42	1	1	0.0	0.0	0.0	low support
-NCBITaxon:435842	Streptococcus sp. C150	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:435842	Streptococcus sp. C150	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	-1.551403165822223e-06	-4.6845254208726575e-06	1.581719089228212e-06	low support
-NCBITaxon:435842	Streptococcus sp. C150	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:435842	Streptococcus sp. C150	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:438033	Ruminococcus gauvreauii	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	2	1				not annotated
-NCBITaxon:438033	Ruminococcus gauvreauii	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	2	1				not annotated
-NCBITaxon:438033	Ruminococcus gauvreauii	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	2	1				not annotated
-NCBITaxon:438033	Ruminococcus gauvreauii	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	204	42	2	1	-0.014846741920537702	-0.04483034550663306	0.015136861665557659	low support
-NCBITaxon:438033	Ruminococcus gauvreauii	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	1	True	204	42	2	1	-0.028926300929024363	-0.08734415077850549	0.029491548920456762	low support
-NCBITaxon:438033	Ruminococcus gauvreauii	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	2	1				not annotated
-NCBITaxon:43948	Tolumonas auensis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	2	1				not annotated
-NCBITaxon:43948	Tolumonas auensis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	204	42	2	1	-3.987135283764214e-05	-0.00012039318344018445	4.065047776490017e-05	low support
-NCBITaxon:43948	Tolumonas auensis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	2	1				not annotated
-NCBITaxon:43948	Tolumonas auensis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	2	1				not annotated
-NCBITaxon:43948	Tolumonas auensis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	2	1				not annotated
-NCBITaxon:43948	Tolumonas auensis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	2	1				not annotated
-NCBITaxon:43995	Johnsonella ignava	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:43995	Johnsonella ignava	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	204	42	1	1	-4.0787160915372906e-05	-0.00012315850345195369	4.1584181621207874e-05	low support
-NCBITaxon:43995	Johnsonella ignava	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:43995	Johnsonella ignava	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	1	1				not annotated
-NCBITaxon:43995	Johnsonella ignava	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:43995	Johnsonella ignava	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:44008	Enterococcus cecorum	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:44008	Enterococcus cecorum	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:44008	Enterococcus cecorum	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:44008	Enterococcus cecorum	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	-1.4985351036410664e-06	-4.5248881410888145e-06	1.5278179338066817e-06	low support
-NCBITaxon:44008	Enterococcus cecorum	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:44008	Enterococcus cecorum	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:450749	Veillonella sp. 6_1_27	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:450749	Veillonella sp. 6_1_27	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:450749	Veillonella sp. 6_1_27	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:450749	Veillonella sp. 6_1_27	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	-1.551403165822223e-06	-4.6845254208726575e-06	1.581719089228212e-06	low support
-NCBITaxon:450749	Veillonella sp. 6_1_27	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:450749	Veillonella sp. 6_1_27	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:457416	Veillonella sp. 3_1_44	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:457416	Veillonella sp. 3_1_44	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:457416	Veillonella sp. 3_1_44	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:457416	Veillonella sp. 3_1_44	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	-1.551403165822223e-06	-4.6845254208726575e-06	1.581719089228212e-06	low support
-NCBITaxon:457416	Veillonella sp. 3_1_44	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:457416	Veillonella sp. 3_1_44	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:46124	Granulicatella adiacens	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:46124	Granulicatella adiacens	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:46124	Granulicatella adiacens	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:46124	Granulicatella adiacens	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	-3.641272758555062e-05	-0.00010994972279009098	3.712426761898973e-05	low support
-NCBITaxon:46124	Granulicatella adiacens	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:46124	Granulicatella adiacens	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:46228	[Ruminococcus] lactaris	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:46228	[Ruminococcus] lactaris	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:46228	[Ruminococcus] lactaris	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:46228	[Ruminococcus] lactaris	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	-0.0029033165397224546	-0.008766683241852037	0.002960050162407128	low support
-NCBITaxon:46228	[Ruminococcus] lactaris	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:46228	[Ruminococcus] lactaris	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:469592	Bacteroides sp. 3_1_19	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:469592	Bacteroides sp. 3_1_19	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	204	42	1	1	-0.0007598628733524917	-0.002294437078005155	0.0007747113313001717	low support
-NCBITaxon:469592	Bacteroides sp. 3_1_19	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:469592	Bacteroides sp. 3_1_19	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	1	1				not annotated
-NCBITaxon:469592	Bacteroides sp. 3_1_19	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:469592	Bacteroides sp. 3_1_19	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	4	1				not annotated
-NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	204	42	4	1	0.018477660758398178	-0.018838732181103816	0.05579405369790017	low support
-NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	4	1				not annotated
-NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	4	1				not annotated
-NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	4	1				not annotated
-NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	4	1				not annotated
-NCBITaxon:53443	Blautia hydrogenotrophica	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:53443	Blautia hydrogenotrophica	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:53443	Blautia hydrogenotrophica	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:53443	Blautia hydrogenotrophica	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	0.00040258707434146895	-0.0004104540164612556	0.0012156281651441935	low support
-NCBITaxon:53443	Blautia hydrogenotrophica	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:53443	Blautia hydrogenotrophica	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:550	Enterobacter cloacae	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	1	True	204	42	0	0	0.0	0.0	0.0	low support
-NCBITaxon:550	Enterobacter cloacae	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	6	True	204	42	0	0	0.0	0.0	0.0	low support
-NCBITaxon:550	Enterobacter cloacae	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	0	0				not annotated
-NCBITaxon:550	Enterobacter cloacae	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	0	0				not annotated
-NCBITaxon:550	Enterobacter cloacae	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	0	0				not annotated
-NCBITaxon:550	Enterobacter cloacae	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	0	0				not annotated
-NCBITaxon:562	Escherichia coli	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	5	True	204	42	3	3	-0.01458040627308506	-0.040873884760540734	0.011713072214370611	mixed
-NCBITaxon:562	Escherichia coli	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	779	True	204	42	3	3	0.003234927044507583	-0.007917077575173511	0.014386931664188678	mixed
-NCBITaxon:562	Escherichia coli	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	14	True	204	42	3	3	0.10117464208444153	-0.1371523317288717	0.33950161589775474	mixed
-NCBITaxon:562	Escherichia coli	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	3	3	-0.010719639330919335	-0.04761353075415711	0.02617425209231844	mixed
-NCBITaxon:562	Escherichia coli	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	3	3				not annotated
-NCBITaxon:562	Escherichia coli	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	3	3				not annotated
-NCBITaxon:573	Klebsiella pneumoniae	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	3	True	204	42	3	2	0.007931796346220939	-0.007113840839615734	0.022977433532057612	low support
-NCBITaxon:573	Klebsiella pneumoniae	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	20	True	204	42	3	2	-0.00039064239444519864	-0.0011329535539416618	0.00035166876505126444	low support
-NCBITaxon:573	Klebsiella pneumoniae	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	3	2				not annotated
-NCBITaxon:573	Klebsiella pneumoniae	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	3	2				not annotated
-NCBITaxon:573	Klebsiella pneumoniae	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	3	2				not annotated
-NCBITaxon:573	Klebsiella pneumoniae	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	3	2				not annotated
-NCBITaxon:649756	Anaerostipes hadrus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:649756	Anaerostipes hadrus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:649756	Anaerostipes hadrus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:649756	Anaerostipes hadrus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	-0.0027445465548016296	-0.008287270767507246	0.002798177657903987	low support
-NCBITaxon:649756	Anaerostipes hadrus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:649756	Anaerostipes hadrus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	204	42	1	1	-0.014614314579201324	-0.04412852162681711	0.01489989246841446	low support
-NCBITaxon:68891	Streptococcus peroris	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:68891	Streptococcus peroris	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:68891	Streptococcus peroris	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:68891	Streptococcus peroris	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	204	42	1	1	-7.277405227612713e-05	-0.0002197442324328083	7.419612788055407e-05	low support
-NCBITaxon:68891	Streptococcus peroris	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:68891	Streptococcus peroris	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:68892	Streptococcus infantis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	2	1				not annotated
-NCBITaxon:68892	Streptococcus infantis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	3	True	204	42	2	1	-0.007275734460515488	-0.021969378293578694	0.00741790937254772	low support
-NCBITaxon:68892	Streptococcus infantis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	2	1				not annotated
-NCBITaxon:68892	Streptococcus infantis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	4	True	204	42	2	1	-0.001251044246504179	-0.0037775793581543288	0.001275490865145971	low support
-NCBITaxon:68892	Streptococcus infantis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	2	1				not annotated
-NCBITaxon:68892	Streptococcus infantis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	2	1				not annotated
-NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	4	1				not annotated
-NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	204	42	4	1	-1.375366315213871e-05	-4.1529749381532714e-05	1.4022423077255293e-05	low support
-NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	4	1				not annotated
-NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	4	1				not annotated
-NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	4	1				not annotated
-NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	4	1				not annotated
-NCBITaxon:729	Haemophilus parainfluenzae	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:729	Haemophilus parainfluenzae	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	2	True	204	42	1	1	-0.00024321591682509964	-0.0007344004255168503	0.00024796859186665106	low support
-NCBITaxon:729	Haemophilus parainfluenzae	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:729	Haemophilus parainfluenzae	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	1	1				not annotated
-NCBITaxon:729	Haemophilus parainfluenzae	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:729	Haemophilus parainfluenzae	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:78259	Scardovia inopinata	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:78259	Scardovia inopinata	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	2	True	204	42	1	1	0.0009308313636086921	-0.0009490207117708746	0.002810683438988259	low support
-NCBITaxon:78259	Scardovia inopinata	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:78259	Scardovia inopinata	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	1	1				not annotated
-NCBITaxon:78259	Scardovia inopinata	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:78259	Scardovia inopinata	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:821	Phocaeicola vulgatus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	2	2				not annotated
-NCBITaxon:821	Phocaeicola vulgatus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	3	True	204	42	2	2	-0.004752526859047993	-0.013645083332753542	0.0041400296146575566	low support
-NCBITaxon:821	Phocaeicola vulgatus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	2	2				not annotated
-NCBITaxon:821	Phocaeicola vulgatus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	2	2				not annotated
-NCBITaxon:821	Phocaeicola vulgatus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	2	2				not annotated
-NCBITaxon:821	Phocaeicola vulgatus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	2	2				not annotated
-NCBITaxon:84030	Lacrimispora saccharolytica	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:84030	Lacrimispora saccharolytica	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	204	42	1	1				not annotated
-NCBITaxon:84030	Lacrimispora saccharolytica	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:84030	Lacrimispora saccharolytica	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	1	1				not annotated
-NCBITaxon:84030	Lacrimispora saccharolytica	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:84030	Lacrimispora saccharolytica	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	204	42	1	1	0.00011224381598948182	-0.00011443716907995955	0.0003389248010589232	low support
-NCBITaxon:84135	Gemella sanguinis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	1	1				not annotated
-NCBITaxon:84135	Gemella sanguinis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	2	True	204	42	1	1	-0.0007440285989743093	-0.002246624837783023	0.0007585676398344046	low support
-NCBITaxon:84135	Gemella sanguinis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	1	1				not annotated
-NCBITaxon:84135	Gemella sanguinis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	204	42	1	1	-0.00019312945117875942	-0.0005831622904331215	0.00019690338807560267	low support
-NCBITaxon:84135	Gemella sanguinis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	1	1				not annotated
-NCBITaxon:84135	Gemella sanguinis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	1	1				not annotated
-NCBITaxon:853	Faecalibacterium prausnitzii	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	204	42	13	8				not annotated
-NCBITaxon:853	Faecalibacterium prausnitzii	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	204	42	13	8	-0.10330735105758505	-0.21477637803769634	0.008161675922526243	mixed
-NCBITaxon:853	Faecalibacterium prausnitzii	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	204	42	13	8				not annotated
-NCBITaxon:853	Faecalibacterium prausnitzii	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	204	42	13	8				not annotated
-NCBITaxon:853	Faecalibacterium prausnitzii	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	204	42	13	8				not annotated
-NCBITaxon:853	Faecalibacterium prausnitzii	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	204	42	13	8				not annotated
+taxon_id	taxon_name	taxonomic_rank	trait_id	trait	trait_overall_direction	trait_overall_mean_z_contrast	annotation_count	has_trait_annotation	influence_basis	paired_profiles	paired_studies	taxon_support_profiles	taxon_support_studies	mean_influence_contrast_z	ci95_low	ci95_high	status
+NCBITaxon:113107	Streptococcus australis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	4	1	0.0	0.0	0.0	low support
+NCBITaxon:113107	Streptococcus australis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	4	1	0.0002997687300437024	-0.00030562650193673515	0.00090516396202414	low support
+NCBITaxon:113107	Streptococcus australis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	4	1	0.0	0.0	0.0	low support
+NCBITaxon:113107	Streptococcus australis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	direct + denominator	204	42	4	1	-0.007794512676937317	-0.02353585037263691	0.00794682501876228	low support
+NCBITaxon:113107	Streptococcus australis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	4	1	0.0	0.0	0.0	low support
+NCBITaxon:113107	Streptococcus australis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	4	1	0.0	0.0	0.0	low support
+NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	0.00021172547831467848	-0.00021586279962811173	0.0006393137562574687	low support
+NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	-0.003443120027374989	-0.010396641988806011	0.0035104019340560333	low support
+NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.00042975469688238873	-0.0004381525207112099	0.0012976619144759874	low support
+NCBITaxon:1203590	Streptococcus sp. HPH0090	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	3	1	0.0	0.0	0.0	low support
+NCBITaxon:1203590	Streptococcus sp. HPH0090	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	3	1	0.00010552668548048736	-0.00010758877932223791	0.00031864215028321264	low support
+NCBITaxon:1203590	Streptococcus sp. HPH0090	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	3	1	0.0	0.0	0.0	low support
+NCBITaxon:1203590	Streptococcus sp. HPH0090	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	3	1	-0.0008594908824419298	-0.002595267933254219	0.0008762861683703596	low support
+NCBITaxon:1203590	Streptococcus sp. HPH0090	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	3	1	0.0	0.0	0.0	low support
+NCBITaxon:1203590	Streptococcus sp. HPH0090	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	3	1	0.0	0.0	0.0	low support
+NCBITaxon:1265	Ruminococcus flavefaciens	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	9.239082429086004e-07	-9.419623065738207e-07	2.7897787923910214e-06	low support
+NCBITaxon:1265	Ruminococcus flavefaciens	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	3.07945145423304e-06	-3.139626924075859e-06	9.29852983254194e-06	low support
+NCBITaxon:1265	Ruminococcus flavefaciens	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:1265	Ruminococcus flavefaciens	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	1.901413782943061e-06	-1.938569253472376e-06	5.7413968193584984e-06	low support
+NCBITaxon:1265	Ruminococcus flavefaciens	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	3.7950488730576055e-07	-3.8692078109095985e-07	1.145930555702481e-06	low support
+NCBITaxon:1265	Ruminococcus flavefaciens	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	2	True	direct + denominator	204	42	1	1	-0.00024580600776659596	-0.0007422213112318675	0.00025060929569867556	low support
+NCBITaxon:1280	Staphylococcus aureus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	2	True	direct + denominator	204	42	1	1	-0.0010793787623165243	-0.0032592283954390494	0.0011004708708060008	low support
+NCBITaxon:1280	Staphylococcus aureus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	717	True	direct + denominator	204	42	1	1	-0.010859916658009708	-0.0327919632844391	0.01107212996841968	low support
+NCBITaxon:1280	Staphylococcus aureus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:1280	Staphylococcus aureus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	3003	True	direct + denominator	204	42	1	1	-0.011605308770729659	-0.035042705307840843	0.011832087766381526	low support
+NCBITaxon:1280	Staphylococcus aureus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	0.0008302475990294395	-0.0008464714428210973	0.0025069666408799765	low support
+NCBITaxon:1280	Staphylococcus aureus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.005750068297466824	-0.005862430212103514	0.017362566807037162	low support
+NCBITaxon:1304	Streptococcus salivarius	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	3	3	-0.00012701951594624504	-0.00035733319148130243	0.00010329415958881233	mixed
+NCBITaxon:1304	Streptococcus salivarius	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	6	True	direct + denominator	204	42	3	3	0.01119239290300912	-0.011423783514043476	0.03380856932006172	mixed
+NCBITaxon:1304	Streptococcus salivarius	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	3	3	-6.387444103332781e-06	-1.928714916641751e-05	6.512260959751947e-06	mixed
+NCBITaxon:1304	Streptococcus salivarius	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	7	True	direct + denominator	204	42	3	3	0.008409906179069452	-0.008595554691166078	0.02541536704930498	mixed
+NCBITaxon:1304	Streptococcus salivarius	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	3	3	-1.4291444084284366e-05	-4.3153600939268675e-05	1.4570712770699943e-05	mixed
+NCBITaxon:1304	Streptococcus salivarius	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	3	3	-2.9958780703237515e-06	-9.046176575789417e-06	3.0544204351419136e-06	mixed
+NCBITaxon:1305	Streptococcus sanguinis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	-0.0003291156194564334	-0.0009937780969608934	0.0003355468580480266	low support
+NCBITaxon:1305	Streptococcus sanguinis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	22	True	direct + denominator	204	42	1	1	2.3649516696822545e-05	-2.411165120354798e-05	7.141068459719307e-05	low support
+NCBITaxon:1305	Streptococcus sanguinis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:1305	Streptococcus sanguinis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	22	True	direct + denominator	204	42	1	1	-1.596843877748726e-05	-4.821735512260759e-05	1.6280477567633066e-05	low support
+NCBITaxon:1305	Streptococcus sanguinis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:1305	Streptococcus sanguinis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:1308	Streptococcus thermophilus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	1.5994484229880924e-05	-1.6307031973442077e-05	4.829600043320393e-05	low support
+NCBITaxon:1308	Streptococcus thermophilus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	5	True	direct + denominator	204	42	1	1	-2.646393429541147e-07	-7.990893384406355e-07	2.698106525324061e-07	low support
+NCBITaxon:1308	Streptococcus thermophilus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	1.514266627422038e-05	-1.5438568668288535e-05	4.572390121672929e-05	low support
+NCBITaxon:1308	Streptococcus thermophilus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	12	True	direct + denominator	204	42	1	1	-1.2571599974993724e-05	-3.796046118849333e-05	1.281726123850588e-05	low support
+NCBITaxon:1308	Streptococcus thermophilus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	1.299161760451662e-05	-1.3245486420112137e-05	3.922872162914538e-05	low support
+NCBITaxon:1308	Streptococcus thermophilus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	4.33634512350412e-06	-4.421081515386118e-06	1.3093771762394358e-05	low support
+NCBITaxon:1309	Streptococcus mutans	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	1	True	direct + denominator	204	42	5	2	0.01680364378303434	-0.016419682983477263	0.05002697054954594	low support
+NCBITaxon:1309	Streptococcus mutans	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	138	True	direct + denominator	204	42	5	2	0.011014954085012501	-0.00973692510873262	0.03176683327875762	low support
+NCBITaxon:1309	Streptococcus mutans	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	5	2	-0.007419566700669462	-0.022403685635593987	0.007564552234255062	low support
+NCBITaxon:1309	Streptococcus mutans	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	164	True	direct + denominator	204	42	5	2	0.04971931078443918	-0.025429836693851918	0.12486845826273028	low support
+NCBITaxon:1309	Streptococcus mutans	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	5	2	-0.00041703298323938066	-0.0012592481789167015	0.00042518221243794025	low support
+NCBITaxon:1309	Streptococcus mutans	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	5	2	0.0	0.0	0.0	low support
+NCBITaxon:1322	Blautia hansenii	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	3	2	1.7994689389453265e-06	-1.834632308291432e-06	5.433570186182085e-06	low support
+NCBITaxon:1322	Blautia hansenii	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	3	2	0.0006495803530453118	-0.0006599331092111023	0.0019590938153017257	low support
+NCBITaxon:1322	Blautia hansenii	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	3	2	1.4953589840731955e-06	-1.524579749780216e-06	4.515297717926607e-06	low support
+NCBITaxon:1322	Blautia hansenii	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	3	2	-0.002982767693597501	-0.009004848371065872	0.0030393129838708704	low support
+NCBITaxon:1322	Blautia hansenii	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	3	2	1.7168639993902389e-06	-1.7504131880541855e-06	5.184141186834663e-06	low support
+NCBITaxon:1322	Blautia hansenii	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	3	2	0.0013159869062867179	-0.0013388781257671128	0.0039708519383405486	low support
+NCBITaxon:1328	Streptococcus anginosus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:1328	Streptococcus anginosus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	direct + denominator	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:1328	Streptococcus anginosus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:1328	Streptococcus anginosus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	6	True	direct + denominator	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:1328	Streptococcus anginosus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	1	True	direct + denominator	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:1328	Streptococcus anginosus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:1343	Streptococcus vestibularis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	3	1	-0.00013198240741891517	-0.00039852628657890016	0.00013456147174106982	low support
+NCBITaxon:1343	Streptococcus vestibularis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	3	1	-8.248103423704946e-05	-0.00024905486216314867	8.409279368904974e-05	low support
+NCBITaxon:1343	Streptococcus vestibularis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	3	1	0.0	0.0	0.0	low support
+NCBITaxon:1343	Streptococcus vestibularis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	3	True	direct + denominator	204	42	3	1	6.6825149933538874e-06	-6.813097821313066e-06	2.0178127808020842e-05	low support
+NCBITaxon:1343	Streptococcus vestibularis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	3	1	0.0	0.0	0.0	low support
+NCBITaxon:1343	Streptococcus vestibularis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	3	1	0.0	0.0	0.0	low support
+NCBITaxon:1379	Gemella haemolysans	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:1379	Gemella haemolysans	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	3	True	direct + denominator	204	42	1	1	-0.0024465521574717395	-0.007387464475807657	0.0024943601608641785	low support
+NCBITaxon:1379	Gemella haemolysans	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:1379	Gemella haemolysans	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	3	True	direct + denominator	204	42	1	1	-0.0012924233599230675	-0.003902525286443203	0.001317678566597068	low support
+NCBITaxon:1379	Gemella haemolysans	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	7.664306551307342e-05	-7.814074539080085e-05	0.00023142687641694769	low support
+NCBITaxon:1379	Gemella haemolysans	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.00010716318655764816	-0.00010925725921857482	0.00032358363233387115	low support
+NCBITaxon:1596	Lactobacillus gasseri	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	1	True	direct + denominator	204	42	2	2	0.0031616238230484798	-0.003468886586860934	0.009792134232957894	low support
+NCBITaxon:1596	Lactobacillus gasseri	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	5	True	direct + denominator	204	42	2	2	0.0024289773795651156	-0.0024810052360801312	0.007338959995210363	low support
+NCBITaxon:1596	Lactobacillus gasseri	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	2	2	-0.00038120622772431595	-0.0011597288244836997	0.00039731636903506785	low support
+NCBITaxon:1596	Lactobacillus gasseri	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	2	2	-9.378349958549836e-05	-0.00029417466024690274	0.00010660766107590606	low support
+NCBITaxon:1596	Lactobacillus gasseri	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	2	2	-0.00013287264781217508	-0.00042049362826774813	0.00015474833264339798	low support
+NCBITaxon:1596	Lactobacillus gasseri	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	2	2	-0.0002112606465750121	-0.0006419679037085155	0.00021944661055849126	low support
+NCBITaxon:1624	Ligilactobacillus salivarius	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	-0.00016911070001670927	-0.0005106366872404747	0.0001724152872070561	low support
+NCBITaxon:1624	Ligilactobacillus salivarius	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	5	True	direct + denominator	204	42	1	1	0.0024379981532377526	-0.0024856390030863	0.007361635309561805	low support
+NCBITaxon:1624	Ligilactobacillus salivarius	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	-0.0003581412278799629	-0.001081422110787729	0.0003651396550278034	low support
+NCBITaxon:1624	Ligilactobacillus salivarius	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	1	1	-9.198418032106395e-05	-0.00027775000111191997	9.378164046979207e-05	low support
+NCBITaxon:1624	Ligilactobacillus salivarius	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	-0.00013188862832395773	-0.0003982431167595052	0.00013446586011158976	low support
+NCBITaxon:1624	Ligilactobacillus salivarius	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	-0.00019817957783125551	-0.0005984113547662515	0.00020205219910374045	low support
+NCBITaxon:187326	Megasphaera micronuciformis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:187326	Megasphaera micronuciformis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:187326	Megasphaera micronuciformis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:187326	Megasphaera micronuciformis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:187326	Megasphaera micronuciformis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:187326	Megasphaera micronuciformis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:187327	Acidaminococcus intestini	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	-7.027864386683388e-05	-0.0002122092445029634	7.165195676929565e-05	low support
+NCBITaxon:187327	Acidaminococcus intestini	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	-4.313835888408042e-05	-0.00013025804204808454	4.3981324279923685e-05	low support
+NCBITaxon:187327	Acidaminococcus intestini	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	-0.00022156144342254348	-0.0006690138558844989	0.00022589096903941194	low support
+NCBITaxon:187327	Acidaminococcus intestini	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	direct + denominator	204	42	1	1	0.00011207372633568853	-0.00011426375570926909	0.0003384112083806461	low support
+NCBITaxon:187327	Acidaminococcus intestini	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	1	True	direct + denominator	204	42	1	1	0.004158199995701169	-0.004239455258906495	0.012555855250308832	low support
+NCBITaxon:187327	Acidaminococcus intestini	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:197614	Streptococcus pasteurianus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:197614	Streptococcus pasteurianus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	direct + denominator	204	42	1	1	-0.0007598628733524917	-0.002294437078005155	0.0007747113313001717	low support
+NCBITaxon:197614	Streptococcus pasteurianus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:197614	Streptococcus pasteurianus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	-0.0004087370023270839	-0.0012341981246620217	0.00041672412000785407	low support
+NCBITaxon:197614	Streptococcus pasteurianus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	3.570468400485334e-05	-3.640238817961085e-05	0.00010781175618931755	low support
+NCBITaxon:197614	Streptococcus pasteurianus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	4.9944523591659844e-05	-5.09204880508731e-05	0.00015080953523419278	low support
+NCBITaxon:2047	Rothia dentocariosa	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	-4.445976805422122e-05	-0.0001342480911760416	4.532855506759917e-05	low support
+NCBITaxon:2047	Rothia dentocariosa	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	-2.49104576344413e-05	-7.521814741963967e-05	2.5397232150757064e-05	low support
+NCBITaxon:2047	Rothia dentocariosa	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	-9.41270691648328e-05	-0.00028422054177078173	9.596640344111616e-05	low support
+NCBITaxon:2047	Rothia dentocariosa	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	direct + denominator	204	42	1	1	0.0008327973850037864	-0.0008490710540878003	0.002514665824095373	low support
+NCBITaxon:2047	Rothia dentocariosa	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	-3.46739610426376e-05	-0.00010469944597573239	3.535152389045719e-05	low support
+NCBITaxon:2047	Rothia dentocariosa	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	-5.2166284923280656e-05	-0.0001575182346015642	5.318566475500288e-05	low support
+NCBITaxon:216816	Bifidobacterium longum	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	4	3	-0.0005985952210873941	-0.0016893382203724229	0.0004921477781976348	mixed
+NCBITaxon:216816	Bifidobacterium longum	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	direct + denominator	204	42	4	3	-0.004653467847371494	-0.013359464311487112	0.004052528616744124	mixed
+NCBITaxon:216816	Bifidobacterium longum	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	4	3	-0.0017461375577298825	-0.005168003650763678	0.0016757285353039134	mixed
+NCBITaxon:216816	Bifidobacterium longum	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	4	3	-0.0055028662507292095	-0.01593064978200765	0.004924917280549233	mixed
+NCBITaxon:216816	Bifidobacterium longum	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	4	3	-0.00014861041822207354	-0.0003652390626204639	6.801822617631681e-05	mixed
+NCBITaxon:216816	Bifidobacterium longum	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	4	3	-4.416630462378386e-05	-0.00013336196632450972	4.5029357076942015e-05	mixed
+NCBITaxon:2173	Methanobrevibacter smithii	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	3	3	-0.00047238970984418233	-0.0013303599958816741	0.00038558057619330954	mixed
+NCBITaxon:2173	Methanobrevibacter smithii	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	3	3	-0.0002848458787194744	-0.000809020106954967	0.00023932834951601826	mixed
+NCBITaxon:2173	Methanobrevibacter smithii	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	3	3	-0.0014165665811946486	-0.004109845123101418	0.0012767119607121208	mixed
+NCBITaxon:2173	Methanobrevibacter smithii	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	3	3	0.028315447141027832	-0.029220583712677235	0.0858514779947329	mixed
+NCBITaxon:2173	Methanobrevibacter smithii	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	3	3	-0.00013038222884797392	-0.00031574518334074843	5.498072564480059e-05	mixed
+NCBITaxon:2173	Methanobrevibacter smithii	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	3	3	-6.490984780677396e-05	-0.00019599794483766826	6.617824922412033e-05	mixed
+NCBITaxon:244366	Klebsiella variicola	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	2	1	-2.3446584580689003e-06	-7.079792275830947e-06	2.3904753596931464e-06	low support
+NCBITaxon:244366	Klebsiella variicola	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	direct + denominator	204	42	2	1	7.540810353786221e-07	-7.688165106013575e-07	2.2769785813586017e-06	low support
+NCBITaxon:244366	Klebsiella variicola	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	2	1	-2.8070886520108366e-06	-8.476119192407776e-06	2.861941888386103e-06	low support
+NCBITaxon:244366	Klebsiella variicola	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	2	1	-8.764124044042598e-07	-2.646363162101698e-06	8.935383532931784e-07	low support
+NCBITaxon:244366	Klebsiella variicola	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	2	1	-1.1899400942327951e-06	-3.593072866906796e-06	1.2131926784412061e-06	low support
+NCBITaxon:244366	Klebsiella variicola	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	2	1	-5.871401762734375e-07	-1.772893817649816e-06	5.98613465102941e-07	low support
+NCBITaxon:246787	Bacteroides cellulosilyticus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	3	2	-8.303715530484703e-06	-2.5073409251188902e-05	8.465978190219495e-06	low support
+NCBITaxon:246787	Bacteroides cellulosilyticus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	3	2	0.00031234321307422165	-0.0003291462045621504	0.0009538326307105937	low support
+NCBITaxon:246787	Bacteroides cellulosilyticus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	3	2	-6.966907109224375e-06	-2.1036861453562293e-05	7.103047235113542e-06	low support
+NCBITaxon:246787	Bacteroides cellulosilyticus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	3	2	-4.965768196981072e-06	-1.4994340520499147e-05	5.062804126537004e-06	low support
+NCBITaxon:246787	Bacteroides cellulosilyticus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	3	2	-7.643741337476193e-06	-2.3080590135965722e-05	7.793107461013336e-06	low support
+NCBITaxon:246787	Bacteroides cellulosilyticus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	direct + denominator	204	42	3	2	-0.012324409836905293	-0.03734982972923172	0.012701010055421132	low support
+NCBITaxon:301302	Roseburia faecis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	6	5	3.7960179359588836e-05	-3.4892340395503225e-05	0.0001108126991146809	mixed
+NCBITaxon:301302	Roseburia faecis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	6	5	0.0018016651592347734	-0.0003571410727843151	0.003960471391253862	mixed
+NCBITaxon:301302	Roseburia faecis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	6	5	9.771230387660442e-07	-9.962169711841587e-07	2.950463048716247e-06	mixed
+NCBITaxon:301302	Roseburia faecis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	6	5	0.0014316366862901692	-0.0006588202092569144	0.003522093581837253	mixed
+NCBITaxon:301302	Roseburia faecis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	6	5	1.917431823127479e-05	-1.6735664289573878e-05	5.508430075212346e-05	mixed
+NCBITaxon:301302	Roseburia faecis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	direct + denominator	204	42	6	5	-0.03018101317232712	-0.06622547054623099	0.00586344420157674	mixed
+NCBITaxon:31973	Eggerthia catenaformis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:31973	Eggerthia catenaformis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	direct + denominator	204	42	1	1	-0.0007362958892984473	-0.0022232756041042296	0.0007506838255073348	low support
+NCBITaxon:31973	Eggerthia catenaformis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:31973	Eggerthia catenaformis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	1	1	4.9838208903785295e-05	-5.081209587082529e-05	0.00015048851367839588	low support
+NCBITaxon:31973	Eggerthia catenaformis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	7.15179831299273e-05	-7.2915513924296e-05	0.00021595148018415059	low support
+NCBITaxon:31973	Eggerthia catenaformis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.00010000271046621985	-0.00010195686047549767	0.0003019622814079374	low support
+NCBITaxon:33035	Blautia producta	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:33035	Blautia producta	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:33035	Blautia producta	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:33035	Blautia producta	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:33035	Blautia producta	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:33035	Blautia producta	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:33038	Mediterraneibacter gnavus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	2	2	4.818012213784634e-05	-4.912160848040388e-05	0.00014548185275609657	low support
+NCBITaxon:33038	Mediterraneibacter gnavus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	2	2	-0.0003250565830391685	-0.0010636665028958229	0.0004135533368174859	low support
+NCBITaxon:33038	Mediterraneibacter gnavus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	2	2	0.0	0.0	0.0	low support
+NCBITaxon:33038	Mediterraneibacter gnavus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	direct + denominator	204	42	2	2	0.0005921338065939073	-0.0023499602523153287	0.0035342278655031436	low support
+NCBITaxon:33038	Mediterraneibacter gnavus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	2	2	2.373448813143926e-05	-2.4198283062456898e-05	7.166725932533542e-05	low support
+NCBITaxon:33038	Mediterraneibacter gnavus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	2	2	6.196855877902212e-05	-6.317948455441761e-05	0.00018711660211246186	low support
+NCBITaxon:33039	Mediterraneibacter torques	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	3	3	-1.1033656114344173e-05	-8.425741346531182e-05	6.219010123662348e-05	mixed
+NCBITaxon:33039	Mediterraneibacter torques	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	3	3	-1.679883242446932e-05	-8.874916913256365e-05	5.515150428362502e-05	mixed
+NCBITaxon:33039	Mediterraneibacter torques	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	3	3	8.176281939855071e-05	-0.00010406258323297634	0.0002675882220300778	mixed
+NCBITaxon:33039	Mediterraneibacter torques	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	direct + denominator	204	42	3	3	-0.0004696789767829207	-0.0015275226954109637	0.0005881647418451224	mixed
+NCBITaxon:33039	Mediterraneibacter torques	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	3	3	-5.609982713051466e-05	-0.00017335639194582012	6.115673768479081e-05	mixed
+NCBITaxon:33039	Mediterraneibacter torques	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	direct + denominator	204	42	3	3	0.002253203482915784	-0.003642222462411865	0.008148629428243433	mixed
+NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	-7.312073435583676e-05	-0.0002207910531762094	7.454958446453584e-05	low support
+NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	direct + denominator	204	42	1	1	0.00042973794570895664	-0.0004381354422035929	0.0012976113336215062	low support
+NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	-0.00015481717947010777	-0.0004674768163381659	0.00015784245739795032	low support
+NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	1	1	-3.980286725903651e-05	-0.00012018638842970034	4.058065391162732e-05	low support
+NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	-5.702651195506216e-05	-0.0001721938892496751	5.81408653395508e-05	low support
+NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	-8.577092143778348e-05	-0.0002589888113538958	8.744696847832879e-05	low support
+NCBITaxon:39492	[Eubacterium] siraeum	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	2	2	-3.3557265522978812e-06	-1.0132753810261436e-05	3.4213007056656744e-06	low support
+NCBITaxon:39492	[Eubacterium] siraeum	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	2	2	0.0007966208126125295	-0.0008164835135728166	0.0024097251387978757	low support
+NCBITaxon:39492	[Eubacterium] siraeum	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	2	2	-2.815255077051944e-06	-8.500778047401436e-06	2.870267893297549e-06	low support
+NCBITaxon:39492	[Eubacterium] siraeum	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	2	2	-0.013435745872629292	-0.04056871603439255	0.013697224289133966	low support
+NCBITaxon:39492	[Eubacterium] siraeum	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	2	2	-3.089083649794383e-06	-9.327614641674719e-06	3.1494473420859525e-06	low support
+NCBITaxon:39492	[Eubacterium] siraeum	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	direct + denominator	204	42	2	2	-0.006640412284568984	-0.020195178914306014	0.006914354345168045	low support
+NCBITaxon:39777	Veillonella atypica	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	4.776216504066907e-06	-4.869548409594489e-06	1.4421981417728303e-05	low support
+NCBITaxon:39777	Veillonella atypica	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	2.4789798510300872e-06	-2.5274215230238325e-06	7.485381225084007e-06	low support
+NCBITaxon:39777	Veillonella atypica	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	4.5214457919153e-06	-4.6097992304874e-06	1.3652690814317999e-05	low support
+NCBITaxon:39777	Veillonella atypica	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	4	True	direct + denominator	204	42	1	1	-4.462245053412376e-06	-1.3473931758928037e-05	4.549441652103284e-06	low support
+NCBITaxon:39777	Veillonella atypica	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	3.879533393309243e-06	-3.955343240674227e-06	1.1714410027292711e-05	low support
+NCBITaxon:39777	Veillonella atypica	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	1.2947991903115092e-06	-1.3201008230169038e-06	3.909699203639922e-06	low support
+NCBITaxon:39778	Veillonella dispar	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:39778	Veillonella dispar	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	7.212560213612227e-05	-7.353500639553068e-05	0.00021778621066777522	low support
+NCBITaxon:39778	Veillonella dispar	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:39778	Veillonella dispar	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	-7.277405227612713e-05	-0.0002197442324328083	7.419612788055407e-05	low support
+NCBITaxon:39778	Veillonella dispar	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:39778	Veillonella dispar	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:40518	Ruminococcus bromii	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	4	3	-2.1038587214296883e-05	-8.261840768104428e-05	4.054123325245052e-05	mixed
+NCBITaxon:40518	Ruminococcus bromii	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	4	3	-2.9756178276900496e-05	-9.450065253897096e-05	3.498829598516996e-05	mixed
+NCBITaxon:40518	Ruminococcus bromii	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	4	3	-1.1816131693470533e-05	-3.8321194596675025e-05	1.4688931209733958e-05	mixed
+NCBITaxon:40518	Ruminococcus bromii	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	direct + denominator	204	42	4	3	4.8114474998985065e-05	-0.0006321850587834659	0.000728414008781436	mixed
+NCBITaxon:40518	Ruminococcus bromii	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	4	3	-5.8201425225301694e-05	-0.00017694623185952424	6.054338140892086e-05	mixed
+NCBITaxon:40518	Ruminococcus bromii	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	2	True	direct + denominator	204	42	4	3	0.005895553285936382	-0.006327769329853083	0.018118875901725846	mixed
+NCBITaxon:40519	Ruminococcus callidus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	-3.741577669398687e-06	-1.1297847066837893e-05	3.814691728040519e-06	low support
+NCBITaxon:40519	Ruminococcus callidus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	-1.975025475201954e-06	-5.963670340037748e-06	2.01361938963384e-06	low support
+NCBITaxon:40519	Ruminococcus callidus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	-6.348546071699206e-06	-1.9169694966230406e-05	6.472602822831995e-06	low support
+NCBITaxon:40519	Ruminococcus callidus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	2.5304599782898064e-05	-2.5799076219286526e-05	7.640827578508265e-05	low support
+NCBITaxon:40519	Ruminococcus callidus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	-4.348507016417894e-06	-1.3130495096325617e-05	4.433481063489829e-06	low support
+NCBITaxon:40519	Ruminococcus callidus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	-4.940625606983736e-06	-1.4918421439899182e-05	5.0371702259317105e-06	low support
+NCBITaxon:40520	Blautia obeum	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	5	2	0.0	0.0	0.0	low support
+NCBITaxon:40520	Blautia obeum	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	5	2	0.0	0.0	0.0	low support
+NCBITaxon:40520	Blautia obeum	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	5	2	0.0	0.0	0.0	low support
+NCBITaxon:40520	Blautia obeum	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	direct + denominator	204	42	5	2	0.07386099871802607	-0.034347628897988924	0.18206962633404106	low support
+NCBITaxon:40520	Blautia obeum	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	5	2	0.0	0.0	0.0	low support
+NCBITaxon:40520	Blautia obeum	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	direct + denominator	204	42	5	2	0.11905529978714521	-0.054847172132634014	0.29295777170692444	low support
+NCBITaxon:435842	Streptococcus sp. C150	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	-1.5046541143709944e-05	-4.5433647446864015e-05	1.5340565159444124e-05	low support
+NCBITaxon:435842	Streptococcus sp. C150	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	direct + denominator	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:435842	Streptococcus sp. C150	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:435842	Streptococcus sp. C150	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	-1.551403165822223e-06	-4.6845254208726575e-06	1.581719089228212e-06	low support
+NCBITaxon:435842	Streptococcus sp. C150	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:435842	Streptococcus sp. C150	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:438033	Ruminococcus gauvreauii	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	2	1	0.0	0.0	0.0	low support
+NCBITaxon:438033	Ruminococcus gauvreauii	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	2	1	0.0011714167152936824	-0.0011943073347017695	0.0035371407652891344	low support
+NCBITaxon:438033	Ruminococcus gauvreauii	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	2	1	0.0	0.0	0.0	low support
+NCBITaxon:438033	Ruminococcus gauvreauii	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	direct + denominator	204	42	2	1	-0.014846741920537702	-0.04483034550663306	0.015136861665557659	low support
+NCBITaxon:438033	Ruminococcus gauvreauii	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	1	True	direct + denominator	204	42	2	1	-0.028926300929024363	-0.08734415077850549	0.029491548920456762	low support
+NCBITaxon:438033	Ruminococcus gauvreauii	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	2	1	0.0	0.0	0.0	low support
+NCBITaxon:43948	Tolumonas auensis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	2	1	5.762822382302648e-06	-5.875433524134123e-06	1.740107828873942e-05	low support
+NCBITaxon:43948	Tolumonas auensis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	direct + denominator	204	42	2	1	-3.987135283764214e-05	-0.00012039318344018445	4.065047776490017e-05	low support
+NCBITaxon:43948	Tolumonas auensis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	2	1	-1.1027396469998039e-06	-3.3297675438459678e-06	1.12428824984636e-06	low support
+NCBITaxon:43948	Tolumonas auensis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	2	1	2.7011733317310597e-06	-2.753956879963448e-06	8.156303543425568e-06	low support
+NCBITaxon:43948	Tolumonas auensis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	2	1	4.755297433087222e-06	-4.848220559667129e-06	1.4358815425841572e-05	low support
+NCBITaxon:43948	Tolumonas auensis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	2	1	6.108757987264323e-06	-6.2281290465269725e-06	1.8445645021055618e-05	low support
+NCBITaxon:43995	Johnsonella ignava	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	6.004923835059972e-06	-6.122265874223592e-06	1.8132113544343536e-05	low support
+NCBITaxon:43995	Johnsonella ignava	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	direct + denominator	204	42	1	1	-4.0787160915372906e-05	-0.00012315850345195369	4.1584181621207874e-05	low support
+NCBITaxon:43995	Johnsonella ignava	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:43995	Johnsonella ignava	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	1	1	2.728282312067844e-06	-2.7815955960836922e-06	8.23816022021938e-06	low support
+NCBITaxon:43995	Johnsonella ignava	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	4.6832114568601894e-06	-4.774725953509405e-06	1.4141148867229784e-05	low support
+NCBITaxon:43995	Johnsonella ignava	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	5.772639337640761e-06	-5.8854423123063225e-06	1.7430720987587843e-05	low support
+NCBITaxon:44008	Enterococcus cecorum	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	2.6997567784314024e-06	-2.752512645837634e-06	8.15202620270044e-06	low support
+NCBITaxon:44008	Enterococcus cecorum	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	1.50445855524758e-06	-1.533857135405948e-06	4.542774245901108e-06	low support
+NCBITaxon:44008	Enterococcus cecorum	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	6.48571813802235e-06	-6.612455364448539e-06	1.958389164049324e-05	low support
+NCBITaxon:44008	Enterococcus cecorum	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	-1.4985351036410664e-06	-4.5248881410888145e-06	1.5278179338066817e-06	low support
+NCBITaxon:44008	Enterococcus cecorum	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	2.1874688732275235e-06	-2.2302141378206917e-06	6.605151884275739e-06	low support
+NCBITaxon:44008	Enterococcus cecorum	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:450749	Veillonella sp. 6_1_27	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	-1.5046541143709944e-05	-4.5433647446864015e-05	1.5340565159444124e-05	low support
+NCBITaxon:450749	Veillonella sp. 6_1_27	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	-1.03780272180947e-05	-3.1336878377392685e-05	1.0580823941203282e-05	low support
+NCBITaxon:450749	Veillonella sp. 6_1_27	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:450749	Veillonella sp. 6_1_27	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	-1.551403165822223e-06	-4.6845254208726575e-06	1.581719089228212e-06	low support
+NCBITaxon:450749	Veillonella sp. 6_1_27	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:450749	Veillonella sp. 6_1_27	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:457416	Veillonella sp. 3_1_44	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	-1.5046541143709944e-05	-4.5433647446864015e-05	1.5340565159444124e-05	low support
+NCBITaxon:457416	Veillonella sp. 3_1_44	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	-1.03780272180947e-05	-3.1336878377392685e-05	1.0580823941203282e-05	low support
+NCBITaxon:457416	Veillonella sp. 3_1_44	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:457416	Veillonella sp. 3_1_44	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	-1.551403165822223e-06	-4.6845254208726575e-06	1.581719089228212e-06	low support
+NCBITaxon:457416	Veillonella sp. 3_1_44	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:457416	Veillonella sp. 3_1_44	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:46124	Granulicatella adiacens	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:46124	Granulicatella adiacens	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	0.00010942267375575239	-0.00011156089898922984	0.00033040624650073464	low support
+NCBITaxon:46124	Granulicatella adiacens	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:46124	Granulicatella adiacens	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	-3.641272758555062e-05	-0.00010994972279009098	3.712426761898973e-05	low support
+NCBITaxon:46124	Granulicatella adiacens	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:46124	Granulicatella adiacens	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:46228	[Ruminococcus] lactaris	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:46228	[Ruminococcus] lactaris	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	0.0007230272951924752	-0.0007371559501961395	0.00218321054058109	low support
+NCBITaxon:46228	[Ruminococcus] lactaris	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:46228	[Ruminococcus] lactaris	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	-0.0029033165397224546	-0.008766683241852037	0.002960050162407128	low support
+NCBITaxon:46228	[Ruminococcus] lactaris	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:46228	[Ruminococcus] lactaris	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.0014655212812191285	-0.0014941589892566393	0.0044252015516948965	low support
+NCBITaxon:469592	Bacteroides sp. 3_1_19	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:469592	Bacteroides sp. 3_1_19	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	direct + denominator	204	42	1	1	-0.0007598628733524917	-0.002294437078005155	0.0007747113313001717	low support
+NCBITaxon:469592	Bacteroides sp. 3_1_19	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:469592	Bacteroides sp. 3_1_19	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	1	1	2.4890334591457365e-05	-2.5376715883984995e-05	7.515738506689972e-05	low support
+NCBITaxon:469592	Bacteroides sp. 3_1_19	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	3.570468400485334e-05	-3.640238817961085e-05	0.00010781175618931755	low support
+NCBITaxon:469592	Bacteroides sp. 3_1_19	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	4.9944523591659844e-05	-5.09204880508731e-05	0.00015080953523419278	low support
+NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	4	1	0.0	0.0	0.0	low support
+NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	direct + denominator	204	42	4	1	0.018477660758398178	-0.018838732181103816	0.05579405369790017	low support
+NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	4	1	0.0	0.0	0.0	low support
+NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	4	1	0.0	0.0	0.0	low support
+NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	4	1	0.0	0.0	0.0	low support
+NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	4	1	0.0	0.0	0.0	low support
+NCBITaxon:53443	Blautia hydrogenotrophica	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	-3.491999030241761e-05	-0.00010544234140556548	3.5602360800730264e-05	low support
+NCBITaxon:53443	Blautia hydrogenotrophica	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	-1.9566824127205117e-05	-5.908282711351666e-05	1.9949178859106425e-05	low support
+NCBITaxon:53443	Blautia hydrogenotrophica	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	-7.392835619448435e-05	-0.000223229700406629	7.537298801766029e-05	low support
+NCBITaxon:53443	Blautia hydrogenotrophica	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	0.00040258707434146895	-0.0004104540164612556	0.0012156281651441935	low support
+NCBITaxon:53443	Blautia hydrogenotrophica	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	-2.7233933876547757e-05	-8.223397912652728e-05	2.776611137343177e-05	low support
+NCBITaxon:53443	Blautia hydrogenotrophica	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	-4.0976782892752046e-05	-0.00012373107478154608	4.177750899604199e-05	low support
+NCBITaxon:550	Enterobacter cloacae	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	1	True	direct + denominator	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:550	Enterobacter cloacae	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	6	True	direct + denominator	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:550	Enterobacter cloacae	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:550	Enterobacter cloacae	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:550	Enterobacter cloacae	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:550	Enterobacter cloacae	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	0	0	0.0	0.0	0.0	low support
+NCBITaxon:562	Escherichia coli	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	5	True	direct + denominator	204	42	3	3	-0.01458040627308506	-0.040873884760540734	0.011713072214370611	mixed
+NCBITaxon:562	Escherichia coli	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	779	True	direct + denominator	204	42	3	3	0.003234927044507583	-0.007917077575173511	0.014386931664188678	mixed
+NCBITaxon:562	Escherichia coli	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	14	True	direct + denominator	204	42	3	3	0.10117464208444153	-0.1371523317288717	0.33950161589775474	mixed
+NCBITaxon:562	Escherichia coli	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	3	3	-0.010719639330919335	-0.04761353075415711	0.02617425209231844	mixed
+NCBITaxon:562	Escherichia coli	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	3	3	-0.0036228211203343883	-0.024523820542341472	0.017278178301672692	mixed
+NCBITaxon:562	Escherichia coli	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	3	3	0.010869762547025189	-0.011082168255661379	0.03282169334971176	mixed
+NCBITaxon:573	Klebsiella pneumoniae	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	3	True	direct + denominator	204	42	3	2	0.007931796346220939	-0.007113840839615734	0.022977433532057612	low support
+NCBITaxon:573	Klebsiella pneumoniae	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	20	True	direct + denominator	204	42	3	2	-0.00039064239444519864	-0.0011329535539416618	0.00035166876505126444	low support
+NCBITaxon:573	Klebsiella pneumoniae	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	3	2	-0.0036770468959340824	-0.010596887563277516	0.0032427937714093517	low support
+NCBITaxon:573	Klebsiella pneumoniae	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	3	2	-0.0006667305478284826	-0.0019057580722171476	0.0005722969765601825	low support
+NCBITaxon:573	Klebsiella pneumoniae	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	3	2	-0.00020737615200157512	-0.0005909329316641301	0.0001761806276609799	low support
+NCBITaxon:573	Klebsiella pneumoniae	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	3	2	-2.390839337050841e-05	-7.219237331967911e-05	2.4375586578662294e-05	low support
+NCBITaxon:649756	Anaerostipes hadrus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:649756	Anaerostipes hadrus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	0.0008737807050166822	-0.0008908552279456581	0.0026384166379790222	low support
+NCBITaxon:649756	Anaerostipes hadrus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:649756	Anaerostipes hadrus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	-0.0027445465548016296	-0.008287270767507246	0.002798177657903987	low support
+NCBITaxon:649756	Anaerostipes hadrus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:649756	Anaerostipes hadrus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	direct + denominator	204	42	1	1	-0.014614314579201324	-0.04412852162681711	0.01489989246841446	low support
+NCBITaxon:68891	Streptococcus peroris	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:68891	Streptococcus peroris	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	7.212560213612227e-05	-7.353500639553068e-05	0.00021778621066777522	low support
+NCBITaxon:68891	Streptococcus peroris	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:68891	Streptococcus peroris	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	1	True	direct + denominator	204	42	1	1	-7.277405227612713e-05	-0.0002197442324328083	7.419612788055407e-05	low support
+NCBITaxon:68891	Streptococcus peroris	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:68891	Streptococcus peroris	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:68892	Streptococcus infantis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	2	1	0.0	0.0	0.0	low support
+NCBITaxon:68892	Streptococcus infantis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	3	True	direct + denominator	204	42	2	1	-0.007275734460515488	-0.021969378293578694	0.00741790937254772	low support
+NCBITaxon:68892	Streptococcus infantis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	2	1	0.0	0.0	0.0	low support
+NCBITaxon:68892	Streptococcus infantis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	4	True	direct + denominator	204	42	2	1	-0.001251044246504179	-0.0037775793581543288	0.001275490865145971	low support
+NCBITaxon:68892	Streptococcus infantis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	2	1	0.0	0.0	0.0	low support
+NCBITaxon:68892	Streptococcus infantis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	2	1	0.0	0.0	0.0	low support
+NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	4	1	-0.00010080285189528011	-0.0003043783412351324	0.00010277263744457217	low support
+NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	direct + denominator	204	42	4	1	-1.375366315213871e-05	-4.1529749381532714e-05	1.4022423077255293e-05	low support
+NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	4	1	0.0	0.0	0.0	low support
+NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	4	1	-5.916316930896245e-05	-0.0001786456136695719	6.031927505164701e-05	low support
+NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	4	1	0.0	0.0	0.0	low support
+NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	4	1	0.0	0.0	0.0	low support
+NCBITaxon:729	Haemophilus parainfluenzae	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	4.818012213784634e-05	-4.912160848040388e-05	0.00014548185275609657	low support
+NCBITaxon:729	Haemophilus parainfluenzae	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	2	True	direct + denominator	204	42	1	1	-0.00024321591682509964	-0.0007344004255168503	0.00024796859186665106	low support
+NCBITaxon:729	Haemophilus parainfluenzae	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:729	Haemophilus parainfluenzae	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	1	1	3.284653144022539e-05	-3.348838454020055e-05	9.918144742065133e-05	low support
+NCBITaxon:729	Haemophilus parainfluenzae	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	2.373448813143926e-05	-2.4198283062456898e-05	7.166725932533542e-05	low support
+NCBITaxon:729	Haemophilus parainfluenzae	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	6.196855877902212e-05	-6.317948455441761e-05	0.00018711660211246186	low support
+NCBITaxon:78259	Scardovia inopinata	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	-4.764123438961066e-05	-0.00014385465912183001	4.85721903426087e-05	low support
+NCBITaxon:78259	Scardovia inopinata	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	2	True	direct + denominator	204	42	1	1	0.0009308313636086921	-0.0009490207117708746	0.002810683438988259	low support
+NCBITaxon:78259	Scardovia inopinata	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	-0.00010086345024502605	-0.00030456132043493137	0.0001028344199448793	low support
+NCBITaxon:78259	Scardovia inopinata	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	1	1	-2.5938510913340756e-05	-7.832239641507316e-05	2.6445374588391645e-05	low support
+NCBITaxon:78259	Scardovia inopinata	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	-3.715517146274645e-05	-0.00011219156249553714	3.7881219570044227e-05	low support
+NCBITaxon:78259	Scardovia inopinata	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	-5.589745593797626e-05	-0.00016878465834816085	5.698974647220833e-05	low support
+NCBITaxon:821	Phocaeicola vulgatus	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	2	2	9.069782563616655e-05	-9.247014916601994e-05	0.00027386580043835306	low support
+NCBITaxon:821	Phocaeicola vulgatus	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	3	True	direct + denominator	204	42	2	2	-0.004752526859047993	-0.013645083332753542	0.0041400296146575566	low support
+NCBITaxon:821	Phocaeicola vulgatus	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	2	2	0.0	0.0	0.0	low support
+NCBITaxon:821	Phocaeicola vulgatus	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	2	2	6.176404377693008e-05	-6.297097313071491e-05	0.00018649906068457506	low support
+NCBITaxon:821	Phocaeicola vulgatus	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	2	2	4.469686060865585e-05	-4.5570280640631894e-05	0.0001349640018579436	low support
+NCBITaxon:821	Phocaeicola vulgatus	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	2	2	0.0004345941730799818	-0.0002440856790266737	0.0011132740251866373	low support
+NCBITaxon:84030	Lacrimispora saccharolytica	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	-7.613559713827266e-06	-2.2989455486803344e-05	7.762336059148814e-06	low support
+NCBITaxon:84030	Lacrimispora saccharolytica	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	0	False	denominator only	204	42	1	1	-4.581773314783434e-06	-1.383485224126357e-05	4.671305611696702e-06	low support
+NCBITaxon:84030	Lacrimispora saccharolytica	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	-7.632959279696277e-06	-2.30480332707536e-05	7.782114711361047e-06	low support
+NCBITaxon:84030	Lacrimispora saccharolytica	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	1	1	-4.442172796654715e-06	-1.3413322757279062e-05	4.528977163969631e-06	low support
+NCBITaxon:84030	Lacrimispora saccharolytica	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	-6.944685980123218e-06	-2.0969763843831877e-05	7.080391883585439e-06	low support
+NCBITaxon:84030	Lacrimispora saccharolytica	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	1	True	direct + denominator	204	42	1	1	0.00011224381598948182	-0.00011443716907995955	0.0003389248010589232	low support
+NCBITaxon:84135	Gemella sanguinis	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:84135	Gemella sanguinis	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	2	True	direct + denominator	204	42	1	1	-0.0007440285989743093	-0.002246624837783023	0.0007585676398344046	low support
+NCBITaxon:84135	Gemella sanguinis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:84135	Gemella sanguinis	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	2	True	direct + denominator	204	42	1	1	-0.00019312945117875942	-0.0005831622904331215	0.00019690338807560267	low support
+NCBITaxon:84135	Gemella sanguinis	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:84135	Gemella sanguinis	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	1	1	0.0	0.0	0.0	low support
+NCBITaxon:853	Faecalibacterium prausnitzii	species	METPO:1000623	moderately halophilic	inc	0.47307002394148256	0	False	denominator only	204	42	13	8	0.00023987479355559827	-7.626978397237843e-05	0.0005560193710835749	mixed
+NCBITaxon:853	Faecalibacterium prausnitzii	species	METPO:1000608	facultatively aerobic	inc	0.41172985152881364	1	True	direct + denominator	204	42	13	8	-0.10330735105758505	-0.21477637803769634	0.008161675922526243	mixed
+NCBITaxon:853	Faecalibacterium prausnitzii	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	inc	0.5159153993670766	0	False	denominator only	204	42	13	8	1.8257909822657858e-05	-1.4660269258931075e-05	5.117608890424679e-05	mixed
+NCBITaxon:853	Faecalibacterium prausnitzii	species	METPO:1000668	coccus shaped	inc	0.13820733638288013	0	False	denominator only	204	42	13	8	0.0031872067114595915	-0.0013666974264922417	0.007741110849411425	mixed
+NCBITaxon:853	Faecalibacterium prausnitzii	species	METPO:1000683	sphere shaped	inc	0.1326105750521218	0	False	denominator only	204	42	13	8	0.00015601981515298908	-5.51871561022832e-05	0.00036722678640826133	mixed
+NCBITaxon:853	Faecalibacterium prausnitzii	species	METPO:2000103|GO:0030245	cellulose catabolic process	dec	-0.6981853279020843	0	False	denominator only	204	42	13	8	0.010459929687209057	-0.00015736691702705925	0.02107722629144517	mixed

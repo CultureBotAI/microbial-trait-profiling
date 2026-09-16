@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts/create_pd_six_trait_taxon_heatmap.py"
 sys.path.insert(0, str(MODULE_PATH.parent))
@@ -76,6 +77,91 @@ def test_classification_preserves_uncertainty_and_low_support() -> None:
     assert heatmap.classify_effect(-0.4, -0.7, -0.1, 3) == "dec"
     assert heatmap.classify_effect(0.1, -0.2, 0.4, 3) == "mixed"
     assert heatmap.classify_effect(0.4, 0.1, 0.7, 2) == "low support"
+
+
+def test_unannotated_trait_retains_denominator_mediated_influence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    profile_rows = []
+    metadata_rows = []
+    evidence_rows = []
+    for study in ["s1", "s2", "s3"]:
+        for direction, counts in [("inc", [50, 5, 45]), ("dec", [5, 50, 45])]:
+            identifier = f"{study}|e1|{direction}"
+            profile_rows.append([identifier, *counts])
+            metadata_rows.append(
+                [
+                    identifier,
+                    study,
+                    "e1",
+                    direction,
+                    heatmap.PD_CONDITION,
+                    heatmap.FECES,
+                    "Homo sapiens",
+                ]
+            )
+            evidence_rows.append(
+                [
+                    "t1",
+                    "taxon-a",
+                    "species",
+                    identifier,
+                    study,
+                    {"inc": "increased", "dec": "decreased"}[direction],
+                ]
+            )
+
+    profiles = pd.DataFrame(profile_rows, columns=["profile_id", "t1", "t2", "other"]).set_index(
+        "profile_id"
+    )
+    metadata = pd.DataFrame(
+        metadata_rows,
+        columns=[
+            "profile_id",
+            "study_id",
+            "experiment_id",
+            "inc_dec",
+            "condition",
+            "body_site_group",
+            "host_species",
+        ],
+    ).set_index("profile_id")
+    taxon_vectors = pd.DataFrame(
+        [["taxon-a", "Species A", "species", 5, 0, 10]],
+        columns=["taxon_id", "taxon_name", "taxonomic_rank", "t1", "t2", "other"],
+    ).set_index("taxon_id")
+    evidence = pd.DataFrame(
+        evidence_rows,
+        columns=[
+            "trait_id",
+            "taxon_id",
+            "taxonomic_rank",
+            "profile_id",
+            "study_id",
+            "direction",
+        ],
+    )
+    trait_summary = pd.DataFrame(
+        [["t1", "Trait one", 1.0], ["t2", "Trait two", -1.0]],
+        columns=["trait_id", "trait", "increased_minus_decreased_mean_z"],
+    )
+    monkeypatch.setattr(
+        heatmap,
+        "load_taxon_specificity",
+        lambda taxon_ids, _metadata: pd.DataFrame({"taxon_id": taxon_ids}),
+    )
+
+    cells, _, _ = heatmap.build_influence_cells(
+        profiles, metadata, taxon_vectors, evidence, trait_summary
+    )
+    by_trait = cells.set_index("trait_id")
+
+    assert by_trait.loc["t1", "influence_basis"] == "direct + denominator"
+    assert by_trait.loc["t2", "influence_basis"] == "denominator only"
+    assert not bool(by_trait.loc["t2", "has_trait_annotation"])
+    assert pd.notna(by_trait.loc["t2", "mean_influence_contrast_z"])
+    assert pd.notna(by_trait.loc["t2", "ci95_low"])
+    assert by_trait.loc["t2", "status"] != "not annotated"
 
 
 def test_taxon_specificity_compares_pd_feces_to_other_feces() -> None:

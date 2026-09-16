@@ -34,7 +34,7 @@ TRANSFORM_SCALE = 1000.0
 ROW_COLOR_LIMIT = 3.0
 INCREASED_COLOR = "#b91c1c"
 DECREASED_COLOR = "#1d4ed8"
-MISSING_COLOR = "#e5e7eb"
+UNAVAILABLE_COLOR = "#e5e7eb"
 SPECIFICITY_COLOR_LIMIT = 3.0
 
 
@@ -344,11 +344,8 @@ def build_influence_cells(
             contrasts = paired_study_contrasts(influence[trait_id], pairs)
             mean, low, high = mean_interval(contrasts)
             annotated = annotation_count > 0
-            status = (
-                classify_effect(mean, low, high, support_studies) if annotated else "not annotated"
-            )
-            if annotated:
-                effect_magnitudes.append(abs(mean))
+            status = classify_effect(mean, low, high, support_studies)
+            effect_magnitudes.append(abs(mean))
             cells.append(
                 {
                     "taxon_id": taxon_id,
@@ -360,13 +357,16 @@ def build_influence_cells(
                     "trait_overall_mean_z_contrast": trait.overall_mean_z_contrast,
                     "annotation_count": annotation_count,
                     "has_trait_annotation": annotated,
+                    "influence_basis": (
+                        "direct + denominator" if annotated else "denominator only"
+                    ),
                     "paired_profiles": len(pairs),
                     "paired_studies": int(pairs["study_id"].nunique()),
                     "taxon_support_profiles": int(paired_presence["profile_id"].nunique()),
                     "taxon_support_studies": support_studies,
-                    "mean_influence_contrast_z": mean if annotated else math.nan,
-                    "ci95_low": low if annotated else math.nan,
-                    "ci95_high": high if annotated else math.nan,
+                    "mean_influence_contrast_z": mean,
+                    "ci95_low": low,
+                    "ci95_high": high,
                     "status": status,
                 }
             )
@@ -423,8 +423,12 @@ def plot_heatmap(
     trait_ids = traits["trait_id"].tolist()
     values = cells.pivot(index="taxon_id", columns="trait_id", values="mean_influence_contrast_z")
     labels = cells.pivot(index="taxon_id", columns="trait_id", values="status")
+    direct_annotations = cells.pivot(
+        index="taxon_id", columns="trait_id", values="has_trait_annotation"
+    )
     values = values.reindex(index=row_ids, columns=trait_ids)
     labels = labels.reindex(index=row_ids, columns=trait_ids)
+    direct_annotations = direct_annotations.reindex(index=row_ids, columns=trait_ids)
     finite = np.abs(values.to_numpy(float)[np.isfinite(values.to_numpy(float))])
     color_limit = max(float(np.quantile(finite, 0.95)) if finite.size else 0.0, 0.02)
 
@@ -444,7 +448,7 @@ def plot_heatmap(
     row_ax = fig.add_subplot(grid[0, 1], sharey=ax)
     specificity_ax = fig.add_subplot(grid[0, 2], sharey=ax)
     cmap = plt.get_cmap("RdBu_r").copy()
-    cmap.set_bad(MISSING_COLOR)
+    cmap.set_bad(UNAVAILABLE_COLOR)
     image = ax.imshow(
         values.to_numpy(float), cmap=cmap, vmin=-color_limit, vmax=color_limit, aspect="auto"
     )
@@ -469,9 +473,18 @@ def plot_heatmap(
     for y, taxon_id in enumerate(row_ids):
         for x, trait_id in enumerate(trait_ids):
             status = labels.loc[taxon_id, trait_id]
-            if status == "not annotated":
-                continue
             value = values.loc[taxon_id, trait_id]
+            if direct_annotations.loc[taxon_id, trait_id]:
+                ax.add_patch(
+                    Rectangle(
+                        (x - 0.49, y - 0.49),
+                        0.98,
+                        0.98,
+                        facecolor="none",
+                        edgecolor="#111827",
+                        linewidth=0.85,
+                    )
+                )
             if status == "low support":
                 ax.add_patch(
                     Rectangle(
@@ -577,11 +590,12 @@ def plot_heatmap(
     subtitle = (
         "Cells show the study-weighted change in each paired increased-decreased trait contrast "
         "attributable to removing one reported species and recomputing its full non-MediaDive "
-        f"profile denominator. Inc/dec requires a 95% interval entirely above/below zero and at "
+        "profile denominator. Outlined cells include direct removal of that trait; unoutlined "
+        "cells retain the denominator-mediated effect when the species has no direct annotation. "
+        f"Inc/dec requires a 95% interval entirely above/below zero and at "
         f"least {MIN_SUPPORT_STUDIES} supporting studies; otherwise cells are mixed or hatched "
-        "low support. Gray = no trait annotation at or below the reported species label. Right "
-        "columns separate raw PD inc/dec occurrence from a PD specificity check: exact reported "
-        "species-label profiles in PD feces versus all other fecal profiles."
+        "low support. Right columns separate raw PD inc/dec occurrence from a PD specificity "
+        "check: exact reported species-label profiles in PD feces versus all other fecal profiles."
     )
     fig.text(
         0.03,
@@ -595,11 +609,11 @@ def plot_heatmap(
         handles=[
             Patch(facecolor=INCREASED_COLOR, label="positive influence"),
             Patch(facecolor=DECREASED_COLOR, label="negative influence"),
-            Patch(facecolor=MISSING_COLOR, label="not annotated"),
+            Patch(facecolor="white", edgecolor="#111827", label="direct trait annotation"),
             Patch(facecolor="white", edgecolor="#64748b", hatch="///", label="low support"),
         ],
         loc="upper center",
-        bbox_to_anchor=(0.60, 1 - 0.94 / height),
+        bbox_to_anchor=(0.60, 1 - 1.38 / height),
         ncol=4,
         frameon=False,
         fontsize=8,
@@ -663,6 +677,9 @@ def main() -> None:
         "traits": len(traits),
         "species": len(rows),
         "cells": len(cells),
+        "filled_cells": int(cells["mean_influence_contrast_z"].notna().sum()),
+        "direct_annotation_cells": int(cells["has_trait_annotation"].sum()),
+        "denominator_only_cells": int((~cells["has_trait_annotation"]).sum()),
         "non_mediadive_columns": len(trait_columns),
         "minimum_support_studies": MIN_SUPPORT_STUDIES,
         "input_sha256_chunks": {
@@ -690,13 +707,15 @@ def main() -> None:
         "combination: the analysis removes the species' complete non-MediaDive annotation vector "
         "from profiles where it was reported, recomputes the six log-fraction scores using the "
         "unchanged human-corpus reference, forms paired increased-minus-decreased experiment "
-        "contrasts, averages experiments within study, and weights studies equally.\n\n"
+        "contrasts, averages experiments within study, and weights studies equally. All six "
+        "computable estimates are retained per species. Outlined cells include direct removal "
+        "of the displayed trait; unoutlined cells show the denominator-mediated effect when the "
+        "species has no direct annotation for that trait.\n\n"
         f"`inc` and `dec` require at least {MIN_SUPPORT_STUDIES} supporting studies and a 95% "
         "Student t interval entirely above or below zero. `mixed` retains supported estimates "
         "whose interval crosses zero; hatched `low support` cells do not receive a forced "
-        "direction. Gray means the trait matrix has no annotation at or below that reported "
-        "species label. The first right-hand annotation retains the raw increased/decreased "
-        "profile occurrence counts in PD feces. The second right-hand annotation is a PD "
+        "direction. The first right-hand annotation retains the raw increased/decreased profile "
+        "occurrence counts in PD feces. The second right-hand annotation is a PD "
         "specificity check: exact reported species-label profiles in PD feces versus all other "
         "fecal profiles in the same full occurrence table.\n\n"
         "This is a reported-species influence diagnostic, not a causal attribution or strain-level "
