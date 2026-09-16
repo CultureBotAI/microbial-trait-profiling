@@ -1,10 +1,15 @@
-# bsdbng
+# microbial-trait-profiling
 
-`bsdbng` is a clean-room BugSigDB ingestion and normalization project.
+`microbial-trait-profiling` integrates curated microbial taxon signatures with
+trait annotations for comparative analysis across studies and biological contexts.
 
 It downloads [BugSigDB](https://bugsigdb.org) data, parses it into
 per-study YAML files validated against a [LinkML](https://linkml.io) schema,
-and provides a foundation for trait aggregation and phenotype cross-referencing.
+and aggregates KG-Microbe trait annotations for paired comparisons and
+enrichment analyses.
+
+The Python package remains `bsdbng`; existing imports, schema identifiers,
+environment variables, and release asset names retain that name for compatibility.
 
 ## Quick start
 
@@ -28,8 +33,8 @@ render PNGs through a headless Chrome, fetched version-pinned by
 ### Clone and run
 
 ```bash
-git clone https://github.com/turbomam/bsdbng.git
-cd bsdbng
+git clone https://github.com/CultureBotAI/microbial-trait-profiling.git
+cd microbial-trait-profiling
 uv sync --all-extras --group dev --group qa
 just check       # run all checks (should pass on a fresh clone)
 just download    # download BugSigDB data (~28 MB, ~6s)
@@ -98,7 +103,7 @@ into `data/raw/` and skip `just download`:
 
 ```bash
 mkdir -p release-assets
-gh release download v0.4.0 --repo turbomam/bsdbng \
+gh release download v0.4.0 --repo CultureBotAI/microbial-trait-profiling \
   --pattern 'bsdbng-raw-data-*.tar.gz' --dir release-assets
 tar xzf release-assets/bsdbng-raw-data-v0.4.0.tar.gz -C data/raw/
 just ingest   # skip `just download`
@@ -131,10 +136,14 @@ All commands go through the Justfile. Run `just --list` to see them all.
 | Command | What it does |
 |---------|-------------|
 | `just check` | Run all checks (ruff, mypy, pytest, linkml, bandit, deptry, pip-audit) |
+| `just precommit` | Run the full pre-commit stack, including the installed-environment dependency audit |
+| `just lock --upgrade-package PACKAGE` | Update a dependency with the declared uv version; run `just sync` first |
+| `just secrets-scan` / `just secrets-audit` | Print candidate secret findings / review the committed baseline |
 | `just download` | Download BugSigDB CSVs (with caching and retry) |
 | `just ingest` | Parse CSVs into per-study YAML |
 | `just taxa-trait-matrix` | Build the taxon x trait matrix from BugSigDB taxa and KG-Microbe |
 | `just study-trait-profiles` | Sum taxon trait vectors by study, experiment, and increased/decreased direction |
+| `just table1-compositional-stats` | Paired log-ratio tests for all 15 Table 1 trait pairs; `--body-site LABEL` for one exact stratum |
 | `just pipeline` | Run download + ingest |
 | `just clean-all` | Remove all generated artifacts |
 | `just format` | Auto-fix lint and formatting |
@@ -142,6 +151,12 @@ All commands go through the Justfile. Run `just --list` to see them all.
 | `just lint` | Run linter only |
 
 Every pipeline step is timed and logged to `logs/pipeline.log`.
+
+The audited `.secrets.baseline` contains only the public BugSigDB source revision
+and dump checksum in `src/bsdbng/download.py`. It records those exact values as
+false positives; it does not exempt the file or new values from detection. Review
+candidate findings before updating the baseline. The lock and secret-audit CLIs
+are declared in the QA group at the same versions as their pre-commit hooks.
 
 ### Downloading KG-Microbe for trait enrichment
 
@@ -203,8 +218,8 @@ linkml-store approach.
 
 ### Workflow
 
-1. Pick an [open issue](https://github.com/turbomam/bsdbng/issues)
-2. Create a branch: `git checkout -b issue-<number>-<short-slug>`
+1. Pick an [open issue](https://github.com/CultureBotAI/microbial-trait-profiling/issues)
+2. Create a linked branch: `gh issue develop <number> --repo CultureBotAI/microbial-trait-profiling --checkout`
 3. Make your changes
 4. Run `just check` — **all checks must pass before opening a PR**
 5. Commit and push
@@ -240,7 +255,7 @@ No DuckDB, no Parquet, no Jupyter notebooks in this repo.
 ## Project structure
 
 ```
-bsdbng/
+microbial-trait-profiling/
   schema/bsdbng.yaml              # LinkML schema (source of truth)
   src/bsdbng/
     download.py                    # BugSigDB CSV download with caching
@@ -271,12 +286,12 @@ See `schema/bsdbng.yaml` for the full definition.
 ## Data quality
 
 The ingest pipeline logs every data drop and transformation assumption to
-`data/derived/ingest_log.json`. See [#44](https://github.com/turbomam/bsdbng/issues/44)
+`data/derived/ingest_log.json`. See [#44](https://github.com/CultureBotAI/microbial-trait-profiling/issues/44)
 for the full audit of what gets discarded and why.
 
 ## Background
 
-- [Where bsdbng came from](docs/origin-story.md) — how this repo relates to the
+- [Project origins](docs/origin-story.md) — how this repo relates to the
   KG-Microbe-search prototype and how to talk about your contributions
 - [BugSigDB data access methods](docs/bugsigdb-access-methods.md)
 - [BugSigDB live counts](docs/bugsigdb-live-counts.md)

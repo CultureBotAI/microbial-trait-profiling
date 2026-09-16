@@ -1,6 +1,6 @@
 ---
 name: review-open-issues
-description: Sweep and prioritize bsdbng's complete open GitHub issue queue using current ingest, provenance, schema, trait-profile, and analysis-branch evidence. Fetches every open issue (never the 30-item default), builds a pipeline-stage dependency graph from BugSigDB vintage through the two trait-analysis arms, checks each claim against code and artifacts on the branch it is about (not just main), groups root-cause families, and assigns a priority tier plus a separate rerun-cost class. Use for full backlog triage or deciding what is genuinely urgent; do not use as permission to close issues, regenerate data, or implement fixes.
+description: Sweep and prioritize microbial-trait-profiling's complete open GitHub issue queue using current ingest, provenance, schema, trait-profile, and analysis-branch evidence. Fetches every open issue (never the 30-item default), builds a pipeline-stage dependency graph from BugSigDB vintage through the two trait-analysis arms, checks each claim against code and artifacts on the branch it is about (not just main), groups root-cause families, and assigns a priority tier plus a separate rerun-cost class. Use for full backlog triage or deciding what is genuinely urgent; do not use as permission to close issues, regenerate data, or implement fixes.
 metadata:
   category: workflow
   requires_database: false
@@ -12,7 +12,7 @@ metadata:
 
 Adapted from the MicroGrowLink `review-open-issues` skill (v1.1.0).
 
-Produce a complete, dependency-aware triage of bsdbng's open issues. The
+Produce a complete, dependency-aware triage of microbial-trait-profiling's open issues. The
 issue queue, the analysis branches, and the committed artifacts on `main` are
 different surfaces: sweep the queue itself, then test every claim against the
 code and data it is actually about.
@@ -73,11 +73,11 @@ checked.
 
 ## What makes this repo different
 
-**1. The repository has one queue under two names.** `turbomam/bsdbng` is a
-GitHub transfer redirect to `CultureBotAI/bsdbng`. `AGENTS.md` still says
-`--repo turbomam/bsdbng`; both resolve to the same issues and PRs. Confirm with
-`gh repo view turbomam/bsdbng --json nameWithOwner` and report the canonical
-name once, then stop worrying about it.
+**1. Use the canonical repository name.** The repository is
+`CultureBotAI/microbial-trait-profiling`. Its former names, `turbomam/bsdbng`
+and `CultureBotAI/bsdbng`, redirect to the same issues and PRs. Confirm with
+`gh repo view CultureBotAI/microbial-trait-profiling --json nameWithOwner`
+and use that name in subsequent GitHub commands.
 
 **2. Most analysis work lives on unmerged branches, not `main`.** The two
 trait-analysis arms — the **composition / paired-contrast arm** ("Analysis A"

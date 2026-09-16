@@ -224,12 +224,12 @@ effect sizes are small: every trait sits within about eight points of 0.5, and
 the significance comes from the number of studies rather than from the size of
 the shift, which is worth stating explicitly next to the q-values.
 
-The right panel reports Spearman rank correlations between traits across those
-per-study contrasts. This is deliberately not the same quantity as the guild
-figure's within-profile correlation, which compares two shares of one profile
-total and is therefore pushed negative by compositionality; correlating one
-trait's contrast against another trait's contrast across studies does not share
-that artefact. Coccus shaped and sphere shaped correlate at rho = 0.45 over 959
+The right panel reports descriptive Spearman rank correlations between traits
+across those per-study contrasts. These still depend on the profile totals:
+differencing and study-level averaging do not remove compositional effects.
+Closure can produce positive as well as negative component correlations, so
+neither sign alone establishes biological association. Coccus shaped and sphere
+shaped correlate at rho = 0.45 over 959
 studies, which is high enough to treat them as overlapping evidence rather than
 two independent lines of it, but well short of the near-identity their names
 suggest. Facultatively aerobic correlates positively with coccus shaped (0.45),
@@ -240,6 +240,11 @@ missing value if either series is constant, since Spearman is undefined there.
 The fifteen pairwise Spearman p-values are reported uncorrected, unlike the six
 binomial p-values; they describe the redundancy between traits rather than
 supporting a claim of their own.
+
+The separate [paired log-ratio analysis](table1_paired_log_ratios.md) tests
+reference-explicit relative contrasts for all 15 trait pairs. It reports zero
+exclusions and the resulting conditional study populations. It does not replace
+these historical fraction results or turn them into absolute abundance claims.
 
 ## Reproducing
 

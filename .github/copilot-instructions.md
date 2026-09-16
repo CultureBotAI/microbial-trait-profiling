@@ -60,7 +60,7 @@ Every change requires an issue, a linked branch, and a linked PR:
 1. **Create or identify a GitHub issue** before writing any code.
 2. **Create a branch linked to the issue** using `gh issue develop`:
    ```bash
-   gh issue develop <number> --repo turbomam/bsdbng --checkout
+   gh issue develop <number> --repo CultureBotAI/microbial-trait-profiling --checkout
    ```
    This formally links the branch to the issue in GitHub's Development
    sidebar. Do not create branches manually with `git checkout -b`.
@@ -109,12 +109,12 @@ Every data pipeline step must be checked for silent data loss or corruption:
 
 When a new release is tagged, check the release assets:
 
-1. Check for new releases: `gh release list --repo turbomam/bsdbng --limit 1`
+1. Check for new releases: `gh release list --repo CultureBotAI/microbial-trait-profiling --limit 1`
 2. **Ask the user before downloading** — releases can be large
 3. Download selected assets:
    ```bash
    mkdir -p release-assets
-   gh release download <tag> --repo turbomam/bsdbng --dir release-assets \
+   gh release download <tag> --repo CultureBotAI/microbial-trait-profiling --dir release-assets \
      --pattern 'bsdbng-studies-*.tar.gz' \
      --pattern 'bsdbng-stats-*.txt' \
      --pattern 'bsdbng-ingest-log-*.json'

@@ -1,5 +1,14 @@
 [default]
 extend-ignore-re = []
 
+[default.extend-identifiers]
+PNGs = "PNGs"
+
+[default.extend-words]
+nonsignificant = "nonsignificant"
+# Without this, typos rewrites the `fac_aer` fixture prefix in
+# tests/test_table1_trait_maps.py to `fac_are`.
+aer = "aer"
+
 [files]
 extend-exclude = ["uv.lock", ".venv"]
