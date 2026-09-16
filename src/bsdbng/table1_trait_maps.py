@@ -79,9 +79,11 @@ class FocusPanel:
 # conditions that were sampled in the same places, so each is legible on its own:
 # the gut block alone, the gut against the pooled remainder, the two cervical
 # conditions, and the oral cluster the fourth cut was asked for. On v1.3.1 that
-# last panel draws rheumatoid arthritis and smoking behavior only: gingivitis
-# and periodontitis are in the corpus but fall outside the top-60 condition cut,
-# so the figure names them rather than redrawing the group under the same title.
+# last panel draws rheumatoid arthritis and smoking behavior only. Gingivitis and
+# periodontitis are both in the corpus but fail different display rules:
+# periodontitis falls just outside the top-60 cut, while gingivitis has at most
+# one study per cell and is dropped as blank at any cut width. The figure names
+# each with its own reason rather than redrawing the group under the same title.
 FOCUS_PANELS: tuple[FocusPanel, ...] = (
     FocusPanel(slug="feces", subtitle="Feces", sites=("Feces",)),
     FocusPanel(
@@ -115,6 +117,7 @@ class MissingConditions:
     """Requested panel conditions that are not drawn, split by cause."""
 
     absent_from_corpus: tuple[str, ...]
+    blank_after_masking: tuple[str, ...]
     cut_by_display: tuple[str, ...]
 
 
@@ -123,31 +126,44 @@ def missing_conditions(
     *,
     corpus_conditions: Collection[str],
     drawn_conditions: Sequence[str],
+    blank_conditions: Collection[str] = (),
 ) -> MissingConditions:
-    """Split undrawn panel conditions into the two causes that look alike.
+    """Split undrawn panel conditions into the three causes that look alike.
 
-    A requested condition can be missing because the export does not hold it, or
-    because it is held and the top-N cut dropped it. Testing membership of the
-    drawn conditions alone cannot tell those apart, since that set is already the
-    cut one — and reporting the second as the first states something false about
-    the export.
+    A requested condition can be undrawn because the export does not hold it,
+    because it is held and every cell fell below the min-studies threshold so the
+    row was dropped as blank, or because the top-N cut never selected it. Testing
+    membership of the drawn conditions alone cannot tell these apart, since that
+    set is already the cut one — and naming the wrong cause states something
+    false about the data. `blank_conditions` is the matrix's own record of rows it
+    dropped as entirely blank, so the second case is read from the build rather
+    than guessed at.
     """
     drawn = set(drawn_conditions)
+    blank = set(blank_conditions)
+    held = [name for name in requested if name in corpus_conditions and name not in drawn]
     return MissingConditions(
         absent_from_corpus=tuple(name for name in requested if name not in corpus_conditions),
-        cut_by_display=tuple(
-            name for name in requested if name in corpus_conditions and name not in drawn
-        ),
+        blank_after_masking=tuple(name for name in held if name in blank),
+        cut_by_display=tuple(name for name in held if name not in blank),
     )
 
 
-def missing_condition_note(missing: MissingConditions, *, max_conditions: int) -> str | None:
+def missing_condition_note(
+    missing: MissingConditions, *, max_conditions: int, min_studies: int
+) -> str | None:
     """Phrase each cause separately, or return None when everything is drawn."""
     parts = []
     if missing.absent_from_corpus:
         parts.append(
             "Not drawn because this BugSigDB export does not contain them: "
             f"{', '.join(missing.absent_from_corpus)}."
+        )
+    if missing.blank_after_masking:
+        parts.append(
+            "Sampled in this export, but every cell is backed by fewer than "
+            f"{min_studies} studies, so the row is blank and not drawn: "
+            f"{', '.join(missing.blank_after_masking)}."
         )
     if missing.cut_by_display:
         parts.append(
@@ -646,12 +662,20 @@ def main() -> int:
             panel.conditions or (),
             corpus_conditions=corpus_conditions,
             drawn_conditions=matrix.conditions,
+            blank_conditions=matrix.dropped_empty_conditions,
         )
-        note = missing_condition_note(missing, max_conditions=args.max_conditions)
+        note = missing_condition_note(
+            missing, max_conditions=args.max_conditions, min_studies=args.min_studies
+        )
         if missing.absent_from_corpus:
             print(
                 f"focus panel {panel.slug}: absent from the corpus: "
                 f"{', '.join(missing.absent_from_corpus)}"
+            )
+        if missing.blank_after_masking:
+            print(
+                f"focus panel {panel.slug}: sampled but blank below "
+                f"{args.min_studies} studies: {', '.join(missing.blank_after_masking)}"
             )
         if missing.cut_by_display:
             print(

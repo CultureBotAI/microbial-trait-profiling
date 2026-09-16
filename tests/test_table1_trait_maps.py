@@ -300,14 +300,16 @@ def test_float_residue_contrasts_are_ties_not_signs() -> None:
     assert shift.p_value == 1.0
 
 
-def test_undrawn_panel_conditions_separate_absent_from_cut() -> None:
+def test_undrawn_panel_conditions_separate_all_three_causes() -> None:
     missing = missing_conditions(
         ("Gingivitis", "Periodontitis", "Rheumatoid arthritis", "Never studied"),
         corpus_conditions={"Gingivitis", "Periodontitis", "Rheumatoid arthritis"},
         drawn_conditions=["Rheumatoid arthritis"],
+        blank_conditions=["Gingivitis"],
     )
     assert missing.absent_from_corpus == ("Never studied",)
-    assert missing.cut_by_display == ("Gingivitis", "Periodontitis")
+    assert missing.blank_after_masking == ("Gingivitis",)
+    assert missing.cut_by_display == ("Periodontitis",)
 
 
 def test_a_cut_condition_is_never_reported_as_missing_from_the_export() -> None:
@@ -321,23 +323,47 @@ def test_a_cut_condition_is_never_reported_as_missing_from_the_export() -> None:
             drawn_conditions=[],
         ),
         max_conditions=60,
+        min_studies=3,
     )
     assert note is not None
     assert "does not contain" not in note
     assert "outside the top-60 condition cut, so not drawn: Periodontitis" in note
 
 
-def test_the_note_states_both_causes_in_their_own_words() -> None:
+def test_a_blank_row_is_not_blamed_on_the_width_of_the_cut() -> None:
+    # Gingivitis is inside the cut at this width and still undrawn, because every
+    # cell is below min_studies. Calling that a top-N exclusion would be false --
+    # at max_conditions=451 nothing is outside the cut at all.
+    note = missing_condition_note(
+        missing_conditions(
+            ("Gingivitis",),
+            corpus_conditions={"Gingivitis"},
+            drawn_conditions=[],
+            blank_conditions=["Gingivitis"],
+        ),
+        max_conditions=451,
+        min_studies=3,
+    )
+    assert note is not None
+    assert "outside the top-451" not in note
+    assert "fewer than 3 studies" in note
+    assert "Gingivitis" in note
+
+
+def test_the_note_states_every_cause_in_its_own_words() -> None:
     note = missing_condition_note(
         MissingConditions(
             absent_from_corpus=("Never studied",),
-            cut_by_display=("Gingivitis",),
+            blank_after_masking=("Gingivitis",),
+            cut_by_display=("Periodontitis",),
         ),
         max_conditions=60,
+        min_studies=3,
     )
     assert note is not None
     assert "does not contain them: Never studied" in note
-    assert "outside the top-60 condition cut, so not drawn: Gingivitis" in note
+    assert "fewer than 3 studies, so the row is blank and not drawn: Gingivitis" in note
+    assert "outside the top-60 condition cut, so not drawn: Periodontitis" in note
 
 
 def test_no_note_when_every_requested_condition_is_drawn() -> None:
@@ -349,6 +375,7 @@ def test_no_note_when_every_requested_condition_is_drawn() -> None:
                 drawn_conditions=["Rheumatoid arthritis"],
             ),
             max_conditions=60,
+            min_studies=3,
         )
         is None
     )

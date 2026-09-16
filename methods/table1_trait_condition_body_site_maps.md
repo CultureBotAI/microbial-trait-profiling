@@ -128,28 +128,40 @@ sampled in the same places:
 
 - `focus_feces`, the 43 conditions drawn in Feces, on that block alone.
 - `focus_feces_other`, the same conditions plus those drawn only in the pooled
-  Other block, 49 in total, over the two blocks. This is the cut that carries
-  every condition the combined figure draws.
+  Other block, 49 in total, over the two blocks. That is 49 of the combined
+  figure's 51 conditions: cervical glandular intraepithelial neoplasia and oral
+  squamous cell carcinoma carry no Feces or Other cell, so neither appears here.
 - `focus_cervical`, cervical glandular intraepithelial neoplasia and human
   papilloma virus infection, over Uterine cervix, Vagina, and Other.
 - `focus_oral`, asked for as the cluster of gingivitis, periodontitis, smoking
   behavior, and rheumatoid arthritis. On this corpus it draws two of those four.
-  Gingivitis and periodontitis are in the pinned v1.3.1 export — twelve studies
-  carry one of those conditions — but neither survives the top-60 condition cut,
-  so those rows are not in the matrix to cut. The figure names them as cut rather
-  than drawing a smaller group under the same title.
+  Gingivitis and periodontitis are both in the pinned v1.3.1 export — 2 and 7
+  human paired studies respectively, 9 studies in all under those exact condition
+  labels — but neither reaches the drawn matrix, for two different reasons given
+  below. The figure names each with its own reason rather than drawing a smaller
+  group under the same title.
 
 That last cut is worth stating plainly, because it was proposed from a figure
 built on the unpinned devel export. There, gingivitis, periodontitis, smoking
 behavior, and rheumatoid arthritis clustered together, and rheumatoid arthritis
 grouping with three oral conditions rather than with the other systemic diseases
 was the observation the cut was meant to show. That observation cannot be checked
-here, but the reason is the display rule, not the vintage. Of 451 distinct
-conditions, periodontitis ranks 62nd on 20 profiles — the same profile count as
-the 60th-ranked condition, losing its place only to the deterministic
-alphabetical tiebreak — and gingivitis ranks 212nd on 4 profiles. Raising
-`--max-conditions` past that tie draws periodontitis; drawing all four together
-needs a cut wide enough to reach gingivitis as well.
+here, but the reason is the display rules, not the vintage, and the two conditions
+fail different rules:
+
+- **Periodontitis is cut by width.** Of 451 distinct conditions it ranks 62nd on
+  20 profiles — the same profile count as the 60th-ranked condition, losing its
+  place only to the deterministic alphabetical tiebreak in `_top_labels`. Raising
+  `--max-conditions` to 62 draws it, which is measured, not inferred.
+- **Gingivitis is cut by support, so no width draws it.** It ranks 212nd on 4
+  profiles, and its two studies sit in different body sites, leaving at most one
+  study per cell against `--min-studies 3`. Widening the cut to 250 or beyond
+  admits the row and then drops it again as entirely blank. Only lowering
+  `--min-studies`, which would weaken every other cell in the figure, would draw
+  it.
+
+So drawing all four together is not a matter of widening the cut. It needs a
+corpus where gingivitis carries at least three studies in one body site.
 
 Each cut fixes one axis and derives the other from the data: naming conditions
 keeps the body sites those conditions were actually drawn in, naming body sites
