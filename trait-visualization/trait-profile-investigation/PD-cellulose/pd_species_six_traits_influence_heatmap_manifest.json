@@ -3,6 +3,9 @@
   "traits": 6,
   "species": 60,
   "cells": 360,
+  "filled_cells": 360,
+  "direct_annotation_cells": 88,
+  "denominator_only_cells": 272,
   "non_mediadive_columns": 317,
   "minimum_support_studies": 3,
   "input_sha256_chunks": {

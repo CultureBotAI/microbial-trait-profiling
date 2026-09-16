@@ -1756,9 +1756,12 @@ This figure uses the same target-taxon/profile occurrence table and broad-label 
 `trait-profile-investigation/PD-cellulose/pd_species_six_traits_influence_heatmap.png`
 replaces the earlier four-positive-trait carrier-ratio heatmap. It includes all
 six Parkinson's disease lollipop traits and retains reported species, the lowest
-reliable rank in the local PD carrier evidence. A non-gray cell requires an
+reliable rank in the local PD carrier evidence. It retains all six computable
+influence estimates for every displayed species. Outlined cells have an
 annotation for that trait at or below the reported species label in the local
-taxa-trait matrix.
+taxa-trait matrix and therefore include direct numerator removal. Unoutlined
+cells have no such annotation and show the denominator-mediated effect of
+removing the species' other non-MediaDive annotations.
 
 The generator removes each reported species label's complete non-MediaDive
 taxa-trait vector from every PD fecal profile where it occurs. It then recomputes
@@ -1772,8 +1775,8 @@ increased/decreased occurrence ratio repeated across traits.
 Cells with at least three supporting studies are `inc` or `dec` only when their
 two-sided 95% Student t interval lies wholly above or below zero. Supported
 intervals crossing zero are `mixed`, and sparser estimates are hatched `low
-support`. Gray is unannotated. The optional right-hand row annotation displays
-raw increased/decreased PD fecal profile occurrence counts and a capped color
+support`. The optional right-hand row annotation displays raw
+increased/decreased PD fecal profile occurrence counts and a capped color
 encoding of their log2 ratio. It is visually and analytically separate from the
 six trait cells.
 

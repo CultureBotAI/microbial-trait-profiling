@@ -94,7 +94,10 @@ outputs as the v2 investigation scripts.
 `PD-cellulose/pd_species_six_traits_influence_heatmap.png` is the species-level
 follow-up for all six Parkinson's disease traits. Unlike the adjacent raw
 carrier lookup, its cells are trait-specific fixed-reference leave-one-species-
-out influence contrasts. The separate right-hand annotation shows the raw
+out influence contrasts. Every computable species-trait estimate is retained:
+outlined cells include direct removal of that trait, while unoutlined cells show
+the denominator-mediated effect when the species has no direct annotation for
+the displayed trait. The separate right-hand annotation shows the raw
 increased/decreased profile occurrence counts and does not supply the trait-cell
 values. Regenerate it with `just pd-trait-taxa-heatmap`.
 

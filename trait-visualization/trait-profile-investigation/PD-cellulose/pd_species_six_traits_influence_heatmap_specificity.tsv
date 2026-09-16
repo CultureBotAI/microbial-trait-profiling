@@ -17,8 +17,8 @@ NCBITaxon:187327	Acidaminococcus intestini	species	1	8	1/8	1	7	0.111111111111111
 NCBITaxon:1379	Gemella haemolysans	species	1	3	1/3	1	2	0.25	-1.222392421336448
 NCBITaxon:197614	Streptococcus pasteurianus	species	1	3	1/3	1	3	0.25	-1.222392421336448
 NCBITaxon:84135	Gemella sanguinis	species	1	7	1/7	1	5	0.125	-2.321928094887362
-NCBITaxon:1265	Ruminococcus flavefaciens	species	1	8	1/8	1	6	0.1111111111111111	-2.502500340529183
 NCBITaxon:1305	Streptococcus sanguinis	species	1	7	1/7	1	6	0.125	-2.321928094887362
+NCBITaxon:1265	Ruminococcus flavefaciens	species	1	8	1/8	1	6	0.1111111111111111	-2.502500340529183
 NCBITaxon:1308	Streptococcus thermophilus	species	2	36	2/36	2	22	0.05263157894736842	-3.867896463992655
 NCBITaxon:435842	Streptococcus sp. C150	species	1	1	1/1	1	1	0.5	0.0
 NCBITaxon:550	Enterobacter cloacae	species	1	12	1/12	1	8	0.07692307692307693	-3.0588936890535687
@@ -43,19 +43,19 @@ NCBITaxon:31973	Eggerthia catenaformis	species	1	0	1/0	1	0	1.0	1.584962500721156
 NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	1	0	1/0	1	0	1.0	1.584962500721156
 NCBITaxon:53443	Blautia hydrogenotrophica	species	1	8	1/8	1	6	0.1111111111111111	-2.502500340529183
 NCBITaxon:729	Haemophilus parainfluenzae	species	1	48	1/48	1	30	0.02040816326530612	-5.014950341465972
+NCBITaxon:1343	Streptococcus vestibularis	species	3	13	3/13	1	10	0.1875	-1.9475325801058645
 NCBITaxon:84030	Lacrimispora saccharolytica	species	1	6	1/6	1	5	0.14285714285714285	-2.115477217419936
+NCBITaxon:46124	Granulicatella adiacens	species	1	4	1/4	1	4	0.2	-1.5849625007211563
+NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	4	0	4/0	1	0	1.0	3.169925001442312
 NCBITaxon:68891	Streptococcus peroris	species	1	2	1/2	1	2	0.3333333333333333	-0.7369655941662062
 NCBITaxon:39778	Veillonella dispar	species	1	32	1/32	1	20	0.030303030303030304	-4.437405312307298
 NCBITaxon:43995	Johnsonella ignava	species	1	2	1/2	1	1	0.3333333333333333	-0.7369655941662062
 NCBITaxon:43948	Tolumonas auensis	species	2	0	2/0	1	0	1.0	2.321928094887362
-NCBITaxon:46124	Granulicatella adiacens	species	1	4	1/4	1	4	0.2	-1.5849625007211563
 NCBITaxon:40519	Ruminococcus callidus	species	2	35	2/35	2	16	0.05405405405405406	-3.8278190246173196
-NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	4	0	4/0	1	0	1.0	3.169925001442312
-NCBITaxon:1343	Streptococcus vestibularis	species	3	13	3/13	1	10	0.1875	-1.9475325801058645
-NCBITaxon:39777	Veillonella atypica	species	1	22	1/22	1	12	0.043478260869565216	-3.9068905956085187
 NCBITaxon:457416	Veillonella sp. 3_1_44	species	1	0	1/0	1	0	1.0	1.584962500721156
 NCBITaxon:450749	Veillonella sp. 6_1_27	species	1	0	1/0	1	0	1.0	1.584962500721156
 NCBITaxon:44008	Enterococcus cecorum	species	1	2	1/2	1	2	0.3333333333333333	-0.7369655941662062
+NCBITaxon:39777	Veillonella atypica	species	1	22	1/22	1	12	0.043478260869565216	-3.9068905956085187
 NCBITaxon:244366	Klebsiella variicola	species	2	10	2/10	1	9	0.16666666666666666	-2.070389327891398
 NCBITaxon:33035	Blautia producta	species	1	13	1/13	1	10	0.07142857142857142	-3.1699250014423126
 NCBITaxon:187326	Megasphaera micronuciformis	species	1	11	1/11	1	5	0.08333333333333333	-2.938599455335857
