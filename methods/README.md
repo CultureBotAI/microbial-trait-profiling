@@ -26,6 +26,11 @@ and defines the shared corpus, paired quantities and evidence levels required
 before choosing comparison thresholds or ranking scores. It also explains why
 the native p-values are not on comparable scales.
 
+[`contrast_orientation.md`](contrast_orientation.md) documents
+`just contrast-orientation`: what each BugSigDB experiment compares, which way its
+direction points, the disease-versus-healthy population with its review, and the
+six Table 1 directions and 15 ratios on that population beside the historical corpus.
+
 [`table1_paired_log_ratios.md`](table1_paired_log_ratios.md) documents
 `just table1-compositional-stats`: paired log-ratio direction tests for all 15
 Table 1 trait pairs, with explicit references, zero exclusions, study-level
