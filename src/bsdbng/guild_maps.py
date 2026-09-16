@@ -16,7 +16,7 @@ import argparse
 import csv
 from collections import defaultdict
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from scipy.cluster.hierarchy import fcluster, leaves_list, linkage
@@ -583,6 +583,23 @@ GUILD_COLORSCALES = {"aerobe": "OrRd", "anaerobe": "YlGn"}
 # Colour-bar ticks as percentages with trailing zeros trimmed, so 0.0004 reads
 # "0.04%" rather than plotly's default SI-prefixed "400u".
 PERCENT_TICKS = ".3~%"
+# Room for the title block above a panel figure and its rotated column labels below.
+PANEL_TOP_MARGIN = 400
+PANEL_BOTTOM_MARGIN = 260
+# A panel's colour bars lie flat under the figure, three across and two deep, in
+# the band this reserves below the column labels. Stacking them vertically ties
+# the legend's height to the number of conditions - a four-row cut would either
+# pad itself out with empty rows or collapse its bars - and measuring them against
+# the figure rather than the plotting area breaks that tie.
+# Bars are laid out this far apart, and the band is sized from however many rows
+# of them a figure's width leaves room for.
+LEGEND_ROW_PITCH = 140
+# A plotting area only a few rows tall makes the renderer fail outright
+# ("axis scaling"), so a cut shorter than this keeps a little slack below it.
+MIN_PANEL_ROWS = 8
+# Every heatmap cell is this tall, in every figure, so a cell in a four-row cut
+# is the same size as a cell in the combined figure.
+ROW_HEIGHT = 26
 NO_SIGNAL_COLOR = "#4d4d4d"
 CLUSTER_GAP_ROWS = 1
 
@@ -697,18 +714,17 @@ def _coverage_note(matrix: GuildMatrix) -> list[str]:
         verb = "pooled into Other" if pool.bucketed else "not drawn"
         return f"{verb} ({pool.pooled_share:.0f}% of profiles)"
 
-    caveat = (
-        " A pooled Other mixes unrelated labels, so no cell in it is one condition or one "
-        "anatomical site."
-        if condition.bucketed or site.bucketed
-        else ""
-    )
-    return [
+    lines = [
         f"Rows and columns are a cut of the corpus: {condition_part} and {site_part}.",
-        f"The remaining {condition.pooled_labels} conditions are "
-        f"{fate(condition)} and the remaining {site.pooled_labels} body sites are "
-        f"{fate(site)}.{caveat}",
+        f"The remaining {condition.pooled_labels} conditions are {fate(condition)} and the "
+        f"remaining {site.pooled_labels} body sites are {fate(site)}.",
     ]
+    if condition.bucketed or site.bucketed:
+        lines.append(
+            "A pooled Other mixes unrelated labels, so no cell in it is one condition or one "
+            "anatomical site."
+        )
+    return lines
 
 
 def write_figure(
@@ -763,13 +779,17 @@ def write_figure(
 
     figure = go.Figure()
     count = len(guild_order)
-    bar_len = min(0.42, 0.92 / count)
+    # Even slices of the plotting area, one per group. Sizing the bars and then
+    # spacing them apart needs more than the whole height once there are six of
+    # them, which silently clips the top and bottom bars.
+    bar_slice = 1.0 / count
+    bar_len = min(0.42, bar_slice * 0.8)
     for position, guild in enumerate(guild_order):
         z_guild = per_group[guild]
         group_values = [v for row in z_guild for v in row if v is not None]
         scale_max = z_max if shared_range else _upper_range(group_values, range_quantile)
         # Evenly space the colour bars down the right margin, top group first.
-        centre = 0.5 + (count - 1) / 2.0 * (bar_len + 0.04) - position * (bar_len + 0.04)
+        centre = 1.0 - bar_slice * (position + 0.5)
         figure.add_trace(
             go.Heatmap(
                 z=z_guild,
@@ -789,6 +809,8 @@ def write_figure(
                     # Percentages, not plotly's default SI prefixes: a tick reading
                     # "400u" for 0.0004 looks like a unit rather than a share.
                     "tickformat": PERCENT_TICKS,
+                    # Six bars share the height; without a cap their ticks collide.
+                    "nticks": 3,
                 },
             )
         )
@@ -893,14 +915,117 @@ def write_figure(
         shapes=shapes,
         annotations=annotations,
         width=max(900, 26 * len(matrix.columns)),
-        height=max(600, 26 * len(row_labels) + 340),
+        height=ROW_HEIGHT * len(row_labels) + 300 + (420 if separate_body_sites else 220),
         # The site headers sit above the plotting area, so they need their own room.
-        # Six subtitle lines plus a two-line site header need the room.
-        margin={"l": 300, "b": 300, "t": 380 if separate_body_sites else 200},
+        # The subtitle block plus a two-line site header need the room.
+        margin={"l": 300, "b": 300, "t": 420 if separate_body_sites else 220},
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.write_image(str(output_path), scale=2)
     return output_path
+
+
+def subset_matrix(
+    matrix: GuildMatrix,
+    *,
+    conditions: Sequence[str] | None = None,
+    sites: Sequence[str] | None = None,
+) -> GuildMatrix:
+    """Cut the matrix down to a set of conditions and body sites.
+
+    One large heatmap answers "what was measured where"; it does not read as a
+    result, because the block that carries most of the corpus sets the eye's
+    scale and the sparse blocks beside it are mostly empty. Decomposing it into
+    a few small heatmaps, each holding conditions that were sampled in the same
+    places, makes each one legible on its own.
+
+    Either axis may be left as ``None`` to be derived from the other: with only
+    ``conditions`` given the body sites become the ones those conditions were
+    actually drawn in, and with only ``sites`` given the conditions become the
+    ones drawn in those sites. Rows and column blocks that end up carrying no
+    value are dropped either way, so a subset never renders a blank band. A
+    named condition absent from the matrix is skipped and recorded in
+    ``dropped_empty_conditions``; the row order and cluster ids are the ones the
+    full matrix was clustered into, so a subset stays comparable to it.
+    """
+    if conditions is None and sites is None:
+        return matrix
+
+    requested_sites = list(matrix.body_sites) if sites is None else list(sites)
+    unknown = [site for site in requested_sites if site not in matrix.body_sites]
+    if unknown:
+        raise ValueError(f"body sites absent from the matrix: {', '.join(unknown)}")
+
+    if conditions is None:
+        row_indices = list(range(len(matrix.conditions)))
+        missing: list[str] = []
+    else:
+        wanted = set(conditions)
+        row_indices = [i for i, name in enumerate(matrix.conditions) if name in wanted]
+        missing = [name for name in conditions if name not in matrix.conditions]
+
+    column_indices = [
+        i
+        for site in requested_sites
+        for i, column in enumerate(matrix.columns)
+        if _site_of_column(column) == site
+    ]
+
+    def has_value(row: int, cols: Sequence[int]) -> bool:
+        return any(matrix.values[row][i] is not None for i in cols)
+
+    row_indices = [i for i in row_indices if has_value(i, column_indices)]
+
+    if sites is None:
+        # Derive the blocks from the rows that survived: a site nothing in this
+        # subset was drawn in would be an empty band of columns.
+        def block(site: str) -> list[int]:
+            return [i for i in column_indices if _site_of_column(matrix.columns[i]) == site]
+
+        requested_sites = [
+            site
+            for site in requested_sites
+            if any(has_value(row, block(site)) for row in row_indices)
+        ]
+        column_indices = [
+            i
+            for site in requested_sites
+            for i, column in enumerate(matrix.columns)
+            if _site_of_column(column) == site
+        ]
+
+    dropped_sites = [site for site in matrix.body_sites if site not in set(requested_sites)]
+    kept = {matrix.conditions[i] for i in row_indices}
+    dropped_conditions = missing + [name for name in matrix.conditions if name not in kept]
+
+    # A cut that leaves the Other row or column behind must stop claiming to pool
+    # into it, or its subtitle describes the figure it was cut from.
+    kept_labels = {
+        "condition": [matrix.conditions[i] for i in row_indices],
+        "body_site": requested_sites,
+    }
+    pooled = [
+        replace(pool, bucketed=pool.bucketed and OTHER_LABEL in kept_labels[pool.kind])
+        if pool.kind in kept_labels
+        else pool
+        for pool in matrix.pooled
+    ]
+
+    return replace(
+        matrix,
+        pooled=pooled,
+        conditions=[matrix.conditions[i] for i in row_indices],
+        body_sites=requested_sites,
+        columns=[matrix.columns[i] for i in column_indices],
+        values=[[matrix.values[r][c] for c in column_indices] for r in row_indices],
+        study_counts=[[matrix.study_counts[r][c] for c in column_indices] for r in row_indices],
+        row_clusters=[matrix.row_clusters[i] for i in row_indices],
+        sampled_no_signal=[
+            [matrix.sampled_no_signal[r][c] for c in column_indices] for r in row_indices
+        ],
+        dropped_empty_conditions=dropped_conditions,
+        dropped_body_sites=dropped_sites,
+    )
 
 
 def write_body_site_panels(
@@ -917,6 +1042,8 @@ def write_body_site_panels(
     colorbar_labels: dict[str, str] | None = None,
     range_quantile: float = 1.0,
     mark_no_signal: bool = True,
+    scale_reference: GuildMatrix | None = None,
+    note: str | None = None,
 ) -> Path:
     """Draw one panel per named body site, at a width where the labels are readable.
 
@@ -933,19 +1060,29 @@ def write_body_site_panels(
     scales: dict[str, object] = dict(GUILD_COLORSCALES) if colorscales is None else colorscales
     labels = colorbar_labels or {}
     row_labels, row_values, row_blanks = _insert_cluster_gaps(matrix)
+    # Slack under a very short cut is added as blank rows, not by stretching the
+    # cells: every cell is ROW_HEIGHT tall in every figure. A distinct invisible
+    # character keeps each label unique without colliding with the cluster spacers.
+    blank_width = len(matrix.columns)
+    for index in range(MIN_PANEL_ROWS - len(row_labels)):
+        row_labels.append("\u2008" * (index + 1))
+        row_values.append([None] * blank_width)
+        row_blanks.append([False] * blank_width)
 
     missing = [site for site in sites if site not in matrix.body_sites]
     if missing:
         raise ValueError(f"body sites absent from the matrix: {', '.join(missing)}")
 
-    # Colour ranges come from the whole matrix, not from the panels, so the
-    # panels are readable at the same colours as the combined figure.
+    # Colour ranges come from ``scale_reference`` when one is given - the full
+    # matrix - rather than from the panels, so a cell keeps the same colour in
+    # every figure cut from it and the small heatmaps stay comparable.
+    reference = scale_reference or matrix
     scale_max = {
         guild: _upper_range(
             [
                 value
-                for row in row_values
-                for column, value in zip(matrix.columns, row, strict=True)
+                for row in reference.values
+                for column, value in zip(reference.columns, row, strict=True)
                 if value is not None and _guild_of_column(column) == guild
             ],
             range_quantile,
@@ -962,7 +1099,20 @@ def write_body_site_panels(
     )
 
     count = len(guild_order)
-    bar_len = min(0.42, 0.92 / count)
+    # All six bars on one line. Plotly places a horizontal bar's title a fixed
+    # distance below it that does not track the row spacing set here, so a second
+    # row of bars lands under the first row's titles; one row cannot collide with
+    # itself. The width floor is what a six-bar legend and the subtitle need.
+    width = max(1600, 300 + 480 * len(sites))
+    legend_columns = count
+    legend_depth = -(-count // legend_columns)
+    legend_height = 50 + legend_depth * LEGEND_ROW_PITCH
+    bottom = PANEL_BOTTOM_MARGIN + legend_height
+    height = PANEL_TOP_MARGIN + bottom + ROW_HEIGHT * len(row_labels)
+    # Bar rows measured up from the foot of the figure, top row first.
+    legend_rows = [
+        (legend_height - 80.0 - row * LEGEND_ROW_PITCH) / height for row in range(legend_depth)
+    ]
     shapes: list[dict[str, object]] = []
     for panel, site in enumerate(sites, start=1):
         indices = [i for i, column in enumerate(matrix.columns) if _site_of_column(column) == site]
@@ -978,7 +1128,7 @@ def write_body_site_panels(
                 [row[i] if _guild_of_column(matrix.columns[i]) == guild else None for i in indices]
                 for row in row_values
             ]
-            centre = 0.5 + (count - 1) / 2.0 * (bar_len + 0.04) - position * (bar_len + 0.04)
+            column, legend_row = position % legend_columns, position // legend_columns
             figure.add_trace(
                 go.Heatmap(
                     z=z_guild,
@@ -992,12 +1142,22 @@ def write_body_site_panels(
                     # One colour bar per trait for the whole figure, not per panel.
                     showscale=panel == len(sites),
                     colorbar={
-                        "title": f"{labels.get(guild, guild)}<br>% of trait assertions",
-                        "len": bar_len,
-                        "y": centre,
-                        "yanchor": "middle",
-                        "thickness": 14,
+                        # The unit is in the subtitle: three bars across a narrow
+                        # figure leave no room to repeat it under each one.
+                        "title": {"text": labels.get(guild, guild), "side": "bottom"},
+                        "orientation": "h",
+                        "x": 0.07 + column * (0.88 / legend_columns),
+                        "xanchor": "left",
+                        "xref": "container",
+                        "y": legend_rows[legend_row],
+                        "yanchor": "bottom",
+                        "yref": "container",
+                        "len": 0.78 / legend_columns,
+                        "lenmode": "fraction",
+                        "thickness": 12,
                         "tickformat": PERCENT_TICKS,
+                        # Three ticks per bar; more collide at this width.
+                        "nticks": 3,
                     },
                 ),
                 row=1,
@@ -1040,6 +1200,7 @@ def write_body_site_panels(
             "Rows are the conditions of the combined figure in the same clustered order, so a "
             f"blank row here was drawn in another body site.{grey_note}",
             *_coverage_note(matrix),
+            *([note] if note else []),
             f"BugSigDB {vintage or 'vintage unknown'}.",
         ]
     )
@@ -1047,10 +1208,13 @@ def write_body_site_panels(
     figure.update_layout(
         title={"text": f"{title}<br><sub>{subtitle}</sub>"},
         shapes=shapes,
-        width=max(900, 150 + 620 * len(sites)),
-        height=max(600, 26 * len(row_labels) + 360),
-        # Six subtitle lines above the panel titles.
-        margin={"l": 300, "b": 260, "t": 360},
+        width=width,
+        # The margins are fixed text - six subtitle lines above, rotated column
+        # labels below - so the plotting area has to be sized on top of them, not
+        # carved out of a fixed total. A four-row cut would otherwise render as a
+        # sliver with the colour bars stacked on each other.
+        height=height,
+        margin={"l": 300, "b": bottom, "t": PANEL_TOP_MARGIN},
         plot_bgcolor="white",
     )
     figure.update_xaxes(tickangle=-60)

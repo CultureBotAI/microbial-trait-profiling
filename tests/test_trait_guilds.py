@@ -6,7 +6,13 @@ from pathlib import Path
 import pytest
 from scipy.stats import binomtest
 
-from bsdbng.guild_maps import OTHER_LABEL, build_matrix, compute_correlation, study_direction_means
+from bsdbng.guild_maps import (
+    OTHER_LABEL,
+    build_matrix,
+    compute_correlation,
+    study_direction_means,
+    subset_matrix,
+)
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
     OXYGEN_GUILDS,
@@ -320,3 +326,29 @@ def test_rows_kept_only_by_no_signal_cells_go_with_the_shading(tmp_path: Path) -
     )
     assert unshaded.conditions == []
     assert "Periodontitis" in unshaded.dropped_empty_conditions
+
+
+def test_subset_derives_the_other_axis_and_drops_blank_bands(corpus: tuple[Path, Path]) -> None:
+    """A cut named on one axis takes the other axis from where values were drawn."""
+    profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
+    matrix = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
+
+    by_condition = subset_matrix(matrix, conditions=["Asthma"])
+    assert by_condition.conditions == ["Asthma"]
+    # Only the sites Asthma was actually drawn in survive, and every column that
+    # remains belongs to one of them.
+    assert by_condition.body_sites
+    assert set(by_condition.body_sites) <= set(matrix.body_sites)
+    assert all(
+        column.split("|", 1)[0] in by_condition.body_sites for column in by_condition.columns
+    )
+    assert any(value is not None for row in by_condition.values for value in row)
+
+    # Naming the axis the other way round drops the conditions with nothing in it.
+    by_site = subset_matrix(matrix, sites=by_condition.body_sites)
+    assert by_site.body_sites == by_condition.body_sites
+    assert "Asthma" in by_site.conditions
+    assert all(any(v is not None for v in row) for row in by_site.values)
+
+    with pytest.raises(ValueError, match="Nowhere"):
+        subset_matrix(matrix, sites=["Nowhere"])

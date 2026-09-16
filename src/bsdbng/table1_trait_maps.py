@@ -24,16 +24,18 @@ from __future__ import annotations
 
 import argparse
 import csv
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 from scipy.stats import binomtest, false_discovery_control, spearmanr
 
 from bsdbng.guild_maps import (
+    OTHER_LABEL,
     SIGN_TOLERANCE,
     build_matrix,
     study_direction_means,
+    subset_matrix,
     write_body_site_panels,
     write_figure,
     write_matrix_outputs,
@@ -55,6 +57,120 @@ from bsdbng.trait_guilds import (
 TRAIT_ORDER: tuple[str, ...] = tuple(TABLE1_TRAITS)
 OUTPUT_PREFIX = "table1_traits"
 CONFIDENCE_LEVEL = 0.95
+
+
+@dataclass(frozen=True)
+class FocusPanel:
+    """One small heatmap cut from the combined figure.
+
+    Exactly one axis is fixed; the other is derived from the data by
+    `subset_matrix`, so a panel never asserts that a condition was studied in a
+    body site it was not.
+    """
+
+    slug: str
+    subtitle: str
+    sites: tuple[str, ...] | None = None
+    conditions: tuple[str, ...] | None = None
+
+
+# The combined figure shows what was measured where, but the Feces block sets
+# the eye's scale and everything beside it reads as empty. These four cuts group
+# conditions that were sampled in the same places, so each is legible on its own:
+# the gut block alone, the gut against the pooled remainder, the two cervical
+# conditions, and the oral cluster the fourth cut was asked for. On v1.3.1 that
+# last panel draws rheumatoid arthritis and smoking behavior only. Gingivitis and
+# periodontitis are both in the corpus but fail different display rules:
+# periodontitis falls just outside the top-60 cut, while gingivitis has at most
+# one study per cell and is dropped as blank at any cut width. The figure names
+# each with its own reason rather than redrawing the group under the same title.
+FOCUS_PANELS: tuple[FocusPanel, ...] = (
+    FocusPanel(slug="feces", subtitle="Feces", sites=("Feces",)),
+    FocusPanel(
+        slug="feces_other",
+        subtitle=f"Feces and {OTHER_LABEL}",
+        sites=("Feces", OTHER_LABEL),
+    ),
+    FocusPanel(
+        slug="cervical",
+        subtitle="cervical neoplasia and papilloma virus infection",
+        conditions=(
+            "Cervical glandular intraepithelial neoplasia",
+            "Human papilloma virus infection",
+        ),
+    ),
+    FocusPanel(
+        slug="oral",
+        subtitle="the oral cluster, with rheumatoid arthritis",
+        conditions=(
+            "Gingivitis",
+            "Rheumatoid arthritis",
+            "Periodontitis",
+            "Smoking behavior",
+        ),
+    ),
+)
+
+
+@dataclass(frozen=True)
+class MissingConditions:
+    """Requested panel conditions that are not drawn, split by cause."""
+
+    absent_from_corpus: tuple[str, ...]
+    blank_after_masking: tuple[str, ...]
+    cut_by_display: tuple[str, ...]
+
+
+def missing_conditions(
+    requested: Sequence[str],
+    *,
+    corpus_conditions: Collection[str],
+    drawn_conditions: Sequence[str],
+    blank_conditions: Collection[str] = (),
+) -> MissingConditions:
+    """Split undrawn panel conditions into the three causes that look alike.
+
+    A requested condition can be undrawn because the export does not hold it,
+    because it is held and every cell fell below the min-studies threshold so the
+    row was dropped as blank, or because the top-N cut never selected it. Testing
+    membership of the drawn conditions alone cannot tell these apart, since that
+    set is already the cut one — and naming the wrong cause states something
+    false about the data. `blank_conditions` is the matrix's own record of rows it
+    dropped as entirely blank, so the second case is read from the build rather
+    than guessed at.
+    """
+    drawn = set(drawn_conditions)
+    blank = set(blank_conditions)
+    held = [name for name in requested if name in corpus_conditions and name not in drawn]
+    return MissingConditions(
+        absent_from_corpus=tuple(name for name in requested if name not in corpus_conditions),
+        blank_after_masking=tuple(name for name in held if name in blank),
+        cut_by_display=tuple(name for name in held if name not in blank),
+    )
+
+
+def missing_condition_note(
+    missing: MissingConditions, *, max_conditions: int, min_studies: int
+) -> str | None:
+    """Phrase each cause separately, or return None when everything is drawn."""
+    parts = []
+    if missing.absent_from_corpus:
+        parts.append(
+            "Not drawn because this BugSigDB export does not contain them: "
+            f"{', '.join(missing.absent_from_corpus)}."
+        )
+    if missing.blank_after_masking:
+        parts.append(
+            "Sampled in this export, but every cell is backed by fewer than "
+            f"{min_studies} studies, so the row is blank and not drawn: "
+            f"{', '.join(missing.blank_after_masking)}."
+        )
+    if missing.cut_by_display:
+        parts.append(
+            f"Sampled in this export but outside the top-{max_conditions} condition "
+            f"cut, so not drawn: {', '.join(missing.cut_by_display)}."
+        )
+    return " ".join(parts) if parts else None
 
 
 def trait_colorscale(trait: str) -> list[list[float | str]]:
@@ -510,6 +626,8 @@ def main() -> int:
             f"({', '.join(sorted(matrix.dropped_empty_conditions))})"
         )
 
+    corpus_conditions = {profile.condition for profile in profiles if profile.condition}
+
     result = compute_direction_shifts(profiles, TRAIT_ORDER)
 
     written = write_matrix_outputs(matrix, args.output_dir, OUTPUT_PREFIX)
@@ -531,27 +649,61 @@ def main() -> int:
             mark_no_signal=args.mark_no_signal,
         )
     )
-    # The combined figure has to squeeze eight body sites in, which leaves each
-    # column too narrow to label legibly. The two end blocks are redrawn on their
-    # own so the trait-by-direction columns can be read.
-    panel_sites = [matrix.body_sites[0], matrix.body_sites[-1]]
-    print(f"detail panels: {', '.join(panel_sites)}")
-    written.append(
-        write_body_site_panels(
-            matrix,
-            args.output_dir / f"{OUTPUT_PREFIX}_first_last_body_site_panels.png",
-            vintage,
-            sites=panel_sites,
-            guild_order=TRAIT_ORDER,
-            colorscales={trait: trait_colorscale(trait) for trait in TRAIT_ORDER},
-            title=(f"Manuscript Table 1 traits: {panel_sites[0]} and {panel_sites[-1]} in detail"),
-            group_noun="trait",
-            value_phrase="trait fraction",
-            colorbar_labels={t: t.replace("_", " ") for t in TRAIT_ORDER},
-            range_quantile=0.98,
-            mark_no_signal=args.mark_no_signal,
+    # The combined figure squeezes every body site in, which leaves each column
+    # too narrow to label and the sparse blocks unreadable next to the gut. The
+    # same matrix is cut into the four smaller heatmaps of FOCUS_PANELS, all on
+    # the combined figure's colour ranges so a cell is the same colour in each.
+    for panel in FOCUS_PANELS:
+        cut = subset_matrix(matrix, conditions=panel.conditions, sites=panel.sites)
+        if not cut.conditions or not cut.body_sites:
+            print(f"focus panel {panel.slug}: nothing drawn, skipped")
+            continue
+        missing = missing_conditions(
+            panel.conditions or (),
+            corpus_conditions=corpus_conditions,
+            drawn_conditions=matrix.conditions,
+            blank_conditions=matrix.dropped_empty_conditions,
         )
-    )
+        note = missing_condition_note(
+            missing, max_conditions=args.max_conditions, min_studies=args.min_studies
+        )
+        if missing.absent_from_corpus:
+            print(
+                f"focus panel {panel.slug}: absent from the corpus: "
+                f"{', '.join(missing.absent_from_corpus)}"
+            )
+        if missing.blank_after_masking:
+            print(
+                f"focus panel {panel.slug}: sampled but blank below "
+                f"{args.min_studies} studies: {', '.join(missing.blank_after_masking)}"
+            )
+        if missing.cut_by_display:
+            print(
+                f"focus panel {panel.slug}: in the corpus but outside the top-"
+                f"{args.max_conditions} cut: {', '.join(missing.cut_by_display)}"
+            )
+        print(
+            f"focus panel {panel.slug}: {len(cut.conditions)} conditions x "
+            f"{len(cut.body_sites)} body sites ({', '.join(cut.body_sites)})"
+        )
+        written.append(
+            write_body_site_panels(
+                cut,
+                args.output_dir / f"{OUTPUT_PREFIX}_focus_{panel.slug}.png",
+                vintage,
+                sites=cut.body_sites,
+                guild_order=TRAIT_ORDER,
+                colorscales={trait: trait_colorscale(trait) for trait in TRAIT_ORDER},
+                title=f"Manuscript Table 1 traits: {panel.subtitle}",
+                group_noun="trait",
+                value_phrase="trait fraction",
+                colorbar_labels={t: t.replace("_", " ") for t in TRAIT_ORDER},
+                range_quantile=0.98,
+                mark_no_signal=args.mark_no_signal,
+                scale_reference=matrix,
+                note=note,
+            )
+        )
     written.append(
         write_shift_figure(
             result,
