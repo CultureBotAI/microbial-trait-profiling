@@ -1,13 +1,15 @@
 {
   "method": "fixed-reference leave-one-reported-species-out influence",
   "traits": 6,
-  "species": 60,
-  "cells": 360,
-  "filled_cells": 360,
-  "direct_annotation_cells": 88,
-  "denominator_only_cells": 272,
+  "species": 8,
+  "cells": 48,
+  "filled_cells": 48,
+  "direct_annotation_cells": 14,
+  "denominator_only_cells": 34,
+  "species_removed_all_low_support": 52,
   "non_mediadive_columns": 317,
   "minimum_support_studies": 3,
+  "row_filter": "exclude species whose six trait cells are all low support",
   "input_sha256_chunks": {
     "data/derived/study_trait_profiles_wide.tsv": [
       "6e70724e",

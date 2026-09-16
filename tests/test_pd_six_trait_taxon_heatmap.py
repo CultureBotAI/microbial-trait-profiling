@@ -151,17 +151,40 @@ def test_unannotated_trait_retains_denominator_mediated_influence(
         lambda taxon_ids, _metadata: pd.DataFrame({"taxon_id": taxon_ids}),
     )
 
-    cells, _, _ = heatmap.build_influence_cells(
+    cells, _, _, removed_low_support_taxa = heatmap.build_influence_cells(
         profiles, metadata, taxon_vectors, evidence, trait_summary
     )
     by_trait = cells.set_index("trait_id")
 
+    assert removed_low_support_taxa == 0
     assert by_trait.loc["t1", "influence_basis"] == "direct + denominator"
     assert by_trait.loc["t2", "influence_basis"] == "denominator only"
     assert not bool(by_trait.loc["t2", "has_trait_annotation"])
     assert pd.notna(by_trait.loc["t2", "mean_influence_contrast_z"])
     assert pd.notna(by_trait.loc["t2", "ci95_low"])
     assert by_trait.loc["t2", "status"] != "not annotated"
+
+
+def test_filter_all_low_support_taxa_removes_only_fully_low_support_rows() -> None:
+    cells = pd.DataFrame(
+        [
+            ["taxon-a", "t1", "low support"],
+            ["taxon-a", "t2", "low support"],
+            ["taxon-b", "t1", "low support"],
+            ["taxon-b", "t2", "mixed"],
+        ],
+        columns=["taxon_id", "trait_id", "status"],
+    )
+    rows = pd.DataFrame(
+        [["taxon-a", "Species A"], ["taxon-b", "Species B"]],
+        columns=["taxon_id", "taxon_name"],
+    )
+
+    filtered_cells, filtered_rows, removed = heatmap.filter_all_low_support_taxa(cells, rows)
+
+    assert removed == 1
+    assert filtered_rows["taxon_id"].tolist() == ["taxon-b"]
+    assert filtered_cells["taxon_id"].unique().tolist() == ["taxon-b"]
 
 
 def test_taxon_specificity_compares_pd_feces_to_other_feces() -> None:

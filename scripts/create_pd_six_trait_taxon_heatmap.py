@@ -38,6 +38,15 @@ UNAVAILABLE_COLOR = "#e5e7eb"
 SPECIFICITY_COLOR_LIMIT = 3.0
 
 
+def format_effect_value(value: float) -> str:
+    """Format signed heatmap effects without distracting negative zeros."""
+    if not math.isfinite(value):
+        return "NA"
+    if abs(value) < 0.005:
+        return "0.00"
+    return f"{value:+.2f}"
+
+
 def profile_id(study_id: object, experiment_id: object, inc_dec: object) -> str:
     """Return the profile identifier shared by the matrix and metadata exports."""
     return f"{study_id}|{experiment_id}|{inc_dec}"
@@ -234,6 +243,24 @@ def classify_effect(mean: float, low: float, high: float, support_studies: int) 
     return "mixed"
 
 
+def filter_all_low_support_taxa(
+    cells: pd.DataFrame,
+    rows: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame, int]:
+    """Drop species whose six trait cells are all low-support estimates."""
+    if cells.empty or rows.empty:
+        return cells.copy(), rows.copy(), 0
+    all_low_support = cells.groupby("taxon_id", sort=False)["status"].apply(
+        lambda statuses: statuses.eq("low support").all()
+    )
+    removed_taxa = set(all_low_support[all_low_support].index.astype(str))
+    if not removed_taxa:
+        return cells.copy(), rows.copy(), 0
+    retained_cells = cells[~cells["taxon_id"].astype(str).isin(removed_taxa)].copy()
+    retained_rows = rows[~rows["taxon_id"].astype(str).isin(removed_taxa)].copy()
+    return retained_cells, retained_rows, len(removed_taxa)
+
+
 def taxon_influence(
     profile_counts: pd.DataFrame,
     totals: pd.Series,
@@ -276,7 +303,7 @@ def build_influence_cells(
     taxon_vectors: pd.DataFrame,
     evidence: pd.DataFrame,
     trait_summary: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, int]:
     """Build six-trait species cells, row annotations, and trait metadata."""
     traits = trait_summary.sort_values("increased_minus_decreased_mean_z", ascending=False).copy()
     trait_ids = traits["trait_id"].astype(str).tolist()
@@ -407,9 +434,13 @@ def build_influence_cells(
         ],
         ascending=[False, False, False, True],
     )
+    cells_table, row_metadata, removed_low_support_taxa = filter_all_low_support_taxa(
+        pd.DataFrame(cells),
+        row_metadata,
+    )
     specificity = load_taxon_specificity(pd.Index(row_metadata["taxon_id"]), metadata)
     row_metadata = row_metadata.merge(specificity, on="taxon_id", how="left")
-    return pd.DataFrame(cells), row_metadata, trait_metadata
+    return cells_table, row_metadata, trait_metadata, removed_low_support_taxa
 
 
 def plot_heatmap(
@@ -497,13 +528,16 @@ def plot_heatmap(
                         linewidth=0,
                     )
                 )
+            cell_label = (
+                "low\nsupport" if status == "low support" else format_effect_value(float(value))
+            )
             ax.text(
                 x,
                 y,
-                "low\nsupport" if status == "low support" else status,
+                cell_label,
                 ha="center",
                 va="center",
-                fontsize=7.2,
+                fontsize=7.2 if status == "low support" else 7.6,
                 color="white" if abs(value) >= 0.58 * color_limit else "#111827",
             )
 
@@ -592,9 +626,10 @@ def plot_heatmap(
         "attributable to removing one reported species and recomputing its full non-MediaDive "
         "profile denominator. Outlined cells include direct removal of that trait; unoutlined "
         "cells retain the denominator-mediated effect when the species has no direct annotation. "
-        f"Inc/dec requires a 95% interval entirely above/below zero and at "
-        f"least {MIN_SUPPORT_STUDIES} supporting studies; otherwise cells are mixed or hatched "
-        "low support. Right columns separate raw PD inc/dec occurrence from a PD specificity "
+        "Cell text shows the signed fixed-reference z influence value; low-support cells remain "
+        f"hatched. Inc/dec calls in the TSV require a 95% interval entirely above/below zero and "
+        f"at least {MIN_SUPPORT_STUDIES} supporting studies. Right columns separate raw PD "
+        "inc/dec occurrence from a PD specificity "
         "check: exact reported species-label profiles in PD feces versus all other fecal profiles."
     )
     fig.text(
@@ -648,7 +683,7 @@ def main() -> None:
     evidence_path = OUTPUT_DIR / "pd_six_trait_taxon_profile_evidence.tsv"
     evidence = read_tsv(evidence_path)
     trait_summary = read_tsv(OUTPUT_DIR / "pd_six_trait_direction_summary.tsv")
-    cells, rows, traits = build_influence_cells(
+    cells, rows, traits, removed_low_support_taxa = build_influence_cells(
         counts,
         metadata,
         taxon_vectors,
@@ -680,8 +715,10 @@ def main() -> None:
         "filled_cells": int(cells["mean_influence_contrast_z"].notna().sum()),
         "direct_annotation_cells": int(cells["has_trait_annotation"].sum()),
         "denominator_only_cells": int((~cells["has_trait_annotation"]).sum()),
+        "species_removed_all_low_support": removed_low_support_taxa,
         "non_mediadive_columns": len(trait_columns),
         "minimum_support_studies": MIN_SUPPORT_STUDIES,
+        "row_filter": "exclude species whose six trait cells are all low support",
         "input_sha256_chunks": {
             PROFILE_MATRIX_PATH.relative_to(PROFILE_MATRIX_PATH.parents[2]).as_posix(): (
                 sha256_chunks(PROFILE_MATRIX_PATH)
@@ -707,13 +744,14 @@ def main() -> None:
         "combination: the analysis removes the species' complete non-MediaDive annotation vector "
         "from profiles where it was reported, recomputes the six log-fraction scores using the "
         "unchanged human-corpus reference, forms paired increased-minus-decreased experiment "
-        "contrasts, averages experiments within study, and weights studies equally. All six "
-        "computable estimates are retained per species. Outlined cells include direct removal "
+        "contrasts, averages experiments within study, and weights studies equally. Species "
+        "whose six cells are all low support are omitted. Outlined cells include direct removal "
         "of the displayed trait; unoutlined cells show the denominator-mediated effect when the "
         "species has no direct annotation for that trait.\n\n"
         f"`inc` and `dec` require at least {MIN_SUPPORT_STUDIES} supporting studies and a 95% "
-        "Student t interval entirely above or below zero. `mixed` retains supported estimates "
-        "whose interval crosses zero; hatched `low support` cells do not receive a forced "
+        "Student t interval entirely above or below zero. The heatmap prints signed numeric "
+        "fixed-reference z influence values in supported cells; `mixed` is retained in the TSV "
+        "when the interval crosses zero. Hatched `low support` cells do not receive a forced "
         "direction. The first right-hand annotation retains the raw increased/decreased profile "
         "occurrence counts in PD feces. The second right-hand annotation is a PD "
         "specificity check: exact reported species-label profiles in PD feces versus all other "

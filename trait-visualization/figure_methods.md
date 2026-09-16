@@ -1768,9 +1768,10 @@ This figure uses the same target-taxon/profile occurrence table and broad-label 
 `trait-profile-investigation/PD-cellulose/pd_species_six_traits_influence_heatmap.png`
 replaces the earlier four-positive-trait carrier-ratio heatmap. It includes all
 six Parkinson's disease lollipop traits and retains reported species, the lowest
-reliable rank in the local PD carrier evidence. It retains all six computable
-influence estimates for every displayed species. Outlined cells have an
-annotation for that trait at or below the reported species label in the local
+reliable rank in the local PD carrier evidence. Species whose six trait cells
+are all `low support` are omitted from the displayed heatmap. It retains all six
+computable influence estimates for every displayed species. Outlined cells have
+an annotation for that trait at or below the reported species label in the local
 taxa-trait matrix and therefore include direct numerator removal. Unoutlined
 cells have no such annotation and show the denominator-mediated effect of
 removing the species' other non-MediaDive annotations.
@@ -1786,11 +1787,17 @@ increased/decreased occurrence ratio repeated across traits.
 
 Cells with at least three supporting studies are `inc` or `dec` only when their
 two-sided 95% Student t interval lies wholly above or below zero. Supported
-intervals crossing zero are `mixed`, and sparser estimates are hatched `low
-support`. The optional right-hand row annotation displays raw
-increased/decreased PD fecal profile occurrence counts and a capped color
-encoding of their log2 ratio. It is visually and analytically separate from the
-six trait cells.
+intervals crossing zero are recorded as `mixed` in the TSV, and sparser
+estimates are hatched `low support`. The plotted cells print the signed
+fixed-reference z influence value instead of the `mixed` label, so color and
+cell text show the effect direction and magnitude directly. The first right-hand
+row annotation displays raw increased/decreased PD fecal profile occurrence
+counts and a capped color encoding of their log2 ratio. The final orange-shaded
+row annotation is the PD specificity check: it compares exact reported
+species-label profiles in PD feces against all other fecal profiles in the same
+occurrence table, with darker orange indicating greater PD-feces enrichment.
+Both annotations are visually and analytically separate from the six trait
+cells.
 
 The companion cell, taxon, trait, and manifest files preserve numeric estimates,
 intervals, support, input hashes, and row annotations. This leave-one-reported-
