@@ -2,17 +2,18 @@
 
 Issue [#190](https://github.com/CultureBotAI/microbial-trait-profiling/issues/190).
 The [measured run summary](table1_taxon_influence_results.md) records the reconciled
-corpus, observed contribution patterns, conditional uncertainty and remaining work.
-The [native rerun extension](table1_native_influence.md) now adds composition and
-both ORA background treatments. Statements below about missing native results
-describe the original contribution/shared-effect stage; consult the completed
-`native_manifest.json` and native summary for the extension and its review limits.
-Run `just table1-taxon-influence`, or pass a directory containing the **same pinned**
-KG files: `just table1-taxon-influence C:/path/to/pinned-kg`.
-The recipe writes TSVs, compressed TSVs, `manifest.json` and
-`influence_summary.md` to `data/derived/table1_taxon_influence/`. It neither
-downloads a replacement KG nor changes input profiles. `just check` validates
-the implementation; the full recipe additionally validates the local corpus.
+corpus, observed contribution patterns, conditional uncertainty and remaining work;
+the [native rerun extension](table1_native_influence.md) adds composition and both ORA
+background treatments under its separately pinned model contract.
+Run `just table1-taxon-influence` to materialize the complete input chain in a clean
+clone. To use an existing directory containing the **same pinned** KG files and
+already materialized derived inputs, run
+`just table1-taxon-influence-from C:/path/to/pinned-kg C:/path/to/derived`.
+The audit writes TSVs, compressed TSVs, `manifest.json` and `influence_summary.md`
+to `data/derived/table1_taxon_influence/`. The default recipe materializes its
+declared inputs; the `-from` entry point neither downloads a replacement KG nor
+changes input profiles. `just check` validates the implementation; the full recipe
+additionally validates the local corpus.
 
 This is a provisional annotation influence diagnostic. The archived Rosalind
 discussion and separate review in [PR #192](https://github.com/CultureBotAI/microbial-trait-profiling/pull/192)
@@ -135,11 +136,11 @@ Each scenario directory contains:
 | `pair_eligibility.tsv.gz` | Original/remaining totals and zero-valued six-trait keys for each arm; establishes the precise membership and exclusion reason for every fraction and all 15 ratios. |
 | `ora_background_counts.tsv` | Full count backgrounds separately labeled `fixed_baseline` and `recomputed_remaining`, per scope, using both arms of all retained profiles including zero totals. |
 
-The ORA exports are count contracts for Ilyas, not native ORA reruns or odds ratios.
+`ora_background_counts.tsv` is a count contract, not a native ORA result or odds ratio.
 A fixed baseline asks about residual annotations against the original corpus; a
 recomputed background asks about residual annotations against the residual corpus.
-Their native tests, support rules, sampling units and correction families must be
-declared by the ORA implementation. Do not mix these backgrounds in a shared ranking.
+The native extension consumes both contracts and exports separately labeled profile
+tests and full correction-family metadata. Do not mix the backgrounds in a shared ranking.
 
 ## Effects, uncertainty and integration
 
@@ -182,9 +183,9 @@ does not establish that a lineage explains a signal.
 
 For #178, join on the **full qualified trait key**, scenario, exact scope, representation
 and population; retain the effect unit, all uncertainty/support fields, family identity,
-input hashes, missingness and ambiguity flags. Native Jed transformed statistics
-require a pinned transformation/reference-population policy and full native correction
-family; they remain explicitly **not rerun** here. Native ORA remains with Ilyas.
-Their absence must remain a missing native result, not be replaced by the shared
-sign-test p-value. These owner integrations, #188/#189 prerequisites and review of
-resolved source semantics remain required before closing #190 or assigning mechanisms.
+input hashes, missingness and ambiguity flags. The native extension supplies the pinned
+transformed-composition and ORA reruns. Its experiment-weighted t/BH statistics and
+profile-level ORA families remain distinct from the study-weighted sign-test BH6 fields;
+none substitutes for another. Baseline parity (#210), native-owner review, the #188/#189
+prerequisites and review of resolved source semantics remain required before manuscript
+adoption or assigning mechanisms.

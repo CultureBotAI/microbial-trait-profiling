@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from collections import Counter, defaultdict
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from functools import lru_cache
 from itertools import combinations
 from pathlib import Path
@@ -48,12 +48,17 @@ def study_means(values: dict[Pair, float]) -> dict[str, float]:
     return {study: mean(items) for study, items in studies.items()}
 
 
+def directional_counts(values: Iterable[float]) -> tuple[int, int]:
+    """Count signs with the shared numerical tie tolerance."""
+    items = list(values)
+    return sum(value > TIE for value in items), sum(value < -TIE for value in items)
+
+
 def describe(values: dict[Pair, float]) -> Record:
     """The t interval targets a mean; the exact interval targets positive share."""
     studies = study_means(values)
     items = list(studies.values())
-    positive = sum(v > TIE for v in items)
-    negative = sum(v < -TIE for v in items)
+    positive, negative = directional_counts(items)
     result: Record = {
         "pairs": len(values),
         "studies": len(items),

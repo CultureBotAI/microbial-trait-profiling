@@ -51,6 +51,7 @@ def run_directory(tmp_path: Path) -> Path:
         json.dumps(
             {
                 "completed": True,
+                "code_dirty": False,
                 "contribution_manifest_sha256": digest(source / "manifest.json"),
                 "results": {
                     "input_sha256": {"scenarios.tsv": digest(source / "scenarios.tsv")},
@@ -95,6 +96,22 @@ def test_publication_rejects_incomplete_runs(run_directory: Path) -> None:
     path.write_text(json.dumps(manifest))
     with pytest.raises(ValueError, match="Only completed"):
         publish(run_directory, run_directory.parent / "review")
+
+
+def test_publication_rejects_dirty_or_legacy_provenance(run_directory: Path) -> None:
+    path = run_directory / "native_manifest.json"
+    manifest = json.loads(path.read_text())
+    destination = run_directory.parent / "review"
+    manifest["code_dirty"] = True
+    path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="dirty or unrecorded"):
+        publish(run_directory, destination)
+    assert not destination.exists()
+
+    del manifest["code_dirty"]
+    path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="dirty or unrecorded"):
+        publish(run_directory, destination)
 
 
 def test_publication_rejects_paths_outside_the_run(run_directory: Path) -> None:
