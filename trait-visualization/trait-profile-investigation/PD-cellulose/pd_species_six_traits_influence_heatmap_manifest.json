@@ -1,8 +1,11 @@
 {
   "method": "fixed-reference leave-one-reported-species-out influence",
   "traits": 6,
-  "species": 60,
-  "cells": 360,
+  "species": 90,
+  "literature_cited_species": 46,
+  "literature_only_species": 30,
+  "local_pd_species": 60,
+  "cells": 540,
   "non_mediadive_columns": 317,
   "minimum_support_studies": 3,
   "input_sha256_chunks": {
@@ -35,6 +38,26 @@
       "0d8842b7",
       "ffa5bb3c",
       "4ad89fce"
+    ],
+    "trait-visualization/trait-profile-investigation/PD-cellulose/pd_literature_taxon_evidence.tsv": [
+      "c6079b17",
+      "12576b74",
+      "b9d7a822",
+      "e211fb0c",
+      "0a3d7c94",
+      "a7fc8a04",
+      "e3c30153",
+      "65e96450"
+    ],
+    "trait-visualization/trait-profile-investigation/PD-cellulose/pd_literature_sources.tsv": [
+      "9110bf66",
+      "4b9022ac",
+      "159a4db3",
+      "10e139fa",
+      "57979907",
+      "019723cf",
+      "eff6b692",
+      "b89807b5"
     ]
   },
   "sha256_chunk_encoding": "concatenate each path's eight chunks in order"

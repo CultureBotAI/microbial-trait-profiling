@@ -76,3 +76,69 @@ def test_classification_preserves_uncertainty_and_low_support() -> None:
     assert heatmap.classify_effect(-0.4, -0.7, -0.1, 3) == "dec"
     assert heatmap.classify_effect(0.1, -0.2, 0.4, 3) == "mixed"
     assert heatmap.classify_effect(0.4, 0.1, 0.7, 2) == "low support"
+
+
+def test_literature_evidence_keeps_citations_separate_and_preserves_conflict() -> None:
+    sources = pd.DataFrame(
+        [
+            ["A", "Earlier study", 2020, "cohort", "10.1000/earlier", "https://doi.org/a"],
+            ["B", "Later study", 2022, "meta-analysis", "10.1000/later", "https://doi.org/b"],
+        ],
+        columns=["source_key", "citation", "year", "study_design", "doi", "url"],
+    )
+    evidence = pd.DataFrame(
+        [
+            [
+                "NCBITaxon:1",
+                "Current name",
+                "species",
+                "Older name",
+                "dec",
+                "A",
+                "cohort",
+                "true",
+                "decreased",
+            ],
+            [
+                "NCBITaxon:1",
+                "Current name",
+                "species",
+                "Current name",
+                "inc",
+                "B",
+                "meta-analysis",
+                "true",
+                "increased",
+            ],
+            [
+                "NCBITaxon:2",
+                "Context genus",
+                "genus",
+                "Context genus",
+                "inc",
+                "B",
+                "meta-analysis",
+                "false",
+                "not projected to species",
+            ],
+        ],
+        columns=[
+            "taxon_id",
+            "taxon_name",
+            "taxonomic_rank",
+            "source_reported_name",
+            "reported_pd_direction",
+            "source_key",
+            "evidence_scope",
+            "heatmap_eligible",
+            "note",
+        ],
+    )
+
+    result = heatmap.aggregate_literature_evidence(evidence, sources)
+
+    assert result.index.tolist() == ["NCBITaxon:1"]
+    assert result.loc["NCBITaxon:1", "literature_direction"] == "mixed"
+    assert result.loc["NCBITaxon:1", "literature_sources"] == "A,B"
+    assert result.loc["NCBITaxon:1", "literature_dois"] == ("10.1000/earlier;10.1000/later")
+    assert result.loc["NCBITaxon:1", "literature_reported_names"] == ("Older name | Current name")

@@ -1,0 +1,76 @@
+taxon_id	taxon_name	taxonomic_rank	source_reported_name	reported_pd_direction	source_key	evidence_scope	heatmap_eligible	note
+NCBITaxon:841	Roseburia	genus	Roseburia	dec	R21	cross-cohort genus meta-analysis	false	Robust genus-level depletion; retained as context rather than projected onto every species.
+NCBITaxon:1407607	Fusicatenibacter	genus	Fusicatenibacter	dec	R21	cross-cohort genus meta-analysis	false	Robust genus-level depletion; retained as context rather than projected onto every species.
+NCBITaxon:572511	Blautia	genus	Blautia	dec	R21	cross-cohort genus meta-analysis	false	Robust genus-level depletion; retained as context rather than projected onto every species.
+NCBITaxon:207244	Anaerostipes	genus	Anaerostipes	dec	R21	cross-cohort genus meta-analysis	false	Robust genus-level depletion; retained as context rather than projected onto every species.
+NCBITaxon:216851	Faecalibacterium	genus	Faecalibacterium	dec	R21	cross-cohort genus meta-analysis	false	Robust genus-level depletion; retained as context rather than projected onto every species.
+NCBITaxon:186803	Lachnospiraceae	family	Lachnospiraceae	dec	R21	cross-cohort family meta-analysis	false	Family-level depletion is contextual and is not assigned to every descendant species.
+NCBITaxon:1578	Lactobacillus	genus	Lactobacillus	inc	R21	cross-cohort genus meta-analysis	false	Genus-level enrichment; retained as context rather than projected onto every species.
+NCBITaxon:239934	Akkermansia	genus	Akkermansia	inc	R21	cross-cohort genus meta-analysis	false	Genus-level enrichment; retained as context rather than projected onto every species.
+NCBITaxon:1678	Bifidobacterium	genus	Bifidobacterium	inc	R21	cross-cohort genus meta-analysis	false	Genus-level enrichment; retained as context rather than projected onto every species.
+NCBITaxon:2172	Methanobrevibacter	genus	Methanobrevibacter	inc	R21	cross-cohort genus meta-analysis	false	Genus-level enrichment; retained as context rather than projected onto every species.
+NCBITaxon:838	Prevotella	genus	Prevotella	mixed	R21	cross-cohort genus meta-analysis	false	Studies disagree at broader Prevotella or Prevotellaceae levels; do not transfer the species-level P. copri result to the genus.
+NCBITaxon:1301	Streptococcus	genus	Streptococcus	mixed	W22	within-cohort species heterogeneity	false	Four associated Streptococcus species increased and four decreased, so the genus is deliberately not assigned one direction.
+NCBITaxon:1263	Ruminococcus	genus	Ruminococcus	mixed	W22	cross-species heterogeneity	false	Species-level directions differ; do not collapse fiber-associated species with the R. gnavus signal.
+NCBITaxon:841	Roseburia	genus	Roseburia	dec	R25	cross-cohort genus meta-analysis	false	Independent meta-analysis supports depletion at genus level.
+NCBITaxon:572511	Blautia	genus	Blautia	dec	R25	cross-cohort genus meta-analysis	false	Independent meta-analysis supports depletion at genus level.
+NCBITaxon:1407607	Fusicatenibacter	genus	Fusicatenibacter	dec	R25	cross-cohort genus meta-analysis	false	Independent meta-analysis supports depletion at genus level.
+NCBITaxon:216851	Faecalibacterium	genus	Faecalibacterium	dec	R25	cross-cohort genus meta-analysis	false	Independent meta-analysis supports depletion at genus level.
+NCBITaxon:1678	Bifidobacterium	genus	Bifidobacterium	inc	R25	cross-cohort genus meta-analysis	false	Independent meta-analysis supports enrichment at genus level.
+NCBITaxon:1301	Streptococcus	genus	Streptococcus	inc	R25	cross-cohort genus meta-analysis	false	Meta-analysis enrichment is contextual; W22 species-level heterogeneity keeps the broad interpretation mixed.
+NCBITaxon:1350	Enterococcus	genus	Enterococcus	inc	R25	cross-cohort genus meta-analysis	false	Genus-level enrichment; retained as context rather than projected onto every species.
+NCBITaxon:1578	Lactobacillus	genus	Lactobacillus sensu lato	inc	R25	cross-cohort genus meta-analysis	false	Genus-complex enrichment; retained as context rather than projected onto every species.
+NCBITaxon:166486	Roseburia intestinalis	species	Roseburia intestinalis	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:301302	Roseburia faecis	species	Roseburia faecis	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:360807	Roseburia inulinivorans	species	Roseburia inulinivorans	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:418240	Blautia wexlerae	species	Blautia wexlerae	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:1322	Blautia hansenii	species	Blautia hansenii	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:1150298	Fusicatenibacter saccharivorans	species	Fusicatenibacter saccharivorans	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:649756	Anaerostipes hadrus	species	Anaerostipes hadrus	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:853	Faecalibacterium prausnitzii	species	Faecalibacterium prausnitzii	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:39491	Agathobacter rectalis	species	Eubacterium rectale	dec	W22	single large shotgun cohort	true	Current matrix name is used; the source used the older Eubacterium rectale name.
+NCBITaxon:39490	Eubacterium ramulus	species	Eubacterium ramulus	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:39485	Lachnospira eligens	species	Eubacterium eligens	dec	W22	single large shotgun cohort	true	Current matrix name is used; the source used the older Eubacterium eligens name.
+NCBITaxon:1262889	Eubacterium sp. CAG:38	species	Eubacterium sp. CAG:38	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	Ruminococcus bicirculans	dec	W22	single large shotgun cohort	true	Mapped to the R. bicirculans concept already used by the local PD profiles.
+NCBITaxon:46228	[Ruminococcus] lactaris	species	Ruminococcus lactaris	dec	W22	single large shotgun cohort	true	Current matrix name is used; source nomenclature is retained separately.
+NCBITaxon:1981510	Monoglobus pectinilyticus	species	Monoglobus pectinilyticus	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:165179	Segatella copri	species	Prevotella copri	dec	W22	single large shotgun cohort	true	Current matrix name is used; this species result must not be generalized to all Prevotella.
+NCBITaxon:218538	Dialister invisus	species	Dialister invisus	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:1262824	Clostridium sp. CAG:58	species	Clostridium sp. CAG:58	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:1262792	Clostridium sp. CAG:299	species	Clostridium sp. CAG:299	dec	W22	single large shotgun cohort	true	PD-depleted species in the Wallen metagenome-wide association study.
+NCBITaxon:562	Escherichia coli	species	Escherichia coli	inc	W22	single large shotgun cohort	true	PD-enriched facultative Enterobacteriaceae signal in the Wallen cohort.
+NCBITaxon:573	Klebsiella pneumoniae	species	Klebsiella pneumoniae	inc	W22	single large shotgun cohort	true	PD-enriched facultative Enterobacteriaceae signal in the Wallen cohort.
+NCBITaxon:1463165	Klebsiella quasipneumoniae	species	Klebsiella quasipneumoniae	inc	W22	single large shotgun cohort	true	PD-enriched facultative Enterobacteriaceae signal in the Wallen cohort.
+NCBITaxon:1309	Streptococcus mutans	species	Streptococcus mutans	inc	W22	single large shotgun cohort	true	PD-enriched species; the source also reports other Streptococcus species with the opposite direction.
+NCBITaxon:1343	Streptococcus vestibularis	species	Streptococcus vestibularis	inc	W22	single large shotgun cohort	true	PD-enriched species; the source also reports other Streptococcus species with the opposite direction.
+NCBITaxon:1328	Streptococcus anginosus	species	Streptococcus anginosus group	inc	W22	single large shotgun cohort	true	Mapped to the local species label while retaining the source's group wording.
+NCBITaxon:150055	Streptococcus lutetiensis	species	Streptococcus lutetiensis	inc	W22	single large shotgun cohort	true	PD-enriched species; the source also reports other Streptococcus species with the opposite direction.
+NCBITaxon:33945	Enterococcus avium	species	Enterococcus avium	inc	W22	single large shotgun cohort	true	PD-enriched species in the Wallen metagenome-wide association study.
+NCBITaxon:1352	Enterococcus faecium	species	Enterococcus faecium	inc	W22	single large shotgun cohort	true	PD-enriched species in the Wallen metagenome-wide association study.
+NCBITaxon:187327	Acidaminococcus intestini	species	Acidaminococcus intestini	inc	W22	single large shotgun cohort	true	PD-enriched species in the Wallen metagenome-wide association study.
+NCBITaxon:1776081	Megasphaera sp. DISK 18	species	Megasphaera sp. DISK 18	inc	W22	single large shotgun cohort	true	Literature-only row because this exact taxon is absent from the local trait matrix.
+NCBITaxon:1603888	Megasphaera sp. MJR8396C	species	Megasphaera sp. MJR8396	inc	W22	single large shotgun cohort	true	Mapped to the current NCBI/local MJR8396C label.
+NCBITaxon:544580	Actinomyces oris	species	Actinomyces oris	inc	W22	single large shotgun cohort	true	PD-enriched oral-resident signal in the Wallen cohort.
+NCBITaxon:1655	Actinomyces naeslundii	species	Actinomyces naeslundii	inc	W22	single large shotgun cohort	true	PD-enriched oral-resident signal in the Wallen cohort.
+NCBITaxon:1203556	Actinomyces sp. HPA0247	species	Actinomyces sp. HPA0247	inc	W22	single large shotgun cohort	true	PD-enriched oral-resident signal in the Wallen cohort.
+NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	Actinomyces sp. oral taxon 448	inc	W22	single large shotgun cohort	true	PD-enriched oral-resident signal in the Wallen cohort.
+NCBITaxon:230143	Scardovia wiggsiae	species	Scardovia wiggsiae	inc	W22	single large shotgun cohort	true	PD-enriched oral-resident signal in the Wallen cohort.
+NCBITaxon:28123	Porphyromonas asaccharolytica	species	Porphyromonas asaccharolytica	inc	W22	single large shotgun cohort	true	PD-enriched pathobiont signal in the Wallen cohort.
+NCBITaxon:1689	Bifidobacterium dentium	species	Bifidobacterium dentium	inc	W22	single large shotgun cohort	true	PD-enriched species in the Wallen metagenome-wide association study.
+NCBITaxon:1681	Bifidobacterium bifidum	species	Bifidobacterium bifidum	inc	W22	single large shotgun cohort	true	PD-enriched species in the Wallen metagenome-wide association study.
+NCBITaxon:1685	Bifidobacterium breve	species	Bifidobacterium breve	inc	W22	single large shotgun cohort	true	PD-enriched species in the Wallen metagenome-wide association study.
+NCBITaxon:216816	Bifidobacterium longum	species	Bifidobacterium longum	inc	W22	single large shotgun cohort	true	PD-enriched species in the Wallen metagenome-wide association study.
+NCBITaxon:2173	Methanobrevibacter smithii	species	Methanobrevibacter smithii	inc	W22	single large shotgun cohort	true	PD-enriched methanogenesis/constipation-associated signal in the Wallen cohort.
+NCBITaxon:1406512	Candidatus Methanomassiliicoccus intestinalis	species	Candidatus Methanomassiliicoccus intestinalis	inc	W22	single large shotgun cohort	true	PD-enriched methanogenesis-associated signal in the Wallen cohort.
+NCBITaxon:239935	Akkermansia muciniphila	species	Akkermansia muciniphila	inc	N24	shotgun meta-analysis	true	Species-level increase supported across shotgun cohorts.
+NCBITaxon:166486	Roseburia intestinalis	species	Roseburia intestinalis	dec	N24	shotgun meta-analysis	true	Species-level decrease supported across shotgun cohorts.
+NCBITaxon:853	Faecalibacterium prausnitzii	species	Faecalibacterium prausnitzii	dec	N24	shotgun meta-analysis	true	Species-level decrease supported across shotgun cohorts.
+NCBITaxon:1309	Streptococcus mutans	species	Streptococcus mutans	inc	M26	shotgun cohort with genetic-risk comparison	true	Among the largest PD increases and directionally coherent in the genetic-risk comparison.
+NCBITaxon:216816	Bifidobacterium longum	species	Bifidobacterium longum	inc	M26	shotgun cohort with genetic-risk comparison	true	Among the largest PD increases in the cohort.
+NCBITaxon:1689	Bifidobacterium dentium	species	Bifidobacterium dentium	inc	M26	shotgun cohort with genetic-risk comparison	true	Among the largest PD increases in the cohort.
+NCBITaxon:2107999	Lactobacillus paragasseri	species	Lactobacillus paragasseri	inc	M26	shotgun cohort with genetic-risk comparison	true	Literature-only row because this exact taxon is absent from the local trait matrix.
+NCBITaxon:33038	Mediterraneibacter gnavus	species	Ruminococcus gnavus	inc	M26	shotgun cohort with genetic-risk comparison	true	Current matrix name is used; the species-level signal must not be generalized to all Ruminococcus.
+NCBITaxon:166486	Roseburia intestinalis	species	Roseburia intestinalis	dec	M26	shotgun cohort with genetic-risk comparison	true	Among the largest PD depletions and directionally coherent in the genetic-risk comparison.
+NCBITaxon:360807	Roseburia inulinivorans	species	Roseburia inulinivorans	dec	M26	shotgun cohort with genetic-risk comparison	true	Directionally coherent PD depletion in the genetic-risk comparison.
+NCBITaxon:853	Faecalibacterium prausnitzii	species	Faecalibacterium prausnitzii	dec	M26	shotgun cohort with genetic-risk comparison	true	PD depletion consistent with the broader Faecalibacterium signal.
