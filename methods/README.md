@@ -11,6 +11,7 @@ BugSigDB vintage the numbers came from.
 | `table1_traits_condition_body_site_heatmap.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | `table1_traits_first_last_body_site_panels.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | `table1_traits_direction_shift.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
+| `gram_{positive,negative}_{inc,dec}_sankey.png` | `src/bsdbng/gram_sankey.py` | `just gram-sankey` | [`gram_stain_sankey.md`](gram_stain_sankey.md) |
 
 Figures write to `data/derived/guild_maps/` and `data/derived/table1_traits/`
 alongside the tab-separated tables backing them, so every number quoted in a
@@ -44,7 +45,3 @@ The [second exchange](../docs/rosalind-six-trait-interpretation-response-2.md)
 preserves the follow-up questions and Rosalind's revised response, including its
 prediction and discriminating-evidence tables. It is archived without a separate
 evidence review.
-
-The gram-stain directional Sankey diagrams live on the
-`147-add-gram-stain-directional-sankey-gram-positive-gram-negative-x-increased-decreased`
-branch together with their own methods file; they are not part of this branch.

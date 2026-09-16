@@ -15,9 +15,10 @@ from __future__ import annotations
 import argparse
 import csv
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Callable, Hashable, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import TypeVar
 
 from scipy.cluster.hierarchy import fcluster, leaves_list, linkage
 from scipy.spatial.distance import pdist
@@ -35,6 +36,8 @@ from bsdbng.trait_guilds import (
     read_bugsigdb_vintage,
     write_stats_report,
 )
+
+K = TypeVar("K", bound=Hashable)
 
 OTHER_LABEL = "Other"
 GUILD_ORDER = ("aerobe", "anaerobe")
@@ -334,41 +337,56 @@ class CorrelationResult:
     studies: int
 
 
+def grouped_direction_means(
+    profiles: list[Profile],
+    guild_order: Sequence[str],
+    group_of: Callable[[Profile], K],
+    *,
+    require_paired: bool = True,
+) -> dict[K, dict[str, float]]:
+    """Mean guild fraction per group and direction, collapsing repeated experiments.
+
+    ``group_of`` names the unit a contrast is reported for - a study, or a study
+    within one condition and body site. Pooling all increased and all decreased
+    profiles of a group equals the mean of per-experiment paired differences only
+    when every experiment contributes both sides, so by default the per-group inc
+    and dec profile counts must match; callers on unpaired corpora must pass
+    require_paired=False and must not describe the result as paired.
+    """
+    sums: defaultdict[K, defaultdict[str, float]] = defaultdict(lambda: defaultdict(float))
+    counts: defaultdict[K, defaultdict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for profile in profiles:
+        group = group_of(profile)
+        for guild in guild_order:
+            key = f"{guild}_{profile.inc_dec}"
+            sums[group][key] += profile.fraction(guild)
+            counts[group][key] += 1
+    if require_paired:
+        for group, per_key in counts.items():
+            for guild in guild_order:
+                inc, dec = per_key.get(f"{guild}_inc", 0), per_key.get(f"{guild}_dec", 0)
+                if inc != dec:
+                    raise ValueError(
+                        f"{group} has {inc} increased vs {dec} decreased profiles; "
+                        "group means are only paired contrasts on a paired corpus "
+                        "(load_profiles(paired_only=True), the default)"
+                    )
+    return {
+        group: {key: total / counts[group][key] for key, total in per_key.items()}
+        for group, per_key in sums.items()
+    }
+
+
 def study_direction_means(
     profiles: list[Profile],
     guild_order: Sequence[str] = GUILD_ORDER,
     *,
     require_paired: bool = True,
 ) -> dict[str, dict[str, float]]:
-    """Mean guild fraction per study and direction, collapsing repeated experiments.
-
-    Pooling all increased and all decreased profiles of a study equals the mean of
-    per-experiment paired differences only when every experiment contributes both
-    sides, so by default the per-study inc and dec profile counts must match;
-    callers on unpaired corpora must pass require_paired=False and must not
-    describe the result as paired.
-    """
-    sums: defaultdict[str, defaultdict[str, float]] = defaultdict(lambda: defaultdict(float))
-    counts: defaultdict[str, defaultdict[str, int]] = defaultdict(lambda: defaultdict(int))
-    for profile in profiles:
-        for guild in guild_order:
-            key = f"{guild}_{profile.inc_dec}"
-            sums[profile.study_id][key] += profile.fraction(guild)
-            counts[profile.study_id][key] += 1
-    if require_paired:
-        for study, per_key in counts.items():
-            for guild in guild_order:
-                inc, dec = per_key.get(f"{guild}_inc", 0), per_key.get(f"{guild}_dec", 0)
-                if inc != dec:
-                    raise ValueError(
-                        f"study {study} has {inc} increased vs {dec} decreased profiles; "
-                        "study means are only paired contrasts on a paired corpus "
-                        "(load_profiles(paired_only=True), the default)"
-                    )
-    return {
-        study: {key: total / counts[study][key] for key, total in per_key.items()}
-        for study, per_key in sums.items()
-    }
+    """Mean guild fraction per study and direction; see :func:`grouped_direction_means`."""
+    return grouped_direction_means(
+        profiles, guild_order, lambda profile: profile.study_id, require_paired=require_paired
+    )
 
 
 def _sign(value: float) -> int:
