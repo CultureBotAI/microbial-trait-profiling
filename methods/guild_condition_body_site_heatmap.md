@@ -139,9 +139,10 @@ studies (710 of 932) carry opposite signs for the two guilds; that observation
 alone does not quantify the structural contribution. The odds ratio reads as
 "the discordance runs more
 often in the aerobe-up direction than the reverse", not as independent
-confirmation of the oxygen hypothesis. The Table 1 directional-shift figure
-tests each trait against itself across directions, but remains dependent on the
-same profile denominators. The [paired log-ratio analysis](table1_paired_log_ratios.md)
+confirmation of the oxygen hypothesis. The matched-corpus Table 1-trait analog
+directional-shift figure tests each trait against itself across directions, but
+remains dependent on the same profile denominators and is not a reproduction of
+the published Table 1 baseline. The [paired log-ratio analysis](table1_paired_log_ratios.md)
 illustrates reference-explicit tests over the individual Table 1 traits; it does
 not independently validate the oxygen guild hypothesis.
 

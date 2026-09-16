@@ -1,4 +1,4 @@
-# Manuscript Table 1 traits by condition and body site, and their paired directional shift
+# Matched-corpus Table 1-trait analog by condition and body site
 
 Figures: `table1_traits_condition_body_site_heatmap.png`, the four cuts
 `table1_traits_focus_feces.png`, `table1_traits_focus_feces_other.png`,
@@ -8,10 +8,16 @@ Figures: `table1_traits_condition_body_site_heatmap.png`, the four cuts
 analysis differs from the composition and enrichment arms is set out in
 [`three_arm_statistics.md`](three_arm_statistics.md).
 
-The figures described here repeat the oxygen guild analysis
+The figures described here are a **matched-corpus Table 1-trait analog**, not a
+reproduction of the published Table 1 baseline. They use the pinned human paired
+KG-Microbe profile corpus and therefore should be read as a same-corpus analog
+over the six named traits, not as proof that the native rerun reproduces the
+manuscript's Table 1 q-values or effects.
+
+The figures repeat the oxygen guild analysis
 ([`guild_condition_body_site_heatmap.md`](guild_condition_body_site_heatmap.md))
-over the six individual traits of manuscript Table 1 rather than over the two
-pooled oxygen guilds, with all six traits combined into one figure each. The
+over the six individual traits named in manuscript Table 1 rather than over the
+two pooled oxygen guilds, with all six traits combined into one figure each. The
 traits are facultatively aerobic (METPO:1000608), cellulose catabolic process
 (GO:0030245), coccus shaped (METPO:1000668), sphere shaped (METPO:1000683),
 arsenate reduction (pathways:arsenate_reduction), and moderately halophilic
@@ -227,7 +233,8 @@ the decreased side. Facultatively aerobic shifts up in 534 of 917 scored studies
 q = 5.8e-05), arsenate reduction in 346 of 616 (0.562, q = 0.0030), sphere
 shaped in 467 of 844 (0.553, q = 0.0030), and coccus shaped in 499 of 915
 (0.545, q = 0.0067). Cellulose catabolic process runs the other way, shifting up
-in only 334 of 774 studies (0.432, q = 0.00031). These directions agree
+in only 334 of 774 studies (0.432, q = 0.00031). Within this matched-corpus
+Table 1-trait analog, these directions agree
 trait-for-trait with the composition arm's paired t-test on the same matrix,
 which also places cellulose catabolic process alone on the decreased side — the
 same corpus and the same six traits, so this is a robustness check against

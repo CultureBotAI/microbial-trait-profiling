@@ -1,4 +1,4 @@
-"""Thin CLI wrapper for the manuscript Table 1 trait figures."""
+"""Thin CLI wrapper for the matched-corpus Table 1-trait analog figures."""
 
 from bsdbng.table1_trait_maps import main
 

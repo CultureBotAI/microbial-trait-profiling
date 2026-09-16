@@ -7,8 +7,11 @@ from scipy.stats import binomtest, false_discovery_control
 
 from bsdbng.guild_maps import SIGN_TOLERANCE, build_matrix, write_body_site_panels
 from bsdbng.table1_trait_maps import (
+    ANALYSIS_LABEL,
+    ANALYSIS_NOTE,
     TRAIT_ORDER,
     MissingConditions,
+    build_parser,
     compute_direction_shifts,
     missing_condition_note,
     missing_conditions,
@@ -38,6 +41,7 @@ TRAIT_COLUMNS = [
 ]
 OTHER_COLUMN = "METPO:1000615"
 MEDIA_COLUMN = "METPO:2000517|mediadive.medium:J14"
+DOCS_DIR = Path(__file__).parents[1] / "methods"
 
 
 def _write_profiles(path: Path, rows: list[tuple[str, str, str, list[int]]]) -> None:
@@ -114,6 +118,27 @@ def test_table1_definitions_cover_the_six_manuscript_traits() -> None:
     # Every trait is a single term: these are traits, not pooled guilds.
     assert all(len(ids) == 1 for ids in TABLE1_TRAITS.values())
     assert trait_colorscale("coccus_shaped") == [[0.0, "#ffffff"], [1.0, "#009e73"]]
+
+
+def test_public_labels_call_this_a_matched_corpus_analog() -> None:
+    description = build_parser().description
+    assert ANALYSIS_LABEL == "Matched-corpus Table 1-trait analog"
+    assert "not a reproduction" in ANALYSIS_NOTE
+    assert "matched-corpus Table 1-trait analog" in description
+    assert "not a reproduction of the published Table 1 baseline" in description
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "table1_trait_condition_body_site_maps.md",
+        "table1_log_ratio_validation.md",
+    ],
+)
+def test_methods_with_table1_numbers_carry_the_analog_label(name: str) -> None:
+    text = " ".join((DOCS_DIR / name).read_text(encoding="utf-8").split())
+    assert "matched-corpus Table 1-trait analog" in text
+    assert "not a reproduction of the published Table 1 baseline" in text
 
 
 def test_qualified_columns_resolve_by_term_suffix(corpus: tuple[Path, Path]) -> None:

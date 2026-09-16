@@ -28,13 +28,14 @@ the native p-values are not on comparable scales.
 
 [`table1_paired_log_ratios.md`](table1_paired_log_ratios.md) documents
 `just table1-compositional-stats`: paired log-ratio direction tests for all 15
-Table 1 trait pairs, with explicit references, zero exclusions, study-level
-coverage, and a separate correction family. It emits statistics and a Markdown
-report without rendering figures.
+Table 1 trait pairs as a matched-corpus Table 1-trait analog, with explicit
+references, zero exclusions, study-level coverage, and a separate correction
+family. It emits statistics and a Markdown report without rendering figures.
 
 [`table1_log_ratio_validation.md`](table1_log_ratio_validation.md) records the
-pinned-corpus rerun of all 15 ratios alongside the original six fraction
-directions, including study coverage, uncertainty and interpretation limits.
+pinned-corpus rerun of all 15 ratios alongside the six matched-corpus analog
+fraction directions, including study coverage, uncertainty and interpretation
+limits. These are not a reproduction of the published Table 1 baseline.
 
 The [GPT Rosalind discussion and review](../docs/rosalind-six-trait-interpretation.md)
 archives proposed biological explanations for the six traits, with a separate
