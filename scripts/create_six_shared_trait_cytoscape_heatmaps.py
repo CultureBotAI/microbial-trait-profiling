@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.patches import Rectangle
-from scipy.cluster.hierarchy import dendrogram, fcluster, leaves_list, linkage
+from scipy.cluster.hierarchy import dendrogram, leaves_list, linkage
 from scipy.spatial.distance import squareform
 from scipy.stats import fisher_exact
 
@@ -28,12 +28,6 @@ CONTRAST_PAGES_FILENAME = "six_shared_trait_signed_direction_heatmap_pages.tsv"
 CLUSTER_TREE_NODES_FILENAME = "six_shared_trait_signed_direction_cluster_tree_nodes.tsv"
 CLUSTER_TREE_LEAVES_FILENAME = "six_shared_trait_signed_direction_cluster_tree_leaves.tsv"
 CLUSTER_COMPARISON_FILENAME = "six_shared_trait_signed_direction_cluster_comparison.tsv"
-GROUPED_CLUSTER_MEMBERSHIP_FILENAME = (
-    "six_shared_trait_grouped_signed_direction_cluster_membership.tsv"
-)
-GROUPED_CLUSTER_ENRICHMENT_FILENAME = (
-    "six_shared_trait_grouped_signed_direction_cluster_enrichment.tsv"
-)
 CONTRAST_ROWS_PER_PAGE = 24
 
 MIN_POSITIVE_PROFILES = 3
@@ -46,9 +40,6 @@ MIN_SPEARMAN_OVERLAP = 3
 UNDEFINED_SPEARMAN_DISTANCE = 1.0
 CLUSTER_LINKAGE_METHOD = "average"
 OUTLIER_IQR_MULTIPLIER = 1.5
-GROUPED_CLUSTER_CUT_FRACTION = 0.70
-CLUSTER_LABEL_MIN_COUNT = 2
-CLUSTER_LABEL_Q_CUTOFF = 0.05
 
 SLATE_50 = "#f8fafc"
 SLATE_100 = "#f1f5f9"
@@ -57,19 +48,6 @@ SLATE_500 = "#64748b"
 SLATE_700 = "#334155"
 SLATE_900 = "#0f172a"
 SIGNIFICANCE_BORDER = "#111827"
-CLUSTER_COLORS = (
-    "#2563eb",
-    "#dc2626",
-    "#059669",
-    "#9333ea",
-    "#d97706",
-    "#0891b2",
-    "#db2777",
-    "#65a30d",
-    "#4f46e5",
-    "#475569",
-)
-
 LEGACY_CORRELATION_OUTPUTS = (
     "six_shared_trait_condition_body_site_trait_correlations.tsv",
     "six_shared_trait_condition_body_site_trait_vectors.tsv",
@@ -84,6 +62,11 @@ LEGACY_CORRELATION_OUTPUTS = (
         "six_shared_traits_decreased_individual_conditions_condition_body_site_trait_"
         "correlation_heatmap.png"
     ),
+)
+
+OBSOLETE_CLUSTER_OUTPUTS = (
+    "six_shared_trait_grouped_signed_direction_cluster_membership.tsv",
+    "six_shared_trait_grouped_signed_direction_cluster_enrichment.tsv",
 )
 
 
@@ -106,10 +89,24 @@ class SpearmanClustering:
     distances: pd.DataFrame
     overlaps: pd.DataFrame
     defined_correlations: pd.DataFrame
+    clusterable_matrix: pd.DataFrame
     linkage_matrix: np.ndarray
     clustered_row_labels: list[str]
+    insufficient_row_labels: list[str]
     tree_nodes: pd.DataFrame
     tree_leaves: pd.DataFrame
+    pair_count: int
+    undefined_pair_count: int
+    undefined_pair_fraction: float
+    distinct_distance_count: int
+    distance_tie_excess_count: int
+    distance_tie_fraction: float
+    linkage_pair_count: int
+    linkage_undefined_pair_count: int
+    linkage_undefined_pair_fraction: float
+    linkage_distinct_distance_count: int
+    linkage_distance_tie_excess_count: int
+    linkage_distance_tie_fraction: float
 
 
 @dataclass(frozen=True)
@@ -122,8 +119,6 @@ class ContrastHeatmapOutputs:
     displayed_cell_count: int
     tested_cell_count: int
     clustering: SpearmanClustering
-    cluster_membership: pd.DataFrame
-    cluster_enrichment: pd.DataFrame
 
 
 CONTRAST_MODES = (
@@ -264,8 +259,8 @@ def finalize_inferential_cells(cells: pd.DataFrame) -> pd.DataFrame:
 
 
 def clean_legacy_outputs(output_dir: Path = OUTPUT_DIR) -> None:
-    """Remove the superseded correlation heatmap outputs from the prior workflow."""
-    for filename in LEGACY_CORRELATION_OUTPUTS:
+    """Remove outputs superseded by the current heatmap workflow."""
+    for filename in (*LEGACY_CORRELATION_OUTPUTS, *OBSOLETE_CLUSTER_OUTPUTS):
         path = output_dir / filename
         if path.exists():
             path.unlink()
@@ -669,11 +664,26 @@ def build_spearman_clustering(
     view_key: str,
     view_label: str,
 ) -> SpearmanClustering:
-    """Cluster heatmap rows and expose the linkage tree and leaf audit tables."""
-    distances, overlaps, defined = spearman_distance_matrices(matrix)
-    row_count = len(matrix)
-    if row_count > 1:
-        condensed = squareform(distances.to_numpy(dtype=float), checks=False)
+    """Cluster informative rows after canonicalizing the linkage input order."""
+    ranked_order = {
+        str(label): order for order, label in enumerate(matrix.index.astype(str), start=1)
+    }
+    canonical_matrix = matrix.copy()
+    canonical_matrix.index = canonical_matrix.index.astype(str)
+    canonical_matrix = canonical_matrix.sort_index()
+    distances, overlaps, defined = spearman_distance_matrices(canonical_matrix)
+
+    row_count = len(canonical_matrix)
+    peer_defined_counts = defined.sum(axis=1).astype(int) - 1
+    clusterable_labels = peer_defined_counts[peer_defined_counts > 0].index.astype(str).tolist()
+    insufficient_labels = peer_defined_counts[peer_defined_counts == 0].index.astype(str).tolist()
+    clusterable_matrix = canonical_matrix.loc[clusterable_labels]
+    clusterable_distances = distances.loc[clusterable_labels, clusterable_labels]
+    clusterable_defined = defined.loc[clusterable_labels, clusterable_labels]
+    clusterable_count = len(clusterable_matrix)
+
+    if clusterable_count > 1:
+        condensed = squareform(clusterable_distances.to_numpy(dtype=float), checks=False)
         linkage_matrix = linkage(
             condensed,
             method=CLUSTER_LINKAGE_METHOD,
@@ -682,42 +692,55 @@ def build_spearman_clustering(
         leaf_ids = leaves_list(linkage_matrix).astype(int).tolist()
     else:
         linkage_matrix = np.empty((0, 4), dtype=float)
-        leaf_ids = list(range(row_count))
+        leaf_ids = list(range(clusterable_count))
+
+    clustered_labels = [str(clusterable_matrix.index[leaf_id]) for leaf_id in leaf_ids]
+    final_labels = clustered_labels + insufficient_labels
+    linkage_order = {label: order for order, label in enumerate(clustered_labels, start=1)}
+    final_order = {label: order for order, label in enumerate(final_labels, start=1)}
+    clusterable_leaf_id = {
+        str(label): leaf_id for leaf_id, label in enumerate(clusterable_matrix.index.astype(str))
+    }
 
     row_metadata = (
         cells.drop_duplicates("condition_body_site_pair")
         .set_index("condition_body_site_pair")[["condition", "body_site_group"]]
-        .reindex(matrix.index)
+        .reindex(canonical_matrix.index)
     )
     leaf_records: list[dict[str, object]] = []
-    for clustered_order, leaf_id in enumerate(leaf_ids, start=1):
-        label = str(matrix.index[leaf_id])
-        peer_defined = defined.iloc[leaf_id].to_numpy(dtype=bool).copy()
-        peer_defined[leaf_id] = False
+    for canonical_order, label in enumerate(canonical_matrix.index.astype(str), start=1):
+        row_position = canonical_order - 1
+        peer_defined = defined.iloc[row_position].to_numpy(dtype=bool).copy()
+        peer_defined[row_position] = False
         if peer_defined.any():
-            peer_distances = distances.iloc[leaf_id].to_numpy(dtype=float).copy()
+            peer_distances = distances.iloc[row_position].to_numpy(dtype=float).copy()
             peer_distances[~peer_defined] = np.inf
-            nearest_leaf_id = int(np.argmin(peer_distances))
-            nearest_label: object = str(matrix.index[nearest_leaf_id])
-            nearest_distance: object = float(peer_distances[nearest_leaf_id])
+            nearest_position = int(np.argmin(peer_distances))
+            nearest_label: object = str(canonical_matrix.index[nearest_position])
+            nearest_distance: object = float(peer_distances[nearest_position])
         else:
             nearest_label = pd.NA
             nearest_distance = math.nan
+        included = label in clusterable_leaf_id
         leaf_records.append(
             {
                 "view_key": view_key,
                 "view_label": view_label,
-                "leaf_id": leaf_id,
-                "ranked_heatmap_order": leaf_id + 1,
-                "clustered_heatmap_order": clustered_order,
+                "leaf_id": clusterable_leaf_id.get(label, pd.NA),
+                "ranked_heatmap_order": ranked_order[label],
+                "canonical_input_order": canonical_order,
+                "linkage_leaf_order": linkage_order.get(label, pd.NA),
+                "clustered_heatmap_order": final_order[label],
                 "condition_body_site_pair": label,
                 "condition": row_metadata.loc[label, "condition"],
                 "body_site_group": row_metadata.loc[label, "body_site_group"],
-                "supported_trait_count": int(matrix.iloc[leaf_id].notna().sum()),
+                "supported_trait_count": int(canonical_matrix.loc[label].notna().sum()),
                 "defined_spearman_neighbor_count": int(peer_defined.sum()),
-                "low_information_for_clustering": bool(
-                    matrix.iloc[leaf_id].notna().sum() < MIN_SPEARMAN_OVERLAP
-                ),
+                "included_in_clustering": included,
+                "low_information_for_clustering": not included,
+                "clustering_exclusion_reason": ""
+                if included
+                else "no defined Spearman distance to any other row",
                 "nearest_defined_neighbor": nearest_label,
                 "nearest_defined_neighbor_distance": nearest_distance,
             }
@@ -727,7 +750,7 @@ def build_spearman_clustering(
         {
             "view_key": view_key,
             "view_label": view_label,
-            "node_id": row_count + merge_index,
+            "node_id": clusterable_count + merge_index,
             "left_child_id": int(merge[0]),
             "right_child_id": int(merge[1]),
             "merge_distance": float(merge[2]),
@@ -747,228 +770,70 @@ def build_spearman_clustering(
             "leaf_count",
         ],
     )
-    tree_leaves = pd.DataFrame.from_records(leaf_records)
-    clustered_labels = [str(matrix.index[leaf_id]) for leaf_id in leaf_ids]
+    tree_leaves = (
+        pd.DataFrame.from_records(leaf_records)
+        .sort_values("clustered_heatmap_order")
+        .reset_index(drop=True)
+    )
+
+    pair_count = row_count * (row_count - 1) // 2
+    if pair_count:
+        row_triangle = np.triu_indices(row_count, k=1)
+        undefined_pair_count = int((~defined.to_numpy(dtype=bool)[row_triangle]).sum())
+        distance_values = distances.to_numpy(dtype=float)[row_triangle]
+        distinct_distance_count = int(np.unique(distance_values).size)
+    else:
+        undefined_pair_count = 0
+        distinct_distance_count = 0
+    undefined_pair_fraction = undefined_pair_count / pair_count if pair_count else 0.0
+    distance_tie_excess_count = max(0, pair_count - distinct_distance_count)
+    distance_tie_fraction = distance_tie_excess_count / pair_count if pair_count else 0.0
+
+    linkage_pair_count = clusterable_count * (clusterable_count - 1) // 2
+    if linkage_pair_count:
+        linkage_triangle = np.triu_indices(clusterable_count, k=1)
+        linkage_defined_values = clusterable_defined.to_numpy(dtype=bool)[linkage_triangle]
+        linkage_distance_values = clusterable_distances.to_numpy(dtype=float)[linkage_triangle]
+        linkage_undefined_pair_count = int((~linkage_defined_values).sum())
+        linkage_distinct_distance_count = int(np.unique(linkage_distance_values).size)
+    else:
+        linkage_undefined_pair_count = 0
+        linkage_distinct_distance_count = 0
+    linkage_undefined_pair_fraction = (
+        linkage_undefined_pair_count / linkage_pair_count if linkage_pair_count else 0.0
+    )
+    linkage_distance_tie_excess_count = max(
+        0,
+        linkage_pair_count - linkage_distinct_distance_count,
+    )
+    linkage_distance_tie_fraction = (
+        linkage_distance_tie_excess_count / linkage_pair_count if linkage_pair_count else 0.0
+    )
+
     return SpearmanClustering(
-        matrix=matrix,
+        matrix=canonical_matrix,
         distances=distances,
         overlaps=overlaps,
         defined_correlations=defined,
+        clusterable_matrix=clusterable_matrix,
         linkage_matrix=linkage_matrix,
         clustered_row_labels=clustered_labels,
+        insufficient_row_labels=insufficient_labels,
         tree_nodes=tree_nodes,
         tree_leaves=tree_leaves,
+        pair_count=pair_count,
+        undefined_pair_count=undefined_pair_count,
+        undefined_pair_fraction=undefined_pair_fraction,
+        distinct_distance_count=distinct_distance_count,
+        distance_tie_excess_count=distance_tie_excess_count,
+        distance_tie_fraction=distance_tie_fraction,
+        linkage_pair_count=linkage_pair_count,
+        linkage_undefined_pair_count=linkage_undefined_pair_count,
+        linkage_undefined_pair_fraction=linkage_undefined_pair_fraction,
+        linkage_distinct_distance_count=linkage_distinct_distance_count,
+        linkage_distance_tie_excess_count=linkage_distance_tie_excess_count,
+        linkage_distance_tie_fraction=linkage_distance_tie_fraction,
     )
-
-
-def cut_grouped_dendrogram(
-    clustering: SpearmanClustering,
-    *,
-    cut_fraction: float = GROUPED_CLUSTER_CUT_FRACTION,
-) -> pd.DataFrame:
-    """Cut a grouped row dendrogram and assign cluster IDs from top to bottom."""
-    if not 0 < cut_fraction <= 1:
-        raise ValueError("Dendrogram cut fraction must be in (0, 1].")
-
-    membership = clustering.tree_leaves.copy()
-    row_count = len(membership)
-    if row_count == 0:
-        return membership.assign(
-            cluster_id=pd.Series(dtype="string"),
-            cluster_rank=pd.Series(dtype="Int64"),
-            cluster_size=pd.Series(dtype="Int64"),
-            cluster_color=pd.Series(dtype="string"),
-            cluster_cut_fraction=pd.Series(dtype=float),
-            cluster_cut_distance=pd.Series(dtype=float),
-        )
-
-    if row_count > 1:
-        max_distance = float(clustering.linkage_matrix[:, 2].max())
-        cut_distance = cut_fraction * max_distance
-        raw_clusters = fcluster(
-            clustering.linkage_matrix,
-            t=cut_distance,
-            criterion="distance",
-        ).astype(int)
-    else:
-        cut_distance = 0.0
-        raw_clusters = np.ones(1, dtype=int)
-
-    raw_cluster_by_leaf = dict(enumerate(raw_clusters))
-    membership["_raw_cluster"] = membership["leaf_id"].map(raw_cluster_by_leaf)
-    # SciPy's left-oriented dendrogram places the first ordered leaf at the
-    # bottom. Numbering by descending order therefore makes C1 the top cluster.
-    raw_cluster_order = (
-        membership.groupby("_raw_cluster")["clustered_heatmap_order"]
-        .max()
-        .sort_values(ascending=False)
-        .index.tolist()
-    )
-    cluster_id_by_raw = {
-        raw_cluster: f"C{rank}" for rank, raw_cluster in enumerate(raw_cluster_order, start=1)
-    }
-    cluster_rank_by_raw = {
-        raw_cluster: rank for rank, raw_cluster in enumerate(raw_cluster_order, start=1)
-    }
-    membership["cluster_id"] = membership["_raw_cluster"].map(cluster_id_by_raw)
-    membership["cluster_rank"] = membership["_raw_cluster"].map(cluster_rank_by_raw)
-    membership["cluster_size"] = membership.groupby("cluster_id")["cluster_id"].transform("size")
-    membership["cluster_color"] = membership["cluster_rank"].map(
-        lambda rank: CLUSTER_COLORS[(int(rank) - 1) % len(CLUSTER_COLORS)]
-    )
-    membership["cluster_cut_fraction"] = cut_fraction
-    membership["cluster_cut_distance"] = cut_distance
-    return membership.drop(columns="_raw_cluster").sort_values("clustered_heatmap_order")
-
-
-def build_grouped_cluster_enrichment(membership: pd.DataFrame) -> pd.DataFrame:
-    """Test dendrogram clusters for anatomy and grouped-condition enrichment."""
-    columns = [
-        "view_key",
-        "cluster_id",
-        "cluster_rank",
-        "cluster_size",
-        "label_type",
-        "label",
-        "cluster_label_count",
-        "cluster_nonlabel_count",
-        "outside_label_count",
-        "outside_nonlabel_count",
-        "overall_label_count",
-        "expected_cluster_count",
-        "observed_expected_ratio",
-        "fisher_odds_ratio",
-        "fisher_p_value",
-        "fisher_q_value",
-        "minimum_label_count_met",
-        "selected_for_dendrogram_label",
-        "label_rank_within_cluster_and_type",
-    ]
-    if membership.empty:
-        return pd.DataFrame(columns=columns)
-
-    total_count = len(membership)
-    records: list[dict[str, object]] = []
-    label_columns = {
-        "anatomy": "body_site_group",
-        "grouped_condition": "condition",
-    }
-    for label_type, column in label_columns.items():
-        labels = sorted(membership[column].dropna().astype(str).unique())
-        overall_counts = membership[column].astype(str).value_counts()
-        for cluster_id, cluster in membership.groupby("cluster_id", sort=False):
-            cluster_size = len(cluster)
-            cluster_rank = int(cluster["cluster_rank"].iloc[0])
-            cluster_values = cluster[column].astype(str)
-            for label in labels:
-                inside_label = int((cluster_values == label).sum())
-                overall_label = int(overall_counts.get(label, 0))
-                inside_other = cluster_size - inside_label
-                outside_label = overall_label - inside_label
-                outside_other = total_count - cluster_size - outside_label
-                result = fisher_exact(
-                    [[inside_label, inside_other], [outside_label, outside_other]],
-                    alternative="greater",
-                )
-                expected = cluster_size * overall_label / total_count
-                records.append(
-                    {
-                        "view_key": str(cluster["view_key"].iloc[0]),
-                        "cluster_id": cluster_id,
-                        "cluster_rank": cluster_rank,
-                        "cluster_size": cluster_size,
-                        "label_type": label_type,
-                        "label": label,
-                        "cluster_label_count": inside_label,
-                        "cluster_nonlabel_count": inside_other,
-                        "outside_label_count": outside_label,
-                        "outside_nonlabel_count": outside_other,
-                        "overall_label_count": overall_label,
-                        "expected_cluster_count": expected,
-                        "observed_expected_ratio": inside_label / expected
-                        if expected > 0
-                        else math.nan,
-                        "fisher_odds_ratio": float(result.statistic),
-                        "fisher_p_value": float(result.pvalue),
-                    }
-                )
-
-    output = pd.DataFrame.from_records(records)
-    output["fisher_q_value"] = 1.0
-    for indices in output.groupby("label_type").groups.values():
-        output.loc[indices, "fisher_q_value"] = benjamini_hochberg(
-            output.loc[indices, "fisher_p_value"]
-        )
-    output["minimum_label_count_met"] = output["cluster_label_count"] >= CLUSTER_LABEL_MIN_COUNT
-    output["selected_for_dendrogram_label"] = (
-        output["minimum_label_count_met"]
-        & (output["fisher_q_value"] <= CLUSTER_LABEL_Q_CUTOFF)
-        & (output["observed_expected_ratio"] > 1.0)
-    )
-    output = output.sort_values(
-        ["cluster_rank", "label_type", "fisher_q_value", "fisher_p_value", "label"],
-        ascending=[True, True, True, True, True],
-    ).reset_index(drop=True)
-    output["label_rank_within_cluster_and_type"] = (
-        output.groupby(["cluster_id", "label_type"]).cumcount() + 1
-    )
-    return output[columns]
-
-
-def dendrogram_cluster_labels(
-    membership: pd.DataFrame,
-    enrichment: pd.DataFrame,
-) -> dict[str, str]:
-    """Label grouped dendrogram branches with their strongest data trends."""
-    labels: dict[str, str] = {}
-    for cluster_id, cluster in membership.groupby("cluster_id", sort=False):
-        cluster_results = enrichment[enrichment["cluster_id"] == cluster_id]
-        parts: list[str] = []
-        selected_any = False
-        for label_type, heading in (
-            ("anatomy", "Anatomy"),
-            ("grouped_condition", "Condition"),
-        ):
-            matches = cluster_results[cluster_results["label_type"] == label_type]
-            selected = matches[matches["selected_for_dendrogram_label"].astype(bool)]
-            if not selected.empty:
-                strongest = selected.iloc[0]
-                selected_any = True
-                prefix = f"{heading} enriched"
-            else:
-                supported_trends = matches[
-                    (matches["cluster_label_count"] >= CLUSTER_LABEL_MIN_COUNT)
-                    & (matches["observed_expected_ratio"] > 1.0)
-                ]
-                positive_trends = matches[
-                    (matches["cluster_label_count"] > 0)
-                    & (matches["observed_expected_ratio"] > 1.0)
-                ]
-                present_labels = matches[matches["cluster_label_count"] > 0].sort_values(
-                    ["cluster_label_count", "fisher_p_value", "label"],
-                    ascending=[False, True, True],
-                )
-                if not supported_trends.empty:
-                    strongest = supported_trends.iloc[0]
-                    prefix = f"{heading} trend"
-                elif not positive_trends.empty:
-                    strongest = positive_trends.iloc[0]
-                    prefix = f"{heading} trend"
-                elif not present_labels.empty:
-                    strongest = present_labels.iloc[0]
-                    prefix = f"{heading} most common"
-                else:
-                    continue
-            parts.append(f"{prefix}: {strongest['label']}")
-
-        if len(cluster) == 1:
-            parts.append("Singleton branch (descriptive label)")
-        elif selected_any:
-            parts.append(f"BH-supported enrichment (n={len(cluster)})")
-        else:
-            parts.append(f"Trends only; no BH enrichment (n={len(cluster)})")
-        labels[cluster_id] = "\n".join(parts)
-    return labels
 
 
 def split_joined_labels(value: object) -> list[str]:
@@ -1357,37 +1222,27 @@ def plot_clustered_contrast_heatmap(
     *,
     title: str,
     subtitle: str,
-    cluster_membership: pd.DataFrame | None = None,
-    cluster_enrichment: pd.DataFrame | None = None,
 ) -> None:
     """Render a compact signed heatmap with its Spearman row dendrogram."""
-    cluster_membership = pd.DataFrame() if cluster_membership is None else cluster_membership.copy()
-    cluster_enrichment = pd.DataFrame() if cluster_enrichment is None else cluster_enrichment.copy()
-    show_cluster_labels = not cluster_membership.empty
     row_count = max(1, len(clustering.matrix))
+    clusterable_count = len(clustering.clusterable_matrix)
+    insufficient_count = len(clustering.insufficient_row_labels)
     fig_height = min(18.0, max(8.0, 4.0 + 0.13 * row_count))
-    fig_width = 15.8 if show_cluster_labels else 13.8
-    fig = plt.figure(figsize=(fig_width, fig_height), facecolor="white")
+    fig = plt.figure(figsize=(13.8, fig_height), facecolor="white")
     grid = fig.add_gridspec(
         1,
-        3 if show_cluster_labels else 2,
-        width_ratios=[2.4, 1.7, 6.0] if show_cluster_labels else [1.7, 6.0],
-        left=0.025 if show_cluster_labels else 0.04,
+        2,
+        width_ratios=[1.7, 6.0],
+        left=0.04,
         right=0.69,
         top=0.84,
         bottom=0.18,
         wspace=0.02,
     )
-    if show_cluster_labels:
-        cluster_label_axis = fig.add_subplot(grid[0, 0])
-        dendrogram_axis = fig.add_subplot(grid[0, 1])
-        heatmap_axis = fig.add_subplot(grid[0, 2])
-    else:
-        cluster_label_axis = None
-        dendrogram_axis = fig.add_subplot(grid[0, 0])
-        heatmap_axis = fig.add_subplot(grid[0, 1])
+    dendrogram_axis = fig.add_subplot(grid[0, 0])
+    heatmap_axis = fig.add_subplot(grid[0, 1])
 
-    if len(clustering.matrix) > 1:
+    if clusterable_count > 1:
         tree = dendrogram(
             clustering.linkage_matrix,
             orientation="left",
@@ -1399,56 +1254,17 @@ def plot_clustered_contrast_heatmap(
         )
         row_positions = [int(value) for value in tree["leaves"]]
     else:
-        row_positions = list(range(len(clustering.matrix)))
-        dendrogram_axis.set_ylim(0, 10 * row_count)
+        row_positions = list(range(clusterable_count))
+    dendrogram_axis.set_ylim(0, 10 * row_count)
     dendrogram_axis.set_xlabel("1 - Spearman rho", fontsize=7.5, color=SLATE_700)
     dendrogram_axis.tick_params(axis="x", labelsize=6.5, colors=SLATE_500)
     dendrogram_axis.tick_params(axis="y", left=False, labelleft=False)
     for spine in dendrogram_axis.spines.values():
         spine.set_visible(False)
 
-    if show_cluster_labels:
-        cut_distance = float(cluster_membership["cluster_cut_distance"].iloc[0])
-        dendrogram_axis.axvline(
-            cut_distance,
-            color=SLATE_900,
-            linestyle=(0, (3, 2)),
-            linewidth=0.9,
-            alpha=0.75,
-        )
-        cluster_label_axis.set_xlim(0, 1)
-        cluster_label_axis.set_ylim(0, 10 * row_count)
-        cluster_label_axis.axis("off")
-        display_labels = dendrogram_cluster_labels(cluster_membership, cluster_enrichment)
-        for cluster_id, cluster in cluster_membership.groupby("cluster_id", sort=False):
-            first_order = int(cluster["clustered_heatmap_order"].min())
-            last_order = int(cluster["clustered_heatmap_order"].max())
-            y_start = 10 * (first_order - 1)
-            y_end = 10 * last_order
-            y_center = (y_start + y_end) / 2
-            color = str(cluster["cluster_color"].iloc[0])
-            cluster_label_axis.add_patch(
-                Rectangle(
-                    (0.94, y_start + 0.6),
-                    0.045,
-                    max(0.8, y_end - y_start - 1.2),
-                    facecolor=color,
-                    edgecolor="none",
-                    alpha=0.9,
-                )
-            )
-            cluster_label_axis.text(
-                0.90,
-                y_center,
-                display_labels[cluster_id],
-                ha="right",
-                va="center",
-                fontsize=6.8,
-                color=SLATE_700,
-                linespacing=1.25,
-            )
-
-    ordered_matrix = clustering.matrix.iloc[row_positions]
+    clustered_labels = [str(clustering.clusterable_matrix.index[index]) for index in row_positions]
+    ordered_labels = clustered_labels + clustering.insufficient_row_labels
+    ordered_matrix = clustering.matrix.loc[ordered_labels]
     ordered_borders = significance_borders.reindex(ordered_matrix.index)
     cmap = plt.get_cmap("RdBu_r").copy()
     cmap.set_bad(SLATE_100)
@@ -1485,16 +1301,21 @@ def plot_clustered_contrast_heatmap(
     for spine in heatmap_axis.spines.values():
         spine.set_visible(False)
 
-    if show_cluster_labels:
-        for _cluster_id, cluster in cluster_membership.groupby("cluster_id", sort=False):
-            first_order = int(cluster["clustered_heatmap_order"].min())
-            if first_order > 1:
-                heatmap_axis.axhline(
-                    10 * (first_order - 1),
-                    color=SLATE_500,
-                    linewidth=0.7,
-                    alpha=0.55,
-                )
+    if insufficient_count:
+        boundary = 10 * clusterable_count
+        dendrogram_axis.axhspan(boundary, 10 * row_count, color=SLATE_100, zorder=-1)
+        dendrogram_axis.axhline(boundary, color=SLATE_500, linewidth=0.9)
+        dendrogram_axis.text(
+            0.5,
+            boundary + 5 * insufficient_count,
+            "Insufficient overlap\n(not clustered)",
+            transform=dendrogram_axis.get_yaxis_transform(),
+            ha="center",
+            va="center",
+            fontsize=7.2,
+            color=SLATE_700,
+        )
+        heatmap_axis.axhline(boundary, color=SLATE_500, linewidth=1.0)
 
     for y_index, row_label in enumerate(ordered_matrix.index):
         for x_index, trait_id in enumerate(trait_order["trait_id"]):
@@ -1656,34 +1477,18 @@ def write_contrast_heatmap(
         view_key=f"{mode.key}_direction_contrast",
         view_label=mode.label,
     )
-    if mode.key == "grouped":
-        cluster_membership = cut_grouped_dendrogram(clustering)
-        cluster_enrichment = build_grouped_cluster_enrichment(cluster_membership)
-        display_labels = dendrogram_cluster_labels(
-            cluster_membership,
-            cluster_enrichment,
-        )
-        cluster_membership["cluster_display_label"] = cluster_membership["cluster_id"].map(
-            lambda cluster_id: display_labels[str(cluster_id)].replace("\n", "; ")
-        )
-        cluster_count = cluster_membership["cluster_id"].nunique()
-        cluster_cut_note = (
-            f" The tree is cut at {GROUPED_CLUSTER_CUT_FRACTION:.0%} of its maximum "
-            f"merge distance into {cluster_count} clusters. Left labels use the strongest "
-            "anatomy and grouped-condition trends rather than numeric cluster IDs and state "
-            f"whether enrichment passed BH q<={CLUSTER_LABEL_Q_CUTOFF:g} with count>="
-            f"{CLUSTER_LABEL_MIN_COUNT}; the dashed line marks the cut."
-        )
-    else:
-        cluster_membership = pd.DataFrame()
-        cluster_enrichment = pd.DataFrame()
-        cluster_cut_note = ""
     clustered_subtitle = (
-        "Rows use average-linkage clustering on pairwise-complete Spearman distance "
-        f"(1-rho; at least {MIN_SPEARMAN_OVERLAP} shared supported traits). Undefined "
-        f"correlations use neutral distance {UNDEFINED_SPEARMAN_DISTANCE:g}; gray cells remain "
-        f"missing, and dark borders mark Fisher p<{P_VALUE_CUTOFF:g}. The ranked full heatmap "
-        f"and readable pages retain numeric cell values.{cluster_cut_note}"
+        "Average linkage uses pairwise-complete Spearman distance after ascending label sort "
+        "for deterministic tie breaking. "
+        f"Before exclusion, {clustering.undefined_pair_count}/{clustering.pair_count} "
+        f"({clustering.undefined_pair_fraction:.1%}) row-pair correlations were undefined; "
+        f"{len(clustering.insufficient_row_labels)} rows with no defined neighbor are shown "
+        "separately and not linked. Among linked rows, "
+        f"{clustering.linkage_undefined_pair_count}/{clustering.linkage_pair_count} "
+        f"({clustering.linkage_undefined_pair_fraction:.1%}) distances use neutral "
+        f"{UNDEFINED_SPEARMAN_DISTANCE:g}; exact-distance tie excess is "
+        f"{clustering.linkage_distance_tie_fraction:.1%}. No dendrogram cut is interpreted. "
+        f"Gray cells remain missing; dark borders mark Fisher p<{P_VALUE_CUTOFF:g}."
     )
     plot_clustered_contrast_heatmap(
         clustering,
@@ -1692,8 +1497,6 @@ def write_contrast_heatmap(
         clustered_output_path,
         title=f"Clustered signed direction contrast: {mode.label}",
         subtitle=clustered_subtitle,
-        cluster_membership=cluster_membership,
-        cluster_enrichment=cluster_enrichment,
     )
     return ContrastHeatmapOutputs(
         overview_path=output_path,
@@ -1702,8 +1505,6 @@ def write_contrast_heatmap(
         displayed_cell_count=displayed_cells,
         tested_cell_count=len(cells),
         clustering=clustering,
-        cluster_membership=cluster_membership,
-        cluster_enrichment=cluster_enrichment,
     )
 
 
@@ -1744,8 +1545,6 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         f"- Cluster-tree nodes: `{CLUSTER_TREE_NODES_FILENAME}`",
         f"- Cluster-tree leaves and row order: `{CLUSTER_TREE_LEAVES_FILENAME}`",
         f"- Individual-versus-grouped comparison: `{CLUSTER_COMPARISON_FILENAME}`",
-        f"- Grouped dendrogram cluster membership: `{GROUPED_CLUSTER_MEMBERSHIP_FILENAME}`",
-        f"- Grouped dendrogram label-enrichment tests: `{GROUPED_CLUSTER_ENRICHMENT_FILENAME}`",
         "",
         "Trait-pattern heatmaps use the six-shared-trait display-edge TSVs that feed "
         "the Cytoscape graph views. Signed contrasts use the full increased and decreased "
@@ -1792,15 +1591,14 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "- `signed_direction_contrast_clustered`: A separate compact overview clusters rows "
         "with average linkage on pairwise-complete Spearman distance (`1 - rho`). A pairwise "
         f"correlation requires at least {MIN_SPEARMAN_OVERLAP} shared supported traits. Blank "
-        "cells are never filled with zero; when a row pair has too little overlap or constant "
-        f"ranks, clustering uses neutral distance {UNDEFINED_SPEARMAN_DISTANCE:g} and records "
-        "the limitation in the leaf table. Trait columns remain in the fixed six-trait order. "
-        f"The grouped tree is cut at {GROUPED_CLUSTER_CUT_FRACTION:.0%} of its maximum merge "
-        "distance. Visible branch names use the strongest anatomy and grouped-condition "
-        "trends instead of numeric cluster IDs. One-sided Fisher tests evaluate those trends, "
-        "with BH correction performed separately for each label type; each annotation states "
-        f"whether any trend met q<={CLUSTER_LABEL_Q_CUTOFF:g} with count>="
-        f"{CLUSTER_LABEL_MIN_COUNT}.",
+        "cells are never filled with zero. Rows are sorted by exact condition/body-site pair "
+        "label before distance construction so SciPy's tied-distance choices are reproducible. "
+        "Rows with no defined Spearman distance to any other row are excluded from linkage and "
+        "shown in a separate `Insufficient overlap (not clustered)` block. Remaining undefined "
+        f"row-pair distances use neutral distance {UNDEFINED_SPEARMAN_DISTANCE:g}. Figure "
+        "subtitles and the manifest report undefined-pair and exact-distance tie fractions. "
+        "No dendrogram cut or cluster IDs are interpreted. Trait columns remain in the fixed "
+        "six-trait order.",
         f"- Readable pages contain at most {CONTRAST_ROWS_PER_PAGE} rows each. "
         f"`{CONTRAST_PAGES_FILENAME}` records their paths and counts; `heatmap_page` in "
         "the contrast table locates each displayed row. The original PNGs show full overviews.",
@@ -1844,66 +1642,33 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
                     "",
                 ]
             )
-    membership_path = output_dir / GROUPED_CLUSTER_MEMBERSHIP_FILENAME
-    enrichment_path = output_dir / GROUPED_CLUSTER_ENRICHMENT_FILENAME
-    if membership_path.exists() and enrichment_path.exists():
-        membership = read_tsv(membership_path)
-        enrichment = read_tsv(enrichment_path)
-        if not membership.empty:
-            lines.extend(
-                [
-                    "### Grouped Dendrogram Labels",
-                    "",
-                    f"The dashed cut is {GROUPED_CLUSTER_CUT_FRACTION:.0%} of the maximum "
-                    "merge distance. From top to bottom, branches are named with their "
-                    "strongest anatomy and grouped-condition trends rather than numeric "
-                    "cluster IDs. A trend is descriptive unless the annotation explicitly "
-                    "says it has BH-supported enrichment.",
-                    "",
-                    "| top-to-bottom branch label | rows | strongest anatomy test | "
-                    "strongest grouped-condition test |",
-                    "| --- | ---: | --- | --- |",
-                ]
+        lines.extend(
+            [
+                "### Clustering Diagnostics",
+                "",
+                "The undefined fraction covers every candidate row pair before low-information "
+                "rows are excluded. Tie excess is `(linkage pairs - distinct distances) / "
+                "linkage pairs`; it is zero only when every linkage distance is unique.",
+                "",
+                "| view | rows linked | insufficient-overlap rows | undefined candidate pairs | "
+                "candidate tie excess | undefined linkage pairs | linkage tie excess |",
+                "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+            ]
+        )
+        for row in clustered_rows.itertuples(index=False):
+            lines.append(
+                f"| {row.view_label} | {int(row.clustered_row_count)} | "
+                f"{int(row.insufficient_overlap_row_count)} | "
+                f"{int(row.undefined_spearman_pair_count)}/{int(row.spearman_pair_count)} "
+                f"({row.undefined_spearman_pair_fraction:.1%}) | "
+                f"{int(row.distance_tie_excess_count)}/{int(row.spearman_pair_count)} "
+                f"({row.distance_tie_fraction:.1%}) | "
+                f"{int(row.linkage_undefined_spearman_pair_count)}/"
+                f"{int(row.linkage_pair_count)} "
+                f"({row.linkage_undefined_spearman_pair_fraction:.1%}) | "
+                f"{int(row.linkage_distance_tie_excess_count)}/{int(row.linkage_pair_count)} "
+                f"({row.linkage_distance_tie_fraction:.1%}) |"
             )
-            cluster_summaries = (
-                membership[["cluster_id", "cluster_rank", "cluster_size", "cluster_display_label"]]
-                .drop_duplicates()
-                .sort_values("cluster_rank")
-            )
-            for cluster in cluster_summaries.itertuples(index=False):
-                cells: list[str] = []
-                for label_type in ("anatomy", "grouped_condition"):
-                    matches = enrichment[
-                        (enrichment["cluster_id"] == cluster.cluster_id)
-                        & (enrichment["label_type"] == label_type)
-                        & (enrichment["cluster_label_count"] > 0)
-                    ]
-                    positive = matches[matches["observed_expected_ratio"] > 1.0]
-                    if not positive.empty:
-                        matches = positive
-                    else:
-                        matches = matches.sort_values(
-                            ["cluster_label_count", "fisher_p_value", "label"],
-                            ascending=[False, True, True],
-                        )
-                    if matches.empty:
-                        cells.append("None")
-                        continue
-                    match = matches.iloc[0]
-                    p_value = float(match["fisher_p_value"])
-                    q_value = float(match["fisher_q_value"])
-                    p_text = "<0.001" if p_value < 0.001 else f"{p_value:.3f}"
-                    q_text = "<0.001" if q_value < 0.001 else f"{q_value:.3f}"
-                    safe_label = str(match["label"]).replace("|", "\\|")
-                    cells.append(
-                        f"{safe_label} ({match['cluster_label_count']}/{cluster.cluster_size}, "
-                        f"p={p_text}, q={q_text})"
-                    )
-                display_label = str(cluster.cluster_display_label).replace("; ", "<br>")
-                lines.append(
-                    f"| {display_label} | {cluster.cluster_size} | {cells[0]} | {cells[1]} |"
-                )
-            lines.append("")
     lines.append("")
     pages_path = output_dir / CONTRAST_PAGES_FILENAME
     if pages_path.exists():
@@ -1966,8 +1731,6 @@ def write_six_shared_trait_cytoscape_heatmaps(
     cluster_tree_leaves: list[pd.DataFrame] = []
     clusterings: dict[str, SpearmanClustering] = {}
     contrast_source_edges: dict[str, pd.DataFrame] = {}
-    grouped_cluster_membership = pd.DataFrame()
-    grouped_cluster_enrichment = pd.DataFrame()
 
     for view in graph_manifest.itertuples(index=False):
         display_edges = read_tsv(resolve_repo_path(view.source_display_edges_path, repo_root))
@@ -2026,9 +1789,6 @@ def write_six_shared_trait_cytoscape_heatmaps(
         clusterings[mode.key] = outputs.clustering
         cluster_tree_nodes.append(outputs.clustering.tree_nodes)
         cluster_tree_leaves.append(outputs.clustering.tree_leaves)
-        if mode.key == "grouped":
-            grouped_cluster_membership = outputs.cluster_membership
-            grouped_cluster_enrichment = outputs.cluster_enrichment
         clustered_order = dict(
             zip(
                 outputs.clustering.tree_leaves["condition_body_site_pair"],
@@ -2088,27 +1848,33 @@ def write_six_shared_trait_cytoscape_heatmaps(
                 "cluster_metric": "pairwise-complete Spearman distance (1-rho)",
                 "cluster_linkage": CLUSTER_LINKAGE_METHOD,
                 "cluster_min_shared_traits": MIN_SPEARMAN_OVERLAP,
+                "cluster_input_order": (
+                    "condition_body_site_pair ascending before distance construction"
+                ),
                 "undefined_cluster_distance": UNDEFINED_SPEARMAN_DISTANCE,
-                "dendrogram_cluster_count": outputs.cluster_membership["cluster_id"].nunique()
-                if not outputs.cluster_membership.empty
-                else pd.NA,
-                "dendrogram_enriched_label_cluster_count": outputs.cluster_enrichment.loc[
-                    outputs.cluster_enrichment.get(
-                        "selected_for_dendrogram_label",
-                        pd.Series(dtype=bool),
-                    ).astype(bool),
-                    "cluster_id",
-                ].nunique()
-                if not outputs.cluster_enrichment.empty
-                else pd.NA,
-                "dendrogram_cut_fraction": GROUPED_CLUSTER_CUT_FRACTION
-                if mode.key == "grouped"
-                else pd.NA,
-                "dendrogram_cut_distance": outputs.cluster_membership["cluster_cut_distance"].iloc[
-                    0
-                ]
-                if not outputs.cluster_membership.empty
-                else pd.NA,
+                "clustered_row_count": len(outputs.clustering.clustered_row_labels),
+                "insufficient_overlap_row_count": len(outputs.clustering.insufficient_row_labels),
+                "spearman_pair_count": outputs.clustering.pair_count,
+                "undefined_spearman_pair_count": outputs.clustering.undefined_pair_count,
+                "undefined_spearman_pair_fraction": (outputs.clustering.undefined_pair_fraction),
+                "distinct_spearman_distance_count": (outputs.clustering.distinct_distance_count),
+                "distance_tie_excess_count": outputs.clustering.distance_tie_excess_count,
+                "distance_tie_fraction": outputs.clustering.distance_tie_fraction,
+                "linkage_pair_count": outputs.clustering.linkage_pair_count,
+                "linkage_undefined_spearman_pair_count": (
+                    outputs.clustering.linkage_undefined_pair_count
+                ),
+                "linkage_undefined_spearman_pair_fraction": (
+                    outputs.clustering.linkage_undefined_pair_fraction
+                ),
+                "linkage_distinct_distance_count": (
+                    outputs.clustering.linkage_distinct_distance_count
+                ),
+                "linkage_distance_tie_excess_count": (
+                    outputs.clustering.linkage_distance_tie_excess_count
+                ),
+                "linkage_distance_tie_fraction": (outputs.clustering.linkage_distance_tie_fraction),
+                "dendrogram_cut_applied": False,
                 "cluster_tree_nodes_path": relative_path(
                     output_dir / CLUSTER_TREE_NODES_FILENAME,
                     repo_root,
@@ -2121,18 +1887,6 @@ def write_six_shared_trait_cytoscape_heatmaps(
                     output_dir / CLUSTER_COMPARISON_FILENAME,
                     repo_root,
                 ),
-                "grouped_cluster_membership_path": relative_path(
-                    output_dir / GROUPED_CLUSTER_MEMBERSHIP_FILENAME,
-                    repo_root,
-                )
-                if mode.key == "grouped"
-                else "",
-                "grouped_cluster_enrichment_path": relative_path(
-                    output_dir / GROUPED_CLUSTER_ENRICHMENT_FILENAME,
-                    repo_root,
-                )
-                if mode.key == "grouped"
-                else "",
                 "source_display_edges_path": "",
                 "source_increased_edges_path": relative_path(increased_path, repo_root),
                 "source_decreased_edges_path": relative_path(decreased_path, repo_root),
@@ -2170,14 +1924,6 @@ def write_six_shared_trait_cytoscape_heatmaps(
     write_tsv(tree_nodes, output_dir / CLUSTER_TREE_NODES_FILENAME)
     write_tsv(tree_leaves, output_dir / CLUSTER_TREE_LEAVES_FILENAME)
     write_tsv(cluster_comparison, output_dir / CLUSTER_COMPARISON_FILENAME)
-    write_tsv(
-        grouped_cluster_membership,
-        output_dir / GROUPED_CLUSTER_MEMBERSHIP_FILENAME,
-    )
-    write_tsv(
-        grouped_cluster_enrichment,
-        output_dir / GROUPED_CLUSTER_ENRICHMENT_FILENAME,
-    )
     write_tsv(
         pd.DataFrame.from_records(
             page_records,

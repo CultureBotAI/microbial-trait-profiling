@@ -213,7 +213,7 @@ def test_contrasts_show_supported_effects_and_mark_strict_significance() -> None
     assert heatmaps.format_p_value(0.0099) == "<0.01"
 
 
-def test_spearman_clustering_uses_pairwise_overlap_and_neutral_undefined_distance() -> None:
+def test_spearman_clustering_separates_rows_without_a_defined_neighbor() -> None:
     matrix = pd.DataFrame(
         [
             [1.0, 2.0, 3.0, math.nan],
@@ -245,55 +245,66 @@ def test_spearman_clustering_uses_pairwise_overlap_and_neutral_undefined_distanc
         clustering.distances.loc["A | Feces", "D | Feces"] == heatmaps.UNDEFINED_SPEARMAN_DISTANCE
     )
     assert bool(clustering.defined_correlations.loc["A | Feces", "D | Feces"]) is False
-    assert sorted(clustering.clustered_row_labels) == sorted(matrix.index)
-    low_information = clustering.tree_leaves.set_index("condition_body_site_pair")[
-        "low_information_for_clustering"
-    ]
-    assert bool(low_information.loc["D | Feces"]) is True
-    assert len(clustering.tree_nodes) == len(matrix) - 1
+    assert sorted(clustering.clustered_row_labels) == sorted(matrix.index[:3])
+    assert clustering.insufficient_row_labels == ["D | Feces"]
+    leaves = clustering.tree_leaves.set_index("condition_body_site_pair")
+    assert bool(leaves.loc["D | Feces", "included_in_clustering"]) is False
+    assert bool(leaves.loc["D | Feces", "low_information_for_clustering"]) is True
+    assert leaves.loc["D | Feces", "clustering_exclusion_reason"] == (
+        "no defined Spearman distance to any other row"
+    )
+    assert pd.isna(leaves.loc["D | Feces", "linkage_leaf_order"])
+    assert leaves.loc["D | Feces", "clustered_heatmap_order"] == len(matrix)
+    assert len(clustering.tree_nodes) == len(clustering.clustered_row_labels) - 1
+    assert clustering.pair_count == 6
+    assert clustering.undefined_pair_count == 3
+    assert clustering.undefined_pair_fraction == 0.5
+    assert clustering.distinct_distance_count == 3
+    assert clustering.distance_tie_excess_count == 3
+    assert clustering.distance_tie_fraction == 0.5
+    assert clustering.linkage_pair_count == 3
+    assert clustering.linkage_undefined_pair_count == 0
+    assert clustering.linkage_distance_tie_excess_count == 1
+    assert math.isclose(clustering.linkage_distance_tie_fraction, 1 / 3)
 
-    membership = heatmaps.cut_grouped_dendrogram(clustering)
-    assert membership["cluster_cut_fraction"].eq(heatmaps.GROUPED_CLUSTER_CUT_FRACTION).all()
-    assert membership["cluster_id"].str.fullmatch(r"C\d+").all()
-    top_cluster = membership.loc[membership["clustered_heatmap_order"].idxmax(), "cluster_id"]
-    assert top_cluster == "C1"
 
+def test_spearman_clustering_is_invariant_to_input_row_permutation() -> None:
+    matrix = pd.DataFrame(
+        [
+            [1.0, 2.0, 3.0, 4.0],
+            [2.0, 4.0, 6.0, 8.0],
+            [4.0, 3.0, 2.0, 1.0],
+            [8.0, 6.0, 4.0, 2.0],
+            [1.0, math.nan, math.nan, math.nan],
+        ],
+        index=["B | Feces", "A | Feces", "D | Feces", "C | Feces", "E | Feces"],
+        columns=["t1", "t2", "t3", "t4"],
+    )
+    cells = pd.DataFrame(
+        {
+            "condition_body_site_pair": matrix.index,
+            "condition": ["B", "A", "D", "C", "E"],
+            "body_site_group": ["Feces"] * len(matrix),
+        }
+    )
+    expected = heatmaps.build_spearman_clustering(
+        matrix,
+        cells,
+        view_key="test",
+        view_label="Test",
+    )
 
-def test_grouped_cluster_enrichment_labels_anatomy_and_condition() -> None:
-    records = []
-    for cluster_rank, (cluster_id, anatomy, condition) in enumerate(
-        [("C1", "Feces", "Condition A"), ("C2", "Oral", "Condition B")],
-        start=1,
-    ):
-        for offset in range(12):
-            records.append(
-                {
-                    "view_key": "grouped_direction_contrast",
-                    "cluster_id": cluster_id,
-                    "cluster_rank": cluster_rank,
-                    "cluster_size": 12,
-                    "clustered_heatmap_order": (cluster_rank - 1) * 12 + offset + 1,
-                    "condition_body_site_pair": f"{condition} {offset} | {anatomy}",
-                    "condition": condition,
-                    "body_site_group": anatomy,
-                    "cluster_color": heatmaps.CLUSTER_COLORS[cluster_rank - 1],
-                    "cluster_cut_fraction": heatmaps.GROUPED_CLUSTER_CUT_FRACTION,
-                    "cluster_cut_distance": 0.7,
-                }
-            )
-    membership = pd.DataFrame.from_records(records)
-
-    enrichment = heatmaps.build_grouped_cluster_enrichment(membership)
-    selected = enrichment[enrichment["selected_for_dendrogram_label"]]
-
-    assert set(selected["label_type"]) == {"anatomy", "grouped_condition"}
-    assert set(selected["cluster_id"]) == {"C1", "C2"}
-    assert selected["fisher_q_value"].le(heatmaps.CLUSTER_LABEL_Q_CUTOFF).all()
-    labels = heatmaps.dendrogram_cluster_labels(membership, enrichment)
-    assert "Anatomy enriched: Feces" in labels["C1"]
-    assert "Condition enriched: Condition A" in labels["C1"]
-    assert "C1" not in labels["C1"]
-    assert "BH-supported enrichment" in labels["C1"]
+    for seed in range(10):
+        permuted_matrix = matrix.sample(frac=1.0, random_state=seed)
+        permuted = heatmaps.build_spearman_clustering(
+            permuted_matrix,
+            cells,
+            view_key="test",
+            view_label="Test",
+        )
+        assert permuted.clustered_row_labels == expected.clustered_row_labels
+        assert permuted.insufficient_row_labels == expected.insufficient_row_labels
+        np.testing.assert_allclose(permuted.linkage_matrix, expected.linkage_matrix)
 
 
 def test_cluster_comparison_flags_inverse_individual_pattern_as_outlier() -> None:
@@ -444,6 +455,8 @@ def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Pa
             edges.to_csv(tmp_path / f"{view_key}_edges.tsv", sep="\t", index=False)
             edges.iloc[:1].to_csv(tmp_path / display_filename, sep="\t", index=False)
     pd.DataFrame(views).to_csv(tmp_path / heatmaps.GRAPH_MANIFEST_FILENAME, sep="\t", index=False)
+    for filename in heatmaps.OBSOLETE_CLUSTER_OUTPUTS:
+        (tmp_path / filename).write_text("obsolete\n", encoding="utf-8")
 
     with (
         patch.object(heatmaps, "plot_matrix_heatmap") as plot,
@@ -473,11 +486,16 @@ def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Pa
         assert call.kwargs["significance_borders"].to_numpy(dtype=bool).all()
         assert (np.char.find(call.args[1].to_numpy(dtype=str), "*") == -1).all()
     assert clustered_plot.call_count == 2
-    grouped_cluster_call, individual_cluster_call = clustered_plot.call_args_list
-    assert not grouped_cluster_call.kwargs["cluster_membership"].empty
-    assert not grouped_cluster_call.kwargs["cluster_enrichment"].empty
-    assert individual_cluster_call.kwargs["cluster_membership"].empty
     assert contrasts["clustered_png_path"].str.endswith("_clustered_heatmap.png").all()
+    assert contrasts["clustered_row_count"].tolist() == [0, 0]
+    assert contrasts["insufficient_overlap_row_count"].tolist() == [30, 30]
+    assert contrasts["undefined_spearman_pair_count"].tolist() == [435, 435]
+    assert contrasts["undefined_spearman_pair_fraction"].tolist() == [1.0, 1.0]
+    assert contrasts["distance_tie_excess_count"].tolist() == [434, 434]
+    assert contrasts["distance_tie_fraction"].tolist() == [434 / 435, 434 / 435]
+    assert contrasts["linkage_pair_count"].tolist() == [0, 0]
+    assert contrasts["linkage_distance_tie_fraction"].tolist() == [0.0, 0.0]
+    assert not contrasts["dendrogram_cut_applied"].any()
     table = pd.read_csv(tmp_path / heatmaps.CONTRAST_TABLE_FILENAME, sep="\t")
     assert len(table) == 60
     assert not table.duplicated(["view_key", "condition_body_site_pair", "trait_id"]).any()
@@ -491,19 +509,9 @@ def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Pa
     tree_nodes = pd.read_csv(tmp_path / heatmaps.CLUSTER_TREE_NODES_FILENAME, sep="\t")
     tree_leaves = pd.read_csv(tmp_path / heatmaps.CLUSTER_TREE_LEAVES_FILENAME, sep="\t")
     comparison = pd.read_csv(tmp_path / heatmaps.CLUSTER_COMPARISON_FILENAME, sep="\t")
-    assert len(tree_nodes) == 58
+    assert len(tree_nodes) == 0
     assert len(tree_leaves) == 60
+    assert not tree_leaves["included_in_clustering"].any()
     assert len(comparison) == 30
-    membership = pd.read_csv(
-        tmp_path / heatmaps.GROUPED_CLUSTER_MEMBERSHIP_FILENAME,
-        sep="\t",
-    )
-    enrichment = pd.read_csv(
-        tmp_path / heatmaps.GROUPED_CLUSTER_ENRICHMENT_FILENAME,
-        sep="\t",
-    )
-    assert len(membership) == 30
-    assert membership["cluster_id"].nunique() == 30
-    assert membership["cluster_display_label"].notna().all()
-    assert not membership["cluster_display_label"].str.startswith("C").any()
-    assert set(enrichment["label_type"]) == {"anatomy", "grouped_condition"}
+    for filename in heatmaps.OBSOLETE_CLUSTER_OUTPUTS:
+        assert not (tmp_path / filename).exists()

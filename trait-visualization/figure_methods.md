@@ -1522,30 +1522,25 @@ Separate compact clustered versions are written with
 with average-linkage hierarchical clustering on pairwise-complete Spearman
 distance, `1 - rho`; columns remain in the fixed six-trait order. At least 3
 shared supported traits are required to define a pairwise correlation. Missing
-cells are not filled with zero. A row pair with too little overlap or constant
-ranks receives neutral clustering distance 1, and low-information leaves are
-flagged in `six_shared_trait_signed_direction_cluster_tree_leaves.tsv`. The
-complete linkage merges are exported in
-`six_shared_trait_signed_direction_cluster_tree_nodes.tsv`.
+cells are not filled with zero. Before distances are constructed, rows are
+sorted lexicographically by their exact condition/body-site pair labels. This
+canonical input order makes SciPy's choices among exact distance ties
+reproducible under input-row permutations, but it does not make the tied
+topology statistically stable. Therefore, the dendrogram is not cut into
+clusters and no cluster IDs or label-enrichment tests are reported.
 
-For the grouped-condition clustered heatmap, the row dendrogram is additionally
-cut at 70% of its maximum merge distance (the conventional SciPy dendrogram
-color-threshold fraction). The resulting contiguous branches are assigned
-cluster IDs from top to bottom and exported in
-`six_shared_trait_grouped_signed_direction_cluster_membership.tsv`. For every
-cluster, anatomy label, and grouped-condition label, a one-sided Fisher exact
-test compares the label frequency inside the cluster with the frequency among
-all rows outside it. Benjamini-Hochberg correction is applied separately across
-all anatomy tests and all grouped-condition tests. The dendrogram label shows
-the strongest anatomy trend and strongest grouped-condition trend instead of a
-numeric cluster ID. When at least 2 cluster rows carry a label and `q <= 0.05`,
-the annotation identifies it as BH-supported enrichment. Otherwise, it marks
-the names as descriptive trends without BH support; one-row branches are
-explicitly marked as singletons. All tested contingency counts, odds ratios,
-p-values, q-values, fold enrichment, and label decisions are exported in
-`six_shared_trait_grouped_signed_direction_cluster_enrichment.tsv`. These
-labels are exploratory annotations of clustering structure, not confirmatory
-biological claims.
+Rows with no defined Spearman distance to any other row are excluded from the
+linkage and displayed in a separate `Insufficient overlap (not clustered)`
+block. For the remaining linkage rows, a row pair with too little overlap or
+constant ranks receives neutral clustering distance 1. The figure subtitle and
+manifest report undefined-pair counts and fractions before exclusion and within
+the linkage subset, as well as the exact-distance tie excess fraction, defined
+as `(linkage pairs - distinct distances) / linkage pairs`. Inclusion status,
+exclusion reason, supported-trait count, defined-neighbor count, canonical input
+order, and displayed row order are recorded in
+`six_shared_trait_signed_direction_cluster_tree_leaves.tsv`. The complete
+linkage merges among included rows are exported in
+`six_shared_trait_signed_direction_cluster_tree_nodes.tsv`.
 
 The raw individual-condition tree is compared with the grouped-condition tree
 in `six_shared_trait_signed_direction_cluster_comparison.tsv`. Each individual
