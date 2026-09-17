@@ -116,11 +116,14 @@ unit and scoped claim and link the full evidence record.
   biological replicates; multiple experiments or cells may share studies.
 - **Comparison basis:** full retained denominator, transformation, background,
   population and selection rule for each arm. Matching export dates alone does
-  not establish comparability. Keep the shared comparison basis and sensitivity
-  results for all 15 unique pairwise ratios among the six traits attached to
-  six-trait summaries (see PR #192's review); report native effects and error-rate
-  families separately. A selected six-trait set does not gain a new error-rate
-  guarantee when displayed in a combined figure.
+  not establish comparability. [Issue #175](https://github.com/CultureBotAI/microbial-trait-profiling/issues/175)
+  and [PR #181](https://github.com/CultureBotAI/microbial-trait-profiling/pull/181)
+  define the [shared comparison basis](https://github.com/CultureBotAI/microbial-trait-profiling/blob/main/methods/three_arm_statistics.md#shared-comparison-basis)
+  and [15 Table 1 paired log-ratios](https://github.com/CultureBotAI/microbial-trait-profiling/blob/main/methods/table1_log_ratio_validation.md#all-15-paired-log-ratios),
+  one declared orientation for each unordered pair among the six traits. Keep
+  that basis and all ratio sensitivity results attached to six-trait summaries;
+  report native effects and error-rate families separately. A selected six-trait
+  set does not gain a new error-rate guarantee when displayed in a combined figure.
 - **Evidence limit:** distinguish association from mechanism, and record unresolved
   calibration, semantic and coverage limitations. Significance alone does not
   establish biological importance, generality, replication or a mechanism.
