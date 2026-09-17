@@ -40,34 +40,45 @@ from bsdbng.trait_guilds import (
 OTHER_LABEL = "Other"
 GUILD_ORDER = ("aerobe", "anaerobe")
 CELL_SIZE_PX = 26
+MIN_PLOT_HEIGHT_PX = 120
+MIN_FIGURE_WIDTH_PX = 900
 
 
 def _figure_height(row_count: int, *, top_margin: int, bottom_margin: int) -> int:
-    """Reserve margins plus enough plotting area for every heatmap row."""
-    plot_height = CELL_SIZE_PX * max(1, row_count)
+    """Reserve margins and a renderable plot area for every heatmap row."""
+    plot_height = max(MIN_PLOT_HEIGHT_PX, CELL_SIZE_PX * max(1, row_count))
     return top_margin + bottom_margin + plot_height
 
 
 def _figure_width(column_count: int, *, left_margin: int, right_margin: int) -> int:
-    """Reserve horizontal margins without taking width from heatmap cells."""
-    return left_margin + right_margin + CELL_SIZE_PX * column_count
+    """Reserve horizontal margins, cell width, and the readable canvas floor."""
+    return max(
+        MIN_FIGURE_WIDTH_PX,
+        left_margin + right_margin + CELL_SIZE_PX * column_count,
+    )
+
+
+def _panel_plot_width(columns_per_panel: Sequence[int], horizontal_spacing: float) -> int:
+    """Return plot width for equal-width cells and proportional panel domains."""
+    if not columns_per_panel or any(count <= 0 for count in columns_per_panel):
+        raise ValueError("every subplot panel must contain at least one column")
+    panel_domain_share = 1.0 - horizontal_spacing * (len(columns_per_panel) - 1)
+    if panel_domain_share <= 0:
+        raise ValueError("horizontal spacing leaves no room for subplot panels")
+    cell_area_width = CELL_SIZE_PX * sum(columns_per_panel)
+    return math.ceil(cell_area_width / panel_domain_share)
 
 
 def _panel_figure_width(
-    columns_per_panel: int,
-    panel_count: int,
+    columns_per_panel: Sequence[int],
     *,
     horizontal_spacing: float,
     left_margin: int,
     right_margin: int,
 ) -> int:
-    """Account for subplot gaps while preserving cell width in every panel."""
-    panel_domain_share = 1.0 - horizontal_spacing * (panel_count - 1)
-    if panel_domain_share <= 0:
-        raise ValueError("horizontal spacing leaves no room for subplot panels")
-    cell_area_width = CELL_SIZE_PX * columns_per_panel * panel_count
-    plot_width = math.ceil(cell_area_width / panel_domain_share)
-    return left_margin + right_margin + plot_width
+    """Reserve margins, proportional panel domains, and the canvas floor."""
+    plot_width = _panel_plot_width(columns_per_panel, horizontal_spacing)
+    return max(MIN_FIGURE_WIDTH_PX, left_margin + right_margin + plot_width)
 
 
 @dataclass(frozen=True)
@@ -922,15 +933,19 @@ def write_figure(
     right_margin = 180
     top_margin = 445
     bottom_margin = 300
+    plot_width = CELL_SIZE_PX * len(matrix.columns)
+    figure_width = _figure_width(
+        len(matrix.columns), left_margin=left_margin, right_margin=right_margin
+    )
+    # Put width-floor slack outside the grid so narrow figures keep 26 px cells.
+    right_margin = figure_width - left_margin - plot_width
     figure.update_layout(
         title={"text": f"{title}<br><sub>{subtitle}</sub>"},
         xaxis={"title": f"body site | {group_noun} _ direction", "tickangle": -60},
         yaxis={"title": "condition", "autorange": "reversed"},
         shapes=shapes,
         annotations=annotations,
-        width=_figure_width(
-            len(matrix.columns), left_margin=left_margin, right_margin=right_margin
-        ),
+        width=figure_width,
         height=_figure_height(len(row_labels), top_margin=top_margin, bottom_margin=bottom_margin),
         # The site headers sit above the plotting area, so they need their own room.
         # Caption lines plus a two-line site header need the room.
@@ -996,11 +1011,13 @@ def write_body_site_panels(
     }
 
     horizontal_spacing = 0.06
+    columns_per_panel = [len(site_indices[site]) for site in sites]
     figure = make_subplots(
         rows=1,
         cols=len(sites),
         shared_yaxes=True,
         horizontal_spacing=horizontal_spacing,
+        column_widths=columns_per_panel,
         subplot_titles=[f"<b>{site}</b>" for site in sites],
     )
 
@@ -1092,16 +1109,19 @@ def write_body_site_panels(
     right_margin = 180
     top_margin = 425
     bottom_margin = 260
+    plot_width = _panel_plot_width(columns_per_panel, horizontal_spacing)
+    figure_width = _panel_figure_width(
+        columns_per_panel,
+        horizontal_spacing=horizontal_spacing,
+        left_margin=left_margin,
+        right_margin=right_margin,
+    )
+    # Put width-floor slack outside the panels so every panel keeps 26 px cells.
+    right_margin = figure_width - left_margin - plot_width
     figure.update_layout(
         title={"text": f"{title}<br><sub>{subtitle}</sub>"},
         shapes=shapes,
-        width=_panel_figure_width(
-            max(len(indices) for indices in site_indices.values()),
-            len(sites),
-            horizontal_spacing=horizontal_spacing,
-            left_margin=left_margin,
-            right_margin=right_margin,
-        ),
+        width=figure_width,
         height=_figure_height(len(row_labels), top_margin=top_margin, bottom_margin=bottom_margin),
         # Caption lines above the panel titles.
         margin={"l": left_margin, "r": right_margin, "b": bottom_margin, "t": top_margin},

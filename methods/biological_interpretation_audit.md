@@ -1,6 +1,7 @@
 # Biological interpretation claim audit (#179)
 
-Audit date: 2026-09-14. Policy: [shared interpretation guide](biological_interpretation.md).
+Audit date: 2026-09-14; revision pins refreshed 2026-09-16. Policy:
+[shared interpretation guide](biological_interpretation.md).
 This is a wording/provenance audit, not a reanalysis or validation of mechanisms.
 `Corrected here` means the source prose/template on this branch is changed;
 previously exported images still require regeneration. `Proposed correction`
@@ -13,13 +14,13 @@ has applied it. `Retain` means the scoped wording/evidence limit is appropriate.
 | --- | --- | --- |
 | Current checkout | `3b73376` before #179 edits: README, CONTRIBUTING, AGENTS, generated Copilot instructions, PR template, all methods, MANUSCRIPT_AUDIT, docs, profile aggregation and guild/Table 1 plot generators | All contributors; Noel for current guild/Table 1 methods and figures; manuscript/public-description owners to be identified by coordinators |
 | Proposed overlay, PR #173 | `85f97ac714c6d7c580c3a548b7f428229d58b634`: Table 1 methods, `guild_maps.py::_significance_note`, overlay source and output schema; figure captions inspected in generator source | Noel, with Jed and Ilyas for their statistical labels |
-| Rosalind archive/review, PR #192 | `593f3c88100c915187c8bc06e2cbdbedef7730c3`: `docs/rosalind-six-trait-interpretation.md`; also supplied in the issue request. The archived review describes its own evidence at `f22b31bd4bdef6e6e55bb5830ca631b81e3d4319` | All narrative authors; follow-up leads below |
-| Taxon contribution/influence audit, PR #194 | `021e5b449080c4a4f2f22a2ae329fccffc7eb367`: `methods/table1_taxon_influence.md` and `methods/table1_taxon_influence_results.md`; inspected the measured contribution, concentration, shared-fraction and bounded lineage-exclusion summaries | Jed with Noel and Ilyas; retain the provisional annotation-level limits and integrate the missing native results before closing #190 |
+| Rosalind archive/review, PR #192 | `8268ccce657629c60268bc47e6fd9b9fa99529ac`: `docs/rosalind-six-trait-interpretation.md` and the separately marked, unreviewed `docs/rosalind-six-trait-interpretation-response-2.md`; inspected the archive attribution/status, oxygen-versus-anaerobic-respiration separation, and the added mechanism/site predictions. The first archived review describes its own evidence at `f22b31bd4bdef6e6e55bb5830ca631b81e3d4319` | All narrative authors; follow-up leads below |
+| Taxon contribution/influence audit, PR #194 | `0f6ad5b82ec6cac46fbd8391a9f323c26cdb2191`: targeted review of `methods/table1_taxon_influence.md`, `methods/table1_taxon_influence_results.md`, `methods/table1_native_influence.md`, the compact native review bundle/manifests, and their source implementations; inspected contribution/concentration, shared-fraction, rule-declared lineage exclusions, native composition and native ORA summaries | Jed with Noel and Ilyas; retain the provisional annotation-level limits and complete native-owner review before closing #190 |
 | Composition branch | `a2b2df98e9beec98b772c9cb5af7aa090d033a98`: targeted review of generated narrative/title sites in `analyze_parkinsons_disease_trait_profiles.py`, `investigate_facultative_aerobe_expansion.py`, `investigate_gut_anaerobe_depletion.py`, and figure annotation templates | Jed; remaining branch artifact owners to inventory |
 | Enrichment branch | `782a33816193c60d5506d9c9934afcac0101f8bf`: `scripts/generate_enrichment_summary.py`, `scripts/generate_depletion_summary.py`, including text output, titles, axes and infographic narrative | Ilyas |
 
-The PR revisions were fetched through `refs/pull/173/head` and
-`refs/pull/192/head`; no changes were made to those PRs. Other branches were
+The PR revisions were fetched through `refs/pull/173/head`, `refs/pull/192/head`
+and `refs/pull/194/head`; no changes were made to those PRs. Other branches were
 inspected with `git show`/`git grep`. Reproduce a claim lookup with
 `git show <revision>:<path>` and the quoted phrase below. The separate-branch
 reviews are targeted, not exhaustive certification of every historical image.
@@ -40,7 +41,7 @@ The source evidence audits and validation work in #188–#191 remain open work.
 | C07 README, methods index and per-figure methods | Public project scope and per-figure descriptions lack a common interpretation contract | **Corrected here:** link the guide/audit and state annotation scope, contrast-orientation restriction and descriptive heatmap uncertainty limits. |
 | C08 CONTRIBUTING, AGENTS, Copilot instructions, PR checklist | Review workflow does not require biological claim/provenance review | **Corrected here:** guide applies to every author/reviewer and output; require effect/uncertainty/support/inference/scope, caption/template review and audit updates. Regenerate Copilot via `just sync-agent-docs`. |
 | C09 Table 1 methods, agreement with composition arm | Explicitly describes shared-matrix agreement as robustness rather than independent evidence | **Retain**, with denominator/selection/calibration qualifications from the guide. Do not promote agreement to replication. |
-| C10 `MANUSCRIPT_AUDIT.md`, #131/#132/#133 and uncertainty notes | Existing warnings about assertion-level inference and incomplete manuscript access | **Retain:** its “Biological interpretation companion” section links this audit. A statistical audit or corrected implementation does not validate biological interpretations. |
+| C10 `MANUSCRIPT_AUDIT.md`, #131/#132/#133 and uncertainty notes | Existing warnings about assertion-level inference and incomplete manuscript access | **Corrected here:** the added “Biological interpretation companion” section links this audit. The existing warnings remain applicable; a statistical audit or corrected implementation does not validate biological interpretations. |
 | C11 `docs/origin-story.md`, “taxa and their abundance directions”; access/benchmark docs | Ingestion history describes the original curated direction; access docs describe data acquisition | **Retain** as provenance descriptions, not claims of patient-level trait measurement. No mechanistic result claim identified in those documents. |
 
 ## PR #173: proposed overlay and narrative
@@ -107,12 +108,12 @@ owner review. This issue does not silently import or change their statistics.
 | G08 same notes, interpretation/integration grids | Positive mean z means “enriched”; single-trait enrichment treated as prevalence; “High enrichment” implies “Common trait” | Replace with “above-average transformed annotation signal” for z-scores. Define ORA as a comparison against its background; a large fold need not mean common/high-prevalence. Keep prevalence, background enrichment and paired contrast in separate columns. | Jed with Ilyas |
 | G09 `trait-visualization/trait-profile-investigation/six-shared-traits/interpretations.md`, Overall/Cross-Disease Patterns | Traits “are not disease-specific”; “shared microbial phenotype axis” including “aerotolerance/oxygen exposure” and “halophily/osmotic tolerance” | “Selected annotation signals recur across the displayed condition/site groups.” Display recurrence does not test disease specificity, measure oxygen exposure or justify salt-label translation. Keep native semantics, eligible orientation and anatomical limits (#188/#189). | Jed |
 | G10 `trait-visualization/figure_methods.md`, taxon heatmap legend | Zero “cells indicate absence/no annotation” | “Zero cells indicate no recorded annotation under the selected mappings.” Distinguish missing mapping/coverage and biological absence; update the generator and rendered legend too. | Jed |
-| G11 PR #194 contribution/influence results | Largest contributing genera, pooled baseline contrasts and largest changes in a predeclared 22-exclusion panel | **Retain as provisional annotation influence diagnostics:** carry resolved-rank coverage, exact corpus/denominator, pairs/studies, effect units, conditional intervals, ambiguity and selection limits. Count concentration is not an additive fraction-effect contribution, and an exclusion is not a causal intervention. Do not infer patient abundance, oxygen exposure, SCFA production or a mechanism. Orientation (#188), semantics/source identity (#189), native Jed/ORA integration and calibration (#182) remain unresolved. | Jed with Noel/Ilyas; PR #194 / #190 |
+| G11 PR #194 contribution/influence results | Largest contributing genera, pooled baseline contrasts and largest changes in a rule-declared 24-scenario panel, with native composition and fixed/recomputed-background ORA reruns | **Retain as provisional annotation influence diagnostics:** carry resolved-rank coverage, exact corpus/denominator, pairs/studies, effect units, conditional intervals, ambiguity, selection limits and distinct correction families. Count concentration is not an additive fraction-effect contribution, and an exclusion is not a causal intervention. Do not infer patient abundance, oxygen exposure, SCFA production or a mechanism. Orientation (#188), semantics/source identity (#189), native-owner review and calibration (#182) remain unresolved. | Jed with Noel/Ilyas; PR #194 / #190 |
 
 ## Adoption record
 
 The repository guide, current prose/caption corrections and workflow are delivered
-on #179. PR #173, PR #194's pending native integrations, separate analysis branches,
+on #179. PR #173, PR #194's pending native-owner review, separate analysis branches,
 unpublished manuscript sections and public outputs still require their owners to
 apply the proposed corrections and record artifact revisions. No coordinator sign-off
 or outside-branch modification is asserted here. Add each newly identified output

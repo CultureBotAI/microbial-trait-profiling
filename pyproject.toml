@@ -19,7 +19,7 @@ dependencies = [
   # deprecated it), so with the plotly floor below, kaleido must sit on the v1
   # line; the two floors are a pair.
   "kaleido>=1.0",
-  "linkml>=1.10.0",
+  "linkml>=1.11.1",
   "linkml-runtime>=1.8.3",
   "plotly>=7.0",
   "pydantic>=2.13.0",
