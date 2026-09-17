@@ -163,6 +163,13 @@ fail different rules:
 So drawing all four together is not a matter of widening the cut. It needs a
 corpus where gingivitis carries at least three studies in one body site.
 
+With `--include-other-conditions`, conditions outside the width cut contribute
+to a pooled Other row. The panel note uses the build's recorded membership to
+distinguish this from omission and reports whether that row is drawn in the
+particular panel. A masked pool or a condition-focused cut that excludes Other
+does not display those conditions. Repeated requested labels are reported once,
+in their first-request order.
+
 Each cut fixes one axis and derives the other from the data: naming conditions
 keeps the body sites those conditions were actually drawn in, naming body sites
 keeps the conditions drawn in them, and rows or column blocks left carrying no
