@@ -36,6 +36,199 @@ INCREASED_COLOR = "#b91c1c"
 DECREASED_COLOR = "#1d4ed8"
 UNAVAILABLE_COLOR = "#e5e7eb"
 SPECIFICITY_COLOR_LIMIT = 3.0
+REFERENCE_TABLE_STEM = "pd_species_six_traits_reference"
+LITERATURE_REFERENCE_NAME = "pd_taxa_literature_reference"
+LITERATURE_COLORS = {
+    "increased": "#fee2e2",
+    "decreased": "#dbeafe",
+    "variable": "#ede9fe",
+    "associated": "#f3f4f6",
+    "not listed": "#f9fafb",
+}
+LITERATURE_LABELS = {
+    "increased": "lit inc",
+    "decreased": "lit dec",
+    "variable": "var",
+    "associated": "assoc",
+    "not listed": "not ref",
+}
+PD_TAXA_LITERATURE_REFERENCE = [
+    {
+        "literature_taxon": "Akkermansia",
+        "literature_rank": "genus",
+        "literature_direction": "increased",
+        "literature_evidence": "Often reported as enriched in PD fecal microbiome studies.",
+        "doi_citations": "10.1186/s13073-017-0428-y;10.1002/mds.28119;10.1038/s41467-022-34667-x",
+        "match_terms": "Akkermansia;Akkermansia muciniphila",
+    },
+    {
+        "literature_taxon": "Bifidobacterium",
+        "literature_rank": "genus",
+        "literature_direction": "increased",
+        "literature_evidence": "Reported as increased in multiple PD gut microbiome cohorts.",
+        "doi_citations": "10.1002/mds.26942;10.1016/j.parkreldis.2016.08.019",
+        "match_terms": "Bifidobacterium;Bifidobacteriaceae",
+    },
+    {
+        "literature_taxon": "Lactobacillus",
+        "literature_rank": "genus",
+        "literature_direction": "increased",
+        "literature_evidence": "Reported as increased in PD and related motor phenotype studies.",
+        "doi_citations": "10.1371/journal.pone.0142164;10.1002/mds.26942",
+        "match_terms": "Lactobacillus;Lactobacillaceae",
+    },
+    {
+        "literature_taxon": "Enterobacteriaceae",
+        "literature_rank": "family",
+        "literature_direction": "increased",
+        "literature_evidence": (
+            "Reported as enriched in PD and linked with postural instability/gait phenotype."
+        ),
+        "doi_citations": "10.1002/mds.26069;10.1016/j.parkreldis.2016.08.019",
+        "match_terms": (
+            "Enterobacteriaceae;Escherichia;Escherichia coli;Shigella;Escherichia-Shigella"
+        ),
+    },
+    {
+        "literature_taxon": "Escherichia-Shigella",
+        "literature_rank": "genus group",
+        "literature_direction": "increased",
+        "literature_evidence": "Reported as increased in PD metagenomic profiles.",
+        "doi_citations": "10.1007/s11427-016-9001-4",
+        "match_terms": "Escherichia-Shigella;Escherichia;Escherichia coli;Shigella",
+    },
+    {
+        "literature_taxon": "Streptococcus",
+        "literature_rank": "genus",
+        "literature_direction": "increased",
+        "literature_evidence": "Often increased, with species-level heterogeneity across cohorts.",
+        "doi_citations": "10.1007/s11427-016-9001-4;10.1038/s41467-022-34667-x",
+        "match_terms": "Streptococcus",
+    },
+    {
+        "literature_taxon": "Enterococcus",
+        "literature_rank": "genus",
+        "literature_direction": "increased",
+        "literature_evidence": "Reported as increased in PD metagenomic profiles.",
+        "doi_citations": "10.1007/s11427-016-9001-4",
+        "match_terms": "Enterococcus",
+    },
+    {
+        "literature_taxon": "Proteus",
+        "literature_rank": "genus",
+        "literature_direction": "increased",
+        "literature_evidence": "Reported as increased in PD metagenomic profiles.",
+        "doi_citations": "10.1007/s11427-016-9001-4",
+        "match_terms": "Proteus",
+    },
+    {
+        "literature_taxon": "Alistipes",
+        "literature_rank": "genus/species",
+        "literature_direction": "increased",
+        "literature_evidence": "Reported as increased in PD, including species-level signals.",
+        "doi_citations": "10.1093/brain/awaa201;10.1038/s41467-022-34667-x",
+        "match_terms": "Alistipes;Alistipes finegoldii;Alistipes indistinctus",
+    },
+    {
+        "literature_taxon": "Methanobrevibacter",
+        "literature_rank": "genus",
+        "literature_direction": "increased",
+        "literature_evidence": "Reported as increased in PD metagenomic species-level analyses.",
+        "doi_citations": "10.1038/s41467-022-34667-x",
+        "match_terms": "Methanobrevibacter;Methanobrevibacter smithii",
+    },
+    {
+        "literature_taxon": "Prevotella",
+        "literature_rank": "genus/family",
+        "literature_direction": "decreased",
+        "literature_evidence": (
+            "Prevotella/Prevotellaceae depletion is a repeated PD microbiome finding."
+        ),
+        "doi_citations": "10.1002/mds.26069;10.1186/s13073-017-0428-y",
+        "match_terms": "Prevotella;Prevotella copri;Prevotellaceae",
+    },
+    {
+        "literature_taxon": "Faecalibacterium",
+        "literature_rank": "genus/species",
+        "literature_direction": "decreased",
+        "literature_evidence": "Reported as depleted in PD, including F. prausnitzii.",
+        "doi_citations": (
+            "10.1016/j.parkreldis.2016.08.019;10.1007/s11427-016-9001-4;10.1002/mds.28119"
+        ),
+        "match_terms": "Faecalibacterium;Faecalibacterium prausnitzii",
+    },
+    {
+        "literature_taxon": "Roseburia",
+        "literature_rank": "genus",
+        "literature_direction": "decreased",
+        "literature_evidence": "Reported as depleted in PD gut microbiome cohorts.",
+        "doi_citations": "10.1002/mds.26307;10.1002/mds.28119",
+        "match_terms": "Roseburia",
+    },
+    {
+        "literature_taxon": "Blautia",
+        "literature_rank": "genus",
+        "literature_direction": "decreased",
+        "literature_evidence": "Reported as depleted in PD gut microbiome cohorts.",
+        "doi_citations": "10.1002/mds.26307;10.1007/s11427-016-9001-4",
+        "match_terms": "Blautia",
+    },
+    {
+        "literature_taxon": "Ruminococcus",
+        "literature_rank": "genus",
+        "literature_direction": "decreased",
+        "literature_evidence": (
+            "Reported as decreased at genus level; species assignments may vary by taxonomy."
+        ),
+        "doi_citations": "10.1007/s11427-016-9001-4",
+        "match_terms": (
+            "Ruminococcus;Ruminococcus bromii;Ruminococcus torques;Mediterraneibacter torques"
+        ),
+    },
+    {
+        "literature_taxon": "Lachnospiraceae",
+        "literature_rank": "family",
+        "literature_direction": "decreased",
+        "literature_evidence": "Reported as depleted in PD gut microbiome cohorts.",
+        "doi_citations": "10.1002/mds.26307;10.1002/mds.26942",
+        "match_terms": "Lachnospiraceae",
+    },
+    {
+        "literature_taxon": "Coprococcus",
+        "literature_rank": "genus",
+        "literature_direction": "decreased",
+        "literature_evidence": "Reported as depleted in PD gut microbiome cohorts.",
+        "doi_citations": "10.1002/mds.26307",
+        "match_terms": "Coprococcus",
+    },
+    {
+        "literature_taxon": "Dorea",
+        "literature_rank": "genus",
+        "literature_direction": "decreased",
+        "literature_evidence": "Reported as depleted in PD gut microbiome cohorts.",
+        "doi_citations": "10.1002/mds.26307",
+        "match_terms": "Dorea",
+    },
+    {
+        "literature_taxon": "Bacteroides fragilis group",
+        "literature_rank": "species group",
+        "literature_direction": "decreased",
+        "literature_evidence": "Reported as decreased in a PD gut microbiome cohort.",
+        "doi_citations": "10.1371/journal.pone.0142164",
+        "match_terms": "Bacteroides fragilis;Bacteroides fragilis group",
+    },
+    {
+        "literature_taxon": "Helicobacter pylori",
+        "literature_rank": "species",
+        "literature_direction": "associated",
+        "literature_evidence": (
+            "Associated with PD risk, severity, or levodopa response; not expected to behave "
+            "like a fecal trait-row species."
+        ),
+        "doi_citations": "10.1111/hel.12398;10.1016/j.clineuro.2018.09.039",
+        "match_terms": "Helicobacter pylori",
+    },
+]
 
 
 def format_effect_value(value: float) -> str:
@@ -230,9 +423,15 @@ def mean_interval(values: pd.Series) -> tuple[float, float, float]:
     return mean, mean - radius, mean + radius
 
 
-def classify_effect(mean: float, low: float, high: float, support_studies: int) -> str:
+def classify_effect(
+    mean: float,
+    low: float,
+    high: float,
+    support_studies: int,
+    min_support_studies: int = MIN_SUPPORT_STUDIES,
+) -> str:
     """Classify a signed influence contrast without forcing sparse or uncertain cells."""
-    if support_studies < MIN_SUPPORT_STUDIES:
+    if support_studies < min_support_studies:
         return "low support"
     if not all(math.isfinite(value) for value in [mean, low, high]):
         return "mixed"
@@ -259,6 +458,289 @@ def filter_all_low_support_taxa(
     retained_cells = cells[~cells["taxon_id"].astype(str).isin(removed_taxa)].copy()
     retained_rows = rows[~rows["taxon_id"].astype(str).isin(removed_taxa)].copy()
     return retained_cells, retained_rows, len(removed_taxa)
+
+
+def literature_reference_table() -> pd.DataFrame:
+    """Return the curated DOI-backed PD taxa reference as a stable table."""
+    return pd.DataFrame(PD_TAXA_LITERATURE_REFERENCE).copy()
+
+
+def normalize_taxon_name(value: object) -> str:
+    """Normalize a taxon label for exact/prefix reference matching."""
+    normalized = str(value).replace("[", "").replace("]", "").lower()
+    return " ".join(normalized.split())
+
+
+def reference_match_terms(row: pd.Series) -> list[str]:
+    """Return all usable literature match terms for one reference row."""
+    raw_terms = [row["literature_taxon"]]
+    if pd.notna(row.get("match_terms")):
+        raw_terms.extend(str(row["match_terms"]).split(";"))
+    return [term.strip() for term in raw_terms if term and term.strip()]
+
+
+def literature_rank_specificity(rank: object) -> int:
+    """Rank literature rows so species-level matches beat broad family matches."""
+    rank_text = str(rank).lower()
+    if "species" in rank_text:
+        return 5
+    if "genus group" in rank_text:
+        return 4
+    if "genus" in rank_text:
+        return 3
+    if "family" in rank_text:
+        return 2
+    return 1
+
+
+def match_literature_reference(
+    taxon_name: object,
+    reference: pd.DataFrame,
+) -> dict[str, object]:
+    """Find the most specific curated PD literature match for a displayed taxon."""
+    name = normalize_taxon_name(taxon_name)
+    best: tuple[tuple[int, int, int, int], dict[str, object]] | None = None
+    for record in reference.to_dict("records"):
+        row = pd.Series(record)
+        for term in reference_match_terms(row):
+            normalized_term = normalize_taxon_name(term)
+            if not normalized_term:
+                continue
+            exact = name == normalized_term
+            prefix = name.startswith(f"{normalized_term} ")
+            synonym_contains_taxon = normalized_term.startswith(f"{name} ")
+            if not (exact or prefix or synonym_contains_taxon):
+                continue
+            score = (
+                3 if exact else 2 if synonym_contains_taxon else 1,
+                len(normalized_term.split()),
+                len(normalized_term),
+                literature_rank_specificity(record["literature_rank"]),
+            )
+            match_type = (
+                "exact" if exact else "synonym" if synonym_contains_taxon else "genus_or_parent"
+            )
+            candidate = (
+                score,
+                {
+                    **record,
+                    "literature_match_term": term,
+                    "literature_match_type": match_type,
+                },
+            )
+            if best is None or candidate[0] > best[0]:
+                best = candidate
+
+    if best is None:
+        return {
+            "literature_taxon": "not listed",
+            "literature_rank": "not listed",
+            "literature_direction": "not listed",
+            "literature_evidence": (
+                "No curated PD literature reference matched this displayed species."
+            ),
+            "doi_citations": "",
+            "match_terms": "",
+            "literature_match_term": "",
+            "literature_match_type": "none",
+        }
+    return best[1]
+
+
+def bugsigdb_pd_direction(row: pd.Series) -> str:
+    """Classify the displayed taxon's BugSigDB PD occurrence balance."""
+    inc = int(row.get("increased_profiles", 0))
+    dec = int(row.get("decreased_profiles", 0))
+    if inc > dec:
+        return "increased"
+    if dec > inc:
+        return "decreased"
+    return "balanced"
+
+
+def direction_agreement(literature_direction: object, bugsigdb_direction: object) -> str:
+    """Compare literature direction to the BugSigDB PD occurrence direction."""
+    literature = str(literature_direction)
+    bugsigdb = str(bugsigdb_direction)
+    if literature == "not listed":
+        return "not in literature reference"
+    if literature not in {"increased", "decreased"}:
+        return "literature non-directional"
+    if bugsigdb == "balanced":
+        return "balanced in BugSigDB"
+    if literature == bugsigdb:
+        return "agrees"
+    return "differs"
+
+
+def interpret_reference_row(row: pd.Series) -> str:
+    """Summarize how to use one literature/BugSigDB/KG-Microbe comparison."""
+    agreement = row["direction_agreement"]
+    literature = row["literature_direction"]
+    bugsigdb = row["bugsigdb_pd_direction"]
+    if agreement == "agrees":
+        lead = (
+            f"BugSigDB PD occurrence agrees with literature ({literature}); treat this as a "
+            "higher-priority taxon for trait-level follow-up."
+        )
+    elif agreement == "differs":
+        lead = (
+            f"BugSigDB PD occurrence is {bugsigdb}, but the literature reference is "
+            f"{literature}; review cohort, taxonomy, and direction labels before interpreting."
+        )
+    elif agreement == "balanced in BugSigDB":
+        lead = (
+            f"Literature suggests {literature}, while BugSigDB PD occurrence is balanced; "
+            "use as a sensitivity case rather than a directional claim."
+        )
+    elif agreement == "literature non-directional":
+        lead = (
+            "The literature match is association-oriented rather than cleanly increased or "
+            "decreased; use it as supporting context, not a direction check."
+        )
+    else:
+        lead = (
+            "No curated PD literature match was found; treat the row as BugSigDB/KG-Microbe only."
+        )
+
+    direct_traits = str(row.get("kg_microbe_direct_six_traits", "none"))
+    if direct_traits and direct_traits != "none":
+        trait_text = f" KG-Microbe direct six-trait annotations: {direct_traits}."
+    else:
+        trait_text = " No direct KG-Microbe annotation among the six displayed traits."
+
+    influence = row.get("strongest_influence_z", math.nan)
+    if pd.notna(influence) and math.isfinite(float(influence)):
+        strongest = (
+            f" Strongest current influence: {row['strongest_influence_trait']} "
+            f"({float(influence):+.2f} fixed-reference z, {row['strongest_influence_status']})."
+        )
+    else:
+        strongest = ""
+    return lead + trait_text + strongest
+
+
+def build_pd_taxa_reference_table(
+    rows: pd.DataFrame,
+    cells: pd.DataFrame,
+    literature_reference: pd.DataFrame,
+) -> pd.DataFrame:
+    """Join heatmap taxa to literature, BugSigDB direction, traits, and interpretation."""
+    reference_matches = pd.DataFrame(
+        [
+            match_literature_reference(row.taxon_name, literature_reference)
+            for row in rows.itertuples(index=False)
+        ]
+    )
+    table = pd.concat([rows.reset_index(drop=True).copy(), reference_matches], axis=1)
+    table["bugsigdb_pd_direction"] = table.apply(bugsigdb_pd_direction, axis=1)
+    table["direction_agreement"] = table.apply(
+        lambda row: direction_agreement(row["literature_direction"], row["bugsigdb_pd_direction"]),
+        axis=1,
+    )
+
+    direct_traits = (
+        cells[cells["has_trait_annotation"].fillna(False)]
+        .groupby("taxon_id")["trait"]
+        .apply(lambda traits: "; ".join(sorted({str(trait) for trait in traits})))
+        .rename("kg_microbe_direct_six_traits")
+    )
+    direct_trait_count = (
+        cells[cells["has_trait_annotation"].fillna(False)]
+        .groupby("taxon_id")["trait_id"]
+        .nunique()
+        .rename("kg_microbe_direct_trait_count")
+    )
+    supported_cells = (
+        cells[~cells["status"].eq("low support")]
+        .groupby("taxon_id")["trait_id"]
+        .nunique()
+        .rename("supported_influence_cells")
+    )
+    finite_cells = cells[pd.notna(cells["mean_influence_contrast_z"])].copy()
+    finite_cells["absolute_influence_z"] = finite_cells["mean_influence_contrast_z"].abs()
+    strongest = finite_cells.loc[
+        finite_cells.groupby("taxon_id")["absolute_influence_z"].idxmax(),
+        ["taxon_id", "trait", "status", "mean_influence_contrast_z"],
+    ].rename(
+        columns={
+            "trait": "strongest_influence_trait",
+            "status": "strongest_influence_status",
+            "mean_influence_contrast_z": "strongest_influence_z",
+        }
+    )
+
+    table = (
+        table.merge(direct_traits, on="taxon_id", how="left")
+        .merge(direct_trait_count, on="taxon_id", how="left")
+        .merge(supported_cells, on="taxon_id", how="left")
+        .merge(strongest, on="taxon_id", how="left")
+    )
+    table["kg_microbe_direct_six_traits"] = table["kg_microbe_direct_six_traits"].fillna("none")
+    table["kg_microbe_direct_trait_count"] = (
+        table["kg_microbe_direct_trait_count"].fillna(0).astype(int)
+    )
+    table["supported_influence_cells"] = table["supported_influence_cells"].fillna(0).astype(int)
+    table["interpretation"] = table.apply(interpret_reference_row, axis=1)
+
+    columns = [
+        "taxon_id",
+        "taxon_name",
+        "taxonomic_rank",
+        "literature_taxon",
+        "literature_rank",
+        "literature_direction",
+        "literature_match_term",
+        "literature_match_type",
+        "literature_evidence",
+        "doi_citations",
+        "bugsigdb_pd_direction",
+        "increased_profiles",
+        "decreased_profiles",
+        "inc_dec_counts",
+        "direction_agreement",
+        "pd_other_feces_counts",
+        "pd_feces_profiles",
+        "other_feces_profiles",
+        "pd_specificity_fraction",
+        "pd_vs_other_feces_log2_ratio",
+        "kg_microbe_direct_six_traits",
+        "kg_microbe_direct_trait_count",
+        "annotated_trait_count",
+        "supported_influence_cells",
+        "strongest_influence_trait",
+        "strongest_influence_status",
+        "strongest_influence_z",
+        "interpretation",
+    ]
+    return table[columns]
+
+
+def write_reference_interpretation(reference_table: pd.DataFrame, output_path: Path) -> None:
+    """Write a compact Markdown interpretation of the joined PD taxa reference."""
+    lines = [
+        "# PD Taxa Reference Interpretation",
+        "",
+        "This table joins the displayed species influence rows to DOI-backed PD taxa literature, "
+        "BugSigDB PD occurrence direction, KG-Microbe six-trait annotations, and the strongest "
+        "current influence value.",
+        "",
+    ]
+    for row in reference_table.itertuples(index=False):
+        lines.extend(
+            [
+                f"## {row.taxon_name}",
+                f"- Literature match: {row.literature_taxon} ({row.literature_direction}); "
+                f"DOI(s): {row.doi_citations or 'none'}",
+                f"- BugSigDB PD direction: {row.bugsigdb_pd_direction} "
+                f"({row.inc_dec_counts} increased/decreased profiles); "
+                f"agreement: {row.direction_agreement}",
+                f"- KG-Microbe direct six-trait annotations: {row.kg_microbe_direct_six_traits}",
+                f"- Interpretation: {row.interpretation}",
+                "",
+            ]
+        )
+    output_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
 
 
 def taxon_influence(
@@ -303,8 +785,11 @@ def build_influence_cells(
     taxon_vectors: pd.DataFrame,
     evidence: pd.DataFrame,
     trait_summary: pd.DataFrame,
+    taxonomic_ranks: tuple[str, ...] = ("species",),
+    min_support_studies: int = MIN_SUPPORT_STUDIES,
+    remove_all_low_support_taxa: bool = True,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, int]:
-    """Build six-trait species cells, row annotations, and trait metadata."""
+    """Build six-trait taxon cells, row annotations, and trait metadata."""
     traits = trait_summary.sort_values("increased_minus_decreased_mean_z", ascending=False).copy()
     trait_ids = traits["trait_id"].astype(str).tolist()
     human_ids = metadata.index[metadata["host_species"].eq("Homo sapiens")]
@@ -336,7 +821,7 @@ def build_influence_cells(
     ].index
     evidence = evidence[
         evidence["trait_id"].isin(trait_ids)
-        & evidence["taxonomic_rank"].eq("species")
+        & evidence["taxonomic_rank"].isin(taxonomic_ranks)
         & evidence["profile_id"].isin(pd_profiles)
     ].copy()
     occurrence = evidence.drop_duplicates(["taxon_id", "profile_id"])
@@ -371,7 +856,7 @@ def build_influence_cells(
             contrasts = paired_study_contrasts(influence[trait_id], pairs)
             mean, low, high = mean_interval(contrasts)
             annotated = annotation_count > 0
-            status = classify_effect(mean, low, high, support_studies)
+            status = classify_effect(mean, low, high, support_studies, min_support_studies)
             effect_magnitudes.append(abs(mean))
             cells.append(
                 {
@@ -434,10 +919,13 @@ def build_influence_cells(
         ],
         ascending=[False, False, False, True],
     )
-    cells_table, row_metadata, removed_low_support_taxa = filter_all_low_support_taxa(
-        pd.DataFrame(cells),
-        row_metadata,
-    )
+    cells_table = pd.DataFrame(cells)
+    removed_low_support_taxa = 0
+    if remove_all_low_support_taxa:
+        cells_table, row_metadata, removed_low_support_taxa = filter_all_low_support_taxa(
+            cells_table,
+            row_metadata,
+        )
     specificity = load_taxon_specificity(pd.Index(row_metadata["taxon_id"]), metadata)
     row_metadata = row_metadata.merge(specificity, on="taxon_id", how="left")
     return cells_table, row_metadata, trait_metadata, removed_low_support_taxa
@@ -448,6 +936,11 @@ def plot_heatmap(
     rows: pd.DataFrame,
     traits: pd.DataFrame,
     output_path: Path,
+    title: str = "PD species contributions across all six traits",
+    taxon_unit: str = "species",
+    method_note: str | None = None,
+    top_margin_inches: float = 1.65,
+    legend_y_inches: float = 1.38,
 ) -> None:
     """Plot trait-specific influence cells with occurrence and PD-specificity annotations."""
     row_ids = rows["taxon_id"].tolist()
@@ -464,20 +957,21 @@ def plot_heatmap(
     color_limit = max(float(np.quantile(finite, 0.95)) if finite.size else 0.0, 0.02)
 
     height = max(8.5, len(rows) * 0.32 + 3.4)
-    fig = plt.figure(figsize=(15.5, height), facecolor="white")
+    fig = plt.figure(figsize=(16.4, height), facecolor="white")
     grid = fig.add_gridspec(
         1,
-        3,
-        width_ratios=[6.0, 0.85, 0.95],
+        4,
+        width_ratios=[6.0, 0.85, 0.95, 0.90],
         left=0.29,
-        right=0.94,
-        top=1 - 1.65 / height,
+        right=0.965,
+        top=1 - top_margin_inches / height,
         bottom=1.15 / height,
         wspace=0.10,
     )
     ax = fig.add_subplot(grid[0, 0])
     row_ax = fig.add_subplot(grid[0, 1], sharey=ax)
     specificity_ax = fig.add_subplot(grid[0, 2], sharey=ax)
+    literature_ax = fig.add_subplot(grid[0, 3], sharey=ax)
     cmap = plt.get_cmap("RdBu_r").copy()
     cmap.set_bad(UNAVAILABLE_COLOR)
     image = ax.imshow(
@@ -493,7 +987,10 @@ def plot_heatmap(
         ],
         fontsize=9,
     )
-    ax.set_yticks(range(len(rows)), rows["taxon_name"], fontsize=8.5)
+    row_labels = [
+        f"{row.taxon_name} ({row.inc_dec_counts})" for row in rows.itertuples(index=False)
+    ]
+    ax.set_yticks(range(len(rows)), row_labels, fontsize=8.3)
     ax.tick_params(length=0, pad=6)
     ax.set_xticks(np.arange(-0.5, len(traits), 1), minor=True)
     ax.set_yticks(np.arange(-0.5, len(rows), 1), minor=True)
@@ -545,7 +1042,7 @@ def plot_heatmap(
     row_ax.imshow(
         row_values[:, None], cmap=cmap, vmin=-ROW_COLOR_LIMIT, vmax=ROW_COLOR_LIMIT, aspect="auto"
     )
-    row_ax.set_xticks([0], ["Taxon occurrence\ninc/dec"], fontsize=9)
+    row_ax.set_xticks([0], ["BugSigDB PD\ninc/dec"], fontsize=9)
     row_ax.tick_params(left=False, labelleft=False, length=0, pad=6)
     row_ax.set_xticks([-0.5, 0.5], minor=True)
     row_ax.set_yticks(np.arange(-0.5, len(rows), 1), minor=True)
@@ -604,34 +1101,81 @@ def plot_heatmap(
     for spine in specificity_ax.spines.values():
         spine.set_visible(False)
 
+    literature_directions = rows.get(
+        "literature_direction",
+        pd.Series(["not listed"] * len(rows), index=rows.index),
+    ).fillna("not listed")
+    literature_ax.set_xlim(-0.5, 0.5)
+    literature_ax.set_ylim(len(rows) - 0.5, -0.5)
+    literature_ax.set_xticks([0], ["Literature\nPD direction"], fontsize=9)
+    literature_ax.tick_params(left=False, labelleft=False, length=0, pad=6)
+    literature_ax.set_xticks([-0.5, 0.5], minor=True)
+    literature_ax.set_yticks(np.arange(-0.5, len(rows), 1), minor=True)
+    literature_ax.grid(which="minor", color="white", linewidth=1)
+    literature_ax.tick_params(which="minor", length=0)
+    for y, direction in enumerate(literature_directions):
+        direction = str(direction) if direction else "not listed"
+        color = LITERATURE_COLORS.get(direction, LITERATURE_COLORS["not listed"])
+        label = LITERATURE_LABELS.get(direction, LITERATURE_LABELS["not listed"])
+        literature_ax.add_patch(
+            Rectangle(
+                (-0.5, y - 0.5),
+                1,
+                1,
+                facecolor=color,
+                edgecolor="white",
+                linewidth=1,
+            )
+        )
+        literature_ax.text(
+            0,
+            y,
+            label,
+            ha="center",
+            va="center",
+            fontsize=7.5,
+            color="#111827",
+        )
+    for spine in literature_ax.spines.values():
+        spine.set_visible(False)
+
     bar = fig.colorbar(
         image,
-        ax=[ax, row_ax, specificity_ax],
+        ax=[ax, row_ax, specificity_ax, literature_ax],
         pad=0.02,
         fraction=0.032,
         shrink=0.58,
         extend="both",
     )
-    bar.set_label("Species influence on paired PD inc-dec trait contrast (fixed-reference z)")
+    bar.set_label(
+        f"{taxon_unit.capitalize()} influence on paired PD inc-dec trait contrast "
+        "(fixed-reference z)"
+    )
     fig.text(
         0.03,
         1 - 0.11 / height,
-        "PD species contributions across all six traits",
+        title,
         fontsize=17,
         fontweight="bold",
         va="top",
     )
     subtitle = (
         "Cells show the study-weighted change in each paired increased-decreased trait contrast "
-        "attributable to removing one reported species and recomputing its full non-MediaDive "
-        "profile denominator. Outlined cells include direct removal of that trait; unoutlined "
-        "cells retain the denominator-mediated effect when the species has no direct annotation. "
+        f"attributable to removing one reported {taxon_unit} and recomputing its full "
+        "non-MediaDive profile denominator. Taxon row labels include BugSigDB PD "
+        "increased/decreased profile "
+        "counts in parentheses. Outlined cells include direct removal of that trait; unoutlined "
+        f"cells retain the denominator-mediated effect when the {taxon_unit} has no direct "
+        "annotation. "
         "Cell text shows the signed fixed-reference z influence value; low-support cells remain "
         f"hatched. Inc/dec calls in the TSV require a 95% interval entirely above/below zero and "
         f"at least {MIN_SUPPORT_STUDIES} supporting studies. Right columns separate raw PD "
         "inc/dec occurrence from a PD specificity "
-        "check: exact reported species-label profiles in PD feces versus all other fecal profiles."
+        f"check: exact reported {taxon_unit}-label profiles in PD feces versus all other "
+        "fecal profiles, then show the matched DOI-backed literature PD direction."
     )
+    if method_note:
+        subtitle = f"{subtitle} {method_note}"
     fig.text(
         0.03,
         1 - 0.48 / height,
@@ -646,10 +1190,12 @@ def plot_heatmap(
             Patch(facecolor=DECREASED_COLOR, label="negative influence"),
             Patch(facecolor="white", edgecolor="#111827", label="direct trait annotation"),
             Patch(facecolor="white", edgecolor="#64748b", hatch="///", label="low support"),
+            Patch(facecolor=LITERATURE_COLORS["increased"], label="literature increased"),
+            Patch(facecolor=LITERATURE_COLORS["decreased"], label="literature decreased"),
         ],
         loc="upper center",
-        bbox_to_anchor=(0.60, 1 - 1.38 / height),
-        ncol=4,
+        bbox_to_anchor=(0.60, 1 - legend_y_inches / height),
+        ncol=6,
         frameon=False,
         fontsize=8,
     )
@@ -690,6 +1236,21 @@ def main() -> None:
         evidence,
         trait_summary,
     )
+    literature_reference = literature_reference_table()
+    reference_table = build_pd_taxa_reference_table(rows, cells, literature_reference)
+    rows = rows.merge(
+        reference_table[
+            [
+                "taxon_id",
+                "literature_taxon",
+                "literature_direction",
+                "literature_match_term",
+                "direction_agreement",
+            ]
+        ],
+        on="taxon_id",
+        how="left",
+    )
     plot_heatmap(cells, rows, traits, OUTPUT_DIR / f"{STEM}.png")
     write_tsv(cells, OUTPUT_DIR / f"{STEM}_cells.tsv")
     write_tsv(rows, OUTPUT_DIR / f"{STEM}_taxa.tsv")
@@ -707,6 +1268,12 @@ def main() -> None:
     ]
     write_tsv(rows[specificity_columns], OUTPUT_DIR / f"{STEM}_specificity.tsv")
     write_tsv(traits, OUTPUT_DIR / f"{STEM}_traits.tsv")
+    write_tsv(literature_reference, OUTPUT_DIR / f"{LITERATURE_REFERENCE_NAME}.tsv")
+    write_tsv(reference_table, OUTPUT_DIR / f"{REFERENCE_TABLE_STEM}_table.tsv")
+    write_reference_interpretation(
+        reference_table,
+        OUTPUT_DIR / f"{REFERENCE_TABLE_STEM}_interpretation.md",
+    )
     manifest = {
         "method": "fixed-reference leave-one-reported-species-out influence",
         "traits": len(traits),
@@ -719,6 +1286,14 @@ def main() -> None:
         "non_mediadive_columns": len(trait_columns),
         "minimum_support_studies": MIN_SUPPORT_STUDIES,
         "row_filter": "exclude species whose six trait cells are all low support",
+        "pd_literature_reference_taxa": len(literature_reference),
+        "displayed_species_with_literature_reference": int(
+            reference_table["literature_direction"].ne("not listed").sum()
+        ),
+        "literature_bug_sig_direction_agreement_counts": {
+            str(label): int(count)
+            for label, count in reference_table["direction_agreement"].value_counts().items()
+        },
         "input_sha256_chunks": {
             PROFILE_MATRIX_PATH.relative_to(PROFILE_MATRIX_PATH.parents[2]).as_posix(): (
                 sha256_chunks(PROFILE_MATRIX_PATH)
@@ -747,7 +1322,8 @@ def main() -> None:
         "contrasts, averages experiments within study, and weights studies equally. Species "
         "whose six cells are all low support are omitted. Outlined cells include direct removal "
         "of the displayed trait; unoutlined cells show the denominator-mediated effect when the "
-        "species has no direct annotation for that trait.\n\n"
+        "species has no direct annotation for that trait. The taxon row label also includes the "
+        "BugSigDB PD increased/decreased profile count, such as `(0/13)`.\n\n"
         f"`inc` and `dec` require at least {MIN_SUPPORT_STUDIES} supporting studies and a 95% "
         "Student t interval entirely above or below zero. The heatmap prints signed numeric "
         "fixed-reference z influence values in supported cells; `mixed` is retained in the TSV "
@@ -755,7 +1331,12 @@ def main() -> None:
         "direction. The first right-hand annotation retains the raw increased/decreased profile "
         "occurrence counts in PD feces. The second right-hand annotation is a PD "
         "specificity check: exact reported species-label profiles in PD feces versus all other "
-        "fecal profiles in the same full occurrence table.\n\n"
+        "fecal profiles in the same full occurrence table. The third right-hand annotation links "
+        "each displayed species to the DOI-backed PD taxa reference direction when a curated "
+        "match is available.\n\n"
+        f"The generated reference table joins literature direction, DOI citations, BugSigDB PD "
+        "occurrence direction, KG-Microbe six-trait annotations, strongest influence value, and "
+        "an interpretation of agreement, disagreement, or balanced evidence.\n\n"
         "This is a reported-species influence diagnostic, not a causal attribution or strain-level "
         "measurement. Removing a reported species changes both trait numerators and the nonlinear "
         "full denominator. Parent/child propagation and unresolved source assertions remain the "
@@ -763,6 +1344,9 @@ def main() -> None:
         "by #188 and #189.\n\n"
         f"[Cell statistics]({STEM}_cells.tsv) | [Taxon row annotations]({STEM}_taxa.tsv) | "
         f"[PD specificity]({STEM}_specificity.tsv) | [Trait summary]({STEM}_traits.tsv) | "
+        f"[PD taxa reference]({REFERENCE_TABLE_STEM}_table.tsv) | "
+        f"[Reference interpretation]({REFERENCE_TABLE_STEM}_interpretation.md) | "
+        f"[Literature DOI list]({LITERATURE_REFERENCE_NAME}.tsv) | "
         f"[Manifest]({STEM}_manifest.json) | "
         f"[Vector figure]({STEM}.svg)\n"
     )

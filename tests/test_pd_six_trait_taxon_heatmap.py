@@ -226,3 +226,95 @@ def test_taxon_specificity_compares_pd_feces_to_other_feces() -> None:
     assert specificity.loc["taxon-a", "other_feces_studies"] == 1
     assert specificity.loc["taxon-a", "pd_specificity_fraction"] == 2 / 3
     assert specificity.loc["taxon-b", "pd_other_feces_counts"] == "0/1"
+
+
+def test_pd_taxa_reference_table_adds_literature_and_interpretation() -> None:
+    rows = pd.DataFrame(
+        [
+            [
+                "taxon-e",
+                "Escherichia coli",
+                "species",
+                1,
+                1,
+                2,
+                "1/2",
+                0.5,
+                -1.0,
+                3,
+                0.8,
+                1,
+                3,
+                "1/3",
+                0.25,
+                -1.0,
+            ],
+            [
+                "taxon-f",
+                "Faecalibacterium prausnitzii",
+                "species",
+                2,
+                0,
+                4,
+                "0/4",
+                0.0,
+                -float("inf"),
+                4,
+                0.6,
+                4,
+                1,
+                "4/1",
+                0.8,
+                1.0,
+            ],
+        ],
+        columns=[
+            "taxon_id",
+            "taxon_name",
+            "taxonomic_rank",
+            "annotated_trait_count",
+            "increased_profiles",
+            "decreased_profiles",
+            "inc_dec_counts",
+            "inc_dec_ratio",
+            "log2_inc_dec_ratio",
+            "paired_support_studies",
+            "max_absolute_influence_z",
+            "pd_feces_profiles",
+            "other_feces_profiles",
+            "pd_other_feces_counts",
+            "pd_specificity_fraction",
+            "pd_vs_other_feces_log2_ratio",
+        ],
+    )
+    cells = pd.DataFrame(
+        [
+            ["taxon-e", "Trait one", "t1", True, 0.2, "mixed"],
+            ["taxon-e", "Trait two", "t2", False, 0.8, "inc"],
+            ["taxon-f", "Trait one", "t1", True, -0.6, "dec"],
+            ["taxon-f", "Trait two", "t2", True, -0.1, "mixed"],
+        ],
+        columns=[
+            "taxon_id",
+            "trait",
+            "trait_id",
+            "has_trait_annotation",
+            "mean_influence_contrast_z",
+            "status",
+        ],
+    )
+
+    table = heatmap.build_pd_taxa_reference_table(
+        rows,
+        cells,
+        heatmap.literature_reference_table(),
+    ).set_index("taxon_id")
+
+    assert table.loc["taxon-e", "literature_taxon"] == "Escherichia-Shigella"
+    assert table.loc["taxon-e", "bugsigdb_pd_direction"] == "decreased"
+    assert table.loc["taxon-e", "direction_agreement"] == "differs"
+    assert "review cohort" in table.loc["taxon-e", "interpretation"]
+    assert table.loc["taxon-f", "literature_direction"] == "decreased"
+    assert table.loc["taxon-f", "direction_agreement"] == "agrees"
+    assert "10.1002/mds.28119" in table.loc["taxon-f", "doi_citations"]
+    assert table.loc["taxon-f", "kg_microbe_direct_trait_count"] == 2

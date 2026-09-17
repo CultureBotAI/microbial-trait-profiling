@@ -10,6 +10,13 @@
   "non_mediadive_columns": 317,
   "minimum_support_studies": 3,
   "row_filter": "exclude species whose six trait cells are all low support",
+  "pd_literature_reference_taxa": 20,
+  "displayed_species_with_literature_reference": 8,
+  "literature_bug_sig_direction_agreement_counts": {
+    "agrees": 5,
+    "differs": 2,
+    "balanced in BugSigDB": 1
+  },
   "input_sha256_chunks": {
     "data/derived/study_trait_profiles_wide.tsv": [
       "6e70724e",

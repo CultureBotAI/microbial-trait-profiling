@@ -1,0 +1,74 @@
+{
+  "method": "exploratory fixed-reference leave-one-reported-taxon-out influence",
+  "taxonomic_ranks": [
+    "species",
+    "genus",
+    "family"
+  ],
+  "minimum_support_studies": 2,
+  "max_displayed_rows": 30,
+  "eligible_rows_before_display_cap": 198,
+  "displayed_rows": 30,
+  "traits": 6,
+  "cells": 180,
+  "filled_cells": 180,
+  "direct_annotation_cells": 67,
+  "denominator_only_cells": 113,
+  "rows_removed_all_low_support": 0,
+  "literature_reference_taxa": 20,
+  "displayed_rows_with_literature_reference": 30,
+  "literature_bug_sig_direction_agreement_counts": {
+    "agrees": 25,
+    "differs": 3,
+    "balanced in BugSigDB": 2
+  },
+  "status_counts": {
+    "mixed": 173,
+    "dec": 6,
+    "inc": 1
+  },
+  "selection": "DOI-backed PD literature matches first, then top-supported non-literature species/genus/family roll-ups",
+  "input_sha256_chunks": {
+    "data/derived/study_trait_profiles_wide.tsv": [
+      "6e70724e",
+      "e807cf24",
+      "e9c1f371",
+      "a51421fa",
+      "5b09d628",
+      "3fa7f3ab",
+      "cd6620e5",
+      "492c6a73"
+    ],
+    "data/derived/taxa_trait_matrix.tsv": [
+      "f6de0576",
+      "63f3a3b0",
+      "026579df",
+      "af341745",
+      "faac27df",
+      "7f9c0afd",
+      "6f5fa3e6",
+      "aa034178"
+    ],
+    "data/derived/taxa.tsv": [
+      "e7fa982b",
+      "23ea8245",
+      "6247bcd8",
+      "41fd97d4",
+      "fe71518e",
+      "09eaaa27",
+      "aee65d9a",
+      "db271c59"
+    ],
+    "trait-visualization/trait-profile-investigation/PD-cellulose/pd_six_trait_taxon_profile_evidence.tsv": [
+      "ebf128f1",
+      "73c658b7",
+      "115d5fd4",
+      "44e00fbc",
+      "b677afa2",
+      "0d8842b7",
+      "ffa5bb3c",
+      "4ad89fce"
+    ]
+  },
+  "sha256_chunk_encoding": "concatenate each path's eight chunks in order"
+}
