@@ -1,6 +1,8 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
 import math
+import struct
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -8,13 +10,19 @@ from scipy.stats import binomtest
 
 from bsdbng.guild_maps import (
     CELL_SIZE_PX,
+    MIN_FIGURE_WIDTH_PX,
+    MIN_PLOT_HEIGHT_PX,
     OTHER_LABEL,
+    GuildMatrix,
     _figure_height,
     _figure_width,
     _panel_figure_width,
+    _panel_plot_width,
     build_matrix,
     compute_correlation,
     study_direction_means,
+    write_body_site_panels,
+    write_figure,
     write_matrix_outputs,
 )
 from bsdbng.trait_guilds import (
@@ -40,42 +48,87 @@ def test_figure_height_keeps_plot_area_outside_margins(row_count: int) -> None:
         - bottom_margin
     )
 
-    assert plot_height == CELL_SIZE_PX * max(1, row_count)
+    assert plot_height >= MIN_PLOT_HEIGHT_PX
+    assert plot_height >= CELL_SIZE_PX * max(1, row_count)
 
 
-def test_figure_width_keeps_margins_outside_cell_area() -> None:
+@pytest.mark.parametrize("columns", [4, 60])
+def test_figure_width_keeps_margins_outside_cell_area(columns: int) -> None:
     left_margin = 300
     right_margin = 180
-    columns = 60
-    plot_width = (
-        _figure_width(columns, left_margin=left_margin, right_margin=right_margin)
-        - left_margin
-        - right_margin
-    )
+    figure_width = _figure_width(columns, left_margin=left_margin, right_margin=right_margin)
+    cell_area_width = CELL_SIZE_PX * columns
+    effective_right_margin = figure_width - left_margin - cell_area_width
 
-    assert plot_width == CELL_SIZE_PX * columns
+    assert figure_width >= MIN_FIGURE_WIDTH_PX
+    assert effective_right_margin >= right_margin
 
 
 def test_panel_width_accounts_for_subplot_spacing() -> None:
     left_margin = 300
     right_margin = 180
-    columns_per_panel = 12
-    panel_count = 2
+    columns_per_panel = [4, 12]
     horizontal_spacing = 0.06
-    plot_width = (
-        _panel_figure_width(
-            columns_per_panel,
-            panel_count,
-            horizontal_spacing=horizontal_spacing,
-            left_margin=left_margin,
-            right_margin=right_margin,
-        )
-        - left_margin
-        - right_margin
+    plot_width = _panel_plot_width(columns_per_panel, horizontal_spacing)
+    figure_width = _panel_figure_width(
+        columns_per_panel,
+        horizontal_spacing=horizontal_spacing,
+        left_margin=left_margin,
+        right_margin=right_margin,
     )
-    cell_domains_width = plot_width * (1.0 - horizontal_spacing * (panel_count - 1))
+    effective_right_margin = figure_width - left_margin - plot_width
+    cell_domains_width = plot_width * (1.0 - horizontal_spacing * (len(columns_per_panel) - 1))
 
-    assert cell_domains_width >= CELL_SIZE_PX * columns_per_panel * panel_count
+    assert figure_width >= MIN_FIGURE_WIDTH_PX
+    assert effective_right_margin >= right_margin
+    for column_count in columns_per_panel:
+        panel_share = column_count / sum(columns_per_panel)
+        assert cell_domains_width * panel_share / column_count >= CELL_SIZE_PX
+
+
+def _one_row_matrix() -> GuildMatrix:
+    columns = [
+        "Feces|aerobe_inc",
+        "Feces|aerobe_dec",
+        "Feces|anaerobe_inc",
+        "Feces|anaerobe_dec",
+    ]
+    return GuildMatrix(
+        conditions=["One condition"],
+        body_sites=["Feces"],
+        columns=columns,
+        values=[[0.2, 0.1, 0.3, 0.4]],
+        study_counts=[[2, 2, 2, 2]],
+        row_clusters=[1],
+        pooled=[],
+        dropped_empty_conditions=[],
+        dropped_body_sites=[],
+        sampled_no_signal=[[False] * len(columns)],
+    )
+
+
+@pytest.mark.parametrize(
+    ("writer", "expected_height"),
+    [
+        (write_figure, 445 + 300 + MIN_PLOT_HEIGHT_PX),
+        (write_body_site_panels, 425 + 260 + MIN_PLOT_HEIGHT_PX),
+    ],
+)
+def test_one_row_figures_render_at_the_size_floors(
+    tmp_path: Path,
+    writer: Callable[..., Path],
+    expected_height: int,
+) -> None:
+    """Exercise Kaleido: short matrices used to fail during axis scaling."""
+    output = tmp_path / f"{writer.__name__}.png"
+    kwargs = {"sites": ["Feces"]} if writer is write_body_site_panels else {}
+
+    writer(_one_row_matrix(), output, None, **kwargs)
+
+    png = output.read_bytes()
+    assert png.startswith(b"\x89PNG\r\n\x1a\n")
+    width, height = struct.unpack(">II", png[16:24])
+    assert (width, height) == (MIN_FIGURE_WIDTH_PX * 2, expected_height * 2)
 
 
 def _write_profiles(path: Path, rows: list[tuple[str, str, str, list[int]]]) -> None:

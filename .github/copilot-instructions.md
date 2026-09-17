@@ -77,7 +77,7 @@ review addressed.
 ## Biological interpretation and review
 
 All contributors and reviewers must use
-[the shared interpretation guide](methods/biological_interpretation.md) for
+[the shared interpretation guide](../methods/biological_interpretation.md) for
 analyses, manuscripts, figures, tables, captions, legends, generated narratives
 and public descriptions. Results measure annotation representation in curated
 taxon signatures, not patient-level trait abundance, pathway activity, exposure
@@ -92,7 +92,7 @@ result or linked backing table. Label mechanisms as hypotheses and specify the
 evidence needed to test them. Do not translate display labels into genes,
 physiology or justified trait groups without source evidence.
 
-Update the [claim audit](methods/biological_interpretation_audit.md) for affected
+Update the [claim audit](../methods/biological_interpretation_audit.md) for affected
 claims, with the correction or supporting evidence, owner and artifact revision.
 Review generators and rendered captions/legends as well as prose. Preserve
 archived transcripts with their separate review status; do not adopt their

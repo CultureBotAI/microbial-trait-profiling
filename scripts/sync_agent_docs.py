@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from bsdbng.agent_docs import links_relative_to_github
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 AGENTS_MD = REPO_ROOT / "AGENTS.md"
 COPILOT_MD = REPO_ROOT / ".github" / "copilot-instructions.md"
@@ -39,7 +41,9 @@ PROJECT_CONVENTIONS = """
 
 def main() -> None:
     agents_content = AGENTS_MD.read_text(encoding="utf-8")
-    copilot_content = COPILOT_HEADER + agents_content + PROJECT_CONVENTIONS
+    copilot_content = (
+        COPILOT_HEADER + links_relative_to_github(agents_content) + PROJECT_CONVENTIONS
+    )
     COPILOT_MD.write_text(copilot_content, encoding="utf-8")
     print(f"wrote {COPILOT_MD}")
 
