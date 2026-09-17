@@ -57,9 +57,18 @@ For #178, use qualified trait keys, exact scope, scenario, background/reference,
 
 For #179, these are annotation influence diagnostics. Higher-rank direct assertions that cannot be allocated remain retained and flagged in the source ledger. Missing source identities/ranks are not repaired by statistical reruns. Disease/control orientation (#188), feature semantics (#189), source-count validity (#184) and full-pipeline calibration (#182) remain independent review requirements. No causal, oxygen-exposure, SCFA or taxonomy-independent mechanism follows from these results. Native kernel/ORA owner review and integration sign-off are still required before manuscript adoption.
 
+## Cross-scale interpretation flags (#213)
+
+The study-weighted raw-fraction mean and the native transformed analysis are different estimands. The raw-fraction directional q-value is a third statistic: it tests the share of non-tied study directions, not whether the mean-effect interval excludes zero. The machine-readable `interpretation_handoff.tsv` keeps those fields separate for #178.
+
+| Trait | Study-weighted raw-fraction finding | Native transformed finding | Interpretation |
+| --- | --- | --- | --- |
+| Arsenate reduction | Excluding Escherichia changes the matched mean by -0.0065 pp [-0.0092, -0.0037]; the remaining mean is -0.0007 pp [-0.0019, 0.0005]. Escherichia supplies 58.7% of increased-arm counts. | q changes from 3.33761e-05 to 0.673778 after the genus exclusion. | Lineage-sensitive on this corpus; do not describe a lineage-independent mechanism or treat removal as causal attribution. |
+| Sphere shaped | Baseline mean 0.0213 pp [-0.0174, 0.0601] crosses zero; the separate directional sign-test q is 0.00287925. | Baseline native q is 3.33761e-05. | Cross-scale non-reproduction of the mean interval, not a refutation or independent replication of the native result. |
+
 ## Review Bundle
 
-The `.tsv.gz` comparison files contain all six traits, scenarios and scopes, including null and untestable results. `native_table1_stats.tsv.gz` is the six-trait subset of the native composition table; its q-values were computed over the FULL native families, whose sizes remain attached. The separate ORA family table includes both backgrounds and both tail-family sizes. `scenarios.tsv` supplies lineage names, support and selection status for the full genus/family inventory, including lineages outside the panel.
+The `.tsv.gz` comparison files contain all six traits, scenarios and scopes, including null and untestable results. `native_table1_stats.tsv.gz` is the six-trait subset of the native composition table; its q-values were computed over the FULL native families, whose sizes remain attached. The separate ORA family table includes both backgrounds and both tail-family sizes. `interpretation_handoff.tsv` carries the two measured #213 flags without collapsing their scales or tests. `scenarios.tsv` supplies lineage names, support and selection status for the full genus/family inventory, including lineages outside the panel.
 
 The full 317-trait composition table, profile-level ORA results and source ledger are generated under `data/derived/table1_taxon_influence/`, following the repository's untracked generated-data convention. Regenerate them with `just table1-taxon-influence <pinned-KG-directory>`. This compact review bundle does not discard any six-trait influence comparison. `run_manifest.json` records hashes for the full data; `publication_manifest.json` identifies these review copies. All full-run file hashes were checked before publication.
 

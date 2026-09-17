@@ -11,7 +11,7 @@ BugSigDB vintage the numbers came from.
 | `table1_traits_condition_body_site_heatmap.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | `table1_traits_first_last_body_site_panels.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | `table1_traits_direction_shift.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
-| Table 1 source contributions and genus/family influence TSVs | `src/bsdbng/taxon_contributions.py` | `just table1-taxon-influence` | [`table1_taxon_influence.md`](table1_taxon_influence.md) |
+| Table 1 source contributions and genus/family influence TSVs | `src/bsdbng/taxon_contributions.py` | `just table1-taxon-influence` | [`table1_taxon_influence.md`](table1_taxon_influence.md); [measured results and cross-scale interpretation flags](table1_taxon_influence_results.md) |
 
 Figures write to `data/derived/guild_maps/` and `data/derived/table1_traits/`
 alongside the tab-separated tables backing them, so every number quoted in a
