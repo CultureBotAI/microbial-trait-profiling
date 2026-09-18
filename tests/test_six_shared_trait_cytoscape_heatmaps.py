@@ -24,6 +24,22 @@ sys.modules[SPEC.name] = heatmaps
 SPEC.loader.exec_module(heatmaps)
 
 
+def test_write_tsv_uses_stable_float_precision(tmp_path: Path) -> None:
+    output_path = tmp_path / "floats.tsv"
+    table = pd.DataFrame(
+        {
+            "merge_distance": [0.12345678901234567],
+            "signed_minus_log10_fisher_p_value": [-1.2345678901234567],
+        }
+    )
+
+    heatmaps.write_tsv(table, output_path)
+
+    assert output_path.read_text(encoding="utf-8").splitlines()[1] == (
+        "0.123456789012\t-1.23456789012"
+    )
+
+
 def test_prepare_pattern_cells_masks_by_fisher_p_value_and_support() -> None:
     view = SimpleNamespace(
         view_key="increased_grouped",
@@ -203,6 +219,13 @@ def test_contrasts_show_supported_effects_and_mark_strict_significance() -> None
     assert finalized["significant_in_heatmap"].tolist() == [True, False, False, False]
     assert finalized["displayed_in_heatmap"].tolist() == [True, True, False, False]
     assert finalized.loc[1, "blank_reason"] == ""
+    borders = heatmaps.flag_matrix(
+        finalized,
+        cells["condition_body_site_pair"].tolist(),
+        pd.DataFrame({"trait_id": ["trait1"]}),
+        flag_column="selected_after_bh",
+    )
+    assert borders["trait1"].tolist() == [True, True, False, False]
     annotations = heatmaps.annotation_matrix(
         finalized,
         cells["condition_body_site_pair"].tolist(),
@@ -309,19 +332,26 @@ def test_spearman_clustering_is_invariant_to_input_row_permutation() -> None:
 
 def test_cluster_comparison_flags_inverse_individual_pattern_as_outlier() -> None:
     grouped_matrix = pd.DataFrame(
-        [[1.0, 2.0, 3.0]],
+        [[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]],
         index=["Group A | Feces"],
-        columns=["t1", "t2", "t3"],
+        columns=["t1", "t2", "t3", "t4", "t5", "t6"],
     )
     individual_matrix = pd.DataFrame(
         [
-            [1.0, 2.0, 3.0],
-            [3.0, 2.0, 1.0],
-            [2.0, 4.0, 6.0],
-            [4.0, 5.0, 8.0],
+            [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+            [6.0, 5.0, 4.0, 3.0, 2.0, 1.0],
+            [2.0, 4.0, 6.0, 8.0, 10.0, 12.0],
+            [4.0, 5.0, 8.0, 9.0, 12.0, 13.0],
+            [1.0, 2.0, 3.0, math.nan, math.nan, math.nan],
         ],
-        index=["A1 | Feces", "A2 | Feces", "A3 | Feces", "A4 | Feces"],
-        columns=["t1", "t2", "t3"],
+        index=[
+            "A1 | Feces",
+            "A2 | Feces",
+            "A3 | Feces",
+            "A4 | Feces",
+            "A5 | Feces",
+        ],
+        columns=["t1", "t2", "t3", "t4", "t5", "t6"],
     )
     grouped_cells = pd.DataFrame(
         {
@@ -333,8 +363,8 @@ def test_cluster_comparison_flags_inverse_individual_pattern_as_outlier() -> Non
     individual_cells = pd.DataFrame(
         {
             "condition_body_site_pair": individual_matrix.index,
-            "condition": ["A1", "A2", "A3", "A4"],
-            "body_site_group": ["Feces"] * 4,
+            "condition": ["A1", "A2", "A3", "A4", "A5"],
+            "body_site_group": ["Feces"] * 5,
         }
     )
     grouped = heatmaps.build_spearman_clustering(
@@ -351,10 +381,10 @@ def test_cluster_comparison_flags_inverse_individual_pattern_as_outlier() -> Non
     )
     rollup_map = pd.DataFrame(
         {
-            "raw_condition": ["A1", "A2", "A3", "A4"],
-            "body_site_group": ["Feces"] * 4,
-            "grouped_condition": ["Group A"] * 4,
-            "grouped_condition_body_site_pair": ["Group A | Feces"] * 4,
+            "raw_condition": ["A1", "A2", "A3", "A4", "A5"],
+            "body_site_group": ["Feces"] * 5,
+            "grouped_condition": ["Group A"] * 5,
+            "grouped_condition_body_site_pair": ["Group A | Feces"] * 5,
         }
     )
 
@@ -366,9 +396,15 @@ def test_cluster_comparison_flags_inverse_individual_pattern_as_outlier() -> Non
 
     assert math.isclose(comparison.loc["A1", "individual_vs_grouped_spearman_rho"], 1.0)
     assert math.isclose(comparison.loc["A2", "individual_vs_grouped_spearman_rho"], -1.0)
+    assert bool(comparison.loc["A2", "pattern_diagnostic_eligible"]) is True
     assert bool(comparison.loc["A2", "discordant_or_inverse_pattern"]) is True
     assert bool(comparison.loc["A2", "within_group_iqr_outlier"]) is True
     assert comparison.loc["A2", "global_difference_rank"] == 1
+    assert comparison.loc["A2", "grouped_contributing_individual_condition_count"] == 5
+    assert comparison.loc["A5", "shared_supported_trait_count"] == 3
+    assert bool(comparison.loc["A5", "pattern_diagnostic_eligible"]) is False
+    assert bool(comparison.loc["A5", "discordant_or_inverse_pattern"]) is False
+    assert pd.isna(comparison.loc["A5", "global_difference_rank"])
 
 
 def test_readme_replacement_preserves_following_sections(tmp_path: Path) -> None:
@@ -384,11 +420,13 @@ def test_readme_replacement_preserves_following_sections(tmp_path: Path) -> None
     manifest = pd.DataFrame(
         [
             {
+                "view_key": "pattern",
                 "view_label": "Pattern",
                 "heatmap_type": "trait_pattern",
                 "png_path": "pattern.png",
                 "clustered_png_path": pd.NA,
                 "displayed_cell_count": 1,
+                "significant_cell_count": 1,
                 "bh_selected_cell_count": 0,
                 "tested_cell_count": 2,
                 "row_count": 1,
@@ -401,6 +439,8 @@ def test_readme_replacement_preserves_following_sections(tmp_path: Path) -> None
     content = readme_path.read_text(encoding="utf-8")
     assert "old generated text" not in content
     assert "## Following Section\n\nmust remain" in content
+    assert "`low positive-z profile or study support`" in content
+    assert "neither direction emitted a candidate edge is absent" in content
 
 
 def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Path) -> None:

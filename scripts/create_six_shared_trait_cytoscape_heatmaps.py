@@ -29,6 +29,7 @@ CLUSTER_TREE_NODES_FILENAME = "six_shared_trait_signed_direction_cluster_tree_no
 CLUSTER_TREE_LEAVES_FILENAME = "six_shared_trait_signed_direction_cluster_tree_leaves.tsv"
 CLUSTER_COMPARISON_FILENAME = "six_shared_trait_signed_direction_cluster_comparison.tsv"
 CONTRAST_ROWS_PER_PAGE = 24
+EXPORT_FLOAT_SIGNIFICANT_DIGITS = 12
 
 MIN_POSITIVE_PROFILES = 3
 MIN_STUDIES = 2
@@ -37,6 +38,7 @@ Q_VALUE_CUTOFF = 0.05
 MAX_MINUS_LOG10_P = 10.0
 MAX_PATTERN_ROWS = 24
 MIN_SPEARMAN_OVERLAP = 3
+MIN_DIAGNOSTIC_SHARED_TRAITS = 5
 UNDEFINED_SPEARMAN_DISTANCE = 1.0
 CLUSTER_LINKAGE_METHOD = "average"
 OUTLIER_IQR_MULTIPLIER = 1.5
@@ -145,8 +147,14 @@ def read_tsv(path: Path) -> pd.DataFrame:
 
 
 def write_tsv(table: pd.DataFrame, path: Path) -> None:
-    """Write TSVs with explicit missing values instead of trailing empty fields."""
-    table.replace("", pd.NA).to_csv(path, sep="\t", index=False, na_rep="NA")
+    """Write TSVs with explicit missing values and stable float precision."""
+    table.replace("", pd.NA).to_csv(
+        path,
+        sep="\t",
+        index=False,
+        na_rep="NA",
+        float_format=f"%.{EXPORT_FLOAT_SIGNIFICANT_DIGITS}g",
+    )
 
 
 def relative_path(path: Path, repo_root: Path = REPO_ROOT) -> str:
@@ -983,16 +991,34 @@ def compare_grouped_and_individual_clusters(
             strict=True,
         )
     ]
-    distances = comparison["individual_vs_grouped_spearman_distance"]
-    comparison["global_difference_rank"] = distances.rank(
-        method="min",
-        ascending=False,
-    ).astype("Int64")
+    comparison["grouped_contributing_individual_condition_count"] = (
+        comparison.groupby(
+            "grouped_condition_body_site_pair",
+            dropna=False,
+        )["individual_condition_body_site_pair"]
+        .transform("nunique")
+        .where(comparison["grouped_condition_body_site_pair"].notna(), pd.NA)
+        .astype("Int64")
+    )
+    comparison["pattern_diagnostic_eligible"] = comparison["comparison_status"].eq(
+        "comparable"
+    ) & comparison["shared_supported_trait_count"].ge(MIN_DIAGNOSTIC_SHARED_TRAITS)
+    comparison["_eligible_distance"] = comparison["individual_vs_grouped_spearman_distance"].where(
+        comparison["pattern_diagnostic_eligible"]
+    )
+    comparison["global_difference_rank"] = (
+        comparison["_eligible_distance"]
+        .rank(
+            method="min",
+            ascending=False,
+        )
+        .astype("Int64")
+    )
     comparison["within_group_difference_rank"] = (
         comparison.groupby(
             "grouped_condition_body_site_pair",
             dropna=False,
-        )["individual_vs_grouped_spearman_distance"]
+        )["_eligible_distance"]
         .rank(
             method="min",
             ascending=False,
@@ -1013,13 +1039,17 @@ def compare_grouped_and_individual_clusters(
         )
     )
     comparison["within_group_iqr_outlier"] = (
-        comparison["individual_vs_grouped_spearman_distance"]
-        > comparison["within_group_outlier_threshold"]
+        comparison["pattern_diagnostic_eligible"]
+        & (
+            comparison["individual_vs_grouped_spearman_distance"]
+            > comparison["within_group_outlier_threshold"]
+        )
     ).fillna(False)
     comparison["discordant_or_inverse_pattern"] = (
-        comparison["individual_vs_grouped_spearman_rho"] <= 0.0
+        comparison["pattern_diagnostic_eligible"]
+        & (comparison["individual_vs_grouped_spearman_rho"] <= 0.0)
     ).fillna(False)
-    return comparison.sort_values(
+    return comparison.drop(columns="_eligible_distance").sort_values(
         ["global_difference_rank", "individual_condition_body_site_pair"],
         na_position="last",
     )
@@ -1418,11 +1448,11 @@ def write_contrast_heatmap(
         value_column="increased_minus_decreased_positive_fraction",
     )
     annotations = annotation_matrix(cells, row_labels, trait_order, mode="contrast")
-    significance_borders = flag_matrix(
+    bh_borders = flag_matrix(
         cells,
         row_labels,
         trait_order,
-        flag_column="significant_in_heatmap",
+        flag_column="selected_after_bh",
     )
     output_path = (
         output_dir
@@ -1432,11 +1462,13 @@ def write_contrast_heatmap(
         output_path.name.replace("_contrast_heatmap.png", "_contrast_clustered_heatmap.png")
     )
     displayed_cells = int(cells["displayed_in_heatmap"].sum())
+    raw_p_value_cell_count = int(cells["significant_in_heatmap"].sum())
+    bh_selected_cell_count = int(cells["selected_after_bh"].sum())
     subtitle = (
         "Color and numbers show increased minus decreased positive-z fractions. "
         "Red favors increased profiles; blue favors decreased profiles. "
-        f"A dark border marks Fisher p<{P_VALUE_CUTOFF:g}; unbordered effects do not meet "
-        "that threshold. "
+        f"A dark border marks BH q<={Q_VALUE_CUTOFF:g} ({bh_selected_cell_count} cells); "
+        f"{raw_p_value_cell_count} cells met uncorrected Fisher p<{P_VALUE_CUTOFF:g}. "
         "All testable cells with >=3 positive-z profiles in either direction and >=2 total "
         "studies are shown. Gray = unavailable or insufficient support, not nonsignificance. "
         "Raw p and BH q are in the TSV."
@@ -1453,7 +1485,7 @@ def write_contrast_heatmap(
         vmin=-1.0,
         vmax=1.0,
         compact=True,
-        significance_borders=significance_borders,
+        significance_borders=bh_borders,
     )
     pages = contrast_row_pages(row_labels)
     for page, labels in enumerate(pages, start=1):
@@ -1469,7 +1501,7 @@ def write_contrast_heatmap(
             vmin=-1.0,
             vmax=1.0,
             compact=True,
-            significance_borders=significance_borders.loc[labels],
+            significance_borders=bh_borders.loc[labels],
         )
     clustering = build_spearman_clustering(
         matrix,
@@ -1488,11 +1520,13 @@ def write_contrast_heatmap(
         f"({clustering.linkage_undefined_pair_fraction:.1%}) distances use neutral "
         f"{UNDEFINED_SPEARMAN_DISTANCE:g}; exact-distance tie excess is "
         f"{clustering.linkage_distance_tie_fraction:.1%}. No dendrogram cut is interpreted. "
-        f"Gray cells remain missing; dark borders mark Fisher p<{P_VALUE_CUTOFF:g}."
+        f"Gray cells remain missing; dark borders mark BH q<={Q_VALUE_CUTOFF:g} "
+        f"({bh_selected_cell_count} cells), versus {raw_p_value_cell_count} cells at "
+        f"uncorrected Fisher p<{P_VALUE_CUTOFF:g}."
     )
     plot_clustered_contrast_heatmap(
         clustering,
-        significance_borders,
+        bh_borders,
         trait_order,
         clustered_output_path,
         title=f"Clustered signed direction contrast: {mode.label}",
@@ -1564,14 +1598,18 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "condition rollup rules; the individual view keeps the original curated condition "
         "label. Both views use the same grouped v3 body-site labels.",
         "",
-        "In a signed heatmap, a gray blank means the condition/body-site/trait combination "
-        "could not support the displayed contrast: one direction had no profiles, both "
-        "directions had fewer than three positive-z profiles, fewer than two studies were "
-        "available, or neither direction produced a candidate edge. Finite tests that do not "
-        "meet the significance threshold are still colored and numbered. A white cell "
-        "containing `+0.00` is a measured "
-        "null contrast, not missing data. In trait-pattern heatmaps only, gray can also mean "
-        f"that the raw one-sided Fisher test did not pass p<{P_VALUE_CUTOFF:g}.",
+        "The signed contrast table contains candidate edge records, not a complete Cartesian "
+        "grid. Its exported `blank_reason` is `low positive-z profile or study support` for "
+        "a present candidate that fails display support and is empty (`NA` in the TSV) for a "
+        "displayed candidate. A condition/body-site/trait combination for which neither "
+        "direction emitted a candidate edge is absent from the table rather than assigned a "
+        "blank reason. In the image, both an absent record and a present under-supported "
+        "candidate appear gray. A direction can have zero positive-z profiles while the cell "
+        "remains colored when total profiles exist and the other direction meets support. "
+        "Finite tests that miss either statistical cutoff are still colored and numbered. A "
+        "white cell containing `+0.00` is a measured null contrast, not missing data. In "
+        "trait-pattern heatmaps only, gray can also mean that the raw one-sided Fisher test "
+        f"did not pass p<{P_VALUE_CUTOFF:g}.",
         "",
         "- `trait_pattern`: Approach 2. Rows are condition/body-site pairs and "
         "columns are the six traits. Cell color is Fisher evidence, `-log10(p)`, "
@@ -1582,8 +1620,9 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "pairs and columns are traits. Cell color and numbers are "
         "`increased_fraction - decreased_fraction` on a fixed -1 to +1 scale. Red "
         "favors increased profiles and blue favors decreased profiles. "
-        f"A dark border marks Fisher p<{P_VALUE_CUTOFF:g}; unbordered cells are descriptive "
-        "effects that do not meet that cutoff. Cells require a finite test, "
+        f"A dark border marks BH q<={Q_VALUE_CUTOFF:g}; the uncorrected Fisher "
+        f"p<{P_VALUE_CUTOFF:g} count is reported separately below. Unbordered cells are "
+        "descriptive effects. Cells require a finite test, "
         "at least 3 positive-z profiles in "
         "either direction, and at least 2 total studies. Every condition/body-site row "
         "with a supported cell is included, without a row cap. Rows are grouped by body "
@@ -1604,11 +1643,14 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "the contrast table locates each displayed row. The original PNGs show full overviews.",
         f"- BH q-values are computed within each heatmap view. "
         f"`selected_after_bh=True` marks supported cells with q<={Q_VALUE_CUTOFF:g}; "
-        "those cells are also collected in the BH-selected cell table.",
+        "those cells receive the dark border and are also collected in the BH-selected cell "
+        "table. `significant_in_heatmap` retains the uncorrected raw-p flag for audit only.",
+        "- The Fisher tables count profiles, not independent studies. A BH-bordered cell is "
+        "therefore a profile-level diagnostic and does not establish study-level replication.",
         "",
         "| heatmap | type | full/ranked PNG | clustered PNG | displayed cells | "
-        "BH-selected cells | tested cells | rows |",
-        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: |",
+        "raw p<0.01 cells | BH-selected cells | tested cells | rows |",
+        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in manifest.itertuples(index=False):
         clustered_path = getattr(row, "clustered_png_path", pd.NA)
@@ -1616,7 +1658,8 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         lines.append(
             f"| {row.view_label} | {row.heatmap_type} | `{row.png_path}` | "
             f"{clustered_text} | "
-            f"{row.displayed_cell_count} | {row.bh_selected_cell_count} | "
+            f"{row.displayed_cell_count} | {int(row.significant_cell_count)} | "
+            f"{row.bh_selected_cell_count} | "
             f"{row.tested_cell_count} | {row.row_count} |"
         )
     clustered_rows = manifest[manifest["heatmap_type"] == "signed_direction_contrast"]
@@ -1626,22 +1669,30 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
                 "",
                 "### Clustered Direction Overviews",
                 "",
-                "Click either compact preview to open the full-resolution clustered heatmap. "
-                "Use the ranked pages below when numeric annotations need to be read.",
+                "The grouped view is previewed below. The 125-row individual view is linked "
+                "directly because a page-width thumbnail is illegible. Use the ranked pages "
+                "below when numeric annotations need to be read.",
                 "",
             ]
         )
         for row in clustered_rows.itertuples(index=False):
             image_name = Path(row.clustered_png_path).name
-            lines.extend(
-                [
-                    f"#### {row.view_label}",
-                    "",
-                    f'<a href="{image_name}"><img src="{image_name}" '
-                    f'alt="{row.view_label}" width="560"></a>',
-                    "",
-                ]
-            )
+            lines.extend([f"#### {row.view_label}", ""])
+            if row.view_key == "grouped_direction_contrast":
+                lines.extend(
+                    [
+                        f'<a href="{image_name}"><img src="{image_name}" '
+                        f'alt="{row.view_label}" width="760"></a>',
+                        "",
+                    ]
+                )
+            else:
+                lines.extend(
+                    [
+                        f"[Open the full-resolution clustered heatmap]({image_name}).",
+                        "",
+                    ]
+                )
         lines.extend(
             [
                 "### Clustering Diagnostics",
@@ -1682,25 +1733,32 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
     comparison_path = output_dir / CLUSTER_COMPARISON_FILENAME
     if comparison_path.exists():
         comparison = read_tsv(comparison_path)
-        comparable = comparison[comparison["comparison_status"] == "comparable"].head(10)
+        comparable = comparison[comparison["pattern_diagnostic_eligible"].astype(bool)].head(10)
         if not comparable.empty:
             lines.extend(
                 [
                     "### Largest Individual-versus-Grouped Pattern Differences",
                     "",
-                    "These are the ten largest finite `1 - rho` distances, not a formal "
-                    "biological outlier test. The complete table also reports within-group "
-                    "IQR flags and each individual row's nearest Spearman neighbor.",
+                    f"These are the ten largest finite `1 - rho` distances among rows with at "
+                    f"least {MIN_DIAGNOSTIC_SHARED_TRAITS} shared supported traits, not a "
+                    "formal biological outlier test. Lower-overlap rows remain in the complete "
+                    "table but are ineligible for ranks and diagnostic flags. Each individual "
+                    "row is compared with a grouped aggregate that includes that row, so the "
+                    "comparison is not independent; a one-contributor aggregate is the same "
+                    "source row at the broader label. The complete table records contributor "
+                    "counts, within-group IQR flags, and each row's nearest Spearman neighbor.",
                     "",
-                    "| individual condition | grouped condition | body site | rho | distance | "
-                    "discordant | IQR outlier |",
-                    "| --- | --- | --- | ---: | ---: | --- | --- |",
+                    "| individual condition | grouped condition | body site | shared traits | "
+                    "group contributors | rho | distance | discordant | IQR outlier |",
+                    "| --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |",
                 ]
             )
             for row in comparable.itertuples(index=False):
                 lines.append(
                     f"| {row.individual_condition} | {row.grouped_condition} | "
-                    f"{row.body_site_group} | {row.individual_vs_grouped_spearman_rho:.3f} | "
+                    f"{row.body_site_group} | {row.shared_supported_trait_count} | "
+                    f"{row.grouped_contributing_individual_condition_count} | "
+                    f"{row.individual_vs_grouped_spearman_rho:.3f} | "
                     f"{row.individual_vs_grouped_spearman_distance:.3f} | "
                     f"{row.discordant_or_inverse_pattern} | "
                     f"{row.within_group_iqr_outlier} |"
@@ -1751,6 +1809,7 @@ def write_six_shared_trait_cytoscape_heatmaps(
                 "condition_mode": view.condition_mode,
                 "row_count": row_count,
                 "displayed_cell_count": displayed_count,
+                "significant_cell_count": int(cells["significant_in_heatmap"].sum()),
                 "bh_selected_cell_count": int(cells["selected_after_bh"].sum()),
                 "tested_cell_count": tested_count,
                 "min_positive_profiles": MIN_POSITIVE_PROFILES,
@@ -1836,7 +1895,10 @@ def write_six_shared_trait_cytoscape_heatmaps(
                 "p_value_cutoff": P_VALUE_CUTOFF,
                 "q_value_cutoff": Q_VALUE_CUTOFF,
                 "color_value": "increased_minus_decreased_positive_fraction",
-                "display_rule": "all supported testable cells; p cutoff marks dark borders only",
+                "display_rule": (
+                    "all supported testable cells; BH q cutoff marks dark borders; "
+                    "raw p cutoff is audit-only"
+                ),
                 "significant_cell_count": int(cells["significant_in_heatmap"].sum()),
                 "filled_fraction": outputs.displayed_cell_count
                 / (len(outputs.row_labels) * len(trait_order))

@@ -1498,12 +1498,18 @@ decreased-profile positive-z fraction. Color encodes this same effect on a fixed
 All supported effects with finite two-sided Fisher exact p-values are displayed,
 including nonsignificant results. Support requires at least 3 positive-z profiles
 in either direction and at least 2 total studies. A dark cell border marks
-`p < 0.01`; unbordered cells are descriptive effects that do not meet that
-threshold. Gray cells are unavailable or insufficiently supported, rather than
-merely nonsignificant. Specifically, a gray cell can indicate that one profile
-direction is absent, both directions have fewer than 3 positive-z profiles,
-fewer than 2 studies are available, or neither direction produced a candidate
-edge. White cells with a numeric `+0.00` represent measured null effects.
+BH `q <= 0.05`; the manifest separately reports how many cells passed the
+uncorrected `p < 0.01` threshold. Unbordered cells are descriptive effects. The
+signed contrast table contains candidate edge records rather than a complete
+Cartesian grid. Its `blank_reason` is
+`low positive-z profile or study support` for a present candidate that fails
+display support and empty (`NA` in the TSV) for a displayed candidate. A
+condition/body-site/trait combination for which neither direction emitted a
+candidate edge is absent from the table rather than assigned a blank reason.
+Both absent records and present under-supported candidates appear gray in the
+image. A direction may have zero positive-z profiles while the cell remains
+colored when total profiles exist and the other direction meets support. White
+cells with a numeric `+0.00` represent measured null effects.
 
 Conditions are not selected with a top-N disease filter. Signed contrasts read
 the full increased and decreased Sankey edge tables before graph display
@@ -1547,16 +1553,27 @@ in `six_shared_trait_signed_direction_cluster_comparison.tsv`. Each individual
 condition/body-site vector is mapped to its grouped aggregate using the grouped
 edge table's `raw_conditions` field. The table reports their Spearman
 correlation and distance, cluster orders, the nearest individual-condition
-neighbor, a within-group distance rank, a 1.5-IQR within-group outlier flag when
-at least 4 comparable individuals exist, and a flag for nonpositive
-individual-versus-grouped correlation. These are exploratory pattern diagnostics,
-not formal biological outlier tests. The six-shared-traits README embeds smaller
-clickable previews that link to the full-resolution clustered PNGs.
+neighbor, the number of individual conditions contributing to the grouped row,
+a within-group distance rank, a 1.5-IQR within-group outlier flag when at least 4
+eligible individuals exist, and a flag for nonpositive individual-versus-grouped
+correlation. Ranks and diagnostic flags require at least 5 shared supported
+traits; lower-overlap comparisons remain exported but are marked ineligible.
+The grouped aggregate includes the individual row being compared, so this is not
+an independent comparison; a one-contributor aggregate is the same source row
+under a broader label. These are exploratory pattern diagnostics, not formal
+biological outlier tests. The six-shared-traits README embeds the grouped
+clustered overview and links directly to the full-resolution individual PNG.
 
 BH q-values are computed across the full cell table within each condition-label
 mode. The companion table records raw delta, raw Fisher p-value, BH q-value,
 signed `-log10(p)`, display and significance flags, ranked page number, and
-clustered row order for each cell.
+clustered row order for each cell. Dark borders use `selected_after_bh`; the
+`significant_in_heatmap` column retains the uncorrected raw-p flag for audit.
+Floating-point fields are exported at 12 significant digits to prevent
+last-bit textual churn without implying additional precision.
+The Fisher contingency tables count profiles rather than independent studies;
+BH-bordered cells are profile-level diagnostics and do not establish
+study-level replication.
 
 ### Inferred Guild Evidence Outputs
 
