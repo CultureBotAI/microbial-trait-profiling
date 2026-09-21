@@ -1,4 +1,4 @@
-condition_body_site_pair	condition	body_site_group	study_count	oral_site	oral_disease	inclusion_reason	supported_traits	in_main_figure
+condition_body_site_pair	condition	body_site_group	max_trait_study_count	oral_site	oral_disease	inclusion_reason	supported_traits	in_main_figure
 Aggressive periodontitis | Oral cavity / dental	Aggressive periodontitis	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
 Chronic periodontitis | Oral cavity / dental	Chronic periodontitis	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
 Dental caries | Oral cavity / dental	Dental caries	Oral cavity / dental	2	True	True	oral site and oral disease	2	True

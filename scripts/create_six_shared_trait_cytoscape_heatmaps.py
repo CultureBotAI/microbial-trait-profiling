@@ -2032,8 +2032,21 @@ def select_oral_contrast_cells(cells: pd.DataFrame) -> pd.DataFrame:
     """Select oral site OR an explicit oral diagnosis without changing inference."""
     selected = cells.loc[cells["view_key"] == "individual_conditions_direction_contrast"].copy()
     keys = ["condition", "body_site_group", "trait_id"]
-    if selected[keys].isna().any().any() or selected.duplicated(keys).any():
+    missing_keys = selected[keys].isna().any().any() or any(
+        selected[key].astype(str).str.strip().eq("").any() for key in keys
+    )
+    if missing_keys or selected.duplicated(keys).any():
         raise ValueError("Individual contrast keys must be present and unique")
+    expected_pairs = selected["condition"] + " | " + selected["body_site_group"]
+    if (
+        selected["condition_body_site_pair"].isna().any()
+        or not selected["condition_body_site_pair"].eq(expected_pairs).all()
+        or selected[["condition_body_site_pair", "condition", "body_site_group"]]
+        .drop_duplicates()
+        .duplicated("condition_body_site_pair")
+        .any()
+    ):
+        raise ValueError("Condition/body-site pair labels must be canonical and unambiguous")
     for flag in ("displayed_in_heatmap", "selected_after_bh"):
         if not pd.api.types.is_bool_dtype(selected[flag]) or selected[flag].isna().any():
             raise ValueError(f"Expected complete Boolean flags: {flag}")
@@ -2064,14 +2077,20 @@ def write_oral_trait_heatmaps(
     if cells.empty:
         raise ValueError("No oral-site or oral-disease cells in the source table")
     traits = read_trait_order(source_dir)
-    if len(traits) != 6 or not cells["trait_id"].isin(traits["trait_id"]).all():
-        raise ValueError("Oral heatmap requires the source's six declared traits")
+    if (
+        len(traits) != 6
+        or traits["trait_id"].isna().any()
+        or traits["trait_id"].astype(str).str.strip().eq("").any()
+        or traits["trait_id"].duplicated().any()
+        or not cells["trait_id"].isin(traits["trait_id"]).all()
+    ):
+        raise ValueError("Oral heatmap requires six distinct, nonempty source trait IDs")
     output_dir = source_dir / "oral"
     output_dir.mkdir(parents=True, exist_ok=True)
     rows = (
         cells.groupby(["condition_body_site_pair", "condition", "body_site_group"], sort=False)
         .agg(
-            study_count=("study_count", "max"),
+            max_trait_study_count=("study_count", "max"),
             oral_site=("oral_site", "any"),
             oral_disease=("oral_disease", "any"),
             inclusion_reason=("inclusion_reason", "first"),
@@ -2099,7 +2118,8 @@ def write_oral_trait_heatmaps(
     display_labels = {
         row.condition_body_site_pair: (
             f"{row.condition} | "
-            f"{'Oral' if row.oral_site else row.body_site_group} | n={row.study_count}"
+            f"{'Oral' if row.oral_site else row.body_site_group} | "
+            f"max n={row.max_trait_study_count}"
         )
         for row in rows.itertuples(index=False)
     }
@@ -2107,7 +2127,8 @@ def write_oral_trait_heatmaps(
     family_size = int((source["view_key"] == "individual_conditions_direction_contrast").sum())
     subtitle = (
         "Oral sampling site OR oral disease. Red: increased; blue: decreased positive-z "
-        "profile fraction. Numbers are increased minus decreased fractions; n = studies per row. "
+        "profile fraction. Numbers are increased minus decreased fractions; "
+        "max n = largest per-trait study count in each row. "
         f"Dark border: source BH q <= {Q_VALUE_CUTOFF:g} ({significant_count} oral cells); "
         f"original {family_size}-cell family retained. Gray: unavailable or below source support "
         "(>=3 positive-z profiles in either direction and >=2 studies), not nonsignificant. "
@@ -2148,6 +2169,10 @@ def write_oral_trait_heatmaps(
     provenance = {
         "source_table": source_path.name,
         "source_table_sha256": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+        "source_trait_table": TRAIT_SELECTION_FILENAME,
+        "source_trait_table_sha256": hashlib.sha256(
+            (source_dir / TRAIT_SELECTION_FILENAME).read_bytes()
+        ).hexdigest(),
         "source_artifact_commit": source_commit,
         "selection": "oral_site OR oral_disease; individual condition labels only",
         "oral_body_site_groups": sorted(ORAL_BODY_SITE_GROUPS),

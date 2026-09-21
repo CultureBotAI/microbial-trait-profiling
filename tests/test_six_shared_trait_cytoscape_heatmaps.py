@@ -49,6 +49,7 @@ def test_oral_selection_uses_inclusive_or_and_exact_disease_components() -> None
             "fisher_q_value": [0.4, 0.03] + [0.4] * 6,
         }
     )
+    cells["condition_body_site_pair"] = cells["condition"] + " | " + cells["body_site_group"]
     selected = heatmaps.select_oral_contrast_cells(cells)
     assert selected.index.tolist() == [0, 1, 2]
     assert selected["inclusion_reason"].tolist() == ["oral site", "oral disease", "oral disease"]
@@ -60,7 +61,8 @@ def test_oral_selection_uses_inclusive_or_and_exact_disease_components() -> None
         heatmaps.select_oral_contrast_cells(cells)
 
 
-def test_oral_writer_keeps_source_q_family_and_unsupported_diagnoses(tmp_path: Path) -> None:
+@pytest.fixture
+def oral_contrast_source(tmp_path: Path) -> pd.DataFrame:
     traits = pd.DataFrame(
         {
             "trait_id": [f"trait{i}" for i in range(6)],
@@ -94,7 +96,15 @@ def test_oral_writer_keeps_source_q_family_and_unsupported_diagnoses(tmp_path: P
                 }
             )
     source = pd.DataFrame(records)
+    source.loc[6, "study_count"] = 5
     source.to_csv(tmp_path / heatmaps.CONTRAST_TABLE_FILENAME, sep="\t", index=False)
+    return source
+
+
+def test_oral_writer_keeps_source_q_family_and_unsupported_diagnoses(
+    tmp_path: Path, oral_contrast_source: pd.DataFrame
+) -> None:
+    source = oral_contrast_source
     with patch.object(heatmaps, "plot_matrix_heatmap") as plot:
         output = heatmaps.write_oral_trait_heatmaps(tmp_path, source_commit="source-sha")
     assert output.name == "oral_six_trait_heatmap.png"
@@ -105,6 +115,10 @@ def test_oral_writer_keeps_source_q_family_and_unsupported_diagnoses(tmp_path: P
     borders = first.kwargs["significance_borders"]
     assert borders.loc[borders.index.str.startswith("Root caries")].all().all()
     assert not borders.loc[borders.index.str.startswith("Rheumatoid")].any().any()
+    assert "Rheumatoid arthritis | Oral | max n=5" in matrix.index
+    rows = pd.read_csv(output.parent / "oral_six_trait_rows.tsv", sep="\t")
+    rheumatoid = rows.loc[rows["condition"] == "Rheumatoid arthritis"]
+    assert rheumatoid["max_trait_study_count"].item() == 5
     exported = pd.read_csv(output.parent / "oral_six_trait_cells.tsv", sep="\t")
     assert len(exported) == 18
     assert exported["fisher_q_value"].tolist() == source.iloc[:18]["fisher_q_value"].tolist()
@@ -113,6 +127,39 @@ def test_oral_writer_keeps_source_q_family_and_unsupported_diagnoses(tmp_path: P
     assert provenance["source_artifact_commit"] == "source-sha"
     assert provenance["bh_significant_displayed_cells"] == 6
     assert provenance["oral_disease_only_rows"] == 1
+
+
+@pytest.mark.parametrize("bad_pair", [None, "", "Rheumatoid arthritis | Oral cavity / dental"])
+def test_oral_selection_rejects_missing_or_conflicting_pair_labels(
+    oral_contrast_source: pd.DataFrame, bad_pair: str | None
+) -> None:
+    oral_contrast_source.loc[0, "condition_body_site_pair"] = bad_pair
+    with pytest.raises(ValueError, match="canonical and unambiguous"):
+        heatmaps.select_oral_contrast_cells(oral_contrast_source)
+
+
+def test_oral_selection_rejects_ambiguous_pair_separator(
+    oral_contrast_source: pd.DataFrame,
+) -> None:
+    cells = oral_contrast_source.iloc[:2].copy()
+    cells["condition"] = ["A | B", "A"]
+    cells["body_site_group"] = ["C", "B | C"]
+    cells["condition_body_site_pair"] = "A | B | C"
+    with pytest.raises(ValueError, match="canonical and unambiguous"):
+        heatmaps.select_oral_contrast_cells(cells)
+
+
+@pytest.mark.parametrize("bad_trait_id", [None, " ", "trait0"])
+@pytest.mark.usefixtures("oral_contrast_source")
+def test_oral_writer_rejects_incomplete_or_duplicate_trait_manifest(
+    tmp_path: Path, bad_trait_id: str | None
+) -> None:
+    manifest_path = tmp_path / heatmaps.TRAIT_SELECTION_FILENAME
+    manifest = pd.read_csv(manifest_path, sep="\t")
+    manifest.loc[5, "trait_id"] = bad_trait_id
+    manifest.to_csv(manifest_path, sep="\t", index=False)
+    with pytest.raises(ValueError, match="six distinct, nonempty"):
+        heatmaps.write_oral_trait_heatmaps(tmp_path)
 
 
 def test_write_tsv_uses_stable_float_precision(tmp_path: Path) -> None:

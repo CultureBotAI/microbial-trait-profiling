@@ -1,6 +1,8 @@
 {
   "source_table": "six_shared_trait_condition_body_site_direction_contrasts.tsv",
   "source_table_sha256": "02f753b1ca94ec00ec3a4a7347eaa84d4a3d4960a8a89d6fc417c8f2473f2c09",
+  "source_trait_table": "six_shared_trait_selection.tsv",
+  "source_trait_table_sha256": "6ab4bb1b1f370a09be2923572b1c626fde192b56893ff8290ea6beea04f40c1a",
   "source_artifact_commit": "fb7afae18d37881ae071c256cbc93c8adb5cb8b8",
   "selection": "oral_site OR oral_disease; individual condition labels only",
   "oral_body_site_groups": [

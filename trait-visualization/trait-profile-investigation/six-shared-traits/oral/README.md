@@ -53,9 +53,10 @@ does not imply significance within these oral rows.
 Source support requires at least three positive-z profiles in either direction
 and at least two studies. Gray cells represent missing source records or cells
 below the source display requirements; they do not establish a null effect.
-The source is sparse: 381 recorded cells out of 80 x 6 possible cells. Row `n`
+The source is sparse: 381 recorded cells out of 80 x 6 possible cells. Row `max n`
 is the largest source study count across that row's recorded traits, not a count
-of independent observations in the Fisher test. Study counts must not be summed
+of independent observations in the Fisher test or the union of studies across
+traits. The row audit names it `max_trait_study_count`. Study counts must not be summed
 across overlapping condition rows.
 
 [Cell audit](oral_six_trait_cells.tsv) preserves source counts, p/q values, flags,
