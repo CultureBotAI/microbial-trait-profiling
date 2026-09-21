@@ -42,6 +42,10 @@ format:
 trait-profile-investigation:
 	uv run python scripts/regenerate_trait_profile_investigation.py
 
+# Reported sample sizes of the experiments behind the saved oral heatmap.
+oral-experiment-sizes raw_dump="data/raw/full_dump.csv":
+    uv run python scripts/plot_oral_experiment_sample_sizes.py --raw-dump "{{raw_dump}}"
+
 # Regenerate six-trait pattern and full-table signed direction heatmaps.
 six-shared-trait-heatmaps:
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py
