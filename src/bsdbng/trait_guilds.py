@@ -205,6 +205,41 @@ def _select_trait_columns(
     return total_positions, guild_positions, mediadive_excluded
 
 
+def _parse_trait_count(
+    row: list[str],
+    index: int,
+    header: list[str],
+    profile_key: tuple[str, str, str],
+    *,
+    reject_missing: bool,
+) -> int:
+    """Parse one count without conflating missing, malformed, negative, and zero."""
+    raw = row[index].strip() if index < len(row) else ""
+    if not raw:
+        if reject_missing:
+            study_id, experiment_id, inc_dec = profile_key
+            raise ValueError(
+                f"Missing trait count for {study_id}, {experiment_id}, {inc_dec}: "
+                f"{header[index]}; missing is not zero"
+            )
+        return 0
+    try:
+        value = int(raw)
+    except ValueError as error:
+        study_id, experiment_id, inc_dec = profile_key
+        raise ValueError(
+            f"Malformed trait count for {study_id}, {experiment_id}, {inc_dec}: "
+            f"{header[index]}={raw!r}"
+        ) from error
+    if value < 0:
+        study_id, experiment_id, inc_dec = profile_key
+        raise ValueError(
+            f"Negative trait count for {study_id}, {experiment_id}, {inc_dec}: "
+            f"{header[index]}={value}"
+        )
+    return value
+
+
 def load_profiles(
     profile_path: Path = DEFAULT_PROFILE_PATH,
     experiments_path: Path = DEFAULT_EXPERIMENTS_PATH,
@@ -253,17 +288,20 @@ def load_profiles(
                 dropped_non_human += 1
                 continue
 
-            if reject_missing_counts:
-                for i in total_positions:
-                    if i >= len(row) or not row[i].strip():
-                        msg = (
-                            f"Missing trait count for {study_id}, {experiment_id}, {inc_dec}: "
-                            f"{header[i]}; missing is not zero"
-                        )
-                        raise ValueError(msg)
-            values = [int(row[i]) if row[i].strip() else 0 for i in total_positions]
+            profile_key = (study_id, experiment_id, inc_dec)
+            parsed = {
+                i: _parse_trait_count(
+                    row,
+                    i,
+                    header,
+                    profile_key,
+                    reject_missing=reject_missing_counts,
+                )
+                for i in total_positions
+            }
+            values = [parsed[i] for i in total_positions]
             guild_counts = {
-                guild: sum(int(row[i]) if row[i].strip() else 0 for i in positions)
+                guild: sum(parsed[i] for i in positions)
                 for guild, positions in guild_positions.items()
             }
             candidates.append(

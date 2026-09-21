@@ -40,9 +40,11 @@ estimates from the shared counts and retains each framework's original test as
 its own evidence record. Computing the same descriptive estimate through three
 exporters is a consistency check, not three independent findings.
 
-This section specifies the harmonized comparison to implement in
-[#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178). It does not certify that
-the historical runs below already meet the specification. No new significance
+This section specifies the harmonized comparison consumed by
+[#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178). The common descriptive
+rows and exact population manifests are implemented by `just table1-common-quantities`
+and reviewed in [`denominator_effect_review.md`](denominator_effect_review.md). This
+does not certify that the historical native runs below meet the specification. No new significance
 cutoff, minimum effect, support cutoff, ranking score or top-k value is selected
 here; the first comparison displays every declared candidate in manifest order.
 
@@ -98,10 +100,11 @@ Unavailable effect intervals must be labeled as unavailable.
 For a given comparison row, every implementation must use the **same eligible
 experiment IDs and study weights**, not merely the same studies. An excluded
 experiment removes both directions. Record eligible/excluded pairs and studies,
-partially observed studies and ties. Current fraction code maps a zero-total
+partially observed studies and ties. Historical fraction code maps a zero-total
 profile to zero; the shared definition above requires exclusion of its complete
-pair instead. Historical fraction outputs therefore need an explicit eligibility
-audit and rerun, rather than relabeling them as this new baseline.
+pair instead. The #256 common rerun makes that exclusion explicit: 94 pairs are
+removed from the pinned pooled corpus. Historical native outputs retain their
+original rule rather than being relabeled as the common baseline.
 
 The fraction and ratio populations also need separate names. First retain the
 full fraction-eligible analysis. For each A/B comparison, additionally calculate
@@ -175,12 +178,15 @@ framework, described under [Compositionality](#compositionality).
 The core paired analyses restrict to human samples and experiments carrying both
 directions, at different points in the pipeline. The enrichment branch filters
 host species at ingest; the other analyses filter downstream. The same retained
-rows do not guarantee the same normalization: Ilyas and Noel remove MediaDive
-before computing totals, whereas Jed's inspected paired-screen code excludes
-MediaDive from trait selection but includes it in the denominator. Issue
-[#174](https://github.com/CultureBotAI/microbial-trait-profiling/issues/174) tracks harmonization and
-the numerical rerun; the historical results below must retain their original
-denominator definitions until that work is complete.
+rows do not guarantee the same normalization. Ilyas and Noel remove MediaDive
+before computing totals, whereas Jed's historical paired-screen code excluded
+MediaDive from trait selection but included it in the denominator. The implementation
+in [PR #197](https://github.com/CultureBotAI/microbial-trait-profiling/pull/197)
+now uses the full retained non-MediaDive universe. The #256 audit confirms exact
+denominator-value parity on all 4,670 current shared-base profiles, while finding a
+separate 160-profile paired-membership discrepancy in PR #197's committed audit.
+See [`denominator_effect_review.md`](denominator_effect_review.md); the historical
+results below retain their original denominator definitions.
 
 ## Thresholds and ranks follow the shared basis
 
@@ -327,8 +333,12 @@ traits remain interpretation limits. The ratio cannot distinguish an absolute
 increase in its numerator from an absolute decrease in its reference. See
 [Morton et al. (2019)](https://doi.org/10.1038/s41467-019-10656-5) on reference
 frames and [Lovell et al. (2015)](https://doi.org/10.1371/journal.pcbi.1004075)
-on associations in relative data. The tests in `tests/test_trait_composition.py`
-exercise the denominator-only counterexample and the ratio invariants.
+on associations in relative data. The #256
+[denominator-effect review](denominator_effect_review.md) adds the common
+study-weighted raw fractions and exact ratio-population-matched fractions. Tests in
+`tests/test_trait_composition.py` and `tests/test_common_trait_quantities.py`
+exercise the denominator-only counterexample, MediaDive invariance, reference
+reversal, zero policies, exact matched populations, and study weighting.
 
 ## Vintage
 
