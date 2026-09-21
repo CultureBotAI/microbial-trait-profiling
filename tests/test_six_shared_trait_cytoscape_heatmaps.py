@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import math
 import sys
 from pathlib import Path
@@ -7,6 +8,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 MODULE_PATH = (
     Path(__file__).resolve().parents[1]
@@ -22,6 +24,142 @@ assert SPEC.loader is not None
 heatmaps = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = heatmaps
 SPEC.loader.exec_module(heatmaps)
+
+
+def test_oral_selection_uses_inclusive_or_and_exact_disease_components() -> None:
+    cells = pd.DataFrame(
+        {
+            "view_key": ["individual_conditions_direction_contrast"] * 7
+            + ["grouped_direction_contrast"],
+            "condition": [
+                "Rheumatoid arthritis",
+                "Periodontitis,Diabetes mellitus",
+                "Root caries",
+                "Colorectal cancer",
+                "Head and neck carcinoma",
+                "Mucositis",
+                "Non-periodontitis comparison",
+                "Oral / periodontal disease",
+            ],
+            "body_site_group": ["Oral cavity / dental", "Feces", "Feces"] + ["Feces"] * 5,
+            "trait_id": ["trait"] * 8,
+            "displayed_in_heatmap": [True] * 8,
+            "selected_after_bh": [False, True] + [False] * 6,
+            "fisher_p_value": [0.01] * 8,
+            "fisher_q_value": [0.4, 0.03] + [0.4] * 6,
+        }
+    )
+    cells["condition_body_site_pair"] = cells["condition"] + " | " + cells["body_site_group"]
+    selected = heatmaps.select_oral_contrast_cells(cells)
+    assert selected.index.tolist() == [0, 1, 2]
+    assert selected["inclusion_reason"].tolist() == ["oral site", "oral disease", "oral disease"]
+    pd.testing.assert_frame_equal(selected[cells.columns], cells.iloc[:3])
+    with pytest.raises(ValueError, match="unique"):
+        heatmaps.select_oral_contrast_cells(pd.concat([cells, cells.iloc[:1]]))
+    cells["displayed_in_heatmap"] = "False"
+    with pytest.raises(ValueError, match="Boolean"):
+        heatmaps.select_oral_contrast_cells(cells)
+
+
+@pytest.fixture
+def oral_contrast_source(tmp_path: Path) -> pd.DataFrame:
+    traits = pd.DataFrame(
+        {
+            "trait_id": [f"trait{i}" for i in range(6)],
+            "trait_name": [f"Trait {i}" for i in range(6)],
+            "slug": [f"trait{i}" for i in range(6)],
+            "base_color": ["#000000"] * 6,
+        }
+    )
+    traits.to_csv(tmp_path / heatmaps.TRAIT_SELECTION_FILENAME, sep="\t", index=False)
+    records = []
+    for condition, site, supported, q_value in [
+        ("Gingivitis", "Oral cavity / dental", False, 1.0),
+        ("Rheumatoid arthritis", "Oral cavity / dental", True, 0.4),
+        ("Root caries", "Feces", True, 0.03),
+        ("Colorectal cancer", "Feces", True, 0.001),
+    ]:
+        for trait_id in traits["trait_id"]:
+            records.append(
+                {
+                    "view_key": "individual_conditions_direction_contrast",
+                    "condition": condition,
+                    "body_site_group": site,
+                    "condition_body_site_pair": f"{condition} | {site}",
+                    "trait_id": trait_id,
+                    "study_count": 3 if supported else 1,
+                    "displayed_in_heatmap": supported,
+                    "selected_after_bh": supported and q_value <= 0.05,
+                    "fisher_p_value": 0.001,
+                    "fisher_q_value": q_value,
+                    "increased_minus_decreased_positive_fraction": 0.25,
+                }
+            )
+    source = pd.DataFrame(records)
+    source.loc[6, "study_count"] = 5
+    source.to_csv(tmp_path / heatmaps.CONTRAST_TABLE_FILENAME, sep="\t", index=False)
+    return source
+
+
+def test_oral_writer_keeps_source_q_family_and_unsupported_diagnoses(
+    tmp_path: Path, oral_contrast_source: pd.DataFrame
+) -> None:
+    source = oral_contrast_source
+    with patch.object(heatmaps, "plot_matrix_heatmap") as plot:
+        output = heatmaps.write_oral_trait_heatmaps(tmp_path, source_commit="source-sha")
+    assert output.name == "oral_six_trait_heatmap.png"
+    first = plot.call_args_list[0]
+    matrix = first.args[0]
+    assert len(matrix) == 3
+    assert matrix.loc[matrix.index.str.startswith("Gingivitis")].isna().all().all()
+    borders = first.kwargs["significance_borders"]
+    assert borders.loc[borders.index.str.startswith("Root caries")].all().all()
+    assert not borders.loc[borders.index.str.startswith("Rheumatoid")].any().any()
+    assert "Rheumatoid arthritis | Oral | max n=5" in matrix.index
+    rows = pd.read_csv(output.parent / "oral_six_trait_rows.tsv", sep="\t")
+    rheumatoid = rows.loc[rows["condition"] == "Rheumatoid arthritis"]
+    assert rheumatoid["max_trait_study_count"].item() == 5
+    exported = pd.read_csv(output.parent / "oral_six_trait_cells.tsv", sep="\t")
+    assert len(exported) == 18
+    assert exported["fisher_q_value"].tolist() == source.iloc[:18]["fisher_q_value"].tolist()
+    provenance = json.loads((output.parent / "oral_six_trait_provenance.json").read_text())
+    assert provenance["source_individual_bh_family_size"] == 24
+    assert provenance["source_artifact_commit"] == "source-sha"
+    assert provenance["bh_significant_displayed_cells"] == 6
+    assert provenance["oral_disease_only_rows"] == 1
+
+
+@pytest.mark.parametrize("bad_pair", [None, "", "Rheumatoid arthritis | Oral cavity / dental"])
+def test_oral_selection_rejects_missing_or_conflicting_pair_labels(
+    oral_contrast_source: pd.DataFrame, bad_pair: str | None
+) -> None:
+    oral_contrast_source.loc[0, "condition_body_site_pair"] = bad_pair
+    with pytest.raises(ValueError, match="canonical and unambiguous"):
+        heatmaps.select_oral_contrast_cells(oral_contrast_source)
+
+
+def test_oral_selection_rejects_ambiguous_pair_separator(
+    oral_contrast_source: pd.DataFrame,
+) -> None:
+    cells = oral_contrast_source.iloc[:2].copy()
+    cells["condition"] = ["A | B", "A"]
+    cells["body_site_group"] = ["C", "B | C"]
+    cells["condition_body_site_pair"] = "A | B | C"
+    with pytest.raises(ValueError, match="canonical and unambiguous"):
+        heatmaps.select_oral_contrast_cells(cells)
+
+
+@pytest.mark.parametrize("bad_trait_id", [None, " ", "trait0"])
+@pytest.mark.usefixtures("oral_contrast_source")
+def test_oral_writer_rejects_incomplete_or_duplicate_trait_manifest(
+    tmp_path: Path, bad_trait_id: str | None
+) -> None:
+    manifest_path = tmp_path / heatmaps.TRAIT_SELECTION_FILENAME
+    manifest = pd.read_csv(manifest_path, sep="\t")
+    manifest.loc[5, "trait_id"] = bad_trait_id
+    manifest.to_csv(manifest_path, sep="\t", index=False)
+    with pytest.raises(ValueError, match="six distinct, nonempty"):
+        heatmaps.write_oral_trait_heatmaps(tmp_path)
 
 
 def test_write_tsv_uses_stable_float_precision(tmp_path: Path) -> None:

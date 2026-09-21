@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import argparse
+import hashlib
+import json
 import math
 from dataclasses import dataclass
 from pathlib import Path
@@ -50,6 +53,26 @@ SLATE_500 = "#64748b"
 SLATE_700 = "#334155"
 SLATE_900 = "#0f172a"
 SIGNIFICANCE_BORDER = "#111827"
+ORAL_BODY_SITE_GROUPS = frozenset({"Oral cavity / dental"})
+# Exact source labels: nonspecific mucositis, Sjogren syndrome and head/neck
+# cancer qualify through oral sampling, not through an assumed oral diagnosis.
+ORAL_DISEASE_LABELS = frozenset(
+    {
+        "aggressive periodontitis",
+        "chronic periodontitis",
+        "dental caries",
+        "dental fluorosis",
+        "gingivitis",
+        "halitosis",
+        "oral cavity carcinoma",
+        "oral leukoplakia",
+        "oral mucositis",
+        "oral squamous cell carcinoma",
+        "periapical periodontitis",
+        "periodontitis",
+        "root caries",
+    }
+)
 LEGACY_CORRELATION_OUTPUTS = (
     "six_shared_trait_condition_body_site_trait_correlations.tsv",
     "six_shared_trait_condition_body_site_trait_vectors.tsv",
@@ -2005,8 +2028,186 @@ def write_six_shared_trait_cytoscape_heatmaps(
     return manifest
 
 
+def select_oral_contrast_cells(cells: pd.DataFrame) -> pd.DataFrame:
+    """Select oral site OR an explicit oral diagnosis without changing inference."""
+    selected = cells.loc[cells["view_key"] == "individual_conditions_direction_contrast"].copy()
+    keys = ["condition", "body_site_group", "trait_id"]
+    missing_keys = selected[keys].isna().any().any() or any(
+        selected[key].astype(str).str.strip().eq("").any() for key in keys
+    )
+    if missing_keys or selected.duplicated(keys).any():
+        raise ValueError("Individual contrast keys must be present and unique")
+    expected_pairs = selected["condition"] + " | " + selected["body_site_group"]
+    if (
+        selected["condition_body_site_pair"].isna().any()
+        or not selected["condition_body_site_pair"].eq(expected_pairs).all()
+        or selected[["condition_body_site_pair", "condition", "body_site_group"]]
+        .drop_duplicates()
+        .duplicated("condition_body_site_pair")
+        .any()
+    ):
+        raise ValueError("Condition/body-site pair labels must be canonical and unambiguous")
+    for flag in ("displayed_in_heatmap", "selected_after_bh"):
+        if not pd.api.types.is_bool_dtype(selected[flag]) or selected[flag].isna().any():
+            raise ValueError(f"Expected complete Boolean flags: {flag}")
+    selected["oral_site"] = selected["body_site_group"].isin(ORAL_BODY_SITE_GROUPS)
+    selected["oral_disease"] = selected["condition"].map(
+        lambda label: any(
+            term.strip().casefold() in ORAL_DISEASE_LABELS for term in str(label).split(",")
+        )
+    )
+    selected = selected.loc[selected["oral_site"] | selected["oral_disease"]].copy()
+    selected["inclusion_reason"] = np.select(
+        [selected["oral_site"] & selected["oral_disease"], selected["oral_site"]],
+        ["oral site and oral disease", "oral site"],
+        default="oral disease",
+    )
+    return selected
+
+
+def write_oral_trait_heatmaps(
+    source_dir: Path = OUTPUT_DIR,
+    *,
+    source_commit: str = "unrecorded",
+) -> Path:
+    """Render an auditable oral view of the saved individual-condition results."""
+    source_path = source_dir / CONTRAST_TABLE_FILENAME
+    source = read_tsv(source_path)
+    cells = select_oral_contrast_cells(source)
+    if cells.empty:
+        raise ValueError("No oral-site or oral-disease cells in the source table")
+    traits = read_trait_order(source_dir)
+    if (
+        len(traits) != 6
+        or traits["trait_id"].isna().any()
+        or traits["trait_id"].astype(str).str.strip().eq("").any()
+        or traits["trait_id"].duplicated().any()
+        or not cells["trait_id"].isin(traits["trait_id"]).all()
+    ):
+        raise ValueError("Oral heatmap requires six distinct, nonempty source trait IDs")
+    output_dir = source_dir / "oral"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    rows = (
+        cells.groupby(["condition_body_site_pair", "condition", "body_site_group"], sort=False)
+        .agg(
+            max_trait_study_count=("study_count", "max"),
+            oral_site=("oral_site", "any"),
+            oral_disease=("oral_disease", "any"),
+            inclusion_reason=("inclusion_reason", "first"),
+            supported_traits=("displayed_in_heatmap", "sum"),
+        )
+        .reset_index()
+        .sort_values(
+            ["oral_disease", "condition", "body_site_group"], ascending=[False, True, True]
+        )
+    )
+    # Keep unsupported oral diagnoses visible in the main figure. Other entirely
+    # unsupported rows remain in the complete figure, pages, and audit table.
+    rows["in_main_figure"] = rows["oral_disease"] | (rows["supported_traits"] > 0)
+    labels = rows["condition_body_site_pair"].tolist()
+    main_labels = rows.loc[rows["in_main_figure"], "condition_body_site_pair"].tolist()
+    cells["in_main_figure"] = cells["condition_body_site_pair"].isin(main_labels)
+    cells["oral_heatmap_order"] = cells["condition_body_site_pair"].map(
+        {label: index + 1 for index, label in enumerate(labels)}
+    )
+    matrix = cell_matrix(
+        cells, labels, traits, value_column="increased_minus_decreased_positive_fraction"
+    )
+    annotations = annotation_matrix(cells, labels, traits, mode="contrast")
+    borders = flag_matrix(cells, labels, traits, flag_column="selected_after_bh") & matrix.notna()
+    display_labels = {
+        row.condition_body_site_pair: (
+            f"{row.condition} | "
+            f"{'Oral' if row.oral_site else row.body_site_group} | "
+            f"max n={row.max_trait_study_count}"
+        )
+        for row in rows.itertuples(index=False)
+    }
+    significant_count = int(borders.to_numpy().sum())
+    family_size = int((source["view_key"] == "individual_conditions_direction_contrast").sum())
+    subtitle = (
+        "Oral sampling site OR oral disease. Red: increased; blue: decreased positive-z "
+        "profile fraction. Numbers are increased minus decreased fractions; "
+        "max n = largest per-trait study count in each row. "
+        f"Dark border: source BH q <= {Q_VALUE_CUTOFF:g} ({significant_count} oral cells); "
+        f"original {family_size}-cell family retained. Gray: unavailable or below source support "
+        "(>=3 positive-z profiles in either direction and >=2 studies), not nonsignificant. "
+        "Source tests are profile-level diagnostics."
+    )
+    figures = [("oral_six_trait_heatmap.png", main_labels, "Oral microbiomes and oral diseases")]
+    figures.append(("oral_six_trait_heatmap_all_rows.pdf", labels, "Oral selection: all rows"))
+    for page, page_labels in enumerate(contrast_row_pages(labels), start=1):
+        figures.append(
+            (
+                f"oral_six_trait_heatmap_page_{page:02d}.png",
+                page_labels,
+                f"Oral selection: page {page}",
+            )
+        )
+    for filename, selected_labels, title in figures:
+        caption = subtitle
+        if filename == "oral_six_trait_heatmap.png":
+            caption += (
+                f" Main view: {len(main_labels)} of {len(labels)} rows; "
+                "all oral diagnoses plus other rows with support. Full coverage in pages/TSV."
+            )
+        plot_matrix_heatmap(
+            matrix.loc[selected_labels].rename(index=display_labels),
+            annotations.loc[selected_labels].rename(index=display_labels),
+            traits,
+            output_dir / filename,
+            title=title,
+            subtitle=caption,
+            colorbar_label="Increased - decreased positive-z profile fraction",
+            cmap_name="RdBu_r",
+            vmin=-1.0,
+            vmax=1.0,
+            significance_borders=borders.loc[selected_labels].rename(index=display_labels),
+        )
+    write_tsv(cells, output_dir / "oral_six_trait_cells.tsv")
+    write_tsv(rows, output_dir / "oral_six_trait_rows.tsv")
+    provenance = {
+        "source_table": source_path.name,
+        "source_table_sha256": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+        "source_trait_table": TRAIT_SELECTION_FILENAME,
+        "source_trait_table_sha256": hashlib.sha256(
+            (source_dir / TRAIT_SELECTION_FILENAME).read_bytes()
+        ).hexdigest(),
+        "source_artifact_commit": source_commit,
+        "selection": "oral_site OR oral_disease; individual condition labels only",
+        "oral_body_site_groups": sorted(ORAL_BODY_SITE_GROUPS),
+        "oral_disease_labels_casefolded": sorted(ORAL_DISEASE_LABELS),
+        "source_individual_bh_family_size": family_size,
+        "inference": "source Fisher p and BH q retained; no subset refit or correction",
+        "q_cutoff": Q_VALUE_CUTOFF,
+        "selected_rows": len(rows),
+        "main_figure_rows": len(main_labels),
+        "selected_cells": len(cells),
+        "displayed_cells": int(cells["displayed_in_heatmap"].sum()),
+        "bh_significant_displayed_cells": significant_count,
+        "oral_site_only_rows": int((rows["oral_site"] & ~rows["oral_disease"]).sum()),
+        "oral_disease_only_rows": int((~rows["oral_site"] & rows["oral_disease"]).sum()),
+        "both_rows": int((rows["oral_site"] & rows["oral_disease"]).sum()),
+        "figures": [filename for filename, _, _ in figures],
+    }
+    (output_dir / "oral_six_trait_provenance.json").write_text(
+        json.dumps(provenance, indent=2) + "\n", encoding="utf-8"
+    )
+    print(json.dumps(provenance, indent=2))
+    return output_dir / "oral_six_trait_heatmap.png"
+
+
 def main() -> None:
     """Write the Cytoscape-derived heatmap outputs."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--oral-only", action="store_true", help="Plot the saved oral subset")
+    parser.add_argument(
+        "--source-commit", default="unrecorded", help="Saved table's artifact commit"
+    )
+    args = parser.parse_args()
+    if args.oral_only:
+        print(f"Wrote oral heatmap: {write_oral_trait_heatmaps(source_commit=args.source_commit)}")
+        return
     manifest = write_six_shared_trait_cytoscape_heatmaps()
     print(f"Wrote Cytoscape heatmaps: {len(manifest)}")
     print(f"Wrote manifest: {OUTPUT_DIR / MANIFEST_FILENAME}")
