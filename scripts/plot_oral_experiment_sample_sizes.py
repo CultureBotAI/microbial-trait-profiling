@@ -225,8 +225,11 @@ def plot_histogram(audit: pd.DataFrame, summary: dict, output: Path) -> None:
         color="#475569",
         linespacing=1.6,
     )
-    for suffix in ["png", "pdf"]:
-        fig.savefig(output / f"oral_experiment_sample_sizes.{suffix}", dpi=200, facecolor="white")
+    with plt.rc_context({"svg.fonttype": "none", "svg.hashsalt": "oral-experiment-sizes"}):
+        for suffix in ["png", "pdf", "svg"]:
+            fig.savefig(
+                output / f"oral_experiment_sample_sizes.{suffix}", dpi=200, facecolor="white"
+            )
     plt.close(fig)
 
 

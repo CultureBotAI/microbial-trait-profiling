@@ -1,6 +1,7 @@
 # Oral experiment sample sizes
 
 [Histogram PNG](oral_experiment_sample_sizes.png) ·
+[Editable SVG](oral_experiment_sample_sizes.svg) ·
 [Vector PDF](oral_experiment_sample_sizes.pdf) ·
 [Experiment audit](oral_experiment_sample_size_audit.tsv) ·
 [Summary](oral_experiment_sample_size_summary.tsv)
