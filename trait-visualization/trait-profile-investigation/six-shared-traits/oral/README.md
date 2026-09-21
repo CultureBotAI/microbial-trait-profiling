@@ -1,6 +1,9 @@
 # Oral microbiomes and oral diseases: six-trait heatmap
 
-[Main figure](oral_six_trait_heatmap.png) · [All 80 rows, vector PDF](oral_six_trait_heatmap_all_rows.pdf)
+[Clustered figure](oral_six_trait_heatmap_clustered.png) ·
+[Clustered vector PDF](oral_six_trait_heatmap_clustered.pdf) ·
+[All 80 rows, clustered PDF](oral_six_trait_heatmap_clustered_all_rows.pdf) ·
+[Original ordering](oral_six_trait_heatmap.png)
 
 This is an oral-focused view of Jed's saved individual-condition signed contrasts
 from [PR #249](https://github.com/CultureBotAI/microbial-trait-profiling/pull/249),
@@ -63,6 +66,37 @@ across overlapping condition rows.
 inclusion reasons, and figure membership. The legacy `significant_in_heatmap`
 column refers to source raw-p screening; borders use `selected_after_bh` instead.
 [Row audit](oral_six_trait_rows.tsv) records support and main-figure membership.
+
+## Clustering both axes
+
+The clustered view orders both condition/site rows and trait columns using the
+source workflow's average-linkage hierarchical clustering on `1 - Spearman rho`,
+with optimal leaf ordering. Distances use only jointly supported finite values,
+with at least three shared values and nonconstant ranks in both vectors. For
+rows those shared values are traits; for columns they are condition/site rows.
+Clustering uses all 80 oral rows; the main figure retains the same 29-row subset.
+Blank cells remain missing and are never filled with biological zeros.
+
+All six traits and 16 rows have at least one defined comparison and enter their
+respective trees. Of the main figure's 29 rows, 13 have insufficient overlap or
+constant values and remain below the tree in alphabetical order. The full PDF
+retains all 64 unclustered rows. Thus a displayed effect alone does not guarantee
+enough information to cluster that row.
+
+Among the 120 pairs within the row tree, nine lack a defined correlation and
+receive the source method's fallback distance of 1. All 15 trait-pair correlations
+are defined. That fallback is a layout convention, not measured similarity.
+The trees summarize exploratory rank patterns; they do not establish biological
+groups or new statistical significance. Neither effects nor source p/q values
+are changed by reordering.
+
+[Axis order and membership](oral_six_trait_cluster_order.tsv) records each label's
+order, supported-value count, and number of defined peers. The
+[pairwise comparison audit](oral_six_trait_cluster_pairs.tsv) records every pair
+used within each tree, its overlap, whether its correlation is defined, and the
+distance used. Provenance also records the method, leaf orders, and fallback
+counts. Vectors with no defined peers are excluded from these pair tables and
+identified explicitly in the membership table.
 
 ## Regenerate
 
