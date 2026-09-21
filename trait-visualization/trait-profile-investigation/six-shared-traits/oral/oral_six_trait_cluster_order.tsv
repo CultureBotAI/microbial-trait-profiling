@@ -1,0 +1,87 @@
+axis	label	display_order	clustered	supported_values	defined_peers
+condition_site	Gingivitis | Oral cavity / dental	1	True	3	14
+condition_site	Periodontitis | Oral cavity / dental	2	True	4	14
+condition_site	Squamous cell carcinoma | Oral cavity / dental	3	True	5	15
+condition_site	Esophageal squamous cell carcinoma | Oral cavity / dental	4	True	4	14
+condition_site	Smoking status measurement | Oral cavity / dental	5	True	6	15
+condition_site	Oral mucositis | Oral cavity / dental	6	True	4	14
+condition_site	Glaucoma | Oral cavity / dental	7	True	6	15
+condition_site	Esophageal cancer | Oral cavity / dental	8	True	4	14
+condition_site	Rheumatoid arthritis | Oral cavity / dental	9	True	5	15
+condition_site	Smoking behavior | Oral cavity / dental	10	True	5	15
+condition_site	COVID-19 | Oral cavity / dental	11	True	3	14
+condition_site	Colorectal cancer | Oral cavity / dental	12	True	6	15
+condition_site	Human papilloma virus infection | Oral cavity / dental	13	True	4	14
+condition_site	Head and neck squamous cell carcinoma | Oral cavity / dental	14	True	3	14
+condition_site	Oral squamous cell carcinoma | Oral cavity / dental	15	True	5	14
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	16	True	4	6
+condition_site	Abnormality on pulmonary function testing | Oral cavity / dental	17	False	0	0
+condition_site	Acne | Oral cavity / dental	18	False	0	0
+condition_site	Acute myeloid leukemia | Oral cavity / dental	19	False	0	0
+condition_site	Age-related macular degeneration | Oral cavity / dental	20	False	0	0
+condition_site	Aggressive periodontitis | Oral cavity / dental	21	False	0	0
+condition_site	Aging | Oral cavity / dental	22	False	0	0
+condition_site	Air pollution | Oral cavity / dental	23	False	0	0
+condition_site	Alcohol drinking | Oral cavity / dental	24	False	0	0
+condition_site	Arthritis | Oral cavity / dental	25	False	2	0
+condition_site	Atopic asthma | Oral cavity / dental	26	False	0	0
+condition_site	Behcet's syndrome | Oral cavity / dental	27	False	0	0
+condition_site	CD4-positive T-lymphocyte count | Oral cavity / dental	28	False	0	0
+condition_site	Carotid artery intima media thickness | Oral cavity / dental	29	False	0	0
+condition_site	Chronic kidney disease | Oral cavity / dental	30	False	0	0
+condition_site	Chronic otitis media | Oral cavity / dental	31	False	0	0
+condition_site	Chronic periodontitis | Oral cavity / dental	32	False	0	0
+condition_site	Coinfection,Age | Oral cavity / dental	33	False	0	0
+condition_site	Dental caries | Oral cavity / dental	34	False	2	0
+condition_site	Dental fluorosis | Oral cavity / dental	35	False	0	0
+condition_site	Down syndrome | Oral cavity / dental	36	False	0	0
+condition_site	Ethnic group | Oral cavity / dental	37	False	0	0
+condition_site	Gastric cancer | Oral cavity / dental	38	False	2	0
+condition_site	HIV infection | Oral cavity / dental	39	False	0	0
+condition_site	Halitosis | Oral cavity / dental	40	False	0	0
+condition_site	Head and neck carcinoma | Oral cavity / dental	41	False	1	0
+condition_site	Health study participation | Oral cavity / dental	42	False	0	0
+condition_site	Health trait | Oral cavity / dental	43	False	0	0
+condition_site	Human papillomavirus | Oral cavity / dental	44	False	0	0
+condition_site	Hypertrophy | Oral cavity / dental	45	False	0	0
+condition_site	Hypothyroidism | Oral cavity / dental	46	False	0	0
+condition_site	Illness severity status | Oral cavity / dental	47	False	0	0
+condition_site	Iron deficiency anemia | Oral cavity / dental	48	False	0	0
+condition_site	Irritable bowel syndrome | Oral cavity / dental	49	False	0	0
+condition_site	Ischemic stroke | Oral cavity / dental	50	False	0	0
+condition_site	Juvenile idiopathic arthritis | Oral cavity / dental	51	False	0	0
+condition_site	Lifestyle measurement | Oral cavity / dental	52	False	0	0
+condition_site	Lung cancer | Oral cavity / dental	53	False	0	0
+condition_site	Mucositis | Oral cavity / dental	54	False	0	0
+condition_site	Nasopharyngeal squamous cell carcinoma | Oral cavity / dental	55	False	0	0
+condition_site	Obesity | Oral cavity / dental	56	False	0	0
+condition_site	Oral cavity carcinoma | Oral cavity / dental	57	False	0	0
+condition_site	Oral leukoplakia | Oral cavity / dental	58	False	0	0
+condition_site	Osteoarthritis,Rheumatoid arthritis | Oral cavity / dental	59	False	0	0
+condition_site	Pancreatic carcinoma | Oral cavity / dental	60	False	0	0
+condition_site	Parkinson's disease | Oral cavity / dental	61	False	0	0
+condition_site	Peptic esophagitis | Oral cavity / dental	62	False	0	0
+condition_site	Periapical Periodontitis | Oral cavity / dental	63	False	0	0
+condition_site	Phenylketonuria | Oral cavity / dental	64	False	0	0
+condition_site	Pituitary Gland Adenoma | Oral cavity / dental	65	False	0	0
+condition_site	Population | Oral cavity / dental	66	False	0	0
+condition_site	Pregnancy | Oral cavity / dental	67	False	0	0
+condition_site	Premature birth | Oral cavity / dental	68	False	0	0
+condition_site	Primary bacterial infectious disease | Oral cavity / dental	69	False	0	0
+condition_site	Psoriasis | Oral cavity / dental	70	False	0	0
+condition_site	Response to allogeneic hematopoietic stem cell transplant | Oral cavity / dental	71	False	0	0
+condition_site	Root caries | Oral cavity / dental	72	False	0	0
+condition_site	SARS coronavirus | Oral cavity / dental	73	False	0	0
+condition_site	Sensory perception of bitter taste | Oral cavity / dental	74	False	0	0
+condition_site	Sjogren syndrome | Oral cavity / dental	75	False	0	0
+condition_site	Sleep Disorder | Oral cavity / dental	76	False	0	0
+condition_site	Smoking behaviour measurement | Oral cavity / dental	77	False	0	0
+condition_site	Systemic lupus erythematosus | Oral cavity / dental	78	False	0	0
+condition_site	Treatment | Oral cavity / dental	79	False	0	0
+condition_site	Type II diabetes mellitus | Oral cavity / dental	80	False	1	0
+trait	METPO:1000668	1	True	18	5
+trait	METPO:2000103|GO:0030245	2	True	4	5
+trait	METPO:1000683	3	True	13	5
+trait	METPO:1000623	4	True	18	5
+trait	METPO:1000608	5	True	19	5
+trait	METPO:2000103|pathways:arsenate_reduction	6	True	7	5

@@ -107,6 +107,17 @@ class ContrastMode:
 
 
 @dataclass(frozen=True)
+class AxisClustering:
+    """Leaf order, tree and missing-comparison audit for either heatmap axis."""
+
+    order: list[str]
+    linkage_matrix: np.ndarray
+    clustered_count: int
+    leaves: pd.DataFrame
+    pairs: pd.DataFrame
+
+
+@dataclass(frozen=True)
 class SpearmanClustering:
     """Auditable row clustering for one signed direction matrix."""
 
@@ -688,6 +699,58 @@ def spearman_distance_matrices(
     )
 
 
+def cluster_heatmap_axis(matrix: pd.DataFrame, *, axis: str) -> AxisClustering:
+    """Cluster supported vectors, keeping uninformative vectors outside the tree."""
+    canonical = matrix.sort_index().sort_index(axis=1)
+    distances, overlaps, defined = spearman_distance_matrices(canonical)
+    peers = defined.sum(axis=1) - 1
+    included = peers[peers > 0].index.tolist()
+    excluded = peers[peers == 0].index.tolist()
+    tree = np.empty((0, 4), dtype=float)
+    clustered = included
+    if len(included) > 1:
+        tree = linkage(
+            squareform(distances.loc[included, included].to_numpy(), checks=False),
+            method=CLUSTER_LINKAGE_METHOD,
+            optimal_ordering=True,
+        )
+        clustered = [included[index] for index in leaves_list(tree)]
+    order = clustered + excluded
+    leaves = pd.DataFrame(
+        {
+            "axis": axis,
+            "label": order,
+            "display_order": range(1, len(order) + 1),
+            "clustered": [label in included for label in order],
+            "supported_values": canonical.notna().sum(axis=1).reindex(order).to_numpy(),
+            "defined_peers": peers.reindex(order).to_numpy(),
+        }
+    )
+    pairs = pd.DataFrame(
+        [
+            {
+                "axis": axis,
+                "left": left,
+                "right": right,
+                "shared_supported_values": overlaps.loc[left, right],
+                "correlation_defined": defined.loc[left, right],
+                "distance_used": distances.loc[left, right],
+            }
+            for index, left in enumerate(included)
+            for right in included[index + 1 :]
+        ],
+        columns=[
+            "axis",
+            "left",
+            "right",
+            "shared_supported_values",
+            "correlation_defined",
+            "distance_used",
+        ],
+    )
+    return AxisClustering(order, tree, len(included), leaves, pairs)
+
+
 def build_spearman_clustering(
     matrix: pd.DataFrame,
     cells: pd.DataFrame,
@@ -1158,6 +1221,8 @@ def plot_matrix_heatmap(
     vmax: float | None = None,
     compact: bool = False,
     significance_borders: pd.DataFrame | None = None,
+    row_tree: AxisClustering | None = None,
+    column_tree: AxisClustering | None = None,
 ) -> None:
     """Render one row x six-trait heatmap with blank nonsignificant cells."""
     row_count = max(1, len(matrix.index))
@@ -1166,6 +1231,10 @@ def plot_matrix_heatmap(
     fig.subplots_adjust(left=0.34, right=0.90, top=0.82, bottom=0.18)
     if compact:
         fig.subplots_adjust(top=1 - 1.15 / fig_height, bottom=1.2 / fig_height)
+    clustered = row_tree is not None and column_tree is not None
+    if clustered:
+        fig.set_size_inches(15.8, fig_height + 1.0)
+        fig.subplots_adjust(left=0.19, right=0.69, top=0.76, bottom=0.20)
     fig.patch.set_facecolor("white")
     ax.set_facecolor(SLATE_100)
 
@@ -1192,6 +1261,9 @@ def plot_matrix_heatmap(
     ax.tick_params(axis="y", labelsize=8.6)
     ax.set_xlabel("Six shared traits", color=SLATE_700)
     ax.set_ylabel("Condition | body-site pair", color=SLATE_700)
+    if clustered:
+        ax.yaxis.tick_right()
+        ax.set_ylabel("")
 
     ax.set_xticks(np.arange(-0.5, len(trait_order), 1), minor=True)
     ax.set_yticks(np.arange(-0.5, len(matrix.index), 1), minor=True)
@@ -1257,13 +1329,78 @@ def plot_matrix_heatmap(
         fontsize=9.2,
         color=SLATE_500,
     )
-    cbar = fig.colorbar(image, ax=ax, shrink=0.78, pad=0.02)
+    if clustered:
+        cbar_axis = fig.add_axes((0.29, 0.055, 0.30, 0.012))
+        cbar = fig.colorbar(image, cax=cbar_axis, orientation="horizontal")
+    else:
+        cbar = fig.colorbar(image, ax=ax, shrink=0.78, pad=0.02)
     cbar.set_label(colorbar_label, color=SLATE_700)
     cbar.ax.tick_params(labelsize=8)
     cbar.outline.set_edgecolor(SLATE_200)
 
+    if row_tree is not None and column_tree is not None:
+        heatmap_position = ax.get_position()
+        for tree, orientation, bounds, count in (
+            (
+                row_tree,
+                "left",
+                (0.04, heatmap_position.y0, 0.14, heatmap_position.height),
+                len(matrix),
+            ),
+            (
+                column_tree,
+                "top",
+                (heatmap_position.x0, 0.77, heatmap_position.width, 0.065),
+                len(trait_order),
+            ),
+        ):
+            tree_axis = fig.add_axes(bounds)
+            if tree.clustered_count > 1:
+                dendrogram(
+                    tree.linkage_matrix,
+                    orientation=orientation,
+                    no_labels=True,
+                    color_threshold=0,
+                    above_threshold_color=SLATE_500,
+                    ax=tree_axis,
+                )
+            boundary = tree.clustered_count
+            if orientation == "left":
+                tree_axis.set_ylim(10 * count, 0)
+                tree_axis.set_xlabel("1 - Spearman rho", fontsize=8)
+                if boundary < count:
+                    ax.axhline(boundary - 0.5, color=SLATE_500, linewidth=1)
+                    tree_axis.text(
+                        0.5,
+                        10 * (boundary + (count - boundary) / 2),
+                        "Insufficient overlap\nor constant values\n(not clustered)",
+                        transform=tree_axis.get_yaxis_transform(),
+                        ha="center",
+                        va="center",
+                        fontsize=8,
+                        color=SLATE_700,
+                    )
+                tree_axis.tick_params(axis="y", left=False, labelleft=False)
+            else:
+                tree_axis.set_xlim(0, 10 * count)
+                tree_axis.set_ylabel("1 - rho", fontsize=8)
+                if boundary < count:
+                    ax.axvline(boundary - 0.5, color=SLATE_500, linewidth=1)
+                    tree_axis.text(
+                        10 * (boundary + (count - boundary) / 2),
+                        0.4,
+                        "Not clustered",
+                        transform=tree_axis.get_xaxis_transform(),
+                        ha="center",
+                        fontsize=8,
+                    )
+                tree_axis.tick_params(axis="x", bottom=False, labelbottom=False)
+            tree_axis.tick_params(labelsize=7)
+            for spine in tree_axis.spines.values():
+                spine.set_visible(False)
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=220, bbox_inches="tight", facecolor="white")
+    fig.savefig(output_path, dpi=180 if clustered else 220, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
 
@@ -2164,6 +2301,46 @@ def write_oral_trait_heatmaps(
             vmax=1.0,
             significance_borders=borders.loc[selected_labels].rename(index=display_labels),
         )
+    row_tree = cluster_heatmap_axis(matrix, axis="condition_site")
+    column_tree = cluster_heatmap_axis(matrix.T, axis="trait")
+    ordered_traits = traits.set_index("trait_id").loc[column_tree.order].reset_index()
+    clustered_main = [label for label in row_tree.order if label in main_labels]
+    cluster_caption = (
+        subtitle + " Average-linkage clustering on both axes: 1 - Spearman rho, "
+        "at least 3 shared supported values. Undefined pair distances use 1; "
+        "vectors with no defined peers remain outside the trees. Clusters are exploratory."
+    )
+    clustered_figures = [
+        ("oral_six_trait_heatmap_clustered.png", clustered_main),
+        ("oral_six_trait_heatmap_clustered.pdf", clustered_main),
+        ("oral_six_trait_heatmap_clustered_all_rows.pdf", row_tree.order),
+    ]
+    for filename, ordered_rows in clustered_figures:
+        plot_matrix_heatmap(
+            matrix.loc[ordered_rows, column_tree.order].rename(index=display_labels),
+            annotations.loc[ordered_rows, column_tree.order].rename(index=display_labels),
+            ordered_traits,
+            output_dir / filename,
+            title="Oral microbiomes and oral diseases: clustered axes",
+            subtitle=cluster_caption + f" Showing {len(ordered_rows)} of {len(labels)} oral rows.",
+            colorbar_label="Increased - decreased positive-z profile fraction",
+            cmap_name="RdBu_r",
+            vmin=-1.0,
+            vmax=1.0,
+            significance_borders=borders.loc[ordered_rows, column_tree.order].rename(
+                index=display_labels
+            ),
+            row_tree=row_tree,
+            column_tree=column_tree,
+        )
+    write_tsv(
+        pd.concat([row_tree.leaves, column_tree.leaves], ignore_index=True),
+        output_dir / "oral_six_trait_cluster_order.tsv",
+    )
+    write_tsv(
+        pd.concat([row_tree.pairs, column_tree.pairs], ignore_index=True),
+        output_dir / "oral_six_trait_cluster_pairs.tsv",
+    )
     write_tsv(cells, output_dir / "oral_six_trait_cells.tsv")
     write_tsv(rows, output_dir / "oral_six_trait_rows.tsv")
     provenance = {
@@ -2188,13 +2365,26 @@ def write_oral_trait_heatmaps(
         "oral_site_only_rows": int((rows["oral_site"] & ~rows["oral_disease"]).sum()),
         "oral_disease_only_rows": int((~rows["oral_site"] & rows["oral_disease"]).sum()),
         "both_rows": int((rows["oral_site"] & rows["oral_disease"]).sum()),
-        "figures": [filename for filename, _, _ in figures],
+        "clustering": {
+            "method": "average linkage; pairwise-complete 1 - Spearman rho",
+            "min_shared_supported_values": MIN_SPEARMAN_OVERLAP,
+            "undefined_pair_distance": UNDEFINED_SPEARMAN_DISTANCE,
+            "uninformative_vectors": "no defined peers; appended outside dendrogram",
+            "clustered_rows": row_tree.clustered_count,
+            "clustered_traits": column_tree.clustered_count,
+            "undefined_row_pairs_in_tree": int((~row_tree.pairs["correlation_defined"]).sum()),
+            "undefined_trait_pairs_in_tree": int((~column_tree.pairs["correlation_defined"]).sum()),
+            "row_order": row_tree.order,
+            "trait_order": column_tree.order,
+        },
+        "figures": [filename for filename, _, _ in figures]
+        + [filename for filename, _ in clustered_figures],
     }
     (output_dir / "oral_six_trait_provenance.json").write_text(
         json.dumps(provenance, indent=2) + "\n", encoding="utf-8"
     )
     print(json.dumps(provenance, indent=2))
-    return output_dir / "oral_six_trait_heatmap.png"
+    return output_dir / "oral_six_trait_heatmap_clustered.png"
 
 
 def main() -> None:

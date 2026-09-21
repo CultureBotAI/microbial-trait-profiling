@@ -1,0 +1,136 @@
+axis	left	right	shared_supported_values	correlation_defined	distance_used
+condition_site	COVID-19 | Oral cavity / dental	Chronic hepatitis B virus infection | Oral cavity / dental	2	False	1
+condition_site	COVID-19 | Oral cavity / dental	Colorectal cancer | Oral cavity / dental	3	True	0.133974596216
+condition_site	COVID-19 | Oral cavity / dental	Esophageal cancer | Oral cavity / dental	3	True	0.133974596216
+condition_site	COVID-19 | Oral cavity / dental	Esophageal squamous cell carcinoma | Oral cavity / dental	3	True	1.86602540378
+condition_site	COVID-19 | Oral cavity / dental	Gingivitis | Oral cavity / dental	3	True	1.5
+condition_site	COVID-19 | Oral cavity / dental	Glaucoma | Oral cavity / dental	3	True	0.133974596216
+condition_site	COVID-19 | Oral cavity / dental	Head and neck squamous cell carcinoma | Oral cavity / dental	3	True	1
+condition_site	COVID-19 | Oral cavity / dental	Human papilloma virus infection | Oral cavity / dental	3	True	1
+condition_site	COVID-19 | Oral cavity / dental	Oral mucositis | Oral cavity / dental	3	True	0.133974596216
+condition_site	COVID-19 | Oral cavity / dental	Oral squamous cell carcinoma | Oral cavity / dental	3	True	1
+condition_site	COVID-19 | Oral cavity / dental	Periodontitis | Oral cavity / dental	3	True	1.86602540378
+condition_site	COVID-19 | Oral cavity / dental	Rheumatoid arthritis | Oral cavity / dental	3	True	0.133974596216
+condition_site	COVID-19 | Oral cavity / dental	Smoking behavior | Oral cavity / dental	3	True	0.133974596216
+condition_site	COVID-19 | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	3	True	0.133974596216
+condition_site	COVID-19 | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	3	True	1.86602540378
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Colorectal cancer | Oral cavity / dental	4	True	1.77459666924
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Esophageal cancer | Oral cavity / dental	3	False	1
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Esophageal squamous cell carcinoma | Oral cavity / dental	3	False	1
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Gingivitis | Oral cavity / dental	2	False	1
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Glaucoma | Oral cavity / dental	4	True	0.225403330759
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Head and neck squamous cell carcinoma | Oral cavity / dental	2	False	1
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Human papilloma virus infection | Oral cavity / dental	3	False	1
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Oral mucositis | Oral cavity / dental	3	False	1
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Oral squamous cell carcinoma | Oral cavity / dental	3	False	1
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Periodontitis | Oral cavity / dental	3	False	1
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Rheumatoid arthritis | Oral cavity / dental	4	True	1.25819888975
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Smoking behavior | Oral cavity / dental	4	True	1.77459666924
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	4	True	1.54433105395
+condition_site	Chronic hepatitis B virus infection | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	4	True	1.77459666924
+condition_site	Colorectal cancer | Oral cavity / dental	Esophageal cancer | Oral cavity / dental	4	True	0.6
+condition_site	Colorectal cancer | Oral cavity / dental	Esophageal squamous cell carcinoma | Oral cavity / dental	4	True	1.94868329805
+condition_site	Colorectal cancer | Oral cavity / dental	Gingivitis | Oral cavity / dental	3	True	1.86602540378
+condition_site	Colorectal cancer | Oral cavity / dental	Glaucoma | Oral cavity / dental	6	True	0.710114482174
+condition_site	Colorectal cancer | Oral cavity / dental	Head and neck squamous cell carcinoma | Oral cavity / dental	3	True	0.5
+condition_site	Colorectal cancer | Oral cavity / dental	Human papilloma virus infection | Oral cavity / dental	4	True	0.262135212627
+condition_site	Colorectal cancer | Oral cavity / dental	Oral mucositis | Oral cavity / dental	4	True	0.8
+condition_site	Colorectal cancer | Oral cavity / dental	Oral squamous cell carcinoma | Oral cavity / dental	5	True	1.3
+condition_site	Colorectal cancer | Oral cavity / dental	Periodontitis | Oral cavity / dental	4	True	1.8
+condition_site	Colorectal cancer | Oral cavity / dental	Rheumatoid arthritis | Oral cavity / dental	5	True	0.5
+condition_site	Colorectal cancer | Oral cavity / dental	Smoking behavior | Oral cavity / dental	5	True	0.435711906353
+condition_site	Colorectal cancer | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	6	True	0.676330562515
+condition_site	Colorectal cancer | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	5	True	1.3
+condition_site	Esophageal cancer | Oral cavity / dental	Esophageal squamous cell carcinoma | Oral cavity / dental	4	True	1.63245553203
+condition_site	Esophageal cancer | Oral cavity / dental	Gingivitis | Oral cavity / dental	3	True	1.86602540378
+condition_site	Esophageal cancer | Oral cavity / dental	Glaucoma | Oral cavity / dental	4	True	0
+condition_site	Esophageal cancer | Oral cavity / dental	Head and neck squamous cell carcinoma | Oral cavity / dental	3	True	0.5
+condition_site	Esophageal cancer | Oral cavity / dental	Human papilloma virus infection | Oral cavity / dental	4	True	0.789181489322
+condition_site	Esophageal cancer | Oral cavity / dental	Oral mucositis | Oral cavity / dental	4	True	0.2
+condition_site	Esophageal cancer | Oral cavity / dental	Oral squamous cell carcinoma | Oral cavity / dental	4	True	0.8
+condition_site	Esophageal cancer | Oral cavity / dental	Periodontitis | Oral cavity / dental	4	True	1.8
+condition_site	Esophageal cancer | Oral cavity / dental	Rheumatoid arthritis | Oral cavity / dental	4	True	0
+condition_site	Esophageal cancer | Oral cavity / dental	Smoking behavior | Oral cavity / dental	4	True	0.0513167019495
+condition_site	Esophageal cancer | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	4	True	0.4
+condition_site	Esophageal cancer | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	4	True	1.8
+condition_site	Esophageal squamous cell carcinoma | Oral cavity / dental	Gingivitis | Oral cavity / dental	3	True	0.133974596216
+condition_site	Esophageal squamous cell carcinoma | Oral cavity / dental	Glaucoma | Oral cavity / dental	4	True	1.63245553203
+condition_site	Esophageal squamous cell carcinoma | Oral cavity / dental	Head and neck squamous cell carcinoma | Oral cavity / dental	3	True	1.5
+condition_site	Esophageal squamous cell carcinoma | Oral cavity / dental	Human papilloma virus infection | Oral cavity / dental	4	True	1.77777777778
+condition_site	Esophageal squamous cell carcinoma | Oral cavity / dental	Oral mucositis | Oral cavity / dental	4	True	1.31622776602
+condition_site	Esophageal squamous cell carcinoma | Oral cavity / dental	Oral squamous cell carcinoma | Oral cavity / dental	4	True	1.21081851068
+condition_site	Esophageal squamous cell carcinoma | Oral cavity / dental	Periodontitis | Oral cavity / dental	4	True	0.0513167019495
+condition_site	Esophageal squamous cell carcinoma | Oral cavity / dental	Rheumatoid arthritis | Oral cavity / dental	4	True	1.63245553203
+condition_site	Esophageal squamous cell carcinoma | Oral cavity / dental	Smoking behavior | Oral cavity / dental	4	True	1.38888888889
+condition_site	Esophageal squamous cell carcinoma | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	4	True	0.789181489322
+condition_site	Esophageal squamous cell carcinoma | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	4	True	0.0513167019495
+condition_site	Gingivitis | Oral cavity / dental	Glaucoma | Oral cavity / dental	3	True	1.86602540378
+condition_site	Gingivitis | Oral cavity / dental	Head and neck squamous cell carcinoma | Oral cavity / dental	3	True	1.86602540378
+condition_site	Gingivitis | Oral cavity / dental	Human papilloma virus infection | Oral cavity / dental	3	True	1.86602540378
+condition_site	Gingivitis | Oral cavity / dental	Oral mucositis | Oral cavity / dental	3	True	1
+condition_site	Gingivitis | Oral cavity / dental	Oral squamous cell carcinoma | Oral cavity / dental	3	True	1.86602540378
+condition_site	Gingivitis | Oral cavity / dental	Periodontitis | Oral cavity / dental	3	True	0.133974596216
+condition_site	Gingivitis | Oral cavity / dental	Rheumatoid arthritis | Oral cavity / dental	3	True	1.86602540378
+condition_site	Gingivitis | Oral cavity / dental	Smoking behavior | Oral cavity / dental	3	True	1.86602540378
+condition_site	Gingivitis | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	3	True	1
+condition_site	Gingivitis | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	3	True	0.133974596216
+condition_site	Glaucoma | Oral cavity / dental	Head and neck squamous cell carcinoma | Oral cavity / dental	3	True	0.5
+condition_site	Glaucoma | Oral cavity / dental	Human papilloma virus infection | Oral cavity / dental	4	True	0.789181489322
+condition_site	Glaucoma | Oral cavity / dental	Oral mucositis | Oral cavity / dental	4	True	0.2
+condition_site	Glaucoma | Oral cavity / dental	Oral squamous cell carcinoma | Oral cavity / dental	5	True	1.4
+condition_site	Glaucoma | Oral cavity / dental	Periodontitis | Oral cavity / dental	4	True	1.8
+condition_site	Glaucoma | Oral cavity / dental	Rheumatoid arthritis | Oral cavity / dental	5	True	0.435711906353
+condition_site	Glaucoma | Oral cavity / dental	Smoking behavior | Oral cavity / dental	5	True	0.868421052632
+condition_site	Glaucoma | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	6	True	0.596970032032
+condition_site	Glaucoma | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	5	True	1.87208159927
+condition_site	Head and neck squamous cell carcinoma | Oral cavity / dental	Human papilloma virus infection | Oral cavity / dental	3	True	0
+condition_site	Head and neck squamous cell carcinoma | Oral cavity / dental	Oral mucositis | Oral cavity / dental	3	True	1.5
+condition_site	Head and neck squamous cell carcinoma | Oral cavity / dental	Oral squamous cell carcinoma | Oral cavity / dental	3	True	0
+condition_site	Head and neck squamous cell carcinoma | Oral cavity / dental	Periodontitis | Oral cavity / dental	3	True	1.5
+condition_site	Head and neck squamous cell carcinoma | Oral cavity / dental	Rheumatoid arthritis | Oral cavity / dental	3	True	0.5
+condition_site	Head and neck squamous cell carcinoma | Oral cavity / dental	Smoking behavior | Oral cavity / dental	3	True	0.5
+condition_site	Head and neck squamous cell carcinoma | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	3	True	1.5
+condition_site	Head and neck squamous cell carcinoma | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	3	True	1.5
+condition_site	Human papilloma virus infection | Oral cavity / dental	Oral mucositis | Oral cavity / dental	4	True	1.31622776602
+condition_site	Human papilloma virus infection | Oral cavity / dental	Oral squamous cell carcinoma | Oral cavity / dental	4	True	0.367544467966
+condition_site	Human papilloma virus infection | Oral cavity / dental	Periodontitis | Oral cavity / dental	4	True	1.73786478737
+condition_site	Human papilloma virus infection | Oral cavity / dental	Rheumatoid arthritis | Oral cavity / dental	4	True	0.789181489322
+condition_site	Human papilloma virus infection | Oral cavity / dental	Smoking behavior | Oral cavity / dental	4	True	0.944444444444
+condition_site	Human papilloma virus infection | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	4	True	1.63245553203
+condition_site	Human papilloma virus infection | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	4	True	1.73786478737
+condition_site	Oral mucositis | Oral cavity / dental	Oral squamous cell carcinoma | Oral cavity / dental	4	True	1.4
+condition_site	Oral mucositis | Oral cavity / dental	Periodontitis | Oral cavity / dental	4	True	1.4
+condition_site	Oral mucositis | Oral cavity / dental	Rheumatoid arthritis | Oral cavity / dental	4	True	0.2
+condition_site	Oral mucositis | Oral cavity / dental	Smoking behavior | Oral cavity / dental	4	True	0.262135212627
+condition_site	Oral mucositis | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	4	True	0.2
+condition_site	Oral mucositis | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	4	True	1.4
+condition_site	Oral squamous cell carcinoma | Oral cavity / dental	Periodontitis | Oral cavity / dental	4	True	1.4
+condition_site	Oral squamous cell carcinoma | Oral cavity / dental	Rheumatoid arthritis | Oral cavity / dental	4	True	0.8
+condition_site	Oral squamous cell carcinoma | Oral cavity / dental	Smoking behavior | Oral cavity / dental	4	True	0.683772233983
+condition_site	Oral squamous cell carcinoma | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	5	True	1.46169025844
+condition_site	Oral squamous cell carcinoma | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	4	True	1.4
+condition_site	Periodontitis | Oral cavity / dental	Rheumatoid arthritis | Oral cavity / dental	4	True	1.8
+condition_site	Periodontitis | Oral cavity / dental	Smoking behavior | Oral cavity / dental	4	True	1.63245553203
+condition_site	Periodontitis | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	4	True	1
+condition_site	Periodontitis | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	4	True	0
+condition_site	Rheumatoid arthritis | Oral cavity / dental	Smoking behavior | Oral cavity / dental	5	True	0.127918400728
+condition_site	Rheumatoid arthritis | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	5	True	0.435711906353
+condition_site	Rheumatoid arthritis | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	5	True	1.6
+condition_site	Smoking behavior | Oral cavity / dental	Smoking status measurement | Oral cavity / dental	5	True	0.210526315789
+condition_site	Smoking behavior | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	5	True	1.15389675281
+condition_site	Smoking status measurement | Oral cavity / dental	Squamous cell carcinoma | Oral cavity / dental	5	True	0.846103247187
+trait	METPO:1000608	METPO:1000623	16	True	0.744117647059
+trait	METPO:1000608	METPO:1000668	18	True	0.836776772407
+trait	METPO:1000608	METPO:1000683	13	True	0.757908986932
+trait	METPO:1000608	METPO:2000103|GO:0030245	4	True	2
+trait	METPO:1000608	METPO:2000103|pathways:arsenate_reduction	7	True	0.45445527441
+trait	METPO:1000623	METPO:1000668	15	True	1.19678027909
+trait	METPO:1000623	METPO:1000683	13	True	0.658871754314
+trait	METPO:1000623	METPO:2000103|GO:0030245	4	True	1.6
+trait	METPO:1000623	METPO:2000103|pathways:arsenate_reduction	7	True	0.890891054882
+trait	METPO:1000668	METPO:1000683	12	True	1.10350877193
+trait	METPO:1000668	METPO:2000103|GO:0030245	4	True	0.6
+trait	METPO:1000668	METPO:2000103|pathways:arsenate_reduction	6	True	1.08827348295
+trait	METPO:1000683	METPO:2000103|GO:0030245	4	True	0.8
+trait	METPO:1000683	METPO:2000103|pathways:arsenate_reduction	7	True	1.10910894512
+trait	METPO:2000103|GO:0030245	METPO:2000103|pathways:arsenate_reduction	3	True	1.5

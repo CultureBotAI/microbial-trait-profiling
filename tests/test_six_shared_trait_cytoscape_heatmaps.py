@@ -107,7 +107,7 @@ def test_oral_writer_keeps_source_q_family_and_unsupported_diagnoses(
     source = oral_contrast_source
     with patch.object(heatmaps, "plot_matrix_heatmap") as plot:
         output = heatmaps.write_oral_trait_heatmaps(tmp_path, source_commit="source-sha")
-    assert output.name == "oral_six_trait_heatmap.png"
+    assert output.name == "oral_six_trait_heatmap_clustered.png"
     first = plot.call_args_list[0]
     matrix = first.args[0]
     assert len(matrix) == 3
@@ -127,6 +127,61 @@ def test_oral_writer_keeps_source_q_family_and_unsupported_diagnoses(
     assert provenance["source_artifact_commit"] == "source-sha"
     assert provenance["bh_significant_displayed_cells"] == 6
     assert provenance["oral_disease_only_rows"] == 1
+    clustered_call = next(call for call in plot.call_args_list if call.args[3] == output)
+    clustered_matrix, clustered_annotations, clustered_traits = clustered_call.args[:3]
+    clustered_borders = clustered_call.kwargs["significance_borders"]
+    ordered_rows = clustered_matrix.index.tolist()
+    ordered_columns = clustered_matrix.columns.tolist()
+    pd.testing.assert_frame_equal(clustered_matrix, matrix.loc[ordered_rows, ordered_columns])
+    pd.testing.assert_frame_equal(
+        clustered_annotations,
+        first.args[1].loc[ordered_rows, ordered_columns],
+    )
+    pd.testing.assert_frame_equal(clustered_borders, borders.loc[ordered_rows, ordered_columns])
+    assert clustered_traits["trait_id"].tolist() == clustered_matrix.columns.tolist()
+
+
+def test_both_axis_clustering_preserves_missingness_and_is_permutation_invariant() -> None:
+    matrix = pd.DataFrame(
+        [
+            [4, 3, 2, 1, np.nan, np.nan],
+            [0, 1, 2, 3, np.nan, np.nan],
+            [0, 1, 3, 4, np.nan, np.nan],
+            [np.nan] * 6,
+            [0, 1, np.nan, np.nan, np.nan, np.nan],
+            [1, 1, 1, 1, np.nan, np.nan],
+        ],
+        index=["opposite", "same", "similar", "blank", "thin", "constant"],
+        columns=[f"trait{i}" for i in range(6)],
+    )
+    original = matrix.copy(deep=True)
+    for axis_matrix, expected_count in [(matrix, 3), (matrix.T, 4)]:
+        clustered = heatmaps.cluster_heatmap_axis(axis_matrix, axis="test")
+        shuffled = heatmaps.cluster_heatmap_axis(axis_matrix.iloc[::-1, ::-1], axis="test")
+        assert clustered.order == shuffled.order
+        np.testing.assert_allclose(clustered.linkage_matrix, shuffled.linkage_matrix)
+        assert clustered.clustered_count == expected_count
+        assert set(clustered.order) == set(axis_matrix.index)
+        assert clustered.leaves.iloc[expected_count:]["defined_peers"].eq(0).all()
+    rows = heatmaps.cluster_heatmap_axis(matrix, axis="row")
+    assert rows.order[3:] == ["blank", "constant", "thin"]
+    distances = rows.pairs.set_index(["left", "right"])["distance_used"]
+    assert distances.loc[("same", "similar")] == pytest.approx(0)
+    assert distances.loc[("opposite", "same")] == pytest.approx(2)
+    pd.testing.assert_frame_equal(matrix, original)
+
+
+def test_axis_clustering_records_undefined_distances_inside_tree() -> None:
+    matrix = pd.DataFrame(
+        [[0, 1, 2, np.nan, np.nan, np.nan], [0, 1, 2, 0, 1, 2], [np.nan, np.nan, np.nan, 0, 1, 2]],
+        index=["left", "bridge", "right"],
+    )
+    clustered = heatmaps.cluster_heatmap_axis(matrix, axis="row")
+    assert clustered.clustered_count == 3
+    missing = clustered.pairs.loc[~clustered.pairs["correlation_defined"]]
+    assert len(missing) == 1
+    assert missing["shared_supported_values"].item() == 0
+    assert missing["distance_used"].item() == 1
 
 
 @pytest.mark.parametrize("bad_pair", [None, "", "Rheumatoid arthritis | Oral cavity / dental"])
