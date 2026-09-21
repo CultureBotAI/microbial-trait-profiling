@@ -34,7 +34,13 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        exclude: ^data/.*/provenance\.json$
+        # Generated public checksums/commit IDs, not credential-bearing inputs (#259).
+        exclude: |
+          (?x)^(
+            data/.*/provenance\.json
+            |trait-visualization/trait-profile-investigation/
+            six-shared-traits/oral/oral_six_trait_provenance\.json
+          )$
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.10
     hooks:

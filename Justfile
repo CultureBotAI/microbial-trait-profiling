@@ -46,6 +46,10 @@ trait-profile-investigation:
 six-shared-trait-heatmaps:
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py
 
+# Focused view of saved Jed contrasts; preserves their original Fisher/BH inference.
+oral-six-trait-heatmap:
+	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py --oral-only --source-commit "$(git log -1 --format=%H -- trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_trait_condition_body_site_direction_contrasts.tsv)"
+
 # Trace PD lollipop traits to observed taxa and profile evidence.
 pd-trait-taxa:
 	uv run python scripts/lookup_pd_trait_taxa.py
