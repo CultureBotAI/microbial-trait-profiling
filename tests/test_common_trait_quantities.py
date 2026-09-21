@@ -140,11 +140,11 @@ def test_reference_reversal_reverses_effect_without_changing_population() -> Non
     forward = build_common_quantities(profiles, ("A", "B"))
     reverse = build_common_quantities(profiles, ("B", "A"))
     ab = _summary(forward.summaries, LOG_RATIO, "A", "B")
-    ba = _summary(reverse.summaries, LOG_RATIO, "B", "A")
+    reverse_ratio = _summary(reverse.summaries, LOG_RATIO, "B", "A")
 
     assert ab.mean_study_effect == pytest.approx(2.0)
-    assert ba.mean_study_effect == pytest.approx(-2.0)
-    assert ab.eligible_experiment_pairs == ba.eligible_experiment_pairs == 1
+    assert reverse_ratio.mean_study_effect == pytest.approx(-2.0)
+    assert ab.eligible_experiment_pairs == reverse_ratio.eligible_experiment_pairs == 1
     pair = Pair("s1", "e1", "condition", "Feces", profiles[0], profiles[1])
     assert log_ratio_contrast(pair, "A", "B") == -log_ratio_contrast(pair, "B", "A")
 
