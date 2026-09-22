@@ -122,6 +122,14 @@ table1-trait-maps:
 table1-compositional-stats *ARGS:
 	uv run python -m bsdbng.trait_composition --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
 
+# The study sign test over every retained non-MediaDive trait, not just the six
+# of Table 1 (#255), with the significant set reported at both the nominal and
+# the effective family size (#265). Candidates are declared in
+# methods/trait_screen_manifest.json. No figure renderer is needed.
+[positional-arguments]
+trait-direction-screen *ARGS:
+	just timed trait-direction-screen "uv run python -m bsdbng.trait_screen --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\" $*"
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src

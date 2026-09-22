@@ -1,0 +1,46 @@
+{
+  "protocol": "trait-direction-screen-v1",
+  "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/255",
+  "also_answers": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/265",
+  "comparison_spec": "three-framework-comparison-v1",
+  "declared_before_first_run": true,
+  "declared_by": "drafted by a coding agent (Claude Code) before any screen result was computed; not revised after seeing results",
+  "why_a_separate_manifest": "methods/three_arm_statistics.md requires that a larger trait screen declare its own candidate manifest rather than reuse the frozen six-trait family. The six Table 1 traits keep their own family and their own published q-values; this screen neither replaces nor recorrects them.",
+  "candidate_rule": "every retained trait column of the pinned profile matrix, in header order: all columns except the three identifier columns and every MediaDive growth-medium column. The candidate set is read from the matrix at run time and never hard-coded, so a corpus change moves the family rather than silently mismatching it.",
+  "candidate_count_on_the_pinned_corpus": 317,
+  "base_population": "human experiments with exactly one increased and one decreased profile (load_profiles, paired, human)",
+  "denominator": "sum of all retained non-MediaDive trait columns of the profile, including traits outside Table 1; selecting a candidate never redefines this total",
+  "study_weighting": "mean fraction per direction within study, then one vote per study; each eligible study weighted equally",
+  "tie_tolerance": {"fraction": 1e-12},
+  "test": "two-sided exact binomial test of non-tied studies shifting up against 0.5, with an exact 95% Clopper-Pearson interval for that share. Identical to the six-trait arm; only the family it is corrected in changes.",
+  "correction": {
+    "primary": "Benjamini-Yekutieli across the full candidate family",
+    "why": "the candidates are strongly and positively dependent (#265), and PR #181 already applies BY to the 15-ratio family for the same reason. BY is valid under arbitrary dependence; BH is reported beside it for comparability with the other two arms, which use BH.",
+    "also_reported": "Benjamini-Hochberg across the same full family",
+    "not_done": "no correction is ever recomputed over a cross-arm overlap or over a displayed subset"
+  },
+  "effective_family_size": {
+    "reported": ["li_ji", "galwey"],
+    "excluded": "cheverud_nyholt",
+    "why_excluded": "known to be anticonservative under strong positive dependence; named here rather than silently omitted (#265 item 2). It is computed and written to the family table carrying this exclusion, so a reader can see the disagreement.",
+    "use": "the significant set is reported at the nominal family size and again at the effective family size, as a sensitivity pair. Membership stability between the two is reported; neither is presented as the corrected result on its own.",
+    "correlation_bases": {
+      "primary": "Spearman between traits over the study-level contrasts actually tested",
+      "secondary": "Spearman between traits over profiles, the basis quoted in #263 and #265, retained so those figures can be reproduced and checked"
+    }
+  },
+  "thresholds_reported": [0.05, 0.001],
+  "threshold_note": "both thresholds are reported for every candidate; no candidate is dropped from the table by either. The screen selects nothing.",
+  "states_kept_explicit": {
+    "tested": "at least one non-tied study contrast",
+    "all_tied": "every eligible study contrast is within the tie tolerance; no p and no q, never a share of 0 or a p of 1",
+    "no_eligible_studies": "no study contributes a contrast for this trait; no p and no q"
+  },
+  "highlighted_subset": "the six Table 1 traits are flagged in the output as a subset of the full family, not as the family. Their separately published six-trait BH q-values are unchanged by this screen; changing any manuscript number is #205.",
+  "does_not_address": [
+    "calibration of the procedure (#182, #263)",
+    "the assertion-level sampling unit (#131)",
+    "reference choice and eligible-population sensitivity (#183)",
+    "denominator harmonization across arms (#174)"
+  ]
+}
