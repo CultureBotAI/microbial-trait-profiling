@@ -1,0 +1,67 @@
+taxon_id	trait	trait_id	positive_side_in_lollipop	taxon_name	taxonomic_rank	annotation_count	increased_profiles	increased_studies	increased_positive_z_profiles	increased_positive_z_studies	decreased_profiles	decreased_studies	decreased_positive_z_profiles	decreased_positive_z_studies	total_studies	trait_annotated	direction_log2_ratio	inc_dec_study_counts	blank_reason
+NCBITaxon:1301	moderately halophilic	METPO:1000623	True	Streptococcus	genus	2	11	10	8	8	5	5	2	2	15	True	0.9328858	10/5	
+NCBITaxon:1301	facultatively aerobic	METPO:1000608	True	Streptococcus	genus	736	11	10	11	10	5	5	5	5	15	True	0.9328858	10/5	
+NCBITaxon:1301	arsenate reduction	NA	NA	Streptococcus	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1301	coccus shaped	METPO:1000668	True	Streptococcus	genus	949	11	10	11	10	5	5	5	5	15	True	0.9328858	10/5	
+NCBITaxon:1301	sphere shaped	METPO:1000683	False	Streptococcus	genus	29	11	10	11	10	5	5	5	5	15	True	0.9328858	10/5	
+NCBITaxon:1301	cellulose catabolic process	NA	NA	Streptococcus	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1578	moderately halophilic	METPO:1000623	True	Lactobacillus	genus	1	15	12	11	10	6	5	5	4	17	True	1.1844246	12/5	
+NCBITaxon:1578	facultatively aerobic	METPO:1000608	True	Lactobacillus	genus	60	15	12	14	11	6	5	6	5	17	True	1.1844246	12/5	
+NCBITaxon:1578	arsenate reduction	NA	NA	Lactobacillus	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1578	coccus shaped	NA	NA	Lactobacillus	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1578	sphere shaped	NA	NA	Lactobacillus	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1578	cellulose catabolic process	NA	NA	Lactobacillus	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:841	moderately halophilic	NA	NA	Roseburia	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:841	facultatively aerobic	NA	NA	Roseburia	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:841	arsenate reduction	NA	NA	Roseburia	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:841	coccus shaped	NA	NA	Roseburia	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:841	sphere shaped	NA	NA	Roseburia	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:841	cellulose catabolic process	METPO:2000103|GO:0030245	False	Roseburia	genus	1	4	4	4	4	31	18	31	18	22	True	-2.0395284	4/18	
+NCBITaxon:572511	moderately halophilic	NA	NA	Blautia	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:572511	facultatively aerobic	NA	NA	Blautia	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:572511	arsenate reduction	NA	NA	Blautia	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:572511	coccus shaped	METPO:1000668	True	Blautia	genus	7	2	2	0	0	15	12	13	11	14	True	-2.3219281	2/12	
+NCBITaxon:572511	sphere shaped	NA	NA	Blautia	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:572511	cellulose catabolic process	METPO:2000103|GO:0030245	False	Blautia	genus	1	2	2	2	2	15	12	14	11	14	True	-2.3219281	2/12	
+NCBITaxon:1350	moderately halophilic	METPO:1000623	True	Enterococcus	genus	14	7	7	7	7	2	2	2	2	9	True	1.5849625	7/2	
+NCBITaxon:1350	facultatively aerobic	METPO:1000608	True	Enterococcus	genus	109	7	7	7	7	2	2	2	2	9	True	1.5849625	7/2	
+NCBITaxon:1350	arsenate reduction	NA	NA	Enterococcus	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1350	coccus shaped	METPO:1000668	True	Enterococcus	genus	121	7	7	5	5	2	2	2	2	9	True	1.5849625	7/2	
+NCBITaxon:1350	sphere shaped	METPO:1000683	False	Enterococcus	genus	9	7	7	6	6	2	2	2	2	9	True	1.5849625	7/2	
+NCBITaxon:1350	cellulose catabolic process	NA	NA	Enterococcus	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:216851	moderately halophilic	NA	NA	Faecalibacterium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:216851	facultatively aerobic	METPO:1000608	True	Faecalibacterium	genus	1	4	2	2	2	32	14	22	9	16	True	-2.5360529	2/14	
+NCBITaxon:216851	arsenate reduction	NA	NA	Faecalibacterium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:216851	coccus shaped	NA	NA	Faecalibacterium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:216851	sphere shaped	NA	NA	Faecalibacterium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:216851	cellulose catabolic process	NA	NA	Faecalibacterium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:561	moderately halophilic	METPO:1000623	True	Escherichia	genus	5	9	5	9	5	2	2	2	2	7	True	1.1375035	5/2	
+NCBITaxon:561	facultatively aerobic	METPO:1000608	True	Escherichia	genus	800	9	5	9	5	2	2	2	2	7	True	1.1375035	5/2	
+NCBITaxon:561	arsenate reduction	METPO:2000103|pathways:arsenate_reduction	True	Escherichia	genus	14	9	5	9	5	2	2	2	2	7	True	1.1375035	5/2	
+NCBITaxon:561	coccus shaped	METPO:1000668	True	Escherichia	genus	1	9	5	4	3	2	2	1	1	7	True	1.1375035	5/2	
+NCBITaxon:561	sphere shaped	NA	NA	Escherichia	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:561	cellulose catabolic process	NA	NA	Escherichia	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1263	moderately halophilic	NA	NA	Ruminococcus	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1263	facultatively aerobic	NA	NA	Ruminococcus	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1263	arsenate reduction	NA	NA	Ruminococcus	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1263	coccus shaped	METPO:1000668	True	Ruminococcus	genus	15	2	2	1	1	9	6	7	5	8	True	-1.3785116	2/6	
+NCBITaxon:1263	sphere shaped	METPO:1000683	False	Ruminococcus	genus	2	2	2	2	2	9	6	7	5	8	True	-1.3785116	2/6	
+NCBITaxon:1263	cellulose catabolic process	METPO:2000103|GO:0030245	False	Ruminococcus	genus	10	2	2	2	2	9	6	9	6	8	True	-1.3785116	2/6	
+NCBITaxon:1678	moderately halophilic	NA	NA	Bifidobacterium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1678	facultatively aerobic	METPO:1000608	True	Bifidobacterium	genus	7	21	11	19	10	2	2	1	1	13	True	2.2016339	11/2	
+NCBITaxon:1678	arsenate reduction	NA	NA	Bifidobacterium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1678	coccus shaped	NA	NA	Bifidobacterium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1678	sphere shaped	NA	NA	Bifidobacterium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1678	cellulose catabolic process	NA	NA	Bifidobacterium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:816	moderately halophilic	NA	NA	Bacteroides	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:816	facultatively aerobic	METPO:1000608	True	Bacteroides	genus	2	3	2	1	1	6	6	2	2	8	True	-1.3785116	2/6	
+NCBITaxon:816	arsenate reduction	NA	NA	Bacteroides	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:816	coccus shaped	NA	NA	Bacteroides	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:816	sphere shaped	NA	NA	Bacteroides	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:816	cellulose catabolic process	METPO:2000103|GO:0030245	False	Bacteroides	genus	1	3	2	3	2	6	6	6	6	8	True	-1.3785116	2/6	
+NCBITaxon:1485	moderately halophilic	NA	NA	Clostridium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1485	facultatively aerobic	NA	NA	Clostridium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1485	arsenate reduction	NA	NA	Clostridium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1485	coccus shaped	NA	NA	Clostridium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1485	sphere shaped	NA	NA	Clostridium	genus	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	False	NA		no annotation in local taxa-trait matrix
+NCBITaxon:1485	cellulose catabolic process	METPO:2000103|GO:0030245	False	Clostridium	genus	7	3	3	2	2	10	7	10	7	10	True	-1.0995357	3/7	
