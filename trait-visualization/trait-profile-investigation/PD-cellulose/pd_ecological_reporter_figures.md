@@ -80,21 +80,55 @@ For PD, the study-weighted cellulose increased-minus-decreased contrast is `-0.6
 
 [Condition/trait audit table](pd_ecological_reporter_combined_condition_trait_summary.tsv) | [Study contrasts](pd_ecological_reporter_combined_study_contrasts.tsv) | [Taxon-panel cells](pd_ecological_reporter_combined_taxon_panel.tsv) | [Vector figure](pd_ecological_reporter_combined.svg)
 
-## Condition-Taxon-Trait Network
+## Condition-Taxon-Trait Evidence Landscape
 
-![Network](pd_condition_taxon_trait_network.png)
+![Evidence landscape](pd_condition_taxon_trait_network.png)
 
-The four layers are condition, increased/decreased BugSigDB signature direction, exact reported
-taxon, and KG-Microbe trait. Line width represents distinct-study support. To keep the network
-readable, it shows the two most supported genus/species labels in each condition-direction context
-when at least two studies support the label. The network contains `31` nodes and `44` edges.
+The regenerated figure separates inference from annotation provenance. It screened every human
+fecal condition with at least three studies containing both increased and decreased BugSigDB
+signatures. Exact genus and species IDs were kept separate, required at least three reporting
+studies, and were tested with an exact McNemar/binomial test on discordant paired studies. The
+complete eligible condition-taxon family was corrected globally with Benjamini-Hochberg.
 
-BugSigDB provides the condition, direction, taxon report, and study support. KG-Microbe provides
-the taxon-to-trait annotations. Genus and species are separate exact IDs and are never summed.
-Taxon-to-trait links repeat the taxon's support for each annotation, so this is an evidence network
-rather than a flow-conserving Sankey diagram.
+The evidence landscape displays all eligible tests without weakening the significance standard:
 
-[Network nodes](pd_condition_taxon_trait_network_nodes.tsv) | [Network edges](pd_condition_taxon_trait_network_edges.tsv) | [Taxon selection](pd_condition_taxon_trait_network_taxon_selection.tsv) | [Vector figure](pd_condition_taxon_trait_network.svg)
+- Filled points pass global `q <= 0.05` and are called FDR-significant.
+- Hollow amber points have `0.05 < q <= 0.20`. They are exploratory follow-up hypotheses, not
+  significant discoveries.
+- Gray points have `q > 0.20` and provide the full tested background.
+
+Panel A shows condition-taxon tests. The x-axis is the fraction of paired studies favoring
+increased rather than decreased reporting, while the y-axis is `-log10(global q)`. Circles are
+genera, triangles are species, and point area represents the number of reporting studies. No
+condition-taxon result passes `q <= 0.05`.
+
+Panel B shows all condition-trait tests. Its x-axis is the mean study-level
+increased-minus-decreased trait contrast, its y-axis is `-log10(global q)`, and point area is the
+number of paired studies. Only Parkinson's disease to moderately halophilic passes
+(`mean contrast = +0.530`, `q = 0.048`, `n = 45`).
+
+The exploratory tier contains one taxon result—Parkinson's disease to *Roseburia* (`q = 0.192`)—
+and three trait results: Parkinson's disease to arsenate reduction, COVID-19 to cellulose
+catabolic process, and colorectal cancer to cellulose catabolic process (each `q = 0.164`). These
+are shown to support follow-up planning, not as significant findings.
+
+Panel C shows all six Parkinson's disease trait effects with their raw `p`, globally adjusted `q`,
+and study count. This provides PD-specific context while retaining the correction across the full
+condition-trait family.
+
+The node and edge audit tables remain significant-only. If taxon results pass in a future data
+release, KG-Microbe taxon-to-trait annotations will remain explicitly noninferential because they
+do not have p-values and do not measure microbial activity.
+
+[Statistical methods and result counts](pd_condition_taxon_trait_network_methods.md) |
+[All condition-taxon tests](pd_condition_taxon_trait_network_condition_taxon_tests.tsv) |
+[All condition-trait tests](pd_condition_taxon_trait_network_condition_trait_tests.tsv) |
+[Condition eligibility](pd_condition_taxon_trait_network_condition_eligibility.tsv) |
+[Study trait contrasts](pd_condition_taxon_trait_network_study_trait_contrasts.tsv) |
+[Network nodes](pd_condition_taxon_trait_network_nodes.tsv) |
+[Network edges](pd_condition_taxon_trait_network_edges.tsv) |
+[Taxon selection](pd_condition_taxon_trait_network_taxon_selection.tsv) |
+[Vector figure](pd_condition_taxon_trait_network.svg)
 
 ## Interpretation Boundary
 

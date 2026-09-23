@@ -116,9 +116,9 @@ An exact species result was preferred. When unavailable, a genus or family resul
 
 ## Contributor Specificity and Trait Co-Carriage
 
-The contributor analysis selects `28` species and `25` families across the six PD traits. The heatmap retains `149/318` taxon-trait pairs whose share of the full trait-direction count differs between increased and decreased profiles. Equal pairs, including the `169` pairs absent in both directions, are omitted. Its first row uses paired red/blue circles for the directional background and a grey outer portion for unresolved or ambiguous rank mass; contributor circles remain fractions of the full count, so unresolved mass is not silently renormalized away.
+The contributor analysis selects `28` species and `25` families across the six PD traits. To remove rows containing only small dots, the heatmap retains `11/53` taxa—`3` species and `8` families—with at least one absolute increased-versus-decreased full-cell contributor-share difference of `5` percentage points. The complete direction-difference audit still retains `149/318` taxon-trait pairs whose share changes between directions. Equal pairs, including the `169` pairs absent in both directions, are omitted. Its first row uses paired red/blue circles for the directional background and a grey outer portion for unresolved or ambiguous rank mass; contributor circles remain fractions of the full count, so unresolved mass is not silently renormalized away.
 
-The specificity strip retains exact-label PD/other occurrence counts as text but now colors by a smoothed prevalence ratio using `253` PD fecal profiles and `3,419` other fecal profiles as the respective denominators. This removes the mechanical pool-size bias in the previous raw-count color encoding. It remains descriptive rather than inferential because profiles and experiments repeat within studies. The largest ratios belong mostly to sparse labels; for example, Erwiniaceae is `1/253` PD profiles versus `0/3,419` other profiles, so its high smoothed ratio is not strong evidence by itself.
+The specificity strip uses `253` PD fecal profiles and `3,419` other fecal profiles as the respective denominators and colors by the normalized prevalence difference (`PD prevalence - other-feces prevalence`) rather than a count ratio. Raw count displays with a zero denominator, such as `1/0`, are rendered as `---`; thus an undefined or infinite ratio cannot dominate the color scale. The prevalence difference remains descriptive rather than inferential because profiles and experiments repeat within studies.
 
 Only `3/15` trait co-carriage pairs change across directions, and every change is one additional increased-direction family: Bifidobacteriaceae. Facultatively aerobic plus coccus shaped changes from `27` decreased to `28` increased shared taxa, facultatively aerobic plus moderately halophilic also changes from `27` to `28`, and coccus shaped plus moderately halophilic changes from `18` to `19`. The other `12` pairs are retained in the all-edges audit but omitted from the network.
 
@@ -158,6 +158,7 @@ See `pd_trait_contributors_species_family_dot_heatmap.png`, `pd_trait_contributo
 - `pd_exploratory_taxa_six_traits_influence_heatmap_taxa.tsv`: selected rank-grouped rows, occurrence summaries, and literature comparisons.
 - `pd_trait_contributors_species_family_dot_heatmap.png`: selected species/family contributor view with specificity strip.
 - `pd_trait_contributors_direction_differences.tsv`: change-only taxon-trait direction pairs.
+- `pd_trait_contributors_heatmap_taxa.tsv`: taxa retained by the large direction-difference filter.
 - `pd_trait_contributors_trait_cocarriage_all_edges.tsv`: all 15 direction-specific co-carriage pairs.
 - `pd_trait_contributors_trait_cocarriage_network.png`: direction-changing co-carriage pairs among selected contributors.
 - `pd_trait_contributors.md`: contributor-analysis interpretation and audit-file index.

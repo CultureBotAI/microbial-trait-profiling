@@ -53,6 +53,70 @@ def test_specificity_normalizes_unequal_profile_pools(
     assert result["other_feces_prevalence"] == 0.1
     assert result["pd_vs_other_feces_log2_ratio"] < 0
     assert result["pd_vs_other_feces_log2_prevalence_ratio"] > 0
+    assert result["pd_minus_other_feces_prevalence_difference"] == pytest.approx(0.4)
+    assert result["pd_other_feces_display"] == "1/2"
+
+
+def test_zero_other_count_is_displayed_as_undefined_not_as_a_ratio(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    selected = pd.DataFrame({"taxon": ["taxon-a"]})
+    specificity = pd.DataFrame(
+        {
+            "taxon_id": ["taxon-a"],
+            "pd_feces_profiles": [1],
+            "other_feces_profiles": [0],
+            "pd_other_feces_counts": ["1/0"],
+            "pd_feces_studies": [1],
+            "other_feces_studies": [0],
+            "pd_specificity_fraction": [1.0],
+            "pd_vs_other_feces_log2_ratio": [math.log2(3.0)],
+        }
+    )
+    monkeypatch.setattr(
+        contributors,
+        "load_taxon_specificity",
+        lambda _taxa, _metadata: specificity,
+    )
+    metadata = pd.DataFrame(
+        [
+            ["pd-1", contributors.PD_CONDITION, contributors.FECES, "inc"],
+            ["pd-2", contributors.PD_CONDITION, contributors.FECES, "dec"],
+            ["other-1", "Other condition", contributors.FECES, "inc"],
+            ["other-2", "Other condition", contributors.FECES, "dec"],
+        ],
+        columns=["profile_id", "condition", "body_site_group", "inc_dec"],
+    )
+
+    result = contributors.augment_selected_taxa(selected, metadata).iloc[0]
+
+    assert result["pd_other_feces_counts"] == "1/0"
+    assert result["pd_other_feces_display"] == "---"
+    assert result["pd_minus_other_feces_prevalence_difference"] == pytest.approx(0.5)
+
+
+def test_large_difference_filter_removes_small_dot_rows() -> None:
+    selected = pd.DataFrame(
+        {
+            "rank": ["species", "species", "family"],
+            "taxon": ["taxon-a", "taxon-b", "taxon-c"],
+            "display_name": ["Taxon A", "Taxon B", "Taxon C"],
+        }
+    )
+    differences = pd.DataFrame(
+        {
+            "rank": ["species", "species", "species", "family"],
+            "taxon": ["taxon-a", "taxon-a", "taxon-b", "taxon-c"],
+            "increased_minus_decreased_share": [0.02, -0.08, 0.049, -0.05],
+        }
+    )
+
+    result = contributors.select_large_difference_taxa(selected, differences)
+
+    assert set(result["taxon"]) == {"taxon-a", "taxon-c"}
+    maxima = result.set_index("taxon")["max_absolute_direction_share_difference"]
+    assert maxima["taxon-a"] == pytest.approx(0.08)
+    assert maxima["taxon-c"] == pytest.approx(0.05)
 
 
 def test_direction_differences_omit_equal_share_pairs() -> None:

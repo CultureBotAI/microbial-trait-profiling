@@ -29,6 +29,7 @@ CELLS_PATH = OUTPUT_DIR / f"{STEM}_cells.tsv"
 SELECTED_TAXA_PATH = OUTPUT_DIR / f"{STEM}_selected_taxa.tsv"
 RANK_COVERAGE_PATH = OUTPUT_DIR / f"{STEM}_rank_coverage.tsv"
 DIRECTION_DIFFERENCES_PATH = OUTPUT_DIR / f"{STEM}_direction_differences.tsv"
+HEATMAP_TAXA_PATH = OUTPUT_DIR / f"{STEM}_heatmap_taxa.tsv"
 TRAIT_INTERVALS_PATH = OUTPUT_DIR / "pd_species_six_traits_influence_heatmap_traits.tsv"
 COCARRIAGE_ALL_EDGES_PATH = OUTPUT_DIR / f"{STEM}_trait_cocarriage_all_edges.tsv"
 
@@ -40,7 +41,8 @@ GRID_COLOR = "#e5e7eb"
 SLATE_500 = "#64748b"
 SLATE_700 = "#334155"
 SLATE_900 = "#111827"
-SPECIFICITY_COLOR_LIMIT = 3.0
+SPECIFICITY_PREVALENCE_DIFFERENCE_LIMIT = 0.05
+MIN_LARGE_DIRECTION_SHARE_DIFFERENCE = 0.05
 UNRESOLVED_COLOR = "#cbd5e1"
 BACKGROUND_CIRCLE_AREA = 680.0
 SHARE_TOLERANCE = 1e-12
@@ -72,6 +74,8 @@ def clean_existing_specificity(selected: pd.DataFrame) -> pd.DataFrame:
         "pd_feces_prevalence",
         "other_feces_prevalence",
         "pd_vs_other_feces_log2_prevalence_ratio",
+        "pd_minus_other_feces_prevalence_difference",
+        "pd_other_feces_display",
     ]
     return selected.drop(columns=[column for column in generated if column in selected])
 
@@ -109,6 +113,14 @@ def augment_selected_taxa(
     augmented["other_feces_total_profiles"] = other_total
     augmented["pd_feces_prevalence"] = augmented["pd_feces_profiles"] / pd_total
     augmented["other_feces_prevalence"] = augmented["other_feces_profiles"] / other_total
+    augmented["pd_minus_other_feces_prevalence_difference"] = (
+        augmented["pd_feces_prevalence"] - augmented["other_feces_prevalence"]
+    )
+    augmented["pd_other_feces_display"] = np.where(
+        augmented["other_feces_profiles"].gt(0),
+        augmented["pd_other_feces_counts"],
+        "---",
+    )
     pd_smoothed = (augmented["pd_feces_profiles"] + 0.5) / (pd_total + 1.0)
     other_smoothed = (augmented["other_feces_profiles"] + 0.5) / (other_total + 1.0)
     augmented["pd_vs_other_feces_log2_prevalence_ratio"] = np.log2(pd_smoothed / other_smoothed)
@@ -196,6 +208,47 @@ def build_direction_differences(
     return differences.drop(columns=["rank_order", "trait_order", "absolute_share_difference"])
 
 
+def select_large_difference_taxa(
+    selected: pd.DataFrame,
+    differences: pd.DataFrame,
+) -> pd.DataFrame:
+    """Retain taxa with at least one direction-share difference of five points."""
+    if differences.empty:
+        raise ValueError("No direction differences are available for heatmap filtering")
+    maxima = differences.assign(
+        absolute_direction_share_difference=differences["increased_minus_decreased_share"].abs()
+    )
+    maxima = (
+        maxima.groupby(["rank", "taxon"], as_index=False)["absolute_direction_share_difference"]
+        .max()
+        .rename(
+            columns={
+                "absolute_direction_share_difference": ("max_absolute_direction_share_difference")
+            }
+        )
+    )
+    heatmap_taxa = selected.merge(
+        maxima,
+        on=["rank", "taxon"],
+        how="left",
+        validate="one_to_one",
+    )
+    heatmap_taxa["max_absolute_direction_share_difference"] = heatmap_taxa[
+        "max_absolute_direction_share_difference"
+    ].fillna(0.0)
+    heatmap_taxa = heatmap_taxa[
+        heatmap_taxa["max_absolute_direction_share_difference"].ge(
+            MIN_LARGE_DIRECTION_SHARE_DIFFERENCE
+        )
+    ].copy()
+    if heatmap_taxa.empty:
+        raise ValueError("No taxa pass the large direction-share difference threshold")
+    return heatmap_taxa.sort_values(
+        ["rank", "max_absolute_direction_share_difference", "display_name"],
+        ascending=[True, False, True],
+    ).reset_index(drop=True)
+
+
 def direction_background_circles(
     coverage: pd.DataFrame,
     columns: list[tuple[str, str, str]],
@@ -250,7 +303,7 @@ def plot_rank_panel(
     nested = grid.subgridspec(
         1,
         2,
-        width_ratios=[9.0, 1.35],
+        width_ratios=[9.0, 1.65],
         wspace=0.04,
     )
     ax = fig.add_subplot(nested[0, 0])
@@ -347,12 +400,15 @@ def plot_rank_panel(
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-    specificity_cmap = plt.get_cmap("YlOrBr").copy()
+    specificity_cmap = plt.get_cmap("RdBu_r").copy()
     specificity_cmap.set_bad("#f3f4f6")
     taxon_specificity_values = (
-        taxa["pd_vs_other_feces_log2_prevalence_ratio"]
+        taxa["pd_minus_other_feces_prevalence_difference"]
         .replace([np.inf, -np.inf], np.nan)
-        .clip(-SPECIFICITY_COLOR_LIMIT, SPECIFICITY_COLOR_LIMIT)
+        .clip(
+            -SPECIFICITY_PREVALENCE_DIFFERENCE_LIMIT,
+            SPECIFICITY_PREVALENCE_DIFFERENCE_LIMIT,
+        )
         .to_numpy(dtype=float, copy=True)
     )
     total_specificity_profiles = taxa["pd_feces_profiles"].astype(float) + taxa[
@@ -363,26 +419,38 @@ def plot_rank_panel(
     specificity_ax.imshow(
         np.ma.masked_invalid(specificity_values[:, None]),
         cmap=specificity_cmap,
-        vmin=-SPECIFICITY_COLOR_LIMIT,
-        vmax=SPECIFICITY_COLOR_LIMIT,
+        vmin=-SPECIFICITY_PREVALENCE_DIFFERENCE_LIMIT,
+        vmax=SPECIFICITY_PREVALENCE_DIFFERENCE_LIMIT,
         aspect="auto",
     )
-    specificity_ax.set_xticks([0], ["PD/other feces\nprevalence ratio"], fontsize=8)
+    specificity_ax.set_xticks(
+        [0],
+        ["PD/other counts\nand prevalence difference"],
+        fontsize=8,
+    )
     specificity_ax.tick_params(left=False, labelleft=False, length=0, pad=4)
     specificity_ax.set_xticks([-0.5, 0.5], minor=True)
     specificity_ax.set_yticks(np.arange(-0.5, len(taxa) + 1, 1), minor=True)
     specificity_ax.grid(which="minor", color="white", linewidth=1)
     specificity_ax.tick_params(which="minor", length=0)
-    for y, label in enumerate(taxa["pd_other_feces_counts"], start=1):
+    for y, row in enumerate(taxa.itertuples(index=False), start=1):
         value = specificity_values[y]
+        difference_pp = 100.0 * float(row.pd_minus_other_feces_prevalence_difference)
+        difference_label = "0.0 pp" if abs(difference_pp) < 0.05 else f"{difference_pp:+.1f} pp"
+        label = f"{row.pd_other_feces_display}\n{difference_label}"
         specificity_ax.text(
             0,
             y,
             label,
             ha="center",
             va="center",
-            fontsize=7.5,
-            color="white" if np.isfinite(value) and value >= 1.8 else SLATE_900,
+            fontsize=6.8,
+            color=(
+                "white"
+                if np.isfinite(value)
+                and abs(float(value)) >= 0.72 * SPECIFICITY_PREVALENCE_DIFFERENCE_LIMIT
+                else SLATE_900
+            ),
         )
     for spine in specificity_ax.spines.values():
         spine.set_visible(False)
@@ -413,7 +481,7 @@ def plot_contributor_heatmap(
         1,
         left=0.22,
         right=0.96,
-        top=0.91,
+        top=0.83,
         bottom=0.7 / height,
         hspace=0.25,
         height_ratios=[
@@ -436,19 +504,26 @@ def plot_contributor_heatmap(
 
     fig.text(
         0.03,
-        0.986,
-        "PD trait contributors with PD-vs-other feces specificity",
+        0.992,
+        "PD trait contributors with large direction differences",
         fontsize=16,
         fontweight="bold",
         va="top",
     )
     subtitle = (
-        "Paired red/blue background circles compare total propagated counts within each trait; "
-        "their grey outer area is unresolved or ambiguous at the plotted rank. Contributor-circle "
-        "area scales with share of the full cell, and equal direction pairs are omitted. The right "
-        "strip uses profile-pool-normalized PD/other feces prevalence; text retains raw counts."
+        "Rows require at least one absolute increased-versus-decreased full-cell contributor-share "
+        f"difference of {MIN_LARGE_DIRECTION_SHARE_DIFFERENCE:.0%}. Paired red/blue backgrounds "
+        "show total propagated counts and unresolved mass; contributor-circle area scales with "
+        "full-cell share. The right strip uses PD minus other-feces prevalence, not a raw ratio."
     )
-    fig.text(0.03, 0.958, "\n".join(wrap(subtitle, 135)), fontsize=9, color=SLATE_500)
+    fig.text(
+        0.03,
+        0.955,
+        "\n".join(wrap(subtitle, 180)),
+        fontsize=9,
+        color=SLATE_500,
+        va="top",
+    )
     legend_handles = [
         Line2D(
             [0],
@@ -465,11 +540,21 @@ def plot_contributor_heatmap(
     legend_handles.append(
         Patch(facecolor=UNRESOLVED_COLOR, label="grey halo: unresolved/ambiguous background")
     )
+    legend_handles.append(
+        Patch(
+            facecolor="white",
+            edgecolor=SLATE_500,
+            label=(
+                "specificity: PD - other prevalence (clipped at +/-5 pp); "
+                "raw x/0 counts display as ---"
+            ),
+        )
+    )
     fig.legend(
         handles=legend_handles,
         loc="upper center",
-        bbox_to_anchor=(0.63, 0.936),
-        ncol=3,
+        bbox_to_anchor=(0.63, 0.89),
+        ncol=4,
         frameon=False,
         fontsize=8.2,
     )
@@ -700,6 +785,7 @@ def plot_trait_cocarriage_network(
 
 def write_note(
     selected: pd.DataFrame,
+    heatmap_taxa: pd.DataFrame,
     differences: pd.DataFrame,
     changed_edges: pd.DataFrame,
     all_edges: pd.DataFrame,
@@ -718,7 +804,7 @@ def write_note(
         .to_numpy()
     ]
     specific = observed.sort_values(
-        "pd_vs_other_feces_log2_prevalence_ratio", ascending=False
+        "pd_minus_other_feces_prevalence_difference", ascending=False
     ).head(5)
     supported_patterns = trait_intervals[
         trait_intervals["overall_ci95_low"].gt(0) | trait_intervals["overall_ci95_high"].lt(0)
@@ -735,14 +821,22 @@ def write_note(
         "circle area uses the full cell denominator, so unresolved mass already reduces the "
         "colored contributor share rather than being discarded.",
         "",
-        f"The heatmap and direction-difference table retain {len(differences)} of "
+        (
+            f"The heatmap retains `{len(heatmap_taxa)}` of `{len(selected)}` candidate taxa. A "
+            "row must have at least one absolute increased-versus-decreased full-cell contributor "
+            f"share difference of `{MIN_LARGE_DIRECTION_SHARE_DIFFERENCE:.0%}`. This removes rows "
+            "containing only small directional changes."
+        ),
+        "",
+        f"The direction-difference table retains {len(differences)} of "
         f"{total_direction_pairs} taxon-trait pairs whose full-cell contributor share changes "
         "between directions. Equal pairs, including pairs absent in both directions, are omitted.",
         "",
-        "The right strip retains exact-label occurrence counts as text but colors them by the "
-        "smoothed PD-versus-other-feces prevalence ratio. This corrects the previous raw-count "
-        "color comparison for unequal profile-pool denominators; it remains descriptive and does "
-        "not account for study clustering.",
+        "The right strip colors taxa by the profile-pool-normalized prevalence difference "
+        "(`PD prevalence - other-feces prevalence`) in percentage points. This finite difference "
+        "is used instead of a count ratio, so a small or zero other-feces count cannot create an "
+        "infinite ratio. Raw count displays with a zero denominator, such as `1/0`, are rendered "
+        "as `---`. The metric remains descriptive and does not account for study clustering.",
         "",
         "## Direction-changing co-carriage pairs",
         "",
@@ -809,15 +903,15 @@ def write_note(
             "",
             "Top profile-pool-normalized reported taxon labels (descriptive):",
             "",
-            "| rank | taxon | PD/other profiles | PD/other prevalence | log2 prevalence ratio |",
+            "| rank | taxon | PD/other profiles | PD/other prevalence | prevalence difference |",
             "| --- | --- | ---: | ---: | ---: |",
         ]
     )
     for row in specific.itertuples(index=False):
         lines.append(
-            f"| {row.rank} | {row.display_name} | {row.pd_other_feces_counts} | "
+            f"| {row.rank} | {row.display_name} | {row.pd_other_feces_display} | "
             f"{float(row.pd_feces_prevalence):.2%}/{float(row.other_feces_prevalence):.2%} | "
-            f"{float(row.pd_vs_other_feces_log2_prevalence_ratio):.2f} |"
+            f"{100.0 * float(row.pd_minus_other_feces_prevalence_difference):+.2f} pp |"
         )
     lines.extend(
         [
@@ -839,8 +933,9 @@ def write_note(
             "",
             f"- `{STEM}_cells.tsv`: long-form source dot cells.",
             f"- `{STEM}_direction_differences.tsv`: change-only taxon-trait direction pairs.",
+            f"- `{STEM}_heatmap_taxa.tsv`: taxa passing the large-difference row filter.",
             f"- `{STEM}_selected_taxa.tsv`: selected taxa with normalized specificity context.",
-            f"- `{STEM}_taxon_specificity.tsv`: PD-vs-other-feces counts and prevalence ratios.",
+            f"- `{STEM}_taxon_specificity.tsv`: PD-vs-other-feces counts and prevalence metrics.",
             f"- `{STEM}_trait_cocarriage_taxa.tsv`: direction-specific taxon-by-trait presence.",
             f"- `{STEM}_trait_cocarriage_all_edges.tsv`: all pairwise direction counts.",
             f"- `{STEM}_trait_cocarriage_edges.tsv`: only pairs that change by direction.",
@@ -861,6 +956,8 @@ def main() -> None:
     write_tsv(selected, SELECTED_TAXA_PATH)
     differences = build_direction_differences(cells, coverage)
     write_tsv(differences, DIRECTION_DIFFERENCES_PATH)
+    heatmap_taxa = select_large_difference_taxa(selected, differences)
+    write_tsv(heatmap_taxa, HEATMAP_TAXA_PATH)
     specificity_columns = [
         "scope",
         "rank",
@@ -879,12 +976,14 @@ def main() -> None:
         "pd_feces_prevalence",
         "other_feces_prevalence",
         "pd_vs_other_feces_log2_prevalence_ratio",
+        "pd_minus_other_feces_prevalence_difference",
+        "pd_other_feces_display",
     ]
     write_tsv(selected[specificity_columns], OUTPUT_DIR / f"{STEM}_taxon_specificity.tsv")
     plot_contributor_heatmap(
         cells,
         differences,
-        selected,
+        heatmap_taxa,
         coverage,
         OUTPUT_DIR / f"{STEM}_species_family_dot_heatmap.png",
     )
@@ -905,6 +1004,7 @@ def main() -> None:
     )
     write_note(
         selected,
+        heatmap_taxa,
         differences,
         changed_cocarriage_edges,
         all_cocarriage_edges,
@@ -914,7 +1014,8 @@ def main() -> None:
         OUTPUT_DIR / f"{STEM}.md",
     )
     print(
-        f"Wrote {len(selected)} selected taxa, {len(differences)} direction differences, "
+        f"Wrote {len(selected)} selected taxa, {len(heatmap_taxa)} large-difference heatmap taxa, "
+        f"{len(differences)} direction differences, "
         f"and {len(changed_cocarriage_edges)}/{len(all_cocarriage_edges)} changed trait pairs"
     )
     print(OUTPUT_DIR / f"{STEM}_species_family_dot_heatmap.png")

@@ -59,6 +59,11 @@ pd-trait-taxa-heatmap:
 pd-trait-contributors:
 	uv run python scripts/create_pd_trait_contributors.py
 
+# Test all eligible fecal condition-taxon and condition-trait pairs, apply global
+# BH correction, and redraw the FDR-tiered evidence landscape.
+pd-significant-ecological-network:
+	uv run python scripts/create_pd_significant_condition_taxon_trait_network.py
+
 # Overlay increased (solid) and decreased (dashed) high-support Sankey links.
 six-shared-trait-combined-sankey:
 	uv run python scripts/create_six_shared_trait_sankeys.py --combined-high-support-only
