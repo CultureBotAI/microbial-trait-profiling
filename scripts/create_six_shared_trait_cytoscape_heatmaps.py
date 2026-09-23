@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import wrap
@@ -157,6 +158,23 @@ def wrap_label(value: object, width: int = 24) -> str:
     """Wrap labels for compact heatmap axes."""
     text = str(value)
     return "\n".join(wrap(text, width=width, break_long_words=False)) or text
+
+
+def compact_dendrogram_label(value: object, *, width: int) -> str:
+    """Return a compact branch title for placement inside the dendrogram."""
+    text = str(value)
+    matches = re.findall(
+        r"(Increased|Decreased)-associated (.*?) "
+        r"\((\d+/\d+) rows; q=([^;]+); (\d+) BH cells?\)",
+        text,
+    )
+    if not matches:
+        return wrap_label(text, width=width)
+    lines = []
+    for direction, trait, row_fraction, q_value, bh_count in matches:
+        lines.append(wrap_label(f"{direction}: {trait}", width=width))
+        lines.append(f"{row_fraction} | q={q_value} | {bh_count} BH")
+    return "\n".join(lines)
 
 
 def format_p_value(value: float) -> str:
@@ -1474,47 +1492,48 @@ def plot_grouped_clustered_contrast_heatmap(
     )
     if preview:
         fig_height = 8.5
-        fig_width = 14.0 + 0.9 * label_track_count
+        fig_width = 13.8
         left = 0.08
         right = 0.92
         top = 0.86
         bottom = 0.23
         label_width = 0.01
-        branch_label_width = 1.05 * label_track_count
+        dendrogram_width = 4.2
         show_row_labels = False
         show_cell_text = False
     else:
         fig_height = max(9.5, 3.2 + 0.34 * row_count)
-        fig_width = 22.0 + 1.0 * label_track_count
+        fig_width = 22.0
         left = 0.04
         right = 0.965
         top = 1 - 1.55 / fig_height
         bottom = 1.8 / fig_height
         label_width = 3.2
-        branch_label_width = 1.1 * label_track_count
+        dendrogram_width = 4.8
         show_row_labels = True
         show_cell_text = True
 
     fig = plt.figure(figsize=(fig_width, fig_height), facecolor="white")
     grid = fig.add_gridspec(
         1,
-        5,
-        width_ratios=[2.7, branch_label_width, 6.0, label_width, 0.32],
+        4,
+        width_ratios=[dendrogram_width, 6.0, label_width, 0.32],
         left=left,
         right=right,
         top=top,
         bottom=bottom,
-        wspace=0.0,
+        wspace=0.035,
     )
     dendro_ax = fig.add_subplot(grid[0, 0])
-    branch_label_ax = fig.add_subplot(grid[0, 1])
-    ax = fig.add_subplot(grid[0, 2])
-    row_label_spacer_ax = fig.add_subplot(grid[0, 3])
-    cbar_ax = fig.add_subplot(grid[0, 4])
+    ax = fig.add_subplot(grid[0, 1])
+    row_label_spacer_ax = fig.add_subplot(grid[0, 2])
+    cbar_ax = fig.add_subplot(grid[0, 3])
 
     y_extent = row_count * 10
+    branch_node_x: dict[int, float] = {}
+    branch_node_y: dict[int, float] = {}
     if linkage_matrix is not None:
-        dendrogram(
+        dendrogram_data = dendrogram(
             linkage_matrix,
             orientation="left",
             no_labels=True,
@@ -1523,7 +1542,18 @@ def plot_grouped_clustered_contrast_heatmap(
             ax=dendro_ax,
         )
         dendro_ax.set_ylim(y_extent, 0)
-    dendro_ax.axis("off")
+        branch_node_y.update(
+            {
+                int(leaf_index): position * 10 + 5
+                for position, leaf_index in enumerate(dendrogram_data["leaves"])
+            }
+        )
+        for offset, linkage_row in enumerate(linkage_matrix):
+            node_id = row_count + offset
+            left_node = int(linkage_row[0])
+            right_node = int(linkage_row[1])
+            branch_node_x[node_id] = float(linkage_row[2])
+            branch_node_y[node_id] = (branch_node_y[left_node] + branch_node_y[right_node]) / 2
 
     branches_to_plot = (
         cluster_summary.sort_values(["nesting_depth", "leaf_start", "branch_node_id"])
@@ -1531,70 +1561,28 @@ def plot_grouped_clustered_contrast_heatmap(
         else cluster_summary
     )
     for branch in branches_to_plot.itertuples(index=False):
-        start = int(branch.leaf_start) * 10
-        end = (int(branch.leaf_end) + 1) * 10
-        midpoint = (start + end) / 2
         track = int(branch.nesting_depth)
-        bracket_x = 0.995 - 0.018 * track
-        dendro_ax.plot(
-            [bracket_x, bracket_x],
-            [start + 1, end - 1],
-            color="black",
-            linewidth=2.1 if not preview else 1.6,
-            solid_capstyle="round",
-            transform=dendro_ax.get_yaxis_transform(),
-            clip_on=False,
-            zorder=2,
+        node_id = int(branch.branch_node_id)
+        node_y = branch_node_y.get(
+            node_id,
+            (int(branch.leaf_start) + int(branch.leaf_end) + 1) * 5,
         )
-        dendro_ax.plot(
-            [bracket_x, 1.005],
-            [start + 1, start + 1],
-            color="black",
-            linewidth=2.1 if not preview else 1.6,
-            transform=dendro_ax.get_yaxis_transform(),
-            clip_on=False,
-            zorder=2,
+        node_x = branch_node_x.get(node_id, 0.0)
+        track_spacing = 0.88 / max(1, label_track_count)
+        label_x = 0.03 + track * track_spacing
+        label_text = compact_dendrogram_label(
+            branch.cluster_label,
+            width=27 if not preview else 23,
         )
-        dendro_ax.plot(
-            [bracket_x, 1.005],
-            [end - 1, end - 1],
-            color="black",
-            linewidth=2.1 if not preview else 1.6,
-            transform=dendro_ax.get_yaxis_transform(),
-            clip_on=False,
-            zorder=2,
-        )
-        branch_label_ax.plot(
-            [0, track + 0.11],
-            [midpoint, midpoint],
-            color="black",
-            linewidth=1.0,
-            zorder=1,
-        )
-        label_source = (
-            str(branch.cluster_label)
-            .replace("Pattern: ", "")
-            .replace("Increased-associated ", "Increased: ")
-            .replace("Decreased-associated ", "Decreased: ")
-            .replace(
-                "); Increased:",
-                ")\nIncreased:",
-            )
-            .replace(
-                "); Decreased:",
-                ")\nDecreased:",
-            )
-        )
-        label_text = "\n".join(
-            wrap_label(part, width=25 if not preview else 20) for part in label_source.splitlines()
-        )
-        branch_label_ax.text(
-            track + 0.13,
-            midpoint,
+        dendro_ax.annotate(
             label_text,
+            xy=(node_x, node_y),
+            xycoords="data",
+            xytext=(label_x, node_y),
+            textcoords=dendro_ax.get_yaxis_transform(),
             ha="left",
             va="center",
-            fontsize=8.4 if not preview else 7.1,
+            fontsize=8.0 if not preview else 6.7,
             color="black",
             fontweight="bold",
             bbox={
@@ -1604,15 +1592,18 @@ def plot_grouped_clustered_contrast_heatmap(
                 "linewidth": 1.2,
                 "alpha": 0.96,
             },
+            arrowprops={
+                "arrowstyle": "-",
+                "color": "black",
+                "linewidth": 0.9,
+                "shrinkA": 2,
+                "shrinkB": 1,
+            },
+            annotation_clip=False,
             clip_on=False,
             zorder=5,
         )
-    branch_label_ax.set_xlim(0, label_track_count)
-    branch_label_ax.set_ylim(y_extent, 0)
-    branch_label_ax.set_xticks([])
-    branch_label_ax.set_yticks([])
-    for spine in branch_label_ax.spines.values():
-        spine.set_visible(False)
+    dendro_ax.axis("off")
     row_label_spacer_ax.patch.set_alpha(0)
     row_label_spacer_ax.set_zorder(-1)
     row_label_spacer_ax.axis("off")
@@ -1720,7 +1711,7 @@ def plot_grouped_clustered_contrast_heatmap(
         "Rows are fixed upstream grouped condition/body-site pairs with at least one displayed "
         f"cell (|effect|>{SIGNED_EFFECT_ABS_CUTOFF:g}). The dendrogram orders rows using average "
         "linkage on Spearman-correlation distance across signed trait deltas; missing cells are "
-        "neutral zero for clustering. A colored title requires either BH-significant metadata "
+        "neutral zero for clustering. A boxed title requires either BH-significant metadata "
         "enrichment or BH-significant enrichment of a recurring signed-trait direction versus "
         "the rest of the dendrogram (>=3 rows, >=67% agreement, and >=1 same-direction "
         "BH-selected cell). Titles report their support; unlabeled branches are not interpreted. "
@@ -2068,11 +2059,11 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "rule, profile count, and study count. Every internal dendrogram branch is tested for "
         "one-sided enrichment of each eligible anatomy and grouped-condition label versus all "
         "rows outside that branch. BH adjustment covers the complete tested branch-by-label "
-        "family. A branch is colored and named only when q<=0.05, it has at least 3 rows and 2 "
-        "matching rows, and the label describes at least two-thirds of the branch. Every "
-        "qualifying nested branch is drawn in a separate annotation track. Each visible label "
-        "reports its matching-row fraction and adjusted q-value; unlabeled branches are not "
-        "interpreted.",
+        "family. A branch is named only when q<=0.05, it has at least 3 rows and 2 matching "
+        "rows, and the label describes at least two-thirds of the branch. Every qualifying "
+        "nested label is placed directly inside the dendrogram and connected to its branch node. "
+        "Each visible label reports its matching-row fraction and adjusted q-value; unlabeled "
+        "branches are not interpreted.",
         "A branch without significant anatomy/condition enrichment may instead receive a "
         "descriptive trait-pattern title. Each branch/trait/direction is tested for one-sided "
         "enrichment against displayed rows outside the branch, with BH adjustment across the "
@@ -2105,8 +2096,8 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "minimum-size, and minimum-purity rules receive an anatomy/condition title. Other branches "
         "can receive a descriptive trait-pattern title only under branch-pattern BH significance, "
         "BH-cell support, recurrence, and directional-purity rules. All qualifying nested labels "
-        "are separated into tracks, and the two audit TSVs preserve every rejected and accepted "
-        "metadata or trait-pattern candidate.",
+        "are overlaid compactly inside the dendrogram and connected to their tested nodes; the "
+        "two audit TSVs preserve every rejected and accepted metadata or trait-pattern candidate.",
         "- Individual-condition signed-direction heatmaps still receive readable pages containing "
         f"at most {CONTRAST_ROWS_PER_PAGE} rows each. `{CONTRAST_PAGES_FILENAME}` records only "
         "those individual-condition page paths and counts.",

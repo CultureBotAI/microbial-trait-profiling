@@ -1525,9 +1525,9 @@ using a one-sided Fisher exact test. BH adjustment is applied across the complet
 branch-by-label family. A branch is colored and labeled only when `q <= 0.05`,
 it contains at least three rows and two matching rows, and the label describes
 at least two-thirds of its rows. Every qualifying nested branch is shown, with
-nested labels separated into parallel annotation tracks beside the dendrogram.
-Visible labels report the matching-row fraction and adjusted q-value; unlabeled
-branches are not interpreted. The full hypothesis family and selection flags are retained in
+compact labels placed directly inside the dendrogram and connected to the tested
+branch nodes. Visible labels report the matching-row fraction and adjusted q-value;
+unlabeled branches are not interpreted. The full hypothesis family and selection flags are retained in
 `six_shared_traits_grouped_signed_direction_branch_label_tests.tsv`. The
 `six_shared_traits_grouped_signed_direction_cluster_rows.tsv` plus
 `six_shared_traits_grouped_signed_direction_cluster_summary.tsv` record displayed

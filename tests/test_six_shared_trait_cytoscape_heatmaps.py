@@ -240,6 +240,23 @@ def test_signed_effect_cutoff_is_strictly_greater_than_point_zero_one() -> None:
     assert finalized.loc[0, "blank_reason"] == "absolute effect <=0.01"
 
 
+def test_compact_dendrogram_label_keeps_each_supported_pattern_readable() -> None:
+    label = (
+        "Pattern: Increased-associated coccus shaped "
+        "(23/23 rows; q=0.018; 1 BH cell); Increased-associated sphere shaped "
+        "(24/27 rows; q=0.048; 2 BH cells)"
+    )
+
+    compact = heatmaps.compact_dendrogram_label(label, width=30)
+
+    assert compact.splitlines() == [
+        "Increased: coccus shaped",
+        "23/23 | q=0.018 | 1 BH",
+        "Increased: sphere shaped",
+        "24/27 | q=0.048 | 2 BH",
+    ]
+
+
 def test_contrast_legend_reports_visible_scope_and_significance() -> None:
     mode = heatmaps.CONTRAST_MODES[0]
     cells = pd.DataFrame(
