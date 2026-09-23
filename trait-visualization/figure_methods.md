@@ -1495,30 +1495,41 @@ Rows are condition/body-site pairs and columns are the six shared traits. The
 annotation reports the increased-profile positive-z fraction minus the
 decreased-profile positive-z fraction. Color encodes this same effect on a fixed
 -1 to +1 scale; red favors increased profiles and blue favors decreased profiles.
-All supported effects with finite two-sided Fisher exact p-values are displayed,
-including nonsignificant results. Support requires at least 3 positive-z profiles
-in either direction and at least 2 total studies. A dark cell border marks
-BH `q <= 0.05`; the manifest separately reports how many cells passed the
-uncorrected `p < 0.01` threshold. Unbordered cells are descriptive effects. The
+Supported effects with finite two-sided Fisher exact p-values are displayed when
+the absolute increased-minus-decreased positive-z fraction is strictly greater
+than 0.01, including nonsignificant results above that effect cutoff. Support
+requires at least 3 positive-z profiles in either direction and at least 2 total
+studies. A dark cell border marks BH-adjusted `q <= 0.05`; the manifest separately
+reports how many cells passed the nominal Fisher `p < 0.01` threshold. Unbordered
+cells are descriptive effects. The figure legend reports the displayed condition-label,
+anatomy-group, row, cell, and BH-border counts. The
 signed contrast table contains candidate edge records rather than a complete
 Cartesian grid. Its `blank_reason` is
 `low positive-z profile or study support` for a present candidate that fails
-display support and empty (`NA` in the TSV) for a displayed candidate. A
+support, `absolute effect <=0.01` for a supported finite candidate removed by the
+effect cutoff, and empty (`NA` in the TSV) for a displayed candidate. A
 condition/body-site/trait combination for which neither direction emitted a
 candidate edge is absent from the table rather than assigned a blank reason.
-Both absent records and present under-supported candidates appear gray in the
-image. A direction may have zero positive-z profiles while the cell remains
-colored when total profiles exist and the other direction meets support. White
-cells with a numeric `+0.00` represent measured null effects.
+Absent records, present under-supported candidates, and cutoff-filtered effects
+appear gray in the image. A direction may have zero positive-z profiles while
+the cell remains colored when total profiles exist, the other direction meets
+support, and the absolute contrast exceeds 0.01.
 
 Conditions are not selected with a top-N disease filter. Signed contrasts read
 the full increased and decreased Sankey edge tables before graph display
 selection, after upstream removal of unknown raw condition labels. Every
-condition/body-site row with at least one supported, finite cell is included.
+condition/body-site row with at least one displayed cell is included.
 The grouped view applies the v3 clinical condition rollup rules; the individual
 view retains the original curated BugSigDB condition label. Both use the same
-grouped v3 body-site labels. Ranked rows are grouped by body site, then ordered
-by significant-trait count, trait coverage, BH-selected count, evidence,
+grouped v3 body-site labels. These condition and anatomy labels are fixed upstream
+categories, not names inferred from dendrogram branches or descriptions of every
+row on a branch. Grouped conditions are assigned by the ordered, case-insensitive
+substring rules in `v3_fully_grouped_condition_display_label`; the first matching
+rule wins and unmatched labels become `Other specific clinical labels`. The
+per-trait `*_profile_sankey_condition_rollups.tsv` files audit the raw label,
+display label, applied rule, profile count, and study count. Ranked rows are
+grouped by body site, then ordered
+by nominal-p trait count, trait coverage, BH-selected count, evidence,
 support, and effect size. Full overview PNGs retain all rows; additional
 `*_page_NN.png` files contain at most 24 rows each. The page manifest is
 `six_shared_trait_signed_direction_heatmap_pages.tsv`.
@@ -1533,7 +1544,9 @@ sorted lexicographically by their exact condition/body-site pair labels. This
 canonical input order makes SciPy's choices among exact distance ties
 reproducible under input-row permutations, but it does not make the tied
 topology statistically stable. Therefore, the dendrogram is not cut into
-clusters and no cluster IDs or label-enrichment tests are reported.
+clusters and no cluster IDs or branch labels are reported. A branch label would
+only be shown after a predeclared, multiplicity-adjusted enrichment analysis
+supported that label; the present dendrogram is an ordering device only.
 
 Rows with no defined Spearman distance to any other row are excluded from the
 linkage and displayed in a separate `Insufficient overlap (not clustered)`
@@ -1564,11 +1577,18 @@ under a broader label. These are exploratory pattern diagnostics, not formal
 biological outlier tests. The six-shared-traits README embeds the grouped
 clustered overview and links directly to the full-resolution individual PNG.
 
+Issue #256 / PR #257 introduced pooled, denominator-harmonized, study-weighted
+fraction contrasts and paired log-ratios. It did not emit condition-by-anatomy
+replacements for this figure. Those pooled quantities are not substituted into
+the profile-level positive-z prevalence contrast here because the estimand and
+sampling unit differ; the manifest records that scope distinction explicitly.
+
 BH q-values are computed across the full cell table within each condition-label
 mode. The companion table records raw delta, raw Fisher p-value, BH q-value,
-signed `-log10(p)`, display and significance flags, ranked page number, and
+signed `-log10(p)`, display and nominal/BH flags, ranked page number, and
 clustered row order for each cell. Dark borders use `selected_after_bh`; the
-`significant_in_heatmap` column retains the uncorrected raw-p flag for audit.
+explicit nominal flag is `nominal_p_value_selected`, while
+`significant_in_heatmap` remains only as a deprecated compatibility alias.
 Floating-point fields are exported at 12 significant digits to prevent
 last-bit textual churn without implying additional precision.
 The Fisher contingency tables count profiles rather than independent studies;

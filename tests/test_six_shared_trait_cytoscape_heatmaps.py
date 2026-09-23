@@ -355,6 +355,7 @@ def test_contrasts_show_supported_effects_and_mark_strict_significance() -> None
     assert heatmaps.select_contrast_rows(finalized) == ["A | Feces", "B | Feces"]
     assert heatmaps.select_contrast_rows(finalized.iloc[2:]) == []
     assert finalized["significant_in_heatmap"].tolist() == [True, False, False, False]
+    assert finalized["nominal_p_value_selected"].tolist() == [True, False, False, False]
     assert finalized["displayed_in_heatmap"].tolist() == [True, True, False, False]
     assert finalized.loc[1, "blank_reason"] == ""
     borders = heatmaps.flag_matrix(
@@ -372,6 +373,47 @@ def test_contrasts_show_supported_effects_and_mark_strict_significance() -> None
     )
     assert annotations["trait1"].tolist() == ["+0.50", "+0.50", "", ""]
     assert heatmaps.format_p_value(0.0099) == "<0.01"
+
+
+def test_contrast_absolute_effect_cutoff_is_strict_and_auditable() -> None:
+    cells = pd.DataFrame(
+        {
+            "condition_body_site_pair": ["A | Feces", "B | Feces", "C | Saliva"],
+            "condition": ["A", "B", "C"],
+            "body_site_group": ["Feces", "Feces", "Saliva"],
+            "trait_id": ["trait1"] * 3,
+            "fisher_p_value": [0.5, 0.5, 0.5],
+            "passes_support": [True, True, True],
+            "increased_minus_decreased_positive_fraction": [0.01, 0.010001, -0.02],
+            "increased_positive_profile_count": [4, 4, 4],
+            "decreased_positive_profile_count": [3, 3, 3],
+        }
+    )
+
+    finalized = heatmaps.finalize_inferential_cells(cells)
+
+    assert finalized["passes_absolute_effect_cutoff"].tolist() == [False, True, True]
+    assert finalized["displayed_in_heatmap"].tolist() == [False, True, True]
+    assert finalized.loc[0, "blank_reason"] == "absolute effect <=0.01"
+
+    mode = heatmaps.ContrastMode(
+        key="grouped",
+        label="Grouped conditions",
+        condition_mode="grouped condition labels",
+        increased_view_key="increased_grouped",
+        decreased_view_key="decreased_grouped",
+    )
+    legend = heatmaps.summarize_contrast_legend(
+        finalized,
+        ["B | Feces", "C | Saliva"],
+        mode,
+    )
+    assert legend.condition_label_kind == "grouped condition labels"
+    assert legend.condition_label_count == 2
+    assert legend.anatomy_group_count == 2
+    assert legend.row_count == 2
+    assert legend.displayed_cell_count == 2
+    assert legend.effect_cutoff_hidden_cell_count == 0
 
 
 def test_spearman_clustering_separates_rows_without_a_defined_neighbor() -> None:
@@ -578,7 +620,10 @@ def test_readme_replacement_preserves_following_sections(tmp_path: Path) -> None
     assert "old generated text" not in content
     assert "## Following Section\n\nmust remain" in content
     assert "`low positive-z profile or study support`" in content
+    assert "absolute effect <=0.01" in content
     assert "neither direction emitted a candidate edge is absent" in content
+    assert "fixed upstream labels" in content
+    assert "Issue #256 / PR #257" in content
 
 
 def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Path) -> None:
@@ -645,6 +690,12 @@ def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Pa
     contrasts = manifest[manifest["heatmap_type"] == "signed_direction_contrast"]
     assert contrasts["row_count"].tolist() == [30, 30]
     assert contrasts["displayed_cell_count"].tolist() == [30, 30]
+    assert contrasts["condition_label_count"].tolist() == [30, 30]
+    assert contrasts["anatomy_group_count"].tolist() == [1, 1]
+    assert contrasts["absolute_effect_cutoff"].tolist() == [
+        heatmaps.SIGNED_EFFECT_ABS_CUTOFF,
+        heatmaps.SIGNED_EFFECT_ABS_CUTOFF,
+    ]
     assert contrasts["tested_cell_count"].tolist() == [30, 30]
     assert contrasts["source_increased_edges_path"].tolist() == [
         "increased_grouped_edges.tsv",
@@ -662,6 +713,7 @@ def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Pa
         assert call.kwargs["vmin"] == -1.0
         assert call.kwargs["vmax"] == 1.0
         assert call.kwargs["significance_borders"].to_numpy(dtype=bool).all()
+        assert call.kwargs["contrast_legend"].condition_label_count == len(matrix)
         assert (np.char.find(call.args[1].to_numpy(dtype=str), "*") == -1).all()
     assert clustered_plot.call_count == 2
     assert contrasts["clustered_png_path"].str.endswith("_clustered_heatmap.png").all()
@@ -680,6 +732,8 @@ def test_heatmap_writer_uses_full_edges_and_keeps_more_than_24_rows(tmp_path: Pa
     assert table["displayed_in_heatmap"].all()
     pages = pd.read_csv(tmp_path / heatmaps.CONTRAST_PAGES_FILENAME, sep="\t")
     assert pages["row_count"].tolist() == [24, 6, 24, 6]
+    assert pages["condition_label_count"].tolist() == [24, 6, 24, 6]
+    assert pages["anatomy_group_count"].tolist() == [1, 1, 1, 1]
     assert pages["displayed_cell_count"].sum() == len(table)
     for _view, rows in table.groupby("view_key"):
         assert rows["heatmap_page"].value_counts().to_dict() == {1: 24, 2: 6}
