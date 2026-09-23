@@ -1,0 +1,597 @@
+branch_node_id	trait_id	trait_label	pattern_direction	branch_row_count	displayed_trait_row_count	direction_row_count	direction_purity	outside_displayed_trait_row_count	outside_direction_row_count	fisher_odds_ratio	fisher_p_value	bh_selected_direction_cell_count	nominal_direction_cell_count	mean_signed_effect	fisher_q_value	passes_bh	passes_direction_rows	passes_direction_purity	passes_bh_cell_support	passes_display_criteria	branch_selected_for_display	included_in_branch_label
+81	METPO:1000608	facultatively aerobic	increased	3	3	3	1.0	70	46	inf	0.29622483761013574	1	3	0.3246572474562203	0.9974576452861068	False	True	True	True	False	False	False
+81	METPO:1000608	facultatively aerobic	decreased	3	3	0	0.0	70	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+81	METPO:1000623	moderately halophilic	increased	3	3	3	1.0	64	37	inf	0.20624151967435544	0	1	0.24786258278554682	0.8717726647228075	False	True	True	False	False	False	False
+81	METPO:1000623	moderately halophilic	decreased	3	3	0	0.0	64	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+81	METPO:1000668	coccus shaped	increased	3	3	1	0.3333333333333333	66	48	0.1875	0.9782417834103142	0	0	0.2055555555555556	1.0	False	False	False	False	False	False	False
+81	METPO:1000668	coccus shaped	decreased	3	3	2	0.6666666666666666	66	18	5.333333333333333	0.19945031873878688	0	0	-0.0875156554540267	0.8717726647228075	False	False	True	False	False	False	False
+81	METPO:1000683	sphere shaped	increased	3	2	2	1.0	62	40	inf	0.42708333333333337	0	0	0.15704022988505745	1.0	False	False	True	False	False	False	False
+81	METPO:1000683	sphere shaped	decreased	3	2	0	0.0	62	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+81	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	3	0	0.0	49	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+81	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	3	3	1.0	49	33	inf	0.32307692307692304	2	2	-0.3241922156265517	1.0	False	True	True	True	False	False	False
+81	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	3	3	1.0	56	34	inf	0.23901073548863394	0	0	0.18615829362344402	0.9250025866962717	False	True	True	False	False	False	False
+81	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	3	0	0.0	56	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+82	METPO:1000608	facultatively aerobic	increased	4	4	4	1.0	69	45	inf	0.19466203614380345	1	4	0.30171211367435696	0.8717726647228075	False	True	True	True	False	False	False
+82	METPO:1000608	facultatively aerobic	decreased	4	4	0	0.0	69	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+82	METPO:1000623	moderately halophilic	increased	4	4	4	1.0	63	36	inf	0.11923337856173673	0	1	0.23726680010285875	0.6597630244740257	False	True	True	False	False	False	False
+82	METPO:1000623	moderately halophilic	decreased	4	4	0	0.0	63	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+82	METPO:1000668	coccus shaped	increased	4	4	2	0.5	65	47	0.3829787234042553	0.9297803010060138	0	0	0.1164764079147641	1.0	False	False	False	False	False	False	False
+82	METPO:1000668	coccus shaped	decreased	4	4	2	0.5	65	18	2.611111111111111	0.32868093848358765	0	0	-0.0875156554540267	1.0	False	False	False	False	False	False	False
+82	METPO:1000683	sphere shaped	increased	4	3	3	1.0	61	39	inf	0.27553763440860213	0	0	0.1183921167270246	0.9775025601638505	False	True	True	False	False	False	False
+82	METPO:1000683	sphere shaped	decreased	4	3	0	0.0	61	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+82	METPO:2000103|GO:0030245	cellulose catabolic process	increased	4	4	0	0.0	48	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+82	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	4	4	4	1.0	48	32	inf	0.21758241758241761	2	2	-0.27054142199388637	0.8832579185520361	False	True	True	True	False	False	False
+82	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	4	4	4	1.0	55	33	inf	0.1451136608323849	0	0	0.17728995309429535	0.7392114688555674	False	True	True	False	False	False	False
+82	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	4	4	0	0.0	55	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+84	METPO:1000608	facultatively aerobic	increased	3	3	3	1.0	70	46	inf	0.29622483761013574	0	2	0.30278028561083764	0.9974576452861068	False	True	True	False	False	False	False
+84	METPO:1000608	facultatively aerobic	decreased	3	3	0	0.0	70	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+84	METPO:1000623	moderately halophilic	increased	3	2	2	1.0	65	38	inf	0.35278154681139756	0	0	0.08790092021799341	1.0	False	False	True	False	False	False	False
+84	METPO:1000623	moderately halophilic	decreased	3	2	0	0.0	65	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+84	METPO:1000668	coccus shaped	increased	3	3	3	1.0	66	46	inf	0.35164331793716835	0	0	0.19272990951424843	1.0	False	True	True	False	False	False	False
+84	METPO:1000668	coccus shaped	decreased	3	3	0	0.0	66	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+84	METPO:1000683	sphere shaped	increased	3	3	2	0.6666666666666666	61	40	1.05	0.7301747311827957	0	0	0.060428392745465936	1.0	False	False	True	False	False	False	False
+84	METPO:1000683	sphere shaped	decreased	3	3	1	0.3333333333333333	61	21	0.9523809523809523	0.7244623655913978	0	0	-0.07017543859649122	1.0	False	False	False	False	False	False	False
+84	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	2	0	0.0	50	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+84	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	2	2	1.0	50	34	inf	0.4751131221719457	0	1	-0.26443688959735173	1.0	False	False	True	False	False	False	False
+84	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	3	2	0.6666666666666666	56	35	1.2	0.6897166938386292	0	0	0.04830027695881355	1.0	False	False	True	False	False	False	False
+84	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	3	1	0.3333333333333333	56	21	0.8333333333333334	0.7609892645113661	0	0	-0.17105263157894735	1.0	False	False	False	False	False	False	False
+93	METPO:1000608	facultatively aerobic	increased	6	6	6	1.0	67	43	inf	0.0821463835389452	1	5	0.2917470235174425	0.5828481498715635	False	True	True	True	False	False	False
+93	METPO:1000608	facultatively aerobic	decreased	6	6	0	0.0	67	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+93	METPO:1000623	moderately halophilic	increased	6	6	6	1.0	61	34	inf	0.038462380181205416	0	1	0.22238131097908212	0.39523411358617977	False	True	True	False	False	False	False
+93	METPO:1000623	moderately halophilic	decreased	6	6	0	0.0	61	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+93	METPO:1000668	coccus shaped	increased	6	6	4	0.6666666666666666	63	45	0.8	0.7706029703395814	0	0	0.11714711295218548	1.0	False	True	True	False	False	False	False
+93	METPO:1000668	coccus shaped	decreased	6	6	2	0.3333333333333333	63	18	1.25	0.5652102506799608	0	0	-0.0875156554540267	1.0	False	False	False	False	False	False	False
+93	METPO:1000683	sphere shaped	increased	6	5	5	1.0	59	37	inf	0.11157015688348318	0	0	0.14057595362205427	0.6597630244740257	False	True	True	False	False	False	False
+93	METPO:1000683	sphere shaped	decreased	6	5	0	0.0	59	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+93	METPO:2000103|GO:0030245	cellulose catabolic process	increased	6	6	0	0.0	46	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+93	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	6	6	6	1.0	46	30	inf	0.09567453822772974	2	2	-0.24533009121395366	0.6315198368133595	False	True	True	True	False	False	False
+93	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	6	6	6	1.0	53	31	inf	0.05159596829595906	0	1	0.20296278576952162	0.4576078872263962	False	True	True	False	False	False	False
+93	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	6	6	0	0.0	53	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+100	METPO:1000608	facultatively aerobic	increased	4	4	4	1.0	69	45	inf	0.19466203614380345	0	2	0.27172807135098537	0.8717726647228075	False	True	True	False	False	False	False
+100	METPO:1000608	facultatively aerobic	decreased	4	4	0	0.0	69	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+100	METPO:1000623	moderately halophilic	increased	4	3	3	1.0	64	37	inf	0.20624151967435544	0	0	0.09431489919294796	0.8717726647228075	False	True	True	False	False	False	False
+100	METPO:1000623	moderately halophilic	decreased	4	3	0	0.0	64	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+100	METPO:1000668	coccus shaped	increased	4	4	4	1.0	65	45	inf	0.2450847367440871	0	0	0.18919028927854348	0.930385370060356	False	True	True	False	False	False	False
+100	METPO:1000668	coccus shaped	decreased	4	4	0	0.0	65	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+100	METPO:1000683	sphere shaped	increased	4	4	2	0.5	60	40	0.5	0.8866891415476821	0	0	0.060428392745465936	1.0	False	False	False	False	False	False	False
+100	METPO:1000683	sphere shaped	decreased	4	4	2	0.5	60	20	2.0	0.42633967918209065	0	0	-0.05294486215538846	1.0	False	False	False	False	False	False	False
+100	METPO:2000103|GO:0030245	cellulose catabolic process	increased	4	3	0	0.0	49	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+100	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	4	3	3	1.0	49	33	inf	0.32307692307692304	0	1	-0.22391030735061546	1.0	False	True	True	False	False	False	False
+100	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	4	4	3	0.75	55	34	1.8529411764705883	0.5207019594573811	0	0	0.04410494654397094	1.0	False	True	True	False	False	False	False
+100	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	4	4	1	0.25	55	21	0.5396825396825397	0.8548863391676151	0	0	-0.17105263157894735	1.0	False	False	False	False	False	False	False
+101	METPO:1000608	facultatively aerobic	increased	3	3	2	0.6666666666666666	70	47	0.9787234042553191	0.7500160782043861	0	0	0.05423460144927536	1.0	False	False	True	False	False	False	False
+101	METPO:1000608	facultatively aerobic	decreased	3	3	1	0.3333333333333333	70	23	1.0217391304347827	0.7037751623898643	0	0	-0.05402298850574716	1.0	False	False	False	False	False	False	False
+101	METPO:1000623	moderately halophilic	increased	3	3	2	0.6666666666666666	64	38	1.368421052631579	0.6458616010854817	0	0	0.08441274154589373	1.0	False	False	True	False	False	False	False
+101	METPO:1000623	moderately halophilic	decreased	3	3	1	0.3333333333333333	64	26	0.7307692307692307	0.7937584803256446	0	0	-0.05057471264367819	1.0	False	False	False	False	False	False	False
+101	METPO:1000668	coccus shaped	increased	3	3	3	1.0	66	46	inf	0.35164331793716835	0	1	0.12421861985673828	1.0	False	True	True	False	False	False	False
+101	METPO:1000668	coccus shaped	decreased	3	3	0	0.0	66	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+101	METPO:1000683	sphere shaped	increased	3	3	3	1.0	61	39	inf	0.27553763440860213	0	0	0.15351074462768616	0.9775025601638505	False	True	True	False	False	False	False
+101	METPO:1000683	sphere shaped	decreased	3	3	0	0.0	61	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+101	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	3	0	0.0	49	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+101	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	3	3	1.0	49	33	inf	0.32307692307692304	0	0	-0.10036214531623078	1.0	False	True	True	False	False	False	False
+101	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	3	2	0.6666666666666666	56	35	1.2	0.6897166938386292	0	0	0.06107336956521739	1.0	False	False	True	False	False	False	False
+101	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	3	1	0.3333333333333333	56	21	0.8333333333333334	0.7609892645113661	0	0	-0.057471264367816105	1.0	False	False	False	False	False	False	False
+102	METPO:1000608	facultatively aerobic	increased	3	3	0	0.0	70	49	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+102	METPO:1000608	facultatively aerobic	decreased	3	3	3	1.0	70	21	inf	0.032542285677535525	0	0	-0.21421356421356427	0.38453012789251156	False	True	True	False	False	False	False
+102	METPO:1000623	moderately halophilic	increased	3	3	2	0.6666666666666666	64	38	1.368421052631579	0.6458616010854817	0	0	0.375	1.0	False	False	True	False	False	False	False
+102	METPO:1000623	moderately halophilic	decreased	3	3	1	0.3333333333333333	64	26	0.7307692307692307	0.7937584803256446	0	0	-0.0861471861471862	1.0	False	False	False	False	False	False	False
+102	METPO:1000668	coccus shaped	increased	3	2	2	1.0	67	47	inf	0.5012787723785166	0	0	0.275	1.0	False	False	True	False	False	False	False
+102	METPO:1000668	coccus shaped	decreased	3	2	0	0.0	67	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+102	METPO:1000683	sphere shaped	increased	3	1	0	0.0	63	42	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+102	METPO:1000683	sphere shaped	decreased	3	1	1	1.0	63	21	inf	0.34375	0	0	-0.09437229437229433	1.0	False	False	True	False	False	False	False
+102	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	1	0	0.0	51	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+102	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	1	1	1.0	51	35	inf	0.6923076923076923	0	0	-0.15281385281385285	1.0	False	False	True	False	False	False	False
+102	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	1	0	0.0	58	37	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+102	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	1	1	1.0	58	21	inf	0.3728813559322033	0	0	-0.13896103896103898	1.0	False	False	True	False	False	False	False
+104	METPO:1000608	facultatively aerobic	increased	3	2	2	1.0	71	47	inf	0.4474885844748859	0	0	0.06642846249373627	1.0	False	False	True	False	False	False	False
+104	METPO:1000608	facultatively aerobic	decreased	3	2	0	0.0	71	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+104	METPO:1000623	moderately halophilic	increased	3	3	3	1.0	64	37	inf	0.20624151967435544	0	0	0.1271455210947357	0.8717726647228075	False	True	True	False	False	False	False
+104	METPO:1000623	moderately halophilic	decreased	3	3	0	0.0	64	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+104	METPO:1000668	coccus shaped	increased	3	3	2	0.6666666666666666	66	47	0.8085106382978723	0.8005496812612131	0	0	0.036965550843848866	1.0	False	False	True	False	False	False	False
+104	METPO:1000668	coccus shaped	decreased	3	3	1	0.3333333333333333	66	19	1.236842105263158	0.6483566820628317	0	0	-0.041666666666666685	1.0	False	False	False	False	False	False	False
+104	METPO:1000683	sphere shaped	increased	3	2	2	1.0	62	40	inf	0.42708333333333337	0	1	0.17250722436020594	1.0	False	False	True	False	False	False	False
+104	METPO:1000683	sphere shaped	decreased	3	2	0	0.0	62	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+104	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	3	0	0.0	49	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+104	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	3	3	1.0	49	33	inf	0.32307692307692304	0	1	-0.22791505767714396	1.0	False	True	True	False	False	False	False
+104	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	2	1	0.5	57	36	0.5833333333333334	0.8649912331969608	0	0	0.11392405063291136	1.0	False	False	False	False	False	False	False
+104	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	2	1	0.5	57	21	1.7142857142857142	0.6107539450613677	0	0	-0.20833333333333334	1.0	False	False	False	False	False	False	False
+105	METPO:1000608	facultatively aerobic	increased	8	8	8	1.0	65	41	inf	0.03354960847384329	1	6	0.23878485907863684	0.38453012789251156	False	True	True	True	False	False	False
+105	METPO:1000608	facultatively aerobic	decreased	8	8	0	0.0	65	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+105	METPO:1000623	moderately halophilic	increased	8	8	8	1.0	59	32	inf	0.011790926383418707	1	2	0.19806420570571406	0.23424640415058498	False	True	True	True	False	False	False
+105	METPO:1000623	moderately halophilic	decreased	8	8	0	0.0	59	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+105	METPO:1000668	coccus shaped	increased	8	8	4	0.5	61	45	0.35555555555555557	0.9599170288866967	0	0	0.11714711295218548	1.0	False	True	False	False	False	False	False
+105	METPO:1000668	coccus shaped	decreased	8	8	4	0.5	61	16	2.8125	0.1628533960021683	0	0	-0.06677693858688973	0.7986143895864672	False	True	False	False	False	False	False
+105	METPO:1000683	sphere shaped	increased	8	5	5	1.0	59	37	inf	0.11157015688348318	0	0	0.14057595362205427	0.6597630244740257	False	True	True	False	False	False	False
+105	METPO:1000683	sphere shaped	decreased	8	5	0	0.0	59	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+105	METPO:2000103|GO:0030245	cellulose catabolic process	increased	8	8	0	0.0	44	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+105	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	8	8	8	1.0	44	28	inf	0.04021103780585743	3	3	-0.22399935629425993	0.4058246617388147	False	True	True	True	False	False	False
+105	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	8	7	7	1.0	52	30	inf	0.030178773908957193	0	2	0.19060462218082683	0.38269253722847846	False	True	True	False	False	False	False
+105	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	8	7	0	0.0	52	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+107	METPO:1000608	facultatively aerobic	increased	3	3	1	0.3333333333333333	70	48	0.22916666666666666	0.9674577143224644	0	0	0.14444444444444443	1.0	False	False	False	False	False	False	False
+107	METPO:1000608	facultatively aerobic	decreased	3	3	2	0.6666666666666666	70	22	4.363636363636363	0.24998392179561382	0	0	-0.18355855855855857	0.9429773252543406	False	False	True	False	False	False	False
+107	METPO:1000623	moderately halophilic	increased	3	3	1	0.3333333333333333	64	39	0.32051282051282054	0.9389416553595658	0	0	0.025000000000000022	1.0	False	False	False	False	False	False	False
+107	METPO:1000623	moderately halophilic	decreased	3	3	2	0.6666666666666666	64	25	3.12	0.35413839891451826	0	0	-0.35498960498960497	1.0	False	False	True	False	False	False	False
+107	METPO:1000668	coccus shaped	increased	3	2	2	1.0	67	47	inf	0.5012787723785166	0	0	0.1301022176022176	1.0	False	False	True	False	False	False	False
+107	METPO:1000668	coccus shaped	decreased	3	2	0	0.0	67	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+107	METPO:1000683	sphere shaped	increased	3	2	2	1.0	62	40	inf	0.42708333333333337	0	0	0.18528239778239777	1.0	False	False	True	False	False	False	False
+107	METPO:1000683	sphere shaped	decreased	3	2	0	0.0	62	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+107	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	1	1	1.0	51	15	inf	0.30769230769230765	0	0	0.07222222222222219	1.0	False	False	True	False	False	False	False
+107	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	1	0	0.0	51	36	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+107	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	3	0	0.0	56	37	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+107	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	3	3	1.0	56	19	inf	0.04737149712387339	0	1	-0.3551147301147301	0.42777897402770515	False	True	True	False	False	False	False
+109	METPO:1000608	facultatively aerobic	increased	3	3	2	0.6666666666666666	70	47	0.9787234042553191	0.7500160782043861	0	0	0.12179487179487175	1.0	False	False	True	False	False	False	False
+109	METPO:1000608	facultatively aerobic	decreased	3	3	1	0.3333333333333333	70	23	1.0217391304347827	0.7037751623898643	0	0	-0.023385539583780313	1.0	False	False	False	False	False	False	False
+109	METPO:1000623	moderately halophilic	increased	3	3	1	0.3333333333333333	64	39	0.32051282051282054	0.9389416553595658	0	0	0.13095238095238093	1.0	False	False	False	False	False	False	False
+109	METPO:1000623	moderately halophilic	decreased	3	3	2	0.6666666666666666	64	25	3.12	0.35413839891451826	0	0	-0.03352161140725826	1.0	False	False	True	False	False	False	False
+109	METPO:1000668	coccus shaped	increased	3	3	3	1.0	66	46	inf	0.35164331793716835	0	0	0.1541652880957751	1.0	False	True	True	False	False	False	False
+109	METPO:1000668	coccus shaped	decreased	3	3	0	0.0	66	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+109	METPO:1000683	sphere shaped	increased	3	3	1	0.3333333333333333	61	41	0.24390243902439024	0.9630376344086021	0	0	0.09523809523809523	1.0	False	False	False	False	False	False	False
+109	METPO:1000683	sphere shaped	decreased	3	3	2	0.6666666666666666	61	20	4.1	0.2698252688172043	0	0	-0.06427763933127587	0.9775025601638505	False	False	True	False	False	False	False
+109	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	3	2	0.6666666666666666	49	14	5.0	0.22081447963800901	0	0	0.11254578754578758	0.8832579185520361	False	False	True	False	False	False	False
+109	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	3	1	0.3333333333333333	49	35	0.2	0.9746606334841629	0	0	-0.08538940141600515	1.0	False	False	False	False	False	False	False
+109	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	3	0	0.0	56	37	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+109	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	3	3	1.0	56	19	inf	0.04737149712387339	0	0	-0.07597399144277496	0.42777897402770515	False	True	True	False	False	False	False
+110	METPO:1000608	facultatively aerobic	increased	3	2	1	0.5	71	48	0.4791666666666667	0.8949771689497716	0	0	0.1166666666666667	1.0	False	False	False	False	False	False	False
+110	METPO:1000608	facultatively aerobic	decreased	3	2	1	0.5	71	23	2.0869565217391304	0.5525114155251141	0	0	-0.09011627906976749	1.0	False	False	False	False	False	False	False
+110	METPO:1000623	moderately halophilic	increased	3	2	2	1.0	65	38	inf	0.35278154681139756	0	0	0.09481837606837606	1.0	False	False	True	False	False	False	False
+110	METPO:1000623	moderately halophilic	decreased	3	2	0	0.0	65	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+110	METPO:1000668	coccus shaped	increased	3	3	3	1.0	66	46	inf	0.35164331793716835	0	0	0.1926758265421056	1.0	False	True	True	False	False	False	False
+110	METPO:1000668	coccus shaped	decreased	3	3	0	0.0	66	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+110	METPO:1000683	sphere shaped	increased	3	3	0	0.0	61	42	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+110	METPO:1000683	sphere shaped	decreased	3	3	3	1.0	61	19	inf	0.03696236559139785	0	0	-0.10621562976214138	0.39523411358617977	False	True	True	False	False	False	False
+110	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	3	1	0.3333333333333333	49	15	1.1333333333333333	0.676923076923077	0	0	0.012500000000000011	1.0	False	False	False	False	False	False	False
+110	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	3	2	0.6666666666666666	49	34	0.8823529411764706	0.779185520361991	0	0	-0.07976793877956671	1.0	False	False	True	False	False	False	False
+110	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	2	2	1.0	57	35	inf	0.3892460549386324	0	0	0.07737403100775195	1.0	False	False	True	False	False	False	False
+110	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	2	0	0.0	57	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+111	METPO:1000608	facultatively aerobic	increased	3	3	3	1.0	70	46	inf	0.29622483761013574	0	0	0.39285714285714285	0.9974576452861068	False	True	True	False	False	False	False
+111	METPO:1000608	facultatively aerobic	decreased	3	3	0	0.0	70	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+111	METPO:1000623	moderately halophilic	increased	3	3	2	0.6666666666666666	64	38	1.368421052631579	0.6458616010854817	0	0	0.24404761904761904	1.0	False	False	True	False	False	False	False
+111	METPO:1000623	moderately halophilic	decreased	3	3	1	0.3333333333333333	64	26	0.7307692307692307	0.7937584803256446	0	0	-0.04166666666666663	1.0	False	False	False	False	False	False	False
+111	METPO:1000668	coccus shaped	increased	3	2	1	0.5	67	48	0.3958333333333333	0.9190110826939472	0	0	0.23809523809523808	1.0	False	False	False	False	False	False	False
+111	METPO:1000668	coccus shaped	decreased	3	2	1	0.5	67	19	2.526315789473684	0.4987212276214833	0	0	-0.16666666666666663	1.0	False	False	False	False	False	False	False
+111	METPO:1000683	sphere shaped	increased	3	3	0	0.0	61	42	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+111	METPO:1000683	sphere shaped	decreased	3	3	3	1.0	61	19	inf	0.03696236559139785	0	0	-0.26587301587301587	0.39523411358617977	False	True	True	False	False	False	False
+111	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	3	3	1.0	56	34	inf	0.23901073548863394	0	0	0.5694444444444444	0.9250025866962717	False	True	True	False	False	False	False
+111	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	3	0	0.0	56	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+113	METPO:1000608	facultatively aerobic	increased	3	2	2	1.0	71	47	inf	0.4474885844748859	0	0	0.11425438596491222	1.0	False	False	True	False	False	False	False
+113	METPO:1000608	facultatively aerobic	decreased	3	2	0	0.0	71	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+113	METPO:1000623	moderately halophilic	increased	3	1	0	0.0	66	40	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+113	METPO:1000623	moderately halophilic	decreased	3	1	1	1.0	66	26	inf	0.40298507462686567	0	0	-0.3706140350877193	1.0	False	False	True	False	False	False	False
+113	METPO:1000668	coccus shaped	increased	3	3	3	1.0	66	46	inf	0.35164331793716835	0	0	0.2559941520467836	1.0	False	True	True	False	False	False	False
+113	METPO:1000668	coccus shaped	decreased	3	3	0	0.0	66	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+113	METPO:1000683	sphere shaped	increased	3	3	3	1.0	61	39	inf	0.27553763440860213	0	0	0.39941520467836256	0.9775025601638505	False	True	True	False	False	False	False
+113	METPO:1000683	sphere shaped	decreased	3	3	0	0.0	61	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+113	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	1	0	0.0	51	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+113	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	1	1	1.0	51	35	inf	0.6923076923076923	0	0	-0.4666666666666666	1.0	False	False	True	False	False	False	False
+113	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	2	2	1.0	57	35	inf	0.3892460549386324	0	0	0.14276315789473684	1.0	False	False	True	False	False	False	False
+113	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	2	0	0.0	57	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+115	METPO:1000608	facultatively aerobic	increased	5	5	4	0.8	68	45	2.0444444444444443	0.46549617338735616	0	0	0.11061960487210311	1.0	False	True	True	False	False	False	False
+115	METPO:1000608	facultatively aerobic	decreased	5	5	1	0.2	68	23	0.4891304347826087	0.8730464981670847	0	0	-0.05402298850574716	1.0	False	False	False	False	False	False	False
+115	METPO:1000623	moderately halophilic	increased	5	5	4	0.8	62	36	2.888888888888889	0.32363345609614264	0	0	0.09103509581134933	1.0	False	True	True	False	False	False	False
+115	METPO:1000623	moderately halophilic	decreased	5	5	1	0.2	62	26	0.34615384615384615	0.9318666408218647	0	0	-0.05057471264367819	1.0	False	False	False	False	False	False	False
+115	METPO:1000668	coccus shaped	increased	5	5	5	1.0	64	44	inf	0.1696740485151372	0	2	0.22575083397241472	0.8090058633201742	False	True	True	False	False	False	False
+115	METPO:1000668	coccus shaped	decreased	5	5	0	0.0	64	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+115	METPO:1000683	sphere shaped	increased	5	5	5	1.0	59	37	inf	0.11157015688348318	0	0	0.19609108579350876	0.6597630244740257	False	True	True	False	False	False	False
+115	METPO:1000683	sphere shaped	decreased	5	5	0	0.0	59	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+115	METPO:2000103|GO:0030245	cellulose catabolic process	increased	5	5	1	0.2	47	15	0.5333333333333333	0.854945054945055	0	0	0.0360983102918587	1.0	False	False	False	False	False	False	False
+115	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	5	5	4	0.8	47	32	1.875	0.5076923076923076	0	0	-0.10062875184431595	1.0	False	True	True	False	False	False	False
+115	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	5	5	4	0.8	54	33	2.5454545454545454	0.3772955181642007	0	0	0.05905819015895278	1.0	False	True	True	False	False	False	False
+115	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	5	5	1	0.2	54	21	0.39285714285714285	0.9129318035005691	0	0	-0.057471264367816105	1.0	False	False	False	False	False	False	False
+116	METPO:1000608	facultatively aerobic	increased	4	3	2	0.6666666666666666	70	47	0.9787234042553191	0.7500160782043861	0	0	0.12179487179487175	1.0	False	False	True	False	False	False	False
+116	METPO:1000608	facultatively aerobic	decreased	4	3	1	0.3333333333333333	70	23	1.0217391304347827	0.7037751623898643	0	0	-0.023385539583780313	1.0	False	False	False	False	False	False	False
+116	METPO:1000623	moderately halophilic	increased	4	3	1	0.3333333333333333	64	39	0.32051282051282054	0.9389416553595658	0	0	0.13095238095238093	1.0	False	False	False	False	False	False	False
+116	METPO:1000623	moderately halophilic	decreased	4	3	2	0.6666666666666666	64	25	3.12	0.35413839891451826	0	0	-0.03352161140725826	1.0	False	False	True	False	False	False	False
+116	METPO:1000668	coccus shaped	increased	4	3	3	1.0	66	46	inf	0.35164331793716835	0	0	0.1541652880957751	1.0	False	True	True	False	False	False	False
+116	METPO:1000668	coccus shaped	decreased	4	3	0	0.0	66	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+116	METPO:1000683	sphere shaped	increased	4	4	1	0.25	60	41	0.15447154471544716	0.9884871320289089	0	0	0.09523809523809523	1.0	False	False	False	False	False	False	False
+116	METPO:1000683	sphere shaped	decreased	4	4	3	0.75	60	19	6.473684210526316	0.113310858452318	0	0	-0.20951842622085057	0.6597630244740257	False	True	True	False	False	False	False
+116	METPO:2000103|GO:0030245	cellulose catabolic process	increased	4	3	2	0.6666666666666666	49	14	5.0	0.22081447963800901	0	0	0.11254578754578758	0.8832579185520361	False	False	True	False	False	False	False
+116	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	4	3	1	0.3333333333333333	49	35	0.2	0.9746606334841629	0	0	-0.08538940141600515	1.0	False	False	False	False	False	False	False
+116	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	4	4	0	0.0	55	37	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+116	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	4	4	4	1.0	55	18	inf	0.01607247223845704	0	0	-0.18198049358208124	0.2817409839447175	False	True	True	False	False	False	False
+117	METPO:1000608	facultatively aerobic	increased	3	3	0	0.0	70	49	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+117	METPO:1000608	facultatively aerobic	decreased	3	3	3	1.0	70	21	inf	0.032542285677535525	0	0	-0.19985569985569987	0.38453012789251156	False	True	True	False	False	False	False
+117	METPO:1000623	moderately halophilic	increased	3	3	0	0.0	64	40	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+117	METPO:1000623	moderately halophilic	decreased	3	3	3	1.0	64	24	inf	0.06105834464043419	0	0	-0.4090909090909091	0.49176720818511865	False	True	True	False	False	False	False
+117	METPO:1000668	coccus shaped	increased	3	2	0	0.0	67	49	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+117	METPO:1000668	coccus shaped	decreased	3	2	2	1.0	67	18	inf	0.08098891730605284	0	0	-0.13879870129870128	0.5828481498715635	False	False	True	False	False	False	False
+117	METPO:1000683	sphere shaped	increased	3	2	0	0.0	62	42	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+117	METPO:1000683	sphere shaped	decreased	3	2	2	1.0	62	20	inf	0.11458333333333333	0	0	-0.13879870129870128	0.6597630244740257	False	False	True	False	False	False	False
+117	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	1	1	1.0	51	15	inf	0.30769230769230765	0	0	0.375	1.0	False	False	True	False	False	False	False
+117	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	1	0	0.0	51	36	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+117	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	1	0	0.0	58	37	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+117	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	1	1	1.0	58	21	inf	0.3728813559322033	0	0	-0.03030303030303033	1.0	False	False	True	False	False	False	False
+118	METPO:1000608	facultatively aerobic	increased	3	3	3	1.0	70	46	inf	0.29622483761013574	0	0	0.21306730893812356	0.9974576452861068	False	True	True	False	False	False	False
+118	METPO:1000608	facultatively aerobic	decreased	3	3	0	0.0	70	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+118	METPO:1000623	moderately halophilic	increased	3	3	3	1.0	64	37	inf	0.20624151967435544	0	0	0.17550090695393042	0.8717726647228075	False	True	True	False	False	False	False
+118	METPO:1000623	moderately halophilic	decreased	3	3	0	0.0	64	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+118	METPO:1000668	coccus shaped	increased	3	3	2	0.6666666666666666	66	47	0.8085106382978723	0.8005496812612131	0	0	0.0931808401354878	1.0	False	False	True	False	False	False	False
+118	METPO:1000668	coccus shaped	decreased	3	3	1	0.3333333333333333	66	19	1.236842105263158	0.6483566820628317	0	0	-0.06666666666666665	1.0	False	False	False	False	False	False	False
+118	METPO:1000683	sphere shaped	increased	3	2	2	1.0	62	40	inf	0.42708333333333337	0	0	0.192202509856183	1.0	False	False	True	False	False	False	False
+118	METPO:1000683	sphere shaped	decreased	3	2	0	0.0	62	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+118	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	3	1	0.3333333333333333	49	15	1.1333333333333333	0.676923076923077	0	0	0.08333333333333331	1.0	False	False	False	False	False	False	False
+118	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	3	2	0.6666666666666666	49	34	0.8823529411764706	0.779185520361991	0	0	-0.24476511744127938	1.0	False	False	True	False	False	False	False
+118	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	3	2	0.6666666666666666	56	35	1.2	0.6897166938386292	0	0	0.07207160308734523	1.0	False	False	True	False	False	False	False
+118	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	3	1	0.3333333333333333	56	21	0.8333333333333334	0.7609892645113661	0	0	-0.25000000000000006	1.0	False	False	False	False	False	False	False
+119	METPO:1000608	facultatively aerobic	increased	3	2	1	0.5	71	48	0.4791666666666667	0.8949771689497716	0	0	0.10989010989010989	1.0	False	False	False	False	False	False	False
+119	METPO:1000608	facultatively aerobic	decreased	3	2	1	0.5	71	23	2.0869565217391304	0.5525114155251141	0	0	-0.42083333333333334	1.0	False	False	False	False	False	False	False
+119	METPO:1000623	moderately halophilic	increased	3	3	2	0.6666666666666666	64	38	1.368421052631579	0.6458616010854817	0	0	0.1724664224664225	1.0	False	False	True	False	False	False	False
+119	METPO:1000623	moderately halophilic	decreased	3	3	1	0.3333333333333333	64	26	0.7307692307692307	0.7937584803256446	0	0	-0.09583333333333333	1.0	False	False	False	False	False	False	False
+119	METPO:1000668	coccus shaped	increased	3	3	3	1.0	66	46	inf	0.35164331793716835	0	0	0.255982905982906	1.0	False	True	True	False	False	False	False
+119	METPO:1000668	coccus shaped	decreased	3	3	0	0.0	66	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+119	METPO:1000683	sphere shaped	increased	3	3	3	1.0	61	39	inf	0.27553763440860213	1	1	0.3427910052910053	0.9775025601638505	False	True	True	True	False	False	False
+119	METPO:1000683	sphere shaped	decreased	3	3	0	0.0	61	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+119	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	2	2	1.0	50	14	inf	0.09049773755656107	0	1	0.3229548229548229	0.6129164952694364	False	False	True	False	False	False	False
+119	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	2	0	0.0	50	36	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+119	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	3	2	0.6666666666666666	56	35	1.2	0.6897166938386292	0	0	0.11721611721611724	1.0	False	False	True	False	False	False	False
+119	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	3	1	0.3333333333333333	56	21	0.8333333333333334	0.7609892645113661	0	0	-0.25	1.0	False	False	False	False	False	False	False
+120	METPO:1000608	facultatively aerobic	increased	5	5	2	0.4	68	47	0.2978723404255319	0.9625056273715351	0	0	0.08799930643720316	1.0	False	False	False	False	False	False	False
+120	METPO:1000608	facultatively aerobic	decreased	5	5	3	0.6	68	21	3.357142857142857	0.19596115505820305	0	0	-0.1602461265251963	0.8717726647228075	False	True	False	False	False	False	False
+120	METPO:1000623	moderately halophilic	increased	5	5	1	0.2	62	39	0.14743589743589744	0.9916408218647025	0	0	0.025000000000000022	1.0	False	False	False	False	False	False	False
+120	METPO:1000623	moderately halophilic	decreased	5	5	4	0.8	62	23	6.782608695652174	0.08104768365962395	0	0	-0.21269082878887374	0.5828481498715635	False	True	True	False	False	False	False
+120	METPO:1000668	coccus shaped	increased	5	3	3	1.0	66	46	inf	0.35164331793716835	0	0	0.09845190864551846	1.0	False	True	True	False	False	False	False
+120	METPO:1000668	coccus shaped	decreased	5	3	0	0.0	66	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+120	METPO:1000683	sphere shaped	increased	5	4	4	1.0	60	38	inf	0.1761634056054997	0	0	0.12769051872788378	0.8202608573506079	False	True	True	False	False	False	False
+120	METPO:1000683	sphere shaped	decreased	5	4	0	0.0	60	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+120	METPO:2000103|GO:0030245	cellulose catabolic process	increased	5	2	2	1.0	50	14	inf	0.09049773755656107	0	0	0.05880472092913905	0.6129164952694364	False	False	True	False	False	False	False
+120	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	5	2	0	0.0	50	36	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+120	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	5	5	0	0.0	54	37	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+120	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	5	5	5	1.0	54	17	inf	0.005260081823495031	0	1	-0.22936717637689008	0.1715457942645942	False	True	True	False	False	False	False
+121	METPO:1000608	facultatively aerobic	increased	3	3	3	1.0	70	46	inf	0.29622483761013574	0	0	0.3769607843137255	0.9974576452861068	False	True	True	False	False	False	False
+121	METPO:1000608	facultatively aerobic	decreased	3	3	0	0.0	70	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+121	METPO:1000623	moderately halophilic	increased	3	3	0	0.0	64	40	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+121	METPO:1000623	moderately halophilic	decreased	3	3	3	1.0	64	24	inf	0.06105834464043419	0	0	-0.29362745098039217	0.49176720818511865	False	True	True	False	False	False	False
+121	METPO:1000668	coccus shaped	increased	3	3	3	1.0	66	46	inf	0.35164331793716835	0	0	0.29485294117647065	1.0	False	True	True	False	False	False	False
+121	METPO:1000668	coccus shaped	decreased	3	3	0	0.0	66	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+121	METPO:1000683	sphere shaped	increased	3	2	0	0.0	62	42	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+121	METPO:1000683	sphere shaped	decreased	3	2	2	1.0	62	20	inf	0.11458333333333333	0	0	-0.1110294117647059	0.6597630244740257	False	False	True	False	False	False	False
+121	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	2	0	0.0	50	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+121	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	2	2	1.0	50	34	inf	0.4751131221719457	0	0	-0.22499999999999998	1.0	False	False	True	False	False	False	False
+122	METPO:1000608	facultatively aerobic	increased	5	4	2	0.5	69	47	0.46808510638297873	0.8991189143996399	0	0	0.11425438596491222	1.0	False	False	False	False	False	False	False
+122	METPO:1000608	facultatively aerobic	decreased	5	4	2	0.5	69	22	2.1363636363636362	0.3990867579908675	0	0	-0.05873015873015869	1.0	False	False	False	False	False	False	False
+122	METPO:1000623	moderately halophilic	increased	5	3	0	0.0	64	40	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+122	METPO:1000623	moderately halophilic	decreased	5	3	3	1.0	64	24	inf	0.06105834464043419	0	0	-0.2505221386800334	0.49176720818511865	False	True	True	False	False	False	False
+122	METPO:1000668	coccus shaped	increased	5	5	5	1.0	64	44	inf	0.1696740485151372	0	0	0.30058061821219717	0.8090058633201742	False	True	True	False	False	False	False
+122	METPO:1000668	coccus shaped	decreased	5	5	0	0.0	64	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+122	METPO:1000683	sphere shaped	increased	5	5	5	1.0	59	37	inf	0.11157015688348318	0	0	0.36091896407685875	0.6597630244740257	False	True	True	False	False	False	False
+122	METPO:1000683	sphere shaped	decreased	5	5	0	0.0	59	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+122	METPO:2000103|GO:0030245	cellulose catabolic process	increased	5	1	0	0.0	51	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+122	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	5	1	1	1.0	51	35	inf	0.6923076923076923	0	0	-0.4666666666666666	1.0	False	False	True	False	False	False	False
+122	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	5	2	2	1.0	57	35	inf	0.3892460549386324	0	0	0.14276315789473684	1.0	False	False	True	False	False	False	False
+122	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	5	2	0	0.0	57	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+123	METPO:1000608	facultatively aerobic	increased	6	5	5	1.0	68	44	inf	0.12695350183291532	0	0	0.15441177036036863	0.6878571553856139	False	True	True	False	False	False	False
+123	METPO:1000608	facultatively aerobic	decreased	6	5	0	0.0	68	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+123	METPO:1000623	moderately halophilic	increased	6	6	6	1.0	61	34	inf	0.038462380181205416	0	0	0.15132321402433305	0.39523411358617977	False	True	True	False	False	False	False
+123	METPO:1000623	moderately halophilic	decreased	6	6	0	0.0	61	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+123	METPO:1000668	coccus shaped	increased	6	6	4	0.6666666666666666	63	45	0.8	0.7706029703395814	0	0	0.06507319548966833	1.0	False	True	True	False	False	False	False
+123	METPO:1000668	coccus shaped	decreased	6	6	2	0.3333333333333333	63	18	1.25	0.5652102506799608	0	0	-0.05416666666666667	1.0	False	False	False	False	False	False	False
+123	METPO:1000683	sphere shaped	increased	6	4	4	1.0	60	38	inf	0.1761634056054997	0	1	0.18235486710819446	0.8202608573506079	False	True	True	False	False	False	False
+123	METPO:1000683	sphere shaped	decreased	6	4	0	0.0	60	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+123	METPO:2000103|GO:0030245	cellulose catabolic process	increased	6	6	1	0.16666666666666666	46	15	0.41333333333333333	0.9043254617722702	0	0	0.08333333333333331	1.0	False	False	False	False	False	False	False
+123	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	6	6	5	0.8333333333333334	46	31	2.4193548387096775	0.3919569791910219	0	1	-0.23465508158279813	1.0	False	True	True	False	False	False	False
+123	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	6	5	3	0.6	54	34	0.8823529411764706	0.7358116213971515	0	0	0.08602241893586726	1.0	False	True	False	False	False	False	False
+123	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	6	5	2	0.4	54	20	1.1333333333333333	0.6227044818357994	0	0	-0.22916666666666669	1.0	False	False	False	False	False	False	False
+125	METPO:1000608	facultatively aerobic	increased	4	4	3	0.75	69	46	1.5	0.6009132420091325	0	0	0.39285714285714285	1.0	False	True	True	False	False	False	False
+125	METPO:1000608	facultatively aerobic	decreased	4	4	1	0.25	69	23	0.6666666666666666	0.8053379638561966	0	0	-0.07515473032714415	1.0	False	False	False	False	False	False	False
+125	METPO:1000623	moderately halophilic	increased	4	4	2	0.5	63	38	0.6578947368421053	0.8244572591587517	0	0	0.24404761904761904	1.0	False	False	False	False	False	False	False
+125	METPO:1000623	moderately halophilic	decreased	4	4	2	0.5	63	25	1.52	0.5327340569877883	0	0	-0.05752652519893897	1.0	False	False	False	False	False	False	False
+125	METPO:1000668	coccus shaped	increased	4	3	1	0.3333333333333333	66	48	0.1875	0.9782417834103142	0	0	0.23809523809523808	1.0	False	False	False	False	False	False	False
+125	METPO:1000668	coccus shaped	decreased	4	3	2	0.6666666666666666	66	18	5.333333333333333	0.19945031873878688	0	0	-0.15716180371352784	0.8717726647228075	False	False	True	False	False	False	False
+125	METPO:1000683	sphere shaped	increased	4	4	0	0.0	60	42	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+125	METPO:1000683	sphere shaped	decreased	4	4	4	1.0	60	18	inf	0.011512867971091132	0	0	-0.23189813060502718	0.23424640415058498	False	True	True	False	False	False	False
+125	METPO:2000103|GO:0030245	cellulose catabolic process	increased	4	1	0	0.0	51	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+125	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	4	1	1	1.0	51	35	inf	0.6923076923076923	0	0	-0.11229000884173299	1.0	False	False	True	False	False	False	False
+125	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	4	4	4	1.0	55	33	inf	0.1451136608323849	0	0	0.475933908045977	0.7392114688555674	False	True	True	False	False	False	False
+125	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	4	4	0	0.0	55	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+127	METPO:1000608	facultatively aerobic	increased	5	4	3	0.75	69	46	1.5	0.6009132420091325	0	0	0.09508547008547004	1.0	False	True	True	False	False	False	False
+127	METPO:1000608	facultatively aerobic	decreased	5	4	1	0.25	69	23	0.6666666666666666	0.8053379638561966	0	0	-0.023385539583780313	1.0	False	False	False	False	False	False	False
+127	METPO:1000623	moderately halophilic	increased	5	4	2	0.5	63	38	0.6578947368421053	0.8244572591587517	0	0	0.10874542124542125	1.0	False	False	False	False	False	False	False
+127	METPO:1000623	moderately halophilic	decreased	5	4	2	0.5	63	25	1.52	0.5327340569877883	0	0	-0.03352161140725826	1.0	False	False	False	False	False	False	False
+127	METPO:1000668	coccus shaped	increased	5	4	4	1.0	65	45	inf	0.2450847367440871	0	0	0.16289960709747237	0.930385370060356	False	True	True	False	False	False	False
+127	METPO:1000668	coccus shaped	decreased	5	4	0	0.0	65	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+127	METPO:1000683	sphere shaped	increased	5	5	1	0.2	59	41	0.10975609756097561	0.9965461396086727	0	0	0.09523809523809523	1.0	False	False	False	False	False	False	False
+127	METPO:1000683	sphere shaped	decreased	5	5	4	0.8	59	18	9.11111111111111	0.043748898290146304	0	0	-0.17797215299897123	0.4074116153269876	False	True	True	False	False	False	False
+127	METPO:2000103|GO:0030245	cellulose catabolic process	increased	5	4	3	0.75	48	13	8.076923076923077	0.08118939883645766	0	0	0.09853479853479856	0.5828481498715635	False	True	True	False	False	False	False
+127	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	5	4	1	0.25	48	35	0.12380952380952381	0.9932773109243698	0	0	-0.08538940141600515	1.0	False	False	False	False	False	False	False
+127	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	5	5	0	0.0	54	37	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+127	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	5	5	5	1.0	54	17	inf	0.005260081823495031	0	0	-0.15712285640412654	0.1715457942645942	False	True	True	False	False	False	False
+128	METPO:1000608	facultatively aerobic	increased	5	5	5	1.0	68	44	inf	0.12695350183291532	0	2	0.2492202769545005	0.6878571553856139	False	True	True	False	False	False	False
+128	METPO:1000608	facultatively aerobic	decreased	5	5	0	0.0	68	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+128	METPO:1000623	moderately halophilic	increased	5	4	4	1.0	63	36	inf	0.11923337856173673	0	0	0.11344139207500342	0.6597630244740257	False	True	True	False	False	False	False
+128	METPO:1000623	moderately halophilic	decreased	5	4	0	0.0	63	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+128	METPO:1000668	coccus shaped	increased	5	5	5	1.0	64	44	inf	0.1696740485151372	0	0	0.17534691404164504	0.8090058633201742	False	True	True	False	False	False	False
+128	METPO:1000668	coccus shaped	decreased	5	5	0	0.0	64	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+128	METPO:1000683	sphere shaped	increased	5	5	3	0.6	59	39	0.7692307692307693	0.7823462013044244	0	0	0.049369454696157535	1.0	False	True	False	False	False	False	False
+128	METPO:1000683	sphere shaped	decreased	5	5	2	0.4	59	20	1.3	0.565463599506434	0	0	-0.05294486215538846	1.0	False	False	False	False	False	False	False
+128	METPO:2000103|GO:0030245	cellulose catabolic process	increased	5	4	0	0.0	48	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+128	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	5	4	4	1.0	48	32	inf	0.21758241758241761	0	1	-0.1927748707588905	0.8832579185520361	False	True	True	False	False	False	False
+128	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	5	5	4	0.8	54	33	2.5454545454545454	0.3772955181642007	0	0	0.045292069828217485	1.0	False	True	True	False	False	False	False
+128	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	5	5	1	0.2	54	21	0.39285714285714285	0.9129318035005691	0	0	-0.17105263157894735	1.0	False	False	False	False	False	False	False
+129	METPO:1000608	facultatively aerobic	increased	10	10	10	1.0	63	39	inf	0.013226287956034375	1	6	0.22717074440576662	0.2542860523160157	False	True	True	True	False	False	False
+129	METPO:1000608	facultatively aerobic	decreased	10	10	0	0.0	63	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+129	METPO:1000623	moderately halophilic	increased	10	10	9	0.9	57	31	7.548387096774194	0.03318825333871682	1	2	0.24272373840507916	0.38453012789251156	False	True	True	True	False	False	False
+129	METPO:1000623	moderately halophilic	decreased	10	10	1	0.1	57	26	0.13247863247863248	0.9965819406860458	0	0	-0.1390476190476191	1.0	False	False	False	False	False	False	False
+129	METPO:1000668	coccus shaped	increased	10	10	4	0.4	59	45	0.2074074074074074	0.9953393154120085	0	0	0.11714711295218548	1.0	False	True	False	False	False	False	False
+129	METPO:1000668	coccus shaped	decreased	10	10	6	0.6	59	14	4.821428571428571	0.028812243582522275	0	0	-0.19435922889919632	0.38269253722847846	False	True	False	False	False	False	False
+129	METPO:1000683	sphere shaped	increased	10	6	5	0.8333333333333334	58	37	2.8378378378378377	0.31958231378489244	0	0	0.14057595362205427	1.0	False	True	True	False	False	False	False
+129	METPO:1000683	sphere shaped	decreased	10	6	1	0.16666666666666666	58	21	0.3523809523809524	0.9300322744967987	0	0	-0.33904761904761904	1.0	False	False	False	False	False	False	False
+129	METPO:2000103|GO:0030245	cellulose catabolic process	increased	10	9	0	0.0	43	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+129	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	10	9	9	1.0	43	27	inf	0.025588842240091086	3	3	-0.2262004860181781	0.3546732552347509	False	True	True	True	False	False	False
+129	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	10	8	7	0.875	51	30	4.9	0.11955437356240733	0	2	0.19060462218082683	0.6597630244740257	False	True	True	False	False	False	False
+129	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	10	8	1	0.125	51	21	0.20408163265306123	0.9825891688986785	0	0	-0.19619047619047614	1.0	False	False	False	False	False	False	False
+130	METPO:1000608	facultatively aerobic	increased	3	3	3	1.0	70	46	inf	0.29622483761013574	0	0	0.28430335097001763	0.9974576452861068	False	True	True	False	False	False	False
+130	METPO:1000608	facultatively aerobic	decreased	3	3	0	0.0	70	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+130	METPO:1000623	moderately halophilic	increased	3	2	0	0.0	65	40	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+130	METPO:1000623	moderately halophilic	decreased	3	2	2	1.0	65	25	inf	0.1587516960651289	0	0	-0.42658730158730157	0.7884667571234735	False	False	True	False	False	False	False
+130	METPO:1000668	coccus shaped	increased	3	3	3	1.0	66	46	inf	0.35164331793716835	0	0	0.13553791887125222	1.0	False	True	True	False	False	False	False
+130	METPO:1000668	coccus shaped	decreased	3	3	0	0.0	66	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+130	METPO:1000683	sphere shaped	increased	3	3	3	1.0	61	39	inf	0.27553763440860213	0	0	0.1620811287477954	0.9775025601638505	False	True	True	False	False	False	False
+130	METPO:1000683	sphere shaped	decreased	3	3	0	0.0	61	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+130	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	2	0	0.0	50	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+130	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	2	2	1.0	50	34	inf	0.4751131221719457	0	0	-0.24140211640211642	1.0	False	False	True	False	False	False	False
+130	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	2	0	0.0	57	37	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+130	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	2	2	1.0	57	20	inf	0.1350087668030391	0	0	-0.20171957671957672	0.7184395090590295	False	False	True	False	False	False	False
+132	METPO:1000608	facultatively aerobic	increased	6	5	3	0.6	68	46	0.717391304347826	0.8040388449417969	0	1	0.13113121345029236	1.0	False	True	False	False	False	False	False
+132	METPO:1000608	facultatively aerobic	decreased	6	5	2	0.4	68	22	1.393939393939394	0.5345038266126438	0	0	-0.05873015873015869	1.0	False	False	False	False	False	False	False
+132	METPO:1000623	moderately halophilic	increased	6	4	1	0.25	63	39	0.20512820512820512	0.9771031207598372	0	0	0.08129699248120303	1.0	False	False	False	False	False	False	False
+132	METPO:1000623	moderately halophilic	decreased	6	4	3	0.75	63	24	4.875	0.17554274084124827	0	0	-0.2505221386800334	0.8202608573506079	False	True	True	False	False	False	False
+132	METPO:1000668	coccus shaped	increased	6	6	6	1.0	63	43	inf	0.11665090835415683	1	1	0.29334490740740743	0.6597630244740257	False	True	True	True	False	False	False
+132	METPO:1000668	coccus shaped	decreased	6	6	0	0.0	63	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+132	METPO:1000683	sphere shaped	increased	6	6	6	1.0	58	36	inf	0.06996772550320131	0	1	0.3303123259537733	0.5506702710581017	False	True	True	False	False	False	False
+132	METPO:1000683	sphere shaped	decreased	6	6	0	0.0	58	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+132	METPO:2000103|GO:0030245	cellulose catabolic process	increased	6	2	0	0.0	50	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+132	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	6	2	2	1.0	50	34	inf	0.4751131221719457	1	1	-0.35615993107769417	1.0	False	False	True	True	False	False	False
+132	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	6	3	3	1.0	56	34	inf	0.23901073548863394	0	1	0.1553062343358396	0.9250025866962717	False	True	True	False	False	False	False
+132	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	6	3	0	0.0	56	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+133	METPO:1000608	facultatively aerobic	increased	6	6	6	1.0	67	43	inf	0.0821463835389452	0	0	0.33063206764187153	0.5828481498715635	False	True	True	False	False	False	False
+133	METPO:1000608	facultatively aerobic	decreased	6	6	0	0.0	67	24	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+133	METPO:1000623	moderately halophilic	increased	6	5	0	0.0	62	40	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+133	METPO:1000623	moderately halophilic	decreased	6	5	5	1.0	62	22	inf	0.00835917813529754	0	0	-0.3468113912231559	0.20354768087035954	False	True	True	False	False	False	False
+133	METPO:1000668	coccus shaped	increased	6	6	6	1.0	63	43	inf	0.11665090835415683	0	0	0.2151954300238614	0.6597630244740257	False	True	True	False	False	False	False
+133	METPO:1000668	coccus shaped	decreased	6	6	0	0.0	63	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+133	METPO:1000683	sphere shaped	increased	6	5	3	0.6	59	39	0.7692307692307693	0.7823462013044244	0	0	0.1620811287477954	1.0	False	True	False	False	False	False	False
+133	METPO:1000683	sphere shaped	decreased	6	5	2	0.4	59	20	1.3	0.565463599506434	0	0	-0.1110294117647059	1.0	False	False	False	False	False	False	False
+133	METPO:2000103|GO:0030245	cellulose catabolic process	increased	6	4	0	0.0	48	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+133	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	6	4	4	1.0	48	32	inf	0.21758241758241761	0	0	-0.2332010582010582	0.8832579185520361	False	True	True	False	False	False	False
+133	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	6	2	0	0.0	57	37	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+133	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	6	2	2	1.0	57	20	inf	0.1350087668030391	0	0	-0.20171957671957672	0.7184395090590295	False	False	True	False	False	False	False
+134	METPO:1000608	facultatively aerobic	increased	3	3	2	0.6666666666666666	70	47	0.9787234042553191	0.7500160782043861	0	0	0.08063966665036931	1.0	False	False	True	False	False	False	False
+134	METPO:1000608	facultatively aerobic	decreased	3	3	1	0.3333333333333333	70	23	1.0217391304347827	0.7037751623898643	0	0	-0.09056122448979587	1.0	False	False	False	False	False	False	False
+134	METPO:1000623	moderately halophilic	increased	3	3	3	1.0	64	37	inf	0.20624151967435544	0	0	0.16173488413874637	0.8717726647228075	False	True	True	False	False	False	False
+134	METPO:1000623	moderately halophilic	decreased	3	3	0	0.0	64	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+134	METPO:1000668	coccus shaped	increased	3	3	2	0.6666666666666666	66	47	0.8085106382978723	0.8005496812612131	0	0	0.04017049549798202	1.0	False	False	True	False	False	False	False
+134	METPO:1000668	coccus shaped	decreased	3	3	1	0.3333333333333333	66	19	1.236842105263158	0.6483566820628317	0	0	-0.029336734693877542	1.0	False	False	False	False	False	False	False
+134	METPO:1000683	sphere shaped	increased	3	3	3	1.0	61	39	inf	0.27553763440860213	0	0	0.19265842380065412	0.9775025601638505	False	True	True	False	False	False	False
+134	METPO:1000683	sphere shaped	decreased	3	3	0	0.0	61	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+134	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	1	1	1.0	51	15	inf	0.30769230769230765	0	0	0.0159027535726734	1.0	False	False	True	False	False	False	False
+134	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	1	0	0.0	51	36	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+134	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	3	3	1.0	56	34	inf	0.23901073548863394	0	1	0.1637127518603584	0.9250025866962717	False	True	True	False	False	False	False
+134	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	3	0	0.0	56	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+135	METPO:1000608	facultatively aerobic	increased	8	7	3	0.42857142857142855	66	46	0.32608695652173914	0.9650621042171422	0	0	0.0952962409215054	1.0	False	True	False	False	False	False	False
+135	METPO:1000608	facultatively aerobic	decreased	8	7	4	0.5714285714285714	66	20	3.066666666666667	0.15509230752638958	0	0	-0.22539292822723056	0.7767648343338504	False	True	False	False	False	False	False
+135	METPO:1000623	moderately halophilic	increased	8	8	3	0.375	59	37	0.3567567567567568	0.9588141392456018	0	0	0.12331094831094834	1.0	False	True	False	False	False	False	False
+135	METPO:1000623	moderately halophilic	decreased	8	8	5	0.625	59	22	2.803030303030303	0.16347475759991445	0	0	-0.18931932969776563	0.7986143895864672	False	True	False	False	False	False	False
+135	METPO:1000668	coccus shaped	increased	8	6	6	1.0	63	43	inf	0.11665090835415683	0	0	0.17721740731421223	0.6597630244740257	False	True	True	False	False	False	False
+135	METPO:1000668	coccus shaped	decreased	8	6	0	0.0	63	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+135	METPO:1000683	sphere shaped	increased	8	7	7	1.0	57	35	inf	0.043428243415780124	1	1	0.21987644154065014	0.4074116153269876	False	True	True	True	False	False	False
+135	METPO:1000683	sphere shaped	decreased	8	7	0	0.0	57	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+135	METPO:2000103|GO:0030245	cellulose catabolic process	increased	8	4	4	1.0	48	12	inf	0.006722689075630252	0	1	0.190879771941981	0.18732425440741385	False	True	True	False	False	False	False
+135	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	8	4	0	0.0	48	36	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+135	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	8	8	2	0.25	51	35	0.1523809523809524	0.9970101539965792	0	0	0.11721611721611724	1.0	False	False	False	False	False	False	False
+135	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	8	8	6	0.75	51	16	6.5625	0.02539927054996031	0	1	-0.23280598031407504	0.3546732552347509	False	True	True	False	False	False	False
+136	METPO:1000608	facultatively aerobic	increased	11	10	7	0.7	63	42	1.1666666666666667	0.5727397446606104	0	1	0.11941029426275565	1.0	False	True	True	False	False	False	False
+136	METPO:1000608	facultatively aerobic	decreased	11	10	3	0.3	63	21	0.8571428571428571	0.7070861106322144	0	0	-0.05716110198868818	1.0	False	True	False	False	False	False	False
+136	METPO:1000623	moderately halophilic	increased	11	9	5	0.5555555555555556	58	35	0.8214285714285714	0.7406631834322022	0	0	0.08908747514532007	1.0	False	True	False	False	False	False	False
+136	METPO:1000623	moderately halophilic	decreased	11	9	4	0.4444444444444444	58	23	1.2173913043478262	0.5294177479207913	0	0	-0.2005352821709446	1.0	False	True	False	False	False	False	False
+136	METPO:1000668	coccus shaped	increased	11	11	11	1.0	58	38	inf	0.01597529880503796	1	3	0.2626203285733198	0.2817409839447175	False	True	True	True	False	False	False
+136	METPO:1000668	coccus shaped	decreased	11	11	0	0.0	58	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+136	METPO:1000683	sphere shaped	increased	11	11	11	1.0	53	31	inf	0.005756570277335377	0	1	0.26930267133547126	0.1715457942645942	False	True	True	False	False	False	False
+136	METPO:1000683	sphere shaped	decreased	11	11	0	0.0	53	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+136	METPO:2000103|GO:0030245	cellulose catabolic process	increased	11	7	1	0.14285714285714285	45	15	0.3333333333333333	0.9376035620253936	0	0	0.0360983102918587	1.0	False	False	False	False	False	False	False
+136	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	11	7	6	0.8571428571428571	45	30	3.0	0.29534313974647	1	1	-0.18580581158877538	0.9974576452861068	False	True	True	True	False	False	False
+136	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	11	8	7	0.875	51	30	4.9	0.11955437356240733	0	1	0.10030735194904714	0.6597630244740257	False	True	True	False	False	False	False
+136	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	11	8	1	0.125	51	21	0.20408163265306123	0.9825891688986785	0	0	-0.057471264367816105	1.0	False	False	False	False	False	False	False
+137	METPO:1000608	facultatively aerobic	increased	7	6	5	0.8333333333333334	67	44	2.6136363636363638	0.35098909330276573	0	0	0.15441177036036863	1.0	False	True	True	False	False	False	False
+137	METPO:1000608	facultatively aerobic	decreased	7	6	1	0.16666666666666666	67	23	0.3826086956521739	0.9178536164610548	0	0	-0.0625	1.0	False	False	False	False	False	False	False
+137	METPO:1000623	moderately halophilic	increased	7	7	7	1.0	60	33	inf	0.021438047969852197	0	0	0.13863418344942832	0.33251018172955804	False	True	True	False	False	False	False
+137	METPO:1000623	moderately halophilic	decreased	7	7	0	0.0	60	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+137	METPO:1000668	coccus shaped	increased	7	6	4	0.6666666666666666	63	45	0.8	0.7706029703395814	0	0	0.06507319548966833	1.0	False	True	True	False	False	False	False
+137	METPO:1000668	coccus shaped	decreased	7	6	2	0.3333333333333333	63	18	1.25	0.5652102506799608	0	0	-0.05416666666666667	1.0	False	False	False	False	False	False	False
+137	METPO:1000683	sphere shaped	increased	7	5	5	1.0	59	37	inf	0.11157015688348318	0	1	0.15838389368655556	0.6597630244740257	False	True	True	False	False	False	False
+137	METPO:1000683	sphere shaped	decreased	7	5	0	0.0	59	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+137	METPO:2000103|GO:0030245	cellulose catabolic process	increased	7	7	1	0.14285714285714285	45	15	0.3333333333333333	0.9376035620253936	0	0	0.08333333333333331	1.0	False	False	False	False	False	False	False
+137	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	7	7	6	0.8571428571428571	45	30	3.0	0.29534313974647	0	1	-0.20596256798566512	0.9974576452861068	False	True	True	False	False	False	False
+137	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	7	6	3	0.5	53	34	0.5588235294117647	0.8685953633352815	0	0	0.08602241893586726	1.0	False	True	False	False	False	False	False
+137	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	7	6	3	0.5	53	19	1.7894736842105263	0.39697212054097836	0	0	-0.21527777777777782	1.0	False	True	False	False	False	False	False
+138	METPO:1000608	facultatively aerobic	increased	4	4	0	0.0	69	49	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+138	METPO:1000608	facultatively aerobic	decreased	4	4	4	1.0	69	20	inf	0.009762685703260658	0	0	-0.3823412698412698	0.22278852668503676	False	True	True	False	False	False	False
+138	METPO:1000623	moderately halophilic	increased	4	2	1	0.5	65	39	0.6666666666666666	0.841248303934871	0	0	0.11428571428571432	1.0	False	False	False	False	False	False	False
+138	METPO:1000623	moderately halophilic	decreased	4	2	1	0.5	65	26	1.5	0.6472184531886025	0	0	-0.16666666666666663	1.0	False	False	False	False	False	False	False
+138	METPO:1000668	coccus shaped	increased	4	4	0	0.0	65	49	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+138	METPO:1000668	coccus shaped	decreased	4	4	4	1.0	65	16	inf	0.005604389121585748	0	0	-0.29454365079365086	0.1715457942645942	False	True	True	False	False	False	False
+138	METPO:1000683	sphere shaped	increased	4	3	1	0.3333333333333333	61	41	0.24390243902439024	0.9630376344086021	0	0	0.41428571428571426	1.0	False	False	False	False	False	False	False
+138	METPO:1000683	sphere shaped	decreased	4	3	2	0.6666666666666666	61	20	4.1	0.2698252688172043	0	0	-0.43333333333333335	0.9775025601638505	False	False	True	False	False	False	False
+138	METPO:2000103|GO:0030245	cellulose catabolic process	increased	4	2	2	1.0	50	14	inf	0.09049773755656107	0	0	0.2263888888888889	0.6129164952694364	False	False	True	False	False	False	False
+138	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	4	2	0	0.0	50	36	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+138	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	4	2	2	1.0	57	35	inf	0.3892460549386324	0	0	0.3263888888888889	1.0	False	False	True	False	False	False	False
+138	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	4	2	0	0.0	57	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+139	METPO:1000608	facultatively aerobic	increased	3	3	2	0.6666666666666666	70	47	0.9787234042553191	0.7500160782043861	0	0	0.18522727272727277	1.0	False	False	True	False	False	False	False
+139	METPO:1000608	facultatively aerobic	decreased	3	3	1	0.3333333333333333	70	23	1.0217391304347827	0.7037751623898643	0	0	-0.049274177059906	1.0	False	False	False	False	False	False	False
+139	METPO:1000623	moderately halophilic	increased	3	3	0	0.0	64	40	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+139	METPO:1000623	moderately halophilic	decreased	3	3	3	1.0	64	24	inf	0.06105834464043419	0	0	-0.11976754872379487	0.49176720818511865	False	True	True	False	False	False	False
+139	METPO:1000668	coccus shaped	increased	3	3	0	0.0	66	49	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+139	METPO:1000668	coccus shaped	decreased	3	3	3	1.0	66	17	inf	0.021758216589685846	0	0	-0.09824667653843693	0.33251018172955804	False	True	True	False	False	False	False
+139	METPO:1000683	sphere shaped	increased	3	3	2	0.6666666666666666	61	40	1.05	0.7301747311827957	0	0	0.2287878787878788	1.0	False	False	True	False	False	False	False
+139	METPO:1000683	sphere shaped	decreased	3	3	1	0.3333333333333333	61	21	0.9523809523809523	0.7244623655913978	0	0	-0.03905131874872214	1.0	False	False	False	False	False	False	False
+139	METPO:2000103|GO:0030245	cellulose catabolic process	increased	3	2	1	0.5	50	15	2.3333333333333335	0.5248868778280542	0	0	0.0393939393939394	1.0	False	False	False	False	False	False	False
+139	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	3	2	1	0.5	50	35	0.42857142857142855	0.9095022624434389	0	0	-0.044980576569208744	1.0	False	False	False	False	False	False	False
+139	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	3	2	1	0.5	57	36	0.5833333333333334	0.8649912331969608	0	0	0.05909090909090908	1.0	False	False	False	False	False	False	False
+139	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	3	2	1	0.5	57	21	1.7142857142857142	0.6107539450613677	0	0	-0.13330607237783684	1.0	False	False	False	False	False	False	False
+140	METPO:1000608	facultatively aerobic	increased	4	4	2	0.5	69	47	0.46808510638297873	0.8991189143996399	0	0	0.08063966665036931	1.0	False	False	False	False	False	False	False
+140	METPO:1000608	facultatively aerobic	decreased	4	4	2	0.5	69	22	2.1363636363636362	0.3990867579908675	0	0	-0.42028061224489793	1.0	False	False	False	False	False	False	False
+140	METPO:1000623	moderately halophilic	increased	4	3	3	1.0	64	37	inf	0.20624151967435544	0	0	0.16173488413874637	0.8717726647228075	False	True	True	False	False	False	False
+140	METPO:1000623	moderately halophilic	decreased	4	3	0	0.0	64	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+140	METPO:1000668	coccus shaped	increased	4	3	2	0.6666666666666666	66	47	0.8085106382978723	0.8005496812612131	0	0	0.04017049549798202	1.0	False	False	True	False	False	False	False
+140	METPO:1000668	coccus shaped	decreased	4	3	1	0.3333333333333333	66	19	1.236842105263158	0.6483566820628317	0	0	-0.029336734693877542	1.0	False	False	False	False	False	False	False
+140	METPO:1000683	sphere shaped	increased	4	3	3	1.0	61	39	inf	0.27553763440860213	0	0	0.19265842380065412	0.9775025601638505	False	True	True	False	False	False	False
+140	METPO:1000683	sphere shaped	decreased	4	3	0	0.0	61	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+140	METPO:2000103|GO:0030245	cellulose catabolic process	increased	4	2	1	0.5	50	15	2.3333333333333335	0.5248868778280542	0	0	0.0159027535726734	1.0	False	False	False	False	False	False	False
+140	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	4	2	1	0.5	50	35	0.42857142857142855	0.9095022624434389	0	0	-0.5	1.0	False	False	False	False	False	False	False
+140	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	4	4	4	1.0	55	33	inf	0.1451136608323849	0	1	0.24778456389526882	0.7392114688555674	False	True	True	False	False	False	False
+140	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	4	4	0	0.0	55	22	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+141	METPO:1000608	facultatively aerobic	increased	14	14	13	0.9285714285714286	59	36	8.305555555555555	0.018871982143668715	1	6	0.265406067125315	0.31243614882295984	False	True	True	True	False	False	False
+141	METPO:1000608	facultatively aerobic	decreased	14	14	1	0.07142857142857142	59	23	0.12040133779264214	0.9981736791473869	0	0	-0.07515473032714415	1.0	False	False	False	False	False	False	False
+141	METPO:1000623	moderately halophilic	increased	14	14	11	0.7857142857142857	53	29	3.0344827586206895	0.09269237165867972	1	2	0.24296444397645003	0.6207264439165517	False	True	True	True	False	False	False
+141	METPO:1000623	moderately halophilic	decreased	14	14	3	0.21428571428571427	53	24	0.32954545454545453	0.9764047604057059	0	0	-0.08470022314849901	1.0	False	True	False	False	False	False	False
+141	METPO:1000668	coccus shaped	increased	14	13	5	0.38461538461538464	56	44	0.17045454545454544	0.998985934112204	0	0	0.141336737980796	1.0	False	True	False	False	False	False	False
+141	METPO:1000668	coccus shaped	decreased	14	13	8	0.6153846153846154	56	12	5.866666666666666	0.0072289561264606015	0	0	-0.1850598726027792	0.18732425440741385	False	True	False	False	False	False	False
+141	METPO:1000683	sphere shaped	increased	14	10	5	0.5	54	37	0.4594594594594595	0.9299801058630487	0	0	0.14057595362205427	1.0	False	True	False	False	False	False	False
+141	METPO:1000683	sphere shaped	decreased	14	10	5	0.5	54	17	2.176470588235294	0.21791066901231063	0	0	-0.25332802829354556	0.8832579185520361	False	True	False	False	False	False	False
+141	METPO:2000103|GO:0030245	cellulose catabolic process	increased	14	10	0	0.0	42	16	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+141	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	14	10	10	1.0	42	26	inf	0.016067412569359518	3	3	-0.21480943830053362	0.2817409839447175	False	True	True	True	False	False	False
+141	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	14	12	11	0.9166666666666666	47	26	8.884615384615385	0.01845694406245127	0	2	0.2943607261317905	0.31243614882295984	False	True	True	False	False	False	False
+141	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	14	12	1	0.08333333333333333	47	21	0.11255411255411256	0.9983452394978491	0	0	-0.19619047619047614	1.0	False	False	False	False	False	False	False
+142	METPO:1000608	facultatively aerobic	increased	8	7	6	0.8571428571428571	66	43	3.2093023255813953	0.25869980487637956	0	2	0.22712800857319485	0.9697175075869322	False	True	True	False	False	False	False
+142	METPO:1000608	facultatively aerobic	decreased	8	7	1	0.14285714285714285	66	23	0.3115942028985507	0.9472791866839606	0	0	-0.09011627906976749	1.0	False	False	False	False	False	False	False
+142	METPO:1000623	moderately halophilic	increased	8	6	6	1.0	61	34	inf	0.038462380181205416	0	0	0.1072337200727943	0.39523411358617977	False	True	True	False	False	False	False
+142	METPO:1000623	moderately halophilic	decreased	8	6	0	0.0	61	27	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+142	METPO:1000668	coccus shaped	increased	8	8	8	1.0	61	41	inf	0.053935366228266064	0	0	0.18184525622931774	0.4658764966963272	False	True	True	False	False	False	False
+142	METPO:1000668	coccus shaped	decreased	8	8	0	0.0	61	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+142	METPO:1000683	sphere shaped	increased	8	8	3	0.375	56	39	0.26153846153846155	0.9837953612129929	0	0	0.049369454696157535	1.0	False	True	False	False	False	False	False
+142	METPO:1000683	sphere shaped	decreased	8	8	5	0.625	56	17	3.823529411764706	0.08450627120807565	0	0	-0.08490732271944021	0.5925380898825069	False	True	False	False	False	False	False
+142	METPO:2000103|GO:0030245	cellulose catabolic process	increased	8	7	1	0.14285714285714285	45	15	0.3333333333333333	0.9376035620253936	0	0	0.012500000000000011	1.0	False	False	False	False	False	False	False
+142	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	8	7	6	0.8571428571428571	45	30	3.0	0.29534313974647	0	1	-0.1551058934324492	0.9974576452861068	False	True	True	False	False	False	False
+142	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	8	7	6	0.8571428571428571	52	31	4.064516129032258	0.1800991346179704	0	0	0.055986056888062304	0.8320859242814757	False	True	True	False	False	False	False
+142	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	8	7	1	0.14285714285714285	52	21	0.24603174603174602	0.9698212260910428	0	0	-0.17105263157894735	1.0	False	False	False	False	False	False	False
+143	METPO:1000608	facultatively aerobic	increased	7	7	0	0.0	66	49	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+143	METPO:1000608	facultatively aerobic	decreased	7	7	7	1.0	66	17	inf	0.00021241863002857488	0	0	-0.30413316841888266	0.025320300699406127	True	True	True	False	False	False	False
+143	METPO:1000623	moderately halophilic	increased	7	5	1	0.2	62	39	0.14743589743589744	0.9916408218647025	0	0	0.11428571428571432	1.0	False	False	False	False	False	False	False
+143	METPO:1000623	moderately halophilic	decreased	7	5	4	0.8	62	23	6.782608695652174	0.08104768365962395	0	0	-0.3484848484848485	0.5828481498715635	False	True	True	False	False	False	False
+143	METPO:1000668	coccus shaped	increased	7	6	0	0.0	63	49	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+143	METPO:1000668	coccus shaped	decreased	7	6	6	1.0	63	14	inf	0.00032333014162994696	0	0	-0.24262866762866767	0.02752925205877834	True	True	True	False	False	False	False
+143	METPO:1000683	sphere shaped	increased	7	5	1	0.2	59	41	0.10975609756097561	0.9965461396086727	0	0	0.41428571428571426	1.0	False	False	False	False	False	False	False
+143	METPO:1000683	sphere shaped	decreased	7	5	4	0.8	59	18	9.11111111111111	0.043748898290146304	0	0	-0.28606601731601733	0.4074116153269876	False	True	True	False	False	False	False
+143	METPO:2000103|GO:0030245	cellulose catabolic process	increased	7	3	3	1.0	49	13	inf	0.0253393665158371	0	0	0.2759259259259259	0.3546732552347509	False	True	True	False	False	False	False
+143	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	7	3	0	0.0	49	36	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+143	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	7	3	2	0.6666666666666666	56	35	1.2	0.6897166938386292	0	0	0.3263888888888889	1.0	False	False	True	False	False	False	False
+143	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	7	3	1	0.3333333333333333	56	21	0.8333333333333334	0.7609892645113661	0	0	-0.03030303030303033	1.0	False	False	False	False	False	False	False
+144	METPO:1000608	facultatively aerobic	increased	5	5	4	0.8	68	45	2.0444444444444443	0.46549617338735616	0	0	0.4051136363636364	1.0	False	True	True	False	False	False	False
+144	METPO:1000608	facultatively aerobic	decreased	5	5	1	0.2	68	23	0.4891304347826087	0.8730464981670847	0	0	-0.049274177059906	1.0	False	False	False	False	False	False	False
+144	METPO:1000623	moderately halophilic	increased	5	3	0	0.0	64	40	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+144	METPO:1000623	moderately halophilic	decreased	5	3	3	1.0	64	24	inf	0.06105834464043419	0	0	-0.11976754872379487	0.49176720818511865	False	True	True	False	False	False	False
+144	METPO:1000668	coccus shaped	increased	5	4	1	0.25	65	48	0.11805555555555555	0.9943956108784142	0	0	0.30000000000000004	1.0	False	False	False	False	False	False	False
+144	METPO:1000668	coccus shaped	decreased	5	4	3	0.75	65	17	8.470588235294118	0.07021969899398613	0	0	-0.09824667653843693	0.5506702710581017	False	True	True	False	False	False	False
+144	METPO:1000683	sphere shaped	increased	5	4	3	0.75	60	39	1.6153846153846154	0.5736603208179094	0	0	0.25252525252525254	1.0	False	True	True	False	False	False	False
+144	METPO:1000683	sphere shaped	decreased	5	4	1	0.25	60	21	0.6190476190476191	0.8238365943945003	0	0	-0.03905131874872214	1.0	False	False	False	False	False	False	False
+144	METPO:2000103|GO:0030245	cellulose catabolic process	increased	5	3	2	0.6666666666666666	49	14	5.0	0.22081447963800901	0	0	0.3196969696969697	0.8832579185520361	False	False	True	False	False	False	False
+144	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	5	3	1	0.3333333333333333	49	35	0.2	0.9746606334841629	0	0	-0.044980576569208744	1.0	False	False	False	False	False	False	False
+144	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	5	3	2	0.6666666666666666	56	35	1.2	0.6897166938386292	0	0	0.27954545454545454	1.0	False	False	True	False	False	False	False
+144	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	5	3	1	0.3333333333333333	56	21	0.8333333333333334	0.7609892645113661	0	0	-0.13330607237783684	1.0	False	False	False	False	False	False	False
+145	METPO:1000608	facultatively aerobic	increased	13	11	9	0.8181818181818182	62	40	2.475	0.22295742554457948	0	2	0.18311382907728657	0.8858841708304623	False	True	True	False	False	False	False
+145	METPO:1000608	facultatively aerobic	decreased	13	11	2	0.18181818181818182	62	22	0.40404040404040403	0.9363878531638347	0	0	-0.0567509093267739	1.0	False	False	False	False	False	False	False
+145	METPO:1000623	moderately halophilic	increased	13	10	8	0.8	57	32	3.125	0.14203552524175508	0	0	0.10761164536595104	0.7392114688555674	False	True	True	False	False	False	False
+145	METPO:1000623	moderately halophilic	decreased	13	10	2	0.2	57	25	0.32	0.9668117466612831	0	0	-0.03352161140725826	1.0	False	False	False	False	False	False	False
+145	METPO:1000668	coccus shaped	increased	13	12	12	1.0	57	37	inf	0.010466575079162802	0	0	0.17553003985203594	0.22278852668503676	False	True	True	False	False	False	False
+145	METPO:1000668	coccus shaped	decreased	13	12	0	0.0	57	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+145	METPO:1000683	sphere shaped	increased	13	13	4	0.3076923076923077	51	38	0.15204678362573099	0.9993865710441753	0	0	0.06083661483164196	1.0	False	True	False	False	False	False	False
+145	METPO:1000683	sphere shaped	decreased	13	13	9	0.6923076923076923	51	13	6.576923076923077	0.004851597409625357	0	0	-0.1262694695103429	0.1715457942645942	False	True	True	False	False	False	False
+145	METPO:2000103|GO:0030245	cellulose catabolic process	increased	13	11	4	0.36363636363636365	41	12	1.380952380952381	0.4551531896453697	0	0	0.07702609890109893	1.0	False	True	False	False	False	False	False
+145	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	13	11	7	0.6363636363636364	41	29	0.7241379310344828	0.7963673355235862	0	1	-0.14514639457295722	1.0	False	True	False	False	False	False	False
+145	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	13	12	6	0.5	47	31	0.5161290322580645	0.9108688282116598	0	0	0.055986056888062304	1.0	False	True	False	False	False	False	False
+145	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	13	12	6	0.5	47	16	1.9375	0.2440763357958422	0	0	-0.15944448559993	0.930385370060356	False	True	False	False	False	False	False
+146	METPO:1000608	facultatively aerobic	increased	17	16	13	0.8125	57	36	2.5277777777777777	0.14397976384622652	0	1	0.21689726659157837	0.7392114688555674	False	True	True	False	False	False	False
+146	METPO:1000608	facultatively aerobic	decreased	17	16	3	0.1875	57	21	0.3956043956043956	0.9568396939360545	0	0	-0.05716110198868818	1.0	False	True	False	False	False	False	False
+146	METPO:1000623	moderately halophilic	increased	17	14	5	0.35714285714285715	53	35	0.2857142857142857	0.9906584428385856	0	0	0.08908747514532007	1.0	False	True	False	False	False	False	False
+146	METPO:1000623	moderately halophilic	decreased	17	14	9	0.6428571428571429	53	18	3.5	0.04085483171867262	0	0	-0.2817997871999509	0.4058246617388147	False	True	False	False	False	False	False
+146	METPO:1000668	coccus shaped	increased	17	17	17	1.0	52	32	inf	0.0010896186237658726	1	3	0.24588212908527568	0.05903751816040546	False	True	True	True	False	False	False
+146	METPO:1000668	coccus shaped	decreased	17	17	0	0.0	52	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	False	False
+146	METPO:1000683	sphere shaped	increased	17	16	14	0.875	48	28	5.0	0.029779352871721298	0	1	0.24632662649525502	0.38269253722847846	False	True	True	False	False	False	False
+146	METPO:1000683	sphere shaped	decreased	17	16	2	0.125	48	20	0.2	0.9952156105390494	0	0	-0.1110294117647059	1.0	False	False	False	False	False	False	False
+146	METPO:2000103|GO:0030245	cellulose catabolic process	increased	17	11	1	0.09090909090909091	41	15	0.17333333333333334	0.9900535065046822	0	0	0.0360983102918587	1.0	False	False	False	False	False	False	False
+146	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	17	11	10	0.9090909090909091	41	26	5.769230769230769	0.07727660330977675	1	1	-0.2047639102336885	0.5828481498715635	False	True	True	True	False	False	False
+146	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	17	10	7	0.7	49	30	1.4777777777777779	0.4434094876007914	0	1	0.10030735194904714	1.0	False	True	True	False	False	False	False
+146	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	17	10	3	0.3	49	19	0.6766917293233082	0.8089451467148325	0	0	-0.1536368059356565	1.0	False	True	False	False	False	False	False
+147	METPO:1000608	facultatively aerobic	increased	25	23	16	0.6956521739130435	50	33	1.1774891774891776	0.49149173205835944	0	1	0.1940970742784397	1.0	False	True	True	False	False	True	False
+147	METPO:1000608	facultatively aerobic	decreased	25	23	7	0.30434782608695654	50	17	0.8492647058823529	0.7123329464243779	0	0	-0.1532935741249981	1.0	False	True	False	False	False	True	False
+147	METPO:1000623	moderately halophilic	increased	25	22	8	0.36363636363636365	45	32	0.23214285714285715	0.9985985517045267	0	0	0.10192127758243066	1.0	False	True	False	False	False	True	False
+147	METPO:1000623	moderately halophilic	decreased	25	22	14	0.6363636363636364	45	13	4.3076923076923075	0.007088358638958867	0	0	-0.24877105237774186	0.18732425440741385	False	True	False	False	False	True	False
+147	METPO:1000668	coccus shaped	increased	25	23	23	1.0	46	26	inf	4.8500759382688106e-05	1	3	0.22796959297108516	0.018348452994370056	True	True	True	True	True	True	True
+147	METPO:1000668	coccus shaped	decreased	25	23	0	0.0	46	20	0.0	1.0	0	0	NA	1.0	False	False	False	False	False	True	False
+147	METPO:1000683	sphere shaped	increased	25	23	21	0.9130434782608695	41	21	10.0	0.00092752477878085	1	2	0.23750989817705334	0.05528047681533867	False	True	True	True	False	True	False
+147	METPO:1000683	sphere shaped	decreased	25	23	2	0.08695652173913043	41	20	0.1	0.9999199149649313	0	0	-0.1110294117647059	1.0	False	False	False	False	False	True	False
+147	METPO:2000103|GO:0030245	cellulose catabolic process	increased	25	15	5	0.3333333333333333	37	11	1.1818181818181819	0.5229130559017336	0	1	0.15992347961195655	1.0	False	True	False	False	False	True	False
+147	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	25	15	10	0.6666666666666666	37	26	0.8461538461538461	0.7248427332935764	1	1	-0.2047639102336885	1.0	False	True	True	True	False	True	False
+147	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	25	18	9	0.5	41	28	0.4642857142857143	0.9475366447985994	0	1	0.10406485534172938	1.0	False	True	False	False	False	True	False
+147	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	25	18	9	0.5	41	13	2.1538461538461537	0.14802917887448597	0	1	-0.20641625552126885	0.7476728017728275	False	True	False	False	False	True	False
+148	METPO:1000608	facultatively aerobic	increased	21	20	18	0.9	53	31	6.387096774193548	0.008538073862011726	1	6	0.234574318023941	0.20354768087035954	False	True	True	True	False	False	False
+148	METPO:1000608	facultatively aerobic	decreased	21	20	2	0.1	53	22	0.15656565656565657	0.9988815399141735	0	0	-0.06882736516357207	1.0	False	False	False	False	False	False	False
+148	METPO:1000623	moderately halophilic	increased	21	21	18	0.8571428571428571	46	22	6.545454545454546	0.002941300774044491	1	2	0.20239156488260826	0.1348473277946551	False	True	True	True	False	False	False
+148	METPO:1000623	moderately halophilic	decreased	21	21	3	0.14285714285714285	46	24	0.1527777777777778	0.9996150941000775	0	0	-0.08470022314849901	1.0	False	True	False	False	False	False	False
+148	METPO:1000668	coccus shaped	increased	21	19	9	0.47368421052631576	50	40	0.225	0.9981032804346793	0	0	0.10744183020696148	1.0	False	True	False	False	False	False	False
+148	METPO:1000668	coccus shaped	decreased	21	19	10	0.5263157894736842	50	10	4.444444444444445	0.010103216587557287	0	0	-0.15888123141555668	0.22278852668503676	False	True	False	False	False	False	False
+148	METPO:1000683	sphere shaped	increased	21	15	10	0.6666666666666666	49	32	1.0625	0.59082122003088	0	1	0.14947992365430496	1.0	False	True	True	False	False	False	False
+148	METPO:1000683	sphere shaped	decreased	21	15	5	0.3333333333333333	49	17	0.9411764705882353	0.6520901528107808	0	0	-0.25332802829354556	1.0	False	True	False	False	False	False	False
+148	METPO:2000103|GO:0030245	cellulose catabolic process	increased	21	17	1	0.058823529411764705	35	15	0.08333333333333333	0.9996082357665707	0	0	0.08333333333333331	1.0	False	False	False	False	False	False	False
+148	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	21	17	16	0.9411764705882353	35	20	12.0	0.005719757808068035	3	4	-0.21149186193245795	0.1715457942645942	False	True	True	True	False	False	False
+148	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	21	18	14	0.7777777777777778	41	23	2.739130434782609	0.09642333078861698	0	2	0.24971680316123557	0.6315198368133595	False	True	True	False	False	False	False
+148	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	21	18	4	0.2222222222222222	41	18	0.36507936507936506	0.9725680392427548	0	0	-0.21050595238095238	1.0	False	True	False	False	False	False	False
+149	METPO:1000608	facultatively aerobic	increased	7	7	2	0.2857142857142857	66	47	0.16170212765957448	0.9957398263644269	0	0	0.08063966665036931	1.0	False	False	False	False	False	False	False
+149	METPO:1000608	facultatively aerobic	decreased	7	7	5	0.7142857142857143	66	19	6.184210526315789	0.03493789578285779	0	0	-0.2966403834260977	0.39288652616194797	False	True	True	False	False	False	False
+149	METPO:1000623	moderately halophilic	increased	7	6	5	0.8333333333333334	61	35	3.7142857142857144	0.2164882541627848	0	0	0.2470409304832478	0.8832579185520361	False	True	True	False	False	False	False
+149	METPO:1000623	moderately halophilic	decreased	7	6	1	0.16666666666666666	61	26	0.2692307692307692	0.9615376198187946	0	0	-0.0861471861471862	1.0	False	False	False	False	False	False	False
+149	METPO:1000668	coccus shaped	increased	7	5	4	0.8	64	45	1.6888888888888889	0.5467274896598865	0	0	0.15758524774899102	1.0	False	True	True	False	False	False	False
+149	METPO:1000668	coccus shaped	decreased	7	5	1	0.2	64	19	0.5921052631578947	0.8303259514848629	0	0	-0.029336734693877542	1.0	False	False	False	False	False	False	False
+149	METPO:1000683	sphere shaped	increased	7	4	3	0.75	60	39	1.6153846153846154	0.5736603208179094	0	0	0.19265842380065412	1.0	False	True	True	False	False	False	False
+149	METPO:1000683	sphere shaped	decreased	7	4	1	0.25	60	21	0.6190476190476191	0.8238365943945003	0	0	-0.09437229437229433	1.0	False	False	False	False	False	False	False
+149	METPO:2000103|GO:0030245	cellulose catabolic process	increased	7	3	1	0.3333333333333333	49	15	1.1333333333333333	0.676923076923077	0	0	0.0159027535726734	1.0	False	False	False	False	False	False	False
+149	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	7	3	2	0.6666666666666666	49	34	0.8823529411764706	0.779185520361991	0	0	-0.3264069264069264	1.0	False	False	True	False	False	False	False
+149	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	7	5	4	0.8	54	33	2.5454545454545454	0.3772955181642007	0	1	0.24778456389526882	1.0	False	True	True	False	False	False	False
+149	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	7	5	1	0.2	54	21	0.39285714285714285	0.9129318035005691	0	0	-0.13896103896103898	1.0	False	False	False	False	False	False	False
+150	METPO:1000608	facultatively aerobic	increased	34	31	27	0.8709677419354839	42	22	6.136363636363637	0.0015905617719697797	1	8	0.21742082170838956	0.07899790134116573	False	True	True	True	False	True	False
+150	METPO:1000608	facultatively aerobic	decreased	34	31	4	0.12903225806451613	42	20	0.16296296296296298	0.9997743561597866	0	0	-0.06278913724517299	1.0	False	True	False	False	False	True	False
+150	METPO:1000623	moderately halophilic	increased	34	31	26	0.8387096774193549	36	14	8.17142857142857	0.00017628307067421372	1	2	0.17322851272363682	0.025320300699406127	True	True	True	True	True	True	True
+150	METPO:1000623	moderately halophilic	decreased	34	31	5	0.16129032258064516	36	22	0.12237762237762238	0.9999808474564463	0	0	-0.06422877845200271	1.0	False	True	False	False	False	True	False
+150	METPO:1000668	coccus shaped	increased	34	31	21	0.6774193548387096	38	28	0.75	0.7905911393610462	0	0	0.14634937857557545	1.0	False	True	True	False	False	True	False
+150	METPO:1000668	coccus shaped	decreased	34	31	10	0.3225806451612903	38	10	1.3333333333333333	0.3907322916628358	0	0	-0.15888123141555668	1.0	False	True	False	False	False	True	False
+150	METPO:1000683	sphere shaped	increased	34	28	14	0.5	36	28	0.2857142857142857	0.9952614506643833	0	1	0.12415326399068695	1.0	False	True	False	False	False	True	False
+150	METPO:1000683	sphere shaped	decreased	34	28	14	0.5	36	8	3.5	0.019847205293765723	0	0	-0.1716475262186296	0.3197009285157938	False	True	False	False	False	True	False
+150	METPO:2000103|GO:0030245	cellulose catabolic process	increased	34	28	5	0.17857142857142858	24	11	0.25691699604743085	0.9937930662034885	0	0	0.07828754578754579	1.0	False	True	False	False	False	True	False
+150	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	34	28	23	0.8214285714285714	24	13	3.8923076923076922	0.029879270764608862	3	5	-0.19129976317087077	0.38269253722847846	False	True	True	True	False	True	False
+150	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	34	30	20	0.6666666666666666	29	17	1.411764705882353	0.355933073688851	0	2	0.1915975792792836	1.0	False	True	True	False	False	True	False
+150	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	34	30	10	0.3333333333333333	29	12	0.7083333333333334	0.8180013861258288	0	0	-0.17986907231233895	1.0	False	True	False	False	False	True	False
+151	METPO:1000608	facultatively aerobic	increased	32	30	18	0.6	43	31	0.5806451612903226	0.9087585804120154	0	1	0.18149069565309853	1.0	False	True	False	False	False	True	False
+151	METPO:1000608	facultatively aerobic	decreased	32	30	12	0.4	43	12	1.7222222222222223	0.20325271656260369	0	0	-0.2130214113337896	0.8717726647228075	False	True	False	False	False	True	False
+151	METPO:1000623	moderately halophilic	increased	32	28	13	0.4642857142857143	39	27	0.3851851851851852	0.9834598662843497	0	0	0.15773652869812957	1.0	False	True	False	False	False	True	False
+151	METPO:1000623	moderately halophilic	decreased	32	28	15	0.5357142857142857	39	12	2.5961538461538463	0.0522102958580452	0	0	-0.23792946129570483	0.4576078872263962	False	True	False	False	False	True	False
+151	METPO:1000668	coccus shaped	increased	32	28	27	0.9642857142857143	41	22	23.318181818181817	6.157198991399348e-05	1	3	0.21754228256781202	0.018348452994370056	True	True	True	True	True	True	True
+151	METPO:1000668	coccus shaped	decreased	32	28	1	0.03571428571428571	41	19	0.042884990253411304	0.9999976725364638	0	0	-0.029336734693877542	1.0	False	False	False	False	False	True	False
+151	METPO:1000683	sphere shaped	increased	32	27	24	0.8888888888888888	37	18	8.444444444444445	0.0007172877789799977	1	2	0.2319034638800035	0.047500390696897626	True	True	True	True	True	True	True
+151	METPO:1000683	sphere shaped	decreased	32	27	3	0.1111111111111111	37	19	0.11842105263157894	0.9999260736383278	0	0	-0.10547703930056872	1.0	False	True	False	False	False	True	False
+151	METPO:2000103|GO:0030245	cellulose catabolic process	increased	32	18	6	0.3333333333333333	34	10	1.2	0.5044899169940316	0	1	0.135920025272076	1.0	False	True	False	False	False	True	False
+151	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	32	18	12	0.6666666666666666	34	24	0.8333333333333334	0.730405104079171	1	1	-0.22503774626256148	1.0	False	True	True	True	False	True	False
+151	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	32	23	13	0.5652173913043478	36	24	0.65	0.8557555988501399	0	2	0.14828630412743385	1.0	False	True	False	False	False	True	False
+151	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	32	23	10	0.43478260869565216	36	12	1.5384615384615385	0.30398799863109044	0	1	-0.1996707338652459	1.0	False	True	False	False	False	True	False
+152	METPO:1000608	facultatively aerobic	increased	39	36	31	0.8611111111111112	37	18	6.544444444444444	0.0006498842216702104	1	8	0.24163924940584078	0.047500390696897626	True	True	True	True	True	True	True
+152	METPO:1000608	facultatively aerobic	decreased	39	36	5	0.1388888888888889	37	19	0.15280135823429541	0.9999126191932557	0	0	-0.06008614520811959	1.0	False	True	False	False	False	True	False
+152	METPO:1000623	moderately halophilic	increased	39	34	26	0.7647058823529411	33	14	4.410714285714286	0.00450307484456637	1	2	0.17322851272363682	0.1715457942645942	False	True	True	True	False	True	False
+152	METPO:1000623	moderately halophilic	decreased	39	34	8	0.23529411764705882	33	19	0.22672064777327935	0.9991184096852594	0	0	-0.08505581730392478	1.0	False	True	False	False	False	True	False
+152	METPO:1000668	coccus shaped	increased	39	35	22	0.6285714285714286	34	27	0.43874643874643876	0.9633145632315511	0	0	0.15333349773123114	1.0	False	True	False	False	False	True	False
+152	METPO:1000668	coccus shaped	decreased	39	35	13	0.37142857142857144	34	7	2.279220779220779	0.10537005765783838	0	0	-0.14488864182852906	0.6597630244740257	False	True	False	False	False	True	False
+152	METPO:1000683	sphere shaped	increased	39	32	17	0.53125	32	25	0.31733333333333336	0.9915690016778517	0	1	0.14680714432031616	1.0	False	True	False	False	False	True	False
+152	METPO:1000683	sphere shaped	decreased	39	32	15	0.46875	32	7	3.1512605042016806	0.03212983690808696	0	0	-0.1628077790539691	0.38453012789251156	False	True	False	False	False	True	False
+152	METPO:2000103|GO:0030245	cellulose catabolic process	increased	39	31	7	0.22580645161290322	21	9	0.3888888888888889	0.9681712636834441	0	0	0.14726166690452405	1.0	False	True	False	False	False	True	False
+152	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	39	31	24	0.7741935483870968	21	12	2.5714285714285716	0.1064110458150661	3	5	-0.1852031303958015	0.6597630244740257	False	True	True	True	False	True	False
+152	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	39	33	22	0.6666666666666666	26	15	1.4666666666666666	0.3306566776503659	0	2	0.19959284066711727	1.0	False	True	True	False	False	True	False
+152	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	39	33	11	0.3333333333333333	26	11	0.6818181818181818	0.8361475066452154	0	0	-0.17563607231829328	1.0	False	True	False	False	False	True	False
+153	METPO:1000608	facultatively aerobic	increased	71	66	49	0.7424242424242424	7	0	inf	0.00021241863002857485	1	9	0.2195438623129967	0.025320300699406127	True	True	True	True	True	True	True
+153	METPO:1000608	facultatively aerobic	decreased	71	66	17	0.25757575757575757	7	7	0.0	1.0	0	0	-0.16804045070859253	1.0	False	True	False	False	False	True	False
+153	METPO:1000623	moderately halophilic	increased	71	62	39	0.6290322580645161	5	1	6.782608695652174	0.08104768365962393	1	2	0.16806451804846773	0.5828481498715635	False	True	False	True	False	True	False
+153	METPO:1000623	moderately halophilic	decreased	71	62	23	0.3709677419354839	5	4	0.14743589743589744	0.9916408218647025	0	0	-0.1847560199072596	1.0	False	True	False	False	False	True	False
+153	METPO:1000668	coccus shaped	increased	71	63	49	0.7777777777777778	6	0	inf	0.00032333014162994696	1	3	0.1887138485595512	0.02752925205877834	True	True	True	True	True	True	True
+153	METPO:1000668	coccus shaped	decreased	71	63	14	0.2222222222222222	6	6	0.0	1.0	0	0	-0.13663493417605393	1.0	False	True	False	False	False	True	False
+153	METPO:1000683	sphere shaped	increased	71	59	41	0.6949152542372882	5	1	9.11111111111111	0.04374889829014632	1	3	0.19661962406257213	0.4074116153269876	False	True	True	True	False	True	False
+153	METPO:1000683	sphere shaped	decreased	71	59	18	0.3050847457627119	5	4	0.10975609756097561	0.9965461396086727	0	0	-0.1532526557617357	1.0	False	True	False	False	False	True	False
+153	METPO:2000103|GO:0030245	cellulose catabolic process	increased	71	49	13	0.2653061224489796	3	3	0.0	1.0	0	1	0.1420270630741634	1.0	False	True	False	False	False	True	False
+153	METPO:2000103|GO:0030245	cellulose catabolic process	decreased	71	49	36	0.7346938775510204	3	0	inf	0.025339366515837104	4	6	-0.1984813356847215	0.3546732552347509	False	True	True	True	False	True	False
+153	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	71	56	35	0.625	3	2	0.8333333333333334	0.7609892645113662	0	4	0.18053612709523487	1.0	False	True	False	False	False	True	False
+153	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	decreased	71	56	21	0.375	3	1	1.2	0.6897166938386293	0	1	-0.18708114924541358	1.0	False	True	False	False	False	True	False

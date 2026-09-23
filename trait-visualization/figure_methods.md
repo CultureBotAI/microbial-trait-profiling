@@ -1519,18 +1519,37 @@ The grouped-condition signed direction heatmap is one clustered
 diagram, not a paged set. Its rows use average linkage on Spearman-correlation
 distance across the six signed trait deltas, with unavailable cells treated as
 neutral zero for clustering. The left dendrogram clusters the condition/anatomy
-rows and the adjacent color strip marks row-cluster membership, but branches do
-not receive semantic anatomy or condition names. No predeclared,
-multiplicity-adjusted branch-enrichment test is available to support such a
-name. The descriptive dominant anatomy/condition fields in
+rows. Every internal branch is tested for overrepresentation of each eligible
+upstream anatomy and grouped-condition label relative to rows outside the branch
+using a one-sided Fisher exact test. BH adjustment is applied across the complete
+branch-by-label family. A branch is colored and labeled only when `q <= 0.05`,
+it contains at least three rows and two matching rows, and the label describes
+at least two-thirds of its rows. Every qualifying nested branch is shown, with
+nested labels separated into parallel annotation tracks beside the dendrogram.
+Visible labels report the matching-row fraction and adjusted q-value; unlabeled
+branches are not interpreted. The full hypothesis family and selection flags are retained in
+`six_shared_traits_grouped_signed_direction_branch_label_tests.tsv`. The
 `six_shared_traits_grouped_signed_direction_cluster_rows.tsv` plus
-`six_shared_traits_grouped_signed_direction_cluster_summary.tsv` are audit
-summaries, not labels asserted to fit every row. A small preview PNG links to the
-larger clustered PNG in the six-shared-traits README. The
+`six_shared_traits_grouped_signed_direction_cluster_summary.tsv` record displayed
+significant-branch membership and label statistics. A small preview PNG links to
+the larger clustered PNG in the six-shared-traits README. The
 individual-condition signed direction heatmap still receives additional readable
 `*_page_NN.png` files with at most 24 rows each. The page manifest is
 `six_shared_trait_signed_direction_heatmap_pages.tsv` and records only those
 individual-condition pages.
+
+A branch without significant anatomy or condition enrichment can receive a
+descriptive signed-trait-pattern title only when that direction is significantly
+enriched relative to displayed rows outside the branch. Every internal
+branch-by-trait-by-direction combination is tested with a one-sided Fisher exact
+test, and BH adjustment is applied across that complete family. Displayed titles
+require `q <= 0.05`, at least three displayed rows in the same direction, at least
+two-thirds directional agreement, and at least one same-direction cell already
+selected by the heatmap-wide BH procedure. The title reports the matching-row
+fraction, branch-pattern q-value, and BH-cell count. All qualifying trait patterns
+are retained, including patterns on nested branches and multiple traits on the
+same branch. Tests and display-selection flags are written to
+`six_shared_traits_grouped_signed_direction_branch_pattern_tests.tsv`.
 BH q-values are computed across the full cell table within each condition-label
 mode. The companion table records raw delta, raw Fisher p-value, BH q-value,
 signed `-log10(p)`, display and significance flags, grouped Spearman-cluster
