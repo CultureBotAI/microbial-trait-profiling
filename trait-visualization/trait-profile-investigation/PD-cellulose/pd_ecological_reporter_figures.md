@@ -1,0 +1,105 @@
+# PD Ecological-Reporter Specificity and Provenance
+
+## Terminology
+
+An **ecological reporter** is a microbial community or trait pattern that reflects the
+environment in which the microbes live. Here, the phrase means that gut taxa and their
+KG-Microbe trait annotations may report changes associated with host state, intestinal
+transit, diet, medication, inflammation, oxygen/redox conditions, or other ecological
+pressures. It does not mean that the organisms are literal sensors, and it does not establish
+which host change produced the pattern.
+
+For each trait and study, the analysis first calculates:
+
+```text
+trait contrast = mean trait z in increased profiles - mean trait z in decreased profiles
+```
+
+The exploratory **ecological-reporter composite** is:
+
+```text
+mean(
+  moderately halophilic contrast,
+  facultatively aerobic contrast,
+  arsenate reduction contrast
+) - cellulose catabolic process contrast
+```
+
+A high positive value therefore requires both parts of the proposed pattern: the three
+positive-side traits are stronger in increased profiles, while cellulose catabolic process is
+stronger in decreased profiles. The composite is a descriptive, study-level summary. It is not
+a validated diagnostic score or a patient-level measurement.
+
+## Combined Figure
+
+![Combined figure](pd_ecological_reporter_combined.png)
+
+### Panel A: disease fingerprints
+
+Rows are selected fecal condition labels and columns are the six shared traits plus the
+ecological-reporter composite. Each cell is the mean of paired within-study contrasts, so studies
+are weighted equally rather than allowing studies with more profiles to dominate. Red means the
+trait is stronger in increased profiles; blue means it is stronger in decreased profiles. `n=` is
+the number of studies containing both directions. A dark border means the descriptive 95% t
+interval excludes zero. The orange outline identifies the PD row.
+
+### Panel B: specificity among conditions
+
+Each point is one of the 56 fecal condition labels with at least three paired studies. Gray points
+provide the full background; named colored points are PD and selected physiological or disease
+comparators. Point size increases with paired-study count.
+
+The x-axis is the cellulose contrast with its sign reversed. Moving right means cellulose
+catabolic process is relatively stronger in decreased profiles.
+
+The y-axis, **three-trait increased-side composite**, means:
+
+```text
+mean(
+  moderately halophilic increased-minus-decreased z,
+  facultatively aerobic increased-minus-decreased z,
+  arsenate reduction increased-minus-decreased z
+)
+```
+
+Moving upward means those three traits are, on average, stronger in increased profiles. The
+upper-right quadrant therefore matches both components of the proposed ecological-reporter
+pattern. PD being in that quadrant shows pattern agreement, not PD specificity: several other
+conditions occupy the same region.
+
+### Panel C: PD taxon and trait provenance
+
+Rows are exact genus or species labels reported in PD fecal BugSigDB signatures; columns are the
+six shared traits. A circle means the local KG-Microbe matrix annotates that taxon with the trait.
+Circle size represents distinct-study support. Circle color shows the log2 ratio of increased to
+decreased BugSigDB study support, with red favoring increased and blue favoring decreased. An `x`
+means no local annotation for that taxon-trait cell. Taxonomic ranks are kept separate and are not
+summed.
+
+For PD, the study-weighted cellulose increased-minus-decreased contrast is `-0.651` across `45` paired studies. The exploratory reporter composite is `+1.150`. The composite equals the mean contrasts for moderately halophilic, facultatively aerobic, and arsenate reduction minus the cellulose contrast; it is not a validated diagnostic score.
+
+[Condition/trait audit table](pd_ecological_reporter_combined_condition_trait_summary.tsv) | [Study contrasts](pd_ecological_reporter_combined_study_contrasts.tsv) | [Taxon-panel cells](pd_ecological_reporter_combined_taxon_panel.tsv) | [Vector figure](pd_ecological_reporter_combined.svg)
+
+## Condition-Taxon-Trait Network
+
+![Network](pd_condition_taxon_trait_network.png)
+
+The four layers are condition, increased/decreased BugSigDB signature direction, exact reported
+taxon, and KG-Microbe trait. Line width represents distinct-study support. To keep the network
+readable, it shows the two most supported genus/species labels in each condition-direction context
+when at least two studies support the label. The network contains `31` nodes and `44` edges.
+
+BugSigDB provides the condition, direction, taxon report, and study support. KG-Microbe provides
+the taxon-to-trait annotations. Genus and species are separate exact IDs and are never summed.
+Taxon-to-trait links repeat the taxon's support for each annotation, so this is an evidence network
+rather than a flow-conserving Sankey diagram.
+
+[Network nodes](pd_condition_taxon_trait_network_nodes.tsv) | [Network edges](pd_condition_taxon_trait_network_edges.tsv) | [Taxon selection](pd_condition_taxon_trait_network_taxon_selection.tsv) | [Vector figure](pd_condition_taxon_trait_network.svg)
+
+## Interpretation Boundary
+
+These are ecological annotations of taxa found in curated differential-abundance signatures. They
+are not measurements of gene expression, metabolite flux, cellulose degradation, or longitudinal
+host physiology. The condition comparison is descriptive and is not an external diagnostic
+validation. The figures can support a hypothesis that microbial traits act as host-state readouts;
+they cannot identify the underlying host signal or establish causality.
