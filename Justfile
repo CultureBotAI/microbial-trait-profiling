@@ -58,6 +58,10 @@ pd-trait-taxa:
 pd-trait-taxa-heatmap:
 	uv run python scripts/create_pd_four_trait_taxon_heatmap.py
 
+# Compare the PD reporter pattern across conditions and trace condition-to-trait provenance.
+pd-ecological-reporter-figures:
+	uv run python scripts/create_pd_ecological_reporter_figures.py
+
 # Overlay increased (solid) and decreased (dashed) high-support Sankey links.
 six-shared-trait-combined-sankey:
 	uv run python scripts/create_six_shared_trait_sankeys.py --combined-high-support-only
