@@ -10,6 +10,14 @@
   "non_mediadive_columns": 317,
   "minimum_support_studies": 3,
   "row_filter": "exclude species whose six trait cells are all low support",
+  "row_order": "descending BugSigDB PD log2(increased/decreased) profile-count ratio; ties by increased-minus-decreased count, total direction profiles, and taxon name",
+  "literature_review_date": "2026-09-22",
+  "literature_review_method": "targeted narrative direction review",
+  "displayed_row_annotations": [
+    "BugSigDB PD increased/decreased recurrence",
+    "literature direction and BugSigDB agreement"
+  ],
+  "pd_specificity_displayed": false,
   "pd_literature_reference_taxa": 20,
   "displayed_species_with_literature_reference": 8,
   "literature_bug_sig_direction_agreement_counts": {

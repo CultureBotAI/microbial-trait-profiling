@@ -1495,24 +1495,38 @@ Rows are condition/body-site pairs and columns are the six shared traits. The
 annotation reports the increased-profile positive-z fraction minus the
 decreased-profile positive-z fraction. Color encodes this same effect on a fixed
 -1 to +1 scale; red favors increased profiles and blue favors decreased profiles.
-All supported effects with finite two-sided Fisher exact p-values are displayed,
-including nonsignificant results. Support requires at least 3 positive-z profiles
-in either direction and at least 2 total studies. A dark border marks `p < 0.01`;
-unbordered cells are descriptive effects that do not meet that threshold. Gray
-cells are unavailable or insufficiently supported, rather than merely
-nonsignificant. White cells with a numeric zero represent measured null effects.
+Supported effects with finite two-sided Fisher exact p-values are displayed only
+when their absolute magnitude is strictly greater than 0.01. Support requires at
+least 3 positive-z profiles in either direction and at least 2 total studies. A
+dark border marks a displayed cell with BH-adjusted `q <= 0.05`; nominal
+`p < 0.01` counts are reported separately and do not control the border.
+Unbordered cells remain descriptive effects. Gray cells are unavailable,
+insufficiently supported, or at or below the effect cutoff.
 Conditions are chosen from the full increased and decreased
 `*_profile_sankey_edges.tsv` tables before graph display selection: every
-condition/body-site row with at least one supported, testable six-trait cell is
-included. The grouped-condition signed direction heatmap is now one clustered
+condition/body-site row with at least one supported, testable six-trait cell
+above the effect cutoff is included.
+
+Grouped condition text is assigned upstream by the ordered, case-insensitive
+substring rules in `v3_fully_grouped_condition_display_label`: the first matching
+rule wins and unmatched labels become `Other specific clinical labels`.
+Individual-condition views retain the original curated condition label. The
+`*_profile_sankey_condition_rollups.tsv` files audit raw labels, display labels,
+rules, profile counts, and study counts. These fixed condition labels and the
+grouped v3 anatomy labels are not inferred from the dendrogram.
+
+The grouped-condition signed direction heatmap is one clustered
 diagram, not a paged set. Its rows use average linkage on Spearman-correlation
 distance across the six signed trait deltas, with unavailable cells treated as
 neutral zero for clustering. The left dendrogram clusters the condition/anatomy
-rows, the adjacent color strip marks row-cluster membership, and
+rows and the adjacent color strip marks row-cluster membership, but branches do
+not receive semantic anatomy or condition names. No predeclared,
+multiplicity-adjusted branch-enrichment test is available to support such a
+name. The descriptive dominant anatomy/condition fields in
 `six_shared_traits_grouped_signed_direction_cluster_rows.tsv` plus
-`six_shared_traits_grouped_signed_direction_cluster_summary.tsv` record the row
-order and dominant anatomy/condition labels for each cluster. A small preview
-PNG links to the larger clustered PNG in the six-shared-traits README. The
+`six_shared_traits_grouped_signed_direction_cluster_summary.tsv` are audit
+summaries, not labels asserted to fit every row. A small preview PNG links to the
+larger clustered PNG in the six-shared-traits README. The
 individual-condition signed direction heatmap still receives additional readable
 `*_page_NN.png` files with at most 24 rows each. The page manifest is
 `six_shared_trait_signed_direction_heatmap_pages.tsv` and records only those
@@ -1521,6 +1535,14 @@ BH q-values are computed across the full cell table within each condition-label
 mode. The companion table records raw delta, raw Fisher p-value, BH q-value,
 signed `-log10(p)`, display and significance flags, grouped Spearman-cluster
 metadata, and page number for each cell.
+
+Every signed heatmap includes a legend reporting the number of shown condition
+labels, anatomy groups, condition-by-anatomy rows, displayed cells, nominal-p
+cells, BH-bordered cells, and shown-row cells hidden by the effect cutoff. Issue
+#256 / PR #257 introduced pooled, denominator-harmonized, study-weighted fraction
+and log-ratio quantities but no condition-by-anatomy replacement for this
+profile-level positive-z prevalence contrast, so those distinct estimands are
+not mixed into these heatmaps.
 
 ### Inferred Guild Evidence Outputs
 
@@ -1790,20 +1812,52 @@ two-sided 95% Student t interval lies wholly above or below zero. Supported
 intervals crossing zero are recorded as `mixed` in the TSV, and sparser
 estimates are hatched `low support`. The plotted cells print the signed
 fixed-reference z influence value instead of the `mixed` label, so color and
-cell text show the effect direction and magnitude directly. The first right-hand
-row annotation displays raw increased/decreased PD fecal profile occurrence
-counts and a capped color encoding of their log2 ratio. The final orange-shaded
-row annotation is the PD specificity check: it compares exact reported
-species-label profiles in PD feces against all other fecal profiles in the same
-occurrence table, with darker orange indicating greater PD-feces enrichment.
-Both annotations are visually and analytically separate from the six trait
-cells.
+cell text show the effect direction and magnitude directly. Rows are ordered by
+the BugSigDB PD log2 increased/decreased profile-count ratio, from the strongest
+increased skew to the strongest decreased skew. Ties use the signed count
+difference, total direction support, and taxon name. This ordering affects the
+display only.
+
+The first right-hand row annotation displays raw increased/decreased PD fecal
+profile occurrence counts and a capped color encoding of their log2 ratio. The
+second gives the matched DOI-backed PD literature direction and directly labels
+the comparison with BugSigDB recurrence as `agrees`, `DIFFERS`, or `balanced`.
+Red, bold `DIFFERS` cells identify opposite directions. In the current display,
+*Mediterraneibacter torques* is BugSigDB increased (`3/1`) versus literature
+decreased, and *Escherichia coli* is BugSigDB decreased (`1/2`) versus
+literature increased. *Ruminococcus bromii* is marked balanced (`2/2`) rather
+than assigned agreement. The former PD-specificity annotation is not plotted;
+its PD-versus-other-feces counts and ratios remain in the companion specificity
+TSV for audit. Both displayed annotations are visually and analytically separate
+from the six trait cells.
 
 The companion cell, taxon, trait, and manifest files preserve numeric estimates,
 intervals, support, input hashes, and row annotations. This leave-one-reported-
 species-out result is an influence diagnostic, not a causal or strain-level
 attribution; descendant propagation and unresolved source-assertion limitations
 remain as documented in issue #190.
+
+#### Literature-review and direction-comparison methods
+
+The PD direction reference is a targeted narrative review updated 2026-09-22,
+not a systematic review or meta-analysis. PubMed, PubMed Central, and publisher
+records were searched using Parkinson disease, gut microbiome, each taxon name
+or synonym, and direction terms such as increased, decreased, enriched, and
+depleted. Eligible evidence was limited to human PD-versus-control fecal or
+intestinal microbiome studies and cross-cohort human meta-analyses that reported
+an explicit taxon direction. Animal-only, intervention-only, non-gut, and
+severity-only results were excluded from direction calls.
+
+Exact species evidence was preferred. When it was unavailable, genus or family
+evidence was retained as an explicitly labeled parent-level proxy. Conflicting
+eligible evidence at the matched level is classified as `variable`, while
+association-only evidence is not treated as directional. BugSigDB direction is
+defined from curated PD fecal profile recurrence: `increased` when the increased
+count exceeds the decreased count, `decreased` for the reverse, and `balanced`
+for a tie. `agrees` and `differs` compare those categories with directional
+literature calls; they are descriptive labels, not statistical agreement tests.
+The reference TSV and Markdown report preserve the matched term, taxonomic
+level, DOI citations, evidence statement, and cohort/medication/taxonomy caveats.
 
 ### PD trait-contributor direction-change views
 

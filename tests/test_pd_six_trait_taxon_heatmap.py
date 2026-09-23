@@ -187,6 +187,49 @@ def test_filter_all_low_support_taxa_removes_only_fully_low_support_rows() -> No
     assert filtered_cells["taxon_id"].unique().tolist() == ["taxon-b"]
 
 
+def test_rows_sort_by_bugsigdb_inc_dec_value() -> None:
+    rows = pd.DataFrame(
+        [
+            ["faecalibacterium", "Faecalibacterium prausnitzii", 0, 13, -float("inf")],
+            ["roseburia", "Roseburia faecis", 0, 6, -float("inf")],
+            ["balanced", "Ruminococcus bromii", 2, 2, 0.0],
+            ["moderate-inc", "Mediterraneibacter torques", 3, 1, 1.585],
+            ["inc-three", "Methanobrevibacter smithii", 3, 0, float("inf")],
+            ["inc-five", "Bifidobacterium longum", 5, 0, float("inf")],
+            ["inc-four", "Streptococcus salivarius", 4, 0, float("inf")],
+            ["moderate-dec", "Escherichia coli", 1, 2, -1.0],
+        ],
+        columns=[
+            "taxon_id",
+            "taxon_name",
+            "increased_profiles",
+            "decreased_profiles",
+            "log2_inc_dec_ratio",
+        ],
+    )
+
+    ordered = heatmap.sort_rows_by_bugsigdb_inc_dec(rows)
+
+    assert ordered["taxon_id"].tolist() == [
+        "inc-five",
+        "inc-four",
+        "inc-three",
+        "moderate-inc",
+        "balanced",
+        "moderate-dec",
+        "roseburia",
+        "faecalibacterium",
+    ]
+
+
+def test_literature_comparison_label_makes_disagreement_explicit() -> None:
+    assert heatmap.literature_comparison_label("decreased", "differs") == "lit dec\nDIFFERS"
+    assert (
+        heatmap.literature_comparison_label("decreased", "balanced in BugSigDB")
+        == "lit dec\nbalanced"
+    )
+
+
 def test_taxon_specificity_compares_pd_feces_to_other_feces() -> None:
     metadata = pd.DataFrame(
         [
@@ -228,7 +271,7 @@ def test_taxon_specificity_compares_pd_feces_to_other_feces() -> None:
     assert specificity.loc["taxon-b", "pd_other_feces_counts"] == "0/1"
 
 
-def test_pd_taxa_reference_table_adds_literature_and_interpretation() -> None:
+def test_pd_taxa_reference_table_adds_literature_and_interpretation(tmp_path: Path) -> None:
     rows = pd.DataFrame(
         [
             [
@@ -318,3 +361,12 @@ def test_pd_taxa_reference_table_adds_literature_and_interpretation() -> None:
     assert table.loc["taxon-f", "direction_agreement"] == "agrees"
     assert "10.1002/mds.28119" in table.loc["taxon-f", "doi_citations"]
     assert table.loc["taxon-f", "kg_microbe_direct_trait_count"] == 2
+
+    output_path = tmp_path / "reference.md"
+    heatmap.write_reference_interpretation(table.reset_index(), output_path)
+    output = output_path.read_text(encoding="utf-8")
+    assert "## Agreement Summary" in output
+    assert "## Methods: Literature Review and Direction Comparison" in output
+    assert "targeted narrative review" in output
+    assert "increased-profile count is greater than decreased-profile count" in output
+    assert "[10.1002/mds.28119](https://doi.org/10.1002/mds.28119)" in output

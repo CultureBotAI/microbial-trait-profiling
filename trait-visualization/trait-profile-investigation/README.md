@@ -97,9 +97,17 @@ carrier lookup, its cells are trait-specific fixed-reference leave-one-species-
 out influence contrasts. Every computable species-trait estimate is retained:
 outlined cells include direct removal of that trait, while unoutlined cells show
 the denominator-mediated effect when the species has no direct annotation for
-the displayed trait. The separate right-hand annotation shows the raw
-increased/decreased profile occurrence counts and does not supply the trait-cell
-values. Regenerate it with `just pd-trait-taxa-heatmap`.
+the displayed trait. Species whose six cells are all low support are omitted,
+and the remaining rows are sorted by the BugSigDB log2 increased/decreased
+profile-count ratio, from increased to decreased skew. The two separate
+right-hand annotations show raw increased/decreased recurrence and a direct
+literature comparison. The latter prints the literature direction plus
+`agrees`, `DIFFERS`, or `balanced`; the current `DIFFERS` rows are
+*Mediterraneibacter torques* and *Escherichia coli*. PD-versus-other-feces
+specificity is retained in a companion audit TSV but is no longer plotted. The
+reference table and interpretation document the targeted narrative-review and
+direction-assignment methods. Regenerate the complete set with
+`just pd-trait-taxa-heatmap`.
 
 ## Cleanup Note
 

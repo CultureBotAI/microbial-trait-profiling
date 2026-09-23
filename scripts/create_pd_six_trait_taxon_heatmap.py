@@ -35,15 +35,15 @@ ROW_COLOR_LIMIT = 3.0
 INCREASED_COLOR = "#b91c1c"
 DECREASED_COLOR = "#1d4ed8"
 UNAVAILABLE_COLOR = "#e5e7eb"
-SPECIFICITY_COLOR_LIMIT = 3.0
 REFERENCE_TABLE_STEM = "pd_species_six_traits_reference"
 LITERATURE_REFERENCE_NAME = "pd_taxa_literature_reference"
-LITERATURE_COLORS = {
-    "increased": "#fee2e2",
-    "decreased": "#dbeafe",
-    "variable": "#ede9fe",
-    "associated": "#f3f4f6",
-    "not listed": "#f9fafb",
+LITERATURE_REVIEW_DATE = "2026-09-22"
+LITERATURE_COMPARISON_COLORS = {
+    "agrees": "#dcfce7",
+    "differs": "#fee2e2",
+    "balanced in BugSigDB": "#fef3c7",
+    "literature non-directional": "#ede9fe",
+    "not in literature reference": "#f3f4f6",
 }
 LITERATURE_LABELS = {
     "increased": "lit inc",
@@ -51,6 +51,13 @@ LITERATURE_LABELS = {
     "variable": "var",
     "associated": "assoc",
     "not listed": "not ref",
+}
+LITERATURE_COMPARISON_LABELS = {
+    "agrees": "agrees",
+    "differs": "DIFFERS",
+    "balanced in BugSigDB": "balanced",
+    "literature non-directional": "non-dir",
+    "not in literature reference": "no ref",
 }
 PD_TAXA_LITERATURE_REFERENCE = [
     {
@@ -65,7 +72,10 @@ PD_TAXA_LITERATURE_REFERENCE = [
         "literature_taxon": "Bifidobacterium",
         "literature_rank": "genus",
         "literature_direction": "increased",
-        "literature_evidence": "Reported as increased in multiple PD gut microbiome cohorts.",
+        "literature_evidence": (
+            "Reported as increased at genus/family level, although one cohort showed "
+            "attenuation after excluding selected medication users."
+        ),
         "doi_citations": "10.1002/mds.26942;10.1016/j.parkreldis.2016.08.019",
         "match_terms": "Bifidobacterium;Bifidobacteriaceae",
     },
@@ -161,8 +171,11 @@ PD_TAXA_LITERATURE_REFERENCE = [
         "literature_taxon": "Roseburia",
         "literature_rank": "genus",
         "literature_direction": "decreased",
-        "literature_evidence": "Reported as depleted in PD gut microbiome cohorts.",
-        "doi_citations": "10.1002/mds.26307;10.1002/mds.28119",
+        "literature_evidence": (
+            "Reported as depleted at genus level, with R. faecis also decreased in a "
+            "large species-level PD metagenomic study."
+        ),
+        "doi_citations": ("10.1002/mds.26307;10.1002/mds.28119;10.1038/s41467-022-34667-x"),
         "match_terms": "Roseburia",
     },
     {
@@ -465,6 +478,51 @@ def literature_reference_table() -> pd.DataFrame:
     return pd.DataFrame(PD_TAXA_LITERATURE_REFERENCE).copy()
 
 
+def doi_markdown_links(value: object) -> str:
+    """Format a semicolon-delimited DOI field as stable Markdown links."""
+    dois = [doi.strip() for doi in str(value).split(";") if doi.strip()]
+    if not dois:
+        return "none"
+    return "; ".join(f"[{doi}](https://doi.org/{doi})" for doi in dois)
+
+
+def literature_methods_markdown() -> str:
+    """Describe the targeted literature review and direction-comparison rules."""
+    return "\n".join(
+        [
+            "## Methods: Literature Review and Direction Comparison",
+            "",
+            f"The literature direction table is a targeted narrative review updated "
+            f"{LITERATURE_REVIEW_DATE}; it is not a systematic review or meta-analysis. "
+            "PubMed, PubMed Central, and publisher records were searched using `Parkinson "
+            "disease`, `gut microbiome`, each taxon name or synonym, and direction terms "
+            "(`increased`, `decreased`, `enriched`, or `depleted`). Existing DOI-backed PD "
+            "microbiome references were checked backward for additional direction evidence.",
+            "",
+            "Eligible evidence comprised human PD-versus-control fecal or intestinal "
+            "microbiome studies and cross-cohort human meta-analyses that reported an explicit "
+            "taxon direction. Animal-only, intervention-only, non-gut, and severity-only "
+            "findings were excluded from increased/decreased calls. Association-only evidence "
+            "is retained as `associated` and is not treated as directional.",
+            "",
+            "Literature direction is assigned at the most specific supported taxonomic level. "
+            "An exact species result is preferred; otherwise a genus or family result is used "
+            "as a flagged parent-level proxy. `variable` is used when eligible reports conflict "
+            "at the matched level. The reference table records the matched term, reference rank, "
+            "match type, evidence statement, and DOI list so broader-rank comparisons remain "
+            "visible.",
+            "",
+            "BugSigDB direction is a recurrence summary, not a pooled abundance effect: "
+            "`increased` when increased-profile count is greater than decreased-profile count, "
+            "`decreased` for the reverse, and `balanced` for a tie. `agrees` and `differs` are "
+            "assigned only against directional literature calls; balanced, variable, associated, "
+            "and unlisted cases remain separate. These labels do not test statistical agreement "
+            "and do not resolve cohort, medication, geography, sequencing, or taxonomic-version "
+            "heterogeneity.",
+        ]
+    )
+
+
 def normalize_taxon_name(value: object) -> str:
     """Normalize a taxon label for exact/prefix reference matching."""
     normalized = str(value).replace("[", "").replace("]", "").lower()
@@ -558,6 +616,28 @@ def bugsigdb_pd_direction(row: pd.Series) -> str:
     return "balanced"
 
 
+def sort_rows_by_bugsigdb_inc_dec(rows: pd.DataFrame) -> pd.DataFrame:
+    """Sort from most increased-skewed to most decreased-skewed BugSigDB recurrence."""
+    ordered = rows.copy()
+    ordered["_inc_minus_dec"] = ordered["increased_profiles"].astype(int) - ordered[
+        "decreased_profiles"
+    ].astype(int)
+    ordered["_total_direction_profiles"] = ordered["increased_profiles"].astype(int) + ordered[
+        "decreased_profiles"
+    ].astype(int)
+    ordered = ordered.sort_values(
+        [
+            "log2_inc_dec_ratio",
+            "_inc_minus_dec",
+            "_total_direction_profiles",
+            "taxon_name",
+        ],
+        ascending=[False, False, False, True],
+        kind="stable",
+    )
+    return ordered.drop(columns=["_inc_minus_dec", "_total_direction_profiles"])
+
+
 def direction_agreement(literature_direction: object, bugsigdb_direction: object) -> str:
     """Compare literature direction to the BugSigDB PD occurrence direction."""
     literature = str(literature_direction)
@@ -571,6 +651,15 @@ def direction_agreement(literature_direction: object, bugsigdb_direction: object
     if literature == bugsigdb:
         return "agrees"
     return "differs"
+
+
+def literature_comparison_label(literature_direction: object, agreement: object) -> str:
+    """Format literature direction and BugSigDB agreement for a heatmap row."""
+    direction = str(literature_direction) if literature_direction else "not listed"
+    comparison = str(agreement) if agreement else "not in literature reference"
+    direction_label = LITERATURE_LABELS.get(direction, LITERATURE_LABELS["not listed"])
+    comparison_label = LITERATURE_COMPARISON_LABELS.get(comparison, comparison)
+    return f"{direction_label}\n{comparison_label}"
 
 
 def interpret_reference_row(row: pd.Series) -> str:
@@ -725,13 +814,36 @@ def write_reference_interpretation(reference_table: pd.DataFrame, output_path: P
         "BugSigDB PD occurrence direction, KG-Microbe six-trait annotations, and the strongest "
         "current influence value.",
         "",
+        "Rows follow the heatmap order: descending BugSigDB PD increased/decreased log2 "
+        "profile-count ratio, with count-based and alphabetical tie-breakers.",
+        "",
+        "## Agreement Summary",
+        "",
+        "| Taxon | BugSigDB inc/dec | BugSigDB direction | Literature value | Match scope | "
+        "Agreement | Strongest six-trait influence |",
+        "| --- | ---: | --- | --- | --- | --- | --- |",
     ]
+    for row in reference_table.itertuples(index=False):
+        strongest = (
+            f"{row.strongest_influence_trait} ({float(row.strongest_influence_z):+.2f}; "
+            f"{row.strongest_influence_status})"
+            if pd.notna(row.strongest_influence_z)
+            else "not available"
+        )
+        match_scope = f"{row.literature_taxon}; {row.literature_rank}; {row.literature_match_type}"
+        lines.append(
+            f"| {row.taxon_name} | {row.inc_dec_counts} | {row.bugsigdb_pd_direction} | "
+            f"{row.literature_direction} | {match_scope} | {row.direction_agreement} | "
+            f"{strongest} |"
+        )
+    lines.extend(["", literature_methods_markdown(), "", "## Taxon Details", ""])
     for row in reference_table.itertuples(index=False):
         lines.extend(
             [
-                f"## {row.taxon_name}",
-                f"- Literature match: {row.literature_taxon} ({row.literature_direction}); "
-                f"DOI(s): {row.doi_citations or 'none'}",
+                f"### {row.taxon_name}",
+                f"- Literature match: {row.literature_taxon} ({row.literature_direction}; "
+                f"{row.literature_rank}; {row.literature_match_type}); "
+                f"source(s): {doi_markdown_links(row.doi_citations)}",
                 f"- BugSigDB PD direction: {row.bugsigdb_pd_direction} "
                 f"({row.inc_dec_counts} increased/decreased profiles); "
                 f"agreement: {row.direction_agreement}",
@@ -910,15 +1022,7 @@ def build_influence_cells(
             }
         )
 
-    row_metadata = pd.DataFrame(rows).sort_values(
-        [
-            "annotated_trait_count",
-            "paired_support_studies",
-            "max_absolute_influence_z",
-            "taxon_name",
-        ],
-        ascending=[False, False, False, True],
-    )
+    row_metadata = pd.DataFrame(rows)
     cells_table = pd.DataFrame(cells)
     removed_low_support_taxa = 0
     if remove_all_low_support_taxa:
@@ -926,6 +1030,7 @@ def build_influence_cells(
             cells_table,
             row_metadata,
         )
+    row_metadata = sort_rows_by_bugsigdb_inc_dec(row_metadata)
     specificity = load_taxon_specificity(pd.Index(row_metadata["taxon_id"]), metadata)
     row_metadata = row_metadata.merge(specificity, on="taxon_id", how="left")
     return cells_table, row_metadata, trait_metadata, removed_low_support_taxa
@@ -942,7 +1047,7 @@ def plot_heatmap(
     top_margin_inches: float = 1.65,
     legend_y_inches: float = 1.38,
 ) -> None:
-    """Plot trait-specific influence cells with occurrence and PD-specificity annotations."""
+    """Plot trait influence with BugSigDB recurrence and literature-comparison annotations."""
     row_ids = rows["taxon_id"].tolist()
     trait_ids = traits["trait_id"].tolist()
     values = cells.pivot(index="taxon_id", columns="trait_id", values="mean_influence_contrast_z")
@@ -957,11 +1062,11 @@ def plot_heatmap(
     color_limit = max(float(np.quantile(finite, 0.95)) if finite.size else 0.0, 0.02)
 
     height = max(8.5, len(rows) * 0.32 + 3.4)
-    fig = plt.figure(figsize=(16.4, height), facecolor="white")
+    fig = plt.figure(figsize=(15.6, height), facecolor="white")
     grid = fig.add_gridspec(
         1,
-        4,
-        width_ratios=[6.0, 0.85, 0.95, 0.90],
+        3,
+        width_ratios=[6.0, 0.85, 1.10],
         left=0.29,
         right=0.965,
         top=1 - top_margin_inches / height,
@@ -970,8 +1075,7 @@ def plot_heatmap(
     )
     ax = fig.add_subplot(grid[0, 0])
     row_ax = fig.add_subplot(grid[0, 1], sharey=ax)
-    specificity_ax = fig.add_subplot(grid[0, 2], sharey=ax)
-    literature_ax = fig.add_subplot(grid[0, 3], sharey=ax)
+    literature_ax = fig.add_subplot(grid[0, 2], sharey=ax)
     cmap = plt.get_cmap("RdBu_r").copy()
     cmap.set_bad(UNAVAILABLE_COLOR)
     image = ax.imshow(
@@ -1062,69 +1166,37 @@ def plot_heatmap(
     for spine in row_ax.spines.values():
         spine.set_visible(False)
 
-    specificity_cmap = plt.get_cmap("YlOrBr").copy()
-    specificity_cmap.set_bad("#f3f4f6")
-    specificity_values = (
-        rows["pd_vs_other_feces_log2_ratio"]
-        .replace([np.inf, -np.inf], np.nan)
-        .clip(-SPECIFICITY_COLOR_LIMIT, SPECIFICITY_COLOR_LIMIT)
-        .to_numpy(dtype=float, copy=True)
-    )
-    total_specificity_profiles = rows["pd_feces_profiles"].astype(float) + rows[
-        "other_feces_profiles"
-    ].astype(float)
-    specificity_values[total_specificity_profiles.eq(0).to_numpy()] = np.nan
-    specificity_ax.imshow(
-        np.ma.masked_invalid(specificity_values[:, None]),
-        cmap=specificity_cmap,
-        vmin=-SPECIFICITY_COLOR_LIMIT,
-        vmax=SPECIFICITY_COLOR_LIMIT,
-        aspect="auto",
-    )
-    specificity_ax.set_xticks([0], ["PD specificity\nPD/other feces"], fontsize=9)
-    specificity_ax.tick_params(left=False, labelleft=False, length=0, pad=6)
-    specificity_ax.set_xticks([-0.5, 0.5], minor=True)
-    specificity_ax.set_yticks(np.arange(-0.5, len(rows), 1), minor=True)
-    specificity_ax.grid(which="minor", color="white", linewidth=1)
-    specificity_ax.tick_params(which="minor", length=0)
-    for y, label in enumerate(rows["pd_other_feces_counts"]):
-        value = specificity_values[y]
-        specificity_ax.text(
-            0,
-            y,
-            label,
-            ha="center",
-            va="center",
-            fontsize=8,
-            color="white" if np.isfinite(value) and value >= 1.8 else "#111827",
-        )
-    for spine in specificity_ax.spines.values():
-        spine.set_visible(False)
-
     literature_directions = rows.get(
         "literature_direction",
         pd.Series(["not listed"] * len(rows), index=rows.index),
     ).fillna("not listed")
+    literature_agreements = rows.get(
+        "direction_agreement",
+        pd.Series(["not in literature reference"] * len(rows), index=rows.index),
+    ).fillna("not in literature reference")
     literature_ax.set_xlim(-0.5, 0.5)
     literature_ax.set_ylim(len(rows) - 0.5, -0.5)
-    literature_ax.set_xticks([0], ["Literature\nPD direction"], fontsize=9)
+    literature_ax.set_xticks([0], ["Literature vs\nBugSigDB"], fontsize=9)
     literature_ax.tick_params(left=False, labelleft=False, length=0, pad=6)
     literature_ax.set_xticks([-0.5, 0.5], minor=True)
     literature_ax.set_yticks(np.arange(-0.5, len(rows), 1), minor=True)
     literature_ax.grid(which="minor", color="white", linewidth=1)
     literature_ax.tick_params(which="minor", length=0)
-    for y, direction in enumerate(literature_directions):
+    for y, (direction, agreement) in enumerate(
+        zip(literature_directions, literature_agreements, strict=True)
+    ):
         direction = str(direction) if direction else "not listed"
-        color = LITERATURE_COLORS.get(direction, LITERATURE_COLORS["not listed"])
-        label = LITERATURE_LABELS.get(direction, LITERATURE_LABELS["not listed"])
+        agreement = str(agreement) if agreement else "not in literature reference"
+        color = LITERATURE_COMPARISON_COLORS.get(agreement, "#f3f4f6")
+        label = literature_comparison_label(direction, agreement)
         literature_ax.add_patch(
             Rectangle(
                 (-0.5, y - 0.5),
                 1,
                 1,
                 facecolor=color,
-                edgecolor="white",
-                linewidth=1,
+                edgecolor="#b91c1c" if agreement == "differs" else "white",
+                linewidth=2.2 if agreement == "differs" else 1,
             )
         )
         literature_ax.text(
@@ -1133,7 +1205,8 @@ def plot_heatmap(
             label,
             ha="center",
             va="center",
-            fontsize=7.5,
+            fontsize=7.3,
+            fontweight="bold" if agreement == "differs" else "normal",
             color="#111827",
         )
     for spine in literature_ax.spines.values():
@@ -1141,7 +1214,7 @@ def plot_heatmap(
 
     bar = fig.colorbar(
         image,
-        ax=[ax, row_ax, specificity_ax, literature_ax],
+        ax=[ax, row_ax, literature_ax],
         pad=0.02,
         fraction=0.032,
         shrink=0.58,
@@ -1169,10 +1242,9 @@ def plot_heatmap(
         "annotation. "
         "Cell text shows the signed fixed-reference z influence value; low-support cells remain "
         f"hatched. Inc/dec calls in the TSV require a 95% interval entirely above/below zero and "
-        f"at least {MIN_SUPPORT_STUDIES} supporting studies. Right columns separate raw PD "
-        "inc/dec occurrence from a PD specificity "
-        f"check: exact reported {taxon_unit}-label profiles in PD feces versus all other "
-        "fecal profiles, then show the matched DOI-backed literature PD direction."
+        f"at least {MIN_SUPPORT_STUDIES} supporting studies. The right columns show raw PD "
+        "inc/dec occurrence and the matched DOI-backed literature direction together with its "
+        "BugSigDB agreement status. Rows marked DIFFERS have opposite recurrence directions."
     )
     if method_note:
         subtitle = f"{subtitle} {method_note}"
@@ -1190,12 +1262,21 @@ def plot_heatmap(
             Patch(facecolor=DECREASED_COLOR, label="negative influence"),
             Patch(facecolor="white", edgecolor="#111827", label="direct trait annotation"),
             Patch(facecolor="white", edgecolor="#64748b", hatch="///", label="low support"),
-            Patch(facecolor=LITERATURE_COLORS["increased"], label="literature increased"),
-            Patch(facecolor=LITERATURE_COLORS["decreased"], label="literature decreased"),
+            Patch(facecolor=LITERATURE_COMPARISON_COLORS["agrees"], label="direction agrees"),
+            Patch(
+                facecolor=LITERATURE_COMPARISON_COLORS["differs"],
+                edgecolor="#b91c1c",
+                linewidth=1.5,
+                label="direction differs",
+            ),
+            Patch(
+                facecolor=LITERATURE_COMPARISON_COLORS["balanced in BugSigDB"],
+                label="BugSigDB balanced",
+            ),
         ],
         loc="upper center",
         bbox_to_anchor=(0.60, 1 - legend_y_inches / height),
-        ncol=6,
+        ncol=7,
         frameon=False,
         fontsize=8,
     )
@@ -1286,6 +1367,17 @@ def main() -> None:
         "non_mediadive_columns": len(trait_columns),
         "minimum_support_studies": MIN_SUPPORT_STUDIES,
         "row_filter": "exclude species whose six trait cells are all low support",
+        "row_order": (
+            "descending BugSigDB PD log2(increased/decreased) profile-count ratio; "
+            "ties by increased-minus-decreased count, total direction profiles, and taxon name"
+        ),
+        "literature_review_date": LITERATURE_REVIEW_DATE,
+        "literature_review_method": "targeted narrative direction review",
+        "displayed_row_annotations": [
+            "BugSigDB PD increased/decreased recurrence",
+            "literature direction and BugSigDB agreement",
+        ],
+        "pd_specificity_displayed": False,
         "pd_literature_reference_taxa": len(literature_reference),
         "displayed_species_with_literature_reference": int(
             reference_table["literature_direction"].ne("not listed").sum()
@@ -1324,26 +1416,32 @@ def main() -> None:
         "of the displayed trait; unoutlined cells show the denominator-mediated effect when the "
         "species has no direct annotation for that trait. The taxon row label also includes the "
         "BugSigDB PD increased/decreased profile count, such as `(0/13)`.\n\n"
+        "Rows are sorted from the most increased-skewed to the most decreased-skewed "
+        "BugSigDB PD recurrence using the log2 increased/decreased profile-count ratio; "
+        "ties use the signed count difference, total support, and taxon name.\n\n"
         f"`inc` and `dec` require at least {MIN_SUPPORT_STUDIES} supporting studies and a 95% "
         "Student t interval entirely above or below zero. The heatmap prints signed numeric "
         "fixed-reference z influence values in supported cells; `mixed` is retained in the TSV "
         "when the interval crosses zero. Hatched `low support` cells do not receive a forced "
         "direction. The first right-hand annotation retains the raw increased/decreased profile "
-        "occurrence counts in PD feces. The second right-hand annotation is a PD "
-        "specificity check: exact reported species-label profiles in PD feces versus all other "
-        "fecal profiles in the same full occurrence table. The third right-hand annotation links "
-        "each displayed species to the DOI-backed PD taxa reference direction when a curated "
-        "match is available.\n\n"
+        "occurrence counts in PD feces. The second annotation shows the DOI-backed literature "
+        "direction and explicitly labels whether BugSigDB recurrence agrees, differs, or is "
+        "balanced. `DIFFERS` marks *Mediterraneibacter torques* (BugSigDB 3/1 increased versus "
+        "literature decreased) and *Escherichia coli* (BugSigDB 1/2 decreased versus literature "
+        "increased); *Ruminococcus bromii* is marked balanced. PD-versus-other-feces specificity "
+        "is retained in the companion audit TSV but is no longer plotted.\n\n"
         f"The generated reference table joins literature direction, DOI citations, BugSigDB PD "
         "occurrence direction, KG-Microbe six-trait annotations, strongest influence value, and "
         "an interpretation of agreement, disagreement, or balanced evidence.\n\n"
+        f"{literature_methods_markdown()}\n\n"
         "This is a reported-species influence diagnostic, not a causal attribution or strain-level "
         "measurement. Removing a reported species changes both trait numerators and the nonlinear "
         "full denominator. Parent/child propagation and unresolved source assertions remain the "
         "limitations documented in #190; contrast orientation and trait semantics remain bounded "
         "by #188 and #189.\n\n"
         f"[Cell statistics]({STEM}_cells.tsv) | [Taxon row annotations]({STEM}_taxa.tsv) | "
-        f"[PD specificity]({STEM}_specificity.tsv) | [Trait summary]({STEM}_traits.tsv) | "
+        f"[PD specificity audit (not plotted)]({STEM}_specificity.tsv) | "
+        f"[Trait summary]({STEM}_traits.tsv) | "
         f"[PD taxa reference]({REFERENCE_TABLE_STEM}_table.tsv) | "
         f"[Reference interpretation]({REFERENCE_TABLE_STEM}_interpretation.md) | "
         f"[Literature DOI list]({LITERATURE_REFERENCE_NAME}.tsv) | "
