@@ -1,5 +1,6 @@
 [codespell]
 skip = .venv,uv.lock
 quiet-level = 3
+ignore-regex = 10\.\d{4,9}/\S+
 # Medical term and spelling preserved in a quoted source-study title.
 ignore-words-list = infarction,homogenous
