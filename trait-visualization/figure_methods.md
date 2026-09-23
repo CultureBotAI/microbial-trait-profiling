@@ -1804,3 +1804,49 @@ intervals, support, input hashes, and row annotations. This leave-one-reported-
 species-out result is an influence diagnostic, not a causal or strain-level
 attribution; descendant propagation and unresolved source-assertion limitations
 remain as documented in issue #190.
+
+### PD trait-contributor direction-change views
+
+`trait-profile-investigation/PD-cellulose/pd_trait_contributors_species_family_dot_heatmap.png`
+uses the committed long-form species and family contribution cells. Taxa were
+selected as the union of the top five resolved contributors in each of the six
+trait-by-direction cells; this is a descriptive, count-selected set rather than
+an inferential sample. A taxon-trait pair is displayed only when its share of
+the full increased cell differs from its share of the full decreased cell.
+Pairs absent from both directions and other equal-share pairs remain available
+in the source cells but are omitted from the change-focused figure.
+
+The first row in each rank panel replaces the earlier unresolved-share bar
+chart. For each trait, red and blue outer-circle areas compare total propagated
+counts between increased and decreased directions; the larger direction within
+each trait receives the fixed reference area. The grey outer portion is the
+unresolved or ambiguous share at the displayed rank, and the colored inner
+portion is resolved. Taxon-circle area encodes that contributor's share of the
+full count, not the resolved-only count, so unresolved mass reduces the visible
+contributor share. Background-circle areas are normalized within trait and
+must not be compared as absolute counts across different traits.
+
+The right strip deduplicates each exact reported taxon label within profile.
+Its text shows raw PD-feces/other-feces occurrence counts. Color instead uses a
+profile-pool-normalized log2 prevalence ratio with a 0.5 pseudocount and one
+pseudo-profile in each denominator. This removes the mechanical bias from the
+unequal PD and other-feces pool sizes but is still descriptive: profiles and
+experiments can repeat within study, and no contributor-level p-value is
+computed.
+
+`pd_trait_contributors_trait_cocarriage_network.png` calculates shared selected
+taxa separately in increased and decreased cells. The displayed edge table and
+network retain only trait pairs whose shared-taxon count differs between
+directions. The companion `*_trait_cocarriage_all_edges.tsv` keeps all 15 pair
+counts so unchanged pairs are auditable rather than silently discarded. These
+counts describe propagated annotation co-carriage in a selected label set; they
+do not show within-sample trait expression or establish a PD mechanism.
+
+Contributor counts are not independent observations. Repeated experiments,
+hierarchical taxon-trait propagation, broad taxon annotations, and selection on
+the same count used for display can all favor frequently reported or broadly
+annotated labels. Species and family panels are therefore separate resolution
+views and must not be summed. Aggregate direction intervals shown in the
+generated Markdown note come from the existing paired study-weighted analysis;
+they provide trait-level context and are not tests of individual contributors
+or co-carriage edges.

@@ -1,16 +1,4 @@
-trait_a_slug	trait_a_label	trait_b_slug	trait_b_label	shared_taxa	species_shared_taxa	family_shared_taxa	example_taxa
-facultatively_aerobic	facultatively aerobic	cellulose_catabolic_process	cellulose catabolic process	7	0	7	Bacillaceae (186817); Micrococcaceae (1268); Oscillospiraceae (216572); Lachnospiraceae (186803); Yersiniaceae (1903411)
-facultatively_aerobic	facultatively aerobic	coccus_shaped	coccus shaped	28	10	18	Bacillaceae (186817); Micrococcaceae (1268); Staphylococcaceae (90964); Enterobacteriaceae (543); Streptococcaceae (1300)
-facultatively_aerobic	facultatively aerobic	sphere_shaped	sphere shaped	16	2	14	Bacillaceae (186817); Micrococcaceae (1268); Staphylococcaceae (90964); Enterobacteriaceae (543); Streptococcaceae (1300)
-facultatively_aerobic	facultatively aerobic	arsenate_reduction	arsenate reduction	5	1	4	Bacillaceae (186817); Micrococcaceae (1268); Staphylococcaceae (90964); Enterobacteriaceae (543); Escherichia coli (562)
-facultatively_aerobic	facultatively aerobic	moderately_halophilic	moderately halophilic	28	9	19	Bacillaceae (186817); Micrococcaceae (1268); Staphylococcaceae (90964); Enterobacteriaceae (543); Streptococcaceae (1300)
-cellulose_catabolic_process	cellulose catabolic process	coccus_shaped	coccus shaped	10	4	6	Bacillaceae (186817); Micrococcaceae (1268); Oscillospiraceae (216572); Lachnospiraceae (186803); Yersiniaceae (1903411)
-cellulose_catabolic_process	cellulose catabolic process	sphere_shaped	sphere shaped	5	1	4	Bacillaceae (186817); Micrococcaceae (1268); Oscillospiraceae (216572); Lachnospiraceae (186803); Ruminococcus champanellensis (1161942)
-cellulose_catabolic_process	cellulose catabolic process	arsenate_reduction	arsenate reduction	2	0	2	Bacillaceae (186817); Micrococcaceae (1268)
-cellulose_catabolic_process	cellulose catabolic process	moderately_halophilic	moderately halophilic	6	1	5	Bacillaceae (186817); Micrococcaceae (1268); Yersiniaceae (1903411); Pseudomonadaceae (135621); Paenibacillaceae (186822)
-coccus_shaped	coccus shaped	sphere_shaped	sphere shaped	21	6	15	Bacillaceae (186817); Micrococcaceae (1268); Staphylococcaceae (90964); Enterobacteriaceae (543); Streptococcaceae (1300)
-coccus_shaped	coccus shaped	arsenate_reduction	arsenate reduction	6	2	4	Bacillaceae (186817); Micrococcaceae (1268); Staphylococcaceae (90964); Enterobacteriaceae (543); Escherichia coli (562)
-coccus_shaped	coccus shaped	moderately_halophilic	moderately halophilic	19	6	13	Bacillaceae (186817); Micrococcaceae (1268); Staphylococcaceae (90964); Enterobacteriaceae (543); Streptococcaceae (1300)
-sphere_shaped	sphere shaped	arsenate_reduction	arsenate reduction	4	0	4	Bacillaceae (186817); Micrococcaceae (1268); Staphylococcaceae (90964); Enterobacteriaceae (543)
-sphere_shaped	sphere shaped	moderately_halophilic	moderately halophilic	9	0	9	Bacillaceae (186817); Micrococcaceae (1268); Staphylococcaceae (90964); Enterobacteriaceae (543); Streptococcaceae (1300)
-arsenate_reduction	arsenate reduction	moderately_halophilic	moderately halophilic	6	2	4	Bacillaceae (186817); Micrococcaceae (1268); Staphylococcaceae (90964); Enterobacteriaceae (543); Escherichia coli (562)
+trait_a_slug	trait_a_label	trait_b_slug	trait_b_label	increased_shared_taxa	decreased_shared_taxa	increased_minus_decreased_shared_taxa	absolute_direction_difference	changes_across_directions	increased_only_taxa	decreased_only_taxa	species_increased_shared_taxa	species_decreased_shared_taxa	family_increased_shared_taxa	family_decreased_shared_taxa
+coccus_shaped	coccus shaped	moderately_halophilic	moderately halophilic	19	18	1	1	True	Bifidobacteriaceae (31953)		6	6	13	12
+facultatively_aerobic	facultatively aerobic	coccus_shaped	coccus shaped	28	27	1	1	True	Bifidobacteriaceae (31953)		10	10	18	17
+facultatively_aerobic	facultatively aerobic	moderately_halophilic	moderately halophilic	28	27	1	1	True	Bifidobacteriaceae (31953)		9	9	19	18
