@@ -427,7 +427,7 @@ def add_contrast_legend(
             Line2D(
                 [0],
                 [0],
-                color=SLATE_500,
+                color="black",
                 linewidth=1.2,
                 label=(
                     f"Labeled branches: {significant_branch_count} "
@@ -1448,12 +1448,6 @@ def plot_matrix_heatmap(
     plt.close(fig)
 
 
-def cluster_color(cluster_id: int) -> tuple[float, float, float, float]:
-    """Return a stable color for a row cluster."""
-    palette = plt.get_cmap("tab20")
-    return palette((cluster_id - 1) % 20)
-
-
 def plot_grouped_clustered_contrast_heatmap(
     matrix: pd.DataFrame,
     annotations: pd.DataFrame,
@@ -1480,24 +1474,24 @@ def plot_grouped_clustered_contrast_heatmap(
     )
     if preview:
         fig_height = 8.5
-        fig_width = 14.0 + 1.6 * label_track_count
+        fig_width = 14.0 + 0.9 * label_track_count
         left = 0.08
         right = 0.92
         top = 0.86
         bottom = 0.23
         label_width = 0.01
-        branch_label_width = 1.6 * label_track_count
+        branch_label_width = 1.05 * label_track_count
         show_row_labels = False
         show_cell_text = False
     else:
         fig_height = max(9.5, 3.2 + 0.34 * row_count)
-        fig_width = 22.0 + 1.8 * label_track_count
+        fig_width = 22.0 + 1.0 * label_track_count
         left = 0.04
         right = 0.965
         top = 1 - 1.55 / fig_height
         bottom = 1.8 / fig_height
         label_width = 3.2
-        branch_label_width = 1.8 * label_track_count
+        branch_label_width = 1.1 * label_track_count
         show_row_labels = True
         show_cell_text = True
 
@@ -1510,7 +1504,7 @@ def plot_grouped_clustered_contrast_heatmap(
         right=right,
         top=top,
         bottom=bottom,
-        wspace=0.06,
+        wspace=0.0,
     )
     dendro_ax = fig.add_subplot(grid[0, 0])
     branch_label_ax = fig.add_subplot(grid[0, 1])
@@ -1541,58 +1535,73 @@ def plot_grouped_clustered_contrast_heatmap(
         end = (int(branch.leaf_end) + 1) * 10
         midpoint = (start + end) / 2
         track = int(branch.nesting_depth)
-        color = cluster_color(int(branch.spearman_cluster))
-        bracket_x = track + 0.08
-        branch_label_ax.plot(
+        bracket_x = 0.995 - 0.018 * track
+        dendro_ax.plot(
             [bracket_x, bracket_x],
             [start + 1, end - 1],
-            color=color,
+            color="black",
             linewidth=2.1 if not preview else 1.6,
             solid_capstyle="round",
+            transform=dendro_ax.get_yaxis_transform(),
+            clip_on=False,
             zorder=2,
         )
-        branch_label_ax.plot(
-            [bracket_x, bracket_x + 0.1],
+        dendro_ax.plot(
+            [bracket_x, 1.005],
             [start + 1, start + 1],
-            color=color,
+            color="black",
             linewidth=2.1 if not preview else 1.6,
+            transform=dendro_ax.get_yaxis_transform(),
+            clip_on=False,
+            zorder=2,
+        )
+        dendro_ax.plot(
+            [bracket_x, 1.005],
+            [end - 1, end - 1],
+            color="black",
+            linewidth=2.1 if not preview else 1.6,
+            transform=dendro_ax.get_yaxis_transform(),
+            clip_on=False,
             zorder=2,
         )
         branch_label_ax.plot(
-            [bracket_x, bracket_x + 0.1],
-            [end - 1, end - 1],
-            color=color,
-            linewidth=2.1 if not preview else 1.6,
-            zorder=2,
+            [0, track + 0.11],
+            [midpoint, midpoint],
+            color="black",
+            linewidth=1.0,
+            zorder=1,
         )
         label_source = (
             str(branch.cluster_label)
+            .replace("Pattern: ", "")
+            .replace("Increased-associated ", "Increased: ")
+            .replace("Decreased-associated ", "Decreased: ")
             .replace(
-                "); Increased-associated",
-                ")\nIncreased-associated",
+                "); Increased:",
+                ")\nIncreased:",
             )
             .replace(
-                "); Decreased-associated",
-                ")\nDecreased-associated",
+                "); Decreased:",
+                ")\nDecreased:",
             )
         )
         label_text = "\n".join(
-            wrap_label(part, width=26 if not preview else 23) for part in label_source.splitlines()
+            wrap_label(part, width=25 if not preview else 20) for part in label_source.splitlines()
         )
         branch_label_ax.text(
-            track + 0.18,
+            track + 0.13,
             midpoint,
             label_text,
             ha="left",
             va="center",
-            fontsize=6.8 if not preview else 6.1,
-            color=SLATE_900,
+            fontsize=8.4 if not preview else 7.1,
+            color="black",
             fontweight="bold",
             bbox={
-                "boxstyle": "round,pad=0.18",
+                "boxstyle": "round,pad=0.14",
                 "facecolor": "white",
-                "edgecolor": color,
-                "linewidth": 1.0,
+                "edgecolor": "black",
+                "linewidth": 1.2,
                 "alpha": 0.96,
             },
             clip_on=False,
