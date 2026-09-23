@@ -50,9 +50,10 @@ six-shared-trait-heatmaps:
 pd-trait-taxa:
 	uv run python scripts/lookup_pd_trait_taxa.py
 
-# Plot species-level influence contrasts for all six PD traits.
+# Plot thresholded species-only and rank-grouped species/genus/family PD influence contrasts.
 pd-trait-taxa-heatmap:
 	uv run python scripts/create_pd_six_trait_taxon_heatmap.py
+	uv run python scripts/create_pd_exploratory_taxa_influence_heatmap.py
 
 # Refresh PD trait contributor dot heatmap with specificity and co-carriage checks.
 pd-trait-contributors:

@@ -17,8 +17,11 @@ from create_pd_cellulose_analysis import (
     write_tsv,
 )
 from create_pd_six_trait_taxon_heatmap import (
+    EXCLUDED_TAXON_NAMES,
+    MIN_ABSOLUTE_INFLUENCE_Z,
     build_influence_cells,
     build_pd_taxa_reference_table,
+    filter_influence_display,
     literature_reference_table,
     plot_heatmap,
     read_profile_counts,
@@ -33,11 +36,21 @@ SELECTED_RANKS = ("species", "genus", "family")
 EXPLORATORY_MIN_SUPPORT_STUDIES = 2
 MAX_ROWS = 30
 RANK_PRIORITY = {"family": 3, "genus": 2, "species": 1}
+RANK_BLOCK_ORDER = {"species": 0, "genus": 1, "family": 2}
 
 
 def rank_priority(rank: object) -> int:
     """Prefer roll-up rows when equally supported."""
     return RANK_PRIORITY.get(str(rank), 0)
+
+
+def group_rows_by_taxonomic_rank(rows: pd.DataFrame) -> pd.DataFrame:
+    """Group selected rows into species, genus, and family blocks without re-ranking ties."""
+    grouped = rows.copy()
+    grouped["_selection_order"] = range(len(grouped))
+    grouped["_rank_block"] = grouped["taxonomic_rank"].map(RANK_BLOCK_ORDER).fillna(99)
+    grouped = grouped.sort_values(["_rank_block", "_selection_order"], kind="stable")
+    return grouped.drop(columns=["_selection_order", "_rank_block"])
 
 
 def select_exploratory_rows(
@@ -52,6 +65,8 @@ def select_exploratory_rows(
             "literature_taxon",
             "literature_direction",
             "literature_match_term",
+            "direction_hamming_distance",
+            "hamming_interpretation",
             "direction_agreement",
         ]
     ].copy()
@@ -118,7 +133,13 @@ def write_exploratory_note(
         f"support threshold of {EXPLORATORY_MIN_SUPPORT_STUDIES} studies, and caps the display at "
         f"{MAX_ROWS} rows so the figure stays readable. Rows are selected by keeping DOI-backed "
         "PD literature matches first, then adding the best-supported non-literature rank "
-        "roll-ups.\n\n"
+        "roll-ups. The y-axis then groups the selected taxa into species, genus, and family blocks "
+        "in that order; dark horizontal rules separate the rank blocks.\n\n"
+        f"*{'; '.join(sorted(EXCLUDED_TAXON_NAMES))}* is explicitly excluded. Only cell values "
+        f"greater than +{MIN_ABSOLUTE_INFLUENCE_Z:g} or less than "
+        f"-{MIN_ABSOLUTE_INFLUENCE_Z:g} are drawn, and rows with no value beyond that threshold "
+        "are omitted. The cell TSV retains all six exact estimates for each displayed taxon and "
+        "marks plotted cells with `displayed_in_heatmap`.\n\n"
         f"The displayed figure contains {len(rows)} taxa out of {source_rows} eligible "
         f"species/genus/family rows, {literature_rows} of which match the curated PD taxa "
         f"reference. It has {len(traits)} traits and {len(cells)} taxon-trait cells. Cell status "
@@ -126,7 +147,10 @@ def write_exploratory_note(
         "Use this view to find candidate taxa and rank-level patterns that the conservative "
         "species-only heatmap may miss. Treat it as hypothesis-generating: genus and family rows "
         "can mix multiple species, and the relaxed support threshold is meant to reveal leads, "
-        "not final directional claims.\n\n"
+        "not final directional claims. The x-axis `baseline Δz` is the full-data paired trait "
+        "contrast before taxon removal; each cell is baseline Δz minus the recomputed contrast "
+        "after removing that row taxon. These non-additive influence values show whether a taxon "
+        "changes the trait contrast, not whether it causally produces the trait effect.\n\n"
         f"[Cell statistics]({STEM}_cells.tsv) | [Taxon row annotations]({STEM}_taxa.tsv) | "
         f"[PD specificity]({STEM}_specificity.tsv) | [Trait summary]({STEM}_traits.tsv) | "
         f"[PD taxa reference]({REFERENCE_TABLE_STEM}_table.tsv) | "
@@ -155,10 +179,13 @@ def main() -> None:
         min_support_studies=EXPLORATORY_MIN_SUPPORT_STUDIES,
         remove_all_low_support_taxa=False,
     )
+    source_rows_before_display_filter = len(rows)
+    cells, rows, excluded_taxa, below_threshold_taxa = filter_influence_display(cells, rows)
     source_rows = len(rows)
     literature_reference = literature_reference_table()
     full_reference_table = build_pd_taxa_reference_table(rows, cells, literature_reference)
     selected_rows = select_exploratory_rows(rows, full_reference_table)
+    selected_rows = group_rows_by_taxonomic_rank(selected_rows)
     selected_ids = selected_rows["taxon_id"].astype(str).tolist()
     selected_cells = cells[cells["taxon_id"].astype(str).isin(selected_ids)].copy()
     selected_reference_table = reference_table_for_rows(full_reference_table, selected_rows)
@@ -171,11 +198,12 @@ def main() -> None:
         title="PD species + genus + family contributions across all six traits",
         taxon_unit="taxon",
         method_note=(
-            "Exploratory rows include reported species, genus, and family taxa; literature-matched "
-            "PD taxa are prioritized before top-supported non-literature roll-ups."
+            "Rows are grouped into species, genus, and family blocks; literature-matched PD taxa "
+            "are prioritized before top-supported non-literature roll-ups within selection."
         ),
-        top_margin_inches=2.85,
-        legend_y_inches=2.42,
+        top_margin_inches=2.75,
+        legend_y_inches=2.36,
+        min_support_studies=EXPLORATORY_MIN_SUPPORT_STUDIES,
     )
     write_tsv(selected_cells, OUTPUT_DIR / f"{STEM}_cells.tsv")
     write_tsv(selected_rows, OUTPUT_DIR / f"{STEM}_taxa.tsv")
@@ -203,12 +231,19 @@ def main() -> None:
         "method": "exploratory fixed-reference leave-one-reported-taxon-out influence",
         "taxonomic_ranks": list(SELECTED_RANKS),
         "minimum_support_studies": EXPLORATORY_MIN_SUPPORT_STUDIES,
+        "absolute_influence_display_threshold_z": MIN_ABSOLUTE_INFLUENCE_Z,
+        "display_rule": "mean influence > +0.01 or < -0.01",
+        "excluded_taxon_names": sorted(EXCLUDED_TAXON_NAMES),
+        "rows_before_display_filter": source_rows_before_display_filter,
+        "rows_removed_by_explicit_exclusion": excluded_taxa,
+        "rows_removed_below_absolute_influence_threshold": below_threshold_taxa,
         "max_displayed_rows": MAX_ROWS,
         "eligible_rows_before_display_cap": source_rows,
         "displayed_rows": len(selected_rows),
         "traits": len(traits),
         "cells": len(selected_cells),
-        "filled_cells": int(selected_cells["mean_influence_contrast_z"].notna().sum()),
+        "displayed_cells": int(selected_cells["displayed_in_heatmap"].sum()),
+        "audited_cells_for_displayed_taxa": len(selected_cells),
         "direct_annotation_cells": int(selected_cells["has_trait_annotation"].sum()),
         "denominator_only_cells": int((~selected_cells["has_trait_annotation"]).sum()),
         "rows_removed_all_low_support": removed_low_support_taxa,
@@ -230,6 +265,8 @@ def main() -> None:
             "DOI-backed PD literature matches first, then top-supported non-literature "
             "species/genus/family roll-ups"
         ),
+        "row_order": "species block, genus block, family block; selection order within rank",
+        "direction_hamming_encoding": {"0": "similar", "1": "different"},
         "input_sha256_chunks": {
             PROFILE_MATRIX_PATH.relative_to(PROFILE_MATRIX_PATH.parents[2]).as_posix(): (
                 sha256_chunks(PROFILE_MATRIX_PATH)

@@ -1,9 +1,6 @@
 taxon_id	taxon_name	taxonomic_rank	pd_feces_profiles	other_feces_profiles	pd_other_feces_counts	pd_feces_studies	other_feces_studies	pd_specificity_fraction	pd_vs_other_feces_log2_ratio
-NCBITaxon:216816	Bifidobacterium longum	species	5	54	5/54	4	32	0.0847457627118644	-3.308752706139629
 NCBITaxon:1304	Streptococcus salivarius	species	4	51	4/51	4	36	0.07272727272727272	-3.516575525740906
 NCBITaxon:2173	Methanobrevibacter smithii	species	3	13	3/13	3	9	0.1875	-1.9475325801058645
-NCBITaxon:33039	Mediterraneibacter torques	species	4	98	4/98	4	47	0.0392156862745098	-4.452126818014064
-NCBITaxon:40518	Ruminococcus bromii	species	4	64	4/64	3	37	0.058823529411764705	-3.841302253980942
 NCBITaxon:562	Escherichia coli	species	3	84	3/84	3	51	0.034482758620689655	-4.59352451422458
 NCBITaxon:301302	Roseburia faecis	species	6	18	6/18	5	17	0.25	-1.5090136474878575
 NCBITaxon:853	Faecalibacterium prausnitzii	species	13	137	13/137	8	74	0.08666666666666667	-3.3484003062485534
