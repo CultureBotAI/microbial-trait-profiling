@@ -1,0 +1,38 @@
+{
+  "date": "2026-09-23",
+  "pages": 22,
+  "source_figures": 21,
+  "replaced_figures": 10,
+  "unchanged_other_author_slides": 11,
+  "source_branch": "clustered-heatmap-generation",
+  "figure_code_footer_errors": [],
+  "renderer": "Chromium dedicated headless shell; installed Playwright revision 1243",
+  "renderer_exit_code": 0,
+  "pdf_page_size_points": [
+    1200,
+    750
+  ],
+  "source_images": "21 PNGs verified against manifest SHA-256 and native embedded dimensions; 20 checked byte-for-byte against pinned Git blobs",
+  "unversioned_source": "Slide 9: original local oxygen-guild PNG preserved by SHA-256",
+  "visually_inspected_pdf_pages": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    10,
+    11,
+    15,
+    16,
+    17
+  ],
+  "generator_missing_slides": [
+    10,
+    16
+  ],
+  "caption_audit": "Latest TSVs checked; individual BH family 2379 rows with missing p values treated as 1; grouped BH family 747 rows; all 48 strict species intervals cross zero.",
+  "repository_check": "just check passed: 55 tests, generated files, formatting, lint, mypy, schema checks, Bandit, deptry, and dependency audit",
+  "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/282",
+  "source_commit_url": "https://github.com/CultureBotAI/microbial-trait-profiling/commit/6db7c3df16342500fe677f12c55300e251b1b1d0"
+}

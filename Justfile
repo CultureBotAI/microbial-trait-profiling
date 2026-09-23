@@ -58,6 +58,35 @@ pd-trait-taxa-heatmap:
 pd-trait-contributors:
 	uv run python scripts/create_pd_trait_contributors.py
 
+# Restore the pinned PNGs used by the selected-figure presentation.
+# The guild figure is an explicitly unversioned local input; see the deck README.
+[positional-arguments]
+review-deck-assets manifest destination guild_source:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	manifest="$1"
+	destination="$2"
+	guild_source="$3"
+	mkdir -p "$destination/assets"
+	tail -n +2 "$manifest" | cut -f5,7,9,11 | while IFS=$'\t' read -r figure revision source_url asset; do
+	  if [[ "$source_url" == "NA" ]]; then
+	    cp "$guild_source" "$destination/$asset"
+	  else
+	    git show "$revision:$figure" > "$destination/$asset"
+	  fi
+	done
+
+# Use a dedicated headless shell that exits normally; desktop Chrome issue: #275.
+[positional-arguments]
+review-deck-pdf html_url output_pdf browser:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	deck_profile="$(mktemp -d)"
+	trap 'rm -rf "$deck_profile"' EXIT
+	"$3" --headless --no-first-run --disable-background-networking --disable-extensions \
+	  --no-pdf-header-footer --user-data-dir="$deck_profile" --print-to-pdf="$2" "$1"
+	test -s "$2"
+
 # Overlay increased (solid) and decreased (dashed) high-support Sankey links.
 six-shared-trait-combined-sankey:
 	uv run python scripts/create_six_shared_trait_sankeys.py --combined-high-support-only
