@@ -36,18 +36,21 @@ a validated diagnostic score or a patient-level measurement.
 
 ### Panel A: disease fingerprints
 
-Rows are selected fecal condition labels and columns are the six shared traits plus the
-ecological-reporter composite. Each cell is the mean of paired within-study contrasts, so studies
-are weighted equally rather than allowing studies with more profiles to dominate. Red means the
-trait is stronger in increased profiles; blue means it is stronger in decreased profiles. `n=` is
-the number of studies containing both directions. A dark border means the descriptive 95% t
-interval excludes zero. The orange outline identifies the PD row.
+Rows are the 13 fecal condition labels that have at least three paired studies and a descriptive
+95% study-level t interval excluding zero for at least one of the six individual traits. Neither
+the three-trait score nor the ecological-reporter composite can qualify a condition. Columns are
+the six shared traits plus the ecological-reporter composite. Each cell is the mean of paired
+within-study contrasts, so studies are weighted equally rather than allowing studies with more
+profiles to dominate. Red means the trait is stronger in increased profiles; blue means it is
+stronger in decreased profiles. `n=` is the number of studies containing both directions. A dark
+border marks the individual cells whose descriptive 95% t interval excludes zero. The orange
+outline identifies the PD row.
 
 ### Panel B: specificity among conditions
 
-Each point is one of the 56 fecal condition labels with at least three paired studies. Gray points
-provide the full background; named colored points are PD and selected physiological or disease
-comparators. Point size increases with paired-study count.
+Each point is one of the same 13 qualifying fecal condition labels shown in Panel A. Conditions
+with no interval-excluding-zero change among the six individual traits are not plotted. Point size
+increases with paired-study count, and PD is highlighted in orange.
 
 The x-axis is the cellulose contrast with its sign reversed. Moving right means cellulose
 catabolic process is relatively stronger in decreased profiles.
@@ -67,6 +70,15 @@ upper-right quadrant therefore matches both components of the proposed ecologica
 pattern. PD being in that quadrant shows pattern agreement, not PD specificity: several other
 conditions occupy the same region.
 
+Those three traits were chosen because, in the PD paired-study analysis, they were the three
+individual traits with positive increased-minus-decreased contrasts whose descriptive 95%
+intervals excluded zero: moderately halophilic, facultatively aerobic, and arsenate reduction.
+Cellulose catabolic process supplied the opposite, decreased-profile component because its PD
+contrast was negative and its interval also excluded zero. Coccus shaped and sphere shaped were
+not included in the y-axis composite because their PD intervals crossed zero. The resulting axis
+is therefore a data-derived exploratory summary of the PD pattern, not an independently validated
+or prospectively specified score.
+
 ### Panel C: PD taxon and trait provenance
 
 Rows are exact genus or species labels reported in PD fecal BugSigDB signatures; columns are the
@@ -78,7 +90,7 @@ summed.
 
 For PD, the study-weighted cellulose increased-minus-decreased contrast is `-0.651` across `45` paired studies. The exploratory reporter composite is `+1.150`. The composite equals the mean contrasts for moderately halophilic, facultatively aerobic, and arsenate reduction minus the cellulose contrast; it is not a validated diagnostic score.
 
-[Condition/trait audit table](pd_ecological_reporter_combined_condition_trait_summary.tsv) | [Study contrasts](pd_ecological_reporter_combined_study_contrasts.tsv) | [Taxon-panel cells](pd_ecological_reporter_combined_taxon_panel.tsv) | [Vector figure](pd_ecological_reporter_combined.svg)
+[Condition selection](pd_ecological_reporter_combined_condition_selection.tsv) | [Condition/trait audit table](pd_ecological_reporter_combined_condition_trait_summary.tsv) | [Study contrasts](pd_ecological_reporter_combined_study_contrasts.tsv) | [Taxon-panel cells](pd_ecological_reporter_combined_taxon_panel.tsv) | [Vector figure](pd_ecological_reporter_combined.svg)
 
 ## Condition-Taxon-Trait Evidence Landscape
 
