@@ -1,0 +1,47 @@
+{
+  "date": "2026-09-24",
+  "version": "v2",
+  "pages": 37,
+  "source_figures": 36,
+  "total_sankeys": 23,
+  "main_slides": 19,
+  "appendix_slides": 18,
+  "removed_v1_pages": [
+    4,
+    5,
+    11,
+    14,
+    15,
+    16
+  ],
+  "retained_prior_result_comparison": {
+    "v1_page": 18,
+    "v2_page": 12,
+    "primary_report": "https://pubmed.ncbi.nlm.nih.gov/28536926/",
+    "doi": "10.1007/s11427-016-9001-4",
+    "qualification": "Sparse species recurrence is compared with a genus-group abundance result. All influence intervals remain disclosed; no confirmed contradiction is claimed."
+  },
+  "source_deck_commit_url": "https://github.com/CultureBotAI/microbial-trait-profiling/commit/936c0e25edd3830fd091bfc6448a0aa3a61fcb44",
+  "jed_source_commit_url": "https://github.com/CultureBotAI/microbial-trait-profiling/commit/205257c5ec887bdf145e2c66e12f17ee005fafa0",
+  "renderer": "Chromium dedicated headless shell; Playwright revision 1243",
+  "renderer_exit_code": 0,
+  "pdf_page_size_points": [
+    1200,
+    750
+  ],
+  "source_images": "36 native-resolution images; all hashes match v1 and 35 match pinned Git blobs. Original unversioned oxygen-guild PNG preserved.",
+  "figure_code_footer_errors": [],
+  "layout_overflow_errors": [],
+  "removed_pages_verified": true,
+  "all_23_sankeys_verified": true,
+  "visually_inspected_pdf_pages": [
+    1,
+    11,
+    12,
+    13
+  ],
+  "v1_versioned_sources_unchanged": true,
+  "repository_check": "just check passed: 68 tests and all remaining gates.",
+  "independent_editorial_review": "Six removals, prior-result exception, retained caveats, page mapping, and citation checked independently; no substantive errors found.",
+  "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/282"
+}
