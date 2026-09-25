@@ -50,9 +50,10 @@ six-shared-trait-heatmaps:
 pd-trait-taxa:
 	uv run python scripts/lookup_pd_trait_taxa.py
 
-# Plot species-level influence contrasts for all six PD traits.
+# Plot thresholded species-only and rank-grouped species/genus/family PD influence contrasts.
 pd-trait-taxa-heatmap:
 	uv run python scripts/create_pd_six_trait_taxon_heatmap.py
+	uv run python scripts/create_pd_exploratory_taxa_influence_heatmap.py
 
 # Refresh PD trait contributor dot heatmap with specificity and co-carriage checks.
 pd-trait-contributors:
@@ -86,6 +87,16 @@ review-deck-pdf html_url output_pdf browser:
 	"$3" --headless --no-first-run --disable-background-networking --disable-extensions \
 	  --no-pdf-header-footer --user-data-dir="$deck_profile" --print-to-pdf="$2" "$1"
 	test -s "$2"
+
+# Test all eligible fecal condition-taxon and condition-trait pairs, apply global
+# BH correction, and redraw the FDR-tiered evidence landscape.
+pd-significant-ecological-network:
+	uv run python scripts/create_pd_significant_condition_taxon_trait_network.py
+
+# Redraw the combined ecological-reporter figure after retaining conditions with
+# a descriptive 95% interval excluding zero for at least one of the six traits.
+pd-ecological-reporter-combined:
+	uv run python scripts/create_pd_ecological_reporter_combined.py
 
 # Overlay increased (solid) and decreased (dashed) high-support Sankey links.
 six-shared-trait-combined-sankey:

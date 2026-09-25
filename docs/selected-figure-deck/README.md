@@ -1,40 +1,62 @@
 # Selected-figure deck
 
-The September 23 refresh replaces all ten of Jed's figure images in the 22-slide
-deck from issue #274. The other eleven figures and their slide content are
-preserved. Work is tracked in #282.
+The September 24 refresh contains 43 slides and 42 source figures. It includes
+all 21 Sankeys in Jed's current manifest and the two published Ilyas Sankeys.
+The three combined six-color views appear on slides 7–9; all 18 alternate and
+individual-trait views appear in the appendix, slides 26–43. Every presentation
+title now states a biological finding or a specific data point. Work is tracked
+in #282 and PR #283, continuing the deck from #274.
 
-Jed's sources are pinned to `6db7c3df16342500fe677f12c55300e251b1b1d0` on
+Jed's sources are pinned to `205257c5ec887bdf145e2c66e12f17ee005fafa0` on
 `clustered-heatmap-generation`. The artifact-only copy briefly merged in #281 was
 reverted on `main`; this deck deliberately follows Jed's current analysis branch.
 
 `selected_figures.html` is the print source. `slide_manifest.tsv` records source
-revisions, paths, captions, methods links, and image SHA-256 hashes.
-`replacements.tsv` maps every replaced image to its predecessor. Images and PDFs
-are generated local artifacts and are not duplicated in this directory.
+revisions, paths, captions, evidence links, and image SHA-256 hashes.
+`replacements.tsv` maps the September 24 slides to their September 23
+predecessors. `sankey_coverage.tsv` records all 21 added views, their source TSVs,
+link counts, and displayed positive-z profile membership totals. Images and
+PDFs are generated local artifacts and are not duplicated in this directory.
 
 ## Changes
 
 | Slides | Replacement |
 | --- | --- |
-| 2, 4, 5, 11 | Current individual-condition heatmaps and matching q values |
-| 3 | Complete grouped heatmap, including the new dendrogram trait-pattern labels |
-| 6 | Current branch's pooled paired-contrast infographic |
-| 10 | Combined ecological-reporter condition comparison and taxon provenance |
-| 15 | Current strict species-influence heatmap |
-| 16 | Condition–direction–taxon–trait evidence network |
-| 17 | Contributor map with direction differences, unresolved mass, and normalized specificity |
+| 1–6 | Exploratory cellulose leads, grouped associations, testing-family sensitivity, and pooled contrasts |
+| 7–9 | Combined bidirectional and separate increased/decreased Sankeys, six trait colors per selected pair and direction |
+| 10–17 | Study-level context, 13 selected ecological-reporter conditions, and anatomy-specific evidence limits |
+| 18 | Five retained PD species; nine displayed effects, all 30 audited intervals include zero |
+| 19 | Current evidence landscape: PD halophily alone survives 336 study-level trait tests |
+| 20 | Eleven PD contributor taxa retained by a five-percentage-point share difference |
+| 21–25 | Original Ilyas enrichment figures and both saved guild Sankeys, with revised titles |
+| 26–43 | Full overlays, six-lane layouts, individual-condition maps, and twelve single-trait Sankeys |
 
-The overview now reports the current branch's four selected cells and the
-2,379-row individual-condition BH family. These values differ from the prior
-deck's denominator-harmonized branch. The source tables and their own testing
-families are preserved; no statistical rerun or cross-arm evidence combination
-is performed. The network and combined figure have committed methods and audit
-tables, but no generating script was found in the branch's source, scripts,
-tests, or Justfile, including an ignored-file search of the checkout. Their
-footers therefore link the methods and state that the generator is not committed.
+The overview reports the source branch's four exploratory profile-level leads
+and the 2,379-row individual-condition BH family. The grouped family has 747
+rows. These differ from the study-level analysis on slide 19: 56 fecal
+conditions × six traits, with global BH correction and one surviving trait
+association (PD halophily, q = 0.04798; 45 paired studies). Its separate
+264-test taxon family has no survivors. Both updated PD generators are now
+committed and linked in the figure footers. Source test families are preserved;
+no statistical rerun or cross-analysis evidence combination is performed.
 
-The source for slide 9 is the pre-existing, unversioned local oxygen-guild PNG.
+Sankey coverage was checked against every fetched remote branch's published
+PNG paths, not only the working tree. All 23 unique published Sankey PNG paths
+are represented. Jed's three reduced views have exactly six trait-color links
+for every selected condition/site/direction: 72 links in each direction and 144
+in the combined view, spanning a union of 14 condition/site pairs. The six
+colors identify facultative aerobiosis, cellulose catabolism, coccus shape,
+sphere shape, arsenate reduction, and moderate halophily. Solid and dashed
+links distinguish increased and decreased profiles in the combined map.
+
+Appendix percentages divide fecal positive-z memberships by all memberships
+across that figure's displayed links. These are selected descriptive views;
+memberships can repeat across traits and overlapping condition groups. They
+are not counts of independent patients, studies, or unique profiles. The oval
+counts in reduced views deduplicate across traits within each selected
+condition/site/direction. All original PNG pixels and their legends are kept.
+
+The source for slide 12 is the pre-existing, unversioned local oxygen-guild PNG.
 Its hash is recorded in the manifest; supply that original image explicitly
 when reconstructing the assets. Do not substitute a newly generated figure.
 
@@ -61,7 +83,8 @@ after PDF export is documented in #275. The renderer must return normally with
 exit code zero. The recipes restore the earlier local-only build workflow as
 versioned commands; they do not suppress renderer failures or install tools.
 
-Before publishing a PDF, compare all 21 PNG hashes with the manifest, confirm
-22 pages and 21 native-resolution embedded images, check every page's source
-footer, and visually inspect the changed slides. Run `just check` before a
-commit. The original local deck is backed up before its replacement.
+Before publishing a PDF, compare all 42 PNG hashes with the manifest, confirm
+43 pages and 42 native-resolution embedded images, check every page's source
+footer, and visually inspect the changed slides. Verify all 21 source Sankey
+manifest entries and the two Ilyas paths are represented. Run `just check`
+before a commit. The original local deck is backed up before its replacement.

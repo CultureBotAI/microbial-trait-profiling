@@ -4,9 +4,11 @@
 
 The background row replaces the separate unresolved-share bars. Within each trait, paired red/blue circle area compares the increased/decreased propagated count; the grey outer area is the portion unresolved or ambiguous at the displayed rank. Contributor circle area uses the full cell denominator, so unresolved mass already reduces the colored contributor share rather than being discarded.
 
-The heatmap and direction-difference table retain 149 of 318 taxon-trait pairs whose full-cell contributor share changes between directions. Equal pairs, including pairs absent in both directions, are omitted.
+The heatmap retains `11` of `53` candidate taxa. A row must have at least one absolute increased-versus-decreased full-cell contributor share difference of `5%`. This removes rows containing only small directional changes.
 
-The right strip retains exact-label occurrence counts as text but colors them by the smoothed PD-versus-other-feces prevalence ratio. This corrects the previous raw-count color comparison for unequal profile-pool denominators; it remains descriptive and does not account for study clustering.
+The direction-difference table retains 149 of 318 taxon-trait pairs whose full-cell contributor share changes between directions. Equal pairs, including pairs absent in both directions, are omitted.
+
+The right strip colors taxa by the profile-pool-normalized prevalence difference (`PD prevalence - other-feces prevalence`) in percentage points. This finite difference is used instead of a count ratio, so a small or zero other-feces count cannot create an infinite ratio. Raw count displays with a zero denominator, such as `1/0`, are rendered as `---`. The metric remains descriptive and does not account for study clustering.
 
 ## Direction-changing co-carriage pairs
 
@@ -50,13 +52,13 @@ High unresolved shares limit rank-specific attribution. They do not create extra
 
 Top profile-pool-normalized reported taxon labels (descriptive):
 
-| rank | taxon | PD/other profiles | PD/other prevalence | log2 prevalence ratio |
+| rank | taxon | PD/other profiles | PD/other prevalence | prevalence difference |
 | --- | --- | ---: | ---: | ---: |
-| family | Erwiniaceae (1903409) | 1/0 | 0.40%/0.00% | 5.34 |
-| family | Listeriaceae (186820) | 1/1 | 0.40%/0.03% | 3.75 |
-| species | Streptococcus mutans (1309) | 5/5 | 1.98%/0.15% | 3.75 |
-| species | Roseburia faecis (301302) | 6/18 | 2.37%/0.53% | 2.24 |
-| species | Listeria monocytogenes (1639) | 0/1 | 0.00%/0.03% | 2.17 |
+| family | Lachnospiraceae (186803) | 49/307 | 19.37%/8.98% | +10.39 pp |
+| family | Oscillospiraceae (216572) | 28/222 | 11.07%/6.49% | +4.57 pp |
+| family | Bifidobacteriaceae (31953) | 16/106 | 6.32%/3.10% | +3.22 pp |
+| family | Lactobacillaceae (33958) | 17/128 | 6.72%/3.74% | +2.98 pp |
+| family | Streptococcaceae (1300) | 14/107 | 5.53%/3.13% | +2.40 pp |
 
 ## Counting and selection bias
 
@@ -69,8 +71,9 @@ Audit files:
 
 - `pd_trait_contributors_cells.tsv`: long-form source dot cells.
 - `pd_trait_contributors_direction_differences.tsv`: change-only taxon-trait direction pairs.
+- `pd_trait_contributors_heatmap_taxa.tsv`: taxa passing the large-difference row filter.
 - `pd_trait_contributors_selected_taxa.tsv`: selected taxa with normalized specificity context.
-- `pd_trait_contributors_taxon_specificity.tsv`: PD-vs-other-feces counts and prevalence ratios.
+- `pd_trait_contributors_taxon_specificity.tsv`: PD-vs-other-feces counts and prevalence metrics.
 - `pd_trait_contributors_trait_cocarriage_taxa.tsv`: direction-specific taxon-by-trait presence.
 - `pd_trait_contributors_trait_cocarriage_all_edges.tsv`: all pairwise direction counts.
 - `pd_trait_contributors_trait_cocarriage_edges.tsv`: only pairs that change by direction.

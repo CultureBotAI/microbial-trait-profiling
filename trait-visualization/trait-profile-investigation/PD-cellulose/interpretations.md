@@ -74,32 +74,37 @@ See `pd_cellulose_direction_exclusive_taxa_context.md`.
 
 ## Species-by-Six-Trait Influence Diagnostic
 
-The influence workflow evaluates `60` reported species across all six PD lollipop traits (`360` species-trait cells). Species whose six cells all have fewer than three supporting studies are omitted from the display, leaving eight species and `48` displayed cells. For each cell, the analysis removes the species' complete non-MediaDive annotation vector from profiles where that species was reported, recomputes trait fractions against the unchanged human-corpus reference, forms paired increased-minus-decreased experiment contrasts, averages experiments within study, and weights studies equally.
+The influence workflow evaluates reported species across all six PD lollipop traits. It removes each species' complete non-MediaDive annotation vector from profiles where that species was reported, recomputes trait fractions against the unchanged human-corpus reference, forms paired increased-minus-decreased experiment contrasts, averages experiments within study, and weights studies equally. Species whose six cells all have fewer than three supporting studies are omitted, *Mediterraneibacter torques* is explicitly excluded, and species with no mean influence greater than `+0.01` or less than `-0.01` are omitted. Five species remain, with `30` audited species-trait cells and nine cells beyond the display threshold.
 
-All `48` displayed cells have intervals that cross zero and are marked `mixed`; none receives a supported `inc` or `dec` classification. Thus, the aggregate trait directions above are not directionally attributable to any single displayed species in this diagnostic.
+All `30` audited cells for the five retained species have intervals that cross zero and are marked `mixed`; none receives a supported `inc` or `dec` classification. Thus, the aggregate trait directions above are not directionally attributable to any single displayed species in this diagnostic. The cell TSV retains the exact value for every retained species-trait combination and uses `displayed_in_heatmap` to identify the nine threshold-passing cells.
 
 Rows are sorted from the strongest BugSigDB increased skew to the strongest decreased skew using the PD log2 increased/decreased profile-count ratio. Infinite-ratio ties are ordered by the signed profile-count difference, then total direction support and taxon name. This ordering controls display only; it does not change influence values or literature comparisons.
 
-The heatmap now shows two right-hand annotations: BugSigDB increased/decreased recurrence and the literature comparison. The PD-specificity strip has been removed from the figure, although its values remain in `pd_species_six_traits_influence_heatmap_specificity.tsv`. The comparison strip directly marks *Mediterraneibacter torques* (`3/1` BugSigDB increased versus literature decreased) and *Escherichia coli* (`1/2` BugSigDB decreased versus literature increased) as `DIFFERS`; *Ruminococcus bromii* (`2/2`) is marked `balanced` rather than counted as agreement.
+The first right-hand annotation shows BugSigDB increased/decreased recurrence. The second uses red fill for literature-increased and blue fill for literature-decreased. Directional literature and BugSigDB recurrence are compared with one-position Hamming distance: `0` means similar and receives a green border; `1` means different and receives a red border. Four of the five retained species have distance `0`. *Escherichia coli* has distance `1` because its BugSigDB recurrence is decreased (`1/2`) while the matched literature direction is increased.
 
-Outlined cells include direct removal of the displayed trait; unoutlined cells show the denominator-mediated effect of removing a species that lacks a direct annotation for that trait. The result is a leave-one-reported-species-out influence diagnostic, not a causal attribution or strain-level measurement.
+The x-axis `baseline Δz` is the full-data, study-weighted paired PD increased-minus-decreased trait contrast before taxon removal. Each heatmap cell is that baseline minus the contrast recomputed after taxon removal. Positive cells make the positive contrast larger; negative cells make the negative contrast larger. The values do not sum to the baseline because trait fractions are nonlinear and taxon annotations overlap.
+
+Outlined cells include direct removal of the displayed trait; unoutlined cells show the denominator-mediated effect of removing a species that lacks a direct annotation for that trait. For example, the *E. coli*–arsenate reduction cell is directly annotated and has influence `+0.1012`, so removing *E. coli* weakens the positive arsenate contrast by that amount in this diagnostic. Its 95% interval crosses zero (`-0.1372` to `+0.3395`), so the direction remains `mixed`. This is contribution/influence evidence, not causal attribution or a strain-level measurement.
 
 See `pd_species_six_traits_influence_heatmap.png`, `pd_species_six_traits_influence_heatmap.md`, and `pd_species_six_traits_influence_heatmap_cells.tsv`.
 
+### Species + Genus + Family View
+
+The expanded view applies the same strict magnitude display filter and excludes *M. torques*, but lowers the exploratory support threshold to two studies. It selects up to 30 literature-matched or best-supported rows, then groups the y-axis into species, genus, and family blocks separated by dark horizontal rules. The current figure contains eight species, 14 genera, and eight families, with `71` visible cells beyond `±0.01`. Genus and family rows can mix multiple descendant species and remain hypothesis-generating taxonomic roll-ups.
+
+See `pd_exploratory_taxa_six_traits_influence_heatmap.png`, `pd_exploratory_taxa_six_traits_influence_heatmap.md`, and `pd_exploratory_taxa_six_traits_influence_heatmap_cells.tsv`.
+
 ### Agreement With Published PD Directions
 
-| displayed species | BugSigDB inc/dec | literature value | comparison level | result |
+| displayed species | BugSigDB inc/dec | literature value | comparison level | Hamming result |
 | --- | ---: | --- | --- | --- |
-| *Bifidobacterium longum* | `5/0` increased | increased | *Bifidobacterium* genus proxy | agrees |
-| *Streptococcus salivarius* | `4/0` increased | increased | *Streptococcus* genus proxy | agrees |
-| *Methanobrevibacter smithii* | `3/0` increased | increased | exact species term in a genus reference | agrees |
-| *Mediterraneibacter torques* | `3/1` increased | decreased | *Ruminococcus* genus/synonym proxy | differs |
-| *Ruminococcus bromii* | `2/2` balanced | decreased | *Ruminococcus* genus proxy | balanced in BugSigDB |
-| *Escherichia coli* | `1/2` decreased | increased | *Escherichia-Shigella* genus-group proxy | differs |
-| *Roseburia faecis* | `0/6` decreased | decreased | genus plus species-level evidence | agrees |
-| *Faecalibacterium prausnitzii* | `0/13` decreased | decreased | genus/species evidence | agrees |
+| *Streptococcus salivarius* | `4/0` increased | increased | *Streptococcus* genus proxy | `0`, similar |
+| *Methanobrevibacter smithii* | `3/0` increased | increased | exact species term in a genus reference | `0`, similar |
+| *Escherichia coli* | `1/2` decreased | increased | *Escherichia-Shigella* genus-group proxy | `1`, different |
+| *Roseburia faecis* | `0/6` decreased | decreased | genus plus species-level evidence | `0`, similar |
+| *Faecalibacterium prausnitzii* | `0/13` decreased | decreased | genus/species evidence | `0`, similar |
 
-Five of the eight displayed rows agree with the curated literature direction, two differ, and one is balanced in BugSigDB. The differences are *M. torques* and *E. coli*. Both comparisons use broader or synonym-group literature rather than a pooled species-specific estimate, so they are sensitivity findings rather than evidence that either source is wrong. *R. bromii* is likewise non-directional in BugSigDB despite a decreased genus-level literature reference.
+The *E. coli* comparison uses broader genus-group literature rather than a pooled species-specific estimate, so its Hamming distance is a descriptive sensitivity finding rather than evidence that either source is wrong.
 
 The DOI-linked evidence statements and taxon-by-taxon interpretations are in `pd_species_six_traits_reference_interpretation.md` and `pd_species_six_traits_reference_table.tsv`.
 
@@ -107,13 +112,13 @@ The DOI-linked evidence statements and taxon-by-taxon interpretations are in `pd
 
 The direction reference is a targeted narrative review updated `2026-09-22`, not a systematic review or meta-analysis. PubMed, PubMed Central, and publisher records were searched using Parkinson disease, gut microbiome, each taxon name or synonym, and the terms increased, decreased, enriched, or depleted. Eligible evidence comprised human PD-versus-control fecal or intestinal microbiome studies and cross-cohort human meta-analyses with an explicit taxon direction. Animal-only, intervention-only, non-gut, and severity-only findings were excluded from increased/decreased calls.
 
-An exact species result was preferred. When unavailable, a genus or family result was retained as an explicitly labeled parent-level proxy; conflicting eligible evidence at the matched level is classified as `variable`, and association-only evidence is not treated as directional. BugSigDB direction is defined from curated PD fecal profile recurrence: increased when increased-profile count exceeds decreased-profile count, decreased for the reverse, and balanced for a tie. Agreement labels compare those categories only; they are not statistical agreement tests and do not resolve cohort, medication, geography, sequencing, or taxonomy-version heterogeneity.
+An exact species result was preferred. When unavailable, a genus or family result was retained as an explicitly labeled parent-level proxy; conflicting eligible evidence at the matched level is classified as `variable`, and association-only evidence is not treated as directional. BugSigDB direction is defined from curated PD fecal profile recurrence: increased when increased-profile count exceeds decreased-profile count, decreased for the reverse, and balanced for a tie. Directional literature and BugSigDB calls are encoded as one binary categorical position and compared with Hamming distance (`0` similar, `1` different). Balanced, variable, associated, and unlisted cases have no defined distance. This is not a statistical agreement test and does not resolve cohort, medication, geography, sequencing, or taxonomy-version heterogeneity.
 
 ## Contributor Specificity and Trait Co-Carriage
 
-The contributor analysis selects `28` species and `25` families across the six PD traits. The heatmap retains `149/318` taxon-trait pairs whose share of the full trait-direction count differs between increased and decreased profiles. Equal pairs, including the `169` pairs absent in both directions, are omitted. Its first row uses paired red/blue circles for the directional background and a grey outer portion for unresolved or ambiguous rank mass; contributor circles remain fractions of the full count, so unresolved mass is not silently renormalized away.
+The contributor analysis selects `28` species and `25` families across the six PD traits. To remove rows containing only small dots, the heatmap retains `11/53` taxa—`3` species and `8` families—with at least one absolute increased-versus-decreased full-cell contributor-share difference of `5` percentage points. The complete direction-difference audit still retains `149/318` taxon-trait pairs whose share changes between directions. Equal pairs, including the `169` pairs absent in both directions, are omitted. Its first row uses paired red/blue circles for the directional background and a grey outer portion for unresolved or ambiguous rank mass; contributor circles remain fractions of the full count, so unresolved mass is not silently renormalized away.
 
-The specificity strip retains exact-label PD/other occurrence counts as text but now colors by a smoothed prevalence ratio using `253` PD fecal profiles and `3,419` other fecal profiles as the respective denominators. This removes the mechanical pool-size bias in the previous raw-count color encoding. It remains descriptive rather than inferential because profiles and experiments repeat within studies. The largest ratios belong mostly to sparse labels; for example, Erwiniaceae is `1/253` PD profiles versus `0/3,419` other profiles, so its high smoothed ratio is not strong evidence by itself.
+The specificity strip uses `253` PD fecal profiles and `3,419` other fecal profiles as the respective denominators and colors by the normalized prevalence difference (`PD prevalence - other-feces prevalence`) rather than a count ratio. Raw count displays with a zero denominator, such as `1/0`, are rendered as `---`; thus an undefined or infinite ratio cannot dominate the color scale. The prevalence difference remains descriptive rather than inferential because profiles and experiments repeat within studies.
 
 Only `3/15` trait co-carriage pairs change across directions, and every change is one additional increased-direction family: Bifidobacteriaceae. Facultatively aerobic plus coccus shaped changes from `27` decreased to `28` increased shared taxa, facultatively aerobic plus moderately halophilic also changes from `27` to `28`, and coccus shaped plus moderately halophilic changes from `18` to `19`. The other `12` pairs are retained in the all-edges audit but omitted from the network.
 
@@ -148,8 +153,12 @@ See `pd_trait_contributors_species_family_dot_heatmap.png`, `pd_trait_contributo
 - `pd_species_six_traits_reference_table.tsv`: BugSigDB/literature direction, match scope, six-trait annotations, and strongest influence per displayed species.
 - `pd_species_six_traits_reference_interpretation.md`: DOI-linked agreement summary, literature-review methods, and taxon details.
 - `pd_taxa_literature_reference.tsv`: curated literature directions, evidence statements, DOI citations, and match terms.
+- `pd_exploratory_taxa_six_traits_influence_heatmap.png`: thresholded influence view grouped into species, genus, and family blocks.
+- `pd_exploratory_taxa_six_traits_influence_heatmap_cells.tsv`: rank-expanded influence estimates and display-filter flags.
+- `pd_exploratory_taxa_six_traits_influence_heatmap_taxa.tsv`: selected rank-grouped rows, occurrence summaries, and literature comparisons.
 - `pd_trait_contributors_species_family_dot_heatmap.png`: selected species/family contributor view with specificity strip.
 - `pd_trait_contributors_direction_differences.tsv`: change-only taxon-trait direction pairs.
+- `pd_trait_contributors_heatmap_taxa.tsv`: taxa retained by the large direction-difference filter.
 - `pd_trait_contributors_trait_cocarriage_all_edges.tsv`: all 15 direction-specific co-carriage pairs.
 - `pd_trait_contributors_trait_cocarriage_network.png`: direction-changing co-carriage pairs among selected contributors.
 - `pd_trait_contributors.md`: contributor-analysis interpretation and audit-file index.

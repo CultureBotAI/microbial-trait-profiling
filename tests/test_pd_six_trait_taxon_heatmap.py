@@ -223,11 +223,48 @@ def test_rows_sort_by_bugsigdb_inc_dec_value() -> None:
 
 
 def test_literature_comparison_label_makes_disagreement_explicit() -> None:
-    assert heatmap.literature_comparison_label("decreased", "differs") == "lit dec\nDIFFERS"
+    assert heatmap.direction_hamming_distance("increased", "increased") == 0
+    assert heatmap.direction_hamming_distance("increased", "decreased") == 1
+    assert pd.isna(heatmap.direction_hamming_distance("increased", "balanced"))
+    assert (
+        heatmap.literature_comparison_label("decreased", "differs", 1) == "lit dec\nH=1 different"
+    )
+    assert heatmap.literature_comparison_label("increased", "agrees", 0) == "lit inc\nH=0 similar"
     assert (
         heatmap.literature_comparison_label("decreased", "balanced in BugSigDB")
         == "lit dec\nbalanced"
     )
+
+
+def test_influence_display_filter_excludes_taxon_and_small_effects() -> None:
+    rows = pd.DataFrame(
+        [
+            ["NCBITaxon:33039", "Mediterraneibacter torques"],
+            ["taxon-small", "Small effect"],
+            ["taxon-kept", "Kept effect"],
+        ],
+        columns=["taxon_id", "taxon_name"],
+    )
+    cells = pd.DataFrame(
+        [
+            ["NCBITaxon:33039", "t1", 0.5],
+            ["taxon-small", "t1", 0.01],
+            ["taxon-small", "t2", -0.01],
+            ["taxon-kept", "t1", 0.0101],
+            ["taxon-kept", "t2", 0.002],
+        ],
+        columns=["taxon_id", "trait_id", "mean_influence_contrast_z"],
+    )
+
+    filtered_cells, filtered_rows, excluded, below_threshold = heatmap.filter_influence_display(
+        cells, rows
+    )
+
+    assert filtered_rows["taxon_id"].tolist() == ["taxon-kept"]
+    assert filtered_rows["displayed_trait_cells"].tolist() == [1]
+    assert filtered_cells["displayed_in_heatmap"].tolist() == [True, False]
+    assert excluded == 1
+    assert below_threshold == 1
 
 
 def test_taxon_specificity_compares_pd_feces_to_other_feces() -> None:
@@ -355,9 +392,12 @@ def test_pd_taxa_reference_table_adds_literature_and_interpretation(tmp_path: Pa
 
     assert table.loc["taxon-e", "literature_taxon"] == "Escherichia-Shigella"
     assert table.loc["taxon-e", "bugsigdb_pd_direction"] == "decreased"
+    assert table.loc["taxon-e", "direction_hamming_distance"] == 1
+    assert table.loc["taxon-e", "hamming_interpretation"] == "different"
     assert table.loc["taxon-e", "direction_agreement"] == "differs"
     assert "review cohort" in table.loc["taxon-e", "interpretation"]
     assert table.loc["taxon-f", "literature_direction"] == "decreased"
+    assert table.loc["taxon-f", "direction_hamming_distance"] == 0
     assert table.loc["taxon-f", "direction_agreement"] == "agrees"
     assert "10.1002/mds.28119" in table.loc["taxon-f", "doi_citations"]
     assert table.loc["taxon-f", "kg_microbe_direct_trait_count"] == 2

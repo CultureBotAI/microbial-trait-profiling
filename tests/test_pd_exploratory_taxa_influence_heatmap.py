@@ -36,16 +36,50 @@ def test_exploratory_row_selection_prioritizes_literature_matches() -> None:
     )
     reference_table = pd.DataFrame(
         [
-            ["taxon-lit-family", "Known family", "decreased", "Known family", "agrees"],
-            ["taxon-lit-species", "Known species", "increased", "Known species", "agrees"],
-            ["taxon-top-genus", "not listed", "not listed", "", "not in literature reference"],
-            ["taxon-other", "not listed", "not listed", "", "not in literature reference"],
+            [
+                "taxon-lit-family",
+                "Known family",
+                "decreased",
+                "Known family",
+                0,
+                "similar",
+                "agrees",
+            ],
+            [
+                "taxon-lit-species",
+                "Known species",
+                "increased",
+                "Known species",
+                0,
+                "similar",
+                "agrees",
+            ],
+            [
+                "taxon-top-genus",
+                "not listed",
+                "not listed",
+                "",
+                float("nan"),
+                "not applicable",
+                "not in literature reference",
+            ],
+            [
+                "taxon-other",
+                "not listed",
+                "not listed",
+                "",
+                float("nan"),
+                "not applicable",
+                "not in literature reference",
+            ],
         ],
         columns=[
             "taxon_id",
             "literature_taxon",
             "literature_direction",
             "literature_match_term",
+            "direction_hamming_distance",
+            "hamming_interpretation",
             "direction_agreement",
         ],
     )
@@ -61,4 +95,27 @@ def test_exploratory_row_selection_prioritizes_literature_matches() -> None:
         "PD literature seed",
         "PD literature seed",
         "top supported exploratory roll-up",
+    ]
+
+
+def test_rows_are_grouped_into_species_genus_family_blocks() -> None:
+    rows = pd.DataFrame(
+        [
+            ["family-a", "family"],
+            ["species-a", "species"],
+            ["genus-a", "genus"],
+            ["species-b", "species"],
+            ["family-b", "family"],
+        ],
+        columns=["taxon_id", "taxonomic_rank"],
+    )
+
+    grouped = heatmap.group_rows_by_taxonomic_rank(rows)
+
+    assert grouped["taxon_id"].tolist() == [
+        "species-a",
+        "species-b",
+        "genus-a",
+        "family-a",
+        "family-b",
     ]

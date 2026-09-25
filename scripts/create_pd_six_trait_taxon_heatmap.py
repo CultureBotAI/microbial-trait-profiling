@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.patches import Patch, Rectangle
 from scipy import stats
+from scipy.spatial import distance
 
 from create_pd_cellulose_analysis import (
     FECES,
@@ -30,20 +31,27 @@ from create_pd_cellulose_analysis import (
 PROFILE_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
 STEM = "pd_species_six_traits_influence_heatmap"
 MIN_SUPPORT_STUDIES = 3
+MIN_ABSOLUTE_INFLUENCE_Z = 0.01
 TRANSFORM_SCALE = 1000.0
 ROW_COLOR_LIMIT = 3.0
 INCREASED_COLOR = "#b91c1c"
 DECREASED_COLOR = "#1d4ed8"
 UNAVAILABLE_COLOR = "#e5e7eb"
+EXCLUDED_TAXON_IDS = frozenset({"NCBITaxon:33039"})
+EXCLUDED_TAXON_NAMES = frozenset({"Mediterraneibacter torques"})
 REFERENCE_TABLE_STEM = "pd_species_six_traits_reference"
 LITERATURE_REFERENCE_NAME = "pd_taxa_literature_reference"
 LITERATURE_REVIEW_DATE = "2026-09-22"
-LITERATURE_COMPARISON_COLORS = {
-    "agrees": "#dcfce7",
-    "differs": "#fee2e2",
-    "balanced in BugSigDB": "#fef3c7",
-    "literature non-directional": "#ede9fe",
-    "not in literature reference": "#f3f4f6",
+LITERATURE_DIRECTION_COLORS = {
+    "increased": "#fee2e2",
+    "decreased": "#dbeafe",
+    "variable": "#ede9fe",
+    "associated": "#fef3c7",
+    "not listed": "#f3f4f6",
+}
+LITERATURE_AGREEMENT_BORDER_COLORS = {
+    "agrees": "#15803d",
+    "differs": "#dc2626",
 }
 LITERATURE_LABELS = {
     "increased": "lit inc",
@@ -194,9 +202,7 @@ PD_TAXA_LITERATURE_REFERENCE = [
             "Reported as decreased at genus level; species assignments may vary by taxonomy."
         ),
         "doi_citations": "10.1007/s11427-016-9001-4",
-        "match_terms": (
-            "Ruminococcus;Ruminococcus bromii;Ruminococcus torques;Mediterraneibacter torques"
-        ),
+        "match_terms": "Ruminococcus;Ruminococcus bromii;Ruminococcus torques",
     },
     {
         "literature_taxon": "Lachnospiraceae",
@@ -248,9 +254,9 @@ def format_effect_value(value: float) -> str:
     """Format signed heatmap effects without distracting negative zeros."""
     if not math.isfinite(value):
         return "NA"
-    if abs(value) < 0.005:
-        return "0.00"
-    return f"{value:+.2f}"
+    if abs(value) < 0.00005:
+        return "0.0000"
+    return f"{value:+.4f}"
 
 
 def profile_id(study_id: object, experiment_id: object, inc_dec: object) -> str:
@@ -473,6 +479,55 @@ def filter_all_low_support_taxa(
     return retained_cells, retained_rows, len(removed_taxa)
 
 
+def filter_influence_display(
+    cells: pd.DataFrame,
+    rows: pd.DataFrame,
+    min_absolute_influence_z: float = MIN_ABSOLUTE_INFLUENCE_Z,
+) -> tuple[pd.DataFrame, pd.DataFrame, int, int]:
+    """Exclude named taxa and retain rows with at least one effect beyond the display threshold."""
+    if min_absolute_influence_z < 0:
+        raise ValueError("The absolute influence threshold must be non-negative")
+
+    excluded_mask = rows["taxon_id"].astype(str).isin(EXCLUDED_TAXON_IDS) | rows[
+        "taxon_name"
+    ].astype(str).isin(EXCLUDED_TAXON_NAMES)
+    excluded_ids = set(rows.loc[excluded_mask, "taxon_id"].astype(str))
+    retained_rows = rows.loc[~excluded_mask].copy()
+    retained_cells = cells.loc[~cells["taxon_id"].astype(str).isin(excluded_ids)].copy()
+
+    values = pd.to_numeric(retained_cells["mean_influence_contrast_z"], errors="coerce")
+    retained_cells["passes_absolute_influence_filter"] = values.abs().gt(min_absolute_influence_z)
+    retained_cells["displayed_in_heatmap"] = retained_cells["passes_absolute_influence_filter"]
+    retained_cells["heatmap_filter_reason"] = np.where(
+        retained_cells["displayed_in_heatmap"],
+        "displayed",
+        f"absolute influence <= {min_absolute_influence_z:g}",
+    )
+
+    displayed_counts = (
+        retained_cells.groupby("taxon_id", sort=False)["displayed_in_heatmap"]
+        .sum()
+        .astype(int)
+        .rename("displayed_trait_cells")
+    )
+    retained_rows = retained_rows.merge(displayed_counts, on="taxon_id", how="left")
+    retained_rows["displayed_trait_cells"] = (
+        retained_rows["displayed_trait_cells"].fillna(0).astype(int)
+    )
+    below_threshold_mask = retained_rows["displayed_trait_cells"].eq(0)
+    below_threshold_ids = set(retained_rows.loc[below_threshold_mask, "taxon_id"].astype(str))
+    retained_rows = retained_rows.loc[~below_threshold_mask].copy()
+    retained_cells = retained_cells.loc[
+        ~retained_cells["taxon_id"].astype(str).isin(below_threshold_ids)
+    ].copy()
+    return (
+        retained_cells,
+        retained_rows,
+        len(excluded_ids),
+        len(below_threshold_ids),
+    )
+
+
 def literature_reference_table() -> pd.DataFrame:
     """Return the curated DOI-backed PD taxa reference as a stable table."""
     return pd.DataFrame(PD_TAXA_LITERATURE_REFERENCE).copy()
@@ -515,10 +570,13 @@ def literature_methods_markdown() -> str:
             "BugSigDB direction is a recurrence summary, not a pooled abundance effect: "
             "`increased` when increased-profile count is greater than decreased-profile count, "
             "`decreased` for the reverse, and `balanced` for a tie. `agrees` and `differs` are "
-            "assigned only against directional literature calls; balanced, variable, associated, "
-            "and unlisted cases remain separate. These labels do not test statistical agreement "
-            "and do not resolve cohort, medication, geography, sequencing, or taxonomic-version "
-            "heterogeneity.",
+            "assigned only against directional literature calls. For those calls, literature and "
+            "BugSigDB direction are each encoded as one binary categorical position and compared "
+            "with Hamming distance: 0 means the directions are similar and 1 means they differ. "
+            "Balanced, variable, associated, and unlisted cases have no defined Hamming distance "
+            "and remain separate. This is a descriptive direction check, not a statistical test of "
+            "agreement, and it does not resolve cohort, medication, geography, sequencing, or "
+            "taxonomic-version heterogeneity.",
         ]
     )
 
@@ -616,6 +674,23 @@ def bugsigdb_pd_direction(row: pd.Series) -> str:
     return "balanced"
 
 
+def direction_hamming_distance(
+    literature_direction: object,
+    bugsigdb_direction: object,
+) -> float:
+    """Return binary direction Hamming distance: 0 similar, 1 different, or NaN."""
+    direction_codes = {"decreased": 0, "increased": 1}
+    literature = str(literature_direction)
+    bugsigdb = str(bugsigdb_direction)
+    if literature not in direction_codes or bugsigdb not in direction_codes:
+        return math.nan
+    value = distance.hamming(
+        [direction_codes[literature]],
+        [direction_codes[bugsigdb]],
+    )
+    return float(value)
+
+
 def sort_rows_by_bugsigdb_inc_dec(rows: pd.DataFrame) -> pd.DataFrame:
     """Sort from most increased-skewed to most decreased-skewed BugSigDB recurrence."""
     ordered = rows.copy()
@@ -648,16 +723,27 @@ def direction_agreement(literature_direction: object, bugsigdb_direction: object
         return "literature non-directional"
     if bugsigdb == "balanced":
         return "balanced in BugSigDB"
-    if literature == bugsigdb:
+    hamming_distance = direction_hamming_distance(literature, bugsigdb)
+    if hamming_distance == 0:
         return "agrees"
-    return "differs"
+    if hamming_distance == 1:
+        return "differs"
+    return "not in literature reference"
 
 
-def literature_comparison_label(literature_direction: object, agreement: object) -> str:
+def literature_comparison_label(
+    literature_direction: object,
+    agreement: object,
+    hamming_distance: object = math.nan,
+) -> str:
     """Format literature direction and BugSigDB agreement for a heatmap row."""
     direction = str(literature_direction) if literature_direction else "not listed"
     comparison = str(agreement) if agreement else "not in literature reference"
     direction_label = LITERATURE_LABELS.get(direction, LITERATURE_LABELS["not listed"])
+    if pd.notna(hamming_distance):
+        numeric_distance = int(float(hamming_distance))
+        relation = "similar" if numeric_distance == 0 else "different"
+        return f"{direction_label}\nH={numeric_distance} {relation}"
     comparison_label = LITERATURE_COMPARISON_LABELS.get(comparison, comparison)
     return f"{direction_label}\n{comparison_label}"
 
@@ -723,6 +809,16 @@ def build_pd_taxa_reference_table(
     )
     table = pd.concat([rows.reset_index(drop=True).copy(), reference_matches], axis=1)
     table["bugsigdb_pd_direction"] = table.apply(bugsigdb_pd_direction, axis=1)
+    table["direction_hamming_distance"] = table.apply(
+        lambda row: direction_hamming_distance(
+            row["literature_direction"], row["bugsigdb_pd_direction"]
+        ),
+        axis=1,
+    ).astype("Int64")
+    table["hamming_interpretation"] = table["direction_hamming_distance"].map(
+        {0.0: "similar", 1.0: "different"}
+    )
+    table["hamming_interpretation"] = table["hamming_interpretation"].fillna("not applicable")
     table["direction_agreement"] = table.apply(
         lambda row: direction_agreement(row["literature_direction"], row["bugsigdb_pd_direction"]),
         axis=1,
@@ -784,6 +880,8 @@ def build_pd_taxa_reference_table(
         "literature_evidence",
         "doi_citations",
         "bugsigdb_pd_direction",
+        "direction_hamming_distance",
+        "hamming_interpretation",
         "increased_profiles",
         "decreased_profiles",
         "inc_dec_counts",
@@ -820,8 +918,8 @@ def write_reference_interpretation(reference_table: pd.DataFrame, output_path: P
         "## Agreement Summary",
         "",
         "| Taxon | BugSigDB inc/dec | BugSigDB direction | Literature value | Match scope | "
-        "Agreement | Strongest six-trait influence |",
-        "| --- | ---: | --- | --- | --- | --- | --- |",
+        "Hamming distance | Agreement | Strongest six-trait influence |",
+        "| --- | ---: | --- | --- | --- | ---: | --- | --- |",
     ]
     for row in reference_table.itertuples(index=False):
         strongest = (
@@ -830,14 +928,21 @@ def write_reference_interpretation(reference_table: pd.DataFrame, output_path: P
             if pd.notna(row.strongest_influence_z)
             else "not available"
         )
+        hamming_value = (
+            row.direction_hamming_distance if pd.notna(row.direction_hamming_distance) else "NA"
+        )
         match_scope = f"{row.literature_taxon}; {row.literature_rank}; {row.literature_match_type}"
         lines.append(
             f"| {row.taxon_name} | {row.inc_dec_counts} | {row.bugsigdb_pd_direction} | "
-            f"{row.literature_direction} | {match_scope} | {row.direction_agreement} | "
+            f"{row.literature_direction} | {match_scope} | "
+            f"{hamming_value} | {row.direction_agreement} | "
             f"{strongest} |"
         )
     lines.extend(["", literature_methods_markdown(), "", "## Taxon Details", ""])
     for row in reference_table.itertuples(index=False):
+        hamming_value = (
+            row.direction_hamming_distance if pd.notna(row.direction_hamming_distance) else "NA"
+        )
         lines.extend(
             [
                 f"### {row.taxon_name}",
@@ -846,7 +951,8 @@ def write_reference_interpretation(reference_table: pd.DataFrame, output_path: P
                 f"source(s): {doi_markdown_links(row.doi_citations)}",
                 f"- BugSigDB PD direction: {row.bugsigdb_pd_direction} "
                 f"({row.inc_dec_counts} increased/decreased profiles); "
-                f"agreement: {row.direction_agreement}",
+                f"Hamming distance: {hamming_value} "
+                f"({row.hamming_interpretation}); agreement: {row.direction_agreement}",
                 f"- KG-Microbe direct six-trait annotations: {row.kg_microbe_direct_six_traits}",
                 f"- Interpretation: {row.interpretation}",
                 "",
@@ -1044,8 +1150,9 @@ def plot_heatmap(
     title: str = "PD species contributions across all six traits",
     taxon_unit: str = "species",
     method_note: str | None = None,
-    top_margin_inches: float = 1.65,
-    legend_y_inches: float = 1.38,
+    top_margin_inches: float = 2.15,
+    legend_y_inches: float = 1.82,
+    min_support_studies: int = MIN_SUPPORT_STUDIES,
 ) -> None:
     """Plot trait influence with BugSigDB recurrence and literature-comparison annotations."""
     row_ids = rows["taxon_id"].tolist()
@@ -1055,9 +1162,18 @@ def plot_heatmap(
     direct_annotations = cells.pivot(
         index="taxon_id", columns="trait_id", values="has_trait_annotation"
     )
+    if "displayed_in_heatmap" in cells:
+        displayed = cells.pivot(index="taxon_id", columns="trait_id", values="displayed_in_heatmap")
+    else:
+        displayed = pd.DataFrame(True, index=values.index, columns=values.columns)
     values = values.reindex(index=row_ids, columns=trait_ids)
     labels = labels.reindex(index=row_ids, columns=trait_ids)
-    direct_annotations = direct_annotations.reindex(index=row_ids, columns=trait_ids)
+    displayed = displayed.reindex(index=row_ids, columns=trait_ids).fillna(False).astype(bool)
+    values = values.where(displayed)
+    direct_annotations = (
+        direct_annotations.reindex(index=row_ids, columns=trait_ids).fillna(False).astype(bool)
+        & displayed
+    )
     finite = np.abs(values.to_numpy(float)[np.isfinite(values.to_numpy(float))])
     color_limit = max(float(np.quantile(finite, 0.95)) if finite.size else 0.0, 0.02)
 
@@ -1086,13 +1202,19 @@ def plot_heatmap(
         [
             f"{'↑' if row.overall_mean_z_contrast > 0 else '↓'} "
             + "\n".join(wrap(str(row.trait), width=17))
-            + f"\n({row.overall_mean_z_contrast:+.2f})"
+            + f"\nbaseline Δz\n{row.overall_mean_z_contrast:+.2f}"
             for row in traits.itertuples(index=False)
         ],
         fontsize=9,
     )
+    multiple_ranks = rows["taxonomic_rank"].astype(str).nunique() > 1
     row_labels = [
-        f"{row.taxon_name} ({row.inc_dec_counts})" for row in rows.itertuples(index=False)
+        (
+            f"[{row.taxonomic_rank}] {row.taxon_name} ({row.inc_dec_counts})"
+            if multiple_ranks
+            else f"{row.taxon_name} ({row.inc_dec_counts})"
+        )
+        for row in rows.itertuples(index=False)
     ]
     ax.set_yticks(range(len(rows)), row_labels, fontsize=8.3)
     ax.tick_params(length=0, pad=6)
@@ -1106,6 +1228,8 @@ def plot_heatmap(
         for x, trait_id in enumerate(trait_ids):
             status = labels.loc[taxon_id, trait_id]
             value = values.loc[taxon_id, trait_id]
+            if not math.isfinite(float(value)):
+                continue
             if direct_annotations.loc[taxon_id, trait_id]:
                 ax.add_patch(
                     Rectangle(
@@ -1174,29 +1298,39 @@ def plot_heatmap(
         "direction_agreement",
         pd.Series(["not in literature reference"] * len(rows), index=rows.index),
     ).fillna("not in literature reference")
+    literature_hamming = rows.get(
+        "direction_hamming_distance",
+        pd.Series([math.nan] * len(rows), index=rows.index),
+    )
     literature_ax.set_xlim(-0.5, 0.5)
     literature_ax.set_ylim(len(rows) - 0.5, -0.5)
-    literature_ax.set_xticks([0], ["Literature vs\nBugSigDB"], fontsize=9)
+    literature_ax.set_xticks([0], ["Literature direction\nHamming vs BugSigDB"], fontsize=9)
     literature_ax.tick_params(left=False, labelleft=False, length=0, pad=6)
     literature_ax.set_xticks([-0.5, 0.5], minor=True)
     literature_ax.set_yticks(np.arange(-0.5, len(rows), 1), minor=True)
     literature_ax.grid(which="minor", color="white", linewidth=1)
     literature_ax.tick_params(which="minor", length=0)
-    for y, (direction, agreement) in enumerate(
-        zip(literature_directions, literature_agreements, strict=True)
+    for y, (direction, agreement, hamming_distance) in enumerate(
+        zip(
+            literature_directions,
+            literature_agreements,
+            literature_hamming,
+            strict=True,
+        )
     ):
         direction = str(direction) if direction else "not listed"
         agreement = str(agreement) if agreement else "not in literature reference"
-        color = LITERATURE_COMPARISON_COLORS.get(agreement, "#f3f4f6")
-        label = literature_comparison_label(direction, agreement)
+        color = LITERATURE_DIRECTION_COLORS.get(direction, "#f3f4f6")
+        edge_color = LITERATURE_AGREEMENT_BORDER_COLORS.get(agreement, "white")
+        label = literature_comparison_label(direction, agreement, hamming_distance)
         literature_ax.add_patch(
             Rectangle(
                 (-0.5, y - 0.5),
                 1,
                 1,
                 facecolor=color,
-                edgecolor="#b91c1c" if agreement == "differs" else "white",
-                linewidth=2.2 if agreement == "differs" else 1,
+                edgecolor=edge_color,
+                linewidth=2.6 if agreement in LITERATURE_AGREEMENT_BORDER_COLORS else 1,
             )
         )
         literature_ax.text(
@@ -1206,11 +1340,22 @@ def plot_heatmap(
             ha="center",
             va="center",
             fontsize=7.3,
-            fontweight="bold" if agreement == "differs" else "normal",
+            fontweight=("bold" if agreement in LITERATURE_AGREEMENT_BORDER_COLORS else "normal"),
             color="#111827",
         )
     for spine in literature_ax.spines.values():
         spine.set_visible(False)
+
+    if multiple_ranks:
+        rank_values = rows["taxonomic_rank"].astype(str).tolist()
+        rank_boundaries = [
+            index - 0.5
+            for index in range(1, len(rank_values))
+            if rank_values[index] != rank_values[index - 1]
+        ]
+        for boundary in rank_boundaries:
+            for rank_axis in [ax, row_ax, literature_ax]:
+                rank_axis.axhline(boundary, color="#111827", linewidth=2.0, zorder=8)
 
     bar = fig.colorbar(
         image,
@@ -1233,18 +1378,17 @@ def plot_heatmap(
         va="top",
     )
     subtitle = (
-        "Cells show the study-weighted change in each paired increased-decreased trait contrast "
-        f"attributable to removing one reported {taxon_unit} and recomputing its full "
-        "non-MediaDive profile denominator. Taxon row labels include BugSigDB PD "
-        "increased/decreased profile "
-        "counts in parentheses. Outlined cells include direct removal of that trait; unoutlined "
-        f"cells retain the denominator-mediated effect when the {taxon_unit} has no direct "
-        "annotation. "
-        "Cell text shows the signed fixed-reference z influence value; low-support cells remain "
-        f"hatched. Inc/dec calls in the TSV require a 95% interval entirely above/below zero and "
-        f"at least {MIN_SUPPORT_STUDIES} supporting studies. The right columns show raw PD "
-        "inc/dec occurrence and the matched DOI-backed literature direction together with its "
-        "BugSigDB agreement status. Rows marked DIFFERS have opposite recurrence directions."
+        "Each column header gives the full-data PD increased-minus-decreased contrast (overall "
+        "Δz) before taxon removal. A cell is baseline Δz minus the recomputed Δz after removing "
+        f"the reported {taxon_unit}; positive values support the positive trait contrast and "
+        "negative values support the negative contrast, but they are influence diagnostics, not "
+        f"causal effects. Only values > +{MIN_ABSOLUTE_INFLUENCE_Z:g} or "
+        f"< -{MIN_ABSOLUTE_INFLUENCE_Z:g} are shown. Black outlines mark direct "
+        "organism-to-trait annotations; unoutlined cells are denominator-only effects. Low-support "
+        f"cells remain hatched; TSV inc/dec calls require at least {min_support_studies} studies "
+        "and a 95% interval wholly above/below zero. Literature fill follows direction (red=inc, "
+        "blue=dec); green borders mark Hamming distance 0 (similar) and red borders mark distance "
+        "1 (different) versus BugSigDB recurrence. Row labels include BugSigDB PD inc/dec counts."
     )
     if method_note:
         subtitle = f"{subtitle} {method_note}"
@@ -1262,32 +1406,48 @@ def plot_heatmap(
             Patch(facecolor=DECREASED_COLOR, label="negative influence"),
             Patch(facecolor="white", edgecolor="#111827", label="direct trait annotation"),
             Patch(facecolor="white", edgecolor="#64748b", hatch="///", label="low support"),
-            Patch(facecolor=LITERATURE_COMPARISON_COLORS["agrees"], label="direction agrees"),
             Patch(
-                facecolor=LITERATURE_COMPARISON_COLORS["differs"],
-                edgecolor="#b91c1c",
-                linewidth=1.5,
-                label="direction differs",
+                facecolor=LITERATURE_DIRECTION_COLORS["increased"],
+                label="literature increased",
             ),
             Patch(
-                facecolor=LITERATURE_COMPARISON_COLORS["balanced in BugSigDB"],
-                label="BugSigDB balanced",
+                facecolor=LITERATURE_DIRECTION_COLORS["decreased"],
+                label="literature decreased",
+            ),
+            Patch(
+                facecolor="white",
+                edgecolor=LITERATURE_AGREEMENT_BORDER_COLORS["agrees"],
+                linewidth=1.5,
+                label="H=0 similar",
+            ),
+            Patch(
+                facecolor="white",
+                edgecolor=LITERATURE_AGREEMENT_BORDER_COLORS["differs"],
+                linewidth=1.5,
+                label="H=1 different",
             ),
         ],
         loc="upper center",
         bbox_to_anchor=(0.60, 1 - legend_y_inches / height),
-        ncol=7,
+        ncol=4,
         frameon=False,
         fontsize=8,
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with plt.rc_context({"svg.hashsalt": STEM}):
         fig.savefig(output_path, dpi=240, bbox_inches="tight", facecolor="white")
+        svg_path = output_path.with_suffix(".svg")
         fig.savefig(
-            output_path.with_suffix(".svg"),
+            svg_path,
             bbox_inches="tight",
             facecolor="white",
             metadata={"Date": None},
+        )
+        svg_lines = svg_path.read_text(encoding="utf-8").splitlines()
+        svg_path.write_text(
+            "\n".join(line.rstrip() for line in svg_lines) + "\n",
+            encoding="utf-8",
+            newline="\n",
         )
     plt.close(fig)
 
@@ -1317,6 +1477,7 @@ def main() -> None:
         evidence,
         trait_summary,
     )
+    cells, rows, excluded_taxa, below_threshold_taxa = filter_influence_display(cells, rows)
     literature_reference = literature_reference_table()
     reference_table = build_pd_taxa_reference_table(rows, cells, literature_reference)
     rows = rows.merge(
@@ -1326,6 +1487,8 @@ def main() -> None:
                 "literature_taxon",
                 "literature_direction",
                 "literature_match_term",
+                "direction_hamming_distance",
+                "hamming_interpretation",
                 "direction_agreement",
             ]
         ],
@@ -1360,13 +1523,23 @@ def main() -> None:
         "traits": len(traits),
         "species": len(rows),
         "cells": len(cells),
-        "filled_cells": int(cells["mean_influence_contrast_z"].notna().sum()),
+        "displayed_cells": int(cells["displayed_in_heatmap"].sum()),
+        "audited_cells_for_displayed_species": len(cells),
         "direct_annotation_cells": int(cells["has_trait_annotation"].sum()),
         "denominator_only_cells": int((~cells["has_trait_annotation"]).sum()),
         "species_removed_all_low_support": removed_low_support_taxa,
+        "species_removed_by_explicit_exclusion": excluded_taxa,
+        "excluded_taxon_ids": sorted(EXCLUDED_TAXON_IDS),
+        "excluded_taxon_names": sorted(EXCLUDED_TAXON_NAMES),
+        "species_removed_below_absolute_influence_threshold": below_threshold_taxa,
+        "absolute_influence_display_threshold_z": MIN_ABSOLUTE_INFLUENCE_Z,
+        "display_rule": "mean influence > +0.01 or < -0.01",
         "non_mediadive_columns": len(trait_columns),
         "minimum_support_studies": MIN_SUPPORT_STUDIES,
-        "row_filter": "exclude species whose six trait cells are all low support",
+        "row_filter": (
+            "exclude explicit taxon removals, species whose six cells are all low support, "
+            "and species with no mean influence beyond +/-0.01"
+        ),
         "row_order": (
             "descending BugSigDB PD log2(increased/decreased) profile-count ratio; "
             "ties by increased-minus-decreased count, total direction profiles, and taxon name"
@@ -1375,8 +1548,9 @@ def main() -> None:
         "literature_review_method": "targeted narrative direction review",
         "displayed_row_annotations": [
             "BugSigDB PD increased/decreased recurrence",
-            "literature direction and BugSigDB agreement",
+            "literature direction and Hamming agreement versus BugSigDB",
         ],
+        "direction_hamming_encoding": {"0": "similar", "1": "different"},
         "pd_specificity_displayed": False,
         "pd_literature_reference_taxa": len(literature_reference),
         "displayed_species_with_literature_reference": int(
@@ -1412,10 +1586,21 @@ def main() -> None:
         "from profiles where it was reported, recomputes the six log-fraction scores using the "
         "unchanged human-corpus reference, forms paired increased-minus-decreased experiment "
         "contrasts, averages experiments within study, and weights studies equally. Species "
-        "whose six cells are all low support are omitted. Outlined cells include direct removal "
-        "of the displayed trait; unoutlined cells show the denominator-mediated effect when the "
-        "species has no direct annotation for that trait. The taxon row label also includes the "
-        "BugSigDB PD increased/decreased profile count, such as `(0/13)`.\n\n"
+        "whose six cells are all low support or whose six mean influences remain between -0.01 "
+        "and +0.01 are omitted. *Mediterraneibacter torques* is explicitly excluded. For retained "
+        "rows, only cell values greater than +0.01 or less than -0.01 are drawn; the exact values "
+        "remain in the cell TSV with a `displayed_in_heatmap` flag. Outlined cells include direct "
+        "removal of the displayed trait; unoutlined cells show the denominator-mediated effect "
+        "when the species has no direct annotation for that trait. Thus, a visible outlined cell "
+        "means the organism has a direct trait annotation and its removal changes the paired PD "
+        "contrast beyond the display threshold. This is contribution/influence evidence, not a "
+        "causal claim. The row label also includes the BugSigDB PD increased/decreased profile "
+        "count, such as `(0/13)`.\n\n"
+        "The x-axis value labeled `baseline Δz` is the full-data, study-weighted paired PD "
+        "increased-minus-decreased trait contrast before removing any row taxon. The heatmap cell "
+        "is that baseline Δz minus the contrast recomputed after removing the taxon. The cell "
+        "values therefore explain sensitivity of the column-level contrast, but they do not sum "
+        "to it because profile fractions are nonlinear and taxon annotations overlap.\n\n"
         "Rows are sorted from the most increased-skewed to the most decreased-skewed "
         "BugSigDB PD recurrence using the log2 increased/decreased profile-count ratio; "
         "ties use the signed count difference, total support, and taxon name.\n\n"
@@ -1425,11 +1610,12 @@ def main() -> None:
         "when the interval crosses zero. Hatched `low support` cells do not receive a forced "
         "direction. The first right-hand annotation retains the raw increased/decreased profile "
         "occurrence counts in PD feces. The second annotation shows the DOI-backed literature "
-        "direction and explicitly labels whether BugSigDB recurrence agrees, differs, or is "
-        "balanced. `DIFFERS` marks *Mediterraneibacter torques* (BugSigDB 3/1 increased versus "
-        "literature decreased) and *Escherichia coli* (BugSigDB 1/2 decreased versus literature "
-        "increased); *Ruminococcus bromii* is marked balanced. PD-versus-other-feces specificity "
-        "is retained in the companion audit TSV but is no longer plotted.\n\n"
+        "direction using red for increased and blue for decreased. Directional literature and "
+        "BugSigDB recurrence are compared with one-position Hamming distance: 0 means similar and "
+        "gets a green border; 1 means different and gets a red border. Balanced and "
+        "non-directional comparisons have no defined Hamming distance. PD-versus-other-feces "
+        "specificity is "
+        "retained in the companion audit TSV but is no longer plotted.\n\n"
         f"The generated reference table joins literature direction, DOI citations, BugSigDB PD "
         "occurrence direction, KG-Microbe six-trait annotations, strongest influence value, and "
         "an interpretation of agreement, disagreement, or balanced evidence.\n\n"
