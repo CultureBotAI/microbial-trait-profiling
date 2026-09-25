@@ -36,6 +36,12 @@ report without rendering figures.
 pinned-corpus rerun of all 15 ratios alongside the original six fraction
 directions, including study coverage, uncertainty and interpretation limits.
 
+[`denominator_effect_review.md`](denominator_effect_review.md) documents
+`just table1-common-quantities`: the #256 denominator audit and the common
+study-weighted six-trait fractions, ratio-population-matched fractions, and all 15
+oriented log-ratios. It explains the recommendation and separates denominator,
+population, and estimand changes without creating a new test family.
+
 The [GPT Rosalind discussion and review](../docs/rosalind-six-trait-interpretation.md)
 archives proposed biological explanations for the six traits, with a separate
 evidence review and assigned follow-up issues. It records hypotheses to evaluate;

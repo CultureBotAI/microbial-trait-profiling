@@ -144,6 +144,7 @@ All commands go through the Justfile. Run `just --list` to see them all.
 | `just taxa-trait-matrix` | Build the taxon x trait matrix from BugSigDB taxa and KG-Microbe |
 | `just study-trait-profiles` | Sum taxon trait vectors by study, experiment, and increased/decreased direction |
 | `just table1-compositional-stats` | Paired log-ratio tests for all 15 Table 1 trait pairs; `--body-site LABEL` for one exact stratum |
+| `just table1-common-quantities` | Pinned #256 denominator audit and study-weighted full/matched fractions plus all 15 oriented log-ratios |
 | `just pipeline` | Run download + ingest |
 | `just clean-all` | Remove all generated artifacts |
 | `just format` | Auto-fix lint and formatting |

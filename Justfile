@@ -122,6 +122,16 @@ table1-trait-maps:
 table1-compositional-stats *ARGS:
 	uv run python -m bsdbng.trait_composition --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
 
+# Common descriptive estimates for issue #256. The matrix blob and PR #197
+# denominator-parity artifact are pinned so an ignored local derived matrix cannot
+# silently change the retained-column universe or the matched profile audit.
+[positional-arguments]
+table1-common-quantities *ARGS:
+	mkdir -p .tmp/issue256
+	git show d837f449e7e967c478d10f92938923e57eec9a19 > .tmp/issue256/study_trait_profiles_wide.tsv
+	git show 309f9b355b157ee496f844413b5dd2e275f6a3a0:trait-visualization/denominator-harmonization/denominator_parity.tsv > .tmp/issue256/issue174_denominator_parity.tsv
+	uv run python -m bsdbng.common_trait_quantities --profile-input .tmp/issue256/study_trait_profiles_wide.tsv --composition-audit-input .tmp/issue256/issue174_denominator_parity.tsv --composition-reference-revision 309f9b355b157ee496f844413b5dd2e275f6a3a0 --profile-git-blob d837f449e7e967c478d10f92938923e57eec9a19 --expected-profile-sha256 c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
