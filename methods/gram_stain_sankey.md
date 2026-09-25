@@ -57,6 +57,18 @@ the discordant units), the paired test the oxygen guild figure uses for aerobes
 against anaerobes, Benjamini-Hochberg corrected across condition and body-site
 pairs.
 
+The unit is deliberately finer than the study, so it is worth stating what that
+does and does not cost. A flow is one condition and body site, and a unit is one
+study within one condition and body site, so **within any one flow a study votes
+at most once** - each sign test's n is a count of distinct studies, not of
+experiments, which is the sampling unit issue #133 asks for. The 1,219 units come
+from 939 distinct studies, and the 169 studies that span more than one condition
+or body site contribute a unit to each. That dependence is therefore between
+flows, not inside any one of them: the individual sign tests are unaffected, and
+what it weakens is the assumption of independence in the Benjamini-Hochberg
+family taken across the 174 flows. Since no flow passes its sign test on this
+corpus, the point is a limitation on the family rather than on any reported call.
+
 174 flows met the three-unit floor. 153 have a net direction and 21 split evenly.
 A flow is drawn once, in the figure for its net direction, with link width equal
 to the net number of units (up minus down), so a six-to-five split is drawn as one

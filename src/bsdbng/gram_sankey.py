@@ -347,11 +347,12 @@ def write_sankey(
         )
     )
     subtitle = (
-        f"Flows where more studies shift {label} than the other way; width = net studies "
-        f"(up minus down). Dark: sign-test q <= {SIGN_TEST_Q} ({passing} of {len(selected)}); "
-        "faded: not."
+        f"Flows where more units shift {label} than the other way; width = net units "
+        f"(up minus down). A unit is one study within one condition and body site, so a "
+        f"study spanning several sites is counted once per site. Dark: sign-test "
+        f"q <= {SIGN_TEST_Q} ({passing} of {len(selected)}); faded: not."
         f"<br>The two gram classes are near-complementary shares: {balance.opposite} of "
-        f"{balance.opposite + balance.same} scored studies shift them in opposite directions, "
+        f"{balance.opposite + balance.same} scored units shift them in opposite directions, "
         "so each gram-negative diagram largely mirrors a gram-positive one."
         f"<br>Annotation shares, not abundance. BugSigDB {vintage or 'vintage unknown'}."
     )
