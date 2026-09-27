@@ -140,6 +140,56 @@ def test_enrichment_hypergeometric_taxon_sampling_values(tmp_path: Path) -> None
         assert abs(fold_val - 1.0) < 1e-4
 
 
+def test_depletion_hypergeometric_taxon_sampling_values(tmp_path: Path) -> None:
+    # Test specific 2x2 contingency table values for depletion
+    # TraitA: present in 0 taxa in profile s1/e1/inc out of 2 taxa (k=0, N=2)
+    # Background universe: M=4 taxa total, TraitA present in K=2 taxa.
+    # hypergeom.cdf(0, 4, 2, 2) == P(X <= 0) == comb(2,0)*comb(2,2)/comb(4,2) == 1/6 == 0.1666666...
+    input_tsv = tmp_path / "input_profiles.tsv"
+    input_tsv.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
+        "s1\te1\tinc\t2\t0\t2\n"
+        "s1\te1\tdec\t2\t2\t0\n",
+        encoding="utf-8",
+    )
+    report_txt = tmp_path / "depletion_report.txt"
+    results_tsv = tmp_path / "depletion_results.tsv"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_depletion.py",
+            "--input",
+            str(input_tsv),
+            "--output",
+            str(report_txt),
+            "--tsv-output",
+            str(results_tsv),
+            "--p-threshold",
+            "1.0",
+            "--max-fold",
+            "2.0",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    with results_tsv.open("r", encoding="utf-8") as f:
+        lines = f.readlines()
+        assert any("# Background-Taxa-Universe-M: 4" in line for line in lines)
+        header = next(line for line in lines if not line.startswith("#")).strip().split("\t")
+        p_idx = header.index("p_value")
+        data_rows = [line.strip().split("\t") for line in lines if not line.startswith("#")][1:]
+        trait_a_row = next(
+            r
+            for r in data_rows
+            if r[header.index("trait")] == "TraitA" and r[header.index("inc_dec")] == "inc"
+        )
+        p_val = float(trait_a_row[p_idx])
+        assert abs(p_val - 1 / 6) < 1e-4
+
+
 def test_enrichment_pipeline_no_fdr_propagation(tmp_path: Path) -> None:
     input_tsv = tmp_path / "input_profiles.tsv"
     input_tsv.write_text(

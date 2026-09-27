@@ -24,9 +24,7 @@ def generate_complete_null_ora_profiles(
     for _, row in empirical_profiles_df.iterrows():
         trait_counts = row[trait_columns].to_numpy(dtype=int)
         max_c = (
-            int(np.max(trait_counts))
-            if len(trait_counts) > 0 and np.max(trait_counts) > 0
-            else 10
+            int(np.max(trait_counts)) if len(trait_counts) > 0 and np.max(trait_counts) > 0 else 10
         )
         profile_n = int(row.get("signature_size", max_c))
         if profile_n <= 0:

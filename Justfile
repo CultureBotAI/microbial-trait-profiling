@@ -148,6 +148,15 @@ analyze: study-trait-profiles
 	  --tsv-output data/derived/trait_enrichment_results.tsv \
 	  --p-threshold {{p_threshold}} \
 	  --min-fold {{min_fold}}"
+	just timed export-rankings "uv run python scripts/export_trait_enrichment_rankings.py \
+	  --input data/derived/trait_enrichment_results.tsv \
+	  --overall-output data/derived/trait_enrichment_traits_overall_ranked.tsv \
+	  --pair-output data/derived/trait_enrichment_trait_study_pairs_ranked.tsv"
+	just timed enrichment-summary "uv run python scripts/generate_enrichment_summary.py"
+
+# Run calibration harness benchmarking across inference adapters.
+calibrate:
+	just timed calibrate "uv run python -m bsdbng.calibration.harness"
 
 # Generate a clustered heatmap from enrichment results.
 genheatmap: analyze
@@ -169,6 +178,10 @@ analyze-depletion: study-trait-profiles
 # Generate a visual summary of trait depletion.
 depletion-infographic: analyze-depletion
 	just timed depletion-infographic "uv run python scripts/generate_depletion_summary.py"
+
+# Deliver full rankings and export summaries for both enrichment and depletion (#254).
+export-rankings: analyze analyze-depletion depletion-infographic
+	@echo "Complete exports and ranking summaries generated."
 
 # Run site-stratified enrichment (e.g., Feces only). Partitioning the input
 # TSV before `analyze` produces site-specific backgrounds ($M$ and $K$)

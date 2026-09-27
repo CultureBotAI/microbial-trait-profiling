@@ -199,30 +199,34 @@ def main():
         )
         f.write("-" * 100 + "\n")
         for _, row in body_site_density.head(10).iterrows():
-            f.write(
-                f"{row['body_site']!s:<40} {row['density']:<20.2f} {row['depletion_count']:<15.0f} {row['total_samples']:.0f}\n"
-            )
+            bs_str = f"{row['body_site']!s:<40}"
+            den_str = f"{row['density']:<20.2f}"
+            cnt_str = f"{row['depletion_count']:<15.0f}"
+            tot_str = f"{row['total_samples']:.0f}"
+            f.write(f"{bs_str} {den_str} {cnt_str} {tot_str}\n")
 
         f.write("\n\n=== SCIENTIFIC FINDINGS SUMMARY ===\n")
-        f.write(
-            f"Total Depleted Traits across all profiles: {trait_counts['depletion_count'].sum():,}\n"
-        )
+        total_dep = trait_counts["depletion_count"].sum()
+        f.write(f"Total Depleted Traits across all profiles: {total_dep:,}\n")
         f.write("Functional scope: 317 metabolic/physiological traits analyzed.\n")
         if not full_profile_data.empty:
-            f.write(
-                f"Average depletion count per profile (all human): {full_profile_data['depletion_count'].mean():.2f}\n"
-            )
+            avg_dep = full_profile_data["depletion_count"].mean()
+            f.write(f"Average depletion count per profile (all human): {avg_dep:.2f}\n")
 
         if not body_site_density.empty:
+            top_site = body_site_density.iloc[0]["body_site"]
+            top_density = body_site_density.iloc[0]["density"]
             f.write(
-                f"Top Body Site by Depletion Density: {body_site_density.iloc[0]['body_site']} ({body_site_density.iloc[0]['density']:.2f} losses/100 samples)\n"
+                f"Top Body Site by Depletion Density: {top_site} "
+                f"({top_density:.2f} losses/100 samples)\n"
             )
 
         bias_inc = int(results_df[results_df["inc_dec"] == "inc"].shape[0])
         bias_dec = int(results_df[results_df["inc_dec"] == "dec"].shape[0])
         bias_str = "Increased" if bias_inc > bias_dec else "Decreased"
         f.write(
-            f"Directionality Bias: More traits depleted in '{bias_str}' profiles ({bias_inc:,} inc vs {bias_dec:,} dec).\n"
+            f"Directionality Bias: More traits depleted in '{bias_str}' "
+            f"profiles ({bias_inc:,} inc vs {bias_dec:,} dec).\n"
         )
 
     # 7. Generate Infographic
@@ -412,12 +416,14 @@ def main():
     summary_text = (
         "DEPLETION SUMMARY\n\n"
         f"• Functional Blind Spots: {len(trait_counts):,} metabolic traits analyzed.\n"
-        f"  Total of {trait_counts['depletion_count'].sum():,} significant under-representations.\n\n"
+        f"  Total of {trait_counts['depletion_count'].sum():,} "
+        "significant under-representations.\n\n"
         f"• Condition Vulnerability: Panel B shows average functional loss per profile,\n"
         "  identifying traits consistently avoided in disease signatures.\n\n"
         f"• Depletion Hotspots: Top 3 sites by depletion density (losses/100 samples):\n"
         f"  {top_3_str}.\n\n"
-        f"• Symmetry: {direction_activity.get('inc', 0):,} 'Increased' vs {direction_activity.get('dec', 0):,} 'Decreased'\n"
+        f"• Symmetry: {direction_activity.get('inc', 0):,} 'Increased' vs "
+        f"{direction_activity.get('dec', 0):,} 'Decreased'\n"
         "  hits show where functional depletion is most prominent."
     )
     ax4.text(

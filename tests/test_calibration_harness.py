@@ -20,10 +20,7 @@ from bsdbng.calibration.scenarios import (
 @pytest.fixture
 def synthetic_calibration_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     # 20 Taxa with various trait profiles
-    taxa_data = {
-        f"trait_{i}": [1 if (j + i) % 3 == 0 else 0 for j in range(20)]
-        for i in range(5)
-    }
+    taxa_data = {f"trait_{i}": [1 if (j + i) % 3 == 0 else 0 for j in range(20)] for i in range(5)}
     taxa_df = pd.DataFrame(taxa_data, index=[f"taxon_{j}" for j in range(20)])
 
     # 4 empirical study profiles

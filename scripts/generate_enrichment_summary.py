@@ -227,32 +227,37 @@ def main():
         )
         f.write("-" * 100 + "\n")
         for _, row in body_site_density.head(10).iterrows():
-            f.write(
-                f"{row['body_site']!s:<40} {row['density']:<20.2f} {row['enrichment_count']:<15.0f} {row['total_samples']:.0f}\n"
-            )
+            bs_str = f"{row['body_site']!s:<40}"
+            den_str = f"{row['density']:<20.2f}"
+            cnt_str = f"{row['enrichment_count']:<15.0f}"
+            tot_str = f"{row['total_samples']:.0f}"
+            f.write(f"{bs_str} {den_str} {cnt_str} {tot_str}\n")
 
         f.write("\n\n=== SCIENTIFIC FINDINGS SUMMARY ===\n")
+        total_enr = trait_counts["enrichment_count"].sum()
+        f.write(f"Total Enriched Traits across all profiles: {total_enr:,}\n")
         f.write(
-            f"Total Enriched Traits across all profiles: {trait_counts['enrichment_count'].sum():,}\n"
-        )
-        f.write(
-            "Functional scope: 317 metabolic/physiological traits analyzed (from 2,651 total assertions).\n"
+            "Functional scope: 317 metabolic/physiological traits analyzed "
+            "(from 2,651 total assertions).\n"
         )
         if not full_profile_data.empty:
-            f.write(
-                f"Average enrichment count per profile (all human): {full_profile_data['enrichment_count'].mean():.2f}\n"
-            )
+            avg_enr = full_profile_data["enrichment_count"].mean()
+            f.write(f"Average enrichment count per profile (all human): {avg_enr:.2f}\n")
 
         if not body_site_density.empty:
+            top_site = body_site_density.iloc[0]["body_site"]
+            top_density = body_site_density.iloc[0]["density"]
             f.write(
-                f"Top Body Site by Enrichment Density: {body_site_density.iloc[0]['body_site']} ({body_site_density.iloc[0]['density']:.2f} hits/100 samples)\n"
+                f"Top Body Site by Enrichment Density: {top_site} "
+                f"({top_density:.2f} hits/100 samples)\n"
             )
 
         bias_inc = int(results_df[results_df["inc_dec"] == "inc"].shape[0])
         bias_dec = int(results_df[results_df["inc_dec"] == "dec"].shape[0])
         bias_str = "Increased" if bias_inc > bias_dec else "Decreased"
         f.write(
-            f"Directionality Bias: More traits found in '{bias_str}' profiles ({bias_inc:,} inc vs {bias_dec:,} dec).\n"
+            f"Directionality Bias: More traits found in '{bias_str}' "
+            f"profiles ({bias_inc:,} inc vs {bias_dec:,} dec).\n"
         )
 
     # 7. Generate Infographic
@@ -299,7 +304,7 @@ def main():
     if not body_site_density.empty:
         # Define relative coordinates (0-1) for body sites
         # Exact-match coordinates for the actual compound body site names in the data.
-        # Sites on the left (x < 0.5) get left-margin labels; right (x >= 0.5) get right-margin labels.
+        # Sites on the left (x < 0.5) get left-side labels; right (x >= 0.5) get right-side labels.
         # Fallback substring keys (shorter strings) are listed last so exact matches win first.
         site_coords = {
             # Head / oral region — spread across right side of head outline
@@ -482,7 +487,8 @@ def main():
         "  highlighting clinical functional burden independent of cohort size.\n\n"
         f"• Anatomical Hotspots: Top 3 sites by density (hits/100 samples):\n"
         f"  {top_3_str}.\n\n"
-        f"• Symmetry: {direction_activity.get('inc', 0):,} 'Increased' vs {direction_activity.get('dec', 0):,} 'Decreased'\n"
+        f"• Symmetry: {direction_activity.get('inc', 0):,} 'Increased' vs "
+        f"{direction_activity.get('dec', 0):,} 'Decreased'\n"
         "  hits suggest slight bias towards taxa gaining dominance."
     )
     ax4.text(

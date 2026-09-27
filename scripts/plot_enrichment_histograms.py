@@ -56,7 +56,7 @@ def main():
     print(f"Loading experiment metadata from {args.experiments}...")
     if args.experiments.exists():
         exp_df = pd.read_csv(args.experiments, sep="\t")
-        # Ensure we only have the columns we need to avoid duplicates if study_tsv was run multiple times
+        # Ensure we only have required columns to avoid duplicates
         exp_df = exp_df[["study_id", "experiment_id", "condition", "body_site"]].drop_duplicates()
 
         # Merge with results
@@ -72,7 +72,8 @@ def main():
         )
     else:
         print(
-            f"Warning: Experiments file {args.experiments} not found. Skipping metadata-based plots."
+            f"Warning: Experiments file {args.experiments} not found. "
+            "Skipping metadata-based plots."
         )
         results_with_meta = None
 
@@ -127,7 +128,7 @@ def main():
 
     # 2. X-Axis: Trait Frequency (How many profiles is each trait enriched in?)
     # Count unique profiles for each trait separated by direction.
-    # This ensures traits enriched in both directions for one experiment are counted twice (once per profile).
+    # This ensures traits enriched in both directions are counted twice.
     trait_inc = results_df[results_df["inc_dec"] == "inc"].groupby("trait")["profile_id"].nunique()
     trait_dec = results_df[results_df["inc_dec"] == "dec"].groupby("trait")["profile_id"].nunique()
     trait_total = results_df.groupby("trait")["profile_id"].nunique()
@@ -255,9 +256,13 @@ def main():
 
             # 2. 100% Stacked (stretched)
             binned_stretched = binned.div(binned.sum(axis=1), axis=0).fillna(0)
+            title_str = (
+                f"Trait Enrichment Frequency by Condition ({suffix})\n"
+                "100% Stacked (Relative Proportion)"
+            )
             save_histogram(
                 binned_stretched,
-                f"Trait Enrichment Frequency by Condition ({suffix})\n100% Stacked (Relative Proportion)",
+                title_str,
                 "Number of Profiles Enriched In (Binned)",
                 "Relative Proportion (0-1)",
                 args.output_dir / f"trait_enrichment_x_condition_{suffix}_stretched.png",
@@ -318,7 +323,8 @@ def main():
                 cbar_kws={"label": "Euclidean Distance (Normalized Vectors)"},
             )
             g.fig.suptitle(
-                "Similarity of (Condition + Direction) Enrichment Profiles\nEuclidean Distance on Normalized Frequency Vectors",
+                "Similarity of (Condition + Direction) Enrichment Profiles\n"
+                "Euclidean Distance on Normalized Frequency Vectors",
                 y=1.02,
             )
 
