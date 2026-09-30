@@ -28,7 +28,10 @@ from bsdbng.integrated_evidence import (
     write_view,
 )
 from bsdbng.table1_trait_maps import compute_direction_shifts
-from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
+from bsdbng.trait_guilds import TABLE1_TRAITS, Profile, drop_zero_total_pairs
+
+#: Both decision thresholds every record builder now takes (#294).
+THRESHOLDS = {"q_threshold": 0.05, "strict_q_threshold": 0.001}
 
 TRAITS = tuple(TABLE1_TRAITS)
 STATUSES = {
@@ -68,7 +71,8 @@ def _profiles(pattern: str = "signal") -> list[Profile]:
 
 def test_counts_reconcile_with_the_source_run() -> None:
     profiles = _profiles()
-    records = {r.trait: r for r in fraction_sign_records(profiles, source="x", q_threshold=0.05)}
+    built = fraction_sign_records(profiles, source="x", **THRESHOLDS)
+    records = {r.trait: r for r in built}
     for shift in compute_direction_shifts(profiles).shifts:
         record = records[shift.trait]
         assert record.testable_units == shift.studies_scored
@@ -80,7 +84,7 @@ def test_counts_reconcile_with_the_source_run() -> None:
 
 
 def test_an_all_tied_trait_is_not_a_negative_result() -> None:
-    records = fraction_sign_records(_profiles("tied"), source="x", q_threshold=0.05)
+    records = fraction_sign_records(_profiles("tied"), source="x", **THRESHOLDS)
     for record in records:
         assert record.test_status == ALL_TIED
         assert record.decision == UNDECIDED
@@ -90,7 +94,7 @@ def test_an_all_tied_trait_is_not_a_negative_result() -> None:
 
 
 def test_a_pair_with_no_positive_counts_is_recorded_as_zero_annotation() -> None:
-    records = log_ratio_records(_profiles("empty"), source="x", q_threshold=0.05)
+    records = log_ratio_records(_profiles("empty"), source="x", **THRESHOLDS)
     assert records
     for record in records:
         assert record.test_status == ZERO_ANNOTATION
@@ -110,8 +114,8 @@ def test_an_unsupplied_method_is_not_a_nonsignificant_result() -> None:
 
 def test_each_method_keeps_its_own_family_and_units() -> None:
     profiles = _profiles()
-    records = fraction_sign_records(profiles, source="x", q_threshold=0.05) + log_ratio_records(
-        profiles, source="x", q_threshold=0.05
+    records = fraction_sign_records(profiles, source="x", **THRESHOLDS) + log_ratio_records(
+        profiles, source="x", **THRESHOLDS
     )
     families = {(r.method, r.family_id, r.correction_method) for r in records}
     assert (
@@ -136,7 +140,7 @@ def test_each_method_keeps_its_own_family_and_units() -> None:
 
 
 def test_display_state_is_independent_of_the_decision() -> None:
-    record = fraction_sign_records(_profiles(), source="x", q_threshold=0.05)[0]
+    record = fraction_sign_records(_profiles(), source="x", **THRESHOLDS)[0]
     masked = replace(record, display_status="masked_below_min_studies")
     assert masked.decision == record.decision
     assert record.display_status == NOT_APPLICABLE
@@ -144,7 +148,7 @@ def test_display_state_is_independent_of_the_decision() -> None:
 
 
 def test_statuses_are_attached_without_changing_any_result() -> None:
-    records = fraction_sign_records(_profiles(), source="x", q_threshold=0.05)
+    records = fraction_sign_records(_profiles(), source="x", **THRESHOLDS)
     annotated = apply_statuses(records, STATUSES)
     for before, after in zip(records, annotated, strict=True):
         assert (after.decision, after.test_status, after.q_value) == (
@@ -172,7 +176,7 @@ def test_absent_assessment_files_read_as_pending(tmp_path: Path) -> None:
 def test_every_field_survives_the_export(tmp_path: Path) -> None:
     profiles = _profiles()
     records = apply_statuses(
-        fraction_sign_records(profiles, source="x", q_threshold=0.05)
+        fraction_sign_records(profiles, source="x", **THRESHOLDS)
         + placeholder_records("enrichment", "profile", "not supplied", TRAITS[:1]),
         STATUSES,
     )
@@ -196,6 +200,85 @@ def test_every_field_survives_the_export(tmp_path: Path) -> None:
 
 
 def test_a_record_carries_the_selection_note() -> None:
-    record = fraction_sign_records(_profiles(), source="x", q_threshold=0.05)[0]
+    record = fraction_sign_records(_profiles(), source="x", **THRESHOLDS)[0]
     assert "selected on this corpus" in record.selection_note
     assert isinstance(record, Record)
+
+
+def test_a_zero_total_pair_is_excluded_rather_than_counted_as_a_tie() -> None:
+    """A pair with no retained annotation on a side has an undefined share (#294).
+
+    ``Profile.fraction`` returns 0.0 for a zero total, so such a pair enters the
+    contrast as a measured share of nothing, the contrast comes out exactly zero,
+    and the sign test counts it as a tie. That merges all-tied studies with
+    zero-annotation studies, which the shared comparison basis of #178 forbids.
+    """
+    scored = _profiles()
+    blank = [
+        Profile(
+            study_id="bsdb:blank",
+            experiment_id="bsdb:blank-1",
+            inc_dec=direction,
+            condition="c",
+            body_site="s",
+            guild_counts=dict.fromkeys(TRAITS, 0),
+            total=0,
+        )
+        for direction in ("inc", "dec")
+    ]
+
+    exclusion = drop_zero_total_pairs(scored + blank)
+
+    assert exclusion.zero_total_experiments == 1
+    assert exclusion.studies_lost == 1
+    assert exclusion.studies_after == len({p.study_id for p in scored})
+    assert all(p.study_id != "bsdb:blank" for p in exclusion.profiles)
+
+    # Kept as a tie, the blank study would inflate the tie count; excluded, the
+    # tallies match the corpus that has a defined share.
+    with_blank = fraction_sign_records(scored + blank, source="x", **THRESHOLDS)
+    without = fraction_sign_records(exclusion.profiles, source="x", **THRESHOLDS)
+    assert {r.trait: r.ties for r in with_blank} != {r.trait: r.ties for r in without}
+
+
+def test_each_row_is_decided_at_both_thresholds_with_their_sources() -> None:
+    """One cutoff cannot speak for three families, so both are reported (#294)."""
+    records = fraction_sign_records(_profiles(), source="x", **THRESHOLDS)
+
+    for record in records:
+        assert record.q_threshold == 0.05
+        assert record.strict_q_threshold == 0.001
+        # Each threshold says where it comes from rather than appearing as a bare number.
+        assert record.q_threshold_source
+        assert record.strict_q_threshold_source
+        assert record.q_threshold_source != record.strict_q_threshold_source
+
+
+def test_the_two_thresholds_decide_independently() -> None:
+    """The strict column must read its own threshold, not copy the loose decision.
+
+    The fixture's q values sit below both default thresholds, so a run at the
+    defaults cannot tell the two columns apart - which is how a strict column
+    that silently reuses ``q_threshold`` would pass. The thresholds here bracket
+    the fixture's q instead, so the two decisions are required to disagree (#294).
+    """
+    records = fraction_sign_records(
+        _profiles(), source="x", q_threshold=0.05, strict_q_threshold=1e-9
+    )
+
+    assert records
+    for record in records:
+        assert record.q_value is not None
+        assert 1e-9 < record.q_value <= 0.05, "fixture must sit between the two thresholds"
+        assert record.decision == SIGNIFICANT
+        assert record.strict_decision == NOT_SIGNIFICANT
+
+
+def test_the_stricter_threshold_can_only_shrink_the_significant_set() -> None:
+    """A row significant at the stricter cutoff is significant at the looser one."""
+    records = fraction_sign_records(_profiles(), source="x", **THRESHOLDS)
+
+    assert records
+    for record in records:
+        if record.strict_decision == SIGNIFICANT:
+            assert record.decision == SIGNIFICANT

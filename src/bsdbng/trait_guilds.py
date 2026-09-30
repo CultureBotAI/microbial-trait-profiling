@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import sys
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TextIO
@@ -107,6 +108,52 @@ class CorpusStats:
     trait_columns_used: int
     kept_experiments: int
     kept_profiles: int
+
+
+@dataclass(frozen=True)
+class PairExclusion:
+    """Experiments kept for a paired contrast, and what was removed."""
+
+    profiles: list[Profile]
+    zero_total_experiments: int
+    studies_before: int
+    studies_after: int
+
+    @property
+    def studies_lost(self) -> int:
+        return self.studies_before - self.studies_after
+
+
+def drop_zero_total_pairs(profiles: Sequence[Profile]) -> PairExclusion:
+    """Remove whole experiments whose retained-annotation total is zero on a side.
+
+    ``Profile.fraction`` returns 0.0 when the total is zero, so such a profile
+    enters a contrast as a measured share of nothing. It is not: the share is
+    undefined. Scoring it as zero makes the contrast exactly zero, which the
+    sign test then counts as a tie, so all-tied studies and zero-annotation
+    studies collapse into one number - the collapse the shared comparison basis
+    of #178 forbids (#294).
+
+    The whole experiment goes, not the offending side, so the corpus stays
+    paired. On the pinned corpus this removes 94 of 2,335 experiments and takes
+    the study count from 959 to 939.
+    """
+    by_experiment: defaultdict[tuple[str, str], list[Profile]] = defaultdict(list)
+    for profile in profiles:
+        by_experiment[(profile.study_id, profile.experiment_id)].append(profile)
+    kept: list[Profile] = []
+    zero_total = 0
+    for sides in by_experiment.values():
+        if any(side.total <= 0 for side in sides):
+            zero_total += 1
+        else:
+            kept.extend(sides)
+    return PairExclusion(
+        profiles=kept,
+        zero_total_experiments=zero_total,
+        studies_before=len({p.study_id for p in profiles}),
+        studies_after=len({p.study_id for p in kept}),
+    )
 
 
 class ExperimentMetadata:

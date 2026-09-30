@@ -44,6 +44,7 @@ from bsdbng.trait_guilds import (
     OXYGEN_GUILDS,
     TABLE1_TRAITS,
     Profile,
+    drop_zero_total_pairs,
     load_profiles,
     read_bugsigdb_vintage,
     write_stats_report,
@@ -83,6 +84,18 @@ NOT_APPLICABLE = "not_applicable"
 SELECTION_NOTE = (
     "the six Table 1 traits were selected on this corpus by the composition arm; "
     "correcting within them is not independent confirmation"
+)
+#: No single cutoff is native to all three families collected here, so each row
+#: is decided at both and each threshold names where it comes from (#294). The
+#: composition arm publishes q with no cutoff at all, which is why neither of
+#: these is described as the arm's own rule.
+DEFAULT_OVERLAY_Q = 0.05
+DEFAULT_MANUSCRIPT_Q = 0.001
+OVERLAY_Q_SOURCE = (
+    "chosen by this integration for display, matching the q <= 0.05 overlay of PR #173"
+)
+MANUSCRIPT_Q_SOURCE = (
+    "the manuscript's q <= 0.001 rule, as the enrichment arm's committed run applies it"
 )
 #: Assessments that belong to other issues. Absent input means pending, not clear.
 ASSESSMENTS = {
@@ -132,6 +145,14 @@ class Record:
     decision: str
     display_status: str
     zero_annotation_state: str
+    #: The same row decided at the stricter threshold, so the manuscript's
+    #: q <= 0.001 rule and the q <= 0.05 overlay can be compared per row rather
+    #: than by rerunning the whole table (#294). Each threshold names its source,
+    #: because no single cutoff is native to all three families here.
+    strict_q_threshold: float | None = None
+    strict_decision: str = UNDECIDED
+    q_threshold_source: str = ""
+    strict_q_threshold_source: str = ""
     selection_note: str = SELECTION_NOTE
     calibration_status: str = "pending #182"
     sensitivity_status: str = "pending #183"
@@ -171,7 +192,11 @@ def _decision(q_value: float | None, threshold: float | None, status: str) -> st
 
 
 def fraction_sign_records(
-    profiles: Sequence[Profile], *, source: str, q_threshold: float | None
+    profiles: Sequence[Profile],
+    *,
+    source: str,
+    q_threshold: float | None,
+    strict_q_threshold: float | None,
 ) -> list[Record]:
     """The six Table 1 traits' study-level directional consistency test."""
     result = compute_direction_shifts(list(profiles))
@@ -220,9 +245,13 @@ def fraction_sign_records(
                 family_id="table1_six_fractions",
                 family_size=len(result.shifts),
                 q_threshold=q_threshold,
+                strict_q_threshold=strict_q_threshold,
+                q_threshold_source=OVERLAY_Q_SOURCE,
+                strict_q_threshold_source=MANUSCRIPT_Q_SOURCE,
                 effect_threshold=None,
                 test_status=status,
                 decision=_decision(shift.q_value, q_threshold, status),
+                strict_decision=_decision(shift.q_value, strict_q_threshold, status),
                 display_status=NOT_APPLICABLE,
                 zero_annotation_state="profiles with no retained annotation score share 0",
                 source=source,
@@ -232,7 +261,11 @@ def fraction_sign_records(
 
 
 def log_ratio_records(
-    profiles: Sequence[Profile], *, source: str, q_threshold: float | None
+    profiles: Sequence[Profile],
+    *,
+    source: str,
+    q_threshold: float | None,
+    strict_q_threshold: float | None,
 ) -> list[Record]:
     """The 15 paired log-ratio direction tests, each on its own eligible population."""
     result = compute_log_ratio_shifts(list(profiles))
@@ -281,9 +314,13 @@ def log_ratio_records(
                 family_id="table1_fifteen_ratios",
                 family_size=result.family_size,
                 q_threshold=q_threshold,
+                strict_q_threshold=strict_q_threshold,
+                q_threshold_source=OVERLAY_Q_SOURCE,
+                strict_q_threshold_source=MANUSCRIPT_Q_SOURCE,
                 effect_threshold=None,
                 test_status=status,
                 decision=_decision(summary.by_q, q_threshold, status),
+                strict_decision=_decision(summary.by_q, strict_q_threshold, status),
                 display_status=NOT_APPLICABLE,
                 zero_annotation_state=(
                     f"{summary.excluded_zero_experiments} experiments excluded for a zero count"
@@ -300,7 +337,11 @@ def log_ratio_records(
 
 
 def guild_records(
-    profiles: Sequence[Profile], *, source: str, q_threshold: float | None
+    profiles: Sequence[Profile],
+    *,
+    source: str,
+    q_threshold: float | None,
+    strict_q_threshold: float | None,
 ) -> list[Record]:
     """The paired aerobe-against-anaerobe McNemar on study signs."""
     matrix = build_matrix(list(profiles), max_conditions=60, max_body_sites=8, min_studies=3)
@@ -338,9 +379,13 @@ def guild_records(
             family_id="guild_mcnemar",
             family_size=1,
             q_threshold=q_threshold,
+            strict_q_threshold=strict_q_threshold,
+            q_threshold_source=OVERLAY_Q_SOURCE,
+            strict_q_threshold_source=MANUSCRIPT_Q_SOURCE,
             effect_threshold=None,
             test_status=status,
             decision=_decision(correlation.mcnemar_p, q_threshold, status),
+            strict_decision=_decision(correlation.mcnemar_p, strict_q_threshold, status),
             display_status=NOT_APPLICABLE,
             zero_annotation_state="profiles with no retained annotation score share 0",
             selection_note="the oxygen guilds were fixed a priori, not selected on this corpus",
@@ -600,7 +645,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--experiments-input", type=Path, default=DEFAULT_EXPERIMENTS_PATH)
     parser.add_argument("--full-dump-input", type=Path, default=DEFAULT_FULL_DUMP_PATH)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
-    parser.add_argument("--q-threshold", type=float, default=0.05)
+    parser.add_argument(
+        "--q-threshold",
+        type=float,
+        default=DEFAULT_OVERLAY_Q,
+        help="Display threshold for the primary decision column.",
+    )
+    parser.add_argument(
+        "--strict-q-threshold",
+        type=float,
+        default=DEFAULT_MANUSCRIPT_Q,
+        help="Second threshold decided per row, for the manuscript comparison (#294).",
+    )
     parser.add_argument("--calibration-status", type=Path, default=DEFAULT_CALIBRATION_STATUS)
     parser.add_argument("--sensitivity-status", type=Path, default=DEFAULT_SENSITIVITY_STATUS)
     parser.add_argument("--orientation-provenance", type=Path, default=DEFAULT_ORIENTATION_STATUS)
@@ -617,10 +673,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     write_stats_report(stats, vintage)
     source = f"{args.profile_input.name}@{_sha256(args.profile_input)[:12]}"
 
+    # The shared comparison basis excludes a pair whose retained-annotation total
+    # is zero on either side; scoring it as share 0 makes its contrast a tie and
+    # merges zero-annotation studies into the all-tied count (#294, #178).
+    exclusion = drop_zero_total_pairs(profiles)
+    profiles = exclusion.profiles
+    print(
+        f"Excluded {exclusion.zero_total_experiments} experiments with a zero "
+        f"retained-annotation total on a side; studies {exclusion.studies_before} "
+        f"-> {exclusion.studies_after}"
+    )
+
+    thresholds = {"q_threshold": args.q_threshold, "strict_q_threshold": args.strict_q_threshold}
     records: list[Record] = []
-    records += fraction_sign_records(profiles, source=source, q_threshold=args.q_threshold)
-    records += log_ratio_records(profiles, source=source, q_threshold=args.q_threshold)
-    records += guild_records(profiles, source=source, q_threshold=args.q_threshold)
+    records += fraction_sign_records(profiles, source=source, **thresholds)
+    records += log_ratio_records(profiles, source=source, **thresholds)
+    records += guild_records(profiles, source=source, **thresholds)
     records += placeholder_records(
         "composition_arm_native_transformed_contrast",
         "body_site",
