@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
+import json
 import sys
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -24,6 +26,9 @@ from bsdbng.paths import KG_MICROBE_DIR
 from bsdbng.trait_guilds import GRAM_GUILDS, OXYGEN_GUILDS, TABLE1_TRAITS
 
 DEFAULT_NODES_PATH = KG_MICROBE_DIR / "merged-kg_nodes.tsv"
+DEFAULT_PROVENANCE_PATH = KG_MICROBE_DIR / "provenance.json"
+#: Read in blocks so a 200 MB node table is not held in memory to be hashed.
+_HASH_BLOCK_BYTES = 1 << 20
 
 #: The label each grouped identifier carries in the pinned node table.
 EXPECTED_LABELS: dict[str, str] = {
@@ -59,6 +64,64 @@ class TermCheck:
         return self.found == self.expected
 
 
+@dataclass(frozen=True)
+class NodeTableIdentity:
+    """Which node table was read, and whether it is the pinned one."""
+
+    path: Path
+    declared_md5: str | None
+    actual_md5: str
+    #: Why the identity could not be established, or ``None`` when it could.
+    undetermined: str | None = None
+
+    @property
+    def pinned(self) -> bool:
+        return self.declared_md5 is not None and self.declared_md5 == self.actual_md5
+
+
+def file_md5(path: Path) -> str:
+    """The MD5 of ``path``, read in blocks."""
+    digest = hashlib.md5(usedforsecurity=False)
+    with path.open("rb") as handle:
+        while block := handle.read(_HASH_BLOCK_BYTES):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def declared_node_md5(provenance_path: Path, filename: str) -> str | None:
+    """The MD5 ``provenance.json`` records for ``filename``, or ``None``.
+
+    Returns ``None`` rather than raising when the sidecar is absent or does not
+    describe the file: that is "unknown", which the caller reports differently
+    from "known and wrong".
+    """
+    if not provenance_path.is_file():
+        return None
+    try:
+        recorded = json.loads(provenance_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    entry = recorded.get("files", {}).get(filename) if isinstance(recorded, dict) else None
+    if not isinstance(entry, dict):
+        return None
+    declared = entry.get("md5")
+    return declared if isinstance(declared, str) else None
+
+
+def identify_node_table(nodes_path: Path, provenance_path: Path) -> NodeTableIdentity:
+    """Establish whether ``nodes_path`` is the KG-Microbe build the sidecar pins.
+
+    A label mismatch means one of two very different things: the pinned build
+    renamed a term, or this is simply not the pinned build. Hashing first keeps
+    those apart, so a check run against a newer KG cannot be read as evidence
+    that a term is missing (#289).
+    """
+    declared = declared_node_md5(provenance_path, nodes_path.name)
+    actual = file_md5(nodes_path)
+    undetermined = None if declared is not None else f"{provenance_path} records no md5"
+    return NodeTableIdentity(nodes_path, declared, actual, undetermined)
+
+
 def check_term_labels(nodes_path: Path, expected: Mapping[str, str]) -> list[TermCheck]:
     """Look every expected identifier up in a KG-Microbe nodes TSV."""
     wanted = dict(expected)
@@ -79,11 +142,33 @@ def check_term_labels(nodes_path: Path, expected: Mapping[str, str]) -> list[Ter
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--nodes", type=Path, default=DEFAULT_NODES_PATH)
+    parser.add_argument("--provenance", type=Path, default=DEFAULT_PROVENANCE_PATH)
+    parser.add_argument(
+        "--allow-unpinned-nodes",
+        action="store_true",
+        help="Report the labels even when the node table is not the pinned build.",
+    )
     args = parser.parse_args(argv)
     unlisted = sorted(grouped_identifiers().difference(EXPECTED_LABELS))
     if unlisted:
         print(f"grouped identifiers without an expected label: {', '.join(unlisted)}")
         return 1
+
+    identity = identify_node_table(args.nodes, args.provenance)
+    print(f"node table {identity.path}")
+    print(f"  md5 {identity.actual_md5}")
+    print(f"  pinned md5 {identity.declared_md5 or '(not recorded)'}")
+    if not identity.pinned:
+        reason = identity.undetermined or "it does not match the pinned md5"
+        print(
+            f"this is not the pinned KG-Microbe node table: {reason}. "
+            "A label reported as missing here is evidence about this build, not about "
+            "the pinned one.",
+            file=sys.stderr,
+        )
+        if not args.allow_unpinned_nodes:
+            return 1
+
     checks = check_term_labels(args.nodes, EXPECTED_LABELS)
     for check in checks:
         status = "ok" if check.ok else "MISMATCH"

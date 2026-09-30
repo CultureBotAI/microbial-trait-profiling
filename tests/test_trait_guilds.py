@@ -1,15 +1,16 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
-import math
 from pathlib import Path
+from statistics import fmean
 
 import pytest
-from scipy.stats import binomtest
+from scipy.stats import binomtest, spearmanr
 
 from bsdbng.guild_maps import (
     OTHER_LABEL,
     build_matrix,
     compute_correlation,
+    require_plotly,
     study_direction_means,
     subset_matrix,
 )
@@ -168,9 +169,124 @@ def test_correlation_counts_studies_by_shift_direction(corpus: tuple[Path, Path]
     assert result.discordant == (2, 0)
     assert result.mcnemar_p == pytest.approx(float(binomtest(2, 2, p=0.5).pvalue))
     assert result.mcnemar_p == pytest.approx(0.5)
-    # The paired odds ratio is the discordant ratio; with no reverse-discordant
-    # studies it is infinite.
-    assert result.odds_ratio == math.inf
+    assert result.status == "tested"
+    # The paired odds ratio is the discordant ratio. With no reverse-discordant
+    # study the denominator is zero, so the ratio has no value - reported as
+    # undefined rather than as infinity, which would print as a number (#289).
+    assert result.odds_ratio is None
+
+
+def test_a_guild_result_with_no_discordant_study_is_undefined_not_unity() -> None:
+    """No discordant study means no McNemar test, not a test that found nothing.
+
+    Writing ``p = 1.0`` here would read as "tested, no difference"; the truth is
+    that the test does not exist. This is the fault the Table 1 arm already
+    fixed, checked here for the guild arm (#289). It does not fire on the pinned
+    corpus, which is why it needs a fixture.
+    """
+    profiles: list[Profile] = []
+    for index in range(4):
+        study = f"bsdb:{index}"
+        # Both guilds shift the same way in every study, so no study is
+        # discordant and the discordant table is empty on both sides.
+        profiles.append(
+            Profile(
+                study_id=study,
+                experiment_id=f"{study}-1",
+                inc_dec="inc",
+                guild_counts={"aerobe": 8, "anaerobe": 8},
+                total=16,
+                condition="c",
+                body_site="s",
+            )
+        )
+        profiles.append(
+            Profile(
+                study_id=study,
+                experiment_id=f"{study}-1",
+                inc_dec="dec",
+                guild_counts={"aerobe": 4, "anaerobe": 4},
+                total=16,
+                condition="c",
+                body_site="s",
+            )
+        )
+
+    result = compute_correlation(profiles)
+
+    assert result.discordant == (0, 0)
+    assert result.mcnemar_p is None
+    assert result.odds_ratio is None
+    assert result.status == "all_tied"
+
+
+def test_a_study_with_no_guild_annotation_is_not_ranked_as_a_zero() -> None:
+    """An unannotated study is missing data, not a measured share of zero (#289).
+
+    Ranking it as (0, 0) would put every such study at one identical point and
+    pull the rank correlation toward that block. The McNemar already drops them
+    as ties, so the two statistics would otherwise describe different populations.
+    """
+
+    def study(name: str, aerobe_inc: int, anaerobe_inc: int) -> list[Profile]:
+        return [
+            Profile(
+                study_id=name,
+                experiment_id=f"{name}-1",
+                inc_dec="inc",
+                guild_counts={"aerobe": aerobe_inc, "anaerobe": anaerobe_inc},
+                total=20,
+                condition="c",
+                body_site="s",
+            ),
+            Profile(
+                study_id=name,
+                experiment_id=f"{name}-1",
+                inc_dec="dec",
+                guild_counts={"aerobe": anaerobe_inc, "anaerobe": aerobe_inc},
+                total=20,
+                condition="c",
+                body_site="s",
+            ),
+        ]
+
+    annotated: list[Profile] = []
+    for index, (aerobe, anaerobe) in enumerate([(9, 1), (7, 3), (3, 7), (1, 9)]):
+        annotated.extend(study(f"bsdb:a{index}", aerobe, anaerobe))
+    unannotated = [p for index in range(3) for p in study(f"bsdb:z{index}", 0, 0)]
+
+    with_blanks = compute_correlation(annotated + unannotated)
+    without_blanks = compute_correlation(annotated)
+
+    assert with_blanks.excluded_no_annotation == 3
+    assert without_blanks.excluded_no_annotation == 0
+    # The blank studies are held out, so both runs rank the same four studies and
+    # agree on every correlation - including the count behind each one.
+    assert with_blanks.spearman == without_blanks.spearman
+    for _rho, _p, n_studies in with_blanks.spearman.values():
+        assert n_studies == 4
+
+
+def test_a_guild_result_with_no_scored_study_reports_no_studies() -> None:
+    """A corpus where every guild contrast ties yields no scored study at all."""
+    profiles = [
+        Profile(
+            study_id="bsdb:1",
+            experiment_id="bsdb:1-1",
+            inc_dec=direction,
+            guild_counts={"aerobe": 5, "anaerobe": 5},
+            total=20,
+            condition="c",
+            body_site="s",
+        )
+        for direction in ("inc", "dec")
+    ]
+
+    result = compute_correlation(profiles)
+
+    assert result.status == "no_studies"
+    assert result.mcnemar_p is None
+    assert result.odds_ratio is None
 
 
 def test_study_means_reject_an_unpaired_corpus() -> None:
@@ -368,23 +484,66 @@ def _guild_profile(
 
 
 def test_rank_correlations_count_each_study_once_across_its_cells() -> None:
-    """#165: a study reaching several condition cells is one observation, not several."""
+    """#165: a study reaching several condition cells is one observation, not several.
+
+    The fixture deliberately does not mirror the decreased side, so the two guild
+    contrasts are not perfect opposites and rho is a value rather than -1 by
+    construction (#289). The expectation is recomputed here from the four
+    study-level contrasts, so counting bsdb:1 once per condition - the bug this
+    test exists to catch - gives six observations and a different rho, and fails.
+    """
+    # (aerobe_inc, anaerobe_inc, aerobe_dec, anaerobe_dec) per experiment.
+    spans = {
+        "A": (9, 1, 2, 6),
+        "B": (7, 2, 3, 5),
+        "C": (8, 3, 1, 7),
+    }
     profiles: list[Profile] = []
-    # bsdb:1 spans three conditions; a cell-level correlation would count it three times.
-    for index, condition in enumerate(("A", "B", "C")):
+    for index, (condition, (a_inc, n_inc, a_dec, n_dec)) in enumerate(spans.items()):
         profiles += [
-            _guild_profile("bsdb:1", f"bsdb:1-{index}", "inc", 9, 1, condition),
-            _guild_profile("bsdb:1", f"bsdb:1-{index}", "dec", 1, 9, condition),
+            _guild_profile("bsdb:1", f"bsdb:1-{index}", "inc", a_inc, n_inc, condition),
+            _guild_profile("bsdb:1", f"bsdb:1-{index}", "dec", a_dec, n_dec, condition),
         ]
-    for study, (up, down) in {"bsdb:2": (6, 3), "bsdb:3": (2, 7), "bsdb:4": (5, 5)}.items():
+    others = {
+        "bsdb:2": (6, 3, 4, 4),
+        "bsdb:3": (2, 7, 5, 2),
+        # bsdb:4 shifts BOTH guilds up, so the two contrast series are not
+        # perfectly inversely ranked and rho is -0.8 rather than a forced -1.
+        "bsdb:4": (6, 6, 2, 2),
+    }
+    for study, (a_inc, n_inc, a_dec, n_dec) in others.items():
         profiles += [
-            _guild_profile(study, f"{study}-1", "inc", up, down, "A"),
-            _guild_profile(study, f"{study}-1", "dec", down, up, "A"),
+            _guild_profile(study, f"{study}-1", "inc", a_inc, n_inc, "A"),
+            _guild_profile(study, f"{study}-1", "dec", a_dec, n_dec, "A"),
         ]
+
     result = compute_correlation(profiles)
+
+    # Four studies, however many cells each reaches.
     assert {n for _rho, _p, n in result.spearman.values()} == {4}
-    rho, _p, _n = result.spearman["aerobe_contrast~anaerobe_contrast"]
-    assert rho == pytest.approx(-1.0)
+
+    # Recompute the expectation independently: one contrast per study, where a
+    # study's contrast averages its experiments' fractions on each side.
+    def share(aerobe: int, anaerobe: int, guild: str) -> float:
+        count = aerobe if guild == "aerobe" else anaerobe
+        return count / (aerobe + anaerobe + 10)
+
+    def contrast(experiments: list[tuple[int, int, int, int]], guild: str) -> float:
+        increased = fmean([share(a_inc, n_inc, guild) for a_inc, n_inc, _, _ in experiments])
+        decreased = fmean([share(a_dec, n_dec, guild) for _, _, a_dec, n_dec in experiments])
+        return increased - decreased
+
+    by_study = [list(spans.values()), *([value] for value in others.values())]
+    expected_rho, _ = spearmanr(
+        [contrast(experiments, "aerobe") for experiments in by_study],
+        [contrast(experiments, "anaerobe") for experiments in by_study],
+    )
+
+    rho, _p, n_studies = result.spearman["aerobe_contrast~anaerobe_contrast"]
+    assert n_studies == 4
+    assert rho == pytest.approx(float(expected_rho))
+    # Not the degenerate -1 that a mirrored fixture would force regardless of code.
+    assert -1.0 < rho < 1.0
 
 
 def test_a_body_site_containing_the_column_separator_is_rejected() -> None:
@@ -394,3 +553,24 @@ def test_a_body_site_containing_the_column_separator_is_rejected() -> None:
     ]
     with pytest.raises(ValueError, match="Plaque"):
         build_matrix(profiles, max_conditions=5, max_body_sites=5, min_studies=1)
+
+
+def test_a_missing_viz_extra_names_the_install_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    """plotly is a 'viz' extra, so its absence must read as a setup step (#288)."""
+    import importlib.util
+
+    real_find_spec = importlib.util.find_spec
+
+    def without_plotly(name: str, package: str | None = None) -> object | None:
+        if name == "plotly":
+            return None
+        return real_find_spec(name, package)
+
+    monkeypatch.setattr(importlib.util, "find_spec", without_plotly)
+    with pytest.raises(ModuleNotFoundError, match="viz"):
+        require_plotly()
+
+
+def test_require_plotly_passes_when_the_extra_is_installed() -> None:
+    """The guard is a probe, not a second import path: present means it does nothing."""
+    require_plotly()

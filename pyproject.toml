@@ -13,17 +13,15 @@ authors = [
 ]
 dependencies = [
   "httpx>=0.28.0",
-  # kaleido 1.x renders figures by driving a headless Chrome/Chromium (fetch a
-  # version-pinned copy with `just get-chrome`). The 0.2.x line bundled its own
-  # renderer, but plotly 7.0 removed the kaleido-v0 code path (6.x had only
-  # deprecated it), so with the plotly floor below, kaleido must sit on the v1
-  # line; the two floors are a pair.
-  "kaleido>=1.0",
   "linkml>=1.10.0",
   "linkml-runtime>=1.8.3",
-  "plotly>=7.0",
   "pydantic>=2.13.0",
   "pyyaml>=6.0.2",
+  # scipy stays a runtime dependency on purpose (#288): the analysis modules
+  # guild_maps, table1_trait_maps and trait_composition all import it at module
+  # level, so it is not optional for anything except a bare ingest-only install,
+  # and the repo's rule is that statistics come from scipy rather than being
+  # hand-rolled (#135).
   "scipy>=1.17.0",
 ]
 
@@ -37,6 +35,18 @@ dev = [
 ]
 kg = [
   "gdown>=6.0.0",
+]
+# Figure rendering only (#288). Installing the package for the ingest and schema
+# side should not pull a headless-Chrome driver, and plotly is imported lazily
+# inside the figure functions, so the analysis modules import without it.
+# kaleido 1.x renders figures by driving a headless Chrome/Chromium (fetch a
+# version-pinned copy with `just get-chrome`). The 0.2.x line bundled its own
+# renderer, but plotly 7.0 removed the kaleido-v0 code path (6.x had only
+# deprecated it), so with the plotly floor, kaleido must sit on the v1 line; the
+# two floors are a pair.
+viz = [
+  "kaleido>=1.0",
+  "plotly>=7.0",
 ]
 mongo = [
   "linkml-store[llm,mongodb]>=0.3.0",
@@ -109,13 +119,15 @@ exclude = [
   "src/bsdbng/datamodel/bsdbng_pydantic\\.py$",
 ]
 
-# `exclude` only keeps the generated model out of the files mypy crawls; it is
-# still followed as an import of bsdbng.datamodel, and on a cold cache its
-# errors surface. Silencing them here keeps its types available to callers,
-# which `follow_imports = "skip"` would not.
-[[tool.mypy.overrides]]
-module = "bsdbng.datamodel.bsdbng_pydantic"
-ignore_errors = true
+# `exclude` keeps the generated model out of the files mypy crawls; it is still
+# followed as an import of bsdbng.datamodel, so its types stay available to
+# callers. It carried an `ignore_errors = true` override as well, added in
+# 05943e7 because the generated file reported errors on a cold cache. The
+# current gen-pydantic output is clean under strict mode, so the blanket
+# suppression was removed rather than narrowed (#288). `just check` runs
+# typecheck on a cold cache in CI; if a future linkml release reintroduces
+# errors here, fix the generation or name the specific codes - do not restore a
+# module-wide ignore.
 
 # scipy and plotly ship no type information; the repo's own code stays strict.
 [[tool.mypy.overrides]]

@@ -23,8 +23,15 @@ METPO:1000608 (facultatively aerobic); the anaerobe guild is METPO:1000603
 (anaerobic) and METPO:1000607 (obligately anaerobic). The term labels were
 checked against the merged KG-Microbe node table rather than taken from prior
 analysis code, and the check is re-runnable: `just verify-trait-terms` looks every
-grouped identifier up in `data/kg-microbe/merged-kg_nodes.tsv` (MD5 recorded in
-`data/kg-microbe/provenance.json`) and fails on a missing or changed label. A label
+grouped identifier up in `data/kg-microbe/merged-kg_nodes.tsv` and fails on a
+missing or changed label. It verifies the node table's MD5 against
+`data/kg-microbe/provenance.json` **before** reading any label, and stops if they
+differ, because otherwise a run against a different KG-Microbe build reports a
+term as missing when the real finding is that the build is not the pinned one
+(#289). `--allow-unpinned-nodes` reports the labels anyway, and says so. On the
+pinned build (nodes MD5 `dd76b4656f9341db25a7c4afa96cd58e`, fetched 2026-04-21)
+all twelve grouped identifiers carry their expected label, `pathways:arsenate_reduction`
+included. A label
 check cannot validate the grouping itself. Placing microaerophilic and
 facultatively aerobic organisms in the aerobe guild is an a priori decision: both
 tolerate oxygen, but neither is an obligate aerobe, and a guild of strict aerobes
@@ -158,10 +165,16 @@ each study's mean guild fraction per direction and its paired contrast (the mean
 increased minus mean decreased fraction). An earlier version correlated the 86
 condition-by-body-site cells that survived masking; one study reaches many cells,
 so that counted dependent cells as independent observations, and it is replaced
-here by the per-study template the Table 1 figure already uses (#165). Over 959
-studies, aerobe and anaerobe fractions correlate negatively within the same
-direction, rho = -0.635 on the increased side and -0.630 on the decreased side,
-and the two guilds' per-study contrasts correlate at rho = -0.725. These are
+here by the per-study template the Table 1 figure already uses (#165). Fifteen of
+the 959 studies carry no oxygen annotation on either side. Their zero is
+missingness rather than a measured share, so they are excluded from the rank
+correlations, which leaves 944 (#289). The McNemar already dropped them as ties,
+so both statistics now describe the same population. Keeping them would add
+fifteen identical points at the origin and attenuate the within-side correlations
+to -0.635 and -0.630. Over those 944 studies, aerobe and anaerobe fractions
+correlate negatively within the same direction, rho = -0.710 on the increased side
+and -0.704 on the decreased side, and the two guilds' per-study contrasts
+correlate at rho = -0.727. These are
 largely the structural artefact described above - two shares of one denominator -
 and are not to be read as support. Studies are still not fully independent where
 they share cohorts, which this computation does not model.

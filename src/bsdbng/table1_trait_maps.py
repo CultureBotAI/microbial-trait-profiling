@@ -34,6 +34,7 @@ from bsdbng.guild_maps import (
     OTHER_LABEL,
     SIGN_TOLERANCE,
     build_matrix,
+    require_plotly,
     study_direction_means,
     subset_matrix,
     write_body_site_panels,
@@ -406,6 +407,7 @@ def write_shift_figure(
     rank correlation between traits across per-study contrasts, which is what
     shows that coccus shaped and sphere shaped are close to the same measurement.
     """
+    require_plotly()
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 

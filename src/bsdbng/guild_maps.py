@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import importlib.util
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
@@ -333,11 +334,39 @@ class CorrelationResult:
     """Guild-by-direction association and cross-cell rank correlations."""
 
     table: dict[str, int]
-    odds_ratio: float
-    mcnemar_p: float
+    #: ``None`` when the discordant ratio is undefined, never ``inf``: with no
+    #: study shifting the guilds the other way, 0/0 has no value to report.
+    odds_ratio: float | None
+    #: ``None`` when no study is discordant, so no McNemar test exists. Writing
+    #: 1.0 there would read as "tested, no difference" rather than "not tested".
+    mcnemar_p: float | None
     discordant: tuple[int, int]
     spearman: dict[str, tuple[float, float, int]]
     studies: int
+    #: ``tested``, ``all_tied`` (studies scored, none discordant) or
+    #: ``no_studies``. The same vocabulary the Table 1 arm uses.
+    status: str
+    #: Studies held out of the rank correlations for carrying no guild
+    #: annotation on either side. The McNemar already drops them as ties.
+    excluded_no_annotation: int = 0
+
+
+def require_plotly() -> None:
+    """Fail with the install command when the figure extra is absent (#288).
+
+    plotly and kaleido are a ``viz`` extra rather than runtime dependencies, so
+    an ingest-only install does not pull a headless-Chrome driver. Every figure
+    function imports plotly lazily and calls this first, so the missing extra
+    reads as a setup step rather than as a stack trace.
+    """
+    if importlib.util.find_spec("plotly") is not None:
+        return
+    msg = (
+        "Rendering a figure needs the 'viz' extra (plotly and kaleido). Install it "
+        "with `uv sync --all-extras`, or `uv sync --extra viz`. PNG export also "
+        "needs a headless Chrome: `just get-chrome`."
+    )
+    raise ModuleNotFoundError(msg)
 
 
 def study_direction_means(
@@ -422,25 +451,44 @@ def compute_correlation(profiles: list[Profile]) -> CorrelationResult:
         else:
             anaerobe_up_aerobe_down += 1
 
+    # An undefined result is reported as undefined, not as a number that reads
+    # like one (#289). This is the fault the Table 1 arm already fixed; the guild
+    # arm carried it until now. Neither branch fires on the pinned corpus.
     n_discordant = aerobe_up_anaerobe_down + anaerobe_up_aerobe_down
     mcnemar_p = (
         float(binomtest(aerobe_up_anaerobe_down, n_discordant, p=0.5).pvalue)
         if n_discordant
-        else 1.0
+        else None
     )
     odds_ratio = (
-        aerobe_up_anaerobe_down / anaerobe_up_aerobe_down
-        if anaerobe_up_aerobe_down
-        else float("inf")
+        aerobe_up_anaerobe_down / anaerobe_up_aerobe_down if anaerobe_up_aerobe_down else None
     )
+    if not signs:
+        status = "no_studies"
+    elif not n_discordant:
+        status = "all_tied"
+    else:
+        status = "tested"
 
     # Rank correlations across studies, one observation per study (#165). An
     # earlier version correlated condition x body-site cells, which counted a
     # study once per cell it reached and so treated dependent cells as independent.
     # Each pair uses the studies carrying both series; a constant series has no
     # defined rank correlation and its pair is omitted rather than written as nan.
+    #
+    # A study whose every guild fraction is zero carries no oxygen annotation on
+    # either side. That zero is missingness, not a measured share, so it is
+    # dropped rather than ranked (#289). The McNemar above already drops these as
+    # ties; excluding them here makes both statistics describe one population.
+    # They are 15 of 959 on the pinned corpus, and keeping them as identical
+    # (0, 0) points attenuates the within-side correlations from -0.710 to -0.635.
+    direction_keys = [f"{guild}_{d}" for guild in GUILD_ORDER for d in DIRECTIONS]
     per_study: dict[str, dict[str, float]] = {}
+    excluded_no_annotation = 0
     for study, per_key in study_means.items():
+        if all(per_key.get(key, 0.0) == 0.0 for key in direction_keys):
+            excluded_no_annotation += 1
+            continue
         row = dict(per_key)
         for guild in GUILD_ORDER:
             inc, dec = per_key.get(f"{guild}_inc"), per_key.get(f"{guild}_dec")
@@ -468,11 +516,13 @@ def compute_correlation(profiles: list[Profile]) -> CorrelationResult:
 
     return CorrelationResult(
         table=table,
-        odds_ratio=float(odds_ratio),
+        odds_ratio=odds_ratio,
         mcnemar_p=mcnemar_p,
         discordant=(aerobe_up_anaerobe_down, anaerobe_up_aerobe_down),
         spearman=spearman,
         studies=len(study_means),
+        status=status,
+        excluded_no_annotation=excluded_no_annotation,
     )
 
 
@@ -570,9 +620,9 @@ def write_outputs(
         writer.writerow(
             [
                 "mcnemar_odds_ratio",
-                "aerobe_vs_anaerobe_paired_signs",
-                f"{correlation.odds_ratio:.6f}",
-                f"{correlation.mcnemar_p:.6g}",
+                f"aerobe_vs_anaerobe_paired_signs ({correlation.status})",
+                "" if correlation.odds_ratio is None else f"{correlation.odds_ratio:.6f}",
+                "" if correlation.mcnemar_p is None else f"{correlation.mcnemar_p:.6g}",
                 up_down + down_up,
                 vintage or "",
             ]
@@ -772,6 +822,7 @@ def write_figure(
     figure where the traits are rare, and the state is still recorded in the
     emitted cell-status table.
     """
+    require_plotly()
     import plotly.graph_objects as go
 
     scales: dict[str, object] = dict(GUILD_COLORSCALES) if colorscales is None else colorscales
@@ -1067,6 +1118,7 @@ def write_body_site_panels(
     colour there, but with the site named once above the panel and the columns
     labelled by trait and direction alone.
     """
+    require_plotly()
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -1308,11 +1360,18 @@ def main() -> int:
     )
 
     up_down, down_up = correlation.discordant
+    ratio = "undefined" if correlation.odds_ratio is None else f"{correlation.odds_ratio:.3f}"
+    p_text = "not tested" if correlation.mcnemar_p is None else f"p={correlation.mcnemar_p:.3g}"
     print(
         f"\nMcNemar (exact, paired signs): discordant {up_down}/{down_up}, "
-        f"odds ratio {correlation.odds_ratio:.3f} "
-        f"(p={correlation.mcnemar_p:.3g}) over {correlation.studies} studies"
+        f"odds ratio {ratio} ({p_text}) over {correlation.studies} studies "
+        f"[{correlation.status}]"
     )
+    if correlation.excluded_no_annotation:
+        print(
+            f"rank correlations exclude {correlation.excluded_no_annotation} studies "
+            "carrying no guild annotation on either side"
+        )
     for path in written:
         print(path)
     return 0
