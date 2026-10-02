@@ -50,7 +50,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
-from bsdbng.paths import DERIVED_DATA_DIR
+from bsdbng.paths import DERIVED_DATA_DIR, REPO_ROOT
 from bsdbng.table1_trait_maps import compute_direction_shifts
 from bsdbng.trait_composition import compute_log_ratio_shifts
 from bsdbng.trait_guilds import (
@@ -892,6 +892,96 @@ def oriented_profiles(
     return kept
 
 
+#: The committed hand review. Tracked, because the agreement rate it supports is only
+#: auditable if the cases behind it are, and because a later rule change has to be
+#: measurable against the same experiments.
+DEFAULT_REVIEW_PATH = REPO_ROOT / "methods" / "contrast_orientation_review.tsv"
+REVIEW_FIELDS = (
+    "study_id",
+    "experiment_id",
+    "pmid",
+    "condition",
+    "group_0_name",
+    "group_1_name",
+    "sampled_class",
+    "sampled_orientation",
+    "reviewer",
+    "verdict",
+    "reviewed_class",
+    "reviewed_orientation",
+    "note",
+)
+NOT_REVIEWED = "not_reviewed"
+
+
+def review_sample(
+    records: Mapping[tuple[str, str], ExperimentRecord],
+    classes: Mapping[tuple[str, str], Classification],
+    corpus: Iterable[tuple[str, str]],
+    *,
+    per_class: int,
+    seed: int,
+) -> list[dict[str, str]]:
+    """Draw a reproducible sample of analysed experiments, stratified by contrast class.
+
+    Each experiment's place in the draw is a digest of the seed, its class and its own
+    identifier, so the same seed always gives the same experiments, a larger sample
+    extends a smaller one instead of replacing it, and an experiment's place does not
+    depend on what else is in the corpus. A class with fewer than ``per_class``
+    analysed experiments contributes all of them.
+    """
+    by_class: dict[str, list[tuple[str, str]]] = {label: [] for label in CLASSES}
+    for key in sorted(set(corpus)):
+        by_class[classes[key].contrast_class].append(key)
+
+    def place(label: str, key: tuple[str, str]) -> str:
+        return hashlib.sha256(f"{seed}:{label}:{key[0]}/{key[1]}".encode()).hexdigest()
+
+    drawn: list[tuple[str, str]] = []
+    for label in CLASSES:
+        keys = sorted(by_class[label], key=lambda key: place(label, key))
+        drawn.extend(sorted(keys[:per_class]))
+    rows = []
+    for key in drawn:
+        record, found = records[key], classes[key]
+        rows.append(
+            {
+                "study_id": record.study_id,
+                "experiment_id": record.experiment_id,
+                "pmid": record.pmid,
+                "condition": record.condition,
+                "group_0_name": record.group_0_name,
+                "group_1_name": record.group_1_name,
+                "sampled_class": found.contrast_class,
+                "sampled_orientation": found.orientation,
+                "reviewer": "",
+                "verdict": "",
+                "reviewed_class": "",
+                "reviewed_orientation": "",
+                "note": "",
+            }
+        )
+    return rows
+
+
+def read_review(path: Path) -> dict[tuple[str, str], str]:
+    """Each reviewed experiment's validation status, from the committed review table."""
+    if not path.exists():
+        return {}
+    statuses: dict[tuple[str, str], str] = {}
+    with path.open(encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle, delimiter="\t"):
+            verdict = row["verdict"].strip().lower()
+            if verdict not in {"agree", "disagree"}:
+                msg = (
+                    f"{path}: experiment {row['experiment_id']} has verdict {row['verdict']!r}; "
+                    "every sampled row must be reviewed as 'agree' or 'disagree'"
+                )
+                raise ValueError(msg)
+            statuses[(row["study_id"], row["experiment_id"])] = f"reviewed_{verdict}d"
+    return statuses
+
+
 MANIFEST_FIELDS = (
     "study_id",
     "experiment_id",
@@ -915,6 +1005,7 @@ MANIFEST_FIELDS = (
     "evidence",
     "flags",
     "in_analysed_corpus",
+    "validation_status",
     "classifier_version",
     "bugsigdb_vintage",
 )
@@ -926,8 +1017,10 @@ def write_manifest(
     classes: Mapping[tuple[str, str], Classification],
     corpus: Iterable[tuple[str, str]],
     vintage: str | None,
+    validation: Mapping[tuple[str, str], str] | None = None,
 ) -> Path:
     in_corpus = set(corpus)
+    reviewed = validation or {}
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
@@ -942,6 +1035,7 @@ def write_manifest(
                     "direction_convention": DIRECTION_CONVENTION,
                     **asdict(found),
                     "in_analysed_corpus": "true" if key in in_corpus else "false",
+                    "validation_status": reviewed.get(key, NOT_REVIEWED),
                     "classifier_version": CLASSIFIER_VERSION,
                     "bugsigdb_vintage": vintage or "",
                 }
@@ -1061,6 +1155,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--full-dump-input", type=Path, default=DEFAULT_FULL_DUMP_PATH)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
+    parser.add_argument(
+        "--review-input",
+        type=Path,
+        default=DEFAULT_REVIEW_PATH,
+        help="Committed hand review, joined to the manifest as validation_status",
+    )
+    parser.add_argument(
+        "--write-review-sample",
+        type=Path,
+        help="Draw a fresh review sample to this path instead of classifying the corpus",
+    )
+    parser.add_argument("--review-seed", type=int, default=188)
+    parser.add_argument("--review-per-class", type=int, default=10)
     args = parser.parse_args(argv)
 
     vintage = read_bugsigdb_vintage(args.full_dump_input)
@@ -1075,12 +1182,34 @@ def main(argv: Sequence[str] | None = None) -> int:
     if unmatched:
         raise ValueError(f"{len(unmatched)} analysed experiments have no export record")
 
+    if args.write_review_sample:
+        rows = review_sample(
+            records,
+            classes,
+            corpus,
+            per_class=args.review_per_class,
+            seed=args.review_seed,
+        )
+        args.write_review_sample.parent.mkdir(parents=True, exist_ok=True)
+        with args.write_review_sample.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(
+                handle, fieldnames=REVIEW_FIELDS, delimiter="\t", lineterminator="\n"
+            )
+            writer.writeheader()
+            writer.writerows(rows)
+        print(f"{len(rows)} experiments sampled to {args.write_review_sample}")
+        print(f"seed {args.review_seed}, {args.review_per_class} per class")
+        return 0
+
+    validation = read_review(args.review_input)
     output = args.output_dir
     output.mkdir(parents=True, exist_ok=True)
     counts = class_counts(classes, corpus)
     oriented = oriented_profiles(profiles, classes)
     written = [
-        write_manifest(output / "contrast_manifest.tsv", records, classes, corpus, vintage),
+        write_manifest(
+            output / "contrast_manifest.tsv", records, classes, corpus, vintage, validation
+        ),
         _write_table(output / "contrast_class_counts.tsv", counts),
         _write_table(
             output / "disease_control_comparison.tsv",
@@ -1110,10 +1239,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             "disease_vs_healthy experiments; reversed ones relabelled so inc = higher in disease"
         ),
         "class_counts": counts,
+        "review": {
+            "path": str(args.review_input.relative_to(REPO_ROOT))
+            if args.review_input.is_relative_to(REPO_ROOT)
+            else str(args.review_input),
+            "sha256": _sha256(args.review_input) if args.review_input.exists() else None,
+            "reviewed_experiments": len(validation),
+            "agreed": sum(status == "reviewed_agreed" for status in validation.values()),
+            "disagreed": sum(status == "reviewed_disagreed" for status in validation.values()),
+        },
         "limitations": [
             "lexical rules over group names; not a curated re-reading of each paper",
             "the export has no Group 0 definition",
-            "validation status: representative-sample review only (see methods)",
+            "validation status: stratified-sample review only; every other experiment is "
+            "not_reviewed in the manifest",
         ],
     }
     provenance_path = output / "contrast_orientation_provenance.json"

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import itertools
 from dataclasses import replace
 from pathlib import Path
 
@@ -15,8 +17,10 @@ from bsdbng.contrast_orientation import (
     LONGITUDINAL,
     NATIVE,
     NOT_APPLICABLE,
+    NOT_REVIEWED,
     OTHER,
     REVERSED,
+    REVIEW_FIELDS,
     TREATMENT,
     UNRESOLVED,
     Classification,
@@ -24,6 +28,8 @@ from bsdbng.contrast_orientation import (
     classify,
     oriented_profiles,
     read_experiment_records,
+    read_review,
+    review_sample,
     write_manifest,
 )
 from bsdbng.trait_guilds import Profile
@@ -697,6 +703,84 @@ def test_a_curated_line_break_does_not_split_a_manifest_row(tmp_path: Path) -> N
         tmp_path / "manifest.tsv", records, {k: classify(v) for k, v in records.items()}, [], None
     )
     assert len(manifest.read_text(encoding="utf-8").splitlines()) == 2
+
+
+def test_the_review_sample_is_reproducible_from_its_seed() -> None:
+    records = {
+        ("bsdb:1", f"bsdb:1-{n}"): replace(BASE, study_id="bsdb:1", experiment_id=f"bsdb:1-{n}")
+        for n in range(1, 21)
+    }
+    classes = {key: classify(record) for key, record in records.items()}
+    corpus = list(records)
+    first = review_sample(records, classes, corpus, per_class=5, seed=188)
+    assert first == review_sample(records, classes, corpus, per_class=5, seed=188)
+    assert first != review_sample(records, classes, corpus, per_class=5, seed=2026)
+    # The corpus order must not matter, or the sample depends on how the caller built it.
+    assert first == review_sample(records, classes, list(reversed(corpus)), per_class=5, seed=188)
+    assert [row["experiment_id"] for row in first] == sorted(row["experiment_id"] for row in first)
+    assert len(first) == 5
+    assert {row["sampled_class"] for row in first} == {DISEASE_VS_HEALTHY}
+    # A class with fewer than per_class experiments contributes all of them.
+    assert len(review_sample(records, classes, corpus, per_class=50, seed=188)) == len(records)
+    # Each experiment's place depends on its own identifier alone, so a larger sample
+    # extends a smaller one instead of replacing it. A per-draw shuffle would not nest.
+    nested = [
+        {
+            row["experiment_id"]
+            for row in review_sample(records, classes, corpus, per_class=size, seed=188)
+        }
+        for size in range(1, 8)
+    ]
+    for smaller, larger in itertools.pairwise(nested):
+        assert smaller < larger
+
+
+def test_the_committed_review_covers_the_sample_it_claims_and_is_joined_back() -> None:
+    """The reported agreement rate is only auditable if these cases are committed."""
+    review = Path(__file__).resolve().parents[1] / "methods" / "contrast_orientation_review.tsv"
+    rows = list(csv.DictReader(review.open(encoding="utf-8", newline=""), delimiter="\t"))
+    assert len(rows) == 60
+    assert {row["verdict"] for row in rows} == {"agree", "disagree"}
+    assert all(row["reviewer"] for row in rows)
+    assert all(row["note"] for row in rows if row["verdict"] == "disagree")
+    statuses = read_review(review)
+    assert len(statuses) == len(rows)
+    assert set(statuses.values()) == {"reviewed_agreed", "reviewed_disagreed"}
+
+
+def test_an_unreviewed_row_in_the_review_table_is_an_error(tmp_path: Path) -> None:
+    """A blank verdict would otherwise be counted as neither agreement nor disagreement."""
+    review = tmp_path / "review.tsv"
+    review.write_text(
+        "\t".join(REVIEW_FIELDS) + "\n" + "\t".join(["bsdb:1", "bsdb:1-1"] + [""] * 11) + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="must be reviewed"):
+        read_review(review)
+
+
+def test_a_verdict_reaches_the_manifest_and_an_unsampled_row_stays_unreviewed(
+    tmp_path: Path,
+) -> None:
+    assert read_review(tmp_path / "missing.tsv") == {}
+    records = {
+        ("bsdb:1", "bsdb:1-1"): replace(BASE, experiment_id="bsdb:1-1"),
+        ("bsdb:1", "bsdb:1-2"): replace(BASE, experiment_id="bsdb:1-2"),
+    }
+    classes = {key: classify(record) for key, record in records.items()}
+    manifest = write_manifest(
+        tmp_path / "manifest.tsv",
+        records,
+        classes,
+        [],
+        None,
+        {("bsdb:1", "bsdb:1-1"): "reviewed_disagreed"},
+    )
+    rows = list(csv.DictReader(manifest.open(encoding="utf-8", newline=""), delimiter="\t"))
+    assert [(row["experiment_id"], row["validation_status"]) for row in rows] == [
+        ("bsdb:1-1", "reviewed_disagreed"),
+        ("bsdb:1-2", NOT_REVIEWED),
+    ]
 
 
 def test_one_disease_value_makes_a_multi_valued_condition_more_than_a_variable() -> None:

@@ -25,8 +25,9 @@ carries the export's own fields verbatim - PMID, DOI, study design, condition an
 EFO ID, body site and UBERON ID, host, both group names, the Group 1 definition,
 both sample sizes and the description - with the curated direction convention, the
 assigned contrast class and orientation, the matched evidence, flags, whether the
-experiment is in the analysed corpus, the classifier version
-(`contrast-orientation-v2`) and the BugSigDB vintage. The export holds no Group 0 definition, so every row carries the flag
+experiment is in the analysed corpus, its `validation_status` from the committed
+hand review, the classifier version (`contrast-orientation-v2`) and the BugSigDB
+vintage. The export holds no Group 0 definition, so every row carries the flag
 `no_group_0_definition_in_export`; a Group 0 reading rests on its name alone.
 
 Whitespace inside the curated free-text fields is collapsed before writing. 187 of
@@ -146,8 +147,59 @@ The rules were written, reviewed against samples of every class, and corrected. 
 reviews were done by a coding agent reading the group names, definition, design and
 condition of each sampled experiment, not by the author; they check the rules against
 the export's own words, not against the source papers, and they require review by the
-author. The sample and the per-experiment verdicts are not yet committed, so the
-agreement rate they support is not auditable; that is addressed separately.
+author. Earlier rounds (seeds 188, 2026 and 9131 at the v1 rules) are superseded by
+the review below, which is the one that is committed and reproducible.
+
+**The committed review.** `methods/contrast_orientation_review.tsv` holds the sample,
+the verdict for each experiment and a note for every disagreement. It is drawn by
+
+```sh
+just contrast-review-sample methods/contrast_orientation_review.tsv 188 10
+```
+
+which samples 10 analysed experiments per contrast class. An experiment's place in
+the draw is a digest of the seed, its class and its own identifier rather than a
+shuffle, so the same seed always gives the same 60 experiments, an experiment's place
+does not depend on what else is in the corpus, and asking for a larger sample extends
+this one rather than replacing it. A class with fewer than ten experiments contributes
+all of them. The verdicts are filled in by
+hand and committed; `just contrast-orientation` joins the file back, writing each
+experiment's `validation_status` into the manifest as `reviewed_agreed`,
+`reviewed_disagreed` or `not_reviewed`, and records the file's SHA-256 and the tally
+in the provenance. A sampled row with a blank verdict is an error rather than a
+silent non-answer.
+
+| Class | Sampled | Agreed | What the disagreements were |
+| --- | --- | --- | --- |
+| disease_vs_healthy | 10 | 10 | - |
+| disease_vs_disease | 10 | 6 | normal against tumour tissue read as two diseases; a body-mass contrast under a condition only half of whose values are variables; "Non-diabetic" against "Diabetic" where the curated condition is "Metabolic toxicity", so the negation has no condition to reach; term against preterm birth, where the unaffected group matches no comparison word |
+| treatment_exposure | 10 | 8 | healthy controls against Parkinson's patients "treated with entacapone"; healthy controls against OSCC patients where "Nonsmoking, nondrinking" is a matching criterion shared by both groups rather than the contrast |
+| longitudinal_timepoint | 10 | 6 | "Pre-DM" against type 2 diabetes, where "pre" names a disease stage; full-term against pre-term infants, where "Pre-term" is a birth category; healthy controls against recovered COVID-19 cases and against RSV convalescence, excluded deliberately by the resolved-disease rule but under a class that describes neither contrast |
+| other | 10 | 10 | - |
+| unresolved | 10 | 3 | seven conservative misses: an age contrast whose condition is "Age at assessment"; one cohort sampled in 2008 and 2010; Parkinson's disease by duration; lean Ghanaians against lean Americans; two pollution levels; two levodopa regimens; control adults by body site |
+
+43 of 60 agreed. The figure is deliberately less flattering than the "24 of 25" it
+replaces, because the sample is stratified over all six classes rather than weighted
+toward the ones that were already right, and because a disagreement is recorded
+wherever a better class exists, not only where the experiment would reach the
+analysis population. The distribution matters more than the total:
+
+- **All ten sampled disease-versus-healthy experiments were correct, in class and in
+  orientation.** That is the population the Table 1 analyses consume, and it is the
+  part of the classification this change was meant to narrow.
+- **`unresolved` is where the conservatism lives.** Seven of ten sampled experiments
+  belong in some class. None of the seven belongs in disease-versus-healthy, so the
+  conservatism costs coverage of the excluded classes rather than the analysis
+  population.
+- **Three of the four disease-versus-disease disagreements are experiments that
+  belong in disease-versus-healthy**, so eligibility is now narrow enough to lose
+  genuine comparisons as well as spurious ones. Each is a named case a later change
+  can be measured against.
+- With ten experiments per class the per-class rates are very imprecise. 10 of 10
+  puts the exact 95% interval for the disease-versus-healthy agreement share at 0.69
+  to 1.00, which bounds nothing useful; an earlier draw of the same size, discarded
+  when the sampling method changed, gave 8 of 10 on the same rules. The value of the
+  table is the named cases, not the rate.
 
 ## Retained, reversed, excluded and unresolved
 
@@ -237,30 +289,43 @@ the historical corpus, so agreement between them is a robustness check, not
 independent replication. Nothing here measures disease activity, oxygen exposure or
 abundance in patients (#179), and none of the procedures has been calibrated (#182).
 
-Known remaining weaknesses, each measured rather than assumed:
+Known remaining weaknesses, each named by a reviewed experiment rather than assumed:
 
-- **`unresolved` is conservative by design and by accident.** Six of ten sampled
-  `unresolved` experiments belong in some class. Two of them - "No Growth" against
-  "Culture Positive" in a urinary tract infection study, and "Normal leukocytes"
-  against "Hypoleukocytes" in a leukopenia study - belong in
-  disease-versus-healthy. They are not recovered here.
+- **Eligibility is now narrow enough to lose genuine comparisons.** Three sampled
+  disease-versus-disease experiments belong in disease-versus-healthy: normal against
+  tumour tissue (30584008-4), where a bare "normal" is a comparison word only when
+  followed by controls, subjects, individuals, group or samples; "Non-diabetic"
+  against "Diabetic" (39417117-26), where the curated condition is "Metabolic
+  toxicity" so the negation has no condition to reach; and term against preterm birth
+  (39569373-1), where the unaffected group matches no comparison word at all.
+- **A shared exposure descriptor still reads as an exposure contrast.** Healthy
+  controls against OSCC patients, both described as "Nonsmoking, nondrinking"
+  (37542310-2), becomes `treatment_exposure` on a word both groups share.
+- **A treated disease group is excluded with its healthy comparison.** Healthy
+  controls against Parkinson's patients "treated with entacapone" (31815177-11) is
+  `treatment_exposure`. The drug confounds the contrast, so the exclusion is
+  defensible, but it is not the reason the rule fires.
+- **"Pre" still names a disease stage as well as a time.** "Pre-DM" against type 2
+  diabetes (24013136-6) and full-term against "Pre-term" infants (25444008-2) are
+  `longitudinal_timepoint`. The first was recorded at the v1 rules and is unfixed.
+- **Resolved disease is excluded under a class that describes it wrongly.** Healthy
+  controls against recovered COVID-19 cases (33431578-2) and against RSV
+  convalescence (39642873-2) are `longitudinal_timepoint` although no time separates
+  the two groups.
+- **`unresolved` is conservative by design and by accident.** Seven of ten sampled
+  `unresolved` experiments belong in some class - an age contrast whose condition is
+  "Age at assessment", one cohort sampled in two years, Parkinson's disease by
+  duration, two lean populations, two pollution levels, two levodopa regimens, and
+  control adults by body site. None belongs in disease-versus-healthy.
+- **Sibling experiments of one study can be read inconsistently.** 33294219-1 is
+  `other` and 33294219-2 is `disease_vs_disease`, though both compare hypertensive
+  Han against hypertensive Tibetan subjects at different altitudes.
 - **"Normal (N-like group)" against "Case (OB-like group)" (25202708-1) stays
   `unresolved`.** The reviewer asked for it. The only rule that admits "Normal"
   followed by a parenthesis also admits "Normal (MN) group" against "Medium-dose
   (MMD) group" and "Model high-dose (MHD) group", two dose arms in a mouse study, so
   it would trade one recovered experiment for two new errors. It is left out until
   the dose-arm case has a rule of its own.
-- **A timepoint beside a healthy comparison only exempts "baseline" and
-  "admission".** "Anorexia patients at T1" and "OCD T3" against healthy groups are
-  still `longitudinal_timepoint`, where the timepoint dates the disease sample only.
-- **The randomized-trial fallback can catch a within-trial disease contrast.**
-  "Cognitively Intact Group" against "Cognitively Impaired Group" in a trial becomes
-  `treatment_exposure` because "intact" is not a comparison word.
-- **Resolved disease is excluded under a class that describes it wrongly.** Healthy
-  controls against recovered COVID-19 patients is `longitudinal_timepoint` although
-  no time separates the two groups.
-- **A disease control is not told apart from a healthy one.** Pneumonia "controls"
-  who are COVID-negative read as a healthy comparison.
 
 ## Reproducing
 
@@ -268,7 +333,8 @@ Known remaining weaknesses, each measured rather than assumed:
 timestamp 2026-04-24_00:41_UTC, `full_dump.csv` SHA-256
 `af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788`). The provenance
 record gives the code revision, the SHA-256 of the export, profile matrix, experiment
-table and classifier source, and the class counts.
+table, classifier source and committed review, the class counts and the review
+tally. `just contrast-review-sample` redraws the review sample from its seed.
 
 `tests/test_contrast_orientation.py` holds a regression fixture, with the curated
 strings copied verbatim, for every contrast that review
