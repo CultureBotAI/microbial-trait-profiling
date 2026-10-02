@@ -1,21 +1,35 @@
-"""Calibration scenarios, resampling and acceptance criteria (#182)."""
+"""Calibration scenarios, resampling and acceptance criteria (#182, #293)."""
 
 from __future__ import annotations
 
+import json
+from collections.abc import Sequence
+
+import numpy as np
 import pytest
 
 from bsdbng.calibration import (
     ALPHA,
     INJECTED_TRAIT,
+    INJECTION_MULTIPLIERS,
+    INJECTION_STUDY_SHARE,
+    NULL_REPLICATES,
+    POWER_REPLICATES,
+    PROTOCOL_PATH,
     SCREEN_KEEP,
     SEED,
     Outcome,
     Resample,
     Scenario,
+    attainable_p_at_alpha,
     check_criteria,
+    criterion_pass_probability,
     flip_directions,
     fraction_sign_test,
     inject_effect,
+    load_protocol,
+    pooled_rate,
+    replicate_counts,
     replicate_rng,
     run_replicates,
     screened_fraction_sign_test,
@@ -27,6 +41,9 @@ from bsdbng.table1_trait_maps import compute_direction_shifts
 from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
 
 TRAITS = tuple(TABLE1_TRAITS)
+#: The trials the declared null budget gives the least-powered procedure: one test
+#: per replicate, over both complete-null scenarios.
+DECLARED_TRIALS = 2 * NULL_REPLICATES
 
 
 def _scenario(name: str = "s") -> Scenario:
@@ -58,9 +75,48 @@ def _corpus(studies: int = 40) -> list[Profile]:
     return profiles
 
 
+def _null_ledger(
+    rejections: int,
+    trials_per_replicate: int,
+    replicates: int,
+    procedure: str = "fraction_sign_test",
+    *,
+    families: int = 0,
+) -> list[dict[str, object]]:
+    """A replicate ledger holding exactly ``rejections`` rejections, spread evenly.
+
+    Spreading them one per replicate keeps the measured design effect near one, so
+    the criterion sees the same uncertainty a single-test procedure would give it.
+    """
+    rows: list[dict[str, object]] = []
+    for index in range(replicates):
+        scenario = "complete_null_study_flip" if index % 2 else "complete_null_experiment_flip"
+        rows.append(
+            {
+                "scenario": scenario,
+                "procedure": procedure,
+                "replicate": index,
+                "tests_evaluated": trials_per_replicate,
+                "null_tests_evaluated": trials_per_replicate,
+                "null_tests_rejected_p": 1 if index < rejections else 0,
+                "family_rejected_q": 1 if index < families else 0,
+            }
+        )
+    return rows
+
+
+def _verdicts(
+    rows: Sequence[dict[str, object]], ledger: Sequence[dict[str, object]]
+) -> dict[tuple[str, str], str]:
+    return {
+        (str(r["criterion"]), str(r["procedure"])): str(r["verdict"])
+        for r in check_criteria(rows, ledger)
+    }
+
+
 def test_flipping_relabels_whole_units_and_keeps_the_corpus_paired() -> None:
     profiles = _corpus()
-    flipped = flip_directions(profiles, replicate_rng(182, "unit-test", 1), unit="study")
+    flipped = flip_directions(profiles, replicate_rng(SEED, "unit-test", 1), unit="study")
     assert len(flipped) == len(profiles)
     # Counts are untouched; only labels move.
     assert sorted(p.total for p in flipped) == sorted(p.total for p in profiles)
@@ -80,11 +136,11 @@ def test_flipping_relabels_whole_units_and_keeps_the_corpus_paired() -> None:
 
 def test_flipping_by_experiment_can_split_a_study() -> None:
     profiles = _corpus()
-    by_experiment = flip_directions(profiles, replicate_rng(182, "s", 7), unit="experiment")
-    by_study = flip_directions(profiles, replicate_rng(182, "s", 7), unit="study")
+    by_experiment = flip_directions(profiles, replicate_rng(SEED, "s", 7), unit="experiment")
+    by_study = flip_directions(profiles, replicate_rng(SEED, "s", 7), unit="study")
     assert by_experiment != by_study
     with pytest.raises(ValueError, match="flip unit"):
-        flip_directions(profiles, replicate_rng(182, "s", 1), unit="condition")
+        flip_directions(profiles, replicate_rng(SEED, "s", 1), unit="condition")
 
 
 def test_injection_leaves_every_other_trait_bit_identical() -> None:
@@ -195,40 +251,176 @@ def test_summary_counts_rejections_and_reports_monte_carlo_bounds() -> None:
         < 0.5
         < float(str(row["rejection_rate_p_ci_high"]))
     )
+    # Power is reported at q, so q carries its own interval (#293).
+    assert (
+        float(str(row["rejection_rate_q_ci_low"]))
+        < 0.5
+        < float(str(row["rejection_rate_q_ci_high"]))
+    )
+    assert row["smallest_observed_p"] == pytest.approx(0.01)
     family = next(r for r in summarize(runs, _scenario(), None) if r["label"] == "FAMILY")
     assert family["rejection_rate_q"] == pytest.approx(0.5)
     assert family["mean_false_discovery_proportion"] == pytest.approx(0.5)
 
 
-def test_a_failing_criterion_is_reported_as_failed() -> None:
-    """An anticonservative procedure must not pass; the checker is not decorative."""
-    rows = [
+def test_the_smallest_observed_p_is_not_the_attainable_resolution() -> None:
+    """Two different quantities, which v1 reported under one name (#293)."""
+    runs = [[Outcome("p", "a", 0.02, 0.02, scored=40)]]
+    row = next(r for r in summarize(runs, _scenario(), None) if r["label"] == "a")
+    assert row["smallest_observed_p"] == pytest.approx(0.02)
+    below, above = attainable_p_at_alpha(40)
+    assert below is not None
+    assert above is not None
+    assert below <= ALPHA < above
+    assert row["attainable_p_below_alpha"] == pytest.approx(below)
+    assert row["attainable_p_above_alpha"] == pytest.approx(above)
+    # The observed p need not be attainable at all for this corpus size.
+    assert below != pytest.approx(0.02)
+    assert attainable_p_at_alpha(0) == (None, None)
+
+
+def test_the_pooled_rate_charges_for_within_replicate_dependence() -> None:
+    """Six labels that always agree carry the information of one, not six."""
+    independent = pooled_rate([(1, 6)] * 20 + [(0, 6)] * 380)
+    lockstep = pooled_rate([(6, 6)] * 20 + [(0, 6)] * 380)
+    assert independent is not None
+    assert lockstep is not None
+    assert independent.trials == lockstep.trials == 2400
+    assert lockstep.rate > independent.rate
+    assert lockstep.design_effect > 5.0
+    assert independent.design_effect < 1.5
+    assert pooled_rate([(0, 0)]) is None
+
+
+def test_the_amended_criterion_fails_a_rate_the_old_rule_accepted() -> None:
+    """The heart of #293: at the declared budget 0.06 to 0.08 must all fail.
+
+    v1 passed a label whose exact two-sided 95% lower bound was at most 0.05, which
+    accepted 16/200 = 0.08 outright. Both rules are checked at the budget that
+    separates them, because at 2400 trials even the old rule rejects 0.08 - the v1
+    rule was anticonservative at the v1 budget, and the two defects travel together.
+    """
+    cases = {0.05: "pass", 0.06: "fail", 0.07: "fail", 0.08: "fail"}
+    for rate, expected in cases.items():
+        ledger = _null_ledger(round(rate * DECLARED_TRIALS), 1, DECLARED_TRIALS)
+        verdict = _verdicts([], ledger)[("per_test_level", "fraction_sign_test")]
+        assert verdict == expected, f"true rate {rate} gave {verdict}, expected {expected}"
+
+
+def test_the_old_budget_cannot_demonstrate_control_at_any_rate() -> None:
+    """At 200 replicates the v1 rule passed 16/200; the amended rule passes nothing.
+
+    This is the test that pins the rule rather than the budget: 0.08 over 200 trials
+    has an exact 95% lower bound of 0.047, so v1 called it a pass. The amended rule
+    fails it, and fails a true 0.05 as well - 200 replicates are not enough to
+    demonstrate control, which is why the declared budget rose to 1200.
+    """
+    for rate in (0.05, 0.08):
+        ledger = _null_ledger(round(rate * 200), 1, 200)
+        verdict = _verdicts([], ledger)[("per_test_level", "fraction_sign_test")]
+        assert verdict == "fail", f"true rate {rate} at 200 trials gave {verdict}"
+
+
+def test_the_criterion_power_meets_the_declared_requirement() -> None:
+    """The reported power calculation the protocol promises, asserted."""
+    declared = load_protocol()["criterion_calibration"]
+    tolerance = float(declared["per_test_tolerance"])
+    required = declared["required_operating_characteristics"]
+    assert criterion_pass_probability(0.05, DECLARED_TRIALS, tolerance) >= float(
+        required["pass_probability_at_0.05"]
+    )
+    assert 1.0 - criterion_pass_probability(0.07, DECLARED_TRIALS, tolerance) >= float(
+        required["fail_probability_at_0.07"]
+    )
+    assert 1.0 - criterion_pass_probability(0.08, DECLARED_TRIALS, tolerance) >= float(
+        required["fail_probability_at_0.08"]
+    )
+
+
+def test_the_criterion_power_formula_matches_a_simulation() -> None:
+    """The analytic operating characteristics, checked against sampled ledgers."""
+    rng = np.random.default_rng([SEED, 293])
+    tolerance = 0.065
+    for rate in (0.05, 0.07):
+        draws = rng.binomial(DECLARED_TRIALS, rate, size=400)
+        failures = 0
+        for successes in draws:
+            pooled = pooled_rate(
+                [(1, 1)] * int(successes) + [(0, 1)] * (DECLARED_TRIALS - int(successes))
+            )
+            assert pooled is not None
+            failures += pooled.upper_bound > tolerance
+        empirical = failures / len(draws)
+        analytic = 1.0 - criterion_pass_probability(rate, DECLARED_TRIALS, tolerance)
+        assert empirical == pytest.approx(analytic, abs=0.06)
+        if rate == 0.07:
+            assert empirical >= 0.9
+
+
+def test_the_family_criterion_fails_an_inflated_rate_and_accounts_for_error() -> None:
+    """v1 compared a point estimate to 0.10, where BH claims 0.05 (#293)."""
+    for rate, expected in {0.05: "pass", 0.08: "fail", 0.10: "fail"}.items():
+        ledger = _null_ledger(0, 1, DECLARED_TRIALS, families=round(rate * DECLARED_TRIALS))
+        verdict = _verdicts([], ledger)[("family_error", "fraction_sign_test")]
+        assert verdict == expected, f"family rate {rate} gave {verdict}"
+
+
+def test_the_guild_and_screened_procedures_are_in_the_applicable_checks() -> None:
+    """Both were missing from the family check; the screened one is the control."""
+    declared = {c["id"]: c for c in load_protocol()["acceptance_criteria"]}
+    for criterion in ("per_test_level", "family_error"):
+        assert "guild_mcnemar" in declared[criterion]["applies_to"], criterion
+        assert "screened_fraction_sign_test" in declared[criterion]["applies_to"], criterion
+    expected = declared["per_test_level"]["expected_verdict"]
+    assert expected["screened_fraction_sign_test"] == "fail"
+
+
+def test_a_negative_control_that_passes_is_flagged_as_unmet() -> None:
+    """The control exists to show the criterion has teeth; silence would hide it."""
+    ledger = _null_ledger(
+        round(0.02 * DECLARED_TRIALS),
+        1,
+        DECLARED_TRIALS,
+        procedure="screened_fraction_sign_test",
+    )
+    row = next(
+        r
+        for r in check_criteria([], ledger)
+        if r["criterion"] == "per_test_level" and r["procedure"] == "screened_fraction_sign_test"
+    )
+    assert row["verdict"] == "pass"
+    assert row["expected_verdict"] == "fail"
+    assert row["expectation_met"] is False
+
+
+def test_power_is_not_reported_as_passing_without_an_interval() -> None:
+    """v1 passed whenever any injected row existed (#293)."""
+    scenarios = [f"injected_{m:g}x_study_flip" for m in INJECTION_MULTIPLIERS]
+    complete = [
         {
-            "scenario": "complete_null_study_flip",
+            "scenario": name,
             "procedure": "fraction_sign_test",
-            "label": "trait",
-            "role": "null",
-            "rejection_rate_p": 0.4,
-            "rejection_rate_p_ci_low": 0.3,
-            "rejection_rate_q": 0.4,
-        },
-        {
-            "scenario": "complete_null_study_flip",
-            "procedure": "fraction_sign_test",
-            "label": "FAMILY",
-            "role": "family",
-            "rejection_rate_p": 0.4,
-            "rejection_rate_p_ci_low": 0.3,
-            "rejection_rate_q": 0.4,
-        },
+            "label": INJECTED_TRAIT,
+            "role": "injected_effect",
+            "replicates": POWER_REPLICATES,
+            "rejection_rate_q": 0.5,
+            "rejection_rate_q_ci_low": 0.45,
+            "rejection_rate_q_ci_high": 0.55,
+        }
+        for name in scenarios
     ]
-    verdicts = {
-        (r["criterion"], r["procedure"]): r["verdict"]
-        for r in check_criteria(rows)
-        if r["procedure"] == "fraction_sign_test"
-    }
-    assert verdicts[("per_test_level", "fraction_sign_test")] == "fail"
-    assert verdicts[("family_error", "fraction_sign_test")] == "fail"
+    assert _verdicts(complete, [])[("power_reported", "fraction_sign_test")] == "pass"
+
+    wide = [dict(row) for row in complete]
+    wide[0]["rejection_rate_q_ci_low"] = 0.1
+    wide[0]["rejection_rate_q_ci_high"] = 0.9
+    assert _verdicts(wide, [])[("power_reported", "fraction_sign_test")] == "fail"
+
+    missing = [dict(row) for row in complete]
+    missing[1]["rejection_rate_q_ci_high"] = None
+    assert _verdicts(missing, [])[("power_reported", "fraction_sign_test")] == "fail"
+
+    assert _verdicts(complete[:1], [])[("power_reported", "fraction_sign_test")] == "fail"
 
 
 def test_a_short_deterministic_run_reproduces_itself() -> None:
@@ -240,11 +432,26 @@ def test_a_short_deterministic_run_reproduces_itself() -> None:
         lambda profiles, rng: Resample(flip_directions(profiles, rng, unit="study")),
     )
     procedures = {"fraction_sign_test": fraction_sign_test}
-    first = run_replicates(profiles, scenario, 2, seed=182, procedures=procedures)
-    second = run_replicates(profiles, scenario, 2, seed=182, procedures=procedures)
+    first = run_replicates(profiles, scenario, 2, seed=SEED, procedures=procedures)
+    second = run_replicates(profiles, scenario, 2, seed=SEED, procedures=procedures)
     assert first == second
     assert len(first.runs) == 2
     assert {o.procedure for run in first.runs for o in run} == {"fraction_sign_test"}
     rows = summarize(first.runs, scenario, None)
     assert all(0.0 <= float(str(r["rejection_rate_p"])) <= 1.0 for r in rows)
+    ledger = replicate_counts(first.runs, scenario, None)
+    assert len(ledger) == 2
+    assert all(r["null_tests_evaluated"] == len(TRAITS) for r in ledger)
     assert ALPHA == 0.05
+
+
+def test_module_constants_match_the_declared_protocol() -> None:
+    """One declaration, not two: the code reads its budget from the protocol."""
+    declared = json.loads(PROTOCOL_PATH.read_text(encoding="utf-8"))
+    assert declared["replicates"]["null"] == NULL_REPLICATES
+    assert declared["replicates"]["power"] == POWER_REPLICATES
+    assert declared["replicates"]["seed"] == SEED
+    assert list(INJECTION_MULTIPLIERS) == declared["signal_injection"]["multipliers"]
+    assert declared["signal_injection"]["study_share"] == INJECTION_STUDY_SHARE
+    assert declared["signal_injection"]["injected_trait"] == INJECTED_TRAIT
+    assert "ci_check" not in declared["replicates"]

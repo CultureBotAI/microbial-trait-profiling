@@ -174,8 +174,11 @@ stats:
 
 # Empirical calibration of this repository's directional tests (#182): rejection
 # rates when their own nulls are true, power under a declared injected effect, and
-# the cost of selecting traits on the data. Scenarios and acceptance criteria are
-# fixed in methods/calibration_protocol.json. Takes a few minutes at 200 replicates.
+# the cost of selecting traits on the data. Scenarios, tolerances and the replicate
+# budget are fixed in methods/calibration_protocol.json. About twenty minutes at the
+# declared budget of 1200 null and 400 power replicates; `just calibration-report
+# --replicates 5` is the quick pass, and it reports the precision criteria as failed
+# because five replicates cannot meet them.
 [positional-arguments]
 calibration-report *ARGS:
 	uv run python -m bsdbng.calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
