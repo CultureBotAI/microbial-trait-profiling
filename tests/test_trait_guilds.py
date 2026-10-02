@@ -1,5 +1,6 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
+from math import isnan
 from pathlib import Path
 from statistics import fmean
 
@@ -574,3 +575,86 @@ def test_a_missing_viz_extra_names_the_install_command(monkeypatch: pytest.Monke
 def test_require_plotly_passes_when_the_extra_is_installed() -> None:
     """The guard is a probe, not a second import path: present means it does nothing."""
     require_plotly()
+
+
+def _fixed_total_profile(
+    study: str, direction: str, aerobe: int, anaerobe: int, total: int = 20
+) -> Profile:
+    """One profile on a fixed denominator, so a guild fraction can be held constant.
+
+    ``_guild_profile`` derives the total from the two counts, which makes every
+    fraction move when either count does. Pinning the total is what lets a
+    fixture vary one direction's series while holding another's flat.
+    """
+    return Profile(
+        study_id=study,
+        experiment_id=f"{study}-1",
+        inc_dec=direction,
+        condition="A",
+        body_site="Feces",
+        guild_counts={"aerobe": aerobe, "anaerobe": anaerobe},
+        total=total,
+    )
+
+
+# (aerobe_inc, anaerobe_inc, aerobe_dec, anaerobe_dec) per study, on a total of 20.
+# aerobe_inc is 4 in every study, so the aerobe increased series is constant at
+# 0.20 while the other three series take four distinct values each.
+_CONSTANT_SERIES_STUDIES = {
+    "bsdb:1": (4, 1, 2, 7),
+    "bsdb:2": (4, 2, 3, 5),
+    "bsdb:3": (4, 3, 5, 4),
+    "bsdb:4": (4, 6, 9, 1),
+}
+_VARYING_FIRST_STUDY = (1, 1, 2, 7)
+
+
+def _constant_series_profiles(*, hold_aerobe_inc_constant: bool) -> list[Profile]:
+    rows = dict(_CONSTANT_SERIES_STUDIES)
+    if not hold_aerobe_inc_constant:
+        # One study's increased aerobe count differs, so that series varies too.
+        rows["bsdb:1"] = _VARYING_FIRST_STUDY
+    profiles: list[Profile] = []
+    for study, (a_inc, n_inc, a_dec, n_dec) in rows.items():
+        profiles.append(_fixed_total_profile(study, "inc", a_inc, n_inc))
+        profiles.append(_fixed_total_profile(study, "dec", a_dec, n_dec))
+    return profiles
+
+
+def test_a_constant_guild_series_is_omitted_from_the_correlations_not_written_as_nan() -> None:
+    """Spearman against a flat series is undefined; the pair must be absent (#289).
+
+    ``spearmanr`` returns nan for a constant input rather than raising, so
+    dropping the guard writes nan into the correlation table and into the figure.
+    The fixture carries four studies, so the pair is past the ``len(paired) < 3``
+    sample-size guard: the control run below varies the same series and recovers
+    every pair at the same n, which is what separates the two guards.
+    """
+    result = compute_correlation(_constant_series_profiles(hold_aerobe_inc_constant=True))
+
+    # The studies are in the ranked population: none is dropped as unannotated.
+    assert result.studies == 4
+    assert result.excluded_no_annotation == 0
+
+    # Exact key set, because "aerobe_inc" is a substring of "anaerobe_inc" and a
+    # substring test would wrongly pass by also excluding the anaerobe pairs.
+    assert set(result.spearman) == {
+        "aerobe_dec~anaerobe_inc",
+        "aerobe_dec~anaerobe_dec",
+        "anaerobe_inc~anaerobe_dec",
+        "aerobe_contrast~anaerobe_contrast",
+    }
+    assert {n for _rho, _p, n in result.spearman.values()} == {4}
+    assert not [key for key, (rho, _p, _n) in result.spearman.items() if isnan(rho)]
+
+    control = compute_correlation(_constant_series_profiles(hold_aerobe_inc_constant=False))
+
+    # Same four studies, same denominators: only the constancy changed, and the
+    # three aerobe_inc pairs come back with the same n.
+    assert set(control.spearman) == set(result.spearman) | {
+        "aerobe_inc~aerobe_dec",
+        "aerobe_inc~anaerobe_inc",
+        "aerobe_inc~anaerobe_dec",
+    }
+    assert {n for _rho, _p, n in control.spearman.values()} == {4}
+    assert not [key for key, (rho, _p, _n) in control.spearman.items() if isnan(rho)]
