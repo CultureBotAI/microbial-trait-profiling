@@ -11,7 +11,10 @@ from pathlib import Path
 import pytest
 
 from bsdbng.log_ratio_sensitivity import (
+    FECES_ANY,
     INSUFFICIENT,
+    NO_GUT_LABEL,
+    OTHER_GUT,
     PROTOCOL_PATH,
     TESTED,
     Row,
@@ -19,9 +22,11 @@ from bsdbng.log_ratio_sensitivity import (
     _estimate_agreement,
     _held_family_q,
     _intervals_overlap,
+    _stratum_of,
     complete_pairs,
     correct,
     eligibility_tables,
+    label_accounting,
     leave_one_stratum_out,
     leave_one_study_out,
     log_ratio_contrast,
@@ -377,17 +382,64 @@ def test_leave_one_stratum_out_only_tests_strata_above_the_minimum() -> None:
     for item in rows:
         contrast = log_ratio_contrast(item.numerator, item.reference)
         eligible = [p for p in pairs if contrast(p) is not None]
-        attribute = "body_site" if item.stratum_kind == "body_site" else "condition"
-        inside = {p.study_id for p in eligible if getattr(p, attribute) == item.stratum}
+        inside = {p.study_id for p in eligible if _stratum_of(p, item.stratum_kind) == item.stratum}
         assert len(inside) == item.studies_eligible_in_stratum
         assert item.studies_eligible_in_stratum >= 4
-        kept = [p for p in pairs if getattr(p, attribute) != item.stratum]
+        kept = [p for p in pairs if _stratum_of(p, item.stratum_kind) != item.stratum]
         assert item.studies_eligible_remaining == len(study_means(kept, contrast))
         assert item.studies_eligible_remaining < len(study_means(pairs, contrast))
         assert item.family_size == 15
         assert item.decision_rule_q == pytest.approx(0.05)
 
-    assert {item.stratum_kind for item in rows} <= {"body_site", "condition"}
+    assert {item.stratum_kind for item in rows} <= {"body_site", "condition", "gut_label_set"}
+
+
+def test_label_set_strata_put_a_multi_label_feces_pair_with_feces() -> None:
+    """A cell naming Feces alongside another site is fecal; the exact-label split is not."""
+    pairs = complete_pairs(_signal_corpus(), TRAITS)
+    by_site = {pair.body_site: pair for pair in pairs}
+    assert "Feces,Blood" in by_site, "fixture must carry a multi-label Feces cell"
+
+    assert by_site["Feces"].gut_stratum() == FECES_ANY
+    assert by_site["Feces,Blood"].gut_stratum() == FECES_ANY
+    assert by_site["Feces,Blood"].labels() == {"Feces", "Blood"}
+    assert by_site["Rectum"].gut_stratum() == OTHER_GUT
+    assert by_site["Saliva"].gut_stratum() == NO_GUT_LABEL
+    assert by_site["Vagina"].gut_stratum() == NO_GUT_LABEL
+
+    # S7, matching the whole cell, keeps the multi-label fecal pairs and the other gut.
+    counts = label_accounting(pairs)
+    assert counts["feces_labelled_pairs_inside_s7"] > 0
+    assert counts["other_gut_pairs_inside_s7"] > 0
+    assert counts["multi_label_pairs"] > 0
+    assert (
+        counts["exact_label_feces_pairs"] + counts["pairs_outside_exact_label_feces"]
+        == counts["pairs_total"]
+        == len(pairs)
+    )
+
+    # The three label-set strata partition every pair exactly once.
+    strata = [FECES_ANY, OTHER_GUT, NO_GUT_LABEL]
+    sizes = {name: sum(pair.gut_stratum() == name for pair in pairs) for name in strata}
+    assert sum(sizes.values()) == len(pairs)
+    assert all(size > 0 for size in sizes.values())
+
+
+def test_label_set_scenarios_run_on_their_own_stratum() -> None:
+    """Each of S9, S10 and S11 is computed on its stratum, not on every pair."""
+    pairs = complete_pairs(_signal_corpus(), TRAITS)
+    rows = run_scenarios(pairs, TRAITS, min_studies=1)
+    for scenario, stratum in (
+        ("S9_feces_any_label", FECES_ANY),
+        ("S10_other_gut_no_feces", OTHER_GUT),
+        ("S11_no_gut_label", NO_GUT_LABEL),
+    ):
+        scenario_rows = _rows(scenario, rows)
+        expected = sum(pair.gut_stratum() == stratum for pair in pairs)
+        assert len(scenario_rows) == 15
+        assert {row.pairs_total for row in scenario_rows} == {expected}
+        assert expected < len(pairs)
+        assert {row.family for row in scenario_rows} == {f"{scenario.split('_')[0]}:fifteen_ratios"}
 
 
 def test_population_comparison_pairs_each_matched_row_with_its_baseline() -> None:

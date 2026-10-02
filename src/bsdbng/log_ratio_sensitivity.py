@@ -66,8 +66,47 @@ S4 = "S4_six_trait_common_support"
 S5 = "S5_triple_common_support"
 S6 = "S6_feces_only"
 S7 = "S7_excluding_feces"
+S8 = "S8_leave_one_study_out"
+S9 = "S9_feces_any_label"
+S10 = "S10_other_gut_no_feces"
+S11 = "S11_no_gut_label"
 
 FECES = "Feces"
+
+# BugSigDB packs several body sites into one comma-joined cell, so S6 and S7, which
+# match the whole cell, split multi-label experiments between them. These three
+# label-set strata partition the same pairs by what the labels mean instead.
+FECES_ANY = "feces, any label"
+OTHER_GUT = "other gut, no feces label"
+NO_GUT_LABEL = "no gut label"
+
+# Lower gastrointestinal labels other than Feces, as observed in the v1.3.1 export.
+# Meconium is counted here as lower-gut material; that is a judgement call, and the
+# methods description reports how many pairs it alone contributes.
+OTHER_GUT_LABELS = frozenset(
+    {
+        "Cecum mucosa",
+        "Colon",
+        "Colonic mucosa",
+        "Colorectal mucosa",
+        "Colorectum",
+        "Ileal mucosa",
+        "Ileum",
+        "Intestinal mucosa",
+        "Intestine",
+        "Meconium",
+        "Mucosa of ascending colon",
+        "Mucosa of rectum",
+        "Mucosa of sigmoid colon",
+        "Mucosa of small intestine",
+        "Rectal lumen",
+        "Rectum",
+        "Right colon",
+        "Sigmoid colon",
+        "Small intestine",
+    }
+)
+
 Contrast = Callable[["Pair"], float | None]
 
 
@@ -84,6 +123,17 @@ class Pair:
 
     def positive(self, traits: Iterable[str]) -> bool:
         return all(self.inc.guild_counts[t] > 0 and self.dec.guild_counts[t] > 0 for t in traits)
+
+    def labels(self) -> frozenset[str]:
+        """The individual body-site labels packed into this pair's single metadata cell."""
+        return frozenset(label.strip() for label in self.body_site.split(",") if label.strip())
+
+    def gut_stratum(self) -> str:
+        """Which declared label-set stratum this pair belongs to; every pair gets one."""
+        labels = self.labels()
+        if FECES in labels:
+            return FECES_ANY
+        return OTHER_GUT if labels & OTHER_GUT_LABELS else NO_GUT_LABEL
 
 
 def complete_pairs(profiles: Sequence[Profile], traits: Sequence[str]) -> list[Pair]:
@@ -438,7 +488,58 @@ def run_scenarios(
         "S7:fifteen_ratios",
         "by",
     )
+
+    # S6 and S7 match the whole body-site cell, so a multi-label experiment naming
+    # Feces alongside another site falls into S7. These three strata partition the
+    # same pairs by label-set membership instead, and each is its own family.
+    by_stratum: defaultdict[str, list[Pair]] = defaultdict(list)
+    for pair in pairs:
+        by_stratum[pair.gut_stratum()].append(pair)
+    for scenario, stratum, family in (
+        (S9, FECES_ANY, "S9:fifteen_ratios"),
+        (S10, OTHER_GUT, "S10:fifteen_ratios"),
+        (S11, NO_GUT_LABEL, "S11:fifteen_ratios"),
+    ):
+        rows += correct(
+            _ratios(
+                scenario,
+                by_stratum[stratum],
+                ratio_pairs,
+                f"S2 pairs whose body-site labels are {stratum}",
+                min_studies=min_studies,
+            ),
+            family,
+            "by",
+        )
     return rows
+
+
+def label_accounting(pairs: Sequence[Pair]) -> dict[str, int]:
+    """How the exact-label S6/S7 split compares with the label-set strata.
+
+    S7 is "outside the exact label Feces", not "outside the gut": it retains the
+    multi-label experiments that name Feces with another site, and every experiment
+    from the rest of the lower gut.
+    """
+    outside_exact = [pair for pair in pairs if pair.body_site != FECES]
+    feces_labelled = [pair for pair in outside_exact if FECES in pair.labels()]
+    other_gut = [pair for pair in outside_exact if pair.gut_stratum() == OTHER_GUT]
+    meconium_only = [pair for pair in other_gut if pair.labels() == {"Meconium"}]
+    return {
+        "pairs_total": len(pairs),
+        "exact_label_feces_pairs": len(pairs) - len(outside_exact),
+        "exact_label_feces_studies": len(
+            {pair.study_id for pair in pairs if pair.body_site == FECES}
+        ),
+        "pairs_outside_exact_label_feces": len(outside_exact),
+        "studies_outside_exact_label_feces": len({pair.study_id for pair in outside_exact}),
+        "feces_labelled_pairs_inside_s7": len(feces_labelled),
+        "feces_labelled_studies_inside_s7": len({pair.study_id for pair in feces_labelled}),
+        "other_gut_pairs_inside_s7": len(other_gut),
+        "other_gut_studies_inside_s7": len({pair.study_id for pair in other_gut}),
+        "other_gut_pairs_labelled_only_meconium": len(meconium_only),
+        "multi_label_pairs": sum(1 for pair in pairs if len(pair.labels()) > 1),
+    }
 
 
 @dataclass(frozen=True)
@@ -801,21 +902,15 @@ def leave_one_stratum_out(
         up, down, _tied, _p = sign_test(means[ratio].values())
         full_share = up / (up + down) if up + down else None
         significant = full_p[index] is not None and full_q[index] <= report_q
-        for kind in ("body_site", "condition"):
+        for kind in ("body_site", "condition", "gut_label_set"):
             grouped: defaultdict[str, set[str]] = defaultdict(set)
             for pair in eligible:
-                grouped[pair.body_site if kind == "body_site" else pair.condition].add(
-                    pair.study_id
-                )
+                grouped[_stratum_of(pair, kind)].add(pair.study_id)
             for label in sorted(grouped):
                 if len(grouped[label]) < min_studies:
                     skipped += 1
                     continue
-                kept = [
-                    pair
-                    for pair in pairs
-                    if (pair.body_site if kind == "body_site" else pair.condition) != label
-                ]
+                kept = [pair for pair in pairs if _stratum_of(pair, kind) != label]
                 remaining = study_means(kept, contrast)
                 r_up, r_down, _t, r_p = sign_test(remaining.values())
                 share = r_up / (r_up + r_down) if r_up + r_down else None
@@ -870,6 +965,13 @@ def read_reported_taxa(path: Path) -> dict[tuple[str, str], ReportedTaxa]:
 
 def _median(values: Sequence[float]) -> float | None:
     return median(values) if values else None
+
+
+def _stratum_of(pair: Pair, kind: str) -> str:
+    """The pair's label for one stratification: exact site, condition or label set."""
+    if kind == "body_site":
+        return pair.body_site
+    return pair.condition if kind == "condition" else pair.gut_stratum()
 
 
 def eligibility_tables(
@@ -933,10 +1035,10 @@ def eligibility_tables(
                 "coverage_sidecar_status": "pending #184",
             }
         )
-        for kind in ("body_site", "condition"):
+        for kind in ("body_site", "condition", "gut_label_set"):
             grouped: defaultdict[str, list[Pair]] = defaultdict(list)
             for pair in pairs:
-                grouped[pair.body_site if kind == "body_site" else pair.condition].append(pair)
+                grouped[_stratum_of(pair, kind)].append(pair)
             for label, members in sorted(grouped.items()):
                 kept_members = [p for p in members if p.positive((numerator, reference))]
                 strata.append(
@@ -991,6 +1093,7 @@ def write_outputs(
     population: Sequence[PopulationComparison],
     stratum_influence: Sequence[StratumInfluence],
     strata_below_minimum: int,
+    label_counts: dict[str, int],
 ) -> list[Path]:
     """Write every scenario row, the influence and eligibility tables, status and a report."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1025,6 +1128,7 @@ def write_outputs(
         "population_estimate_agreement": dict(
             Counter(item.estimate_agreement for item in population)
         ),
+        "body_site_label_accounting": dict(label_counts),
         "influence_decision_rule": (
             f"BY over the {len(influence)} S2 ratios with the other p-values held at their "
             f"full-data values; a ratio crosses when q <= {REPORT_Q}"
@@ -1126,6 +1230,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         population=population,
         stratum_influence=stratum_influence,
         strata_below_minimum=strata_below_minimum,
+        label_counts=label_accounting(pairs),
     ):
         print(path)
     return 0

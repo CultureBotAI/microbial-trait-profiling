@@ -44,6 +44,7 @@ interval for that share (not for the mean effect).
 | S4 six-trait common support | 354 pairs (239 studies) with all six traits positive | BH over 6 fractions; BY over 15 ratios |
 | S5 triple common support | per trait triple, pairs with all three positive; A/B, B/C, A/C | BY over 60 |
 | S6 / S7 fecal strata | S2 within exact body site Feces / outside it | BY over 15 each |
+| S9 / S10 / S11 label-set strata | S2 partitioned by body-site label set: any Feces label / other lower gut with no Feces label / no gut label | BY over 15 each |
 | S8 influence | S2 with each study, then each stratum of 30+ eligible studies, removed in turn | BY over 15, other 14 p held fixed; crossing at q = 0.05 |
 
 S0 reproduces the published six-trait directions and S2 reproduces the log-ratio
@@ -131,13 +132,55 @@ cellulose reaches q <= 0.05 in any population. Ratios without cellulose do not f
 a stable ordering: their shares stay between 0.43 and 0.60 and some change side
 between populations.
 
-**The signal is fecal (S6, S7).** Within Feces (602 studies; a study with experiments both in and outside Feces
-counts in each stratum), facultatively
-aerobic/cellulose, cellulose/sphere shaped, cellulose/arsenate reduction and
-cellulose/moderately halophilic reach q <= 0.02. Outside Feces (381 studies across
-all other exact body sites) no ratio does; the cellulose ratios sit at shares of
-0.42 to 0.52. Whether that reflects biology, fewer eligible studies per site or
-heterogeneous pooling of many sites cannot be separated here.
+**Nothing is detected outside the fecal stratum, which is not the same as the signal
+being fecal (S6, S7, S9, S10, S11).**
+
+First, the label handling, because it changes what S6 and S7 mean. BugSigDB packs
+several body sites into one comma-joined metadata cell, and S6 and S7 match the
+whole cell. S7 is therefore "outside the exact label Feces", not "outside the gut":
+of its 875 pairs, 15 (from 10 studies) carry the label Feces alongside another site
+(`Feces,Blood`, `Meconium,Feces`, `Colon,Feces` and so on), and a further 105 pairs
+(47 studies) come from the rest of the lower gut - Rectum, Intestine, Colon,
+Colorectum, Ileum and their mucosae, plus 11 pairs labelled only Meconium. 73 of the
+2,335 pairs carry more than one label. S9, S10 and S11 therefore partition the same
+pairs by label-set membership instead, and S6 and S7 are kept unchanged as declared.
+The full accounting is in `sensitivity_status.json` under
+`body_site_label_accounting`, and the per-ratio eligible counts per stratum are in
+`eligibility_by_stratum.tsv` under `stratum_kind` `gut_label_set`.
+
+Second, the counts that are actually tested. A stratum's `studies_total` is not its
+eligible count, and the earlier text quoted the former. Per ratio:
+
+| Stratum | Studies in stratum | Eligible studies per ratio | Rows tested | Rows at q <= 0.05 |
+| --- | --- | --- | --- | --- |
+| S6 exact label Feces | 602 | 146 to 403 | 15 | 4 |
+| S7 outside exact label Feces | 381 | 99 to 287 | 15 | 0 |
+| S9 any Feces label | 609 | 147 to 407 | 15 | 4 |
+| S10 other gut, no Feces label | 47 | 12 to 35 | 5 | 0 |
+| S11 no gut label | 331 | 85 to 249 | 15 | 0 |
+
+Within the fecal stratum the same four ratios reach q <= 0.021 under either
+definition: facultatively aerobic/cellulose, cellulose/sphere shaped,
+cellulose/arsenate reduction and cellulose/moderately halophilic. Moving the 15
+multi-label fecal pairs into the stratum (S6 to S9) changes none of the four
+conclusions.
+
+Outside it, nothing is detected, but the three strata establish different amounts.
+S11, away from the gut altogether, is a real negative on 331 studies and 85 to 249
+eligible per ratio: all 15 rows are tested and the largest share is 0.554. S10, the
+rest of the lower gut, establishes almost nothing - 47 studies, 12 to 35 eligible
+per ratio, so 10 of its 15 rows fall below the 30-study minimum and are reported
+descriptively with no p or q; the 5 that are tested reach shares of 0.34 to 0.70 on
+30 to 35 studies. Cellulose/arsenate reduction, the strongest fecal ratio, cannot be
+tested there at all. And in S7 the cellulose ratios still point the same way without
+reaching the threshold - cellulose/arsenate reduction sits at 0.418 on 99 eligible
+studies, against 0.331 on 146 inside Feces.
+
+So the defensible claim is that these ratios are detected in fecal signatures and
+not detected outside them, that the non-gut stratum is a genuine negative, and that
+the rest of the lower gut is untested rather than negative. Whether the fecal
+restriction reflects biology, the fecal stratum simply holding two thirds of the
+corpus, or heterogeneous pooling of many small sites cannot be separated here.
 
 **No single study drives a ratio; the fecal stratum does (S8).** The tested family
 is the 15 S2 ratios under BY with the other 14 p-values held at their full-data
@@ -174,7 +217,10 @@ with positive counts, cellulose-associated annotations are relatively lower on t
 increased side than several other Table 1 annotations, and that relative shift
 survives restriction to matched populations. It is conditional on positive
 annotation counts, is measured on over-represented, richly annotated signatures,
-and does not identify an absolute change in any trait. Five of the six original
+and does not identify an absolute change in any trait. It holds in one stratum:
+removing the fecal pairs is the only tested stratum removal that takes any ratio
+back across the rule, the non-gut stratum is a tested negative, and the rest of the
+lower gut is too small to test. Five of the six original
 fraction directions stop being detected once restricted to a ratio-eligible
 population, but their estimates remain compatible with the full-population
 estimates (29 of 30 overlapping intervals, median share shift -0.037), and the

@@ -80,8 +80,42 @@
         "leave-one-condition-out and leave-one-body-site-out for every stratum holding at least min_studies_for_a_test of the ratio's eligible studies"
       ],
       "not_reported": "a ranking of the most influential studies: every study in one sign group produces the identical share change, so any such ranking orders studies by their identifier"
+    },
+    {
+      "id": "S9_feces_any_label",
+      "comparison": "log_ratio",
+      "population": "S2 restricted to pairs whose body-site cell contains the label Feces among any others",
+      "family": "BY over the 15 ratios",
+      "purpose": "the fecal stratum without the exact-match artefact of S6"
+    },
+    {
+      "id": "S10_other_gut_no_feces",
+      "comparison": "log_ratio",
+      "population": "S2 restricted to pairs with no Feces label but at least one other_gut_labels label",
+      "family": "BY over the 15 ratios",
+      "purpose": "whether the fecal result extends to the rest of the lower gut"
+    },
+    {
+      "id": "S11_no_gut_label",
+      "comparison": "log_ratio",
+      "population": "S2 restricted to pairs with neither a Feces label nor any other_gut_labels label",
+      "family": "BY over the 15 ratios",
+      "purpose": "whether anything is detected away from the gut"
     }
   ],
+  "body_site_label_handling": {
+    "problem": "BugSigDB packs several body sites into one comma-joined metadata cell, and S6 and S7 match the whole cell. S7, declared as 'excluding Feces', therefore retains every multi-label experiment that names Feces alongside another site, and every experiment from the rest of the lower gut.",
+    "resolution": "S9, S10 and S11 partition the same pairs by label-set membership, so a cell naming Feces is fecal wherever else it also points, and the rest of the lower gut is its own stratum. S6 and S7 are kept unchanged as declared.",
+    "other_gut_labels": [
+      "Cecum mucosa", "Colon", "Colonic mucosa", "Colorectal mucosa", "Colorectum",
+      "Ileal mucosa", "Ileum", "Intestinal mucosa", "Intestine", "Meconium",
+      "Mucosa of ascending colon", "Mucosa of rectum", "Mucosa of sigmoid colon",
+      "Mucosa of small intestine", "Rectal lumen", "Rectum", "Right colon",
+      "Sigmoid colon", "Small intestine"
+    ],
+    "other_gut_labels_note": "Lower gastrointestinal labels as observed in the v1.3.1 export. Meconium is counted as lower-gut material, which is a judgement call; the number of pairs it alone contributes is reported in body_site_label_accounting. Upper gastrointestinal sites (stomach, duodenum, oesophagus) are deliberately left outside the gut strata.",
+    "reported_counts": "eligible studies per ratio per stratum in eligibility_by_stratum.tsv under stratum_kind gut_label_set; studies_total is not an eligible count and must not be quoted as one"
+  },
   "decision_threshold_for_reporting": "q <= 0.05 is used only to count which rows would change status; no preferred scenario or cutoff is selected",
   "protocol_amendments": [
     {
@@ -89,6 +123,13 @@
       "reviewing_issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/290",
       "scenario": "S8_leave_one_study_out",
       "change": "S8 was declared as leave-one-study-out alone. Review showed that on populations of 243 to 676 studies a single removal moves the share by about 1/n in either direction, so the scenario could not detect influence and its most-influential-study ranking was ordered by study identifier. S8 now also reports the minimum removals and minimum sign flips needed to cross the decision rule, and leave-one-condition-out and leave-one-body-site-out; the study ranking is removed.",
+      "declared_before_the_amended_run": false
+    },
+    {
+      "date": "2026-10-02",
+      "reviewing_issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/290",
+      "scenario": "S9_feces_any_label, S10_other_gut_no_feces, S11_no_gut_label",
+      "change": "Added after review. S6 and S7 match the whole comma-joined body-site cell, so S7 retained 15 multi-label pairs naming Feces and every other lower-gut pair, which made a claim that the signal is fecal unsupportable from S6/S7 alone. The three new strata partition the same pairs by label-set membership. S6 and S7 are unchanged.",
       "declared_before_the_amended_run": false
     }
   ],
