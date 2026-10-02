@@ -93,5 +93,9 @@ To ensure clean merging with `main` and other collaborator branches (specificall
 2. **Deterministic File Headers & Pre-commit Compliance**:
    - All generated TSVs and reports adhere to non-conflicting `# Comment: Value` metadata headers.
    - Codebase conforms 100% to line length ($<100$ characters) and typing standards (`ruff` and `mypy` green).
-3. **Reproducible Justfile Recipes**:
-   - All workflows (`just analyze`, `just export-rankings`, `just calibrate`, `just workflow-diagram`) use isolated relative paths inside `data/derived/`.
+3. **Reproducible Justfile Recipes & Explicit Background Wiring**:
+   - All enrichment and depletion workflows (`just analyze`, `just analyze-depletion`, `just analyze-site`) explicitly pass the unique-taxon reference background (`--taxa-matrix data/derived/taxa_trait_matrix.tsv`).
+   - Missing or invalid matrix inputs are rejected with explicit errors to prevent uncalibrated fallback.
+4. **Exchangeability & Empirical Calibration Model Status**:
+   - Binary taxon representation standardizes denominator definitions ($M, K, N, k$), but does not by itself establish independence across correlated microbial taxa.
+   - The production statistical model is maintained in active calibration status until empirical permutation nulls, sampling-unit A/B tests, and taxon-level bootstrap results are completed (#263 / #182).

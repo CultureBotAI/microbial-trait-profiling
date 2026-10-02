@@ -1,99 +1,59 @@
-# Milestone Plan: Taxon Hypergeometric Model, Complete Exports & Calibration
+# Implementation Plan: Enforce Taxon Background Wiring, Strict Input Validation, and Calibration Documentation
 
-## 1. Executive Summary & Goals
+## 1. Context & Architectural Overview
 
-This plan narrows the next milestone to:
-1. **[Issue #131](https://github.com/turbomam/bsdbng/issues/131)**: Standardizing the taxon-level hypergeometric sampling model with exact testable denominators ($M$, $K$, $N$, $k$) and formal background reference definition.
-2. **[Issue #254](https://github.com/turbomam/bsdbng/issues/254)**: Delivering complete ranking exports (overall trait rankings, trait-study pairs, and condition breakdowns) in the standard workflow.
-3. **[Issue #263](https://github.com/turbomam/bsdbng/issues/263)**: Coordinating calibration harness benchmarks using actual production code with Noel's methodology (#178 / #181).
-4. **Pinned Results & PR Deliverable**: Regenerating derived results with before/after comparison and opening a draft PR on the linked branch.
-
----
-
-## 2. Mathematical Formalization & Background Definitions (#131)
-
-### 2.1 The 2x2 Taxon-Level Sampling Urn
-For each trait $T$ evaluated in profile $P$:
-
-| | Taxon Has Trait $T$ | Taxon Does NOT Have Trait $T$ | Total Taxa |
-|---|---|---|---|
-| **In Profile $P$ (Drawn)** | $k$ | $N - k$ | $N$ |
-| **In Background Universe (Not in $P$)** | $K - k$ | $(M - N) - (K - k)$ | $M - N$ |
-| **Total Universe (Background)** | $K$ | $M - K$ | $M$ |
-
-Where:
-- **$M$ (Background Population Size)**: Total unique taxa in the reference background universe $\mathcal{U}_{\text{bg}}$.
-- **$N$ (Profile Sample Size)**: Total unique taxa reported in profile $P$ ($N = |U_P|$).
-- **$K$ (Population Trait Hits)**: Total unique taxa in $\mathcal{U}_{\text{bg}}$ possessing trait $T$ ($K = \sum_{t \in \mathcal{U}_{\text{bg}}} \mathbf{1}[C(t, T) > 0]$).
-- **$k$ (Observed Trait Hits)**: Number of unique taxa in profile $P$ possessing trait $T$ ($k = \sum_{t \in U_P} \mathbf{1}[C(t, T) > 0]$).
-
-### 2.2 Expected Counts & P-Values
-- **Expected Hits**: $\mathbb{E}[k] = N \times \frac{K}{M}$
-- **Fold**: $\text{Fold} = \frac{k}{\mathbb{E}[k]} = \frac{k / N}{K / M}$
-- **Enrichment P-value**: $p_{\text{enrich}} = \text{hypergeom.sf}(k - 1, M, K, N)$
-- **Depletion P-value**: $p_{\text{deplete}} = \text{hypergeom.cdf}(k, M, K, N)$
-
-### 2.3 Background Reference Options
-1. **Global Study Universe (Default)**: All unique taxa reported across all testable profiles in BugSigDB ($\mathcal{U}_{\text{bg}} = \bigcup_{P \in \mathcal{P}_{\text{testable}}} U_P$).
-2. **Matrix Universe**: All taxa present in [`data/derived/taxa_trait_matrix.tsv`](data/derived/taxa_trait_matrix.tsv).
-3. **Stratified Body-Site Background**: Taxa restricted to specific anatomical sites (e.g., Feces / Gut).
+The goal of this issue is to address acceptance conditions for production Over-Representation Analysis (ORA) in `bsdbng`:
+1. **Pass Defined Unique-Taxon Background**: Explicitly wire `--taxa-matrix data/derived/taxa_trait_matrix.tsv` in [`Justfile`](Justfile:144) (`analyze`, `analyze-depletion`, `analyze-site`) so that the standard commands do not omit it.
+2. **Strict Validation & No Silent Fallback**: In [`scripts/trait_enrichment.py`](scripts/trait_enrichment.py:370) and [`scripts/trait_depletion.py`](scripts/trait_depletion.py:308), if `--taxa-matrix` is passed with a nonexistent or invalid path, fail immediately with an explicit error rather than silently falling back to summing profile occurrences. Validate profile draws ($N$) and background counts ($M, K$) such that invalid or missing inputs are rejected.
+3. **Repeated-Taxon Fixture & Test**: Add a test fixture reproducing the exact repeated-taxon scenario (four unique taxa across two paired experiments) to verify that with the explicit unique-taxon background matrix $M=4$, $p=1/6$ rather than $M=8$, $p=0.2142857$.
+4. **Calibration Documentation & Model Status**: Update documentation ([`docs/draft_pr_overview_and_merge_guide.md`](docs/draft_pr_overview_and_merge_guide.md:1), [`docs/milestone_taxon_model_before_after_summary.md`](docs/milestone_taxon_model_before_after_summary.md:1)) to explicitly note that binary presence alone does not establish exchangeability or independent sampling, that $p$-value direction bias depends on composition, and that the production model is pending full empirical calibration under #263 / #182.
 
 ```mermaid
 flowchart TD
-    StudyProfiles[Profile Taxa Sets] --> GenBG[Build Background Taxa Universe M, K]
-    TaxaMatrix[taxa_trait_matrix.tsv] --> TraitMap[Taxon Trait Presence]
-    
-    StudyProfiles --> ProfileDraws[Compute Profile Size N and Hits k]
-    TraitMap --> GenBG
-    TraitMap --> ProfileDraws
-    
-    GenBG --> Hypergeom[2x2 Taxon Hypergeometric Test]
-    ProfileDraws --> Hypergeom
-    
-    Hypergeom --> BH[Benjamini-Hochberg Global FDR]
-    BH --> RankedExports[Ranked Trait TSVs #254]
-    BH --> Calib[Calibration Harness Evaluation #263]
+    subgraph InputValidation["Input & Matrix Validation"]
+        A[--taxa-matrix path provided] -->|Exists| B[Load Taxon Matrix: M=unique taxa, K=trait taxa]
+        A -->|Missing or Nonexistent| C[Raise FileNotFoundError / ValidationError]
+        D[Profile Wide TSV] -->|Parse row| E[Validate n_taxa >= max k, n_taxa <= M]
+    end
+
+    subgraph JustfileWiring["Justfile Recipe Wiring"]
+        F[just analyze] -->|--taxa-matrix data/derived/taxa_trait_matrix.tsv| G[trait_enrichment.py]
+        H[just analyze-depletion] -->|--taxa-matrix data/derived/taxa_trait_matrix.tsv| I[trait_depletion.py]
+        J[just analyze-site SITE] -->|--taxa-matrix ...| G
+    end
+
+    subgraph StatisticalEngine["Hypergeometric Inference"]
+        B --> K[hypergeom_sf_many / hypergeom_cdf_many with exact M, K]
+        E --> K
+        K --> L[Calibrated Exact Denominators M, N, K, k in Output Headers]
+    end
 ```
 
 ---
 
-## 3. Step-by-Step Implementation Strategy
+## 2. Proposed Changes
 
-### Step 1: Core Taxon Model & Background Pipeline (#131)
-- Verify [`src/bsdbng/study_trait_profiles.py:193`](src/bsdbng/study_trait_profiles.py:193) outputs binary-count taxon matrices by default.
-- Standardize [`scripts/trait_enrichment.py:314`](scripts/trait_enrichment.py:314) and [`scripts/trait_depletion.py:257`](scripts/trait_depletion.py:257) with explicit denominator logging:
-  - Output `# Total-Taxa-Universe-M: <M>`
-  - Output `# Total-Testable-Profiles: <P>`
-  - Explicit taxon counts per profile row ($N$).
+### 2.1 Justfile
+- In [`Justfile`](Justfile:144) recipe `analyze`: add `--taxa-matrix data/derived/taxa_trait_matrix.tsv` to [`scripts/trait_enrichment.py`](scripts/trait_enrichment.py:1).
+- In [`Justfile`](Justfile:170) recipe `analyze-depletion`: add `--taxa-matrix data/derived/taxa_trait_matrix.tsv` to [`scripts/trait_depletion.py`](scripts/trait_depletion.py:1).
+- In [`Justfile`](Justfile:189) recipe `analyze-site SITE`: add `--taxa-matrix data/derived/taxa_trait_matrix.tsv` (or site-filtered taxa matrix if applicable).
 
-### Step 2: Complete Exports & Summaries (#254)
-- Ensure [`scripts/export_trait_enrichment_rankings.py`](scripts/export_trait_enrichment_rankings.py) processes the taxon model results without zero-division or degenerate $p$-values.
-- Generate overall trait rankings and trait-study pairs across both $p < 0.001$ and FDR $q < 0.05$ regimes.
-- Generate depletion rankings via [`scripts/generate_depletion_summary.py`](scripts/generate_depletion_summary.py).
+### 2.2 Strict Input Validation in `scripts/trait_enrichment.py` and `scripts/trait_depletion.py`
+- If `args.taxa_matrix` is specified, verify `args.taxa_matrix.is_file()`. If it does not exist, raise `FileNotFoundError(f"Specified taxa matrix file does not exist: {args.taxa_matrix}")`.
+- If `args.taxa_matrix` is empty or lacks rows, raise `ValueError("Taxa matrix file contains no valid taxa rows")`.
+- Validate profile draws ($N$): verify $N > 0$ and $N \ge \max(k_{\text{observed}})$ for each profile. If $N > M$, raise a `ValueError` indicating draws exceed population size.
+- Validate that $K(T) \le M$ for all traits.
+- Add provenance headers into output TSVs: `# Taxa-Matrix-Source: <path>` or `# Background-Mode: TaxaMatrix` to ensure output provenance.
 
-### Step 3: Production Code Calibration Coordination (#263)
-- Wire [`src/bsdbng/calibration/adapters/ilyas_ora.py`](src/bsdbng/calibration/adapters/ilyas_ora.py) to use identical denominator extraction and data structures from production [`src/bsdbng/study_trait_profiles.py`](src/bsdbng/study_trait_profiles.py).
-- Verify synthetic benchmarks (null uniform, spiked true positive recovery, power curves) execute seamlessly through `Justfile` recipe.
+### 2.3 Repeated-Taxon Fixture in `tests/test_enrichment_pipeline.py`
+- Add `test_repeated_taxon_fixture_background_wiring(tmp_path)`:
+  - Create a fixture with 4 unique taxa in a taxa matrix (`Taxon1`, `Taxon2`, `Taxon3`, `Taxon4`), where `TraitA` is present in 2 of the 4 taxa ($K=2, M=4$).
+  - Create profile TSV where 2 paired experiments have profiles drawing 2 taxa each ($N=2, k=1$).
+  - Verify that running with `--taxa-matrix` reports $M=4$ and the exact expected $p$-value ($p = 1/6 \approx 0.1666667$).
+  - Verify that running with a nonexistent matrix path raises an error and does not silently fall back.
 
-### Step 4: Unit & Integration Testing
-- Add unit tests for specific $2 \times 2$ analytical hypergeometric edge cases in [`tests/test_enrichment_pipeline.py`](tests/test_enrichment_pipeline.py).
-- Test calibration protocol in [`tests/test_calibration_harness.py`](tests/test_calibration_harness.py).
-
-### Step 5: Pinned Results Regeneration & Draft PR
-- Run standard Justfile pipeline recipes to generate fresh derived tables.
-- Document Before vs. After results comparison summary (assertion inflation vs. taxon sampling).
-- Run full suite `just check` to ensure green lint/typecheck/tests.
-- Prepare draft PR branch details.
-
----
-
-## 4. Before / After Comparison Matrix
-
-| Metric / Aspect | Previous Assertion-Count Model | Taxon-Level Sampling Model (#131) |
-|---|---|---|
-| **Population Draw Unit** | Trait assertion instances across all annotations | Distinct taxon carrying trait ($0$ or $1$) |
-| **Profile Size ($N$)** | $\sim 24,000$ assertion sums | $\sim 10 - 80$ unique taxa per profile |
-| **Universe Size ($M$)** | $\sim 500,000$ total assertions | $\sim 2,500$ unique taxa in BugSigDB |
-| **$p$-value behavior** | Degenerate $0.0$ on modest fold enrichments | Calibrated probabilities reflecting true taxon sample sizes |
-| **FDR BH Correction** | Skewed by tied zero $p$-values | Granular, ranked distribution |
-| **Downstream Calibration** | Diverged from gene-set / ORA standard | Directly comparable with Noel's methods (#178 / #181) |
+### 2.4 Documentation Updates
+- Update [`docs/draft_pr_overview_and_merge_guide.md`](docs/draft_pr_overview_and_merge_guide.md:1) and [`docs/milestone_taxon_model_before_after_summary.md`](docs/milestone_taxon_model_before_after_summary.md:1) to clarify:
+  - Intended unique-taxon background definition and Justfile wiring.
+  - Exchangeability caveats: binary presence does not guarantee independent sampling.
+  - Production model completeness status is tied to the calibration battery (#263 / #182).

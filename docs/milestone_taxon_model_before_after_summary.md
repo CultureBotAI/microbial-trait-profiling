@@ -38,9 +38,12 @@ This document records the exact transition from the legacy assertion-count hyper
 
 ---
 
-## 4. Calibration Harness Alignment (#263 / #178 / #181)
+## 4. Calibration Harness Alignment & Model Status (#263 / #178 / #181 / #182)
 
-- The production adapter [`src/bsdbng/calibration/adapters/ilyas_ora.py:12`](src/bsdbng/calibration/adapters/ilyas_ora.py:12) has been fully unified with the $2 \times 2$ taxon model denominators.
-- Under uniform random taxon draws (Null scenario), $p$-values follow a uniform $[0, 1]$ distribution without anti-conservative inflation.
-- Under spiked trait simulations, power curves demonstrate robust recovery without false-positive leakage at $\alpha = 0.05$.
+- The standard analysis recipes (`just analyze`, `just analyze-depletion`, `just analyze-site`) are explicitly wired to pass the unique-taxon reference background `--taxa-matrix data/derived/taxa_trait_matrix.tsv`.
+- Ingestion and statistical scripts enforce strict validation of profile draw sizes ($N \ge \max(k)$) and population counts ($M \ge \max(K, N)$), failing loudly on invalid or missing background matrix inputs.
+- **Exchangeability and Calibration Caveats**:
+  - Binary presence alone does not establish independent sampling or universal exchangeability across real microbial communities.
+  - The hypergeometric model assumes independent draws from the defined background universe, but taxon co-occurrence and phylogenetic structure introduce dependencies that do not create a single universal direction of $p$-value bias.
+  - The production statistical model is not marked complete until empirical calibration results are generated under the full calibration battery (#263 / #182: permutation nulls, sampling-unit A/B, and taxon-level bootstrap).
 - Ready for cross-adapter benchmarking alongside Noel's GSEA/Score-based calibration (#178 / #181).

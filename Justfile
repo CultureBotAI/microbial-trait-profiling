@@ -144,6 +144,7 @@ stats:
 analyze: study-trait-profiles
 	just timed analyze "uv run python scripts/trait_enrichment.py \
 	  --input data/derived/study_trait_profiles_wide.tsv \
+	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
 	  --output data/derived/trait_enrichment_report.txt \
 	  --tsv-output data/derived/trait_enrichment_results.tsv \
 	  --p-threshold {{p_threshold}} \
@@ -186,6 +187,7 @@ plot-histograms: genheatmap
 analyze-depletion: study-trait-profiles
 	just timed analyze-depletion "uv run python scripts/trait_depletion.py \
 	  --input data/derived/study_trait_profiles_wide.tsv \
+	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
 	  --output data/derived/trait_depletion_report.txt \
 	  --tsv-output data/derived/trait_depletion_results.tsv \
 	  --p-threshold {{p_threshold}} \
@@ -207,6 +209,7 @@ analyze-site SITE: study-trait-profiles
 	@uv run python -c "import pandas as pd; df = pd.read_csv('data/derived/study_trait_profiles_wide.tsv', sep='\t'); meta = pd.read_csv('data/derived/experiments.tsv', sep='\t'); merged = df.merge(meta[['study_id', 'experiment_id', 'body_site']], on=['study_id', 'experiment_id']); filtered = merged[merged['body_site'] == '{{SITE}}'].drop(columns='body_site'); filtered.to_csv('data/derived/sites/{{SITE}}/study_trait_profiles_wide.tsv', sep='\t', index=False)"
 	uv run python scripts/trait_enrichment.py \
 	  --input data/derived/sites/{{SITE}}/study_trait_profiles_wide.tsv \
+	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
 	  --output data/derived/sites/{{SITE}}/trait_enrichment_report.txt \
 	  --tsv-output data/derived/sites/{{SITE}}/trait_enrichment_results.tsv \
 	  --p-threshold {{p_threshold}} \

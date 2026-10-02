@@ -261,7 +261,7 @@ def main() -> None:
         profile_taxa_counts: list[int] = []
 
         # 2. Process only paired rows
-        for row in all_raw_rows:
+        for row_idx, row in enumerate(all_raw_rows, start=2):  # line 1 is header
             sid = row.get("study_id", "").strip()
             eid = row.get("experiment_id", "").strip()
             if (sid, eid) not in paired_experiments:
@@ -269,6 +269,8 @@ def main() -> None:
 
             row_traits_data = {}
             raw_taxa_count = row.get("taxa_count")
+            direction = row.get("inc_dec", "").strip()
+
             for t in trait_columns:
                 val = row.get(t)
                 if val and val != "0":
@@ -278,18 +280,51 @@ def main() -> None:
                         try:
                             c = int(float(val))
                         except ValueError:
-                            c = 0
+                            raise ValueError(
+                                f"File '{args.input}', line {row_idx}: invalid non-integer "
+                                f"trait count '{val}' for trait '{t}' "
+                                f"(study_id='{sid}', experiment_id='{eid}', inc_dec='{direction}')"
+                            ) from None
+                    if c < 0:
+                        raise ValueError(
+                            f"File '{args.input}', line {row_idx}: negative trait count '{c}' "
+                            f"for trait '{t}' (study_id='{sid}', experiment_id='{eid}', "
+                            f"inc_dec='{direction}')"
+                        )
                     if c > 0:
                         row_traits_data[t] = c
                 testable_counts[t] += 1
 
-            if raw_taxa_count is not None and raw_taxa_count.strip():
-                try:
-                    n_taxa = int(raw_taxa_count.strip())
-                except ValueError:
-                    n_taxa = max(row_traits_data.values(), default=0)
-            else:
-                n_taxa = max(row_traits_data.values(), default=0)
+            # Validate required draw count taxa_count (N) strictly without fallback
+            if raw_taxa_count is None or not raw_taxa_count.strip():
+                raise ValueError(
+                    f"File '{args.input}', line {row_idx}: missing required 'taxa_count' column "
+                    f"or value for profile (study_id='{sid}', experiment_id='{eid}', "
+                    f"inc_dec='{direction}')"
+                )
+
+            try:
+                n_taxa = int(raw_taxa_count.strip())
+            except ValueError:
+                raise ValueError(
+                    f"File '{args.input}', line {row_idx}: malformed 'taxa_count' value "
+                    f"'{raw_taxa_count}' (study_id='{sid}', experiment_id='{eid}', "
+                    f"inc_dec='{direction}')"
+                ) from None
+
+            if n_taxa < 0:
+                raise ValueError(
+                    f"File '{args.input}', line {row_idx}: negative 'taxa_count' {n_taxa} "
+                    f"(study_id='{sid}', experiment_id='{eid}', inc_dec='{direction}')"
+                )
+
+            max_k_row = max(row_traits_data.values(), default=0)
+            if n_taxa < max_k_row:
+                raise ValueError(
+                    f"File '{args.input}', line {row_idx}: profile draw 'taxa_count'={n_taxa} "
+                    f"is less than observed trait count {max_k_row} "
+                    f"(study_id='{sid}', experiment_id='{eid}', inc_dec='{direction}')"
+                )
 
             rows.append(
                 {
@@ -306,7 +341,11 @@ def main() -> None:
         raise ValueError("Input TSV contains no rows")
 
     # Determine reference population M and background successes K
-    if args.taxa_matrix and args.taxa_matrix.exists():
+    if args.taxa_matrix is not None:
+        if not args.taxa_matrix.exists():
+            raise FileNotFoundError(
+                f"Specified taxa matrix file does not exist: {args.taxa_matrix}"
+            )
         matrix_taxa_total = 0
         with open_input_text(args.taxa_matrix) as m_fh:
             m_reader = csv.DictReader(m_fh, delimiter="\t")
@@ -320,17 +359,25 @@ def main() -> None:
                                 background_counts[t] += 1
                         except ValueError:
                             pass
+        if matrix_taxa_total == 0:
+            raise ValueError(f"Taxa matrix file {args.taxa_matrix} contains no taxon rows")
         background_taxa_universe = matrix_taxa_total
+        bg_mode = f"TaxaMatrix ({args.taxa_matrix})"
     else:
         for r in rows:
             for t, c in r["traits"].items():
                 background_counts[t] += c
         background_taxa_universe = sum(profile_taxa_counts)
+        bg_mode = "EmpiricalProfileSum"
 
+    # Validate profile draws and background counts
     max_k_trait = max(background_counts.values(), default=0)
     max_n_profile = max(profile_taxa_counts, default=0)
     if background_taxa_universe < max(max_k_trait, max_n_profile):
-        background_taxa_universe = max(max_k_trait, max_n_profile)
+        raise ValueError(
+            f"Background universe M ({background_taxa_universe}) is smaller than "
+            f"maximum trait count K ({max_k_trait}) or maximum profile draw N ({max_n_profile})"
+        )
 
     # Second pass: Collect all P-values
     all_hits: list[dict] = []
@@ -414,6 +461,7 @@ def main() -> None:
             out_fh.write(f"# P-Threshold: {args.p_threshold}\n")
             out_fh.write(f"# Max-Fold: {args.max_fold}\n")
             out_fh.write(f"# Max-Traits-Per-Row-Report: {args.max_traits_per_row}\n")
+            out_fh.write(f"# Background-Mode: {bg_mode}\n")
             testable_profile_count = len([n for n in profile_taxa_counts if n > 0])
             mean_taxa = (
                 sum(profile_taxa_counts) / testable_profile_count

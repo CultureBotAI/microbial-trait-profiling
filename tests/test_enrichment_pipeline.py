@@ -1,3 +1,4 @@
+import csv
 import subprocess
 import sys
 from pathlib import Path
@@ -7,15 +8,15 @@ def test_enrichment_pipeline_fdr_propagation(tmp_path: Path) -> None:
     # 1. Create a dummy trait profile TSV
     input_tsv = tmp_path / "input_profiles.tsv"
     input_tsv.write_text(
-        "study_id\texperiment_id\tinc_dec\tTraitA\tTraitB\n"
-        "s1\te1\tinc\t10\t1\n"
-        "s1\te1\tdec\t1\t10\n"
-        "s1\te2\tinc\t0\t5\n"
-        "s1\te2\tdec\t5\t0\n"
-        "s2\te1\tinc\t10\t0\n"
-        "s2\te1\tdec\t0\t10\n"
-        "s3\te1\tinc\t0\t0\n"
-        "s3\te1\tdec\t0\t0\n",
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
+        "s1\te1\tinc\t10\t10\t1\n"
+        "s1\te1\tdec\t10\t1\t10\n"
+        "s1\te2\tinc\t5\t0\t5\n"
+        "s1\te2\tdec\t5\t5\t0\n"
+        "s2\te1\tinc\t10\t10\t0\n"
+        "s2\te1\tdec\t10\t0\t10\n"
+        "s3\te1\tinc\t2\t0\t0\n"
+        "s3\te1\tdec\t2\t0\t0\n",
         encoding="utf-8",
     )
 
@@ -193,9 +194,9 @@ def test_depletion_hypergeometric_taxon_sampling_values(tmp_path: Path) -> None:
 def test_enrichment_pipeline_no_fdr_propagation(tmp_path: Path) -> None:
     input_tsv = tmp_path / "input_profiles.tsv"
     input_tsv.write_text(
-        "study_id\texperiment_id\tinc_dec\tTraitA\tTraitB\n"
-        "s1\te1\tinc\t10\t1\n"
-        "s1\te1\tdec\t1\t10\n",
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
+        "s1\te1\tinc\t10\t10\t1\n"
+        "s1\te1\tdec\t10\t1\t10\n",
         encoding="utf-8",
     )
 
@@ -251,11 +252,11 @@ def test_enrichment_pipeline_censorship_detection(tmp_path: Path) -> None:
     input_tsv = tmp_path / "input_profiles.tsv"
     # Ensure TraitA and TraitB appear in at least 2 profiles to pass prevalence filter
     input_tsv.write_text(
-        "study_id\texperiment_id\tinc_dec\tTraitA\tTraitB\tTraitC\n"
-        "s1\te1\tinc\t100\t100\t100\n"
-        "s1\te1\tdec\t1\t1\t1\n"
-        "s2\te1\tinc\t100\t100\t100\n"
-        "s2\te1\tdec\t1\t1\t1\n",
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\tTraitC\n"
+        "s1\te1\tinc\t100\t100\t100\t100\n"
+        "s1\te1\tdec\t100\t1\t1\t1\n"
+        "s2\te1\tinc\t100\t100\t100\t100\n"
+        "s2\te1\tdec\t100\t1\t1\t1\n",
         encoding="utf-8",
     )
 
@@ -322,17 +323,17 @@ def test_enrichment_pipeline_censorship_detection(tmp_path: Path) -> None:
 def test_enrichment_pipeline_profile_fdr_propagation(tmp_path: Path) -> None:
     input_tsv = tmp_path / "input_profiles.tsv"
     input_tsv.write_text(
-        "study_id\texperiment_id\tinc_dec\tTraitA\tTraitB\n"
-        "s1\te1\tinc\t10\t1\n"
-        "s1\te1\tdec\t1\t10\n"
-        "s1\te2\tinc\t10\t1\n"
-        "s1\te2\tdec\t1\t10\n"
-        "s1\te3\tinc\t10\t1\n"
-        "s1\te3\tdec\t1\t10\n"
-        "s1\te4\tinc\t10\t1\n"
-        "s1\te4\tdec\t1\t10\n"
-        "s1\te5\tinc\t10\t1\n"
-        "s1\te5\tdec\t1\t10\n",
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
+        "s1\te1\tinc\t10\t10\t1\n"
+        "s1\te1\tdec\t10\t1\t10\n"
+        "s1\te2\tinc\t10\t10\t1\n"
+        "s1\te2\tdec\t10\t1\t10\n"
+        "s1\te3\tinc\t10\t10\t1\n"
+        "s1\te3\tdec\t10\t1\t10\n"
+        "s1\te4\tinc\t10\t10\t1\n"
+        "s1\te4\tdec\t10\t1\t10\n"
+        "s1\te5\tinc\t10\t10\t1\n"
+        "s1\te5\tdec\t10\t1\t10\n",
         encoding="utf-8",
     )
 
@@ -385,3 +386,335 @@ def test_enrichment_pipeline_profile_fdr_propagation(tmp_path: Path) -> None:
         data_row = [line for line in lines if not line.startswith("#")][1].strip().split("\t")
         prev_idx = header.index("prevalence_summary")
         assert "/" in data_row[prev_idx]
+
+
+def test_repeated_taxon_fixture_matrix_wiring(tmp_path: Path) -> None:
+    """Verify that 4 unique taxa repeated across 2 paired experiments report M=4, p=1/6
+
+    with the explicit unique-taxon matrix, vs M=8, p=0.2142857 without matrix.
+    Also verifies that a nonexistent matrix path fails instead of falling back silently.
+    """
+    matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
+    matrix_tsv.write_text(
+        "taxon_id\tTraitA\nNCBITaxon:1\t1\nNCBITaxon:2\t1\nNCBITaxon:3\t0\nNCBITaxon:4\t0\n",
+        encoding="utf-8",
+    )
+
+    profiles_tsv = tmp_path / "profiles.tsv"
+    profiles_tsv.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
+        "s1\te1\tinc\t2\t2\n"
+        "s1\te1\tdec\t2\t0\n"
+        "s2\te2\tinc\t2\t2\n"
+        "s2\te2\tdec\t2\t0\n",
+        encoding="utf-8",
+    )
+
+    report_matrix = tmp_path / "report_matrix.txt"
+    results_matrix = tmp_path / "results_matrix.tsv"
+
+    # 1. With explicit unique-taxon matrix: M=4, K=2, N=2, k=2
+    # P[X>=2] = comb(2,2)*comb(2,0)/comb(4,2) = 1/6 ~ 0.1666667
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
+            "--output",
+            str(report_matrix),
+            "--tsv-output",
+            str(results_matrix),
+            "--no-fdr",
+            "--p-threshold",
+            "1.0",
+            "--min-fold",
+            "0.0",
+        ],
+        check=True,
+    )
+
+    content_matrix = results_matrix.read_text(encoding="utf-8")
+    assert "# Background-Taxa-Universe-M: 4" in content_matrix
+    assert "# Background-Mode: TaxaMatrix" in content_matrix
+    # p_value should be 1/6 (approx 0.166667)
+    with results_matrix.open("r", encoding="utf-8") as f:
+        reader = csv.DictReader((line for line in f if not line.startswith("#")), delimiter="\t")
+        rows_matrix = list(reader)
+        p_val_matrix = float(rows_matrix[0]["p_value"])
+        assert abs(p_val_matrix - 1 / 6) < 1e-5
+
+    # 2. Without matrix (empirical sum fallback): M=8, K=4, N=2, k=2
+    # P[X>=2] = comb(4,2)*comb(4,0)/comb(8,2) = 6/28 = 3/14 ~ 0.2142857
+    report_nomatrix = tmp_path / "report_nomatrix.txt"
+    results_nomatrix = tmp_path / "results_nomatrix.tsv"
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(profiles_tsv),
+            "--output",
+            str(report_nomatrix),
+            "--tsv-output",
+            str(results_nomatrix),
+            "--no-fdr",
+            "--p-threshold",
+            "1.0",
+            "--min-fold",
+            "0.0",
+        ],
+        check=True,
+    )
+    content_nomatrix = results_nomatrix.read_text(encoding="utf-8")
+    assert "# Background-Taxa-Universe-M: 8" in content_nomatrix
+    assert "# Background-Mode: EmpiricalProfileSum" in content_nomatrix
+    with results_nomatrix.open("r", encoding="utf-8") as f:
+        reader = csv.DictReader((line for line in f if not line.startswith("#")), delimiter="\t")
+        rows_nomatrix = list(reader)
+        p_val_nomatrix = float(rows_nomatrix[0]["p_value"])
+        assert abs(p_val_nomatrix - 3 / 14) < 1e-5
+
+    # 3. Nonexistent matrix path must fail loudly and not fall back silently
+    res_bad = subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(profiles_tsv),
+            "--taxa-matrix",
+            str(tmp_path / "nonexistent_matrix.tsv"),
+            "--output",
+            str(report_matrix),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert res_bad.returncode != 0
+    assert "Specified taxa matrix file does not exist" in res_bad.stderr
+
+    # 4. Same test on trait_depletion.py
+    report_dep_matrix = tmp_path / "dep_report_matrix.txt"
+    results_dep_matrix = tmp_path / "dep_results_matrix.tsv"
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_depletion.py",
+            "--input",
+            str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
+            "--output",
+            str(report_dep_matrix),
+            "--tsv-output",
+            str(results_dep_matrix),
+            "--no-fdr",
+            "--p-threshold",
+            "1.0",
+            "--max-fold",
+            "10.0",
+        ],
+        check=True,
+    )
+    content_dep_matrix = results_dep_matrix.read_text(encoding="utf-8")
+    assert "# Background-Taxa-Universe-M: 4" in content_dep_matrix
+    assert "# Background-Mode: TaxaMatrix" in content_dep_matrix
+
+    res_dep_bad = subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_depletion.py",
+            "--input",
+            str(profiles_tsv),
+            "--taxa-matrix",
+            str(tmp_path / "nonexistent_matrix.tsv"),
+            "--output",
+            str(report_dep_matrix),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert res_dep_bad.returncode != 0
+    assert "Specified taxa matrix file does not exist" in res_dep_bad.stderr
+
+    def test_malformed_taxa_count_strict_rejection(tmp_path: Path) -> None:
+        """Verify that malformed, missing, negative, or invalid taxa_count values fail loudly
+
+        with file/line/column context instead of silently substituting max trait counts.
+        With background M=4, K=2 (TraitA present in 2 of 4 taxa), and profile trait count k=2:
+        - Valid N=3 produces p=0.5, fold=1.3333
+        - Replacing N with invalid must fail, not silently substitute N=2 (p=1/6, fold=2.0).
+        """
+        matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
+        matrix_tsv.write_text(
+            "taxon_id\tTraitA\nNCBITaxon:1\t1\nNCBITaxon:2\t1\nNCBITaxon:3\t0\nNCBITaxon:4\t0\n",
+            encoding="utf-8",
+        )
+
+        valid_profiles_tsv = tmp_path / "valid_profiles.tsv"
+        valid_profiles_tsv.write_text(
+            "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
+            "s1\te1\tinc\t3\t2\n"
+            "s1\te1\tdec\t3\t0\n",
+            encoding="utf-8",
+        )
+
+        report_valid = tmp_path / "report_valid.txt"
+        results_valid = tmp_path / "results_valid.tsv"
+
+        # Valid N=3: P[X>=2] = hypergeom.sf(1, 4, 2, 3) = (comb(2,2)*comb(2,1)) / comb(4,3)
+        # = (1 * 2) / 4 = 2/4 = 0.5. Expected = 3 * (2/4) = 1.5. Fold = 2 / 1.5 = 1.333333
+        subprocess.run(
+            [
+                sys.executable,
+                "scripts/trait_enrichment.py",
+                "--input",
+                str(valid_profiles_tsv),
+                "--taxa-matrix",
+                str(matrix_tsv),
+                "--output",
+                str(report_valid),
+                "--tsv-output",
+                str(results_valid),
+                "--no-fdr",
+                "--p-threshold",
+                "1.0",
+                "--min-fold",
+                "0.0",
+            ],
+            check=True,
+        )
+        with results_valid.open("r", encoding="utf-8") as f:
+            reader = csv.DictReader(
+                (line for line in f if not line.startswith("#")), delimiter="\t"
+            )
+            rows = list(reader)
+            assert abs(float(rows[0]["p_value"]) - 0.5) < 1e-5
+            assert abs(float(rows[0]["fold"]) - 1.333333) < 1e-4
+            assert int(rows[0]["count"]) == 2
+
+        # Case 1: Invalid non-integer taxa_count string 'invalid'
+        invalid_profiles_tsv = tmp_path / "invalid_profiles.tsv"
+        invalid_profiles_tsv.write_text(
+            "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
+            "s1\te1\tinc\tinvalid\t2\n"
+            "s1\te1\tdec\t3\t0\n",
+            encoding="utf-8",
+        )
+        res1 = subprocess.run(
+            [
+                sys.executable,
+                "scripts/trait_enrichment.py",
+                "--input",
+                str(invalid_profiles_tsv),
+                "--taxa-matrix",
+                str(matrix_tsv),
+                "--output",
+                str(tmp_path / "out.txt"),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert res1.returncode != 0
+        assert "malformed 'taxa_count' value 'invalid'" in res1.stderr
+        assert "line 2" in res1.stderr
+
+        # Case 2: Missing / empty taxa_count value
+        missing_val_tsv = tmp_path / "missing_val.tsv"
+        missing_val_tsv.write_text(
+            "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
+            "s1\te1\tinc\t\t2\n"
+            "s1\te1\tdec\t3\t0\n",
+            encoding="utf-8",
+        )
+        res2 = subprocess.run(
+            [
+                sys.executable,
+                "scripts/trait_enrichment.py",
+                "--input",
+                str(missing_val_tsv),
+                "--taxa-matrix",
+                str(matrix_tsv),
+                "--output",
+                str(tmp_path / "out.txt"),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert res2.returncode != 0
+        assert "missing required 'taxa_count' column or value" in res2.stderr
+        assert "line 2" in res2.stderr
+
+        # Case 3: taxa_count < observed trait count k (taxa_count=1, TraitA=2)
+        less_taxa_tsv = tmp_path / "less_taxa.tsv"
+        less_taxa_tsv.write_text(
+            "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
+            "s1\te1\tinc\t1\t2\n"
+            "s1\te1\tdec\t3\t0\n",
+            encoding="utf-8",
+        )
+        res3 = subprocess.run(
+            [
+                sys.executable,
+                "scripts/trait_enrichment.py",
+                "--input",
+                str(less_taxa_tsv),
+                "--taxa-matrix",
+                str(matrix_tsv),
+                "--output",
+                str(tmp_path / "out.txt"),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert res3.returncode != 0
+        assert "is less than observed trait count 2" in res3.stderr
+        assert "line 2" in res3.stderr
+
+        # Case 4: taxa_count > universe M (taxa_count=5, universe M=4)
+        more_taxa_tsv = tmp_path / "more_taxa.tsv"
+        more_taxa_tsv.write_text(
+            "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
+            "s1\te1\tinc\t5\t2\n"
+            "s1\te1\tdec\t3\t0\n",
+            encoding="utf-8",
+        )
+        res4 = subprocess.run(
+            [
+                sys.executable,
+                "scripts/trait_enrichment.py",
+                "--input",
+                str(more_taxa_tsv),
+                "--taxa-matrix",
+                str(matrix_tsv),
+                "--output",
+                str(tmp_path / "out.txt"),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert res4.returncode != 0
+        assert "smaller than" in res4.stderr
+        assert "maximum profile draw N (5)" in res4.stderr
+
+        # Case 5: Same validations hold for trait_depletion.py
+        res5 = subprocess.run(
+            [
+                sys.executable,
+                "scripts/trait_depletion.py",
+                "--input",
+                str(invalid_profiles_tsv),
+                "--taxa-matrix",
+                str(matrix_tsv),
+                "--output",
+                str(tmp_path / "out.txt"),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert res5.returncode != 0
+        assert "malformed 'taxa_count' value 'invalid'" in res5.stderr
+
+    assert "Specified taxa matrix file does not exist" in res_dep_bad.stderr
