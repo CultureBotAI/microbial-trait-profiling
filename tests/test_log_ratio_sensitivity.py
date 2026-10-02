@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import json
 import math
+from collections.abc import Callable
 from dataclasses import replace
 from itertools import combinations
 from pathlib import Path
 
 import pytest
+from scipy.stats import false_discovery_control
 
 from bsdbng.log_ratio_sensitivity import (
     FECES_ANY,
@@ -140,8 +142,11 @@ def test_protocol_declares_every_scenario_the_code_runs() -> None:
     assert ran | {"S8_leave_one_study_out"} == declared
 
 
-def test_historical_scenario_reproduces_the_published_fraction_directions() -> None:
-    profiles = _corpus()
+@pytest.mark.parametrize("corpus", [_corpus, _signal_corpus], ids=["flat", "signal"])
+def test_historical_scenario_reproduces_the_published_fraction_directions(
+    corpus: Callable[[], list[Profile]],
+) -> None:
+    profiles = corpus()
     rows = _rows(
         "S0_historical_fraction",
         run_scenarios(complete_pairs(profiles, TRAITS), TRAITS, min_studies=1),
@@ -158,8 +163,11 @@ def test_historical_scenario_reproduces_the_published_fraction_directions() -> N
             assert row.q_value == pytest.approx(shift.q_value)
 
 
-def test_complete_case_scenario_reproduces_the_log_ratio_module() -> None:
-    profiles = _corpus()
+@pytest.mark.parametrize("corpus", [_corpus, _signal_corpus], ids=["flat", "signal"])
+def test_complete_case_scenario_reproduces_the_log_ratio_module(
+    corpus: Callable[[], list[Profile]],
+) -> None:
+    profiles = corpus()
     rows = _rows(
         "S2_ratio_complete_case",
         run_scenarios(complete_pairs(profiles, TRAITS), TRAITS, min_studies=1),
@@ -174,8 +182,66 @@ def test_complete_case_scenario_reproduces_the_log_ratio_module() -> None:
         assert row.pairs_eligible == summary.eligible_experiments
         assert row.studies_partially_observed == summary.studies_partially_observed
         assert (row.studies_up, row.studies_down) == (summary.studies_up, summary.studies_down)
+        # The effect, not only the counts: compute_log_ratio_shifts is an independent
+        # implementation of the same study-level mean, so a flipped sign shows up here.
+        if summary.mean_log2_ratio_change is None:
+            assert row.mean_effect is None
+        else:
+            assert row.mean_effect == pytest.approx(summary.mean_log2_ratio_change, abs=1e-12)
+            assert row.median_effect == pytest.approx(summary.median_log2_ratio_change, abs=1e-12)
         if summary.by_q is not None and row.q_value is not None:
             assert row.q_value == pytest.approx(summary.by_q)
+
+
+def test_the_signal_fixture_produces_corrected_values_below_one() -> None:
+    """Guard the other tests: with every q at 1, a q assertion proves nothing.
+
+    A flat corpus makes Benjamini-Yekutieli and Benjamini-Hochberg indistinguishable
+    because both clip to 1, which is how a BY-to-BH mutation passed review.
+    """
+    rows = run_scenarios(complete_pairs(_signal_corpus(), TRAITS), TRAITS, min_studies=1)
+    for scenario in ("S0_historical_fraction", "S2_ratio_complete_case"):
+        below = [
+            row.q_value
+            for row in _rows(scenario, rows)
+            if row.q_value is not None and row.q_value < 1
+        ]
+        assert below, f"{scenario} has no q below 1; the fixture has lost its signal"
+        assert min(below) < 0.01
+
+
+@pytest.mark.parametrize(
+    ("scenario", "expected_size"),
+    [("S2_ratio_complete_case", 15), ("S3_ratio_matched_fractions", 30)],
+)
+def test_ratio_families_are_corrected_with_benjamini_yekutieli(
+    scenario: str, expected_size: int
+) -> None:
+    """The emitted q must be the BY adjustment and must differ from the BH one."""
+    rows = _rows(
+        scenario, run_scenarios(complete_pairs(_signal_corpus(), TRAITS), TRAITS, min_studies=1)
+    )
+    assert len(rows) == expected_size
+    assert {row.family_size for row in rows} == {expected_size}
+    assert {row.correction for row in rows} == {"Benjamini-Yekutieli"}
+
+    observed = [row.p_value for row in rows]
+    held = [1.0 if p is None else p for p in observed]
+    by = [float(q) for q in false_discovery_control(held, method="by")]
+    bh = [float(q) for q in false_discovery_control(held, method="bh")]
+
+    differing = 0
+    for row, by_q, bh_q in zip(rows, by, bh, strict=True):
+        if row.p_value is None:
+            assert row.q_value is None
+            continue
+        assert row.q_value == pytest.approx(by_q, abs=1e-12)
+        if abs(by_q - bh_q) > 1e-12:
+            differing += 1
+            assert row.q_value != pytest.approx(bh_q, abs=1e-12)
+    assert differing >= expected_size - 2, (
+        "the fixture must separate BY from BH on nearly every row"
+    )
 
 
 def test_matched_fractions_use_exactly_the_ratio_pairs() -> None:
@@ -211,6 +277,110 @@ def test_common_support_scenarios_share_one_population() -> None:
     pairs = complete_pairs(_corpus(studies=40), TRAITS)
     rows = _rows("S4_six_trait_common_support", run_scenarios(pairs, TRAITS, min_studies=1))
     assert len({(r.pairs_total, r.pairs_eligible) for r in rows}) == 1
+
+
+def test_six_trait_common_support_keeps_only_pairs_positive_on_all_six() -> None:
+    """One shared population is not enough: it must be the restricted one."""
+    pairs = complete_pairs(_signal_corpus(), TRAITS)
+    rows = _rows("S4_six_trait_common_support", run_scenarios(pairs, TRAITS, min_studies=1))
+    expected = sum(pair.positive(TRAITS) for pair in pairs)
+    assert 0 < expected < len(pairs), "fixture must drop some pairs from common support"
+    assert {row.pairs_total for row in rows} == {expected}
+    assert {row.studies_total for row in rows} == {
+        len({pair.study_id for pair in pairs if pair.positive(TRAITS)})
+    }
+
+
+def test_triple_common_support_restricts_each_triple_to_its_own_pairs() -> None:
+    """Each S5 group is computed on the pairs positive for that triple, not on all pairs."""
+    pairs = complete_pairs(_signal_corpus(), TRAITS)
+    rows = _rows("S5_triple_common_support", run_scenarios(pairs, TRAITS, min_studies=1))
+    assert len(rows) == 60
+
+    # The three ratios of a triple name exactly its three traits, so the triple is
+    # recovered from the rows themselves rather than from the population string.
+    groups: dict[str, list[Row]] = {}
+    for row in rows:
+        groups.setdefault(row.population, []).append(row)
+    assert len(groups) == 20
+
+    totals = set()
+    for members in groups.values():
+        assert len(members) == 3
+        triple = {row.numerator for row in members} | {row.reference for row in members}
+        assert len(triple) == 3
+        expected = sum(pair.positive(triple) for pair in pairs)
+        assert {row.pairs_total for row in members} == {expected}
+        totals.add(expected)
+    assert len(totals) > 1, "a removed filter would give every triple the same population"
+    assert max(totals) < len(pairs)
+
+
+def test_fecal_strata_partition_the_pairs_by_their_exact_label() -> None:
+    """S6 keeps exactly the Feces-labelled pairs and S7 exactly the rest."""
+    pairs = complete_pairs(_signal_corpus(), TRAITS)
+    rows = run_scenarios(pairs, TRAITS, min_studies=1)
+    feces = sum(pair.body_site == "Feces" for pair in pairs)
+    assert 0 < feces < len(pairs), "fixture must have pairs on both sides of the filter"
+
+    inside = _rows("S6_feces_only", rows)
+    outside = _rows("S7_excluding_feces", rows)
+    assert len(inside) == len(outside) == 15
+    assert {row.pairs_total for row in inside} == {feces}
+    assert {row.pairs_total for row in outside} == {len(pairs) - feces}
+    assert {row.studies_total for row in inside} == {
+        len({pair.study_id for pair in pairs if pair.body_site == "Feces"})
+    }
+    # The two strata together account for every pair exactly once.
+    for ratio_in, ratio_out in zip(inside, outside, strict=True):
+        assert (ratio_in.numerator, ratio_in.reference) == (
+            ratio_out.numerator,
+            ratio_out.reference,
+        )
+        eligible = sum(
+            1
+            for pair in pairs
+            if log_ratio_contrast(ratio_in.numerator, ratio_in.reference)(pair) is not None
+        )
+        assert ratio_in.pairs_eligible + ratio_out.pairs_eligible == eligible
+
+
+def test_mean_effect_keeps_the_sign_of_the_study_level_contrasts() -> None:
+    """The effect is the mean of the study means, with its own sign."""
+    pairs = complete_pairs(_signal_corpus(), TRAITS)
+    for numerator, reference in combinations(TRAITS, 2):
+        contrast = log_ratio_contrast(numerator, reference)
+        means = list(study_means(pairs, contrast).values())
+        row = summarize(
+            scenario="x",
+            comparison="log_ratio",
+            numerator=numerator,
+            reference=reference,
+            population="all",
+            pairs=pairs,
+            contrast=contrast,
+            min_studies=1,
+        )
+        assert row.mean_effect == pytest.approx(sum(means) / len(means), abs=1e-12)
+        assert row.median_effect == pytest.approx(sorted(means)[len(means) // 2], abs=1e-9)
+
+    # On a strongly signalled ratio the sign is unambiguous, so a flip is visible
+    # without reference to any other implementation.
+    strong = summarize(
+        scenario="x",
+        comparison="log_ratio",
+        numerator=TRAITS[0],
+        reference=TRAITS[1],
+        population="all",
+        pairs=pairs,
+        contrast=log_ratio_contrast(TRAITS[0], TRAITS[1]),
+        min_studies=1,
+    )
+    assert strong.mean_effect is not None
+    assert strong.share_up is not None
+    assert strong.mean_effect > 0
+    assert strong.share_up > 0.5
+    assert strong.studies_up > strong.studies_down
 
 
 def test_small_populations_are_described_but_not_tested() -> None:
