@@ -182,6 +182,14 @@ stats:
 [positional-arguments]
 calibration-report *ARGS:
 	uv run python -m bsdbng.calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+
+# Just the shared flip-assignment artefact of #263: which studies each replicate of
+# complete_null_study_flip exchanges, for another arm to rerun its own pipeline on
+# the identical null. Seconds, not minutes.
+[positional-arguments]
+calibration-flip-assignments *ARGS:
+	uv run python -m bsdbng.calibration --flip-assignments-only --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+
 pipeline: download ingest
 
 # --- linkml-store over MongoDB (localhost:27017/bsdbng.studies) ---

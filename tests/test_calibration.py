@@ -24,6 +24,7 @@ from bsdbng.calibration import (
     attainable_p_at_alpha,
     check_criteria,
     criterion_pass_probability,
+    flip_assignments,
     flip_directions,
     fraction_sign_test,
     inject_effect,
@@ -443,6 +444,39 @@ def test_a_short_deterministic_run_reproduces_itself() -> None:
     assert len(ledger) == 2
     assert all(r["null_tests_evaluated"] == len(TRAITS) for r in ledger)
     assert ALPHA == 0.05
+
+
+def test_a_replicate_stream_is_addressable_without_replaying_it() -> None:
+    """#263 needs replicate 7 on its own, not the seventh draw of a chain."""
+    direct = flip_directions(_corpus(), replicate_rng(SEED, "shared", 7), unit="study")
+    again = flip_directions(_corpus(), replicate_rng(SEED, "shared", 7), unit="study")
+    other = flip_directions(_corpus(), replicate_rng(SEED, "shared", 8), unit="study")
+    assert direct == again
+    assert direct != other
+
+
+def test_the_shared_flip_artefact_matches_the_scenario_it_names() -> None:
+    """Replicate i of the artefact must be replicate i of the null it is named for."""
+    profiles = _corpus(studies=12)
+    rows = flip_assignments(profiles, replicates=3, seed=SEED)
+    studies = sorted({p.study_id for p in profiles})
+    assert len(rows) == 3 * len(studies)
+    assert {r["experiment_id"] for r in rows} == {None}
+    for replicate in range(3):
+        declared = {
+            str(r["study_id"]) for r in rows if r["replicate"] == replicate and r["flipped"] == 1
+        }
+        flipped = flip_directions(
+            profiles,
+            replicate_rng(SEED, "complete_null_study_flip", replicate),
+            unit="study",
+        )
+        moved = {
+            before.study_id
+            for before, after in zip(profiles, flipped, strict=True)
+            if before.inc_dec != after.inc_dec
+        }
+        assert declared == moved
 
 
 def test_module_constants_match_the_declared_protocol() -> None:

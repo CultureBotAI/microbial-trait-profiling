@@ -94,6 +94,7 @@ _PROTOCOL = load_protocol()
 SEED = int(_PROTOCOL["replicates"]["seed"])
 NULL_REPLICATES = int(_PROTOCOL["replicates"]["null"])
 POWER_REPLICATES = int(_PROTOCOL["replicates"]["power"])
+SHARED_FLIP_REPLICATES = int(_PROTOCOL["replicates"]["shared_flip_artifact"])
 INJECTION_MULTIPLIERS: tuple[float, ...] = tuple(
     float(m) for m in _PROTOCOL["signal_injection"]["multipliers"]
 )
@@ -980,6 +981,50 @@ def check_criteria(
     return results
 
 
+def flip_assignments(
+    profiles: Sequence[Profile],
+    *,
+    unit: str = "study",
+    replicates: int = SHARED_FLIP_REPLICATES,
+    seed: int = SEED,
+    stream: str = "complete_null_study_flip",
+) -> list[dict[str, object]]:
+    """The per-replicate flip set, as a table another arm can consume (#263).
+
+    ``stream`` is the scenario name whose replicates these are, so replicate ``i``
+    here is replicate ``i`` of that scenario: an arm that reruns its own pipeline on
+    these assignments is measured on the identical null, not merely a similar one.
+    """
+    keys = unit_keys(profiles, unit)
+    rows: list[dict[str, object]] = []
+    for index in range(replicates):
+        rng = replicate_rng(seed, stream, index)
+        flipped = flipped_units(profiles, rng, unit=unit)
+        for key in keys:
+            study, experiment = _unit_columns(key, unit)
+            rows.append(
+                {
+                    "seed": seed,
+                    "stream": stream,
+                    "unit": unit,
+                    "replicate": index,
+                    "study_id": study,
+                    "experiment_id": experiment,
+                    "flipped": int(key in flipped),
+                }
+            )
+    return rows
+
+
+def _unit_columns(key: Hashable, unit: str) -> tuple[str, str | None]:
+    """Split a resampling unit into atomic study and experiment columns."""
+    if unit == "study":
+        return str(key), None
+    if isinstance(key, tuple) and len(key) == 2:
+        return str(key[0]), str(key[1])
+    raise ValueError(f"unit {unit!r} does not describe {key!r}")
+
+
 def _format(value: object) -> str:
     if value is None:
         return ""
@@ -1024,6 +1069,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Replicates per injected scenario; defaults to the declared power budget, "
         "or to --replicates when that is smaller",
     )
+    parser.add_argument(
+        "--flip-assignments-only",
+        action="store_true",
+        help="Write the shared flip-assignment artefact of #263 and stop",
+    )
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
@@ -1051,6 +1101,34 @@ def main(argv: Sequence[str] | None = None) -> int:
     }
 
     output = args.output_dir
+    flips = flip_assignments(profiles, replicates=SHARED_FLIP_REPLICATES, seed=args.seed)
+    flip_path = _write(output / "calibration_flip_assignments.tsv", flips)
+    flip_manifest = {
+        "version": VERSION,
+        "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/263",
+        "seed": args.seed,
+        "stream": "complete_null_study_flip",
+        "unit": "study",
+        "replicates": SHARED_FLIP_REPLICATES,
+        "units": len(unit_keys(profiles, "study")),
+        "rows": len(flips),
+        "rng": "numpy.random.default_rng([seed, sha256_64(stream), replicate])",
+        "draw_order": "units sorted by repr; one uniform draw per unit; flipped when draw < 0.5",
+        "semantics": "flipped = 1 means the inc and dec labels of every profile of that "
+        "study are exchanged; counts are untouched",
+        "table_sha256": file_sha256(flip_path),
+        "bugsigdb_vintage": vintage,
+        "inputs": inputs,
+        "code_commit": args.code_commit,
+    }
+    flip_manifest_path = output / "calibration_flip_assignments.json"
+    flip_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    flip_manifest_path.write_text(json.dumps(flip_manifest, indent=2) + "\n", encoding="utf-8")
+    if args.flip_assignments_only:
+        print(flip_path)
+        print(flip_manifest_path)
+        return 0
+
     rows: list[dict[str, object]] = []
     ledger: list[dict[str, object]] = []
     injection_rows: list[dict[str, object]] = []
@@ -1069,6 +1147,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     criteria = check_criteria(rows, ledger, protocol)
 
     written = [
+        flip_path,
+        flip_manifest_path,
         _write(output / "calibration_results.tsv", rows),
         _write(output / "calibration_replicates.tsv", ledger),
         _write(output / "calibration_injection.tsv", injection_rows),
