@@ -176,6 +176,7 @@ validate-studies-linkml:
 [positional-arguments]
 validation-evidence *ARGS:
 	uv run python -m bsdbng.validation_evidence "$@"
+
 stats:
 	@uv run python -c "from bsdbng.stats import print_stats; print_stats()"
 

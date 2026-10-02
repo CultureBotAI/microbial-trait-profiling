@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
+from dataclasses import fields
 from pathlib import Path
 
 import pytest
@@ -28,6 +30,7 @@ from bsdbng.validation_evidence import (
     external_overlap,
     find_mentions,
     inferred_function_traits,
+    main,
     marker_split_candidates,
     nodes_status,
     parse_supplement,
@@ -79,6 +82,11 @@ def _row(**changes: str) -> dict[str, str]:
     }
     base.update(changes)
     return base
+
+
+def _read_rows(path: Path) -> list[dict[str, str]]:
+    with path.open(encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle, delimiter="\t"))
 
 
 def _source(bsdb_id: str, experiment: str) -> dict[str, str]:
@@ -673,6 +681,204 @@ def test_no_title_match_is_reported_as_such_and_not_as_independence(tmp_path: Pa
     assert row["matched_bugsigdb_studies"] == ""
     assert row["match_basis"] == ""
     assert row["best_title_agreement"] == 0.0
+
+
+def test_a_newline_in_curated_text_does_not_split_the_row(tmp_path: Path) -> None:
+    # bsdb:27362264's Antibiotics exclusion field, exactly as the pinned dump carries it.
+    path = tmp_path / "dump.csv"
+    path.write_text(
+        "# BugSigDB test\n"
+        + HEADER
+        + "\n"
+        + ",".join(
+            '"' + _row(**{"Antibiotics exclusion": "X"}).get(name, "NA") + '"'
+            for name in HEADER.split(",")
+        ).replace('"X"', '"2 weeks prior to delivery\n2 weeks after delivery"')
+        + "\n",
+        encoding="utf-8",
+    )
+    studies = read_studies(path)
+    assert "\n" in studies["bsdb:1"].antibiotics_exclusion_field
+    written = _write(tmp_path / "out.tsv", evidence_rows(studies, {"bsdb:1"}))
+    body = written.read_text(encoding="utf-8")
+    assert body.count("\n") == 2, "one header line and one row line"
+    assert "2 weeks prior to delivery 2 weeks after delivery" in body
+
+
+def test_the_searched_fields_are_reported_beside_the_absence_of_a_mention(
+    tmp_path: Path,
+) -> None:
+    path = _dump(tmp_path / "dump.csv", [_row()])
+    (row,) = evidence_rows(read_studies(path), set())
+    assert row["transit_status"] == "not_mentioned_in_curated_metadata"
+    # The Group 1 definition and Keywords of this row are NA, so they were not searched.
+    assert row["searched_fields"] == "Condition;Group 0 name;Group 1 name;Title"
+    assert "access" not in row
+
+
+def test_expression_and_flux_are_inventoried(tmp_path: Path) -> None:
+    path = _dump(
+        tmp_path / "dump.csv",
+        # bsdb:32143621's and bsdb:33220709's keywords, as the dump carries them.
+        [
+            _row(Keywords="metatranscriptomics"),
+            _row(**{"BSDB ID": "bsdb:2/1/1", "Keywords": "metaproteomics"}),
+            _row(**{"BSDB ID": "bsdb:3/1/1"}),
+        ],
+    )
+    rows = evidence_rows(read_studies(path), {"bsdb:1", "bsdb:2", "bsdb:3"})
+    statuses = {str(row["study_id"]): row["expression_or_flux_status"] for row in rows}
+    assert statuses["bsdb:1"] == "mentioned_in_curated_metadata"
+    assert statuses["bsdb:2"] == "mentioned_in_curated_metadata"
+    assert statuses["bsdb:3"] == "not_mentioned_in_curated_metadata"
+    summary = {row["evidence"]: row for row in summary_rows(rows)}
+    assert summary["expression_or_flux"]["discovery_studies_mentioning"] == 2
+
+
+TABLE1_COLUMNS = (
+    "METPO:1000608\tGO:0030245\tMETPO:1000668\tMETPO:1000683"
+    "\tpathways:arsenate_reduction\tMETPO:1000623\tMETPO:2000006|CHEBI:17272"
+)
+
+
+def _run_inputs(tmp_path: Path) -> dict[str, Path]:
+    """The four inputs main() reads, each a minimal copy of the real thing."""
+    profile = tmp_path / "study_trait_profiles_wide.tsv"
+    profile.write_text(
+        "study_id\texperiment_id\tinc_dec\t" + TABLE1_COLUMNS + "\n"
+        "bsdb:1\tbsdb:1-1\tinc\t1\t0\t0\t0\t0\t0\t2\n"
+        "bsdb:1\tbsdb:1-1\tdec\t0\t1\t0\t0\t0\t0\t1\n",
+        encoding="utf-8",
+    )
+    experiments = tmp_path / "experiments.tsv"
+    experiments.write_text(
+        "study_id\texperiment_id\texperiment_name\tcondition\tbody_site\thost_species"
+        "\tlocation_of_subjects\tgroup_0_name\tgroup_1_name\tsignature_count\ttaxon_count\n"
+        "bsdb:1\tbsdb:1-1\tExperiment 1\tIncreased inflammatory response\tFeces"
+        "\tHomo sapiens\tSpain\tlow calprotectin\thigh calprotectin\t2\t3\n",
+        encoding="utf-8",
+    )
+    dump = _dump(tmp_path / "dump.csv", [_row(**_source("bsdb:1/1/1", "bsdb:35888992-6"))])
+    cohorts = tmp_path / "cohorts.tsv"
+    cohorts.write_text(
+        "\t".join(f.name for f in fields(ExternalCohort))
+        + "\n"
+        + "\t".join(str(getattr(_cohort(), f.name)) for f in fields(ExternalCohort))
+        + "\n",
+        encoding="utf-8",
+    )
+    return {
+        "--profile-input": profile,
+        "--experiments-input": experiments,
+        "--full-dump-input": dump,
+        "--external-cohorts": cohorts,
+    }
+
+
+def _argv(tmp_path: Path, *extra: str) -> list[str]:
+    out = tmp_path / "out"
+    args = [part for name, path in _run_inputs(tmp_path).items() for part in (name, str(path))]
+    return [*args, "--output-dir", str(out), *extra]
+
+
+def test_main_writes_every_table_and_a_provenance_record(tmp_path: Path) -> None:
+    nodes = _kg(tmp_path)
+    assert main([*_argv(tmp_path), "--nodes-input", str(nodes)]) == 0
+    out = tmp_path / "out"
+    written = sorted(path.name for path in out.iterdir())
+    assert written == [
+        "evidence_availability_by_study.tsv",
+        "evidence_availability_summary.tsv",
+        "external_cohort_overlap.tsv",
+        "inferred_function_traits.tsv",
+        "marker_split_candidates.tsv",
+        "validation_evidence_provenance.json",
+    ]
+    provenance = json.loads(
+        (out / "validation_evidence_provenance.json").read_text(encoding="utf-8")
+    )
+    assert provenance["nodes_status"] == NODES_VERIFIED
+    assert provenance["inferred_function_traits_interpretable"] is True
+    assert provenance["marker_split_candidates"] == {
+        MARKER_STRATIFIED: {"experiments": 1, "human": 1, "in_discovery_corpus": 1}
+    }
+    assert provenance["external_supplement_extraction"].startswith("pdftotext -layout")
+    # The calprotectin experiment is the one measured split in these inputs.
+    (candidate,) = _read_rows(out / "marker_split_candidates.tsv")
+    assert candidate["experiment_id"] == "bsdb:1-1"
+    assert candidate["classification"] == MARKER_STRATIFIED
+    assert "no per-study access value" in " ".join(provenance["notes"])
+
+
+def test_main_warns_and_still_writes_a_header_without_the_node_table(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    missing = tmp_path / "nowhere" / "merged-kg_nodes.tsv"
+    assert main([*_argv(tmp_path), "--nodes-input", str(missing)]) == 0
+    captured = capsys.readouterr()
+    assert "is missing" in captured.err
+    assert "just download-kg" in captured.err
+    table = (tmp_path / "out" / "inferred_function_traits.tsv").read_text(encoding="utf-8")
+    assert table == "\t".join(INFERRED_FUNCTION_FIELDS) + "\n"
+    provenance = json.loads(
+        (tmp_path / "out" / "validation_evidence_provenance.json").read_text(encoding="utf-8")
+    )
+    assert provenance["nodes_status"] == NODES_MISSING
+    assert provenance["inferred_function_traits_interpretable"] is False
+
+
+def test_main_fails_on_a_missing_node_table_when_asked_to(tmp_path: Path) -> None:
+    missing = tmp_path / "nowhere" / "merged-kg_nodes.tsv"
+    with pytest.raises(SystemExit) as raised:
+        main([*_argv(tmp_path), "--nodes-input", str(missing), "--require-nodes"])
+    assert raised.value.code == 2
+
+
+def test_report_renders_the_methods_tables_from_the_artifacts(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    nodes = _kg(tmp_path)
+    assert main([*_argv(tmp_path, "--report"), "--nodes-input", str(nodes)]) == 0
+    report = capsys.readouterr().out
+    assert "| Evidence | Discovery studies mentioning |" in report
+    assert f"| `{MARKER_STRATIFIED}` | 1 | 1 | 1 |" in report
+    assert "| Inflammation markers | 1 | 1 |" in report
+    # A pipe inside a profile column has to be escaped or it would split the cell.
+    assert r"`METPO:2000006\|CHEBI:17272`" in report
+    assert "Node table: verified_against_provenance." in report
+
+
+def test_supplement_parsing_reads_the_disease_and_accession_sections() -> None:
+    # Lines 46-53 and the accession table of the pinned supplement text, verbatim.
+    text = (
+        " Study ID      Disease name                             Disease type"
+        "              Abbr.         Number of     # case   # control   Total"
+        "   DNA extraction method\n"
+        "                                                                      "
+        "                          comparisons\n"
+        " ZhuJ_2018     breast cancer                            cancer"
+        "                    BC            1             62       71          133"
+        "     QIAamp DNA Stool Mini Kit\n"
+        " WangQ_2021    bone mass loss                           cardiometabolic disease"
+        "   BL            1             231      119         350     QinJ_2012\n"
+        "Study ID      Sequencing platform     Antibiotic usage   Probiotics"
+        "   Medication   Region       Accession     Journal                    Year\n"
+        "ZhuJ_2018     Illumina HiSeq X Ten    N                  no data"
+        "      no data      Guangxi      PRJNA453965   Microbiome                 2018\n"
+        "WangQ_2021    BGISEQ-500              N                  N"
+        "            no data      Guangdong    PRJNA530339   GigaByte                   2021\n"
+    )
+    parsed = parse_supplement(text)
+    assert parsed["ZhuJ_2018"]["disease_name"] == "breast cancer"
+    assert parsed["ZhuJ_2018"]["abbreviation"] == "BC"
+    assert parsed["ZhuJ_2018"]["accession"] == "PRJNA453965"
+    assert parsed["ZhuJ_2018"]["region"] == "Guangxi"
+    assert parsed["ZhuJ_2018"]["antibiotic_usage"] == "N"
+    assert parsed["ZhuJ_2018"]["probiotics_usage"] == "no data"
+    assert parsed["ZhuJ_2018"]["medication_usage"] == "no data"
+    assert parsed["WangQ_2021"]["disease_name"] == "bone mass loss"
+    assert parsed["WangQ_2021"]["accession"] == "PRJNA530339"
+    assert parsed["WangQ_2021"]["probiotics_usage"] == "N"
 
 
 def test_supplement_parsing_joins_wrapped_titles_and_stops_at_the_next_table() -> None:
