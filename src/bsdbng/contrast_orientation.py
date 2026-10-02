@@ -907,9 +907,12 @@ REVIEW_FIELDS = (
     "sampled_orientation",
     "reviewer",
     "verdict",
+    # The note is free text and is empty for most agreements, so it is not the last
+    # column: a trailing empty field is trailing whitespace, which the pre-commit hook
+    # strips, which would silently drop a column from every agreeing row.
+    "note",
     "reviewed_class",
     "reviewed_orientation",
-    "note",
 )
 NOT_REVIEWED = "not_reviewed"
 
@@ -956,9 +959,9 @@ def review_sample(
                 "sampled_orientation": found.orientation,
                 "reviewer": "",
                 "verdict": "",
+                "note": "",
                 "reviewed_class": "",
                 "reviewed_orientation": "",
-                "note": "",
             }
         )
     return rows
