@@ -2,8 +2,9 @@
 
 Produced by `src/bsdbng/integrated_evidence.py`, driven by `just integrated-evidence`,
 which writes `data/derived/integrated_evidence/`: the machine-readable table
-(`integrated_evidence.tsv`), a generated view with the data dictionary
-(`integrated_evidence.md`) and a provenance record. It implements
+(`integrated_evidence.tsv`), three tidy side-cars for the feature-to-column map,
+the correction families and the assessments, a generated view with the data
+dictionary (`integrated_evidence.md`) and a provenance record. It implements
 [#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178) and follows
 the shared comparison basis in [`three_arm_statistics.md`](three_arm_statistics.md).
 
@@ -98,16 +99,33 @@ read as a negative result.
 
 ## What is in it now
 
-On the pinned v1.3.1 corpus, 40 records:
+On the pinned v1.3.1 corpus, **1,912 rows: 40 method results and 1,872 figure
+cells**.
 
 | Method | Records | Family | Tested | q <= 0.05 | q <= 0.001 |
 | --- | --- | --- | --- | --- | --- |
 | directional consistency, fraction sign test | 6 | BH over six traits | 6 | 6 | **3** |
 | directional consistency, log-ratio sign test | 15 | BY over 15 pairs | 15 | 3 | **0** |
-| oxygen guild McNemar | 1 | single test | 1 | 1 | 1 |
+| oxygen guild McNemar | 1 | single uncorrected test | 1 | no q | no q |
 | composition arm, native transformed contrast | 6 | - | 0 | not supplied | not supplied |
 | enrichment arm, profile hypergeometric | 6 | - | 0 | not supplied | not supplied |
 | aggregated profile support | 6 | - | 0 | not supplied | not supplied |
+| oxygen guild cell support | 1,872 | - | 0 | not a test | not a test |
+
+The guild McNemar is a single uncorrected test. It carries p = 2.2e-06 and leaves
+q blank, so it has no threshold decision in either column: a decision in this
+table is a decision on a corrected value and there is no corrected value here.
+An earlier version wrote the uncorrected p into `q_value` as well, which made it
+look like a one-member FDR family (#294).
+
+The cell rows are the oxygen guild figure's own inventory, one per cell of the
+condition-by-body-site grid at the figure's parameters: **316 drawn, 7 drawn as
+sampled-without-signal, 209 masked for too little support and 1,340 never
+sampled**. They report support and display, never a test, which is why they are
+counted in the generated view rather than listed row by row. Before they
+existed, nothing in the table set `drawn` or `masked_below_min_studies` and
+`not_sampled` was never emitted at all, so three of the four display states named
+something the table could not produce.
 
 Both columns are reported because **no single cutoff is native to all three
 families** (#294). An earlier version applied one `--q-threshold` to all of them
@@ -117,14 +135,27 @@ at each, and each threshold names its source: q <= 0.05 is chosen by this
 integration for display, matching the overlay of PR #173, while q <= 0.001 is the
 manuscript's rule as the enrichment arm's committed run applies it. The
 composition arm publishes q with no cutoff at all, so neither is that arm's own
-rule. At the stricter threshold coccus shaped, sphere shaped and arsenate
-reduction drop out of the fraction family, and the whole ratio family does.
+rule. At the stricter threshold coccus shaped (q = 0.0073), sphere shaped
+(0.0029) and arsenate reduction (0.0038) drop out of the fraction family, and the
+whole ratio family does.
 
 The three unsupplied methods are the point of the design rather than a gap in it. The
 composition arm's native output moves under #174/#197, the enrichment arm's rests on
 the urn of #131, and the aggregated support rule lives on the #173 branch. Each is
-recorded as not supplied with the reason, and pointing the recipe at those outputs
-adds them without changing any other row.
+recorded as not supplied with the reason.
+
+**There is no way to supply them yet.** The command line takes the profile
+matrix, the experiments table, the full dump, the two thresholds and the five
+assessment status files, and nothing else; there is no `--composition-stats`,
+`--ora` or `--support` input. Importing an arm means adding its reader and
+deciding how its effect, family and eligibility map onto these columns, which is
+the work those issues describe - not pointing an existing recipe at a file. An
+earlier version of this note said otherwise (#294).
+
+The placeholder rows also cover the six Table 1 traits only. That is their
+declared scope, not an inventory of what each method would report: the enrichment
+arm covers every retained trait in the matrix, and the corpus-wide directional
+screen of #276 is not integrated here at all.
 
 At q <= 0.05, six of the six fraction results and three of the fifteen ratio
 results are significant in their own families; at q <= 0.001 it is three and
@@ -135,20 +166,36 @@ that a reader cannot silently add them up.
 
 ## Standing of the results in it
 
-Every row carries the same caveats as fields rather than as prose:
+Every row carries the same caveats as fields rather than as prose. **On `main`,
+every one of the five status columns reads `pending`**, because none of the five
+assessments has landed. The findings below come from open pull requests and are
+reported here as what those branches currently say, not as settled properties of
+these results; an earlier version of this note stated them as established
+(#294).
 
 - **Selection.** The six Table 1 traits were chosen on this corpus by the composition
-  arm. #182 measures what selecting on the data and testing the selection costs:
-  per-test error roughly 0.08 against a nominal 0.05, a lower bound. These results
-  are exploratory.
-- **Calibration.** Where #182 has run, `calibration_status` carries its verdict per
-  procedure. The procedures this repository owns hold their nominal rates under the
-  paired null; the other arms' procedures are not assessed.
-- **Population.** #183 shows most fraction directions do not survive restriction to a
-  ratio's eligible population, and #188 gives the disease-versus-healthy subset in
-  which the directions do hold. Both are populations, not corrections.
+  arm, which every row records in `selection_note` regardless of any assessment.
+  These results are exploratory on that ground alone.
+- **Calibration (#182, open as PR #240).** Its branch measures what selecting on
+  the data and then testing the selection costs - a per-test error of roughly 0.08
+  against a nominal 0.05, a lower bound - and reports the procedures this
+  repository owns as holding their nominal rates under the paired null. The same
+  output names the enrichment arm's urn, the composition arm's native test and the
+  aggregated support rule as `not_calibrated_here`, and those rows say so rather
+  than carrying any verdict. Until #240 merges, every `calibration_status` on
+  `main` is `pending #182`.
+- **Population (#183 as PR #237, #188 as PR #238).** #237's branch reports that
+  most fraction directions do not survive restriction to a ratio's eligible
+  population, and #238's gives a disease-versus-healthy subset in which the
+  directions do hold. Both are populations rather than corrections, and #237
+  reports per scenario without reaching a verdict at all. Neither is on `main`.
 - **Coverage and influence.** #184 and #190 remain pending; until they land, no row
   should be read as accounting for annotation coverage or taxonomic concentration.
+- **Guild grouping.** The guild rows previously claimed the oxygen guilds were
+  fixed a priori. Nothing in this repository records where or when they were
+  declared, and the aerobe guild contains METPO:1000608, which is also one of the
+  six traits selected on this corpus - so that grouping is not independent of the
+  selection either. The claim is removed rather than restated (#294).
 
 ## Reproducing
 
@@ -176,10 +223,15 @@ outputs once those exist. The provenance record carries the code revision, input
 hashes, the corpus cascade, the assessment statuses and the per-method summary.
 
 `tests/test_integrated_evidence.py` covers the states the contract exists to
-preserve: an all-tied trait, a pair with no positive counts, a method that was not
-supplied, two methods keeping separate families and units, display state independent
-of decision, statuses attached without changing a result, an unreadable status file,
-and a full export in which counts reconcile with the source runs.
+preserve: an all-tied trait, a pair with no eligible experiment, a method that was
+not supplied, two methods keeping separate families and units, the four figure-cell
+support states taken from the real matrix, a masked cell leaving a tested result
+alone, each assessment reaching only the procedure it assessed, ten malformed
+status files, both thresholds deciding independently, the ratio populations and
+effect summaries reconciling with their source run, the McNemar keeping its p with
+q blank, an undefined odds ratio coming out missing, and the CLI end to end with
+its exports and provenance record. Each test was checked against a deliberately
+broken version of the code it covers.
 
 The table, the contract and this description were drafted with the assistance of a
 coding agent (Claude Code) and require confirmation by the method owners before any

@@ -25,8 +25,12 @@ PROFILE_ID_COLUMNS = ("study_id", "experiment_id", "inc_dec")
 HUMAN_HOST_SPECIES = "Homo sapiens"
 MEDIADIVE_MARKER = "mediadive.medium"
 
-# Oxygen guilds, fixed a priori and identical to both analysis arms. Labels were
-# verified against data/kg-microbe/merged-kg_nodes.tsv.
+# Oxygen guilds, identical to the groupings both analysis arms use. Labels were
+# verified against data/kg-microbe/merged-kg_nodes.tsv. They were previously
+# described here as fixed a priori; nothing in this repository records where or
+# when they were declared, and METPO:1000608 belongs to the aerobe guild and to
+# the six traits the composition arm selected on this corpus, so the grouping is
+# not independent of the selection (#294).
 OXYGEN_GUILDS: dict[str, tuple[str, ...]] = {
     "aerobe": ("METPO:1000602", "METPO:1000604", "METPO:1000608"),
     "anaerobe": ("METPO:1000603", "METPO:1000607"),

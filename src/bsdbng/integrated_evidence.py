@@ -12,14 +12,19 @@ What it deliberately does not do:
   discovery rate for a set defined as "significant under any method". Separate
   corrections do not combine into one guarantee.
 * It does not turn an absent source row into a negative result. A method whose
-  output was not supplied is recorded as ``source_not_supplied`` for every feature it
-  would have covered.
+  output was not supplied is recorded as ``source_not_supplied``, for the six
+  Table 1 traits. That is the scope of the placeholders and not an inventory of
+  what those methods would report: the enrichment arm covers every retained
+  trait in the matrix, and the corpus-wide directional screen of #276 is not
+  integrated here at all.
 * It does not mark anything confirmed. The six Table 1 traits were selected on this
   same corpus, which every row carries in ``selection_note``.
 
-Rows are produced for the analyses this repository runs, and read from files for the
-other arms and for the assessments tracked in #182, #183, #184, #188 and #190. Each
-of those is a status, not a result: ``pending`` until its own deliverable exists.
+Rows are produced for the analyses this repository runs. The other arms have no
+input on this command line yet, so they appear only as placeholders; adding them
+needs the inputs, not just the files. The assessments tracked in #182, #183,
+#184, #188 and #190 are read from their own outputs where those exist, and each
+is a status, not a result: ``pending`` until its own deliverable lands on main.
 """
 
 from __future__ import annotations
