@@ -11,10 +11,11 @@ what is recorded, without acquiring new data:
   fields, title, keywords), and which sequencing modality the study used. A mention
   is a pointer to the source paper, not data: the export carries no sample-level
   values, and "not mentioned" never means "not measured".
-* **Marker-stratified experiments**: experiments whose groups are defined by a
-  measured marker (a "calprotectin measurement" or "butyrate measurement"
-  condition). These link a signature to a measurement, but they are part of the
-  same BugSigDB corpus and are not independent of it.
+* **Marker-split candidates**: every experiment whose condition or group fields name
+  a marker of one of those evidence types, each classified as a split on the
+  marker's measured value, an administered intervention, or a contrast that merely
+  carries the marker's name. Only the first kind links a signature to a measurement,
+  and even then it is part of the same BugSigDB corpus and not independent of it.
 * **Inferred-function traits**: KG-Microbe trait columns whose labels concern SCFA
   production or fermentation. They are annotations, not measurements, and share
   their taxa with every other trait.
@@ -164,11 +165,106 @@ EVIDENCE_TYPES: dict[str, re.Pattern[str]] = {
     ),
 }
 
-#: A condition that is itself a measurement of one of the evidence types.
-MARKER_CONDITION = re.compile(
-    r"calprotectin|c-reactive protein|interleukin|^cytokine|tumou?r necrosis factor"
-    r"|inflammat\w* marker|short[- ]chain fatty acid|(?:acetate|butyrate|propionate) measurement"
-    r"|nitrate|nitrite|^oxygen$|oxidative stress",
+#: Markers whose measurement bears on the redox and SCFA reading of Table 1, by the
+#: evidence type each belongs to. Disease-activity scores and clinical covariates are
+#: deliberately absent: the export also holds experiments split on measured grey-matter
+#: volume or triglycerides, which are measured splits but not of a marker in question.
+#: The inflammation panel includes the growth factors assayed on the same multiplex as
+#: the cytokines (bsdb:39103909), and names inflammation itself but not the disease
+#: names that contain the word, so "inflammatory bowel disease" is not a marker.
+MARKER_TERMS: dict[str, re.Pattern[str]] = {
+    "inflammation_marker": _terms(
+        r"calprotectin",
+        r"lactoferrin",
+        r"c-reactive protein",
+        r"hs-?crp",
+        r"crp",
+        r"interleukin[- ]?\d*",
+        r"il-?\d+\w*",
+        r"cytokines?",
+        r"chemokines?",
+        r"tumou?r necrosis factor",
+        "tnf(?:-?\u03b1|-?alpha)?",
+        r"inflammation",
+        r"inflammator\w* (?:response|marker|protein|cytokine|factor|mediator)s?",
+        r"colony[- ]stimulating factor",
+        r"g-?csf",
+        r"monocyte chemo(?:tactic|attractant) protein(?: 1)?",
+        r"mcp-?1",
+        r"macrophage inflammatory protein(?: 1 ?[ab](?:lpha|eta)?)?",
+        r"mip-?1[ab]?",
+        r"interferon gamma[- ]induced protein(?: 10)?",
+        r"ip-?10",
+        r"vascular endothelial growth factor",
+        r"vegf",
+        r"platelet[- ]derived growth factor(?: bb)?",
+        r"pdgf(?:-?bb)?",
+        r"fibroblast growth factor(?: basic)?",
+        r"fgf",
+        r"erythrocyte sedimentation rate",
+        r"esr",
+    ),
+    "scfa_metabolite": _terms(
+        r"scfas?",
+        r"short[- ]chain fatty acids?",
+        r"butyrate",
+        r"butyric acid",
+        r"propionate",
+        r"propionic acid",
+        r"acetate",
+        r"acetic acid",
+        r"valerate",
+    ),
+    "nitrate_oxygen_redox": _terms(
+        r"nitrate",
+        r"nitrite",
+        r"nitric oxide",
+        r"oxygen",
+        r"normoxi\w*",
+        r"hypoxi\w*",
+        r"oxidative stress",
+        r"redox",
+        r"malondialdehyde",
+        r"mda",
+        r"superoxide dismutase",
+        r"sod",
+    ),
+}
+
+#: A group *label* naming a measured value: a direction or level word, or a threshold
+#: with units. Group names are labels for the two arms, so a direction word in one is
+#: about the cut. This pattern is deliberately not applied to the Group 1 definition,
+#: which is prose: the definition of bsdb:39787116-2 says AECOPD involves "increased
+#: breathlessness, cough, mucus production, and inflammation", and that describes the
+#: disease, not a cut on a measured inflammation value.
+MEASURED_LEVEL = re.compile(
+    r"(?<![\w])(?:increased|decreased|elevated|reduced|higher|lower|high|low|levels?"
+    r"|concentrations?|quantified|measured|titers?|titres?|above|below)(?![\w])"
+    r"|[<>]\s*\d|\d\s*(?:mg|ug|µg|ng|pg|mmol|µmol|nmol)(?![\w])",
+    re.IGNORECASE,
+)
+#: Wording that states outright that the groups were cut on something, which is what
+#: the Group 1 definition has to say before its prose is read as describing a cut.
+SPLIT_WORDING = re.compile(
+    r"grouped\s+(?:according\s+to|by)|defined\s+by|stratified\s+by|based\s+on"
+    r"|divided\s+(?:by|according\s+to)|cut-?off|threshold",
+    re.IGNORECASE,
+)
+#: A group label naming the marker's absence, the other half of a presence/absence cut.
+MARKER_ABSENT = re.compile(r"^\s*(?:no|without|absence of|non-?)(?![\w])", re.IGNORECASE)
+#: An administered intervention. Searched over the two group names only - the labels
+#: that say what the two arms are. Not over the condition, which names the clinical
+#: setting rather than the contrast: bsdb:31065565-2 is conditioned on "Response to
+#: allogeneic hematopoietic stem cell transplant" but its groups are low against high
+#: measured fecal butyrate. Not over the Group 1 definition either, whose prose often
+#: names a therapy only to record an eligibility rule. "Dose" is absent on purpose:
+#: bsdb:37789856 pools the same dose arms on both sides of a measured
+#: superoxide-dismutase cut, so the dose is not what that contrast is.
+INTERVENTION = re.compile(
+    r"(?<![\w])(?:placebo|pro-?biotics?|pre-?biotics?|synbiotics?|supplement\w*"
+    r"|therapy|therapeutic|therapies|treated|treatment|pills?|tablets?|capsules?"
+    r"|vaccin\w*|transplant\w*|intervention|administration|infusion"
+    r"|antibiotics?|antimicrobials?)(?![\w])",
     re.IGNORECASE,
 )
 #: Inferred-function trait labels about SCFA production or fermentation.
@@ -319,17 +415,105 @@ def summary_rows(rows: Sequence[Mapping[str, object]]) -> list[dict[str, object]
     return summary
 
 
-def marker_stratified_experiments(
+#: The groups were cut on the marker's measured value.
+MARKER_STRATIFIED = "marker_stratified"
+#: The two groups differ by an administered intervention, so the cut is a trial arm.
+INTERVENTION_CONTRAST = "intervention_contrast"
+#: A marker is named, but nothing says the groups were cut on its measured value.
+MARKER_NAMED_NOT_MEASURED = "marker_named_groups_not_measured"
+#: The group fields whose text decides what the two groups are.
+GROUP_FIELDS = ("Group 0 name", "Group 1 name", "Group 1 definition")
+
+
+@dataclass(frozen=True)
+class MarkerSplit:
+    classification: str
+    evidence_type: str
+    terms: str
+    split_evidence_field: str
+    split_evidence_term: str
+    exclusion_reason: str
+
+
+def classify_marker_split(
+    condition: str, group_0_name: str, group_1_name: str, group_1_definition: str
+) -> MarkerSplit | None:
+    """Decide whether an experiment's groups were cut on a measured marker.
+
+    The condition label decides nothing on its own, in either direction. It can
+    name a measurement whose groups are not one ("C-reactive protein measurement"
+    labels bsdb:37180439-9, healthy controls against liver-disease patients), and
+    it can fail to name the marker of a genuine measured cut ("Increased
+    inflammatory response" labels bsdb:35888992-6, whose groups are inflammatory
+    bowel disease patients either side of fecal calprotectin 1000 mg/kg). So the
+    marker, and the evidence that the cut was on its measured value, are read from
+    the group names and the Group 1 definition as well, and an intervention named in
+    a group label disqualifies the contrast however the condition is labelled.
+
+    Returns ``None`` when no marker of an evidence type in :data:`MARKER_TERMS` is
+    named anywhere, which is the common case.
+    """
+    group_texts = (group_0_name, group_1_name, group_1_definition)
+    everywhere = " | ".join(text for text in (condition, *group_texts) if text)
+    found = {
+        name: {match.group(0).lower() for match in pattern.finditer(everywhere)}
+        for name, pattern in MARKER_TERMS.items()
+        if pattern.search(everywhere)
+    }
+    if not found:
+        return None
+    evidence_type = ";".join(sorted(found))
+    terms = ";".join(sorted({term for terms in found.values() for term in terms}))
+    arm = INTERVENTION.search(" | ".join(text for text in (group_0_name, group_1_name) if text))
+    if arm:
+        return MarkerSplit(
+            INTERVENTION_CONTRAST,
+            evidence_type,
+            terms,
+            "",
+            "",
+            f"a group label names an administered intervention ({arm.group(0).lower()})",
+        )
+    for field, text in zip(GROUP_FIELDS, group_texts, strict=True):
+        if not text or not any(pattern.search(text) for pattern in MARKER_TERMS.values()):
+            continue
+        is_label = field != "Group 1 definition"
+        stated = SPLIT_WORDING.search(text) or (is_label and MEASURED_LEVEL.search(text))
+        if stated:
+            return MarkerSplit(
+                MARKER_STRATIFIED, evidence_type, terms, field, stated.group(0).lower(), ""
+            )
+        if is_label and MARKER_ABSENT.search(text):
+            return MarkerSplit(
+                MARKER_STRATIFIED, evidence_type, terms, field, "marker named as absent", ""
+            )
+    return MarkerSplit(
+        MARKER_NAMED_NOT_MEASURED,
+        evidence_type,
+        terms,
+        "",
+        "",
+        "the group fields carry no measured level, threshold or stratification wording",
+    )
+
+
+def marker_split_candidates(
     full_dump_path: Path, discovery_experiments: set[tuple[str, str]]
 ) -> list[dict[str, object]]:
-    """Experiments whose condition is a measurement of an evidence marker."""
+    """Every experiment naming a marker, with how its groups were actually cut.
+
+    Candidates that are not measured splits are kept in the table with the reason,
+    so the inventory can be audited rather than only counted.
+    """
     seen: dict[tuple[str, str], dict[str, object]] = {}
     with full_dump_path.open(encoding="utf-8", newline="") as handle:
         if not handle.readline().startswith("#"):
             handle.seek(0)
         for row in csv.DictReader(handle):
             condition = _clean(row["Condition"])
-            if not MARKER_CONDITION.search(condition):
+            groups = tuple(_clean(row[name]) for name in GROUP_FIELDS)
+            split = classify_marker_split(condition, *groups)
+            if split is None:
                 continue
             parts = row["BSDB ID"].removeprefix("bsdb:").split("/")
             key = (f"bsdb:{parts[0]}", f"bsdb:{parts[0]}-{parts[1]}")
@@ -338,11 +522,18 @@ def marker_stratified_experiments(
                 {
                     "study_id": key[0],
                     "experiment_id": key[1],
+                    "classification": split.classification,
+                    "marker_evidence_type": split.evidence_type,
+                    "marker_terms": split.terms,
+                    "split_evidence_field": split.split_evidence_field,
+                    "split_evidence_term": split.split_evidence_term,
+                    "exclusion_reason": split.exclusion_reason,
                     "condition": condition,
                     "host_species": _clean(row["Host species"]),
                     "body_site": _clean(row["Body site"]),
-                    "group_0_name": _clean(row["Group 0 name"]),
-                    "group_1_name": _clean(row["Group 1 name"]),
+                    "group_0_name": groups[0],
+                    "group_1_name": groups[1],
+                    "group_1_definition": groups[2],
                     "in_discovery_corpus": key in discovery_experiments,
                     "independence": (
                         "same BugSigDB corpus; not independent of the discovery analyses"
@@ -350,6 +541,19 @@ def marker_stratified_experiments(
                 },
             )
     return [seen[key] for key in sorted(seen)]
+
+
+def _classification_counts(markers: Sequence[Mapping[str, object]]) -> dict[str, dict[str, int]]:
+    """Candidate counts per classification, overall and for human and discovery subsets."""
+    counts: dict[str, dict[str, int]] = {}
+    for row in markers:
+        bucket = counts.setdefault(
+            str(row["classification"]), {"experiments": 0, "human": 0, "in_discovery_corpus": 0}
+        )
+        bucket["experiments"] += 1
+        bucket["human"] += "Homo sapiens" in str(row["host_species"])
+        bucket["in_discovery_corpus"] += bool(row["in_discovery_corpus"])
+    return dict(sorted(counts.items()))
 
 
 def inferred_function_traits(profile_path: Path, nodes_path: Path) -> list[dict[str, object]]:
@@ -694,7 +898,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     studies = read_studies(args.full_dump_input)
     evidence = evidence_rows(studies, discovery)
     summary = summary_rows(evidence)
-    markers = marker_stratified_experiments(args.full_dump_input, discovery_experiments)
+    markers = marker_split_candidates(args.full_dump_input, discovery_experiments)
     functions = inferred_function_traits(args.profile_input, args.nodes_input)
     overlap = external_overlap(read_external_cohorts(args.external_cohorts), studies, discovery)
 
@@ -702,7 +906,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     written = [
         _write(out / "evidence_availability_by_study.tsv", evidence),
         _write(out / "evidence_availability_summary.tsv", summary),
-        _write(out / "marker_stratified_experiments.tsv", markers),
+        _write(out / "marker_split_candidates.tsv", markers),
         _write(out / "inferred_function_traits.tsv", functions),
         _write(out / "external_cohort_overlap.tsv", overlap),
     ]
@@ -718,6 +922,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "external_source_sha256": SUN2024_SAMPLE_GROUP_SHA256,
         "discovery_studies": len(discovery),
         "discovery_experiments": stats.kept_experiments,
+        "marker_split_candidates": _classification_counts(markers),
         "notes": [
             "a mention in curated metadata points to a source paper; it is not data",
             "not mentioned does not mean not measured",

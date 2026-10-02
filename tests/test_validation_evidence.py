@@ -8,13 +8,17 @@ import pytest
 
 from bsdbng.validation_evidence import (
     EVIDENCE_TYPES,
+    INTERVENTION_CONTRAST,
+    MARKER_NAMED_NOT_MEASURED,
+    MARKER_STRATIFIED,
     ExternalCohort,
     StudyRecord,
+    classify_marker_split,
     evidence_rows,
     external_overlap,
     find_mentions,
     inferred_function_traits,
-    marker_stratified_experiments,
+    marker_split_candidates,
     parse_supplement,
     read_studies,
     summary_rows,
@@ -62,6 +66,18 @@ def _row(**changes: str) -> dict[str, str]:
     }
     base.update(changes)
     return base
+
+
+def _source(bsdb_id: str, experiment: str) -> dict[str, str]:
+    """A dump row carrying one real experiment's condition and group fields."""
+    condition, group_0, group_1, definition = SOURCE_ROWS[experiment]
+    return {
+        "BSDB ID": bsdb_id,
+        "Condition": condition,
+        "Group 0 name": group_0,
+        "Group 1 name": group_1,
+        "Group 1 definition": definition,
+    }
 
 
 def test_studies_pool_text_across_rows_and_drop_na(tmp_path: Path) -> None:
@@ -121,19 +137,191 @@ def test_rows_cover_human_studies_and_flag_the_corpus_and_modality(tmp_path: Pat
     assert summary["inflammation_marker"]["discovery_studies_mentioning"] == 0
 
 
-def test_marker_conditions_are_measurements_not_drugs(tmp_path: Path) -> None:
+# Condition, Group 0 name, Group 1 name and Group 1 definition exactly as the pinned
+# BugSigDBExports v1.3.1 full_dump.csv carries them, for the experiments named in #292.
+# Verified against data/raw/full_dump.csv (BugSigDB 2026-04-24_00:41_UTC) - the typo
+# "fecal protectin", the doubled spaces and the misspelt "granulocute" are the source's.
+SOURCE_ROWS: dict[str, tuple[str, str, str, str]] = {
+    # Missed: the IBD calprotectin threshold split #191 is about. The condition names
+    # no marker at all; the group names carry it.
+    "bsdb:35888992-6": (
+        "Increased inflammatory response",
+        "Inflammatory bowel disease patients with fecal calprotectin levels < 1000 mg/kg",
+        "Inflammatory bowel disease patients with fecal calprotectin levels > 1000 mg/kg",
+        "Inflammatory bowel disease patients with higher fecal protectin levels "
+        "(31 with CD and 12 with UC had above 1000 mg/kg).",
+    ),
+    # Missed: a presence/absence cut on systemic inflammation, in an RCT whose other
+    # experiments are trial arms.
+    "bsdb:38890302-6": (
+        "Inflammation",
+        "No inflammation",
+        "Inflammation",
+        "This group includes children grouped according to  systemic inflammation",
+    ),
+    # Missed: defined by measured cytokine levels, so the marker is in the definition.
+    "bsdb:33220709-1": (
+        "Vaginal inflammation",
+        "Low Genital Inflammation",
+        "High Genital Inflammation",
+        "Women with high levels of genital inflammation, defined by elevated "
+        "inflammatory cytokine levels in their cervicovaginal secretions.",
+    ),
+    # Missed: a non-interleukin cytokine row of bsdb:39103909.
+    "bsdb:39103909-4": (
+        "Monocyte chemotactic protein 1 measurement",
+        "Decreased MCP-1 (monocyte chemoattractant protein 1)",
+        "Increased MCP-1 (monocyte chemoattractant protein 1)",
+        "Increased levels of monocyte chemoattractant protein 1 (MCP-1)",
+    ),
+    # Missed: and another, a colony-stimulating factor rather than an interleukin.
+    "bsdb:39103909-13": (
+        "Granulocyte colony-stimulating factor measurement",
+        "Decreased GCSF (granulocute colony-stimulating factor)",
+        "Increased GCSF (granulocute colony-stimulating factor)",
+        "Increased levels of granulocute colony-stimulating factor (GCSF)",
+    ),
+    # Kept, and must stay kept: the condition names a transplant, but the cut is on
+    # measured fecal butyrate, so the intervention test must not read the condition.
+    "bsdb:31065565-2": (
+        "Response to allogeneic hematopoietic stem cell transplant",
+        "low fecal butyrate levels",
+        "high fecal butyrate levels",
+        "patients undergoing T cell repleted allogeneic hematopoietic stem cell transplantation",
+    ),
+    # Wrongly admitted: oxygen therapy is an intervention.
+    "bsdb:879-4": (
+        "Oxygen",
+        "No oxygen therapy",
+        "Oxygen therapy",
+        "COVID-19 patients who had oxygen therapy.",
+    ),
+    # Wrongly admitted: baseline against a placebo arm, not a measured split.
+    "bsdb:39748236-1": (
+        "Oxidative Stress",
+        "Baseline",
+        "Placebo",
+        "Healthy male soccer players taking placebo pills blindly for the first period of 12weeks.",
+    ),
+    # Wrongly admitted: baseline against a probiotic arm.
+    "bsdb:39748236-2": (
+        "Oxidative Stress",
+        "Baseline",
+        "Probiotic",
+        "Healthy male soccer players taking probiotic pills blindly for the second "
+        "period of 12 weeks.",
+    ),
+    # Must not be admitted: the condition says "measurement", the groups are disease
+    # status, so the condition label alone cannot decide.
+    "bsdb:37180439-9": (
+        "C-reactive protein measurement",
+        "Healthy Controls",
+        "Patients with Metabolic dysfunction-associated liver disease",
+        "Patients diagnosed with Non-alcoholic fatty liver disease (now known as "
+        'Metabolic dysfunction-associated fatty liver disease "MAFLD")',
+    ),
+    # Must not be admitted: the condition names a cytokine, the groups are diabetes
+    # status, and the definition's "high levels of blood sugar" is not the marker.
+    "bsdb:36687728-2": (
+        "Cytokine",
+        "Non-Type 2 Diabetes (Prediabetes)",
+        "Type 2 Diabetes",
+        "Participants with chronic metabolic condition characterized by high levels "
+        "of blood sugar (glucose), insulin resistance, and relative insulin "
+        "deficiency, after adjusting for age (used as a covariate).",
+    ),
+    # Must not be admitted: prose describing a disease, not a cut on inflammation.
+    "bsdb:39787116-2": (
+        "Chronic obstructive pulmonary disease",
+        "Healthy Control Group (HC)",
+        "AECOPD Group (Acute Exacerbation of Chronic Obstructive Pulmonary Disease)",
+        "Patients diagnosed with Acute Exacerbation of Chronic Obstructive Pulmonary "
+        "Disease (AECOPD). It is a sudden worsening of COPD symptoms, including "
+        "increased breathlessness, cough, mucus production, and inflammation.",
+    ),
+    # Must not be admitted: a steroid ester, not a measured short-chain fatty acid.
+    "bsdb:30866773-2": (
+        "Medroxyprogesterone acetate",
+        "black naive vaginal microbiome (baseline visit )",
+        "white naiive vaginal microbiome (baseline)",
+        "white participants at baseline",
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    ("experiment", "classification", "evidence_type"),
+    [
+        ("bsdb:35888992-6", MARKER_STRATIFIED, "inflammation_marker"),
+        ("bsdb:38890302-6", MARKER_STRATIFIED, "inflammation_marker"),
+        ("bsdb:33220709-1", MARKER_STRATIFIED, "inflammation_marker"),
+        ("bsdb:39103909-4", MARKER_STRATIFIED, "inflammation_marker"),
+        ("bsdb:39103909-13", MARKER_STRATIFIED, "inflammation_marker"),
+        ("bsdb:31065565-2", MARKER_STRATIFIED, "scfa_metabolite"),
+        ("bsdb:879-4", INTERVENTION_CONTRAST, "nitrate_oxygen_redox"),
+        ("bsdb:39748236-1", INTERVENTION_CONTRAST, "nitrate_oxygen_redox"),
+        ("bsdb:39748236-2", INTERVENTION_CONTRAST, "nitrate_oxygen_redox"),
+        ("bsdb:37180439-9", MARKER_NAMED_NOT_MEASURED, "inflammation_marker"),
+        ("bsdb:36687728-2", MARKER_NAMED_NOT_MEASURED, "inflammation_marker"),
+        ("bsdb:39787116-2", MARKER_NAMED_NOT_MEASURED, "inflammation_marker"),
+    ],
+)
+def test_marker_split_is_decided_by_the_group_fields_not_the_condition(
+    experiment: str, classification: str, evidence_type: str
+) -> None:
+    split = classify_marker_split(*SOURCE_ROWS[experiment])
+    assert split is not None, experiment
+    assert split.classification == classification, experiment
+    assert split.evidence_type == evidence_type, experiment
+    assert (split.exclusion_reason == "") is (classification == MARKER_STRATIFIED)
+
+
+def test_calprotectin_split_reports_the_group_field_that_decided_it() -> None:
+    split = classify_marker_split(*SOURCE_ROWS["bsdb:35888992-6"])
+    assert split is not None
+    assert split.split_evidence_field == "Group 0 name"
+    assert split.split_evidence_term == "levels"
+    assert "calprotectin" in split.terms
+
+
+def test_an_absent_marker_in_one_group_is_a_measured_split() -> None:
+    split = classify_marker_split(*SOURCE_ROWS["bsdb:38890302-6"])
+    assert split is not None
+    assert split.split_evidence_term == "marker named as absent"
+
+
+def test_intervention_reason_names_the_term_that_disqualified_the_contrast() -> None:
+    therapy = classify_marker_split(*SOURCE_ROWS["bsdb:879-4"])
+    probiotic = classify_marker_split(*SOURCE_ROWS["bsdb:39748236-2"])
+    assert therapy is not None
+    assert probiotic is not None
+    assert "therapy" in therapy.exclusion_reason
+    assert "probiotic" in probiotic.exclusion_reason
+
+
+def test_a_condition_naming_no_marker_at_all_is_not_a_candidate() -> None:
+    assert classify_marker_split("Colorectal cancer", "Healthy controls", "Patients", "") is None
+    # A probiotic species carries an SCFA name only inside its epithet.
+    assert classify_marker_split("Clostridium butyricum", "control", "treated", "") is None
+
+
+def test_marker_candidates_keep_the_excluded_rows_with_their_reason(tmp_path: Path) -> None:
     path = _dump(
         tmp_path / "dump.csv",
         [
-            _row(**{"BSDB ID": "bsdb:1/1/1", "Condition": "Calprotectin measurement"}),
-            _row(**{"BSDB ID": "bsdb:2/1/1", "Condition": "Medroxyprogesterone acetate"}),
-            _row(**{"BSDB ID": "bsdb:3/1/1", "Condition": "Clostridium butyricum"}),
+            _row(**_source("bsdb:1/1/1", "bsdb:35888992-6")),
+            _row(**_source("bsdb:2/1/1", "bsdb:879-4")),
+            _row(**{"BSDB ID": "bsdb:3/1/1", "Condition": "Colorectal cancer"}),
         ],
     )
-    found = marker_stratified_experiments(path, {("bsdb:1", "bsdb:1-1")})
-    assert [row["study_id"] for row in found] == ["bsdb:1"]
-    assert found[0]["in_discovery_corpus"] is True
-    assert "not independent" in str(found[0]["independence"])
+    candidates = marker_split_candidates(path, {("bsdb:1", "bsdb:1-1")})
+    found = {str(row["experiment_id"]): row for row in candidates}
+    assert sorted(found) == ["bsdb:1-1", "bsdb:2-1"]
+    assert found["bsdb:1-1"]["classification"] == MARKER_STRATIFIED
+    assert found["bsdb:1-1"]["in_discovery_corpus"] is True
+    assert "not independent" in str(found["bsdb:1-1"]["independence"])
+    assert found["bsdb:2-1"]["classification"] == INTERVENTION_CONTRAST
+    assert found["bsdb:2-1"]["in_discovery_corpus"] is False
 
 
 def test_function_traits_report_what_the_annotation_asserts(tmp_path: Path) -> None:
