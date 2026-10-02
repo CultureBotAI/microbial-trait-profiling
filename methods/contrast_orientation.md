@@ -26,9 +26,8 @@ EFO ID, body site and UBERON ID, host, both group names, the Group 1 definition,
 both sample sizes and the description - with the curated direction convention, the
 assigned contrast class and orientation, the matched evidence, flags, whether the
 experiment is in the analysed corpus, the classifier version
-(`contrast-orientation-v1`) and the BugSigDB vintage. The export holds no Group 0
-definition, so every row carries the flag `no_group_0_definition_in_export`; a
-Group 0 reading rests on its name alone.
+(`contrast-orientation-v2`) and the BugSigDB vintage. The export holds no Group 0 definition, so every row carries the flag
+`no_group_0_definition_in_export`; a Group 0 reading rests on its name alone.
 
 Whitespace inside the curated free-text fields is collapsed before writing. 187 of
 the 4,457 descriptions and definitions contain a line break; quoting them keeps the
@@ -45,25 +44,74 @@ from the disease-versus-healthy population rather than into it.
 3. Group names that differ in time (baseline against follow-up, pre against post,
    day 4 against month 1): `longitudinal_timepoint`. A time word shared by both
    groups ("at baseline") is a shared timepoint, not a contrast; "baseline" beside a
-   healthy comparison only dates the disease sample.
+   healthy comparison only dates the disease sample. An age band is not a time point:
+   "2-12 years" against "18-62 years" and "Controls aged > 10 years" say how old the
+   subjects were, not when they were sampled, and are flagged
+   `age_band_not_timepoint` (27 experiments).
 4. A treatment or exposure in either group name (placebo, probiotic, smokers, users,
-   responders, antibiotic) or a treatment or exposure condition (response to a drug,
-   antimicrobial agent, caesarean section, breastfeeding): `treatment_exposure`. A
-   negated treatment word ("without antiretroviral treatment", "treatment-naive") names
+   responders, antibiotic), an intervention arm opposite a bare control, a treatment
+   or exposure condition (response to a drug, antimicrobial agent, caesarean section,
+   breastfeeding), or an intervention named in the Group 1 definition or description
+   and matched approximately to a group name: `treatment_exposure`. A negated
+   treatment word ("without antiretroviral treatment", "treatment-naive") names
    untreated disease and does not count.
 5. One group named by time only, a condition that is a variable (population, age,
-   ethnic group, any "measurement"), or two groups that are levels of one variable
-   (low against high LDL): `longitudinal_timepoint` or `other`.
+   ethnic group, pregnancy, any "measurement"), or two groups that are levels of one
+   variable (low against high LDL): `longitudinal_timepoint` or `other`. A condition
+   can hold several comma-separated values and counts as a variable only when every
+   value is one, so "Age" is a variable and "Coinfection,Age" is not.
 6. **Exactly one group reads as a comparison: `disease_vs_healthy`.** Strong
-   comparison words are healthy, control, HC, unaffected, uninfected, disease-free
-   and volunteers. Weak ones are normal weight, lean, normoglycaemic, negative, a
-   test marker negative only in that group ("HPV-" against "HPV+"), and absence of
+   comparison words are healthy, control, HC, unaffected, uninfected, disease-free,
+   normal controls/subjects/groups/samples and volunteers. Weak ones are normal
+   weight, lean, normoglycaemic, a test marker negative only in that group ("HPV-"
+   against "HPV+"), a bare "negative" whose subject is the condition, and absence of
    the condition itself ("non-IBS", "no asthma", "free from colorectal cancer"). The
    orientation is `native` when the comparison is Group 0. It is `reversed` only when
    Group 1 carries a strong comparison word and Group 0 has disease evidence;
    otherwise the experiment is `unresolved` with the flag
    `possible_reversal_unverified`. A contrast resting on weak evidence only is
    flagged `weak_comparison_evidence`.
+
+   **What the comparison reading requires.** Group names say both more and less than
+   they appear to, so four conditions scope the reading to the actual comparison
+   context. Each withdrawal is recorded in `evidence` and flagged
+   `comparison_reading_withdrawn` rather than dropped silently (10 experiments in the
+   corpus).
+
+   - **A negation must scope the condition, not a modifier of it.** The first content
+     word after the negator must name the condition, and a negation that runs on into
+     another pathological finding does not count. "non-IBS" and "no asthma at 5 years
+     old" deny the condition; "non-exacerbated asthma", "non-cachectic cancer",
+     "Mild/Non-severe Preeclampsia", "Non-inflammatory depression", "No liver
+     metastasis" and "Non-obstruction tumour group" deny a modifier or a neighbouring
+     finding, and those subjects still have the disease. Filler words between the
+     negator and the condition are skipped, so "healthy controls without any form of
+     Parkinson's disease" keeps its reading, and words that say *which* case is meant
+     ("prevalent", "functional", "idiopathic") are filler while words that say *how
+     bad* ("severe", "exacerbated", "ulcerative") are not.
+   - **A bare "negative" counts only where its subject is the condition.** The
+     subject is the whole run of words before the sign, so "group B Streptococcus
+     culture-negative" denies the organism, but any disease word in that run
+     disqualifies it, because a disease named beside the sign is one the group has:
+     "Her2 negative tumor", "crohn disease ASCA negative patients", "Metaformin
+     negative", "Parkinson's disease dementia negative" and "HIV infected cART
+     negative" all describe someone who is ill. The same requirement applies to a
+     marker sign, so "tumor HP-" against "tumor HP+" is H. pylori status within
+     gastric cancer rather than cancer against health.
+   - **A group that only resembles the comparison group is not it.** "HC-like IBS
+     (Healthy Control like Irritable Bowel Syndrome)" is an irritable-bowel subgroup
+     whose profile looks like a healthy one.
+   - **A condition with several values needs a group that is well in general.**
+     Denying one value leaves the others standing: "Epstein-Barr virus non-infected
+     (EBV- GC)" lacks the virus and has the gastric cancer, and "young HIV-infected
+     group without coinfection" lacks the coinfection and has the HIV.
+
+   **An untreated arm is not a healthy control.** A group labelled only "Control"
+   opposite an "Experimental group", "Trial group", "Intervention group" or "usage
+   group" is the untreated arm of an intervention, and the contrast is
+   `treatment_exposure`. The trailing "group" is required, so the disease
+   "Experimental Autoimmune Encephalomyelitis" and the "Trial Making Test" are not
+   read as arms.
 7. Both groups read as comparisons: `unresolved`.
 8. Both groups read as disease groups (disease, patients, stage, severity, activity,
    subtype, or naming the condition): `disease_vs_disease`.
@@ -74,51 +122,32 @@ reversed experiment the increased and decreased profiles are swapped, so that in
 the whole population `inc` means higher in the disease group. The historical
 results are not overwritten; the oriented population is reported beside them.
 
+## Which fields the classifier reads
+
+The study design, condition and both group names drive the classification. The Group
+1 definition is read for a missing-definition flag and, with the description, for
+intervention evidence: a group label can name an intervention the term list cannot
+match - "Metaformin positive" misspells metformin, "Meditation group" is a practice
+no drug list holds - while the curated prose spells it out. The prose supplies the
+vocabulary and the group names decide whether it applies, because each intervention
+found in the prose must also be approximately present in a group name. Without that
+restriction, prose describing a cohort's history ("had history of taking
+anti-diabetic medication ... metformin" beside "Healthy controls") turns a
+disease-versus-healthy contrast into a drug trial. Cancer therapy is excluded from
+that vocabulary for the same reason: a case-control description routinely dates its
+samples against chemotherapy or radiotherapy, and including those words moved eight
+genuine healthy-control contrasts out of the population. Nothing else is read from
+the definition or the description, and the evidence string names which field supplied
+each match.
+
 ## Development and review
 
-The rules were written, reviewed against samples of every class, corrected, and
-then frozen before any trait result was computed on the oriented population. The
-reviews were done by a coding agent reading the group names, definitions, design
-and condition of each sampled experiment, not by the author; they check the rules
-against the export's own words, not against the source papers.
-
-**First review** (12 random experiments per class, seed 188, plus all 4 then
-classed as reversed). All 12 native disease-versus-healthy and all 12 `other`
-experiments were correct and about 11 of 12 disease-versus-disease. Every reversal
-was wrong: "abnormal pH" against "normal pH", "Adults" against "normal weight
-children", a calprotectin-positive against calprotectin-normal Parkinson's
-comparison, and "Asymptomatic" against "No Growth". Other errors: the condition
-"Non-alcoholic fatty liver disease" matched the alcohol-exposure rule; a time word
-shared by both groups made a stable-against-progressed comparison longitudinal;
-"HPV-/HIV-" against "HPV+/HIV-" read both groups as negative; `Control_Chinese`
-was missed at the underscore; and absence-of-condition names such as "Non-OSA" were
-not recognised. The rules were changed as described above.
-
-**Second review** (12 per class, seed 2026). All 13 disease-versus-healthy
-experiments sampled (including the one remaining reversal, polycystic ovary
-syndrome against "Healthy control") and all 12 `other` were correct. Errors were
-outside the analysis population or conservative: low-against-high LDL as
-disease-versus-disease, an HIV-positive group "without antiretroviral treatment" as
-treatment, age bands as time points, and a caesarean-section comparison as
-longitudinal. Those four rules were fixed and the classifier frozen.
-
-**Validation review of the frozen rules** (seed 9131, no changes made afterwards):
-
-| Class | Sampled | Agreed | Disagreements |
-| --- | --- | --- | --- |
-| disease_vs_healthy | 25 | 24 | mild/non-severe against severe preeclampsia, read as absence of the condition |
-| disease_vs_disease | 8 | 7 | normal against very poor postnatal growth, which is disease versus unaffected |
-| treatment_exposure | 8 | 7 | meconium against transitional stool within caesarean births, a time contrast |
-| longitudinal_timepoint | 8 | 5 | "Pre-DM" against type 2 diabetes, and "Pre - High risk" patients against rheumatoid arthritis and against healthy controls: "pre" named a disease stage, not a time |
-| other | 8 | 8 | - |
-| unresolved | 8 | 8 | none wrongly excluded from a class; two conservative misses ("neurotypical" against autistic, normal against cancer within H. pylori-positive) |
-
-Orientation was correct in all 24 correctly classed disease-versus-healthy
-experiments. The one disease-versus-healthy error is the known weakness of the
-absence rule, which can admit a within-disease severity comparison; a sensitivity
-population restricted to strong comparison evidence addresses it below. With 25
-sampled experiments, 24 agreements bound the population's error rate only loosely
-(exact 95% interval for the agreement share 0.80 to 1.00).
+The rules were written, reviewed against samples of every class, and corrected. The
+reviews were done by a coding agent reading the group names, definition, design and
+condition of each sampled experiment, not by the author; they check the rules against
+the export's own words, not against the source papers, and they require review by the
+author. The sample and the per-experiment verdicts are not yet committed, so the
+agreement rate they support is not auditable; that is addressed separately.
 
 ## Retained, reversed, excluded and unresolved
 
@@ -126,19 +155,28 @@ Within the 2,335 analysed experiments (959 studies):
 
 | Class | Orientation | Experiments | Studies |
 | --- | --- | --- | --- |
-| disease_vs_healthy | native | 1,051 | 589 |
+| disease_vs_healthy | native | 1,003 | 569 |
 | disease_vs_healthy | reversed | 1 | 1 |
-| disease_vs_disease | - | 225 | 154 |
-| treatment_exposure | - | 354 | 169 |
-| longitudinal_timepoint | - | 204 | 107 |
-| other | - | 269 | 102 |
-| unresolved | - | 231 | 145 |
+| disease_vs_disease | - | 260 | 173 |
+| treatment_exposure | - | 366 | 174 |
+| longitudinal_timepoint | - | 200 | 105 |
+| other | - | 275 | 105 |
+| unresolved | - | 230 | 136 |
 
-Studies appear in more than one class when their experiments differ. 1,052
-experiments from 589 studies are retained, 1 of them reversed; 1,052 are excluded
-as other classes and 231 are unresolved. Of the retained experiments 216 (108
-studies) rest on weak comparison evidence only; 836 experiments from 497 studies
+Studies appear in more than one class when their experiments differ. 1,004
+experiments from 569 studies are retained, 1 of them reversed; 1,101 are excluded
+as other classes and 230 are unresolved. Of the retained experiments 166 (83
+studies) rest on weak comparison evidence only; 838 experiments from 498 studies
 rest on strong evidence.
+
+Against the v1 rules the retained population falls by 48 experiments and 20 studies
+(1,052 from 589 to 1,004 from 569). 102 experiments change class in all. 66 leave
+disease-versus-healthy: 30 for disease-versus-disease, 22 for `unresolved` where a
+marker sign no longer reads as absence of the condition, 12 for `treatment_exposure`
+and 2 for `other` (the pregnancy contrasts). 18 enter it, 15 from `unresolved` and 3
+from disease-versus-disease. The remaining 18 move between the excluded classes.
+Every analysed experiment still carries exactly one class, and the class counts still
+sum to 2,335.
 
 ## The oriented subset against the historical corpus
 
@@ -151,21 +189,31 @@ share is of non-tied studies shifting toward the increased side, with an exact 9
 interval for that share only. In the oriented populations "increased" means higher
 in the disease group.
 
-| Comparison | Historical (959 studies) | Disease vs healthy (589) | Strong evidence only (497) |
+| Comparison | Historical (959 studies) | Disease vs healthy (569) | Strong evidence only (498) |
 | --- | --- | --- | --- |
-| facultatively aerobic | 0.582 [0.550, 0.614], q 4.1e-06 | 0.579 [0.537, 0.621], q 5.6e-04 | 0.566 [0.520, 0.611], q 0.0074 |
-| cellulose catabolic process | 0.432 [0.396, 0.467], q 3.1e-04 | 0.401 [0.357, 0.447], q 1.1e-04 | 0.382 [0.334, 0.431], q 1.3e-05 |
-| coccus shaped | 0.545 [0.512, 0.578], q 0.0067 | 0.572 [0.530, 0.614], q 0.0011 | 0.563 [0.517, 0.608], q 0.0083 |
-| sphere shaped | 0.553 [0.519, 0.587], q 0.0030 | 0.548 [0.504, 0.592], q 0.031 | 0.555 [0.507, 0.602], q 0.025 |
-| arsenate reduction | 0.562 [0.521, 0.601], q 0.0030 | 0.567 [0.515, 0.618], q 0.013 | 0.582 [0.526, 0.636], q 0.0074 |
-| moderately halophilic | 0.574 [0.540, 0.608], q 5.8e-05 | 0.581 [0.537, 0.624], q 5.6e-04 | 0.579 [0.531, 0.626], q 0.0037 |
-| facultatively aerobic / cellulose | 0.595 [0.549, 0.640], q 0.0011 | 0.620 [0.560, 0.677], q 0.0018 | 0.623 [0.559, 0.685], q 0.0041 |
-| cellulose / sphere shaped | 0.407 [0.360, 0.456], q 0.0026 | 0.395 [0.335, 0.458], q 0.015 | 0.394 [0.329, 0.461], q 0.024 |
-| cellulose / arsenate reduction | 0.365 [0.304, 0.429], q 0.0011 | 0.335 [0.262, 0.415], q 0.0018 | 0.331 [0.253, 0.417], q 0.0041 |
-| cellulose / moderately halophilic | 0.435 [0.386, 0.485], q 0.12 | 0.394 [0.332, 0.459], q 0.015 | 0.389 [0.323, 0.459], q 0.024 |
+| facultatively aerobic | 0.582 [0.550, 0.614], q 4.1e-06 | 0.584 [0.541, 0.626], q 2.1e-04 | 0.574 [0.528, 0.619], q 0.0030 |
+| cellulose catabolic process | 0.432 [0.396, 0.467], q 3.1e-04 | 0.392 [0.347, 0.438], q 2.5e-05 | 0.379 [0.332, 0.428], q 7.9e-06 |
+| coccus shaped | 0.545 [0.512, 0.578], q 0.0067 | 0.570 [0.527, 0.612], q 0.0019 | 0.566 [0.520, 0.611], q 0.0055 |
+| sphere shaped | 0.553 [0.519, 0.587], q 0.0030 | 0.546 [0.501, 0.591], q 0.044 | 0.555 [0.507, 0.602], q 0.025 |
+| arsenate reduction | 0.562 [0.521, 0.601], q 0.0030 | 0.582 [0.529, 0.634], q 0.0026 | 0.585 [0.529, 0.639], q 0.0039 |
+| moderately halophilic | 0.574 [0.540, 0.608], q 5.8e-05 | 0.589 [0.544, 0.633], q 2.1e-04 | 0.585 [0.537, 0.632], q 0.0013 |
+| facultatively aerobic / cellulose | 0.595 [0.549, 0.640], q 0.0011 | 0.633 [0.572, 0.691], q 8.2e-04 | 0.630 [0.566, 0.692], q 0.0035 |
+| cellulose / sphere shaped | 0.407 [0.360, 0.456], q 0.0026 | 0.393 [0.331, 0.457], q 0.015 | 0.395 [0.330, 0.463], q 0.029 |
+| cellulose / arsenate reduction | 0.365 [0.304, 0.429], q 0.0011 | 0.336 [0.261, 0.417], q 0.0015 | 0.336 [0.257, 0.421], q 0.0037 |
+| cellulose / moderately halophilic | 0.435 [0.386, 0.485], q 0.12 | 0.392 [0.329, 0.458], q 0.016 | 0.391 [0.324, 0.461], q 0.029 |
 
 The other eleven ratios have q >= 0.12 in every population; all 45 rows, with study
 counts, are in `disease_control_comparison.tsv`.
+
+Narrowing eligibility moved none of these. Every one of the six fraction directions
+and all four significant log-ratios keep their direction and their significance at
+q <= 0.05 in both oriented populations, and no further ratio becomes significant.
+The shares move by at most 0.015 in the oriented population, which is well inside
+the intervals. That the headline numbers barely move is not a reason the systematic
+error did not matter: the 66 experiments that left the population included
+intervention arms, exposure contrasts and within-disease marker comparisons, and the
+claim that the population is disease against healthy is now supportable where before
+it was not.
 
 Every direction of the historical analysis is preserved in the disease-versus-healthy
 subset and in its strong-evidence restriction, with wider intervals from the smaller
@@ -180,25 +228,53 @@ contrasts.
 
 ## Limits
 
-The classification reads curated group names, not the source papers, and is only
-as good as those names; the validation sample is small. Excluded classes are not
-wrong data - a severity or treatment contrast answers a different question - and
-their directions are not reversed or discarded, only kept out of this population.
-The oriented subset overlaps the historical corpus, so agreement between them is a
-robustness check, not independent replication. Nothing here measures disease
-activity, oxygen exposure or abundance in patients (#179), and none of the
-procedures has been calibrated (#182).
+The classification reads curated group names, the Group 1 definition and the
+description, not the source papers, and is only as good as those fields; the
+validation sample is small. Excluded classes are not wrong data - a severity or
+treatment contrast answers a different question - and their directions are not
+reversed or discarded, only kept out of this population. The oriented subset overlaps
+the historical corpus, so agreement between them is a robustness check, not
+independent replication. Nothing here measures disease activity, oxygen exposure or
+abundance in patients (#179), and none of the procedures has been calibrated (#182).
+
+Known remaining weaknesses, each measured rather than assumed:
+
+- **`unresolved` is conservative by design and by accident.** Six of ten sampled
+  `unresolved` experiments belong in some class. Two of them - "No Growth" against
+  "Culture Positive" in a urinary tract infection study, and "Normal leukocytes"
+  against "Hypoleukocytes" in a leukopenia study - belong in
+  disease-versus-healthy. They are not recovered here.
+- **"Normal (N-like group)" against "Case (OB-like group)" (25202708-1) stays
+  `unresolved`.** The reviewer asked for it. The only rule that admits "Normal"
+  followed by a parenthesis also admits "Normal (MN) group" against "Medium-dose
+  (MMD) group" and "Model high-dose (MHD) group", two dose arms in a mouse study, so
+  it would trade one recovered experiment for two new errors. It is left out until
+  the dose-arm case has a rule of its own.
+- **A timepoint beside a healthy comparison only exempts "baseline" and
+  "admission".** "Anorexia patients at T1" and "OCD T3" against healthy groups are
+  still `longitudinal_timepoint`, where the timepoint dates the disease sample only.
+- **The randomized-trial fallback can catch a within-trial disease contrast.**
+  "Cognitively Intact Group" against "Cognitively Impaired Group" in a trial becomes
+  `treatment_exposure` because "intact" is not a comparison word.
+- **Resolved disease is excluded under a class that describes it wrongly.** Healthy
+  controls against recovered COVID-19 patients is `longitudinal_timepoint` although
+  no time separates the two groups.
+- **A disease control is not told apart from a healthy one.** Pneumonia "controls"
+  who are COVID-negative read as a healthy comparison.
 
 ## Reproducing
 
 `just contrast-orientation` on the pinned BugSigDBExports v1.3.1 inputs (export
-timestamp 2026-04-24_00:41_UTC). The provenance record gives the code revision, the
-SHA-256 of the export, profile matrix, experiment table and classifier source, and
-the class counts. The fixtures in `tests/test_contrast_orientation.py` cover reversed
-groups, treatment and time-point contrasts, disease-versus-disease comparisons,
-missing definitions and names, the non-alcoholic fatty liver disease guard, test
-markers and shared timepoints.
+timestamp 2026-04-24_00:41_UTC, `full_dump.csv` SHA-256
+`af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788`). The provenance
+record gives the code revision, the SHA-256 of the export, profile matrix, experiment
+table and classifier source, and the class counts.
 
-The classifier, the reviews and this description were drafted with the assistance
-of a coding agent (Claude Code) and require review by the author before manuscript
-use.
+`tests/test_contrast_orientation.py` holds a regression fixture, with the curated
+strings copied verbatim, for every contrast that review
+[#291](https://github.com/CultureBotAI/microbial-trait-profiling/issues/291) found
+wrongly admitted to or wrongly kept out of the population, alongside the genuine
+comparisons the narrowed rules must not take away. Each fixture asserts the expected
+class and orientation rather than merely that a wrong answer was avoided.
+
+Every rule here was checked by breaking it on purpose and confirming a test failed.
