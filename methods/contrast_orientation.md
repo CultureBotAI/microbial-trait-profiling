@@ -341,6 +341,19 @@ strings copied verbatim, for every contrast that review
 [#291](https://github.com/CultureBotAI/microbial-trait-profiling/issues/291) found
 wrongly admitted to or wrongly kept out of the population, alongside the genuine
 comparisons the narrowed rules must not take away. Each fixture asserts the expected
-class and orientation rather than merely that a wrong answer was avoided.
+class and orientation rather than merely that a wrong answer was avoided. The rest of
+the suite covers the reversal rule, the strong-evidence population, both-groups
+comparisons, unverified reversals, the randomized-trial branch, baseline dating,
+variable conditions, age bands, the class counts, the comparison table, the review
+round trip and the command-line entry point.
 
-Every rule here was checked by breaking it on purpose and confirming a test failed.
+Every rule was checked by breaking it on purpose and confirming a test failed: 35
+such mutations, all caught. Four tests that passed on mutated code were strengthened
+(a tautological classifier-version assertion, a study count a fixture could not
+distinguish from an experiment count, a review sample whose ordering was not pinned,
+and a `validation_status` no test read back), and two pieces of production code that
+no test and no corpus experiment exercised were removed rather than left in.
+
+The classifier, the reviews and this description were drafted with the assistance
+of a coding agent (Claude Code) and require review by the author before manuscript
+use.

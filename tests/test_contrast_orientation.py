@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import itertools
+import json
 from dataclasses import replace
 from pathlib import Path
 
@@ -11,6 +13,7 @@ import pytest
 
 from bsdbng.contrast_orientation import (
     ARM_GROUP,
+    CLASSIFIER_VERSION,
     DISEASE_VS_DISEASE,
     DISEASE_VS_HEALTHY,
     INTERVENTION_EVIDENCE,
@@ -25,14 +28,17 @@ from bsdbng.contrast_orientation import (
     UNRESOLVED,
     Classification,
     ExperimentRecord,
+    class_counts,
     classify,
+    comparison_rows,
+    main,
     oriented_profiles,
     read_experiment_records,
     read_review,
     review_sample,
     write_manifest,
 )
-from bsdbng.trait_guilds import Profile
+from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
 
 BASE = ExperimentRecord(
     study_id="bsdb:1",
@@ -783,6 +789,75 @@ def test_a_verdict_reaches_the_manifest_and_an_unsampled_row_stays_unreviewed(
     ]
 
 
+def test_both_groups_reading_as_comparisons_is_unresolved_not_a_guess() -> None:
+    found = classify(
+        replace(
+            BASE,
+            group_0_name="Healthy controls",
+            group_1_name="Non-IBS volunteers",
+            condition="Irritable bowel syndrome",
+        )
+    )
+    assert (found.contrast_class, found.orientation) == (UNRESOLVED, NOT_APPLICABLE)
+    assert "both groups read as comparisons" in found.evidence
+
+
+def test_a_possible_reversal_without_disease_evidence_stays_unresolved() -> None:
+    """Group 1 looks like the comparison, but Group 0 shows no disease to reverse toward."""
+    found = classify(
+        replace(
+            BASE,
+            group_0_name="Group A",
+            group_1_name="Healthy controls",
+            condition="Colorectal cancer",
+        )
+    )
+    assert (found.contrast_class, found.orientation) == (UNRESOLVED, NOT_APPLICABLE)
+    assert "possible_reversal_unverified" in found.flags.split(",")
+
+
+def test_a_randomized_trial_without_a_comparison_group_name_is_treatment() -> None:
+    found = classify(
+        replace(
+            BASE,
+            study_design="randomized controlled trial",
+            group_0_name="Arm A",
+            group_1_name="Arm B",
+            condition="Colorectal cancer",
+        )
+    )
+    assert (found.contrast_class, found.orientation) == (TREATMENT, NOT_APPLICABLE)
+    assert "design_rct" in found.flags.split(",")
+    assert "randomized controlled trial" in found.evidence
+
+
+def test_a_randomized_trial_with_a_healthy_comparison_is_still_disease_versus_healthy() -> None:
+    found = classify(replace(BASE, study_design="randomized controlled trial"))
+    assert (found.contrast_class, found.orientation) == (DISEASE_VS_HEALTHY, NATIVE)
+    assert "design_rct" in found.flags.split(",")
+
+
+def test_baseline_beside_a_healthy_comparison_only_dates_the_disease_sample() -> None:
+    found = classify(
+        replace(BASE, group_0_name="Healthy controls", group_1_name="CRC patients at baseline")
+    )
+    assert (found.contrast_class, found.orientation) == (DISEASE_VS_HEALTHY, NATIVE)
+    assert "disease_sample_dated_at_baseline" in found.flags.split(",")
+
+
+def test_a_variable_condition_beside_a_comparison_group_is_other() -> None:
+    found = classify(
+        replace(
+            BASE,
+            group_0_name="Healthy controls",
+            group_1_name="Urban residents",
+            condition="Population",
+        )
+    )
+    assert (found.contrast_class, found.orientation) == (OTHER, NOT_APPLICABLE)
+    assert "the condition is a variable" in found.evidence
+
+
 def test_one_disease_value_makes_a_multi_valued_condition_more_than_a_variable() -> None:
     """ "Coinfection,Age" is not an age comparison, because coinfection is a disease."""
     assert _classify(
@@ -814,3 +889,198 @@ def test_an_age_band_is_flagged_so_the_reading_can_be_checked() -> None:
     )
     assert found.contrast_class == OTHER
     assert "age_band_not_timepoint" in found.flags.split(",")
+
+
+def test_the_strong_evidence_population_drops_weakly_evidenced_contrasts() -> None:
+    profiles = [_profile(e, d) for e in ("bsdb:1-1", "bsdb:1-2") for d in ("inc", "dec")]
+    classes = {
+        ("bsdb:1", "bsdb:1-1"): Classification(DISEASE_VS_HEALTHY, NATIVE, "", "a_flag"),
+        ("bsdb:1", "bsdb:1-2"): Classification(
+            DISEASE_VS_HEALTHY, NATIVE, "", "a_flag,weak_comparison_evidence"
+        ),
+    }
+    assert {p.experiment_id for p in oriented_profiles(profiles, classes)} == {
+        "bsdb:1-1",
+        "bsdb:1-2",
+    }
+    assert {
+        p.experiment_id for p in oriented_profiles(profiles, classes, strong_evidence_only=True)
+    } == {"bsdb:1-1"}
+
+
+def test_class_counts_count_experiments_and_distinct_studies_in_class_order() -> None:
+    classes = {
+        ("bsdb:1", "bsdb:1-1"): Classification(DISEASE_VS_HEALTHY, NATIVE, "", ""),
+        ("bsdb:1", "bsdb:1-2"): Classification(DISEASE_VS_HEALTHY, NATIVE, "", ""),
+        ("bsdb:2", "bsdb:2-1"): Classification(DISEASE_VS_HEALTHY, REVERSED, "", ""),
+        ("bsdb:3", "bsdb:3-1"): Classification(TREATMENT, NOT_APPLICABLE, "", ""),
+        ("bsdb:4", "bsdb:4-1"): Classification(UNRESOLVED, NOT_APPLICABLE, "", ""),
+    }
+    # bsdb:4-1 is classified but outside the analysed corpus, so it is not counted.
+    corpus = [key for key in classes if key[0] != "bsdb:4"]
+    assert class_counts(classes, corpus) == [
+        {
+            "contrast_class": DISEASE_VS_HEALTHY,
+            "orientation": NATIVE,
+            "experiments": 2,
+            "studies": 1,
+        },
+        {
+            "contrast_class": DISEASE_VS_HEALTHY,
+            "orientation": REVERSED,
+            "experiments": 1,
+            "studies": 1,
+        },
+        {
+            "contrast_class": TREATMENT,
+            "orientation": NOT_APPLICABLE,
+            "experiments": 1,
+            "studies": 1,
+        },
+    ]
+
+
+def test_comparison_rows_report_both_analyses_for_each_population() -> None:
+    # Two experiments in one study, so a study count cannot pass as an experiment count.
+    profiles = [
+        Profile("bsdb:1", experiment, d, "C", "Feces", dict.fromkeys(TABLE1_TRAITS, 3), 10)
+        for experiment in ("bsdb:1-1", "bsdb:1-2")
+        for d in ("inc", "dec")
+    ]
+    rows = comparison_rows([("one", profiles), ("two", profiles)])
+    assert {row["population"] for row in rows} == {"one", "two"}
+    assert {row["comparison"] for row in rows} == {"fraction", "log_ratio"}
+    for population in ("one", "two"):
+        mine = [row for row in rows if row["population"] == population]
+        assert sum(row["comparison"] == "fraction" for row in mine) == len(TABLE1_TRAITS)
+        assert {row["population_studies"] for row in mine} == {1}
+        assert {row["population_experiments"] for row in mine} == {2}
+    assert {row["family"] for row in rows} == {
+        "Benjamini-Hochberg over 6 fractions",
+        "Benjamini-Yekutieli over 15 ratios",
+    }
+
+
+def _write_corpus(tmp_path: Path) -> tuple[Path, Path, Path]:
+    """A two-experiment corpus: one disease-versus-healthy, one treatment contrast."""
+    dump = tmp_path / "full_dump.csv"
+    dump.write_text(
+        "# BugSigDB 2026-04-24_00:41_UTC, License: Creative Commons Attribution 4.0\n"
+        + HEADER
+        + "\n"
+        "bsdb:1/1/1,case-control,1,NA,Colorectal cancer,E,Feces,U,Homo sapiens,"
+        "Healthy controls,CRC patients,d,10,10,x\n"
+        "bsdb:2/1/1,case-control,2,NA,Colorectal cancer,E,Feces,U,Homo sapiens,"
+        "Placebo,Probiotic,d,10,10,x\n",
+        encoding="utf-8",
+    )
+    terms = [term for ids in TABLE1_TRAITS.values() for term in ids]
+    header = ["study_id", "experiment_id", "inc_dec", *terms]
+    rows = [
+        "\t".join([study, experiment, direction, *[str(count)] * len(terms)])
+        for study, experiment, increased in (("bsdb:1", "bsdb:1-1", 4), ("bsdb:2", "bsdb:2-1", 5))
+        for direction, count in (("inc", increased), ("dec", increased + 1))
+    ]
+    profiles = tmp_path / "profiles.tsv"
+    profiles.write_text("\n".join(["\t".join(header), *rows]) + "\n", encoding="utf-8")
+    experiments = tmp_path / "experiments.tsv"
+    experiments.write_text(
+        "\n".join(
+            [
+                "\t".join(["study_id", "experiment_id", "condition", "body_site", "host_species"]),
+                "bsdb:1\tbsdb:1-1\tColorectal cancer\tFeces\tHomo sapiens",
+                "bsdb:2\tbsdb:2-1\tColorectal cancer\tFeces\tHomo sapiens",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return dump, profiles, experiments
+
+
+def test_main_writes_every_artefact_and_accounts_for_every_experiment(tmp_path: Path) -> None:
+    dump, profiles, experiments = _write_corpus(tmp_path)
+    output = tmp_path / "out"
+    assert (
+        main(
+            [
+                "--full-dump-input",
+                str(dump),
+                "--profile-input",
+                str(profiles),
+                "--experiments-input",
+                str(experiments),
+                "--output-dir",
+                str(output),
+                "--code-commit",
+                "abc123",
+            ]
+        )
+        == 0
+    )
+    manifest = list(
+        csv.DictReader((output / "contrast_manifest.tsv").open(encoding="utf-8"), delimiter="\t")
+    )
+    assert [row["experiment_id"] for row in manifest] == ["bsdb:1-1", "bsdb:2-1"]
+    assert [row["contrast_class"] for row in manifest] == [DISEASE_VS_HEALTHY, TREATMENT]
+    assert {row["in_analysed_corpus"] for row in manifest} == {"true"}
+    # Spelled out, so that bumping the version is a deliberate edit to this test too:
+    # the manifest and provenance are what downstream work keys off.
+    assert CLASSIFIER_VERSION == "contrast-orientation-v2"
+    assert {row["classifier_version"] for row in manifest} == {CLASSIFIER_VERSION}
+    assert {row["bugsigdb_vintage"] for row in manifest} == {"2026-04-24_00:41_UTC"}
+
+    counts = list(
+        csv.DictReader(
+            (output / "contrast_class_counts.tsv").open(encoding="utf-8"), delimiter="\t"
+        )
+    )
+    # Every analysed experiment appears in exactly one class, and none is lost.
+    assert sum(int(row["experiments"]) for row in counts) == len(manifest)
+
+    provenance = json.loads(
+        (output / "contrast_orientation_provenance.json").read_text(encoding="utf-8")
+    )
+    assert provenance["code_commit"] == "abc123"
+    assert provenance["classifier_version"] == CLASSIFIER_VERSION
+    assert provenance["analysed_experiments"] == len(manifest)
+    assert sum(row["experiments"] for row in provenance["class_counts"]) == len(manifest)
+    assert provenance["full_dump_sha256"] == hashlib.sha256(dump.read_bytes()).hexdigest()
+
+    populations = {
+        row["population"]
+        for row in csv.DictReader(
+            (output / "disease_control_comparison.tsv").open(encoding="utf-8"), delimiter="\t"
+        )
+    }
+    assert populations == {
+        "historical_human_paired",
+        "disease_vs_healthy_oriented",
+        "disease_vs_healthy_strong_evidence",
+    }
+
+
+def test_main_refuses_a_corpus_the_export_does_not_describe(tmp_path: Path) -> None:
+    dump, profiles, experiments = _write_corpus(tmp_path)
+    dump.write_text(
+        "\n".join(
+            line
+            for line in dump.read_text(encoding="utf-8").splitlines()
+            if not line.startswith("bsdb:2/")
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="no export record"):
+        main(
+            [
+                "--full-dump-input",
+                str(dump),
+                "--profile-input",
+                str(profiles),
+                "--experiments-input",
+                str(experiments),
+                "--output-dir",
+                str(tmp_path / "out"),
+            ]
+        )
