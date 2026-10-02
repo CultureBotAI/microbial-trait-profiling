@@ -5,8 +5,10 @@ Produced by `src/bsdbng/log_ratio_sensitivity.py`, driven by
 `data/derived/table1_composition_sensitivity/`: every scenario row
 (`sensitivity_results.tsv`), eligibility by ratio and by exact body site and
 condition (`eligibility_by_ratio.tsv`, `eligibility_by_stratum.tsv`),
-leave-one-study-out influence (`leave_one_study_out.tsv`), a status record for the
-integrated evidence table (`sensitivity_status.json`) and a generated table of
+leave-one-study-out influence (`leave_one_study_out.tsv`), the full-population
+against restricted-population comparison of every matched fraction
+(`population_sensitivity.tsv`), a status record for the integrated evidence table
+(`sensitivity_status.json`) and a generated table of
 every row (`sensitivity_report.md`). It implements
 [#183](https://github.com/CultureBotAI/microbial-trait-profiling/issues/183) and the
 population rules of the [shared comparison basis](three_arm_statistics.md#shared-comparison-basis).
@@ -68,14 +70,45 @@ annotation-coverage sidecar of #184 is not yet available and is recorded as pend
 94 pairs, which removes 20 studies entirely, leaves every one of the six fraction directions in place,
 each with q <= 0.008.
 
-**Most fraction signals depend on the population (S1 against S3).** Restricted to
-a ratio's eligible pairs, facultatively aerobic keeps its increased-side share only
-on the facultatively aerobic/coccus shaped pairs (0.567, q = 0.010) and loses it on
-the other four (shares 0.531 to 0.554, q >= 0.15). Coccus shaped, sphere shaped,
-arsenate reduction and moderately halophilic lose theirs on every restricted
-population (q >= 0.098). Cellulose catabolic process is the exception: its
-decreased-side share holds on all five of its ratio populations (0.354 to 0.403,
-q <= 0.003).
+**Restriction to a ratio's pairs costs precision and detection, not the estimate
+(S1 against S3).** S1 and S3 differ in three ways at once, so a comparison of q
+status alone cannot attribute the difference: S1 tests 6 fractions under BH on 939
+eligible studies, while S3 tests 30 matched fractions under BY on 243 to 676
+eligible studies (26% to 72% of the baseline). Comparing the shares and their
+intervals instead - the row-by-row table is `population_sensitivity.tsv` - the
+estimates barely move. The share shifts by a median of -0.037 and by at most 0.107,
+and 29 of the 30 restricted 95% intervals overlap the baseline interval for the same
+trait. One row's interval has moved clear of its baseline: sphere shaped on the
+sphere shaped/arsenate reduction pairs, 0.447 (0.384 to 0.510) on 253 studies
+against 0.554 (0.520 to 0.588) on 939. Seven rows sit on the other side of 0.5 from
+their baseline, but every one of the seven has 0.5 inside its restricted interval,
+so none of them establishes a reversal.
+
+What the restriction does remove is detection, and the two causes separate:
+
+- **Five rows lose only the correction.** They keep a raw p <= 0.05 and fail
+  q <= 0.05 once the family is 30 rows under BY. Moderately halophilic on the
+  arsenate reduction/moderately halophilic pairs is the clearest: share 0.588
+  (0.525 to 0.649) on 255 studies, *above* its own baseline of 0.572 (0.538 to
+  0.605) on 939, with p = 0.0058 and BY q = 0.0985. Facultatively aerobic on the
+  facultatively aerobic/moderately halophilic pairs is the same case: 0.554 (0.513
+  to 0.595) on 582 studies, p = 0.0101, q = 0.150.
+- **Nineteen rows lose p <= 0.05 before any correction.** Eighteen of the nineteen
+  still have an interval overlapping their baseline, so what they have lost is
+  precision: the eligible n falls to between a quarter and three quarters of 939
+  and the interval widens across 0.5.
+
+So the population is not what moves these six directions. The earlier phrasing -
+that most fraction signals depend on the population - confused a loss of power and a
+larger correction family with a different effect in a different population, and is
+withdrawn.
+
+One asymmetry survives this accounting. Cellulose catabolic process is the only
+trait whose restricted share moves *further* from 0.5 on every population
+(-0.027 to -0.076), and the only one that keeps q <= 0.05 on all five of its
+populations (0.354 to 0.403). The other five traits together retain detection on 1
+of their 25 rows (facultatively aerobic on the facultatively aerobic/coccus shaped
+pairs, 0.567, q = 0.0104).
 
 **The three significant ratios are carried by cellulose (S3 against S2).** The
 ratios with BY q <= 0.05 are facultatively aerobic/cellulose (share up 0.595,
@@ -115,10 +148,15 @@ with positive counts, cellulose-associated annotations are relatively lower on t
 increased side than several other Table 1 annotations, and that relative shift
 survives restriction to matched populations. It is conditional on positive
 annotation counts, is measured on over-represented, richly annotated signatures,
-and does not identify an absolute change in any trait. Most of the six original
-fraction directions do not survive restriction to ratio-eligible populations; that
-is a population effect, not evidence that those directions are false in the full
-corpus. Agreement between scenarios is robustness to these analytical choices on
+and does not identify an absolute change in any trait. Five of the six original
+fraction directions stop being detected once restricted to a ratio-eligible
+population, but their estimates remain compatible with the full-population
+estimates (29 of 30 overlapping intervals, median share shift -0.037), and the
+eligible n falls to between 243 and 676 while the family grows from 6 under BH to
+30 under BY. These scenarios therefore neither confirm nor refute those five
+directions on the restricted populations; they establish only that the restricted
+data are too few, under a correction family five times larger, to detect a shift of
+that size. Agreement between scenarios is robustness to these analytical choices on
 the same annotation data, not independent replication. The six traits were
 selected on overlapping data, the signature directions have not been verified as
 disease versus control (#188), none of these procedures has been calibrated (#182),

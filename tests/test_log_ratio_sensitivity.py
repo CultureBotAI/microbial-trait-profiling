@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -13,11 +14,16 @@ from bsdbng.log_ratio_sensitivity import (
     PROTOCOL_PATH,
     TESTED,
     Row,
+    _detection_change,
+    _estimate_agreement,
+    _intervals_overlap,
     complete_pairs,
     correct,
     eligibility_tables,
     leave_one_study_out,
     log_ratio_contrast,
+    matched_reference,
+    population_comparison,
     read_reported_taxa,
     run_scenarios,
     summarize,
@@ -203,6 +209,103 @@ def test_leave_one_study_out_ranges_bracket_the_full_share() -> None:
         assert item.min_share_up <= item.full_share_up + 1e-12
         assert item.max_share_up >= item.full_share_up - 1e-12
         assert item.removals_changing_q_status >= 0
+
+
+def test_population_comparison_pairs_each_matched_row_with_its_baseline() -> None:
+    """Every S3 row is compared against the S1 row for the same trait, not another."""
+    pairs = complete_pairs(_corpus(studies=30), TRAITS)
+    rows = run_scenarios(pairs, TRAITS, min_studies=1)
+    baseline = {r.numerator: r for r in _rows("S1_fraction_baseline", rows)}
+    matched = {(r.numerator, r.reference): r for r in _rows("S3_ratio_matched_fractions", rows)}
+    comparisons = population_comparison(rows, TRAITS)
+
+    assert len(comparisons) == len(matched) == 30
+    for item in comparisons:
+        base = baseline[item.trait]
+        rest = matched[(item.trait, matched_reference(item.ratio_numerator, item.ratio_reference))]
+        assert item.baseline_studies_eligible == base.studies_eligible
+        assert item.restricted_studies_eligible == rest.studies_eligible
+        assert item.baseline_share_up == base.share_up
+        assert item.restricted_share_up == rest.share_up
+        assert item.baseline_family == base.family
+        assert item.restricted_family == rest.family
+        assert item.baseline_family_size != item.restricted_family_size
+        if base.share_up is not None and rest.share_up is not None:
+            assert item.share_shift == pytest.approx(rest.share_up - base.share_up, abs=1e-12)
+
+
+def test_detection_change_separates_the_correction_from_the_raw_test() -> None:
+    """A row with a raw p under the rule but q over it is attributed to the correction."""
+    base = Row(
+        scenario="S1",
+        comparison="fraction",
+        numerator="t",
+        reference="",
+        population="all",
+        effect_units="u",
+        studies_total=100,
+        studies_eligible=100,
+        studies_partially_observed=0,
+        pairs_total=100,
+        pairs_eligible=100,
+        studies_up=60,
+        studies_down=40,
+        studies_tied=0,
+        mean_effect=0.1,
+        median_effect=0.1,
+        share_up=0.6,
+        ci_low=0.5,
+        ci_high=0.7,
+        p_value=0.001,
+        status=TESTED,
+        q_value=0.004,
+    )
+    lost_at_correction = replace(base, scenario="S3", p_value=0.02, q_value=0.4)
+    lost_before = replace(base, scenario="S3", p_value=0.3, q_value=0.9)
+    kept = replace(base, scenario="S3", p_value=0.001, q_value=0.01)
+
+    assert _detection_change(base, lost_at_correction) == "lost at correction"
+    assert _detection_change(base, lost_before) == "lost before correction"
+    assert _detection_change(base, kept) == "retained"
+    assert _detection_change(lost_before, kept) == "gained"
+    assert _detection_change(lost_before, lost_before) == "absent in both"
+
+
+def test_estimate_agreement_reports_a_moved_interval_even_when_the_side_flips() -> None:
+    """A row whose interval has moved is not recorded only as a change of side."""
+    low = Row(
+        scenario="S1",
+        comparison="fraction",
+        numerator="t",
+        reference="",
+        population="all",
+        effect_units="u",
+        studies_total=10,
+        studies_eligible=10,
+        studies_partially_observed=0,
+        pairs_total=10,
+        pairs_eligible=10,
+        studies_up=4,
+        studies_down=6,
+        studies_tied=0,
+        mean_effect=-0.1,
+        median_effect=-0.1,
+        share_up=0.40,
+        ci_low=0.30,
+        ci_high=0.48,
+        p_value=0.2,
+        status=TESTED,
+    )
+    high_overlapping = replace(low, share_up=0.55, ci_low=0.45, ci_high=0.65)
+    high_disjoint = replace(low, share_up=0.80, ci_low=0.70, ci_high=0.90)
+    same_side_disjoint = replace(low, share_up=0.20, ci_low=0.10, ci_high=0.25)
+
+    assert _estimate_agreement(low, high_overlapping, True) == "side reversed, intervals overlap"
+    assert _estimate_agreement(low, high_disjoint, False) == "shifted and side reversed"
+    assert _estimate_agreement(low, same_side_disjoint, False) == "shifted"
+    assert _estimate_agreement(low, replace(low), True) == "consistent"
+    assert _intervals_overlap(low, high_overlapping) is True
+    assert _intervals_overlap(low, high_disjoint) is False
 
 
 def test_eligibility_partitions_every_study(tmp_path: Path) -> None:

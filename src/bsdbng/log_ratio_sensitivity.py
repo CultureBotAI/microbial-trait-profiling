@@ -58,6 +58,15 @@ ALL_TIED = "all_tied"
 INSUFFICIENT = "insufficient_support"
 NO_PAIRS = "no_eligible_pairs"
 
+S0 = "S0_historical_fraction"
+S1 = "S1_fraction_baseline"
+S2 = "S2_ratio_complete_case"
+S3 = "S3_ratio_matched_fractions"
+S4 = "S4_six_trait_common_support"
+S5 = "S5_triple_common_support"
+S6 = "S6_feces_only"
+S7 = "S7_excluding_feces"
+
 FECES = "Feces"
 Contrast = Callable[["Pair"], float | None]
 
@@ -239,6 +248,11 @@ def summarize(
     )
 
 
+def matched_reference(numerator: str, reference: str) -> str:
+    """The label an S3 row carries, naming the ratio whose pairs define its population."""
+    return f"on {numerator}/{reference} pairs"
+
+
 def correct(rows: Sequence[Row], family: str, method: str) -> list[Row]:
     """Adjust one declared family. Untested rows hold their place at p = 1."""
     if not rows:
@@ -313,7 +327,7 @@ def run_scenarios(
     rows: list[Row] = []
     rows += correct(
         _fractions(
-            "S0_historical_fraction",
+            S0,
             pairs,
             traits,
             "all complete pairs; zero-total profiles score fraction 0",
@@ -325,7 +339,7 @@ def run_scenarios(
     )
     rows += correct(
         _fractions(
-            "S1_fraction_baseline",
+            S1,
             pairs,
             traits,
             "complete pairs with positive totals both sides",
@@ -336,7 +350,7 @@ def run_scenarios(
     )
     rows += correct(
         _ratios(
-            "S2_ratio_complete_case",
+            S2,
             pairs,
             ratio_pairs,
             "pairs with both traits positive",
@@ -355,10 +369,10 @@ def run_scenarios(
         for trait in (numerator, reference):
             matched.append(
                 summarize(
-                    scenario="S3_ratio_matched_fractions",
+                    scenario=S3,
                     comparison="fraction",
                     numerator=trait,
-                    reference=f"on {numerator}/{reference} pairs",
+                    reference=matched_reference(numerator, reference),
                     population=f"pairs eligible for {numerator}/{reference}",
                     pairs=pairs,
                     contrast=restricted(
@@ -372,15 +386,13 @@ def run_scenarios(
     common = [pair for pair in pairs if pair.positive(traits)]
     population = "pairs with all six traits positive on both sides"
     rows += correct(
-        _fractions(
-            "S4_six_trait_common_support", common, traits, population, min_studies=min_studies
-        ),
+        _fractions(S4, common, traits, population, min_studies=min_studies),
         "S4:six_fractions",
         "bh",
     )
     rows += correct(
         _ratios(
-            "S4_six_trait_common_support",
+            S4,
             common,
             ratio_pairs,
             population,
@@ -394,7 +406,7 @@ def run_scenarios(
     for triple in combinations(traits, 3):
         shared = [pair for pair in pairs if pair.positive(triple)]
         triples += _ratios(
-            "S5_triple_common_support",
+            S5,
             shared,
             list(combinations(triple, 2)),
             f"pairs with {', '.join(triple)} positive on both sides",
@@ -406,7 +418,7 @@ def run_scenarios(
     others = [pair for pair in pairs if pair.body_site != FECES]
     rows += correct(
         _ratios(
-            "S6_feces_only",
+            S6,
             feces,
             ratio_pairs,
             "S2 pairs in exact body site Feces",
@@ -417,7 +429,7 @@ def run_scenarios(
     )
     rows += correct(
         _ratios(
-            "S7_excluding_feces",
+            S7,
             others,
             ratio_pairs,
             "S2 pairs outside exact body site Feces",
@@ -427,6 +439,142 @@ def run_scenarios(
         "by",
     )
     return rows
+
+
+@dataclass(frozen=True)
+class PopulationComparison:
+    """One trait's fraction result at S1 against the same result on one ratio's pairs.
+
+    S1 and S3 differ in three ways at once: the eligible studies, the family size and
+    the correction method. This row keeps all three visible, compares the share and
+    its interval rather than the q status, and splits a changed estimate from a
+    detection lost to the larger family.
+    """
+
+    trait: str
+    ratio_numerator: str
+    ratio_reference: str
+    baseline_scenario: str
+    baseline_family: str
+    baseline_family_size: int
+    baseline_correction: str
+    baseline_studies_eligible: int
+    baseline_share_up: float | None
+    baseline_ci_low: float | None
+    baseline_ci_high: float | None
+    baseline_p_value: float | None
+    baseline_q_value: float | None
+    restricted_scenario: str
+    restricted_family: str
+    restricted_family_size: int
+    restricted_correction: str
+    restricted_studies_eligible: int
+    restricted_share_up: float | None
+    restricted_ci_low: float | None
+    restricted_ci_high: float | None
+    restricted_p_value: float | None
+    restricted_q_value: float | None
+    studies_retained: float | None
+    share_shift: float | None
+    restricted_share_in_baseline_ci: bool | None
+    intervals_overlap: bool | None
+    estimate_agreement: str
+    detection_change: str
+
+
+def _intervals_overlap(baseline: Row, restricted: Row) -> bool | None:
+    low_b, high_b = baseline.ci_low, baseline.ci_high
+    low_r, high_r = restricted.ci_low, restricted.ci_high
+    if low_b is None or high_b is None or low_r is None or high_r is None:
+        return None
+    return low_b <= high_r and low_r <= high_b
+
+
+def _estimate_agreement(baseline: Row, restricted: Row, overlap: bool | None) -> str:
+    """Whether the restricted share is compatible with the baseline share.
+
+    Interval overlap is reported first, so a row whose interval has genuinely moved is
+    never recorded only as a change of side.
+    """
+    if baseline.share_up is None or restricted.share_up is None or overlap is None:
+        return "not comparable"
+    reversed_side = (baseline.share_up - 0.5) * (restricted.share_up - 0.5) < 0
+    if overlap:
+        return "side reversed, intervals overlap" if reversed_side else "consistent"
+    return "shifted and side reversed" if reversed_side else "shifted"
+
+
+def _detection_change(baseline: Row, restricted: Row) -> str:
+    """Split a lost detection into one lost at the correction and one lost before it."""
+    detected = baseline.q_value is not None and baseline.q_value <= REPORT_Q
+    restricted_detected = restricted.q_value is not None and restricted.q_value <= REPORT_Q
+    restricted_raw = restricted.p_value is not None and restricted.p_value <= REPORT_Q
+    if detected and restricted_detected:
+        return "retained"
+    if detected and restricted_raw:
+        return "lost at correction"
+    if detected:
+        return "lost before correction"
+    return "gained" if restricted_detected else "absent in both"
+
+
+def population_comparison(rows: Sequence[Row], traits: Sequence[str]) -> list[PopulationComparison]:
+    """Pair every S3 matched-fraction row with its S1 full-population counterpart."""
+    baseline = {row.numerator: row for row in rows if row.scenario == S1}
+    restricted = {(row.numerator, row.reference): row for row in rows if row.scenario == S3}
+    comparisons: list[PopulationComparison] = []
+    for numerator, reference in combinations(traits, 2):
+        label = matched_reference(numerator, reference)
+        for trait in (numerator, reference):
+            base, rest = baseline[trait], restricted[(trait, label)]
+            overlap = _intervals_overlap(base, rest)
+            in_ci = (
+                None
+                if rest.share_up is None or base.ci_low is None or base.ci_high is None
+                else base.ci_low <= rest.share_up <= base.ci_high
+            )
+            comparisons.append(
+                PopulationComparison(
+                    trait=trait,
+                    ratio_numerator=numerator,
+                    ratio_reference=reference,
+                    baseline_scenario=base.scenario,
+                    baseline_family=base.family,
+                    baseline_family_size=base.family_size,
+                    baseline_correction=base.correction,
+                    baseline_studies_eligible=base.studies_eligible,
+                    baseline_share_up=base.share_up,
+                    baseline_ci_low=base.ci_low,
+                    baseline_ci_high=base.ci_high,
+                    baseline_p_value=base.p_value,
+                    baseline_q_value=base.q_value,
+                    restricted_scenario=rest.scenario,
+                    restricted_family=rest.family,
+                    restricted_family_size=rest.family_size,
+                    restricted_correction=rest.correction,
+                    restricted_studies_eligible=rest.studies_eligible,
+                    restricted_share_up=rest.share_up,
+                    restricted_ci_low=rest.ci_low,
+                    restricted_ci_high=rest.ci_high,
+                    restricted_p_value=rest.p_value,
+                    restricted_q_value=rest.q_value,
+                    studies_retained=(
+                        rest.studies_eligible / base.studies_eligible
+                        if base.studies_eligible
+                        else None
+                    ),
+                    share_shift=(
+                        None
+                        if base.share_up is None or rest.share_up is None
+                        else rest.share_up - base.share_up
+                    ),
+                    restricted_share_in_baseline_ci=in_ci,
+                    intervals_overlap=overlap,
+                    estimate_agreement=_estimate_agreement(base, rest, overlap),
+                    detection_change=_detection_change(base, rest),
+                )
+            )
+    return comparisons
 
 
 @dataclass(frozen=True)
@@ -639,6 +787,8 @@ def write_outputs(
     strata: Sequence[dict[str, object]],
     output_dir: Path,
     provenance: dict[str, object],
+    *,
+    population: Sequence[PopulationComparison],
 ) -> list[Path]:
     """Write every scenario row, the influence and eligibility tables, status and a report."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -647,6 +797,9 @@ def write_outputs(
         _write_rows(output_dir / "leave_one_study_out.tsv", [asdict(item) for item in influence]),
         _write_rows(output_dir / "eligibility_by_ratio.tsv", list(overall)),
         _write_rows(output_dir / "eligibility_by_stratum.tsv", list(strata)),
+        _write_rows(
+            output_dir / "population_sensitivity.tsv", [asdict(item) for item in population]
+        ),
     ]
     by_scenario: defaultdict[str, Counter[str]] = defaultdict(Counter)
     for row in rows:
@@ -660,6 +813,12 @@ def write_outputs(
         "protocol_sha256": _sha256(PROTOCOL_PATH),
         "row_fields": [field.name for field in fields(Row)],
         "scenario_status": {name: dict(counts) for name, counts in sorted(by_scenario.items())},
+        "population_comparison_summary": dict(
+            Counter(item.detection_change for item in population)
+        ),
+        "population_estimate_agreement": dict(
+            Counter(item.estimate_agreement for item in population)
+        ),
         "calibration_status": "not assessed (#182)",
         "orientation_status": "not verified as disease versus control (#188)",
         "coverage_status": "profile totals and reported taxa only; #184 sidecar pending",
@@ -714,6 +873,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     pairs = complete_pairs(profiles, traits)
     rows = run_scenarios(pairs, traits)
     influence = leave_one_study_out(pairs, traits)
+    population = population_comparison(rows, traits)
     overall, strata = eligibility_tables(pairs, traits, read_reported_taxa(args.taxa_input))
     provenance: dict[str, object] = {
         "bugsigdb_vintage": vintage,
@@ -726,7 +886,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         "complete_pairs": len(pairs),
         "studies": len({pair.study_id for pair in pairs}),
     }
-    for path in write_outputs(rows, influence, overall, strata, args.output_dir, provenance):
+    for path in write_outputs(
+        rows, influence, overall, strata, args.output_dir, provenance, population=population
+    ):
         print(path)
     return 0
 
