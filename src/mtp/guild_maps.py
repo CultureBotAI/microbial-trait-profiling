@@ -24,6 +24,7 @@ from scipy.cluster.hierarchy import fcluster, leaves_list, linkage
 from scipy.spatial.distance import pdist
 from scipy.stats import binomtest, spearmanr
 
+from mtp.corpus_identity import corpus_identity, summary_lines, write_identity
 from mtp.paths import DERIVED_DATA_DIR
 from mtp.trait_guilds import (
     DEFAULT_EXPERIMENTS_PATH,
@@ -1388,6 +1389,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Keep non-human host species (issue #129 excludes them by default).",
     )
+    parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     return parser
 
 
@@ -1401,6 +1403,8 @@ def main() -> int:
     )
     vintage = read_bugsigdb_vintage(args.full_dump_input)
     write_stats_report(stats, vintage)
+    identity = corpus_identity(args.profile_input, bugsigdb_vintage=vintage)
+    print("\n".join(summary_lines(identity)))
 
     matrix = build_matrix(
         profiles,
@@ -1443,6 +1447,7 @@ def main() -> int:
             f"rank correlations exclude {correlation.excluded_no_annotation} studies "
             "carrying no guild annotation on either side"
         )
+    written.append(write_identity(identity, args.output_dir, code_commit=args.code_commit))
     for path in written:
         print(path)
     return 0

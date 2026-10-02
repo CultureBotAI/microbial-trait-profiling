@@ -32,10 +32,20 @@ on the per-experiment host_species field (the v1.3.1 wide matrix is already
 human-only upstream, so that filter drops 0 rows on this run), experiments were
 restricted to those carrying both an increased and a decreased signature, and
 growth-medium columns carrying a mediadive.medium marker were removed from the
-trait space before any total was computed. Of 5,829 profile rows read, 1,159
-experiments were dropped as unpaired; 2,290 of the trait columns were MediaDive,
-leaving 317 traits, 2,335 experiments, 4,670 profiles, and 959 studies — the
-same corpus as the composition arm's 2,335 pairs.
+trait space before any total was computed. Of 7,329 profile rows read, 1,500 were
+dropped as non-human and 1,159 experiments as unpaired; 2,333 of the trait columns
+were MediaDive, leaving 317 traits, 2,335 experiments, 4,670 profiles, and 959
+studies — the same corpus as the composition arm's 2,335 pairs.
+
+The matrix these counts were measured on is
+`data/derived/study_trait_profiles_wide.tsv`, sha256
+`6e70724ee807cf24e9c1f371a51421fa5b09d6283fa7f3abcd6620e5492c6a73`: 2,653
+header columns (3 identifier, 2,333 MediaDive, 317 retained) over 7,329 profile
+rows, joined from BugSigDB `2026-04-24_00:41_UTC` and a KG-Microbe build whose
+nodes are md5 `dd76b4656f9341db25a7c4afa96cd58e` and which records no release
+tag. Naming the dump does not identify the matrix, so the run writes this
+record to `corpus_identity.json` beside its outputs (#222).
+
 
 ## Resolving the six traits to columns
 
