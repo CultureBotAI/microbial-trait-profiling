@@ -30,6 +30,11 @@ experiment is in the analysed corpus, the classifier version
 definition, so every row carries the flag `no_group_0_definition_in_export`; a
 Group 0 reading rests on its name alone.
 
+Whitespace inside the curated free-text fields is collapsed before writing. 187 of
+the 4,457 descriptions and definitions contain a line break; quoting them keeps the
+file valid CSV but puts one experiment on several physical lines, which `grep`,
+`cut` and `head` then read wrongly.
+
 ## Classes and the orientation rule
 
 Classification is lexical and ordered, and ambiguity is resolved toward exclusion

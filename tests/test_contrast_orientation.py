@@ -22,6 +22,7 @@ from bsdbng.contrast_orientation import (
     classify,
     oriented_profiles,
     read_experiment_records,
+    write_manifest,
 )
 from bsdbng.trait_guilds import Profile
 
@@ -221,3 +222,27 @@ def test_export_rows_collapse_to_experiments_and_conflicts_raise(tmp_path: Path)
     )
     with pytest.raises(ValueError, match="conflicting"):
         read_experiment_records(bad)
+
+
+def test_a_curated_line_break_does_not_split_a_manifest_row(tmp_path: Path) -> None:
+    """187 of 4,457 curated descriptions hold a line break.
+
+    The csv module quotes them, so the file stays valid CSV, but every row after the
+    first such description lands on its own physical line and grep, cut and head all
+    read the wrong fields.
+    """
+    dump = tmp_path / "dump.csv"
+    dump.write_text(
+        HEADER + "\n"
+        "bsdb:7/2/1,case-control,1,NA,Asthma,E,Feces,U,Homo sapiens,Controls,Asthma,"
+        '"a definition\nover two lines",1,1,"a description\nover two lines"\n',
+        encoding="utf-8",
+    )
+    records = read_experiment_records(dump)
+    record = records[("bsdb:7", "bsdb:7-2")]
+    assert record.description == "a description over two lines"
+    assert record.group_1_definition == "a definition over two lines"
+    manifest = write_manifest(
+        tmp_path / "manifest.tsv", records, {k: classify(v) for k, v in records.items()}, [], None
+    )
+    assert len(manifest.read_text(encoding="utf-8").splitlines()) == 2

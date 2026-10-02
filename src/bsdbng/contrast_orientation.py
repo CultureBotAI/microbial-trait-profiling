@@ -257,7 +257,10 @@ class Classification:
 
 
 def _clean(value: str) -> str:
-    value = value.strip()
+    # Curated descriptions and definitions contain line breaks, which would split a
+    # manifest row across physical lines: valid CSV, but grep, cut and head all read it
+    # wrongly. Whitespace is collapsed so every cell holds one line.
+    value = " ".join(value.split())
     return "" if value.upper() == "NA" else value
 
 
