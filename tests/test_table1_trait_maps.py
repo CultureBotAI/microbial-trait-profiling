@@ -1,5 +1,6 @@
 """Table 1 trait selection, the paired directional shift, and its FDR control."""
 
+from math import isnan
 from pathlib import Path
 
 import pytest
@@ -412,3 +413,80 @@ def test_no_note_when_every_requested_condition_is_drawn() -> None:
         )
         is None
     )
+
+
+def _trait_profile(study: str, direction: str, counts: dict[str, int], total: int = 100) -> Profile:
+    """One profile on a fixed denominator, so a trait contrast can be held constant."""
+    return Profile(
+        study_id=study,
+        experiment_id=f"{study}-1",
+        inc_dec=direction,
+        condition="X",
+        body_site="Feces",
+        guild_counts={**dict.fromkeys(TRAIT_ORDER, 0), **counts},
+        total=total,
+    )
+
+
+# Per study: (facultatively_aerobic, cellulose, coccus) increased then decreased
+# counts on a total of 100. The facultatively aerobic contrast is +0.10 in every
+# study - constant but NOT zero and NOT absent - while the other two vary.
+_FLAT_CONTRAST_STUDIES = {
+    "bsdb:1": ((30, 10, 5), (20, 40, 20)),
+    "bsdb:2": ((30, 20, 15), (20, 30, 20)),
+    "bsdb:3": ((30, 30, 25), (20, 20, 10)),
+    "bsdb:4": ((30, 40, 35), (20, 10, 5)),
+}
+
+
+def _flat_contrast_profiles(*, hold_facultative_flat: bool) -> list[Profile]:
+    rows = dict(_FLAT_CONTRAST_STUDIES)
+    if not hold_facultative_flat:
+        # One study's increased facultative count differs, so its contrast varies.
+        (_, cellulose_inc, coccus_inc), decreased = rows["bsdb:1"]
+        rows["bsdb:1"] = ((45, cellulose_inc, coccus_inc), decreased)
+    keys = ("facultatively_aerobic", "cellulose_catabolic_process", "coccus_shaped")
+    profiles: list[Profile] = []
+    for study, (increased, decreased) in rows.items():
+        profiles.append(_trait_profile(study, "inc", dict(zip(keys, increased, strict=True))))
+        profiles.append(_trait_profile(study, "dec", dict(zip(keys, decreased, strict=True))))
+    return profiles
+
+
+def test_a_constant_trait_contrast_is_omitted_from_the_correlations_not_written_as_nan() -> None:
+    """The Table 1 copy of the constant-series skip, on a non-zero flat series (#289).
+
+    ``test_contrast_correlation_is_computed_across_studies`` reaches this branch
+    through a trait that is absent from the whole fixture, where a flat series and
+    an unmeasured one look alike. Here the flat trait is measured in every study
+    and shifts up in every study; only its *variance* is zero. The fixture carries
+    four studies, so the pair clears the ``len(paired) < 3`` sample-size guard,
+    and the control run varies the same trait and recovers its pairs at the same n.
+    """
+    result = compute_direction_shifts(
+        _flat_contrast_profiles(hold_facultative_flat=True), TRAIT_ORDER
+    )
+
+    assert result.studies == 4
+    assert set(result.spearman) == {"cellulose_catabolic_process~coccus_shaped"}
+    assert result.spearman["cellulose_catabolic_process~coccus_shaped"][2] == 4
+    assert not [key for key, (rho, _p, _n) in result.spearman.items() if isnan(rho)]
+
+    # The skip is confined to the correlation panel: the flat trait is still
+    # tested and still reported, with every one of the four studies scored up.
+    flat = next(s for s in result.shifts if s.trait == "facultatively_aerobic")
+    assert (flat.studies_up, flat.studies_down, flat.studies_tied) == (4, 0, 0)
+    assert flat.status == "tested"
+    assert flat.q_value is not None
+
+    control = compute_direction_shifts(
+        _flat_contrast_profiles(hold_facultative_flat=False), TRAIT_ORDER
+    )
+
+    assert set(control.spearman) == {
+        "cellulose_catabolic_process~coccus_shaped",
+        "facultatively_aerobic~cellulose_catabolic_process",
+        "facultatively_aerobic~coccus_shaped",
+    }
+    assert {n for _rho, _p, n in control.spearman.values()} == {4}
+    assert not [key for key, (rho, _p, _n) in control.spearman.items() if isnan(rho)]
