@@ -23,6 +23,10 @@ dependencies = [
   "linkml-runtime>=1.8.3",
   "plotly>=7.0",
   "pydantic>=2.13.0",
+  # numpy arrives with scipy either way; it is declared because `bsdbng.calibration`
+  # imports it directly for `numpy.random.default_rng`, the seeded generator that
+  # replaced the stdlib `random` module and its global bandit B311 suppression.
+  "numpy>=2.0",
   "pyyaml>=6.0.2",
   "scipy>=1.17.0",
 ]
@@ -146,11 +150,6 @@ quiet-level = 3
 
 [tool.bandit]
 exclude_dirs = ["tests", ".venv"]
-# B311 warns that `random` is not cryptographically secure. The only use here is
-# `bsdbng.calibration`, whose generator is seeded so a calibration run reproduces
-# exactly; a cryptographic generator would make the report unrepeatable. Nothing in
-# this repository uses randomness for a security purpose.
-skips = ["B311"]
 
 [tool.deptry]
 exclude = [

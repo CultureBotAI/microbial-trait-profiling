@@ -27,12 +27,13 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
-import random
 from collections.abc import Callable, Hashable, Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
+import numpy as np
 from scipy.stats import binomtest, false_discovery_control
 
 from bsdbng.guild_maps import GuildMatrix, build_matrix, compute_correlation
@@ -81,6 +82,27 @@ class Outcome:
 
 
 Procedure = Callable[[Sequence[Profile]], list[Outcome]]
+
+
+def _stream_key(name: str) -> int:
+    """A stable integer stream id for a named scenario, independent of its position.
+
+    hash is salted per interpreter, and a scenario's index would move whenever
+    the tuple is reordered; a digest of the name survives both.
+    """
+    return int.from_bytes(hashlib.sha256(name.encode("utf-8")).digest()[:8], "big")
+
+
+def replicate_rng(seed: int, stream: str, replicate: int) -> np.random.Generator:
+    """The generator for one replicate of one named stream.
+
+    numpy.random.default_rng takes the whole triple as seed entropy, so every
+    (seed, stream, replicate) is independently reproducible and another arm can
+    regenerate any single replicate without replaying the ones before it. The
+    stdlib generator this replaced could not do that, and required a global bandit
+    B311 suppression that AGENTS.md treats as a workaround.
+    """
+    return np.random.default_rng([seed, _stream_key(stream), replicate])
 
 
 def fraction_sign_test(profiles: Sequence[Profile]) -> list[Outcome]:
@@ -170,7 +192,7 @@ def procedures_for(matrix: GuildMatrix) -> dict[str, Procedure]:
 
 
 def flip_directions(
-    profiles: Sequence[Profile], rng: random.Random, *, unit: str = "study"
+    profiles: Sequence[Profile], rng: np.random.Generator, *, unit: str = "study"
 ) -> list[Profile]:
     """Exchange the two direction labels within a random half of the units.
 
@@ -197,7 +219,7 @@ def flip_directions(
 
 def inject_effect(
     profiles: Sequence[Profile],
-    rng: random.Random,
+    rng: np.random.Generator,
     *,
     trait: str = INJECTED_TRAIT,
     multiplier: float,
@@ -229,11 +251,13 @@ class Scenario:
 
     name: str
     truth: str
-    transform: Callable[[Sequence[Profile], random.Random], list[Profile]]
+    transform: Callable[[Sequence[Profile], np.random.Generator], list[Profile]]
 
 
-def _injection(multiplier: float) -> Callable[[Sequence[Profile], random.Random], list[Profile]]:
-    def transform(profiles: Sequence[Profile], rng: random.Random) -> list[Profile]:
+def _injection(
+    multiplier: float,
+) -> Callable[[Sequence[Profile], np.random.Generator], list[Profile]]:
+    def transform(profiles: Sequence[Profile], rng: np.random.Generator) -> list[Profile]:
         return inject_effect(
             flip_directions(profiles, rng, unit="study"), rng, multiplier=multiplier
         )
@@ -274,7 +298,7 @@ def run_replicates(
     chosen = procedures or {}
     runs: list[list[Outcome]] = []
     for index in range(replicates):
-        rng = random.Random(f"{seed}:{scenario.name}:{index}")
+        rng = replicate_rng(seed, scenario.name, index)
         transformed = scenario.transform(profiles, rng)
         outcomes: list[Outcome] = []
         for procedure in chosen.values():

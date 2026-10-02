@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import random
 from collections.abc import Sequence
 
+import numpy as np
 import pytest
 
 from bsdbng.calibration import (
@@ -17,6 +17,7 @@ from bsdbng.calibration import (
     flip_directions,
     fraction_sign_test,
     inject_effect,
+    replicate_rng,
     run_replicates,
     screened_fraction_sign_test,
     summarize,
@@ -26,7 +27,7 @@ from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
 TRAITS = tuple(TABLE1_TRAITS)
 
 
-def _identity(profiles: Sequence[Profile], _rng: random.Random) -> list[Profile]:
+def _identity(profiles: Sequence[Profile], _rng: np.random.Generator) -> list[Profile]:
     """A scenario transform for summaries built from outcomes, not from a corpus."""
     return list(profiles)
 
@@ -57,7 +58,7 @@ def _corpus(studies: int = 40) -> list[Profile]:
 
 def test_flipping_relabels_whole_units_and_keeps_the_corpus_paired() -> None:
     profiles = _corpus()
-    flipped = flip_directions(profiles, random.Random(1), unit="study")
+    flipped = flip_directions(profiles, replicate_rng(182, "unit-test", 1), unit="study")
     assert len(flipped) == len(profiles)
     # Counts are untouched; only labels move.
     assert sorted(p.total for p in flipped) == sorted(p.total for p in profiles)
@@ -77,16 +78,18 @@ def test_flipping_relabels_whole_units_and_keeps_the_corpus_paired() -> None:
 
 def test_flipping_by_experiment_can_split_a_study() -> None:
     profiles = _corpus()
-    by_experiment = flip_directions(profiles, random.Random(7), unit="experiment")
-    by_study = flip_directions(profiles, random.Random(7), unit="study")
+    by_experiment = flip_directions(profiles, replicate_rng(182, "s", 7), unit="experiment")
+    by_study = flip_directions(profiles, replicate_rng(182, "s", 7), unit="study")
     assert by_experiment != by_study
     with pytest.raises(ValueError, match="flip unit"):
-        flip_directions(profiles, random.Random(1), unit="condition")
+        flip_directions(profiles, replicate_rng(182, "s", 1), unit="condition")
 
 
 def test_injection_touches_only_the_increased_side_of_chosen_studies() -> None:
     profiles = _corpus()
-    injected = inject_effect(profiles, random.Random(3), multiplier=2.0, study_share=0.5)
+    injected = inject_effect(
+        profiles, replicate_rng(182, "inject", 3), multiplier=2.0, study_share=0.5
+    )
     changed = [
         (before, after) for before, after in zip(profiles, injected, strict=True) if before != after
     ]
