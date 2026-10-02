@@ -38,16 +38,31 @@ guarantee, and the table says so on every row and in its own summary.
 One row per (method, feature, inference level). The fields, grouped:
 
 - **Identity**: `method`, `method_version`, `inference_level`, `feature_type`,
-  `trait`, `trait_qualifier` (the raw identifiers), `reference` for a comparison that
-  names one, `stratum_kind` and `stratum`, and `source` (the input file and a hash
-  prefix).
+  `trait` and `reference`, each with two identifier columns, `stratum_kind` and
+  `stratum`, and `source` (the input file and a hash prefix). `trait_qualifier`
+  and `reference_qualifier` carry the term ids the analysis declared;
+  `trait_columns` and `reference_columns` carry the raw matrix columns those
+  terms resolved to. The two differ: `GO:0030245` is carried in the matrix as
+  `METPO:2000103|GO:0030245`, so only the raw column joins back to it, and a
+  ratio row that named the numerator alone described half of its own hypothesis
+  (#294). `integrated_evidence_features.tsv` is the same mapping in tidy form,
+  one row per (feature, term, column), because a pooled guild lists several
+  columns in one cell of the main table.
 - **Population**: `population`, `eligibility_rule`, `denominator`, `background`, and
   the counts that are never interchangeable - `unique_studies`,
-  `paired_experiments`, `profiles`, `testable_units`, `ties`.
+  `paired_experiments`, `profiles`, `testable_units`, `ties`. A ratio population
+  is conditional on the pair, so it also carries `studies_total`,
+  `studies_excluded`, `studies_partially_observed`, `experiments_eligible` and
+  `experiments_excluded_zero_count`. These are blank, not zero, for a method that
+  declares no such rule.
 - **Effect**: `effect_value` with its `effect_units`, and `interval_low`,
   `interval_high` and `interval_type`. A standardized mean contrast, an ORA fold and
   a directional proportion are different quantities and are never put in one column.
   Where no interval was computed, `interval_type` is `unavailable` rather than blank.
+  `study_effect_mean`, `study_effect_median` and `study_effect_units` describe the
+  per-study distribution the test ran over rather than the tested estimate, which
+  is why they survive on a row whose `effect_value` is blanked. The ratio mean
+  previously existed only as a sentence inside `notes`.
 - **Inference**: `p_value`, `q_value`, `correction_method`, `family_id`,
   `family_size`, `effect_threshold`, and two thresholds with their decisions -
   `q_threshold`/`decision` and `strict_q_threshold`/`strict_decision`, each with a
@@ -127,7 +142,20 @@ Every row carries the same caveats as fields rather than as prose:
 
 ## Reproducing
 
-`just integrated-evidence` on the pinned inputs. It reads
+`just integrated-evidence` on the pinned inputs writes five files into
+`data/derived/integrated_evidence/`: the table (`integrated_evidence.tsv`), the
+feature-to-column map (`integrated_evidence_features.tsv`), the correction
+families with their declared sizes (`integrated_evidence_families.tsv`), the
+generated view (`integrated_evidence.md`) and the provenance record. The family
+export is the #236/#289 requirement that no exported q appears without the
+family it was corrected in and that family's size; the run fails if a declared
+size and the rows exported for that family disagree, because a q corrected over
+a different set of tests than the table shows cannot be read. The provenance
+record carries the zero-total pair exclusion as counts and a rule, both decision
+thresholds with their sources, the resolved feature columns, and any declared
+term that matched no column.
+
+It reads
 `data/derived/calibration/calibration_status.json`,
 `data/derived/table1_composition_sensitivity/sensitivity_status.json` and
 `data/derived/contrast_orientation/contrast_orientation_provenance.json` when they

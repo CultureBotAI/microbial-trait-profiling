@@ -19,16 +19,26 @@ from bsdbng.integrated_evidence import (
     ZERO_ANNOTATION,
     Record,
     apply_statuses,
+    family_inventory,
+    feature_column_rows,
     fraction_sign_records,
     log_ratio_records,
     placeholder_records,
     read_status,
     summarize,
+    unmatched_terms,
     write_table,
     write_view,
 )
 from bsdbng.table1_trait_maps import compute_direction_shifts
-from bsdbng.trait_guilds import TABLE1_TRAITS, Profile, drop_zero_total_pairs
+from bsdbng.trait_composition import compute_log_ratio_shifts
+from bsdbng.trait_guilds import (
+    OXYGEN_GUILDS,
+    TABLE1_TRAITS,
+    Profile,
+    drop_zero_total_pairs,
+    resolve_trait_columns,
+)
 
 #: Both decision thresholds every record builder now takes (#294).
 THRESHOLDS = {"q_threshold": 0.05, "strict_q_threshold": 0.001}
@@ -41,6 +51,41 @@ STATUSES = {
     "orientation_status": "1052 classified",
     "taxon_influence_status": "pending #190",
 }
+
+#: The matrix header, as the pinned corpus actually spells it: four of the six
+#: Table 1 terms are bare CURIEs and two are METPO-qualified composites, so the
+#: declared term is not the column name and cannot be joined on (#294).
+MATRIX_COLUMNS: dict[str, str] = {
+    "METPO:1000608": "METPO:1000608",
+    "GO:0030245": "METPO:2000103|GO:0030245",
+    "METPO:1000668": "METPO:1000668",
+    "METPO:1000683": "METPO:1000683",
+    "pathways:arsenate_reduction": "METPO:2000103|pathways:arsenate_reduction",
+    "METPO:1000623": "METPO:1000623",
+    "METPO:1000602": "METPO:1000602",
+    "METPO:1000604": "METPO:1000604",
+    "METPO:1000603": "METPO:1000603",
+    "METPO:1000607": "METPO:1000607",
+}
+
+
+def write_matrix(tmp_path: Path, rows: list[list[str]]) -> Path:
+    """Write a profile matrix whose header spells the columns as the corpus does."""
+    header = ["study_id", "experiment_id", "inc_dec", *MATRIX_COLUMNS.values()]
+    # A MediaDive growth-medium column, which the loader must exclude from both
+    # the guild sums and the denominator.
+    header.append("mediadive.medium:372")
+    path = tmp_path / "study_trait_profiles_wide.tsv"
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(header)
+        writer.writerows(rows)
+    return path
+
+
+def resolved_columns(tmp_path: Path) -> dict[str, tuple[tuple[str, str], ...]]:
+    """The real resolution of the real header, not a hand-written expectation."""
+    return resolve_trait_columns(write_matrix(tmp_path, []), {**TABLE1_TRAITS, **OXYGEN_GUILDS})
 
 
 def _profiles(pattern: str = "signal") -> list[Profile]:
@@ -69,9 +114,62 @@ def _profiles(pattern: str = "signal") -> list[Profile]:
     return profiles
 
 
+def _ratio_profiles() -> list[Profile]:
+    """Twelve studies of two experiments each, with uneven ratio eligibility.
+
+    A log-ratio population is conditional: an experiment counts for a pair only
+    when both traits are positive on both sides. Zeroing one trait in some
+    experiments makes ``studies_total``, ``studies_eligible``,
+    ``paired_experiments`` and ``experiments_eligible`` four different numbers.
+    A fixture in which they coincide cannot tell those columns apart, so it would
+    pass on code that exported one of them in another's place.
+    """
+    sparse = TRAITS[1]
+    profiles: list[Profile] = []
+    for study in range(12):
+        for experiment in range(2):
+            for direction in ("inc", "dec"):
+                counts = dict.fromkeys(TRAITS, 5)
+                if direction == "inc":
+                    counts[TRAITS[0]] = 30
+                # Studies 10 and 11 never carry the sparse trait, so every pair
+                # involving it drops them; studies 8 and 9 carry it in their
+                # second experiment only, so they are partially observed.
+                if study >= 10 or (study >= 8 and experiment == 0):
+                    counts[sparse] = 0
+                profiles.append(
+                    Profile(
+                        study_id=f"s{study}",
+                        experiment_id=f"s{study}-{experiment}",
+                        inc_dec=direction,
+                        condition="C",
+                        body_site="Feces",
+                        guild_counts=counts,
+                        total=sum(counts.values()) + 20,
+                    )
+                )
+    return profiles
+
+
+def _built(
+    pattern: str = "signal",
+    *,
+    q_threshold: float | None = 0.05,
+    strict_q_threshold: float | None = 0.001,
+) -> list[Record]:
+    """Fraction-sign records with no resolved columns, for state-only assertions."""
+    return fraction_sign_records(
+        _profiles(pattern),
+        source="x",
+        columns={},
+        q_threshold=q_threshold,
+        strict_q_threshold=strict_q_threshold,
+    )
+
+
 def test_counts_reconcile_with_the_source_run() -> None:
     profiles = _profiles()
-    built = fraction_sign_records(profiles, source="x", **THRESHOLDS)
+    built = fraction_sign_records(profiles, source="x", columns={}, **THRESHOLDS)
     records = {r.trait: r for r in built}
     for shift in compute_direction_shifts(profiles).shifts:
         record = records[shift.trait]
@@ -84,7 +182,7 @@ def test_counts_reconcile_with_the_source_run() -> None:
 
 
 def test_an_all_tied_trait_is_not_a_negative_result() -> None:
-    records = fraction_sign_records(_profiles("tied"), source="x", **THRESHOLDS)
+    records = fraction_sign_records(_profiles("tied"), source="x", columns={}, **THRESHOLDS)
     for record in records:
         assert record.test_status == ALL_TIED
         assert record.decision == UNDECIDED
@@ -94,7 +192,7 @@ def test_an_all_tied_trait_is_not_a_negative_result() -> None:
 
 
 def test_a_pair_with_no_positive_counts_is_recorded_as_zero_annotation() -> None:
-    records = log_ratio_records(_profiles("empty"), source="x", **THRESHOLDS)
+    records = log_ratio_records(_profiles("empty"), source="x", columns={}, **THRESHOLDS)
     assert records
     for record in records:
         assert record.test_status == ZERO_ANNOTATION
@@ -114,9 +212,9 @@ def test_an_unsupplied_method_is_not_a_nonsignificant_result() -> None:
 
 def test_each_method_keeps_its_own_family_and_units() -> None:
     profiles = _profiles()
-    records = fraction_sign_records(profiles, source="x", **THRESHOLDS) + log_ratio_records(
-        profiles, source="x", **THRESHOLDS
-    )
+    records = fraction_sign_records(
+        profiles, source="x", columns={}, **THRESHOLDS
+    ) + log_ratio_records(profiles, source="x", columns={}, **THRESHOLDS)
     families = {(r.method, r.family_id, r.correction_method) for r in records}
     assert (
         "directional_consistency_fraction_sign_test",
@@ -140,7 +238,7 @@ def test_each_method_keeps_its_own_family_and_units() -> None:
 
 
 def test_display_state_is_independent_of_the_decision() -> None:
-    record = fraction_sign_records(_profiles(), source="x", **THRESHOLDS)[0]
+    record = _built()[0]
     masked = replace(record, display_status="masked_below_min_studies")
     assert masked.decision == record.decision
     assert record.display_status == NOT_APPLICABLE
@@ -148,7 +246,7 @@ def test_display_state_is_independent_of_the_decision() -> None:
 
 
 def test_statuses_are_attached_without_changing_any_result() -> None:
-    records = fraction_sign_records(_profiles(), source="x", **THRESHOLDS)
+    records = _built()
     annotated = apply_statuses(records, STATUSES)
     for before, after in zip(records, annotated, strict=True):
         assert (after.decision, after.test_status, after.q_value) == (
@@ -174,10 +272,8 @@ def test_absent_assessment_files_read_as_pending(tmp_path: Path) -> None:
 
 
 def test_every_field_survives_the_export(tmp_path: Path) -> None:
-    profiles = _profiles()
     records = apply_statuses(
-        fraction_sign_records(profiles, source="x", **THRESHOLDS)
-        + placeholder_records("enrichment", "profile", "not supplied", TRAITS[:1]),
+        _built() + placeholder_records("enrichment", "profile", "not supplied", TRAITS[:1]),
         STATUSES,
     )
     path = write_table(records, tmp_path / "evidence.tsv")
@@ -200,7 +296,7 @@ def test_every_field_survives_the_export(tmp_path: Path) -> None:
 
 
 def test_a_record_carries_the_selection_note() -> None:
-    record = fraction_sign_records(_profiles(), source="x", **THRESHOLDS)[0]
+    record = _built()[0]
     assert "selected on this corpus" in record.selection_note
     assert isinstance(record, Record)
 
@@ -236,14 +332,14 @@ def test_a_zero_total_pair_is_excluded_rather_than_counted_as_a_tie() -> None:
 
     # Kept as a tie, the blank study would inflate the tie count; excluded, the
     # tallies match the corpus that has a defined share.
-    with_blank = fraction_sign_records(scored + blank, source="x", **THRESHOLDS)
-    without = fraction_sign_records(exclusion.profiles, source="x", **THRESHOLDS)
+    with_blank = fraction_sign_records(scored + blank, source="x", columns={}, **THRESHOLDS)
+    without = fraction_sign_records(exclusion.profiles, source="x", columns={}, **THRESHOLDS)
     assert {r.trait: r.ties for r in with_blank} != {r.trait: r.ties for r in without}
 
 
 def test_each_row_is_decided_at_both_thresholds_with_their_sources() -> None:
     """One cutoff cannot speak for three families, so both are reported (#294)."""
-    records = fraction_sign_records(_profiles(), source="x", **THRESHOLDS)
+    records = _built()
 
     for record in records:
         assert record.q_threshold == 0.05
@@ -262,9 +358,7 @@ def test_the_two_thresholds_decide_independently() -> None:
     that silently reuses ``q_threshold`` would pass. The thresholds here bracket
     the fixture's q instead, so the two decisions are required to disagree (#294).
     """
-    records = fraction_sign_records(
-        _profiles(), source="x", q_threshold=0.05, strict_q_threshold=1e-9
-    )
+    records = _built(q_threshold=0.05, strict_q_threshold=1e-9)
 
     assert records
     for record in records:
@@ -276,9 +370,163 @@ def test_the_two_thresholds_decide_independently() -> None:
 
 def test_the_stricter_threshold_can_only_shrink_the_significant_set() -> None:
     """A row significant at the stricter cutoff is significant at the looser one."""
-    records = fraction_sign_records(_profiles(), source="x", **THRESHOLDS)
+    records = _built()
 
     assert records
     for record in records:
         if record.strict_decision == SIGNIFICANT:
             assert record.decision == SIGNIFICANT
+
+
+def test_a_row_exports_the_raw_matrix_column_not_the_declared_term(tmp_path: Path) -> None:
+    """The declared CURIE does not name a column, so it cannot be joined on (#294).
+
+    Two of the six Table 1 traits are carried as METPO-qualified composites. A
+    row exported under the bare term, and a ratio row that drops the reference's
+    identifier altogether, cannot be joined back to the matrix at all.
+    """
+    columns = resolved_columns(tmp_path)
+    profiles = _profiles()
+
+    fractions = {
+        r.trait: r
+        for r in fraction_sign_records(profiles, source="x", columns=columns, **THRESHOLDS)
+    }
+    cellulose = fractions["cellulose_catabolic_process"]
+    assert cellulose.trait_qualifier == "GO:0030245"
+    assert cellulose.trait_columns == "METPO:2000103|GO:0030245"
+    assert cellulose.trait_columns != cellulose.trait_qualifier
+    arsenate = fractions["arsenate_reduction"]
+    assert arsenate.trait_columns == "METPO:2000103|pathways:arsenate_reduction"
+
+    ratios = log_ratio_records(profiles, source="x", columns=columns, **THRESHOLDS)
+    pair = next(
+        r
+        for r in ratios
+        if (r.trait, r.reference) == ("cellulose_catabolic_process", "arsenate_reduction")
+    )
+    # Both halves of the hypothesis are named, each with its own raw column.
+    assert pair.reference_qualifier == "pathways:arsenate_reduction"
+    assert pair.reference_columns == "METPO:2000103|pathways:arsenate_reduction"
+    assert pair.trait_columns == "METPO:2000103|GO:0030245"
+
+
+def test_the_feature_column_sidecar_is_atomic_and_covers_every_feature(tmp_path: Path) -> None:
+    """A pooled guild lists several columns in one cell; the side-car splits them.
+
+    Each of the six Table 1 traits resolves to exactly one column, so a side-car
+    that simply copied the main table's packed cell would be indistinguishable on
+    them. The aerobe guild pools three terms, which is what forces the split.
+    """
+    columns = resolved_columns(tmp_path)
+    records = fraction_sign_records(
+        _profiles(), source="x", columns=columns, **THRESHOLDS
+    ) + placeholder_records(
+        "oxygen_guild_placeholder", "corpus", "not supplied", ("aerobe",), columns=columns
+    )
+    rows = feature_column_rows(records, columns)
+
+    assert {row["feature"] for row in rows} == {*TRAITS, "aerobe"}
+    for row in rows:
+        assert ";" not in row["matrix_column"]
+        assert ";" not in row["term_id"]
+    # One row per pooled term, not one packed row for the guild.
+    aerobe = [row for row in rows if row["feature"] == "aerobe"]
+    assert {row["matrix_column"] for row in aerobe} == set(OXYGEN_GUILDS["aerobe"])
+    # Header order, not declaration order: the header puts METPO:1000608 first.
+    assert [row["matrix_column"] for row in aerobe] == [
+        "METPO:1000608",
+        "METPO:1000602",
+        "METPO:1000604",
+    ]
+    assert {
+        "feature": "cellulose_catabolic_process",
+        "term_id": "GO:0030245",
+        "matrix_column": "METPO:2000103|GO:0030245",
+    } in rows
+
+
+def test_an_unresolved_declared_term_is_reported(tmp_path: Path) -> None:
+    """A guild with no column at all is rejected upstream; one missing term is not.
+
+    The aerobe guild pools three terms. If one of them matched no column the sum
+    would silently cover two, so the run names the term rather than staying quiet.
+    """
+    columns = resolved_columns(tmp_path)
+    assert unmatched_terms(columns, {**TABLE1_TRAITS, **OXYGEN_GUILDS}) == []
+    assert unmatched_terms(columns, {"aerobe": ("METPO:1000602", "METPO:9999999")}) == [
+        "aerobe/METPO:9999999"
+    ]
+
+
+def test_a_ratio_row_exports_its_own_population_and_effect_summary() -> None:
+    """The ratio population is conditional, so each field is its own column (#294).
+
+    The mean previously survived only as a string inside ``notes``, and the
+    population fields the #178 spec lists were absent, so a reader could not tell
+    how many studies a ratio hypothesis had dropped.
+    """
+    profiles = _ratio_profiles()
+    records = {
+        (r.trait, r.reference): r
+        for r in log_ratio_records(profiles, source="x", columns={}, **THRESHOLDS)
+    }
+    summaries = compute_log_ratio_shifts(profiles).summaries
+    assert summaries
+
+    # The fixture must separate the four population counts, or an export that
+    # put one of them in another's column would pass this test.
+    assert any(r.studies_total != r.unique_studies for r in records.values())
+    assert any(r.paired_experiments != r.experiments_eligible for r in records.values())
+    assert any((r.studies_partially_observed or 0) > 0 for r in records.values())
+    assert any((r.studies_excluded or 0) > 0 for r in records.values())
+
+    for summary in summaries:
+        record = records[(summary.numerator, summary.reference)]
+        assert record.studies_total == summary.studies_total
+        assert record.studies_excluded == summary.studies_excluded
+        assert record.studies_partially_observed == summary.studies_partially_observed
+        assert record.paired_experiments == summary.paired_experiments
+        assert record.experiments_eligible == summary.eligible_experiments
+        assert record.experiments_excluded_zero_count == summary.excluded_zero_experiments
+        assert record.study_effect_mean == summary.mean_log2_ratio_change
+        assert record.study_effect_median == summary.median_log2_ratio_change
+        assert record.study_effect_units
+        # The numbers are in numeric columns, so no text column carries one.
+        assert record.notes == ""
+        assert not any(character.isdigit() for character in record.zero_annotation_state)
+
+
+def test_every_family_exports_its_size_and_the_size_is_checked() -> None:
+    """A q is unreadable without its family and that family's size (#236, #289)."""
+    profiles = _profiles()
+    records = (
+        fraction_sign_records(profiles, source="x", columns={}, **THRESHOLDS)
+        + log_ratio_records(profiles, source="x", columns={}, **THRESHOLDS)
+        + placeholder_records("enrichment", "profile", "not supplied", TRAITS)
+    )
+
+    inventory = {row["family_id"]: row for row in family_inventory(records)}
+    assert inventory["table1_six_fractions"]["family_size"] == 6
+    assert inventory["table1_six_fractions"]["rows_exported"] == 6
+    assert inventory["table1_fifteen_ratios"]["family_size"] == 15
+    assert inventory["table1_fifteen_ratios"]["rows_exported"] == 15
+    # Unsupplied rows carry no q, so they belong to no correction family.
+    assert "" not in inventory
+
+    # A family whose declared size no longer matches the rows exported for it
+    # means the q was corrected over a different set of tests than the table
+    # shows, which makes every q in it unreadable.
+    shrunk = [r for r in records if r.family_id != "table1_six_fractions"] + [
+        r for r in records if r.family_id == "table1_six_fractions"
+    ][:5]
+    with pytest.raises(ValueError, match="declares 6 members but the table exports 5"):
+        family_inventory(shrunk)
+
+
+def test_a_q_value_without_a_family_is_rejected() -> None:
+    """Every corrected value must name the family it was corrected in (#236)."""
+    record = _built()[0]
+    assert record.q_value is not None
+    with pytest.raises(ValueError, match="no correction family"):
+        family_inventory([replace(record, family_id="", family_size=None)])
