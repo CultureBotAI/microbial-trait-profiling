@@ -209,9 +209,10 @@ with status `all_tied`, it keeps its place in the six-trait family at p = 1, and
 the figure draws no marker for it rather than a point at 0 that would read as
 every study shifting down. Ties are common for the rarer traits — 343 studies for
 arsenate reduction against 42 for facultatively aerobic — and almost all of them
-are studies where the trait is absent from both sides. Each trait then gets a two-sided exact binomial test against a half-and-half
-null with an exact binomial 95 per cent interval, and the six p-values are
-Benjamini-Hochberg corrected together as one family.
+are studies where the trait is absent from both sides. Each trait then gets a
+two-sided exact binomial test against a half-and-half null with an exact
+binomial 95 per cent interval, and the six p-values are Benjamini-Hochberg
+corrected together as one family.
 
 One boundary case is scored rather than dropped: a profile whose taxa carry none
 of the retained traits enters with fraction 0 instead of as missing. 24
@@ -260,6 +261,32 @@ The separate [paired log-ratio analysis](table1_paired_log_ratios.md) tests
 reference-explicit relative contrasts for all 15 trait pairs. It reports zero
 exclusions and the resulting conditional study populations. It does not replace
 these historical fraction results or turn them into absolute abundance claims.
+
+### Outstanding: the correction family is described here but not exported
+
+`table1_traits_direction_shift.tsv` carries each trait's p and q and its status,
+but nothing in the row says which correction family produced that q or how large
+the family was. A reader joining this table to the composition arm's per-stratum
+BH tables or to the enrichment arm's global FDR sees three columns called `q`
+whose families differ in size by orders of magnitude — six selected traits here
+against hundreds of screened traits and hundreds of thousands of profile tests
+there, per #178 — and no exported row says which. The family here is Table 1's
+six traits corrected together, with every trait included at p = 1 when it has no
+scored study, so the family size is 6 on every run of this figure and the
+untestable traits are inside it rather than dropped from it.
+
+That is a property of the exported row, not of this figure, and the same gap
+exists in the other two arms' exports. It is therefore tracked as part of the
+shared result contract in
+[#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178) and
+implemented in
+[#241](https://github.com/CultureBotAI/microbial-trait-profiling/pull/241),
+whose acceptance criteria already require a family identifier and its size on
+every exported result. It is deliberately not added here: adding a
+`correction_family` / `correction_family_size` pair to this one TSV ahead of
+that contract would fix a column spelling that the integration then has to
+reconcile across three producers. When #241 lands the implementing commit, this
+paragraph should name it and the requirement closes.
 
 ## Reproducing
 
