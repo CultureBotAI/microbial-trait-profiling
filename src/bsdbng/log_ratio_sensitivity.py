@@ -1041,14 +1041,23 @@ def eligibility_tables(
                 grouped[_stratum_of(pair, kind)].append(pair)
             for label, members in sorted(grouped.items()):
                 kept_members = [p for p in members if p.positive((numerator, reference))]
+                dropped_members = [p for p in members if not p.positive((numerator, reference))]
+                in_stratum = {p.study_id for p in members}
+                kept_studies = {p.study_id for p in kept_members}
                 strata.append(
                     {
                         "numerator": numerator,
                         "reference": reference,
                         "stratum_kind": kind,
                         "stratum": label,
-                        "studies_total": len({p.study_id for p in members}),
-                        "studies_eligible": len({p.study_id for p in kept_members}),
+                        "studies_total": len(in_stratum),
+                        "studies_eligible": len(kept_studies),
+                        # Counted within this stratum: a study contributing some but
+                        # not all of its pairs here, and one contributing none.
+                        "studies_partially_observed": len(
+                            {p.study_id for p in dropped_members} & kept_studies
+                        ),
+                        "studies_entirely_excluded": len(in_stratum - kept_studies),
                         "pairs_total": len(members),
                         "pairs_eligible": len(kept_members),
                     }
@@ -1111,16 +1120,34 @@ def write_outputs(
         ),
     ]
     by_scenario: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    by_family: defaultdict[str, Counter[str]] = defaultdict(Counter)
     for row in rows:
         by_scenario[row.scenario][row.status] += 1
+        by_family[row.family][row.status] += 1
         if row.q_value is not None and row.q_value <= REPORT_Q:
             by_scenario[row.scenario]["q_at_or_below_0.05"] += 1
+            by_family[row.family]["q_at_or_below_0.05"] += 1
+    family_meta = {row.family: (row.scenario, row.family_size, row.correction) for row in rows}
     status = {
         **provenance,
         "version": VERSION,
         "protocol": str(PROTOCOL_PATH.relative_to(REPO_ROOT)),
         "protocol_sha256": _sha256(PROTOCOL_PATH),
         "row_fields": [field.name for field in fields(Row)],
+        # Keyed by scenario, a scenario testing two families reports them merged. S4
+        # tests 6 fractions under BH and 15 ratios under BY, which as one "tested 21"
+        # is not a usable count. family_status is the authoritative breakdown and is
+        # what the integrated evidence table of #178 must read.
+        "family_status_is_authoritative_for": "#178",
+        "family_status": {
+            name: {
+                "scenario": family_meta[name][0],
+                "family_size": family_meta[name][1],
+                "correction": family_meta[name][2],
+                **dict(counts),
+            }
+            for name, counts in sorted(by_family.items())
+        },
         "scenario_status": {name: dict(counts) for name, counts in sorted(by_scenario.items())},
         "population_comparison_summary": dict(
             Counter(item.detection_change for item in population)

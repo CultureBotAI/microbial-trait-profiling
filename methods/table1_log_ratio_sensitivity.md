@@ -24,16 +24,29 @@ its own population: 243 to 676 of the 959 studies. Comparing a ratio with the
 original six fraction results therefore changes two things at once - who is
 measured and what is measured. This analysis separates them.
 
-## Declared before the first run
+## The declared scenario grid, and what can be said about when it was declared
 
 The scenarios, their populations, their correction families, the 30-study minimum
-for a test and the reporting threshold were written to
-[`table1_log_ratio_sensitivity_protocol.json`](table1_log_ratio_sensitivity_protocol.json)
-before any result was computed, and were not changed afterwards. Each scenario
-keeps its own family, no scenario is preferred, and q <= 0.05 is used only to count
-rows. The same test is used throughout: study-level mean contrasts, an exact
-two-sided binomial test of the non-tied studies shifting up, and an exact 95%
+for a test and the reporting threshold are in
+[`table1_log_ratio_sensitivity_protocol.json`](table1_log_ratio_sensitivity_protocol.json).
+Each scenario keeps its own family, no scenario is preferred, and q <= 0.05 is used
+only to count rows. The same test is used throughout: study-level mean contrasts, an
+exact two-sided binomial test of the non-tied studies shifting up, and an exact 95%
 interval for that share (not for the mean effect).
+
+**The claim that this was declared before the first run cannot be verified from this
+repository, and is no longer asserted as a fact.** The protocol, the code, the
+results and the tests were all committed together in `c70e342`, so nothing in the
+history orders the protocol before the first run; the earlier
+`declared_before_first_run: true` was self-attested and has been removed rather than
+restated. What the available evidence does support is narrower: issue
+[#183](https://github.com/CultureBotAI/microbial-trait-profiling/issues/183) names the
+three axes - zero-exclusion rule, reference choice, eligible study population -
+before this branch existed, so the shape of the grid predates the results; every
+change made after a result was seen is listed in `protocol_amendments` with its date
+and the reviewing issue; and a test enforces the scenario list against the code, so
+an undeclared scenario cannot be added silently. S9 to S11 and the revised S8 were
+added after review and are recorded as such.
 
 | Scenario | Population | Family |
 | --- | --- | --- |
@@ -122,10 +135,13 @@ the facultatively aerobic, sphere shaped and arsenate reduction fractions do not
 therefore consistent with a relative decrease of cellulose-associated annotations
 rather than with a shift in the other member of each pair.
 
-**On one shared population the pattern is the same (S4, S5).** On the 239 studies
+**On one shared population the pattern is the same (S4, S5).** S4 runs two separate
+families on that population - 6 fractions under BH and 15 ratios under BY - and the
+counts below belong to one or the other, never to a pooled 21. On the 239 studies
 with all six traits positive, cellulose has the only strong fraction shift (share
-0.356, q = 5.7e-05), moderately halophilic a weaker increase (0.590, q = 0.019), and
-the significant ratios are the four with cellulose against facultatively aerobic,
+0.356, q = 5.7e-05) and moderately halophilic a weaker increase (0.590, q = 0.019),
+2 of the 6 fractions; and 4 of the 15 ratios reach
+q <= 0.05, those with cellulose against facultatively aerobic,
 sphere shaped, arsenate reduction and moderately halophilic. Across the 20 triple
 populations, all 13 rows with q <= 0.05 involve cellulose, and no ratio without
 cellulose reaches q <= 0.05 in any population. Ratios without cellulose do not form
@@ -239,8 +255,29 @@ and annotation coverage is not yet available per profile (#184).
 `just table1-log-ratio-sensitivity` on the pinned BugSigDBExports v1.3.1 inputs
 (export timestamp 2026-04-24_00:41_UTC). The status JSON records the code revision,
 the SHA-256 of the profile matrix, experiment table, taxa table, analysis source
-and protocol, the corpus filter cascade, and the per-scenario test counts. All
-statistics use scipy (`binomtest`, `false_discovery_control`).
+and protocol, the corpus filter cascade, the body-site label accounting, the
+influence decision rule, and the test counts. All statistics use scipy
+(`binomtest`, `false_discovery_control`).
+
+Counts are reported **by family**, in `family_status`, and that is the field the
+integrated evidence table of #178 should read. `scenario_status` is kept for
+continuity but merges families where one scenario tests two: S4 runs 6 fractions
+under BH and 15 ratios under BY, and its scenario-level "tested 21" is not a usable
+count for either.
+
+S2's declared 30-study minimum is a guard that `compute_log_ratio_shifts` does not
+apply, so S2 reproduces that module exactly only while every ratio clears it. On
+this corpus the smallest eligible count is 243, so it is inactive and the
+reproduction is exact; the guard is kept because the strata of S4 to S11 do fall
+below it, and a test now asserts the divergence on a fixture sized to straddle 30
+rather than leaving it hidden behind `min_studies=1`.
+
+## Corrections to the commit record
+
+The message on `c70e342` says the scenario grid evaluates a pseudocount. It does
+not: no scenario adds a pseudocount, no pseudocount exists anywhere in the code, and
+the protocol's `not_done` list has always said so. The message is wrong and is left
+uncorrected rather than rewriting shared history.
 
 The protocol, code and this description were drafted with the assistance of a
 coding agent (Claude Code) and reviewed by the author.

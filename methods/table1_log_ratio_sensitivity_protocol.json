@@ -1,14 +1,24 @@
 {
   "protocol": "log-ratio-sensitivity-v1",
   "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/183",
-  "declared_before_first_run": true,
-  "declared_by": "drafted by a coding agent (Claude Code) before any sensitivity result was computed; not revised after seeing results",
+  "declaration_evidence": {
+    "claim": "the scenario grid was drafted before any sensitivity result was computed",
+    "verifiable_from_this_repository": false,
+    "why_not": "the protocol, the code, the results and the tests were all committed together in c70e342, so the repository carries no timestamp that orders the protocol before the first run. The previous declared_before_first_run: true was self-attested and has been removed rather than restated.",
+    "what_the_evidence_does_support": [
+      "issue #183 names the three axes (zero-exclusion rule, reference choice, eligible study population) before this branch existed, so the shape of the grid predates the results",
+      "every change made after a result was seen is listed in protocol_amendments with its date and the reviewing issue",
+      "the scenario list is enforced against the code by a test, so an undeclared scenario cannot be added silently"
+    ],
+    "drafted_by": "a coding agent (Claude Code), reviewed by the author"
+  },
   "base_population": "human experiments with exactly one increased and one decreased profile (load_profiles, paired, human, blank counts rejected)",
   "study_weighting": "mean of eligible experiment contrasts within study; each eligible study weighted equally",
   "tie_tolerance": {"fraction": 1e-12, "log2_ratio": 1e-12},
   "test": "two-sided exact binomial test of non-tied studies shifting up against 0.5, with an exact 95% Clopper-Pearson interval for that share",
   "min_studies_for_a_test": 30,
   "min_studies_note": "a scenario row with fewer eligible studies is reported descriptively with status insufficient_support and no p or q",
+  "min_studies_divergence_from_the_log_ratio_module": "compute_log_ratio_shifts applies no such minimum, so S2 is only an exact reproduction of it while every ratio clears 30 eligible studies. On the pinned v1.3.1 corpus the smallest is 243, so the guard is inactive and the reproduction is exact. The guard is kept rather than removed because S4 to S11 run on strata that genuinely fall below it -- 10 of S10's 15 rows do. The divergence is asserted by a test instead of being left to a fixture that sets min_studies=1.",
   "scenarios": [
     {
       "id": "S0_historical_fraction",

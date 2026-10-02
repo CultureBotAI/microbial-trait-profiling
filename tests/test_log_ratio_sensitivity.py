@@ -15,6 +15,7 @@ from scipy.stats import false_discovery_control
 from bsdbng.log_ratio_sensitivity import (
     FECES_ANY,
     INSUFFICIENT,
+    MIN_STUDIES,
     NO_GUT_LABEL,
     OTHER_GUT,
     PROTOCOL_PATH,
@@ -39,6 +40,7 @@ from bsdbng.log_ratio_sensitivity import (
     sign_test,
     study_means,
     summarize,
+    write_outputs,
 )
 from bsdbng.table1_trait_maps import compute_direction_shifts
 from bsdbng.trait_composition import compute_log_ratio_shifts
@@ -191,6 +193,45 @@ def test_complete_case_scenario_reproduces_the_log_ratio_module(
             assert row.median_effect == pytest.approx(summary.median_log2_ratio_change, abs=1e-12)
         if summary.by_q is not None and row.q_value is not None:
             assert row.q_value == pytest.approx(summary.by_q)
+
+
+def test_s2_applies_a_study_minimum_that_the_log_ratio_module_does_not() -> None:
+    """Make the divergence explicit rather than hiding it behind min_studies=1.
+
+    compute_log_ratio_shifts has no study minimum, so S2 reproduces it exactly only
+    while every ratio clears the declared minimum. Below it, S2 withholds p and q and
+    the module still reports them, and that is the documented difference.
+    """
+    declared = json.loads(PROTOCOL_PATH.read_text(encoding="utf-8"))["min_studies_for_a_test"]
+    assert declared == 30
+    assert declared == MIN_STUDIES
+
+    # Sized to straddle the minimum: some ratios clear 30 eligible studies and some
+    # do not, so the guard is active here even though it is inactive on the real
+    # corpus, where the smallest eligible count is 243.
+    profiles = _signal_corpus(studies=36)
+    pairs = complete_pairs(profiles, TRAITS)
+    guarded = _rows("S2_ratio_complete_case", run_scenarios(pairs, TRAITS))
+    summaries = {
+        (s.numerator, s.reference): s for s in compute_log_ratio_shifts(profiles).summaries
+    }
+
+    below = [row for row in guarded if row.studies_eligible < declared]
+    assert below, "fixture must put a ratio below the declared minimum"
+    assert len(below) < len(guarded), "fixture must also put a ratio above it"
+    for row in below:
+        assert row.status == INSUFFICIENT
+        assert row.p_value is None
+        assert row.q_value is None
+        # The module it claims to reproduce does report a p for the same ratio.
+        assert summaries[(row.numerator, row.reference)].sign_p is not None
+        # The descriptive quantities are still reported.
+        assert row.mean_effect is not None
+
+    for row in guarded:
+        if row.studies_eligible >= declared:
+            assert row.status == TESTED
+            assert row.p_value is not None
 
 
 def test_the_signal_fixture_produces_corrected_values_below_one() -> None:
@@ -735,3 +776,51 @@ def test_eligibility_partitions_every_study(tmp_path: Path) -> None:
     ]
     assert sum(int(str(r["pairs_total"])) for r in sites) == len(pairs)
     assert not math.isnan(float(str(overall[0]["pairs_eligible"])))
+
+    # Every stratum row carries the same population accounting as the per-ratio rows.
+    for row in strata:
+        total = int(str(row["studies_total"]))
+        eligible = int(str(row["studies_eligible"]))
+        assert eligible + int(str(row["studies_entirely_excluded"])) == total
+        assert 0 <= int(str(row["studies_partially_observed"])) <= eligible
+    assert any(int(str(row["studies_entirely_excluded"])) > 0 for row in strata)
+
+
+def test_family_status_keeps_the_two_families_of_one_scenario_apart(tmp_path: Path) -> None:
+    """#178 reads family_status; S4's two families must not be merged into one count."""
+    pairs = complete_pairs(_signal_corpus(), TRAITS)
+    rows = run_scenarios(pairs, TRAITS, min_studies=1)
+    written = write_outputs(
+        rows,
+        leave_one_study_out(pairs, TRAITS),
+        [],
+        [],
+        tmp_path,
+        {},
+        population=population_comparison(rows, TRAITS),
+        stratum_influence=[],
+        strata_below_minimum=0,
+        label_counts=label_accounting(pairs),
+    )
+    status = json.loads(
+        next(p for p in written if p.name == "sensitivity_status.json").read_text(encoding="utf-8")
+    )
+    families = status["family_status"]
+
+    fractions, ratios = families["S4:six_fractions"], families["S4:fifteen_ratios"]
+    assert fractions["scenario"] == ratios["scenario"] == "S4_six_trait_common_support"
+    assert (fractions["family_size"], fractions["correction"]) == (6, "Benjamini-Hochberg")
+    assert (ratios["family_size"], ratios["correction"]) == (15, "Benjamini-Yekutieli")
+    # The merged scenario-level count is exactly what must not be read as one family.
+    assert status["scenario_status"]["S4_six_trait_common_support"]["tested"] == 21
+    assert fractions["tested"] + ratios["tested"] == 21
+    assert fractions["tested"] == 6
+    assert ratios["tested"] == 15
+
+    # Every row's family is accounted for, and no family spans two corrections.
+    assert sum(counts["tested"] for counts in families.values() if "tested" in counts) == sum(
+        1 for row in rows if row.status == TESTED
+    )
+    for name, counts in families.items():
+        sizes = {row.family_size for row in rows if row.family == name}
+        assert sizes == {counts["family_size"]}

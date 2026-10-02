@@ -99,7 +99,8 @@ study-trait-profiles:
 # Scenarios are fixed in methods/table1_log_ratio_sensitivity_protocol.json.
 [positional-arguments]
 table1-log-ratio-sensitivity *ARGS:
-	uv run python -m bsdbng.log_ratio_sensitivity --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+	uv run python -m bsdbng.log_ratio_sensitivity --code-commit "$(git rev-parse HEAD)$(test -z "$(git status --porcelain)" || echo +dirty)" "$@"
+
 # PNG export (guild-maps, table1-trait-maps) runs through kaleido 1.x, which
 # drives a headless Chrome. This downloads (~170 MB) the version-pinned Chrome
 # for Testing build into choreographer's data directory; kaleido prefers that
