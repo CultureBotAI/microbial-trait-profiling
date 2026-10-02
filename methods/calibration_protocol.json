@@ -1,8 +1,8 @@
 {
-  "protocol": "calibration-v1",
+  "protocol": "calibration-v2",
   "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/182",
-  "declared_before_first_run": true,
-  "declared_by": "drafted by a coding agent (Claude Code) before any calibration result was computed; acceptance criteria not revised after seeing results",
+  "declared_before_first_run": false,
+  "declared_by": "calibration-v1 was drafted by a coding agent (Claude Code) before any calibration result was computed. calibration-v2 is an amendment made after review (#293) with the v1 results in hand; the amendments array records what changed, why, and what was already known when the change was made. Nothing here should be read as predeclared except where an amendment says it is unchanged from v1.",
   "scope": "procedures owned by this repository's directional-consistency framework. The composition arm's and the enrichment arm's native procedures are not evaluated here; their adapters belong to their owners (#182 assigns them), and the assertion-level urn of #131 is a separate model question.",
   "procedures": [
     {
@@ -26,7 +26,7 @@
       "null": "among studies whose aerobe and anaerobe signs disagree, either direction of disagreement is equally likely",
       "estimand": "odds ratio of discordant study signs",
       "unit": "study",
-      "family": "a single test",
+      "family": "a single test, so its family error rate is its per-test level",
       "claimed_error_rate": "level 0.05"
     },
     {
@@ -35,7 +35,8 @@
       "estimand": "as fraction_sign_test, on the selected traits",
       "unit": "study",
       "family": "Benjamini-Hochberg over the three selected traits",
-      "claimed_error_rate": "none claimed; this procedure is expected to be anticonservative and is measured to quantify by how much"
+      "claimed_error_rate": "none claimed; this procedure is expected to be anticonservative and is measured to quantify by how much",
+      "role": "negative control. It is held to the same criteria as the published procedures and is declared in advance to be expected to fail them. A criterion this procedure passes is too weak to be evidence about any procedure."
     }
   ],
   "null_generation": {
@@ -50,11 +51,15 @@
     "units": [
       "study",
       "experiment"
-    ]
+    ],
+    "rng": "numpy.random.default_rng([seed, sha256_64(stream), replicate]), where stream is the scenario name. Each replicate is independently reproducible without replaying its predecessors.",
+    "independent_unit": "the simulation replicate. Labels tested inside one replicate share that replicate's resampled corpus and are not independent trials; every pooled interval treats the replicate as the cluster."
   },
   "signal_injection": {
-    "design": "multiply one trait's counts on the increased side by a factor for a random share of studies, adding the difference to that profile's total so the remaining shares stay coherent",
+    "design": "raise one trait's counts on the increased side for a random share of studies, taking the added counts from the complement of the eight tracked traits so that the profile total is unchanged and every other tracked trait's share is unchanged exactly",
     "purpose": "power for the injected trait, and the false-discovery proportion among the traits left untouched",
+    "truth_labels": "valid for every tracked trait: the injected trait and any ratio naming it carry the effect; all other labels are unchanged bit for bit, which is verified by a test comparing their study contrasts before and after injection",
+    "effective_size_reporting": "round() leaves small counts where they are and the available complement caps large ones, so the realised multiplier is reported per scenario alongside the nominal one",
     "multipliers": [
       1.1,
       1.3,
@@ -65,9 +70,32 @@
     "injected_trait": "coccus_shaped"
   },
   "replicates": {
-    "report": 200,
-    "ci_check": 5,
+    "null": 1200,
+    "power": 400,
+    "shared_flip_artifact": 100,
     "seed": 182
+  },
+  "criterion_calibration": {
+    "nominal_level": 0.05,
+    "tolerated_inflation": 0.015,
+    "per_test_tolerance": 0.065,
+    "family_tolerance": 0.065,
+    "decision_rule": "pass only when the one-sided 95% upper confidence bound on the pooled rate is at most the tolerance. The burden of proof is on the procedure: an interval that merely covers 0.05 is not evidence of control, because an interval from a procedure whose true rate is 0.08 usually covers 0.05 too.",
+    "uncertainty": "per-label rates keep their exact two-sided binomial interval over independent replicates. Pooled per-procedure rates use the ratio estimator over replicate clusters, which reduces to the binomial variance when a replicate contributes one test and inflates it by the measured design effect when it contributes several correlated ones. Family rates are one Bernoulli per replicate, so their bound is exact.",
+    "replicate_budget_rationale": "the budget is set by the least-powered procedure. guild_mcnemar contributes one test per replicate, so its pooled trial count is 2 x null replicates. 1200 null replicates give 2400 trials, a standard error of 0.0045 at a true rate of 0.05, and the operating characteristics below. Procedures with more labels per replicate exceed these numbers.",
+    "required_operating_characteristics": {
+      "pass_probability_at_0.05": 0.95,
+      "fail_probability_at_0.07": 0.9,
+      "fail_probability_at_0.08": 0.99
+    },
+    "declared_operating_characteristics_at_2400_trials": {
+      "pass_probability_at_0.05": 0.9579,
+      "fail_probability_at_0.06": 0.7302,
+      "fail_probability_at_0.07": 0.9954,
+      "fail_probability_at_0.08": 1.0
+    },
+    "reported_per_verdict": "every criterion row carries the pass probability at the nominal level and the fail probability at 0.06, 0.07 and 0.08 for the design that produced it, so a verdict is never reported without the probability it would have been reached.",
+    "what_the_tolerance_does_not_detect": "a true rate of 0.06 lies inside the declared tolerance, so a precisely measured 0.06 passes by declaration rather than by weakness: at 2400 trials it fails 73% of the time only because the bound is still wide, and at the 14400 trials fraction_sign_test contributes it passes 81% of the time. Treating 0.06 as material inflation would mean declaring a tolerance of 0.055, which needs about 20600 pooled trials - 10300 null replicates for a single-test procedure - to keep the pass probability at the nominal level at 0.95. That budget was not taken; the criterion is sized to separate rates at or below 0.065 from rates at or above 0.07."
   },
   "acceptance_criteria": [
     {
@@ -75,17 +103,30 @@
       "applies_to": [
         "fraction_sign_test",
         "log_ratio_sign_test",
-        "guild_mcnemar"
+        "guild_mcnemar",
+        "screened_fraction_sign_test"
       ],
-      "criterion": "under the complete null, the 95% Monte Carlo interval for the per-test rejection rate at p <= 0.05 includes 0.05, or lies below it"
+      "statistic": "per-test rejection rate at p <= 0.05, pooled over every null label and both complete-null scenarios, with the simulation replicate as the independent cluster",
+      "criterion": "under the complete null, the one-sided 95% upper confidence bound on the pooled per-test rejection rate is at most 0.065",
+      "tolerance": 0.065,
+      "expected_verdict": {
+        "screened_fraction_sign_test": "fail"
+      }
     },
     {
       "id": "family_error",
       "applies_to": [
         "fraction_sign_test",
-        "log_ratio_sign_test"
+        "log_ratio_sign_test",
+        "guild_mcnemar",
+        "screened_fraction_sign_test"
       ],
-      "criterion": "under the complete null, the rate of replicates with at least one q <= 0.05 is at most 0.10"
+      "statistic": "share of complete-null replicates with at least one q <= 0.05, one Bernoulli per replicate, pooled over both complete-null scenarios",
+      "criterion": "under the complete null, the exact one-sided 95% upper confidence bound on the share of replicates with any q <= 0.05 is at most 0.065",
+      "tolerance": 0.065,
+      "expected_verdict": {
+        "screened_fraction_sign_test": "fail"
+      }
     },
     {
       "id": "power_reported",
@@ -93,20 +134,24 @@
         "fraction_sign_test",
         "log_ratio_sign_test"
       ],
-      "criterion": "under injected signal, power for the injected trait is reported with its Monte Carlo interval; no threshold is set"
+      "statistic": "rejection rate at q <= 0.05 for the injected label in each declared injected scenario, with its exact two-sided 95% interval over replicates",
+      "criterion": "every declared injected scenario reports power for the injected label with a Monte Carlo interval no wider than 0.12; no threshold is set on power itself",
+      "max_interval_width": 0.12
     },
     {
       "id": "selection_inflation_measured",
       "applies_to": [
         "screened_fraction_sign_test"
       ],
-      "criterion": "reported, not judged: the rejection rate under the complete null is expected to exceed the nominal level"
+      "criterion": "reported, not judged: the range of per-test rejection rates under the complete null, beside the judged per_test_level verdict for the same procedure"
     }
   ],
   "reporting_rules": [
-    "discrete test statistics make the attainable p-values a finite set; uniformity of p is not required and the attainable resolution is reported",
-    "Monte Carlo uncertainty is reported as an exact binomial interval over replicates",
-    "a failed criterion is reported as failed; no procedure is tuned against these simulations"
+    "discrete test statistics make the attainable p-values a finite set; uniformity of p is not required. The smallest p actually observed and the two attainable p-values straddling 0.05 at the median scored unit count are both reported, and they are different quantities",
+    "Monte Carlo uncertainty is reported as an exact binomial interval for per-label and family rates, and as a replicate-clustered interval for pooled per-procedure rates",
+    "power is reported with its Monte Carlo interval; a budget too small to meet the declared interval width fails the criterion rather than reporting a bare point estimate",
+    "a failed criterion is reported as failed; no procedure and no threshold is tuned against the simulations that judge it",
+    "every reported number comes from a run whose seed, completed replicate count and input digests are recorded in calibration_status.json"
   ],
   "not_covered": [
     "the enrichment arm's hypergeometric urn (#131) and the composition arm's native transform (owners' adapters)",
@@ -116,9 +161,32 @@
   "amendments": [
     {
       "date": "2026-09-16",
+      "protocol": "calibration-v1",
       "change": "the single injected multiplier of 1.3 was replaced by a declared curve of 1.1, 1.3, 2.0 and 4.0",
       "reason": "the first run showed a 1.3x lift moves almost no study signs, so power was ~0 and the scenario was uninformative; a curve reports where the procedures start to detect an effect",
       "unchanged": "the null scenarios, the acceptance criteria and every threshold"
+    },
+    {
+      "date": "2026-10-02",
+      "protocol": "calibration-v2",
+      "change": "the per-test acceptance rule was replaced. v1 passed a label when the lower bound of its exact two-sided 95% interval was at most 0.05. v2 pools rejections per procedure, treats the replicate as the independent cluster, and passes only when the one-sided 95% upper bound is at most a declared tolerance of 0.065. The family criterion was tightened from a point estimate at or below 0.10 to the same exact upper-bound rule at 0.065. guild_mcnemar and screened_fraction_sign_test were added to the family check, and screened_fraction_sign_test was added to both checks as a declared negative control. power_reported became a real check on the Monte Carlo interval width. The null replicate budget rose from 200 to 1200 and a separate power budget of 400 was declared.",
+      "reason": "#293 showed the v1 rule was anticonservative: at 200 replicates it accepted up to 16/200, a true rate of 0.08 passed 57% of the time and 0.06 passed 91%, and the screened procedure, which this protocol itself declares inflated, passed on 10 of 12 label x scenario rows. The v1 fixture test used a true rate of 0.4 and could not detect this.",
+      "known_when_amended": "the v1 report at 200 replicates: pooled per-test rates near 0.042 (fraction), 0.041 (log-ratio), 0.052 (guild) and 0.082 (screened). The tolerance of 0.065 was chosen as the smallest value the single-test procedure's budget can resolve while still passing a procedure at the nominal level with probability 0.95, not as a value the measured rates were known to clear; the screened procedure is expected to fail it and the published procedures are not guaranteed to pass it.",
+      "unchanged": "the null generation design and its exchangeability argument, the unit choice, the nominal level of 0.05, the injected multiplier curve, the injected trait and study share, and the rule that failures are reported rather than tuned away"
+    },
+    {
+      "date": "2026-10-02",
+      "protocol": "calibration-v2",
+      "change": "injection now moves counts from the complement of the tracked traits, holding each profile's total fixed, where v1 added the injected counts to the total",
+      "reason": "#293 showed v1's construction lowered every other trait's share on the increased side, so traits the report called untouched carried real induced effects and the reported false-discovery proportion counted them as false discoveries. The log-ratio family was unaffected because no total enters a ratio.",
+      "unchanged": "the multiplier curve, the injected trait, the study share and the definition of the false-discovery proportion"
+    },
+    {
+      "date": "2026-10-02",
+      "protocol": "calibration-v2",
+      "change": "the resampler moved from random.Random seeded with a per-scenario string to numpy.random.default_rng seeded with [seed, sha256_64(stream), replicate], and replicates.ci_check was removed as unused",
+      "reason": "the string seed made a replicate's assignment reachable only by replaying the scenario, so another arm could not reuse it (#263), and the stdlib generator required a global bandit B311 suppression, which AGENTS.md treats as a workaround. Every number in the v2 report therefore comes from different draws than v1, not only from different rules.",
+      "unchanged": "the draw order within a replicate, the flip probability of 0.5 per unit and the seed 182"
     }
   ]
 }
