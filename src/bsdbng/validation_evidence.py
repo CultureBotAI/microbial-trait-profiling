@@ -24,8 +24,11 @@ what is recorded, without acquiring new data:
   production or fermentation. They are annotations, not measurements, and share
   their taxa with every other trait.
 * **An external cohort collection** (Sun et al. 2024, 36 Chinese fecal metagenome
-  studies): candidate overlaps with the discovery corpus by author surname, year and
-  location, for confirmation before any "independent" claim.
+  studies plus two the authors recruited): candidate overlaps with the discovery
+  corpus, decided by normalised publication-title similarity at
+  :data:`TITLE_AGREEMENT` and nothing else, for confirmation before any
+  "independent" claim. A source study with no publication title in the external
+  table is reported as not assessable rather than guessed at from its authors.
 """
 
 from __future__ import annotations
@@ -63,10 +66,28 @@ SUN2024_SAMPLE_GROUP_URL = (
     "bd254f4e6f6857c1d94eb6faf7941a0cdf489764/data/sample.group"
 )
 SUN2024_SAMPLE_GROUP_SHA256 = "0b3a8fef3c95731b53e6505f3f6e8c954cfd86d2b37ff3ca59d3bb0cead373e2"
-#: Supplementary Table 1 of the same paper, as text, for the source study titles.
+#: Supplementary Table 1 of the same paper, for the source study titles. The Europe PMC
+#: endpoint serves a zip of the article's supplementary files; the table is in the one
+#: PDF it contains. The zip itself is rebuilt per request and so has no stable
+#: checksum, but the PDF inside it does.
 SUN2024_SUPPLEMENT_URL = (
     "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC11442664/supplementaryFiles"
 )
+SUN2024_SUPPLEMENT_PDF_NAME = "41522_2024_567_MOESM1_ESM.pdf"
+SUN2024_SUPPLEMENT_PDF_SHA256 = "67fa73e08dff34ecb98aae5331e5e32fb4be4d4b2e386de939ebc6897045e3fa"
+SUN2024_SUPPLEMENT_PDF_BYTES = 1865194
+#: How the PDF becomes the text this module parses. A PDF text layer is produced by the
+#: extractor, not stored in the file, so the command and the tool version are part of
+#: the input's identity: a different extractor can lay the table's columns out
+#: differently and change what parse_supplement() reads.
+SUN2024_SUPPLEMENT_EXTRACTION = (
+    f"pdftotext -layout {SUN2024_SUPPLEMENT_PDF_NAME} sun2024_supplement.txt"
+)
+SUN2024_SUPPLEMENT_EXTRACTOR = "poppler pdftotext 26.02.0"
+SUN2024_SUPPLEMENT_TEXT_SHA256 = "ce6f54da95fd46d314b92fb1f384fe04d554017c1286d739a8f7a950ccf85e6d"
+#: The committed snapshot these pinned inputs reproduce. Checked after regeneration,
+#: so a parse that silently changes the table is caught even if the text layer matched.
+EXTERNAL_COHORTS_SHA256 = "bbc460ac127f2b04b9d956cd84dbd4201b7d4f4549abe9f734485c7d8591c6f8"
 #: Two titles name the same publication at or above this character-level similarity
 #: once case, spacing and punctuation are removed, which absorbs PDF artefacts such
 #: as "Ametagenome" for "A metagenome" without matching merely similar titles.
@@ -996,13 +1017,38 @@ def _sha256(path: Path) -> str:
 def write_external_snapshot(
     sample_group_path: Path, supplement_path: Path, output: Path = EXTERNAL_COHORTS_PATH
 ) -> Path:
-    """Regenerate the committed cohort snapshot from the pinned sources."""
+    """Regenerate the committed cohort snapshot from the pinned sources.
+
+    Both inputs are checked by SHA-256 before anything is read, and the result is
+    checked against the committed snapshot's SHA-256 after it is written. The last
+    check is what makes the pins mean something: it says that these exact bytes
+    produce exactly the table in version control, so a changed input or a changed
+    parse cannot quietly become a new snapshot.
+    """
     digest = _sha256(sample_group_path)
     if digest != SUN2024_SAMPLE_GROUP_SHA256:
         raise ValueError(f"{sample_group_path} has SHA-256 {digest}, not the pinned table")
-    return _write(
+    text_digest = _sha256(supplement_path)
+    if text_digest != SUN2024_SUPPLEMENT_TEXT_SHA256:
+        raise ValueError(
+            f"{supplement_path} has SHA-256 {text_digest}, not the pinned supplement text "
+            f"{SUN2024_SUPPLEMENT_TEXT_SHA256}. It is produced by "
+            f"`{SUN2024_SUPPLEMENT_EXTRACTION}` with {SUN2024_SUPPLEMENT_EXTRACTOR} from "
+            f"{SUN2024_SUPPLEMENT_PDF_NAME} ({SUN2024_SUPPLEMENT_PDF_BYTES:,} bytes, "
+            f"SHA-256 {SUN2024_SUPPLEMENT_PDF_SHA256}) in the zip at "
+            f"{SUN2024_SUPPLEMENT_URL}. A newer extractor can lay the table out "
+            "differently; confirm the PDF's checksum first, then re-pin the text."
+        )
+    written = _write(
         output, [asdict(c) for c in summarize_sun2024(sample_group_path, supplement_path)]
     )
+    snapshot_digest = _sha256(written)
+    if written == EXTERNAL_COHORTS_PATH and snapshot_digest != EXTERNAL_COHORTS_SHA256:
+        raise ValueError(
+            f"{written} came out with SHA-256 {snapshot_digest}, not the committed "
+            f"{EXTERNAL_COHORTS_SHA256}. The pinned inputs verified, so the parse changed."
+        )
+    return written
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -1021,7 +1067,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--snapshot-supplement",
         type=Path,
-        help=f"Supplementary Table 1 as text, from {SUN2024_SUPPLEMENT_URL}",
+        help=f"Supplementary Table 1 as text, extracted with "
+        f"`{SUN2024_SUPPLEMENT_EXTRACTION}` from {SUN2024_SUPPLEMENT_PDF_NAME} "
+        f"in the zip at {SUN2024_SUPPLEMENT_URL}",
     )
     parser.add_argument(
         "--require-nodes",
@@ -1085,6 +1133,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "external_cohorts_sha256": _sha256(args.external_cohorts),
         "external_source": SUN2024_SAMPLE_GROUP_URL,
         "external_source_sha256": SUN2024_SAMPLE_GROUP_SHA256,
+        "external_supplement_pdf": SUN2024_SUPPLEMENT_PDF_NAME,
+        "external_supplement_pdf_sha256": SUN2024_SUPPLEMENT_PDF_SHA256,
+        "external_supplement_extraction": SUN2024_SUPPLEMENT_EXTRACTION,
+        "external_supplement_extractor": SUN2024_SUPPLEMENT_EXTRACTOR,
+        "external_supplement_text_sha256": SUN2024_SUPPLEMENT_TEXT_SHA256,
         "discovery_studies": len(discovery),
         "discovery_experiments": stats.kept_experiments,
         "marker_split_candidates": _classification_counts(markers),

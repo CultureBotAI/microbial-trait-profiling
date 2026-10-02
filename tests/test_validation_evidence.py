@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from bsdbng import validation_evidence
 from bsdbng.validation_evidence import (
     EVIDENCE_EXCLUSIONS,
     EVIDENCE_TYPES,
@@ -17,6 +18,7 @@ from bsdbng.validation_evidence import (
     MARKER_STRATIFIED,
     NODES_MISSING,
     NODES_VERIFIED,
+    SUN2024_SUPPLEMENT_PDF_SHA256,
     ExternalCohort,
     Mention,
     StudyRecord,
@@ -30,8 +32,10 @@ from bsdbng.validation_evidence import (
     nodes_status,
     parse_supplement,
     read_studies,
+    summarize_sun2024,
     summary_rows,
     title_agreement,
+    write_external_snapshot,
 )
 
 HEADER = (
@@ -592,6 +596,83 @@ def test_overlap_is_decided_by_title_and_states_when_it_cannot_be(tmp_path: Path
     assert untitled["overlap_status"] == "not_assessable_without_title"
     outside = external_overlap([_cohort()], studies, set())[0]
     assert outside["overlap_status"] == "curated_in_bugsigdb_outside_discovery_corpus"
+
+
+# The pinned sample.group's header, and two rows built from its real column values.
+SAMPLE_GROUP = (
+    "Sample\tGroup\tGroup_1\tGroup_2\tLevelB\tLevelA\tgroup\tProject\tProject_1"
+    "\tProject_2\tLevelA2\tLevelA3\tLevelA4\tLevelA5\tAge\tGender\tBMI\tLocation_1"
+    "\tLocation\tsequence_type\tDNA_extract_type\n"
+    "SRR8845307\tDisease\tDisease\tDisease\tBL\tmetabolic disease\tlow\tWangQ_2021.BL"
+    "\tWangQ_2021\tDiscover\tcardiometabolic disease\tcardiometabolic disease\tBL"
+    "\tcardiometabolic disease\t55.3\tFemale\t15.81685744\tShenzhen"
+    "\tShenzhen (Guangdong)\tBGISEQ-500\tQinJ_2012\n"
+    "SRR8845308\tControl\tControl\tControl\tBL\tmetabolic disease\tlow\tWangQ_2021.BL"
+    "\tWangQ_2021\tDiscover\tcardiometabolic disease\tcardiometabolic disease\tBL"
+    "\tcardiometabolic disease\tNA\tMale\tNA\tShenzhen"
+    "\tShenzhen (Guangdong)\tBGISEQ-500\tQinJ_2012\n"
+)
+
+
+def test_summarize_joins_the_sample_counts_to_the_supplement_description(
+    tmp_path: Path,
+) -> None:
+    sample_group = tmp_path / "sample.group"
+    sample_group.write_text(SAMPLE_GROUP, encoding="utf-8")
+    supplement = tmp_path / "supplement.txt"
+    supplement.write_text(
+        "Study ID      Reference\nWangQ_2021    Gut microbiota and metabolic disease\n",
+        encoding="utf-8",
+    )
+    (cohort,) = summarize_sun2024(sample_group, supplement)
+    assert cohort.study_id == "WangQ_2021"
+    assert cohort.year == "2021"
+    assert cohort.samples == 2
+    assert cohort.disease_samples == 1
+    assert cohort.control_samples == 1
+    assert cohort.role == "Discover"
+    assert cohort.projects == "WangQ_2021.BL"
+    # Age and BMI are counted per sample, and "NA" is absent, not a value.
+    assert cohort.samples_with_age == 1
+    assert cohort.samples_with_bmi == 1
+    assert cohort.reference_title == "Gut microbiota and metabolic disease"
+
+
+def test_the_snapshot_refuses_an_unpinned_sample_table(tmp_path: Path) -> None:
+    sample_group = tmp_path / "sample.group"
+    sample_group.write_text(SAMPLE_GROUP, encoding="utf-8")
+    supplement = tmp_path / "supplement.txt"
+    supplement.write_text("Study ID      Reference\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="not the pinned table"):
+        write_external_snapshot(sample_group, supplement, tmp_path / "out.tsv")
+
+
+def test_the_snapshot_refuses_a_supplement_text_it_cannot_identify(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sample_group = tmp_path / "sample.group"
+    sample_group.write_text(SAMPLE_GROUP, encoding="utf-8")
+    monkeypatch.setattr(
+        validation_evidence,
+        "SUN2024_SAMPLE_GROUP_SHA256",
+        hashlib.sha256(sample_group.read_bytes()).hexdigest(),
+    )
+    supplement = tmp_path / "supplement.txt"
+    supplement.write_text("Study ID      Reference\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="not the pinned supplement text") as raised:
+        write_external_snapshot(sample_group, supplement, tmp_path / "out.tsv")
+    # The message has to say how to produce the right bytes, not just that these are wrong.
+    assert "pdftotext -layout" in str(raised.value)
+    assert SUN2024_SUPPLEMENT_PDF_SHA256 in str(raised.value)
+
+
+def test_no_title_match_is_reported_as_such_and_not_as_independence(tmp_path: Path) -> None:
+    path = _dump(tmp_path / "dump.csv", [_row(Title="Something else entirely")])
+    (row,) = external_overlap([_cohort()], read_studies(path), {"bsdb:1"})
+    assert row["overlap_status"] == "no_title_match_found"
+    assert row["matched_bugsigdb_studies"] == ""
+    assert row["match_basis"] == ""
+    assert row["best_title_agreement"] == 0.0
 
 
 def test_supplement_parsing_joins_wrapped_titles_and_stops_at_the_next_table() -> None:
