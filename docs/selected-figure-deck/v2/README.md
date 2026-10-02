@@ -1,53 +1,58 @@
 # Selected-figure deck v2
 
-Version 2 contains 37 slides and 36 original figure images. It retains all 23
-Sankeys, including the combined six-color views on slides 5–7. The main sequence
-ends on slide 19; the 18 alternate and individual-trait Sankeys occupy slides
-20–37. The complete 43-slide v1 sources in the parent directory are unchanged.
-Work continues under issue #282 and PR #283.
+The October 2 revision contains 31 slides and 30 original figure images.
+It retains all 21 of Jed's Sankeys, including the combined six-color views on
+slides 5–7. The main sequence ends on slide 13; the 18 alternate and
+individual-trait Sankeys occupy slides 14–31. Work continues under issue #282
+and PR #283.
 
-## Selection
+## October 2 changes
 
-The user requested removal of pages about negative results, with exceptions for
-documented controversies or disagreement with prior results. Negative here means
-null, inconclusive, or sensitivity-focused findings; it does not mean a trait
-decreases, is under-represented, or occurs in decreased taxon signatures.
+Jed requested the expanded PD influence figure on slide 12 and removal of the
+separate contributor view on slide 14. Slide 12 now uses
+`pd_exploratory_taxa_six_traits_influence_heatmap.png`, pinned to
+`205257c5ec887bdf145e2c66e12f17ee005fafa0`. It displays 30 species, genus and
+family rows, including 23 matches to the curated PD literature reference.
+The source tables audit all 180 taxon–trait cells: one has an
+increased-direction call, six have decreased-direction calls, 167 are mixed
+and six have low support. These are exploratory, non-additive removal
+diagnostics, not causal effects or a calibrated discovery family.
 
-Removed original v1 pages:
+The expanded figure preserves the literature comparison and makes the rank
+difference visible: E. coli recurs in one increased and two decreased PD
+profiles, while the genus Escherichia recurs in nine increased and two
+decreased profiles. The prior genus-group result is linked to
+[Li et al. (2017)](https://pubmed.ncbi.nlm.nih.gov/28536926/),
+DOI 10.1007/s11427-016-9001-4. Overlapping rank roll-ups, different estimands
+and sparse species recurrence limit the comparison. The previous species-only
+figure's statement that all 30 intervals include zero does not describe this
+expanded figure and has been replaced.
 
-| v1 slide | Reason |
-| --- | --- |
-| 4 | PD facultative aerobiosis loses significance in the full screening family |
-| 5 | COVID-19 cellulose loses significance in the full screening family |
-| 11 | No adjusted fecal condition–trait association in the broad screen |
-| 14 | Oral coccus contrast remains inconclusive after correction |
-| 15 | Zero adjusted associations across 18,152 condition–site tests |
-| 16 | All six salivary results are nonsignificant |
+The previous v2 slides 15–19 were Ilyas's saved enrichment/depletion
+infographics, clustered heatmap and two guild Sankeys, pinned to
+`0a0d739a70c7356ad0285154601af52a83316c94`. They are removed pending validated
+regeneration. At the reviewed ORA head `e71f967`, background/sampling-unit,
+complete-export and calibration findings remain open in #131, #254 and #263;
+the command/export/check blockers are #295–#297. This deck revision does not
+rerun ORA or replace those outputs with unsupported new results.
 
-The testing-family comparisons on v1 slides 4 and 5 are sensitivity analyses,
-without a documented disagreement with an independent prior study. They do not
-use the requested exception.
+The six removals use the previous 37-slide v2 numbering: 14, 15, 16, 17, 18
+and 19. Slides after those removals are renumbered. The complete 43-slide v1
+sources in the parent directory retain the historical figures.
 
-V1 slide 18 is retained as v2 slide 12 under the prior-result exception. The
-figure explicitly compares sparse E. coli recurrence (one increased versus two
-decreased PD profiles) with the increased Escherichia–Shigella finding reported
-by [Li et al. (2017)](https://pubmed.ncbi.nlm.nih.gov/28536926/), DOI
-10.1007/s11427-016-9001-4. The title now states that comparison, and the footer
-links the primary report. The notes preserve the different taxonomic ranks,
-sparse recurrence, and all 30 influence intervals crossing zero. This is a
-descriptive discrepancy to investigate, not a demonstrated contradiction.
+## Selection and provenance
 
-The cervical slide remains because it reports descriptive profile-enrichment
-support. Its title now names the coccus pattern in decreased cervical-neoplasia
-signatures. The study-level PD slide remains because halophily passes its
-336-test correction family. Necessary limits remain in the retained slides'
-notes; source PNGs and their embedded annotations are unchanged.
+The earlier v2 selection removed original v1 pages 4, 5, 11, 14, 15 and 16,
+which centered on null, inconclusive or testing-family sensitivity findings.
+Decreased traits and under-representation were not themselves exclusion
+criteria. The cervical descriptive enrichment and study-level PD halophily
+pages remain with their existing qualifications.
 
-`page_selection.tsv` maps all 43 v1 pages to retention/removal decisions and
-new page numbers. `slide_manifest.tsv` records each retained figure's hash,
-source revision, evidence, and any prior-result reference. `sankey_coverage.tsv`
-keeps the complete 21-view Jed audit with the new page numbering; the two Ilyas
-Sankeys are also present in the slide manifest.
+`page_selection.tsv` maps all 43 v1 pages to their current retention,
+replacement or removal decisions. `slide_manifest.tsv` records every retained
+figure's hash, source revision, evidence and prior-result reference.
+`sankey_coverage.tsv` records all 21 Jed views with the current page numbers.
+All retained PNGs use their original pixels.
 
 ## Rebuild and validation
 
@@ -63,12 +68,12 @@ just review-deck-pdf "file://$deck_dir/selected_figures.html" \
   "$deck_dir/selected_figures.pdf" /absolute/path/to/chrome-headless-shell
 ```
 
-The unversioned original guild image is the same input as in v1. All pinned
-source revisions and PNG bytes are retained from v1. Before delivery, check 37
-pages, 36 native-resolution embedded images, all retained image hashes, all
-titles/notes/source footers, page numbering, the prior-report citation, and
-absence of the six removed pages. Check for layout overflow and inspect the
-revised pages. Run `just check` and `just precommit` before committing.
+The unversioned original guild image remains an explicit input, identified by
+its manifest hash. Before delivery, verify 31 pages, 30 native-resolution
+figure images, all image hashes, source footers, numbering, all 21 Jed
+Sankeys, the expanded slide 12 and absence of the six newly removed pages.
+Inspect the rendered layout, particularly slide 12 and the appendix transition.
+Run `just check` and `just precommit` before committing.
 
-The local PDF is delivered beside v1 as `microbla-trait-profiling_v2.pdf`, with
-separate v2 companion files. V1 is preserved byte-for-byte.
+The local PDF is delivered beside v1 as `microbla-trait-profiling_v2.pdf`.
+The preceding v2 is backed up before replacement; v1 is preserved.
