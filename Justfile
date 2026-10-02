@@ -122,6 +122,12 @@ table1-trait-maps:
 table1-compositional-stats *ARGS:
 	uv run python -m bsdbng.trait_composition --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
 
+# Same inputs and filters as `just guild-maps`. Emits four Sankey PNGs (gram
+# positive/negative x increased/decreased) plus the edge table backing them, to
+# data/derived/gram_sankey/. Needs a local Chrome for the PNGs (`just get-chrome`).
+gram-sankey:
+	just timed gram-sankey "uv run python scripts/create_gram_sankey.py"
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
