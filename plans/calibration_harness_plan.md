@@ -134,7 +134,7 @@ class MethodAdapter(Protocol):
         config: dict[str, Any],
     ) -> CalibrationResult:
         """Execute the end-to-end inference procedure on provided inputs.
-        
+
         Returns DataFrame containing test_id, trait, p_value, adjusted_p_value,
         effect_size, and reject_null indicator.
         """

@@ -42,14 +42,14 @@ Where:
 flowchart TD
     StudyProfiles[Profile Taxa Sets] --> GenBG[Build Background Taxa Universe M, K]
     TaxaMatrix[taxa_trait_matrix.tsv] --> TraitMap[Taxon Trait Presence]
-    
+
     StudyProfiles --> ProfileDraws[Compute Profile Size N and Hits k]
     TraitMap --> GenBG
     TraitMap --> ProfileDraws
-    
+
     GenBG --> Hypergeom[2x2 Taxon Hypergeometric Test]
     ProfileDraws --> Hypergeom
-    
+
     Hypergeom --> BH[Benjamini-Hochberg Global FDR]
     BH --> RankedExports[Ranked Trait TSVs #254]
     BH --> Calib[Calibration Harness Evaluation #263]

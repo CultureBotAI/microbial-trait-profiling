@@ -69,15 +69,15 @@ Where:
 flowchart TD
     StudyYAML[Study YAMLs] --> CollectProfileTaxa[Collect Unique Taxa per Profile]
     TaxaMatrix[taxa_trait_matrix.tsv] --> TraitLookup[Taxon-to-Trait Binary Mapping]
-    
+
     CollectProfileTaxa --> ProfileBinary[Profile Taxa Vector N, k]
     CollectProfileTaxa --> BackgroundUniverse[Background Taxon Universe M, K]
     TraitLookup --> ProfileBinary
     TraitLookup --> BackgroundUniverse
-    
+
     ProfileBinary --> HypergeomTest[2x2 Hypergeometric Test per Trait]
     BackgroundUniverse --> HypergeomTest
-    
+
     HypergeomTest --> FDR[Benjamini-Hochberg FDR]
     FDR --> FilterResults[Significant Enriched / Depleted Trait Hits]
 ```

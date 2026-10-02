@@ -39,18 +39,18 @@ graph TD
     EnrichTSV[data/derived/trait_enrichment_results.tsv] --> Filter[Filter by inc_dec Direction and Target Traits]
     ExpTSV[data/derived/experiments.tsv] --> MergeMeta[Join metadata: body_site, condition]
     Filter --> MergeMeta
-    
+
     MergeMeta --> AggLeft[Aggregate Condition -> Trait edges: n_profiles, n_studies, mean_signal]
     MergeMeta --> AggRight[Aggregate Trait -> BodySite edges: n_profiles, n_studies, mean_signal]
-    
+
     AggLeft --> TripartiteLayout[Tripartite Node Layout Engine: Left Column, Center 3x2 Grid, Right Column]
     AggRight --> TripartiteLayout
-    
+
     TripartiteLayout --> DrawNodes[Render Nodes with Labels and Counts]
     TripartiteLayout --> DrawEdges[Render Smooth Bezier Curves with Trait Colors and Widths]
     DrawEdges --> RenderFinal[Matplotlib / SVG Exporter]
     DrawNodes --> RenderFinal
-    
+
     RenderFinal --> DecPNG[data/derived/Cytoscape_Diagrams/cytoscape_six_traits_decreased.png]
     RenderFinal --> IncPNG[data/derived/Cytoscape_Diagrams/cytoscape_six_traits_increased.png]
 ```

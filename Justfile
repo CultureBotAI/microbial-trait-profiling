@@ -33,6 +33,11 @@ check-generated:
 sync:
 	uv sync --all-extras --group dev --group qa
 
+# Use the same declared uv version as the lock hook; run `just sync` first.
+[positional-arguments]
+lock *ARGS:
+	uv run --frozen --group qa uv lock "$@"
+
 lint:
 	uv run ruff check src tests scripts
 	uv run ruff format --check src tests scripts
@@ -96,8 +101,8 @@ security:
 	tmpdir="$(mktemp -d)" && \
 	trap 'rm -rf "$tmpdir"' EXIT && \
 	reqfile="$tmpdir/requirements.txt" && \
-	uv export --quiet --frozen --no-dev --format requirements.txt \
-	  --no-emit-project --no-emit-workspace --no-emit-local \
+	uv export --quiet --frozen --no-dev --format requirements-txt \
+	  --no-emit-project --no-emit-workspace \
 	  --output-file "$reqfile" && \
 	uv run pip-audit -r "$reqfile" --disable-pip \
 	  --cache-dir "$tmpdir/pip-audit-cache"
@@ -106,7 +111,7 @@ precommit:
 	uv run pre-commit run --all-files
 
 validate-schema:
-	uv run linkml validate -s {{schema}}
+	uv run linkml validate {{schema}}
 
 lint-schema:
 	uv run linkml lint --config {{lintconfig}} --validate --ignore-warnings {{schema}}

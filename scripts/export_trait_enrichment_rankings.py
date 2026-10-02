@@ -208,7 +208,7 @@ def parse_report(path: Path, stat_type: str = "p_value") -> list[ParsedRow]:
                 payload = line[2:]
                 parts = payload.split(", ")
                 if len(parts) < 3:
-                    raise ValueError(f"Unparseable trait row: {line!r}")
+                    raise ValueError(f"Unparsable trait row: {line!r}")
 
                 trait = parts[0].strip()
                 val = float(parts[1])
@@ -219,8 +219,6 @@ def parse_report(path: Path, stat_type: str = "p_value") -> list[ParsedRow]:
                 summary = parts[3] if len(parts) >= 4 else parts[2]
                 obs, exp, fold = _parse_summary_values(summary)
 
-                # Pylint: current_header is checked at top of block
-                assert current_header is not None
                 study_id, experiment_id, inc_dec = current_header
                 profile_id = f"{study_id}|{experiment_id}|{inc_dec}"
                 # Exclude MediaDive growth-medium traits for consistency

@@ -18,13 +18,7 @@ import math
 from collections import defaultdict
 from pathlib import Path
 
-try:
-    from scipy.stats import hypergeom as _scipy_hypergeom  # type: ignore
-
-    _HAVE_SCIPY = True
-except Exception:
-    _scipy_hypergeom = None
-    _HAVE_SCIPY = False
+from scipy.stats import hypergeom as _scipy_hypergeom
 
 
 def parse_args() -> argparse.Namespace:
@@ -94,53 +88,12 @@ def _to_int(value: str) -> int:
     return int(_to_float(value))
 
 
-def _comb(n: int, k: int) -> int:
-    if k < 0 or k > n:
-        return 0
-    return math.comb(n, k)
-
-
 def hypergeom_sf(x: int, population_size: int, population_successes: int, draws: int) -> float:
-    """Return P[X >= x] for Hypergeometric(population_size, population_successes, draws)."""
-    # Use SciPy's implementation if available for speed and numerical stability
-    if _HAVE_SCIPY:
-        # scipy.hypergeom.sf(k-1, M, K, N) == P[X >= k]
-        try:
-            return float(_scipy_hypergeom.sf(x - 1, population_size, population_successes, draws))
-        except Exception:
-            pass
-
-    # Fallback calculation
-    if x <= 0:
-        return 1.0
-    max_k = min(population_successes, draws)
-    if x > max_k:
-        return 0.0
-
-    # Optimized fallback: P(X >= x) = sum_{k=x}^{max_k} P(X=k)
-    # Using recurrence: P(X=k+1) = P(X=k) * (K-k)(N-k) / ((k+1)(M-K-N+k+1))
-    # where M=pop_size, K=pop_successes, N=draws.
-    try:
-        # Start with P(X=x) * denom
-        term = _comb(population_successes, x) * _comb(
-            population_size - population_successes, draws - x
-        )
-        numer_sum = term
-
-        M, K, N = population_size, population_successes, draws
-        for k in range(x, max_k):
-            # Calculate next term using integer math to maintain precision.
-            term = (term * (K - k) * (N - k)) // ((k + 1) * (M - K - N + k + 1))
-            numer_sum += term
-            if term == 0:
-                break
-
-        denom = _comb(M, N)
-        if denom == 0:
-            return 1.0
-        return float(numer_sum / denom)
-    except (OverflowError, MemoryError):
-        return 0.0
+    """Return P[X >= x] using the required SciPy implementation."""
+    value = float(_scipy_hypergeom.sf(x - 1, population_size, population_successes, draws))
+    if not math.isfinite(value):
+        raise ValueError("Invalid hypergeometric population or draw parameters")
+    return value
 
 
 def hypergeom_sf_many(
@@ -149,73 +102,17 @@ def hypergeom_sf_many(
     population_successes: list[int],
     draws: int,
 ) -> list[float]:
-    """Return P[X >= x] for many Hypergeometric draws.
-
-    This keeps the fallback behavior unchanged, but when SciPy is available it
-    evaluates the survival function over the whole row at once.
-    """
+    """Compute each trait's tail probability without silently replacing failed calculations."""
+    if len(counts) != len(population_successes):
+        raise ValueError("Counts and population successes must have the same length")
     if not counts:
         return []
-
-    if _HAVE_SCIPY:
-        try:
-            # scipy.hypergeom.sf(k-1, M, K, N) == P[X >= k]
-            values = _scipy_hypergeom.sf(
-                [count - 1 for count in counts],
-                population_size,
-                population_successes,
-                draws,
-            )
-            if hasattr(values, "__iter__"):
-                return [float(v) for v in values]
-            return [float(values)]
-        except Exception:
-            pass
-
-    # Background counts for hypergeometric test
-    # Optimized fallback using P(X=k) recurrence
-    # P(X=k+1) = P(X=k) * (K-k)(N-k) / ((k+1)(M-K-N+k+1))
-    # where M=pop_size, K=pop_successes, N=draws.
-    M, N = population_size, draws
-    results = []
-
-    for x, K in zip(counts, population_successes, strict=True):
-        if x <= 0:
-            results.append(1.0)
-            continue
-        max_k = min(K, N)
-        if x > max_k:
-            results.append(0.0)
-            continue
-
-        # We need to calculate P(X >= x) = sum_{k=x}^{max_k} P(X=k)
-        # To avoid large numbers in denom, we use floating point recurrence for P(X=k)
-        # However, to avoid underflow when starting from x, we can start from the mode
-        # or use a more stable approach.
-        # Simple approach: use math.log (log_comb) to find P(X=x) then propagate.
-
-        def log_comb(n: int, k: int) -> float:
-            if k < 0 or k > n:
-                return -float("inf")
-            return math.lgamma(n + 1) - math.lgamma(k + 1) - math.lgamma(n - k + 1)
-
-        # log P(X=x) = log_comb(K, x) + log_comb(M-K, N-x) - log_comb(M, N)
-        log_px = log_comb(K, x) + log_comb(M - K, N - x) - log_comb(M, N)
-
-        try:
-            px = math.exp(log_px)
-            p_sum = px
-            curr_px = px
-            for k in range(x, max_k):
-                # px(k+1) = px(k) * (K-k)(N-k) / ((k+1)(M-K-N+k+1))
-                curr_px *= (K - k) * (N - k) / ((k + 1) * (M - K - N + k + 1))
-                p_sum += curr_px
-                if curr_px < 1e-18:  # Optimization: break if terms are negligible
-                    break
-            results.append(min(p_sum, 1.0))
-        except (OverflowError, ZeroDivisionError):
-            results.append(0.0)
-
+    values = _scipy_hypergeom.sf(
+        [x - 1 for x in counts], population_size, population_successes, draws
+    )
+    results = [float(value) for value in values]
+    if any(not math.isfinite(value) for value in results):
+        raise ValueError("Invalid hypergeometric population or draw parameters")
     return results
 
 
