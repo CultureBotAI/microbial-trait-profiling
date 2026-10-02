@@ -36,6 +36,7 @@ import difflib
 import hashlib
 import json
 import re
+import sys
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
@@ -452,7 +453,7 @@ def evidence_rows(
             "metagenomic_reads_possible": "WMS" in record.sequencing_types,
             "antibiotics_exclusion_field": record.antibiotics_exclusion_field,
             "observation_level": "study-level curated text; no sample-level values in the export",
-            "access": "source article and supplements; not assessed",
+            "searched_fields": ";".join(n for n in TEXT_FIELDS if record.texts.get(n)),
         }
         for name, pattern in EVIDENCE_TYPES.items():
             mention = find_mentions(record, pattern, EVIDENCE_EXCLUSIONS.get(name))
@@ -638,13 +639,67 @@ def _classification_counts(markers: Sequence[Mapping[str, object]]) -> dict[str,
     return dict(sorted(counts.items()))
 
 
-def inferred_function_traits(profile_path: Path, nodes_path: Path) -> list[dict[str, object]]:
+#: The columns of the inferred-function table, written whether or not it has rows.
+INFERRED_FUNCTION_FIELDS = (
+    "column",
+    "term",
+    "label",
+    "qualifier",
+    "qualifier_label",
+    "evidence_kind",
+)
+#: What the node table was found to be. Only "verified" licenses reading the labels.
+NODES_VERIFIED = "verified_against_provenance"
+NODES_MISSING = "missing"
+
+
+def nodes_status(nodes_path: Path, provenance_path: Path | None = None) -> str:
+    """Whether the node table is present and is the one its provenance records.
+
+    Every label in the inferred-function table comes from this file, so a different
+    file means different labels, and a missing one means no labels at all. The
+    provenance sidecar written by ``scripts/download_kg_microbe.py`` records the MD5
+    Google Drive reported for each download; this compares the file against it and
+    says which of the three situations holds, rather than leaving the caller to infer
+    it from an empty table.
+    """
+    if provenance_path is None:
+        provenance_path = nodes_path.parent / "provenance.json"
+    if not nodes_path.exists():
+        return NODES_MISSING
+    if not provenance_path.exists():
+        return f"present but unverifiable: no {provenance_path.name} beside it"
+    recorded = json.loads(provenance_path.read_text(encoding="utf-8"))
+    expected = recorded.get("files", {}).get(nodes_path.name, {}).get("md5")
+    if not expected:
+        return f"present but unverifiable: {provenance_path.name} records no md5 for it"
+    with nodes_path.open("rb") as handle:
+        digest = hashlib.file_digest(handle, lambda: hashlib.md5(usedforsecurity=False)).hexdigest()
+    if digest != expected:
+        return f"present but MD5 {digest} does not match the recorded {expected}"
+    return NODES_VERIFIED
+
+
+def inferred_function_traits(
+    profile_path: Path, nodes_path: Path, status: str = NODES_VERIFIED
+) -> list[dict[str, object]]:
     """Retained trait columns whose KG-Microbe label concerns SCFA or fermentation.
 
     A column can be qualified (``METPO:2000006|CHEBI:17272``); the qualifier's label
     says what the annotation asserts, and "uses as carbon source" is consumption, not
     production. Both labels are reported so the direction of the claim is explicit.
+
+    ``status`` is :func:`nodes_status`' verdict on ``nodes_path``. Anything other than
+    :data:`NODES_VERIFIED` raises: the labels are the entire content of this table, so
+    a table built from an unidentified node file would look like a result while
+    asserting nothing. Returning no rows is a legitimate answer only once the node
+    file is known to be the right one.
     """
+    if status != NODES_VERIFIED:
+        raise ValueError(
+            f"{nodes_path} is {status}; the inferred-function labels come from this file, "
+            "so they cannot be interpreted. Run `just download-kg` to fetch it."
+        )
     with profile_path.open(encoding="utf-8", newline="") as handle:
         header = next(csv.reader(handle, delimiter="\t"))
     columns = [
@@ -652,13 +707,12 @@ def inferred_function_traits(profile_path: Path, nodes_path: Path) -> list[dict[
     ]
     wanted = {part for column in columns for part in column.split("|")}
     labels: dict[str, str] = {}
-    if nodes_path.exists():
-        with nodes_path.open(encoding="utf-8", newline="") as handle:
-            for row in csv.DictReader(handle, delimiter="\t"):
-                if row["id"] in wanted:
-                    labels[row["id"]] = row["name"]
-                    if len(labels) == len(wanted):
-                        break
+    with nodes_path.open(encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle, delimiter="\t"):
+            if row["id"] in wanted:
+                labels[row["id"]] = row["name"]
+                if len(labels) == len(wanted):
+                    break
     rows: list[dict[str, object]] = []
     for column in columns:
         term = column.rsplit("|", 1)[-1]
@@ -915,13 +969,22 @@ def _format(value: object) -> str:
     return str(value)
 
 
-def _write(path: Path, rows: Sequence[Mapping[str, object]]) -> Path:
+def _write(
+    path: Path, rows: Sequence[Mapping[str, object]], fields: Sequence[str] | None = None
+) -> Path:
+    """Write a TSV, header first, whether or not there are rows to put under it.
+
+    A file with no header is not an empty table, it is an unreadable one: nothing
+    downstream can tell it from a truncated write. ``fields`` names the columns for
+    a table that can legitimately come out empty.
+    """
+    names = list(fields) if fields is not None else list(rows[0]) if rows else []
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
-        if rows:
-            writer.writerow(list(rows[0]))
-            writer.writerows([_format(v) for v in row.values()] for row in rows)
+        if names:
+            writer.writerow(names)
+        writer.writerows([_format(row[name]) for name in names] for row in rows)
     return path
 
 
@@ -960,6 +1023,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         help=f"Supplementary Table 1 as text, from {SUN2024_SUPPLEMENT_URL}",
     )
+    parser.add_argument(
+        "--require-nodes",
+        action="store_true",
+        help="fail instead of warning when the KG-Microbe node table is missing or "
+        "does not match the MD5 its provenance sidecar records",
+    )
     args = parser.parse_args(argv)
 
     if args.snapshot_from is not None:
@@ -981,7 +1050,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     evidence = evidence_rows(studies, discovery)
     summary = summary_rows(evidence)
     markers = marker_split_candidates(args.full_dump_input, discovery_experiments)
-    functions = inferred_function_traits(args.profile_input, args.nodes_input)
+    nodes = nodes_status(args.nodes_input)
+    functions: list[dict[str, object]] = []
+    if nodes == NODES_VERIFIED:
+        functions = inferred_function_traits(args.profile_input, args.nodes_input, nodes)
+    elif args.require_nodes:
+        parser.error(f"--nodes-input {args.nodes_input} is {nodes}")
+    else:
+        print(
+            f"warning: {args.nodes_input} is {nodes}. The inferred-function table needs "
+            "its labels, so that table is written with its header and no rows. Run "
+            "`just download-kg`, or pass --require-nodes to make this an error.",
+            file=sys.stderr,
+        )
     overlap = external_overlap(read_external_cohorts(args.external_cohorts), studies, discovery)
 
     out = args.output_dir
@@ -989,7 +1070,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         _write(out / "evidence_availability_by_study.tsv", evidence),
         _write(out / "evidence_availability_summary.tsv", summary),
         _write(out / "marker_split_candidates.tsv", markers),
-        _write(out / "inferred_function_traits.tsv", functions),
+        _write(out / "inferred_function_traits.tsv", functions, INFERRED_FUNCTION_FIELDS),
         _write(out / "external_cohort_overlap.tsv", overlap),
     ]
     provenance = {
@@ -997,7 +1078,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         "bugsigdb_vintage": read_bugsigdb_vintage(args.full_dump_input),
         "full_dump_sha256": _sha256(args.full_dump_input),
         "profile_sha256": _sha256(args.profile_input),
-        "nodes_available": args.nodes_input.exists(),
+        "nodes_input": str(args.nodes_input),
+        "nodes_status": nodes,
+        "inferred_function_traits_interpretable": nodes == NODES_VERIFIED,
         "external_cohorts": str(args.external_cohorts),
         "external_cohorts_sha256": _sha256(args.external_cohorts),
         "external_source": SUN2024_SAMPLE_GROUP_URL,
@@ -1010,6 +1093,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             "not mentioned does not mean not measured",
             "marker-stratified experiments are part of the discovery corpus",
             "external overlap candidates require manual confirmation",
+            "whether the source articles' own data are obtainable was not assessed, and "
+            "no per-study access value is emitted rather than a constant standing in for one",
         ],
     }
     provenance_path = out / "validation_evidence_provenance.json"

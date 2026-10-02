@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -9,18 +11,23 @@ import pytest
 from bsdbng.validation_evidence import (
     EVIDENCE_EXCLUSIONS,
     EVIDENCE_TYPES,
+    INFERRED_FUNCTION_FIELDS,
     INTERVENTION_CONTRAST,
     MARKER_NAMED_NOT_MEASURED,
     MARKER_STRATIFIED,
+    NODES_MISSING,
+    NODES_VERIFIED,
     ExternalCohort,
     Mention,
     StudyRecord,
+    _write,
     classify_marker_split,
     evidence_rows,
     external_overlap,
     find_mentions,
     inferred_function_traits,
     marker_split_candidates,
+    nodes_status,
     parse_supplement,
     read_studies,
     summary_rows,
@@ -446,25 +453,74 @@ def test_marker_candidates_keep_the_excluded_rows_with_their_reason(tmp_path: Pa
     assert found["bsdb:2-1"]["in_discovery_corpus"] is False
 
 
+# The two profile columns of data/derived/study_trait_profiles_wide.tsv that the
+# "consumption, not production" reading rests on, with their KG-Microbe labels.
+PROFILE_HEADER = (
+    "study_id\texperiment_id\tinc_dec\tMETPO:2000006|CHEBI:17272\tCHEBI:16865"
+    "\tCHEBI:18401\tMETPO:2000006|mediadive.medium:1\n"
+)
+NODE_TABLE = (
+    "id\tcategory\tname\n"
+    "METPO:2000006\tx\tuses as carbon source\n"
+    "CHEBI:17272\tx\tpropionate\n"
+    "CHEBI:16865\tx\tgamma-aminobutyric acid\n"
+    "CHEBI:18401\tx\tphenylacetate\n"
+)
+
+
+def _kg(tmp_path: Path, *, md5: str | None = None, sidecar: bool = True) -> Path:
+    """A node table beside a provenance sidecar, as `just download-kg` leaves them."""
+    directory = tmp_path / "kg-microbe"
+    directory.mkdir(parents=True, exist_ok=True)
+    nodes = directory / "merged-kg_nodes.tsv"
+    nodes.write_text(NODE_TABLE, encoding="utf-8")
+    if sidecar:
+        digest = md5 or hashlib.md5(nodes.read_bytes(), usedforsecurity=False).hexdigest()
+        (directory / "provenance.json").write_text(
+            json.dumps({"files": {"merged-kg_nodes.tsv": {"md5": digest}}}),
+            encoding="utf-8",
+        )
+    return nodes
+
+
 def test_function_traits_report_what_the_annotation_asserts(tmp_path: Path) -> None:
     profiles = tmp_path / "profiles.tsv"
-    profiles.write_text(
-        "study_id\texperiment_id\tinc_dec\tMETPO:2000006|CHEBI:17272\tCHEBI:16865"
-        "\tCHEBI:18401\tMETPO:2000006|mediadive.medium:1\n",
-        encoding="utf-8",
-    )
-    nodes = tmp_path / "nodes.tsv"
-    nodes.write_text(
-        "id\tcategory\tname\n"
-        "METPO:2000006\tx\tuses as carbon source\n"
-        "CHEBI:17272\tx\tpropionate\n"
-        "CHEBI:16865\tx\tgamma-aminobutyric acid\n"
-        "CHEBI:18401\tx\tphenylacetate\n",
-        encoding="utf-8",
-    )
+    profiles.write_text(PROFILE_HEADER, encoding="utf-8")
+    nodes = _kg(tmp_path)
+    assert nodes_status(nodes) == NODES_VERIFIED
     rows = inferred_function_traits(profiles, nodes)
     assert [row["term"] for row in rows] == ["CHEBI:17272"]
     assert rows[0]["qualifier_label"] == "uses as carbon source"
+    assert list(rows[0]) == list(INFERRED_FUNCTION_FIELDS)
+
+
+def test_nodes_status_separates_missing_mismatched_and_unverifiable(tmp_path: Path) -> None:
+    assert nodes_status(tmp_path / "merged-kg_nodes.tsv") == NODES_MISSING
+    mismatched = nodes_status(_kg(tmp_path, md5="0" * 32))
+    assert mismatched.startswith("present but MD5 ")
+    assert "0" * 32 in mismatched
+    unverifiable = nodes_status(_kg(tmp_path / "bare", sidecar=False))
+    assert unverifiable == "present but unverifiable: no provenance.json beside it"
+    no_entry = tmp_path / "empty"
+    no_entry.mkdir()
+    (no_entry / "provenance.json").write_text('{"files": {}}', encoding="utf-8")
+    (no_entry / "merged-kg_nodes.tsv").write_text(NODE_TABLE, encoding="utf-8")
+    assert nodes_status(no_entry / "merged-kg_nodes.tsv") == (
+        "present but unverifiable: provenance.json records no md5 for it"
+    )
+
+
+@pytest.mark.parametrize("status", [NODES_MISSING, "present but MD5 abc does not match"])
+def test_unverified_nodes_refuse_to_produce_labels(tmp_path: Path, status: str) -> None:
+    profiles = tmp_path / "profiles.tsv"
+    profiles.write_text(PROFILE_HEADER, encoding="utf-8")
+    with pytest.raises(ValueError, match="cannot be interpreted"):
+        inferred_function_traits(profiles, _kg(tmp_path), status)
+
+
+def test_an_empty_table_still_gets_its_header(tmp_path: Path) -> None:
+    written = _write(tmp_path / "inferred_function_traits.tsv", [], INFERRED_FUNCTION_FIELDS)
+    assert written.read_text(encoding="utf-8") == "\t".join(INFERRED_FUNCTION_FIELDS) + "\n"
 
 
 @pytest.mark.parametrize(
