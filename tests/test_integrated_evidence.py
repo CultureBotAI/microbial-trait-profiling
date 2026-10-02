@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
-from dataclasses import replace
+from dataclasses import fields, replace
 from pathlib import Path
 
 import pytest
@@ -12,6 +12,7 @@ import pytest
 from bsdbng.guild_maps import build_matrix, cell_status_rows, compute_correlation
 from bsdbng.integrated_evidence import (
     ALL_TIED,
+    ASSESSMENTS,
     CELL_STATES,
     DRAWN,
     GUILD_MIN_STUDIES,
@@ -39,6 +40,7 @@ from bsdbng.integrated_evidence import (
     guild_records,
     is_cell_row,
     log_ratio_records,
+    main,
     placeholder_records,
     read_status,
     summarize,
@@ -114,6 +116,93 @@ def write_matrix(tmp_path: Path, rows: list[list[str]]) -> Path:
 def resolved_columns(tmp_path: Path) -> dict[str, tuple[tuple[str, str], ...]]:
     """The real resolution of the real header, not a hand-written expectation."""
     return resolve_trait_columns(write_matrix(tmp_path, []), {**TABLE1_TRAITS, **OXYGEN_GUILDS})
+
+
+#: Per-direction trait counts for one profile of the synthetic corpus. The
+#: MediaDive column carries a count too, so the run has to exclude it from both
+#: the guild sums and the denominator rather than merely tolerate it.
+def _counts(direction: str, kind: str) -> dict[str, int]:
+    high = direction == "inc"
+    if kind == "zero_total":
+        return dict.fromkeys(MATRIX_COLUMNS.values(), 0)
+    shapes = {
+        "METPO:2000103|GO:0030245": 9 if high else 4,
+        "METPO:1000668": 9 if high else 4,
+        "METPO:1000683": 9 if high else 4,
+        "METPO:2000103|pathways:arsenate_reduction": 4 if high else 9,
+        "METPO:1000623": 9 if high else 4,
+    }
+    if kind == "no_oxygen":
+        # Annotated, and carrying no term of either oxygen guild: the cell is
+        # sampled and its guild signal is genuinely absent.
+        oxygen = dict.fromkeys(
+            (
+                "METPO:1000608",
+                "METPO:1000602",
+                "METPO:1000604",
+                "METPO:1000603",
+                "METPO:1000607",
+            ),
+            0,
+        )
+    else:
+        oxygen = {
+            "METPO:1000608": 30 if high else 5,
+            "METPO:1000602": 20 if high else 5,
+            "METPO:1000604": 20 if high else 5,
+            "METPO:1000603": 2 if high else 30,
+            "METPO:1000607": 2 if high else 30,
+        }
+    return {**shapes, **oxygen}
+
+
+#: (studies, condition, body site, host, kind, directions) of the corpus below.
+CORPUS_BLOCKS: tuple[tuple[int, str, str, str, str, tuple[str, ...]], ...] = (
+    (6, "Colitis", "Feces", "Homo sapiens", "signal", ("inc", "dec")),
+    (2, "Colitis", "Saliva", "Homo sapiens", "signal", ("inc", "dec")),
+    (4, "IBS", "Saliva", "Homo sapiens", "signal", ("inc", "dec")),
+    (3, "Crohn", "Feces", "Homo sapiens", "no_oxygen", ("inc", "dec")),
+    (1, "Colitis", "Feces", "Homo sapiens", "zero_total", ("inc", "dec")),
+    (1, "Colitis", "Feces", "Mus musculus", "signal", ("inc", "dec")),
+    (1, "Colitis", "Feces", "Homo sapiens", "signal", ("inc",)),
+)
+
+
+def _corpus(tmp_path: Path) -> tuple[Path, Path]:
+    """A matrix and an experiments table exercising every filter the run applies.
+
+    Twelve human paired studies with an oxygen signal, three more that carry no
+    oxygen term at all, one whose retained-annotation total is zero on both
+    sides, one mouse study, and one experiment with only an increased side.
+    """
+    rows: list[list[str]] = []
+    experiments: list[list[str]] = []
+    index = 0
+    for count, condition, site, host, kind, directions in CORPUS_BLOCKS:
+        for _ in range(count):
+            index += 1
+            study = f"bsdb:{index}"
+            experiment = f"{study}-1"
+            experiments.append([study, experiment, condition, site, host])
+            for direction in directions:
+                counts = _counts(direction, kind)
+                rows.append(
+                    [
+                        study,
+                        experiment,
+                        direction,
+                        *(str(counts[column]) for column in MATRIX_COLUMNS.values()),
+                        "77",
+                    ]
+                )
+
+    profile_path = write_matrix(tmp_path, rows)
+    experiments_path = tmp_path / "experiments.tsv"
+    with experiments_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(["study_id", "experiment_id", "condition", "body_site", "host_species"])
+        writer.writerows(experiments)
+    return profile_path, experiments_path
 
 
 def _profiles(pattern: str = "signal") -> list[Profile]:
@@ -994,3 +1083,154 @@ def test_a_q_value_without_a_family_is_rejected() -> None:
     assert record.q_value is not None
     with pytest.raises(ValueError, match="no correction family"):
         family_inventory([replace(record, family_id="", family_size=None)])
+
+
+def test_main_writes_every_artifact_and_its_provenance(tmp_path: Path) -> None:
+    """The CLI end to end: the files it writes, and what they agree on (#294).
+
+    Nothing covered `main()` or the provenance record, so the exclusion counts,
+    the thresholds and the family sizes could drift from the table beside them
+    without any test noticing.
+    """
+    profile_path, experiments_path = _corpus(tmp_path)
+    output = tmp_path / "out"
+
+    exit_code = main(
+        [
+            "--profile-input",
+            str(profile_path),
+            "--experiments-input",
+            str(experiments_path),
+            "--full-dump-input",
+            str(tmp_path / "no_such_full_dump.csv"),
+            "--output-dir",
+            str(output),
+            "--code-commit",
+            "0123456789abcdef",
+        ]
+    )
+
+    assert exit_code == 0
+    written = {
+        "integrated_evidence.tsv",
+        "integrated_evidence_features.tsv",
+        "integrated_evidence_families.tsv",
+        "integrated_evidence_assessments.tsv",
+        "integrated_evidence.md",
+        "integrated_evidence_provenance.json",
+    }
+    assert {path.name for path in output.iterdir()} == written
+
+    with (output / "integrated_evidence.tsv").open(encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    provenance = json.loads(
+        (output / "integrated_evidence_provenance.json").read_text(encoding="utf-8")
+    )
+
+    # Every declared field is exported, under its own name.
+    assert list(rows[0]) == [field.name for field in fields(Record)]
+
+    # The corpus cascade: one mouse study and one unpaired increased side are
+    # dropped by the loader, and the zero-total pair by the shared basis.
+    corpus = provenance["corpus"]
+    assert corpus["dropped_non_human"] == 2
+    assert corpus["dropped_unpaired"] == 1
+    assert corpus["mediadive_columns_excluded"] == 1
+    assert corpus["trait_columns_used"] == 10
+    exclusion = provenance["pair_exclusion"]
+    assert exclusion["zero_total_experiments"] == 1
+    assert exclusion["studies_before"] - exclusion["studies_after"] == 1
+    assert exclusion["studies_after"] == 15
+    assert exclusion["experiments_kept"] == 15
+    assert "undefined, not zero" in exclusion["rule"]
+
+    # The exclusion is applied to the data, not merely reported beside it: the
+    # tests run on the 15 remaining studies, and the only ties on the oxygen
+    # trait are the three studies that carry no oxygen term.
+    fractions = [
+        row for row in rows if row["method"] == "directional_consistency_fraction_sign_test"
+    ]
+    assert {row["unique_studies"] for row in fractions} == {str(exclusion["studies_after"])}
+    assert {row["studies_total"] for row in fractions} == {str(exclusion["studies_after"])}
+    aerobic = next(row for row in fractions if row["trait"] == "facultatively_aerobic")
+    assert aerobic["ties"] == "3"
+    assert aerobic["testable_units"] == "12"
+
+    # Both thresholds are recorded with their sources, not as bare numbers.
+    assert provenance["thresholds"]["q_threshold"] == 0.05
+    assert provenance["thresholds"]["strict_q_threshold"] == 0.001
+    assert provenance["thresholds"]["q_threshold_source"]
+    assert (
+        provenance["thresholds"]["q_threshold_source"]
+        != provenance["thresholds"]["strict_q_threshold_source"]
+    )
+    assert provenance["code_commit"] == "0123456789abcdef"
+    assert provenance["bugsigdb_vintage"] is None
+    assert provenance["declared_terms_without_a_matrix_column"] == []
+
+    # The family export, the provenance record and the table all agree, and the
+    # declared size is the number of rows exported for that family.
+    with (output / "integrated_evidence_families.tsv").open(encoding="utf-8") as handle:
+        families = {row["family_id"]: row for row in csv.DictReader(handle, delimiter="\t")}
+    assert {name: row["family_size"] for name, row in families.items()} == {
+        "table1_six_fractions": "6",
+        "table1_fifteen_ratios": "15",
+        "guild_mcnemar": "1",
+    }
+    for name, row in families.items():
+        assert row["rows_exported"] == row["family_size"]
+        assert sum(r["family_id"] == name for r in rows) == int(row["family_size"])
+    assert {row["family_id"]: row["family_size"] for row in provenance["families"]} == {
+        name: int(row["family_size"]) for name, row in families.items()
+    }
+    # No exported q belongs to no family.
+    assert all(row["family_id"] for row in rows if row["q_value"])
+
+    # The raw column is exported and is joinable against the matrix header.
+    with (output / "integrated_evidence_features.tsv").open(encoding="utf-8") as handle:
+        features = list(csv.DictReader(handle, delimiter="\t"))
+    header = profile_path.read_text(encoding="utf-8").splitlines()[0].split("\t")
+    assert features
+    for feature in features:
+        assert feature["matrix_column"] in header
+    assert {
+        "feature": "cellulose_catabolic_process",
+        "term_id": "GO:0030245",
+        "matrix_column": "METPO:2000103|GO:0030245",
+    } in features
+
+    # The uncorrected guild test keeps its p and leaves q blank.
+    mcnemar = next(row for row in rows if row["method"] == "oxygen_guild_mcnemar")
+    assert mcnemar["p_value"]
+    assert mcnemar["q_value"] == ""
+    assert mcnemar["decision"] == UNDECIDED
+
+    # The cell inventory covers all four support states, and nothing else does.
+    cell_states = {
+        (row["display_status"], row["test_status"]) for row in rows if row["support_threshold"]
+    }
+    assert cell_states == {
+        (DRAWN, UNTESTED),
+        (DRAWN, ZERO_ANNOTATION),
+        (MASKED, INSUFFICIENT),
+        (NOT_DRAWN, NOT_SAMPLED),
+    }
+    assert all(row["condition"] and row["body_site"] for row in rows if row["support_threshold"])
+
+    # With no assessment output present, every status is pending, per procedure.
+    with (output / "integrated_evidence_assessments.tsv").open(encoding="utf-8") as handle:
+        assessments = list(csv.DictReader(handle, delimiter="\t"))
+    assert assessments
+    assert {row["state_value"] for row in assessments} == {
+        f"pending {issue}" for issue in ASSESSMENTS.values()
+    }
+    assert {row["calibration_status"] for row in rows} == {"pending #182"}
+
+    view = (output / "integrated_evidence.md").read_text(encoding="utf-8")
+    assert "no pooled p-value" in view
+    assert "Figure cells, by what the figure does with them" in view
+    # The cell inventory is counted in the view, never listed row by row.
+    before, records_section = view.split("## Records", 1)
+    assert "oxygen_guild_cell_support" not in records_section
+    assert "oxygen_guild_cell_support" in before
+    assert "oxygen_guild_mcnemar" in records_section
