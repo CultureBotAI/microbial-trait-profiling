@@ -135,6 +135,17 @@ GUILD_MAX_CONDITIONS = 60
 GUILD_MAX_BODY_SITES = 8
 GUILD_MIN_STUDIES = 3
 
+#: This module's method names against the procedure names the assessments use.
+#: A row takes the verdict for its own procedure; a method an assessment is
+#: silent about takes that assessment's default, never another's verdict (#294).
+ASSESSED_PROCEDURE: dict[str, str] = {
+    "directional_consistency_fraction_sign_test": "fraction_sign_test",
+    "directional_consistency_log_ratio_sign_test": "log_ratio_sign_test",
+    "oxygen_guild_mcnemar": "guild_mcnemar",
+}
+#: The one procedure #183's scenarios restrict the population of.
+SENSITIVITY_PROCEDURE = "log_ratio_sign_test"
+
 #: Assessments that belong to other issues. Absent input means pending, not clear.
 ASSESSMENTS = {
     "calibration_status": "#182",
@@ -732,50 +743,232 @@ def placeholder_records(
     ]
 
 
-def read_status(path: Path | None, key: str, issue: str) -> str:
-    """Read one assessment's status from its own output, or say it is pending."""
+@dataclass(frozen=True)
+class AssessmentStatus:
+    """One assessment's state, per procedure, plus the detail it reports.
+
+    An assessment does not have a single verdict. #182 reports one per procedure
+    and separately names the procedures it does not cover; #183 reports counts
+    per scenario, which is a report and not a verdict at all. Concatenating
+    either into one string and copying it onto every row attached a verdict to
+    procedures the assessment had explicitly excluded, and turned a scenario
+    count into something that reads as cleared (#294).
+    """
+
+    issue: str
+    #: procedure name -> the verdict that assessment reached for it.
+    verdicts: dict[str, str]
+    #: what a procedure the assessment is silent about reads as.
+    default: str
+    #: (scope kind, scope, variable, value) rows, for the tidy side-car. This is
+    #: where scenario and contrast-class detail belongs: attached to the scope it
+    #: describes rather than summarised onto a result row.
+    detail: tuple[tuple[str, str, str, str], ...] = ()
+
+    def for_procedure(self, procedure: str) -> str:
+        """The status that applies to one procedure, never another's verdict."""
+        return self.verdicts.get(procedure, self.default)
+
+
+def _unreadable(issue: str, why: str) -> AssessmentStatus:
+    return AssessmentStatus(issue=issue, verdicts={}, default=f"unreadable {issue}: {why}")
+
+
+def _string_map(value: object) -> dict[str, str] | None:
+    """``value`` as a mapping of strings, or None if it is not one."""
+    if not isinstance(value, dict):
+        return None
+    pairs: dict[str, str] = {}
+    for name, item in value.items():
+        if not isinstance(name, str) or not isinstance(item, str):
+            return None
+        pairs[name] = item
+    return pairs
+
+
+def _calibration_status(content: Mapping[str, object], issue: str) -> AssessmentStatus:
+    """#182: a verdict per procedure, and the procedures it does not cover."""
+    verdicts = _string_map(content.get("calibration_status", {}))
+    if verdicts is None:
+        return _unreadable(issue, "calibration_status is not a mapping of strings")
+    uncovered = content.get("not_calibrated_here", [])
+    if not isinstance(uncovered, list) or any(not isinstance(item, str) for item in uncovered):
+        return _unreadable(issue, "not_calibrated_here is not a list of strings")
+    detail = [("procedure", name, "verdict", verdict) for name, verdict in sorted(verdicts.items())]
+    detail += [("note", "not_calibrated_here", "procedure", str(item)) for item in uncovered]
+    if not verdicts and not uncovered:
+        return AssessmentStatus(issue, {}, f"pending {issue}")
+    # A procedure the assessment did not reach is not calibrated by it, which is
+    # the opposite of the verdict a concatenated string used to imply.
+    default = f"not_calibrated_here {issue}" if uncovered else f"pending {issue}"
+    return AssessmentStatus(issue, verdicts, default, tuple(detail))
+
+
+def _sensitivity_status(content: Mapping[str, object], issue: str) -> AssessmentStatus:
+    """#183: scenario-level counts on the log-ratio procedure, and no verdict."""
+    scenarios = content.get("scenario_status", {})
+    if not isinstance(scenarios, dict):
+        return _unreadable(issue, "scenario_status is not an object")
+    if not scenarios:
+        return AssessmentStatus(issue, {}, f"pending {issue}")
+    detail: list[tuple[str, str, str, str]] = []
+    for scenario, counts in sorted(scenarios.items()):
+        if isinstance(counts, dict):
+            detail += [
+                ("scenario", str(scenario), str(name), str(value))
+                for name, value in sorted(counts.items())
+            ]
+        else:
+            detail.append(("scenario", str(scenario), "status", str(counts)))
+    # The scenarios restrict the log-ratio procedure's population. They report
+    # what each restriction does; none of them passes or fails anything, so the
+    # row says so instead of carrying a count that reads as cleared.
+    return AssessmentStatus(
+        issue,
+        {SENSITIVITY_PROCEDURE: f"scenarios reported, no verdict {issue}"},
+        f"pending {issue}",
+        tuple(detail),
+    )
+
+
+def _orientation_status(content: Mapping[str, object], issue: str) -> AssessmentStatus:
+    """#188: how the corpus's contrasts are oriented, which is a population."""
+    counts = content.get("class_counts", [])
+    if not isinstance(counts, list):
+        return _unreadable(issue, "class_counts is not a list")
+    if not counts:
+        return AssessmentStatus(issue, {}, f"pending {issue}")
+    detail: list[tuple[str, str, str, str]] = []
+    for row in counts:
+        if not isinstance(row, dict):
+            return _unreadable(issue, "a class_counts entry is not an object")
+        detail.append(
+            (
+                "contrast_class",
+                str(row.get("contrast_class", "")),
+                "experiments",
+                str(row.get("experiments", "")),
+            )
+        )
+    # Orientation describes the corpus every procedure here runs on rather than
+    # any one procedure, so it reaches every row through the default.
+    return AssessmentStatus(
+        issue, {}, f"contrast population described, no verdict {issue}", tuple(detail)
+    )
+
+
+def read_status(path: Path | None, key: str, issue: str) -> AssessmentStatus:
+    """Read one assessment's state from its own output, or say it is pending.
+
+    A missing file is pending, never clear. A file that is not a JSON object, or
+    that carries something other than a string where a verdict belongs, is
+    unreadable and says why: the previous version raised ``AttributeError`` on a
+    JSON array and passed a nested object straight through into a status column
+    (#294).
+    """
     if path is None or not path.exists():
-        return f"pending {issue}"
+        return AssessmentStatus(issue=issue, verdicts={}, default=f"pending {issue}")
     try:
         content = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
-        return f"unreadable {issue}"
+        return AssessmentStatus(issue=issue, verdicts={}, default=f"unreadable {issue}")
+    if not isinstance(content, dict):
+        return _unreadable(issue, f"the file holds a JSON {type(content).__name__}, not an object")
     if key == "calibration_status":
-        verdicts = content.get("calibration_status", {})
-        return (
-            "; ".join(f"{name}: {verdict}" for name, verdict in sorted(verdicts.items()))
-            or f"pending {issue}"
-        )
+        return _calibration_status(content, issue)
     if key == "sensitivity_status":
-        scenarios = content.get("scenario_status", {})
-        return f"{len(scenarios)} scenarios reported" if scenarios else f"pending {issue}"
+        return _sensitivity_status(content, issue)
     if key == "orientation_status":
-        counts = content.get("class_counts", [])
-        kept = sum(
-            int(row.get("experiments", 0))
-            for row in counts
-            if row.get("contrast_class") == "disease_vs_healthy"
-        )
-        return f"{kept} disease-vs-healthy experiments classified" if counts else f"pending {issue}"
-    return content.get(key) or f"pending {issue}"
+        return _orientation_status(content, issue)
+    value = content.get(key)
+    if value is None:
+        return AssessmentStatus(issue, {}, f"pending {issue}")
+    if not isinstance(value, str):
+        return _unreadable(issue, f"{key} is a {type(value).__name__}, not a string")
+    return AssessmentStatus(issue, {}, value, (("note", key, "status", value),))
 
 
-def apply_statuses(records: Sequence[Record], statuses: Mapping[str, str]) -> list[Record]:
-    """Attach the assessment statuses to every row, so no row implies more than is known."""
+def assessed_procedure(method: str) -> str:
+    """The procedure name an assessment would know this method's rows by."""
+    return ASSESSED_PROCEDURE.get(method, method)
+
+
+def apply_statuses(
+    records: Sequence[Record], statuses: Mapping[str, AssessmentStatus]
+) -> list[Record]:
+    """Attach each assessment's state for the procedure the row actually reports.
+
+    Every assessment still reaches every row, so no row implies more than is
+    known, but a row now carries the verdict for its own procedure rather than
+    a concatenation of all of them.
+    """
     missing = set(ASSESSMENTS).difference(statuses)
     if missing:
         raise ValueError(f"no status supplied for {sorted(missing)}")
-    return [
-        replace(
-            record,
-            calibration_status=statuses["calibration_status"],
-            sensitivity_status=statuses["sensitivity_status"],
-            coverage_status=statuses["coverage_status"],
-            orientation_status=statuses["orientation_status"],
-            taxon_influence_status=statuses["taxon_influence_status"],
+    attached = {
+        "calibration_status",
+        "sensitivity_status",
+        "coverage_status",
+        "orientation_status",
+        "taxon_influence_status",
+    }
+    if attached != set(ASSESSMENTS):
+        # An assessment declared but never attached would leave its column
+        # reading "pending" on every row whatever its own output said.
+        raise ValueError(
+            f"assessments not attached to any column: {sorted(set(ASSESSMENTS) - attached)}"
         )
-        for record in records
-    ]
+    return [_with_statuses(record, statuses) for record in records]
+
+
+def _with_statuses(record: Record, statuses: Mapping[str, AssessmentStatus]) -> Record:
+    procedure = assessed_procedure(record.method)
+    return replace(
+        record,
+        calibration_status=statuses["calibration_status"].for_procedure(procedure),
+        sensitivity_status=statuses["sensitivity_status"].for_procedure(procedure),
+        coverage_status=statuses["coverage_status"].for_procedure(procedure),
+        orientation_status=statuses["orientation_status"].for_procedure(procedure),
+        taxon_influence_status=statuses["taxon_influence_status"].for_procedure(procedure),
+    )
+
+
+def assessment_rows(
+    records: Sequence[Record], statuses: Mapping[str, AssessmentStatus]
+) -> list[dict[str, object]]:
+    """Tidy rows of every assessment against the scope it actually assessed.
+
+    Fixed identifier columns, then one variable and one value per row, so the
+    scenario counts of #183 and the contrast classes of #188 keep the scope they
+    describe instead of being flattened onto a result row.
+    """
+    rows: list[dict[str, object]] = []
+    procedures = sorted({assessed_procedure(record.method) for record in records})
+    for key in sorted(statuses):
+        status = statuses[key]
+        rows += [
+            {
+                "issue": status.issue,
+                "assessment": key,
+                "scope_kind": "procedure",
+                "scope": procedure,
+                "state_variable": "status_applied",
+                "state_value": status.for_procedure(procedure),
+            }
+            for procedure in procedures
+        ]
+        rows += [
+            {
+                "issue": status.issue,
+                "assessment": key,
+                "scope_kind": scope_kind,
+                "scope": scope,
+                "state_variable": variable,
+                "state_value": value,
+            }
+            for scope_kind, scope, variable, value in status.detail
+        ]
+    return rows
 
 
 def family_inventory(records: Sequence[Record]) -> list[dict[str, object]]:
@@ -988,7 +1181,10 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
     (
         "calibration_status / sensitivity_status / coverage_status / orientation_status / "
         "taxon_influence_status",
-        "the state of #182, #183, #184, #188 and #190 for this row; 'pending' means not assessed",
+        "the state of #182, #183, #184, #188 and #190 for this row's own procedure. "
+        "'pending' means the assessment has not run; 'not_calibrated_here' means it ran "
+        "and excluded this procedure; a report with no verdict says so. Per-scenario and "
+        "per-contrast-class detail is in integrated_evidence_assessments.tsv",
     ),
     ("source", "the input the row was computed from"),
 )
@@ -1176,6 +1372,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     summary = summarize(records)
     families = family_inventory(records)
     feature_rows = feature_column_rows(records, columns)
+    assessments = assessment_rows(records, statuses)
 
     output = args.output_dir
     written = [
@@ -1199,6 +1396,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "significant_at_strict_q_threshold",
             ),
             output / "integrated_evidence_families.tsv",
+        ),
+        write_tidy_tsv(
+            assessments,
+            ("issue", "assessment", "scope_kind", "scope", "state_variable", "state_value"),
+            output / "integrated_evidence_assessments.tsv",
         ),
         write_view(records, summary, output / "integrated_evidence.md"),
     ]
@@ -1230,7 +1432,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             "strict_q_threshold": args.strict_q_threshold,
             "strict_q_threshold_source": MANUSCRIPT_Q_SOURCE,
         },
-        "assessment_status": statuses,
+        "assessment_status": {
+            key: {
+                "issue": status.issue,
+                "verdicts_by_procedure": status.verdicts,
+                "status_for_a_procedure_it_is_silent_about": status.default,
+                "detail_rows": len(status.detail),
+            }
+            for key, status in sorted(statuses.items())
+        },
         "methods": [dict(row) for row in summary],
         "families": families,
         "feature_columns": {

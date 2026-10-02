@@ -76,7 +76,17 @@ One row per (method, feature, inference level). The fields, grouped:
 - **Standing**: `selection_note`, and one status field per open assessment -
   `calibration_status` (#182), `sensitivity_status` (#183), `coverage_status` (#184),
   `orientation_status` (#188) and `taxon_influence_status` (#190). Each reads from
-  that analysis's own output when it exists and is `pending` otherwise.
+  that analysis's own output when it exists and is `pending` otherwise, and each
+  carries the state for **this row's own procedure**. An assessment does not have
+  a single verdict: #182 reports one per procedure and separately names the arms
+  it does not cover, which read `not_calibrated_here`, and #183 reports counts per
+  scenario, which is not a verdict at all and says so. A concatenation of every
+  verdict copied onto every row attached a calibration result to procedures that
+  assessment had explicitly excluded (#294). Per-scenario and per-contrast-class
+  detail stays in `integrated_evidence_assessments.tsv`, attached to the scope it
+  describes. A status file that is not a JSON object, or that holds something
+  other than a string where a verdict belongs, reads `unreadable` with the
+  reason rather than crashing the run or being written through verbatim.
 
 Two rules are enforced in code rather than left to the reader. A row that was not
 tested has its effect, interval, p and q blanked, because a source may carry a
@@ -142,11 +152,13 @@ Every row carries the same caveats as fields rather than as prose:
 
 ## Reproducing
 
-`just integrated-evidence` on the pinned inputs writes five files into
+`just integrated-evidence` on the pinned inputs writes six files into
 `data/derived/integrated_evidence/`: the table (`integrated_evidence.tsv`), the
 feature-to-column map (`integrated_evidence_features.tsv`), the correction
-families with their declared sizes (`integrated_evidence_families.tsv`), the
-generated view (`integrated_evidence.md`) and the provenance record. The family
+families with their declared sizes (`integrated_evidence_families.tsv`), each
+assessment against the procedure and scenario it assessed
+(`integrated_evidence_assessments.tsv`), the generated view
+(`integrated_evidence.md`) and the provenance record. The family
 export is the #236/#289 requirement that no exported q appears without the
 family it was corrected in and that family's size; the run fails if a declared
 size and the rows exported for that family disagree, because a q corrected over

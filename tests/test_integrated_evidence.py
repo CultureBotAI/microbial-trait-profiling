@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import json
 from dataclasses import replace
 from pathlib import Path
 
@@ -27,6 +28,7 @@ from bsdbng.integrated_evidence import (
     UNDECIDED,
     UNTESTED,
     ZERO_ANNOTATION,
+    AssessmentStatus,
     Record,
     apply_statuses,
     build_guild_matrix,
@@ -58,12 +60,24 @@ from bsdbng.trait_guilds import (
 THRESHOLDS = {"q_threshold": 0.05, "strict_q_threshold": 0.001}
 
 TRAITS = tuple(TABLE1_TRAITS)
-STATUSES = {
-    "calibration_status": "fraction_sign_test: pass",
-    "sensitivity_status": "8 scenarios reported",
-    "coverage_status": "pending #184",
-    "orientation_status": "1052 classified",
-    "taxon_influence_status": "pending #190",
+#: A per-assessment status as `read_status` now returns it. #182 has a verdict
+#: for one procedure and excludes the rest; the others are pending.
+STATUSES: dict[str, AssessmentStatus] = {
+    "calibration_status": AssessmentStatus(
+        issue="#182",
+        verdicts={"fraction_sign_test": "pass"},
+        default="not_calibrated_here #182",
+    ),
+    "sensitivity_status": AssessmentStatus(
+        issue="#183",
+        verdicts={"log_ratio_sign_test": "scenarios reported, no verdict #183"},
+        default="pending #183",
+    ),
+    "coverage_status": AssessmentStatus(issue="#184", verdicts={}, default="pending #184"),
+    "orientation_status": AssessmentStatus(
+        issue="#188", verdicts={}, default="contrast population described, no verdict #188"
+    ),
+    "taxon_influence_status": AssessmentStatus(issue="#190", verdicts={}, default="pending #190"),
 }
 
 #: The matrix header, as the pinned corpus actually spells it: four of the six
@@ -518,21 +532,150 @@ def test_statuses_are_attached_without_changing_any_result() -> None:
             before.test_status,
             before.q_value,
         )
-        assert after.calibration_status == "fraction_sign_test: pass"
+        assert after.calibration_status == "pass"
         assert after.coverage_status == "pending #184"
     with pytest.raises(ValueError, match="no status supplied"):
-        apply_statuses(records, {"calibration_status": "x"})
+        apply_statuses(records, {"calibration_status": STATUSES["calibration_status"]})
+
+
+def test_each_row_carries_its_own_procedures_verdict_only() -> None:
+    """A verdict belongs to the procedure it was reached for (#294).
+
+    #182 reports per procedure and names the arms it does not cover. Copying a
+    concatenation of every verdict onto every row attached a calibration result
+    to the three arms that assessment had explicitly excluded.
+    """
+    profiles = _profiles()
+    records = apply_statuses(
+        fraction_sign_records(profiles, source="x", columns={}, **THRESHOLDS)
+        + log_ratio_records(profiles, source="x", columns={}, **THRESHOLDS)
+        + placeholder_records(
+            "enrichment_arm_profile_hypergeometric", "profile", "not supplied", TRAITS
+        ),
+        STATUSES,
+    )
+    by_method: dict[str, Record] = {record.method: record for record in records}
+
+    fraction = by_method["directional_consistency_fraction_sign_test"]
+    ratio = by_method["directional_consistency_log_ratio_sign_test"]
+    enrichment = by_method["enrichment_arm_profile_hypergeometric"]
+
+    # Only the procedure #182 reached carries its verdict.
+    assert fraction.calibration_status == "pass"
+    assert ratio.calibration_status == "not_calibrated_here #182"
+    assert enrichment.calibration_status == "not_calibrated_here #182"
+    assert "pass" not in enrichment.calibration_status
+
+    # #183 restricts the log-ratio population and assesses nothing else.
+    assert ratio.sensitivity_status == "scenarios reported, no verdict #183"
+    assert fraction.sensitivity_status == "pending #183"
+    assert enrichment.sensitivity_status == "pending #183"
+
+    # #188 describes the corpus, so it reaches every row the same way.
+    assert {record.orientation_status for record in records} == {
+        "contrast population described, no verdict #188"
+    }
+
+
+def test_a_sensitivity_scenario_count_is_not_a_verdict(tmp_path: Path) -> None:
+    """#183 reports per scenario; a count of scenarios read as cleared (#294)."""
+    path = tmp_path / "sensitivity_status.json"
+    path.write_text(
+        json.dumps(
+            {
+                "scenario_status": {
+                    "zero_exclusion": {"tested": 9, "all_tied": 6},
+                    "reference_choice": {"tested": 15},
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    status = read_status(path, "sensitivity_status", "#183")
+
+    applied = status.for_procedure("log_ratio_sign_test")
+    assert "no verdict" in applied
+    assert applied != "2 scenarios reported"
+    assert not any(character.isdigit() for character in applied.replace("#183", ""))
+    # A procedure the scenarios say nothing about stays pending.
+    assert status.for_procedure("fraction_sign_test") == "pending #183"
+    # The per-scenario numbers are kept, attached to the scenario they describe.
+    assert ("scenario", "zero_exclusion", "tested", "9") in status.detail
+    assert ("scenario", "reference_choice", "tested", "15") in status.detail
+
+
+def test_a_calibration_file_keeps_its_uncovered_arms(tmp_path: Path) -> None:
+    """`not_calibrated_here` is preserved rather than being read as a pass."""
+    path = tmp_path / "calibration_status.json"
+    path.write_text(
+        json.dumps(
+            {
+                "calibration_status": {"fraction_sign_test": "pass", "guild_mcnemar": "pass"},
+                "not_calibrated_here": ["the enrichment arm's hypergeometric urn (#131)"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    status = read_status(path, "calibration_status", "#182")
+
+    assert status.for_procedure("fraction_sign_test") == "pass"
+    assert status.for_procedure("guild_mcnemar") == "pass"
+    assert status.for_procedure("log_ratio_sign_test") == "not_calibrated_here #182"
+    assert (
+        "note",
+        "not_calibrated_here",
+        "procedure",
+        "the enrichment arm's hypergeometric urn (#131)",
+    ) in status.detail
 
 
 def test_absent_assessment_files_read_as_pending(tmp_path: Path) -> None:
-    assert read_status(None, "calibration_status", "#182") == "pending #182"
-    assert read_status(tmp_path / "missing.json", "coverage_status", "#184") == "pending #184"
+    assert read_status(None, "calibration_status", "#182").default == "pending #182"
+    missing = read_status(tmp_path / "missing.json", "coverage_status", "#184")
+    assert missing.for_procedure("anything") == "pending #184"
     broken = tmp_path / "broken.json"
     broken.write_text("not json", encoding="utf-8")
-    assert read_status(broken, "coverage_status", "#184") == "unreadable #184"
+    assert read_status(broken, "coverage_status", "#184").default == "unreadable #184"
     written = tmp_path / "calibration.json"
     written.write_text('{"calibration_status": {"a": "pass"}}', encoding="utf-8")
-    assert read_status(written, "calibration_status", "#182") == "a: pass"
+    assert read_status(written, "calibration_status", "#182").for_procedure("a") == "pass"
+
+
+@pytest.mark.parametrize(
+    ("payload", "key", "why"),
+    [
+        ("[1, 2, 3]", "coverage_status", "JSON list"),
+        ('"just a string"', "coverage_status", "JSON str"),
+        ("17", "coverage_status", "JSON int"),
+        ('{"coverage_status": {"nested": "object"}}', "coverage_status", "not a string"),
+        ('{"coverage_status": [1]}', "coverage_status", "not a string"),
+        ('{"calibration_status": ["a", "b"]}', "calibration_status", "not a mapping"),
+        ('{"calibration_status": {"a": {"b": "c"}}}', "calibration_status", "not a mapping"),
+        ('{"scenario_status": ["one"]}', "sensitivity_status", "not an object"),
+        ('{"class_counts": {"a": 1}}', "orientation_status", "not a list"),
+        ('{"class_counts": ["a"]}', "orientation_status", "not an object"),
+    ],
+)
+def test_a_status_file_of_the_wrong_shape_is_unreadable_and_says_why(
+    tmp_path: Path, payload: str, key: str, why: str
+) -> None:
+    """A status file is validated, not trusted (#294).
+
+    The previous version called `.get` on whatever JSON held, so an array raised
+    `AttributeError` and killed the run, and a nested object was written into a
+    status column verbatim.
+    """
+    path = tmp_path / "status.json"
+    path.write_text(payload, encoding="utf-8")
+
+    status = read_status(path, key, "#184")
+
+    applied = status.for_procedure("fraction_sign_test")
+    assert applied.startswith("unreadable #184")
+    assert why in applied
+    assert status.verdicts == {}
 
 
 def test_every_field_survives_the_export(tmp_path: Path) -> None:
