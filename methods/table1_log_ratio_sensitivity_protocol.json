@@ -69,12 +69,29 @@
     {
       "id": "S8_leave_one_study_out",
       "comparison": "log_ratio",
-      "population": "S2 with each eligible study removed in turn",
+      "population": "S2 with each eligible study, and then each large stratum, removed in turn",
       "family": "BY over the 15 ratios, the other 14 p-values held at their S2 values",
-      "purpose": "influence: share and p ranges, and the studies whose removal moves BY q across 0.05"
+      "decision_rule": "a ratio crosses when its held-family BY q passes 0.05",
+      "purpose": "influence: how much has to change before a ratio crosses the decision rule",
+      "reported": [
+        "leave-one-study-out share and p ranges, and the largest absolute share shift, as a bound on single-study influence",
+        "the minimum number of study removals that crosses the decision rule, searched over both single-sign-group removal paths, which dominate every mixed removal set",
+        "the minimum number of studies whose contrast sign must reverse to cross the decision rule, which is exact because a flip holds the sample size fixed",
+        "leave-one-condition-out and leave-one-body-site-out for every stratum holding at least min_studies_for_a_test of the ratio's eligible studies"
+      ],
+      "not_reported": "a ranking of the most influential studies: every study in one sign group produces the identical share change, so any such ranking orders studies by their identifier"
     }
   ],
   "decision_threshold_for_reporting": "q <= 0.05 is used only to count which rows would change status; no preferred scenario or cutoff is selected",
+  "protocol_amendments": [
+    {
+      "date": "2026-10-02",
+      "reviewing_issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/290",
+      "scenario": "S8_leave_one_study_out",
+      "change": "S8 was declared as leave-one-study-out alone. Review showed that on populations of 243 to 676 studies a single removal moves the share by about 1/n in either direction, so the scenario could not detect influence and its most-influential-study ranking was ordered by study identifier. S8 now also reports the minimum removals and minimum sign flips needed to cross the decision rule, and leave-one-condition-out and leave-one-body-site-out; the study ranking is removed.",
+      "declared_before_the_amended_run": false
+    }
+  ],
   "not_done": [
     "no pseudocounts or zero replacement",
     "no scenario is chosen by its q-value",

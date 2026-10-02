@@ -5,7 +5,8 @@ Produced by `src/bsdbng/log_ratio_sensitivity.py`, driven by
 `data/derived/table1_composition_sensitivity/`: every scenario row
 (`sensitivity_results.tsv`), eligibility by ratio and by exact body site and
 condition (`eligibility_by_ratio.tsv`, `eligibility_by_stratum.tsv`),
-leave-one-study-out influence (`leave_one_study_out.tsv`), the full-population
+leave-one-study-out influence (`leave_one_study_out.tsv`), leave-one-stratum-out
+influence (`leave_one_stratum_out.tsv`), the full-population
 against restricted-population comparison of every matched fraction
 (`population_sensitivity.tsv`), a status record for the integrated evidence table
 (`sensitivity_status.json`) and a generated table of
@@ -43,7 +44,7 @@ interval for that share (not for the mean effect).
 | S4 six-trait common support | 354 pairs (239 studies) with all six traits positive | BH over 6 fractions; BY over 15 ratios |
 | S5 triple common support | per trait triple, pairs with all three positive; A/B, B/C, A/C | BY over 60 |
 | S6 / S7 fecal strata | S2 within exact body site Feces / outside it | BY over 15 each |
-| S8 leave one study out | S2 with each study removed in turn | BY over 15, other 14 p held fixed |
+| S8 influence | S2 with each study, then each stratum of 30+ eligible studies, removed in turn | BY over 15, other 14 p held fixed; crossing at q = 0.05 |
 
 S0 reproduces the published six-trait directions and S2 reproduces the log-ratio
 module's output exactly (study counts, partially observed studies, pairs, effects
@@ -138,8 +139,33 @@ all other exact body sites) no ratio does; the cellulose ratios sit at shares of
 0.42 to 0.52. Whether that reflects biology, fewer eligible studies per site or
 heterogeneous pooling of many sites cannot be separated here.
 
-**No single study drives a ratio (S8).** Removing any one eligible study moves a
-ratio's share up by at most about 0.003 and changes no ratio's q across 0.05.
+**No single study drives a ratio; the fecal stratum does (S8).** The tested family
+is the 15 S2 ratios under BY with the other 14 p-values held at their full-data
+values, and a ratio crosses when that held-family q passes 0.05.
+
+Leave-one-study-out cannot detect influence at these population sizes, and is
+reported only as a bound: removing any one of a ratio's 243 to 676 eligible studies
+moves its share by at most 0.0026, in *either* direction, and no single removal
+changes any ratio's q status. Every study within one sign group produces the
+identical share change, so the previous `most_influential_studies` column ranked
+studies by their identifier rather than by influence; it has been dropped.
+
+What it takes to cross the rule is reported instead. The three significant ratios
+need 19 to 26 of their studies removed, or 9 to 12 studies to reverse sign, before
+they stop crossing. The twelve non-significant ratios need 7 to 62 removals, or 4
+to 33 sign reversals, to start crossing - the lowest being cellulose catabolic
+process/moderately halophilic at 7 removals and 4 flips. Every ratio can be made to
+cross by some number of removals, so none is unreachable.
+
+Removing a whole stratum is a different matter. Of the 24 ratio-by-stratum removals
+large enough to test - a stratum must hold at least 30 of that ratio's eligible
+studies, which leaves out 4,605 smaller ratio-by-stratum cells - exactly three
+cross the rule, and all three are a significant ratio with the Feces body site
+removed: facultatively aerobic/cellulose (q 0.0011 to 1), cellulose/sphere shaped
+(0.0026 to 1) and cellulose/arsenate reduction (0.0011 to 0.748). Removing Saliva,
+colorectal cancer or Parkinson's disease leaves every ratio on the same side of the
+rule. The three significant ratios therefore depend on one stratum, not on any
+single study; `leave_one_stratum_out.tsv` holds every tested removal.
 
 ## Interpretation limits
 

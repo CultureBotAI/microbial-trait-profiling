@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import replace
+from itertools import combinations
 from pathlib import Path
 
 import pytest
@@ -16,16 +17,20 @@ from bsdbng.log_ratio_sensitivity import (
     Row,
     _detection_change,
     _estimate_agreement,
+    _held_family_q,
     _intervals_overlap,
     complete_pairs,
     correct,
     eligibility_tables,
+    leave_one_stratum_out,
     leave_one_study_out,
     log_ratio_contrast,
     matched_reference,
     population_comparison,
     read_reported_taxa,
     run_scenarios,
+    sign_test,
+    study_means,
     summarize,
 )
 from bsdbng.table1_trait_maps import compute_direction_shifts
@@ -64,6 +69,56 @@ def _corpus(studies: int = 12) -> list[Profile]:
                         body_site=site,
                         guild_counts=counts,
                         total=total,
+                    )
+                )
+    return profiles
+
+
+# Share of studies whose increased side carries the larger count, per trait. The first
+# two traits carry a strong and opposite signal so that corrected q values land well
+# below 1 and a BY family can be told apart from a BH one; the rest sit near the null.
+_SIGNAL = (0.78, 0.22, 0.58, 0.50, 0.45, 0.53)
+_SITES = ("Feces", "Feces", "Saliva", "Feces,Blood", "Rectum", "Vagina")
+
+
+def _signal_corpus(studies: int = 96) -> list[Profile]:
+    """A corpus with real signal, scattered zeros, several sites and several conditions.
+
+    Without a signal every corrected q collapses to 1, which makes a q assertion
+    vacuous and lets a BY family pass as a BH one. The direction of a trait is a
+    deterministic function of the study, so every experiment of a study agrees and the
+    study-level sign is unambiguous.
+    """
+    profiles: list[Profile] = []
+    for study in range(studies):
+        for experiment in range(1 + study % 2):
+            seed = study * 2 + experiment
+            counts: dict[str, dict[str, int]] = {"inc": {}, "dec": {}}
+            for index, trait in enumerate(TRAITS):
+                positive = (study * 37 + index * 11) % 100 < _SIGNAL[index] * 100
+                low = 4 + (seed * 3 + index * 7) % 6
+                high = low + 4
+                counts["inc"][trait] = high if positive else low
+                counts["dec"][trait] = low if positive else high
+                # Scattered zeros, at different rates per side, so each ratio keeps a
+                # different population and some studies are only partially observed.
+                if (seed + index * 5) % 11 == 0:
+                    counts["inc"][trait] = 0
+                if (seed + index * 7) % 13 == 0:
+                    counts["dec"][trait] = 0
+            for direction in ("inc", "dec"):
+                # One decreased profile has no retained annotation at all.
+                empty = seed == 7 and direction == "dec"
+                values = dict.fromkeys(TRAITS, 0) if empty else counts[direction]
+                profiles.append(
+                    Profile(
+                        study_id=f"s{study:03d}",
+                        experiment_id=f"s{study:03d}-{experiment}",
+                        inc_dec=direction,
+                        condition=f"c{study % 5}",
+                        body_site=_SITES[study % len(_SITES)],
+                        guild_counts=values,
+                        total=0 if empty else sum(values.values()) + 50,
                     )
                 )
     return profiles
@@ -209,6 +264,130 @@ def test_leave_one_study_out_ranges_bracket_the_full_share() -> None:
         assert item.min_share_up <= item.full_share_up + 1e-12
         assert item.max_share_up >= item.full_share_up - 1e-12
         assert item.removals_changing_q_status >= 0
+        assert item.max_abs_share_shift == pytest.approx(
+            max(
+                abs(item.min_share_up - item.full_share_up),
+                abs(item.max_share_up - item.full_share_up),
+            ),
+            abs=1e-12,
+        )
+
+
+def _ratio_index(ratio: tuple[str, str]) -> int:
+    return list(combinations(TRAITS, 2)).index(ratio)
+
+
+def _removal_states(up: int, down: int, count: int) -> tuple[tuple[int, int], ...]:
+    """The up/down counts reachable by removing ``count`` studies from one sign group."""
+    return ((up - count, down), (up, down - count))
+
+
+def _flip_states(up: int, down: int, count: int) -> tuple[tuple[int, int], ...]:
+    """The up/down counts reachable by reversing ``count`` study signs."""
+    return ((up - count, down + count), (up + count, down - count))
+
+
+def _crosses_at(
+    base: list[float], position: int, up: int, down: int, report_q: float
+) -> bool | None:
+    """Whether these counts put the held family's q at or below the rule."""
+    if up < 0 or down < 0 or up + down == 0:
+        return None
+    p_value = sign_test([1.0] * up + [-1.0] * down)[3]
+    assert p_value is not None
+    return _held_family_q(base, position, p_value) <= report_q
+
+
+def test_removal_flip_counts_are_the_minima_that_cross_the_rule() -> None:
+    """A removal or flip count below the reported minimum must not cross the rule.
+
+    The decision threshold is placed inside the range of q values that single
+    removals produce, so at least one ratio has to cross at one removal. That makes
+    the flip count non-zero, so forcing it to zero cannot pass.
+    """
+    pairs = complete_pairs(_signal_corpus(), TRAITS)
+    ratio_pairs = list(combinations(TRAITS, 2))
+    means = {r: study_means(pairs, log_ratio_contrast(*r)) for r in ratio_pairs}
+    base = [sign_test(v.values())[3] or 1.0 for v in means.values()]
+
+    # A threshold strictly between the full-data q and the largest single-removal q
+    # of one ratio, so that removing one study does change that ratio's status.
+    target = ratio_pairs[0]
+    index = _ratio_index(target)
+    full_q = _held_family_q(base, index, base[index])
+    single = []
+    for study in sorted(means[target]):
+        rest = [v for other, v in means[target].items() if other != study]
+        up, down, _t, p = sign_test(rest)
+        if p is not None:
+            single.append(_held_family_q(base, index, p))
+    assert max(single) > full_q, "fixture must have a removal that raises q"
+    report_q = (full_q + max(single)) / 2
+
+    items = leave_one_study_out(pairs, TRAITS, report_q=report_q)
+    by_ratio = {(i.numerator, i.reference): i for i in items}
+    crossing = by_ratio[target]
+
+    assert crossing.decision_rule_q == report_q
+    assert crossing.family_size == 15
+    assert crossing.correction == "Benjamini-Yekutieli"
+    assert crossing.removals_changing_q_status > 0
+    assert crossing.min_removals_to_cross == 1
+
+    for item in items:
+        ratio = (item.numerator, item.reference)
+        position = _ratio_index(ratio)
+        up, down, _tied, _p = sign_test(means[ratio].values())
+        significant = _held_family_q(base, position, base[position]) <= report_q
+        # A non-zero leave-one-out flip count and a minimum of one are the same fact.
+        assert (item.removals_changing_q_status > 0) == (item.min_removals_to_cross == 1)
+        for count, states in (
+            (item.min_removals_to_cross, _removal_states),
+            (item.min_flips_to_cross, _flip_states),
+        ):
+            if count is None:
+                continue
+            assert count >= 1
+            # Nothing below the reported minimum may cross.
+            for smaller in range(1, count):
+                for r_up, r_down in states(up, down, smaller):
+                    crossed = _crosses_at(base, position, r_up, r_down, report_q)
+                    assert crossed is None or crossed == significant, (
+                        f"{ratio} crosses at {smaller} < {count}"
+                    )
+            # The reported minimum itself must cross on one of the two paths.
+            assert any(
+                _crosses_at(base, position, r_up, r_down, report_q) not in (None, significant)
+                for r_up, r_down in states(up, down, count)
+            ), f"{ratio} does not cross at its reported minimum {count}"
+
+
+def test_leave_one_stratum_out_only_tests_strata_above_the_minimum() -> None:
+    """Each reported stratum removal must drop exactly that stratum's studies."""
+    pairs = complete_pairs(_signal_corpus(), TRAITS)
+    rows, skipped = leave_one_stratum_out(pairs, TRAITS, min_studies=4)
+    assert rows, "fixture must produce testable strata"
+
+    # The minimum is a real filter: raising it past every stratum reports nothing and
+    # accounts for all of them as skipped.
+    empty, all_skipped = leave_one_stratum_out(pairs, TRAITS, min_studies=10_000)
+    assert empty == []
+    assert all_skipped == len(rows) + skipped > 0
+
+    for item in rows:
+        contrast = log_ratio_contrast(item.numerator, item.reference)
+        eligible = [p for p in pairs if contrast(p) is not None]
+        attribute = "body_site" if item.stratum_kind == "body_site" else "condition"
+        inside = {p.study_id for p in eligible if getattr(p, attribute) == item.stratum}
+        assert len(inside) == item.studies_eligible_in_stratum
+        assert item.studies_eligible_in_stratum >= 4
+        kept = [p for p in pairs if getattr(p, attribute) != item.stratum]
+        assert item.studies_eligible_remaining == len(study_means(kept, contrast))
+        assert item.studies_eligible_remaining < len(study_means(pairs, contrast))
+        assert item.family_size == 15
+        assert item.decision_rule_q == pytest.approx(0.05)
+
+    assert {item.stratum_kind for item in rows} <= {"body_site", "condition"}
 
 
 def test_population_comparison_pairs_each_matched_row_with_its_baseline() -> None:

@@ -577,28 +577,123 @@ def population_comparison(rows: Sequence[Row], traits: Sequence[str]) -> list[Po
     return comparisons
 
 
+RATIO_FAMILY = "S8:fifteen_ratios"
+RATIO_CORRECTION = "Benjamini-Yekutieli"
+
+
+def _sign_p(up: int, down: int) -> float | None:
+    """The sign test's two-sided exact p for these counts, or None with nothing to test."""
+    return float(binomtest(up, up + down, p=0.5).pvalue) if up + down else None
+
+
+def _held_family_q(base: Sequence[float], index: int, p_value: float) -> float:
+    """This ratio's BY q when the other 14 ratios hold their full-data p-values."""
+    family = list(base)
+    family[index] = p_value
+    return float(false_discovery_control(family, method="by")[index])
+
+
+def _crosses(base: Sequence[float], index: int, p_value: float, *, report_q: float) -> bool:
+    return _held_family_q(base, index, p_value) <= report_q
+
+
+def _min_removals_to_cross(
+    up: int, down: int, base: Sequence[float], index: int, *, report_q: float
+) -> int | None:
+    """Fewest study removals that move this ratio's held-family q across the rule.
+
+    The sign test's p depends only on the up and down counts, so a removal set is
+    characterised by how many studies it takes from each sign group. Removing a
+    majority-sign study shrinks both the sign imbalance and the sample size, so it
+    can only raise p; removing a minority-sign study can only lower it. Every
+    removal set is therefore dominated by one drawn entirely from a single sign
+    group, and scanning both single-group paths returns the exact minimum. None
+    means no number of removals crosses the rule.
+    """
+    start = _sign_p(up, down)
+    if start is None:
+        return None
+    significant = _crosses(base, index, start, report_q=report_q)
+    for removals in range(1, up + down + 1):
+        for remaining_up, remaining_down in ((up - removals, down), (up, down - removals)):
+            if remaining_up < 0 or remaining_down < 0:
+                continue
+            p_value = _sign_p(remaining_up, remaining_down)
+            if p_value is None:
+                continue
+            if _crosses(base, index, p_value, report_q=report_q) != significant:
+                return removals
+    return None
+
+
+def _min_flips_to_cross(
+    up: int, down: int, base: Sequence[float], index: int, *, report_q: float
+) -> int | None:
+    """Fewest studies whose contrast sign must reverse to cross the rule.
+
+    A flip holds the number of non-tied studies fixed and moves the imbalance by
+    two, so the reachable states are exactly (up - f, down + f) and (up + f,
+    down - f). Since p is a function of the two counts alone, this is an exact
+    minimum rather than a greedy one.
+    """
+    total = up + down
+    start = _sign_p(up, down)
+    if start is None:
+        return None
+    significant = _crosses(base, index, start, report_q=report_q)
+    for flips in range(1, total + 1):
+        for flipped_up in (up - flips, up + flips):
+            if not 0 <= flipped_up <= total:
+                continue
+            p_value = _sign_p(flipped_up, total - flipped_up)
+            if p_value is None:
+                continue
+            if _crosses(base, index, p_value, report_q=report_q) != significant:
+                return flips
+    return None
+
+
 @dataclass(frozen=True)
 class Influence:
-    """Leave-one-study-out summary for one S2 ratio (S8)."""
+    """How much has to change before one S2 ratio crosses the decision rule (S8).
+
+    The tested family is the 15 S2 ratios under Benjamini-Yekutieli with the other
+    14 p-values held at their full-data values, and the decision rule is
+    ``q <= decision_rule_q``. Leave-one-study-out ranges are reported because they
+    bound single-study influence, but on populations of this size they cannot
+    detect it: a removal moves the share by about 1/n in either direction. The
+    minimum-removal and minimum-flip counts are what answer the question.
+    """
 
     numerator: str
     reference: str
+    family: str
+    family_size: int
+    correction: str
+    decision_rule_q: float
     studies: int
     full_share_up: float | None
+    full_p: float | None
     full_q: float | None
+    full_crosses_rule: bool | None
     min_share_up: float | None
     max_share_up: float | None
+    max_abs_share_shift: float | None
     min_p: float | None
     max_p: float | None
     removals_changing_q_status: int
-    most_influential_studies: str
+    min_removals_to_cross: int | None
+    min_flips_to_cross: int | None
+    crossing_direction: str
 
 
-def leave_one_study_out(pairs: Sequence[Pair], traits: Sequence[str]) -> list[Influence]:
-    """Remove each eligible study in turn and re-adjust the 15-ratio BY family.
+def leave_one_study_out(
+    pairs: Sequence[Pair], traits: Sequence[str], *, report_q: float = REPORT_Q
+) -> list[Influence]:
+    """Bound single-study influence, then report what it would actually take to cross.
 
     The other 14 ratios keep their full-data p-values, so a change in status is
-    attributable to the removed study's effect on this ratio alone.
+    attributable to the removed studies' effect on this ratio alone.
     """
     ratio_pairs = list(combinations(traits, 2))
     means = {pair: study_means(pairs, log_ratio_contrast(*pair)) for pair in ratio_pairs}
@@ -611,41 +706,146 @@ def leave_one_study_out(pairs: Sequence[Pair], traits: Sequence[str]) -> list[In
         values = means[ratio]
         up, down, _tied, _p = sign_test(values.values())
         full_share = up / (up + down) if up + down else None
+        significant = full_p[index] is not None and full_q[index] <= report_q
         shares: list[float] = []
         p_values: list[float] = []
         flips = 0
-        shifts: list[tuple[float, str]] = []
         for study in sorted(values):
             rest = [value for other, value in values.items() if other != study]
-            r_up, r_down, _t, r_p = sign_test(rest)
-            if r_p is None:
+            removed_up, removed_down, _t, removed_p = sign_test(rest)
+            if removed_p is None:
                 continue
-            share = r_up / (r_up + r_down)
-            shares.append(share)
-            p_values.append(r_p)
-            family = list(base)
-            family[index] = r_p
-            q = float(false_discovery_control(family, method="by")[index])
-            flips += (q <= REPORT_Q) != (full_q[index] <= REPORT_Q)
-            if full_share is not None:
-                shifts.append((abs(share - full_share), study))
-        top = ", ".join(study for _delta, study in sorted(shifts, reverse=True)[:3])
+            shares.append(removed_up / (removed_up + removed_down))
+            p_values.append(removed_p)
+            flips += _crosses(base, index, removed_p, report_q=report_q) != significant
         results.append(
             Influence(
                 numerator=ratio[0],
                 reference=ratio[1],
+                family=RATIO_FAMILY,
+                family_size=len(ratio_pairs),
+                correction=RATIO_CORRECTION,
+                decision_rule_q=report_q,
                 studies=len(values),
                 full_share_up=full_share,
+                full_p=full_p[index],
                 full_q=full_q[index] if full_p[index] is not None else None,
+                full_crosses_rule=None if full_p[index] is None else significant,
                 min_share_up=min(shares, default=None),
                 max_share_up=max(shares, default=None),
+                max_abs_share_shift=(
+                    max((abs(share - full_share) for share in shares), default=None)
+                    if full_share is not None
+                    else None
+                ),
                 min_p=min(p_values, default=None),
                 max_p=max(p_values, default=None),
                 removals_changing_q_status=flips,
-                most_influential_studies=top,
+                min_removals_to_cross=_min_removals_to_cross(
+                    up, down, base, index, report_q=report_q
+                ),
+                min_flips_to_cross=_min_flips_to_cross(up, down, base, index, report_q=report_q),
+                crossing_direction=("to not significant" if significant else "to significant"),
             )
         )
     return results
+
+
+@dataclass(frozen=True)
+class StratumInfluence:
+    """What removing one whole condition or body site does to one S2 ratio (S8).
+
+    Only strata holding at least ``min_studies`` of the ratio's eligible studies are
+    reported individually; a smaller stratum cannot be a testable unit under the
+    declared minimum, and the count left out is recorded in the status JSON.
+    """
+
+    numerator: str
+    reference: str
+    stratum_kind: str
+    stratum: str
+    family: str
+    family_size: int
+    correction: str
+    decision_rule_q: float
+    studies_eligible_in_stratum: int
+    studies_eligible_remaining: int
+    full_share_up: float | None
+    full_q: float | None
+    share_up: float | None
+    share_shift: float | None
+    p_value: float | None
+    q_value: float | None
+    crosses_decision_rule: bool | None
+
+
+def leave_one_stratum_out(
+    pairs: Sequence[Pair],
+    traits: Sequence[str],
+    *,
+    report_q: float = REPORT_Q,
+    min_studies: int = MIN_STUDIES,
+) -> tuple[list[StratumInfluence], int]:
+    """Remove each large condition and body site in turn; also return the number skipped."""
+    ratio_pairs = list(combinations(traits, 2))
+    means = {pair: study_means(pairs, log_ratio_contrast(*pair)) for pair in ratio_pairs}
+    full_p = [sign_test(values.values())[3] for values in means.values()]
+    base = [1.0 if p is None else p for p in full_p]
+    full_q = [float(q) for q in false_discovery_control(base, method="by")]
+
+    results: list[StratumInfluence] = []
+    skipped = 0
+    for index, ratio in enumerate(ratio_pairs):
+        contrast = log_ratio_contrast(*ratio)
+        eligible = [pair for pair in pairs if contrast(pair) is not None]
+        up, down, _tied, _p = sign_test(means[ratio].values())
+        full_share = up / (up + down) if up + down else None
+        significant = full_p[index] is not None and full_q[index] <= report_q
+        for kind in ("body_site", "condition"):
+            grouped: defaultdict[str, set[str]] = defaultdict(set)
+            for pair in eligible:
+                grouped[pair.body_site if kind == "body_site" else pair.condition].add(
+                    pair.study_id
+                )
+            for label in sorted(grouped):
+                if len(grouped[label]) < min_studies:
+                    skipped += 1
+                    continue
+                kept = [
+                    pair
+                    for pair in pairs
+                    if (pair.body_site if kind == "body_site" else pair.condition) != label
+                ]
+                remaining = study_means(kept, contrast)
+                r_up, r_down, _t, r_p = sign_test(remaining.values())
+                share = r_up / (r_up + r_down) if r_up + r_down else None
+                q_value = None if r_p is None else _held_family_q(base, index, r_p)
+                results.append(
+                    StratumInfluence(
+                        numerator=ratio[0],
+                        reference=ratio[1],
+                        stratum_kind=kind,
+                        stratum=label,
+                        family=RATIO_FAMILY,
+                        family_size=len(ratio_pairs),
+                        correction=RATIO_CORRECTION,
+                        decision_rule_q=report_q,
+                        studies_eligible_in_stratum=len(grouped[label]),
+                        studies_eligible_remaining=len(remaining),
+                        full_share_up=full_share,
+                        full_q=full_q[index] if full_p[index] is not None else None,
+                        share_up=share,
+                        share_shift=(
+                            None if share is None or full_share is None else share - full_share
+                        ),
+                        p_value=r_p,
+                        q_value=q_value,
+                        crosses_decision_rule=(
+                            None if q_value is None else (q_value <= report_q) != significant
+                        ),
+                    )
+                )
+    return results, skipped
 
 
 @dataclass(frozen=True)
@@ -789,6 +989,8 @@ def write_outputs(
     provenance: dict[str, object],
     *,
     population: Sequence[PopulationComparison],
+    stratum_influence: Sequence[StratumInfluence],
+    strata_below_minimum: int,
 ) -> list[Path]:
     """Write every scenario row, the influence and eligibility tables, status and a report."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -799,6 +1001,10 @@ def write_outputs(
         _write_rows(output_dir / "eligibility_by_stratum.tsv", list(strata)),
         _write_rows(
             output_dir / "population_sensitivity.tsv", [asdict(item) for item in population]
+        ),
+        _write_rows(
+            output_dir / "leave_one_stratum_out.tsv",
+            [asdict(item) for item in stratum_influence],
         ),
     ]
     by_scenario: defaultdict[str, Counter[str]] = defaultdict(Counter)
@@ -819,6 +1025,29 @@ def write_outputs(
         "population_estimate_agreement": dict(
             Counter(item.estimate_agreement for item in population)
         ),
+        "influence_decision_rule": (
+            f"BY over the {len(influence)} S2 ratios with the other p-values held at their "
+            f"full-data values; a ratio crosses when q <= {REPORT_Q}"
+        ),
+        "influence_summary": {
+            "ratios_crossed_by_one_study_removal": sum(
+                item.removals_changing_q_status > 0 for item in influence
+            ),
+            "min_removals_to_cross": sorted(
+                {item.min_removals_to_cross for item in influence if item.min_removals_to_cross}
+            ),
+            "min_flips_to_cross": sorted(
+                {item.min_flips_to_cross for item in influence if item.min_flips_to_cross}
+            ),
+            "ratios_never_crossing_by_removal": sum(
+                item.min_removals_to_cross is None for item in influence
+            ),
+            "stratum_removals_crossing_rule": sum(
+                item.crosses_decision_rule is True for item in stratum_influence
+            ),
+            "stratum_removals_tested": len(stratum_influence),
+            "ratio_stratum_cells_below_min_studies_not_tested": strata_below_minimum,
+        },
         "calibration_status": "not assessed (#182)",
         "orientation_status": "not verified as disease versus control (#188)",
         "coverage_status": "profile totals and reported taxa only; #184 sidecar pending",
@@ -873,6 +1102,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     pairs = complete_pairs(profiles, traits)
     rows = run_scenarios(pairs, traits)
     influence = leave_one_study_out(pairs, traits)
+    stratum_influence, strata_below_minimum = leave_one_stratum_out(pairs, traits)
     population = population_comparison(rows, traits)
     overall, strata = eligibility_tables(pairs, traits, read_reported_taxa(args.taxa_input))
     provenance: dict[str, object] = {
@@ -887,7 +1117,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         "studies": len({pair.study_id for pair in pairs}),
     }
     for path in write_outputs(
-        rows, influence, overall, strata, args.output_dir, provenance, population=population
+        rows,
+        influence,
+        overall,
+        strata,
+        args.output_dir,
+        provenance,
+        population=population,
+        stratum_influence=stratum_influence,
+        strata_below_minimum=strata_below_minimum,
     ):
         print(path)
     return 0
