@@ -73,6 +73,11 @@ TESTED = "tested"
 UNTESTED = "untested"
 INSUFFICIENT = "insufficient_support"
 ALL_TIED = "all_tied"
+#: The method's eligibility rule left nothing to test. Not the same claim as
+#: ``ZERO_ANNOTATION``: two traits can both be well annotated across the corpus
+#: and still never both be positive on both sides of one experiment (#294).
+NO_ELIGIBLE_PAIRS = "no_eligible_pairs"
+#: Sampled, but no taxon in the profile carried any term of the feature.
 ZERO_ANNOTATION = "zero_annotation_signal"
 NOT_SAMPLED = "not_sampled"
 SOURCE_MISSING = "source_not_supplied"
@@ -330,10 +335,14 @@ def log_ratio_records(
     result = compute_log_ratio_shifts(list(profiles))
     records = []
     for summary in result.summaries:
+        # ``no_positive_pairs`` means the pair's eligibility rule left nothing to
+        # test, which is not the same claim as "the annotation is absent": the
+        # traits can be well annotated across the corpus and still never both be
+        # positive on both sides of one experiment (#294).
         status = {
             "tested": TESTED,
             "all_tied": ALL_TIED,
-            "no_positive_pairs": ZERO_ANNOTATION,
+            "no_positive_pairs": NO_ELIGIBLE_PAIRS,
         }.get(summary.status, UNTESTED)
         records.append(
             Record(
@@ -409,7 +418,13 @@ def guild_records(
     q_threshold: float | None,
     strict_q_threshold: float | None,
 ) -> list[Record]:
-    """The paired aerobe-against-anaerobe McNemar on study signs."""
+    """The paired aerobe-against-anaerobe McNemar on study signs.
+
+    The test is uncorrected, so the row carries a p and leaves q blank. A
+    threshold decision in this table is a decision on a corrected value, and
+    there is no corrected value here; writing the uncorrected p into ``q_value``
+    made a single uncorrected test look like a one-member FDR family (#294).
+    """
     matrix = build_matrix(list(profiles), max_conditions=60, max_body_sites=8, min_studies=3)
     correlation = compute_correlation(list(profiles), matrix)
     up_down, down_up = correlation.discordant
@@ -451,8 +466,8 @@ def guild_records(
             interval_high=None,
             interval_type="unavailable",
             p_value=correlation.mcnemar_p,
-            q_value=correlation.mcnemar_p,
-            correction_method="none; a single test",
+            q_value=None,
+            correction_method="none; a single uncorrected test, so no q is computed",
             family_id="guild_mcnemar",
             family_size=1,
             q_threshold=q_threshold,
@@ -461,8 +476,8 @@ def guild_records(
             strict_q_threshold_source=MANUSCRIPT_Q_SOURCE,
             effect_threshold=None,
             test_status=status,
-            decision=_decision(correlation.mcnemar_p, q_threshold, status),
-            strict_decision=_decision(correlation.mcnemar_p, strict_q_threshold, status),
+            decision=_decision(None, q_threshold, status),
+            strict_decision=_decision(None, strict_q_threshold, status),
             display_status=NOT_APPLICABLE,
             zero_annotation_state="profiles with no retained annotation score share 0",
             selection_note="the oxygen guilds were fixed a priori, not selected on this corpus",
@@ -770,8 +785,10 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
     ("q_threshold / effect_threshold", "the thresholds this row's decision used, if any"),
     (
         "test_status",
-        f"{TESTED}, {UNTESTED}, {INSUFFICIENT}, {ALL_TIED}, {ZERO_ANNOTATION}, "
-        f"{NOT_SAMPLED} or {SOURCE_MISSING}",
+        f"{TESTED}, {UNTESTED}, {INSUFFICIENT}, {ALL_TIED}, {NO_ELIGIBLE_PAIRS}, "
+        f"{ZERO_ANNOTATION}, {NOT_SAMPLED} or {SOURCE_MISSING}. The last three are "
+        "different claims: nothing was eligible to test, the feature was sampled "
+        "but carried no annotation, and nothing was sampled at all",
     ),
     ("decision", f"{SIGNIFICANT}, {NOT_SIGNIFICANT} or {UNDECIDED}; only ever within one family"),
     ("display_status", f"{DRAWN}, {MASKED}, {NOT_DRAWN} or {NOT_APPLICABLE}; never a result"),

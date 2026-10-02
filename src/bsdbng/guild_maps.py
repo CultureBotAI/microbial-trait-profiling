@@ -327,7 +327,10 @@ class CorrelationResult:
     """Guild-by-direction association and cross-cell rank correlations."""
 
     table: dict[str, int]
-    odds_ratio: float
+    #: The discordant ratio, or None when no study is discordant in the reverse
+    #: direction and the ratio is undefined. An undefined statistic is missing,
+    #: not infinite; writing float("inf") into a TSV is a sentinel value (#294).
+    odds_ratio: float | None
     mcnemar_p: float
     discordant: tuple[int, int]
     spearman: dict[str, tuple[float, float, int]]
@@ -369,6 +372,11 @@ def study_direction_means(
         study: {key: total / counts[study][key] for key, total in per_key.items()}
         for study, per_key in sums.items()
     }
+
+
+def _odds_ratio_label(odds_ratio: float | None) -> str:
+    """Render the discordant ratio, saying so when it is undefined."""
+    return "undefined (no reverse-discordant study)" if odds_ratio is None else f"{odds_ratio:.3f}"
 
 
 def _sign(value: float) -> int:
@@ -423,9 +431,7 @@ def compute_correlation(profiles: list[Profile], matrix: GuildMatrix) -> Correla
         else 1.0
     )
     odds_ratio = (
-        aerobe_up_anaerobe_down / anaerobe_up_aerobe_down
-        if anaerobe_up_aerobe_down
-        else float("inf")
+        aerobe_up_anaerobe_down / anaerobe_up_aerobe_down if anaerobe_up_aerobe_down else None
     )
 
     # Rank correlation across condition x body-site cells. Only cells where both
@@ -455,7 +461,7 @@ def compute_correlation(profiles: list[Profile], matrix: GuildMatrix) -> Correla
 
     return CorrelationResult(
         table=table,
-        odds_ratio=float(odds_ratio),
+        odds_ratio=None if odds_ratio is None else float(odds_ratio),
         mcnemar_p=mcnemar_p,
         discordant=(aerobe_up_anaerobe_down, anaerobe_up_aerobe_down),
         spearman=spearman,
@@ -558,7 +564,7 @@ def write_outputs(
             [
                 "mcnemar_odds_ratio",
                 "aerobe_vs_anaerobe_paired_signs",
-                f"{correlation.odds_ratio:.6f}",
+                "" if correlation.odds_ratio is None else f"{correlation.odds_ratio:.6f}",
                 f"{correlation.mcnemar_p:.6g}",
                 up_down + down_up,
                 vintage or "",
@@ -1297,7 +1303,7 @@ def main() -> int:
     up_down, down_up = correlation.discordant
     print(
         f"\nMcNemar (exact, paired signs): discordant {up_down}/{down_up}, "
-        f"odds ratio {correlation.odds_ratio:.3f} "
+        f"odds ratio {_odds_ratio_label(correlation.odds_ratio)} "
         f"(p={correlation.mcnemar_p:.3g}) over {correlation.studies} studies"
     )
     for path in written:

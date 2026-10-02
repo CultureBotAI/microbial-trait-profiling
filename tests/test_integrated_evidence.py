@@ -8,8 +8,10 @@ from pathlib import Path
 
 import pytest
 
+from bsdbng.guild_maps import build_matrix, compute_correlation
 from bsdbng.integrated_evidence import (
     ALL_TIED,
+    NO_ELIGIBLE_PAIRS,
     NOT_APPLICABLE,
     NOT_SIGNIFICANT,
     SIGNIFICANT,
@@ -22,6 +24,7 @@ from bsdbng.integrated_evidence import (
     family_inventory,
     feature_column_rows,
     fraction_sign_records,
+    guild_records,
     log_ratio_records,
     placeholder_records,
     read_status,
@@ -151,6 +154,37 @@ def _ratio_profiles() -> list[Profile]:
     return profiles
 
 
+def _guild_profiles(reverse: int = 0) -> list[Profile]:
+    """Twelve studies with discordant oxygen guild signs, ``reverse`` of them flipped.
+
+    The McNemar runs on the two pooled guilds, so the counts have to be keyed on
+    ``aerobe`` and ``anaerobe`` rather than on the six Table 1 trait names. With
+    ``reverse=0`` no study is discordant the other way and the discordant ratio
+    has a zero denominator; with ``reverse>0`` the ratio is defined.
+    """
+    profiles: list[Profile] = []
+    for study in range(12):
+        flipped = study < reverse
+        for direction in ("inc", "dec"):
+            aerobe_high = (direction == "inc") != flipped
+            counts = {
+                "aerobe": 30 if aerobe_high else 5,
+                "anaerobe": 5 if aerobe_high else 30,
+            }
+            profiles.append(
+                Profile(
+                    study_id=f"g{study}",
+                    experiment_id=f"g{study}-1",
+                    inc_dec=direction,
+                    condition="C",
+                    body_site="Feces",
+                    guild_counts=counts,
+                    total=sum(counts.values()) + 20,
+                )
+            )
+    return profiles
+
+
 def _built(
     pattern: str = "signal",
     *,
@@ -191,13 +225,52 @@ def test_an_all_tied_trait_is_not_a_negative_result() -> None:
         assert record.interval_type == "unavailable"
 
 
-def test_a_pair_with_no_positive_counts_is_recorded_as_zero_annotation() -> None:
-    records = log_ratio_records(_profiles("empty"), source="x", columns={}, **THRESHOLDS)
-    assert records
-    for record in records:
-        assert record.test_status == ZERO_ANNOTATION
+def test_a_pair_with_no_eligible_experiment_is_not_absent_annotation() -> None:
+    """An eligibility failure and absent annotation are different claims (#294).
+
+    ``no_positive_pairs`` was mapped onto ``zero_annotation_signal``, which says
+    the annotation is not there. The second fixture below shows why that is wrong:
+    both traits are annotated on every profile, and the pair is still untestable
+    because they are never both positive on both sides of one experiment.
+    """
+    empty = log_ratio_records(_profiles("empty"), source="x", columns={}, **THRESHOLDS)
+    assert empty
+    for record in empty:
+        assert record.test_status == NO_ELIGIBLE_PAIRS
+        assert record.test_status != ZERO_ANNOTATION
         assert record.decision == UNDECIDED
         assert record.q_value is None
+
+    # Two traits that are each well annotated but never co-occur on one side.
+    exclusive: list[Profile] = []
+    for study in range(6):
+        for direction in ("inc", "dec"):
+            counts = dict.fromkeys(TRAITS, 4)
+            counts[TRAITS[0]] = 9 if direction == "inc" else 0
+            counts[TRAITS[1]] = 0 if direction == "inc" else 9
+            exclusive.append(
+                Profile(
+                    study_id=f"e{study}",
+                    experiment_id=f"e{study}-1",
+                    inc_dec=direction,
+                    condition="C",
+                    body_site="Feces",
+                    guild_counts=counts,
+                    total=sum(counts.values()) + 20,
+                )
+            )
+    pair = next(
+        record
+        for record in log_ratio_records(exclusive, source="x", columns={}, **THRESHOLDS)
+        if (record.trait, record.reference) == (TRAITS[0], TRAITS[1])
+    )
+    assert pair.test_status == NO_ELIGIBLE_PAIRS
+    assert pair.experiments_excluded_zero_count == 6
+    # The annotation is present on every profile; only the pairing fails.
+    assert all(
+        profile.guild_counts[TRAITS[0]] + profile.guild_counts[TRAITS[1]] > 0
+        for profile in exclusive
+    )
 
 
 def test_an_unsupplied_method_is_not_a_nonsignificant_result() -> None:
@@ -522,6 +595,64 @@ def test_every_family_exports_its_size_and_the_size_is_checked() -> None:
     ][:5]
     with pytest.raises(ValueError, match="declares 6 members but the table exports 5"):
         family_inventory(shrunk)
+
+
+def test_the_mcnemar_row_keeps_its_p_and_leaves_q_blank() -> None:
+    """A single uncorrected test has no q, so it gets no q-threshold decision.
+
+    Writing the uncorrected p into ``q_value`` made the guild row a one-member
+    FDR family, and both threshold columns then read as though a multiplicity
+    correction had been applied to it (#294).
+    """
+    profiles = _guild_profiles()
+    (record,) = guild_records(profiles, source="x", columns={}, **THRESHOLDS)
+
+    matrix = build_matrix(profiles, max_conditions=60, max_body_sites=8, min_studies=3)
+    correlation = compute_correlation(profiles, matrix)
+    up_down, down_up = correlation.discordant
+
+    assert record.test_status == TESTED
+    assert record.p_value == correlation.mcnemar_p
+    assert record.p_value is not None
+    assert record.q_value is None
+    # The p clears both thresholds, so a decision on this row could only come
+    # from reading the uncorrected p as though it were a q.
+    assert record.p_value <= 0.001
+    assert record.decision == UNDECIDED
+    assert record.strict_decision == UNDECIDED
+    assert record.testable_units == up_down + down_up == 12
+    assert record.unique_studies == correlation.studies == 12
+    assert "no q is computed" in record.correction_method
+
+
+def test_an_undefined_odds_ratio_is_missing_rather_than_infinite() -> None:
+    """Every study discordant the same way leaves the ratio undefined (#294).
+
+    The discordant ratio has a zero denominator when no study is discordant in
+    the reverse direction. ``float("inf")`` in a TSV cell is a sentinel value,
+    which this repository does not use for missing data. The defined case is
+    asserted alongside it, so code that simply never reported a ratio would
+    fail here too.
+    """
+    undefined = _guild_profiles(reverse=0)
+    (blank,) = guild_records(undefined, source="x", columns={}, **THRESHOLDS)
+    matrix = build_matrix(undefined, max_conditions=60, max_body_sites=8, min_studies=3)
+    correlation = compute_correlation(undefined, matrix)
+
+    assert correlation.discordant == (12, 0)
+    assert correlation.odds_ratio is None
+    assert blank.effect_value is None
+    assert blank.effect_units == "odds ratio of discordant study signs"
+    assert blank.test_status == TESTED, "the test ran; only the ratio is undefined"
+
+    defined = _guild_profiles(reverse=3)
+    (ratio,) = guild_records(defined, source="x", columns={}, **THRESHOLDS)
+    defined_matrix = build_matrix(defined, max_conditions=60, max_body_sites=8, min_studies=3)
+    defined_correlation = compute_correlation(defined, defined_matrix)
+
+    assert defined_correlation.discordant == (9, 3)
+    assert defined_correlation.odds_ratio == 3.0
+    assert ratio.effect_value == 3.0
 
 
 def test_a_q_value_without_a_family_is_rejected() -> None:

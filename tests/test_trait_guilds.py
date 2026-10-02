@@ -1,6 +1,5 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
-import math
 from pathlib import Path
 
 import pytest
@@ -170,8 +169,9 @@ def test_correlation_counts_studies_by_shift_direction(corpus: tuple[Path, Path]
     assert result.mcnemar_p == pytest.approx(float(binomtest(2, 2, p=0.5).pvalue))
     assert result.mcnemar_p == pytest.approx(0.5)
     # The paired odds ratio is the discordant ratio; with no reverse-discordant
-    # studies it is infinite.
-    assert result.odds_ratio == math.inf
+    # studies it has no value, and an undefined statistic is missing rather than
+    # infinite - float("inf") in a TSV cell is a sentinel value (#294).
+    assert result.odds_ratio is None
 
 
 def test_study_means_reject_an_unpaired_corpus() -> None:
