@@ -1,7 +1,10 @@
 """Table 1 trait selection, the paired directional shift, and its FDR control."""
 
+from __future__ import annotations
+
 from math import isnan
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from scipy.stats import binomtest, false_discovery_control
@@ -23,6 +26,9 @@ from bsdbng.trait_guilds import (
     column_term_id,
     load_profiles,
 )
+
+if TYPE_CHECKING:
+    from plotly.graph_objects import Figure
 
 # Two of the six traits reach the profile matrix behind a METPO qualifier, so the
 # fixture uses the qualified spelling to prove the suffix lookup is what resolves
@@ -490,3 +496,95 @@ def test_a_constant_trait_contrast_is_omitted_from_the_correlations_not_written_
     }
     assert {n for _rho, _p, n in control.spearman.values()} == {4}
     assert not [key for key, (rho, _p, _n) in control.spearman.items() if isnan(rho)]
+
+
+def _shift_annotations(figure: Figure) -> dict[str, str]:
+    """The per-trait annotation column, keyed by the trait label it sits beside.
+
+    The subplot titles are annotations too, but they are placed against the paper
+    rather than the left panel's axes, so the axis reference separates them.
+    """
+    return {a.y: a.text for a in figure.layout.annotations if a.xref == "x" and a.yref == "y"}
+
+
+def _annotation_column_x(figure: Figure) -> float:
+    """The single x the per-trait annotations share, asserted to be shared."""
+    xs = sorted({a.x for a in figure.layout.annotations if a.xref == "x"})
+    assert len(xs) == 1, f"annotations spread across {len(xs)} columns: {xs}"
+    return float(xs[0])
+
+
+def test_an_unscored_trait_gets_no_marker_and_an_undefined_share_annotation() -> None:
+    """A cut selecting no study still has to draw its rows, with no marker (#289).
+
+    A body-site or condition cut can select an empty profile list, which is the
+    only way a trait reaches ``studies_scored == 0`` with no tie either: the
+    per-study means fill every trait key, so a trait present in the corpus always
+    lands up, down or tied. The state is taken from ``compute_direction_shifts``
+    rather than built here, so the figure is checked against what the production
+    statistic actually produces.
+    """
+    from bsdbng.table1_trait_maps import build_shift_figure
+
+    result = compute_direction_shifts([], TRAIT_ORDER)
+
+    assert result.studies == 0
+    assert {s.status for s in result.shifts} == {"no_studies"}
+    assert {s.share_up for s in result.shifts} == {None}
+    assert result.spearman == {}
+
+    figure = build_shift_figure(result, "v1.3.1", TRAIT_ORDER)
+    scatter = figure.data[0]
+
+    # No marker anywhere: a point at 0 would read as every study shifting down.
+    assert list(scatter.x) == [None] * len(TRAIT_ORDER)
+    assert list(scatter.error_x.array) == [None] * len(TRAIT_ORDER)
+    assert list(scatter.error_x.arrayminus) == [None] * len(TRAIT_ORDER)
+
+    # Every ci_high is None, so the annotation column falls back to its default
+    # position instead of collapsing onto the axis origin.
+    annotations = _shift_annotations(figure)
+    assert set(annotations) == {TABLE1_TRAIT_LABELS[t] for t in TRAIT_ORDER}
+    assert set(annotations.values()) == {"no scored study (0 tied); share undefined"}
+    assert _annotation_column_x(figure) == pytest.approx(0.512)
+
+
+def test_only_the_all_tied_trait_loses_its_marker(corpus: tuple[Path, Path]) -> None:
+    """The undefined-share branches are per trait, not per figure.
+
+    On the shared fixture sphere shaped ties in every study while the other five
+    are scored, so the same figure must carry five markers and one gap, and the
+    annotation column must still be placed from the scored traits' intervals.
+    """
+    from bsdbng.table1_trait_maps import build_shift_figure
+
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    result = compute_direction_shifts(profiles, TRAIT_ORDER)
+    by_trait = {s.trait: s for s in result.shifts}
+    assert by_trait["sphere_shaped"].status == "all_tied"
+    assert by_trait["sphere_shaped"].studies_tied == 3
+
+    figure = build_shift_figure(result, "v1.3.1", TRAIT_ORDER)
+    scatter = figure.data[0]
+    missing = [t for t, value in zip(TRAIT_ORDER, scatter.x, strict=True) if value is None]
+    assert missing == ["sphere_shaped"]
+    assert [t for t, v in zip(TRAIT_ORDER, scatter.error_x.array, strict=True) if v is None] == [
+        "sphere_shaped"
+    ]
+    assert [
+        t for t, v in zip(TRAIT_ORDER, scatter.error_x.arrayminus, strict=True) if v is None
+    ] == ["sphere_shaped"]
+
+    annotations = _shift_annotations(figure)
+    assert (
+        annotations[TABLE1_TRAIT_LABELS["sphere_shaped"]]
+        == "no scored study (3 tied); share undefined"
+    )
+    scored = annotations[TABLE1_TRAIT_LABELS["facultatively_aerobic"]]
+    assert scored.startswith("3/3 studies, q=")
+
+    # The column sits past the widest scored interval, not at the no-data default.
+    widest = max(s.ci_high for s in result.shifts if s.ci_high is not None)
+    column_x = _annotation_column_x(figure)
+    assert column_x == pytest.approx(widest + 0.012)
+    assert column_x != pytest.approx(0.512)

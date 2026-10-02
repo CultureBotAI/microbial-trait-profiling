@@ -27,6 +27,7 @@ import csv
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from scipy.stats import binomtest, false_discovery_control, spearmanr
 
@@ -54,6 +55,11 @@ from bsdbng.trait_guilds import (
     read_bugsigdb_vintage,
     write_stats_report,
 )
+
+if TYPE_CHECKING:
+    # plotly is the optional "viz" extra, so it is imported for annotations only;
+    # the figure builders import it at call time behind require_plotly().
+    from plotly.graph_objects import Figure
 
 TRAIT_ORDER: tuple[str, ...] = tuple(TABLE1_TRAITS)
 OUTPUT_PREFIX = "table1_traits"
@@ -397,15 +403,20 @@ def write_shift_table(result: ShiftResult, output_dir: Path, vintage: str | None
     return [shifts_path, spearman_path]
 
 
-def write_shift_figure(
-    result: ShiftResult, output_path: Path, vintage: str | None, trait_order: Sequence[str]
-) -> Path:
-    """Render all six traits' directional shifts and their correlations in one figure.
+def build_shift_figure(
+    result: ShiftResult, vintage: str | None, trait_order: Sequence[str]
+) -> Figure:
+    """Build all six traits' directional shifts and their correlations as one figure.
 
     Left panel: the share of studies whose paired contrast is positive, with an
     exact binomial 95% interval, against the half-and-half null. Right panel: the
     rank correlation between traits across per-study contrasts, which is what
     shows that coccus shaped and sphere shaped are close to the same measurement.
+
+    Separate from ``write_shift_figure`` so the undefined-share branches below -
+    the absent marker, the absent error bar, the fallback annotation column and
+    the "share undefined" text - are reachable in a test without a kaleido image
+    export (#289). Nothing between the two functions depends on the output path.
     """
     require_plotly()
     import plotly.graph_objects as go
@@ -536,7 +547,14 @@ def write_shift_figure(
     figure.update_yaxes(autorange="reversed", row=1, col=1)
     figure.update_xaxes(tickangle=-40, row=1, col=2)
     figure.update_yaxes(autorange="reversed", row=1, col=2)
+    return figure
 
+
+def write_shift_figure(
+    result: ShiftResult, output_path: Path, vintage: str | None, trait_order: Sequence[str]
+) -> Path:
+    """Render the directional-shift figure to an image file."""
+    figure = build_shift_figure(result, vintage, trait_order)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.write_image(str(output_path), scale=2)
     return output_path
