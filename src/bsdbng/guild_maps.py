@@ -374,6 +374,40 @@ def study_direction_means(
     }
 
 
+#: Per-cell render states of an aggregated matrix. Once the value is blank, a
+#: cell shaded for carrying no annotation, a cell held back for too little
+#: support, and a cell nothing was sampled in all look identical, and they are
+#: three different claims. The figure writer and the integrated evidence table
+#: both classify cells here, so no cell can be drawn in one artifact and masked
+#: in the other (#294).
+CELL_VALUE = "value"
+CELL_NO_SIGNAL = "no_guild_signal"
+CELL_BELOW_MIN_STUDIES = "below_min_studies"
+CELL_NOT_SAMPLED = "not_sampled"
+
+
+def cell_status(value: float | None, sampled_no_signal: bool, study_count: int) -> str:
+    """Why a cell carries a value, or which of three reasons it does not."""
+    if value is not None:
+        return CELL_VALUE
+    if sampled_no_signal:
+        return CELL_NO_SIGNAL
+    return CELL_BELOW_MIN_STUDIES if study_count else CELL_NOT_SAMPLED
+
+
+def cell_status_rows(matrix: GuildMatrix) -> list[list[str]]:
+    """``cell_status`` over the whole matrix, in its own row and column order."""
+    return [
+        [
+            cell_status(value, blank, count)
+            for value, blank, count in zip(v_row, b_row, c_row, strict=True)
+        ]
+        for v_row, b_row, c_row in zip(
+            matrix.values, matrix.sampled_no_signal, matrix.study_counts, strict=True
+        )
+    ]
+
+
 def _odds_ratio_label(odds_ratio: float | None) -> str:
     """Render the discordant ratio, saying so when it is undefined."""
     return "undefined (no reverse-discordant study)" if odds_ratio is None else f"{odds_ratio:.3f}"
@@ -490,19 +524,7 @@ def write_matrix_outputs(
     value_rows = [["" if v is None else f"{v:.6f}" for v in row] for row in matrix.values]
     count_rows = [[str(c) for c in row] for row in matrix.study_counts]
 
-    status_rows = [
-        [
-            "value"
-            if value is not None
-            else "no_guild_signal"
-            if blank
-            else ("below_min_studies" if count else "not_sampled")
-            for value, blank, count in zip(v_row, b_row, c_row, strict=True)
-        ]
-        for v_row, b_row, c_row in zip(
-            matrix.values, matrix.sampled_no_signal, matrix.study_counts, strict=True
-        )
-    ]
+    status_rows = cell_status_rows(matrix)
 
     values_path = output_dir / f"{prefix}_condition_body_site_matrix.tsv"
     status_path = output_dir / f"{prefix}_condition_body_site_cell_status.tsv"

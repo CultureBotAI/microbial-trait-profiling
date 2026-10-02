@@ -8,23 +8,34 @@ from pathlib import Path
 
 import pytest
 
-from bsdbng.guild_maps import build_matrix, compute_correlation
+from bsdbng.guild_maps import build_matrix, cell_status_rows, compute_correlation
 from bsdbng.integrated_evidence import (
     ALL_TIED,
+    CELL_STATES,
+    DRAWN,
+    GUILD_MIN_STUDIES,
+    INSUFFICIENT,
+    MASKED,
     NO_ELIGIBLE_PAIRS,
     NOT_APPLICABLE,
+    NOT_DRAWN,
+    NOT_SAMPLED,
     NOT_SIGNIFICANT,
     SIGNIFICANT,
     SOURCE_MISSING,
     TESTED,
     UNDECIDED,
+    UNTESTED,
     ZERO_ANNOTATION,
     Record,
     apply_statuses,
+    build_guild_matrix,
+    cell_support_records,
     family_inventory,
     feature_column_rows,
     fraction_sign_records,
     guild_records,
+    is_cell_row,
     log_ratio_records,
     placeholder_records,
     read_status,
@@ -310,12 +321,192 @@ def test_each_method_keeps_its_own_family_and_units() -> None:
     )
 
 
-def test_display_state_is_independent_of_the_decision() -> None:
-    record = _built()[0]
-    masked = replace(record, display_status="masked_below_min_studies")
-    assert masked.decision == record.decision
-    assert record.display_status == NOT_APPLICABLE
-    assert masked.test_status == TESTED
+def _support_profiles() -> list[Profile]:
+    """A corpus whose figure cells land in each of the four support states.
+
+    - Colitis in Feces: four studies, enough to be drawn.
+    - Colitis in Saliva: two studies, below the min-studies rule, so masked.
+    - Crohn in Feces: three studies in which no taxon carries either guild, so
+      sampled with no signal.
+    - IBS in Saliva: four studies, so the Saliva column block survives the rule
+      that drops a body site no condition is drawn in - without it the masked
+      Colitis/Saliva cell would be dropped with the whole block.
+    - Crohn in Saliva and IBS in Feces: never sampled.
+    """
+    profiles: list[Profile] = []
+
+    def add(study: str, condition: str, site: str, *, signal: bool) -> None:
+        for direction in ("inc", "dec"):
+            aerobe_high = direction == "inc"
+            counts = (
+                {"aerobe": 30 if aerobe_high else 5, "anaerobe": 5 if aerobe_high else 30}
+                if signal
+                else {"aerobe": 0, "anaerobe": 0}
+            )
+            profiles.append(
+                Profile(
+                    study_id=study,
+                    experiment_id=f"{study}-{site}",
+                    inc_dec=direction,
+                    condition=condition,
+                    body_site=site,
+                    guild_counts=counts,
+                    total=sum(counts.values()) + 20,
+                )
+            )
+
+    for index in range(4):
+        add(f"drawn{index}", "Colitis", "Feces", signal=True)
+    for index in range(2):
+        add(f"thin{index}", "Colitis", "Saliva", signal=True)
+    for index in range(3):
+        add(f"blank{index}", "Crohn", "Feces", signal=False)
+    for index in range(4):
+        add(f"keep{index}", "IBS", "Saliva", signal=True)
+    return profiles
+
+
+def _cells_by_stratum(records: list[Record]) -> dict[tuple[str, str, str, str], Record]:
+    return {(r.condition, r.body_site, r.trait, r.direction): r for r in records if is_cell_row(r)}
+
+
+def test_the_four_cell_support_states_come_from_the_real_matrix() -> None:
+    """Drawn, masked, sampled-without-signal and not-sampled, each emitted (#294).
+
+    Nothing used to set ``drawn`` or ``masked_below_min_studies``, and
+    ``not_sampled`` was never emitted at all, so three of the enum's states named
+    something the table could not produce. These rows come from the same
+    ``cell_status`` classification the figure writer uses, over the matrix the
+    McNemar row is computed on.
+    """
+    profiles = _support_profiles()
+    matrix = build_guild_matrix(profiles)
+    records = cell_support_records(matrix, source="x", columns={}, min_studies=GUILD_MIN_STUDIES)
+    cells = _cells_by_stratum(records)
+
+    drawn = cells[("Colitis", "Feces", "aerobe", "inc")]
+    assert (drawn.display_status, drawn.test_status) == (DRAWN, UNTESTED)
+    assert drawn.unique_studies == 4
+
+    masked = cells[("Colitis", "Saliva", "aerobe", "inc")]
+    assert (masked.display_status, masked.test_status) == (MASKED, INSUFFICIENT)
+    assert masked.unique_studies == 2
+    assert masked.support_threshold == GUILD_MIN_STUDIES == 3
+
+    no_signal = cells[("Crohn", "Feces", "aerobe", "inc")]
+    assert (no_signal.display_status, no_signal.test_status) == (DRAWN, ZERO_ANNOTATION)
+    assert no_signal.unique_studies == 3, "sampled; the annotation is what is absent"
+
+    not_sampled = cells[("Crohn", "Saliva", "aerobe", "inc")]
+    assert (not_sampled.display_status, not_sampled.test_status) == (NOT_DRAWN, NOT_SAMPLED)
+    assert not_sampled.unique_studies == 0
+
+    # The four states are different claims, so no two of them collapse.
+    assert len({(c.display_status, c.test_status) for c in cells.values()}) == 4
+    # Every cell of the matrix is present, including the unsampled ones.
+    assert len([r for r in records if is_cell_row(r)]) == len(matrix.conditions) * len(
+        matrix.columns
+    )
+
+
+def test_cell_rows_line_up_with_the_figure_writers_cell_grid() -> None:
+    """The rows must be the figure's own cells, in the figure's own order.
+
+    This pins the alignment, not the mapping: it re-derives the expectation from
+    ``CELL_STATES``, so a change to that table passes here and is caught by
+    ``test_the_four_cell_support_states_come_from_the_real_matrix`` instead. What
+    it does catch is a row emitted against the wrong cell - a transposed index,
+    a column parsed into the wrong site or direction, or a skipped cell.
+    """
+    matrix = build_guild_matrix(_support_profiles())
+    records = cell_support_records(matrix, source="x", columns={}, min_studies=GUILD_MIN_STUDIES)
+    statuses = cell_status_rows(matrix)
+
+    expected = [
+        CELL_STATES[statuses[row][column]]
+        for row in range(len(matrix.conditions))
+        for column in range(len(matrix.columns))
+    ]
+    assert [(r.display_status, r.test_status) for r in records] == [
+        (display, test) for test, display in expected
+    ]
+    # Each row names the cell it came from, so the grid can be rebuilt from it.
+    assert [f"{r.body_site}|{r.trait}_{r.direction}" for r in records] == [
+        column for _ in matrix.conditions for column in matrix.columns
+    ]
+    assert [r.condition for r in records] == [
+        condition for condition in matrix.conditions for _ in matrix.columns
+    ]
+
+
+def test_a_cell_row_parses_a_trait_name_that_contains_an_underscore() -> None:
+    """The column is ``site|feature_direction``, and five of the features have
+    underscores in their own names.
+
+    The oxygen guilds do not, so a fixture built on them cannot tell a split on
+    the first underscore from a split on the last. The six Table 1 traits can,
+    and this builder is given whichever matrix it is handed.
+    """
+    traits = ("facultatively_aerobic", "coccus_shaped")
+    profiles = [
+        Profile(
+            study_id=f"u{study}",
+            experiment_id=f"u{study}-1",
+            inc_dec=direction,
+            condition="Colitis",
+            body_site="Feces",
+            guild_counts={
+                "facultatively_aerobic": 30 if direction == "inc" else 5,
+                "coccus_shaped": 5,
+            },
+            total=60,
+        )
+        for study in range(4)
+        for direction in ("inc", "dec")
+    ]
+    matrix = build_matrix(
+        profiles,
+        max_conditions=10,
+        max_body_sites=4,
+        min_studies=3,
+        guild_order=traits,
+    )
+    records = cell_support_records(matrix, source="x", columns={}, min_studies=3)
+
+    cells = _cells_by_stratum(records)
+    assert ("Colitis", "Feces", "facultatively_aerobic", "inc") in cells
+    assert ("Colitis", "Feces", "coccus_shaped", "dec") in cells
+    assert {r.trait for r in records} == set(traits)
+    assert {r.direction for r in records} == {"inc", "dec"}
+
+
+def test_a_masked_cell_does_not_change_a_tested_result() -> None:
+    """Display state never feeds back into a decision (#178).
+
+    The previous version of this test built its own masked record with
+    ``dataclasses.replace``, so it passed whatever the code did. This one takes
+    a corpus in which the tested corpus-level result and a masked figure cell
+    are both produced by the real builders, and checks that the masking is
+    recorded without touching the result.
+    """
+    profiles = _support_profiles()
+    matrix = build_guild_matrix(profiles)
+    (tested,) = guild_records(profiles, matrix=matrix, source="x", columns={}, **THRESHOLDS)
+    cells = _cells_by_stratum(
+        cell_support_records(matrix, source="x", columns={}, min_studies=GUILD_MIN_STUDIES)
+    )
+
+    masked = cells[("Colitis", "Saliva", "aerobe", "inc")]
+    assert masked.display_status == MASKED
+    assert masked.decision == UNDECIDED
+    assert masked.q_value is None
+
+    # The corpus-level test ran over the same studies and is unaffected by what
+    # the figure draws, so it is not a figure cell and has no display state.
+    assert tested.test_status == TESTED
+    assert tested.display_status == NOT_APPLICABLE
+    assert not is_cell_row(tested)
+    assert tested.p_value is not None
 
 
 def test_statuses_are_attached_without_changing_any_result() -> None:
@@ -605,9 +796,8 @@ def test_the_mcnemar_row_keeps_its_p_and_leaves_q_blank() -> None:
     correction had been applied to it (#294).
     """
     profiles = _guild_profiles()
-    (record,) = guild_records(profiles, source="x", columns={}, **THRESHOLDS)
-
-    matrix = build_matrix(profiles, max_conditions=60, max_body_sites=8, min_studies=3)
+    matrix = build_guild_matrix(profiles)
+    (record,) = guild_records(profiles, matrix=matrix, source="x", columns={}, **THRESHOLDS)
     correlation = compute_correlation(profiles, matrix)
     up_down, down_up = correlation.discordant
 
@@ -635,8 +825,8 @@ def test_an_undefined_odds_ratio_is_missing_rather_than_infinite() -> None:
     fail here too.
     """
     undefined = _guild_profiles(reverse=0)
-    (blank,) = guild_records(undefined, source="x", columns={}, **THRESHOLDS)
-    matrix = build_matrix(undefined, max_conditions=60, max_body_sites=8, min_studies=3)
+    matrix = build_guild_matrix(undefined)
+    (blank,) = guild_records(undefined, matrix=matrix, source="x", columns={}, **THRESHOLDS)
     correlation = compute_correlation(undefined, matrix)
 
     assert correlation.discordant == (12, 0)
@@ -646,8 +836,8 @@ def test_an_undefined_odds_ratio_is_missing_rather_than_infinite() -> None:
     assert blank.test_status == TESTED, "the test ran; only the ratio is undefined"
 
     defined = _guild_profiles(reverse=3)
-    (ratio,) = guild_records(defined, source="x", columns={}, **THRESHOLDS)
-    defined_matrix = build_matrix(defined, max_conditions=60, max_body_sites=8, min_studies=3)
+    defined_matrix = build_guild_matrix(defined)
+    (ratio,) = guild_records(defined, matrix=defined_matrix, source="x", columns={}, **THRESHOLDS)
     defined_correlation = compute_correlation(defined, defined_matrix)
 
     assert defined_correlation.discordant == (9, 3)

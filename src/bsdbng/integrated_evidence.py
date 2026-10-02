@@ -32,7 +32,16 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, fields, replace
 from pathlib import Path
 
-from bsdbng.guild_maps import build_matrix, compute_correlation
+from bsdbng.guild_maps import (
+    CELL_BELOW_MIN_STUDIES,
+    CELL_NO_SIGNAL,
+    CELL_NOT_SAMPLED,
+    CELL_VALUE,
+    GuildMatrix,
+    build_matrix,
+    cell_status_rows,
+    compute_correlation,
+)
 from bsdbng.paths import DERIVED_DATA_DIR
 from bsdbng.table1_trait_maps import compute_direction_shifts
 from bsdbng.trait_composition import ANALYSIS_VERSION as LOG_RATIO_VERSION
@@ -93,9 +102,19 @@ MASKED = "masked_below_min_studies"
 NOT_DRAWN = "not_drawn"
 NOT_APPLICABLE = "not_applicable"
 
+
 SELECTION_NOTE = (
     "the six Table 1 traits were selected on this corpus by the composition arm; "
     "correcting within them is not independent confirmation"
+)
+#: The guild rows carried "fixed a priori", which nothing in this repository
+#: establishes and which is not true of the aerobe guild in any case:
+#: METPO:1000608 is both a member of it and one of the six traits the
+#: composition arm selected on this corpus (#294).
+GUILD_SELECTION_NOTE = (
+    "the two oxygen guilds are the groupings both arms use, with no record in this "
+    "repository of where or when they were declared; the aerobe guild contains "
+    "METPO:1000608, which is also one of the six traits selected on this corpus"
 )
 #: No single cutoff is native to all three families collected here, so each row
 #: is decided at both and each threshold names where it comes from (#294). The
@@ -109,6 +128,13 @@ OVERLAY_Q_SOURCE = (
 MANUSCRIPT_Q_SOURCE = (
     "the manuscript's q <= 0.001 rule, as the enrichment arm's committed run applies it"
 )
+#: The oxygen guild figure's aggregation parameters. The McNemar row and the cell
+#: support inventory share one matrix, so both describe the same figure and the
+#: masking threshold a cell row reports is the one that masked it.
+GUILD_MAX_CONDITIONS = 60
+GUILD_MAX_BODY_SITES = 8
+GUILD_MIN_STUDIES = 3
+
 #: Assessments that belong to other issues. Absent input means pending, not clear.
 ASSESSMENTS = {
     "calibration_status": "#182",
@@ -140,6 +166,11 @@ class Record:
     reference_columns: str
     stratum_kind: str
     stratum: str
+    #: The stratum as separate identifiers rather than one packed label, so a
+    #: cell row can be joined on any of them. Blank where the row is pooled.
+    condition: str
+    body_site: str
+    direction: str
     population: str
     denominator: str
     background: str
@@ -176,6 +207,9 @@ class Record:
     family_size: int | None
     q_threshold: float | None
     effect_threshold: float | None
+    #: The minimum number of studies a figure cell needs before it is drawn
+    #: rather than masked. It is a display rule, not an inference threshold.
+    support_threshold: int | None
     test_status: str
     decision: str
     display_status: str
@@ -196,6 +230,16 @@ class Record:
     taxon_influence_status: str = "pending #190"
     source: str = ""
     notes: str = ""
+
+
+def is_cell_row(record: Record) -> bool:
+    """Whether the row describes a figure cell rather than a method result.
+
+    ``not_drawn`` is shared with a method whose output was not supplied, so the
+    display state cannot identify the inventory; the support threshold can,
+    because only a cell is subject to one.
+    """
+    return record.support_threshold is not None
 
 
 def untested(record: Record) -> Record:
@@ -274,6 +318,9 @@ def fraction_sign_records(
                 reference_columns="",
                 stratum_kind="pooled",
                 stratum="all body sites and conditions",
+                condition="",
+                body_site="",
+                direction="",
                 population="human, paired experiments",
                 denominator="summed non-MediaDive trait counts of the profile",
                 background="",
@@ -312,6 +359,7 @@ def fraction_sign_records(
                 q_threshold_source=OVERLAY_Q_SOURCE,
                 strict_q_threshold_source=MANUSCRIPT_Q_SOURCE,
                 effect_threshold=None,
+                support_threshold=None,
                 test_status=status,
                 decision=_decision(shift.q_value, q_threshold, status),
                 strict_decision=_decision(shift.q_value, strict_q_threshold, status),
@@ -358,6 +406,9 @@ def log_ratio_records(
                 reference_columns=matrix_columns(columns, summary.reference),
                 stratum_kind="pooled",
                 stratum="all body sites and conditions",
+                condition="",
+                body_site="",
+                direction="",
                 population="human, paired experiments with all four counts positive",
                 denominator="none; the profile total cancels in the ratio",
                 background="",
@@ -397,6 +448,7 @@ def log_ratio_records(
                 q_threshold_source=OVERLAY_Q_SOURCE,
                 strict_q_threshold_source=MANUSCRIPT_Q_SOURCE,
                 effect_threshold=None,
+                support_threshold=None,
                 test_status=status,
                 decision=_decision(summary.by_q, q_threshold, status),
                 strict_decision=_decision(summary.by_q, strict_q_threshold, status),
@@ -410,9 +462,20 @@ def log_ratio_records(
     return [untested(record) for record in records]
 
 
+def build_guild_matrix(profiles: Sequence[Profile]) -> GuildMatrix:
+    """The oxygen guild figure's aggregation, at the figure's own parameters."""
+    return build_matrix(
+        list(profiles),
+        max_conditions=GUILD_MAX_CONDITIONS,
+        max_body_sites=GUILD_MAX_BODY_SITES,
+        min_studies=GUILD_MIN_STUDIES,
+    )
+
+
 def guild_records(
     profiles: Sequence[Profile],
     *,
+    matrix: GuildMatrix,
     source: str,
     columns: FeatureColumns,
     q_threshold: float | None,
@@ -425,7 +488,6 @@ def guild_records(
     there is no corrected value here; writing the uncorrected p into ``q_value``
     made a single uncorrected test look like a one-member FDR family (#294).
     """
-    matrix = build_matrix(list(profiles), max_conditions=60, max_body_sites=8, min_studies=3)
     correlation = compute_correlation(list(profiles), matrix)
     up_down, down_up = correlation.discordant
     status = TESTED if up_down + down_up else INSUFFICIENT
@@ -443,6 +505,9 @@ def guild_records(
             reference_columns=matrix_columns(columns, "anaerobe"),
             stratum_kind="pooled",
             stratum="all body sites and conditions",
+            condition="",
+            body_site="",
+            direction="",
             population="human, paired experiments",
             denominator="summed non-MediaDive trait counts of the profile",
             background="",
@@ -475,16 +540,123 @@ def guild_records(
             q_threshold_source=OVERLAY_Q_SOURCE,
             strict_q_threshold_source=MANUSCRIPT_Q_SOURCE,
             effect_threshold=None,
+            support_threshold=None,
             test_status=status,
             decision=_decision(None, q_threshold, status),
             strict_decision=_decision(None, strict_q_threshold, status),
             display_status=NOT_APPLICABLE,
             zero_annotation_state="profiles with no retained annotation score share 0",
-            selection_note="the oxygen guilds were fixed a priori, not selected on this corpus",
+            selection_note=GUILD_SELECTION_NOTE,
             source=source,
         )
     ]
     return [untested(record) for record in records]
+
+
+#: How a matrix cell's render state maps onto the table's own two state columns.
+#: A cell is never tested here - the tests in this table are at corpus level - so
+#: its test_status reports the support it has and its display_status reports what
+#: the figure does with it. They are separate columns because a cell held back
+#: for too little support is not a negative result (#294).
+CELL_STATES: dict[str, tuple[str, str]] = {
+    CELL_VALUE: (UNTESTED, DRAWN),
+    CELL_NO_SIGNAL: (ZERO_ANNOTATION, DRAWN),
+    CELL_BELOW_MIN_STUDIES: (INSUFFICIENT, MASKED),
+    CELL_NOT_SAMPLED: (NOT_SAMPLED, NOT_DRAWN),
+}
+
+
+def cell_support_records(
+    matrix: GuildMatrix,
+    *,
+    source: str,
+    columns: FeatureColumns,
+    min_studies: int,
+    method: str = "oxygen_guild_cell_support",
+) -> list[Record]:
+    """One row per figure cell, saying why the cell is drawn or is not.
+
+    ``drawn``, ``masked_below_min_studies`` and ``not_sampled`` only exist at
+    cell level: a corpus-level test is not drawn anywhere, so its display state
+    is ``not_applicable``, and before these rows existed no code path could set
+    the other three at all - the enum named states the table never emitted.
+
+    The classification is ``guild_maps.cell_status``, the same function the
+    figure writer uses, so a cell cannot be reported as drawn by one artifact
+    and masked by the other. The inventory is complete, every cell of the
+    matrix including the unsampled ones, because a partial inventory would put
+    a reader back to guessing what an absent row meant.
+    """
+    statuses = cell_status_rows(matrix)
+    records: list[Record] = []
+    for row_index, condition in enumerate(matrix.conditions):
+        for column_index, column in enumerate(matrix.columns):
+            site, suffix = column.split("|", 1)
+            guild, direction = suffix.rsplit("_", 1)
+            test_status, display_status = CELL_STATES[statuses[row_index][column_index]]
+            records.append(
+                Record(
+                    method=method,
+                    method_version="guild-maps-build-matrix",
+                    inference_level="condition_body_site",
+                    feature_type="guild",
+                    trait=guild,
+                    trait_qualifier=declared_terms(columns, guild),
+                    trait_columns=matrix_columns(columns, guild),
+                    reference="",
+                    reference_qualifier="",
+                    reference_columns="",
+                    stratum_kind="condition x body site x direction",
+                    stratum=f"{condition}, {site}, {direction}",
+                    condition=condition,
+                    body_site=site,
+                    direction=direction,
+                    population="human, paired experiments",
+                    denominator="summed non-MediaDive trait counts of the profile",
+                    background="",
+                    eligibility_rule=(
+                        "no test is run on a cell; the cell is drawn when enough studies "
+                        "back it and any of them carries the annotation"
+                    ),
+                    unique_studies=matrix.study_counts[row_index][column_index],
+                    studies_total=None,
+                    studies_excluded=None,
+                    studies_partially_observed=None,
+                    paired_experiments=None,
+                    experiments_eligible=None,
+                    experiments_excluded_zero_count=None,
+                    profiles=None,
+                    testable_units=None,
+                    ties=None,
+                    effect_value=None,
+                    effect_units="",
+                    study_effect_mean=None,
+                    study_effect_median=None,
+                    study_effect_units="",
+                    interval_low=None,
+                    interval_high=None,
+                    interval_type="unavailable",
+                    p_value=None,
+                    q_value=None,
+                    correction_method="",
+                    family_id="",
+                    family_size=None,
+                    q_threshold=None,
+                    effect_threshold=None,
+                    support_threshold=min_studies,
+                    test_status=test_status,
+                    decision=UNDECIDED,
+                    display_status=display_status,
+                    zero_annotation_state=(
+                        "sampled, and no taxon carried any term of the guild"
+                        if test_status == ZERO_ANNOTATION
+                        else "profiles with no retained annotation score share 0"
+                    ),
+                    selection_note=GUILD_SELECTION_NOTE,
+                    source=source,
+                )
+            )
+    return records
 
 
 def placeholder_records(
@@ -517,6 +689,9 @@ def placeholder_records(
             reference_columns="",
             stratum_kind="",
             stratum="",
+            condition="",
+            body_site="",
+            direction="",
             population="",
             denominator="",
             background="",
@@ -546,6 +721,7 @@ def placeholder_records(
             family_size=None,
             q_threshold=None,
             effect_threshold=None,
+            support_threshold=None,
             test_status=SOURCE_MISSING,
             decision=UNDECIDED,
             display_status=NOT_DRAWN,
@@ -782,7 +958,17 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
         "p_value / q_value / correction_method / family_id / family_size",
         "the test and the family it was corrected in; families are not comparable",
     ),
-    ("q_threshold / effect_threshold", "the thresholds this row's decision used, if any"),
+    (
+        "q_threshold / effect_threshold / support_threshold",
+        "the thresholds this row used: two for the decision, and the minimum studies "
+        "a figure cell needs to be drawn. The support threshold is a display rule and "
+        "is set only on a cell row, which is what identifies the cell inventory",
+    ),
+    (
+        "stratum_kind / stratum / condition / body_site / direction",
+        "what the row is about within the corpus, as one label and as separate "
+        "identifiers; blank on a pooled row",
+    ),
     (
         "test_status",
         f"{TESTED}, {UNTESTED}, {INSUFFICIENT}, {ALL_TIED}, {NO_ELIGIBLE_PAIRS}, "
@@ -791,7 +977,12 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
         "but carried no annotation, and nothing was sampled at all",
     ),
     ("decision", f"{SIGNIFICANT}, {NOT_SIGNIFICANT} or {UNDECIDED}; only ever within one family"),
-    ("display_status", f"{DRAWN}, {MASKED}, {NOT_DRAWN} or {NOT_APPLICABLE}; never a result"),
+    (
+        "display_status",
+        f"{DRAWN}, {MASKED}, {NOT_DRAWN} or {NOT_APPLICABLE}; never a result. The first "
+        "two belong to a figure cell, which is what the cell rows carry; a corpus-level "
+        f"test is drawn nowhere, so it is {NOT_APPLICABLE}",
+    ),
     ("zero_annotation_state", "how zero or absent annotation was treated"),
     ("selection_note", "whether the feature was selected on this corpus"),
     (
@@ -834,27 +1025,52 @@ def write_view(
             f"{row['untested_or_unsupplied']} | {row['significant']} | {row['not_significant']} | "
             f"{row['undecided']} |"
         )
+    cells = [record for record in records if is_cell_row(record)]
+    if cells:
+        lines += [
+            "",
+            "## Figure cells, by what the figure does with them",
+            "",
+            "Cell rows report support and display, never a test. They are listed here as",
+            "counts rather than one row each; the whole inventory is in the TSV.",
+            "",
+            "| Display | Test state | Cells |",
+            "| --- | --- | --- |",
+        ]
+        states = sorted({(record.display_status, record.test_status) for record in cells})
+        for display, test_status in states:
+            count = sum(
+                record.display_status == display and record.test_status == test_status
+                for record in cells
+            )
+            lines.append(f"| {display} | {test_status} | {count} |")
+
     lines += [
         "",
         "## Records",
         "",
-        "| Method | Feature | Level | Effect | Units | q (family) | Decision | Test state |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| Method | Feature | Level | Effect | Units | p | q (family) | Decision | Test state |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for record in records:
+        if is_cell_row(record):
+            continue
         feature = f"{record.trait}/{record.reference}" if record.reference else record.trait
         effect = "NA" if record.effect_value is None else f"{record.effect_value:.4g}"
+        p_value = "NA" if record.p_value is None else f"{record.p_value:.3g}"
         q_value = "NA" if record.q_value is None else f"{record.q_value:.3g}"
         lines.append(
             f"| {record.method} | {feature} | {record.inference_level} | {effect} | "
-            f"{record.effect_units or 'NA'} | {q_value} ({record.family_id or 'NA'}) | "
-            f"{record.decision} | {record.test_status} |"
+            f"{record.effect_units or 'NA'} | {p_value} | {q_value} "
+            f"({record.family_id or 'NA'}) | {record.decision} | {record.test_status} |"
         )
     lines += [
         "",
         "Reading rules: a blank q is not a negative result; `source_not_supplied` means the",
         "method's output was not given to this run; a decision holds only inside its own family;",
         "and the six Table 1 traits were selected on this corpus, so no row confirms them.",
+        "A row with a p and no q was not corrected for multiplicity, so it carries no",
+        "threshold decision either.",
         "",
     ]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -918,7 +1134,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     records: list[Record] = []
     records += fraction_sign_records(profiles, source=source, columns=columns, **thresholds)
     records += log_ratio_records(profiles, source=source, columns=columns, **thresholds)
-    records += guild_records(profiles, source=source, columns=columns, **thresholds)
+    matrix = build_guild_matrix(profiles)
+    records += guild_records(profiles, matrix=matrix, source=source, columns=columns, **thresholds)
+    records += cell_support_records(
+        matrix, source=source, columns=columns, min_studies=GUILD_MIN_STUDIES
+    )
     records += placeholder_records(
         "composition_arm_native_transformed_contrast",
         "body_site",
