@@ -32,6 +32,7 @@ import json
 from collections.abc import Callable, Hashable, Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
+from statistics import fmean, median
 
 import numpy as np
 from scipy.stats import binomtest, false_discovery_control
@@ -217,6 +218,26 @@ def flip_directions(
     return result
 
 
+@dataclass(frozen=True)
+class InjectionEffect:
+    """What a nominal multiplier actually did to one replicate's corpus.
+
+    The nominal multiplier is not the realised one: ``round`` leaves a small count
+    where it is, and the available complement caps a large one. Reporting power
+    against the nominal lift alone overstates the effect that was present.
+    """
+
+    trait: str
+    nominal_multiplier: float
+    eligible_profiles: int
+    changed_profiles: int
+    unchanged_after_rounding: int
+    capped_profiles: int
+    mean_realized_multiplier: float | None
+    median_realized_multiplier: float | None
+    mean_realized_multiplier_when_changed: float | None
+
+
 def inject_effect(
     profiles: Sequence[Profile],
     rng: np.random.Generator,
@@ -224,25 +245,64 @@ def inject_effect(
     trait: str = INJECTED_TRAIT,
     multiplier: float,
     study_share: float = INJECTION_STUDY_SHARE,
-) -> list[Profile]:
-    """Raise one trait's counts on the increased side for a share of studies.
+) -> tuple[list[Profile], InjectionEffect]:
+    """Raise one trait's share on the increased side for a share of studies.
 
-    The profile's total moves with the counts, so the other traits' shares stay
-    coherent rather than being rescaled behind the injected one.
+    The added counts come from the complement of the tracked traits: a profile's
+    ``total`` sums all 317 trait columns, of which the eight the procedures read are
+    disjoint subsets, so there is headroom to move annotations into the injected
+    trait without touching any other tracked count or the denominator. Holding the
+    total fixed is what makes the truth labels valid -- every other tracked trait's
+    share is unchanged exactly, not merely approximately, so a rejection on one of
+    them is a false discovery and nothing else. Raising the total instead (as
+    ``calibration-v1`` did) lowers every other share on the increased side and
+    manufactures real effects on the traits the report calls untouched.
     """
     studies = sorted({p.study_id for p in profiles})
     chosen = {study for study in studies if rng.random() < study_share}
-    result = []
+    result: list[Profile] = []
+    realized: list[float] = []
+    eligible = changed = capped = 0
     for profile in profiles:
         count = profile.guild_counts.get(trait, 0)
         if profile.study_id not in chosen or profile.inc_dec != "inc" or count <= 0:
             result.append(profile)
             continue
-        raised = round(count * multiplier)
+        eligible += 1
+        headroom = profile.total - sum(profile.guild_counts.values())
+        ceiling = count + max(headroom, 0)
+        raised = min(round(count * multiplier), ceiling)
+        if raised < round(count * multiplier):
+            capped += 1
+        realized.append(raised / count)
+        if raised == count:
+            result.append(profile)
+            continue
+        changed += 1
         counts = dict(profile.guild_counts)
         counts[trait] = raised
-        result.append(replace(profile, guild_counts=counts, total=profile.total + raised - count))
-    return result
+        result.append(replace(profile, guild_counts=counts))
+    changed_ratios = [ratio for ratio in realized if ratio != 1.0]
+    effect = InjectionEffect(
+        trait=trait,
+        nominal_multiplier=multiplier,
+        eligible_profiles=eligible,
+        changed_profiles=changed,
+        unchanged_after_rounding=eligible - changed,
+        capped_profiles=capped,
+        mean_realized_multiplier=fmean(realized) if realized else None,
+        median_realized_multiplier=median(realized) if realized else None,
+        mean_realized_multiplier_when_changed=(fmean(changed_ratios) if changed_ratios else None),
+    )
+    return result, effect
+
+
+@dataclass(frozen=True)
+class Resample:
+    """One replicate's corpus, plus what the injection actually achieved on it."""
+
+    profiles: list[Profile]
+    injection: InjectionEffect | None = None
 
 
 @dataclass(frozen=True)
@@ -251,16 +311,24 @@ class Scenario:
 
     name: str
     truth: str
-    transform: Callable[[Sequence[Profile], np.random.Generator], list[Profile]]
+    transform: Callable[[Sequence[Profile], np.random.Generator], Resample]
+
+
+def _flip_only(unit: str) -> Callable[[Sequence[Profile], np.random.Generator], Resample]:
+    def transform(profiles: Sequence[Profile], rng: np.random.Generator) -> Resample:
+        return Resample(flip_directions(profiles, rng, unit=unit))
+
+    return transform
 
 
 def _injection(
     multiplier: float,
-) -> Callable[[Sequence[Profile], np.random.Generator], list[Profile]]:
-    def transform(profiles: Sequence[Profile], rng: np.random.Generator) -> list[Profile]:
-        return inject_effect(
+) -> Callable[[Sequence[Profile], np.random.Generator], Resample]:
+    def transform(profiles: Sequence[Profile], rng: np.random.Generator) -> Resample:
+        injected, effect = inject_effect(
             flip_directions(profiles, rng, unit="study"), rng, multiplier=multiplier
         )
+        return Resample(injected, effect)
 
     return transform
 
@@ -269,12 +337,12 @@ SCENARIOS: tuple[Scenario, ...] = (
     Scenario(
         "complete_null_study_flip",
         "no trait differs between the directions",
-        lambda profiles, rng: flip_directions(profiles, rng, unit="study"),
+        _flip_only("study"),
     ),
     Scenario(
         "complete_null_experiment_flip",
         "no trait differs between the directions",
-        lambda profiles, rng: flip_directions(profiles, rng, unit="experiment"),
+        _flip_only("experiment"),
     ),
     *(
         Scenario(
@@ -287,24 +355,35 @@ SCENARIOS: tuple[Scenario, ...] = (
 )
 
 
+@dataclass(frozen=True)
+class ScenarioRun:
+    """Every replicate's outcomes for one scenario, and its realised injections."""
+
+    runs: list[list[Outcome]]
+    injections: list[InjectionEffect]
+
+
 def run_replicates(
     profiles: Sequence[Profile],
     scenario: Scenario,
     replicates: int,
     seed: int = SEED,
     procedures: Mapping[str, Procedure] | None = None,
-) -> list[list[Outcome]]:
+) -> ScenarioRun:
     """Run every procedure on ``replicates`` transformed copies of the corpus."""
     chosen = procedures or {}
     runs: list[list[Outcome]] = []
+    injections: list[InjectionEffect] = []
     for index in range(replicates):
         rng = replicate_rng(seed, scenario.name, index)
-        transformed = scenario.transform(profiles, rng)
+        resample = scenario.transform(profiles, rng)
+        if resample.injection is not None:
+            injections.append(resample.injection)
         outcomes: list[Outcome] = []
         for procedure in chosen.values():
-            outcomes.extend(procedure(transformed))
+            outcomes.extend(procedure(resample.profiles))
         runs.append(outcomes)
-    return runs
+    return ScenarioRun(runs, injections)
 
 
 def _interval(successes: int, trials: int) -> tuple[float, float]:
@@ -400,6 +479,40 @@ def summarize(
             }
         )
     return rows
+
+
+def summarize_injection(
+    effects: Sequence[InjectionEffect], scenario: Scenario
+) -> list[dict[str, object]]:
+    """The effective injection size, averaged over the replicates that applied it."""
+    if not effects:
+        return []
+    eligible = [e.eligible_profiles for e in effects]
+    changed = [e.changed_profiles for e in effects]
+    realized = [e.mean_realized_multiplier for e in effects if e.mean_realized_multiplier]
+    when_changed = [
+        e.mean_realized_multiplier_when_changed
+        for e in effects
+        if e.mean_realized_multiplier_when_changed
+    ]
+    return [
+        {
+            "scenario": scenario.name,
+            "trait": effects[0].trait,
+            "replicates": len(effects),
+            "nominal_multiplier": effects[0].nominal_multiplier,
+            "mean_eligible_profiles": fmean(eligible),
+            "mean_changed_profiles": fmean(changed),
+            "share_unchanged_after_rounding": (
+                1.0 - fmean(changed) / fmean(eligible) if fmean(eligible) else None
+            ),
+            "mean_capped_profiles": fmean([e.capped_profiles for e in effects]),
+            "mean_effective_multiplier": fmean(realized) if realized else None,
+            "mean_effective_multiplier_when_changed": (
+                fmean(when_changed) if when_changed else None
+            ),
+        }
+    ]
 
 
 def check_criteria(rows: Sequence[dict[str, object]]) -> list[dict[str, object]]:
@@ -512,18 +625,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     write_stats_report(stats, vintage)
 
     rows: list[dict[str, object]] = []
+    injection_rows: list[dict[str, object]] = []
     matrix = build_matrix(profiles, max_conditions=60, max_body_sites=8, min_studies=3)
     procedures = procedures_for(matrix)
     for scenario in SCENARIOS:
-        runs = run_replicates(profiles, scenario, args.replicates, args.seed, procedures)
+        run = run_replicates(profiles, scenario, args.replicates, args.seed, procedures)
         injected = INJECTED_TRAIT if scenario.name.startswith("injected") else None
-        rows.extend(summarize(runs, scenario, injected))
+        rows.extend(summarize(run.runs, scenario, injected))
+        injection_rows.extend(summarize_injection(run.injections, scenario))
         print(f"{scenario.name}: {args.replicates} replicates")
     criteria = check_criteria(rows)
 
     output = args.output_dir
     written = [
         _write(output / "calibration_results.tsv", rows),
+        _write(output / "calibration_injection.tsv", injection_rows),
         _write(output / "calibration_criteria.tsv", criteria),
     ]
     status = {
