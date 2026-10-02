@@ -154,9 +154,25 @@ analyze: study-trait-profiles
 	  --pair-output data/derived/trait_enrichment_trait_study_pairs_ranked.tsv"
 	just timed enrichment-summary "uv run python scripts/generate_enrichment_summary.py"
 
-# Run calibration harness benchmarking across inference adapters.
-calibrate:
-	just timed calibrate "uv run python -m bsdbng.calibration.harness"
+# Run the Monte Carlo calibration benchmark for the ORA adapter. Writes
+# calibration_summary.json (status, metrics, per-replicate records, provenance),
+# calibration_replicates.tsv, calibration_ecdf.tsv and calibration_null_pvalues.tsv.gz
+# to data/derived/calibration/. Exits 1 on invalid input or failed run, 2 if only
+# some replicates completed. A successful exit does not establish calibration
+# (see #263, #182). Override settings, e.g. `just calibrate 100 7 null`.
+calibrate replicates="10" seed="42" scenario="all": study-trait-profiles
+	just timed calibrate "uv run python -m bsdbng.calibration.harness \
+	  --profiles data/derived/study_trait_profiles_wide.tsv \
+	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
+	  --output-dir data/derived/calibration \
+	  --replicates {{replicates}} \
+	  --seed {{seed}} \
+	  --scenario {{scenario}} \
+	  --alpha 0.05 \
+	  --fdr-q 0.05 \
+	  --signal-strength 0.6 \
+	  --n-spike-traits 3 \
+	  --test-type enrichment"
 
 # Generate a clustered heatmap from enrichment results.
 genheatmap: analyze

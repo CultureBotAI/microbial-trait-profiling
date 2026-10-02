@@ -1,5 +1,7 @@
 """Ilyas ORA & Depletion framework adapter for the calibration harness."""
 
+from __future__ import annotations
+
 from typing import Any
 
 import numpy as np
@@ -7,6 +9,43 @@ import pandas as pd
 from scipy.stats import hypergeom
 
 from bsdbng.calibration.protocol import MethodInferenceResult
+from bsdbng.calibration.scenarios import (
+    profile_identifiers,
+    resolve_signature_sizes,
+    shared_trait_columns,
+    trait_population_counts,
+)
+
+RESULT_COLUMNS: list[str] = [
+    "profile_id",
+    "trait",
+    "k_observed",
+    "k_pop",
+    "m_universe",
+    "n_draws",
+    "effect_size",
+    "p_value",
+    "q_value",
+    "is_significant",
+]
+
+# Which (profile, trait) pairs enter the BH family. Recorded in metadata so that
+# calibration reports state the test scope explicitly (see #263).
+TEST_SCOPE = "pairs_with_k_observed_gt_0_and_k_pop_gt_0_and_n_draws_gt_0"
+
+
+def benjamini_hochberg(p_values: np.ndarray) -> np.ndarray:
+    """Return Benjamini-Hochberg adjusted q-values."""
+    p_arr = np.asarray(p_values, dtype=float)
+    n_tests = len(p_arr)
+    if n_tests == 0:
+        return np.empty(0, dtype=float)
+    order = np.argsort(p_arr)
+    ranked = p_arr[order] * n_tests / np.arange(1, n_tests + 1)
+    cummin = np.minimum.accumulate(ranked[::-1])[::-1]
+    q_values = np.empty(n_tests, dtype=float)
+    q_values[order] = np.clip(cummin, 0.0, 1.0)
+    return q_values
 
 
 class IlyasORAAdapter:
@@ -18,102 +57,89 @@ class IlyasORAAdapter:
         "Taxa in signature drawn uniformly from background universe without replacement"
     )
 
+    def _empty_result(self, metadata: dict[str, Any]) -> MethodInferenceResult:
+        return MethodInferenceResult(
+            method_id=self.method_id,
+            owner=self.owner,
+            target_null=self.target_null,
+            results_df=pd.DataFrame(columns=RESULT_COLUMNS),
+            metadata=metadata,
+        )
+
     def run_inference(
         self,
         profiles_df: pd.DataFrame,
         taxa_matrix_df: pd.DataFrame,
         config: dict[str, Any] | None = None,
     ) -> MethodInferenceResult:
-        """Run ORA hypergeometric enrichment and depletion inference."""
+        """Run ORA hypergeometric enrichment or depletion inference."""
         config = config or {}
-        test_type = config.get("test_type", "enrichment")  # "enrichment" or "depletion"
-        alpha = config.get("alpha", 0.05)
+        test_type = str(config.get("test_type", "enrichment"))
+        if test_type not in {"enrichment", "depletion"}:
+            raise ValueError(f"Unsupported test_type: {test_type}")
+        alpha = float(config.get("alpha", 0.05))
 
-        non_trait_cols = {
-            "study_id",
-            "experiment_id",
-            "inc_dec",
-            "condition",
-            "body_site",
-            "signature_size",
-        }
-        trait_columns = [col for col in profiles_df.columns if col not in non_trait_cols]
-
+        trait_columns = shared_trait_columns(profiles_df, taxa_matrix_df)
         m_universe = len(taxa_matrix_df)
-        k_totals = (taxa_matrix_df[trait_columns] > 0).sum(axis=0).to_dict()
+        metadata: dict[str, Any] = {
+            "test_type": test_type,
+            "alpha": alpha,
+            "test_scope": TEST_SCOPE,
+            "m_universe": m_universe,
+            "n_trait_columns": len(trait_columns),
+            "n_tests": 0,
+        }
+        if not trait_columns or m_universe <= 0:
+            return self._empty_result(metadata)
 
-        results = []
+        signature_sizes = resolve_signature_sizes(profiles_df)
+        profile_ids = profile_identifiers(profiles_df)
+        k_pop_arr = trait_population_counts(taxa_matrix_df, trait_columns)
+        observed = (
+            profiles_df[trait_columns].apply(pd.to_numeric, errors="raise").to_numpy(dtype=np.int64)
+        )
 
-        for _, row in profiles_df.iterrows():
-            study_id = row.get("study_id", "study_1")
-            exp_id = row.get("experiment_id", "exp_1")
-            inc_dec = row.get("inc_dec", "inc")
-            profile_id = f"{study_id}:{exp_id}:{inc_dec}"
+        test_mask = (observed > 0) & (k_pop_arr[np.newaxis, :] > 0)
+        test_mask &= signature_sizes[:, np.newaxis] > 0
+        if not np.any(test_mask):
+            return self._empty_result(metadata)
 
-            n_draws = int(row.get("signature_size", 10))
+        p_idx, t_idx = np.nonzero(test_mask)
+        k_obs = observed[p_idx, t_idx]
+        k_pop = k_pop_arr[t_idx]
+        n_draws = signature_sizes[p_idx]
 
-            for trait in trait_columns:
-                k_observed = int(row[trait])
-                k_pop = k_totals.get(trait, 0)
-
-                if m_universe <= 0 or n_draws <= 0 or k_pop <= 0:
-                    continue
-
-                if test_type == "enrichment":
-                    p_val = float(hypergeom.sf(k_observed - 1, m_universe, k_pop, n_draws))
-                    expected_k = n_draws * (k_pop / m_universe)
-                    effect_size = (k_observed / expected_k) if expected_k > 0 else 0.0
-                else:
-                    p_val = float(hypergeom.cdf(k_observed, m_universe, k_pop, n_draws))
-                    expected_k = n_draws * (k_pop / m_universe)
-                    effect_size = (k_observed / expected_k) if expected_k > 0 else 0.0
-
-                results.append(
-                    {
-                        "profile_id": profile_id,
-                        "trait": trait,
-                        "k_observed": k_observed,
-                        "k_pop": k_pop,
-                        "m_universe": m_universe,
-                        "n_draws": n_draws,
-                        "effect_size": effect_size,
-                        "p_value": p_val,
-                    }
-                )
-
-        res_df = pd.DataFrame(results)
-        if not res_df.empty:
-            p_vals = res_df["p_value"].to_numpy()
-            n_tests = len(p_vals)
-            sorted_indices = np.argsort(p_vals)
-            sorted_p = p_vals[sorted_indices]
-
-            q_values = np.zeros(n_tests)
-            cumulative_min = 1.0
-            for i in range(n_tests - 1, -1, -1):
-                rank = i + 1
-                q = (sorted_p[i] * n_tests) / rank
-                cumulative_min = min(cumulative_min, q)
-                q_values[sorted_indices[i]] = cumulative_min
-
-            res_df["q_value"] = np.clip(q_values, 0.0, 1.0)
-            res_df["is_significant"] = res_df["q_value"] <= alpha
+        if test_type == "enrichment":
+            p_vals = hypergeom.sf(k_obs - 1, m_universe, k_pop, n_draws)
         else:
-            res_df = pd.DataFrame(
-                columns=[
-                    "profile_id",
-                    "trait",
-                    "effect_size",
-                    "p_value",
-                    "q_value",
-                    "is_significant",
-                ]
-            )
+            p_vals = hypergeom.cdf(k_obs, m_universe, k_pop, n_draws)
+        p_vals = np.asarray(p_vals, dtype=float)
 
+        expected = n_draws * (k_pop / m_universe)
+        effect_sizes = np.divide(
+            k_obs, expected, out=np.zeros_like(expected, dtype=float), where=expected > 0
+        )
+        q_values = benjamini_hochberg(p_vals)
+        metadata["n_tests"] = len(p_vals)
+
+        res_df = pd.DataFrame(
+            {
+                "profile_id": profile_ids[p_idx],
+                "trait": np.asarray(trait_columns, dtype=object)[t_idx],
+                "k_observed": k_obs,
+                "k_pop": k_pop,
+                "m_universe": m_universe,
+                "n_draws": n_draws,
+                "effect_size": effect_sizes,
+                "p_value": p_vals,
+                "q_value": q_values,
+                "is_significant": q_values <= alpha,
+            }
+        )
         return MethodInferenceResult(
             method_id=self.method_id,
             owner=self.owner,
             target_null=self.target_null,
             results_df=res_df,
-            metadata={"test_type": test_type, "alpha": alpha},
+            metadata=metadata,
         )
