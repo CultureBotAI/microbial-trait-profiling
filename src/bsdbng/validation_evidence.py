@@ -10,7 +10,11 @@ what is recorded, without acquiring new data:
   (condition, group names and definition, description, matching and confounder
   fields, title, keywords), and which sequencing modality the study used. A mention
   is a pointer to the source paper, not data: the export carries no sample-level
-  values, and "not mentioned" never means "not measured".
+  values, and "not mentioned" never means "not measured". Evidence kinds that share
+  a vocabulary are counted apart rather than lumped: a short-chain fatty acid by
+  name, an enzyme or gene named after one, and untargeted metabolomics are three
+  different kinds of evidence, and a steroid ester that happens to be called an
+  acetate is none of them.
 * **Marker-split candidates**: every experiment whose condition or group fields name
   a marker of one of those evidence types, each classified as a split on the
   marker's measured value, an administered intervention, or a contrast that merely
@@ -86,6 +90,43 @@ def _terms(*terms: str) -> re.Pattern[str]:
     return re.compile(r"(?<![\w])(?:" + "|".join(terms) + r")(?![\w])", re.IGNORECASE)
 
 
+#: The short-chain fatty acids by name, free acid and conjugate base alike.
+SCFA_NAMES = (
+    r"scfas?",
+    r"short[- ]chain fatty acids?",
+    r"butyrate",
+    r"butyric acid",
+    r"propionate",
+    r"propionic acid",
+    r"acetate",
+    r"acetic acid",
+    r"valerate",
+    r"valeric acid",
+)
+#: An SCFA name used as the anion of a steroid or corticosteroid ester, which is a drug
+#: and not a measured metabolite. The pinned corpus holds two: "Medroxyprogesterone
+#: acetate" (bsdb:30866773, the condition of four experiments) and "fluticasone
+#: propionate cream" (bsdb:27543211). Both are the same chemical pattern - a steroid
+#: stem followed by the ester - so the stem suffixes are matched rather than the two
+#: drug names, which also covers budesonide, prednisolone and the rest of the class.
+DRUG_ESTER = re.compile(
+    r"(?<![\w])\w*(?:sone|olone|onide|sterone|adiol)\s+"
+    r"(?:di)?(?:acetate|propionate|butyrate|valerate)(?![\w])",
+    re.IGNORECASE,
+)
+#: An SCFA name inside an enzyme or gene name rather than naming the metabolite: #191
+#: AC2 asks for genes and metabolites to stay distinct. The pinned corpus holds one,
+#: "BCoAT: Butyryl-CoA:acetate CoAtransferase" (bsdb:24296500), spelt without the
+#: hyphen the enzyme usually carries.
+SCFA_GENE_OR_ENZYME = re.compile(
+    r"(?<![\w])(?:(?:butyryl|acetyl|propionyl|butanoyl)-coa(?:[:\s-]+\w+)?"
+    r"|(?:acetate|butyrate|propionate)\s*coa\s*-?\s*transferase"
+    r"|(?:acetate|butyrate|propionate)[- ](?:kinase|dehydrogenase|synthase)"
+    r"|bcoat)",
+    re.IGNORECASE,
+)
+
+
 #: Kinds of measured evidence, each with the words that point to it.
 EVIDENCE_TYPES: dict[str, re.Pattern[str]] = {
     "inflammation_marker": _terms(
@@ -118,18 +159,9 @@ EVIDENCE_TYPES: dict[str, re.Pattern[str]] = {
         r"disease activity",
         r"severity",
     ),
-    "scfa_metabolite": _terms(
-        r"scfas?",
-        r"short[- ]chain fatty acids?",
-        r"butyrate",
-        r"butyric acid",
-        r"propionate",
-        r"propionic acid",
-        r"acetate",
-        r"acetic acid",
-        r"valerate",
-        r"metabolom\w*",
-    ),
+    "scfa_metabolite": _terms(*SCFA_NAMES),
+    "scfa_gene_or_enzyme": SCFA_GENE_OR_ENZYME,
+    "untargeted_metabolomics": _terms(r"metabolom\w*"),
     "nitrate_oxygen_redox": _terms(
         r"nitrate",
         r"nitrite",
@@ -163,6 +195,17 @@ EVIDENCE_TYPES: dict[str, re.Pattern[str]] = {
         r"smoking",
         r"medication\w*",
     ),
+}
+
+#: Matches of an evidence type's pattern that mean something else and are reported
+#: separately rather than counted. Only the SCFA names are ambiguous this way: they are
+#: also drug esters and parts of enzyme names. The separation is what keeps the SCFA
+#: count interpretable - a drug ester is not a metabolite measurement, a gene name is
+#: not a metabolite, and untargeted metabolomics is its own evidence type above.
+EVIDENCE_EXCLUSIONS: dict[str, re.Pattern[str]] = {
+    "scfa_metabolite": re.compile(
+        f"{DRUG_ESTER.pattern}|{SCFA_GENE_OR_ENZYME.pattern}", re.IGNORECASE
+    )
 }
 
 #: Markers whose measurement bears on the redox and SCFA reading of Table 1, by the
@@ -342,23 +385,51 @@ class Mention:
     status: str
     fields: str
     terms: str
+    excluded_terms: str
 
 
-def find_mentions(record: StudyRecord, pattern: re.Pattern[str]) -> Mention:
+def matched_terms(
+    pattern: re.Pattern[str], text: str, exclude: re.Pattern[str] | None = None
+) -> tuple[set[str], set[str]]:
+    """The pattern's matches in ``text``, split into counted and excluded ones.
+
+    A match that falls inside a match of ``exclude`` is the same characters meaning
+    something else - the "acetate" of "Medroxyprogesterone acetate" - so it is
+    reported separately instead of being silently dropped.
+    """
+    spans = [m.span() for m in exclude.finditer(text)] if exclude is not None else []
+    counted: set[str] = set()
+    excluded: set[str] = set()
+    for match in pattern.finditer(text):
+        inside = any(start <= match.start() and match.end() <= end for start, end in spans)
+        (excluded if inside else counted).add(match.group(0).lower())
+    return counted, excluded
+
+
+def find_mentions(
+    record: StudyRecord, pattern: re.Pattern[str], exclude: re.Pattern[str] | None = None
+) -> Mention:
     fields: list[str] = []
     terms: set[str] = set()
+    excluded: set[str] = set()
+    searched = False
     for name in TEXT_FIELDS:
-        found = {
-            m.group(0).lower()
-            for text in record.texts.get(name, [])
-            for m in pattern.finditer(text)
-        }
+        found: set[str] = set()
+        for text in record.texts.get(name, []):
+            searched = True
+            counted, skipped = matched_terms(pattern, text, exclude)
+            found |= counted
+            excluded |= skipped
         if found:
             fields.append(name)
             terms |= found
     if fields:
-        return Mention("mentioned_in_curated_metadata", ";".join(fields), ";".join(sorted(terms)))
-    return Mention("not_mentioned_in_curated_metadata", "", "")
+        status = "mentioned_in_curated_metadata"
+    elif searched:
+        status = "not_mentioned_in_curated_metadata"
+    else:
+        status = "no_curated_text_to_search"
+    return Mention(status, ";".join(fields), ";".join(sorted(terms)), ";".join(sorted(excluded)))
 
 
 def evidence_rows(
@@ -384,10 +455,12 @@ def evidence_rows(
             "access": "source article and supplements; not assessed",
         }
         for name, pattern in EVIDENCE_TYPES.items():
-            mention = find_mentions(record, pattern)
+            mention = find_mentions(record, pattern, EVIDENCE_EXCLUSIONS.get(name))
             row[f"{name}_status"] = mention.status
             row[f"{name}_fields"] = mention.fields
             row[f"{name}_terms"] = mention.terms
+            if name in EVIDENCE_EXCLUSIONS:
+                row[f"{name}_excluded_terms"] = mention.excluded_terms
         rows.append(row)
     return rows
 
@@ -435,6 +508,20 @@ class MarkerSplit:
     exclusion_reason: str
 
 
+def _markers_in(text: str) -> dict[str, set[str]]:
+    """The markers named in one piece of text, by evidence type, esters excluded.
+
+    The same exclusions the mention counts use apply here, so the condition
+    "Medroxyprogesterone acetate" (bsdb:30866773) names no SCFA marker at all.
+    """
+    found = {}
+    for name, pattern in MARKER_TERMS.items():
+        counted, _excluded = matched_terms(pattern, text, EVIDENCE_EXCLUSIONS.get(name))
+        if counted:
+            found[name] = counted
+    return found
+
+
 def classify_marker_split(
     condition: str, group_0_name: str, group_1_name: str, group_1_definition: str
 ) -> MarkerSplit | None:
@@ -454,12 +541,7 @@ def classify_marker_split(
     named anywhere, which is the common case.
     """
     group_texts = (group_0_name, group_1_name, group_1_definition)
-    everywhere = " | ".join(text for text in (condition, *group_texts) if text)
-    found = {
-        name: {match.group(0).lower() for match in pattern.finditer(everywhere)}
-        for name, pattern in MARKER_TERMS.items()
-        if pattern.search(everywhere)
-    }
+    found = _markers_in(" | ".join(text for text in (condition, *group_texts) if text))
     if not found:
         return None
     evidence_type = ";".join(sorted(found))
@@ -475,7 +557,7 @@ def classify_marker_split(
             f"a group label names an administered intervention ({arm.group(0).lower()})",
         )
     for field, text in zip(GROUP_FIELDS, group_texts, strict=True):
-        if not text or not any(pattern.search(text) for pattern in MARKER_TERMS.values()):
+        if not text or not _markers_in(text):
             continue
         is_label = field != "Group 1 definition"
         stated = SPLIT_WORDING.search(text) or (is_label and MEASURED_LEVEL.search(text))

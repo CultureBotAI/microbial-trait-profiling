@@ -7,11 +7,13 @@ from pathlib import Path
 import pytest
 
 from bsdbng.validation_evidence import (
+    EVIDENCE_EXCLUSIONS,
     EVIDENCE_TYPES,
     INTERVENTION_CONTRAST,
     MARKER_NAMED_NOT_MEASURED,
     MARKER_STRATIFIED,
     ExternalCohort,
+    Mention,
     StudyRecord,
     classify_marker_split,
     evidence_rows,
@@ -116,6 +118,126 @@ def test_mentions_report_the_field_and_the_word() -> None:
     assert mention.terms == "calprotectin;il-6"
     assert find_mentions(record, EVIDENCE_TYPES["transit"]).status == (
         "not_mentioned_in_curated_metadata"
+    )
+
+
+# Curated text exactly as the pinned dump carries it, for the #292 SCFA examples.
+SCFA_SOURCE_TEXT: dict[str, str] = {
+    # A steroid ester, the condition of all four experiments of bsdb:30866773.
+    "bsdb:30866773": "Medroxyprogesterone acetate",
+    # A corticosteroid ester, in the title of bsdb:27543211.
+    "bsdb:27543211": (
+        "Cutaneous microbiome effects of fluticasone propionate cream and adjunctive "
+        "bleach baths in childhood atopic dermatitis"
+    ),
+    # An enzyme name, in the figure description of bsdb:24296500. The source spells it
+    # "CoAtransferase", with no hyphen.
+    "bsdb:24296500": (
+        "Asterisks indicate a significant difference (q < 0.05) compared to baseline. "
+        "BCoAT: Butyryl-CoA:acetate CoAtransferase, NND: New Nordic Diet, ADD: "
+        "Average Danish"
+    ),
+    # A measured metabolite, for contrast: bsdb:31065565's group name.
+    "bsdb:31065565": "low fecal butyrate levels",
+    # Untargeted metabolomics, which is its own evidence type.
+    "bsdb:36133313": "gut microbiome, microbiome, mycobiome, plasma metabolites, metabolomics",
+}
+
+
+def _text_record(text: str) -> StudyRecord:
+    return StudyRecord(
+        study_id="bsdb:1",
+        pmid="1",
+        doi="",
+        title="",
+        authors="",
+        year="2020",
+        location="China",
+        host_species="Homo sapiens",
+        sequencing_types="16S",
+        antibiotics_exclusion_field="",
+        texts={"Description": [text]},
+    )
+
+
+@pytest.mark.parametrize(
+    ("study", "scfa", "excluded", "gene", "metabolomics"),
+    [
+        ("bsdb:30866773", False, "acetate", False, False),
+        ("bsdb:27543211", False, "propionate", False, False),
+        ("bsdb:24296500", False, "acetate", True, False),
+        ("bsdb:31065565", True, "", False, False),
+        ("bsdb:36133313", False, "", False, True),
+    ],
+)
+def test_scfa_categories_separate_drugs_genes_and_metabolomics(
+    study: str, scfa: bool, excluded: str, gene: bool, metabolomics: bool
+) -> None:
+    record = _text_record(SCFA_SOURCE_TEXT[study])
+
+    def mentioned(name: str) -> Mention:
+        return find_mentions(record, EVIDENCE_TYPES[name], EVIDENCE_EXCLUSIONS.get(name))
+
+    metabolite = mentioned("scfa_metabolite")
+    assert (metabolite.status == "mentioned_in_curated_metadata") is scfa, study
+    assert metabolite.excluded_terms == excluded, study
+    assert (mentioned("scfa_gene_or_enzyme").status == "mentioned_in_curated_metadata") is gene, (
+        study
+    )
+    assert (
+        mentioned("untargeted_metabolomics").status == "mentioned_in_curated_metadata"
+    ) is metabolomics, study
+
+
+def test_the_enzyme_name_is_reported_as_an_enzyme_not_as_acetate() -> None:
+    record = _text_record(SCFA_SOURCE_TEXT["bsdb:24296500"])
+    enzyme = find_mentions(record, EVIDENCE_TYPES["scfa_gene_or_enzyme"])
+    assert "bcoat" in enzyme.terms
+    assert "butyryl-coa:acetate" in enzyme.terms
+    # The second half of the same source name has to be recognised on its own, so the
+    # enzyme rule does not rest on the butyryl-CoA prefix. The source spells it with no
+    # hyphen before "transferase", which the published enzyme name carries.
+    bare = _text_record("acetate CoAtransferase")
+    assert find_mentions(bare, EVIDENCE_TYPES["scfa_gene_or_enzyme"]).terms == (
+        "acetate coatransferase"
+    )
+    assert (
+        find_mentions(
+            bare, EVIDENCE_TYPES["scfa_metabolite"], EVIDENCE_EXCLUSIONS["scfa_metabolite"]
+        ).excluded_terms
+        == "acetate"
+    )
+
+
+def test_an_ester_does_not_make_a_marker_split_candidate() -> None:
+    # All four experiments of bsdb:30866773 are conditioned on the ester.
+    assert (
+        classify_marker_split(
+            "Medroxyprogesterone acetate",
+            "black naive vaginal microbiome (baseline visit )",
+            "white naiive vaginal microbiome (baseline)",
+            "white participants at baseline",
+        )
+        is None
+    )
+
+
+def test_a_study_with_no_searchable_text_is_not_reported_as_not_mentioned() -> None:
+    empty = StudyRecord(
+        study_id="bsdb:1",
+        pmid="1",
+        doi="",
+        title="",
+        authors="",
+        year="",
+        location="",
+        host_species="Homo sapiens",
+        sequencing_types="",
+        antibiotics_exclusion_field="",
+        texts={},
+    )
+    assert find_mentions(empty, EVIDENCE_TYPES["scfa_metabolite"]).status == (
+        "no_curated_text_to_search"
     )
 
 
