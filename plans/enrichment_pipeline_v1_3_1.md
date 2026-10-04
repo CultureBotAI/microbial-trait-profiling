@@ -29,7 +29,7 @@ This plan outlines the steps to re-run the BugSigDB enrichment pipeline using ex
 - **Heatmaps**: Generate clustered heatmaps of enrichment results.
 - **Histograms**: Plot distribution of enrichments across traits and profiles.
 - **Sankey Diagrams**: Create guild-specific Sankey diagrams showing flow from condition to trait.
-- **Infographics**: Generate summary PNGs for enrichment and depletion results.
+- **Infographics**: Generate summary figures in PNG format for enrichment and depletion results.
 
 ## Mermaid Workflow Diagram
 

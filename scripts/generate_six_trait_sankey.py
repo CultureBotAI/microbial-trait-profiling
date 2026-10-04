@@ -122,24 +122,22 @@ def load_trait_labels(trait_meta_path: Path, mapping_path: Path) -> dict[str, st
         "METPO:1000623": "moderately halophilic",
     }
     if trait_meta_path.exists():
-        try:
-            tm = pd.read_csv(trait_meta_path, sep="\t")
-            for _, r in tm.iterrows():
-                cid = str(r["column_id"])
-                lbl = str(r.get("column_label", cid))
-                lbl = lbl.split(" [METPO")[0].split(" METPO:")[0].replace("capable of: ", "")
-                labels[cid] = lbl
-        except Exception:
-            pass
+        tm = pd.read_csv(trait_meta_path, sep="\t")
+        if "column_id" not in tm.columns:
+            raise ValueError(f"Trait metadata is missing column_id: {trait_meta_path}")
+        for _, r in tm.iterrows():
+            cid = str(r["column_id"])
+            lbl = str(r.get("column_label", cid))
+            lbl = lbl.split(" [METPO")[0].split(" METPO:")[0].replace("capable of: ", "")
+            labels[cid] = lbl
     if mapping_path.exists():
-        try:
-            mp = pd.read_csv(mapping_path, sep="\t", header=None)
-            for _, r in mp.iterrows():
-                cid = str(r[0])
-                lbl = str(r[1]).split(" [METPO")[0].split(" METPO:")[0]
-                labels[cid] = lbl
-        except Exception:
-            pass
+        mp = pd.read_csv(mapping_path, sep="\t", header=None)
+        if mp.shape[1] < 2:
+            raise ValueError(f"Trait mapping requires at least two columns: {mapping_path}")
+        for _, r in mp.iterrows():
+            cid = str(r[0])
+            lbl = str(r[1]).split(" [METPO")[0].split(" METPO:")[0]
+            labels[cid] = lbl
     return labels
 
 

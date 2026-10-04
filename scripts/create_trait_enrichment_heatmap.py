@@ -44,7 +44,7 @@ def load_metpo_label_lookup() -> dict[str, str]:
 
     mapping = pd.read_csv(METPO_MAPPING_PATH, sep="\t", dtype=str).fillna("")
     if not {"METPO_ID", "Description"}.issubset(mapping.columns):
-        return {}
+        raise ValueError(f"Trait mapping requires METPO_ID and Description: {METPO_MAPPING_PATH}")
 
     return {
         row["METPO_ID"].strip(): row["Description"].strip()
@@ -159,7 +159,7 @@ def parse_args() -> argparse.Namespace:
 def _parse_profile_header(line: str) -> ProfileParts:
     parts = line.split("\t")
     if len(parts) != 3:
-        msg = f"Unparseable profile header: {line!r}"
+        msg = f"Unparsable profile header: {line!r}"
         raise ValueError(msg)
     return ProfileParts(parts[0], parts[1], parts[2])
 
@@ -211,20 +211,20 @@ def parse_report(path: Path) -> list[ParsedHit]:
                 payload = line[2:]
                 parts = payload.split(", ")
                 if len(parts) not in {3, 4}:
-                    msg = f"Unparseable trait row: {line!r}"
+                    msg = f"Unparsable trait row: {line!r}"
                     raise ValueError(msg)
 
                 trait, pvalue_text = parts[0], parts[1]
                 if len(parts) == 4:
                     summary = parts[3]
                     if "fold=" not in summary:
-                        msg = f"Unparseable summary in trait row: {line!r}"
+                        msg = f"Unparsable summary in trait row: {line!r}"
                         raise ValueError(msg)
                     fold_text = summary.rsplit("fold=", 1)[-1]
                 else:
                     summary = parts[2]
                     if not summary.startswith("fold="):
-                        msg = f"Unparseable summary in trait row: {line!r}"
+                        msg = f"Unparsable summary in trait row: {line!r}"
                         raise ValueError(msg)
                     fold_text = summary.split("=", 1)[-1]
                 if "mediadive.medium:" not in trait:
@@ -394,31 +394,27 @@ def build_matrix(
     # Map trait IDs (e.g. METPO:XXXX) to human phenotype names when a mapping
     # file exists. If multiple traits map to the same phenotype, disambiguate by
     # appending the original trait id in brackets so column names remain unique.
-    try:
-        mapping_path = Path("metpo_phenotype_mapping.tsv")
-        if mapping_path.exists():
-            mapdf = pd.read_csv(mapping_path, sep="\t", dtype=str)
-            # expected columns: METPO_ID, Description
-            if "METPO_ID" in mapdf.columns and "Description" in mapdf.columns:
-                lookup = dict(zip(mapdf["METPO_ID"], mapdf["Description"], strict=False))
-                orig_cols = list(matrix.columns)
-                mapped = [lookup.get(c, c) for c in orig_cols]
+    mapping_path = Path("metpo_phenotype_mapping.tsv")
+    if mapping_path.exists():
+        mapdf = pd.read_csv(mapping_path, sep="\t", dtype=str)
+        # expected columns: METPO_ID, Description
+        if "METPO_ID" in mapdf.columns and "Description" in mapdf.columns:
+            lookup = dict(zip(mapdf["METPO_ID"], mapdf["Description"], strict=False))
+            orig_cols = list(matrix.columns)
+            mapped = [lookup.get(c, c) for c in orig_cols]
 
-                counts = Counter(mapped)
-                if any(v > 1 for v in counts.values()):
-                    new_cols = []
-                    # disambiguate duplicates by appending original trait id
-                    for orig, lab in zip(orig_cols, mapped, strict=False):
-                        if counts[lab] == 1:
-                            new_cols.append(lab)
-                        else:
-                            new_cols.append(f"{lab} [{orig}]")
-                    matrix.columns = new_cols
-                else:
-                    matrix.columns = mapped
-    except Exception:
-        # best-effort only; do not fail plotting if mapping unavailable
-        pass
+            counts = Counter(mapped)
+            if any(v > 1 for v in counts.values()):
+                new_cols = []
+                # disambiguate duplicates by appending original trait id
+                for orig, lab in zip(orig_cols, mapped, strict=False):
+                    if counts[lab] == 1:
+                        new_cols.append(lab)
+                    else:
+                        new_cols.append(f"{lab} [{orig}]")
+                matrix.columns = new_cols
+            else:
+                matrix.columns = mapped
     return matrix, profile_meta
 
 

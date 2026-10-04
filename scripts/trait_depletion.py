@@ -18,13 +18,7 @@ import math
 from collections import defaultdict
 from pathlib import Path
 
-try:
-    from scipy.stats import hypergeom as _scipy_hypergeom  # type: ignore
-
-    _HAVE_SCIPY = True
-except Exception:
-    _scipy_hypergeom = None
-    _HAVE_SCIPY = False
+from scipy.stats import hypergeom as _scipy_hypergeom
 
 
 def parse_args() -> argparse.Namespace:
@@ -94,53 +88,12 @@ def _to_int(value: str) -> int:
     return int(_to_float(value))
 
 
-def _comb(n: int, k: int) -> int:
-    if k < 0 or k > n:
-        return 0
-    return math.comb(n, k)
-
-
 def hypergeom_cdf(x: int, population_size: int, population_successes: int, draws: int) -> float:
-    """Return P[X <= x] for Hypergeometric(population_size, population_successes, draws)."""
-    # Use SciPy's implementation if available for speed and numerical stability
-    if _HAVE_SCIPY:
-        # scipy.hypergeom.cdf(k, M, K, N) == P[X <= k]
-        try:
-            return float(_scipy_hypergeom.cdf(x, population_size, population_successes, draws))
-        except Exception:
-            pass
-
-    # Fallback calculation: P(X <= x) = sum_{k=0}^{x} P(X=k)
-    if x < 0:
-        return 0.0
-    max_k = min(population_successes, draws)
-    if x >= max_k:
-        return 1.0
-
-    # Fallback using recurrence: P(X=k+1) = P(X=k) * (K-k)(N-k) / ((k+1)(M-K-N+k+1))
-    # Starting from k=0 is safer for CDF.
-    try:
-        M, K, N = population_size, population_successes, draws
-
-        # P(X=0) = comb(M-K, N) / comb(M, N)
-        # log P(X=0) = log_comb(M-K, N) - log_comb(M, N)
-        def log_comb(n, k):
-            if k < 0 or k > n:
-                return -float("inf")
-            return math.lgamma(n + 1) - math.lgamma(k + 1) - math.lgamma(n - k + 1)
-
-        log_p0 = log_comb(M - K, N) - log_comb(M, N)
-        curr_px = math.exp(log_p0)
-        p_sum = curr_px
-
-        for k in range(x):
-            # px(k+1) = px(k) * (K-k)(N-k) / ((k+1)(M-K-N+k+1))
-            curr_px *= (K - k) * (N - k) / ((k + 1) * (M - K - N + k + 1))
-            p_sum += curr_px
-
-        return min(p_sum, 1.0)
-    except (OverflowError, MemoryError, ZeroDivisionError):
-        return 1.0
+    """Return P[X <= x] using the required SciPy implementation."""
+    value = float(_scipy_hypergeom.cdf(x, population_size, population_successes, draws))
+    if not math.isfinite(value):
+        raise ValueError("Invalid hypergeometric population or draw parameters")
+    return value
 
 
 def hypergeom_cdf_many(
@@ -149,29 +102,15 @@ def hypergeom_cdf_many(
     population_successes: list[int],
     draws: int,
 ) -> list[float]:
-    """Return P[X <= x] for many Hypergeometric draws."""
+    """Compute each trait's tail probability without silently replacing failed calculations."""
+    if len(counts) != len(population_successes):
+        raise ValueError("Counts and population successes must have the same length")
     if not counts:
         return []
-
-    if _HAVE_SCIPY:
-        try:
-            # scipy.hypergeom.cdf(k, M, K, N) == P[X <= k]
-            values = _scipy_hypergeom.cdf(
-                counts,
-                population_size,
-                population_successes,
-                draws,
-            )
-            if hasattr(values, "__iter__"):
-                return [float(v) for v in values]
-            return [float(values)]
-        except Exception:
-            pass
-
-    # Fallback loop
-    results = []
-    for x, K in zip(counts, population_successes, strict=True):
-        results.append(hypergeom_cdf(x, population_size, K, draws))
+    values = _scipy_hypergeom.cdf(counts, population_size, population_successes, draws)
+    results = [float(value) for value in values]
+    if any(not math.isfinite(value) for value in results):
+        raise ValueError("Invalid hypergeometric population or draw parameters")
     return results
 
 

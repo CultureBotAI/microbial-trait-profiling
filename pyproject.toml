@@ -16,6 +16,7 @@ dependencies = [
   "linkml>=1.10.0",
   "linkml-runtime>=1.8.3",
   "matplotlib>=3.10.0",
+  "numpy>=1.26.0",
   "pandas>=3.0.0",
   "pydantic>=2.13.0",
   "pyyaml>=6.0.2",
@@ -57,6 +58,8 @@ qa = [
   "pip-audit>=2.10.0",
   "pytest-cov>=6.0.0",
   "types-PyYAML>=6.0.12.20260408",
+  # Keep the maintenance CLI aligned with .pre-commit-config.yaml.
+  "uv==0.11.15",
 ]
 
 [tool.setuptools]
