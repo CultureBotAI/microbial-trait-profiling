@@ -1,15 +1,39 @@
 #!/usr/bin/env python3
-"""Export ranked enrichment trait summaries from a trait enrichment report."""
+"""Export ranked enrichment trait summaries from a trait enrichment report.
+
+Both outputs always carry their declared column headers plus ``# Key: Value``
+metadata recording the result status and counts, so an empty table is
+interpretable (#296):
+
+* ``Result-Status``: ``discoveries``, ``zero_discoveries`` or
+  ``zero_eligible_tests`` (see :mod:`bsdbng.enrichment_results`).
+* ``Total-Tests-Performed`` / ``Significant-Hits``: counts from the analyzer.
+* ``Exported-Rows`` (pair table) / ``Ranked-Traits`` (overall table).
+
+Malformed or missing input exits with status 1 and an actionable message
+instead of writing an empty successful report.
+"""
 
 from __future__ import annotations
 
 import argparse
 import re
-from dataclasses import dataclass
+import sys
+from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
+from bsdbng.enrichment_results import (
+    META_RESULT_STATUS,
+    META_SIGNIFICANT_HITS,
+    META_TESTS_PERFORMED,
+    RESULT_STATUSES,
+    STATUS_DISCOVERIES,
+    MalformedResultsError,
+    load_results_tsv,
+)
 
 DEFAULT_INPUT_CANDIDATES = [
     Path("data/derived/trait_enrichment_report_p0.001.txt"),
@@ -21,6 +45,9 @@ DEFAULT_RESULTS_CANDIDATES = [
 ]
 DEFAULT_OVERALL_OUTPUT_STEM = "trait_enrichment_traits_overall_ranked"
 DEFAULT_PAIR_OUTPUT_STEM = "trait_enrichment_trait_study_pairs_ranked"
+DEFAULT_MIN_FOLD = 1.5
+# #115: traits must be significant in at least this many profiles to be ranked.
+MIN_HIT_ROWS_FOR_RANKING = 2
 
 
 @dataclass(frozen=True)
@@ -37,6 +64,50 @@ class ParsedRow:
     exp: float
     testable_profiles: int
     hit_count: int | None = None
+
+
+PARSED_ROW_COLUMNS: list[str] = [f.name for f in fields(ParsedRow)]
+
+
+def overall_columns(stat_type: str, censored: bool) -> list[str]:
+    """Declared column order of the overall trait ranking table."""
+    is_fdr = stat_type == "fdr_q"
+    best_stat_col = "best_qvalue" if is_fdr else "best_pvalue"
+    median_stat_col = "median_qvalue" if is_fdr else "median_pvalue"
+    other_best_col = "best_pvalue" if is_fdr else "best_qvalue"
+    columns = [
+        "rank",
+        "trait",
+        "net_direction",
+        "inc_hits",
+        "dec_hits",
+        "prevalence_summary",
+        "stat_type",
+        best_stat_col,
+        median_stat_col,
+        "hit_rows",
+        "unique_profiles",
+        "mean_fold",
+        "max_fold",
+        "testable_profiles",
+        other_best_col,
+        "min_p_direction",
+        "min_p_study_id",
+        "min_p_experiment_id",
+        "min_p_profile_id",
+    ]
+    if censored:
+        columns.append("n_censored_profiles")
+    columns.append("prevalence")
+    return columns
+
+
+def pair_columns(stat_type: str) -> list[str]:
+    """Declared column order of the trait-study pair ranking table."""
+    renamed = [
+        "q_value" if (stat_type == "fdr_q" and c == "fdr_q") else c for c in PARSED_ROW_COLUMNS
+    ]
+    return ["rank", *renamed, "is_censored_hit"]
 
 
 def resolve_default_input() -> Path:
@@ -108,9 +179,13 @@ def detect_metadata(path: Path) -> dict[str, Any]:
     meta: dict[str, Any] = {
         "stat_type": "p_value",
         "threshold": 0.001,
+        "min_fold": None,
         "testable_profiles": None,
         "max_traits": None,
         "fdr_scope": "global",
+        "tests_performed": None,
+        "significant_hits": None,
+        "result_status": None,
     }
     if not path.exists():
         return meta
@@ -125,12 +200,22 @@ def detect_metadata(path: Path) -> dict[str, Any]:
             elif line.startswith("FDR q < "):
                 meta["stat_type"] = "fdr_q"
                 meta["threshold"] = float(line.split("<")[1].strip())
+            elif line.startswith("Min Fold >= "):
+                meta["min_fold"] = float(line.split(">=")[1].strip())
+            elif line.startswith("Tests performed: "):
+                meta["tests_performed"] = int(line.split(": ")[1].strip())
+            elif line.startswith("Significant hits: "):
+                meta["significant_hits"] = int(line.split(": ")[1].strip())
+            elif line.startswith("Result status: "):
+                meta["result_status"] = line.split(": ")[1].strip()
             # TSV metadata header format
             elif line.startswith("# FDR: "):
                 is_fdr = line.split(": ")[1].strip().lower() == "true"
                 meta["stat_type"] = "fdr_q" if is_fdr else "p_value"
             elif line.startswith("# P-Threshold: "):
                 meta["threshold"] = float(line.split(": ")[1].strip())
+            elif line.startswith("# Min-Fold: "):
+                meta["min_fold"] = float(line.split(": ")[1].strip())
             elif line.startswith("# FDR-Scope: "):
                 meta["fdr_scope"] = line.split(": ")[1].strip().lower()
             elif line.startswith("# Testable-Profiles: "):
@@ -146,13 +231,15 @@ def detect_metadata(path: Path) -> dict[str, Any]:
 
 
 def parse_results_tsv(
-    path: Path, stat_type: str, threshold: float, min_fold: float = 1.5
+    path: Path, stat_type: str, threshold: float, min_fold: float = DEFAULT_MIN_FOLD
 ) -> list[ParsedRow]:
-    if not path.exists():
-        raise FileNotFoundError(f"Results TSV not found: {path}")
+    """Validate the analyzer results TSV and return the selected rows.
 
-    # Use comment='#' to skip the metadata header emitted by trait_enrichment.py
-    df = pd.read_csv(path, sep="\t", comment="#")
+    Raises ``FileNotFoundError`` or :class:`MalformedResultsError` for invalid
+    input. A valid file with zero selected rows returns an empty list.
+    """
+    table = load_results_tsv(path)
+    df = table.frame
 
     # col used for filtering
     col = "p_value" if stat_type == "p_value" else "fdr_q"
@@ -180,7 +267,7 @@ def parse_results_tsv(
                 experiment_id=experiment_id,
                 inc_dec=inc_dec,
                 profile_id=f"{study_id}|{experiment_id}|{inc_dec}",
-                trait=str(r["trait"]),
+                trait=trait,
                 p_value=float(r["p_value"]),
                 fdr_q=float(r["fdr_q"]),
                 fold=float(r["fold"]),
@@ -192,7 +279,9 @@ def parse_results_tsv(
     return rows
 
 
-def parse_report(path: Path, stat_type: str = "p_value") -> list[ParsedRow]:
+def parse_report(
+    path: Path, stat_type: str = "p_value", allow_empty: bool = False
+) -> list[ParsedRow]:
     rows: list[ParsedRow] = []
     current_header: tuple[str, str, str] | None = None
 
@@ -252,10 +341,28 @@ def parse_report(path: Path, stat_type: str = "p_value") -> list[ParsedRow]:
                 continue
             current_header = (header_parts[0], header_parts[1], header_parts[2])
 
-    if not rows:
-        raise ValueError(f"No trait rows parsed from {path}")
+    if not rows and not allow_empty:
+        raise MalformedResultsError(
+            f"No trait rows parsed from {path}, and the report does not declare a "
+            "'Result status:' of zero_discoveries or zero_eligible_tests. Regenerate it "
+            "with `scripts/trait_enrichment.py`."
+        )
 
     return rows
+
+
+def rows_to_frame(rows: list[ParsedRow], max_traits: int | None) -> pd.DataFrame:
+    """Build the parsed-row frame with a fixed schema (even when empty)."""
+    frame = pd.DataFrame([row.__dict__ for row in rows], columns=PARSED_ROW_COLUMNS)
+    # If we are parsing from a truncated source, identify potentially censored profiles.
+    # A profile is censored if it hit the cap.
+    if max_traits and not frame.empty:
+        counts_per_profile = frame.groupby("profile_id").size()
+        censored_profiles = set(counts_per_profile[counts_per_profile >= max_traits].index)
+        frame["is_censored_hit"] = frame["profile_id"].isin(censored_profiles)
+    else:
+        frame["is_censored_hit"] = pd.Series(False, index=frame.index, dtype=bool)
+    return frame
 
 
 def build_overall_table(
@@ -267,16 +374,14 @@ def build_overall_table(
 ) -> pd.DataFrame:
     _ = total_profiles  # Reserved for future weighting
     _ = fdr_scope  # Stat type already implies scope
-    grouped = frame.groupby("trait", dropna=False)
+    columns = overall_columns(stat_type, censored=bool(max_traits))
+    if frame.empty:
+        return pd.DataFrame(columns=columns)
 
-    # If we are parsing from a truncated source, identify potentially censored profiles.
-    # A profile is censored if it hit the cap.
-    if max_traits:
-        counts_per_profile = frame.groupby("profile_id").size()
-        censored_profiles = set(counts_per_profile[counts_per_profile >= max_traits].index)
-        frame["is_censored_hit"] = frame["profile_id"].isin(censored_profiles)
-    else:
-        frame["is_censored_hit"] = False
+    if "is_censored_hit" not in frame.columns:
+        frame = frame.assign(is_censored_hit=False)
+
+    grouped = frame.groupby("trait", dropna=False)
 
     # Use the relevant stat for choosing the 'best' row metadata
     stat_col = "fdr_q" if stat_type == "fdr_q" else "p_value"
@@ -329,7 +434,7 @@ def build_overall_table(
     overall.insert(1, "stat_type", stat_type)
 
     # Calculate net direction based on vote count
-    def get_net_direction(row):
+    def get_net_direction(row: pd.Series) -> str:
         if row["inc_hits"] > row["dec_hits"]:
             return "inc"
         if row["dec_hits"] > row["inc_hits"]:
@@ -357,7 +462,7 @@ def build_overall_table(
 
     # #115: Minimum hit thresholding for overall ranking to reduce noise.
     # We require traits to be significant in at least 2 profiles to appear in rankings.
-    overall = overall[overall["hit_rows"] >= 2]
+    overall = overall[overall["hit_rows"] >= MIN_HIT_ROWS_FOR_RANKING]
 
     # #119: Rank by prevalence (significant / testable) descending, then by significance.
     # This provides a directly interpretable ranking that avoids extreme-value inflation.
@@ -368,17 +473,13 @@ def build_overall_table(
     )
     overall.insert(0, "rank", range(1, len(overall) + 1))
 
-    # Reorder columns to put consensus metrics upfront
-    cols = list(overall.columns)
-    # Move net_direction, inc_hits, dec_hits after trait
-    front_cols = ["rank", "trait", "net_direction", "inc_hits", "dec_hits", "prevalence_summary"]
-    remaining = [c for c in cols if c not in front_cols]
-    overall = overall[front_cols + remaining]
-
-    return overall
+    # Enforce the declared schema (raises if the computed table drifts from it).
+    return overall[columns]
 
 
 def build_pair_table(frame: pd.DataFrame, stat_type: str) -> pd.DataFrame:
+    if "is_censored_hit" not in frame.columns:
+        frame = frame.assign(is_censored_hit=False)
     pairs = frame.copy()
     sort_col = "fdr_q" if stat_type == "fdr_q" else "p_value"
     pairs = pairs.sort_values([sort_col, "fold"], ascending=[True, False])
@@ -386,11 +487,29 @@ def build_pair_table(frame: pd.DataFrame, stat_type: str) -> pd.DataFrame:
     # Rename stat column for self-description
     if stat_type == "fdr_q":
         pairs = pairs.rename(columns={"fdr_q": "q_value"})
-    else:
-        pairs = pairs.rename(columns={"p_value": "p_value"})
 
     pairs.insert(0, "rank", range(1, len(pairs) + 1))
-    return pairs
+    return pairs[pair_columns(stat_type)]
+
+
+def _write_table(
+    path: Path,
+    table: pd.DataFrame,
+    header: list[tuple[str, Any]],
+    warnings: list[str],
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as f:
+        for key, value in header:
+            f.write(f"# {key}: {value}\n")
+        for warning in warnings:
+            f.write(f"# WARNING: {warning}\n")
+        table.to_csv(f, sep="\t", index=False)
+
+
+def _fail(message: str) -> int:
+    print(f"ERROR: {message}", file=sys.stderr)
+    return 1
 
 
 def main() -> int:
@@ -399,52 +518,79 @@ def main() -> int:
     meta = detect_metadata(args.input)
     stat_type = meta["stat_type"]
     stat_threshold = meta["threshold"]
+    min_fold = meta["min_fold"] if meta["min_fold"] is not None else DEFAULT_MIN_FOLD
     testable_profiles = meta["testable_profiles"]
     fdr_scope = meta["fdr_scope"]
     max_traits = meta.get("max_traits")
+    tests_performed: int | None = meta["tests_performed"]
+    analyzer_hits: int | None = meta["significant_hits"]
+    result_status: str | None = meta["result_status"]
 
     results_path = args.results or resolve_default_results(args.input)
 
-    if results_path.exists():
-        print(f"Loading data from results TSV: {results_path}")
-        results_meta = detect_metadata(results_path)
+    try:
+        if results_path.exists():
+            print(f"Loading data from results TSV: {results_path}")
+            results_meta = detect_metadata(results_path)
 
-        # Prefer TSV metadata if available
-        stat_type = results_meta.get("stat_type", stat_type)
-        stat_threshold = results_meta.get("threshold", stat_threshold)
-        fdr_scope = results_meta.get("fdr_scope", fdr_scope)
-        testable_profiles = results_meta.get("testable_profiles") or testable_profiles
+            # Prefer TSV metadata if available
+            stat_type = results_meta.get("stat_type", stat_type)
+            stat_threshold = results_meta.get("threshold", stat_threshold)
+            if results_meta.get("min_fold") is not None:
+                min_fold = results_meta["min_fold"]
+            fdr_scope = results_meta.get("fdr_scope", fdr_scope)
+            testable_profiles = results_meta.get("testable_profiles") or testable_profiles
 
-        rows = parse_results_tsv(results_path, stat_type, stat_threshold)
-        # Results TSV contains all hits regardless of the report truncation cap
-        is_source_truncated = False
-        max_traits = None
-    else:
-        print(
-            f"Warning: Results TSV not found at {results_path}. "
-            f"Falling back to report parser ({args.input.name})."
-        )
-        rows = parse_report(args.input, stat_type=stat_type)
+            table = load_results_tsv(results_path)
+            tests_performed = table.tests_performed
+            analyzer_hits = table.significant_hits
+            result_status = table.status
 
-        # Check for truncation in the report metadata
-        if max_traits is not None:
-            is_source_truncated = True
-            print(
-                f"\nCRITICAL WARNING: The source report '{args.input.name}' "
-                f"is truncated to {max_traits} traits per profile."
-            )
-            print(
-                "Downstream rankings (hit_rows, unique_profiles, mean_fold) "
-                "will be systematically biased."
-            )
-            print(
-                "Please regenerate the report with --max-traits-per-row 0 "
-                "or ensure the results TSV is available.\n"
-            )
-        else:
+            rows = parse_results_tsv(results_path, stat_type, stat_threshold, min_fold)
+            # Results TSV contains all hits regardless of the report truncation cap
             is_source_truncated = False
+            max_traits = None
+        else:
+            if not args.input.is_file():
+                return _fail(
+                    f"Neither the results TSV ({results_path}) nor the report ({args.input}) "
+                    "exists. Run `scripts/trait_enrichment.py` (or `just analyze`) first."
+                )
+            print(
+                f"Warning: Results TSV not found at {results_path}. "
+                f"Falling back to report parser ({args.input.name})."
+            )
+            if result_status is not None and result_status not in RESULT_STATUSES:
+                raise MalformedResultsError(
+                    f"{args.input}: unknown 'Result status: {result_status}' "
+                    f"(expected one of {list(RESULT_STATUSES)})."
+                )
+            allow_empty = result_status is not None and result_status != STATUS_DISCOVERIES
+            rows = parse_report(args.input, stat_type=stat_type, allow_empty=allow_empty)
+            if result_status is None:
+                result_status = STATUS_DISCOVERIES
 
-    frame = pd.DataFrame([row.__dict__ for row in rows])
+            # Check for truncation in the report metadata
+            if max_traits is not None:
+                is_source_truncated = True
+                print(
+                    f"\nCRITICAL WARNING: The source report '{args.input.name}' "
+                    f"is truncated to {max_traits} traits per profile."
+                )
+                print(
+                    "Downstream rankings (hit_rows, unique_profiles, mean_fold) "
+                    "will be systematically biased."
+                )
+                print(
+                    "Please regenerate the report with --max-traits-per-row 0 "
+                    "or ensure the results TSV is available.\n"
+                )
+            else:
+                is_source_truncated = False
+    except (FileNotFoundError, MalformedResultsError) as exc:
+        return _fail(str(exc))
+
+    frame = rows_to_frame(rows, max_traits)
 
     overall = build_overall_table(
         frame,
@@ -471,34 +617,43 @@ def main() -> int:
     if pair_out is None:
         pair_out = Path("data/derived") / f"{DEFAULT_PAIR_OUTPUT_STEM}{suffix}.tsv"
 
-    overall_out.parent.mkdir(parents=True, exist_ok=True)
-    pair_out.parent.mkdir(parents=True, exist_ok=True)
+    def na(value: int | None) -> str:
+        return "NA" if value is None else str(value)
 
-    # Write overall table with metadata header
-    with overall_out.open("w", encoding="utf-8", newline="") as f:
-        f.write(f"# Stat-Type: {stat_type}\n")
-        f.write(f"# FDR-Scope: {fdr_scope}\n")
-        f.write(f"# Stat-Threshold: {stat_threshold}\n")
-        if testable_profiles:
-            f.write(f"# Total-Testable-Profiles: {testable_profiles}\n")
-        if is_source_truncated:
-            f.write(f"# Max-Traits-Per-Profile-Cap: {max_traits}\n")
-            f.write("# WARNING: Totals are censored due to source truncation.\n")
-        overall.to_csv(f, sep="\t", index=False)
+    common: list[tuple[str, Any]] = [
+        ("Stat-Type", stat_type),
+        ("FDR-Scope", fdr_scope),
+        ("Stat-Threshold", stat_threshold),
+        ("Min-Fold", min_fold),
+        (META_RESULT_STATUS, result_status),
+        (META_TESTS_PERFORMED, na(tests_performed)),
+        (META_SIGNIFICANT_HITS, na(analyzer_hits)),
+    ]
 
-    # Write pair table with metadata header
-    with pair_out.open("w", encoding="utf-8", newline="") as f:
-        f.write(f"# Stat-Type: {stat_type}\n")
-        f.write(f"# FDR-Scope: {fdr_scope}\n")
-        f.write(f"# Stat-Threshold: {stat_threshold}\n")
-        if is_source_truncated:
-            f.write(f"# Max-Traits-Per-Profile-Cap: {max_traits}\n")
-            f.write("# WARNING: Data is censored due to source truncation.\n")
-        pairs.to_csv(f, sep="\t", index=False)
+    overall_header = list(common)
+    if testable_profiles:
+        overall_header.append(("Total-Testable-Profiles", testable_profiles))
+    overall_header.append(("Min-Profiles-Per-Ranked-Trait", MIN_HIT_ROWS_FOR_RANKING))
+    overall_header.append(("Ranked-Traits", len(overall)))
+    pair_header = [*common, ("Exported-Rows", len(pairs))]
+    overall_warnings: list[str] = []
+    pair_warnings: list[str] = []
+    if is_source_truncated:
+        overall_header.append(("Max-Traits-Per-Profile-Cap", max_traits))
+        pair_header.append(("Max-Traits-Per-Profile-Cap", max_traits))
+        overall_warnings.append("Totals are censored due to source truncation.")
+        pair_warnings.append("Data is censored due to source truncation.")
 
+    _write_table(overall_out, overall, overall_header, overall_warnings)
+    _write_table(pair_out, pairs, pair_header, pair_warnings)
+
+    print(f"Result status: {result_status}")
+    print(f"Tests performed: {na(tests_performed)}")
+    print(f"Analyzer significant hits: {na(analyzer_hits)}")
     print(f"Input rows parsed: {len(frame)}")
     print(f"Unique traits: {frame['trait'].nunique()}")
     print(f"Unique profiles: {frame['profile_id'].nunique()}")
+    print(f"Ranked traits: {len(overall)}")
     print(f"Wrote overall ranking: {overall_out}")
     print(f"Wrote pair ranking: {pair_out}")
     return 0

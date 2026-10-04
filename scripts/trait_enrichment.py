@@ -20,6 +20,13 @@ from pathlib import Path
 
 from scipy.stats import hypergeom as _scipy_hypergeom
 
+from bsdbng.enrichment_results import (
+    META_RESULT_STATUS,
+    META_SIGNIFICANT_HITS,
+    META_TESTS_PERFORMED,
+    classify_result_status,
+)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -185,6 +192,11 @@ def main() -> None:
 
         # 1. Read all rows to identify paired experiments
         all_raw_rows = list(reader)
+        if not all_raw_rows:
+            raise ValueError(
+                f"Input TSV '{args.input}' has a header but no profile rows; "
+                "regenerate it with `just study-trait-profiles`."
+            )
         experiment_directions = defaultdict(set)
         for row in all_raw_rows:
             sid = row.get("study_id", "").strip()
@@ -205,8 +217,9 @@ def main() -> None:
         )
 
         if not paired_experiments:
-            print("No paired experiments found. Exiting.")
-            return
+            # Valid but untestable input: still write outputs (status
+            # zero_eligible_tests) so downstream steps never read stale files (#296).
+            print("No paired experiments found; no tests are eligible.")
 
         rows = []
         # Background counts for hypergeometric test:
@@ -292,9 +305,6 @@ def main() -> None:
                 }
             )
             profile_taxa_counts.append(n_taxa)
-
-    if not rows:
-        raise ValueError("Input TSV contains no rows")
 
     # Determine reference population M and background successes K
     if args.taxa_matrix is not None:
@@ -409,6 +419,7 @@ def main() -> None:
 
     # Filter significant hits
     significant_hits = [h for h in all_hits if h["is_significant"]]
+    result_status = classify_result_status(len(all_hits), len(significant_hits))
 
     # Write TSV output if requested
     if args.tsv_output:
@@ -436,7 +447,9 @@ def main() -> None:
             out_fh.write(f"# Background-Taxa-Universe-M: {background_taxa_universe}\n")
             out_fh.write(f"# Mean-Taxa-Per-Testable-Profile-N: {mean_taxa:.2f}\n")
             out_fh.write(f"# Mean-Assertions-Per-Testable-Profile: {mean_taxa:.2f}\n")
-            out_fh.write(f"# Total-Tests-Performed: {len(all_hits)}\n")
+            out_fh.write(f"# {META_TESTS_PERFORMED}: {len(all_hits)}\n")
+            out_fh.write(f"# {META_SIGNIFICANT_HITS}: {len(significant_hits)}\n")
+            out_fh.write(f"# {META_RESULT_STATUS}: {result_status}\n")
 
             writer = csv.DictWriter(
                 out_fh,
@@ -483,6 +496,9 @@ def main() -> None:
         report_lines.append(f"Max traits per profile: {args.max_traits_per_row}")
     else:
         report_lines.append("Max traits per profile: unlimited")
+    report_lines.append(f"Tests performed: {len(all_hits)}")
+    report_lines.append(f"Significant hits: {len(significant_hits)}")
+    report_lines.append(f"Result status: {result_status}")
     report_lines.append("")
 
     # Group significant hits for report
@@ -530,6 +546,7 @@ def main() -> None:
     print(f"Background taxa universe M: {background_taxa_universe}")
     print(f"Total tests performed: {len(all_hits)}")
     print(f"Significant hits: {len(significant_hits)}")
+    print(f"Result status: {result_status}")
     print(f"Rows with hits: {rows_with_hits}")
     print(f"Wrote report: {args.output}")
     if args.tsv_output:

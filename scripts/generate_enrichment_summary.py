@@ -1,11 +1,25 @@
 #!/usr/bin/env python3
+"""Summarize trait enrichment results as a text report and an infographic.
+
+The results TSV is validated with :mod:`bsdbng.enrichment_results`. A valid
+result with zero discoveries (or zero eligible tests) produces a summary that
+states its status and counts; a missing or malformed results file exits with
+status 1 and an actionable message (#296).
+"""
+
+from __future__ import annotations
+
+import argparse
 import re
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+
+from bsdbng.enrichment_results import MalformedResultsError, load_results_tsv
 
 
 def shorten_grows_in(desc):
@@ -24,22 +38,54 @@ def shorten_grows_in(desc):
     return desc
 
 
-def main():
-    # Paths
-    results_path = Path("data/derived/trait_enrichment_results.tsv")
-    mapping_path = Path("metpo_phenotype_mapping.tsv")
-    experiments_path = Path("data/raw/full_dump.csv")
-    trait_meta_path = Path("data/derived/taxa_trait_matrix_columns.tsv")
-    output_text_path = Path("data/derived/enrichment_summary_top10.txt")
-    output_img_path = Path("data/derived/enrichment_infographic.png")
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
+    parser.add_argument(
+        "--results", type=Path, default=Path("data/derived/trait_enrichment_results.tsv")
+    )
+    parser.add_argument("--mapping", type=Path, default=Path("metpo_phenotype_mapping.tsv"))
+    parser.add_argument("--experiments", type=Path, default=Path("data/raw/full_dump.csv"))
+    parser.add_argument(
+        "--trait-meta", type=Path, default=Path("data/derived/taxa_trait_matrix_columns.tsv")
+    )
+    parser.add_argument(
+        "--output-text", type=Path, default=Path("data/derived/enrichment_summary_top10.txt")
+    )
+    parser.add_argument(
+        "--output-image", type=Path, default=Path("data/derived/enrichment_infographic.png")
+    )
+    return parser.parse_args(argv)
+
+
+def _placeholder(ax, title: str, message: str) -> None:
+    ax.axis("off")
+    ax.text(0.5, 0.5, message, ha="center", va="center", fontsize=13, wrap=True)
+    ax.set_title(title, fontsize=16, fontweight="bold")
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    results_path = args.results
+    mapping_path = args.mapping
+    experiments_path = args.experiments
+    trait_meta_path = args.trait_meta
+    output_text_path = args.output_text
+    output_img_path = args.output_image
 
     # 1. Load Data
     print("Loading data...")
-    if not results_path.exists():
-        print(f"Error: {results_path} not found.")
-        return
+    try:
+        table = load_results_tsv(results_path)
+    except (FileNotFoundError, MalformedResultsError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
 
-    results_df = pd.read_csv(results_path, sep="\t", comment="#")
+    tests_performed = "NA" if table.tests_performed is None else str(table.tests_performed)
+    print(
+        f"Result status: {table.status} (tests performed: {tests_performed}, "
+        f"selected rows: {len(table.frame)})"
+    )
+    results_df = table.frame.copy()
     # Exclude growth mediums
     results_df = results_df[~results_df["trait"].str.contains("mediadive.medium:", na=False)]
 
@@ -198,12 +244,22 @@ def main():
         full_profile_data = pd.DataFrame()
 
     # 5. Additional Finding: Directionality Bias (Total hits)
-    all_profile_activity = full_profile_data[full_profile_data["enrichment_count"] > 0]
-    direction_activity = all_profile_activity.groupby("inc_dec")["enrichment_count"].sum()
+    if full_profile_data.empty:
+        direction_activity = pd.Series(dtype="int64")
+    else:
+        all_profile_activity = full_profile_data[full_profile_data["enrichment_count"] > 0]
+        direction_activity = all_profile_activity.groupby("inc_dec")["enrichment_count"].sum()
 
     # 6. Write Text File
     print(f"Writing summary to {output_text_path}...")
+    output_text_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_text_path, "w", encoding="utf-8") as f:
+        f.write("=== RESULT STATUS ===\n")
+        f.write(f"Result-Status: {table.status}\n")
+        f.write(f"Total-Tests-Performed: {tests_performed}\n")
+        f.write(f"Selected-Rows: {len(table.frame)}\n")
+        f.write(f"Selected-Rows-Excluding-MediaDive: {len(results_df)}\n")
+        f.write(f"Source: {results_path}\n\n")
         f.write("=== TOP 10 MOST ENRICHED TRAITS ===\n")
         f.write(f"{'Trait ID':<40} {'Enrichment Count':<20} {'Description'}\n")
         f.write("-" * 100 + "\n")
@@ -254,11 +310,17 @@ def main():
 
         bias_inc = int(results_df[results_df["inc_dec"] == "inc"].shape[0])
         bias_dec = int(results_df[results_df["inc_dec"] == "dec"].shape[0])
-        bias_str = "Increased" if bias_inc > bias_dec else "Decreased"
-        f.write(
-            f"Directionality Bias: More traits found in '{bias_str}' "
-            f"profiles ({bias_inc:,} inc vs {bias_dec:,} dec).\n"
-        )
+        if bias_inc == bias_dec:
+            f.write(
+                f"Directionality Bias: none ({bias_inc:,} inc vs {bias_dec:,} dec "
+                f"selected rows; status {table.status}).\n"
+            )
+        else:
+            bias_str = "Increased" if bias_inc > bias_dec else "Decreased"
+            f.write(
+                f"Directionality Bias: More traits found in '{bias_str}' "
+                f"profiles ({bias_inc:,} inc vs {bias_dec:,} dec).\n"
+            )
 
     # 7. Generate Infographic
     print(f"Generating infographic to {output_img_path}...")
@@ -268,40 +330,62 @@ def main():
 
     # Panel A: Top 10 Traits (Shortened Labels)
     ax1 = fig.add_subplot(gs[0, 0])
-    sns.barplot(data=top_traits, x="enrichment_count", y="description", color="steelblue", ax=ax1)
-    ax1.set_title("A. Top Enriched Traits", fontsize=16, fontweight="bold")
-    ax1.set_xlabel("Number of Profiles Enriched In")
-    ax1.set_ylabel("")
+    if top_traits.empty:
+        _placeholder(
+            ax1,
+            "A. Top Enriched Traits",
+            f"No enriched traits\n(status: {table.status}, tests performed: {tests_performed})",
+        )
+    else:
+        sns.barplot(
+            data=top_traits, x="enrichment_count", y="description", color="steelblue", ax=ax1
+        )
+        ax1.set_title("A. Top Enriched Traits", fontsize=16, fontweight="bold")
+        ax1.set_xlabel("Number of Profiles Enriched In")
+        ax1.set_ylabel("")
 
     # Panel B: Condition Average Enrichment (Stacked & Visible)
     ax2 = fig.add_subplot(gs[0, 1])
-    plot_data_b = top_conditions_avg.drop(columns="total_avg").copy()
-    plot_data_b.index = [str(i)[:25] for i in plot_data_b.index]
-    # Show highest total average at the top
-    plot_data_b = plot_data_b.iloc[::-1]
-    plot_data_b.plot(kind="barh", stacked=True, color=["#e74c3c", "#3498db"], ax=ax2, alpha=0.8)
-
-    # Add value labels for better visibility
-    for i, (_idx, row) in enumerate(plot_data_b.iterrows()):
-        total = row.sum()
-        if total > 0:
-            ax2.text(total + 2, i, f"{round(total)}", va="center", fontsize=10, fontweight="bold")
-
-    ax2.set_title("B. Avg Enriched Traits per Condition", fontsize=16, fontweight="bold")
-    ax2.set_xlabel("Average Number of Enriched Traits")
-    ax2.set_ylabel("")
-    ax2.legend(
-        ["Decreased", "Increased"],
-        loc="center left",
-        bbox_to_anchor=(1, 0.5),
-        title="Taxonomic Signature",
+    has_condition_signal = (
+        not top_conditions_avg.empty and float(top_conditions_avg["total_avg"].sum()) > 0
     )
+    if not has_condition_signal:
+        reason = (
+            "No experiment metadata available"
+            if top_conditions_avg.empty
+            else f"No enriched traits (status: {table.status})"
+        )
+        _placeholder(ax2, "B. Avg Enriched Traits per Condition", reason)
+    else:
+        plot_data_b = top_conditions_avg.drop(columns="total_avg").copy()
+        plot_data_b.index = [str(i)[:25] for i in plot_data_b.index]
+        # Show highest total average at the top
+        plot_data_b = plot_data_b.iloc[::-1]
+        plot_data_b.plot(kind="barh", stacked=True, color=["#e74c3c", "#3498db"], ax=ax2, alpha=0.8)
+
+        # Add value labels for better visibility
+        for i, (_idx, row) in enumerate(plot_data_b.iterrows()):
+            total = row.sum()
+            if total > 0:
+                ax2.text(
+                    total + 2, i, f"{round(total)}", va="center", fontsize=10, fontweight="bold"
+                )
+
+        ax2.set_title("B. Avg Enriched Traits per Condition", fontsize=16, fontweight="bold")
+        ax2.set_xlabel("Average Number of Enriched Traits")
+        ax2.set_ylabel("")
+        ax2.legend(
+            ["Decreased", "Increased"],
+            loc="center left",
+            bbox_to_anchor=(1, 0.5),
+            title="Taxonomic Signature",
+        )
 
     # Panel C: Anatomical Representation
     ax3 = fig.add_subplot(gs[1, 0])
     ax3.axis("off")
 
-    if not body_site_density.empty:
+    if not body_site_density.empty and float(body_site_density["density"].max()) > 0:
         # Define relative coordinates (0-1) for body sites
         # Exact-match coordinates for the actual compound body site names in the data.
         # Sites on the left (x < 0.5) get left-side labels; right (x >= 0.5) get right-side labels.
@@ -464,7 +548,7 @@ def main():
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=max_d))
         fig.colorbar(sm, ax=ax3, shrink=0.5, label="Hits / 100 Samples")
     else:
-        ax3.text(0.5, 0.5, "No Body Site Data Available", ha="center", va="center")
+        ax3.text(0.5, 0.5, "No Body Site Enrichment Available", ha="center", va="center")
 
     # Panel D: Scientific Summary
     ax4 = fig.add_subplot(gs[1, 1])
@@ -481,6 +565,7 @@ def main():
 
     summary_text = (
         "PRESENTATION SUMMARY\n\n"
+        f"• Result status: {table.status} (tests performed: {tests_performed}).\n\n"
         f"• Functional Scope: {len(trait_counts):,} metabolic/physiological traits analyzed.\n"
         f"  Total of {trait_counts['enrichment_count'].sum():,} significant associations.\n\n"
         f"• Condition Robustness: Panel B shows average enrichment per profile,\n"
@@ -509,10 +594,13 @@ def main():
         fontweight="bold",
         y=0.98,
     )
+    output_img_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_img_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
     print(f"Infographic saved to {output_img_path}")
     print("Done.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
