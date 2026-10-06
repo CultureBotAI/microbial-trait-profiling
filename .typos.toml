@@ -1,5 +1,10 @@
 [default]
 extend-ignore-re = []
 
+[default.extend-words]
+ba = "ba"
+nonsignificant = "nonsignificant"
+
+
 [files]
 extend-exclude = ["uv.lock", ".venv"]
