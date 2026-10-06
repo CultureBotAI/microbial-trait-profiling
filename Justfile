@@ -152,6 +152,7 @@ analyze: study-trait-profiles
 	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
 	  --output data/derived/trait_enrichment_report.txt \
 	  --tsv-output data/derived/trait_enrichment_results.tsv \
+	  --all-results-output data/derived/trait_enrichment_all_results.tsv \
 	  --p-threshold {{p_threshold}} \
 	  --min-fold {{min_fold}}"
 	just timed export-rankings "uv run python scripts/export_trait_enrichment_rankings.py \
@@ -195,6 +196,7 @@ analyze-depletion: study-trait-profiles
 	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
 	  --output data/derived/trait_depletion_report.txt \
 	  --tsv-output data/derived/trait_depletion_results.tsv \
+	  --all-results-output data/derived/trait_depletion_all_results.tsv \
 	  --p-threshold {{p_threshold}} \
 	  --max-fold 0.5"
 
