@@ -204,9 +204,8 @@ def main() -> None:
             print("No paired experiments found; no tests are eligible.")
 
         rows = []
-        # Background counts for hypergeometric test
         background_counts = dict.fromkeys(trait_columns, 0)
-        testable_counts = dict.fromkeys(trait_columns, 0)
+        experiment_traits: dict[tuple[str, str], set[str]] = defaultdict(set)
         profile_taxa_counts: list[int] = []
 
         # 2. Process only paired rows
@@ -242,7 +241,7 @@ def main() -> None:
                         )
                     if c > 0:
                         row_traits_data[t] = c
-                testable_counts[t] += 1
+                        experiment_traits[(sid, eid)].add(t)
 
             # Validate required draw count taxa_count (N) strictly without fallback
             if raw_taxa_count is None or not raw_taxa_count.strip():
@@ -279,7 +278,7 @@ def main() -> None:
                 {
                     "study_id": sid,
                     "experiment_id": eid,
-                    "inc_dec": row.get("inc_dec", ""),
+                    "inc_dec": direction,
                     "traits": row_traits_data,
                     "n_taxa": n_taxa,
                 }
@@ -324,6 +323,17 @@ def main() -> None:
             f"Background universe M ({background_taxa_universe}) is smaller than "
             f"maximum trait count K ({max_k_trait}) or maximum profile draw N ({max_n_profile})"
         )
+    # Aligned testability denominators:
+    # A profile is testable for trait t if it has n_taxa > 0, t is observed in the
+    # experiment's paired arm (experiment_traits), and background_counts[t] > 0.
+    testable_counts = dict.fromkeys(trait_columns, 0)
+    for r in rows:
+        if r["n_taxa"] <= 0:
+            continue
+        exp_key = (r["study_id"], r["experiment_id"])
+        for t in experiment_traits[exp_key]:
+            if background_counts[t] > 0:
+                testable_counts[t] += 1
 
     # Second pass: Collect all P-values
     all_hits: list[dict] = []
@@ -332,8 +342,13 @@ def main() -> None:
         if n_draws == 0:
             continue
 
-        # For depletion, we test ALL traits, even those with count 0 in this profile
-        row_traits = trait_columns
+        exp_key = (row["study_id"], row["experiment_id"])
+        row_traits = [
+            t for t in trait_columns if t in experiment_traits[exp_key] and background_counts[t] > 0
+        ]
+        if not row_traits:
+            continue
+
         row_counts = [row["traits"].get(t, 0) for t in row_traits]
         row_successes = [int(background_counts[t]) for t in row_traits]
 
@@ -524,7 +539,13 @@ def main() -> None:
         report_lines.append(f"p < {args.p_threshold:g} (Depletion)")
     if args.max_fold < float("inf"):
         report_lines.append(f"Max Fold <= {args.max_fold:g}")
-
+    if args.max_traits_per_row > 0:
+        report_lines.append(f"Max traits per profile: {args.max_traits_per_row}")
+    else:
+        report_lines.append("Max traits per profile: unlimited")
+    report_lines.append(f"Tests performed: {len(all_hits)}")
+    report_lines.append(f"Significant hits: {len(significant_hits)}")
+    report_lines.append(f"Result status: {result_status}")
     report_lines.append("")
 
     report_groups: dict[tuple, list[dict]] = {}

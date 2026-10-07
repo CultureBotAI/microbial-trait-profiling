@@ -321,6 +321,11 @@ def main(argv: list[str] | None = None) -> int:
                 f"Directionality Bias: More traits found in '{bias_str}' "
                 f"profiles ({bias_inc:,} inc vs {bias_dec:,} dec).\n"
             )
+            f.write(
+                "Directional Distribution Note: Raw inc/dec hit totals reflect compositional "
+                "profile counts rather than evidence of taxa dominance or "
+                "biological directionality bias.\n"
+            )
 
     # 7. Generate Infographic
     print(f"Generating infographic to {output_img_path}...")

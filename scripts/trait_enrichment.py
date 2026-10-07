@@ -210,7 +210,7 @@ def main() -> None:
         # K(T) = number of unique taxa carrying trait T in reference background
         # M = total number of unique taxa in reference background
         background_counts = dict.fromkeys(trait_columns, 0)
-        testable_counts = dict.fromkeys(trait_columns, 0)
+        experiment_traits: dict[tuple[str, str], set[str]] = defaultdict(set)
         profile_taxa_counts: list[int] = []
 
         # 2. Process only paired rows
@@ -246,7 +246,7 @@ def main() -> None:
                         )
                     if c > 0:
                         row_traits_data[t] = c
-                        testable_counts[t] += 1
+                        experiment_traits[(sid, eid)].add(t)
 
             # Validate required draw count taxa_count (N) strictly without fallback
             if raw_taxa_count is None or not raw_taxa_count.strip():
@@ -330,6 +330,18 @@ def main() -> None:
             f"Background universe M ({background_taxa_universe}) is smaller than "
             f"maximum trait count K ({max_k_trait}) or maximum profile draw N ({max_n_profile})"
         )
+
+    # Aligned testability denominators:
+    # A profile is testable for trait t if it has n_taxa > 0, t is observed in the
+    # experiment's paired arm (experiment_traits), and background_counts[t] > 0.
+    testable_counts = dict.fromkeys(trait_columns, 0)
+    for r in rows:
+        if r["n_taxa"] <= 0:
+            continue
+        exp_key = (r["study_id"], r["experiment_id"])
+        for t in experiment_traits[exp_key]:
+            if background_counts[t] > 0:
+                testable_counts[t] += 1
 
     # Second pass: Collect all P-values
     all_hits: list[dict] = []
