@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import re
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -33,8 +34,8 @@ def main():
     # 1. Load Data
     print("Loading data...")
     if not results_path.exists():
-        print(f"Error: {results_path} not found.")
-        return
+        print(f"Error: {results_path} not found.", file=sys.stderr)
+        return 1
 
     results_df = pd.read_csv(results_path, sep="\t", comment="#")
     # Exclude growth mediums
@@ -447,7 +448,8 @@ def main():
     plt.savefig(output_img_path, dpi=300, bbox_inches="tight")
     print(f"Infographic saved to {output_img_path}")
     print("Done.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
