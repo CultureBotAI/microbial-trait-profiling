@@ -37,7 +37,7 @@ from bsdbng.enrichment_stats import (
 )
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Trait enrichment report with hypergeometric p-values"
     )
@@ -95,7 +95,7 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help="Maximum number of bullet traits to show per row in text report (0 or -1 for all)",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def _to_float(value: str) -> float:
@@ -156,8 +156,8 @@ def open_input_text(path: Path):
     return path.open("r", encoding="utf-8", newline="")
 
 
-def main() -> None:
-    args = parse_args()
+def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
 
     with open_input_text(args.input) as fh:
         reader = csv.DictReader(fh, delimiter="\t")
