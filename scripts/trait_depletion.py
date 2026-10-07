@@ -28,7 +28,11 @@ from bsdbng.enrichment_results import (
 )
 from bsdbng.enrichment_stats import (
     benjamini_hochberg,
+)
+from bsdbng.enrichment_stats import (
     hypergeom_cdf as _core_hypergeom_cdf,
+)
+from bsdbng.enrichment_stats import (
     hypergeom_cdf_many as _core_hypergeom_cdf_many,
 )
 
