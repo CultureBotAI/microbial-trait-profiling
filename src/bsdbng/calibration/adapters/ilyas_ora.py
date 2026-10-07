@@ -15,6 +15,7 @@ from bsdbng.calibration.scenarios import (
     shared_trait_columns,
     trait_population_counts,
 )
+from bsdbng.enrichment_stats import benjamini_hochberg as benjamini_hochberg
 
 RESULT_COLUMNS: list[str] = [
     "profile_id",
@@ -32,20 +33,6 @@ RESULT_COLUMNS: list[str] = [
 # Which (profile, trait) pairs enter the BH family. Recorded in metadata so that
 # calibration reports state the test scope explicitly (see #263).
 TEST_SCOPE = "pairs_with_k_observed_gt_0_and_k_pop_gt_0_and_n_draws_gt_0"
-
-
-def benjamini_hochberg(p_values: np.ndarray) -> np.ndarray:
-    """Return Benjamini-Hochberg adjusted q-values."""
-    p_arr = np.asarray(p_values, dtype=float)
-    n_tests = len(p_arr)
-    if n_tests == 0:
-        return np.empty(0, dtype=float)
-    order = np.argsort(p_arr)
-    ranked = p_arr[order] * n_tests / np.arange(1, n_tests + 1)
-    cummin = np.minimum.accumulate(ranked[::-1])[::-1]
-    q_values = np.empty(n_tests, dtype=float)
-    q_values[order] = np.clip(cummin, 0.0, 1.0)
-    return q_values
 
 
 class IlyasORAAdapter:

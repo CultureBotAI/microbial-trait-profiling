@@ -26,6 +26,15 @@ from bsdbng.enrichment_results import (
     META_TESTS_PERFORMED,
     classify_result_status,
 )
+from bsdbng.enrichment_stats import (
+    benjamini_hochberg,
+)
+from bsdbng.enrichment_stats import (
+    hypergeom_sf as _core_hypergeom_sf,
+)
+from bsdbng.enrichment_stats import (
+    hypergeom_sf_many as _core_hypergeom_sf_many,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -38,6 +47,11 @@ def parse_args() -> argparse.Namespace:
         "--tsv-output",
         type=Path,
         help="Path to write structured TSV results",
+    )
+    parser.add_argument(
+        "--all-results-output",
+        type=Path,
+        help="Path to write complete unfiltered TSV results",
     )
     parser.add_argument(
         "--taxa-matrix",
@@ -97,10 +111,9 @@ def _to_int(value: str) -> int:
 
 def hypergeom_sf(x: int, population_size: int, population_successes: int, draws: int) -> float:
     """Return P[X >= x] using the required SciPy implementation."""
-    value = float(_scipy_hypergeom.sf(x - 1, population_size, population_successes, draws))
-    if not math.isfinite(value):
-        raise ValueError("Invalid hypergeometric population or draw parameters")
-    return value
+    return _core_hypergeom_sf(
+        x, population_size, population_successes, draws, scipy_hypergeom=_scipy_hypergeom
+    )
 
 
 def hypergeom_sf_many(
@@ -110,38 +123,9 @@ def hypergeom_sf_many(
     draws: int,
 ) -> list[float]:
     """Compute each trait's tail probability without silently replacing failed calculations."""
-    if len(counts) != len(population_successes):
-        raise ValueError("Counts and population successes must have the same length")
-    if not counts:
-        return []
-    values = _scipy_hypergeom.sf(
-        [x - 1 for x in counts], population_size, population_successes, draws
+    return _core_hypergeom_sf_many(
+        counts, population_size, population_successes, draws, scipy_hypergeom=_scipy_hypergeom
     )
-    results = [float(value) for value in values]
-    if any(not math.isfinite(value) for value in results):
-        raise ValueError("Invalid hypergeometric population or draw parameters")
-    return results
-
-
-def benjamini_hochberg(p_values: list[float]) -> list[float]:
-    """Apply Benjamini-Hochberg FDR correction."""
-    n = len(p_values)
-    if n == 0:
-        return []
-
-    # Sort indices by p-value
-    indexed_p = sorted(enumerate(p_values), key=lambda x: x[1])
-    q_values = [0.0] * n
-
-    min_q = float("inf")
-    for i in range(n - 1, -1, -1):
-        idx, p = indexed_p[i]
-        rank = i + 1
-        q = (p * n) / rank
-        min_q = min(min_q, q)
-        q_values[idx] = min(min_q, 1.0)
-
-    return q_values
 
 
 def format_pvalue(value: float) -> str:
@@ -496,6 +480,67 @@ def main() -> None:
                     }
                 )
 
+    # Write all-results output if requested
+    if args.all_results_output:
+        args.all_results_output.parent.mkdir(parents=True, exist_ok=True)
+        # Sort globally by significance (FDR q), then by study/experiment/direction/trait
+        all_hits.sort(key=lambda h: (h["fdr_q"], h["study_id"], h["experiment_id"], h["trait"]))
+        with args.all_results_output.open("w", encoding="utf-8", newline="") as out_fh:
+            # Metadata header
+            out_fh.write(f"# FDR: {args.fdr}\n")
+            out_fh.write(f"# FDR-Scope: {args.fdr_scope}\n")
+            out_fh.write(f"# P-Threshold: {args.p_threshold}\n")
+            out_fh.write(f"# Min-Fold: {args.min_fold}\n")
+            out_fh.write(f"# Background-Mode: {bg_mode}\n")
+            out_fh.write(f"# {META_TESTS_PERFORMED}: {len(all_hits)}\n")
+            out_fh.write(f"# {META_SIGNIFICANT_HITS}: {len(significant_hits)}\n")
+            out_fh.write(f"# {META_RESULT_STATUS}: {result_status}\n")
+
+            writer = csv.DictWriter(
+                out_fh,
+                fieldnames=[
+                    "study_id",
+                    "experiment_id",
+                    "inc_dec",
+                    "trait",
+                    "p_value",
+                    "fdr_q",
+                    "fold",
+                    "count",
+                    "expected",
+                    "testable_profiles",
+                    "background_m",
+                    "background_k",
+                    "is_significant",
+                    "correction_family",
+                    "eligibility_status",
+                ],
+                delimiter="\t",
+            )
+            writer.writeheader()
+            for h in all_hits:
+                writer.writerow(
+                    {
+                        "study_id": h["study_id"],
+                        "experiment_id": h["experiment_id"],
+                        "inc_dec": h["inc_dec"],
+                        "trait": h["trait"],
+                        "p_value": h["p_value"],
+                        "fdr_q": h["fdr_q"],
+                        "fold": h["fold"],
+                        "count": h["count"],
+                        "expected": h["expected"],
+                        "testable_profiles": h["testable_profiles"],
+                        "background_m": background_taxa_universe,
+                        "background_k": h["trait_total"],
+                        "is_significant": h["is_significant"],
+                        "correction_family": args.fdr_scope,
+                        "eligibility_status": (
+                            "testable" if h["testable_profiles"] > 0 else "ineligible"
+                        ),
+                    }
+                )
+
     # Generate text report
     report_lines: list[str] = []
     if args.fdr:
@@ -563,6 +608,8 @@ def main() -> None:
     print(f"Wrote report: {args.output}")
     if args.tsv_output:
         print(f"Wrote results TSV: {args.tsv_output}")
+    if args.all_results_output:
+        print(f"Wrote all-results TSV: {args.all_results_output}")
 
 
 if __name__ == "__main__":
