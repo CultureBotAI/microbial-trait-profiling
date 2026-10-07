@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 def test_enrichment_pipeline_fdr_propagation(tmp_path: Path) -> None:
     # 1. Create a dummy trait profile TSV
@@ -715,3 +717,201 @@ def test_malformed_taxa_count_strict_rejection(tmp_path: Path) -> None:
     )
     assert res5.returncode != 0
     assert "malformed 'taxa_count' value 'invalid'" in res5.stderr
+
+
+def test_complete_unfiltered_export_254(tmp_path: Path) -> None:
+    """Verify that --all-results-output emits a complete unfiltered per-trait table (#254).
+
+    Checks:
+    - Row count in the all-results file equals Total-Tests-Performed.
+    - Zero discoveries still write all tested rows with is_significant=False.
+    - Hand-computed M, N, K, k, expected, and fold match exactly.
+    - Significant-hits TSV is a strict subset of the all-results TSV.
+    - Depletion analyzer also produces the complete all-results TSV.
+    """
+    matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
+    matrix_tsv.write_text(
+        "taxon_id\tTraitA\tTraitB\n"
+        "NCBITaxon:1\t1\t0\n"
+        "NCBITaxon:2\t1\t1\n"
+        "NCBITaxon:3\t0\t1\n"
+        "NCBITaxon:4\t0\t0\n",
+        encoding="utf-8",
+    )
+
+    profiles_tsv = tmp_path / "profiles.tsv"
+    profiles_tsv.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
+        "s1\te1\tinc\t3\t2\t0\n"
+        "s1\te1\tdec\t3\t0\t1\n",
+        encoding="utf-8",
+    )
+
+    report_txt = tmp_path / "report.txt"
+    tsv_out = tmp_path / "results.tsv"
+    all_out = tmp_path / "all_results.tsv"
+
+    # Step 1: Run enrichment with strict thresholds (0 discoveries)
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
+            "--output",
+            str(report_txt),
+            "--tsv-output",
+            str(tsv_out),
+            "--all-results-output",
+            str(all_out),
+            "--p-threshold",
+            "0.001",
+            "--min-fold",
+            "1.5",
+        ],
+        check=True,
+    )
+
+    assert all_out.exists()
+    all_lines = all_out.read_text(encoding="utf-8").strip().splitlines()
+
+    # Verify metadata header
+    meta = {}
+    data_rows = []
+    for line in all_lines:
+        if line.startswith("#"):
+            parts = line[1:].strip().split(":", 1)
+            if len(parts) == 2:
+                meta[parts[0].strip()] = parts[1].strip()
+        else:
+            data_rows.append(line.split("\t"))
+
+    assert meta["Total-Tests-Performed"] == "2"
+    assert meta["Significant-Hits"] == "0"
+    assert meta["Result-Status"] == "zero_discoveries"
+
+    header = data_rows[0]
+    expected_cols = [
+        "study_id",
+        "experiment_id",
+        "inc_dec",
+        "trait",
+        "p_value",
+        "fdr_q",
+        "fold",
+        "count",
+        "expected",
+        "testable_profiles",
+        "background_m",
+        "background_k",
+        "is_significant",
+        "correction_family",
+        "eligibility_status",
+    ]
+    assert header == expected_cols
+
+    # 2 tests performed, so 2 data rows
+    rows = data_rows[1:]
+    assert len(rows) == 2
+
+    # Parse rows into dicts
+    row_dicts = [dict(zip(header, r, strict=True)) for r in rows]
+
+    # Verify hand-computed values:
+    # TraitA in s1|e1|inc: k=2, N=3, M=4, K=2 (from matrix: NCBITaxon:1, 2)
+    # Expected = 3 * (2/4) = 1.5. Fold = 2 / 1.5 = 1.333333
+    row_a = next(r for r in row_dicts if r["trait"] == "TraitA" and r["inc_dec"] == "inc")
+    assert row_a["study_id"] == "s1"
+    assert row_a["experiment_id"] == "e1"
+    assert row_a["count"] == "2"
+    assert row_a["background_m"] == "4"
+    assert row_a["background_k"] == "2"
+    assert float(row_a["expected"]) == pytest.approx(1.5, rel=1e-3)
+    assert float(row_a["fold"]) == pytest.approx(1.3333, rel=1e-3)
+    assert row_a["is_significant"] == "False"
+    assert row_a["eligibility_status"] == "testable"
+
+    # In strict mode, tsv_out has zero discovery data rows
+    tsv_lines = tsv_out.read_text(encoding="utf-8").strip().splitlines()
+    tsv_data = [line for line in tsv_lines if not line.startswith("#")]
+    assert len(tsv_data) == 1  # Header only
+
+    # Step 2: Run with loose thresholds to produce discoveries and verify subset
+    tsv_loose = tmp_path / "results_loose.tsv"
+    all_loose = tmp_path / "all_results_loose.tsv"
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
+            "--output",
+            str(report_txt),
+            "--tsv-output",
+            str(tsv_loose),
+            "--all-results-output",
+            str(all_loose),
+            "--p-threshold",
+            "1.0",
+            "--min-fold",
+            "1.0",
+        ],
+        check=True,
+    )
+
+    all_loose_lines = all_loose.read_text(encoding="utf-8").strip().splitlines()
+    all_loose_data = [line.split("\t") for line in all_loose_lines if not line.startswith("#")]
+    all_loose_dicts = [dict(zip(all_loose_data[0], r, strict=True)) for r in all_loose_data[1:]]
+
+    tsv_loose_lines = tsv_loose.read_text(encoding="utf-8").strip().splitlines()
+    tsv_loose_data = [line.split("\t") for line in tsv_loose_lines if not line.startswith("#")]
+    tsv_loose_dicts = [dict(zip(tsv_loose_data[0], r, strict=True)) for r in tsv_loose_data[1:]]
+
+    # Every significant row must exist in all_results with is_significant=True
+    assert len(tsv_loose_dicts) > 0
+    for sig_row in tsv_loose_dicts:
+        matching = [
+            r
+            for r in all_loose_dicts
+            if r["study_id"] == sig_row["study_id"]
+            and r["experiment_id"] == sig_row["experiment_id"]
+            and r["inc_dec"] == sig_row["inc_dec"]
+            and r["trait"] == sig_row["trait"]
+        ]
+        assert len(matching) == 1
+        assert matching[0]["is_significant"] == "True"
+
+    # Step 3: Run depletion analysis with --all-results-output
+    dep_tsv = tmp_path / "dep_results.tsv"
+    dep_all = tmp_path / "dep_all.tsv"
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_depletion.py",
+            "--input",
+            str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
+            "--output",
+            str(report_txt),
+            "--tsv-output",
+            str(dep_tsv),
+            "--all-results-output",
+            str(dep_all),
+            "--p-threshold",
+            "1.0",
+            "--max-fold",
+            "10.0",
+        ],
+        check=True,
+    )
+
+    assert dep_all.exists()
+    dep_lines = dep_all.read_text(encoding="utf-8").strip().splitlines()
+    dep_data = [line.split("\t") for line in dep_lines if not line.startswith("#")]
+    assert dep_data[0] == expected_cols
+    assert len(dep_data[1:]) > 0

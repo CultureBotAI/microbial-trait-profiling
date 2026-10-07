@@ -19,13 +19,15 @@ from pathlib import Path
 
 from scipy.stats import hypergeom as _scipy_hypergeom
 
+from bsdbng.enrichment_results import (
+    META_RESULT_STATUS,
+    META_SIGNIFICANT_HITS,
+    META_TESTS_PERFORMED,
+    classify_result_status,
+)
 from bsdbng.enrichment_stats import (
     benjamini_hochberg,
-)
-from bsdbng.enrichment_stats import (
     hypergeom_cdf as _core_hypergeom_cdf,
-)
-from bsdbng.enrichment_stats import (
     hypergeom_cdf_many as _core_hypergeom_cdf_many,
 )
 
@@ -40,6 +42,11 @@ def parse_args() -> argparse.Namespace:
         "--tsv-output",
         type=Path,
         help="Path to write structured TSV results",
+    )
+    parser.add_argument(
+        "--all-results-output",
+        type=Path,
+        help="Path to write complete unfiltered TSV results",
     )
     parser.add_argument(
         "--taxa-matrix",
@@ -129,6 +136,15 @@ def format_trait_name(name: str) -> str:
     return " ".join(word if word.isupper() else word.capitalize() for word in words)
 
 
+def hypergeom_summary(count: int, row_total: int, trait_total: int, background_total: int) -> str:
+    if background_total <= 0 or row_total <= 0:
+        return "obs=0 exp=0 fold=NA"
+    expected = row_total * (trait_total / background_total)
+    fold = (count / expected) if expected > 0 else 0.0
+    fold_str = "inf" if math.isinf(fold) else f"{fold:.2f}"
+    return f"obs={count} exp={expected:.2f} fold={fold_str}"
+
+
 def open_input_text(path: Path):
     if path.suffix == ".gz":
         return gzip.open(path, "rt", encoding="utf-8", newline="")
@@ -155,6 +171,11 @@ def main() -> None:
 
         # 1. Read all rows to identify paired experiments
         all_raw_rows = list(reader)
+        if not all_raw_rows:
+            raise ValueError(
+                f"Input TSV '{args.input}' has a header but no profile rows; "
+                "regenerate it with `just study-trait-profiles`."
+            )
         experiment_directions = defaultdict(set)
         for row in all_raw_rows:
             sid = row.get("study_id", "").strip()
@@ -173,6 +194,9 @@ def main() -> None:
         print(
             f"Dropping {len(experiment_directions) - len(paired_experiments)} unpaired experiments."
         )
+
+        if not paired_experiments:
+            print("No paired experiments found; no tests are eligible.")
 
         rows = []
         # Background counts for hypergeometric test
@@ -256,9 +280,6 @@ def main() -> None:
                 }
             )
             profile_taxa_counts.append(n_taxa)
-
-    if not rows:
-        raise ValueError("Input TSV contains no rows")
 
     # Determine reference population M and background successes K
     if args.taxa_matrix is not None:
@@ -368,6 +389,7 @@ def main() -> None:
 
     # Filter significant hits
     significant_hits = [h for h in all_hits if h["is_significant"]]
+    result_status = classify_result_status(len(all_hits), len(significant_hits))
 
     # Write TSV output if requested
     if args.tsv_output:
@@ -393,7 +415,9 @@ def main() -> None:
             out_fh.write(f"# Background-Taxa-Universe-M: {background_taxa_universe}\n")
             out_fh.write(f"# Mean-Taxa-Per-Testable-Profile-N: {mean_taxa:.2f}\n")
             out_fh.write(f"# Mean-Assertions-Per-Testable-Profile: {mean_taxa:.2f}\n")
-            out_fh.write(f"# Total-Tests-Performed: {len(all_hits)}\n")
+            out_fh.write(f"# {META_TESTS_PERFORMED}: {len(all_hits)}\n")
+            out_fh.write(f"# {META_SIGNIFICANT_HITS}: {len(significant_hits)}\n")
+            out_fh.write(f"# {META_RESULT_STATUS}: {result_status}\n")
 
             writer = csv.DictWriter(
                 out_fh,
@@ -425,6 +449,65 @@ def main() -> None:
                         "count": h["count"],
                         "expected": h["expected"],
                         "testable_profiles": h["testable_profiles"],
+                    }
+                )
+
+    # Write all-results output if requested
+    if args.all_results_output:
+        args.all_results_output.parent.mkdir(parents=True, exist_ok=True)
+        all_hits.sort(key=lambda h: (h["fdr_q"], h["study_id"], h["experiment_id"], h["trait"]))
+        with args.all_results_output.open("w", encoding="utf-8", newline="") as out_fh:
+            out_fh.write(f"# FDR: {args.fdr}\n")
+            out_fh.write(f"# FDR-Scope: {args.fdr_scope}\n")
+            out_fh.write(f"# P-Threshold: {args.p_threshold}\n")
+            out_fh.write(f"# Max-Fold: {args.max_fold}\n")
+            out_fh.write(f"# Background-Mode: {bg_mode}\n")
+            out_fh.write(f"# {META_TESTS_PERFORMED}: {len(all_hits)}\n")
+            out_fh.write(f"# {META_SIGNIFICANT_HITS}: {len(significant_hits)}\n")
+            out_fh.write(f"# {META_RESULT_STATUS}: {result_status}\n")
+
+            writer = csv.DictWriter(
+                out_fh,
+                fieldnames=[
+                    "study_id",
+                    "experiment_id",
+                    "inc_dec",
+                    "trait",
+                    "p_value",
+                    "fdr_q",
+                    "fold",
+                    "count",
+                    "expected",
+                    "testable_profiles",
+                    "background_m",
+                    "background_k",
+                    "is_significant",
+                    "correction_family",
+                    "eligibility_status",
+                ],
+                delimiter="\t",
+            )
+            writer.writeheader()
+            for h in all_hits:
+                writer.writerow(
+                    {
+                        "study_id": h["study_id"],
+                        "experiment_id": h["experiment_id"],
+                        "inc_dec": h["inc_dec"],
+                        "trait": h["trait"],
+                        "p_value": h["p_value"],
+                        "fdr_q": h["fdr_q"],
+                        "fold": h["fold"],
+                        "count": h["count"],
+                        "expected": h["expected"],
+                        "testable_profiles": h["testable_profiles"],
+                        "background_m": background_taxa_universe,
+                        "background_k": h["trait_total"],
+                        "is_significant": h["is_significant"],
+                        "correction_family": args.fdr_scope,
+                        "eligibility_status": (
+                            "testable" if h["testable_profiles"] > 0 else "ineligible"
+                        ),
                     }
                 )
 
@@ -482,10 +565,13 @@ def main() -> None:
     print(f"Background taxa universe M: {background_taxa_universe}")
     print(f"Total tests performed: {len(all_hits)}")
     print(f"Significant depletion hits: {len(significant_hits)}")
+    print(f"Result status: {result_status}")
     print(f"Rows with hits: {rows_with_hits}")
     print(f"Wrote report: {args.output}")
     if args.tsv_output:
         print(f"Wrote results TSV: {args.tsv_output}")
+    if args.all_results_output:
+        print(f"Wrote all-results TSV: {args.all_results_output}")
 
 
 if __name__ == "__main__":
