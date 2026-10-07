@@ -223,11 +223,21 @@ def main():
 
         bias_inc = int(results_df[results_df["inc_dec"] == "inc"].shape[0])
         bias_dec = int(results_df[results_df["inc_dec"] == "dec"].shape[0])
-        bias_str = "Increased" if bias_inc > bias_dec else "Decreased"
-        f.write(
-            f"Directionality Bias: More traits depleted in '{bias_str}' "
-            f"profiles ({bias_inc:,} inc vs {bias_dec:,} dec).\n"
-        )
+        if bias_inc == bias_dec:
+            f.write(
+                f"Directionality Bias: none ({bias_inc:,} inc vs {bias_dec:,} dec selected rows).\n"
+            )
+        else:
+            bias_str = "Increased" if bias_inc > bias_dec else "Decreased"
+            f.write(
+                f"Directionality Bias: More traits depleted in '{bias_str}' "
+                f"profiles ({bias_inc:,} inc vs {bias_dec:,} dec).\n"
+            )
+            f.write(
+                "Directional Distribution Note: Raw inc/dec hit totals reflect compositional "
+                "profile counts rather than evidence of taxa dominance or "
+                "biological directionality bias.\n"
+            )
 
     # 7. Generate Infographic
     print(f"Generating infographic to {output_img_path}...")

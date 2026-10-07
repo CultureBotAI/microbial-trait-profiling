@@ -715,3 +715,137 @@ def test_malformed_taxa_count_strict_rejection(tmp_path: Path) -> None:
     )
     assert res5.returncode != 0
     assert "malformed 'taxa_count' value 'invalid'" in res5.stderr
+
+
+def test_enrichment_and_depletion_zero_eligibility_and_aligned_denominators(tmp_path: Path) -> None:
+    """Validate zero-annotation eligibility and aligned testability denominators (#132).
+
+    Four-profile fixture across two paired experiments:
+    s1/e1/inc: TraitA=10, TraitB=0, TraitC=0, taxa_count=10
+    s1/e1/dec: TraitA=0, TraitB=10, TraitC=0, taxa_count=10
+    s2/e1/inc: TraitA=10, TraitB=0, TraitC=0, taxa_count=10
+    s2/e1/dec: TraitA=0, TraitB=10, TraitC=0, taxa_count=10
+
+    TraitA is observed in inc arms; its 0 in dec arms is an observed zero.
+    TraitB is observed in dec arms; its 0 in inc arms is an observed zero.
+    TraitC is 0 in all arms (structural zero / coverage state): never tested.
+
+    Both enrichment and depletion must report:
+    - TraitA testable_profiles = 4
+    - TraitB testable_profiles = 4
+    - TraitC not tested (0 tests, 0 hits)
+    - TraitA enriched in inc (2 hits), depleted in dec (2 hits)
+    - TraitB enriched in dec (2 hits), depleted in inc (2 hits)
+    """
+    profiles_tsv = tmp_path / "profiles.tsv"
+    profiles_tsv.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\tTraitC\n"
+        "s1\te1\tinc\t10\t10\t0\t0\n"
+        "s1\te1\tdec\t10\t0\t10\t0\n"
+        "s2\te1\tinc\t10\t10\t0\t0\n"
+        "s2\te1\tdec\t10\t0\t10\t0\n",
+        encoding="utf-8",
+    )
+
+    enr_report = tmp_path / "enr_report.txt"
+    enr_tsv = tmp_path / "enr_results.tsv"
+    res_enr = subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(profiles_tsv),
+            "--output",
+            str(enr_report),
+            "--tsv-output",
+            str(enr_tsv),
+            "--p-threshold",
+            "0.05",
+            "--min-fold",
+            "1.5",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert res_enr.returncode == 0, res_enr.stderr
+
+    dep_report = tmp_path / "dep_report.txt"
+    dep_tsv = tmp_path / "dep_results.tsv"
+    res_dep = subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_depletion.py",
+            "--input",
+            str(profiles_tsv),
+            "--output",
+            str(dep_report),
+            "--tsv-output",
+            str(dep_tsv),
+            "--p-threshold",
+            "0.05",
+            "--max-fold",
+            "0.67",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert res_dep.returncode == 0, res_dep.stderr
+
+    # Parse TSV outputs
+    def _read(tsv: Path) -> tuple[dict[str, str], list[str], list[dict[str, str]]]:
+        lines = tsv.read_text(encoding="utf-8").splitlines()
+        meta: dict[str, str] = {}
+        body: list[str] = []
+        for line in lines:
+            if line.startswith("#"):
+                k, _, v = line.lstrip("#").strip().partition(": ")
+                meta[k] = v
+            else:
+                body.append(line)
+        header = body[0].split("\t")
+        rows = [dict(zip(header, row.split("\t"), strict=True)) for row in body[1:] if row]
+        return meta, header, rows
+
+    enr_meta, _, enr_rows = _read(enr_tsv)
+    dep_meta, _, dep_rows = _read(dep_tsv)
+
+    # 1. Total tests and metadata
+    assert enr_meta["Total-Tests-Performed"] == "4"
+    assert enr_meta["Significant-Hits"] == "4"
+    assert enr_meta["Result-Status"] == "discoveries"
+
+    # Depletion tests 4 profile-trait pairs for TraitA and 4 for TraitB;
+    # TraitC is skipped (structural zero)
+    assert dep_meta["Total-Tests-Performed"] == "8"
+    assert dep_meta["Significant-Hits"] == "4"
+    assert dep_meta["Result-Status"] == "discoveries"
+
+    # 2. Denominators (testable_profiles) are aligned: 4 for TraitA, 4 for TraitB
+    for r in enr_rows:
+        assert r["testable_profiles"] == "4"
+        assert r["trait"] in {"TraitA", "TraitB"}
+
+    for r in dep_rows:
+        assert r["testable_profiles"] == "4"
+        assert r["trait"] in {"TraitA", "TraitB"}
+
+    # 3. Direction of discoveries
+    # TraitA: enriched in inc, depleted in dec (observed zero with count 0)
+    enr_a = [r for r in enr_rows if r["trait"] == "TraitA"]
+    dep_a = [r for r in dep_rows if r["trait"] == "TraitA"]
+    assert len(enr_a) == 2
+    assert all(r["inc_dec"] == "inc" for r in enr_a)
+    assert len(dep_a) == 2
+    assert all(r["inc_dec"] == "dec" and r["count"] == "0" for r in dep_a)
+
+    # TraitB: enriched in dec, depleted in inc (observed zero with count 0)
+    enr_b = [r for r in enr_rows if r["trait"] == "TraitB"]
+    dep_b = [r for r in dep_rows if r["trait"] == "TraitB"]
+    assert len(enr_b) == 2
+    assert all(r["inc_dec"] == "dec" for r in enr_b)
+    assert len(dep_b) == 2
+    assert all(r["inc_dec"] == "inc" and r["count"] == "0" for r in dep_b)
+
+    # TraitC: never tested, never reported
+    assert not any(r["trait"] == "TraitC" for r in enr_rows)
+    assert not any(r["trait"] == "TraitC" for r in dep_rows)
