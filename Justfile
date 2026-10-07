@@ -95,6 +95,10 @@ trait-enrichment-heatmap-dense: analyze
 study-trait-profiles: taxa-trait-matrix
 	uv run python scripts/create_study_trait_profiles.py --format wide
 
+# Audit Table 1 trait semantics, ontology overlap, and source evidence.
+audit-table1-traits: study-trait-profiles
+	uv run python scripts/audit_table1_trait_semantics.py
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
