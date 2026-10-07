@@ -13,15 +13,19 @@ from __future__ import annotations
 
 import argparse
 import csv
-from collections import defaultdict
 import gzip
+from collections import defaultdict
 from pathlib import Path
 
 from scipy.stats import hypergeom as _scipy_hypergeom
 
 from bsdbng.enrichment_stats import (
     benjamini_hochberg,
+)
+from bsdbng.enrichment_stats import (
     hypergeom_cdf as _core_hypergeom_cdf,
+)
+from bsdbng.enrichment_stats import (
     hypergeom_cdf_many as _core_hypergeom_cdf_many,
 )
 
