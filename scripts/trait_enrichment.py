@@ -26,6 +26,11 @@ from bsdbng.enrichment_results import (
     META_TESTS_PERFORMED,
     classify_result_status,
 )
+from bsdbng.enrichment_stats import (
+    benjamini_hochberg,
+    hypergeom_sf as _core_hypergeom_sf,
+    hypergeom_sf_many as _core_hypergeom_sf_many,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -97,10 +102,9 @@ def _to_int(value: str) -> int:
 
 def hypergeom_sf(x: int, population_size: int, population_successes: int, draws: int) -> float:
     """Return P[X >= x] using the required SciPy implementation."""
-    value = float(_scipy_hypergeom.sf(x - 1, population_size, population_successes, draws))
-    if not math.isfinite(value):
-        raise ValueError("Invalid hypergeometric population or draw parameters")
-    return value
+    return _core_hypergeom_sf(
+        x, population_size, population_successes, draws, scipy_hypergeom=_scipy_hypergeom
+    )
 
 
 def hypergeom_sf_many(
@@ -110,38 +114,9 @@ def hypergeom_sf_many(
     draws: int,
 ) -> list[float]:
     """Compute each trait's tail probability without silently replacing failed calculations."""
-    if len(counts) != len(population_successes):
-        raise ValueError("Counts and population successes must have the same length")
-    if not counts:
-        return []
-    values = _scipy_hypergeom.sf(
-        [x - 1 for x in counts], population_size, population_successes, draws
+    return _core_hypergeom_sf_many(
+        counts, population_size, population_successes, draws, scipy_hypergeom=_scipy_hypergeom
     )
-    results = [float(value) for value in values]
-    if any(not math.isfinite(value) for value in results):
-        raise ValueError("Invalid hypergeometric population or draw parameters")
-    return results
-
-
-def benjamini_hochberg(p_values: list[float]) -> list[float]:
-    """Apply Benjamini-Hochberg FDR correction."""
-    n = len(p_values)
-    if n == 0:
-        return []
-
-    # Sort indices by p-value
-    indexed_p = sorted(enumerate(p_values), key=lambda x: x[1])
-    q_values = [0.0] * n
-
-    min_q = float("inf")
-    for i in range(n - 1, -1, -1):
-        idx, p = indexed_p[i]
-        rank = i + 1
-        q = (p * n) / rank
-        min_q = min(min_q, q)
-        q_values[idx] = min(min_q, 1.0)
-
-    return q_values
 
 
 def format_pvalue(value: float) -> str:
