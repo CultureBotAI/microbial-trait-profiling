@@ -391,7 +391,7 @@ def test_enrichment_pipeline_profile_fdr_propagation(tmp_path: Path) -> None:
 
 
 def test_repeated_taxon_fixture_matrix_wiring(tmp_path: Path) -> None:
-    """Verify that 4 unique taxa repeated across 2 paired experiments report M=4, p=1/6
+    """Verify issue #131: 4 unique taxa repeated across 2 paired experiments report M=4, p=1/6
 
     with the explicit unique-taxon matrix, vs M=8, p=0.2142857 without matrix.
     Also verifies that a nonexistent matrix path fails instead of falling back silently.
@@ -543,9 +543,9 @@ def test_repeated_taxon_fixture_matrix_wiring(tmp_path: Path) -> None:
 
 
 def test_malformed_taxa_count_strict_rejection(tmp_path: Path) -> None:
-    """Verify that malformed, missing, negative, or invalid taxa_count values fail loudly
-
-    with file/line/column context instead of silently substituting max trait counts.
+    """Verify issues #131 / #184: malformed, missing, negative, or invalid
+    taxa_count values fail loudly with file/line/column context instead of
+    silently substituting max trait counts.
     With background M=4, K=2 (TraitA present in 2 of 4 taxa), and profile trait count k=2:
     - Valid N=3 produces p=0.5, fold=1.3333
     - Replacing N with invalid must fail, not silently substitute N=2 (p=1/6, fold=2.0).
