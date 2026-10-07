@@ -64,12 +64,15 @@ class ParsedRow:
     exp: float
     testable_profiles: int
     hit_count: int | None = None
+    trait_total: int = 0
 
 
 PARSED_ROW_COLUMNS: list[str] = [f.name for f in fields(ParsedRow)]
 
 
-def overall_columns(stat_type: str, censored: bool) -> list[str]:
+def overall_columns(
+    stat_type: str, censored: bool, body_site_group: str | None = None
+) -> list[str]:
     """Declared column order of the overall trait ranking table."""
     is_fdr = stat_type == "fdr_q"
     best_stat_col = "best_qvalue" if is_fdr else "best_pvalue"
@@ -90,6 +93,8 @@ def overall_columns(stat_type: str, censored: bool) -> list[str]:
         "mean_fold",
         "max_fold",
         "testable_profiles",
+        "n_profiles_tested",
+        "trait_total",
         other_best_col,
         "min_p_direction",
         "min_p_study_id",
@@ -99,15 +104,22 @@ def overall_columns(stat_type: str, censored: bool) -> list[str]:
     if censored:
         columns.append("n_censored_profiles")
     columns.append("prevalence")
+    if body_site_group is not None:
+        columns.append("body_site_group")
     return columns
 
 
-def pair_columns(stat_type: str) -> list[str]:
+def pair_columns(stat_type: str, body_site_group: str | None = None) -> list[str]:
     """Declared column order of the trait-study pair ranking table."""
     renamed = [
-        "q_value" if (stat_type == "fdr_q" and c == "fdr_q") else c for c in PARSED_ROW_COLUMNS
+        "q_value" if (stat_type == "fdr_q" and c == "fdr_q") else c
+        for c in PARSED_ROW_COLUMNS
+        if c != "trait_total"
     ]
-    return ["rank", *renamed, "is_censored_hit"]
+    cols = ["rank", *renamed, "is_censored_hit"]
+    if body_site_group is not None:
+        cols.append("body_site_group")
+    return cols
 
 
 def resolve_default_input() -> Path:
@@ -133,7 +145,7 @@ def resolve_default_results(report_path: Path | None = None) -> Path:
     return DEFAULT_RESULTS_CANDIDATES[-1]
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Export ranked trait enrichment TSV outputs from a text report."
     )
@@ -161,7 +173,47 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         help="Output TSV for trait-study pair ranking. Defaults to dynamic path based on stats.",
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--body-site-group",
+        type=str,
+        default=None,
+        help="Optional body site group / stratum label to record in headers and columns.",
+    )
+    parser.add_argument(
+        "--profiles",
+        type=Path,
+        default=None,
+        help="Optional path to profiles TSV to compute empirical background K (trait totals).",
+    )
+    return parser.parse_args(argv)
+
+
+def compute_trait_totals_from_profiles(profiles_path: Path) -> dict[str, int]:
+    """Compute empirical background sum K for each trait from a profiles TSV."""
+    if not profiles_path.exists():
+        return {}
+    try:
+        df = pd.read_csv(profiles_path, sep="\t", low_memory=False)
+        if "study_id" in df.columns and "experiment_id" in df.columns and "inc_dec" in df.columns:
+            exp_dirs = df.groupby(["study_id", "experiment_id"])["inc_dec"].apply(
+                lambda s: set(s.str.lower())
+            )
+            paired = {k for k, dirs in exp_dirs.items() if "inc" in dirs and "dec" in dirs}
+            mask = df.set_index(["study_id", "experiment_id"]).index.isin(paired)
+            df = df[mask]
+
+        non_trait = {"study_id", "experiment_id", "inc_dec", "taxa_count", "body_site"}
+        trait_cols = [c for c in df.columns if c not in non_trait and "mediadive.medium:" not in c]
+        if not trait_cols:
+            return {}
+        numeric_df = df[trait_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+        return {col: int(total) for col, total in numeric_df.sum().items()}
+    except Exception as exc:
+        print(
+            f"Warning: failed to compute trait totals from {profiles_path}: {exc}",
+            file=sys.stderr,
+        )
+        return {}
 
 
 def _parse_summary_values(summary: str) -> tuple[float | None, float | None, float | None]:
@@ -231,7 +283,11 @@ def detect_metadata(path: Path) -> dict[str, Any]:
 
 
 def parse_results_tsv(
-    path: Path, stat_type: str, threshold: float, min_fold: float = DEFAULT_MIN_FOLD
+    path: Path,
+    stat_type: str,
+    threshold: float,
+    min_fold: float = DEFAULT_MIN_FOLD,
+    trait_totals: dict[str, int] | None = None,
 ) -> list[ParsedRow]:
     """Validate the analyzer results TSV and return the selected rows.
 
@@ -261,6 +317,10 @@ def parse_results_tsv(
         study_id = str(r["study_id"])
         experiment_id = str(r["experiment_id"])
         inc_dec = str(r["inc_dec"])
+        trait_total_raw = r["background_k"] if "background_k" in r else r.get("trait_total", 0)
+        trait_total_val = int(trait_total_raw) if pd.notna(trait_total_raw) else 0
+        if trait_total_val == 0 and trait_totals and trait in trait_totals:
+            trait_total_val = trait_totals[trait]
         rows.append(
             ParsedRow(
                 study_id=study_id,
@@ -274,13 +334,17 @@ def parse_results_tsv(
                 obs=float(r["count"]),
                 exp=float(r["expected"]),
                 testable_profiles=int(r["testable_profiles"]),
+                trait_total=trait_total_val,
             )
         )
     return rows
 
 
 def parse_report(
-    path: Path, stat_type: str = "p_value", allow_empty: bool = False
+    path: Path,
+    stat_type: str = "p_value",
+    allow_empty: bool = False,
+    trait_totals: dict[str, int] | None = None,
 ) -> list[ParsedRow]:
     rows: list[ParsedRow] = []
     current_header: tuple[str, str, str] | None = None
@@ -318,6 +382,7 @@ def parse_report(
                 p_value = val if stat_type == "p_value" else 1.0
                 fdr_q = val if stat_type == "fdr_q" else 1.0
 
+                trait_tot = trait_totals.get(trait, 0) if trait_totals else 0
                 rows.append(
                     ParsedRow(
                         study_id=study_id,
@@ -332,6 +397,7 @@ def parse_report(
                         exp=exp or 0.0,
                         testable_profiles=0,  # Not available in text report
                         hit_count=hit_count,
+                        trait_total=trait_tot,
                     )
                 )
                 continue
@@ -371,10 +437,12 @@ def build_overall_table(
     total_profiles: int | None = None,
     max_traits: int | None = None,
     fdr_scope: str = "global",
+    body_site_group: str | None = None,
+    trait_totals: dict[str, int] | None = None,
 ) -> pd.DataFrame:
     _ = total_profiles  # Reserved for future weighting
     _ = fdr_scope  # Stat type already implies scope
-    columns = overall_columns(stat_type, censored=bool(max_traits))
+    columns = overall_columns(stat_type, censored=bool(max_traits), body_site_group=body_site_group)
     if frame.empty:
         return pd.DataFrame(columns=columns)
 
@@ -412,6 +480,8 @@ def build_overall_table(
         "max_fold": ("fold", "max"),
         "testable_profiles": ("testable_profiles", "first"),
     }
+    if "trait_total" in frame.columns:
+        agg_map["trait_total"] = ("trait_total", "max")
 
     # Also include the other statistic if it's available (non-1.0)
     if stat_type == "fdr_q":
@@ -432,6 +502,16 @@ def build_overall_table(
     overall[["inc_hits", "dec_hits"]] = overall[["inc_hits", "dec_hits"]].fillna(0).astype(int)
     overall = overall.reset_index().merge(best_rows, on="trait", how="left")
     overall.insert(1, "stat_type", stat_type)
+    if "trait_total" not in overall.columns:
+        overall["trait_total"] = 0
+    else:
+        overall["trait_total"] = overall["trait_total"].fillna(0).astype(int)
+    if trait_totals:
+        for t, tot in trait_totals.items():
+            mask = overall["trait"] == t
+            if mask.any():
+                overall.loc[mask, "trait_total"] = tot
+    overall["n_profiles_tested"] = overall["testable_profiles"]
 
     # Calculate net direction based on vote count
     def get_net_direction(row: pd.Series) -> str:
@@ -472,12 +552,16 @@ def build_overall_table(
         ascending=[False, True, False],
     )
     overall.insert(0, "rank", range(1, len(overall) + 1))
+    if body_site_group is not None:
+        overall["body_site_group"] = body_site_group
 
     # Enforce the declared schema (raises if the computed table drifts from it).
     return overall[columns]
 
 
-def build_pair_table(frame: pd.DataFrame, stat_type: str) -> pd.DataFrame:
+def build_pair_table(
+    frame: pd.DataFrame, stat_type: str, body_site_group: str | None = None
+) -> pd.DataFrame:
     if "is_censored_hit" not in frame.columns:
         frame = frame.assign(is_censored_hit=False)
     pairs = frame.copy()
@@ -489,7 +573,9 @@ def build_pair_table(frame: pd.DataFrame, stat_type: str) -> pd.DataFrame:
         pairs = pairs.rename(columns={"fdr_q": "q_value"})
 
     pairs.insert(0, "rank", range(1, len(pairs) + 1))
-    return pairs[pair_columns(stat_type)]
+    if body_site_group is not None:
+        pairs["body_site_group"] = body_site_group
+    return pairs[pair_columns(stat_type, body_site_group=body_site_group)]
 
 
 def _write_table(
@@ -512,8 +598,8 @@ def _fail(message: str) -> int:
     return 1
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
 
     meta = detect_metadata(args.input)
     stat_type = meta["stat_type"]
@@ -527,6 +613,10 @@ def main() -> int:
     result_status: str | None = meta["result_status"]
 
     results_path = args.results or resolve_default_results(args.input)
+
+    trait_totals: dict[str, int] = {}
+    if args.profiles and args.profiles.is_file():
+        trait_totals = compute_trait_totals_from_profiles(args.profiles)
 
     try:
         if results_path.exists():
@@ -546,7 +636,9 @@ def main() -> int:
             analyzer_hits = table.significant_hits
             result_status = table.status
 
-            rows = parse_results_tsv(results_path, stat_type, stat_threshold, min_fold)
+            rows = parse_results_tsv(
+                results_path, stat_type, stat_threshold, min_fold, trait_totals=trait_totals
+            )
             # Results TSV contains all hits regardless of the report truncation cap
             is_source_truncated = False
             max_traits = None
@@ -566,7 +658,12 @@ def main() -> int:
                     f"(expected one of {list(RESULT_STATUSES)})."
                 )
             allow_empty = result_status is not None and result_status != STATUS_DISCOVERIES
-            rows = parse_report(args.input, stat_type=stat_type, allow_empty=allow_empty)
+            rows = parse_report(
+                args.input,
+                stat_type=stat_type,
+                allow_empty=allow_empty,
+                trait_totals=trait_totals,
+            )
             if result_status is None:
                 result_status = STATUS_DISCOVERIES
 
@@ -598,8 +695,10 @@ def main() -> int:
         total_profiles=testable_profiles,
         max_traits=max_traits,
         fdr_scope=fdr_scope,
+        body_site_group=args.body_site_group,
+        trait_totals=trait_totals,
     )
-    pairs = build_pair_table(frame, stat_type)
+    pairs = build_pair_table(frame, stat_type, body_site_group=args.body_site_group)
 
     # Resolve dynamic filenames
     # Include 'profile' in suffix if using per-profile FDR
@@ -629,6 +728,8 @@ def main() -> int:
         (META_TESTS_PERFORMED, na(tests_performed)),
         (META_SIGNIFICANT_HITS, na(analyzer_hits)),
     ]
+    if args.body_site_group is not None:
+        common.append(("Body-Site-Group", args.body_site_group))
 
     overall_header = list(common)
     if testable_profiles:

@@ -226,6 +226,15 @@ analyze-site SITE: study-trait-profiles
 	  --overall-output data/derived/sites/{{SITE}}/trait_enrichment_traits_overall_ranked.tsv \
 	  --pair-output data/derived/sites/{{SITE}}/trait_enrichment_trait_study_pairs_ranked.tsv
 
+# Run ORA background stratification and annotation-density sensitivity evaluation (#118).
+analyze-strata: study-trait-profiles
+	just timed analyze-strata "uv run python scripts/run_stratified_enrichment.py \
+	  --profiles data/derived/study_trait_profiles_wide.tsv \
+	  --experiments data/derived/experiments.tsv \
+	  --output-dir data/derived \
+	  --p-threshold {{p_threshold}} \
+	  --min-fold {{min_fold}}"
+
 # Generate grouped 6-trait Sankey diagrams for decreased and increased profiles.
 six-trait-sankey: analyze
 	just timed six-trait-sankey "uv run python scripts/generate_six_trait_sankey.py --direction both"

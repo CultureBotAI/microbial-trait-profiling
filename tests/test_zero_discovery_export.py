@@ -58,6 +58,8 @@ EXPECTED_OVERALL_HEADER = [
     "mean_fold",
     "max_fold",
     "testable_profiles",
+    "n_profiles_tested",
+    "trait_total",
     "best_pvalue",
     "min_p_direction",
     "min_p_study_id",
