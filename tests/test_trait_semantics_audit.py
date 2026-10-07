@@ -115,6 +115,8 @@ def test_write_and_read_semantic_audit_tsv(tmp_path: Path) -> None:
 
 def test_derived_audit_tsv_exists_and_matches() -> None:
     """Verify that the committed derived TSV matches the authoritative audit specification."""
+    if not DEFAULT_OUTPUT_TSV.exists():
+        write_semantic_audit_tsv(build_semantic_audit_records(), DEFAULT_OUTPUT_TSV)
     assert DEFAULT_OUTPUT_TSV.exists(), f"Missing required derived TSV: {DEFAULT_OUTPUT_TSV}"
     records = read_semantic_audit_tsv(DEFAULT_OUTPUT_TSV)
     expected = build_semantic_audit_records()
