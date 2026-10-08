@@ -112,6 +112,17 @@ def map_body_site(raw_site: str | None) -> str:
     return raw_site.strip()
 
 
+def clean_trait_label(lbl: str) -> str:
+    lbl = lbl.split(" [METPO")[0].split(" METPO:")[0]
+    lbl = lbl.replace("capable of: ", "").replace("grows in: ", "").replace("has shape: ", "")
+    if "pathways:" in lbl:
+        lbl = lbl.split("pathways:")[0].strip()
+    if "GO:" in lbl:
+        lbl = lbl.split("GO:")[0].strip()
+    lbl = lbl.replace("_", " ").strip()
+    return " ".join(lbl.split())
+
+
 def load_trait_labels(trait_meta_path: Path, mapping_path: Path) -> dict[str, str]:
     labels = {
         "METPO:1000608": "facultatively aerobic",
@@ -128,16 +139,15 @@ def load_trait_labels(trait_meta_path: Path, mapping_path: Path) -> dict[str, st
         for _, r in tm.iterrows():
             cid = str(r["column_id"])
             lbl = str(r.get("column_label", cid))
-            lbl = lbl.split(" [METPO")[0].split(" METPO:")[0].replace("capable of: ", "")
-            labels[cid] = lbl
+            labels[cid] = clean_trait_label(lbl)
     if mapping_path.exists():
         mp = pd.read_csv(mapping_path, sep="\t", header=None)
         if mp.shape[1] < 2:
             raise ValueError(f"Trait mapping requires at least two columns: {mapping_path}")
         for _, r in mp.iterrows():
             cid = str(r[0])
-            lbl = str(r[1]).split(" [METPO")[0].split(" METPO:")[0]
-            labels[cid] = lbl
+            lbl = str(r[1])
+            labels[cid] = clean_trait_label(lbl)
     return labels
 
 
@@ -200,6 +210,7 @@ def plot_grouped_six_trait_sankey(
     output_svg: Path | None = None,
     min_profiles: int = 2,
     min_studies: int = 1,
+    max_conditions: int = 25,
 ) -> None:
     # 1. Prepare data
     df = enrich_df[
@@ -209,6 +220,15 @@ def plot_grouped_six_trait_sankey(
     if df.empty:
         print(f"No enrichment data for direction={direction}")
         return
+
+    if "profile_id" not in df.columns:
+        df["profile_id"] = (
+            df["study_id"].astype(str)
+            + "|"
+            + df["experiment_id"].astype(str)
+            + "|"
+            + df["inc_dec"].astype(str)
+        )
 
     # Map condition and body site
     if "condition" not in df.columns or "body_site" not in df.columns:
@@ -254,6 +274,11 @@ def plot_grouped_six_trait_sankey(
         )
         .sort_values("total_n", ascending=False)
     )
+
+    if max_conditions is not None and len(cond_stats) > max_conditions:
+        top_conditions = set(cond_stats.head(max_conditions).index)
+        edge_agg = edge_agg[edge_agg["condition"].isin(top_conditions)].copy()
+        cond_stats = cond_stats.loc[cond_stats.index.isin(top_conditions)]
 
     site_stats = (
         edge_agg.groupby("display_body_site")
@@ -626,11 +651,15 @@ def plot_grouped_six_trait_sankey(
     footer_lines = [
         "Every line is trait-specific. Node counts are profile-trait memberships across "
         "displayed links, not deduplicated profile totals.",
-        "Display filtering uses thresholds after aggregating by raw condition, "
-        "grouped body-site label, and trait: at least 2 positive-z focus profiles.",
+        f"Display filtering uses thresholds after aggregating by raw condition, "
+        f"grouped body-site label, and trait: at least {min_profiles} positive-z focus profiles "
+        f"(top {len(conditions)} conditions shown by profile support).",
         "Body-site trunks sum all displayed condition links by trait color. "
         "Hybrid display mode keeps individual condition labels on the left "
         "and grouped body-site labels on the right.",
+        "Interpretation: Results measure annotation representation in curated taxon signatures "
+        "(urn model, M = 5,184 background taxa), not direct patient-level organism abundance, "
+        "pathway activity, or disease causation.",
     ]
     footer_text = "\n".join(footer_lines)
     ax.text(
@@ -696,6 +725,12 @@ def main() -> None:
         default=1,
         help="Minimum study count per edge",
     )
+    parser.add_argument(
+        "--max-conditions",
+        type=int,
+        default=25,
+        help="Maximum conditions to display (ordered by profile support, default 25)",
+    )
 
     args = parser.parse_args()
 
@@ -744,6 +779,7 @@ def main() -> None:
             output_svg=out_svg,
             min_profiles=args.min_profiles,
             min_studies=args.min_studies,
+            max_conditions=args.max_conditions,
         )
 
 

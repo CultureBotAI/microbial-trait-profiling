@@ -32,7 +32,7 @@ COLOR_NONE = "rgba(180, 180, 180, 0.30)"  # Gray for no enrichment
 
 
 def generate_single_guild_sankey_with_background(
-    enrich_df, total_counts_df, guild_name, direction, title
+    enrich_df, total_counts_df, guild_name, direction, title, max_conditions: int = 20
 ):
     guild_traits = GUILDS[guild_name]
     g_df = enrich_df[
@@ -81,12 +81,16 @@ def generate_single_guild_sankey_with_background(
     merged["n_profiles"] = merged["n_profiles"].fillna(0).astype(int)
     merged["n_no_enrich"] = (merged["total_profiles"] - merged["n_profiles"]).clip(lower=0)
 
+    # Filter to top conditions by total profiles to ensure publication-quality spacing
     cond_order = (
         merged.groupby("condition")["total_profiles"]
         .sum()
         .sort_values(ascending=False)
+        .head(max_conditions)
         .index.tolist()
     )
+    merged = merged[merged["condition"].isin(cond_order)].copy()
+
     site_order = (
         merged.groupby("body_site")["total_profiles"]
         .sum()
@@ -135,54 +139,45 @@ def generate_single_guild_sankey_with_background(
         data=[
             go.Sankey(
                 node={
-                    "pad": 15,
+                    "pad": 18,
                     "thickness": 20,
                     "line": {"color": "black", "width": 0.5},
                     "label": node_labels,
                     "color": "lightgray",
+                    "x": [0.01] * len(cond_order) + [0.99] * len(site_order),
                 },
                 link={"source": sources, "target": targets, "value": values, "color": edge_colors},
-                arrangement="fixed",
+                arrangement="snap",
             )
         ]
     )
 
-    node_x = [0.01] * len(cond_order) + [0.99] * len(site_order)
-
-    def get_y_pos(counts):
-        total = sum(counts)
-        if total == 0:
-            return [0.5] * len(counts)
-        y = []
-        curr = 0
-        for c in counts:
-            y.append((curr + c / 2) / total)
-            curr += c
-        return y
-
-    cond_y = get_y_pos(merged.groupby("condition")["total_profiles"].sum().loc[cond_order].tolist())
-    site_y = get_y_pos(merged.groupby("body_site")["total_profiles"].sum().loc[site_order].tolist())
-    fig.data[0].node.x = node_x
-    fig.data[0].node.y = cond_y + site_y
-
     color_desc = "Red" if direction == "inc" else "Blue"
     subtitle = (
         f"<span style='font-size:10px'>Colored links: {direction}reased enrichment ({color_desc}). "
-        "Gray links: no enrichment.</span>"
+        "Gray links: no enrichment. Node n sums profile memberships.<br>"
+        "Interpretation: Results measure annotation representation in curated taxon signatures "
+        "(urn model, M = 5,184 background taxa), "
+        "not direct patient-level organism abundance.</span>"
     )
     fig.update_layout(
         title_text=f"<b>{title}</b><br>{subtitle}",
         font_size=12,
         width=1200,
-        height=1200,
+        height=1300,
+        margin={"t": 140, "b": 40, "l": 40, "r": 40},
     )
 
     filename = OUTPUT_DIR / f"{guild_name.lower()}_sankey_{direction}_with_unenriched.png"
     fig.write_image(str(filename), scale=2)
     print(f"Saved {filename}")
 
+    legacy_filename = OUTPUT_DIR / f"{guild_name.lower()}_sankey_{direction}.png"
+    fig.write_image(str(legacy_filename), scale=2)
+    print(f"Saved {legacy_filename}")
 
-def generate_combined_sankey(enrich_df, total_counts_df):
+
+def generate_combined_sankey(enrich_df, total_counts_df, max_conditions: int = 20):
     """Generates a 3-column Sankey:
 
     Left: Aerobe (Conditions split by Inc, Dec, None)
@@ -247,15 +242,15 @@ def generate_combined_sankey(enrich_df, total_counts_df):
     sig_df = pd.DataFrame(list(significant_pairs), columns=["condition", "body_site"])
     base_df = pd.merge(sig_df, total_counts_df, on=["condition", "body_site"], how="left")
 
-    # Left: Aerobe conditions
-    # Center: Body sites
-    # Right: Anaerobe conditions
+    # Filter to top conditions by total profiles to ensure legible publication layout
     left_conditions = (
         base_df.groupby("condition")["total_profiles"]
         .sum()
         .sort_values(ascending=False)
+        .head(max_conditions)
         .index.tolist()
     )
+    base_df = base_df[base_df["condition"].isin(left_conditions)].copy()
     center_sites = (
         base_df.groupby("body_site")["total_profiles"]
         .sum()
@@ -370,60 +365,39 @@ def generate_combined_sankey(enrich_df, total_counts_df):
         data=[
             go.Sankey(
                 node={
-                    "pad": 15,
+                    "pad": 18,
                     "thickness": 20,
                     "line": {"color": "black", "width": 0.5},
                     "label": node_labels,
                     "color": "lightgray",
+                    "x": (
+                        [0.01] * len(left_conditions)
+                        + [0.50] * len(center_sites)
+                        + [0.99] * len(right_conditions)
+                    ),
                 },
                 link={"source": sources, "target": targets, "value": values, "color": edge_colors},
-                arrangement="fixed",
+                arrangement="snap",
             )
         ]
     )
-
-    # Compute positions
-    def get_y_pos(counts):
-        total = sum(counts)
-        if total == 0:
-            return [0.5] * len(counts)
-        y = []
-        curr = 0
-        for c in counts:
-            y.append((curr + c / 2) / total)
-            curr += c
-        return y
-
-    left_y = get_y_pos(
-        base_df.groupby("condition")["total_profiles"].sum().loc[left_conditions].tolist()
-    )
-    center_y = get_y_pos(
-        base_df.groupby("body_site")["total_profiles"].sum().loc[center_sites].tolist()
-    )
-    right_y = get_y_pos(
-        base_df.groupby("condition")["total_profiles"].sum().loc[right_conditions].tolist()
-    )
-
-    node_x = (
-        [0.01] * len(left_conditions) + [0.50] * len(center_sites) + [0.99] * len(right_conditions)
-    )
-    node_y = left_y + center_y + right_y
-
-    fig.data[0].node.x = node_x
-    fig.data[0].node.y = node_y
 
     combined_subtitle = (
         "<span style='font-size:11px'>Left: Aerobes & Facultative Aerobes | "
         "Center: Anatomy / Body Sites | Right: Anaerobes<br>"
         "Red = Increased Enrichment | Blue = Decreased Enrichment | "
-        "Gray = No Significant Enrichment</span>"
+        "Gray = No Significant Enrichment<br>"
+        "Interpretation: Results measure annotation representation in curated taxon signatures "
+        "(urn model, M = 5,184 background taxa), "
+        "not direct patient-level organism abundance.</span>"
     )
     title = "<b>Combined Guild Enrichment Across Anatomical Sites</b>"
     fig.update_layout(
         title_text=f"{title}<br>{combined_subtitle}",
         font_size=12,
         width=1600,
-        height=1200,
+        height=1300,
+        margin={"t": 140, "b": 40, "l": 40, "r": 40},
     )
 
     filename = OUTPUT_DIR / "combined_aerobe_anaerobe_sankey.png"
@@ -435,27 +409,53 @@ def main():
     print("Loading enrichment data...")
     enrich_df = pd.read_csv(ENRICHMENT_PATH, sep="\t", comment="#")
 
+    if "profile_id" not in enrich_df.columns:
+        enrich_df["profile_id"] = (
+            enrich_df["study_id"].astype(str)
+            + "|"
+            + enrich_df["experiment_id"].astype(str)
+            + "|"
+            + enrich_df["inc_dec"].astype(str)
+        )
+
     print("Loading metadata...")
-    meta_df = pd.read_csv(EXPERIMENTS_PATH, comment="#", dtype=str)
-    meta_df.columns = [c.strip().replace('"', "") for c in meta_df.columns]
+    derived_exp_path = Path("data/derived/experiments.tsv")
+    if derived_exp_path.exists():
+        print(f"Loading metadata from {derived_exp_path}...")
+        meta_df = pd.read_csv(derived_exp_path, sep="\t", dtype=str)
+        lookup = (
+            meta_df.drop_duplicates(subset="experiment_id")
+            .set_index("experiment_id")[["body_site", "condition"]]
+            .to_dict("index")
+        )
+        enrich_df["body_site"] = enrich_df["experiment_id"].map(
+            lambda x: lookup.get(x, {}).get("body_site", "Unknown")
+        )
+        enrich_df["condition"] = enrich_df["experiment_id"].map(
+            lambda x: lookup.get(x, {}).get("condition", "Unknown")
+        )
+    elif EXPERIMENTS_PATH.exists():
+        print(f"Loading metadata from {EXPERIMENTS_PATH}...")
+        meta_df = pd.read_csv(EXPERIMENTS_PATH, comment="#", dtype=str)
+        meta_df.columns = [c.strip().replace('"', "") for c in meta_df.columns]
 
-    meta_df["study_key"] = "bsdb:" + meta_df["Study"].astype(str).str.strip()
-    meta_df["exp_num"] = meta_df["Experiment"].str.extract(r"(\d+)", expand=False).fillna("1")
-    meta_df["exp_key"] = meta_df["study_key"] + "-" + meta_df["exp_num"]
+        meta_df["study_key"] = "bsdb:" + meta_df["Study"].astype(str).str.strip()
+        meta_df["exp_num"] = meta_df["Experiment"].str.extract(r"(\d+)", expand=False).fillna("1")
+        meta_df["exp_key"] = meta_df["study_key"] + "-" + meta_df["exp_num"]
 
-    lookup = (
-        meta_df.drop_duplicates(subset="exp_key")
-        .set_index("exp_key")[["Body site", "Condition"]]
-        .to_dict("index")
-    )
+        lookup = (
+            meta_df.drop_duplicates(subset="exp_key")
+            .set_index("exp_key")[["Body site", "Condition"]]
+            .to_dict("index")
+        )
 
-    print("Mapping metadata...")
-    enrich_df["body_site"] = enrich_df["experiment_id"].map(
-        lambda x: lookup.get(x, {}).get("Body site", "Unknown")
-    )
-    enrich_df["condition"] = enrich_df["experiment_id"].map(
-        lambda x: lookup.get(x, {}).get("Condition", "Unknown")
-    )
+        print("Mapping metadata...")
+        enrich_df["body_site"] = enrich_df["experiment_id"].map(
+            lambda x: lookup.get(x, {}).get("Body site", "Unknown")
+        )
+        enrich_df["condition"] = enrich_df["experiment_id"].map(
+            lambda x: lookup.get(x, {}).get("Condition", "Unknown")
+        )
 
     # Clean and filter
     enrich_df = enrich_df[

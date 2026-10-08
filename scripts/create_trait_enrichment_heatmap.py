@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import math
-from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import NamedTuple
@@ -19,6 +18,8 @@ from scipy.spatial.distance import pdist
 DEFAULT_REPORT_PATH = Path("data/derived/trait_enrichment_results.tsv")
 DEFAULT_OUTPUT_PATH = Path("data/derived/trait_enrichment_clustered_heatmap.png")
 DEFAULT_MATRIX_PATH = Path("data/derived/trait_enrichment_clustered_heatmap_matrix.tsv")
+DEFAULT_TRAIT_COLUMNS_PATH = Path("data/derived/taxa_trait_matrix_columns.tsv")
+DEFAULT_EXPERIMENTS_PATH = Path("data/derived/experiments.tsv")
 METPO_MAPPING_PATH = Path("metpo_phenotype_mapping.tsv")
 
 
@@ -39,18 +40,30 @@ class ProfileParts(NamedTuple):
 
 
 def load_metpo_label_lookup() -> dict[str, str]:
-    if not METPO_MAPPING_PATH.exists():
-        return {}
+    lookup: dict[str, str] = {}
+    if DEFAULT_TRAIT_COLUMNS_PATH.exists():
+        cols_df = pd.read_csv(DEFAULT_TRAIT_COLUMNS_PATH, sep="\t", dtype=str).fillna("")
+        for _, row in cols_df.iterrows():
+            cid = str(row.get("column_id", "")).strip()
+            label = str(row.get("object_name", "")).strip()
+            if not label or label == "nan":
+                label = str(row.get("column_label", "")).strip()
+            if cid and label and label != "nan":
+                lookup[cid] = label
 
-    mapping = pd.read_csv(METPO_MAPPING_PATH, sep="\t", dtype=str).fillna("")
-    if not {"METPO_ID", "Description"}.issubset(mapping.columns):
-        raise ValueError(f"Trait mapping requires METPO_ID and Description: {METPO_MAPPING_PATH}")
+    if METPO_MAPPING_PATH.exists():
+        mapping = pd.read_csv(METPO_MAPPING_PATH, sep="\t", dtype=str).fillna("")
+        if not {"METPO_ID", "Description"}.issubset(mapping.columns):
+            raise ValueError(
+                f"Trait mapping requires METPO_ID and Description: {METPO_MAPPING_PATH}"
+            )
+        for _, row in mapping.iterrows():
+            cid = row["METPO_ID"].strip()
+            desc = row["Description"].strip()
+            if cid and desc:
+                lookup[cid] = desc
 
-    return {
-        row["METPO_ID"].strip(): row["Description"].strip()
-        for _, row in mapping.iterrows()
-        if row["METPO_ID"].strip()
-    }
+    return lookup
 
 
 def _clean_label(value: str) -> str:
@@ -67,13 +80,13 @@ def _format_profile_label(row: pd.Series) -> str:
 
     detail_parts: list[str] = []
     if disease:
-        detail_parts.append(f"Disease: {disease}")
+        detail_parts.append(disease)
     if anatomy:
-        detail_parts.append(f"Anatomy: {anatomy}")
-    detail = "\n".join(detail_parts)
-    support = f"Study: {study_ref} | Exp: {experiment_id} | {direction}"
+        detail_parts.append(f"({anatomy})")
+    detail = " ".join(detail_parts)
+    support = f"{study_ref} | {experiment_id} | {direction}"
     if detail:
-        return f"{detail}\n{support}"
+        return f"{detail} [{support}]"
     return support
 
 
@@ -323,14 +336,19 @@ def build_matrix(
         .loc[matrix.index]
     )
 
-    # Attempt to enrich profile metadata with experiment-level fields (condition, body_site)
+    # Enrich profile metadata with experiment-level fields (condition, body_site)
+    conds = []
+    sites = []
+    studies = []
     try:
-        experiments_path = Path("data/raw/experiments.csv")
-        if experiments_path.exists():
-            exdf = pd.read_csv(experiments_path, dtype=str)
-            # normalize column names
+        exdf_lookup = None
+        if DEFAULT_EXPERIMENTS_PATH.exists():
+            exdf = pd.read_csv(DEFAULT_EXPERIMENTS_PATH, sep="\t", dtype=str)
+            if "experiment_id" in exdf.columns:
+                exdf_lookup = exdf.set_index("experiment_id")
+        elif Path("data/raw/experiments.csv").exists():
+            exdf = pd.read_csv("data/raw/experiments.csv", dtype=str)
             exdf.columns = [c.strip().lower().replace(" ", "_") for c in exdf.columns]
-            # build keys matching parsed profile ids (e.g. study_33947803 / exp1)
             exdf = exdf.assign(
                 study_key=("study_" + exdf["study"].astype(str).str.strip()),
                 experiment_key=(
@@ -341,32 +359,32 @@ def build_matrix(
                     .astype(str)
                 ),
             )
-
             exdf_lookup = exdf.set_index(["study_key", "experiment_key"])
 
-            conds = []
-            sites = []
-            studies = []
-            for _, row in profile_meta.iterrows():
-                sk = row["study_id"].strip()
-                ek = row["experiment_id"].strip()
-                try:
-                    entry = exdf_lookup.loc[(sk, ek)]
-                    # if multiple rows match, take first
+        for _, row in profile_meta.iterrows():
+            sk = row["study_id"].strip()
+            ek = row["experiment_id"].strip()
+            c_val, s_val, st_val = "", "", sk
+            if exdf_lookup is not None:
+                key: tuple[str, str] | str = (
+                    (sk, ek) if "study_key" in getattr(exdf_lookup.index, "names", []) else ek
+                )
+                if key in exdf_lookup.index:
+                    entry = exdf_lookup.loc[key]
                     if isinstance(entry, pd.DataFrame):
                         entry = entry.iloc[0]
-                    conds.append(entry.get("condition", ""))
-                    sites.append(entry.get("body_site", ""))
-                    studies.append(entry.get("study", ""))
-                except Exception:
-                    conds.append("")
-                    sites.append("")
-                    studies.append("")
-
-            profile_meta = profile_meta.assign(condition=conds, body_site=sites, study_ref=studies)
+                    c_val = str(entry.get("condition", ""))
+                    s_val = str(entry.get("body_site", ""))
+                    st_val = str(entry.get("study_id", entry.get("study", sk)))
+            conds.append(c_val)
+            sites.append(s_val)
+            studies.append(st_val)
     except Exception:
-        # best-effort only; silently continue if anything goes wrong
-        profile_meta = profile_meta.assign(condition="", body_site="", study_ref="")
+        conds = [""] * len(profile_meta)
+        sites = [""] * len(profile_meta)
+        studies = [r["study_id"] for _, r in profile_meta.iterrows()]
+
+    profile_meta = profile_meta.assign(condition=conds, body_site=sites, study_ref=studies)
 
     if min_profile_hits > 0:
         keep = profile_meta["hit_count"] >= min_profile_hits
@@ -391,30 +409,6 @@ def build_matrix(
 
     matrix = matrix.sort_index()
     profile_meta = profile_meta.loc[matrix.index]
-    # Map trait IDs (e.g. METPO:XXXX) to human phenotype names when a mapping
-    # file exists. If multiple traits map to the same phenotype, disambiguate by
-    # appending the original trait id in brackets so column names remain unique.
-    mapping_path = Path("metpo_phenotype_mapping.tsv")
-    if mapping_path.exists():
-        mapdf = pd.read_csv(mapping_path, sep="\t", dtype=str)
-        # expected columns: METPO_ID, Description
-        if "METPO_ID" in mapdf.columns and "Description" in mapdf.columns:
-            lookup = dict(zip(mapdf["METPO_ID"], mapdf["Description"], strict=False))
-            orig_cols = list(matrix.columns)
-            mapped = [lookup.get(c, c) for c in orig_cols]
-
-            counts = Counter(mapped)
-            if any(v > 1 for v in counts.values()):
-                new_cols = []
-                # disambiguate duplicates by appending original trait id
-                for orig, lab in zip(orig_cols, mapped, strict=False):
-                    if counts[lab] == 1:
-                        new_cols.append(lab)
-                    else:
-                        new_cols.append(f"{lab} [{orig}]")
-                matrix.columns = new_cols
-            else:
-                matrix.columns = mapped
     return matrix, profile_meta
 
 
@@ -466,21 +460,29 @@ def save_heatmap(matrix: pd.DataFrame, profile_meta: pd.DataFrame, output_path: 
         row_cluster=row_cluster,
         col_cluster=col_cluster,
         figsize=(fig_width, fig_height),
-        cbar_pos=(0.02, 0.82, 0.02, 0.12),
+        cbar_pos=(0.02, 0.81, 0.015, 0.09),
         dendrogram_ratio=(0.14, 0.12),
         colors_ratio=(0.03, 0.03),
     )
 
     cluster.ax_heatmap.set_xlabel("Trait")
     cluster.ax_heatmap.set_ylabel("Study profile")
-    cluster.ax_heatmap.set_title(
-        "BugSigDB Trait Enrichment Clustered Heatmap\n"
-        "Cell values are -log10(p) for significant traits in each "
-        "study|experiment|direction profile",
-        pad=18,
+    cluster.fig.suptitle(
+        "CultureBotAI: Microbial Trait Over-Representation Clustered Heatmap\n"
+        "Discrete urn model (M=5,184). "
+        "Cell values: -log10(p) for enriched traits (FDR q <= 0.001, fold >= 1.5)\n"
+        "Biological Governance: Annotation representation in curated signatures, "
+        "not patient-level trait abundance",
+        fontsize=13,
+        fontweight="bold",
+        y=0.985,
     )
     cluster.ax_heatmap.xaxis.label.set_size(11)
     cluster.ax_heatmap.yaxis.label.set_size(11)
+
+    if cluster.cax is not None:
+        cluster.cax.tick_params(labelsize=8)
+        cluster.cax.set_title("-log10(p)", fontsize=9, pad=6)
 
     if show_col_labels:
         for label in cluster.ax_heatmap.get_xticklabels():
@@ -514,28 +516,28 @@ def save_heatmap(matrix: pd.DataFrame, profile_meta: pd.DataFrame, output_path: 
     from matplotlib.patches import Patch
 
     legend_handles = [
-        Patch(facecolor="#c0392b", edgecolor="none", label="inc"),
-        Patch(facecolor="#2874a6", edgecolor="none", label="dec"),
+        Patch(facecolor="#c0392b", edgecolor="none", label="Increased"),
+        Patch(facecolor="#2874a6", edgecolor="none", label="Decreased"),
     ]
     cluster.fig.legend(
         handles=legend_handles,
-        title="Row annotation",
+        title="Signature Direction",
         loc="upper right",
         bbox_to_anchor=(0.985, 0.985),
-        frameon=False,
+        frameon=True,
+        facecolor="white",
+        edgecolor="#d0d0d0",
         fontsize=9,
         title_fontsize=10,
     )
     # Provide extra space on the right for y-axis labels moved to the right
     try:
-        cluster.fig.subplots_adjust(top=0.94, right=0.88)
+        cluster.fig.subplots_adjust(top=0.91, right=0.88)
     except Exception:
-        cluster.fig.subplots_adjust(top=0.94)
+        cluster.fig.subplots_adjust(top=0.91)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    # Lower DPI for very large matrices to keep runtime/memory manageable.
-    cell_count = row_count * col_count
-    dpi = 120 if cell_count > 2_000_000 else 300
+    dpi = 300
     cluster.fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
     plt.close(cluster.fig)
 

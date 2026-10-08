@@ -148,11 +148,19 @@ def main():
     )
 
     # For each bin, sum the 'inc' and 'dec' enrichment hits
-    trait_binned = active_traits.groupby("bin_idx")[["inc", "dec"]].sum()
+    trait_binned = (
+        active_traits.groupby("bin_idx")[["inc", "dec"]]
+        .sum()
+        .rename(columns={"inc": "Increased", "dec": "Decreased"})[["Increased", "Decreased"]]
+    )
+    profile_binned = profile_binned.rename(columns={"inc": "Increased", "dec": "Decreased"})[
+        ["Increased", "Decreased"]
+    ]
 
     # Plotting
     sns.set_theme(style="whitegrid")
-    colors = {"inc": "#3498db", "dec": "#e74c3c"}  # Blue for Increase, Red for Decrease
+    # Harmonized palette: Red/Coral for Increased, Blue for Decreased
+    colors = {"Increased": "#c0392b", "Decreased": "#2874a6"}
     tick_indices = range(0, num_bins, 2)
 
     def save_histogram(
@@ -165,12 +173,18 @@ def main():
         is_stacked=True,
         color_map=None,
         bin_labels=None,
+        legend_title="Signature Direction",
+        subtitle=(
+            "Discrete urn model (M=5,184). Annotation representation "
+            "in curated signatures, not patient-level abundance."
+        ),
     ):
         plt.figure(figsize=(12, 7))
         df.plot(kind="bar", stacked=is_stacked, width=0.8, color=color_map, ax=plt.gca())
-        plt.title(title, pad=15)
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
+        full_title = f"{title}\n{subtitle}" if subtitle else title
+        plt.title(full_title, pad=15, fontsize=12)
+        plt.xlabel(xlabel, fontsize=11)
+        plt.ylabel(ylabel, fontsize=11)
         if use_log:
             plt.yscale("log")
 
@@ -178,7 +192,7 @@ def main():
             plt.xticks(tick_indices, [bin_labels[i] for i in tick_indices], rotation=45)
 
         plt.legend(
-            title="Category",
+            title=legend_title,
             bbox_to_anchor=(1.05, 1) if len(df.columns) > 5 else None,
             loc="upper left" if len(df.columns) > 5 else None,
         )
@@ -196,7 +210,7 @@ def main():
         "Number of Enriched Traits (Binned)",
         "Number of Profiles",
         args.output_dir / "profile_enrichment_y_histogram.png",
-        color_map=[colors["inc"], colors["dec"]],
+        color_map=[colors["Increased"], colors["Decreased"]],
         bin_labels=bin_labels_y,
     )
 
@@ -209,7 +223,7 @@ def main():
         "Number of Profiles Enriched In (Binned)",
         "Number of Profile Hits",
         args.output_dir / "trait_enrichment_x_histogram.png",
-        color_map=[colors["inc"], colors["dec"]],
+        color_map=[colors["Increased"], colors["Decreased"]],
         bin_labels=bin_labels_x,
     )
 
@@ -242,22 +256,28 @@ def main():
             binned = binned[main_cols + other_col]
 
             cat_colors = sns.color_palette("husl", len(binned.columns))
+            disp_suffix = {
+                "all": "All Signatures",
+                "inc": "Increased Signatures",
+                "dec": "Decreased Signatures",
+            }.get(suffix, suffix)
 
             # 1. Normal count plot (log scale)
             save_histogram(
                 binned,
-                f"Trait Enrichment Frequency by Condition ({suffix})\nStacked Counts",
+                f"Trait Enrichment Frequency by Condition ({disp_suffix})\nStacked Counts",
                 "Number of Profiles Enriched In (Binned)",
                 "Number of Profile Hits",
                 args.output_dir / f"trait_enrichment_x_condition_{suffix}_counts.png",
                 color_map=cat_colors,
                 bin_labels=bin_labels_x,
+                legend_title="Condition (Body Site)",
             )
 
             # 2. 100% Stacked (stretched)
             binned_stretched = binned.div(binned.sum(axis=1), axis=0).fillna(0)
             title_str = (
-                f"Trait Enrichment Frequency by Condition ({suffix})\n"
+                f"Trait Enrichment Frequency by Condition ({disp_suffix})\n"
                 "100% Stacked (Relative Proportion)"
             )
             save_histogram(
@@ -269,6 +289,7 @@ def main():
                 use_log=False,
                 color_map=cat_colors,
                 bin_labels=bin_labels_x,
+                legend_title="Condition (Body Site)",
             )
             return binned
 
@@ -284,10 +305,9 @@ def main():
 
         # 4. Correlation Matrix (Euclidean Distance Heatmap)
         print("Creating Euclidean distance heatmap for categories (including Direction)...")
-        # We want to compare (Category + Direction) profiles.
-        results_with_meta["cat_dir"] = (
-            results_with_meta["plot_category"] + " [" + results_with_meta["inc_dec"] + "]"
-        )
+        # We want to compare (Category + Direction) profiles with readable direction names
+        dir_labels = results_with_meta["inc_dec"].map({"inc": "Increased", "dec": "Decreased"})
+        results_with_meta["cat_dir"] = results_with_meta["plot_category"] + " [" + dir_labels + "]"
 
         # Group by bin and cat_dir
         cat_dir_binned = (
@@ -316,17 +336,23 @@ def main():
                 dist_df,
                 row_linkage=linkage_matrix,
                 col_linkage=linkage_matrix,
-                cmap="rocket_r",  # Different palette to distinguish from previous version
+                cmap="rocket_r",
                 linewidths=0.5,
                 annot=len(dist_df) < 25,
                 fmt=".2f",
-                cbar_kws={"label": "Euclidean Distance (Normalized Vectors)"},
+                cbar_kws={"label": "Euclidean Distance", "orientation": "horizontal"},
+                cbar_pos=(0.03, 0.91, 0.12, 0.018),
             )
+            g.ax_heatmap.set_xlabel("")
+            g.ax_heatmap.set_ylabel("")
             g.fig.suptitle(
                 "Similarity of (Condition + Direction) Enrichment Profiles\n"
-                "Euclidean Distance on Normalized Frequency Vectors",
-                y=1.02,
+                "Euclidean Distance on Normalized Frequency Vectors\n"
+                "Discrete urn model (M=5,184). Annotation representation in curated signatures.",
+                y=0.99,
+                fontsize=13,
             )
+            g.fig.subplots_adjust(top=0.89, right=0.90)
 
             heatmap_path = (
                 args.output_dir / "trait_enrichment_category_direction_distance_heatmap.png"

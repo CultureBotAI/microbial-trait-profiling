@@ -273,10 +273,19 @@ def main():
     plot_data_b = plot_data_b.iloc[::-1]
     plot_data_b.plot(kind="barh", stacked=True, color=["#2c3e50", "#2980b9"], ax=ax2, alpha=0.8)
 
+    max_b = max(float(plot_data_b.sum(axis=1).max()), 0.01)
+    offset_b = max_b * 0.02
     for i, (_idx, row) in enumerate(plot_data_b.iterrows()):
-        total = row.sum()
+        total = float(row.sum())
         if total > 0:
-            ax2.text(total + 0.5, i, f"{round(total)}", va="center", fontsize=10, fontweight="bold")
+            if total < 0.1:
+                val_str = f"{total:.3f}"
+            elif total < 1:
+                val_str = f"{total:.2f}"
+            else:
+                val_str = f"{round(total)}"
+            ax2.text(total + offset_b, i, val_str, va="center", fontsize=10, fontweight="bold")
+    ax2.set_xlim(0, max_b * 1.20)
 
     ax2.set_title("B. Avg Depleted Traits per Condition", fontsize=16, fontweight="bold")
     ax2.set_xlabel("Average Number of Depleted Traits")
@@ -301,6 +310,7 @@ def main():
             "Subgingival dental plaque,Saliva": (0.56, 0.84),
             "Saliva,Supragingival dental plaque,Buccal mucosa,Tongue": (0.54, 0.81),
             "Dental plaque": (0.54, 0.87),
+            "Saliva": (0.54, 0.87),
             "Meconium,Feces": (0.48, 0.35),
             "Meconium": (0.48, 0.35),
             "Mesenteric lymph node": (0.38, 0.42),
@@ -310,6 +320,7 @@ def main():
             "Mucosa of ascending colon": (0.42, 0.44),
             "Caecum": (0.46, 0.42),
             "Rectum": (0.48, 0.30),
+            "Feces": (0.48, 0.35),
             "Skin of abdomen": (0.22, 0.62),
             "Axilla skin": (0.20, 0.65),
             "Skin of body": (0.22, 0.58),
@@ -339,8 +350,12 @@ def main():
         ax3.plot([0.38, 0.22, 0.25, 0.38], [0.8, 0.6, 0.58, 0.78], color="gray", lw=2.0, alpha=0.8)
         ax3.plot([0.62, 0.78, 0.75, 0.62], [0.8, 0.6, 0.58, 0.78], color="gray", lw=2.0, alpha=0.8)
 
-        plot_sites = body_site_density.head(8).copy()
-        max_d = plot_sites["density"].max()
+        active_sites = body_site_density[body_site_density["depletion_count"] > 0].copy()
+        plot_sites = (
+            active_sites.head(8) if not active_sites.empty else body_site_density.head(3).copy()
+        )
+        raw_max = float(plot_sites["density"].max()) if not plot_sites.empty else 0.0
+        max_d = max(raw_max, 0.001)
         cmap = plt.get_cmap("GnBu")
 
         ready_to_plot = []
@@ -357,12 +372,13 @@ def main():
                         break
             if coord:
                 ready_to_plot.append(
-                    {"name": site, "x": coord[0], "y": coord[1], "density": row["density"]}
+                    {"name": site, "x": coord[0], "y": coord[1], "density": float(row["density"])}
                 )
 
         for item in ready_to_plot:
-            radius = (item["density"] / max_d) * 0.05 + 0.015
-            color = cmap(item["density"] / max_d)
+            scaled_ratio = min(item["density"] / max_d, 1.0)
+            radius = scaled_ratio * 0.05 + 0.015
+            color = cmap(scaled_ratio)
             circle = plt.Circle(
                 (item["x"], item["y"]), radius, color=color, alpha=0.6, ec="black", lw=1.5, zorder=3
             )
@@ -383,8 +399,10 @@ def main():
                 label_text = item["name"].split(",")[0].strip()
                 if len(label_text) > 20:
                     label_text = label_text[:18] + ".."
+                den_val = item["density"]
+                den_str = f"{den_val:.3f}" if den_val < 0.1 else f"{den_val:.1f}"
                 ax3.annotate(
-                    f"{label_text}\n({item['density']:.1f})",
+                    f"{label_text}\n({den_str})",
                     xy=(item["x"], item["y"]),
                     xytext=(x_target, target_y),
                     fontsize=9,
@@ -424,31 +442,42 @@ def main():
     ax4 = fig.add_subplot(gs[1, 1])
     ax4.axis("off")
 
-    top_3_sites = body_site_density.head(3)
-    top_3_str = ", ".join(
-        [f"'{row['body_site']}' ({row['density']:.1f})" for _, row in top_3_sites.iterrows()]
+    active_sites_df = body_site_density[body_site_density["depletion_count"] > 0]
+    display_sites = active_sites_df if not active_sites_df.empty else body_site_density.head(3)
+    top_site_parts = []
+    for _, row in display_sites.iterrows():
+        d_val = float(row["density"])
+        d_str = f"{d_val:.3f}" if d_val < 0.1 else f"{d_val:.1f}"
+        top_site_parts.append(f"'{row['body_site']}' ({d_str} calls/100 samples)")
+    top_3_str = ", ".join(top_site_parts) if top_site_parts else "None"
+
+    inc_calls = int(direction_activity.get("inc", 0))
+    dec_calls = int(direction_activity.get("dec", 0))
+    dep_trait_names = (
+        ", ".join(top_traits["description"].tolist()) if not top_traits.empty else "None"
     )
 
+    sig_dep_count = trait_counts["depletion_count"].sum()
     summary_text = (
         "UNDER-REPRESENTATION SUMMARY\n\n"
-        f"• Under-Represented Trait Scope: {len(trait_counts):,} metabolic traits analyzed.\n"
-        f"  Total of {trait_counts['depletion_count'].sum():,} "
-        "significant under-representations.\n\n"
-        f"• Condition Profile Rates: Panel B shows mean under-representation calls per profile,\n"
-        "  summarizing trait counts with significantly fewer annotations than "
-        "background expectation.\n\n"
-        f"• Under-Representation Representation: Top 3 sites by call density\n"
-        f"  (calls/100 reported samples): {top_3_str}.\n\n"
-        f"• Signature Direction Contrast: {direction_activity.get('inc', 0):,} 'Increased' vs "
-        f"{direction_activity.get('dec', 0):,} 'Decreased'\n"
-        "  signature calls indicate relative annotation distribution across signature directions."
+        f"• Discrete Urn Reference Universe: M=5,184 background taxa.\n"
+        f"  Total tests: 720,824 across 4,670 testable profiles.\n"
+        f"  Significant depletion calls (FDR q <= 0.001, max fold <= 0.5): "
+        f"{sig_dep_count:,}.\n\n"
+        f"• Depleted Traits: {len(trait_counts)} traits ({dep_trait_names})\n"
+        "  demonstrate significant depletion under the urn model.\n\n"
+        f"• Active Body Sites: {top_3_str}.\n\n"
+        f"• Signature Direction Contrast: {inc_calls} 'Increased' vs {dec_calls} 'Decreased'\n"
+        "  signature calls indicate relative annotation distribution across directions.\n\n"
+        "• Biological Governance: Results measure annotation representation in curated\n"
+        "  signatures, not patient-level trait abundance, loss, or disease vulnerability."
     )
     ax4.text(
         0.05,
         0.95,
         summary_text,
         transform=ax4.transAxes,
-        fontsize=13,
+        fontsize=12,
         va="top",
         ha="left",
         bbox={"boxstyle": "round,pad=1", "facecolor": "ghostwhite", "alpha": 0.7},
@@ -456,8 +485,9 @@ def main():
     ax4.set_title("D. Scientific Implications", fontsize=16, fontweight="bold")
 
     plt.suptitle(
-        "CultureBotAI: Meta-Analysis of Microbial Trait Depletion",
-        fontsize=24,
+        "CultureBotAI: Meta-Analysis of Microbial Trait Depletion\n"
+        "Discrete urn model (M=5,184). Significant depletion calls at FDR q <= 0.001, fold <= 0.5.",
+        fontsize=22,
         fontweight="bold",
         y=0.98,
     )

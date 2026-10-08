@@ -1,60 +1,60 @@
 === RESULT STATUS ===
 Result-Status: discoveries
 Total-Tests-Performed: 556516
-Selected-Rows: 64063
-Selected-Rows-Excluding-MediaDive: 64063
+Selected-Rows: 79142
+Selected-Rows-Excluding-MediaDive: 79142
 Source: data\derived\trait_enrichment_results.tsv
 
 === TOP 10 MOST ENRICHED TRAITS ===
 Trait ID                                 Enrichment Count     Description
 ----------------------------------------------------------------------------------------------------
-METPO:1000603                            1873                 anaerobic
-METPO:1000615                            1356                 mesophilic
-METPO:1000698                            1336                 gram positive
-METPO:1000703                            1298                 non motile
-METPO:1000607                            1271                 obligately anaerobic
-METPO:1000699                            1217                 gram negative
-METPO:1000872                            1194                 non-spore forming
-METPO:1000432                            1183                 GC high
-METPO:1002005                            1033                 Fermentation
-METPO:1000604                            936                  microaerophilic
+METPO:1000603                            924                  anaerobic
+METPO:1000615                            851                  mesophilic
+METPO:1000446                            811                  temperature optimum mid4
+METPO:1002005                            758                  Fermentation
+METPO:1000703                            702                  non motile
+METPO:1000607                            692                  obligately anaerobic
+METPO:1000883                            659                  cell length very small
+METPO:1000890                            658                  cell width large
+METPO:1000889                            654                  cell width medium
+METPO:1000429                            654                  GC low
 
 
 === TOP 10 CONDITIONS BY AVERAGE ENRICHMENT DEPTH ===
 Condition                                Avg Total       Avg Inc         Avg Dec
 ----------------------------------------------------------------------------------------------------
-Temporomandibular joint disorder         113.00          59.00           54.00
-Cervix erosion                           112.00          48.00           64.00
-Hepatitis                                97.00           40.00           57.00
-Sjogren syndrome                         87.00           56.00           31.00
-Blastocystis hominis infectious disease  86.50           51.00           35.50
-Rare dyslipidemia,Polycystic ovary syndrome 84.00           40.00           44.00
-Pemphigus vulgaris                       78.00           2.00            76.00
-Schistosomiasis                          71.00           45.00           26.00
-Cholestasis                              71.00           45.00           26.00
-Nutraceutical                            70.67           42.67           28.00
+Gastric carcinoma                        363.00          200.00          163.00
+Cervix erosion                           338.00          206.00          132.00
+Peptic esophagitis                       292.00          88.00           204.00
+Constipation,Parkinson's disease         261.00          80.00           181.00
+Remission                                228.50          103.00          125.50
+Neuromyelitis optica                     225.00          198.00          27.00
+Intestinal obstruction                   215.33          153.33          62.00
+Encephalitis                             215.00          150.50          64.50
+Rare dyslipidemia,Polycystic ovary syndrome 207.00          54.00           153.00
+Schistosomiasis                          202.00          136.00          66.00
 
 
 === TOP 10 BODY SITES BY ENRICHMENT DENSITY (Normalized by Sample Size) ===
 Note: Sites with missing sample size data are excluded from density normalization.
 Body Site                                Calls/100 Reported Samples     Total Calls     Total Samples
 ----------------------------------------------------------------------------------------------------
-Nasal cavity mucosa                      188.89                         68              36
-Mucosa of ascending colon                130.77                         68              52
-Superior surface of tongue               110.00                         33              30
-Dental plaque                            86.88                          278             320
-Mucosa of small intestine                83.33                          40              48
-Dental pulp                              77.50                          62              80
-Mucus                                    74.14                          86              116
-Renal pelvis/ureter                      68.18                          60              88
-Semen                                    62.24                          61              98
-Mucosa of oral region                    61.46                          59              96
+Dental plaque                            254.06                         813             320
+Manual digit skin                        246.15                         64              26
+Mucosa of small intestine                220.83                         106             48
+Mucus                                    208.62                         242             116
+Cervical mucus                           194.12                         198             102
+Tear film                                143.39                         499             348
+Semen                                    124.49                         122             98
+Urinary bladder                          122.12                         276             226
+Renal pelvis/ureter                      114.77                         101             88
+Duodenal mucosa                          106.86                         374             350
 
 
 === SCIENTIFIC FINDINGS SUMMARY ===
-Total Enriched Traits across all profiles: 64,063
+Total Enriched Traits across all profiles: 79,142
 Functional scope: 317 metabolic/physiological traits analyzed (from 2,651 total assertions).
-Average enrichment count per profile (all human): 9.25
-Top Body Site by Enrichment Density: Nasal cavity mucosa (188.89 hits/100 samples)
-Directionality Bias: More traits found in 'Decreased' profiles (31,750 inc vs 32,313 dec).
+Average enrichment count per profile (all human): 11.49
+Top Body Site by Enrichment Density: Dental plaque (254.06 hits/100 samples)
+Directionality Bias: More traits found in 'Increased' profiles (42,615 inc vs 36,527 dec).
 Directional Distribution Note: Raw inc/dec hit totals reflect compositional profile counts rather than evidence of taxa dominance or biological directionality bias.

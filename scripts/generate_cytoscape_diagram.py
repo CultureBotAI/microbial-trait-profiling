@@ -346,11 +346,12 @@ def plot_cytoscape_diagram(
         ha="left",
     )
     subtitle = (
-        f"Graph view from displayed edges ({direction.capitalize()}, individual conditions). "
-        "Left nodes are conditions using raw individual condition labels;\n"
-        "center nodes are the six trait hubs; right nodes are body-site groups. "
-        "Edges are aggregated condition-to-trait and trait-to-body-site associations.\n"
-        "n = positive-z profile memberships."
+        f"Tripartite association network ({direction.capitalize()} profiles, "
+        "individual conditions).\n"
+        "Left: individual conditions | Center: six canonical trait hubs | "
+        "Right: anatomical body sites.\n"
+        "Discrete urn model (M=5,184). Profiles meeting hypergeometric over-representation "
+        "(FDR q <= 0.001, fold >= 1.5)."
     )
     ax.text(
         3,
@@ -752,9 +753,9 @@ def plot_cytoscape_diagram(
     ax.text(
         0.5,
         1.0,
-        f"Static graph PNG generated from {direction}_individual_conditions. "
-        "Edge data aggregates the displayed links into condition-trait "
-        "and trait-body-site graph edges.",
+        "Measures annotation representation in curated signatures (discrete urn model M=5,184), "
+        "not patient-level trait abundance or disease causation. "
+        "Edges aggregate statistically enriched condition-trait and trait-body-site links.",
         fontsize=8.5,
         fontfamily="sans-serif",
         color="#777777",

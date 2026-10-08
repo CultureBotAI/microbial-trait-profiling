@@ -1,51 +1,45 @@
 === TOP 10 MOST DEPLETED TRAITS ===
 Trait ID                                 Depletion Count      Description
 ----------------------------------------------------------------------------------------------------
-METPO:1000668                            2103                 coccus shaped
-METPO:1000430                            1808                 GC mid1
-METPO:1000606                            1721                 obligately aerobic
-METPO:1000871                            1711                 spore forming
-METPO:1000602                            1638                 aerobic
-METPO:1000608                            1515                 facultatively aerobic
-METPO:1000699                            1435                 gram negative
-METPO:1000431                            1384                 GC mid2
-METPO:1000702                            1343                 motile
-METPO:1000444                            1343                 temperature optimum mid2
+METPO:1000602                            3                    aerobic
+METPO:1000606                            1                    obligately aerobic
 
 
 === TOP 10 CONDITIONS BY AVERAGE DEPLETION DEPTH ===
 Condition                                Avg Total       Avg Inc         Avg Dec
 ----------------------------------------------------------------------------------------------------
-Human papilloma virus infection,Cervical cancer 199.00          126.00          73.00
-Pancreatic ductal adenocarcinoma         180.00          147.00          33.00
-Cancer or benign tumor                   171.00          155.00          16.00
-Gut microbiome measurement               157.50          95.00           62.50
-Disease prognosis measurement            157.00          95.50           61.50
-Binge eating                             135.00          135.00          0.00
-Age,Human papilloma virus infection      131.00          31.00           100.00
-Allergic asthma                          130.00          99.00           31.00
-Overactive bladder                       129.00          107.50          21.50
-Cervical glandular intraepithelial neoplasia,Cervical cancer 125.00          125.00          0.00
+Chronic constipation                     0.06            0.02            0.04
+Parkinson's disease                      0.01            0.00            0.01
+Vaginal inflammation                     0.00            0.00            0.00
+Acute respiratory failure                0.00            0.00            0.00
+White matter volume measurement          0.00            0.00            0.00
+Abnormal stool composition               0.00            0.00            0.00
+Abnormality of the gastrointestinal tract 0.00            0.00            0.00
+Abnormality on pulmonary function testing 0.00            0.00            0.00
+Acne                                     0.00            0.00            0.00
+Treatment refractory schizophrenia       0.00            0.00            0.00
 
 
 === TOP 10 BODY SITES BY DEPLETION DENSITY (Normalized by Sample Size) ===
-Body Site                                Losses/100 Samples   Total Losses    Total Samples
+Note: Sites with missing sample size data are excluded from density normalization.
+Body Site                                Calls/100 Reported Samples     Total Calls     Total Samples
 ----------------------------------------------------------------------------------------------------
-Superior surface of tongue               316.67               95              30
-Mucosa of small intestine                264.58               127             48
-Amniotic fluid                           191.18               130             68
-Ocular surface region                    181.67               109             60
-Dental pulp                              167.50               134             80
-Mucosa                                   160.53               122             76
-Nasal cavity mucosa                      152.78               55              36
-Skin epidermis                           152.50               122             80
-Mucosa of ascending colon                142.31               74              52
-Skin epithelium                          119.15               224             188
+Saliva                                   0.00                           1               40138
+Feces                                    0.00                           3               5111344
+Axilla skin                              0.00                           0               226
+Alveolus of lung                         0.00                           0               180
+Blood serum                              0.00                           0               1620
+Breast                                   0.00                           0               2138
+Bronchus                                 0.00                           0               786
+Amniotic fluid                           0.00                           0               68
+Bulbar conjunctiva                       0.00                           0               1360
+Cavity of pharynx                        0.00                           0               332
 
 
 === SCIENTIFIC FINDINGS SUMMARY ===
-Total Depleted Traits across all profiles: 100,999
+Total Depleted Traits across all profiles: 4
 Functional scope: 317 metabolic/physiological traits analyzed.
-Average depletion count per profile (all human): 14.45
-Top Body Site by Depletion Density: Superior surface of tongue (316.67 losses/100 samples)
-Directionality Bias: More traits depleted in 'Increased' profiles (56,508 inc vs 44,491 dec).
+Average depletion count per profile (all human): 0.00
+Top Body Site by Depletion Density: Saliva (0.00 calls/100 reported samples; aggregate call ratio, not patient loss)
+Directionality Bias: More traits depleted in 'Decreased' profiles (1 inc vs 3 dec).
+Directional Distribution Note: Raw inc/dec hit totals reflect compositional profile counts rather than evidence of taxa dominance or biological directionality bias.
