@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import argparse
 import csv
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -260,7 +260,7 @@ class ShiftResult:
     studies: int
 
 
-def _study_contrasts(
+def study_trait_contrasts(
     profiles: list[Profile], trait_order: Sequence[str]
 ) -> dict[str, dict[str, float]]:
     """Per study, the increased minus decreased mean fraction for each trait.
@@ -284,21 +284,19 @@ def _study_contrasts(
     return contrasts
 
 
-def compute_direction_shifts(
-    profiles: list[Profile], trait_order: Sequence[str] = TRAIT_ORDER
-) -> ShiftResult:
-    """Score every study once per trait by the sign of its paired contrast.
+def tally_direction_signs(
+    contrasts: Mapping[str, Mapping[str, float]], trait_order: Sequence[str]
+) -> dict[str, tuple[int, int, int]]:
+    """Per trait, the number of studies shifted up, shifted down, and tied.
 
     A study counts as shifted up for a trait when its mean increased fraction
     exceeds its mean decreased fraction, and down when the reverse holds; ties
-    (including sub-tolerance float residue, see ``SIGN_TOLERANCE``) are recorded
-    separately and excluded from the test. Each trait then gets a two-sided exact
-    binomial test against a half-and-half null, and the six p-values are
-    Benjamini-Hochberg corrected together because the six traits are one family
-    of tests.
-    """
-    contrasts = _study_contrasts(profiles, trait_order)
+    (including sub-tolerance float residue, see ``SIGN_TOLERANCE``) are counted
+    separately and are excluded from any test built on this tally.
 
+    Shared with ``bsdbng.trait_screen`` so that the widened trait family of #255
+    votes by exactly this rule rather than by a second copy of it.
+    """
     tallies: dict[str, tuple[int, int, int]] = {}
     for trait in trait_order:
         up = down = tied = 0
@@ -313,6 +311,24 @@ def compute_direction_shifts(
             else:
                 tied += 1
         tallies[trait] = (up, down, tied)
+    return tallies
+
+
+def compute_direction_shifts(
+    profiles: list[Profile], trait_order: Sequence[str] = TRAIT_ORDER
+) -> ShiftResult:
+    """Score every study once per trait by the sign of its paired contrast.
+
+    A study counts as shifted up for a trait when its mean increased fraction
+    exceeds its mean decreased fraction, and down when the reverse holds; ties
+    (including sub-tolerance float residue, see ``SIGN_TOLERANCE``) are recorded
+    separately and excluded from the test. Each trait then gets a two-sided exact
+    binomial test against a half-and-half null, and the p-values of
+    ``trait_order`` are Benjamini-Hochberg corrected together as one family.
+    The widened family of #255 is corrected separately in ``bsdbng.trait_screen``.
+    """
+    contrasts = study_trait_contrasts(profiles, trait_order)
+    tallies = tally_direction_signs(contrasts, trait_order)
 
     p_values: list[float] = []
     for trait in trait_order:
