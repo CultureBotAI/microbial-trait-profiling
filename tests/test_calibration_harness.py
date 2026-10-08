@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from bsdbng.calibration.adapters.ilyas_ora import IlyasORAAdapter, benjamini_hochberg
+from bsdbng.calibration.adapters.ilyas_ora import IlyasORAAdapter
 from bsdbng.calibration.harness import (
     EXIT_FAILURE,
     EXIT_SUCCESS,
@@ -34,6 +34,7 @@ from bsdbng.calibration.scenarios import (
     generate_mixed_signal_ora_profiles,
     resolve_signature_sizes,
 )
+from bsdbng.enrichment_stats import benjamini_hochberg
 
 TRAITS = [f"METPO:{1000 + i}" for i in range(5)]
 N_TAXA = 30
@@ -196,7 +197,8 @@ def test_benchmark_records_every_replicate(synthetic_calibration_data: Calibrati
     assert report.status == "SUCCESS"
     assert [rec.replicate_index for rec in report.replicate_records] == list(range(6))
     assert report.complete_null_type_i is not None
-    assert report.complete_null_type_i.replicates == len(report.null_pvalues)
+    assert report.complete_null_type_i.replicates == 6
+    assert report.complete_null_type_i.n_tests == len(report.null_pvalues)
     assert len(report.null_pvalues) > 0
     assert report.mixed_signal_fdr is not None
     assert report.mixed_signal_fdr.replicates == 6
@@ -275,7 +277,8 @@ def test_cli_writes_results_and_provenance(
     assert summary["invalid_replicates"] == 0
     assert len(summary["replicates"]) == 4
     assert summary["n_null_pvalues"] > 0
-    assert summary["complete_null_type_i"]["replicates"] == summary["n_null_pvalues"]
+    assert summary["complete_null_type_i"]["replicates"] == 4
+    assert summary["complete_null_type_i"]["n_tests"] == summary["n_null_pvalues"]
     assert summary["mixed_signal_fdr"]["replicates"] == 4
     prov = summary["provenance"]
     assert prov["command_args"]["seed"] == 7
@@ -374,3 +377,143 @@ def test_standard_module_command_executes_benchmark(
     )
     assert bad.returncode == EXIT_FAILURE
     assert _read_summary(out)["status"] == "FAILED"
+
+
+def test_ilyas_ora_adapter_parity_with_production(
+    synthetic_calibration_data: CalibrationData, tmp_path: Path
+) -> None:
+    """Verify IlyasORAAdapter produces identical results to scripts/trait_enrichment.py."""
+    profiles_df, taxa_df = synthetic_calibration_data
+    adapter = IlyasORAAdapter()
+    adapter_res = adapter.run_inference(
+        profiles_df, taxa_df, config={"alpha": 0.05, "min_fold": 1.5, "test_type": "enrichment"}
+    )
+    adapter_sig = adapter_res.results_df[adapter_res.results_df["is_significant"]]
+
+    profiles_path, taxa_path = _write_inputs(tmp_path, synthetic_calibration_data)
+    rep_txt = tmp_path / "report.txt"
+    out_tsv = tmp_path / "out.tsv"
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(profiles_path),
+            "--taxa-matrix",
+            str(taxa_path),
+            "--output",
+            str(rep_txt),
+            "--tsv-output",
+            str(out_tsv),
+            "--p-threshold",
+            "0.05",
+            "--min-fold",
+            "1.5",
+        ],
+        check=True,
+    )
+    prod_df = pd.read_csv(out_tsv, sep="\t", comment="#")
+    assert len(adapter_sig) == len(prod_df)
+    for _, row in prod_df.iterrows():
+        pid = f"{row['study_id']}:{row['experiment_id']}:{row['inc_dec']}"
+        trait = row["trait"]
+        match = adapter_sig[(adapter_sig["profile_id"] == pid) & (adapter_sig["trait"] == trait)]
+        assert len(match) == 1
+        np.testing.assert_allclose(match["p_value"].iloc[0], row["p_value"], rtol=1e-10)
+        np.testing.assert_allclose(match["q_value"].iloc[0], row["fdr_q"], rtol=1e-10)
+        np.testing.assert_allclose(match["effect_size"].iloc[0], row["fold"], rtol=1e-10)
+
+
+def test_support_constraint_violations_raise(
+    synthetic_calibration_data: CalibrationData,
+) -> None:
+    profiles_df, taxa_df = synthetic_calibration_data
+    adapter = IlyasORAAdapter()
+
+    # M < max(N): background universe smaller than signature size
+    tiny_taxa = taxa_df.head(2)
+    with pytest.raises(ValueError, match=r"Background universe M .* is smaller"):
+        adapter.run_inference(profiles_df, tiny_taxa)
+
+    # N < max(k_obs): signature size smaller than observed count
+    bad_draw = profiles_df.copy()
+    bad_draw.loc[0, "taxa_count"] = 1
+    with pytest.raises(ValueError, match="Observed trait count k exceeds profile draw count N"):
+        adapter.run_inference(bad_draw, taxa_df)
+
+    # k_obs > K: observed count exceeds population count
+    bad_pop = taxa_df.copy()
+    bad_pop[TRAITS[0]] = 0
+    with pytest.raises(ValueError, match="Observed trait count k exceeds population trait count K"):
+        adapter.run_inference(profiles_df, bad_pop)
+
+
+def test_complete_null_preserves_coannotation_bundles() -> None:
+    """Whole-taxon sampling must preserve identical counts for perfectly co-annotated traits."""
+    m_universe = 50
+    co_presence = [1 if i % 2 == 0 else 0 for i in range(m_universe)]
+    taxa_df = pd.DataFrame(
+        {
+            "taxon_name": [f"Taxon {j}" for j in range(m_universe)],
+            "taxonomic_rank": ["species"] * m_universe,
+            "TRAIT_A": co_presence,
+            "TRAIT_B": co_presence,
+        },
+        index=pd.Index([f"NCBITaxon:{j}" for j in range(m_universe)], name="taxon_id"),
+    )
+    profiles_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1"],
+            "experiment_id": ["e1", "e1"],
+            "inc_dec": ["increased", "decreased"],
+            "taxa_count": [15, 20],
+            "TRAIT_A": [5, 7],
+            "TRAIT_B": [5, 7],
+        }
+    )
+    rng = np.random.default_rng(42)
+    for _ in range(10):
+        null_df = generate_complete_null_ora_profiles(profiles_df, taxa_df, rng)
+        np.testing.assert_array_equal(null_df["TRAIT_A"].to_numpy(), null_df["TRAIT_B"].to_numpy())
+
+
+def test_replicate_monte_carlo_se_invariance_under_within_replicate_duplication() -> None:
+    """Duplicating tests within replicates must not reduce Monte Carlo SE across replicates."""
+    rep_rates = [0.04, 0.06, 0.05, 0.07, 0.03]
+    p_vals_rep = []
+    for r in rep_rates:
+        n_sig = round(r * 100)
+        p_vals_rep.append([0.01] * n_sig + [0.50] * (100 - n_sig))
+
+    pooled_pvals = [p for sub in p_vals_rep for p in sub]
+    metric_single = compute_type_i_error(pooled_pvals, alpha=0.05, replicate_rates=rep_rates)
+
+    duplicated_rates = rep_rates
+    duplicated_pvals = pooled_pvals * 10
+    metric_dup = compute_type_i_error(
+        duplicated_pvals, alpha=0.05, replicate_rates=duplicated_rates
+    )
+
+    assert metric_single.replicates == 5
+    assert metric_dup.replicates == 5
+    assert metric_single.monte_carlo_se == pytest.approx(metric_dup.monte_carlo_se)
+    assert metric_single.empirical_rate == pytest.approx(metric_dup.empirical_rate)
+
+
+def test_ilyas_ora_adapter_drops_unpaired_experiments(
+    synthetic_calibration_data: CalibrationData,
+) -> None:
+    profiles_df, taxa_df = synthetic_calibration_data
+    unpaired_row = pd.DataFrame(
+        {
+            "study_id": ["s_unpaired"],
+            "experiment_id": ["e_unpaired"],
+            "inc_dec": ["increased"],
+            "taxa_count": [6],
+            **{trait: [2] for trait in TRAITS},
+        }
+    )
+    with_unpaired = pd.concat([profiles_df, unpaired_row], ignore_index=True)
+    adapter = IlyasORAAdapter()
+    res = adapter.run_inference(with_unpaired, taxa_df)
+    assert "s_unpaired:e_unpaired:increased" not in res.results_df["profile_id"].values

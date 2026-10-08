@@ -16,6 +16,7 @@ class TypeIErrorMetric:
     monte_carlo_se: float
     replicates: int
     is_conservative: bool  # empirical_rate <= alpha + 2.58 * se (approx 99% upper bound)
+    n_tests: int = 0
 
 
 @dataclass
@@ -31,32 +32,68 @@ class FDRMetric:
 
 
 def compute_type_i_error(
-    p_values: np.ndarray | list[float], alpha: float = 0.05
+    p_values: np.ndarray | list[float],
+    alpha: float = 0.05,
+    *,
+    replicate_rates: list[float] | np.ndarray | None = None,
 ) -> TypeIErrorMetric:
-    """Compute empirical Type I error and Monte Carlo standard error under the null."""
+    """Compute empirical Type I error and Monte Carlo standard error under the null.
+
+    When ``replicate_rates`` is provided, the empirical rate and Monte Carlo SE
+    are estimated across independent simulation replicates (R replicates, s / sqrt(R)),
+    rather than treating pooled correlated within-replicate tests as independent.
+    If no valid tests or replicates exist, is_conservative is always False.
+    """
     p_arr = np.asarray(p_values, dtype=float)
     p_arr = p_arr[~np.isnan(p_arr)]
-    n = len(p_arr)
-    if n == 0:
+    total_tests = len(p_arr)
+
+    if replicate_rates is not None:
+        rep_arr = np.asarray(replicate_rates, dtype=float)
+        rep_arr = rep_arr[~np.isnan(rep_arr)]
+        r = len(rep_arr)
+        if r == 0:
+            return TypeIErrorMetric(
+                alpha=alpha,
+                empirical_rate=0.0,
+                monte_carlo_se=0.0,
+                replicates=0,
+                is_conservative=False,
+                n_tests=total_tests,
+            )
+        rate = float(np.mean(rep_arr))
+        se = float(np.std(rep_arr, ddof=1) / math.sqrt(r)) if r > 1 else 0.0
+        is_conservative = rate <= (alpha + 2.58 * se)
+        return TypeIErrorMetric(
+            alpha=alpha,
+            empirical_rate=rate,
+            monte_carlo_se=se,
+            replicates=r,
+            is_conservative=is_conservative,
+            n_tests=total_tests,
+        )
+
+    if total_tests == 0:
         return TypeIErrorMetric(
             alpha=alpha,
             empirical_rate=0.0,
             monte_carlo_se=0.0,
             replicates=0,
-            is_conservative=True,
+            is_conservative=False,
+            n_tests=0,
         )
 
     rate = float(np.mean(p_arr <= alpha))
-    se = math.sqrt((rate * (1.0 - rate)) / n) if n > 1 else 0.0
-    # Conservative or calibrated if within normal sampling tolerance
+    se = math.sqrt((rate * (1.0 - rate)) / total_tests) if total_tests > 1 else 0.0
     is_conservative = rate <= (alpha + 2.58 * se)
 
     return TypeIErrorMetric(
         alpha=alpha,
         empirical_rate=rate,
         monte_carlo_se=se,
-        replicates=n,
+        replicates=total_tests,
         is_conservative=is_conservative,
+        n_tests=total_tests,
     )
 
 
