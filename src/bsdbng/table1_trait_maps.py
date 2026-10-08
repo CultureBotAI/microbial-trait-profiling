@@ -322,6 +322,13 @@ def compute_direction_shifts(
     return ShiftResult(shifts=shifts, spearman=spearman, studies=len(contrasts))
 
 
+#: The correction family every q in the direction-shift table belongs to. Named so a
+#: row read on its own says which family it was corrected in and how large that
+#: family was (#289, carried to #178).
+SHIFT_FAMILY_ID = "table1_six_fractions"
+SHIFT_CORRECTION = "Benjamini-Hochberg"
+
+
 def write_shift_table(result: ShiftResult, output_dir: Path, vintage: str | None) -> list[Path]:
     """Write the per-trait shift table and the trait-pair correlation table.
 
@@ -347,6 +354,9 @@ def write_shift_table(result: ShiftResult, output_dir: Path, vintage: str | None
                 "ci_high",
                 "binomial_p",
                 "bh_q",
+                "family_id",
+                "family_size",
+                "correction_method",
                 "bugsigdb_vintage",
             ]
         )
@@ -364,6 +374,9 @@ def write_shift_table(result: ShiftResult, output_dir: Path, vintage: str | None
                     f"{shift.ci_high:.6f}",
                     f"{shift.p_value:.6g}",
                     f"{shift.q_value:.6g}",
+                    SHIFT_FAMILY_ID,
+                    len(result.shifts),
+                    SHIFT_CORRECTION,
                     vintage or "",
                 ]
             )

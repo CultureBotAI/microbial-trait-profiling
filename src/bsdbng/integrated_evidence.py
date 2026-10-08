@@ -48,7 +48,7 @@ from bsdbng.guild_maps import (
     compute_correlation,
 )
 from bsdbng.paths import DERIVED_DATA_DIR
-from bsdbng.table1_trait_maps import compute_direction_shifts
+from bsdbng.table1_trait_maps import SHIFT_FAMILY_ID, compute_direction_shifts
 from bsdbng.trait_composition import ANALYSIS_VERSION as LOG_RATIO_VERSION
 from bsdbng.trait_composition import compute_log_ratio_shifts
 from bsdbng.trait_guilds import (
@@ -368,7 +368,7 @@ def fraction_sign_records(
                 p_value=shift.p_value,
                 q_value=shift.q_value,
                 correction_method="Benjamini-Hochberg",
-                family_id="table1_six_fractions",
+                family_id=SHIFT_FAMILY_ID,
                 family_size=len(result.shifts),
                 q_threshold=q_threshold,
                 strict_q_threshold=strict_q_threshold,
@@ -792,15 +792,54 @@ def _string_map(value: object) -> dict[str, str] | None:
 
 
 def _calibration_status(content: Mapping[str, object], issue: str) -> AssessmentStatus:
-    """#182: a verdict per procedure, and the procedures it does not cover."""
-    verdicts = _string_map(content.get("calibration_status", {}))
-    if verdicts is None:
-        return _unreadable(issue, "calibration_status is not a mapping of strings")
+    """#182: an overall status and every criterion's verdict per procedure.
+
+    The producer's earlier contract was one string per procedure, built from the
+    per-test criterion alone, so a failed family-error criterion vanished and a
+    5-replicate run reached this table as an unqualified pass (#240 review,
+    2026-10-03). A flat string is therefore refused rather than trusted: the row
+    carries the overall status with the criteria it was judged on, and the tidy
+    side-car keeps each criterion and the completed replicate counts.
+    """
+    raw = content.get("calibration_status", {})
+    if not isinstance(raw, dict):
+        return _unreadable(issue, "calibration_status is not a mapping")
     uncovered = content.get("not_calibrated_here", [])
     if not isinstance(uncovered, list) or any(not isinstance(item, str) for item in uncovered):
         return _unreadable(issue, "not_calibrated_here is not a list of strings")
-    detail = [("procedure", name, "verdict", verdict) for name, verdict in sorted(verdicts.items())]
+    verdicts: dict[str, str] = {}
+    detail: list[tuple[str, str, str, str]] = []
+    for name, entry in sorted(raw.items()):
+        if not isinstance(entry, dict):
+            return _unreadable(
+                issue,
+                f"calibration_status[{name!r}] is not an object with an overall status and "
+                "per-criterion verdicts; a single verdict string cannot show which criteria "
+                "it covers",
+            )
+        overall = entry.get("overall")
+        criteria = _string_map(entry.get("criteria"))
+        if not isinstance(overall, str) or not criteria:
+            return _unreadable(
+                issue, f"calibration_status[{name!r}] lacks an overall status or its criteria"
+            )
+        listed = ", ".join(f"{criterion}={verdict}" for criterion, verdict in criteria.items())
+        verdicts[str(name)] = f"{overall} {issue} [{listed}]"
+        detail.append(("procedure", str(name), "overall", overall))
+        detail += [
+            ("procedure", str(name), f"criterion:{criterion}", verdict)
+            for criterion, verdict in criteria.items()
+        ]
     detail += [("note", "not_calibrated_here", "procedure", str(item)) for item in uncovered]
+    completed = content.get("replicates_completed", {})
+    if isinstance(completed, dict):
+        detail += [
+            ("scenario", str(scenario), "replicates_completed", str(count))
+            for scenario, count in sorted(completed.items())
+        ]
+    rule = content.get("calibration_status_rule")
+    if isinstance(rule, str):
+        detail.append(("note", "calibration_status_rule", "rule", rule))
     if not verdicts and not uncovered:
         return AssessmentStatus(issue, {}, f"pending {issue}")
     # A procedure the assessment did not reach is not calibrated by it, which is
@@ -809,8 +848,22 @@ def _calibration_status(content: Mapping[str, object], issue: str) -> Assessment
     return AssessmentStatus(issue, verdicts, default, tuple(detail))
 
 
+#: The fields a #183 family record must carry for its counts to mean anything.
+FAMILY_FIELDS = ("scenario", "family_size", "correction")
+
+
 def _sensitivity_status(content: Mapping[str, object], issue: str) -> AssessmentStatus:
-    """#183: scenario-level counts on the log-ratio procedure, and no verdict."""
+    """#183: counts per correction family on the log-ratio procedure, and no verdict.
+
+    #183 marks ``family_status`` authoritative. Its ``scenario_status`` pools
+    families that share a scenario - S4 tests 6 fractions under BH and 15 ratios
+    under BY, and the pooled record reads tested=21 with no family, size or
+    correction (#241 review, 2026-10-03) - so it is read only when no family
+    records are supplied.
+    """
+    families = content.get("family_status")
+    if families is not None:
+        return _family_status(families, issue)
     scenarios = content.get("scenario_status", {})
     if not isinstance(scenarios, dict):
         return _unreadable(issue, "scenario_status is not an object")
@@ -825,6 +878,27 @@ def _sensitivity_status(content: Mapping[str, object], issue: str) -> Assessment
             ]
         else:
             detail.append(("scenario", str(scenario), "status", str(counts)))
+    return _scenarios_reported(issue, detail)
+
+
+def _family_status(families: object, issue: str) -> AssessmentStatus:
+    if not isinstance(families, dict):
+        return _unreadable(issue, "family_status is not an object")
+    if not families:
+        return AssessmentStatus(issue, {}, f"pending {issue}")
+    detail: list[tuple[str, str, str, str]] = []
+    for family, record in sorted(families.items()):
+        if not isinstance(record, dict) or any(field not in record for field in FAMILY_FIELDS):
+            return _unreadable(
+                issue, f"family_status[{family!r}] lacks one of {', '.join(FAMILY_FIELDS)}"
+            )
+        detail += [
+            ("family", str(family), str(name), str(value)) for name, value in sorted(record.items())
+        ]
+    return _scenarios_reported(issue, detail)
+
+
+def _scenarios_reported(issue: str, detail: list[tuple[str, str, str, str]]) -> AssessmentStatus:
     # The scenarios restrict the log-ratio procedure's population. They report
     # what each restriction does; none of them passes or fails anything, so the
     # row says so instead of carrying a count that reads as cleared.
@@ -837,7 +911,13 @@ def _sensitivity_status(content: Mapping[str, object], issue: str) -> Assessment
 
 
 def _orientation_status(content: Mapping[str, object], issue: str) -> AssessmentStatus:
-    """#188: how the corpus's contrasts are oriented, which is a population."""
+    """#188: how the corpus's contrasts are classed and oriented, and how far that is checked.
+
+    Each class keeps its orientation and both of its counts, so a reversed
+    disease-versus-healthy contrast stays distinguishable from a native one; and
+    the hand-review summary travels with it as the validation status, because a
+    classifier's labels are only as good as the share of them a reviewer agreed with.
+    """
     counts = content.get("class_counts", [])
     if not isinstance(counts, list):
         return _unreadable(issue, "class_counts is not a list")
@@ -847,18 +927,34 @@ def _orientation_status(content: Mapping[str, object], issue: str) -> Assessment
     for row in counts:
         if not isinstance(row, dict):
             return _unreadable(issue, "a class_counts entry is not an object")
-        detail.append(
-            (
-                "contrast_class",
-                str(row.get("contrast_class", "")),
-                "experiments",
-                str(row.get("experiments", "")),
-            )
-        )
+        scope = str(row.get("contrast_class", ""))
+        orientation = row.get("orientation")
+        if isinstance(orientation, str) and orientation:
+            scope = f"{scope}:{orientation}"
+        for name in ("experiments", "studies"):
+            if name in row:
+                detail.append(("contrast_class", scope, name, str(row[name])))
+    review = content.get("review")
+    validation = "not_reviewed"
+    if isinstance(review, dict):
+        for name in ("reviewed_experiments", "agreed", "disagreed"):
+            if name in review:
+                detail.append(("validation", "hand_review", name, str(review[name])))
+        if review.get("disagreed"):
+            validation = "hand_review_disagreements_unresolved"
+        elif review.get("reviewed_experiments"):
+            validation = "hand_review_agreed"
+    detail.append(("validation", "hand_review", "validation_status", validation))
+    version = content.get("classifier_version")
+    if isinstance(version, str):
+        detail.append(("note", "classifier_version", "version", version))
     # Orientation describes the corpus every procedure here runs on rather than
     # any one procedure, so it reaches every row through the default.
     return AssessmentStatus(
-        issue, {}, f"contrast population described, no verdict {issue}", tuple(detail)
+        issue,
+        {},
+        f"contrast population described, {validation}, no verdict {issue}",
+        tuple(detail),
     )
 
 

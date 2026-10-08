@@ -32,6 +32,7 @@ from bsdbng.integrated_evidence import (
     AssessmentStatus,
     Record,
     apply_statuses,
+    assessment_rows,
     build_guild_matrix,
     cell_support_records,
     family_inventory,
@@ -700,7 +701,16 @@ def test_a_calibration_file_keeps_its_uncovered_arms(tmp_path: Path) -> None:
     path.write_text(
         json.dumps(
             {
-                "calibration_status": {"fraction_sign_test": "pass", "guild_mcnemar": "pass"},
+                "calibration_status": {
+                    "fraction_sign_test": {
+                        "overall": "pass",
+                        "criteria": {"per_test_level": "pass", "family_error": "pass"},
+                    },
+                    "guild_mcnemar": {
+                        "overall": "fail",
+                        "criteria": {"per_test_level": "pass", "family_error": "fail"},
+                    },
+                },
                 "not_calibrated_here": ["the enrichment arm's hypergeometric urn (#131)"],
             }
         ),
@@ -709,8 +719,14 @@ def test_a_calibration_file_keeps_its_uncovered_arms(tmp_path: Path) -> None:
 
     status = read_status(path, "calibration_status", "#182")
 
-    assert status.for_procedure("fraction_sign_test") == "pass"
-    assert status.for_procedure("guild_mcnemar") == "pass"
+    assert status.for_procedure("fraction_sign_test") == (
+        "pass #182 [per_test_level=pass, family_error=pass]"
+    )
+    # A failed family criterion is no longer dropped behind a per-test pass.
+    assert status.for_procedure("guild_mcnemar") == (
+        "fail #182 [per_test_level=pass, family_error=fail]"
+    )
+    assert ("procedure", "guild_mcnemar", "criterion:family_error", "fail") in status.detail
     assert status.for_procedure("log_ratio_sign_test") == "not_calibrated_here #182"
     assert (
         "note",
@@ -728,8 +744,13 @@ def test_absent_assessment_files_read_as_pending(tmp_path: Path) -> None:
     broken.write_text("not json", encoding="utf-8")
     assert read_status(broken, "coverage_status", "#184").default == "unreadable #184"
     written = tmp_path / "calibration.json"
-    written.write_text('{"calibration_status": {"a": "pass"}}', encoding="utf-8")
-    assert read_status(written, "calibration_status", "#182").for_procedure("a") == "pass"
+    written.write_text(
+        '{"calibration_status": {"a": {"overall": "pass", "criteria": {"c": "pass"}}}}',
+        encoding="utf-8",
+    )
+    assert read_status(written, "calibration_status", "#182").for_procedure("a") == (
+        "pass #182 [c=pass]"
+    )
 
 
 @pytest.mark.parametrize(
@@ -741,7 +762,10 @@ def test_absent_assessment_files_read_as_pending(tmp_path: Path) -> None:
         ('{"coverage_status": {"nested": "object"}}', "coverage_status", "not a string"),
         ('{"coverage_status": [1]}', "coverage_status", "not a string"),
         ('{"calibration_status": ["a", "b"]}', "calibration_status", "not a mapping"),
-        ('{"calibration_status": {"a": {"b": "c"}}}', "calibration_status", "not a mapping"),
+        ('{"calibration_status": {"a": "pass"}}', "calibration_status", "single verdict"),
+        ('{"calibration_status": {"a": {"b": "c"}}}', "calibration_status", "lacks an overall"),
+        ('{"family_status": ["one"]}', "sensitivity_status", "not an object"),
+        ('{"family_status": {"S4:x": {"tested": 6}}}', "sensitivity_status", "lacks one of"),
         ('{"scenario_status": ["one"]}', "sensitivity_status", "not an object"),
         ('{"class_counts": {"a": 1}}', "orientation_status", "not a list"),
         ('{"class_counts": ["a"]}', "orientation_status", "not an object"),
@@ -1234,3 +1258,75 @@ def test_main_writes_every_artifact_and_its_provenance(tmp_path: Path) -> None:
     assert "oxygen_guild_cell_support" not in records_section
     assert "oxygen_guild_cell_support" in before
     assert "oxygen_guild_mcnemar" in records_section
+
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def test_the_sensitivity_producers_family_records_survive_the_export() -> None:
+    """Cross-PR: #237's status at c9fb6f1 keeps S4's two families apart (#241 review).
+
+    The producer and consumer tests each passed on their own while the consumer read
+    only ``scenario_status``, which pools S4 into tested=21 with no family, size or
+    correction. This feeds the producer's real output through the consumer.
+    """
+    status = read_status(FIXTURES / "sensitivity_status_c9fb6f1.json", "sensitivity_status", "#183")
+    detail = set(status.detail)
+    assert ("family", "S4:six_fractions", "correction", "Benjamini-Hochberg") in detail
+    assert ("family", "S4:six_fractions", "family_size", "6") in detail
+    assert ("family", "S4:six_fractions", "q_at_or_below_0.05", "2") in detail
+    assert ("family", "S4:fifteen_ratios", "correction", "Benjamini-Yekutieli") in detail
+    assert ("family", "S4:fifteen_ratios", "family_size", "15") in detail
+    assert ("family", "S4:fifteen_ratios", "q_at_or_below_0.05", "4") in detail
+    assert not any(value == "21" for _kind, _scope, _variable, value in detail)
+    assert not any(kind == "scenario" for kind, _scope, _variable, _value in detail)
+    rows = assessment_rows(
+        apply_statuses(_built(), {**STATUSES, "sensitivity_status": status}),
+        {**STATUSES, "sensitivity_status": status},
+    )
+    exported = {
+        (str(r["scope"]), str(r["state_variable"]), str(r["state_value"]))
+        for r in rows
+        if r["assessment"] == "sensitivity_status"
+    }
+    assert ("S4:six_fractions", "correction", "Benjamini-Hochberg") in exported
+    assert ("S4:fifteen_ratios", "family_size", "15") in exported
+
+
+def test_a_quick_calibration_run_never_reaches_the_table_as_a_pass() -> None:
+    """Cross-PR: #240's quick run (5 replicates, seed 1) at da8e1c1, end to end.
+
+    Before the #240 fix this file said ``guild_mcnemar: "pass"`` and this table
+    carried it as an unqualified pass on the McNemar row.
+    """
+    status = read_status(
+        FIXTURES / "calibration_status_quick_run.json", "calibration_status", "#182"
+    )
+    for procedure in ("fraction_sign_test", "log_ratio_sign_test", "guild_mcnemar"):
+        applied = status.for_procedure(procedure)
+        assert applied.startswith("not_certified #182 ["), applied
+        assert "insufficient_budget" in applied
+    assert ("scenario", "complete_null_study_flip", "replicates_completed", "5") in status.detail
+    records = apply_statuses(_built(), {**STATUSES, "calibration_status": status})
+    assert not any(record.calibration_status.startswith("pass") for record in records)
+
+
+def test_orientation_carries_class_orientation_and_validation() -> None:
+    """Cross-PR: #238's provenance at 3d9d5cd, read for #188's fifth criterion."""
+    status = read_status(
+        FIXTURES / "contrast_orientation_provenance_3d9d5cd.json", "orientation_status", "#188"
+    )
+    detail = set(status.detail)
+    assert ("contrast_class", "disease_vs_healthy:native", "experiments", "1003") in detail
+    assert ("contrast_class", "disease_vs_healthy:reversed", "experiments", "1") in detail
+    assert ("contrast_class", "disease_vs_healthy:native", "studies", "569") in detail
+    assert ("validation", "hand_review", "disagreed", "17") in detail
+    assert (
+        "validation",
+        "hand_review",
+        "validation_status",
+        "hand_review_disagreements_unresolved",
+    ) in detail
+    assert status.for_procedure("anything") == (
+        "contrast population described, hand_review_disagreements_unresolved, no verdict #188"
+    )

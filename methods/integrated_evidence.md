@@ -182,13 +182,33 @@ these results; an earlier version of this note stated them as established
   repository owns as holding their nominal rates under the paired null. The same
   output names the enrichment arm's urn, the composition arm's native test and the
   aggregated support rule as `not_calibrated_here`, and those rows say so rather
-  than carrying any verdict. Until #240 merges, every `calibration_status` on
-  `main` is `pending #182`.
+  than carrying any verdict. Each procedure's row carries #240's overall status with
+  the criteria it was judged on - for example
+  `not_certified #182 [per_test_level=insufficient_budget, ...]` - and the
+  assessment side-car keeps every criterion and the completed replicate counts. A
+  status file that gives one verdict string per procedure is refused as unreadable:
+  that was the contract under which a five-replicate run with a failed family
+  criterion reached this table as a pass (#240 review, 2026-10-03). Until #240
+  merges, every `calibration_status` on `main` is `pending #182`.
 - **Population (#183 as PR #237, #188 as PR #238).** #237's branch reports that
   most fraction directions do not survive restriction to a ratio's eligible
   population, and #238's gives a disease-versus-healthy subset in which the
   directions do hold. Both are populations rather than corrections, and #237
-  reports per scenario without reaching a verdict at all. Neither is on `main`.
+  reports per scenario without reaching a verdict at all. #237's counts are read
+  from its `family_status` records, one per correction family with its scenario,
+  size and correction, because its `scenario_status` pools the two S4 families
+  (6 fractions under BH, 15 ratios under BY) into tested=21. #238's contrast classes
+  keep their orientation (native, reversed, not applicable) and study and
+  experiment counts, and its hand-review summary travels as the validation status;
+  at #238's head 17 of 60 reviewed experiments disagree with the classifier, so
+  every row reads `hand_review_disagreements_unresolved`. #238's own
+  `disease_control_comparison.tsv` holds the verified-subset comparison of #188;
+  it is not imported here. Neither PR is on `main`.
+- **Validation data (#191, PR #239).** Whether measured inflammation or SCFA data
+  could validate the trait directions independently is assessed in
+  [`validation_feasibility.md`](validation_feasibility.md) on #239's branch. It
+  identifies evidence pointers, not validation: an independent check would need
+  sample-level data, so no row here carries a validation status from it.
 - **Coverage and influence.** #184 and #190 remain pending; until they land, no row
   should be read as accounting for annotation coverage or taxonomic concentration.
 - **Guild grouping.** The guild rows previously claimed the oxygen guilds were
@@ -207,7 +227,10 @@ assessment against the procedure and scenario it assessed
 (`integrated_evidence_assessments.tsv`), the generated view
 (`integrated_evidence.md`) and the provenance record. The family
 export is the #236/#289 requirement that no exported q appears without the
-family it was corrected in and that family's size; the run fails if a declared
+family it was corrected in and that family's size. The Table 1 direction-shift TSV
+written by `table1_trait_maps.write_shift_table` now carries the same
+`family_id`, `family_size` and `correction_method` columns, which closes the
+source-export half of that requirement that #236 deferred here. The run fails if a declared
 size and the rows exported for that family disagree, because a q corrected over
 a different set of tests than the table shows cannot be read. The provenance
 record carries the zero-total pair exclusion as counts and a rule, both decision
