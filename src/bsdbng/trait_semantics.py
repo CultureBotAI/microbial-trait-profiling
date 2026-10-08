@@ -26,15 +26,15 @@ DEFAULT_OUTPUT_TSV = DERIVED_DATA_DIR / "table1_trait_semantic_audit.tsv"
 # Pinned KG-Microbe checksums from data/kg-microbe/provenance.json
 PINNED_KG_PROVENANCE = {
     "merged-kg_edges.tsv": {
-        "md5": "555ecf5ba5d89288cdc44e368375374f",
+        "md5": "555ecf5ba5d89288cdc44e368375374f",  # pragma: allowlist secret
         "size": 1034256091,
-        "file_id": "1iIVd-FEleeRIv7CPS0l1F732p3J9JO5d",
+        "file_id": "1iIVd-FEleeRIv7CPS0l1F732p3J9JO5d",  # pragma: allowlist secret
         "fetched_at": "2026-08-30T18:06:23+00:00",
     },
     "merged-kg_nodes.tsv": {
-        "md5": "dd76b4656f9341db25a7c4afa96cd58e",
+        "md5": "dd76b4656f9341db25a7c4afa96cd58e",  # pragma: allowlist secret
         "size": 209545218,
-        "file_id": "1lDVjE67E82LMUdNtqWGvyczrHvNu3BdY",
+        "file_id": "1lDVjE67E82LMUdNtqWGvyczrHvNu3BdY",  # pragma: allowlist secret
         "fetched_at": "2026-08-30T18:05:46+00:00",
     },
 }

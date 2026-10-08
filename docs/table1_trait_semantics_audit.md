@@ -173,4 +173,3 @@ Issue [#179](https://github.com/CultureBotAI/bsdbng/issues/179) governs biologic
 - *Evidence chain:* Source literature $\to$ curated isolate traits $\to$ NCBI taxonomy rollup $\to$ BugSigDB signature overlap $\to$ hypergeometric statistic.
 - *Defensible claims:* A significant shift indicates a higher proportion of taxa in a differential abundance signature possessing the recorded trait annotation.
 - *Prohibited claims:* Statistical enrichment in a differential signature does not demonstrate in vivo metabolic fluxes, gene expression levels, environmental chemical exposure, or host causation.
-

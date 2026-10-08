@@ -24,8 +24,10 @@ def test_provenance_verification() -> None:
     assert verify_provenance_checksums() is True
     assert "merged-kg_edges.tsv" in PINNED_KG_PROVENANCE
     assert "merged-kg_nodes.tsv" in PINNED_KG_PROVENANCE
-    assert PINNED_KG_PROVENANCE["merged-kg_edges.tsv"]["md5"] == "555ecf5ba5d89288cdc44e368375374f"
-    assert PINNED_KG_PROVENANCE["merged-kg_nodes.tsv"]["md5"] == "dd76b4656f9341db25a7c4afa96cd58e"
+    edges_md5 = "555ecf5ba5d89288cdc44e368375374f"  # pragma: allowlist secret
+    nodes_md5 = "dd76b4656f9341db25a7c4afa96cd58e"  # pragma: allowlist secret
+    assert PINNED_KG_PROVENANCE["merged-kg_edges.tsv"]["md5"] == edges_md5
+    assert PINNED_KG_PROVENANCE["merged-kg_nodes.tsv"]["md5"] == nodes_md5
 
 
 def test_semantic_audit_records_coverage() -> None:
