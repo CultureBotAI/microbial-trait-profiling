@@ -17,6 +17,7 @@ data/raw/download_provenance.json
 data/studies/*.yaml
 data/derived/*
 !data/derived/.gitkeep
+!data/derived/table1_trait_semantic_audit.tsv
 data/benchmarks/*
 data/kg-microbe/*.tsv
 logs/
