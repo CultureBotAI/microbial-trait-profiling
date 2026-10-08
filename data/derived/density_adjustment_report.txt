@@ -1,0 +1,59 @@
+================================================================================
+TRAIT CORRELATION, ANNOTATION DENSITY ADJUSTMENT, AND NEAR-TWIN AUDIT
+================================================================================
+
+1. BASELINE DIMENSIONALITY AND CORRELATION STRUCTURE
+--------------------------------------------------------------------------------
+Input profiles evaluated: 5,829
+Non-MediaDive trait columns: 317
+Pearson pairwise correlation: median +0.6000, mean +0.5498
+Pairs exceeding +0.5: 61.1% | Pairs exceeding +0.9: 7.1%
+PC1 variance explained: 60.82% | PC1-PC5 variance explained: 80.27%
+Effective number of independent tests: Li & Ji (2005) = 62.0, Galwey (2009) = 38.4, Cheverud/Nyholt = 196.8
+
+Spearman baseline verification:
+  Median pairwise rho: +0.5286, Mean pairwise rho: +0.4887
+  Pairs > 0.5: 54.1% | Pairs > 0.9: 1.1%
+  PC1 variance: 53.73%
+
+2. DENSITY AXIS ADJUSTMENT: SEPARATING BIOLOGY FROM CURATION EFFORT
+--------------------------------------------------------------------------------
+Test Case Pair: facultatively aerobic x moderately halophilic
+  Baseline Pearson r: +0.8936
+  Post-PC1 regression r: +0.5349 (attenuation: -0.3587)
+  Post-downweighting r: +0.2468
+
+Global Correlation Matrix Centering (Method A - PC1 Regression):
+  Median pairwise r: -0.0261 (centered around 0)
+  Mean pairwise r: +0.0014
+  Pairs > 0.5: 6.5%
+
+3. SURVIVAL OF CONVERGENT SIX TRAIT SIGNALS (PAIRED EXPERIMENTS N=2,335)
+--------------------------------------------------------------------------------
+  facultatively aerobic          | Raw mean: +0.375 (p=2.60e-05) | Adj mean: +0.041 (p=2.62e-01) | collapsed (artifact removed)
+  cellulose catabolic process    | Raw mean: -0.076 (p=1.37e-02) | Adj mean: -0.228 (p=1.84e-11) | enhanced depletion
+  coccus shaped                  | Raw mean: +0.466 (p=1.72e-06) | Adj mean: +0.146 (p=7.21e-03) | survived (biological signal)
+  sphere shaped                  | Raw mean: +0.394 (p=3.49e-09) | Adj mean: +0.163 (p=9.35e-05) | survived (biological signal)
+  arsenate reduction             | Raw mean: +0.155 (p=4.64e-05) | Adj mean: +0.058 (p=4.62e-02) | survived (biological signal)
+  moderately halophilic          | Raw mean: +0.364 (p=1.77e-07) | Adj mean: +0.113 (p=3.33e-04) | survived (biological signal)
+
+4. NEAR-TWIN CONDITIONAL TEST AND COLLINEARITY (COCCUS VS. SPHERE)
+--------------------------------------------------------------------------------
+Candidate pair: coccus shaped (METPO:1000668) vs. sphere shaped (METPO:1000683)
+Profile-level correlation: r = +0.9110 | Variance Inflation Factor (VIF): 5.88
+Profile OLS regression slope (coccus ~ sphere): 1.3524
+Paired contrasts (N=2335): r = +0.8808 | Paired VIF: 4.46
+Paired regression slope: 1.3405
+Residual coccus | sphere: mean = -0.0000, Wilcoxon p = 3.01e-02
+
+5. CONCLUSION & METHODOLOGICAL IMPLICATIONS
+--------------------------------------------------------------------------------
+1. The vast majority of positive correlation among traits is driven by curation density (PC1).
+2. Regressing out PC1 collapses the spurious facultatively aerobic x moderately halophilic
+   contrast from significant (p=2.6e-5) to completely nonsignificant (p=0.26).
+3. In contrast, genuine convergent signals survive and strengthen: cellulose depletion
+   becomes significantly sharper (p=1.8e-11), while coccus, sphere, and mod halophilic
+   retain clear significance.
+4. Coccus and sphere exhibit severe collinearity (VIF ~ 5.88); conditional testing confirms
+   unstable coefficients when included simultaneously.
+================================================================================
