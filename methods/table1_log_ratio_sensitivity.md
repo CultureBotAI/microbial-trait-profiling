@@ -85,21 +85,28 @@ annotation-coverage sidecar of #184 is not yet available and is recorded as pend
 94 pairs, which removes 20 studies entirely, leaves every one of the six fraction directions in place,
 each with q <= 0.008.
 
-**Restriction to a ratio's pairs costs precision and detection, not the estimate
-(S1 against S3).** S1 and S3 differ in three ways at once, so a comparison of q
-status alone cannot attribute the difference: S1 tests 6 fractions under BH on 939
-eligible studies, while S3 tests 30 matched fractions under BY on 243 to 676
-eligible studies (26% to 72% of the baseline). Comparing the shares and their
-intervals instead - the row-by-row table is `population_sensitivity.tsv` - the
-estimates barely move. The share shifts by a median of -0.037 and by at most 0.107,
-and 29 of the 30 restricted 95% intervals overlap the baseline interval for the same
-trait. One row's interval has moved clear of its baseline: sphere shaped on the
+**Restriction to a ratio's pairs changes four things at once (S1 against S3).**
+S1 tests 6 fractions under BH on 939 eligible studies, while S3 tests 30 matched
+fractions under BY on 243 to 676 eligible studies (26% to 72% of the baseline). The
+population, the eligible n, the family size and the correction all change together,
+so neither a comparison of q status nor a comparison of intervals can attribute a
+lost detection to any one of them. The four are reported separately below; the
+row-by-row table is `population_sensitivity.tsv`.
+
+*Effect estimates.* The restricted share differs from the baseline share by a
+median of -0.037 and by at most 0.107 in absolute value.
+
+*Interval overlap.* 29 of the 30 restricted 95% intervals overlap the baseline
+interval for the same trait. Overlap does not show that the effect is unchanged: two
+intervals can overlap while the estimates differ, and a wider interval overlaps more
+easily. One row's interval has moved clear of its baseline: sphere shaped on the
 sphere shaped/arsenate reduction pairs, 0.447 (0.384 to 0.510) on 253 studies
 against 0.554 (0.520 to 0.588) on 939. Seven rows sit on the other side of 0.5 from
 their baseline, but every one of the seven has 0.5 inside its restricted interval,
 so none of them establishes a reversal.
 
-What the restriction does remove is detection, and the two causes separate:
+*Eligible counts and correction.* Detection at q <= 0.05 is lost on 24 rows, in
+two patterns:
 
 - **Five rows lose only the correction.** They keep a raw p <= 0.05 and fail
   q <= 0.05 once the family is 30 rows under BY. Moderately halophilic on the
@@ -108,15 +115,15 @@ What the restriction does remove is detection, and the two causes separate:
   0.605) on 939, with p = 0.0058 and BY q = 0.0985. Facultatively aerobic on the
   facultatively aerobic/moderately halophilic pairs is the same case: 0.554 (0.513
   to 0.595) on 582 studies, p = 0.0101, q = 0.150.
-- **Nineteen rows lose p <= 0.05 before any correction.** Eighteen of the nineteen
-  still have an interval overlapping their baseline, so what they have lost is
-  precision: the eligible n falls to between a quarter and three quarters of 939
-  and the interval widens across 0.5.
+- **Nineteen rows lose p <= 0.05 before any correction.** On these rows the
+  eligible n falls to between a quarter and three quarters of 939, and eighteen of
+  the nineteen intervals overlap their baseline.
 
-So the population is not what moves these six directions. The earlier phrasing -
-that most fraction signals depend on the population - confused a loss of power and a
-larger correction family with a different effect in a different population, and is
-withdrawn.
+How much of each lost detection comes from a shifted estimate, from the smaller
+eligible n, and from the larger correction family has not been separated here; the
+data above are compatible with any mixture of the three. The earlier phrasing -
+that most fraction signals depend on the population - attributed the loss to the
+population alone, which these scenarios cannot establish either, and is withdrawn.
 
 One asymmetry survives this accounting. Cellulose catabolic process is the only
 trait whose restricted share moves *further* from 0.5 on every population
@@ -182,8 +189,10 @@ multi-label fecal pairs into the stratum (S6 to S9) changes none of the four
 conclusions.
 
 Outside it, nothing is detected, but the three strata establish different amounts.
-S11, away from the gut altogether, is a real negative on 331 studies and 85 to 249
-eligible per ratio: all 15 rows are tested and the largest share is 0.554. S10, the
+S11, away from the gut altogether, is tested, with no detection at the declared
+threshold, on 331 studies and 85 to 249 eligible per ratio: all 15 rows are tested
+and the largest share is 0.554. Non-detection there does not establish that the
+effect is absent or equivalent to zero. S10, the
 rest of the lower gut, establishes almost nothing - 47 studies, 12 to 35 eligible
 per ratio, so 10 of its 15 rows fall below the 30-study minimum and are reported
 descriptively with no p or q; the 5 that are tested reach shares of 0.34 to 0.70 on
@@ -193,8 +202,8 @@ reaching the threshold - cellulose/arsenate reduction sits at 0.418 on 99 eligib
 studies, against 0.331 on 146 inside Feces.
 
 So the defensible claim is that these ratios are detected in fecal signatures and
-not detected outside them, that the non-gut stratum is a genuine negative, and that
-the rest of the lower gut is untested rather than negative. Whether the fecal
+not detected outside them, that the non-gut stratum was tested with no detection at
+the declared threshold, and that the rest of the lower gut is largely untested. Whether the fecal
 restriction reflects biology, the fecal stratum simply holding two thirds of the
 corpus, or heterogeneous pooling of many small sites cannot be separated here.
 
@@ -235,13 +244,14 @@ survives restriction to matched populations. It is conditional on positive
 annotation counts, is measured on over-represented, richly annotated signatures,
 and does not identify an absolute change in any trait. It holds in one stratum:
 removing the fecal pairs is the only tested stratum removal that takes any ratio
-back across the rule, the non-gut stratum is a tested negative, and the rest of the
+back across the rule, the non-gut stratum was tested with no detection at the
+declared threshold, and the rest of the
 lower gut is too small to test. Five of the six original
 fraction directions stop being detected once restricted to a ratio-eligible
-population, but their estimates remain compatible with the full-population
-estimates (29 of 30 overlapping intervals, median share shift -0.037), and the
-eligible n falls to between 243 and 676 while the family grows from 6 under BH to
-30 under BY. These scenarios therefore neither confirm nor refute those five
+population, while their estimates shift (median -0.037, at most 0.107, one interval
+moving clear of its baseline), 29 of 30 intervals overlap, the eligible n falls to
+between 243 and 676, and the family grows from 6 under BH to 30 under BY. The
+contribution of each of these to the lost detections has not been separated. These scenarios therefore neither confirm nor refute those five
 directions on the restricted populations; they establish only that the restricted
 data are too few, under a correction family five times larger, to detect a shift of
 that size. Agreement between scenarios is robustness to these analytical choices on
