@@ -3,7 +3,8 @@
 This describes `just trait-direction-screen`, which runs the directional-consistency
 arm's study sign test over every retained trait of the pinned corpus rather than over
 the six traits of manuscript Table 1 (issue #255), and reports the significant set at
-both the nominal and the effective family size (issue #265).
+both the nominal and the effective family size (issue #265). The nominal BY set is the
+reported result; the effective-size set is a sensitivity bound with no FDR guarantee.
 
 ## Why the family changed
 
@@ -85,6 +86,20 @@ redundant one, which the test suite checks at both limits.
 Because the substitution is monotone, the nominal significant set is always contained in
 the effective one. The difference between them is candidates gained, not candidates
 swapped, and the family table reports both the overlap and its size.
+
+### Which set is the reported result
+
+The reported significant set is **BY at the nominal m = 317**, with BH at m = 317
+beside it for comparison with the other arms. On the pinned corpus that is 18 traits
+at BY q <= 0.05. The effective-size run (m = 112 by Li & Ji on the study-contrast
+basis, 56 traits) is a sensitivity bound only, and carries **no FDR guarantee**: Li & Ji
+and Galwey were derived to set per-test thresholds for familywise error, so putting
+their m into a BH or BY step-up is a heuristic, and BY at the nominal m already
+controls FDR under arbitrary dependence, so shrinking m on top of it would adjust for
+dependence twice. Because the count moves from 18 to 56 with the assumed dependence,
+it is not a stable quantity: report it as unstable, and do not quote either number
+alone. This follows the ruling on issue #265 (2026-09-28); the manuscript wording is
+issue #205.
 
 ## Two correlation bases, and why they disagree
 

@@ -787,12 +787,13 @@ def _report(result: ScreenResult, vintage: str | None) -> str:
         "",
         *_dependence_paragraphs(result),
         "",
-        f"At BY q <= 0.05, {len(nominal)} traits are called at the nominal family size of "
-        f"{result.family_size}"
+        f"The reported result is BY q <= 0.05 at the nominal family size of "
+        f"{result.family_size}: {len(nominal)} traits"
         + (
-            f" and {len(effective)} at the effective one. The nominal set is contained in "
-            "the effective one, so the difference is candidates gained, not candidates "
-            "swapped; a count of significant traits is not a count of findings."
+            f". The effective family size gives {len(effective)}, a sensitivity bound with "
+            "no FDR guarantee (#265). The nominal set is contained in the effective one, so "
+            "the difference is candidates gained, not candidates swapped. The count depends "
+            "on the assumed dependence and is not stable; do not quote either number alone."
             if result.effective_family_size_used is not None
             else ". No effective family size was available, so no second count is given."
         ),
