@@ -196,12 +196,16 @@ def main():
 
         f.write("\n\n=== TOP 10 BODY SITES BY DEPLETION DENSITY (Normalized by Sample Size) ===\n")
         f.write(
-            f"{'Body Site':<40} {'Losses/100 Samples':<20} {'Total Losses':<15} {'Total Samples'}\n"
+            "Note: Sites with missing sample size data are excluded from density normalization.\n"
+        )
+        f.write(
+            f"{'Body Site':<40} {'Calls/100 Reported Samples':<30} "
+            f"{'Total Calls':<15} {'Total Samples'}\n"
         )
         f.write("-" * 100 + "\n")
         for _, row in body_site_density.head(10).iterrows():
             bs_str = f"{row['body_site']!s:<40}"
-            den_str = f"{row['density']:<20.2f}"
+            den_str = f"{row['density']:<30.2f}"
             cnt_str = f"{row['depletion_count']:<15.0f}"
             tot_str = f"{row['total_samples']:.0f}"
             f.write(f"{bs_str} {den_str} {cnt_str} {tot_str}\n")
@@ -219,7 +223,8 @@ def main():
             top_density = body_site_density.iloc[0]["density"]
             f.write(
                 f"Top Body Site by Depletion Density: {top_site} "
-                f"({top_density:.2f} losses/100 samples)\n"
+                f"({top_density:.2f} calls/100 reported samples; "
+                "aggregate call ratio, not patient loss)\n"
             )
 
         bias_inc = int(results_df[results_df["inc_dec"] == "inc"].shape[0])
@@ -409,9 +414,9 @@ def main():
 
         ax3.set_xlim(0, 1)
         ax3.set_ylim(0, 1)
-        ax3.set_title("C. Anatomical Depletion", fontsize=16, fontweight="bold")
+        ax3.set_title("C. Anatomical Under-Representation", fontsize=16, fontweight="bold")
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=max_d))
-        fig.colorbar(sm, ax=ax3, shrink=0.5, label="Losses / 100 Samples")
+        fig.colorbar(sm, ax=ax3, shrink=0.5, label="Calls / 100 Reported Samples")
     else:
         ax3.text(0.5, 0.5, "No Body Site Data Available", ha="center", va="center")
 
@@ -425,17 +430,18 @@ def main():
     )
 
     summary_text = (
-        "DEPLETION SUMMARY\n\n"
-        f"• Functional Blind Spots: {len(trait_counts):,} metabolic traits analyzed.\n"
+        "UNDER-REPRESENTATION SUMMARY\n\n"
+        f"• Under-Represented Trait Scope: {len(trait_counts):,} metabolic traits analyzed.\n"
         f"  Total of {trait_counts['depletion_count'].sum():,} "
         "significant under-representations.\n\n"
-        f"• Condition Vulnerability: Panel B shows average functional loss per profile,\n"
-        "  identifying traits consistently avoided in disease signatures.\n\n"
-        f"• Depletion Hotspots: Top 3 sites by depletion density (losses/100 samples):\n"
-        f"  {top_3_str}.\n\n"
-        f"• Symmetry: {direction_activity.get('inc', 0):,} 'Increased' vs "
+        f"• Condition Profile Rates: Panel B shows mean under-representation calls per profile,\n"
+        "  summarizing trait counts with significantly fewer annotations than "
+        "background expectation.\n\n"
+        f"• Under-Representation Representation: Top 3 sites by call density\n"
+        f"  (calls/100 reported samples): {top_3_str}.\n\n"
+        f"• Signature Direction Contrast: {direction_activity.get('inc', 0):,} 'Increased' vs "
         f"{direction_activity.get('dec', 0):,} 'Decreased'\n"
-        "  hits show where functional depletion is most prominent."
+        "  signature calls indicate relative annotation distribution across signature directions."
     )
     ax4.text(
         0.05,

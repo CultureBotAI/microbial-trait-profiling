@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary & Branch Scope
 
-This Pull Request brings together the end-to-end microbial trait profiling and over-representation analysis (ORA) pipeline on branch `enrichment-analysis-heatmap-cluster`. It standardizes the $2 \times 2$ taxon-level hypergeometric sampling model ([#131](plans/taxon_hypergeometric_model_plan.md:1)), delivers full ranked TSV export suites ([#254](scripts/export_trait_enrichment_rankings.py:1)), integrates production code with the synthetic calibration harness ([#263](src/bsdbng/calibration/harness.py:1)), and provides visualization pipelines (densified heatmaps, 6-trait grouped Sankeys, tripartite Cytoscape networks, and infographic diagrams).
+This Pull Request brings together the end-to-end microbial trait profiling and over-representation analysis (ORA) pipeline on branch `enrichment-analysis-heatmap-cluster`. It standardizes the $2 \times 2$ taxon-level hypergeometric sampling model ([#131](plans/taxon_hypergeometric_model_plan.md:1)), delivers full ranked TSV export suites ([#254](scripts/export_trait_enrichment_rankings.py:1)), integrates production code with the synthetic calibration harness ([#263](src/bsdbng/calibration/harness.py:1)), and provides visualization pipelines (densified heatmaps, 6-trait grouped Sankeys, tripartite Cytoscape networks, and infographic diagrams), with biological interpretation governed by [`methods/biological_interpretation.md`](methods/biological_interpretation.md).
 
 ---
 
@@ -96,6 +96,7 @@ To ensure clean merging with `main` and other collaborator branches (specificall
 3. **Reproducible Justfile Recipes & Explicit Background Wiring**:
    - All enrichment and depletion workflows (`just analyze`, `just analyze-depletion`, `just analyze-site`) explicitly pass the unique-taxon reference background (`--taxa-matrix data/derived/taxa_trait_matrix.tsv`).
    - Missing or invalid matrix inputs are rejected with explicit errors to prevent uncalibrated fallback.
-4. **Exchangeability & Empirical Calibration Model Status**:
+4. **Exchangeability, Empirical Calibration Model Status & Biological Interpretation**:
    - Binary taxon representation standardizes denominator definitions ($M, K, N, k$), but does not by itself establish independence across correlated microbial taxa.
-   - The production statistical model is maintained in active calibration status until empirical permutation nulls, sampling-unit A/B tests, and taxon-level bootstrap results are completed (#263 / #182).
+   - The production statistical model is maintained in active calibration status until empirical permutation nulls, sampling-unit A/B tests, and taxon-level bootstrap results are completed (#263 / #182 / #184).
+   - All claims, figure captions, and narrative summaries must comply with [`methods/biological_interpretation.md`](methods/biological_interpretation.md) and [`methods/biological_interpretation_audit.md`](methods/biological_interpretation_audit.md), keeping biological interpretations within measured annotation evidence.
