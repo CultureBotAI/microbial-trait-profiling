@@ -202,4 +202,3 @@ the existing scope of #118/#120/#176 (scope/strata), #182/#183 (calibration and
 sensitivity), #184 (input coverage), #131/#132 (annotation sampling/background
 limitations), #165 (dependence), and #172/#173 (integrated display). Statistical
 implementation changes and biological evidence are separate review questions.
-

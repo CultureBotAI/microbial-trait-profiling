@@ -19,4 +19,3 @@ as well as methods.
 Individual analysis scripts (e.g., in `scripts/` and `src/bsdbng/`) document their
 respective workflows, Justfile recipes, and BugSigDB vintages following the
 shared biological interpretation guide.
-

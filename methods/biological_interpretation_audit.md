@@ -117,4 +117,3 @@ record artifact revisions. No coordinator sign-off or outside-branch modificatio
 asserted here. Add each newly identified output to this ledger; record its owner,
 source revision, exact claim, evidence or replacement, and completion revision.
 #188-#191 complement this guide and do not close biological validation.
-
