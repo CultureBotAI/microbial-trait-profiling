@@ -279,12 +279,13 @@ def main(argv: list[str] | None = None) -> int:
             "Note: Sites with missing sample size data are excluded from density normalization.\n"
         )
         f.write(
-            f"{'Body Site':<40} {'Hits/100 Samples':<20} {'Total Hits':<15} {'Total Samples'}\n"
+            f"{'Body Site':<40} {'Calls/100 Reported Samples':<30} "
+            f"{'Total Calls':<15} {'Total Samples'}\n"
         )
         f.write("-" * 100 + "\n")
         for _, row in body_site_density.head(10).iterrows():
             bs_str = f"{row['body_site']!s:<40}"
-            den_str = f"{row['density']:<20.2f}"
+            den_str = f"{row['density']:<30.2f}"
             cnt_str = f"{row['enrichment_count']:<15.0f}"
             tot_str = f"{row['total_samples']:.0f}"
             f.write(f"{bs_str} {den_str} {cnt_str} {tot_str}\n")
@@ -547,11 +548,11 @@ def main(argv: list[str] | None = None) -> int:
 
         ax3.set_xlim(0, 1)
         ax3.set_ylim(0, 1)
-        ax3.set_title("C. Anatomical Enrichment", fontsize=16, fontweight="bold")
+        ax3.set_title("C. Anatomical Annotation Representation", fontsize=16, fontweight="bold")
 
         # Legend for color
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=max_d))
-        fig.colorbar(sm, ax=ax3, shrink=0.5, label="Hits / 100 Samples")
+        fig.colorbar(sm, ax=ax3, shrink=0.5, label="Calls / 100 Reported Samples")
     else:
         ax3.text(0.5, 0.5, "No Body Site Enrichment Available", ha="center", va="center")
 
@@ -573,13 +574,16 @@ def main(argv: list[str] | None = None) -> int:
         f"• Result status: {table.status} (tests performed: {tests_performed}).\n\n"
         f"• Functional Scope: {len(trait_counts):,} metabolic/physiological traits analyzed.\n"
         f"  Total of {trait_counts['enrichment_count'].sum():,} significant associations.\n\n"
-        f"• Condition Robustness: Panel B shows average enrichment per profile,\n"
-        "  highlighting clinical functional burden independent of cohort size.\n\n"
-        f"• Anatomical Hotspots: Top 3 sites by density (hits/100 samples):\n"
-        f"  {top_3_str}.\n\n"
+        f"• Condition Profiles: Panel B shows mean annotation-enrichment calls\n"
+        "  per eligible profile under the specified background and thresholds\n"
+        "  (aggregate call rate per profile; does not establish patient-level\n"
+        "  clinical burden or cohort-size independence).\n\n"
+        f"• Anatomical Distribution: Top 3 sites by normalized call ratio\n"
+        f"  (calls/100 reported samples): {top_3_str}\n"
+        "  (aggregate call ratio across signatures, not sample trait frequency).\n\n"
         f"• Symmetry: {direction_activity.get('inc', 0):,} 'Increased' vs "
         f"{direction_activity.get('dec', 0):,} 'Decreased'\n"
-        "  hits suggest slight bias towards taxa gaining dominance."
+        "  calls describe representation across curated signature directions."
     )
     ax4.text(
         0.05,

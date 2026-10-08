@@ -6,6 +6,13 @@ It downloads [BugSigDB](https://bugsigdb.org) data, parses it into
 per-study YAML files validated against a [LinkML](https://linkml.io) schema,
 and provides a foundation for trait aggregation and phenotype cross-referencing.
 
+Trait results describe KG-Microbe annotation representation among taxa in curated
+BugSigDB signatures. They do not directly measure patient-level trait abundance,
+pathway activity, environmental exposure or causation. Result descriptions
+are governed by the [biological interpretation guide](methods/biological_interpretation.md);
+the [claim audit](methods/biological_interpretation_audit.md) records corrections,
+proposed revisions, and outstanding evidence needs across current and proposed outputs.
+
 ## Quick start
 
 ### Prerequisites

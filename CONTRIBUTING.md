@@ -130,6 +130,30 @@ git checkout -b issue-<number>-<short-slug>
 - Tests go in `tests/`
 - Justfile recipes for new pipeline steps should use the `timed` wrapper
 
+### Interpret and review results
+
+Every contributor and reviewer follows the
+[biological interpretation guide](methods/biological_interpretation.md), including
+for manuscript prose, public descriptions, figures, tables, captions, legends
+and generated summaries. State annotation units and keep signature direction,
+relative annotation contrast, background enrichment and biological change distinct.
+Report effect size/units, uncertainty (or not estimated), support counts, inference
+level and relevant corpus restrictions in the result or a linked backing table.
+Preserve source IDs and annotation provenance. A disease label, small q-value,
+zero mapped count or agreement across shared-data analyses does not establish
+exposure, causation, biological absence or independent replication.
+
+Label mechanisms as hypotheses and specify missing evidence; use the PR #192
+review as the guide's worked example. Update the
+[claim audit](methods/biological_interpretation_audit.md) with the exact affected
+claim, correction/evidence, output owner and revision. Check the generator and
+rendered captions together. Jed, Ilyas and Noel coordinate adoption and identify
+additional manuscript/report owners; the rule applies to everyone.
+
+When updating `AGENTS.md`, run `just sync-agent-docs` and include the generated
+Copilot instructions in the change. #188–#191 retain their separate evidence
+deliverables; adopting the guide does not validate the mechanisms.
+
 ### 4. Run checks before committing
 
 ```bash
