@@ -122,6 +122,8 @@ class MissingConditions:
     pooled_in_other: tuple[str, ...] = ()
     pooled_not_drawn: tuple[str, ...] = ()
     left_out_of_panel: tuple[str, ...] = ()
+    # The panel names the pooled Other row itself, and it is not drawn.
+    other_not_drawn: bool = False
 
 
 def missing_conditions(
@@ -133,11 +135,13 @@ def missing_conditions(
     pooled_conditions: Collection[str] = (),
     combined_conditions: Collection[str] = (),
 ) -> MissingConditions:
-    """Split undrawn panel conditions into the three causes that look alike.
+    """Split undrawn panel conditions by why they have no row of their own.
 
     A requested condition can be undrawn because the export does not hold it,
     because it is held and every cell fell below the min-studies threshold so the
-    row was dropped as blank, or because the top-N cut never selected it. Testing
+    row was dropped as blank, because the top-N cut never selected it, because it
+    was assigned to the pooled Other row, or because the combined figure draws it
+    but the panel's own cut does not. Testing
     membership of the drawn conditions alone cannot tell these apart, since that
     set is already the cut one — and naming the wrong cause states something
     false about the data. `blank_conditions` is the matrix's own record of rows it
@@ -148,7 +152,11 @@ def missing_conditions(
     the combined figure's Other row. ``combined_conditions`` are the rows the
     combined figure draws: one of those missing from a panel was removed by the
     panel's own cut, not by the top-N width cut, so it is reported apart from
-    ``cut_by_display``. Repeated requests are counted once.
+    ``cut_by_display``. Other membership is assignment, not contribution: site
+    binning or masking can leave a pooled condition with no profile in any drawn
+    Other cell, so the note says "assigned to" and claims no more. A panel may
+    name ``OTHER_LABEL`` itself; it is never a corpus condition, so it is
+    reported only as drawn or not. Repeated requests are counted once.
     """
     drawn = set(drawn_conditions)
     blank = set(blank_conditions)
@@ -160,12 +168,15 @@ def missing_conditions(
     held = [name for name in held if name not in combined]
     pooled_missing = tuple(name for name in held if name in pooled)
     return MissingConditions(
-        absent_from_corpus=tuple(name for name in requested if name not in corpus_conditions),
+        absent_from_corpus=tuple(
+            name for name in requested if name not in corpus_conditions and name != OTHER_LABEL
+        ),
         blank_after_masking=tuple(name for name in held if name in blank and name not in pooled),
         cut_by_display=tuple(name for name in held if name not in blank and name not in pooled),
         pooled_in_other=pooled_missing if OTHER_LABEL in drawn else (),
         pooled_not_drawn=pooled_missing if OTHER_LABEL not in drawn else (),
         left_out_of_panel=left_out,
+        other_not_drawn=OTHER_LABEL in requested and OTHER_LABEL not in drawn,
     )
 
 
@@ -192,7 +203,7 @@ def missing_condition_note(
         )
     if missing.pooled_in_other:
         parts.append(
-            "Included in the pooled Other row, with no separate condition row: "
+            "Assigned to the pooled Other row rather than drawn as a row of its own: "
             f"{', '.join(missing.pooled_in_other)}."
         )
     if missing.pooled_not_drawn:
@@ -200,6 +211,8 @@ def missing_condition_note(
             "Assigned to the pooled Other row, which is not drawn in this panel: "
             f"{', '.join(missing.pooled_not_drawn)}."
         )
+    if missing.other_not_drawn:
+        parts.append("The pooled Other row is not drawn in this panel.")
     if missing.left_out_of_panel:
         parts.append(
             "Drawn in the combined figure but left out of this panel's cut: "
@@ -724,13 +737,15 @@ def main() -> int:
             )
         if missing.pooled_in_other:
             print(
-                f"focus panel {panel.slug}: pooled in Other: {', '.join(missing.pooled_in_other)}"
+                f"focus panel {panel.slug}: assigned to Other: {', '.join(missing.pooled_in_other)}"
             )
         if missing.pooled_not_drawn:
             print(
                 f"focus panel {panel.slug}: assigned to Other, not drawn in this panel: "
                 f"{', '.join(missing.pooled_not_drawn)}"
             )
+        if missing.other_not_drawn:
+            print(f"focus panel {panel.slug}: the pooled Other row is not drawn")
         if missing.left_out_of_panel:
             print(
                 f"focus panel {panel.slug}: drawn in the combined figure, not in this panel: "

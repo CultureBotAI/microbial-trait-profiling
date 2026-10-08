@@ -436,7 +436,7 @@ def test_other_membership_comes_from_build_even_when_pool_is_masked(
     assert "outside the top" not in note
     if min_studies == 1:
         assert missing.pooled_in_other == ("Asthma",)
-        assert "Included in the pooled Other row" in note
+        assert "Assigned to the pooled Other row rather than drawn" in note
     else:
         assert OTHER_LABEL in matrix.dropped_empty_conditions
         assert missing.pooled_not_drawn == ("Asthma",)
@@ -569,3 +569,100 @@ def test_row_left_out_of_a_panel_is_not_blamed_on_the_width_cut() -> None:
     assert not missing.cut_by_display
     note = missing_condition_note(missing, max_conditions=60, min_studies=3)
     assert note == "Drawn in the combined figure but left out of this panel's cut: NoSig."
+
+
+def _run_cli_with_panel(
+    corpus: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    conditions: tuple[str, ...],
+) -> tuple[list[str | None], str]:
+    """Run main() with one condition-focused panel; return its notes and stdout."""
+    notes: list[str | None] = []
+
+    def record_panel(*_args: object, **kwargs: object) -> Path:
+        note = kwargs["note"]
+        assert note is None or isinstance(note, str)
+        notes.append(note)
+        return tmp_path / "panel.png"
+
+    monkeypatch.setattr(table1_trait_maps, "write_body_site_panels", record_panel)
+    monkeypatch.setattr(table1_trait_maps, "write_figure", lambda *_a, **_kw: tmp_path / "all.png")
+    monkeypatch.setattr(
+        table1_trait_maps, "write_shift_figure", lambda *_a, **_kw: tmp_path / "shift.png"
+    )
+    monkeypatch.setattr(table1_trait_maps, "read_bugsigdb_vintage", lambda _path: "fixture")
+    monkeypatch.setattr(
+        table1_trait_maps,
+        "FOCUS_PANELS",
+        (table1_trait_maps.FocusPanel("test", "test", conditions=conditions),),
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "table1-trait-maps",
+            "--profile-input",
+            str(corpus[0]),
+            "--experiments-input",
+            str(corpus[1]),
+            "--output-dir",
+            str(tmp_path / "output"),
+            "--max-conditions",
+            "1",
+            "--min-studies",
+            "1",
+            "--min-site-conditions",
+            "1",
+            "--include-other-conditions",
+        ],
+    )
+    assert table1_trait_maps.main() == 0
+    return notes, capsys.readouterr().out
+
+
+def test_cli_panel_naming_other_does_not_call_it_absent(
+    corpus: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # The only way main() can draw Other in a focus cut is a panel naming it (#321).
+    notes, out = _run_cli_with_panel(corpus, tmp_path, monkeypatch, capsys, ("Asthma", OTHER_LABEL))
+    (note,) = notes
+    assert note == (
+        "Assigned to the pooled Other row rather than drawn as a row of its own: Asthma."
+    )
+    assert "absent from the corpus" not in out
+    assert "focus panel test: assigned to Other: Asthma" in out
+
+
+def test_cli_skipped_panel_still_reports_why(
+    corpus: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    notes, out = _run_cli_with_panel(
+        corpus, tmp_path, monkeypatch, capsys, ("Asthma", "Not a condition")
+    )
+    assert notes == []
+    assert "focus panel test: absent from the corpus: Not a condition" in out
+    assert "focus panel test: assigned to Other, not drawn in this panel: Asthma" in out
+    assert out.index("assigned to Other") < out.index("focus panel test: nothing drawn, skipped")
+
+
+def test_requested_other_that_is_not_drawn_is_named_once() -> None:
+    missing = missing_conditions(
+        (OTHER_LABEL, "Asthma"),
+        corpus_conditions={"Asthma"},
+        drawn_conditions=[],
+        pooled_conditions=["Asthma"],
+    )
+    assert not missing.absent_from_corpus
+    assert missing.other_not_drawn
+    note = missing_condition_note(missing, max_conditions=1, min_studies=1)
+    assert note == (
+        "Assigned to the pooled Other row, which is not drawn in this panel: Asthma. "
+        "The pooled Other row is not drawn in this panel."
+    )
