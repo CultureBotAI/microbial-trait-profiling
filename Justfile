@@ -216,6 +216,10 @@ depletion-infographic: analyze-depletion
 export-rankings: analyze analyze-depletion depletion-infographic
 	@echo "Complete exports and ranking summaries generated."
 
+# Generate modern publication-ready figures inspired by the project slide deck.
+deck-figures: study-trait-profiles
+	just timed deck-figures "uv run python scripts/generate_deck_visualizations.py"
+
 # Run site-stratified enrichment (e.g., Feces only). Partitioning the input
 # TSV before `analyze` produces site-specific backgrounds ($M$ and $K$)
 # and prevalence rankings for free.

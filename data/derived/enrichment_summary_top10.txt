@@ -1,3 +1,10 @@
+=== RESULT STATUS ===
+Result-Status: discoveries
+Total-Tests-Performed: 556516
+Selected-Rows: 64063
+Selected-Rows-Excluding-MediaDive: 64063
+Source: data\derived\trait_enrichment_results.tsv
+
 === TOP 10 MOST ENRICHED TRAITS ===
 Trait ID                                 Enrichment Count     Description
 ----------------------------------------------------------------------------------------------------
@@ -30,18 +37,18 @@ Nutraceutical                            70.67           42.67           28.00
 
 === TOP 10 BODY SITES BY ENRICHMENT DENSITY (Normalized by Sample Size) ===
 Note: Sites with missing sample size data are excluded from density normalization.
-Body Site                                Hits/100 Samples     Total Hits      Total Samples
+Body Site                                Calls/100 Reported Samples     Total Calls     Total Samples
 ----------------------------------------------------------------------------------------------------
-Nasal cavity mucosa                      188.89               68              36
-Mucosa of ascending colon                130.77               68              52
-Superior surface of tongue               110.00               33              30
-Dental plaque                            86.88                278             320
-Mucosa of small intestine                83.33                40              48
-Dental pulp                              77.50                62              80
-Mucus                                    74.14                86              116
-Renal pelvis/ureter                      68.18                60              88
-Semen                                    62.24                61              98
-Mucosa of oral region                    61.46                59              96
+Nasal cavity mucosa                      188.89                         68              36
+Mucosa of ascending colon                130.77                         68              52
+Superior surface of tongue               110.00                         33              30
+Dental plaque                            86.88                          278             320
+Mucosa of small intestine                83.33                          40              48
+Dental pulp                              77.50                          62              80
+Mucus                                    74.14                          86              116
+Renal pelvis/ureter                      68.18                          60              88
+Semen                                    62.24                          61              98
+Mucosa of oral region                    61.46                          59              96
 
 
 === SCIENTIFIC FINDINGS SUMMARY ===
@@ -50,3 +57,4 @@ Functional scope: 317 metabolic/physiological traits analyzed (from 2,651 total 
 Average enrichment count per profile (all human): 9.25
 Top Body Site by Enrichment Density: Nasal cavity mucosa (188.89 hits/100 samples)
 Directionality Bias: More traits found in 'Decreased' profiles (31,750 inc vs 32,313 dec).
+Directional Distribution Note: Raw inc/dec hit totals reflect compositional profile counts rather than evidence of taxa dominance or biological directionality bias.
