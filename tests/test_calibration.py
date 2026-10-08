@@ -22,6 +22,7 @@ from bsdbng.calibration import (
     Resample,
     Scenario,
     attainable_p_at_alpha,
+    calibration_status,
     check_criteria,
     criterion_pass_probability,
     flip_assignments,
@@ -32,6 +33,7 @@ from bsdbng.calibration import (
     pooled_rate,
     replicate_counts,
     replicate_rng,
+    run_calibration,
     run_replicates,
     screened_fraction_sign_test,
     summarize,
@@ -313,13 +315,15 @@ def test_the_old_budget_cannot_demonstrate_control_at_any_rate() -> None:
 
     This is the test that pins the rule rather than the budget: 0.08 over 200 trials
     has an exact 95% lower bound of 0.047, so v1 called it a pass. The amended rule
-    fails it, and fails a true 0.05 as well - 200 replicates are not enough to
-    demonstrate control, which is why the declared budget rose to 1200.
+    fails it, because its estimate already exceeds the tolerance, and withholds any
+    verdict on a true 0.05 - 200 replicates are not enough to demonstrate control,
+    which is why the declared budget rose to 1200.
     """
-    for rate in (0.05, 0.08):
+    cases = {0.05: "insufficient_budget", 0.08: "fail"}
+    for rate, expected in cases.items():
         ledger = _null_ledger(round(rate * 200), 1, 200)
         verdict = _verdicts([], ledger)[("per_test_level", "fraction_sign_test")]
-        assert verdict == "fail", f"true rate {rate} at 200 trials gave {verdict}"
+        assert verdict == expected, f"true rate {rate} at 200 trials gave {verdict}"
 
 
 def test_the_criterion_power_meets_the_declared_requirement() -> None:
@@ -489,3 +493,85 @@ def test_module_constants_match_the_declared_protocol() -> None:
     assert declared["signal_injection"]["study_share"] == INJECTION_STUDY_SHARE
     assert declared["signal_injection"]["injected_trait"] == INJECTED_TRAIT
     assert "ci_check" not in declared["replicates"]
+
+
+def test_zero_rejections_in_ten_trials_do_not_certify_a_zero_rate() -> None:
+    """The #240 counterexample: guild_mcnemar, 0/10 null rejections, bound reported as 0.
+
+    The clustered variance is zero when no replicate rejects, so the normal bound
+    collapsed onto the point estimate. The exact bound at ten trials is 0.2589, the
+    same number the family criterion reported for the same ten replicates.
+    """
+    pooled = pooled_rate([(0, 1)] * 10)
+    assert pooled is not None
+    assert pooled.rate == 0.0
+    assert pooled.effective_trials == 10
+    assert pooled.upper_bound == pytest.approx(0.258866, abs=1e-6)
+
+
+def test_a_zero_count_with_correlated_labels_counts_each_replicate_once() -> None:
+    """Six labels per replicate and no rejection: the design effect is unmeasurable."""
+    pooled = pooled_rate([(0, 6)] * 10)
+    assert pooled is not None
+    assert pooled.trials == 60
+    assert pooled.effective_trials == 10
+    assert pooled.upper_bound == pytest.approx(0.258866, abs=1e-6)
+
+
+def test_the_quick_run_ledger_cannot_export_a_pass() -> None:
+    """The exact shape of the reviewed quick run: 5 replicates x 2 null scenarios."""
+    ledger = _null_ledger(0, 1, 10, procedure="guild_mcnemar")
+    criteria = check_criteria([], ledger)
+    verdicts = {
+        str(r["criterion"]): str(r["verdict"])
+        for r in criteria
+        if r["procedure"] == "guild_mcnemar"
+    }
+    assert verdicts == {
+        "per_test_level": "insufficient_budget",
+        "family_error": "insufficient_budget",
+    }
+    status = calibration_status(criteria)["guild_mcnemar"]
+    assert status["overall"] == "not_certified"
+
+
+def test_a_pass_below_the_declared_budget_is_withheld() -> None:
+    """A clean bound from too few replicates is not a certificate."""
+    short = _null_ledger(0, 1, 400)
+    full = _null_ledger(round(0.04 * DECLARED_TRIALS), 1, DECLARED_TRIALS)
+    short_rows = {
+        r["criterion"]: r
+        for r in check_criteria([], short)
+        if r["procedure"] == "fraction_sign_test"
+    }
+    assert short_rows["per_test_level"]["verdict"] == "insufficient_budget"
+    assert short_rows["per_test_level"]["replicates_recorded"] == 400
+    assert short_rows["per_test_level"]["replicates_required"] == DECLARED_TRIALS
+    assert _verdicts([], full)[("per_test_level", "fraction_sign_test")] == "pass"
+
+
+def test_the_overall_status_keeps_every_failed_criterion_visible() -> None:
+    """#241 used to read only per_test_level; a failed family error must surface."""
+    criteria = [
+        {"criterion": "per_test_level", "procedure": "p", "verdict": "pass"},
+        {"criterion": "family_error", "procedure": "p", "verdict": "fail"},
+        {"criterion": "per_test_level", "procedure": "q", "verdict": "pass"},
+        {"criterion": "power_reported", "procedure": "q", "verdict": "insufficient_budget"},
+        {"criterion": "per_test_level", "procedure": "r", "verdict": "pass"},
+        {"criterion": "selection_inflation_measured", "procedure": "r", "verdict": "reported"},
+    ]
+    status = calibration_status(criteria)
+    assert status["p"]["overall"] == "fail"
+    assert status["q"]["overall"] == "not_certified"
+    assert status["r"]["overall"] == "pass"
+    assert status["p"]["criteria"] == {"per_test_level": "pass", "family_error": "fail"}
+
+
+def test_a_quick_end_to_end_run_certifies_nothing() -> None:
+    """The reviewed command's shape, end to end: 5 null and 5 power replicates, seed 1."""
+    procedures = {"fraction_sign_test": fraction_sign_test}
+    result = run_calibration(_corpus(studies=30), procedures, 5, 5, seed=1)
+    assert result.completed["complete_null_study_flip"] == 5
+    status = calibration_status(result.criteria)
+    assert all(entry["overall"] != "pass" for entry in status.values()), status
+    assert "pass" not in {str(row["verdict"]) for row in result.criteria}

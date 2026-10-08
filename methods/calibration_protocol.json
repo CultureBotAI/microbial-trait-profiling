@@ -80,7 +80,7 @@
     "tolerated_inflation": 0.015,
     "per_test_tolerance": 0.065,
     "family_tolerance": 0.065,
-    "decision_rule": "pass only when the one-sided 95% upper confidence bound on the pooled rate is at most the tolerance. The burden of proof is on the procedure: an interval that merely covers 0.05 is not evidence of control, because an interval from a procedure whose true rate is 0.08 usually covers 0.05 too.",
+    "decision_rule": "pass only when the one-sided 95% upper confidence bound on the pooled rate is at most the tolerance. The burden of proof is on the procedure: an interval that merely covers 0.05 is not evidence of control, because an interval from a procedure whose true rate is 0.08 usually covers 0.05 too. The bound is the larger of the replicate-clustered normal bound and an exact Clopper-Pearson bound at the effective sample size (trials divided by the measured design effect; one trial per replicate when no or every test rejects, because the design effect is then unmeasurable). A run below the declared replicate budget cannot certify: a criterion it would pass, or would fail only because its interval is still wide, is reported as insufficient_budget. A short run still fails a criterion whose point estimate already exceeds the tolerance.",
     "uncertainty": "per-label rates keep their exact two-sided binomial interval over independent replicates. Pooled per-procedure rates use the ratio estimator over replicate clusters, which reduces to the binomial variance when a replicate contributes one test and inflates it by the measured design effect when it contributes several correlated ones. Family rates are one Bernoulli per replicate, so their bound is exact.",
     "replicate_budget_rationale": "the budget is set by the least-powered procedure. guild_mcnemar contributes one test per replicate, so its pooled trial count is 2 x null replicates. 1200 null replicates give 2400 trials, a standard error of 0.0045 at a true rate of 0.05, and the operating characteristics below. Procedures with more labels per replicate exceed these numbers.",
     "required_operating_characteristics": {
@@ -95,7 +95,8 @@
       "fail_probability_at_0.08": 1.0
     },
     "reported_per_verdict": "every criterion row carries the pass probability at the nominal level and the fail probability at 0.06, 0.07 and 0.08 for the design that produced it, so a verdict is never reported without the probability it would have been reached.",
-    "what_the_tolerance_does_not_detect": "a true rate of 0.06 lies inside the declared tolerance, so a precisely measured 0.06 passes by declaration rather than by weakness: at 2400 trials it fails 73% of the time only because the bound is still wide, and at the 14400 trials fraction_sign_test contributes it passes 81% of the time. Treating 0.06 as material inflation would mean declaring a tolerance of 0.055, which needs about 20600 pooled trials - 10300 null replicates for a single-test procedure - to keep the pass probability at the nominal level at 0.95. That budget was not taken; the criterion is sized to separate rates at or below 0.065 from rates at or above 0.07."
+    "what_the_tolerance_does_not_detect": "a true rate of 0.06 lies inside the declared tolerance, so a precisely measured 0.06 passes by declaration rather than by weakness: at 2400 trials it fails 73% of the time only because the bound is still wide, and at the 14400 trials fraction_sign_test contributes it passes 81% of the time. Treating 0.06 as material inflation would mean declaring a tolerance of 0.055, which needs about 20600 pooled trials - 10300 null replicates for a single-test procedure - to keep the pass probability at the nominal level at 0.95. That budget was not taken; the criterion is sized to separate rates at or below 0.065 from rates at or above 0.07.",
+    "overall_status": "per procedure: 'fail' if any judged criterion failed; otherwise 'pass' only if every judged criterion passed; otherwise 'not_certified'. 'reported' rows are not judged. calibration_status.json exports every criterion's verdict beside the overall status."
   },
   "acceptance_criteria": [
     {
@@ -187,6 +188,14 @@
       "change": "the resampler moved from random.Random seeded with a per-scenario string to numpy.random.default_rng seeded with [seed, sha256_64(stream), replicate], and replicates.ci_check was removed as unused",
       "reason": "the string seed made a replicate's assignment reachable only by replaying the scenario, so another arm could not reuse it (#263), and the stdlib generator required a global bandit B311 suppression, which AGENTS.md treats as a workaround. Every number in the v2 report therefore comes from different draws than v1, not only from different rules.",
       "unchanged": "the draw order within a replicate, the flip probability of 0.5 per unit and the seed 182"
+    },
+    {
+      "date": "2026-10-08",
+      "protocol": "calibration-v2",
+      "change": "three changes to how verdicts are reached and exported, none to the criteria or tolerances. (1) The pooled per-test bound is now the larger of the clustered normal bound and an exact bound at the effective sample size. (2) A run below the declared replicate budget reports insufficient_budget instead of pass, and instead of a fail that rests only on interval width. (3) calibration_status.json exports every criterion's verdict per procedure and an overall status, where it previously exported per_test_level alone.",
+      "reason": "the #240 review of 2026-10-03 ran the supported quick command (5 null and 5 power replicates, seed 1) and found calibration_status.json exporting guild_mcnemar as pass: the clustered variance is zero when no replicate rejects, so 0/10 gave an upper bound of 0, and the export dropped the failed family_error criterion. #241 consumed that as an unqualified pass.",
+      "known_when_amended": "the full-budget v2 report and the quick-run counterexample. The full-budget report was regenerated after this amendment; its verdicts are in calibration_criteria.tsv beside the code commit that produced them.",
+      "unchanged": "the tolerances, the nominal level, the replicate budgets, the null and injection designs, and every procedure"
     }
   ]
 }

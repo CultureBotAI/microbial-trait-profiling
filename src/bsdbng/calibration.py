@@ -48,7 +48,7 @@ from statistics import fmean, median
 from typing import Any
 
 import numpy as np
-from scipy.stats import binomtest, false_discovery_control, norm
+from scipy.stats import beta, binomtest, false_discovery_control, norm
 
 from bsdbng.guild_maps import GuildMatrix, build_matrix, compute_correlation
 from bsdbng.paths import DERIVED_DATA_DIR, REPO_ROOT
@@ -669,6 +669,22 @@ class PooledRate:
     standard_error: float
     upper_bound: float
     design_effect: float
+    #: Trials deflated by the design effect: the binomial sample size carrying the
+    #: same information. At a zero or full rate the design effect cannot be measured,
+    #: so every replicate counts as one trial - the fully correlated worst case.
+    effective_trials: float
+
+
+def _effective_upper_bound(rate: float, effective_trials: float) -> float:
+    """The one-sided 95% Clopper-Pearson upper bound at a fractional sample size.
+
+    The exact bound is a beta quantile, which is defined for non-integer counts, so
+    the design effect can deflate the sample size without rounding it.
+    """
+    successes = rate * effective_trials
+    if successes >= effective_trials:
+        return 1.0
+    return float(beta.ppf(0.95, successes + 1.0, effective_trials - successes))
 
 
 def pooled_rate(counts: Sequence[tuple[int, int]]) -> PooledRate | None:
@@ -677,6 +693,14 @@ def pooled_rate(counts: Sequence[tuple[int, int]]) -> PooledRate | None:
     This is the ratio estimator over replicate clusters. Its variance reduces to the
     binomial one when every replicate contributes a single test, and inflates it by
     the measured design effect when a replicate contributes several correlated tests.
+
+    The reported bound is the larger of that normal-theory bound and an exact
+    binomial bound at the effective sample size. The normal bound alone collapses to
+    the point estimate when no replicate rejects - the empirical variance is then
+    zero - so ten null trials without a rejection would certify a rate of exactly
+    zero (#240 review, 2026-10-03). The exact bound keeps the uncertainty a zero
+    count still carries, and charges for clustering through the effective sample
+    size rather than through a variance that cannot be estimated.
     """
     usable = [(k, m) for k, m in counts if m > 0]
     if len(usable) < 2:
@@ -689,14 +713,18 @@ def pooled_rate(counts: Sequence[tuple[int, int]]) -> PooledRate | None:
     variance = clusters / (clusters - 1) * residual / trials**2
     independent = rate * (1.0 - rate) / trials
     error = math.sqrt(variance)
+    measurable = independent > 0 and variance > 0
+    design_effect = variance / independent if measurable else 1.0
+    effective = trials / max(design_effect, 1.0) if measurable else float(clusters)
     return PooledRate(
         clusters=clusters,
         trials=trials,
         rejections=rejections,
         rate=rate,
         standard_error=error,
-        upper_bound=rate + Z_ONE_SIDED * error,
-        design_effect=variance / independent if independent > 0 and variance > 0 else 1.0,
+        upper_bound=max(rate + Z_ONE_SIDED * error, _effective_upper_bound(rate, effective)),
+        design_effect=design_effect,
+        effective_trials=effective,
     )
 
 
@@ -762,6 +790,8 @@ def _criterion_row(
         "trials": None,
         "rejections": None,
         "design_effect": None,
+        "replicates_recorded": None,
+        "replicates_required": None,
     }
     for name in _operating_column_names():
         row[name] = None
@@ -949,6 +979,60 @@ def _selection_row(
     )
 
 
+def _null_replicates(ledger: Sequence[Mapping[str, object]], procedure: str) -> int:
+    """Complete-null replicates recorded for a procedure, over every null scenario."""
+    return sum(
+        1
+        for r in ledger
+        if r["procedure"] == procedure and str(r["scenario"]).startswith("complete_null")
+    )
+
+
+def _power_replicates(rows: Sequence[Mapping[str, object]], procedure: str) -> int:
+    """The fewest replicates behind any injected scenario's power estimate."""
+    counts = [
+        int(str(r["replicates"]))
+        for r in rows
+        if r["procedure"] == procedure
+        and r["role"] == "injected_effect"
+        and r.get("replicates") is not None
+    ]
+    return min(counts) if counts else 0
+
+
+def _gate(row: dict[str, object], recorded: int, required: int) -> dict[str, object]:
+    """Withhold a verdict that the declared replicate budget did not pay for.
+
+    The operating characteristics the protocol declares hold only at the declared
+    budget, so a shorter run can neither certify calibration nor fail a procedure
+    merely because its interval is still wide. The one verdict a short run can
+    reach is a failure whose point estimate already exceeds the tolerance: that is
+    evidence of inflation, not a lack of evidence.
+    """
+    row["replicates_recorded"] = recorded
+    row["replicates_required"] = required
+    if recorded >= required or row["verdict"] not in ("pass", "fail"):
+        return row
+    estimate, tolerance = row.get("estimate"), row.get("tolerance")
+    if (
+        row["verdict"] == "fail"
+        and row["criterion"] != "power_reported"
+        and estimate is not None
+        and tolerance is not None
+        and float(str(estimate)) > float(str(tolerance))
+    ):
+        return row
+    gated = dict(row)
+    gated["verdict"] = "insufficient_budget"
+    expected = gated["expected_verdict"]
+    gated["expectation_met"] = None if expected is None else expected == "insufficient_budget"
+    gated["detail"] = (
+        f"{row['detail']}; {recorded} replicates were recorded against a declared budget "
+        f"of {required}, so this run can neither certify nor reject calibration"
+    )
+    return gated
+
+
 def check_criteria(
     rows: Sequence[Mapping[str, object]],
     ledger: Sequence[Mapping[str, object]] = (),
@@ -956,15 +1040,20 @@ def check_criteria(
 ) -> list[dict[str, object]]:
     """Judge the declared acceptance criteria, reporting failures as failures."""
     declared = dict(protocol) if protocol is not None else load_protocol()
+    null_budget = int(declared["replicates"]["null"]) * len(NULL_SCENARIOS)
+    power_budget = int(declared["replicates"]["power"])
     results: list[dict[str, object]] = []
     for criterion in declared["acceptance_criteria"]:
         for procedure in criterion["applies_to"]:
             if criterion["id"] == "per_test_level":
-                results.append(_per_test_verdict(criterion, procedure, ledger))
+                row = _per_test_verdict(criterion, procedure, ledger)
+                results.append(_gate(row, _null_replicates(ledger, procedure), null_budget))
             elif criterion["id"] == "family_error":
-                results.append(_family_verdict(criterion, procedure, ledger))
+                row = _family_verdict(criterion, procedure, ledger)
+                results.append(_gate(row, _null_replicates(ledger, procedure), null_budget))
             elif criterion["id"] == "power_reported":
-                results.append(_power_verdict(criterion, procedure, rows))
+                row = _power_verdict(criterion, procedure, rows)
+                results.append(_gate(row, _power_replicates(rows, procedure), power_budget))
             elif criterion["id"] == "selection_inflation_measured":
                 results.append(_selection_row(criterion, procedure, rows))
             else:
@@ -979,6 +1068,40 @@ def check_criteria(
                     )
                 )
     return results
+
+
+#: Verdicts that are reported but never judged, so they do not enter the overall status.
+UNJUDGED = frozenset({"reported"})
+
+OVERALL_RULE = (
+    "per procedure: 'fail' if any judged criterion failed; otherwise 'pass' only if every "
+    "judged criterion passed; otherwise 'not_certified' (a criterion was "
+    "insufficient_budget or not_evaluated). 'reported' rows are not judged."
+)
+
+
+def calibration_status(criteria: Sequence[Mapping[str, object]]) -> dict[str, dict[str, object]]:
+    """Every criterion's verdict per procedure, and one overall status by ``OVERALL_RULE``.
+
+    The status used to carry only ``per_test_level``, so a failed family-error or
+    power criterion vanished before it reached a consumer (#240 review, 2026-10-03).
+    """
+    by_procedure: dict[str, dict[str, str]] = {}
+    for row in criteria:
+        by_procedure.setdefault(str(row["procedure"]), {})[str(row["criterion"])] = str(
+            row["verdict"]
+        )
+    status: dict[str, dict[str, object]] = {}
+    for procedure, verdicts in by_procedure.items():
+        judged = [v for v in verdicts.values() if v not in UNJUDGED]
+        if "fail" in judged:
+            overall = "fail"
+        elif judged and all(v == "pass" for v in judged):
+            overall = "pass"
+        else:
+            overall = "not_certified"
+        status[procedure] = {"overall": overall, "criteria": verdicts}
+    return status
 
 
 def flip_assignments(
@@ -1047,6 +1170,43 @@ def _write(path: Path, rows: Sequence[Mapping[str, object]]) -> Path:
         writer.writerow(fields)
         writer.writerows([_format(row.get(field)) for field in fields] for row in rows)
     return path
+
+
+@dataclass(frozen=True)
+class CalibrationRun:
+    """Everything one calibration run produces before it is written out."""
+
+    rows: list[dict[str, object]]
+    ledger: list[dict[str, object]]
+    injection_rows: list[dict[str, object]]
+    completed: dict[str, int]
+    criteria: list[dict[str, object]]
+
+
+def run_calibration(
+    profiles: Sequence[Profile],
+    procedures: Mapping[str, Procedure],
+    replicates: int,
+    power_replicates: int,
+    seed: int,
+    protocol: Mapping[str, Any] | None = None,
+) -> CalibrationRun:
+    """Run every declared scenario and judge the acceptance criteria on the result."""
+    rows: list[dict[str, object]] = []
+    ledger: list[dict[str, object]] = []
+    injection_rows: list[dict[str, object]] = []
+    completed: dict[str, int] = {}
+    for scenario in SCENARIOS:
+        injected = INJECTED_TRAIT if scenario in POWER_SCENARIOS else None
+        count = power_replicates if injected else replicates
+        run = run_replicates(profiles, scenario, count, seed, procedures)
+        rows.extend(summarize(run.runs, scenario, injected))
+        ledger.extend(replicate_counts(run.runs, scenario, injected))
+        injection_rows.extend(summarize_injection(run.injections, scenario))
+        completed[scenario.name] = len(run.runs)
+        print(f"{scenario.name}: {len(run.runs)} replicates")
+    criteria = check_criteria(rows, ledger, protocol)
+    return CalibrationRun(rows, ledger, injection_rows, completed, criteria)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -1129,22 +1289,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(flip_manifest_path)
         return 0
 
-    rows: list[dict[str, object]] = []
-    ledger: list[dict[str, object]] = []
-    injection_rows: list[dict[str, object]] = []
-    completed: dict[str, int] = {}
     matrix = build_matrix(profiles, max_conditions=60, max_body_sites=8, min_studies=3)
-    procedures = procedures_for(matrix)
-    for scenario in SCENARIOS:
-        injected = INJECTED_TRAIT if scenario in POWER_SCENARIOS else None
-        replicates = power_replicates if injected else args.replicates
-        run = run_replicates(profiles, scenario, replicates, args.seed, procedures)
-        rows.extend(summarize(run.runs, scenario, injected))
-        ledger.extend(replicate_counts(run.runs, scenario, injected))
-        injection_rows.extend(summarize_injection(run.injections, scenario))
-        completed[scenario.name] = len(run.runs)
-        print(f"{scenario.name}: {len(run.runs)} replicates")
-    criteria = check_criteria(rows, ledger, protocol)
+    result = run_calibration(
+        profiles, procedures_for(matrix), args.replicates, power_replicates, args.seed, protocol
+    )
+    rows, ledger, injection_rows = result.rows, result.ledger, result.injection_rows
+    completed, criteria = result.completed, result.criteria
 
     written = [
         flip_path,
@@ -1179,11 +1329,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "family": f"Benjamini-Hochberg over {SCREEN_KEEP} traits selected in the replicate",
             },
         },
-        "calibration_status": {
-            str(row["procedure"]): row["verdict"]
-            for row in criteria
-            if row["criterion"] == "per_test_level"
-        },
+        "calibration_status_rule": OVERALL_RULE,
+        "calibration_status": calibration_status(criteria),
         "not_calibrated_here": [
             "the enrichment arm's hypergeometric urn (#131)",
             "the composition arm's native transformed test",
