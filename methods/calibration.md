@@ -114,14 +114,32 @@ and every criterion row in `calibration_criteria.tsv` carries these four
 probabilities for the design that produced it, so no verdict is reported without the
 probability it would have been reached.
 
+The pooled per-test bound is the larger of the replicate-clustered normal bound and
+an exact Clopper-Pearson bound at the effective sample size (trials divided by the
+measured design effect). The normal bound alone collapses to the point estimate when
+no replicate rejects, because the empirical variance is then zero: a five-replicate
+quick run reported `guild_mcnemar` at 0/10 with an upper bound of 0 and exported it
+as a pass (#240 review, 2026-10-03). With zero rejections the design effect cannot
+be measured, so each replicate counts as one trial, the fully correlated worst case;
+0/10 then gives 0.259, the same bound the family criterion reports for those ten
+replicates. At the declared budget the exact bound sits within 0.001 of the normal
+one, which is why the three affected bounds below moved by at most 0.0007.
+
+A run below the declared replicate budget cannot certify calibration. A criterion it
+would pass, or would fail only because its interval is still wide, is reported as
+`insufficient_budget`; it still fails a criterion whose point estimate already
+exceeds the tolerance. `calibration_status.json` exports every criterion's verdict
+per procedure beside an overall status: `fail` if any judged criterion failed,
+otherwise `pass` only if every judged criterion passed, otherwise `not_certified`.
+
 At 1200 null and 400 power replicates, seed 182, on the pinned v1.3.1 corpus:
 
 | Criterion | Procedure | Verdict | Evidence |
 | --- | --- | --- | --- |
-| Pooled per-test upper bound at most 0.065 | fraction_sign_test | **pass** | 0.0463 (667/14,400), upper bound 0.0494 |
+| Pooled per-test upper bound at most 0.065 | fraction_sign_test | **pass** | 0.0463 (667/14,400), upper bound 0.0496 |
 | | log_ratio_sign_test | **pass** | 0.0431 (1,553/36,000), upper bound 0.0454 |
-| | guild_mcnemar | **pass** | 0.0429 (103/2,400), upper bound 0.0497 |
-| | screened_fraction_sign_test | **fail** (expected) | 0.0924 (665/7,200), upper bound 0.0986 |
+| | guild_mcnemar | **pass** | 0.0429 (103/2,400), upper bound 0.0504 |
+| | screened_fraction_sign_test | **fail** (expected) | 0.0924 (665/7,200), upper bound 0.0988 |
 | Family upper bound at most 0.065 | fraction_sign_test | **pass** | 0.0437 (105/2,400), exact upper bound 0.0513 |
 | | log_ratio_sign_test | **pass** | 0.0146 (35/2,400), exact upper bound 0.0193 |
 | | guild_mcnemar | **pass** | 0.0429 (103/2,400), exact upper bound 0.0504 |
@@ -236,9 +254,10 @@ independent validation, and none is claimed.
 
 `just calibration-report` at the declared budget of 1200 null and 400 power
 replicates, about twenty minutes, on the pinned BugSigDBExports v1.3.1 inputs.
-`just calibration-report --replicates 5` is the quick pass; note that it honestly
-reports the precision criteria as **failed**, because five replicates cannot meet
-either the tolerance bound or the power interval width. (The form documented here
+`just calibration-report --replicates 5 --power-replicates 5` is the quick pass. It
+reports every judged criterion as `insufficient_budget` and every procedure as
+`not_certified`, because five replicates can neither meet the tolerance bound nor
+show that a procedure exceeds it; it is a smoke test, not a calibration. (The form documented here
 previously, `just calibration-report -- --replicates 5`, fails: `just` forwards the
 literal `--` and argparse rejects it.)
 
@@ -252,17 +271,21 @@ criterion fails a true rate of 0.06 to 0.08 at the declared budget **and** fails
 16/200 at the v1 budget, which the v1 rule passed; that the criterion's analytic
 operating characteristics match sampled ledgers; that the family rule accounts for
 Monte Carlo error; that the negative control's unmet expectation is surfaced; that
-power without an interval is not reported as a pass; that a replicate stream is
+power without an interval is not reported as a pass; that zero rejections in ten
+trials do not certify a zero rate; that a pass below the declared budget is withheld;
+that the exported overall status keeps every failed criterion visible; that an
+end-to-end quick run certifies nothing; that a replicate stream is
 addressable on its own; and that the shared artefact matches the scenario it names.
 
-The run that produced the numbers above: seed 182; 1200 + 1200 + 400 + 400 + 400 +
+The run that produced the numbers above: code commit `da8e1c1`; seed 182; 1200 + 1200 + 400 + 400 + 400 +
 400 completed replicates; BugSigDB vintage `2026-04-24_00:41_UTC`;
 `study_trait_profiles_wide.tsv` sha256 `6e70724e...92c6a73`; `experiments.tsv` sha256
 `403afea9...f30ad230`; `full_dump.csv` sha256 `af84bfca...0fdd5788`; corpus 4,670
 paired profiles over 2,335 experiments and 959 studies after the human-host and
 pairing filters. The full digests, the protocol digest and the analysis-source digest
 are in `calibration_status.json`, which also carries each procedure's tested level,
-family and verdict for the integrated evidence table of #178.
+family, per-criterion verdicts and overall status for the integrated evidence table
+of #178.
 
 The protocol, code and this description were drafted with the assistance of a coding
 agent (Claude Code) and require review by the author before manuscript use.
