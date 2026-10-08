@@ -464,3 +464,10 @@ clean-logs:
 	rm -f {{logdir}}/pipeline.log
 
 clean-all: clean-raw clean-studies clean-derived clean-logs
+
+# The widened directional screen of #255 run under the directional arm's complete
+# study-flip null (#263): how many traits each correction calls when nothing is there,
+# beside the observed calls. Replicate i is replicate i of the shared flip artefact.
+[positional-arguments]
+calibration-screen *ARGS:
+	uv run python -m bsdbng.screen_calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
