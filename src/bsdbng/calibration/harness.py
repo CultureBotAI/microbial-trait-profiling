@@ -203,11 +203,17 @@ def run_ora_calibration_benchmark(
     if run_mixed and not spike_traits:
         raise ValueError("Mixed-signal scenario requires at least one spike trait")
 
-    adapter_config = {**(config or {}), "alpha": fdr_q}
+    min_fold = config.get("min_fold", 1.5) if config and "min_fold" in config else 1.5
+    adapter_config = {
+        "alpha": fdr_q,
+        "min_fold": min_fold,
+        **(config or {}),
+    }
     child_seeds = np.random.SeedSequence(seed).spawn(replicates)
 
     records: list[ReplicateRecord] = []
     null_frames: list[pd.DataFrame] = []
+    replicate_null_rates: list[float] = []
     mixed_discoveries: list[set[tuple[str, str]]] = []
     all_true_signal_pairs: set[tuple[str, str]] = set()
     adapter_metadata: dict[str, Any] = {}
@@ -220,6 +226,7 @@ def run_ora_calibration_benchmark(
             status=REPLICATE_COMPLETED,
         )
         rep_null: pd.DataFrame | None = None
+        rep_null_rate: float = 0.0
         rep_disc: set[tuple[str, str]] | None = None
         rep_truth: set[tuple[str, str]] = set()
         try:
@@ -231,10 +238,14 @@ def run_ora_calibration_benchmark(
                 null_res = adapter.run_inference(null_sim_df, taxa_matrix_df, adapter_config)
                 adapter_metadata = null_res.metadata
                 record.n_null_tests = len(null_res.results_df)
+                rep_null_pvals = null_res.results_df["p_value"].to_numpy(dtype=float)
+                rep_null_rate = (
+                    float(np.mean(rep_null_pvals <= alpha)) if len(rep_null_pvals) > 0 else 0.0
+                )
                 rep_null = pd.DataFrame(
                     {
                         "replicate_index": rep_idx,
-                        "null_p_value": null_res.results_df["p_value"].to_numpy(dtype=float),
+                        "null_p_value": rep_null_pvals,
                     }
                 )
             if run_mixed:
@@ -275,6 +286,7 @@ def run_ora_calibration_benchmark(
         else:
             if rep_null is not None:
                 null_frames.append(rep_null)
+                replicate_null_rates.append(rep_null_rate)
             if rep_disc is not None:
                 # Key pairs by replicate so each replicate's FDP is computed
                 # against its own ground truth, not the union across replicates.
@@ -290,7 +302,11 @@ def run_ora_calibration_benchmark(
     )
     pvals = null_pvalues["null_p_value"].to_numpy(dtype=float)
 
-    type_i = compute_type_i_error(pvals, alpha=alpha) if run_null and len(pvals) else None
+    type_i = (
+        compute_type_i_error(pvals, alpha=alpha, replicate_rates=replicate_null_rates)
+        if run_null and len(pvals)
+        else None
+    )
     ecdf_df = compute_discrete_ecdf(pvals)
     fdr_metric = (
         compute_empirical_fdr(mixed_discoveries, all_true_signal_pairs, target_q=fdr_q)
@@ -428,6 +444,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--scenario", choices=SCENARIOS, default="all")
     parser.add_argument("--test-type", choices=["enrichment", "depletion"], default="enrichment")
     parser.add_argument(
+        "--min-fold",
+        type=float,
+        default=1.5,
+        help="Minimum fold enrichment for significance (default: 1.5).",
+    )
+    parser.add_argument(
         "--signal-strength",
         type=float,
         default=0.6,
@@ -533,7 +555,7 @@ def main(args: list[str] | None = None) -> int:
             fdr_q=parsed.fdr_q,
             scenario=parsed.scenario,
             signal_strength=parsed.signal_strength,
-            config={"test_type": parsed.test_type},
+            config={"test_type": parsed.test_type, "min_fold": parsed.min_fold},
         )
     except Exception as err:
         error_message = f"{type(err).__name__}: {err}"
