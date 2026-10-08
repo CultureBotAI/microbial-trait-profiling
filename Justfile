@@ -99,6 +99,10 @@ study-trait-profiles: taxa-trait-matrix
 audit-table1-traits: study-trait-profiles
 	uv run python scripts/audit_table1_trait_semantics.py
 
+# Audit trait correlation, annotation density adjustment, and near-twin collinearity.
+audit-trait-density: study-trait-profiles
+	uv run python scripts/audit_trait_density_correlation.py
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
