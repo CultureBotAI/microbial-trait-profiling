@@ -121,6 +121,7 @@ class MissingConditions:
     cut_by_display: tuple[str, ...]
     pooled_in_other: tuple[str, ...] = ()
     pooled_not_drawn: tuple[str, ...] = ()
+    left_out_of_panel: tuple[str, ...] = ()
 
 
 def missing_conditions(
@@ -130,6 +131,7 @@ def missing_conditions(
     drawn_conditions: Sequence[str],
     blank_conditions: Collection[str] = (),
     pooled_conditions: Collection[str] = (),
+    combined_conditions: Collection[str] = (),
 ) -> MissingConditions:
     """Split undrawn panel conditions into the three causes that look alike.
 
@@ -143,13 +145,19 @@ def missing_conditions(
     than guessed at. ``pooled_conditions`` lists actual Other membership from the
     full matrix build; the presence of an Other row alone cannot establish it.
     ``drawn_conditions`` belongs to the figure being annotated, which may omit
-    the combined figure's Other row. Repeated requests are counted once.
+    the combined figure's Other row. ``combined_conditions`` are the rows the
+    combined figure draws: one of those missing from a panel was removed by the
+    panel's own cut, not by the top-N width cut, so it is reported apart from
+    ``cut_by_display``. Repeated requests are counted once.
     """
     drawn = set(drawn_conditions)
     blank = set(blank_conditions)
     pooled = set(pooled_conditions)
+    combined = set(combined_conditions)
     requested = tuple(dict.fromkeys(requested))
     held = [name for name in requested if name in corpus_conditions and name not in drawn]
+    left_out = tuple(name for name in held if name in combined)
+    held = [name for name in held if name not in combined]
     pooled_missing = tuple(name for name in held if name in pooled)
     return MissingConditions(
         absent_from_corpus=tuple(name for name in requested if name not in corpus_conditions),
@@ -157,6 +165,7 @@ def missing_conditions(
         cut_by_display=tuple(name for name in held if name not in blank and name not in pooled),
         pooled_in_other=pooled_missing if OTHER_LABEL in drawn else (),
         pooled_not_drawn=pooled_missing if OTHER_LABEL not in drawn else (),
+        left_out_of_panel=left_out,
     )
 
 
@@ -190,6 +199,11 @@ def missing_condition_note(
         parts.append(
             "Assigned to the pooled Other row, which is not drawn in this panel: "
             f"{', '.join(missing.pooled_not_drawn)}."
+        )
+    if missing.left_out_of_panel:
+        parts.append(
+            "Drawn in the combined figure but left out of this panel's cut: "
+            f"{', '.join(missing.left_out_of_panel)}."
         )
     return " ".join(parts) if parts else None
 
@@ -688,6 +702,7 @@ def main() -> int:
             drawn_conditions=cut.conditions,
             blank_conditions=matrix.dropped_empty_conditions,
             pooled_conditions=pooled_conditions,
+            combined_conditions=matrix.conditions,
         )
         note = missing_condition_note(
             missing, max_conditions=args.max_conditions, min_studies=args.min_studies
@@ -715,6 +730,11 @@ def main() -> int:
             print(
                 f"focus panel {panel.slug}: assigned to Other, not drawn in this panel: "
                 f"{', '.join(missing.pooled_not_drawn)}"
+            )
+        if missing.left_out_of_panel:
+            print(
+                f"focus panel {panel.slug}: drawn in the combined figure, not in this panel: "
+                f"{', '.join(missing.left_out_of_panel)}"
             )
         if not cut.conditions or not cut.body_sites:
             print(f"focus panel {panel.slug}: nothing drawn, skipped")

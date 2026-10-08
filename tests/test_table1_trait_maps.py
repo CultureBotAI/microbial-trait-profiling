@@ -9,6 +9,7 @@ from bsdbng import table1_trait_maps
 from bsdbng.guild_maps import (
     OTHER_LABEL,
     SIGN_TOLERANCE,
+    GuildMatrix,
     build_matrix,
     subset_matrix,
     write_body_site_panels,
@@ -540,3 +541,31 @@ def test_cli_focus_note_uses_actual_pooling_state(
         assert "outside the top" not in note
     else:
         assert "outside the top-1 condition cut, so not drawn: Asthma" in note
+
+
+def test_row_left_out_of_a_panel_is_not_blamed_on_the_width_cut() -> None:
+    # Under --mark-no-signal the combined figure keeps a row whose only cells are
+    # sampled-without-signal, but a focus cut drops it (#318).
+    matrix = GuildMatrix(
+        conditions=["A", "NoSig"],
+        body_sites=["Feces"],
+        columns=["Feces|g"],
+        values=[[0.5], [None]],
+        study_counts=[[3], [3]],
+        row_clusters=[1, 1],
+        pooled=[],
+        dropped_empty_conditions=[],
+        dropped_body_sites=[],
+        sampled_no_signal=[[False], [True]],
+    )
+    cut = subset_matrix(matrix, conditions=("A", "NoSig"))
+    missing = missing_conditions(
+        ("A", "NoSig"),
+        corpus_conditions={"A", "NoSig"},
+        drawn_conditions=cut.conditions,
+        combined_conditions=matrix.conditions,
+    )
+    assert missing.left_out_of_panel == ("NoSig",)
+    assert not missing.cut_by_display
+    note = missing_condition_note(missing, max_conditions=60, min_studies=3)
+    assert note == "Drawn in the combined figure but left out of this panel's cut: NoSig."
