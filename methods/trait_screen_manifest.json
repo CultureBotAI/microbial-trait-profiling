@@ -50,6 +50,13 @@
       "reason": "ruling on #265 by the PI (2026-09-28): Li & Ji and Galwey set per-test familywise thresholds, so substituting their m into BH or BY is a heuristic, and BY at the nominal m already controls FDR under arbitrary dependence.",
       "known_when_amended": "the full screen result: 18 traits at BY q <= 0.05 with m = 317, 56 with m = 112.",
       "unchanged": "the candidate rule, the test, both corrections, both family sizes and every output column; only which column the reporting leads with"
+    },
+    {
+      "date": "2026-10-08",
+      "change": "effective_family_size.why_excluded is corrected. Cheverud/Nyholt is excluded as an unreliable estimator (Li & Ji 2005 found it overly large and excessively conservative; Salyakina et al. 2005 found its error rate off in both directions) that disagrees with Li & Ji and Galwey on this corpus, not as anticonservative.",
+      "reason": "#325: on this corpus Cheverud/Nyholt gives the largest effective m of the three (294.4 vs Li & Ji 112.0 on the contrast basis; 198.9 vs 60.0 on the profile basis), so it would give the strictest correction, the opposite of the original rationale.",
+      "known_when_amended": "the full screen result, including the effective family sizes in trait_screen_family.tsv.",
+      "unchanged": "which estimators are reported and which is excluded; every number and output column"
     }
   ]
 }
