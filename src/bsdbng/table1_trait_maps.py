@@ -724,6 +724,22 @@ def main() -> int:
     # same matrix is cut into the four smaller heatmaps of FOCUS_PANELS, all on
     # the combined figure's colour ranges so a cell is the same colour in each.
     for panel in FOCUS_PANELS:
+        # A panel naming a body site the figure does not draw (e.g. Other under
+        # --drop-other-body-sites, or a site too few conditions reach) cannot be
+        # cut; drawing the remaining sites would mislabel it, so skip it (#324).
+        absent_sites = [site for site in panel.sites or () if site not in matrix.body_sites]
+        if absent_sites:
+            reasons = [
+                f"{site} (dropped: fewer than {args.min_site_conditions} conditions)"
+                if site in matrix.dropped_body_sites
+                else f"{site} (not in this figure's body sites)"
+                for site in absent_sites
+            ]
+            print(
+                f"focus panel {panel.slug}: names body sites this figure does not draw, "
+                f"skipped: {', '.join(reasons)}"
+            )
+            continue
         cut = subset_matrix(matrix, conditions=panel.conditions, sites=panel.sites)
         missing = missing_conditions(
             panel.conditions or (),
