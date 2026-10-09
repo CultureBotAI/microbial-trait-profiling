@@ -123,7 +123,7 @@ ignore_errors = true
 
 # pandas, scipy and plotly ship no type information; the repo's own code stays strict.
 [[tool.mypy.overrides]]
-module = ["pandas", "scipy.*", "plotly.*"]
+module = ["pandas", "pandas.*", "scipy.*", "plotly.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
