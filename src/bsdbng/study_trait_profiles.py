@@ -135,6 +135,7 @@ def collect_profile_taxa(
     study_dir: Path,
     *,
     deduplicate_taxa: bool = True,
+    host_species: str | None = None,
 ) -> tuple[dict[ProfileKey, list[str]], int]:
     """Collect taxa from per-study YAML files by study, experiment, and direction."""
     profile_taxa: dict[ProfileKey, list[str]] = {}
@@ -150,6 +151,11 @@ def collect_profile_taxa(
         for experiment in experiments:
             if not isinstance(experiment, dict):
                 continue
+
+            if host_species is not None:
+                host = _as_text(experiment.get("host_species")).strip().lower()
+                if host != host_species.lower():
+                    continue
 
             experiment_id = _as_text(experiment.get("id")).strip()
             signatures_obj = experiment.get("signatures")
@@ -189,8 +195,14 @@ def collect_profile_taxa(
 def aggregate_profile_counts(
     profile_taxa: dict[ProfileKey, list[str]],
     matrix: TaxaTraitMatrix,
+    *,
+    binary: bool = False,
 ) -> tuple[dict[ProfileKey, Counter[str]], int, int]:
-    """Sum taxon trait vectors for each study profile."""
+    """Aggregate taxon trait presence or counts for each study profile.
+
+    When binary=True, counts the number of distinct taxa in the profile
+    bearing each trait (0 or 1 per taxon). When binary=False (default), sums raw assertion counts.
+    """
     profile_counts = {key: Counter[str]() for key in profile_taxa}
     matched_profile_taxa = 0
     unmatched_profile_taxa = 0
@@ -203,7 +215,13 @@ def aggregate_profile_counts(
                 continue
 
             matched_profile_taxa += 1
-            profile_counts[key].update(taxon_counts)
+            if binary:
+                # Binary indicator: each taxon contributes 1 if it has the trait
+                for trait, count in taxon_counts.items():
+                    if count > 0:
+                        profile_counts[key][trait] += 1
+            else:
+                profile_counts[key].update(taxon_counts)
 
     return profile_counts, matched_profile_taxa, unmatched_profile_taxa
 
@@ -212,15 +230,20 @@ def write_wide_profiles(
     output_path: Path,
     profile_counts: dict[ProfileKey, Counter[str]],
     trait_columns: list[str],
+    profile_taxa_counts: dict[ProfileKey, int] | None = None,
 ) -> None:
     """Write one row per study, experiment, and inc/dec profile."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
-        writer.writerow(["study_id", "experiment_id", "inc_dec", *trait_columns])
+        extra_cols = ["taxa_count"] if profile_taxa_counts is not None else []
+        writer.writerow(["study_id", "experiment_id", "inc_dec", *extra_cols, *trait_columns])
         for key in sorted(profile_counts):
             counts = profile_counts[key]
-            writer.writerow([*key, *[str(counts.get(column, 0)) for column in trait_columns]])
+            taxa_val = [str(profile_taxa_counts[key])] if profile_taxa_counts is not None else []
+            writer.writerow(
+                [*key, *taxa_val, *[str(counts.get(column, 0)) for column in trait_columns]]
+            )
 
 
 def write_long_profiles(
@@ -249,8 +272,11 @@ def create_study_trait_profiles(
     output_path: Path = DEFAULT_OUTPUT_PATH,
     output_format: ProfileFormat = "wide",
     deduplicate_taxa: bool = True,
+    binary: bool = False,
+    include_taxa_count: bool = False,
+    host_species: str | None = None,
 ) -> StudyTraitProfileStats:
-    """Create a study profile TSV by summing taxa-trait vectors from YAML taxa."""
+    """Create a study profile TSV by aggregating taxa-trait presence from YAML taxa."""
     if output_format not in PROFILE_FORMATS:
         raise ValueError(f"Unsupported output format: {output_format}")
     if not study_dir.exists():
@@ -262,14 +288,28 @@ def create_study_trait_profiles(
     profile_taxa, taxon_observations = collect_profile_taxa(
         study_dir,
         deduplicate_taxa=deduplicate_taxa,
+        host_species=host_species,
     )
     profile_counts, matched_profile_taxa, unmatched_profile_taxa = aggregate_profile_counts(
         profile_taxa,
         matrix,
+        binary=binary,
     )
 
     if output_format == "wide":
-        write_wide_profiles(output_path, profile_counts, matrix.trait_columns)
+        profile_taxa_counts = None
+        if include_taxa_count:
+            # Issue #350: N must strictly count matched signature taxa in matrix universe M
+            profile_taxa_counts = {
+                key: sum(1 for taxon_id in taxa if taxon_id in matrix.counts_by_taxon)
+                for key, taxa in profile_taxa.items()
+            }
+        write_wide_profiles(
+            output_path,
+            profile_counts,
+            matrix.trait_columns,
+            profile_taxa_counts=profile_taxa_counts,
+        )
     else:
         write_long_profiles(output_path, profile_counts, matrix.trait_columns)
 
@@ -327,6 +367,27 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Count repeated taxon IDs within the same study/experiment/direction profile.",
     )
+    parser.add_argument(
+        "--binary",
+        action="store_true",
+        default=False,
+        help=(
+            "Count binary taxon presence per trait (0 or 1 per taxon) "
+            "rather than raw assertion counts."
+        ),
+    )
+    parser.add_argument(
+        "--include-taxa-count",
+        action="store_true",
+        default=False,
+        help="Include matched signature taxa_count column in wide format output.",
+    )
+    parser.add_argument(
+        "--host-species",
+        type=str,
+        default=None,
+        help="Optional filter by host species (e.g. 'Homo sapiens').",
+    )
     return parser
 
 
@@ -340,6 +401,9 @@ def main() -> int:
         output_path=output_path,
         output_format=output_format,
         deduplicate_taxa=not args.count_duplicates,
+        binary=args.binary,
+        include_taxa_count=args.include_taxa_count,
+        host_species=args.host_species,
     )
 
     print(f"Wrote {stats.output_format} study trait profiles: {stats.output_path}")
