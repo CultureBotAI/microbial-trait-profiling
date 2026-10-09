@@ -343,6 +343,9 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
     assert contrast.li_ji == pytest.approx(112.0, abs=0.05)
     assert contrast.galwey == pytest.approx(110.1, abs=0.05)
     assert contrast.cheverud_nyholt == pytest.approx(294.4, abs=0.05)
+    # Li & Ji is 111.99999999999996 here, so a floor instead of a round would
+    # silently correct at 111; the 56 count below is unchanged from 110 to 113 (#416).
+    assert result.effective_family_size_used == 112
     # The contrast-basis figures the methods note and report lead with (#326).
     assert contrast.median_rho == pytest.approx(0.089, abs=0.001)
     assert contrast.pc1_share == pytest.approx(0.206, abs=0.001)
@@ -363,7 +366,7 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
         "sphere_shaped": (467, 377, 115, 0.101343),
         "coccus_shaped": (499, 416, 44, 0.206457),
     }
-    table1 = {table1_slug(row.trait): row for row in result.rows if table1_slug(row.trait)}
+    table1 = {row.table1_slug: row for row in result.rows if row.table1_slug}
     assert set(table1) == set(expected)
     for slug, (up, down, tied, by_q) in expected.items():
         row = table1[slug]
