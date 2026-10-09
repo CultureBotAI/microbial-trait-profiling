@@ -152,9 +152,11 @@ of 0.0 or a p-value of 1.0. On the pinned corpus all 317 candidates are testable
 
 Every paired study contributes a contrast for every candidate, so the two untested states
 arise differently. A candidate that is zero, or otherwise equal, on both sides of every
-study in scope is `all_tied`; this is how a trait absent from a narrow body-site or
-condition scope shows up. `no_eligible_studies` cannot single out one candidate. Every
-candidate reads it at once when the scope holds no paired study at all.
+study screened is `all_tied`. If the screen were run on a subset of studies (the CLI has
+no such option today), this is how a trait absent from that subset would show up.
+`no_eligible_studies` cannot single out one candidate. Every candidate reads it at once
+when the screened profiles hold no paired study at all; on the real pipeline that means
+`load_profiles` kept no paired human study.
 
 ## Outputs
 

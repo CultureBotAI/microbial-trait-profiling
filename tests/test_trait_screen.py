@@ -181,6 +181,30 @@ def test_the_six_study_corpus_gives_the_hand_computed_sign_test() -> None:
     assert rows["B"].p_value == pytest.approx(1 / 32)
     assert rows["A"].bh_q_nominal == pytest.approx(3 / 64)
     assert rows["B"].bh_q_nominal == pytest.approx(3 / 64)
+    # Exact Clopper-Pearson for 6 of 6 is (0.025 ** (1 / 6), 1); testing the
+    # down count instead of the up count would put it at (0, 0.459) (#415).
+    assert rows["A"].ci_low == pytest.approx(0.025 ** (1 / 6))
+    assert rows["A"].ci_high == pytest.approx(1.0)
+
+
+def test_ties_are_left_out_of_the_binomial_n() -> None:
+    """The manifest's test is of non-tied studies; a unanimous fixture cannot show it (#415).
+
+    M shifts up in four studies, down in one, and is tied in one: p is the
+    two-sided exact binomial of 4 of 5 = 0.375. Counting the tie as a trial
+    would give 4 of 6 = 0.6875.
+    """
+    up = ({"M": 2, "Z": 1}, {"M": 1, "Z": 2})
+    down = ({"M": 1, "Z": 2}, {"M": 2, "Z": 1})
+    tied = ({"M": 1, "Z": 2}, {"M": 1, "Z": 2})
+    profiles = []
+    for index, (inc, dec) in enumerate([up, up, up, up, down, tied]):
+        profiles.append(_profile(f"s{index}", "inc", inc))
+        profiles.append(_profile(f"s{index}", "dec", dec))
+    rows = {row.trait: row for row in run_screen(profiles, ["M", "Z"]).rows}
+    assert (rows["M"].studies_up, rows["M"].studies_down, rows["M"].studies_tied) == (4, 1, 1)
+    assert rows["M"].p_value == pytest.approx(0.375)
+    assert rows["M"].share_up == pytest.approx(0.8)
 
 
 def test_an_all_tied_trait_has_no_result_rather_than_a_share_of_zero() -> None:
@@ -196,7 +220,7 @@ def test_an_all_tied_trait_has_no_result_rather_than_a_share_of_zero() -> None:
     assert rows["B"].share_up == pytest.approx(0.0)
 
 
-def test_a_trait_no_study_contrasts_is_untestable_not_a_null_result() -> None:
+def test_a_trait_zero_on_both_sides_is_all_tied_not_a_null_result() -> None:
     profiles = [
         _profile("s0", "inc", {"A": 1, "D": 0}),
         _profile("s0", "dec", {"A": 2, "D": 0}),
@@ -215,7 +239,9 @@ def test_no_eligible_studies_is_the_state_of_a_scope_with_no_paired_study() -> N
     """Every paired study contrasts every candidate, so this state is per-scope (#327).
 
     It cannot single out one trait; it is what every candidate reads when the
-    scope (say a body site no paired study sampled) holds no paired study at all.
+    profiles passed in hold no paired study at all. The CLI has no subset
+    option, so on the real pipeline this means load_profiles kept no paired
+    human study.
     """
     screen = run_screen([], ["A", "D"])
     assert {row.test_status for row in screen.rows} == {NO_ELIGIBLE_STUDIES}
