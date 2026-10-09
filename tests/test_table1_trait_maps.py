@@ -5,7 +5,15 @@ from pathlib import Path
 import pytest
 from scipy.stats import binomtest, false_discovery_control
 
-from bsdbng.guild_maps import SIGN_TOLERANCE, build_matrix, write_body_site_panels
+from bsdbng import table1_trait_maps
+from bsdbng.guild_maps import (
+    OTHER_LABEL,
+    SIGN_TOLERANCE,
+    GuildMatrix,
+    build_matrix,
+    subset_matrix,
+    write_body_site_panels,
+)
 from bsdbng.table1_trait_maps import (
     TRAIT_ORDER,
     MissingConditions,
@@ -378,4 +386,283 @@ def test_no_note_when_every_requested_condition_is_drawn() -> None:
             min_studies=3,
         )
         is None
+    )
+
+
+def test_repeated_requests_preserve_first_occurrence_order_in_every_category() -> None:
+    missing = missing_conditions(
+        ("B", "A", "B", "Blank", "Blank", "Absent", "Absent", "Pooled", "Pooled"),
+        corpus_conditions={"A", "B", "Blank", "Pooled"},
+        drawn_conditions=[OTHER_LABEL],
+        blank_conditions=["Blank"],
+        pooled_conditions=["Pooled"],
+    )
+    assert missing.cut_by_display == ("B", "A")
+    assert missing.blank_after_masking == ("Blank",)
+    assert missing.absent_from_corpus == ("Absent",)
+    assert missing.pooled_in_other == ("Pooled",)
+    note = missing_condition_note(missing, max_conditions=1, min_studies=3)
+    assert note is not None
+    assert "B, A." in note
+    assert note.count("Pooled") == 1
+
+
+@pytest.mark.parametrize("min_studies", [1, 2])
+def test_other_membership_comes_from_build_even_when_pool_is_masked(
+    corpus: tuple[Path, Path], min_studies: int
+) -> None:
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    matrix = build_matrix(
+        profiles,
+        max_conditions=1,
+        max_body_sites=1,
+        min_studies=min_studies,
+        guild_order=TRAIT_ORDER,
+        mark_no_signal=False,
+    )
+    pool = next(pool for pool in matrix.pooled if pool.kind == "condition")
+    assert pool.pooled_names == ("Asthma",)
+    missing = missing_conditions(
+        ("Asthma", "Asthma"),
+        corpus_conditions={p.condition for p in profiles},
+        drawn_conditions=matrix.conditions,
+        blank_conditions=matrix.dropped_empty_conditions,
+        pooled_conditions=pool.pooled_names,
+    )
+    assert not missing.cut_by_display
+    assert not missing.blank_after_masking
+    note = missing_condition_note(missing, max_conditions=1, min_studies=min_studies)
+    assert note is not None
+    assert "outside the top" not in note
+    if min_studies == 1:
+        assert missing.pooled_in_other == ("Asthma",)
+        assert "Assigned to the pooled Other row rather than drawn" in note
+    else:
+        assert OTHER_LABEL in matrix.dropped_empty_conditions
+        assert missing.pooled_not_drawn == ("Asthma",)
+        assert "Other row, which is not drawn in this panel" in note
+
+
+def test_focus_cut_does_not_claim_to_draw_the_combined_figures_pool(
+    corpus: tuple[Path, Path],
+) -> None:
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    matrix = build_matrix(
+        profiles, max_conditions=1, max_body_sites=1, min_studies=1, guild_order=TRAIT_ORDER
+    )
+    assert OTHER_LABEL in matrix.conditions
+    requested = ("Colorectal cancer", "Asthma")
+    cut = subset_matrix(matrix, conditions=requested)
+    assert OTHER_LABEL not in cut.conditions
+    pool = next(pool for pool in matrix.pooled if pool.kind == "condition")
+    missing = missing_conditions(
+        requested,
+        corpus_conditions={p.condition for p in profiles},
+        drawn_conditions=cut.conditions,
+        pooled_conditions=pool.pooled_names,
+    )
+    assert missing.pooled_not_drawn == ("Asthma",)
+    assert not missing.pooled_in_other
+    assert not missing.cut_by_display
+
+
+def test_other_row_alone_does_not_make_an_individually_blank_condition_pooled() -> None:
+    missing = missing_conditions(
+        ("Gingivitis",),
+        corpus_conditions={"Gingivitis"},
+        drawn_conditions=[OTHER_LABEL],
+        blank_conditions=["Gingivitis"],
+        pooled_conditions=["Periodontitis"],
+    )
+    assert missing.blank_after_masking == ("Gingivitis",)
+    assert not missing.pooled_in_other
+
+
+def test_empty_request_has_no_note_even_when_other_is_drawn() -> None:
+    missing = missing_conditions(
+        (),
+        corpus_conditions={"Asthma"},
+        drawn_conditions=[OTHER_LABEL],
+        pooled_conditions=["Asthma"],
+    )
+    assert missing_condition_note(missing, max_conditions=1, min_studies=3) is None
+
+
+@pytest.mark.parametrize("include_other", [False, True])
+def test_cli_focus_note_uses_actual_pooling_state(
+    corpus: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    include_other: bool,
+) -> None:
+    notes: list[str | None] = []
+
+    def record_panel(*_args: object, **kwargs: object) -> Path:
+        note = kwargs["note"]
+        assert note is None or isinstance(note, str)
+        notes.append(note)
+        return tmp_path / "panel.png"
+
+    monkeypatch.setattr(table1_trait_maps, "write_body_site_panels", record_panel)
+    monkeypatch.setattr(table1_trait_maps, "write_figure", lambda *_a, **_kw: tmp_path / "all.png")
+    monkeypatch.setattr(
+        table1_trait_maps, "write_shift_figure", lambda *_a, **_kw: tmp_path / "shift.png"
+    )
+    monkeypatch.setattr(table1_trait_maps, "read_bugsigdb_vintage", lambda _path: "fixture")
+    monkeypatch.setattr(
+        table1_trait_maps,
+        "FOCUS_PANELS",
+        (table1_trait_maps.FocusPanel("test", "test", conditions=("Colorectal cancer", "Asthma")),),
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "table1-trait-maps",
+            "--profile-input",
+            str(corpus[0]),
+            "--experiments-input",
+            str(corpus[1]),
+            "--output-dir",
+            str(tmp_path / "output"),
+            "--max-conditions",
+            "1",
+            "--min-studies",
+            "1",
+            "--min-site-conditions",
+            "1",
+            *(["--include-other-conditions"] if include_other else []),
+        ],
+    )
+    assert table1_trait_maps.main() == 0
+    (note,) = notes
+    assert note is not None
+    if include_other:
+        assert "Assigned to the pooled Other row, which is not drawn in this panel: Asthma" in note
+        assert "outside the top" not in note
+    else:
+        assert "outside the top-1 condition cut, so not drawn: Asthma" in note
+
+
+def test_row_left_out_of_a_panel_is_not_blamed_on_the_width_cut() -> None:
+    # Under --mark-no-signal the combined figure keeps a row whose only cells are
+    # sampled-without-signal, but a focus cut drops it (#318).
+    matrix = GuildMatrix(
+        conditions=["A", "NoSig"],
+        body_sites=["Feces"],
+        columns=["Feces|g"],
+        values=[[0.5], [None]],
+        study_counts=[[3], [3]],
+        row_clusters=[1, 1],
+        pooled=[],
+        dropped_empty_conditions=[],
+        dropped_body_sites=[],
+        sampled_no_signal=[[False], [True]],
+    )
+    cut = subset_matrix(matrix, conditions=("A", "NoSig"))
+    missing = missing_conditions(
+        ("A", "NoSig"),
+        corpus_conditions={"A", "NoSig"},
+        drawn_conditions=cut.conditions,
+        combined_conditions=matrix.conditions,
+    )
+    assert missing.left_out_of_panel == ("NoSig",)
+    assert not missing.cut_by_display
+    note = missing_condition_note(missing, max_conditions=60, min_studies=3)
+    assert note == "Drawn in the combined figure but left out of this panel's cut: NoSig."
+
+
+def _run_cli_with_panel(
+    corpus: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    conditions: tuple[str, ...],
+) -> tuple[list[str | None], str]:
+    """Run main() with one condition-focused panel; return its notes and stdout."""
+    notes: list[str | None] = []
+
+    def record_panel(*_args: object, **kwargs: object) -> Path:
+        note = kwargs["note"]
+        assert note is None or isinstance(note, str)
+        notes.append(note)
+        return tmp_path / "panel.png"
+
+    monkeypatch.setattr(table1_trait_maps, "write_body_site_panels", record_panel)
+    monkeypatch.setattr(table1_trait_maps, "write_figure", lambda *_a, **_kw: tmp_path / "all.png")
+    monkeypatch.setattr(
+        table1_trait_maps, "write_shift_figure", lambda *_a, **_kw: tmp_path / "shift.png"
+    )
+    monkeypatch.setattr(table1_trait_maps, "read_bugsigdb_vintage", lambda _path: "fixture")
+    monkeypatch.setattr(
+        table1_trait_maps,
+        "FOCUS_PANELS",
+        (table1_trait_maps.FocusPanel("test", "test", conditions=conditions),),
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "table1-trait-maps",
+            "--profile-input",
+            str(corpus[0]),
+            "--experiments-input",
+            str(corpus[1]),
+            "--output-dir",
+            str(tmp_path / "output"),
+            "--max-conditions",
+            "1",
+            "--min-studies",
+            "1",
+            "--min-site-conditions",
+            "1",
+            "--include-other-conditions",
+        ],
+    )
+    assert table1_trait_maps.main() == 0
+    return notes, capsys.readouterr().out
+
+
+def test_cli_panel_naming_other_does_not_call_it_absent(
+    corpus: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # The only way main() can draw Other in a focus cut is a panel naming it (#321).
+    notes, out = _run_cli_with_panel(corpus, tmp_path, monkeypatch, capsys, ("Asthma", OTHER_LABEL))
+    (note,) = notes
+    assert note == (
+        "Assigned to the pooled Other row rather than drawn as a row of its own: Asthma."
+    )
+    assert "absent from the corpus" not in out
+    assert "focus panel test: assigned to Other: Asthma" in out
+
+
+def test_cli_skipped_panel_still_reports_why(
+    corpus: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    notes, out = _run_cli_with_panel(
+        corpus, tmp_path, monkeypatch, capsys, ("Asthma", "Not a condition")
+    )
+    assert notes == []
+    assert "focus panel test: absent from the corpus: Not a condition" in out
+    assert "focus panel test: assigned to Other, not drawn in this panel: Asthma" in out
+    assert out.index("assigned to Other") < out.index("focus panel test: nothing drawn, skipped")
+
+
+def test_requested_other_that_is_not_drawn_is_named_once() -> None:
+    missing = missing_conditions(
+        (OTHER_LABEL, "Asthma"),
+        corpus_conditions={"Asthma"},
+        drawn_conditions=[],
+        pooled_conditions=["Asthma"],
+    )
+    assert not missing.absent_from_corpus
+    assert missing.other_not_drawn
+    note = missing_condition_note(missing, max_conditions=1, min_studies=1)
+    assert note == (
+        "Assigned to the pooled Other row, which is not drawn in this panel: Asthma. "
+        "The pooled Other row is not drawn in this panel."
     )
