@@ -77,9 +77,13 @@ own raw p-value; that floor binds only on the effective-size run.
 
 Effective family size is estimated from the eigenvalue spectrum of the Spearman
 correlation between candidates, by **Li & Ji (2005)** and **Galwey (2009)**.
-**Cheverud/Nyholt is computed, reported, and excluded**: it is known to be
-anticonservative under strong positive dependence, and on this corpus it disagrees with
-the other two by a wide margin. It is named in the output rather than silently omitted.
+**Cheverud/Nyholt is computed, reported, and excluded**: Li & Ji (2005) show that its
+eigenvalue-variance estimate can misstate the effective number of tests, and on this
+corpus it disagrees with the other two by a wide margin. It is excluded as unreliable,
+not as lenient. Here it is the largest of the three (294.4 against Li & Ji 112.0 on the
+contrast basis, and 198.9 against 60.0 on the profile basis), so it would give the
+strictest correction. Leaving it out makes the effective-size sensitivity run less strict,
+not more. It is named in the output rather than silently omitted.
 All three return the candidate count for an independent family and 1.0 for a perfectly
 redundant one, which the test suite checks at both limits.
 
