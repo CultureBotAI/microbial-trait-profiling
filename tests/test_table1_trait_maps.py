@@ -666,3 +666,104 @@ def test_requested_other_that_is_not_drawn_is_named_once() -> None:
         "Assigned to the pooled Other row, which is not drawn in this panel: Asthma. "
         "The pooled Other row is not drawn in this panel."
     )
+
+
+def _run_cli_with_shipped_panels(
+    corpus: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    extra_args: list[str],
+) -> list[str]:
+    """Run main() with the shipped FOCUS_PANELS; return the panel files drawn."""
+    drawn: list[str] = []
+
+    def record_panel(_matrix: object, path: Path, *_args: object, **_kwargs: object) -> Path:
+        drawn.append(path.name)
+        return path
+
+    monkeypatch.setattr(table1_trait_maps, "write_body_site_panels", record_panel)
+    monkeypatch.setattr(table1_trait_maps, "write_figure", lambda *_a, **_kw: tmp_path / "all.png")
+    monkeypatch.setattr(
+        table1_trait_maps, "write_shift_figure", lambda *_a, **_kw: tmp_path / "shift.png"
+    )
+    monkeypatch.setattr(table1_trait_maps, "read_bugsigdb_vintage", lambda _path: "fixture")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "table1-trait-maps",
+            "--profile-input",
+            str(corpus[0]),
+            "--experiments-input",
+            str(corpus[1]),
+            "--output-dir",
+            str(tmp_path / "output"),
+            "--min-studies",
+            "1",
+            *extra_args,
+        ],
+    )
+    assert table1_trait_maps.main() == 0
+    return drawn
+
+
+def test_cli_drop_other_body_sites_skips_panels_naming_other(
+    corpus: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # The shipped feces_other panel names Other; without Other in the matrix,
+    # subset_matrix used to raise "body sites absent from the matrix" (#324).
+    drawn = _run_cli_with_shipped_panels(
+        corpus, tmp_path, monkeypatch, ["--min-site-conditions", "1", "--drop-other-body-sites"]
+    )
+    out = capsys.readouterr().out
+    assert (
+        f"focus panel feces_other: names body sites this figure does not draw, skipped: "
+        f"{OTHER_LABEL} (not in this figure's body sites)"
+    ) in out
+    assert not any("feces_other" in name for name in drawn)
+    assert any(name.endswith("_focus_feces.png") for name in drawn)
+
+
+def test_cli_reports_a_site_dropped_below_min_site_conditions(
+    corpus: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Two conditions reach Feces in the fixture, so a threshold of 3 drops it (#413).
+    drawn = _run_cli_with_shipped_panels(
+        corpus, tmp_path, monkeypatch, ["--min-site-conditions", "3"]
+    )
+    out = capsys.readouterr().out
+    assert (
+        "focus panel feces: names body sites this figure does not draw, skipped: "
+        "Feces (dropped: fewer than 3 conditions)"
+    ) in out
+    assert not any(name.endswith("_focus_feces.png") for name in drawn)
+
+
+@pytest.mark.parametrize(
+    ("dropped", "pooled", "other_drawn", "reason"),
+    [
+        (True, False, True, "Gut (dropped: fewer than 2 conditions)"),
+        (False, True, True, f"Gut (pooled into {OTHER_LABEL} by the top-4 body-site cut)"),
+        (False, True, False, "Gut (outside the top-4 body-site cut)"),
+        (False, False, True, "Gut (not in this figure's body sites)"),
+    ],
+)
+def test_absent_site_reason_names_the_actual_cause(
+    dropped: bool, pooled: bool, other_drawn: bool, reason: str
+) -> None:
+    assert (
+        table1_trait_maps._absent_site_reason(
+            "Gut",
+            dropped=dropped,
+            pooled=pooled,
+            other_drawn=other_drawn,
+            max_body_sites=4,
+            min_site_conditions=2,
+        )
+        == reason
+    )
