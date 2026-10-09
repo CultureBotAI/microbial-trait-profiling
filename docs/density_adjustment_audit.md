@@ -135,4 +135,3 @@ Following [`methods/biological_interpretation.md`](file:///c:/Users/ilabd/bsdbng
 1. **Annotation Representation Only:** Trait counts measure curated knowledge representation in published signatures, not physical abundance in patient gut microbiomes.
 2. **Do Not Conflate Density with Co-selection:** Positive correlations across traits in raw profiles must not be cited as biological co-selection or shared operon architecture without testing against PC1 density residualization.
 3. **No Causal Inferences:** The survival of *moderately halophilic* ($p = 0.00033$) does not indicate patient-level osmolarity changes or causal gut dysbiosis; it indicates that taxa curated with this trait are disproportionately represented in published disease-increased signatures.
-

@@ -285,7 +285,7 @@ def normalize_traits_by_profile_composition(
     Supports both standard signature (profiles_df, non_media_cols) and legacy alias
     signature (taxa_matrix_path, profiles_df, non_media_cols).
     """
-    if isinstance(profiles_df, (Path, str)):
+    if isinstance(profiles_df, Path | str):
         if isinstance(non_media_cols, pd.DataFrame):
             actual_df = non_media_cols
             actual_cols = taxa_matrix_path if isinstance(taxa_matrix_path, list) else []
