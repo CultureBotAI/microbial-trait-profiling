@@ -211,7 +211,19 @@ def plot_grouped_six_trait_sankey(
     min_profiles: int = 2,
     min_studies: int = 1,
     max_conditions: int = 25,
+    m_universe: int | None = None,
 ) -> None:
+    if m_universe is None:
+        matrix_file = Path("data/derived/taxa_trait_matrix.tsv")
+        if matrix_file.exists():
+            try:
+                with matrix_file.open(encoding="utf-8") as h:
+                    m_universe = max(1, sum(1 for line in h if line.strip()) - 1)
+            except Exception:
+                m_universe = 5184
+        else:
+            m_universe = 5184
+
     # 1. Prepare data
     df = enrich_df[
         (enrich_df["trait"].isin(selected_traits)) & (enrich_df["inc_dec"] == direction)
@@ -658,8 +670,8 @@ def plot_grouped_six_trait_sankey(
         "Hybrid display mode keeps individual condition labels on the left "
         "and grouped body-site labels on the right.",
         "Interpretation: Results measure annotation representation in curated taxon signatures "
-        "(urn model, M = 5,184 background taxa), not direct patient-level organism abundance, "
-        "pathway activity, or disease causation.",
+        f"(urn model, M = {m_universe:,} background taxa), not direct patient-level "
+        "organism abundance, pathway activity, or disease causation.",
     ]
     footer_text = "\n".join(footer_lines)
     ax.text(
@@ -769,6 +781,22 @@ def main() -> None:
         out_svg = args.output_dir / f"six_trait_sankey_{dir_name}.svg"
 
         print(f"Generating 6-trait Sankey diagram for {dir_name} profiles...")
+        m_universe = 5184
+        if enrich_path.exists():
+            try:
+                with enrich_path.open(encoding="utf-8") as handle:
+                    for line in handle:
+                        if not line.startswith("#"):
+                            break
+                        raw = line.lstrip("#").strip()
+                        if ":" in raw:
+                            k, v = raw.split(":", 1)
+                            if k.strip() == "Background-Taxa-Universe-M":
+                                m_universe = int(v.strip())
+                                break
+            except (OSError, ValueError):
+                m_universe = 5184
+
         plot_grouped_six_trait_sankey(
             enrich_df=enrich_df,
             metadata_df=meta_df,
@@ -780,6 +808,7 @@ def main() -> None:
             min_profiles=args.min_profiles,
             min_studies=args.min_studies,
             max_conditions=args.max_conditions,
+            m_universe=m_universe,
         )
 
 

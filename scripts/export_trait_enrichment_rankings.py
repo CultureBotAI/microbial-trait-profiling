@@ -65,6 +65,7 @@ class ParsedRow:
     testable_profiles: int
     hit_count: int | None = None
     trait_total: int = 0
+    is_significant: bool = True
 
 
 PARSED_ROW_COLUMNS: list[str] = [f.name for f in fields(ParsedRow)]
@@ -114,7 +115,7 @@ def pair_columns(stat_type: str, body_site_group: str | None = None) -> list[str
     renamed = [
         "q_value" if (stat_type == "fdr_q" and c == "fdr_q") else c
         for c in PARSED_ROW_COLUMNS
-        if c != "trait_total"
+        if c not in ("trait_total", "is_significant")
     ]
     cols = ["rank", *renamed, "is_censored_hit"]
     if body_site_group is not None:
@@ -131,6 +132,8 @@ def resolve_default_input() -> Path:
 
 def resolve_default_results(report_path: Path | None = None) -> Path:
     if report_path:
+        if report_path.suffix == ".tsv":
+            return report_path
         # Try to find a .tsv with same name/prefix as report
         stem = report_path.stem
         if stem.startswith("trait_enrichment_report"):
@@ -184,6 +187,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=None,
         help="Optional path to profiles TSV to compute empirical background K (trait totals).",
+    )
+    parser.add_argument(
+        "--unfiltered",
+        "--all-results",
+        action="store_true",
+        dest="unfiltered",
+        help="Process an unfiltered results TSV containing all tested pairs.",
     )
     return parser.parse_args(argv)
 
@@ -288,27 +298,38 @@ def parse_results_tsv(
     threshold: float,
     min_fold: float = DEFAULT_MIN_FOLD,
     trait_totals: dict[str, int] | None = None,
+    unfiltered: bool = False,
 ) -> list[ParsedRow]:
     """Validate the analyzer results TSV and return the selected rows.
 
     Raises ``FileNotFoundError`` or :class:`MalformedResultsError` for invalid
     input. A valid file with zero selected rows returns an empty list.
     """
-    table = load_results_tsv(path)
+    table = load_results_tsv(path, allow_unfiltered=unfiltered)
     df = table.frame
 
     # col used for filtering
     col = "p_value" if stat_type == "p_value" else "fdr_q"
 
-    # Apply filtering to match report logic
-    df = df[(df[col] <= threshold) & (df["fold"] >= min_fold)]
-    print(
-        f"Filtered to {len(df)} significant hits "
-        f"(source={path.name}, threshold={threshold}, fold={min_fold})"
-    )
+    if unfiltered:
+        if "is_significant" in df.columns:
+            sig_mask = df["is_significant"].astype(str).str.lower().isin(("true", "1"))
+        else:
+            sig_mask = (df[col] <= threshold) & (df["fold"] >= min_fold)
+        print(
+            f"Loaded {len(df)} all-result rows ({sig_mask.sum()} significant hits) "
+            f"(source={path.name}, threshold={threshold}, fold={min_fold})"
+        )
+    else:
+        sig_mask = (df[col] <= threshold) & (df["fold"] >= min_fold)
+        df = df[sig_mask]
+        print(
+            f"Filtered to {len(df)} significant hits "
+            f"(source={path.name}, threshold={threshold}, fold={min_fold})"
+        )
 
     rows = []
-    for _, r in df.iterrows():
+    for idx, r in df.iterrows():
         trait = str(r["trait"])
         # Exclude MediaDive growth-medium traits for consistency
         if "mediadive.medium:" in trait:
@@ -321,6 +342,7 @@ def parse_results_tsv(
         trait_total_val = int(trait_total_raw) if pd.notna(trait_total_raw) else 0
         if trait_total_val == 0 and trait_totals and trait in trait_totals:
             trait_total_val = trait_totals[trait]
+        is_sig = bool(sig_mask.loc[idx]) if unfiltered else True
         rows.append(
             ParsedRow(
                 study_id=study_id,
@@ -335,6 +357,7 @@ def parse_results_tsv(
                 exp=float(r["expected"]),
                 testable_profiles=int(r["testable_profiles"]),
                 trait_total=trait_total_val,
+                is_significant=is_sig,
             )
         )
     return rows
@@ -449,7 +472,11 @@ def build_overall_table(
     if "is_censored_hit" not in frame.columns:
         frame = frame.assign(is_censored_hit=False)
 
-    grouped = frame.groupby("trait", dropna=False)
+    sig_frame = frame[frame["is_significant"]] if "is_significant" in frame.columns else frame
+    if sig_frame.empty:
+        return pd.DataFrame(columns=columns)
+
+    grouped = sig_frame.groupby("trait", dropna=False)
 
     # Use the relevant stat for choosing the 'best' row metadata
     stat_col = "fdr_q" if stat_type == "fdr_q" else "p_value"
@@ -461,7 +488,9 @@ def build_overall_table(
     # ideally apply a correction here. For now, we keep the naming explicit.
 
     best_idx = grouped[stat_col].idxmin()
-    best_rows = frame.loc[best_idx, ["trait", "inc_dec", "study_id", "experiment_id", "profile_id"]]
+    best_rows = sig_frame.loc[
+        best_idx, ["trait", "inc_dec", "study_id", "experiment_id", "profile_id"]
+    ]
     best_rows = best_rows.rename(
         columns={
             "inc_dec": "min_p_direction",
@@ -480,7 +509,7 @@ def build_overall_table(
         "max_fold": ("fold", "max"),
         "testable_profiles": ("testable_profiles", "first"),
     }
-    if "trait_total" in frame.columns:
+    if "trait_total" in sig_frame.columns:
         agg_map["trait_total"] = ("trait_total", "max")
 
     # Also include the other statistic if it's available (non-1.0)
@@ -492,10 +521,10 @@ def build_overall_table(
     summary = grouped.agg(**agg_map)
 
     inc_counts = (
-        frame[frame["inc_dec"] == "inc"].groupby("trait")["trait"].size().rename("inc_hits")
+        sig_frame[sig_frame["inc_dec"] == "inc"].groupby("trait")["trait"].size().rename("inc_hits")
     )
     dec_counts = (
-        frame[frame["inc_dec"] == "dec"].groupby("trait")["trait"].size().rename("dec_hits")
+        sig_frame[sig_frame["inc_dec"] == "dec"].groupby("trait")["trait"].size().rename("dec_hits")
     )
 
     overall = summary.join(inc_counts, how="left").join(dec_counts, how="left")
@@ -511,7 +540,14 @@ def build_overall_table(
             mask = overall["trait"] == t
             if mask.any():
                 overall.loc[mask, "trait_total"] = tot
-    overall["n_profiles_tested"] = overall["testable_profiles"]
+
+    if "is_significant" in frame.columns and frame["profile_id"].nunique() > 0:
+        tested_per_trait = frame.groupby("trait")["profile_id"].nunique()
+        overall["n_profiles_tested"] = (
+            overall["trait"].map(tested_per_trait).fillna(overall["testable_profiles"]).astype(int)
+        )
+    else:
+        overall["n_profiles_tested"] = overall["testable_profiles"]
 
     # Calculate net direction based on vote count
     def get_net_direction(row: pd.Series) -> str:
@@ -525,7 +561,10 @@ def build_overall_table(
 
     if max_traits:
         censored_counts = (
-            frame[frame["is_censored_hit"]].groupby("trait").size().rename("n_censored_profiles")
+            sig_frame[sig_frame["is_censored_hit"]]
+            .groupby("trait")
+            .size()
+            .rename("n_censored_profiles")
         )
         overall = overall.merge(censored_counts, on="trait", how="left")
         overall["n_censored_profiles"] = overall["n_censored_profiles"].fillna(0).astype(int)
@@ -562,9 +601,16 @@ def build_overall_table(
 def build_pair_table(
     frame: pd.DataFrame, stat_type: str, body_site_group: str | None = None
 ) -> pd.DataFrame:
+    cols = pair_columns(stat_type, body_site_group=body_site_group)
     if "is_censored_hit" not in frame.columns:
         frame = frame.assign(is_censored_hit=False)
-    pairs = frame.copy()
+    if "is_significant" in frame.columns:
+        pairs = frame[frame["is_significant"]].copy()
+    else:
+        pairs = frame.copy()
+    if pairs.empty:
+        return pd.DataFrame(columns=cols)
+
     sort_col = "fdr_q" if stat_type == "fdr_q" else "p_value"
     pairs = pairs.sort_values([sort_col, "fold"], ascending=[True, False])
 
@@ -575,7 +621,7 @@ def build_pair_table(
     pairs.insert(0, "rank", range(1, len(pairs) + 1))
     if body_site_group is not None:
         pairs["body_site_group"] = body_site_group
-    return pairs[pair_columns(stat_type, body_site_group=body_site_group)]
+    return pairs[cols]
 
 
 def _write_table(
@@ -631,13 +677,19 @@ def main(argv: list[str] | None = None) -> int:
             fdr_scope = results_meta.get("fdr_scope", fdr_scope)
             testable_profiles = results_meta.get("testable_profiles") or testable_profiles
 
-            table = load_results_tsv(results_path)
+            is_unfiltered = args.unfiltered or "all_results" in str(results_path)
+            table = load_results_tsv(results_path, allow_unfiltered=is_unfiltered)
             tests_performed = table.tests_performed
             analyzer_hits = table.significant_hits
             result_status = table.status
 
             rows = parse_results_tsv(
-                results_path, stat_type, stat_threshold, min_fold, trait_totals=trait_totals
+                results_path,
+                stat_type,
+                stat_threshold,
+                min_fold,
+                trait_totals=trait_totals,
+                unfiltered=is_unfiltered,
             )
             # Results TSV contains all hits regardless of the report truncation cap
             is_source_truncated = False

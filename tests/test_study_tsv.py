@@ -18,8 +18,13 @@ def _write_study_yaml(study_dir: Path) -> None:
         "experiments": [
             {
                 "id": "bsdb:99-1",
-                "host_species": "Homo sapiens",
                 "experiment_name": "Experiment 1",
+                "condition": "Obesity",
+                "condition_ontology_id": ["EFO:0001073"],
+                "body_site": "Feces",
+                "body_site_ontology_id": ["UBERON:0001988", "UBERON:0001179"],
+                "host_species": "Homo sapiens",
+                "location_of_subjects": "Italy",
                 "group_0_name": "lean",
                 "group_1_name": "obese",
                 "signatures": [
@@ -98,11 +103,12 @@ def test_generate_tables_writes_flattened_outputs(tmp_path: Path) -> None:
             "study_id": "bsdb:99",
             "experiment_id": "bsdb:99-1",
             "experiment_name": "Experiment 1",
-            "body_site": "",
-            "condition": "",
+            "condition": "Obesity",
+            "body_site": "Feces",
+            "host_species": "Homo sapiens",
+            "location_of_subjects": "Italy",
             "group_0_name": "lean",
             "group_1_name": "obese",
-            "host_species": "Homo sapiens",
             "signature_count": "2",
             "taxon_count": "3",
         }
@@ -178,3 +184,85 @@ def test_generate_tables_writes_profile_matrices(tmp_path: Path) -> None:
             "bsdb:99_bsdb:99-1_inc": "1",
         },
     ]
+
+
+def _write_study_yaml_without_metadata(study_dir: Path) -> None:
+    """A study whose experiment carries no condition, body site, or ontology ids."""
+    study = {
+        "id": "bsdb:100",
+        "experiments": [
+            {
+                "id": "bsdb:100-1",
+                "experiment_name": "Experiment 1",
+                "condition": None,
+                "body_site": None,
+                "condition_ontology_id": None,
+                "body_site_ontology_id": None,
+                "signatures": [
+                    {
+                        "id": "bsdb:100-1-1",
+                        "direction": "increased",
+                        "taxa": [
+                            {
+                                "id": "NCBITaxon:1350",
+                                "taxon_name": "Enterococcus",
+                                "taxonomic_rank": "genus",
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+    (study_dir / "bsdb_100.yaml").write_text(
+        yaml.dump(study, default_flow_style=False, sort_keys=False),
+        encoding="utf-8",
+    )
+
+
+def test_experiment_ontology_terms_emits_one_row_per_term(tmp_path: Path) -> None:
+    study_dir = tmp_path / "studies"
+    output_dir = tmp_path / "derived"
+    study_dir.mkdir()
+    _write_study_yaml(study_dir)
+
+    tables = generate_tables(study_dir, output_dir)
+
+    assert tables.experiment_ontology_terms == output_dir / "experiment_ontology_terms.tsv"
+    assert _read_tsv(tables.experiment_ontology_terms) == [
+        {
+            "study_id": "bsdb:99",
+            "experiment_id": "bsdb:99-1",
+            "slot": "condition_ontology_id",
+            "term_id": "EFO:0001073",
+        },
+        {
+            "study_id": "bsdb:99",
+            "experiment_id": "bsdb:99-1",
+            "slot": "body_site_ontology_id",
+            "term_id": "UBERON:0001988",
+        },
+        {
+            "study_id": "bsdb:99",
+            "experiment_id": "bsdb:99-1",
+            "slot": "body_site_ontology_id",
+            "term_id": "UBERON:0001179",
+        },
+    ]
+
+
+def test_missing_metadata_is_empty_not_a_sentinel(tmp_path: Path) -> None:
+    study_dir = tmp_path / "studies"
+    output_dir = tmp_path / "derived"
+    study_dir.mkdir()
+    _write_study_yaml_without_metadata(study_dir)
+
+    tables = generate_tables(study_dir, output_dir)
+
+    experiment_rows = _read_tsv(tables.experiments)
+    assert len(experiment_rows) == 1
+    for column in ("condition", "body_site", "host_species", "location_of_subjects"):
+        assert experiment_rows[0][column] == ""
+
+    # An absent multivalued slot contributes no rows at all -- not a placeholder row.
+    assert _read_tsv(tables.experiment_ontology_terms) == []

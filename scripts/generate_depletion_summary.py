@@ -458,10 +458,32 @@ def main():
     )
 
     sig_dep_count = trait_counts["depletion_count"].sum()
+    m_universe = 5184
+    total_tests_str = "720,824"
+    testable_profiles_str = "4,670"
+    if results_path.exists():
+        try:
+            with results_path.open(encoding="utf-8") as handle:
+                for line in handle:
+                    if not line.startswith("#"):
+                        break
+                    raw = line.lstrip("#").strip()
+                    if ":" in raw:
+                        k, v = raw.split(":", 1)
+                        k, v = k.strip(), v.strip()
+                        if k == "Background-Taxa-Universe-M":
+                            m_universe = int(v)
+                        elif k == "Total-Tests-Performed":
+                            total_tests_str = f"{int(v):,}"
+                        elif k == "Testable-Profiles":
+                            testable_profiles_str = f"{int(v):,}"
+        except (OSError, ValueError):
+            m_universe = 5184
+
     summary_text = (
         "UNDER-REPRESENTATION SUMMARY\n\n"
-        f"• Discrete Urn Reference Universe: M=5,184 background taxa.\n"
-        f"  Total tests: 720,824 across 4,670 testable profiles.\n"
+        f"• Discrete Urn Reference Universe: M={m_universe:,} background taxa.\n"
+        f"  Total tests: {total_tests_str} across {testable_profiles_str} testable profiles.\n"
         f"  Significant depletion calls (FDR q <= 0.001, max fold <= 0.5): "
         f"{sig_dep_count:,}.\n\n"
         f"• Depleted Traits: {len(trait_counts)} traits ({dep_trait_names})\n"

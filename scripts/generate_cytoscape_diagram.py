@@ -211,8 +211,20 @@ def plot_cytoscape_diagram(
     output_svg: Path | None = None,
     min_profiles: int = 3,
     min_studies: int = 2,
+    m_universe: int | None = None,
 ) -> None:
     """Generate a Cytoscape-inspired tripartite network diagram."""
+    if m_universe is None:
+        matrix_file = Path("data/derived/taxa_trait_matrix.tsv")
+        if matrix_file.exists():
+            try:
+                with matrix_file.open(encoding="utf-8") as h:
+                    m_universe = max(1, sum(1 for line in h if line.strip()) - 1)
+            except Exception:
+                m_universe = 5184
+        else:
+            m_universe = 5184
+
     # 1. Filter enrichment results by selected traits and direction
     df = enrich_df[
         (enrich_df["trait"].isin(selected_traits)) & (enrich_df["inc_dec"] == direction)
@@ -753,7 +765,8 @@ def plot_cytoscape_diagram(
     ax.text(
         0.5,
         1.0,
-        "Measures annotation representation in curated signatures (discrete urn model M=5,184), "
+        "Measures annotation representation in curated signatures "
+        f"(discrete urn model M={m_universe:,}), "
         "not patient-level trait abundance or disease causation. "
         "Edges aggregate statistically enriched condition-trait and trait-body-site links.",
         fontsize=8.5,
@@ -879,6 +892,22 @@ def main() -> None:
         out_png = args.output_dir / f"cytoscape_six_traits_{dir_name}.png"
         out_svg = args.output_dir / f"cytoscape_six_traits_{dir_name}.svg"
 
+        m_universe = 5184
+        if args.enrichment.exists():
+            try:
+                with args.enrichment.open(encoding="utf-8") as handle:
+                    for line in handle:
+                        if not line.startswith("#"):
+                            break
+                        raw = line.lstrip("#").strip()
+                        if ":" in raw:
+                            k, v = raw.split(":", 1)
+                            if k.strip() == "Background-Taxa-Universe-M":
+                                m_universe = int(v.strip())
+                                break
+            except (OSError, ValueError):
+                m_universe = 5184
+
         plot_cytoscape_diagram(
             enrich_df=enrich_df,
             metadata_df=metadata_df,
@@ -889,6 +918,7 @@ def main() -> None:
             output_svg=out_svg,
             min_profiles=args.min_profiles,
             min_studies=args.min_studies,
+            m_universe=m_universe,
         )
 
 

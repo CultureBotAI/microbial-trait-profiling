@@ -111,13 +111,14 @@ def generate_complete_null_ora_profiles(
     n_traits = len(trait_columns)
     simulated_k = np.zeros((n_profiles, n_traits), dtype=np.int64)
 
-    # Convert taxa trait matrix to numeric binary/count matrix (M x T)
-    taxa_traits = (
+    # Convert taxa trait matrix to numeric binary presence matrix (M x T)
+    numeric_matrix = (
         taxa_trait_matrix_df[trait_columns]
         .apply(pd.to_numeric, errors="coerce")
         .fillna(0)
-        .to_numpy(dtype=np.int64)
+        .to_numpy()
     )
+    taxa_traits = (numeric_matrix > 0).astype(np.int64)
 
     for i, n_draw in enumerate(signature_sizes):
         if n_draw <= 0:
@@ -179,12 +180,14 @@ def generate_mixed_signal_ora_profiles(
     n_traits = len(trait_columns)
     simulated_k = np.zeros((n_profiles, n_traits), dtype=np.int64)
 
-    taxa_traits = (
+    # Convert taxa trait matrix to numeric binary presence matrix (M x T)
+    numeric_matrix = (
         taxa_trait_matrix_df[trait_columns]
         .apply(pd.to_numeric, errors="coerce")
         .fillna(0)
-        .to_numpy(dtype=np.int64)
+        .to_numpy()
     )
+    taxa_traits = (numeric_matrix > 0).astype(np.int64)
 
     trait_to_idx = {col: idx for idx, col in enumerate(trait_columns)}
     true_signal_pairs: set[tuple[str, str]] = set()

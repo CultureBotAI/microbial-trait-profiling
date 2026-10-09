@@ -88,12 +88,12 @@ taxa-trait-matrix: study-tsvs
 # Build a clustered heatmap from the enriched trait report.
 trait-enrichment-heatmap: genheatmap
 
-# Build a densified clustered heatmap with stricter filtering (prevalence >= 5, hits >= 3).
+# Build a densified clustered heatmap with stricter filtering (prevalence >= 14, hits >= 12).
 trait-enrichment-heatmap-dense: analyze
 	just timed trait-enrichment-heatmap-dense "uv run python scripts/create_trait_enrichment_heatmap.py --min-trait-prevalence 14 --min-profile-hits 12 --output data/derived/trait_enrichment_densified_heatmap.png"
 
 study-trait-profiles: taxa-trait-matrix
-	uv run python scripts/create_study_trait_profiles.py --format wide
+	uv run python scripts/create_study_trait_profiles.py --format wide --binary --include-taxa-count --host-species "Homo sapiens"
 
 # Audit Table 1 trait semantics, ontology overlap, and source evidence.
 audit-table1-traits: study-trait-profiles
@@ -139,10 +139,10 @@ check: check-generated check-agent-docs lint typecheck test check-schema securit
 # --- pipeline steps (timed, logged) ---
 
 download:
-	just timed download "uv run python -c 'from bsdbng.download import download_zenodo; download_zenodo()'"
+	just timed download "uv run python -c 'from bsdbng.download import download_exports; download_exports()'"
 
 ingest:
-	just timed ingest "uv run python -c 'from bsdbng.ingest import ingest; ingest(host_species=\"Homo sapiens\")'"
+	just timed ingest "uv run python -c 'from bsdbng.ingest import ingest; ingest()'"
 
 validate-studies:
 	just timed validate-studies "uv run python -c 'from bsdbng.validate import validate_all_studies; validate_all_studies()'"
@@ -164,7 +164,7 @@ analyze: study-trait-profiles
 	  --p-threshold {{p_threshold}} \
 	  --min-fold {{min_fold}}"
 	just timed export-rankings "uv run python scripts/export_trait_enrichment_rankings.py \
-	  --input data/derived/trait_enrichment_results.tsv \
+	  --input data/derived/trait_enrichment_all_results.tsv \
 	  --overall-output data/derived/trait_enrichment_traits_overall_ranked.tsv \
 	  --pair-output data/derived/trait_enrichment_trait_study_pairs_ranked.tsv"
 	just timed enrichment-summary "uv run python scripts/generate_enrichment_summary.py"
@@ -220,9 +220,8 @@ export-rankings: analyze analyze-depletion depletion-infographic
 deck-figures: study-trait-profiles
 	just timed deck-figures "uv run python scripts/generate_deck_visualizations.py"
 
-# Run site-stratified enrichment (e.g., Feces only). Partitioning the input
-# TSV before `analyze` produces site-specific backgrounds ($M$ and $K$)
-# and prevalence rankings for free.
+# Run site-stratified enrichment (e.g., Feces only). Filters study trait
+# profiles to a specific body site before running enrichment analysis.
 analyze-site SITE: study-trait-profiles
 	@mkdir -p data/derived/sites/{{SITE}}
 	@uv run python -c "import pandas as pd; df = pd.read_csv('data/derived/study_trait_profiles_wide.tsv', sep='\t'); meta = pd.read_csv('data/derived/experiments.tsv', sep='\t'); merged = df.merge(meta[['study_id', 'experiment_id', 'body_site']], on=['study_id', 'experiment_id']); filtered = merged[merged['body_site'] == '{{SITE}}'].drop(columns='body_site'); filtered.to_csv('data/derived/sites/{{SITE}}/study_trait_profiles_wide.tsv', sep='\t', index=False)"
@@ -231,10 +230,11 @@ analyze-site SITE: study-trait-profiles
 	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
 	  --output data/derived/sites/{{SITE}}/trait_enrichment_report.txt \
 	  --tsv-output data/derived/sites/{{SITE}}/trait_enrichment_results.tsv \
+	  --all-results-output data/derived/sites/{{SITE}}/trait_enrichment_all_results.tsv \
 	  --p-threshold {{p_threshold}} \
 	  --min-fold {{min_fold}}
 	uv run python scripts/export_trait_enrichment_rankings.py \
-	  --input data/derived/sites/{{SITE}}/trait_enrichment_results.tsv \
+	  --input data/derived/sites/{{SITE}}/trait_enrichment_all_results.tsv \
 	  --overall-output data/derived/sites/{{SITE}}/trait_enrichment_traits_overall_ranked.tsv \
 	  --pair-output data/derived/sites/{{SITE}}/trait_enrichment_trait_study_pairs_ranked.tsv
 

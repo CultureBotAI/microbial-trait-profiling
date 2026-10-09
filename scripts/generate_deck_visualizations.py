@@ -626,15 +626,22 @@ def generate_figure4_annotation_density_pc1_landscape(output_path: Path) -> None
 
     # Panel A: Annotation Density vs PC1 Loading
     ax_a = fig.add_subplot(gs[0])
+    profiles_df = pd.read_csv("data/derived/study_trait_profiles_wide.tsv", sep="\t")
+    common_traits = [c for c in trait_cols if c in profiles_df.columns]
+    trait_counts = trait_counts[common_traits]
 
-    # Compute correlation with PC1 proxy (total count proxy)
+    # Calculate real PC1 trait loadings via SVD on centered profile matrix
     log_counts = np.log10(trait_counts.values + 1)
-    # Synthetic / representative PC1 loadings from our Issue #264 analysis
-    # PC1 variance = 56.6%, Spearman rho = 0.655
-    rng = np.random.default_rng(42)
-    pc1_loadings = 0.655 * (log_counts - log_counts.mean()) / log_counts.std() + rng.normal(
-        0, 0.35, len(log_counts)
-    )
+    x_mat = profiles_df[common_traits].values.astype(float)
+    x_c = x_mat - x_mat.mean(axis=0)
+    _, _, vt = np.linalg.svd(x_c, full_matrices=False)
+    pc1_loadings = vt[0, :]
+    if stats.spearmanr(log_counts, pc1_loadings).statistic < 0:
+        pc1_loadings = -pc1_loadings
+
+    rho_res = stats.spearmanr(log_counts, pc1_loadings)
+    spearman_rho = float(rho_res.statistic)
+    spearman_p = float(rho_res.pvalue)
 
     ax_a.scatter(log_counts, pc1_loadings, color="#3498db", alpha=0.6, edgecolors="none", s=28)
     # Regression line
@@ -661,8 +668,9 @@ def generate_figure4_annotation_density_pc1_landscape(output_path: Path) -> None
                 tc + 0.05, pc1_loadings[idx], row["trait_label"][:14], fontsize=8, weight="bold"
             )
 
+    p_str = f"p = {spearman_p:.2e}" if spearman_p < 0.001 else f"p = {spearman_p:.4f}"
     ax_a.set_title(
-        "A. Trait Correlation Driven by Density\n(Spearman rho = 0.655, p = 0.0058)",
+        f"A. Trait Correlation Driven by Density\n(Spearman rho = {spearman_rho:.3f}, {p_str})",
         fontsize=11,
         weight="bold",
     )

@@ -146,7 +146,7 @@ def _validate_numeric(frame: Any, path: Path, first_data_line: int) -> Any:
     return frame
 
 
-def load_results_tsv(path: Path) -> ResultsTable:
+def load_results_tsv(path: Path, *, allow_unfiltered: bool = False) -> ResultsTable:
     """Read and validate an analyzer results TSV.
 
     Raises ``FileNotFoundError`` if the file is missing and
@@ -186,11 +186,19 @@ def load_results_tsv(path: Path) -> ResultsTable:
     tests_performed = _parse_metadata_count(metadata, META_TESTS_PERFORMED, path)
     significant_hits = _parse_metadata_count(metadata, META_SIGNIFICANT_HITS, path)
 
-    if significant_hits is not None and significant_hits != n_rows:
+    is_unfiltered_table = allow_unfiltered or (
+        tests_performed is not None and tests_performed == n_rows
+    )
+
+    if significant_hits is not None and significant_hits != n_rows and not is_unfiltered_table:
         raise MalformedResultsError(
             f"{path}: metadata declares {significant_hits} significant hits but the file "
             f"contains {n_rows} rows; the file may be truncated. {_REGENERATE_HINT}"
         )
+
+    selected_rows = (
+        significant_hits if (is_unfiltered_table and significant_hits is not None) else n_rows
+    )
 
     if tests_performed is None:
         if n_rows == 0:
@@ -202,7 +210,7 @@ def load_results_tsv(path: Path) -> ResultsTable:
         status = STATUS_DISCOVERIES
     else:
         try:
-            status = classify_result_status(tests_performed, n_rows)
+            status = classify_result_status(tests_performed, selected_rows)
         except MalformedResultsError as exc:
             raise MalformedResultsError(f"{path}: {exc} {_REGENERATE_HINT}") from None
 

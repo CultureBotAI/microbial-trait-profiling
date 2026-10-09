@@ -75,7 +75,11 @@ class IlyasORAAdapter:
             "test_type": test_type,
             "alpha": alpha,
             "min_fold": min_fold,
-            "test_scope": TEST_SCOPE,
+            "test_scope": (
+                TEST_SCOPE
+                if test_type == "enrichment"
+                else "pairs_with_k_pop_gt_0_and_n_draws_gt_0"
+            ),
             "m_universe": m_universe,
             "n_trait_columns": len(trait_columns),
             "n_tests": 0,
@@ -129,7 +133,10 @@ class IlyasORAAdapter:
             if np.any(observed > k_pop_arr[np.newaxis, :]):
                 raise ValueError("Observed trait count k exceeds population trait count K")
 
-        test_mask = (observed > 0) & (k_pop_arr[np.newaxis, :] > 0)
+        if test_type == "enrichment":
+            test_mask = (observed > 0) & (k_pop_arr[np.newaxis, :] > 0)
+        else:
+            test_mask = k_pop_arr[np.newaxis, :] > 0
         test_mask &= signature_sizes[:, np.newaxis] > 0
         if not np.any(test_mask):
             return self._empty_result(metadata)

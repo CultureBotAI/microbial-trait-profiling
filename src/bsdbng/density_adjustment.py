@@ -146,10 +146,10 @@ def compute_effective_tests(eigenvalues: np.ndarray) -> tuple[float, float, floa
     if p == 0:
         return 0.0, 0.0, 0.0
 
-    # Li & Ji (2005): f(lambda) = I(lambda >= 1) + (lambda - floor(lambda))
-    li_ji = float(
-        np.sum((eigenvalues >= 1.0).astype(float) + (eigenvalues - np.floor(eigenvalues)))
-    )
+    # Li & Ji (2005): f(lambda) = I(|lambda| >= 1) + (|lambda| - floor(|lambda|))
+    abs_evals = np.abs(eigenvalues)
+    li_ji = float(np.sum((abs_evals >= 1.0).astype(float) + (abs_evals - np.floor(abs_evals))))
+    li_ji = min(li_ji, float(p))
 
     # Galwey (2009): (sum sqrt(max(0, lambda)))^2 / sum(lambda)
     pos_evals = np.maximum(eigenvalues, 0.0)

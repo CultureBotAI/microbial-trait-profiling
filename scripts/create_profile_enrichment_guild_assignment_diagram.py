@@ -369,7 +369,7 @@ def plot_workflow_diagram(
                 "• Hypergeometric over-representation\n"
                 "• One-sided exact p-value tests\n"
                 "• Filter: p < 0.001 & fold > 1.5\n"
-                "• Benjamini-Hochberg FDR q < 0.05"
+                "• Benjamini-Hochberg FDR q <= 0.001"
             ),
             "bg": "#fefce8",
             "border": "#fde047",
