@@ -1640,4 +1640,3 @@ def test_trait_depletion_rejects_non_lower_tail(tmp_path: Path) -> None:
     )
     assert res.returncode != 0
     assert "only supports --tail lower" in res.stderr
-

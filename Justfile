@@ -134,6 +134,23 @@ analyze-depletion: study-trait-profiles-ora
 export-rankings: analyze analyze-depletion
 	@echo "Complete exports and ranking summaries generated."
 
+# Run the ORA harness benchmark check suite over synthetic null and mixed scenarios (Refs #263, #343, #348, #351).
+calibrate replicates="10" seed="42" scenario="all": taxa-trait-matrix study-trait-profiles-ora
+	just timed calibrate "uv run python -m bsdbng.calibration.harness \
+	  --profiles data/derived/study_trait_profiles_ora_wide.tsv \
+	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
+	  --output-dir data/derived/calibration \
+	  --replicates {{replicates}} \
+	  --seed {{seed}} \
+	  --scenario {{scenario}} \
+	  --alpha 0.05 \
+	  --fdr-q 0.05 \
+	  --signal-strength 0.6 \
+	  --n-spike-traits 3 \
+	  --test-type enrichment \
+	  --min-fold 1.5 \
+	  --max-fold 0.67"
+
 # PNG export (guild-maps, table1-trait-maps) runs through kaleido 1.x, which
 # drives a headless Chrome. This downloads (~170 MB) the version-pinned Chrome
 # for Testing build into choreographer's data directory; kaleido prefers that
