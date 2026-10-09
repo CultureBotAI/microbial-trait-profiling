@@ -654,6 +654,25 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _absent_site_reason(
+    site: str,
+    *,
+    dropped: bool,
+    pooled: bool,
+    other_drawn: bool,
+    max_body_sites: int,
+    min_site_conditions: int,
+) -> str:
+    """Why a body site a focus panel names is not in the figure (#324, #413)."""
+    if dropped:
+        return f"{site} (dropped: fewer than {min_site_conditions} conditions)"
+    if pooled and other_drawn:
+        return f"{site} (pooled into {OTHER_LABEL} by the top-{max_body_sites} body-site cut)"
+    if pooled:
+        return f"{site} (outside the top-{max_body_sites} body-site cut)"
+    return f"{site} (not in this figure's body sites)"
+
+
 def main() -> int:
     args = build_parser().parse_args()
     profiles, stats = load_profiles(
@@ -729,10 +748,21 @@ def main() -> int:
         # cut; drawing the remaining sites would mislabel it, so skip it (#324).
         absent_sites = [site for site in panel.sites or () if site not in matrix.body_sites]
         if absent_sites:
+            pooled_sites = {
+                name
+                for pool in matrix.pooled
+                if pool.kind == "body_site"
+                for name in pool.pooled_names
+            }
             reasons = [
-                f"{site} (dropped: fewer than {args.min_site_conditions} conditions)"
-                if site in matrix.dropped_body_sites
-                else f"{site} (not in this figure's body sites)"
+                _absent_site_reason(
+                    site,
+                    dropped=site in matrix.dropped_body_sites,
+                    pooled=site in pooled_sites,
+                    other_drawn=OTHER_LABEL in matrix.body_sites,
+                    max_body_sites=args.max_body_sites,
+                    min_site_conditions=args.min_site_conditions,
+                )
                 for site in absent_sites
             ]
             print(
