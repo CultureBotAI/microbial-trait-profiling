@@ -8,6 +8,14 @@ import pytest
 
 def test_enrichment_pipeline_fdr_propagation(tmp_path: Path) -> None:
     # 1. Create a dummy trait profile TSV
+    matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
+    matrix_tsv.write_text(
+        "taxon_id\tTraitA\tTraitB\n"
+        + "\n".join(f"NCBITaxon:{i}\t1\t1" for i in range(1, 11))
+        + "\n",
+        encoding="utf-8",
+    )
+
     input_tsv = tmp_path / "input_profiles.tsv"
     input_tsv.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
@@ -32,6 +40,8 @@ def test_enrichment_pipeline_fdr_propagation(tmp_path: Path) -> None:
             "scripts/trait_enrichment.py",
             "--input",
             str(input_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
             "--output",
             str(report_txt),
             "--tsv-output",
@@ -46,7 +56,7 @@ def test_enrichment_pipeline_fdr_propagation(tmp_path: Path) -> None:
 
     # Verify report header has FDR
     report_content = report_txt.read_text(encoding="utf-8")
-    assert "FDR q < 1" in report_content
+    assert "FDR q <= 1" in report_content or "FDR q < 1" in report_content
 
     overall_out = tmp_path / "overall.tsv"
     pair_out = tmp_path / "pairs.tsv"
@@ -88,6 +98,15 @@ def test_enrichment_hypergeometric_taxon_sampling_values(tmp_path: Path) -> None
     # TraitA: present in 1 taxon in profile s1/e1/inc out of 2 taxa (k=1, N=2)
     # Background universe across paired profiles: M=4 taxa total, TraitA present in K=2 taxa.
     # hypergeom_sf(1, 4, 2, 2)
+    matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
+    matrix_tsv.write_text(
+        "taxon_id\tTraitA\tTraitB\n"
+        "NCBITaxon:1\t1\t1\n"
+        "NCBITaxon:2\t1\t1\n"
+        "NCBITaxon:3\t0\t0\n"
+        "NCBITaxon:4\t0\t0\n",
+        encoding="utf-8",
+    )
     input_tsv = tmp_path / "input_profiles.tsv"
     input_tsv.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
@@ -104,6 +123,8 @@ def test_enrichment_hypergeometric_taxon_sampling_values(tmp_path: Path) -> None
             "scripts/trait_enrichment.py",
             "--input",
             str(input_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
             "--output",
             str(report_txt),
             "--tsv-output",
@@ -148,6 +169,15 @@ def test_depletion_hypergeometric_taxon_sampling_values(tmp_path: Path) -> None:
     # TraitA: present in 0 taxa in profile s1/e1/inc out of 2 taxa (k=0, N=2)
     # Background universe: M=4 taxa total, TraitA present in K=2 taxa.
     # hypergeom.cdf(0, 4, 2, 2) == P(X <= 0) == comb(2,0)*comb(2,2)/comb(4,2) == 1/6 == 0.1666666...
+    matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
+    matrix_tsv.write_text(
+        "taxon_id\tTraitA\tTraitB\n"
+        "NCBITaxon:1\t1\t1\n"
+        "NCBITaxon:2\t1\t1\n"
+        "NCBITaxon:3\t0\t0\n"
+        "NCBITaxon:4\t0\t0\n",
+        encoding="utf-8",
+    )
     input_tsv = tmp_path / "input_profiles.tsv"
     input_tsv.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
@@ -164,6 +194,8 @@ def test_depletion_hypergeometric_taxon_sampling_values(tmp_path: Path) -> None:
             "scripts/trait_depletion.py",
             "--input",
             str(input_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
             "--output",
             str(report_txt),
             "--tsv-output",
@@ -194,6 +226,13 @@ def test_depletion_hypergeometric_taxon_sampling_values(tmp_path: Path) -> None:
 
 
 def test_enrichment_pipeline_no_fdr_propagation(tmp_path: Path) -> None:
+    matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
+    matrix_tsv.write_text(
+        "taxon_id\tTraitA\tTraitB\n"
+        + "\n".join(f"NCBITaxon:{i}\t1\t1" for i in range(1, 11))
+        + "\n",
+        encoding="utf-8",
+    )
     input_tsv = tmp_path / "input_profiles.tsv"
     input_tsv.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
@@ -212,6 +251,8 @@ def test_enrichment_pipeline_no_fdr_propagation(tmp_path: Path) -> None:
             "scripts/trait_enrichment.py",
             "--input",
             str(input_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
             "--output",
             str(report_txt),
             "--tsv-output",
@@ -251,6 +292,13 @@ def test_enrichment_pipeline_no_fdr_propagation(tmp_path: Path) -> None:
 
 
 def test_enrichment_pipeline_censorship_detection(tmp_path: Path) -> None:
+    matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
+    matrix_tsv.write_text(
+        "taxon_id\tTraitA\tTraitB\tTraitC\n"
+        + "\n".join(f"NCBITaxon:{i}\t1\t1\t1" for i in range(1, 101))
+        + "\n",
+        encoding="utf-8",
+    )
     input_tsv = tmp_path / "input_profiles.tsv"
     # Ensure TraitA and TraitB appear in at least 2 profiles to pass prevalence filter
     input_tsv.write_text(
@@ -272,6 +320,8 @@ def test_enrichment_pipeline_censorship_detection(tmp_path: Path) -> None:
             "scripts/trait_enrichment.py",
             "--input",
             str(input_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
             "--output",
             str(report_txt),
             "--tsv-output",
@@ -323,6 +373,15 @@ def test_enrichment_pipeline_censorship_detection(tmp_path: Path) -> None:
 
 
 def test_enrichment_pipeline_profile_fdr_propagation(tmp_path: Path) -> None:
+    matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
+    matrix_rows = ["taxon_id\tTraitA\tTraitB"]
+    for i in range(1, 11):
+        matrix_rows.append(f"NCBITaxon:{i}\t1\t0")
+    for i in range(11, 21):
+        matrix_rows.append(f"NCBITaxon:{i}\t0\t1")
+    for i in range(21, 101):
+        matrix_rows.append(f"NCBITaxon:{i}\t0\t0")
+    matrix_tsv.write_text("\n".join(matrix_rows) + "\n", encoding="utf-8")
     input_tsv = tmp_path / "input_profiles.tsv"
     input_tsv.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
@@ -348,6 +407,8 @@ def test_enrichment_pipeline_profile_fdr_propagation(tmp_path: Path) -> None:
             "scripts/trait_enrichment.py",
             "--input",
             str(input_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
             "--output",
             str(report_txt),
             "--tsv-output",
@@ -448,11 +509,9 @@ def test_repeated_taxon_fixture_matrix_wiring(tmp_path: Path) -> None:
         p_val_matrix = float(rows_matrix[0]["p_value"])
         assert abs(p_val_matrix - 1 / 6) < 1e-5
 
-    # 2. Without matrix (empirical sum fallback): M=8, K=4, N=2, k=2
-    # P[X>=2] = comb(4,2)*comb(4,0)/comb(8,2) = 6/28 = 3/14 ~ 0.2142857
+    # 2. Without matrix: must fail loudly since --taxa-matrix is required (#399)
     report_nomatrix = tmp_path / "report_nomatrix.txt"
-    results_nomatrix = tmp_path / "results_nomatrix.tsv"
-    subprocess.run(
+    res_nomatrix = subprocess.run(
         [
             sys.executable,
             "scripts/trait_enrichment.py",
@@ -460,24 +519,12 @@ def test_repeated_taxon_fixture_matrix_wiring(tmp_path: Path) -> None:
             str(profiles_tsv),
             "--output",
             str(report_nomatrix),
-            "--tsv-output",
-            str(results_nomatrix),
-            "--no-fdr",
-            "--p-threshold",
-            "1.0",
-            "--min-fold",
-            "0.0",
         ],
-        check=True,
+        capture_output=True,
+        text=True,
     )
-    content_nomatrix = results_nomatrix.read_text(encoding="utf-8")
-    assert "# Background-Taxa-Universe-M: 8" in content_nomatrix
-    assert "# Background-Mode: EmpiricalProfileSum" in content_nomatrix
-    with results_nomatrix.open("r", encoding="utf-8") as f:
-        reader = csv.DictReader((line for line in f if not line.startswith("#")), delimiter="\t")
-        rows_nomatrix = list(reader)
-        p_val_nomatrix = float(rows_nomatrix[0]["p_value"])
-        assert abs(p_val_nomatrix - 3 / 14) < 1e-5
+    assert res_nomatrix.returncode != 0
+    assert "--taxa-matrix" in res_nomatrix.stderr
 
     # 3. Nonexistent matrix path must fail loudly and not fall back silently
     res_bad = subprocess.run(
@@ -788,7 +835,7 @@ def test_complete_unfiltered_export_254(tmp_path: Path) -> None:
         else:
             data_rows.append(line.split("\t"))
 
-    assert meta["Total-Tests-Performed"] == "2"
+    assert meta["Total-Tests-Performed"] == "4"
     assert meta["Significant-Hits"] == "0"
     assert meta["Result-Status"] == "zero_discoveries"
 
@@ -812,9 +859,9 @@ def test_complete_unfiltered_export_254(tmp_path: Path) -> None:
     ]
     assert header == expected_cols
 
-    # 2 tests performed, so 2 data rows
+    # 4 tests performed, so 4 data rows
     rows = data_rows[1:]
-    assert len(rows) == 2
+    assert len(rows) == 4
 
     # Parse rows into dicts
     row_dicts = [dict(zip(header, r, strict=True)) for r in rows]
@@ -918,7 +965,7 @@ def test_complete_unfiltered_export_254(tmp_path: Path) -> None:
 
 
 def test_enrichment_and_depletion_zero_eligibility_and_aligned_denominators(tmp_path: Path) -> None:
-    """Validate zero-annotation eligibility and aligned testability denominators (#132).
+    """Validate zero-annotation eligibility and aligned testability denominators (#132, #398).
 
     Four-profile fixture across two paired experiments:
     s1/e1/inc: TraitA=10, TraitB=0, TraitC=0, taxa_count=10
@@ -936,7 +983,18 @@ def test_enrichment_and_depletion_zero_eligibility_and_aligned_denominators(tmp_
     - TraitC not tested (0 tests, 0 hits)
     - TraitA enriched in inc (2 hits), depleted in dec (2 hits)
     - TraitB enriched in dec (2 hits), depleted in inc (2 hits)
+    - Total tests performed = 8 (2 candidate traits x 4 profiles)
     """
+    matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
+    matrix_tsv.write_text(
+        "taxon_id\tTraitA\tTraitB\tTraitC\n"
+        + "\n".join(f"NCBITaxon:{i}\t1\t0\t0" for i in range(1, 11))
+        + "\n"
+        + "\n".join(f"NCBITaxon:{i}\t0\t1\t0" for i in range(11, 21))
+        + "\n",
+        encoding="utf-8",
+    )
+
     profiles_tsv = tmp_path / "profiles.tsv"
     profiles_tsv.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\tTraitC\n"
@@ -955,6 +1013,8 @@ def test_enrichment_and_depletion_zero_eligibility_and_aligned_denominators(tmp_
             "scripts/trait_enrichment.py",
             "--input",
             str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
             "--output",
             str(enr_report),
             "--tsv-output",
@@ -977,6 +1037,8 @@ def test_enrichment_and_depletion_zero_eligibility_and_aligned_denominators(tmp_
             "scripts/trait_depletion.py",
             "--input",
             str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
             "--output",
             str(dep_report),
             "--tsv-output",
@@ -1009,8 +1071,8 @@ def test_enrichment_and_depletion_zero_eligibility_and_aligned_denominators(tmp_
     enr_meta, _, enr_rows = _read(enr_tsv)
     dep_meta, _, dep_rows = _read(dep_tsv)
 
-    # 1. Total tests and metadata
-    assert enr_meta["Total-Tests-Performed"] == "4"
+    # 1. Total tests and metadata: unified family (#398)
+    assert enr_meta["Total-Tests-Performed"] == "8"
     assert enr_meta["Significant-Hits"] == "4"
     assert enr_meta["Result-Status"] == "discoveries"
 
@@ -1064,6 +1126,16 @@ def test_unfiltered_ranking_export_preserves_all_tests_349(tmp_path: Path) -> No
        omits is_significant.
     4. scripts/trait_depletion.py produces valid all-results output with is_significant column.
     """
+    matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
+    matrix_rows = ["taxon_id\tTraitA\tTraitB"]
+    for i in range(1, 11):
+        matrix_rows.append(f"NCBITaxon:{i}\t1\t0")
+    for i in range(11, 21):
+        matrix_rows.append(f"NCBITaxon:{i}\t0\t1")
+    for i in range(21, 101):
+        matrix_rows.append(f"NCBITaxon:{i}\t0\t0")
+    matrix_tsv.write_text("\n".join(matrix_rows) + "\n", encoding="utf-8")
+
     profiles_tsv = tmp_path / "profiles.tsv"
     # Create profiles where TraitA is enriched/significant, TraitB is present but not significant
     profiles_tsv.write_text(
@@ -1085,6 +1157,8 @@ def test_unfiltered_ranking_export_preserves_all_tests_349(tmp_path: Path) -> No
             "scripts/trait_enrichment.py",
             "--input",
             str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
             "--output",
             str(enr_report),
             "--tsv-output",
@@ -1192,6 +1266,8 @@ def test_unfiltered_ranking_export_preserves_all_tests_349(tmp_path: Path) -> No
             "scripts/trait_depletion.py",
             "--input",
             str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
             "--output",
             str(dep_report),
             "--tsv-output",
@@ -1241,3 +1317,327 @@ def test_unfiltered_ranking_export_preserves_all_tests_349(tmp_path: Path) -> No
     assert "is_significant" in dep_header
     dep_rows = [dict(zip(dep_header, r.split("\t"), strict=True)) for r in dep_unfiltered_body[1:]]
     assert len(dep_rows) == int(dep_unfiltered_meta["Total-Tests-Performed"])
+
+
+def test_taxa_matrix_strict_count_parsing(tmp_path: Path) -> None:
+    """Verify strict count parsing in taxa matrix (#397).
+
+    Integer-valued floats like '1.0' parse successfully. Non-integer floats,
+    non-numeric strings, and negative values must raise a ValueError and fail.
+    """
+    profiles_tsv = tmp_path / "profiles.tsv"
+    profiles_tsv.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
+        "s1\te1\tinc\t1\t1\n"
+        "s1\te1\tdec\t1\t0\n",
+        encoding="utf-8",
+    )
+
+    # 1. Float-like integer '1.0' succeeds
+    valid_matrix = tmp_path / "matrix_float_int.tsv"
+    valid_matrix.write_text("taxon_id\tTraitA\nNCBITaxon:1\t1.0\n", encoding="utf-8")
+    report = tmp_path / "report1.txt"
+    res_valid = subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(profiles_tsv),
+            "--taxa-matrix",
+            str(valid_matrix),
+            "--output",
+            str(report),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert res_valid.returncode == 0, res_valid.stderr
+
+    # 2. Non-integer float '1.5' fails
+    matrix_non_int = tmp_path / "matrix_non_int.tsv"
+    matrix_non_int.write_text("taxon_id\tTraitA\nNCBITaxon:1\t1.5\n", encoding="utf-8")
+    res_non_int = subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_non_int),
+            "--output",
+            str(report),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert res_non_int.returncode != 0
+    assert "Expected integer count" in res_non_int.stderr or "ValueError" in res_non_int.stderr
+
+    # 3. String 'abc' fails
+    matrix_str = tmp_path / "matrix_str.tsv"
+    matrix_str.write_text("taxon_id\tTraitA\nNCBITaxon:1\tabc\n", encoding="utf-8")
+    res_str = subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_str),
+            "--output",
+            str(report),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert res_str.returncode != 0
+
+    # 4. Negative count '-1' fails
+    matrix_neg = tmp_path / "matrix_neg.tsv"
+    matrix_neg.write_text("taxon_id\tTraitA\nNCBITaxon:1\t-1\n", encoding="utf-8")
+    res_neg = subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_neg),
+            "--output",
+            str(report),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert res_neg.returncode != 0
+    assert "Count cannot be negative" in res_neg.stderr or "ValueError" in res_neg.stderr
+
+
+def test_profile_counts_exceeding_matrix_counts_rejected(tmp_path: Path) -> None:
+    """Verify strict profile count checks k <= K (#397).
+
+    k > K and k > 0 when K == 0 must raise hard ValueError.
+    """
+    matrix_tsv = tmp_path / "matrix.tsv"
+    matrix_tsv.write_text(
+        "taxon_id\tTraitA\tTraitZero\nNCBITaxon:1\t1\t0\nNCBITaxon:2\t0\t0\n",
+        encoding="utf-8",
+    )
+
+    # Case 1: k > K (k=2, K=1)
+    profiles_k_gt_K = tmp_path / "profiles_k_gt_K.tsv"
+    profiles_k_gt_K.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitZero\n"
+        "s1\te1\tinc\t2\t2\t0\n"
+        "s1\te1\tdec\t2\t0\t0\n",
+        encoding="utf-8",
+    )
+    res1 = subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(profiles_k_gt_K),
+            "--taxa-matrix",
+            str(matrix_tsv),
+            "--output",
+            str(tmp_path / "out1.txt"),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert res1.returncode != 0
+    assert "has count k=2 > reference background K=1" in res1.stderr
+
+    # Case 2: k > 0 when K == 0 (k=1, K=0 for TraitZero)
+    profiles_k_gt_0_K_0 = tmp_path / "profiles_k_gt_0_K_0.tsv"
+    profiles_k_gt_0_K_0.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitZero\n"
+        "s1\te1\tinc\t2\t1\t1\n"
+        "s1\te1\tdec\t2\t0\t0\n",
+        encoding="utf-8",
+    )
+    res2 = subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_enrichment.py",
+            "--input",
+            str(profiles_k_gt_0_K_0),
+            "--taxa-matrix",
+            str(matrix_tsv),
+            "--output",
+            str(tmp_path / "out2.txt"),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert res2.returncode != 0
+    assert "for trait 'TraitZero', but reference background K is 0" in res2.stderr
+
+
+def test_depletion_ranking_export_sorting_and_headers(tmp_path: Path) -> None:
+    """Verify exporter depletion sorting and headers (#400).
+
+    In depletion mode:
+    - Output headers contain '# Tail: lower' and '# Max-Fold:'.
+    - Overall ranking is sorted by prevalence desc, best_stat asc, mean_fold asc.
+    - Pair ranking is sorted by stat asc, fold asc.
+    """
+    matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
+    matrix_tsv.write_text(
+        "taxon_id\tTraitA\tTraitB\n"
+        + "\n".join(f"NCBITaxon:{i}\t1\t1" for i in range(1, 11))
+        + "\n",
+        encoding="utf-8",
+    )
+
+    profiles_tsv = tmp_path / "profiles.tsv"
+    profiles_tsv.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
+        "s1\te1\tinc\t10\t0\t2\n"
+        "s1\te1\tdec\t10\t10\t8\n"
+        "s2\te1\tinc\t10\t1\t2\n"
+        "s2\te1\tdec\t10\t9\t8\n",
+        encoding="utf-8",
+    )
+
+    dep_report = tmp_path / "dep_report.txt"
+    dep_results = tmp_path / "dep_results.tsv"
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_depletion.py",
+            "--input",
+            str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
+            "--output",
+            str(dep_report),
+            "--tsv-output",
+            str(dep_results),
+            "--p-threshold",
+            "1.0",
+            "--max-fold",
+            "1.0",
+        ],
+        check=True,
+    )
+
+    overall_out = tmp_path / "dep_overall.tsv"
+    pair_out = tmp_path / "dep_pairs.tsv"
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/export_trait_enrichment_rankings.py",
+            "--input",
+            str(dep_report),
+            "--results",
+            str(dep_results),
+            "--overall-output",
+            str(overall_out),
+            "--pair-output",
+            str(pair_out),
+        ],
+        check=True,
+    )
+
+    # Verify headers
+    overall_content = overall_out.read_text(encoding="utf-8")
+    assert "# Tail: lower" in overall_content
+    assert "# Max-Fold: 1.0" in overall_content or "# Max-Fold: 1" in overall_content
+
+    pair_content = pair_out.read_text(encoding="utf-8")
+    assert "# Tail: lower" in pair_content
+    assert "# Max-Fold: 1.0" in pair_content or "# Max-Fold: 1" in pair_content
+
+    # Verify overall table sorting: prevalence desc, best_stat asc, mean_fold asc
+    overall_lines = [line for line in overall_content.splitlines() if not line.startswith("#")]
+    header = overall_lines[0].split("\t")
+    stat_idx = (
+        header.index("best_qvalue") if "best_qvalue" in header else header.index("best_pvalue")
+    )
+    mean_fold_idx = header.index("mean_fold")
+    prev_idx = header.index("prevalence")
+
+    rows = [r.split("\t") for r in overall_lines[1:]]
+    for i in range(len(rows) - 1):
+        prev1, prev2 = float(rows[i][prev_idx]), float(rows[i + 1][prev_idx])
+        stat1, stat2 = float(rows[i][stat_idx]), float(rows[i + 1][stat_idx])
+        fold1, fold2 = float(rows[i][mean_fold_idx]), float(rows[i + 1][mean_fold_idx])
+        assert (prev1, -stat1, -fold1) >= (prev2, -stat2, -fold2)
+
+    # Verify pair table sorting: stat asc, fold asc
+    pair_lines = [line for line in pair_content.splitlines() if not line.startswith("#")]
+    pair_header = pair_lines[0].split("\t")
+    p_stat_idx = (
+        pair_header.index("q_value") if "q_value" in pair_header else pair_header.index("p_value")
+    )
+    p_fold_idx = pair_header.index("fold")
+    p_rows = [r.split("\t") for r in pair_lines[1:]]
+    for i in range(len(p_rows) - 1):
+        stat1, stat2 = float(p_rows[i][p_stat_idx]), float(p_rows[i + 1][p_stat_idx])
+        fold1, fold2 = float(p_rows[i][p_fold_idx]), float(p_rows[i + 1][p_fold_idx])
+        assert (stat1, fold1) <= (stat2, fold2)
+
+
+def test_unfiltered_export_rejects_truncated_file(tmp_path: Path) -> None:
+    """Verify exporter rejects truncated unfiltered results files (#400)."""
+    truncated_tsv = tmp_path / "truncated_all_results.tsv"
+    truncated_tsv.write_text(
+        "# Background-Taxa-Universe-M: 10\n"
+        "# Total-Tests-Performed: 4\n"
+        "# Significant-Hits: 1\n"
+        "# Tail: upper\n"
+        "study_id\texperiment_id\tinc_dec\ttrait\tp_value\tfdr_q\tfold\tcount\texpected\ttestable_profiles\tbackground_m\tbackground_k\tis_significant\tcorrection_family\teligibility_status\n"
+        "s1\te1\tinc\tTraitA\t0.01\t0.02\t2.0\t5\t2.5\t2\t10\t5\tTrue\tCartesianProduct\ttestable\n",
+        encoding="utf-8",
+    )
+
+    res = subprocess.run(
+        [
+            sys.executable,
+            "scripts/export_trait_enrichment_rankings.py",
+            "--input",
+            str(truncated_tsv),
+            "--unfiltered",
+            "--overall-output",
+            str(tmp_path / "out.tsv"),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert res.returncode != 0
+    assert "Expected 4 data rows" in res.stderr or "file may be truncated" in res.stderr
+
+
+def test_trait_depletion_rejects_non_lower_tail(tmp_path: Path) -> None:
+    """Verify scripts/trait_depletion.py strictly enforces --tail lower (#402)."""
+    matrix_tsv = tmp_path / "matrix.tsv"
+    matrix_tsv.write_text("taxon_id\tTraitA\nNCBITaxon:1\t1\n", encoding="utf-8")
+    profiles_tsv = tmp_path / "profiles.tsv"
+    profiles_tsv.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
+        "s1\te1\tinc\t1\t1\n"
+        "s1\te1\tdec\t1\t0\n",
+        encoding="utf-8",
+    )
+
+    res = subprocess.run(
+        [
+            sys.executable,
+            "scripts/trait_depletion.py",
+            "--input",
+            str(profiles_tsv),
+            "--taxa-matrix",
+            str(matrix_tsv),
+            "--output",
+            str(tmp_path / "out.txt"),
+            "--tail",
+            "upper",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert res.returncode != 0
+    assert "only supports --tail lower" in res.stderr
+

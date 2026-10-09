@@ -340,12 +340,12 @@ def test_hypergeom_input_validation() -> None:
 # --- Consolidation and Module Re-export Verification --------------------------
 
 
-def test_bsdbng_stats_reexports() -> None:
-    """bsdbng.stats must re-export consolidated statistics identically."""
-    assert bsdbng_stats.benjamini_hochberg is benjamini_hochberg
-    assert bsdbng_stats.hypergeom_sf is hypergeom_sf
-    assert bsdbng_stats.hypergeom_sf_many is hypergeom_sf_many
-    assert bsdbng_stats.hypergeom_cdf is hypergeom_cdf
-    assert bsdbng_stats.hypergeom_cdf_many is hypergeom_cdf_many
-    assert bsdbng_stats.hypergeom_sf_pure_python is hypergeom_sf_pure_python
-    assert bsdbng_stats.hypergeom_cdf_pure_python is hypergeom_cdf_pure_python
+def test_bsdbng_stats_does_not_reexport_enrichment_stats() -> None:
+    """bsdbng.stats must not re-export heavy enrichment_stats to avoid importing scipy (#402)."""
+    assert not hasattr(bsdbng_stats, "benjamini_hochberg")
+    assert not hasattr(bsdbng_stats, "hypergeom_sf")
+    assert not hasattr(bsdbng_stats, "hypergeom_sf_many")
+    assert not hasattr(bsdbng_stats, "hypergeom_cdf")
+    assert not hasattr(bsdbng_stats, "hypergeom_cdf_many")
+    assert not hasattr(bsdbng_stats, "hypergeom_sf_pure_python")
+    assert not hasattr(bsdbng_stats, "hypergeom_cdf_pure_python")

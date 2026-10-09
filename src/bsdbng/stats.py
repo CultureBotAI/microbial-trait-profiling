@@ -9,27 +9,6 @@ from pathlib import Path
 
 import yaml
 
-from bsdbng.enrichment_stats import (
-    benjamini_hochberg as benjamini_hochberg,
-)
-from bsdbng.enrichment_stats import (
-    hypergeom_cdf as hypergeom_cdf,
-)
-from bsdbng.enrichment_stats import (
-    hypergeom_cdf_many as hypergeom_cdf_many,
-)
-from bsdbng.enrichment_stats import (
-    hypergeom_cdf_pure_python as hypergeom_cdf_pure_python,
-)
-from bsdbng.enrichment_stats import (
-    hypergeom_sf as hypergeom_sf,
-)
-from bsdbng.enrichment_stats import (
-    hypergeom_sf_many as hypergeom_sf_many,
-)
-from bsdbng.enrichment_stats import (
-    hypergeom_sf_pure_python as hypergeom_sf_pure_python,
-)
 from bsdbng.paths import DERIVED_DATA_DIR, RAW_DATA_DIR, STUDY_DATA_DIR
 
 

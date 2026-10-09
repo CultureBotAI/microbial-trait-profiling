@@ -18,7 +18,19 @@ hypergeom_sf_many = trait_enrichment.hypergeom_sf_many
 
 def main(argv: list[str] | None = None) -> None:
     raw_args = sys.argv[1:] if argv is None else argv
-    forwarded = ["--tail", "lower", *raw_args] if "--tail" not in raw_args else list(raw_args)
+    for i, arg in enumerate(raw_args):
+        if arg == "--tail":
+            if i + 1 >= len(raw_args) or raw_args[i + 1] != "lower":
+                raise ValueError("scripts/trait_depletion.py only supports --tail lower")
+        elif arg.startswith("--tail="):
+            val = arg.split("=", 1)[1]
+            if val != "lower":
+                raise ValueError("scripts/trait_depletion.py only supports --tail lower")
+    forwarded = (
+        ["--tail", "lower", *raw_args]
+        if "--tail" not in raw_args and not any(a.startswith("--tail=") for a in raw_args)
+        else list(raw_args)
+    )
     trait_enrichment.main(forwarded)
 
 

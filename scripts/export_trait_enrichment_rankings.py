@@ -34,18 +34,20 @@ from bsdbng.enrichment_results import (
     MalformedResultsError,
     load_results_tsv,
 )
+from bsdbng.paths import DERIVED_DATA_DIR
 
 DEFAULT_INPUT_CANDIDATES = [
-    Path("data/derived/trait_enrichment_report_p0.001.txt"),
-    Path("data/derived/trait_enrichment_report.txt"),
+    DERIVED_DATA_DIR / "trait_enrichment_report_p0.001.txt",
+    DERIVED_DATA_DIR / "trait_enrichment_report.txt",
 ]
 DEFAULT_RESULTS_CANDIDATES = [
-    Path("data/derived/trait_enrichment_results_p0.001.tsv"),
-    Path("data/derived/trait_enrichment_results.tsv"),
+    DERIVED_DATA_DIR / "trait_enrichment_results_p0.001.tsv",
+    DERIVED_DATA_DIR / "trait_enrichment_results.tsv",
 ]
 DEFAULT_OVERALL_OUTPUT_STEM = "trait_enrichment_traits_overall_ranked"
 DEFAULT_PAIR_OUTPUT_STEM = "trait_enrichment_trait_study_pairs_ranked"
 DEFAULT_MIN_FOLD = 1.5
+DEFAULT_MAX_FOLD = 0.67
 # #115: traits must be significant in at least this many profiles to be ranked.
 MIN_HIT_ROWS_FOR_RANKING = 2
 
@@ -194,6 +196,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Optional path to profiles TSV to compute empirical background K (trait totals).",
     )
     parser.add_argument(
+        "--tail",
+        choices=["upper", "lower"],
+        default=None,
+        help=(
+            "Direction of tail: upper for enrichment, lower for depletion "
+            "(detected from metadata if omitted)."
+        ),
+    )
+    parser.add_argument(
         "--unfiltered",
         "--all-results",
         action="store_true",
@@ -247,6 +258,8 @@ def detect_metadata(path: Path) -> dict[str, Any]:
         "stat_type": "p_value",
         "threshold": 0.001,
         "min_fold": None,
+        "max_fold": None,
+        "tail": "upper",
         "testable_profiles": None,
         "max_traits": None,
         "fdr_scope": "global",
@@ -261,14 +274,40 @@ def detect_metadata(path: Path) -> dict[str, Any]:
         for line in handle:
             line = line.strip()
             # Text report format
-            if line.startswith("p < "):
+            if line.startswith("p <= "):
                 meta["stat_type"] = "p_value"
-                meta["threshold"] = float(line.split("<")[1].strip())
+                val = line.split("<=")[1]
+                if "(Depletion)" in val:
+                    meta["tail"] = "lower"
+                    val = val.replace("(Depletion)", "")
+                meta["threshold"] = float(val.strip())
+            elif line.startswith("p < "):
+                meta["stat_type"] = "p_value"
+                val = line.split("<")[1]
+                if "(Depletion)" in val:
+                    meta["tail"] = "lower"
+                    val = val.replace("(Depletion)", "")
+                meta["threshold"] = float(val.strip())
+            elif line.startswith("FDR q <= "):
+                meta["stat_type"] = "fdr_q"
+                val = line.split("<=")[1]
+                if "(Depletion)" in val:
+                    meta["tail"] = "lower"
+                    val = val.replace("(Depletion)", "")
+                meta["threshold"] = float(val.strip())
             elif line.startswith("FDR q < "):
                 meta["stat_type"] = "fdr_q"
-                meta["threshold"] = float(line.split("<")[1].strip())
+                val = line.split("<")[1]
+                if "(Depletion)" in val:
+                    meta["tail"] = "lower"
+                    val = val.replace("(Depletion)", "")
+                meta["threshold"] = float(val.strip())
             elif line.startswith("Min Fold >= "):
                 meta["min_fold"] = float(line.split(">=")[1].strip())
+            elif line.startswith("Max Fold <= "):
+                meta["max_fold"] = float(line.split("<=")[1].strip())
+            elif line.startswith("Tail: "):
+                meta["tail"] = line.split(": ")[1].strip().lower()
             elif line.startswith("Tests performed: "):
                 meta["tests_performed"] = int(line.split(": ")[1].strip())
             elif line.startswith("Significant hits: "):
@@ -276,13 +315,17 @@ def detect_metadata(path: Path) -> dict[str, Any]:
             elif line.startswith("Result status: "):
                 meta["result_status"] = line.split(": ")[1].strip()
             # TSV metadata header format
+            elif line.startswith("# Tail: "):
+                meta["tail"] = line.split(": ")[1].strip().lower()
             elif line.startswith("# FDR: "):
                 is_fdr = line.split(": ")[1].strip().lower() == "true"
                 meta["stat_type"] = "fdr_q" if is_fdr else "p_value"
-            elif line.startswith("# P-Threshold: "):
+            elif line.startswith(("# P-Threshold: ", "# Stat-Threshold: ")):
                 meta["threshold"] = float(line.split(": ")[1].strip())
             elif line.startswith("# Min-Fold: "):
                 meta["min_fold"] = float(line.split(": ")[1].strip())
+            elif line.startswith("# Max-Fold: "):
+                meta["max_fold"] = float(line.split(": ")[1].strip())
             elif line.startswith("# FDR-Scope: "):
                 meta["fdr_scope"] = line.split(": ")[1].strip().lower()
             elif line.startswith("# Testable-Profiles: "):
@@ -302,6 +345,8 @@ def parse_results_tsv(
     stat_type: str,
     threshold: float,
     min_fold: float = DEFAULT_MIN_FOLD,
+    max_fold: float = DEFAULT_MAX_FOLD,
+    tail: str = "upper",
     trait_totals: dict[str, int] | None = None,
     unfiltered: bool = False,
 ) -> list[ParsedRow]:
@@ -316,21 +361,25 @@ def parse_results_tsv(
     # col used for filtering
     col = "p_value" if stat_type == "p_value" else "fdr_q"
 
-    if unfiltered:
-        if "is_significant" in df.columns:
-            sig_mask = df["is_significant"].astype(str).str.lower().isin(("true", "1"))
+    if "is_significant" in df.columns:
+        sig_mask = df["is_significant"].astype(str).str.lower().isin(("true", "1"))
+    else:
+        if tail == "lower":
+            sig_mask = (df[col] <= threshold) & (df["fold"] <= max_fold)
         else:
             sig_mask = (df[col] <= threshold) & (df["fold"] >= min_fold)
+
+    fold_desc = f"max_fold={max_fold}" if tail == "lower" else f"min_fold={min_fold}"
+    if unfiltered:
         print(
             f"Loaded {len(df)} all-result rows ({sig_mask.sum()} significant hits) "
-            f"(source={path.name}, threshold={threshold}, fold={min_fold})"
+            f"(source={path.name}, threshold={threshold}, {fold_desc}, tail={tail})"
         )
     else:
-        sig_mask = (df[col] <= threshold) & (df["fold"] >= min_fold)
         df = df[sig_mask]
         print(
             f"Filtered to {len(df)} significant hits "
-            f"(source={path.name}, threshold={threshold}, fold={min_fold})"
+            f"(source={path.name}, threshold={threshold}, {fold_desc}, tail={tail})"
         )
 
     rows = []
@@ -380,7 +429,20 @@ def parse_report(
     with path.open("r", encoding="utf-8") as handle:
         for raw in handle:
             line = raw.strip()
-            if not line or line == "---" or line.startswith(("p < ", "FDR q < ")):
+            if not line or line == "---" or line.startswith(
+                (
+                    "p < ",
+                    "p <= ",
+                    "FDR q < ",
+                    "FDR q <= ",
+                    "Min Fold >= ",
+                    "Max Fold <= ",
+                    "Tail: ",
+                    "Tests performed: ",
+                    "Significant hits: ",
+                    "Result status: ",
+                )
+            ):
                 continue
 
             if line.startswith("- "):
@@ -462,6 +524,7 @@ def rows_to_frame(rows: list[ParsedRow], max_traits: int | None) -> pd.DataFrame
 def build_overall_table(
     frame: pd.DataFrame,
     stat_type: str,
+    tail: str = "upper",
     total_profiles: int | None = None,
     max_traits: int | None = None,
     fdr_scope: str = "global",
@@ -591,10 +654,16 @@ def build_overall_table(
     # #119: Rank by prevalence (significant / testable) descending, then by significance.
     # This provides a directly interpretable ranking that avoids extreme-value inflation.
     sort_stat = "best_qvalue" if stat_type == "fdr_q" else "best_pvalue"
-    overall = overall.sort_values(
-        ["prevalence", sort_stat, "max_fold"],
-        ascending=[False, True, False],
-    )
+    if tail == "lower":
+        overall = overall.sort_values(
+            ["prevalence", sort_stat, "mean_fold"],
+            ascending=[False, True, True],
+        )
+    else:
+        overall = overall.sort_values(
+            ["prevalence", sort_stat, "max_fold"],
+            ascending=[False, True, False],
+        )
     overall.insert(0, "rank", range(1, len(overall) + 1))
     if body_site_group is not None:
         overall["body_site_group"] = body_site_group
@@ -606,6 +675,7 @@ def build_overall_table(
 def build_pair_table(
     frame: pd.DataFrame,
     stat_type: str,
+    tail: str = "upper",
     body_site_group: str | None = None,
     *,
     unfiltered: bool = False,
@@ -623,7 +693,10 @@ def build_pair_table(
         return pd.DataFrame(columns=cols)
 
     sort_col = "fdr_q" if stat_type == "fdr_q" else "p_value"
-    pairs = pairs.sort_values([sort_col, "fold"], ascending=[True, False])
+    if tail == "lower":
+        pairs = pairs.sort_values([sort_col, "fold"], ascending=[True, True])
+    else:
+        pairs = pairs.sort_values([sort_col, "fold"], ascending=[True, False])
 
     # Rename stat column for self-description
     if stat_type == "fdr_q":
@@ -659,9 +732,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
     meta = detect_metadata(args.input)
+    tail = args.tail or meta.get("tail", "upper")
     stat_type = meta["stat_type"]
     stat_threshold = meta["threshold"]
     min_fold = meta["min_fold"] if meta["min_fold"] is not None else DEFAULT_MIN_FOLD
+    max_fold = meta["max_fold"] if meta["max_fold"] is not None else DEFAULT_MAX_FOLD
     testable_profiles = meta["testable_profiles"]
     fdr_scope = meta["fdr_scope"]
     max_traits = meta.get("max_traits")
@@ -682,10 +757,14 @@ def main(argv: list[str] | None = None) -> int:
             results_meta = detect_metadata(results_path)
 
             # Prefer TSV metadata if available
+            if args.tail is None and results_meta.get("tail"):
+                tail = results_meta["tail"]
             stat_type = results_meta.get("stat_type", stat_type)
             stat_threshold = results_meta.get("threshold", stat_threshold)
             if results_meta.get("min_fold") is not None:
                 min_fold = results_meta["min_fold"]
+            if results_meta.get("max_fold") is not None:
+                max_fold = results_meta["max_fold"]
             fdr_scope = results_meta.get("fdr_scope", fdr_scope)
             testable_profiles = results_meta.get("testable_profiles") or testable_profiles
 
@@ -700,7 +779,9 @@ def main(argv: list[str] | None = None) -> int:
                 results_path,
                 stat_type,
                 stat_threshold,
-                min_fold,
+                min_fold=min_fold,
+                max_fold=max_fold,
+                tail=tail,
                 trait_totals=trait_totals,
                 unfiltered=is_unfiltered,
             )
@@ -757,6 +838,7 @@ def main(argv: list[str] | None = None) -> int:
     overall = build_overall_table(
         frame,
         stat_type,
+        tail=tail,
         total_profiles=testable_profiles,
         max_traits=max_traits,
         fdr_scope=fdr_scope,
@@ -764,7 +846,11 @@ def main(argv: list[str] | None = None) -> int:
         trait_totals=trait_totals,
     )
     pairs = build_pair_table(
-        frame, stat_type, body_site_group=args.body_site_group, unfiltered=is_unfiltered
+        frame,
+        stat_type,
+        tail=tail,
+        body_site_group=args.body_site_group,
+        unfiltered=is_unfiltered,
     )
 
     # Resolve dynamic filenames
@@ -775,26 +861,43 @@ def main(argv: list[str] | None = None) -> int:
 
     suffix = f"_{method_suffix}{stat_threshold}"
 
+    overall_stem = (
+        DEFAULT_OVERALL_OUTPUT_STEM.replace("enrichment", "depletion")
+        if tail == "lower"
+        else DEFAULT_OVERALL_OUTPUT_STEM
+    )
+    pair_stem = (
+        DEFAULT_PAIR_OUTPUT_STEM.replace("enrichment", "depletion")
+        if tail == "lower"
+        else DEFAULT_PAIR_OUTPUT_STEM
+    )
+
     overall_out = args.overall_output
     if overall_out is None:
-        overall_out = Path("data/derived") / f"{DEFAULT_OVERALL_OUTPUT_STEM}{suffix}.tsv"
+        overall_out = DERIVED_DATA_DIR / f"{overall_stem}{suffix}.tsv"
 
     pair_out = args.pair_output
     if pair_out is None:
-        pair_out = Path("data/derived") / f"{DEFAULT_PAIR_OUTPUT_STEM}{suffix}.tsv"
+        pair_out = DERIVED_DATA_DIR / f"{pair_stem}{suffix}.tsv"
 
     def na(value: int | None) -> str:
         return "NA" if value is None else str(value)
 
     common: list[tuple[str, Any]] = [
+        ("Tail", tail),
         ("Stat-Type", stat_type),
         ("FDR-Scope", fdr_scope),
         ("Stat-Threshold", stat_threshold),
-        ("Min-Fold", min_fold),
+    ]
+    if tail == "lower":
+        common.append(("Max-Fold", max_fold))
+    else:
+        common.append(("Min-Fold", min_fold))
+    common.extend([
         (META_RESULT_STATUS, result_status),
         (META_TESTS_PERFORMED, na(tests_performed)),
         (META_SIGNIFICANT_HITS, na(analyzer_hits)),
-    ]
+    ])
     if args.body_site_group is not None:
         common.append(("Body-Site-Group", args.body_site_group))
 
