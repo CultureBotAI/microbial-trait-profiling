@@ -14,7 +14,9 @@ from bsdbng.trait_screen import (
     ALL_TIED,
     NO_ELIGIBLE_STUDIES,
     TESTED,
+    Dependence,
     candidate_slots,
+    cheverud_note,
     dependence,
     effective_family_size,
     main,
@@ -336,6 +338,11 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
     assert len(columns) == stats.trait_columns_used == 317
     result = run_screen(paired, columns, dependence_profiles=unpaired)
     assert result.family_size == 317
+    contrast = result.contrast_dependence
+    assert contrast is not None
+    assert contrast.li_ji == pytest.approx(112.0, abs=0.05)
+    assert contrast.galwey == pytest.approx(110.1, abs=0.05)
+    assert contrast.cheverud_nyholt == pytest.approx(294.4, abs=0.05)
     profiles = result.profile_dependence
     assert profiles is not None
     assert profiles.units == 5829
@@ -346,3 +353,33 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
     assert profiles.pairs == 50086
     assert profiles.median_rho == pytest.approx(0.611, abs=0.001)
     assert profiles.share_rho_above_half == pytest.approx(0.635, abs=0.001)
+
+
+def _dependence_record(*, li_ji: float, galwey: float, cheverud_nyholt: float) -> Dependence:
+    return Dependence(
+        basis="contrast",
+        units=10,
+        traits=5,
+        constant_traits_excluded=0,
+        pc1_share=0.5,
+        eigenvalues=(),
+        li_ji=li_ji,
+        galwey=galwey,
+        cheverud_nyholt=cheverud_nyholt,
+        pairs=10,
+        median_rho=0.1,
+        mean_rho=0.1,
+        share_rho_above_half=0.0,
+        share_rho_above_nine_tenths=0.0,
+    )
+
+
+def test_cheverud_note_claims_strictness_only_when_it_is_the_largest() -> None:
+    largest = cheverud_note(_dependence_record(li_ji=3.0, galwey=3.1, cheverud_nyholt=4.5))
+    assert "Li & Ji (2005) found overly large" in largest
+    assert "Here too it is the largest of the three" in largest
+
+    smaller = cheverud_note(_dependence_record(li_ji=3.0, galwey=3.1, cheverud_nyholt=2.0))
+    assert "Li & Ji (2005) found overly large" in smaller
+    assert "largest" not in smaller
+    assert "disagrees" not in smaller

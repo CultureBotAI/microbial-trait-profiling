@@ -53,9 +53,9 @@
     },
     {
       "date": "2026-10-08",
-      "change": "effective_family_size.why_excluded is corrected. Cheverud/Nyholt is excluded as an unreliable estimator that disagrees with Li & Ji and Galwey (Li & Ji 2005), not as anticonservative.",
+      "change": "effective_family_size.why_excluded is corrected. Cheverud/Nyholt is excluded as an unreliable estimator (Li & Ji 2005 found it overly large and excessively conservative; Salyakina et al. 2005 found its error rate off in both directions) that disagrees with Li & Ji and Galwey on this corpus, not as anticonservative.",
       "reason": "#325: on this corpus Cheverud/Nyholt gives the largest effective m of the three (294.4 vs Li & Ji 112.0 on the contrast basis; 198.9 vs 60.0 on the profile basis), so it would give the strictest correction, the opposite of the original rationale.",
-      "known_when_amended": "the full screen result, including the family table above.",
+      "known_when_amended": "the full screen result, including the effective family sizes in trait_screen_family.tsv.",
       "unchanged": "which estimators are reported and which is excluded; every number and output column"
     }
   ]

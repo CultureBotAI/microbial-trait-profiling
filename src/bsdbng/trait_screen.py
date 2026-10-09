@@ -235,11 +235,11 @@ def effective_family_size(eigenvalues: Sequence[float]) -> tuple[float, float, f
     """Li & Ji, Galwey and Cheverud/Nyholt effective numbers of tests.
 
     Cheverud/Nyholt is computed so that it can be named and excluded rather than
-    silently omitted (#265). Li & Ji (2005) show its eigenvalue-variance estimate
-    can misstate the effective number of tests in either direction, and on this
-    corpus it disagrees with the other two by more than a factor of two. It is
-    excluded as unreliable, not as lenient: here it is the largest of the three,
-    so it would give the strictest correction (#325).
+    silently omitted (#265). Li & Ji (2005) report that its eigenvalue-variance
+    estimate is overly large, giving excessively conservative results; Salyakina
+    et al. (2005) found its nominal error rate off in both directions depending
+    on the dependence structure. It is excluded as unreliable, not as lenient
+    (#325, #357).
 
     All three return the trait count for an identity correlation matrix and 1.0
     for a perfectly correlated one.
@@ -524,7 +524,7 @@ def _family_rows(result: ScreenResult) -> list[dict[str, str]]:
             "effective_cheverud_nyholt",
             record.basis,
             record.cheverud_nyholt,
-            "reported and EXCLUDED: unreliable estimator that disagrees with Li & Ji and Galwey",
+            "reported and EXCLUDED: unreliable estimator (Li & Ji 2005; Salyakina et al. 2005)",
         )
         add("pc1_variance_share", record.basis, record.pc1_share, "first principal component")
         add("trait_pairs", record.basis, record.pairs, "unordered candidate pairs")
@@ -724,6 +724,21 @@ def write_screen_outputs(
     return [screen_path, family_path, spectrum_path, provenance_path, report_path]
 
 
+def cheverud_note(record: Dependence) -> str:
+    """Why Cheverud/Nyholt is excluded, claiming only what this record shows."""
+    note = (
+        "it is reported here only so that it can be named and excluded as an "
+        "unreliable estimator, which Li & Ji (2005) found overly large and "
+        "excessively conservative"
+    )
+    if record.cheverud_nyholt > max(record.li_ji, record.galwey):
+        return (
+            f"{note}. Here too it is the largest of the three, so it is not excluded "
+            "for being lenient: leaving it out makes the effective-size run less strict."
+        )
+    return f"{note}."
+
+
 def _dependence_paragraphs(result: ScreenResult) -> list[str]:
     """What the dependence actually measured, on each basis, without overstating it.
 
@@ -746,14 +761,7 @@ def _dependence_paragraphs(result: ScreenResult) -> list[str]:
         f"{contrast.pc1_share:.1%} of the variance. The effective number of tests is "
         f"{contrast.li_ji:.1f} by Li & Ji and {contrast.galwey:.1f} by Galwey against a "
         f"nominal {result.family_size}. Cheverud/Nyholt gives "
-        f"{contrast.cheverud_nyholt:.1f}; it is reported here only so that it can be "
-        "named and excluded as an unreliable estimator (Li & Ji 2005) that disagrees "
-        "with the other two"
-        + (
-            ", not for being lenient: it is the largest of the three, so the strictest."
-            if contrast.cheverud_nyholt > max(contrast.li_ji, contrast.galwey)
-            else "."
-        ),
+        f"{contrast.cheverud_nyholt:.1f}; {cheverud_note(contrast)}",
     ]
     profiles = result.profile_dependence
     if profiles is not None:
