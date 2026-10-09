@@ -148,8 +148,13 @@ Three states are kept distinct and never collapsed into a number:
 | `no_eligible_studies` | no study contributed a contrast for this candidate |
 
 An untested candidate has no share, no interval, no p and no q. It does not have a share
-of 0.0 or a p-value of 1.0. On the pinned corpus all 317 candidates are testable, but a
-body-site or condition scope will not be.
+of 0.0 or a p-value of 1.0. On the pinned corpus all 317 candidates are testable.
+
+Every paired study contributes a contrast for every candidate, so the two untested states
+arise differently. A candidate that is zero, or otherwise equal, on both sides of every
+study in scope is `all_tied`; this is how a trait absent from a narrow body-site or
+condition scope shows up. `no_eligible_studies` cannot single out one candidate. Every
+candidate reads it at once when the scope holds no paired study at all.
 
 ## Outputs
 
