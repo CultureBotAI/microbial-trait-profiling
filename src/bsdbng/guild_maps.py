@@ -16,7 +16,7 @@ import argparse
 import csv
 from collections import defaultdict
 from collections.abc import Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from scipy.cluster.hierarchy import fcluster, leaves_list, linkage
@@ -82,8 +82,8 @@ class GuildMatrix:
     # Cluster id per condition row, from Euclidean clustering of the row vectors.
     row_clusters: list[int]
     pooled: list[PooledLabels]
-    # Conditions removed because no cell survived the study threshold and none was
-    # sampled-without-signal, so the row would render entirely blank.
+    # Conditions with no visible cells under the study/no-signal display policy,
+    # excluding those made empty only by the body-site cuts.
     dropped_empty_conditions: list[str]
     # Body sites whose column block was backed by too few conditions to read as a
     # site-level pattern, removed with all of their columns.
@@ -92,6 +92,11 @@ class GuildMatrix:
     # profile carried any trait of that guild. Without this, an all-zero cell is
     # drawn in the same colour as a genuinely low fraction.
     sampled_no_signal: list[list[bool]]
+    # Keep the build's visibility policy when cutting a focus panel. The masks
+    # remain populated even when their shading is disabled.
+    mark_no_signal: bool = True
+    # Conditions with drawable cells before body-site exclusion, but none after.
+    dropped_site_conditions: list[str] = field(default_factory=list)
 
 
 def _top_labels(counts: dict[str, int], limit: int) -> list[str]:
@@ -222,8 +227,12 @@ def build_matrix(
         body_site = _binned(
             profile.body_site, keep_body_sites, bucket_rest=include_other_body_sites
         )
-        if condition is None or body_site is None:
+        if condition is None or not profile.body_site:
             continue
+        # Preserve evidence at sites excluded by the top-N cut, without pooling
+        # different excluded sites. It determines why a condition has no row.
+        if body_site is None:
+            body_site = profile.body_site
         for guild in guild_order:
             key = (condition, body_site, f"{guild}_{profile.inc_dec}")
             per_study[key][profile.study_id].append(profile.fraction(guild))
@@ -239,6 +248,25 @@ def build_matrix(
         for direction in DIRECTIONS
     ]
 
+    def summarize_cell(by_study: dict[str, list[float]]) -> tuple[float | None, int, bool]:
+        """Apply the same study support and signal rules at kept and excluded sites."""
+        n_studies = len(by_study)
+        study_means = [sum(v) / len(v) for v in by_study.values()]
+        zero_signal = n_studies > 0 and not any(m > 0 for m in study_means)
+        value = (
+            sum(study_means) / n_studies
+            if n_studies > 0 and n_studies >= min_studies and not zero_signal
+            else None
+        )
+        return value, n_studies, zero_signal
+
+    visible_before_site_cuts: set[str] = set()
+    for (condition, site, _), excluded_studies in per_study.items():
+        if site not in body_sites:
+            value, _, zero_signal = summarize_cell(excluded_studies)
+            if value is not None or (mark_no_signal and zero_signal):
+                visible_before_site_cuts.add(condition)
+
     values: list[list[float | None]] = []
     study_counts: list[list[int]] = []
     sampled_no_signal: list[list[bool]] = []
@@ -252,15 +280,10 @@ def build_matrix(
                     by_study: dict[str, list[float]] = per_study.get(
                         (condition, site, f"{guild}_{direction}"), {}
                     )
-                    n_studies = len(by_study)
+                    value, n_studies, zero_signal = summarize_cell(by_study)
                     count_row.append(n_studies)
-                    study_means = [sum(v) / len(v) for v in by_study.values()]
-                    zero_signal = n_studies > 0 and not any(m > 0 for m in study_means)
                     blank_row.append(zero_signal)
-                    if n_studies < min_studies or zero_signal:
-                        value_row.append(None)
-                        continue
-                    value_row.append(sum(study_means) / len(study_means))
+                    value_row.append(value)
         values.append(value_row)
         study_counts.append(count_row)
         sampled_no_signal.append(blank_row)
@@ -273,6 +296,9 @@ def build_matrix(
 
     # Drop body-site blocks that too few conditions reach. Done before the rows so
     # a condition drawn only inside a dropped block goes with it.
+    visible_before_site_cuts.update(
+        condition for i, condition in enumerate(conditions) if drawn(i, range(len(columns)))
+    )
     site_columns = {
         site: [i for i, column in enumerate(columns) if _site_of_column(column) == site]
         for site in body_sites
@@ -300,6 +326,8 @@ def build_matrix(
     all_columns = list(range(len(columns)))
     keep_rows = [i for i in range(len(conditions)) if drawn(i, all_columns)]
     dropped = [conditions[i] for i in range(len(conditions)) if i not in set(keep_rows)]
+    dropped_with_sites = [name for name in dropped if name in visible_before_site_cuts]
+    dropped_blank = [name for name in dropped if name not in visible_before_site_cuts]
     conditions = [conditions[i] for i in keep_rows]
     values = [values[i] for i in keep_rows]
     study_counts = [study_counts[i] for i in keep_rows]
@@ -314,9 +342,11 @@ def build_matrix(
         study_counts=[study_counts[i] for i in order],
         row_clusters=[labels[i] for i in order],
         pooled=pooled,
-        dropped_empty_conditions=dropped,
+        dropped_empty_conditions=dropped_blank,
         dropped_body_sites=dropped_sites,
         sampled_no_signal=[sampled_no_signal[i] for i in order],
+        mark_no_signal=mark_no_signal,
+        dropped_site_conditions=dropped_with_sites,
     )
 
 
@@ -946,8 +976,9 @@ def subset_matrix(
     ``conditions`` given the body sites become the ones those conditions were
     actually drawn in, and with only ``sites`` given the conditions become the
     ones drawn in those sites. Rows and column blocks that end up carrying no
-    value are dropped either way, so a subset never renders a blank band. A
-    named condition absent from the matrix is skipped and recorded in
+    visible cells are dropped, using the build's ``mark_no_signal`` policy so
+    shaded no-signal cells survive the cut. A named condition absent from the
+    matrix is skipped and recorded in
     ``dropped_empty_conditions``; the row order and cluster ids are the ones the
     full matrix was clustered into, so a subset stays comparable to it.
     """
@@ -974,10 +1005,12 @@ def subset_matrix(
         if _site_of_column(column) == site
     ]
 
-    def has_value(row: int, cols: Sequence[int]) -> bool:
-        return any(matrix.values[row][i] is not None for i in cols)
+    def is_drawn(row: int, cols: Sequence[int]) -> bool:
+        return any(matrix.values[row][i] is not None for i in cols) or (
+            matrix.mark_no_signal and any(matrix.sampled_no_signal[row][i] for i in cols)
+        )
 
-    row_indices = [i for i in row_indices if has_value(i, column_indices)]
+    row_indices = [i for i in row_indices if is_drawn(i, column_indices)]
 
     if sites is None:
         # Derive the blocks from the rows that survived: a site nothing in this
@@ -988,7 +1021,7 @@ def subset_matrix(
         requested_sites = [
             site
             for site in requested_sites
-            if any(has_value(row, block(site)) for row in row_indices)
+            if any(is_drawn(row, block(site)) for row in row_indices)
         ]
         column_indices = [
             i
@@ -1290,6 +1323,12 @@ def main() -> int:
         print(
             f"conditions dropped as entirely blank: {len(matrix.dropped_empty_conditions)} "
             f"({', '.join(sorted(matrix.dropped_empty_conditions))})"
+        )
+    if matrix.dropped_site_conditions:
+        print(
+            "conditions dropped with excluded body-site blocks: "
+            f"{len(matrix.dropped_site_conditions)} "
+            f"({', '.join(sorted(matrix.dropped_site_conditions))})"
         )
     correlation = compute_correlation(profiles, matrix)
     written = write_outputs(matrix, correlation, args.output_dir, vintage)
