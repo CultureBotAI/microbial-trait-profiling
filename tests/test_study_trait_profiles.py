@@ -1,10 +1,17 @@
 import csv
 from pathlib import Path
 
+import pytest
 import yaml
 
-from bsdbng.study_trait_profiles import create_study_trait_profiles
+from bsdbng.study_trait_profiles import (
+    DEFAULT_ORA_OUTPUT_PATH,
+    DEFAULT_OUTPUT_PATH,
+    create_study_trait_profiles,
+    main,
+)
 from bsdbng.taxa_trait_matrix import create_taxa_trait_matrix
+from bsdbng.trait_guilds import retained_trait_columns
 
 
 def _write_study_yaml(study_dir: Path) -> None:
@@ -431,3 +438,141 @@ def test_create_study_trait_profiles_binary_with_taxa_count_and_host_filter(
     rows_all = _read_tsv(output_path_all)
     assert {r["experiment_id"] for r in rows_all} == {"bsdb:99-1", "bsdb:99-2"}
     assert "taxa_count" not in rows_all[0]
+
+
+def test_create_study_trait_profiles_validates_flag_combinations(tmp_path: Path) -> None:
+    study_dir = tmp_path / "studies"
+    study_dir.mkdir()
+    _write_study_yaml(study_dir)
+
+    taxa_trait_matrix_path = tmp_path / "taxa_trait_matrix.tsv"
+    taxa_trait_matrix_path.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1\nNCBITaxon:1\tTaxon one\tspecies\t1\n",
+        encoding="utf-8",
+    )
+
+    # Issue #386: --count-duplicates cannot be combined with binary or include_taxa_count
+    with pytest.raises(ValueError, match="--count-duplicates cannot be combined"):
+        create_study_trait_profiles(
+            study_dir=study_dir,
+            taxa_trait_matrix_path=taxa_trait_matrix_path,
+            deduplicate_taxa=False,
+            binary=True,
+        )
+
+    with pytest.raises(ValueError, match="--count-duplicates cannot be combined"):
+        create_study_trait_profiles(
+            study_dir=study_dir,
+            taxa_trait_matrix_path=taxa_trait_matrix_path,
+            deduplicate_taxa=False,
+            include_taxa_count=True,
+        )
+
+    # Issue #387: include_taxa_count not supported with long format
+    with pytest.raises(ValueError, match="not supported with long format"):
+        create_study_trait_profiles(
+            study_dir=study_dir,
+            taxa_trait_matrix_path=taxa_trait_matrix_path,
+            output_format="long",
+            include_taxa_count=True,
+        )
+
+
+def test_retained_trait_columns_excludes_taxa_count() -> None:
+    # Issue #384: composition arm must never read taxa_count as a trait
+    header = [
+        "study_id",
+        "experiment_id",
+        "inc_dec",
+        "taxa_count",
+        "taxon_count",
+        "species_count",
+        "mediadive.medium:123",
+        "METPO:1000608",
+        "GO:0030245",
+    ]
+    positions, columns, mediadive_excluded = retained_trait_columns(header)
+    assert columns == ["METPO:1000608", "GO:0030245"]
+    assert positions == [7, 8]
+    assert mediadive_excluded == 1
+
+
+def test_create_study_trait_profiles_distinct_taxa_dedup(tmp_path: Path) -> None:
+    # Issue #386: duplicate taxa in signature must not inflate N or binary counts
+    study_dir = tmp_path / "studies"
+    study_dir.mkdir()
+    study = {
+        "id": "bsdb:100",
+        "experiments": [
+            {
+                "id": "bsdb:100-1",
+                "host_species": "Homo sapiens",
+                "signatures": [
+                    {
+                        "id": "bsdb:100-1-1",
+                        "direction": "increased",
+                        "taxa": [
+                            {"id": "NCBITaxon:1", "taxon_name": "Taxon one"},
+                            {"id": "NCBITaxon:1", "taxon_name": "Taxon one duplicate"},
+                        ],
+                    },
+                ],
+            }
+        ],
+    }
+    (study_dir / "bsdb_100.yaml").write_text(
+        yaml.dump(study, default_flow_style=False, sort_keys=False),
+        encoding="utf-8",
+    )
+    taxa_trait_matrix_path = tmp_path / "taxa_trait_matrix.tsv"
+    taxa_trait_matrix_path.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1\nNCBITaxon:1\tTaxon one\tspecies\t2\n",
+        encoding="utf-8",
+    )
+
+    out_file = tmp_path / "ora_profiles.tsv"
+    create_study_trait_profiles(
+        study_dir=study_dir,
+        taxa_trait_matrix_path=taxa_trait_matrix_path,
+        output_path=out_file,
+        binary=True,
+        include_taxa_count=True,
+    )
+    rows = _read_tsv(out_file)
+    assert len(rows) == 1
+    # Distinct taxon: N=1, and binary METPO:1=1
+    assert rows[0]["taxa_count"] == "1"
+    assert rows[0]["METPO:1"] == "1"
+
+
+def test_create_study_trait_profiles_ora_output_redirection(tmp_path: Path) -> None:
+    # Issues #384 & #385: ORA output redirects away from default composition-arm path
+    study_dir = tmp_path / "studies"
+    study_dir.mkdir()
+    _write_study_yaml(study_dir)
+
+    taxa_trait_matrix_path = tmp_path / "taxa_trait_matrix.tsv"
+    taxa_trait_matrix_path.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1\nNCBITaxon:1\tTaxon one\tspecies\t1\n",
+        encoding="utf-8",
+    )
+
+    # Explicit default output path with binary=True redirects to DEFAULT_ORA_OUTPUT_PATH
+    stats = create_study_trait_profiles(
+        study_dir=study_dir,
+        taxa_trait_matrix_path=taxa_trait_matrix_path,
+        output_path=DEFAULT_OUTPUT_PATH,
+        binary=True,
+    )
+    assert stats.output_path == DEFAULT_ORA_OUTPUT_PATH
+
+
+def test_main_cli_error_handling() -> None:
+    # Issue #387: CLI exits with error code when invalid options combined
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--count-duplicates", "--binary"])
+    assert exc_info.value.code == 2
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--format", "long", "--include-taxa-count"])
+    assert exc_info.value.code == 2

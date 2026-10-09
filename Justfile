@@ -93,6 +93,9 @@ taxa-trait-matrix: study-tsvs
 study-trait-profiles:
 	uv run python scripts/create_study_trait_profiles.py
 
+study-trait-profiles-ora:
+	uv run python scripts/create_study_trait_profiles.py --binary --include-taxa-count --host-species "Homo sapiens"
+
 # PNG export (guild-maps, table1-trait-maps) runs through kaleido 1.x, which
 # drives a headless Chrome. This downloads (~170 MB) the version-pinned Chrome
 # for Testing build into choreographer's data directory; kaleido prefers that
