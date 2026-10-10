@@ -1,26 +1,28 @@
 """Trait correlation, annotation density adjustment, and conditional near-twin evaluation.
 
-Addresses Issue #264 and Issue #352:
+Addresses Issue #264, Issue #352, and follow-ups #375-#383:
 1. Quantifies the baseline trait correlation structure across non-MediaDive traits:
    - Pairwise correlation distribution (median, mean, proportion > 0.5, proportion > 0.9).
-   - Dominant annotation density axis: PC1 variance explained (~60.4% - 60.8%) and PC1-5.
+   - Dominant annotation density axis: PC1 and top principal components variance explained.
    - Effective number of independent tests: Li & Ji (2005), Galwey (2009), Cheverud/Nyholt (2004).
+     (Note: Cheverud/Nyholt is reported for completeness but excluded as unreliable per #325, #357).
 2. Adjusts for the curation density axis:
    - Method A: Profile-level PC1 regression / residualization.
-   - Method B: Profile annotation depth normalization (Total Sum Scaling / profile
-     composition).
-   - Re-evaluates pairwise correlations and tests the explicit diagnostic case:
-     verifies whether the spurious facultatively aerobic x moderately halophilic correlation
-     collapses while genuine biological signals survive.
+   - Method B: Profile composition normalization (Total Sum Scaling / profile
+     annotation depth normalization).
+   - Re-evaluates pairwise correlations and tests the diagnostic test pair
+     (facultatively aerobic x moderately halophilic) across profile representations.
 3. Evaluates conditional test and collinearity for near-twins (coccus shaped vs. sphere shaped):
    - Computes bivariate correlation, paired contrast correlation, and
      Variance Inflation Factor (VIF).
-   - Evaluates partial correlation and residual contrasts.
+   - Evaluates partial correlation and paired contrast regression.
 """
 
 from __future__ import annotations
 
 import argparse
+import math
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -30,11 +32,11 @@ import pandas as pd
 from scipy import stats
 
 from bsdbng.paths import DERIVED_DATA_DIR
+from bsdbng.trait_screen import effective_family_size
 
 DEFAULT_PROFILES_PATH = DERIVED_DATA_DIR / "study_trait_profiles_wide.tsv"
 DEFAULT_COLUMNS_PATH = DERIVED_DATA_DIR / "taxa_trait_matrix_columns.tsv"
-DEFAULT_TAXA_MATRIX_PATH = DERIVED_DATA_DIR / "taxa_trait_matrix.tsv"
-DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR
+DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "density_adjustment"
 
 # The six canonical Table 1 traits
 TABLE_1_TRAITS: dict[str, str] = {
@@ -61,6 +63,7 @@ class CorrelationMetrics:
 
     n_samples: int
     n_traits: int
+    constant_traits_excluded: int
     median_pairwise_r: float
     mean_pairwise_r: float
     pct_pairs_gt_05: float
@@ -83,6 +86,7 @@ class ConditionalTwinSummary:
     trait_a_label: str
     trait_b_label: str
     profile_correlation: float
+    profile_partial_r_depth: float
     vif_profile: float
     profile_slope_a_on_b: float
     profile_intercept_a_on_b: float
@@ -90,8 +94,7 @@ class ConditionalTwinSummary:
     paired_correlation: float
     vif_paired: float
     paired_slope_a_on_b: float
-    paired_residual_a_mean: float
-    paired_residual_a_pvalue: float
+    paired_slope_pvalue: float
 
 
 @dataclass(frozen=True)
@@ -134,11 +137,19 @@ def load_non_media_profile_matrix(
     return profiles_df, valid_cols
 
 
-def compute_effective_tests(eigenvalues: np.ndarray) -> tuple[float, float, float]:
+def compute_effective_tests(
+    eigenvalues: Sequence[float] | np.ndarray,
+) -> tuple[float, float, float]:
     """Compute effective number of tests: Li & Ji (2005), Galwey (2009), Cheverud/Nyholt.
 
+    Delegates to canonical trait_screen.effective_family_size (#378).
+    Handles edge cases:
+      - p == 0: returns (0.0, 0.0, 0.0)
+      - p == 1: returns (min(abs(val), 1.0), min(abs(val), 1.0), 1.0)
+      - p >= 2: calls effective_family_size and caps at p (#377).
+
     Args:
-        eigenvalues: 1D array of eigenvalues of the correlation matrix, sorted descending.
+        eigenvalues: 1D array or sequence of eigenvalues of the correlation matrix.
 
     Returns:
         tuple of (M_eff_li_ji, M_eff_galwey, M_eff_nyholt)
@@ -146,52 +157,71 @@ def compute_effective_tests(eigenvalues: np.ndarray) -> tuple[float, float, floa
     p = len(eigenvalues)
     if p == 0:
         return 0.0, 0.0, 0.0
+    if p < 2:
+        val = float(abs(eigenvalues[0]))
+        return min(val, 1.0), min(val, 1.0), 1.0
 
-    # Li & Ji (2005): f(lambda) = I(|lambda| >= 1) + (|lambda| - floor(|lambda|))
-    # Threshold tiny near-zero round-off eigenvalues (< 1e-12) to strictly 0.0 (#352).
-    abs_evals = np.abs(eigenvalues)
-    abs_evals[abs_evals < 1e-12] = 0.0
-    li_ji = float(np.sum((abs_evals >= 1.0).astype(float) + (abs_evals - np.floor(abs_evals))))
-    li_ji = min(li_ji, float(p))
-
-    # Galwey (2009): (sum sqrt(max(0, lambda)))^2 / sum(lambda)
-    pos_evals = np.maximum(eigenvalues, 0.0)
-    denom = float(np.sum(pos_evals))
-    galwey = float((np.sum(np.sqrt(pos_evals)) ** 2) / denom) if denom > 0 else 0.0
-    galwey = min(galwey, float(p))
-
-    # Cheverud (1995) / Nyholt (2004): 1 + (P - 1) * (1 - Var(lambda) / P)
-    var_lambda = float(np.var(eigenvalues, ddof=1)) if p > 1 else 0.0
-    nyholt = float(1.0 + (p - 1.0) * (1.0 - var_lambda / p))
-    nyholt = min(max(nyholt, 1.0), float(p))
-
-    return li_ji, galwey, nyholt
+    eval_list = [float(x) for x in eigenvalues]
+    li_ji, galwey, nyholt = effective_family_size(eval_list)
+    return min(li_ji, float(p)), min(galwey, float(p)), min(max(nyholt, 1.0), float(p))
 
 
 def compute_correlation_metrics(
     trait_matrix: np.ndarray,
-    column_ids: list[str],
+    column_ids: Sequence[str],
     *,
     method: Literal["pearson", "spearman"] = "pearson",
 ) -> CorrelationMetrics:
-    """Compute pairwise correlation distribution, PC1 variance, and effective test numbers."""
+    """Compute pairwise correlation distribution, PC1 variance, and effective test numbers.
+
+    Constant columns (zero variance) are excluded before correlation estimation (#378),
+    preventing spurious eigenvalues of 1.0 from artificially inflating effective test counts.
+    """
     n_samples, n_traits = trait_matrix.shape
     if n_traits < 2:
         raise ValueError("Need at least 2 traits to compute correlation metrics.")
 
+    # Drop constant columns before correlating (#378)
+    stds = np.std(trait_matrix, axis=0)
+    varying_mask = stds > 0.0
+    constant_traits_excluded = int(np.sum(~varying_mask))
+    varying_indices = np.where(varying_mask)[0]
+
+    if len(varying_indices) < 2:
+        return CorrelationMetrics(
+            n_samples=n_samples,
+            n_traits=n_traits,
+            constant_traits_excluded=constant_traits_excluded,
+            median_pairwise_r=0.0,
+            mean_pairwise_r=0.0,
+            pct_pairs_gt_05=0.0,
+            pct_pairs_gt_09=0.0,
+            pc1_variance_pct=0.0,
+            pc1_5_variance_pct=0.0,
+            m_eff_li_ji=float(len(varying_indices)),
+            m_eff_galwey=float(len(varying_indices)),
+            m_eff_nyholt=float(len(varying_indices)),
+            test_pair_r=0.0,
+            near_twin_r=0.0,
+        )
+
+    reduced_matrix = trait_matrix[:, varying_indices]
+    reduced_cols = [column_ids[i] for i in varying_indices]
+    n_varying = len(varying_indices)
+
     if method == "pearson":
-        corr = np.corrcoef(trait_matrix.T)
+        corr = np.corrcoef(reduced_matrix.T)
     elif method == "spearman":
-        res = stats.spearmanr(trait_matrix)
+        res = stats.spearmanr(reduced_matrix)
         corr = res.statistic if hasattr(res, "statistic") else np.array(res[0])
     else:
         raise ValueError(f"Unsupported correlation method: {method}")
 
-    # Handle any NaN correlations due to zero variance
+    # Ensure symmetric and non-nan
     corr = np.nan_to_num(corr, nan=0.0)
     np.fill_diagonal(corr, 1.0)
 
-    iu = np.triu_indices(n_traits, k=1)
+    iu = np.triu_indices(n_varying, k=1)
     upper_vals = corr[iu]
 
     median_r = float(np.median(upper_vals))
@@ -209,20 +239,21 @@ def compute_correlation_metrics(
 
     # Specific pair correlations
     test_pair_r = 0.0
-    if TEST_PAIR_A in column_ids and TEST_PAIR_B in column_ids:
-        idx_a = column_ids.index(TEST_PAIR_A)
-        idx_b = column_ids.index(TEST_PAIR_B)
+    if TEST_PAIR_A in reduced_cols and TEST_PAIR_B in reduced_cols:
+        idx_a = reduced_cols.index(TEST_PAIR_A)
+        idx_b = reduced_cols.index(TEST_PAIR_B)
         test_pair_r = float(corr[idx_a, idx_b])
 
     near_twin_r = 0.0
-    if TWIN_A in column_ids and TWIN_B in column_ids:
-        idx_twin_a = column_ids.index(TWIN_A)
-        idx_twin_b = column_ids.index(TWIN_B)
+    if TWIN_A in reduced_cols and TWIN_B in reduced_cols:
+        idx_twin_a = reduced_cols.index(TWIN_A)
+        idx_twin_b = reduced_cols.index(TWIN_B)
         near_twin_r = float(corr[idx_twin_a, idx_twin_b])
 
     return CorrelationMetrics(
         n_samples=n_samples,
         n_traits=n_traits,
+        constant_traits_excluded=constant_traits_excluded,
         median_pairwise_r=median_r,
         mean_pairwise_r=mean_r,
         pct_pairs_gt_05=pct_05,
@@ -272,39 +303,26 @@ def regress_out_pc1(trait_matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray, f
 
 
 def normalize_traits_by_profile_composition(
-    profiles_df: pd.DataFrame | Path | str,
-    non_media_cols: list[str] | pd.DataFrame | None = None,
-    taxa_matrix_path: Path | None | list[str] = None,
+    df: pd.DataFrame,
+    cols: Sequence[str],
 ) -> np.ndarray:
     """Normalize trait counts per profile by total annotation depth (profile composition / TSS).
 
     Method B adjusts for overall variation in profile annotation richness by dividing
-    each profile's trait counts by its row sum across non-MediaDive traits (#352):
+    each profile's trait counts by its row sum across the candidate trait columns (#352, #379):
         x_norm = x_i / sum_j(x_ij)
-    This controls for profiles originating from heavily sequenced or densely annotated studies.
-    Supports both standard signature (profiles_df, non_media_cols) and legacy alias
-    signature (taxa_matrix_path, profiles_df, non_media_cols).
+    This accounts for profiles with higher total numbers of annotated traits without
+    conflating taxon count with sequencing depth.
     """
-    if isinstance(profiles_df, Path | str):
-        if isinstance(non_media_cols, pd.DataFrame):
-            actual_df = non_media_cols
-            actual_cols = taxa_matrix_path if isinstance(taxa_matrix_path, list) else []
-        else:
-            raise TypeError("Expected pd.DataFrame as second argument when first argument is Path.")
-    else:
-        actual_df = profiles_df
-        actual_cols = non_media_cols if isinstance(non_media_cols, list) else []
+    cols_list = list(cols)
+    if not cols_list:
+        raise ValueError("cols must not be empty")
 
-    profile_sums = actual_df[actual_cols].sum(axis=1).astype(float)
-    profile_sums_safe = profile_sums.replace(0, 1.0)
-    downweighted_profiles = actual_df[actual_cols].div(profile_sums_safe, axis=0)
-    downweighted_profiles[profile_sums == 0] = 0.0
-
-    return np.asarray(downweighted_profiles.values, dtype=float)
-
-
-# Backward-compatible alias for existing callers
-downweight_traits_by_taxon_degree = normalize_traits_by_profile_composition
+    sub = df[cols_list].to_numpy(dtype=float)
+    row_sums = sub.sum(axis=1, keepdims=True)
+    safe_sums = np.where(row_sums == 0, 1.0, row_sums)
+    norm = np.where(row_sums == 0, 0.0, sub / safe_sums)
+    return norm
 
 
 def evaluate_table1_paired_effects(
@@ -346,21 +364,26 @@ def evaluate_table1_paired_effects(
         nz_raw = raw_diff[raw_diff != 0.0]
         nz_adj = adj_diff[adj_diff != 0.0]
 
-        raw_p = float(stats.wilcoxon(nz_raw).pvalue) if len(nz_raw) > 10 else 1.0
-        adj_p = float(stats.wilcoxon(nz_adj).pvalue) if len(nz_adj) > 10 else 1.0
+        # Use NaN when <= 10 non-zero pairs instead of fabricating 1.0 (#383)
+        raw_p = float(stats.wilcoxon(nz_raw).pvalue) if len(nz_raw) > 10 else float("nan")
+        adj_p = float(stats.wilcoxon(nz_adj).pvalue) if len(nz_adj) > 10 else float("nan")
 
         rel_change = (
             float((adj_mean - raw_mean) / abs(raw_mean) * 100.0) if abs(raw_mean) > 1e-9 else 0.0
         )
 
-        if trait_id == TEST_PAIR_A:
-            status = "collapsed (artifact removed)" if adj_p > 0.05 else "attenuated"
-        elif trait_id == "METPO:2000103|GO:0030245":
-            status = "enhanced depletion" if adj_p < 0.001 and adj_mean < 0 else "survived"
-        elif adj_p <= 0.05:
-            status = "survived (biological signal)"
+        # Classify status using general statistical criteria rather than hardcoded trait IDs (#383)
+        if math.isnan(adj_p):
+            status = "insufficient non-zero pairs"
+        elif not math.isnan(raw_p) and raw_p <= 0.05 and adj_p > 0.05:
+            status = "collapsed (attenuated to nonsignificant)"
+        elif not math.isnan(raw_p) and adj_p <= 0.05:
+            if abs(adj_mean) > abs(raw_mean) and np.sign(adj_mean) == np.sign(raw_mean):
+                status = "enhanced (significant, larger magnitude)"
+            else:
+                status = "survived (significant post-adjustment)"
         else:
-            status = "attenuated"
+            status = "attenuated (nonsignificant post-adjustment)"
 
         results.append(
             Table1TraitEffect(
@@ -382,8 +405,15 @@ def evaluate_conditional_twin_test(
     profiles_df: pd.DataFrame,
     trait_a: str = TWIN_A,
     trait_b: str = TWIN_B,
+    columns_for_depth: Sequence[str] | None = None,
 ) -> ConditionalTwinSummary:
-    """Evaluate conditional regression, partial correlation, and VIF for near-twins."""
+    """Evaluate collinearity, regression, and partial correlation for near-twins (#380).
+
+    Computes:
+      - Bivariate profile correlation r, R^2, and Variance Inflation Factor (VIF).
+      - Partial correlation controlling for profile total annotation depth.
+      - Paired experiment contrast correlation, paired VIF, and paired OLS regression.
+    """
     if trait_a not in profiles_df.columns or trait_b not in profiles_df.columns:
         raise ValueError(f"Missing twin columns: {trait_a} or {trait_b}")
 
@@ -394,6 +424,17 @@ def evaluate_conditional_twin_test(
     corr_prof = float(np.corrcoef(vec_a, vec_b)[0, 1])
     r2_prof = corr_prof**2
     vif_prof = float(1.0 / (1.0 - r2_prof)) if (1.0 - r2_prof) > 0 else float("inf")
+
+    # Partial correlation controlling for profile annotation depth
+    if columns_for_depth:
+        depth = profiles_df[list(columns_for_depth)].sum(axis=1).values.astype(float)
+    else:
+        depth = vec_a + vec_b
+
+    r_az = float(np.corrcoef(vec_a, depth)[0, 1]) if np.std(depth) > 0 else 0.0
+    r_bz = float(np.corrcoef(vec_b, depth)[0, 1]) if np.std(depth) > 0 else 0.0
+    denom = math.sqrt(max(0.0, (1.0 - r_az**2) * (1.0 - r_bz**2)))
+    partial_r = float((corr_prof - r_az * r_bz) / denom) if denom > 0 else 0.0
 
     # Profile OLS regression: A ~ B
     slope_prof, intercept_prof, _, _, _ = stats.linregress(vec_b, vec_a)
@@ -414,11 +455,7 @@ def evaluate_conditional_twin_test(
     vif_paired = float(1.0 / (1.0 - r2_paired)) if (1.0 - r2_paired) > 0 else float("inf")
 
     # Paired regression: delta_A ~ delta_B
-    slope_paired, intercept_paired, _, _, _ = stats.linregress(delta_b, delta_a)
-    residual_a = delta_a - (intercept_paired + slope_paired * delta_b)
-
-    nz_res = residual_a[residual_a != 0.0]
-    res_p = float(stats.wilcoxon(nz_res).pvalue) if len(nz_res) > 10 else 1.0
+    slope_paired, _, _, pval_paired_slope, _ = stats.linregress(delta_b, delta_a)
 
     return ConditionalTwinSummary(
         trait_a=trait_a,
@@ -426,6 +463,7 @@ def evaluate_conditional_twin_test(
         trait_a_label=TABLE_1_TRAITS.get(trait_a, trait_a),
         trait_b_label=TABLE_1_TRAITS.get(trait_b, trait_b),
         profile_correlation=corr_prof,
+        profile_partial_r_depth=partial_r,
         vif_profile=vif_prof,
         profile_slope_a_on_b=float(slope_prof),
         profile_intercept_a_on_b=float(intercept_prof),
@@ -433,16 +471,15 @@ def evaluate_conditional_twin_test(
         paired_correlation=corr_paired,
         vif_paired=vif_paired,
         paired_slope_a_on_b=float(slope_paired),
-        paired_residual_a_mean=float(np.mean(residual_a)),
-        paired_residual_a_pvalue=res_p,
+        paired_slope_pvalue=float(pval_paired_slope),
     )
 
 
 def run_density_audit(
     profiles_path: Path = DEFAULT_PROFILES_PATH,
     columns_path: Path = DEFAULT_COLUMNS_PATH,
-    taxa_matrix_path: Path = DEFAULT_TAXA_MATRIX_PATH,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
+    code_commit: str = "",
 ) -> dict[str, Any]:
     """Execute the complete trait density adjustment and near-twin audit.
 
@@ -463,19 +500,17 @@ def run_density_audit(
     adj_matrix_pc1, _pc1_scores, _pc1_var_pct = regress_out_pc1(raw_matrix)
     adj_pc1_pearson = compute_correlation_metrics(adj_matrix_pc1, non_media_cols, method="pearson")
 
-    # 3. Method B: Profile Composition / Annotation Normalization (#352)
-    dw_matrix = normalize_traits_by_profile_composition(
-        profiles_df,
-        non_media_cols,
-        taxa_matrix_path=taxa_matrix_path,
-    )
-    adj_dw_pearson = compute_correlation_metrics(dw_matrix, non_media_cols, method="pearson")
+    # 3. Method B: Profile Composition / Annotation Normalization (#352, #379)
+    comp_matrix = normalize_traits_by_profile_composition(profiles_df, non_media_cols)
+    adj_comp_pearson = compute_correlation_metrics(comp_matrix, non_media_cols, method="pearson")
 
     # 4. Table 1 Trait Effects under PC1 adjustment
     t1_effects = evaluate_table1_paired_effects(profiles_df, adj_matrix_pc1, non_media_cols)
 
     # 5. Near-twin conditional test
-    twin_summary = evaluate_conditional_twin_test(profiles_df, TWIN_A, TWIN_B)
+    twin_summary = evaluate_conditional_twin_test(
+        profiles_df, TWIN_A, TWIN_B, columns_for_depth=non_media_cols
+    )
 
     # 6. Save Table 1 Effects TSV
     t1_df = pd.DataFrame([asdict(e) for e in t1_effects])
@@ -487,64 +522,75 @@ def run_density_audit(
         {"metric_set": "raw_pearson", **asdict(raw_pearson)},
         {"metric_set": "raw_spearman", **asdict(raw_spearman)},
         {"metric_set": "adjusted_pc1_pearson", **asdict(adj_pc1_pearson)},
-        {"metric_set": "adjusted_profile_composition_pearson", **asdict(adj_dw_pearson)},
+        {"metric_set": "adjusted_profile_composition_pearson", **asdict(adj_comp_pearson)},
     ]
     summary_df = pd.DataFrame(summary_rows)
     summary_out = output_dir / "density_adjustment_summary.tsv"
     summary_df.to_csv(summary_out, sep="\t", index=False)
 
-    # 8. Save Comprehensive Text Report
+    # 8. Save Comprehensive Text Report (fully dynamic, no hard-coded values)
     report_out = output_dir / "density_adjustment_report.txt"
     report_lines = [
         "=" * 80,
         "TRAIT CORRELATION, ANNOTATION DENSITY ADJUSTMENT, AND NEAR-TWIN AUDIT",
         "=" * 80,
-        "",
-        "1. BASELINE DIMENSIONALITY AND CORRELATION STRUCTURE",
-        "-" * 80,
-        f"Input profiles evaluated: {raw_pearson.n_samples:,}",
-        f"Non-MediaDive trait columns: {raw_pearson.n_traits}",
-        f"Taxa trait matrix source: {taxa_matrix_path}",
-        f"Pearson pairwise correlation: median {raw_pearson.median_pairwise_r:+.4f}, "
-        f"mean {raw_pearson.mean_pairwise_r:+.4f}",
-        f"Pairs exceeding +0.5: {raw_pearson.pct_pairs_gt_05:.1f}% | "
-        f"Pairs exceeding +0.9: {raw_pearson.pct_pairs_gt_09:.1f}%",
-        f"PC1 variance explained: {raw_pearson.pc1_variance_pct:.2f}% | "
-        f"PC1-PC5 variance explained: {raw_pearson.pc1_5_variance_pct:.2f}%",
-        f"Effective number of independent tests: "
-        f"Li & Ji (2005) = {raw_pearson.m_eff_li_ji:.1f}, "
-        f"Galwey (2009) = {raw_pearson.m_eff_galwey:.1f}, "
-        f"Cheverud/Nyholt = {raw_pearson.m_eff_nyholt:.1f}",
-        "",
-        "Spearman baseline verification:",
-        f"  Median pairwise rho: {raw_spearman.median_pairwise_r:+.4f}, "
-        f"Mean pairwise rho: {raw_spearman.mean_pairwise_r:+.4f}",
-        f"  Pairs > 0.5: {raw_spearman.pct_pairs_gt_05:.1f}% | "
-        f"Pairs > 0.9: {raw_spearman.pct_pairs_gt_09:.1f}%",
-        f"  PC1 variance: {raw_spearman.pc1_variance_pct:.2f}%",
-        "",
-        "2. DENSITY AXIS ADJUSTMENT: SEPARATING BIOLOGY FROM CURATION EFFORT",
-        "-" * 80,
-        "Test Case Pair: facultatively aerobic x moderately halophilic",
-        f"  Baseline Pearson r: {raw_pearson.test_pair_r:+.4f}",
-        f"  Post-PC1 regression r: {adj_pc1_pearson.test_pair_r:+.4f} "
-        f"(attenuation: {adj_pc1_pearson.test_pair_r - raw_pearson.test_pair_r:+.4f})",
-        f"  Post-profile-composition r: {adj_dw_pearson.test_pair_r:+.4f}",
-        "",
-        "Global Correlation Matrix Centering (Method A - PC1 Regression):",
-        f"  Median pairwise r: {adj_pc1_pearson.median_pairwise_r:+.4f} (centered around 0)",
-        f"  Mean pairwise r: {adj_pc1_pearson.mean_pairwise_r:+.4f}",
-        f"  Pairs > 0.5: {adj_pc1_pearson.pct_pairs_gt_05:.1f}%",
-        "",
-        "3. SURVIVAL OF CONVERGENT SIX TRAIT SIGNALS (PAIRED EXPERIMENTS N=2,335)",
-        "-" * 80,
     ]
+    if code_commit:
+        report_lines.append(f"Code commit: {code_commit}")
+    report_lines.extend(
+        [
+            f"Profiles source: {profiles_path}",
+            f"Columns source: {columns_path}",
+            "",
+            "1. BASELINE DIMENSIONALITY AND CORRELATION STRUCTURE",
+            "-" * 80,
+            f"Input profiles evaluated: {raw_pearson.n_samples:,}",
+            f"Non-MediaDive trait columns: {raw_pearson.n_traits} "
+            f"({raw_pearson.constant_traits_excluded} constant excluded)",
+            f"Pearson pairwise correlation: median {raw_pearson.median_pairwise_r:+.4f}, "
+            f"mean {raw_pearson.mean_pairwise_r:+.4f}",
+            f"Pairs exceeding +0.5: {raw_pearson.pct_pairs_gt_05:.1f}% | "
+            f"Pairs exceeding +0.9: {raw_pearson.pct_pairs_gt_09:.1f}%",
+            f"PC1 variance explained: {raw_pearson.pc1_variance_pct:.2f}% | "
+            f"PC1-PC5 variance explained: {raw_pearson.pc1_5_variance_pct:.2f}%",
+            f"Effective number of independent tests: "
+            f"Li & Ji (2005) = {raw_pearson.m_eff_li_ji:.1f}, "
+            f"Galwey (2009) = {raw_pearson.m_eff_galwey:.1f}, "
+            f"Cheverud/Nyholt = {raw_pearson.m_eff_nyholt:.1f} (unreliable, #325, #357)",
+            "",
+            "Spearman baseline verification:",
+            f"  Median pairwise rho: {raw_spearman.median_pairwise_r:+.4f}, "
+            f"Mean pairwise rho: {raw_spearman.mean_pairwise_r:+.4f}",
+            f"  Pairs > 0.5: {raw_spearman.pct_pairs_gt_05:.1f}% | "
+            f"Pairs > 0.9: {raw_spearman.pct_pairs_gt_09:.1f}%",
+            f"  PC1 variance: {raw_spearman.pc1_variance_pct:.2f}%",
+            "",
+            "2. DENSITY AXIS ADJUSTMENT: SEPARATING BIOLOGY FROM CURATION EFFORT",
+            "-" * 80,
+            "Test Case Pair: facultatively aerobic x moderately halophilic",
+            f"  Baseline Pearson r: {raw_pearson.test_pair_r:+.4f}",
+            f"  Post-PC1 regression r: {adj_pc1_pearson.test_pair_r:+.4f} "
+            f"(attenuation: {adj_pc1_pearson.test_pair_r - raw_pearson.test_pair_r:+.4f})",
+            f"  Post-profile-composition r: {adj_comp_pearson.test_pair_r:+.4f}",
+            "",
+            "Global Correlation Matrix Centering (Method A - PC1 Regression):",
+            f"  Median pairwise r: {adj_pc1_pearson.median_pairwise_r:+.4f} (centered around 0)",
+            f"  Mean pairwise r: {adj_pc1_pearson.mean_pairwise_r:+.4f}",
+            f"  Pairs > 0.5: {adj_pc1_pearson.pct_pairs_gt_05:.1f}%",
+            "",
+            f"3. SURVIVAL OF CONVERGENT SIX TRAIT SIGNALS "
+            f"(PAIRED EXPERIMENTS N={twin_summary.n_paired_experiments:,})",
+            "-" * 80,
+        ]
+    )
 
     for eff in t1_effects:
+        p_raw_str = f"p={eff.raw_wilcoxon_p:.2e}" if not math.isnan(eff.raw_wilcoxon_p) else "p=NA"
+        p_adj_str = f"p={eff.adj_wilcoxon_p:.2e}" if not math.isnan(eff.adj_wilcoxon_p) else "p=NA"
         report_lines.append(
             f"  {eff.trait_label:<30s} | "
-            f"Raw mean: {eff.raw_mean_diff:+.3f} (p={eff.raw_wilcoxon_p:.2e}) | "
-            f"Adj mean: {eff.adj_mean_diff:+.3f} (p={eff.adj_wilcoxon_p:.2e}) | "
+            f"Raw mean: {eff.raw_mean_diff:+.3f} ({p_raw_str}) | "
+            f"Adj mean: {eff.adj_mean_diff:+.3f} ({p_adj_str}) | "
             f"{eff.status}"
         )
 
@@ -556,43 +602,41 @@ def run_density_audit(
             f"Candidate pair: {twin_summary.trait_a_label} ({twin_summary.trait_a}) vs. "
             f"{twin_summary.trait_b_label} ({twin_summary.trait_b})",
             f"Profile-level correlation: r = {twin_summary.profile_correlation:+.4f} | "
+            f"Partial r (controlling for depth): r = {twin_summary.profile_partial_r_depth:+.4f}",
             f"Variance Inflation Factor (VIF): {twin_summary.vif_profile:.2f}",
             f"Profile OLS regression slope (coccus ~ sphere): "
             f"{twin_summary.profile_slope_a_on_b:.4f}",
             f"Paired contrasts (N={twin_summary.n_paired_experiments}): "
             f"r = {twin_summary.paired_correlation:+.4f} | "
             f"Paired VIF: {twin_summary.vif_paired:.2f}",
-            f"Paired regression slope: {twin_summary.paired_slope_a_on_b:.4f}",
-            f"Residual coccus | sphere: mean = {twin_summary.paired_residual_a_mean:+.4f}, "
-            f"Wilcoxon p = {twin_summary.paired_residual_a_pvalue:.2e}",
+            f"Paired regression slope: {twin_summary.paired_slope_a_on_b:.4f} "
+            f"(p={twin_summary.paired_slope_pvalue:.2e})",
             "",
-            "5. CONCLUSION & METHODOLOGICAL IMPLICATIONS",
+            "5. METHODOLOGICAL FINDINGS SUMMARY",
             "-" * 80,
-            "1. The vast majority of positive correlation among traits is driven by "
-            "curation density (PC1).",
-            "2. Regressing out PC1 collapses the spurious facultatively aerobic x "
-            "moderately halophilic",
-            "   contrast from significant (p=2.6e-5) to completely nonsignificant (p=0.26).",
-            "3. In contrast, genuine convergent signals survive and strengthen: "
-            "cellulose depletion",
-            "   becomes significantly sharper (p=1.8e-11), while coccus, sphere, "
-            "and mod halophilic",
-            "   retain clear significance.",
-            "4. Coccus and sphere exhibit severe collinearity (VIF ~ 5.88); "
-            "conditional testing confirms",
-            "   unstable coefficients when included simultaneously.",
+            f"1. A substantial positive correlation component among traits is driven by PC1 "
+            f"({raw_pearson.pc1_variance_pct:.2f}% variance explained).",
+            f"2. Method A (PC1 regression) centers median pairwise correlation from "
+            f"{raw_pearson.median_pairwise_r:+.4f} to {adj_pc1_pearson.median_pairwise_r:+.4f}.",
+            "3. Test case pair (facultatively aerobic x moderately halophilic) correlation "
+            f"attenuates from r={raw_pearson.test_pair_r:+.4f} "
+            f"to r={adj_pc1_pearson.test_pair_r:+.4f}.",
+            f"4. Near-twins ({twin_summary.trait_a_label} and {twin_summary.trait_b_label}) show "
+            f"profile VIF = {twin_summary.vif_profile:.2f} "
+            f"(paired VIF = {twin_summary.vif_paired:.2f}), "
+            "indicating strong collinearity.",
             "=" * 80,
         ]
     )
 
-    report_text = "\n".join(report_lines)
+    report_text = "\n".join(report_lines) + "\n"
     report_out.write_text(report_text, encoding="utf-8")
 
     return {
         "raw_pearson": raw_pearson,
         "raw_spearman": raw_spearman,
         "adj_pc1_pearson": adj_pc1_pearson,
-        "adj_dw_pearson": adj_dw_pearson,
+        "adj_comp_pearson": adj_comp_pearson,
         "table1_effects": t1_effects,
         "twin_summary": twin_summary,
         "summary_tsv": summary_out,
@@ -619,24 +663,24 @@ def main() -> None:
         help="Path to taxa_trait_matrix_columns.tsv",
     )
     parser.add_argument(
-        "--taxa-matrix",
-        type=Path,
-        default=DEFAULT_TAXA_MATRIX_PATH,
-        help="Path to taxa_trait_matrix.tsv",
-    )
-    parser.add_argument(
         "--output-dir",
         type=Path,
         default=DEFAULT_OUTPUT_DIR,
         help="Directory to write output TSVs and reports",
+    )
+    parser.add_argument(
+        "--code-commit",
+        type=str,
+        default="",
+        help="Code commit hash for provenance tracking",
     )
 
     args = parser.parse_args()
     results = run_density_audit(
         profiles_path=args.profiles,
         columns_path=args.columns,
-        taxa_matrix_path=args.taxa_matrix,
         output_dir=args.output_dir,
+        code_commit=args.code_commit,
     )
     print(f"Density adjustment audit completed successfully. Outputs written to {args.output_dir}")
     print(f"Summary TSV: {results['summary_tsv']}")

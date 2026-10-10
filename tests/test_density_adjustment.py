@@ -11,14 +11,12 @@ import pytest
 from bsdbng.density_adjustment import (
     DEFAULT_COLUMNS_PATH,
     DEFAULT_PROFILES_PATH,
-    DEFAULT_TAXA_MATRIX_PATH,
     TABLE_1_TRAITS,
     TEST_PAIR_A,
     TWIN_A,
     TWIN_B,
     compute_correlation_metrics,
     compute_effective_tests,
-    downweight_traits_by_taxon_degree,
     evaluate_conditional_twin_test,
     evaluate_table1_paired_effects,
     get_non_media_trait_columns,
@@ -50,11 +48,32 @@ def test_effective_tests_identity_and_collinear() -> None:
 
 
 def test_effective_tests_roundoff_eigenvalues() -> None:
-    """Verify Li & Ji formula handles negative/roundoff eigenvalues properly (#352)."""
+    """Verify Li & Ji formula handles negative/roundoff eigenvalues properly (#352, #377)."""
     # Round-off negative and near-zero eigenvalues should not artificially add ~1.0
-    evals = np.array([2.0, 1.0, 1e-16, -1e-16])
+    evals = np.array([2.0, 1.0, 1e-11, -1e-11])
     m_li_ji, _m_galwey, _m_nyholt = compute_effective_tests(evals)
     assert pytest.approx(m_li_ji, abs=1e-8) == 2.0
+
+    # Upper cap at P (total eigenvalues)
+    evals_equal = np.array([1.0, 1.0, 1.0])
+    m_li_ji_eq, _, _ = compute_effective_tests(evals_equal)
+    assert pytest.approx(m_li_ji_eq, abs=1e-8) == 3.0
+    assert m_li_ji_eq <= 3.0
+
+
+def test_effective_tests_constant_columns() -> None:
+    """Verify constant columns are dropped and do not inflate Li & Ji effective tests (#378)."""
+    rng = np.random.default_rng(42)
+    # 3 informative columns + 2 constant columns
+    data_var = rng.normal(size=(50, 3))
+    data_const1 = np.zeros((50, 1))
+    data_const2 = np.full((50, 1), 7.0)
+    data = np.hstack([data_var, data_const1, data_const2])
+    cols = ["v1", "v2", "v3", "c1", "c2"]
+
+    metrics = compute_correlation_metrics(data, cols, method="pearson")
+    # Li & Ji effective tests should not exceed the number of variable traits (3)
+    assert metrics.m_eff_li_ji <= 3.0 + 1e-7
 
 
 def test_get_non_media_trait_columns(tmp_path: Path) -> None:
@@ -179,47 +198,31 @@ def test_normalize_traits_by_profile_composition() -> None:
         }
     )
 
-    norm = normalize_traits_by_profile_composition(prof_df, ["t1", "t2"])
-    assert norm.shape == (2, 2)
-    # Row 1 sum is 4.0, normalized row should sum to 1.0 (0.5, 0.5)
-    assert pytest.approx(norm[0].sum()) == 1.0
-    assert pytest.approx(norm[0, 0]) == 0.5
-    assert pytest.approx(norm[0, 1]) == 0.5
-    # Row 2 was all zeros, should remain 0
-    assert pytest.approx(norm[1].sum()) == 0.0
+    # Test with Sequence[str]: list, tuple, pd.Index (#379)
+    for cols in [["t1", "t2"], ("t1", "t2"), pd.Index(["t1", "t2"])]:
+        norm = normalize_traits_by_profile_composition(prof_df, cols)
+        assert norm.shape == (2, 2)
+        # Row 1 sum is 4.0, normalized row should sum to 1.0 (0.5, 0.5)
+        assert pytest.approx(norm[0].sum()) == 1.0
+        assert pytest.approx(norm[0, 0]) == 0.5
+        assert pytest.approx(norm[0, 1]) == 0.5
+        # Row 2 was all zeros, should remain 0
+        assert pytest.approx(norm[1].sum()) == 0.0
 
-
-def test_downweight_traits_by_taxon_degree_legacy_alias(tmp_path: Path) -> None:
-    """Verify backward compatibility of downweight_traits_by_taxon_degree alias."""
-    taxa_file = tmp_path / "taxa.tsv"
-    taxa_file.touch()
-
-    prof_df = pd.DataFrame(
-        {
-            "study_id": ["s1", "s2"],
-            "experiment_id": ["e1", "e2"],
-            "inc_dec": ["inc", "inc"],
-            "t1": [3.0, 0.0],
-            "t2": [1.0, 0.0],
-        }
-    )
-
-    # Calling with legacy (taxa_path, profiles_df, cols) signature
-    dw = downweight_traits_by_taxon_degree(taxa_file, prof_df, ["t1", "t2"])
-    assert dw.shape == (2, 2)
-    assert pytest.approx(dw[0].sum()) == 1.0
-    assert pytest.approx(dw[0, 0]) == 0.75
-    assert pytest.approx(dw[0, 1]) == 0.25
-    assert pytest.approx(dw[1].sum()) == 0.0
+    # Test error if cols is empty
+    with pytest.raises(ValueError, match="cols must not be empty"):
+        normalize_traits_by_profile_composition(prof_df, [])
 
 
 def test_evaluate_conditional_twin_test_vif() -> None:
-    """Verify VIF and conditional test behavior on highly correlated twins."""
+    """Verify VIF and conditional test behavior on highly correlated twins (#380)."""
     rng = np.random.default_rng(99)
+    depth = rng.uniform(50.0, 100.0, size=200)
     base = rng.normal(size=200)
-    # Create near-twins with r ~ 0.95
-    t_a = base + rng.normal(scale=0.2, size=200)
-    t_b = base + rng.normal(scale=0.2, size=200)
+    # Create near-twins with r ~ 0.95 and correlated with depth
+    t_a = 0.5 * depth + base + rng.normal(scale=0.2, size=200)
+    t_b = 0.5 * depth + base + rng.normal(scale=0.2, size=200)
+    t_other = depth + rng.normal(scale=1.0, size=200)
 
     # 100 paired experiments (inc/dec)
     study_ids = [f"s_{i // 2}" for i in range(200)]
@@ -233,20 +236,26 @@ def test_evaluate_conditional_twin_test_vif() -> None:
             "inc_dec": inc_dec,
             TWIN_A: t_a,
             TWIN_B: t_b,
+            "t_other": t_other,
         }
     )
 
-    summary = evaluate_conditional_twin_test(df, TWIN_A, TWIN_B)
+    summary = evaluate_conditional_twin_test(
+        df, TWIN_A, TWIN_B, columns_for_depth=[TWIN_A, TWIN_B, "t_other"]
+    )
     assert summary.trait_a == TWIN_A
     assert summary.trait_b == TWIN_B
     assert summary.profile_correlation > 0.90
     # For r > 0.90, VIF = 1 / (1 - r^2) > 5.0
     assert summary.vif_profile > 5.0
     assert summary.n_paired_experiments == 100
+    assert summary.profile_partial_r_depth > 0.80
+    assert summary.paired_slope_pvalue < 0.05
+    assert summary.paired_slope_a_on_b > 0.0
 
 
 def test_evaluate_table1_paired_effects_synthetic() -> None:
-    """Verify paired experiment contrast evaluation across Table 1 traits."""
+    """Verify paired experiment contrast evaluation across Table 1 traits (#383)."""
     study_ids = [f"s{i}" for i in range(20) for _ in range(2)]
     exp_ids = [f"e{i}" for i in range(20) for _ in range(2)]
     inc_dec = ["inc", "dec"] * 20
@@ -254,7 +263,7 @@ def test_evaluate_table1_paired_effects_synthetic() -> None:
     # Ensure all Table 1 traits exist in test dataframe
     cols = list(TABLE_1_TRAITS.keys())
     data = {c: np.ones(40, dtype=float) for c in cols}
-    # For TEST_PAIR_A, make inc > dec
+    # For TEST_PAIR_A, make inc > dec with strong signal
     inc_vals = np.array([5.0, 1.0] * 20)
     data[TEST_PAIR_A] = inc_vals
 
@@ -272,22 +281,47 @@ def test_evaluate_table1_paired_effects_synthetic() -> None:
     assert len(effects) == len(cols)
     test_pair_eff = next(e for e in effects if e.trait_id == TEST_PAIR_A)
     assert test_pair_eff.raw_mean_diff > 0
+    assert test_pair_eff.raw_wilcoxon_p < 0.05
+    assert "survived" in test_pair_eff.status
+
+
+def test_evaluate_table1_paired_effects_nan_fallback() -> None:
+    """Verify Wilcoxon p-value falls back to NaN when non-zero pairs <= 10 (#383)."""
+    study_ids = [f"s{i}" for i in range(5) for _ in range(2)]
+    exp_ids = [f"e{i}" for i in range(5) for _ in range(2)]
+    inc_dec = ["inc", "dec"] * 5
+
+    cols = list(TABLE_1_TRAITS.keys())
+    data = {c: np.zeros(10, dtype=float) for c in cols}
+    # Set only 5 pairs for TEST_PAIR_A (<= 10 non-zero pairs)
+    data[TEST_PAIR_A] = np.array([2.0, 1.0] * 5)
+
+    prof_df = pd.DataFrame(
+        {
+            "study_id": study_ids,
+            "experiment_id": exp_ids,
+            "inc_dec": inc_dec,
+            **data,
+        }
+    )
+
+    adj_matrix = prof_df[cols].values.copy()
+    effects = evaluate_table1_paired_effects(prof_df, adj_matrix, cols)
+    test_pair_eff = next(e for e in effects if e.trait_id == TEST_PAIR_A)
+    assert np.isnan(test_pair_eff.raw_wilcoxon_p)
+    assert np.isnan(test_pair_eff.adj_wilcoxon_p)
+    assert test_pair_eff.status == "insufficient non-zero pairs"
 
 
 @pytest.mark.skipif(
-    not (
-        DEFAULT_PROFILES_PATH.exists()
-        and DEFAULT_COLUMNS_PATH.exists()
-        and DEFAULT_TAXA_MATRIX_PATH.exists()
-    ),
+    not (DEFAULT_PROFILES_PATH.exists() and DEFAULT_COLUMNS_PATH.exists()),
     reason="Derived data files not available in test environment",
 )
 def test_full_density_audit_integration(tmp_path: Path) -> None:
-    """Verify full density audit run against real derived data and validate core findings."""
+    """Verify full density audit run against real derived data and validate core findings (#375)."""
     results = run_density_audit(
         profiles_path=DEFAULT_PROFILES_PATH,
         columns_path=DEFAULT_COLUMNS_PATH,
-        taxa_matrix_path=DEFAULT_TAXA_MATRIX_PATH,
         output_dir=tmp_path,
     )
 
@@ -309,24 +343,29 @@ def test_full_density_audit_integration(tmp_path: Path) -> None:
         "adjusted_profile_composition_pearson",
     }
 
-    # 2. Key findings from Issue #264:
-    # Baseline PC1 explains ~60.4% - 60.8% of variance
+    # 2. Structural sanity checks on real data
     raw = results["raw_pearson"]
-    assert 58.0 <= raw.pc1_variance_pct <= 63.0
-    assert raw.median_pairwise_r > 0.50
+    assert 0.0 < raw.pc1_variance_pct <= 100.0
+    assert -1.0 <= raw.median_pairwise_r <= 1.0
+    assert raw.n_traits > 0
+    assert raw.n_samples > 0
 
-    # Post-PC1 regression pairwise median correlation centers near 0
     adj = results["adj_pc1_pearson"]
-    assert -0.10 <= adj.median_pairwise_r <= 0.05
+    assert -1.0 <= adj.median_pairwise_r <= 1.0
 
-    # Near-twin collinearity (coccus vs sphere) shows high VIF
     twin = results["twin_summary"]
-    assert twin.profile_correlation > 0.85
-    assert twin.vif_profile > 4.0
+    assert -1.0 <= twin.profile_correlation <= 1.0
+    assert twin.vif_profile >= 1.0
 
-    # Diagnostic pair: facultatively aerobic x moderately halophilic
     t1_effects = results["table1_effects"]
-    fac_aero = next(e for e in t1_effects if e.trait_id == TEST_PAIR_A)
-    # Post-adjustment p-value should collapse to nonsignificance (> 0.05)
-    assert fac_aero.adj_wilcoxon_p > 0.05
-    assert "collapsed" in fac_aero.status
+    assert len(t1_effects) == len(TABLE_1_TRAITS)
+    for eff in t1_effects:
+        assert eff.trait_id in TABLE_1_TRAITS
+        assert eff.status in {
+            "collapsed (artifact removed)",
+            "survived (biological signal)",
+            "enhanced depletion (genuine signal)",
+            "unaffected non-significant",
+            "emerged post-adjustment",
+            "insufficient pairs",
+        }

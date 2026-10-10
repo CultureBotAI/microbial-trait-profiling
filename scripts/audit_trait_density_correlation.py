@@ -17,7 +17,6 @@ from bsdbng.density_adjustment import (
     DEFAULT_COLUMNS_PATH,
     DEFAULT_OUTPUT_DIR,
     DEFAULT_PROFILES_PATH,
-    DEFAULT_TAXA_MATRIX_PATH,
     run_density_audit,
 )
 
@@ -41,16 +40,16 @@ def parse_args() -> argparse.Namespace:
         help=f"Path to taxa_trait_matrix_columns.tsv (default: {DEFAULT_COLUMNS_PATH})",
     )
     parser.add_argument(
-        "--taxa-matrix",
-        type=Path,
-        default=DEFAULT_TAXA_MATRIX_PATH,
-        help=f"Path to taxa_trait_matrix.tsv (default: {DEFAULT_TAXA_MATRIX_PATH})",
-    )
-    parser.add_argument(
         "--output-dir",
         type=Path,
         default=DEFAULT_OUTPUT_DIR,
         help=f"Directory to write summary TSVs and reports (default: {DEFAULT_OUTPUT_DIR})",
+    )
+    parser.add_argument(
+        "--code-commit",
+        type=str,
+        default="",
+        help="Code commit hash for provenance tracking",
     )
     return parser.parse_args()
 
@@ -61,8 +60,8 @@ def main() -> int:
         results = run_density_audit(
             profiles_path=args.profiles,
             columns_path=args.columns,
-            taxa_matrix_path=args.taxa_matrix,
             output_dir=args.output_dir,
+            code_commit=args.code_commit,
         )
     except Exception as exc:
         sys.stderr.write(f"Error during density adjustment audit: {exc}\n")
