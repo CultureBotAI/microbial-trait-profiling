@@ -95,7 +95,7 @@ def _parse_strict_count(val: Any) -> int:
     """Parse count strictly matching production rules."""
     if val is None or val == "" or (isinstance(val, float) and np.isnan(val)):
         return 0
-    if isinstance(val, (int, np.integer)):
+    if isinstance(val, int | np.integer):
         if val < 0:
             raise ValueError(f"Negative count: {val}")
         return int(val)
