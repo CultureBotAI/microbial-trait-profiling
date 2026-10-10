@@ -337,9 +337,7 @@ def main(argv: list[str] | None = None) -> None:
 
     # Determine reference population M and background successes K from taxa_matrix
     if not args.taxa_matrix.exists():
-        raise FileNotFoundError(
-            f"Specified taxa matrix file does not exist: {args.taxa_matrix}"
-        )
+        raise FileNotFoundError(f"Specified taxa matrix file does not exist: {args.taxa_matrix}")
     background_counts: dict[str, int] = dict.fromkeys(trait_columns, 0)
     matrix_taxa_total = 0
     with open_input_text(args.taxa_matrix) as m_fh:
@@ -468,9 +466,7 @@ def main(argv: list[str] | None = None) -> None:
     result_status = classify_result_status(len(all_hits), len(significant_hits))
 
     mean_taxa = (
-        sum(profile_taxa_counts) / testable_profile_count
-        if testable_profile_count > 0
-        else 0.0
+        sum(profile_taxa_counts) / testable_profile_count if testable_profile_count > 0 else 0.0
     )
 
     # Write TSV output if requested

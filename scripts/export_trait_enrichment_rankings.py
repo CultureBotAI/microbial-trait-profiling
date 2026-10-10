@@ -429,18 +429,22 @@ def parse_report(
     with path.open("r", encoding="utf-8") as handle:
         for raw in handle:
             line = raw.strip()
-            if not line or line == "---" or line.startswith(
-                (
-                    "p < ",
-                    "p <= ",
-                    "FDR q < ",
-                    "FDR q <= ",
-                    "Min Fold >= ",
-                    "Max Fold <= ",
-                    "Tail: ",
-                    "Tests performed: ",
-                    "Significant hits: ",
-                    "Result status: ",
+            if (
+                not line
+                or line == "---"
+                or line.startswith(
+                    (
+                        "p < ",
+                        "p <= ",
+                        "FDR q < ",
+                        "FDR q <= ",
+                        "Min Fold >= ",
+                        "Max Fold <= ",
+                        "Tail: ",
+                        "Tests performed: ",
+                        "Significant hits: ",
+                        "Result status: ",
+                    )
                 )
             ):
                 continue
@@ -893,11 +897,13 @@ def main(argv: list[str] | None = None) -> int:
         common.append(("Max-Fold", max_fold))
     else:
         common.append(("Min-Fold", min_fold))
-    common.extend([
-        (META_RESULT_STATUS, result_status),
-        (META_TESTS_PERFORMED, na(tests_performed)),
-        (META_SIGNIFICANT_HITS, na(analyzer_hits)),
-    ])
+    common.extend(
+        [
+            (META_RESULT_STATUS, result_status),
+            (META_TESTS_PERFORMED, na(tests_performed)),
+            (META_SIGNIFICANT_HITS, na(analyzer_hits)),
+        ]
+    )
     if args.body_site_group is not None:
         common.append(("Body-Site-Group", args.body_site_group))
 
