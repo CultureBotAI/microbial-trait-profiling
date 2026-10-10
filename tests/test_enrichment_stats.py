@@ -1,20 +1,23 @@
-"""Numerical reference-value and consolidation tests for enrichment statistics (#135)."""
+"""Numerical reference-value and consolidation tests for enrichment statistics (#366, #355)."""
 
 from __future__ import annotations
+
+from typing import Any
 
 import numpy as np
 import pytest
 from scipy.stats import hypergeom as scipy_hypergeom
 
-from bsdbng import stats as bsdbng_stats
 from bsdbng.enrichment_stats import (
     benjamini_hochberg,
+    compute_fold_enrichment,
     hypergeom_cdf,
     hypergeom_cdf_many,
     hypergeom_cdf_pure_python,
     hypergeom_sf,
     hypergeom_sf_many,
     hypergeom_sf_pure_python,
+    hypergeom_test,
 )
 
 # --- Benjamini-Hochberg (BH) Numerical Reference Tests ------------------------
@@ -116,9 +119,9 @@ def test_bh_boundary_conditions() -> None:
 
     # Values that would exceed 1.0 must be capped at 1.0
     # p = [0.8, 0.9], n = 2:
-    # rank 1: 0.8 * 2 / 1 = 1.6 -> capped to 1.0
-    # rank 2: 0.9 * 2 / 2 = 0.9 -> capped by cummin(1.0, 0.9) = 0.9 ?
-    # Wait: rank 2 is 0.9, rank 1 is min(1.0, min(1.6, 0.9)) = 0.9!
+    # rank 1: min(1.0, 0.8 * 2 / 1) = 1.0
+    # rank 2: min(1.0, 0.9 * 2 / 2) = 0.9
+    # Step-up cummin enforces monotone order: [0.9, 0.9].
     assert benjamini_hochberg([0.8, 0.9]) == pytest.approx([0.9, 0.9], rel=1e-12)
 
 
@@ -153,6 +156,24 @@ def test_bh_rejects_invalid_p_values() -> None:
         benjamini_hochberg([0.05, float("nan")])
     with pytest.raises(ValueError, match="finite real numbers"):
         benjamini_hochberg([0.05, float("inf")])
+
+
+def test_bh_family_size() -> None:
+    """benjamini_hochberg supports effective family_size larger than input length."""
+    # p = [0.01], family_size = 10 -> q = 0.01 * 10 / 1 = 0.10
+    assert benjamini_hochberg([0.01], family_size=10) == pytest.approx([0.10])
+    # p = [0.01, 0.02], family_size = 100
+    assert benjamini_hochberg([0.01, 0.02], family_size=100) == pytest.approx([1.0, 1.0])
+
+
+def test_bh_rejects_non_numeric() -> None:
+    """benjamini_hochberg rejects non-numeric entries (bool, str) with TypeError."""
+    bad_bools: list[Any] = [True, False]
+    with pytest.raises(TypeError, match="p-values must be numeric"):
+        benjamini_hochberg(bad_bools)
+    bad_strs: list[Any] = ["0.05", "0.10"]
+    with pytest.raises(TypeError, match="p-values must be numeric"):
+        benjamini_hochberg(bad_strs)
 
 
 # --- Hypergeometric Exact Analytical Values -----------------------------------
@@ -284,7 +305,7 @@ def test_hypergeom_vector_pure_python_matches_scipy() -> None:
 
 
 def test_hypergeom_boundary_extremes() -> None:
-    """Test boundary extremes: K=0, N=0, x < k_min, x > k_max."""
+    """Test boundary extremes: K=0, N=0, K=M, N=M, x < k_min, x > k_max."""
     # K = 0 (no successes in population)
     assert hypergeom_sf(0, 100, 0, 10) == pytest.approx(1.0)
     assert hypergeom_sf(1, 100, 0, 10) == pytest.approx(0.0)
@@ -303,9 +324,33 @@ def test_hypergeom_boundary_extremes() -> None:
     assert hypergeom_sf_pure_python(1, 100, 20, 0) == pytest.approx(0.0)
     assert hypergeom_cdf_pure_python(0, 100, 20, 0) == pytest.approx(1.0)
 
+    # K = M (all items are successes in population)
+    assert hypergeom_sf(10, 50, 50, 10) == pytest.approx(1.0)
+    assert hypergeom_sf(11, 50, 50, 10) == pytest.approx(0.0)
+    assert hypergeom_sf(9, 50, 50, 10) == pytest.approx(1.0)
+    assert hypergeom_cdf(10, 50, 50, 10) == pytest.approx(1.0)
+    assert hypergeom_cdf(9, 50, 50, 10) == pytest.approx(0.0)
+
+    assert hypergeom_sf_pure_python(10, 50, 50, 10) == pytest.approx(1.0)
+    assert hypergeom_sf_pure_python(11, 50, 50, 10) == pytest.approx(0.0)
+    assert hypergeom_cdf_pure_python(10, 50, 50, 10) == pytest.approx(1.0)
+    assert hypergeom_cdf_pure_python(9, 50, 50, 10) == pytest.approx(0.0)
+
+    # N = M (entire urn drawn)
+    assert hypergeom_sf(20, 50, 20, 50) == pytest.approx(1.0)
+    assert hypergeom_sf(21, 50, 20, 50) == pytest.approx(0.0)
+    assert hypergeom_sf(19, 50, 20, 50) == pytest.approx(1.0)
+    assert hypergeom_cdf(20, 50, 20, 50) == pytest.approx(1.0)
+    assert hypergeom_cdf(19, 50, 20, 50) == pytest.approx(0.0)
+
+    assert hypergeom_sf_pure_python(20, 50, 20, 50) == pytest.approx(1.0)
+    assert hypergeom_sf_pure_python(21, 50, 20, 50) == pytest.approx(0.0)
+    assert hypergeom_cdf_pure_python(20, 50, 20, 50) == pytest.approx(1.0)
+    assert hypergeom_cdf_pure_python(19, 50, 20, 50) == pytest.approx(0.0)
+
 
 def test_hypergeom_input_validation() -> None:
-    """Invalid parameter checks must raise ValueError."""
+    """Invalid parameter checks must raise ValueError or TypeError."""
     # K > M
     with pytest.raises(ValueError, match="Invalid hypergeometric"):
         hypergeom_sf(1, 4, 5, 2)
@@ -322,13 +367,29 @@ def test_hypergeom_input_validation() -> None:
     with pytest.raises(ValueError, match="Invalid hypergeometric"):
         hypergeom_sf_pure_python(1, 4, 2, 5)
 
-    # Negative parameters
-    with pytest.raises(ValueError, match="Invalid hypergeometric"):
+    # Negative population size
+    with pytest.raises(ValueError, match="Population size must be strictly positive"):
         hypergeom_sf(1, -4, 2, 2)
+    # Negative population successes or draws
     with pytest.raises(ValueError, match="Invalid hypergeometric"):
         hypergeom_sf(1, 4, -2, 2)
     with pytest.raises(ValueError, match="Invalid hypergeometric"):
         hypergeom_sf(1, 4, 2, -2)
+
+    # Population size <= 0
+    with pytest.raises(ValueError, match="Population size must be strictly positive"):
+        hypergeom_sf(1, 0, 0, 0)
+
+    # Rejection of bool, float, str for integer parameters
+    bad_val: Any = True
+    with pytest.raises(TypeError, match="must be an integer"):
+        hypergeom_sf(bad_val, 100, 20, 10)
+    bad_val = 1.5
+    with pytest.raises(TypeError, match="must be an integer"):
+        hypergeom_sf(1, bad_val, 20, 10)
+    bad_val = "10"
+    with pytest.raises(TypeError, match="must be an integer"):
+        hypergeom_sf(1, 100, bad_val, 10)
 
     # Vector length mismatch
     with pytest.raises(ValueError, match="same length"):
@@ -337,15 +398,60 @@ def test_hypergeom_input_validation() -> None:
         hypergeom_cdf_many([1, 2], 4, [2], 2)
 
 
-# --- Consolidation and Module Re-export Verification --------------------------
+def test_compute_fold_enrichment() -> None:
+    """Test fold enrichment calculation across standard, edge, and error cases."""
+    # Standard enrichment: M=100, K=20, N=10, x=4 -> Expected = 2.0, Fold = 2.0
+    assert compute_fold_enrichment(4, 100, 20, 10) == pytest.approx(2.0)
+
+    # Standard depletion: M=100, K=50, N=10, x=1 -> Expected = 5.0, Fold = 0.2
+    assert compute_fold_enrichment(1, 100, 50, 10) == pytest.approx(0.2)
+
+    # Boundary: K=M (all successes) -> Expected = N, Fold = 1.0
+    assert compute_fold_enrichment(10, 50, 50, 10) == pytest.approx(1.0)
+
+    # Boundary: N=M (entire urn drawn) -> Expected = K, Fold = 1.0
+    assert compute_fold_enrichment(20, 50, 20, 50) == pytest.approx(1.0)
+
+    # Zero observed: x=0, expected > 0 -> Fold = 0.0
+    assert compute_fold_enrichment(0, 100, 20, 10) == pytest.approx(0.0)
+
+    # Expected zero (K=0) with x=0 -> Fold = 0.0
+    assert compute_fold_enrichment(0, 100, 0, 10) == pytest.approx(0.0)
+
+    # Expected zero (K=0) with x>0 -> Fold = inf
+    assert compute_fold_enrichment(1, 100, 0, 10) == float("inf")
+
+    # Invalid x (negative or > draws)
+    with pytest.raises(ValueError, match="Invalid observed successes"):
+        compute_fold_enrichment(-1, 100, 20, 10)
+    with pytest.raises(ValueError, match="Invalid observed successes"):
+        compute_fold_enrichment(15, 100, 20, 10)
+
+    # Invalid types
+    bad_x: Any = True
+    with pytest.raises(TypeError, match="must be an integer"):
+        compute_fold_enrichment(bad_x, 100, 20, 10)
 
 
-def test_bsdbng_stats_reexports() -> None:
-    """bsdbng.stats must re-export consolidated statistics identically."""
-    assert bsdbng_stats.benjamini_hochberg is benjamini_hochberg
-    assert bsdbng_stats.hypergeom_sf is hypergeom_sf
-    assert bsdbng_stats.hypergeom_sf_many is hypergeom_sf_many
-    assert bsdbng_stats.hypergeom_cdf is hypergeom_cdf
-    assert bsdbng_stats.hypergeom_cdf_many is hypergeom_cdf_many
-    assert bsdbng_stats.hypergeom_sf_pure_python is hypergeom_sf_pure_python
-    assert bsdbng_stats.hypergeom_cdf_pure_python is hypergeom_cdf_pure_python
+def test_hypergeom_test() -> None:
+    """Test hypergeom_test direction, aliases, and equivalence to sf/cdf."""
+    M, K, N, x = 100, 20, 10, 4
+    # "greater", "upper", "enrichment" must match hypergeom_sf
+    expected_upper = hypergeom_sf(x, M, K, N)
+    for alt in ("greater", "upper", "enrichment", "GREATER", "Upper"):
+        assert hypergeom_test(x, M, K, N, alternative=alt) == pytest.approx(expected_upper)
+        assert hypergeom_test(x, M, K, N, alternative=alt, use_pure_python=True) == pytest.approx(
+            expected_upper
+        )
+
+    # "less", "lower", "depletion" must match hypergeom_cdf
+    expected_lower = hypergeom_cdf(x, M, K, N)
+    for alt in ("less", "lower", "depletion", "LESS", "Lower"):
+        assert hypergeom_test(x, M, K, N, alternative=alt) == pytest.approx(expected_lower)
+        assert hypergeom_test(x, M, K, N, alternative=alt, use_pure_python=True) == pytest.approx(
+            expected_lower
+        )
+
+    # Invalid alternative raises ValueError
+    with pytest.raises(ValueError, match="Unknown alternative"):
+        hypergeom_test(x, M, K, N, alternative="two-sided")
