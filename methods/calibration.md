@@ -25,9 +25,11 @@ directly: make the null true, run the whole procedure, and count rejections.
 | `screened_fraction_sign_test` | as the first, but the three traits furthest from an even split are chosen inside the replicate and corrected over those three | study | BH over the three selected | none claimed |
 
 The last is not a published procedure. It stands in for the step that produced the
-six Table 1 traits - a selection made on this same corpus by another arm - to measure
-what selecting and then testing the selection costs. Selecting three of six rather
-than six of hundreds makes the measured inflation a lower bound. It is also the
+six Table 1 traits - a selection made on this same corpus - to illustrate what
+selecting and then testing the selection costs. It selects on the test's own
+statistic, three of six; the published selection used other statistics over hundreds
+of traits. Neither dominates the other, so the measured inflation is an illustration
+of the cost, not a bound on it in either direction (#363). It is also the
 **negative control**: the protocol declares in advance that it is expected to fail
 the acceptance criteria, because a criterion this procedure passes is too weak to be
 evidence about any procedure.
@@ -46,8 +48,23 @@ representation.
 The flip unit matters, so both are reported. Flipping **whole studies** preserves the
 dependence between a study's experiments and matches the unit these tests treat as
 independent. Flipping **whole experiments** breaks that dependence and is the weaker
-null. Results below are near-identical under the two, which is itself informative:
-on this corpus the within-study dependence is not what drives the error rate.
+null.
+
+**What the flip cannot test (#360).** A flip negates a unit's contrast without
+changing its magnitude, so every scored count is fixed and each sign becomes a fair
+coin. An exact sign test then sees exactly Binomial(n, 1/2), which is its own null,
+and its per-test rejection rate is its exact size: known in closed form, at most
+0.05, and independent of the data. For the three published procedures the simulated
+per-test rate therefore only re-estimates that constant, under either flip unit, and
+`per_test_level` is reported for them as a **sanity check** on the implementation
+beside the analytic size, not as evidence that the method holds its level. It is
+excluded from their overall status unless it fails. Neither flip can detect
+dependence *between* studies - shared cohorts, reused datasets, overlapping
+populations - because both treat studies as independent; that is listed under
+`not_covered` in the protocol and is not addressed here. What the flip does test is
+everything the construction leaves open: the family rates, where the dependence
+between traits matters; the screened selection, which breaks the construction; and
+power and the false-discovery proportion under an injected effect.
 
 The generator is `numpy.random.default_rng([seed, sha256_64(stream), replicate])`.
 Any one replicate is therefore reproducible on its own, which is what lets the same
@@ -72,7 +89,7 @@ them as independent Bernoulli trials understates the uncertainty, so
 the pooled per-test rate is a ratio estimator over replicate clusters, which reduces
 to the binomial variance when a replicate contributes one test and inflates it by the
 measured design effect when it contributes several correlated ones. The measured
-design effects are 1.00 for the single McNemar, 1.18 for the six-trait family, 1.22
+design effects are 1.00 for the single McNemar, 1.16 for the six-trait family, 1.21
 for the screened three and 1.62 for the 15 overlapping ratios - the ratios are the
 most correlated, as expected.
 
@@ -94,22 +111,33 @@ on the procedure, because an interval from a procedure whose true rate is 0.08 u
 covers 0.05 too.
 
 The budget follows from the tolerance rather than the other way round. `guild_mcnemar`
-contributes one test per replicate, so it is the least-powered procedure, and 1200
-null replicates per scenario give it 2400 pooled trials. At that design:
+contributes one test per replicate, so it is the least-powered procedure, and the
+family criterion is one Bernoulli per replicate on the same count. 1400 null
+replicates per scenario give 2800 pooled trials. The operating characteristics are
+computed by **exact enumeration of the rule the verdicts use**, not by a normal
+approximation; the two rules - the per-test bound and the family exact bound - give
+the same numbers at this design:
 
-| True per-test rate | What the criterion does |
+| True per-test rate | What the criterion does at 2800 trials |
 | --- | --- |
-| 0.05 | passes with probability 0.958 |
-| 0.06 | fails with probability 0.730 |
-| 0.07 | fails with probability 0.995 |
+| 0.05 | passes with probability 0.960 |
+| 0.06 | fails with probability 0.722 |
+| 0.07 | fails with probability 0.997 |
 | 0.08 | fails with probability 1.000 |
 
+The budget was 1200 replicates until 2026-10-09. Enumerated exactly, both rules then
+passed a true 0.05 with probability 0.925, below the protocol's requirement of 0.95;
+the 0.958 reported earlier came from a normal model of a rule no longer in use
+(#361). 1400 is the first round budget that meets the requirement; 1325 is the
+smallest, at 0.953. The change is recorded as an amendment in the protocol.
+
 A true 0.06 lies **inside** the declared tolerance, so where it is measured precisely
-it passes by declaration, not by weakness - at the 14,400 trials the six-trait family
-contributes, a true 0.06 passes 75% of the time. Treating 0.06 as material inflation
-would mean declaring a tolerance of 0.055, which needs about 20,600 pooled trials, or
-10,300 null replicates for a single-test procedure. That budget was not taken. The
-criterion is sized to separate rates at or below 0.065 from rates at or above 0.07,
+it passes by declaration, not by weakness - at the 16,800 trials the six-trait family
+contributes, a true 0.06 passes 78% of the time with that family's measured design
+effect of about 1.18 (85% if its six tests were independent). Treating 0.06 as
+material inflation would mean declaring a tolerance of 0.055 and a budget several
+times larger. That budget was not taken. The criterion is sized to separate rates at
+or below 0.065 from rates at or above 0.07,
 and every criterion row in `calibration_criteria.tsv` carries these four
 probabilities for the design that produced it, so no verdict is reported without the
 probability it would have been reached.
@@ -123,7 +151,7 @@ as a pass (#240 review, 2026-10-03). With zero rejections the design effect cann
 be measured, so each replicate counts as one trial, the fully correlated worst case;
 0/10 then gives 0.259, the same bound the family criterion reports for those ten
 replicates. At the declared budget the exact bound sits within 0.001 of the normal
-one, which is why the three affected bounds below moved by at most 0.0007.
+one.
 
 A run below the declared replicate budget cannot certify calibration. A criterion it
 would pass, or would fail only because its interval is still wide, is reported as
@@ -132,51 +160,61 @@ exceeds the tolerance. `calibration_status.json` exports every criterion's verdi
 per procedure beside an overall status: `fail` if any judged criterion failed,
 otherwise `pass` only if every judged criterion passed, otherwise `not_certified`.
 
-At 1200 null and 400 power replicates, seed 182, on the pinned v1.3.1 corpus:
+At 1400 null and 400 power replicates, seed 182, on the pinned v1.3.1 corpus:
 
 | Criterion | Procedure | Verdict | Evidence |
 | --- | --- | --- | --- |
-| Pooled per-test upper bound at most 0.065 | fraction_sign_test | **pass** | 0.0463 (667/14,400), upper bound 0.0496 |
-| | log_ratio_sign_test | **pass** | 0.0431 (1,553/36,000), upper bound 0.0454 |
-| | guild_mcnemar | **pass** | 0.0429 (103/2,400), upper bound 0.0504 |
-| | screened_fraction_sign_test | **fail** (expected) | 0.0924 (665/7,200), upper bound 0.0988 |
-| Family upper bound at most 0.065 | fraction_sign_test | **pass** | 0.0437 (105/2,400), exact upper bound 0.0513 |
-| | log_ratio_sign_test | **pass** | 0.0146 (35/2,400), exact upper bound 0.0193 |
-| | guild_mcnemar | **pass** | 0.0429 (103/2,400), exact upper bound 0.0504 |
-| | screened_fraction_sign_test | **fail** (expected) | 0.0838 (201/2,400), exact upper bound 0.0936 |
+| Pooled per-test upper bound at most 0.065 | fraction_sign_test | pass (**sanity check**) | 0.0465 (781/16,800), upper bound 0.0495; analytic exact size 0.0466 |
+| | log_ratio_sign_test | pass (**sanity check**) | 0.0439 (1,843/42,000), upper bound 0.0460; analytic exact size 0.0432 |
+| | guild_mcnemar | pass (**sanity check**) | 0.0425 (119/2,800), upper bound 0.0493; analytic exact size 0.0480 |
+| | screened_fraction_sign_test | **fail** (expected) | 0.0927 (779/8,400), upper bound 0.0987 |
+| Family upper bound at most 0.065 | fraction_sign_test | **pass** | 0.0454 (127/2,800), exact upper bound 0.0524 |
+| | log_ratio_sign_test | **pass** | 0.0136 (38/2,800), exact upper bound 0.0178 |
+| | guild_mcnemar | **pass** | 0.0425 (119/2,800), exact upper bound 0.0493 |
+| | screened_fraction_sign_test | **fail** (expected) | 0.0861 (241/2,800), exact upper bound 0.0953 |
 | Power reported with an interval no wider than 0.12 | fraction, log-ratio | **pass** | widest interval 0.069 and 0.099 |
-| Selection inflation measured, not judged | screened | **reported** | per-test rate 0.070 to 0.121 |
+| Selection inflation measured, not judged | screened | **reported** | per-test rate 0.070 to 0.122 |
+
+The analytic exact size is the mean over each procedure's null labels at their median
+scored count; the simulated rate agrees with it, as it must under this null (#360).
+For `guild_mcnemar` the family and per-test rows are the same single test, so its
+family pass is subject to the same construction.
 
 The screened procedure fails both judged criteria, which is the declared expectation
 and the point of including it: the criterion has teeth on real data, not only on a
 fixture. Had it passed, `expectation_met` would say so in the output.
 
-The three published procedures pass. That is a statement about these four procedures
-under these two nulls on this corpus at this tolerance, and nothing more.
+The three published procedures pass the family criterion and report power within
+the declared width. That is a statement about these four procedures under these two
+nulls on this corpus at this tolerance, and nothing more; in particular it says
+nothing about dependence between studies.
 
 ## What the numbers say
 
-**Under the complete null the published procedures hold their rates.** Mean per-test
-rejection at p <= 0.05, over 1200 replicates per scenario:
+**Under the complete null the per-test rates are the tests' exact sizes, as
+constructed.** Mean per-test rejection at p <= 0.05, over 1400 replicates per scenario:
 
 | Procedure | Study flip | Experiment flip | Highest single test |
 | --- | --- | --- | --- |
-| fraction_sign_test (6 tests) | 0.0461 | 0.0465 | 0.0583 (facultatively aerobic, experiment flip) |
-| log_ratio_sign_test (15 tests) | 0.0422 | 0.0441 | 0.0567 (arsenate reduction/moderately halophilic) |
-| guild_mcnemar (1 test) | 0.0458 | 0.0400 | 0.0458 |
-| screened_fraction_sign_test (3 of 6) | 0.0924 | 0.0928 | 0.1213 (facultatively aerobic, experiment flip) |
+| fraction_sign_test (6 tests) | 0.0462 | 0.0468 | 0.0585 (facultatively aerobic, experiment flip) |
+| log_ratio_sign_test (15 tests) | 0.0427 | 0.0450 | 0.0550 (facultatively aerobic/sphere shaped, study flip) |
+| guild_mcnemar (1 test) | 0.0421 | 0.0429 | 0.0429 |
+| screened_fraction_sign_test (3 of 6) | 0.0924 | 0.0931 | 0.1222 (facultatively aerobic, experiment flip) |
 
-At the family level, the share of replicates with any q <= 0.05 is 0.035 and 0.053
-for the six-trait BH family, 0.016 and 0.013 for the 15-pair BY family, 0.046 and
-0.040 for the single McNemar, and 0.085 and 0.083 for the screened three.
+The first three rows estimate known constants and are reported as a check on the
+code. The screened row is the informative one: selection breaks the construction.
+
+At the family level, the share of replicates with any q <= 0.05 is 0.040 and 0.051
+for the six-trait BH family, 0.015 and 0.012 for the 15-pair BY family, 0.042 and
+0.043 for the single McNemar, and 0.088 and 0.084 for the screened three.
 Benjamini-Yekutieli is visibly conservative here, as its arbitrary-dependence
 guarantee implies: it spends power to be safe under the dependence between
 overlapping ratios, and the measured design effect of 1.62 is that dependence.
 
 The tests are discrete, so the attainable p-values are a finite set, and the smallest
 p *observed* is a different quantity from the resolution the test can *attain*. Both
-are reported per label. Under the study flip the smallest observed null p is 2.4e-04
-for the fraction family, 4.3e-05 for the ratios and 4.7e-04 for the McNemar; at the
+are reported per label. Under the study flip the smallest observed null p is 2.1e-04
+for the fraction family, 4.3e-05 for the ratios and 2.7e-04 for the McNemar; at the
 median scored unit count the two attainable two-sided p-values straddling 0.05 are
 0.0460 and 0.0540 for the fraction family, so the decision at 0.05 is about 0.008
 coarse. Uniformity of p is neither expected nor required.
@@ -212,12 +250,16 @@ false-discovery proportion of 0.038 to 0.055 is simply its null rate, which conf
 that the injection no longer leaks into it.
 
 **Selecting traits on the data and testing the selection inflates the error rate.**
-The screened procedure rejects a true null 0.092 of the time per test against a
-nominal 0.05, its family rate is 0.084 against a claimed 0.05, and its
+The screened procedure rejects a true null 0.093 of the time per test against a
+nominal 0.05, its family rate is 0.086 against a claimed 0.05, and its
 false-discovery proportion under an injected signal reaches 0.104. The six Table 1
-traits were selected on this corpus by the composition arm's criteria over hundreds of
-traits, so the published q-values for those six are not post-selection valid, and the
-measured inflation here is a lower bound on the cost. This is the concrete statistical
+traits were selected on this same corpus from hundreds of traits - by the composition
+arm's paired contrast at q <= 0.001, according to the selection record on
+`clustered-heatmap-generation` (`six-shared-traits/README.md`); `trait_screen.py` on
+`main` describes them as the intersection of the composition and enrichment arms'
+significant sets, and which account is right is open on #363. Either way the
+published q-values for those six are not post-selection valid, and the measured
+inflation here illustrates the cost without bounding it. This is the concrete statistical
 basis for treating the six-trait results as **exploratory** rather than confirmatory,
 and it cannot be repaired by correcting within the six.
 
@@ -252,8 +294,8 @@ independent validation, and none is claimed.
 
 ## Reproducing
 
-`just calibration-report` at the declared budget of 1200 null and 400 power
-replicates, about twenty minutes, on the pinned BugSigDBExports v1.3.1 inputs.
+`just calibration-report` at the declared budget of 1400 null and 400 power
+replicates, about twenty-five minutes, on the pinned BugSigDBExports v1.3.1 inputs.
 `just calibration-report --replicates 5 --power-replicates 5` is the quick pass. It
 reports every judged criterion as `insufficient_budget` and every procedure as
 `not_certified`, because five replicates can neither meet the tolerance bound nor
@@ -261,9 +303,13 @@ show that a procedure exceeds it; it is a smoke test, not a calibration. (The fo
 previously, `just calibration-report -- --replicates 5`, fails: `just` forwards the
 literal `--` and argparse rejects it.)
 
-`tests/test_calibration.py` holds the deterministic CI-sized checks. Each was
-mutation-tested - the production code was broken in the exact way the test is meant
-to catch, and the test was confirmed to fail before the code was restored. They
+`tests/test_calibration.py` holds the deterministic CI-sized checks. The #240 review
+found five mutations that left the whole suite passing - selecting the least extreme
+traits, reporting the raw p instead of the q-value, pooling only the study-flip null,
+dropping the c/(c-1) factor, and changing a `<=` to `<` - so "each test was
+mutation-tested" was not true of the suite as a whole (#362). Those five, and every
+other `<=` on a p or q threshold, now each fail at least one test; that set of
+mutations is what has been checked, not every possible defect. The tests
 assert that the resampler relabels whole units and keeps the corpus paired; that the
 injection leaves every non-injected trait's study contrast identical to the bit; that
 the effective lift is reported rather than the nominal one; that the amended
@@ -277,7 +323,7 @@ that the exported overall status keeps every failed criterion visible; that an
 end-to-end quick run certifies nothing; that a replicate stream is
 addressable on its own; and that the shared artefact matches the scenario it names.
 
-The run that produced the numbers above: code commit `da8e1c1`; seed 182; 1200 + 1200 + 400 + 400 + 400 +
+The run that produced the numbers above: code commit `8ec18b1`; seed 182; 1400 + 1400 + 400 + 400 + 400 +
 400 completed replicates; BugSigDB vintage `2026-04-24_00:41_UTC`;
 `study_trait_profiles_wide.tsv` sha256 `6e70724e...92c6a73`; `experiments.tsv` sha256
 `403afea9...f30ad230`; `full_dump.csv` sha256 `af84bfca...0fdd5788`; corpus 4,670
