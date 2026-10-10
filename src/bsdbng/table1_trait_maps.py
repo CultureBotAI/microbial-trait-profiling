@@ -124,6 +124,7 @@ class MissingConditions:
     left_out_of_panel: tuple[str, ...] = ()
     # The panel names the pooled Other row itself, and it is not drawn.
     other_not_drawn: bool = False
+    dropped_with_body_sites: tuple[str, ...] = ()
 
 
 def missing_conditions(
@@ -134,18 +135,21 @@ def missing_conditions(
     blank_conditions: Collection[str] = (),
     pooled_conditions: Collection[str] = (),
     combined_conditions: Collection[str] = (),
+    site_dropped_conditions: Collection[str] = (),
 ) -> MissingConditions:
     """Split undrawn panel conditions by why they have no row of their own.
 
     A requested condition can be undrawn because the export does not hold it,
-    because it is held and every cell fell below the min-studies threshold so the
-    row was dropped as blank, because the top-N cut never selected it, because it
+    because study-count masking and no-signal display settings leave its row
+    blank, because its visible cells belonged to excluded body-site blocks,
+    because the top-N cut never selected it, because it
     was assigned to the pooled Other row, or because the combined figure draws it
     but the panel's own cut does not. Testing
     membership of the drawn conditions alone cannot tell these apart, since that
     set is already the cut one — and naming the wrong cause states something
     false about the data. `blank_conditions` is the matrix's own record of rows it
-    dropped as entirely blank, so the second case is read from the build rather
+    dropped as entirely blank, while ``site_dropped_conditions`` records rows
+    lost with their body-site blocks. These causes are read from the build rather
     than guessed at. ``pooled_conditions`` lists actual Other membership from the
     full matrix build; the presence of an Other row alone cannot establish it.
     ``drawn_conditions`` belongs to the figure being annotated, which may omit
@@ -162,6 +166,7 @@ def missing_conditions(
     blank = set(blank_conditions)
     pooled = set(pooled_conditions)
     combined = set(combined_conditions)
+    site_dropped = set(site_dropped_conditions)
     requested = tuple(dict.fromkeys(requested))
     held = [name for name in requested if name in corpus_conditions and name not in drawn]
     left_out = tuple(name for name in held if name in combined)
@@ -171,12 +176,23 @@ def missing_conditions(
         absent_from_corpus=tuple(
             name for name in requested if name not in corpus_conditions and name != OTHER_LABEL
         ),
-        blank_after_masking=tuple(name for name in held if name in blank and name not in pooled),
-        cut_by_display=tuple(name for name in held if name not in blank and name not in pooled),
+        blank_after_masking=tuple(
+            name
+            for name in held
+            if name in blank and name not in pooled and name not in site_dropped
+        ),
+        cut_by_display=tuple(
+            name
+            for name in held
+            if name not in blank and name not in pooled and name not in site_dropped
+        ),
         pooled_in_other=pooled_missing if OTHER_LABEL in drawn else (),
         pooled_not_drawn=pooled_missing if OTHER_LABEL not in drawn else (),
         left_out_of_panel=left_out,
         other_not_drawn=OTHER_LABEL in requested and OTHER_LABEL not in drawn,
+        dropped_with_body_sites=tuple(
+            name for name in held if name in site_dropped and name not in pooled
+        ),
     )
 
 
@@ -192,9 +208,15 @@ def missing_condition_note(
         )
     if missing.blank_after_masking:
         parts.append(
-            "Sampled in this export, but every cell is backed by fewer than "
-            f"{min_studies} studies, so the row is blank and not drawn: "
+            "Sampled in this export, but blank after study-count masking "
+            f"(minimum {min_studies} studies) and no-signal display settings, so not drawn: "
             f"{', '.join(missing.blank_after_masking)}."
+        )
+    if missing.dropped_with_body_sites:
+        parts.append(
+            "Sampled in this export, but its visible cells were in body-site blocks "
+            "excluded from this figure, so not drawn: "
+            f"{', '.join(missing.dropped_with_body_sites)}."
         )
     if missing.cut_by_display:
         parts.append(
@@ -708,6 +730,12 @@ def main() -> int:
             f"conditions dropped as entirely blank: {len(matrix.dropped_empty_conditions)} "
             f"({', '.join(sorted(matrix.dropped_empty_conditions))})"
         )
+    if matrix.dropped_site_conditions:
+        print(
+            "conditions dropped with excluded body-site blocks: "
+            f"{len(matrix.dropped_site_conditions)} "
+            f"({', '.join(sorted(matrix.dropped_site_conditions))})"
+        )
 
     corpus_conditions = {profile.condition for profile in profiles if profile.condition}
     pooled_conditions = {
@@ -778,6 +806,7 @@ def main() -> int:
             blank_conditions=matrix.dropped_empty_conditions,
             pooled_conditions=pooled_conditions,
             combined_conditions=matrix.conditions,
+            site_dropped_conditions=matrix.dropped_site_conditions,
         )
         note = missing_condition_note(
             missing, max_conditions=args.max_conditions, min_studies=args.min_studies
@@ -789,8 +818,14 @@ def main() -> int:
             )
         if missing.blank_after_masking:
             print(
-                f"focus panel {panel.slug}: sampled but blank below "
-                f"{args.min_studies} studies: {', '.join(missing.blank_after_masking)}"
+                f"focus panel {panel.slug}: blank after study-count masking "
+                f"(minimum {args.min_studies} studies) and no-signal display settings: "
+                f"{', '.join(missing.blank_after_masking)}"
+            )
+        if missing.dropped_with_body_sites:
+            print(
+                f"focus panel {panel.slug}: body-site blocks excluded, so not drawn: "
+                f"{', '.join(missing.dropped_with_body_sites)}"
             )
         if missing.cut_by_display:
             print(
