@@ -40,7 +40,7 @@ def _validate_int(val: Any, name: str) -> int:
 def _validate_p_values(p_values: Sequence[float] | np.ndarray) -> np.ndarray:
     """Validate that p-values are numeric and in [0, 1]."""
     for v in p_values:
-        if isinstance(v, (str, bool)):
+        if isinstance(v, str | bool):
             raise TypeError("p-values must be numeric")
     p_arr = np.asarray(p_values, dtype=float)
     if not np.all(np.isfinite(p_arr)):
