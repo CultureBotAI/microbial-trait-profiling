@@ -7,20 +7,30 @@ from scipy.stats import binomtest, false_discovery_control
 
 from bsdbng import table1_trait_maps
 from bsdbng.guild_maps import (
+    COLORBAR_TITLE_CHARS,
+    COLORBAR_TOP_TICK_SHARE,
+    COLUMN_MARK_GLYPH,
+    MARK_STYLES,
     OTHER_LABEL,
     SIGN_TOLERANCE,
+    EvidenceMarks,
     GuildMatrix,
+    body_site_panels_figure,
     build_matrix,
+    condition_body_site_figure,
     subset_matrix,
-    write_body_site_panels,
 )
 from bsdbng.table1_trait_maps import (
     TRAIT_ORDER,
+    FocusPanel,
     MissingConditions,
+    cell_display_status,
     compute_direction_shifts,
+    evidence_marks,
     missing_condition_note,
     missing_conditions,
     trait_colorscale,
+    uncovered_conditions,
 )
 from bsdbng.trait_guilds import (
     TABLE1_TRAIT_COLORS,
@@ -30,6 +40,7 @@ from bsdbng.trait_guilds import (
     column_term_id,
     load_profiles,
 )
+from bsdbng.trait_significance import CELL_COMPOSITION, SUPPORT, build_overlay
 
 # Two of the six traits reach the profile matrix behind a METPO qualifier, so the
 # fixture uses the qualified spelling to prove the suffix lookup is what resolves
@@ -237,9 +248,7 @@ def test_contrast_correlation_is_computed_across_studies(corpus: tuple[Path, Pat
     assert not [k for k in result.spearman if "sphere_shaped" in k]
 
 
-def test_panel_figure_rejects_a_body_site_it_cannot_draw(
-    tmp_path: Path, corpus: tuple[Path, Path]
-) -> None:
+def test_panel_figure_rejects_a_body_site_it_cannot_draw(corpus: tuple[Path, Path]) -> None:
     """Naming an absent site would otherwise render a silently empty panel."""
     profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
     matrix = build_matrix(
@@ -251,13 +260,7 @@ def test_panel_figure_rejects_a_body_site_it_cannot_draw(
     )
 
     with pytest.raises(ValueError, match="Nowhere"):
-        write_body_site_panels(
-            matrix,
-            tmp_path / "panels.png",
-            None,
-            sites=["Nowhere"],
-            guild_order=TRAIT_ORDER,
-        )
+        body_site_panels_figure(matrix, None, sites=["Nowhere"], guild_order=TRAIT_ORDER)
 
 
 def _paired_profile(
@@ -389,6 +392,235 @@ def test_no_note_when_every_requested_condition_is_drawn() -> None:
     )
 
 
+CellMarks = dict[tuple[str, str, str, str], frozenset[str]]
+SCALES: dict[str, object] = {trait: trait_colorscale(trait) for trait in TRAIT_ORDER}
+
+
+def _matrix(
+    corpus: tuple[Path, Path], *, max_conditions: int = 10, min_studies: int = 1
+) -> tuple[list[Profile], GuildMatrix]:
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    matrix = build_matrix(
+        profiles,
+        max_conditions=max_conditions,
+        max_body_sites=10,
+        min_studies=min_studies,
+        guild_order=TRAIT_ORDER,
+        include_other_conditions=False,
+        mark_no_signal=False,
+    )
+    return profiles, matrix
+
+
+def _evidence(cells: CellMarks, columns: dict[tuple[str, str], str] | None = None) -> EvidenceMarks:
+    totals: dict[str, int] = {}
+    for kinds in cells.values():
+        for kind in kinds:
+            totals[kind] = totals.get(kind, 0) + 1
+    return EvidenceMarks(
+        cells=cells,
+        totals=totals,
+        legend={kind: f"<{kind}>" for kind in MARK_STYLES},
+        columns=columns or {},
+        column_legend="<glyph>",
+    )
+
+
+def test_legend_counts_only_the_marks_a_figure_draws(corpus: tuple[Path, Path]) -> None:
+    """#216: a mark on a masked cell is counted as not drawn, never as drawn."""
+    _, matrix = _matrix(corpus, min_studies=2)
+    drawn_cell = ("Colorectal cancer", "Feces", "facultatively_aerobic", "inc")
+    masked_cell = ("Asthma", "Feces", "facultatively_aerobic", "inc")
+    assert cell_display_status(matrix, drawn_cell) == "drawn"
+    assert cell_display_status(matrix, masked_cell) == "condition_not_drawn"
+    evidence = _evidence({drawn_cell: frozenset({SUPPORT}), masked_cell: frozenset({SUPPORT})})
+
+    figure = condition_body_site_figure(
+        matrix, None, guild_order=TRAIT_ORDER, colorscales=SCALES, evidence=evidence
+    )
+    outlines = [shape for shape in figure.layout.shapes if shape.line.color == "#111111"]
+    assert len(outlines) == 1
+    subtitle = str(figure.layout.title.text)
+    assert "Drawn here: 1 cells. Across the corpus 2 cells meet the rule" in subtitle
+
+
+def test_every_mark_type_present_is_explained_even_when_none_is_drawn(
+    corpus: tuple[Path, Path],
+) -> None:
+    _, matrix = _matrix(corpus, min_studies=2)
+    undrawn = ("Asthma", "Feces", "coccus_shaped", "dec")
+    evidence = _evidence({undrawn: frozenset({CELL_COMPOSITION})})
+    subtitle = str(
+        condition_body_site_figure(
+            matrix, None, guild_order=TRAIT_ORDER, colorscales=SCALES, evidence=evidence
+        ).layout.title.text
+    )
+    assert f"<{CELL_COMPOSITION}> Drawn here: 0 cells" in subtitle
+    assert f"<{SUPPORT}>" not in subtitle
+
+
+def test_two_evidence_types_on_one_cell_are_both_visible(corpus: tuple[Path, Path]) -> None:
+    _, matrix = _matrix(corpus)
+    cell = ("Colorectal cancer", "Feces", "coccus_shaped", "inc")
+    figure = condition_body_site_figure(
+        matrix,
+        None,
+        guild_order=TRAIT_ORDER,
+        colorscales=SCALES,
+        evidence=_evidence({cell: frozenset({SUPPORT, CELL_COMPOSITION})}),
+    )
+    outlines = [shape for shape in figure.layout.shapes if shape.line.color == "#111111"]
+    assert sorted(shape.line.dash for shape in outlines) == ["dot", "solid"]
+    widths = sorted(shape.x1 - shape.x0 for shape in outlines)
+    assert widths[0] < widths[1]
+
+
+def test_an_unknown_mark_type_is_an_error_not_a_default_style(corpus: tuple[Path, Path]) -> None:
+    _, matrix = _matrix(corpus)
+    cell = ("Colorectal cancer", "Feces", "coccus_shaped", "inc")
+    with pytest.raises(KeyError):
+        condition_body_site_figure(
+            matrix,
+            None,
+            guild_order=TRAIT_ORDER,
+            colorscales=SCALES,
+            evidence=_evidence({cell: frozenset({"both"})}),
+        )
+
+
+def test_a_site_glyph_is_drawn_once_per_trait_over_both_columns(corpus: tuple[Path, Path]) -> None:
+    """#217: the glyph is one statement about the trait, centred on its two columns."""
+    _, matrix = _matrix(corpus)
+    evidence = _evidence({}, columns={("Feces", "coccus_shaped"): "decreased"})
+    for figure in (
+        condition_body_site_figure(
+            matrix, None, guild_order=TRAIT_ORDER, colorscales=SCALES, evidence=evidence
+        ),
+        body_site_panels_figure(
+            matrix,
+            None,
+            sites=["Feces"],
+            guild_order=TRAIT_ORDER,
+            colorscales=SCALES,
+            evidence=evidence,
+        ),
+    ):
+        glyphs = [a for a in figure.layout.annotations if a.text in COLUMN_MARK_GLYPH.values()]
+        assert len(glyphs) == 1
+        assert glyphs[0].text == COLUMN_MARK_GLYPH["decreased"]
+        # coccus shaped is the third trait: columns 4 and 5 within the block.
+        assert glyphs[0].x == 4.5
+        # Not rotated with the column labels.
+        assert glyphs[0].textangle is None
+
+
+def test_every_trait_keeps_its_colour_bar_when_a_panel_lacks_it(corpus: tuple[Path, Path]) -> None:
+    """#217: the arsenate reduction bar vanished when its trace had no cell in the last panel."""
+    _, matrix = _matrix(corpus)
+    figure = body_site_panels_figure(
+        matrix, None, sites=["Feces"], guild_order=TRAIT_ORDER, colorscales=SCALES
+    )
+    bars = [trace for trace in figure.data if trace.showscale]
+    assert len(bars) == len(TRAIT_ORDER)
+    positions = [bar.colorbar.x for bar in bars]
+    assert len(set(positions)) == len(TRAIT_ORDER)
+    for bar in bars:
+        assert all(
+            len(line) <= COLORBAR_TITLE_CHARS for line in bar.colorbar.title.text.split("<br>")
+        )
+        assert bar.colorbar.tickvals[-1] <= COLORBAR_TOP_TICK_SHARE * bar.zmax
+
+
+def test_a_short_cut_is_as_tall_as_its_rows(corpus: tuple[Path, Path]) -> None:
+    _, matrix = _matrix(corpus)
+    cut = subset_matrix(matrix, conditions=["Asthma"])
+    figure = body_site_panels_figure(
+        cut, None, sites=cut.body_sites, guild_order=TRAIT_ORDER, colorscales=SCALES
+    )
+    rows = {label for trace in figure.data if not trace.showscale for label in trace.y}
+    assert rows == {"Asthma"}
+
+
+def test_a_cut_records_only_requested_conditions_as_dropped(corpus: tuple[Path, Path]) -> None:
+    """#214: a condition that was never asked for is not reported as dropped."""
+    _, matrix = _matrix(corpus)
+    by_name = subset_matrix(matrix, conditions=["Asthma", "Nowhere"])
+    assert by_name.dropped_empty_conditions == ["Nowhere"]
+    by_site = subset_matrix(matrix, sites=["Feces"])
+    assert by_site.dropped_empty_conditions == []
+
+
+def test_uncovered_conditions_are_reported(corpus: tuple[Path, Path]) -> None:
+    _, matrix = _matrix(corpus)
+    panels = (FocusPanel(slug="one", subtitle="one", conditions=("Asthma",)),)
+    assert uncovered_conditions(matrix, panels) == ["Colorectal cancer"]
+    everything = (FocusPanel(slug="all", subtitle="all", sites=("Feces",)),)
+    assert uncovered_conditions(matrix, everything) == []
+    # A panel naming a site the matrix does not draw is skipped by the CLI (#324),
+    # so it covers nothing rather than raising.
+    absent = (FocusPanel(slug="gone", subtitle="gone", sites=("Feces", "Nowhere")),)
+    assert uncovered_conditions(matrix, absent) == list(matrix.conditions)
+
+
+def test_evidence_does_not_depend_on_the_display_cut(corpus: tuple[Path, Path]) -> None:
+    """#176: narrowing the drawn conditions changes where marks land, not what is tested."""
+    profiles, wide = _matrix(corpus, max_conditions=10)
+    _, narrow = _matrix(corpus, max_conditions=1)
+    assert set(narrow.conditions) < set(wide.conditions)
+    overlay = build_overlay(profiles, TABLE1_TRAITS, corpus[0])
+    evidence = evidence_marks(overlay, overlay.enrichment.tests_performed)
+    # The overlay takes no display input at all; the marks and their totals are
+    # the same object whichever matrix they are drawn on.
+    subtitles = [
+        str(
+            condition_body_site_figure(
+                matrix, None, guild_order=TRAIT_ORDER, colorscales=SCALES, evidence=evidence
+            ).layout.title.text
+        )
+        for matrix in (wide, narrow)
+    ]
+    for kind in evidence.totals:
+        total = evidence.totals[kind]
+        assert all(f"Across the corpus {total} cells" in text for text in subtitles)
+    dropped = next(c for c in wide.conditions if c not in narrow.conditions)
+    cell = (dropped, "Feces", "facultatively_aerobic", "inc")
+    assert cell_display_status(narrow, cell) == "condition_not_drawn"
+
+
+def test_the_pooled_other_block_is_never_a_match() -> None:
+    matrix = GuildMatrix(
+        conditions=["A"],
+        body_sites=[OTHER_LABEL],
+        columns=[f"{OTHER_LABEL}|coccus_shaped_inc"],
+        values=[[0.1]],
+        study_counts=[[5]],
+        row_clusters=[1],
+        pooled=[],
+        dropped_empty_conditions=[],
+        dropped_body_sites=[],
+        sampled_no_signal=[[False]],
+    )
+    assert (
+        cell_display_status(matrix, ("A", OTHER_LABEL, "coccus_shaped", "inc")) == "site_not_drawn"
+    )
+
+
+@pytest.mark.integration
+def test_a_one_row_cut_renders(tmp_path: Path, corpus: tuple[Path, Path]) -> None:
+    """The padding rows existed because short cuts were believed not to render."""
+    from bsdbng.guild_maps import save_figure
+
+    _, matrix = _matrix(corpus)
+    cut = subset_matrix(matrix, conditions=["Asthma"])
+    path = save_figure(
+        body_site_panels_figure(
+            cut, None, sites=cut.body_sites, guild_order=TRAIT_ORDER, colorscales=SCALES
+        ),
+        tmp_path / "one_row.png",
+    )
+    assert path.stat().st_size > 0
+
+
 def test_repeated_requests_preserve_first_occurrence_order_in_every_category() -> None:
     missing = missing_conditions(
         ("B", "A", "B", "Blank", "Blank", "Absent", "Absent", "Pooled", "Pooled"),
@@ -503,8 +735,11 @@ def test_cli_focus_note_uses_actual_pooling_state(
         notes.append(note)
         return tmp_path / "panel.png"
 
-    monkeypatch.setattr(table1_trait_maps, "write_body_site_panels", record_panel)
-    monkeypatch.setattr(table1_trait_maps, "write_figure", lambda *_a, **_kw: tmp_path / "all.png")
+    # Panels are built by body_site_panels_figure and written by save_figure, so
+    # the note is read where the figure is built and nothing reaches the disk.
+    monkeypatch.setattr(table1_trait_maps, "body_site_panels_figure", record_panel)
+    monkeypatch.setattr(table1_trait_maps, "condition_body_site_figure", lambda *_a, **_kw: None)
+    monkeypatch.setattr(table1_trait_maps, "save_figure", lambda _fig, path, *_a, **_kw: path)
     monkeypatch.setattr(
         table1_trait_maps, "write_shift_figure", lambda *_a, **_kw: tmp_path / "shift.png"
     )
@@ -587,8 +822,11 @@ def _run_cli_with_panel(
         notes.append(note)
         return tmp_path / "panel.png"
 
-    monkeypatch.setattr(table1_trait_maps, "write_body_site_panels", record_panel)
-    monkeypatch.setattr(table1_trait_maps, "write_figure", lambda *_a, **_kw: tmp_path / "all.png")
+    # Panels are built by body_site_panels_figure and written by save_figure, so
+    # the note is read where the figure is built and nothing reaches the disk.
+    monkeypatch.setattr(table1_trait_maps, "body_site_panels_figure", record_panel)
+    monkeypatch.setattr(table1_trait_maps, "condition_body_site_figure", lambda *_a, **_kw: None)
+    monkeypatch.setattr(table1_trait_maps, "save_figure", lambda _fig, path, *_a, **_kw: path)
     monkeypatch.setattr(
         table1_trait_maps, "write_shift_figure", lambda *_a, **_kw: tmp_path / "shift.png"
     )
@@ -677,12 +915,14 @@ def _run_cli_with_shipped_panels(
     """Run main() with the shipped FOCUS_PANELS; return the panel files drawn."""
     drawn: list[str] = []
 
-    def record_panel(_matrix: object, path: Path, *_args: object, **_kwargs: object) -> Path:
-        drawn.append(path.name)
+    def record_save(_figure: object, path: Path, *_args: object, **_kwargs: object) -> Path:
+        if "_focus_" in path.name:
+            drawn.append(path.name)
         return path
 
-    monkeypatch.setattr(table1_trait_maps, "write_body_site_panels", record_panel)
-    monkeypatch.setattr(table1_trait_maps, "write_figure", lambda *_a, **_kw: tmp_path / "all.png")
+    monkeypatch.setattr(table1_trait_maps, "body_site_panels_figure", lambda *_a, **_kw: None)
+    monkeypatch.setattr(table1_trait_maps, "condition_body_site_figure", lambda *_a, **_kw: None)
+    monkeypatch.setattr(table1_trait_maps, "save_figure", record_save)
     monkeypatch.setattr(
         table1_trait_maps, "write_shift_figure", lambda *_a, **_kw: tmp_path / "shift.png"
     )

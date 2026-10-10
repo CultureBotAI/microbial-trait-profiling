@@ -35,7 +35,10 @@ growth-medium columns carrying a mediadive.medium marker were removed from the
 trait space before any total was computed. Of 5,829 profile rows read, 1,159
 experiments were dropped as unpaired; 2,290 of the trait columns were MediaDive,
 leaving 317 traits, 2,335 experiments, 4,670 profiles, and 959 studies — the
-same corpus as the composition arm's 2,335 pairs.
+same corpus as the composition arm's 2,335 pairs. A profile matrix built from the
+same pinned export without the upstream human filter (7,329 rows, 2,333 MediaDive
+columns) reduces to exactly this corpus after the loader's filters, and the
+evidence outputs below record the SHA-256 of whichever matrix was used.
 
 ## Resolving the six traits to columns
 
@@ -117,51 +120,47 @@ range a single extreme cell was flattening the rest of the distribution to one
 pale tint, so ramps are cut at the 98th percentile of that trait's observed cells
 and cells above the cut saturate at the top colour.
 
-## Second set of figures: four cuts of the same matrix
+## Second set of figures: four overlapping cuts of the same matrix
 
 Sixty columns across one figure leaves each column too narrow to label legibly,
 and the Feces block, which carries 43 of the 51 drawn conditions, sets the eye's
 scale so that every other block reads as empty beside it. The combined heatmap
 therefore answers what was measured where rather than showing a result. The same
-matrix is cut into four smaller heatmaps, each holding conditions that were
-sampled in the same places:
+matrix is redrawn as four smaller heatmaps. They are **overlapping views, not a
+partition** of the combined figure:
 
 - `focus_feces`, the 43 conditions drawn in Feces, on that block alone.
-- `focus_feces_other`, the same conditions plus those drawn only in the pooled
-  Other block, 49 in total, over the two blocks. That is 49 of the combined
-  figure's 51 conditions: cervical glandular intraepithelial neoplasia and oral
-  squamous cell carcinoma carry no Feces or Other cell, so neither appears here.
+- `focus_feces_other`, the same 43 conditions plus those drawn only in the pooled
+  Other block, 49 in total, over the two blocks. `focus_feces` is contained in it.
 - `focus_cervical`, cervical glandular intraepithelial neoplasia and human
   papilloma virus infection, over Uterine cervix, Vagina, and Other.
-- `focus_oral`, asked for as the cluster of gingivitis, periodontitis, smoking
-  behavior, and rheumatoid arthritis. On this corpus it draws two of those four.
-  Gingivitis and periodontitis are both in the pinned v1.3.1 export — 2 and 7
-  human paired studies respectively, 9 studies in all under those exact condition
-  labels — but neither reaches the drawn matrix, for two different reasons given
-  below. The figure names each with its own reason rather than drawing a smaller
-  group under the same title.
+- `focus_oral`, the conditions requested as an oral cluster (gingivitis,
+  periodontitis, smoking behavior, rheumatoid arthritis) together with oral
+  squamous cell carcinoma, over Feces, Saliva, and Other. On this corpus it draws
+  three conditions: rheumatoid arthritis, smoking behavior, and oral squamous cell
+  carcinoma.
 
-That last cut is worth stating plainly, because it was proposed from a figure
-built on the unpinned devel export. There, gingivitis, periodontitis, smoking
-behavior, and rheumatoid arthritis clustered together, and rheumatoid arthritis
-grouping with three oral conditions rather than with the other systemic diseases
-was the observation the cut was meant to show. That observation cannot be checked
-here, but the reason is the display rules, not the vintage, and the two conditions
-fail different rules:
+The Other column block appears in three of the four cuts and Feces in three. Oral
+squamous cell carcinoma, the one drawn condition sampled only in an oral site, was
+in no cut until it was added to `focus_oral`; the recipe now checks on every run
+that each drawn condition appears in at least one cut and prints any that do not.
+On this run every drawn condition is covered.
+
+Gingivitis and periodontitis are both in the pinned v1.3.1 export (2 and 7 human
+paired studies respectively) but neither reaches the drawn matrix, and the figure
+names each with its own reason rather than drawing a smaller group under the same
+title. The cut was proposed from a figure built on the unpinned devel export, where
+the four requested conditions clustered together; that observation cannot be
+checked here, and the reason is the display rules, not the vintage:
 
 - **Periodontitis is cut by width.** Of 451 distinct conditions it ranks 62nd on
-  20 profiles — the same profile count as the 60th-ranked condition, losing its
+  20 profiles, the same profile count as the 60th-ranked condition, losing its
   place only to the deterministic alphabetical tiebreak in `_top_labels`. Raising
-  `--max-conditions` to 62 draws it, which is measured, not inferred.
+  `--max-conditions` to 62 draws it.
 - **Gingivitis is cut by support, so no width draws it.** It ranks 212nd on 4
   profiles, and its two studies sit in different body sites, leaving at most one
   study per cell against `--min-studies 3`. Widening the cut to 250 or beyond
-  admits the row and then drops it again as entirely blank. Only lowering
-  `--min-studies`, which would weaken every other cell in the figure, would draw
-  it.
-
-So drawing all four together is not a matter of widening the cut. It needs a
-corpus where gingivitis carries at least three studies in one body site.
+  admits the row and then drops it again as entirely blank.
 
 With `--include-other-conditions`, conditions outside the width cut are
 assigned to a pooled Other row. The panel note uses the build's recorded
@@ -177,15 +176,18 @@ Each cut fixes one axis and derives the other from the data: naming conditions
 keeps the body sites those conditions were actually drawn in, naming body sites
 keeps the conditions drawn in them, and rows or column blocks left carrying no
 value are dropped either way. So a cut never asserts that a condition was studied
-in a site where it was not, and never renders a blank band.
+in a site where it was not, and never renders a blank band. A cut records as
+dropped only the conditions it was asked for and could not draw.
 
-Every cell is the same size in every figure, the combined one included. A cut
-holding only a few conditions is padded with blank rows rather than stretched to
-fill the panel, so a cell in the two-row oral cut is the same square as a cell in
-the 43-row Feces cut and the two can be compared by eye. The six colour bars lie
-flat in a band under each cut rather than stacked down its side: stacked, their
-height would set the figure's height, and a two-row cut would have to be padded
-out with empty rows to give them room or let them collapse into hairlines.
+Every cell is the same size in every figure, the combined one included, and a cut
+is exactly as tall as its rows. An earlier version padded short cuts with blank
+rows on the belief that the renderer failed below five rows; a one-row cut
+renders (checked by an integration test), so the padding was removed. The six
+colour bars sit side by side in the right margin, each drawn from its own
+invisible trace so a bar cannot disappear when its trait has no drawn cell in a
+panel, which is how an earlier cut lost its arsenate reduction bar. Each bar is
+labelled at 0 and at one round value no higher than 85 per cent of its range, so
+the top label never rises into the bar's title.
 
 The cuts are a redraw and not a re-analysis. They use the same cell values, the
 same masking, the same row order and cluster ids from the single clustering of
@@ -296,3 +298,151 @@ from an unpinned devel-branch export; those are superseded.
 
 The pipeline code and this description were drafted with the assistance of a
 coding agent (Claude Code) and reviewed by the author.
+
+## Evidence marks on the heatmaps
+
+The heatmap shows how large a trait's annotation share is. At Marcin Joachimiak's
+request (issue #172) three further kinds of evidence are drawn on top of it. They
+answer different questions at different levels, and they are kept apart in every
+table, legend and sentence below (issue #177). None of them is a calibrated test
+of an individual heatmap cell, and the six traits were selected using this same
+corpus, so no mark confirms them independently. All three are computed by
+`src/bsdbng/trait_significance.py` on the analysed corpus (human, paired
+experiments) **before** anything is drawn: the heatmap's top-60 condition cut,
+top-8 body-site cut, masking, and pooled Other groups decide only where a result is
+shown, never what is tested or which results are corrected together (issue #176).
+Every test uses exact source condition and body-site labels, so a pooled Other row
+or column is never marked.
+
+The evidence is written to `table1_traits_cell_support.tsv` (support per exact
+condition, body site, trait and direction),
+`table1_traits_composition_contrasts.tsv` (the six traits' composition results),
+`table1_traits_composition_screen.tsv` (every composition test, so each correction
+family can be checked in full), and `table1_traits_evidence_provenance.json`
+(input hashes, rules, thresholds, families, and the departures listed below). Each
+row carries a `display_status` saying whether and why it is or is not drawn in the
+combined figure.
+
+### Aggregated profile-level support (solid outline)
+
+The profile-level test is the enrichment arm's (Analysis B, Ilyas Abdolcader,
+`scripts/trait_enrichment.py` at `c75744a`): for each profile and each trait with a
+positive count, a one-tailed hypergeometric test of whether that profile's trait
+annotations are over-represented against the pool of every profile in the analysed
+corpus with a positive total, Benjamini-Hochberg across all 556,516 profile-trait
+tests at once, and a call at q <= 0.001 with fold >= 1.5. 4,517 of the 4,670
+profiles enter; the other 153 carry no retained annotation. Re-running the test
+reproduces that arm's committed per-trait counts exactly (860, 660, 864, 515, 267
+and 262 enriched profiles for the six traits), which
+`tests/test_trait_significance.py::test_reproduces_the_enrichment_arm_committed_counts`
+checks against the pinned commit. The arm has no depletion test, so no depletion
+call is made; an earlier draft carried a fold <= 0.5 branch that could never fire
+and was removed. The pool counts trait-annotation assertions rather than taxa, so
+"over-represented" is relative to that urn and inherits the sampling-unit problem
+in issue #131.
+
+Those profile calls are summarised per cell by a **descriptive support rule**, not
+a statistical test: a cell is outlined when at least two studies contribute an
+eligible profile (positive total) and a strict majority of them have at least one
+enriched profile there. No cell-level p- or q-value exists and none is reported.
+The rule gives a study with several experiments more chances to supply an enriched
+profile than a study with one, so an alternative rule is reported beside it for
+every cell: a study counts only when a strict majority of its own eligible profiles
+in the cell are enriched.
+
+Of 8,508 exact condition-by-site-by-trait-by-direction cells, 89 meet the rule; 31
+meet the alternative rule, so 58 depend on the any-profile aggregation. 37 of the
+89 are drawn in the combined figure. The other 52 are not drawn: 24 are conditions
+outside the top-60 cut, 24 are in body sites outside the drawn blocks (Oral cavity,
+Skin of body, Stomach, Tongue and others), and 4 are masked for having fewer than
+three studies. Each figure's legend reports how many outlines it draws against the
+89. Of the 37 drawn outlines only 6 also meet the alternative rule, and most rest on
+two of three or three of four studies. The outlines should be read as that: small
+study counts under a lenient aggregation.
+
+### Body-site composition contrast (triangle above a trait's columns)
+
+This test is modelled on the composition arm (Analysis A, Jed Kim-Ozaeta,
+`scripts/create_trait_profile_infographic.py` at `3afeecd`). It is a
+reimplementation, not a transcription, and differs from that arm's committed run in
+six stated ways:
+
+| Aspect | Composition arm at `3afeecd` | Here |
+| --- | --- | --- |
+| Sampling unit | each matched experiment pair is one observation | experiment contrasts averaged to one value per unique study, pooling all of its conditions in the site (#133, #176) |
+| Strata | `body_site_group` labels with at least 50 pairs, plus Feces and Feces-excluded | exact source body-site labels with at least 50 eligible pairs; no pooled Other stratum, since that pool is defined by the figure's cut |
+| Denominator | every column, MediaDive growth media included (#174) | non-MediaDive trait columns, as the shared comparison basis specifies |
+| Zero totals | a zero-total profile is scored as share 0 | a pair with a zero total on either side is excluded |
+| Correction family | Benjamini-Hochberg within each stratum over every trait the stratum selects | the same selection (present in 6 to 95 per cent of the stratum's profiles, nonzero variance) and the same per-stratum family; the six-trait family is reported only as a sensitivity column |
+| Cutoff | q-values published without a cutoff | q <= 0.05, chosen here for display |
+
+Within a site, each eligible profile's trait share is scaled per 1,000,
+`log1p`-transformed and z-scored over the site's eligible profiles; each experiment
+contributes its increased-minus-decreased value, these are averaged within study,
+and the study means are tested against zero with a one-sample t-test.
+
+Only Feces (1,411 eligible pairs, 591 studies, 305 conditions, 49 zero-total pairs
+excluded) and Saliva (156 pairs, 65 studies) reach 50 pairs. In Feces all six
+traits pass q <= 0.05 within the site's 310-trait family: moderately halophilic
+(mean contrast +0.275 z, q = 6.4e-08), facultatively aerobic (+0.286, q = 3.9e-07),
+arsenate reduction (+0.244, q = 7.9e-05), coccus shaped (+0.205, q = 6.8e-04),
+cellulose catabolic process (-0.206, q = 8.7e-04) and sphere shaped (+0.172,
+q = 2.5e-03). In Saliva none does (every q = 0.96). An earlier version of this
+test drew its site population from the displayed conditions only, which left it at
+394 fecal studies, and pooled the display's Other block into a stratum of its own;
+both are corrected here.
+
+In the audit's wording: in the retained fecal corpus, the transformed annotation
+contrasts favour the increased signatures for five traits and the decreased
+signatures for cellulose catabolic process. These associations motivate an
+intestinal redox or substrate hypothesis; they do not establish oxygen exposure,
+functional activity or disease causation, and translating all five traits into
+oxygen tolerance is not supported. A result in Saliva that does not pass the
+threshold is not evidence that no effect exists there. A triangle is a statement
+about the whole exact body site and does not test any one condition in the column.
+
+### Condition-by-body-site composition contrast (dotted inner outline)
+
+The same test is run inside each exact condition and body site, using the site's
+trait selection and z-score scale, with one Benjamini-Hochberg family over every
+tested condition, site and trait. 18,152 such tests were run and none passes
+q <= 0.05; for the six traits, 410 cells had the three studies the t-test needs and
+1,800 did not. No dotted outline is therefore drawn on this corpus, and the legend
+describes that mark only when some cell meets it. (An earlier draft reported 413
+testable cells and one survivor over a six-trait family; that count does not
+reproduce.)
+
+### What the marks show, and what they do not
+
+Described cell by cell rather than as mechanisms (audit items P06 to P08):
+
+- Coccus-shaped and facultatively aerobic annotations on the increased side account
+  for 18 of the 37 drawn outlines. COVID-19 in feces carries outlines for
+  facultatively aerobic and coccus shaped (increased) and cellulose catabolic
+  process (decreased), each on 7 or 8 of 13 studies, none of which meets the
+  alternative rule. Diarrhea in feces carries five outlines on three studies each,
+  three of which meet the alternative rule.
+- Rheumatoid arthritis carries coccus shaped and sphere shaped (increased) in feces
+  on 3 of 4 studies, both meeting the alternative rule, and the same two in saliva
+  on 2 of 3, neither meeting it. The two sites share studies, so this is not
+  independent confirmation across sites.
+- Cellulose-associated annotations meet the support rule in increased chronic
+  constipation signatures (8 of 14 studies). Enrichment against a background is
+  not the same estimand as the pooled fecal contrast, and an outline does not show
+  a reversed paired effect. Slow transit is a hypothesis that would need measured
+  transit or substrate data and a within-stratum contrast.
+- Coccus-associated annotations meet the support rule in decreased cervical
+  glandular intraepithelial neoplasia signatures in uterine cervix and vagina.
+  This is not a test of a reversed paired effect or of baseline community
+  morphology, and a gut interpretation does not carry over.
+- Of the 35 drawn condition-site-trait combinations with a supported direction,
+  2 are supported in both directions, which is possible because enrichment against
+  a background can occur on both sides of a pair.
+
+Every mark here concerns annotations linked to taxa in curated signatures. The
+signature direction has not been verified as disease versus control (issue #188),
+and none of these marks measures abundance, activity, exposure, or causation in
+patients (issue #179).
+
+The overlay code and this section were drafted with the assistance of a coding
+agent (Claude Code) and reviewed by the author.
