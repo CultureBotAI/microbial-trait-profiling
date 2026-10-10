@@ -21,14 +21,18 @@ from bsdbng.calibration import (
     Outcome,
     Resample,
     Scenario,
+    _family_bound,
+    _pooled_bound,
     attainable_p_at_alpha,
     calibration_status,
     check_criteria,
     criterion_pass_probability,
+    exact_sign_test_size,
     flip_assignments,
     flip_directions,
     fraction_sign_test,
     inject_effect,
+    largest_passing_count,
     load_protocol,
     pooled_rate,
     replicate_counts,
@@ -575,3 +579,202 @@ def test_a_quick_end_to_end_run_certifies_nothing() -> None:
     status = calibration_status(result.criteria)
     assert all(entry["overall"] != "pass" for entry in status.values()), status
     assert "pass" not in {str(row["verdict"]) for row in result.criteria}
+
+
+# --- #360: the flip makes each exact sign test see its own null -------------
+
+
+def test_the_exact_size_of_the_sign_test_is_known_in_closed_form() -> None:
+    """Six units reject only at 0/6 and 6/6; 710 is the McNemar's discordant count."""
+    assert exact_sign_test_size(6) == pytest.approx(2 / 64)
+    assert exact_sign_test_size(5) == 0.0
+    assert exact_sign_test_size(710) == pytest.approx(0.0466189, abs=1e-6)
+    assert exact_sign_test_size(0) is None
+
+
+def test_the_study_flip_reproduces_the_exact_size_it_cannot_avoid() -> None:
+    """Every scored count is fixed under the flip, so the rate converges on the size."""
+    profiles = _corpus(studies=40)
+    scenario = Scenario(
+        "complete_null_study_flip",
+        "no trait differs",
+        lambda corpus, rng: Resample(flip_directions(corpus, rng, unit="study")),
+    )
+    run = run_replicates(
+        profiles, scenario, 400, seed=SEED, procedures={"fraction_sign_test": fraction_sign_test}
+    )
+    rows = [r for r in summarize(run.runs, scenario, None) if r["label"] != "FAMILY"]
+    for row in rows:
+        size = row["exact_size_at_median_scored"]
+        assert size is not None
+        assert float(str(row["rejection_rate_p"])) == pytest.approx(float(str(size)), abs=0.04)
+    scored = {o.scored for r in run.runs for o in r}
+    unflipped = {o.scored for o in fraction_sign_test(profiles)}
+    assert scored == unflipped
+
+
+def test_per_test_level_is_a_sanity_check_for_the_published_procedures() -> None:
+    """It is reported with its analytic size and kept out of the overall status."""
+    ledger = _null_ledger(round(0.04 * DECLARED_TRIALS), 1, DECLARED_TRIALS)
+    rows = [
+        {
+            "scenario": "complete_null_study_flip",
+            "procedure": "fraction_sign_test",
+            "label": trait,
+            "role": "null",
+            "exact_size_at_median_scored": 0.048,
+        }
+        for trait in TRAITS
+    ]
+    criteria = check_criteria(rows, ledger)
+    per_test = next(
+        r
+        for r in criteria
+        if r["criterion"] == "per_test_level" and r["procedure"] == "fraction_sign_test"
+    )
+    assert per_test["role"] == "sanity_check"
+    assert per_test["analytic_exact_size"] == pytest.approx(0.048)
+    assert "sanity check only" in str(per_test["detail"])
+    verdicts = calibration_status(criteria)["fraction_sign_test"]["criteria"]
+    assert isinstance(verdicts, dict)
+    assert verdicts["per_test_level"] == "pass (sanity check)"
+    # The negative control's per-test row stays judged: selection breaks the construction.
+    screened = next(
+        r
+        for r in criteria
+        if r["criterion"] == "per_test_level" and r["procedure"] == "screened_fraction_sign_test"
+    )
+    assert screened["role"] == "judged"
+
+
+def test_a_failing_sanity_check_still_fails_the_procedure() -> None:
+    criteria = [
+        {
+            "criterion": "per_test_level",
+            "procedure": "p",
+            "verdict": "fail",
+            "role": "sanity_check",
+        },
+        {"criterion": "family_error", "procedure": "p", "verdict": "pass", "role": "judged"},
+        {
+            "criterion": "per_test_level",
+            "procedure": "q",
+            "verdict": "pass",
+            "role": "sanity_check",
+        },
+        {"criterion": "family_error", "procedure": "q", "verdict": "pass", "role": "judged"},
+    ]
+    status = calibration_status(criteria)
+    assert status["p"]["overall"] == "fail"
+    assert status["q"]["overall"] == "pass"
+
+
+# --- #361: the operating characteristic of the rule actually used -----------
+
+
+def test_the_declared_budget_meets_the_requirement_under_the_implemented_rules() -> None:
+    """Exact enumeration, both rules: 2400 trials missed 0.95 (0.925); 2800 meets it."""
+    declared = load_protocol()["criterion_calibration"]
+    required = declared["required_operating_characteristics"]
+    pinned = declared["declared_operating_characteristics_at_2800_trials"]
+    assert DECLARED_TRIALS == 2800
+    for bound in (_pooled_bound, _family_bound):
+        passes = criterion_pass_probability(0.05, DECLARED_TRIALS, 0.065, bound=bound)
+        assert passes >= float(required["pass_probability_at_0.05"])
+        assert passes == pytest.approx(float(pinned["pass_probability_at_0.05"]), abs=1e-4)
+        at_007 = 1.0 - criterion_pass_probability(0.07, DECLARED_TRIALS, 0.065, bound=bound)
+        assert at_007 >= float(required["fail_probability_at_0.07"])
+        assert criterion_pass_probability(0.05, 2400, 0.065, bound=bound) == pytest.approx(
+            0.9247, abs=1e-4
+        )
+
+
+def test_the_operating_characteristic_is_the_rules_own_threshold() -> None:
+    """The enumerated threshold is exactly where the implemented verdict flips."""
+    passing = largest_passing_count(DECLARED_TRIALS, 0.065)
+    at = _null_ledger(passing, 1, DECLARED_TRIALS, procedure="guild_mcnemar")
+    over = _null_ledger(passing + 1, 1, DECLARED_TRIALS, procedure="guild_mcnemar")
+    assert _verdicts([], at)[("per_test_level", "guild_mcnemar")] == "pass"
+    assert _verdicts([], over)[("per_test_level", "guild_mcnemar")] == "fail"
+
+
+# --- #362: pin the declared negative control and the surviving mutants --------
+
+#: Studies shifting up out of ten, per Table 1 trait, in TRAITS order.
+SCREEN_UPS = (10, 0, 8, 6, 5, 3)
+
+
+def _screen_corpus() -> list[Profile]:
+    """Ten studies; trait i shifts up in SCREEN_UPS[i] of them and down in the rest.
+
+    Both sides carry the same total, so each share is exactly SCREEN_UPS[i] / 10.
+    """
+    profiles: list[Profile] = []
+    for study in range(10):
+        inc: dict[str, int] = {}
+        dec: dict[str, int] = {}
+        for trait, ups in zip(TRAITS, SCREEN_UPS, strict=True):
+            up = study < ups
+            inc[trait], dec[trait] = (6, 4) if up else (4, 6)
+        for direction, counts in (("inc", inc), ("dec", dec)):
+            profiles.append(
+                Profile(f"s{study}", f"s{study}-1", direction, "C", "Feces", counts, 1000)
+            )
+    return profiles
+
+
+def test_the_screen_keeps_the_most_extreme_traits_and_corrects_over_them_only() -> None:
+    """Known selection and known q-values: a reversed sort or a raw p would both fail."""
+    outcomes = {o.label: o for o in screened_fraction_sign_test(_screen_corpus())}
+    selected = {label for label, o in outcomes.items() if o.selected}
+    assert selected == {TRAITS[0], TRAITS[1], TRAITS[2]}
+    extreme = 2 / 1024
+    eight_of_ten = 0.109375
+    assert outcomes[TRAITS[0]].p_value == pytest.approx(extreme)
+    assert outcomes[TRAITS[2]].p_value == pytest.approx(eight_of_ten)
+    # BH over the three selected p-values, not the raw p and not over all six.
+    assert outcomes[TRAITS[0]].q_value == pytest.approx(extreme * 3 / 2)
+    assert outcomes[TRAITS[1]].q_value == pytest.approx(extreme * 3 / 2)
+    assert outcomes[TRAITS[2]].q_value == pytest.approx(eight_of_ten)
+    for trait in TRAITS[3:]:
+        assert not outcomes[trait].selected
+        assert outcomes[trait].p_value is None
+        assert outcomes[trait].q_value is None
+
+
+def test_both_complete_nulls_are_pooled_into_one_verdict() -> None:
+    """The ledger alternates the two null scenarios; every replicate must be counted."""
+    ledger = _null_ledger(round(0.04 * DECLARED_TRIALS), 1, DECLARED_TRIALS)
+    scenarios = {str(r["scenario"]) for r in ledger}
+    assert scenarios == {"complete_null_study_flip", "complete_null_experiment_flip"}
+    row = next(
+        r
+        for r in check_criteria([], ledger)
+        if r["criterion"] == "per_test_level" and r["procedure"] == "fraction_sign_test"
+    )
+    assert row["trials"] == DECLARED_TRIALS
+    assert row["clusters"] == DECLARED_TRIALS
+
+
+def test_the_clustered_variance_carries_its_small_sample_factor() -> None:
+    """Three clusters of two tests: residual 2, so variance = 3/2 * 2 / 36."""
+    pooled = pooled_rate([(1, 2), (0, 2), (2, 2)])
+    assert pooled is not None
+    assert pooled.rate == 0.5
+    assert pooled.standard_error == pytest.approx((3 / 2 * 2 / 36) ** 0.5)
+
+
+def test_a_p_or_q_exactly_at_the_threshold_counts_as_a_rejection() -> None:
+    run = [
+        [
+            Outcome("fraction_sign_test", "a", ALPHA, 0.05),
+            Outcome("fraction_sign_test", "b", 0.0500001, 0.0500001),
+        ]
+    ]
+    (row,) = replicate_counts(run, _scenario("complete_null_study_flip"), None)
+    assert row["null_tests_rejected_p"] == 1
+    assert row["family_rejected_q"] == 1
+    by_label = {r["label"]: r for r in summarize(run, _scenario("complete_null_study_flip"), None)}
+    assert (by_label["a"]["rejections_p"], by_label["a"]["rejections_q"]) == (1, 1)
+    assert (by_label["b"]["rejections_p"], by_label["b"]["rejections_q"]) == (0, 0)
+    assert by_label["FAMILY"]["rejections_q"] == 1

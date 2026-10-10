@@ -48,7 +48,7 @@ from statistics import fmean, median
 from typing import Any
 
 import numpy as np
-from scipy.stats import beta, binomtest, false_discovery_control, norm
+from scipy.stats import beta, binom, binomtest, false_discovery_control, norm
 
 from bsdbng.guild_maps import GuildMatrix, build_matrix, compute_correlation
 from bsdbng.paths import DERIVED_DATA_DIR, REPO_ROOT
@@ -154,10 +154,11 @@ def fraction_sign_test(profiles: Sequence[Profile]) -> list[Outcome]:
 def screened_fraction_sign_test(profiles: Sequence[Profile]) -> list[Outcome]:
     """Keep the traits furthest from an even split, then correct over those only.
 
-    The published six traits were chosen on this same corpus by another arm's
-    criteria. This stands in for that step to measure what selecting on the data and
-    then testing the selection does to the error rate; selecting from six rather than
-    from hundreds makes the measured inflation a lower bound. The protocol declares
+    The published six traits were chosen on this same corpus using other statistics
+    than this test's own. This selects on the test's own statistic instead, so it
+    illustrates what selecting on the data and then testing the selection does to the
+    error rate; it is not a bound on the published selection's cost in either
+    direction (#363). The protocol declares
     this procedure a negative control: it is expected to fail the per-test criterion,
     and a criterion it passed would be too weak to use.
     """
@@ -489,6 +490,34 @@ def attainable_p_at_alpha(scored: int, alpha: float = ALPHA) -> tuple[float | No
     return (below, above)
 
 
+def exact_sign_test_size(scored: int, alpha: float = ALPHA) -> float | None:
+    """The exact size of the two-sided binomial sign test on ``scored`` units.
+
+    Under a whole-study (or whole-experiment) flip, each scored unit's sign is a
+    fair coin and the scored count does not change, so the test sees exactly
+    Binomial(scored, 1/2) - its own null. Its rejection rate under that null is
+    this number, known before any replicate is drawn (#360).
+    """
+    if scored <= 0:
+        return None
+
+    def p_at(successes: int) -> float:
+        return float(binomtest(successes, scored, p=0.5).pvalue)
+
+    if p_at(0) > alpha:
+        return 0.0
+    # The p-value rises towards the centre, so the rejection region is the two
+    # symmetric tails k <= low and k >= scored - low.
+    low, high = 0, scored // 2
+    while low < high:
+        middle = (low + high + 1) // 2
+        if p_at(middle) <= alpha:
+            low = middle
+        else:
+            high = middle - 1
+    return float(min(1.0, 2.0 * binom.cdf(low, scored, 0.5)))
+
+
 def _is_injected(label: object, injected: str | None) -> bool:
     """A ratio naming the injected trait carries the injected effect too."""
     return injected is not None and injected in str(label).split("/")
@@ -543,6 +572,9 @@ def summarize(
                     ),
                     "attainable_p_below_alpha": below,
                     "attainable_p_above_alpha": above,
+                    "exact_size_at_median_scored": (
+                        exact_sign_test_size(median_scored) if median_scored else None
+                    ),
                 }
             )
     for procedure in procedures:
@@ -728,22 +760,58 @@ def pooled_rate(counts: Sequence[tuple[int, int]]) -> PooledRate | None:
     )
 
 
-def criterion_pass_probability(
-    rate: float, trials: int, tolerance: float, design_effect: float = 1.0
-) -> float:
-    """Probability the amended criterion passes when the true per-test rate is ``rate``.
+def _pooled_bound(rejections: int, trials: int) -> float:
+    """The per-test rule's bound when each of ``trials`` replicates carries one test."""
+    pooled = pooled_rate([(1, 1)] * rejections + [(0, 1)] * (trials - rejections))
+    return pooled.upper_bound if pooled is not None else 1.0
 
-    The decision rule is ``rate_hat + z * se <= tolerance``, so this is the
-    probability that a design with this many trials and this design effect produces
-    an estimate low enough to clear it. Reported beside every verdict: a pass that
-    a 0.08 procedure would also have obtained is not evidence of anything.
+
+def _family_bound(rejections: int, trials: int) -> float:
+    """The family rule's bound: exact, one Bernoulli per replicate."""
+    bound = _upper_bound(rejections, trials)
+    return bound if bound is not None else 1.0
+
+
+def largest_passing_count(
+    trials: int, tolerance: float, bound: Callable[[int, int], float] = _pooled_bound
+) -> int:
+    """The most rejections out of ``trials`` that ``bound`` still passes, or -1.
+
+    Every rule here has a bound that rises with the rejection count, so a bisection
+    finds the threshold the decision actually uses.
     """
-    if trials <= 0:
+    low, high, best = 0, trials, -1
+    while low <= high:
+        middle = (low + high) // 2
+        if bound(middle, trials) <= tolerance:
+            best, low = middle, middle + 1
+        else:
+            high = middle - 1
+    return best
+
+
+def criterion_pass_probability(
+    rate: float,
+    trials: int,
+    tolerance: float,
+    design_effect: float = 1.0,
+    bound: Callable[[int, int], float] = _pooled_bound,
+) -> float:
+    """Probability the implemented criterion passes when the true per-test rate is ``rate``.
+
+    Computed by exact enumeration of the rule the verdicts use, not by a normal
+    approximation of it: the normal model stopped describing the per-test rule when
+    the exact bound was added (#361), and overstated its pass probability at 0.05
+    as 0.958 when the rule delivers 0.925 at 2400 trials. ``design_effect`` deflates
+    the trials to the binomial sample size carrying the same information. Reported
+    beside every verdict: a pass that a 0.08 procedure would also have obtained is
+    not evidence of anything.
+    """
+    effective = round(trials / max(design_effect, 1.0))
+    if effective <= 0:
         return 1.0
-    error = math.sqrt(rate * (1.0 - rate) * design_effect / trials)
-    if error <= 0.0:
-        return 1.0 if rate <= tolerance else 0.0
-    return float(norm.cdf((tolerance - Z_ONE_SIDED * error - rate) / error))
+    passing = largest_passing_count(effective, tolerance, bound)
+    return float(binom.cdf(passing, effective, rate)) if passing >= 0 else 0.0
 
 
 def _operating_column_names() -> list[str]:
@@ -757,12 +825,15 @@ def _operating_column_names() -> list[str]:
 
 
 def _operating_columns(
-    trials: int, tolerance: float, design_effect: float = 1.0
+    trials: int,
+    tolerance: float,
+    design_effect: float = 1.0,
+    bound: Callable[[int, int], float] = _pooled_bound,
 ) -> dict[str, object]:
     """Pass probability at the nominal level, fail probability at inflated rates."""
     columns: dict[str, object] = {}
     for point, name in zip(OPERATING_POINTS, _operating_column_names(), strict=True):
-        passes = criterion_pass_probability(point, trials, tolerance, design_effect)
+        passes = criterion_pass_probability(point, trials, tolerance, design_effect, bound)
         columns[name] = passes if point <= ALPHA else 1.0 - passes
     return columns
 
@@ -792,6 +863,8 @@ def _criterion_row(
         "design_effect": None,
         "replicates_recorded": None,
         "replicates_required": None,
+        "role": "judged",
+        "analytic_exact_size": None,
     }
     for name in _operating_column_names():
         row[name] = None
@@ -894,7 +967,7 @@ def _family_verdict(
             "trials": trials,
             "rejections": rejections,
             "design_effect": 1.0,
-            **_operating_columns(trials, tolerance),
+            **_operating_columns(trials, tolerance, bound=_family_bound),
         },
     )
 
@@ -979,6 +1052,38 @@ def _selection_row(
     )
 
 
+def _as_sanity_check(
+    row: dict[str, object], rows: Sequence[Mapping[str, object]], procedure: str
+) -> dict[str, object]:
+    """Mark a per-test row whose null makes the test exact by construction (#360).
+
+    The flip leaves every scored count fixed and makes each sign a fair coin, so an
+    exact sign test's rejection rate is its known exact size. The replicates only
+    re-estimate that constant: agreement checks the implementation, not the method.
+    The analytic size is reported beside the simulated rate so the two can be read
+    against each other.
+    """
+    sizes = [
+        float(str(r["exact_size_at_median_scored"]))
+        for r in rows
+        if r["procedure"] == procedure
+        and r["role"] == "null"
+        and r["label"] != "FAMILY"
+        and str(r["scenario"]).startswith("complete_null")
+        and r.get("exact_size_at_median_scored") is not None
+    ]
+    marked = dict(row)
+    marked["role"] = "sanity_check"
+    marked["analytic_exact_size"] = fmean(sizes) if sizes else None
+    marked["detail"] = (
+        f"{row['detail']}; sanity check only: under this null the exact sign test sees its "
+        "own Binomial(n, 1/2), so its rate is its exact size"
+        + (f" (analytic mean {fmean(sizes):.4f})" if sizes else "")
+        + " and agreement says nothing about dependence between studies"
+    )
+    return marked
+
+
 def _null_replicates(ledger: Sequence[Mapping[str, object]], procedure: str) -> int:
     """Complete-null replicates recorded for a procedure, over every null scenario."""
     return sum(
@@ -1047,6 +1152,8 @@ def check_criteria(
         for procedure in criterion["applies_to"]:
             if criterion["id"] == "per_test_level":
                 row = _per_test_verdict(criterion, procedure, ledger)
+                if procedure in criterion.get("sanity_check_for", ()):
+                    row = _as_sanity_check(row, rows, procedure)
                 results.append(_gate(row, _null_replicates(ledger, procedure), null_budget))
             elif criterion["id"] == "family_error":
                 row = _family_verdict(criterion, procedure, ledger)
@@ -1071,12 +1178,20 @@ def check_criteria(
 
 
 #: Verdicts that are reported but never judged, so they do not enter the overall status.
-UNJUDGED = frozenset({"reported"})
+UNJUDGED = frozenset(
+    {
+        "reported",
+        "pass (sanity check)",
+        "insufficient_budget (sanity check)",
+        "not_evaluated (sanity check)",
+    }
+)
 
 OVERALL_RULE = (
     "per procedure: 'fail' if any judged criterion failed; otherwise 'pass' only if every "
     "judged criterion passed; otherwise 'not_certified' (a criterion was "
-    "insufficient_budget or not_evaluated). 'reported' rows are not judged."
+    "insufficient_budget or not_evaluated). 'reported' rows and passing sanity checks are "
+    "not judged; a failing sanity check is."
 )
 
 
@@ -1088,9 +1203,12 @@ def calibration_status(criteria: Sequence[Mapping[str, object]]) -> dict[str, di
     """
     by_procedure: dict[str, dict[str, str]] = {}
     for row in criteria:
-        by_procedure.setdefault(str(row["procedure"]), {})[str(row["criterion"])] = str(
-            row["verdict"]
-        )
+        verdict = str(row["verdict"])
+        if row.get("role") == "sanity_check" and verdict != "fail":
+            # Passing by construction is not evidence (#360); a failing sanity
+            # check still fails, because it means the implementation is wrong.
+            verdict = f"{verdict} (sanity check)"
+        by_procedure.setdefault(str(row["procedure"]), {})[str(row["criterion"])] = verdict
     status: dict[str, dict[str, object]] = {}
     for procedure, verdicts in by_procedure.items():
         judged = [v for v in verdicts.values() if v not in UNJUDGED]

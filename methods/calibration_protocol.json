@@ -70,7 +70,7 @@
     "injected_trait": "coccus_shaped"
   },
   "replicates": {
-    "null": 1200,
+    "null": 1400,
     "power": 400,
     "shared_flip_artifact": 100,
     "seed": 182
@@ -82,21 +82,22 @@
     "family_tolerance": 0.065,
     "decision_rule": "pass only when the one-sided 95% upper confidence bound on the pooled rate is at most the tolerance. The burden of proof is on the procedure: an interval that merely covers 0.05 is not evidence of control, because an interval from a procedure whose true rate is 0.08 usually covers 0.05 too. The bound is the larger of the replicate-clustered normal bound and an exact Clopper-Pearson bound at the effective sample size (trials divided by the measured design effect; one trial per replicate when no or every test rejects, because the design effect is then unmeasurable). A run below the declared replicate budget cannot certify: a criterion it would pass, or would fail only because its interval is still wide, is reported as insufficient_budget. A short run still fails a criterion whose point estimate already exceeds the tolerance.",
     "uncertainty": "per-label rates keep their exact two-sided binomial interval over independent replicates. Pooled per-procedure rates use the ratio estimator over replicate clusters, which reduces to the binomial variance when a replicate contributes one test and inflates it by the measured design effect when it contributes several correlated ones. Family rates are one Bernoulli per replicate, so their bound is exact.",
-    "replicate_budget_rationale": "the budget is set by the least-powered procedure. guild_mcnemar contributes one test per replicate, so its pooled trial count is 2 x null replicates. 1200 null replicates give 2400 trials, a standard error of 0.0045 at a true rate of 0.05, and the operating characteristics below. Procedures with more labels per replicate exceed these numbers.",
+    "replicate_budget_rationale": "the budget is set by the least-powered procedure under the implemented rule. guild_mcnemar contributes one test per replicate, so its pooled trial count is 2 x null replicates, and the family criterion is one Bernoulli per replicate on the same count. Operating characteristics are computed by exact enumeration of the rule the verdicts use (calibration.criterion_pass_probability), not by a normal approximation. 1400 null replicates give 2800 trials, which is the first round budget at which both the per-test and the family rule pass a true rate of 0.05 with probability at least 0.95 (1325 is the smallest, at 0.9526). Procedures with more labels per replicate exceed these numbers.",
     "required_operating_characteristics": {
       "pass_probability_at_0.05": 0.95,
       "fail_probability_at_0.07": 0.9,
       "fail_probability_at_0.08": 0.99
     },
-    "declared_operating_characteristics_at_2400_trials": {
-      "pass_probability_at_0.05": 0.9579,
-      "fail_probability_at_0.06": 0.7302,
-      "fail_probability_at_0.07": 0.9954,
-      "fail_probability_at_0.08": 1.0
-    },
     "reported_per_verdict": "every criterion row carries the pass probability at the nominal level and the fail probability at 0.06, 0.07 and 0.08 for the design that produced it, so a verdict is never reported without the probability it would have been reached.",
-    "what_the_tolerance_does_not_detect": "a true rate of 0.06 lies inside the declared tolerance, so a precisely measured 0.06 passes by declaration rather than by weakness: at 2400 trials it fails 73% of the time only because the bound is still wide, and at the 14400 trials fraction_sign_test contributes it passes 81% of the time. Treating 0.06 as material inflation would mean declaring a tolerance of 0.055, which needs about 20600 pooled trials - 10300 null replicates for a single-test procedure - to keep the pass probability at the nominal level at 0.95. That budget was not taken; the criterion is sized to separate rates at or below 0.065 from rates at or above 0.07.",
-    "overall_status": "per procedure: 'fail' if any judged criterion failed; otherwise 'pass' only if every judged criterion passed; otherwise 'not_certified'. 'reported' rows are not judged. calibration_status.json exports every criterion's verdict beside the overall status."
+    "what_the_tolerance_does_not_detect": "a true rate of 0.06 lies inside the declared tolerance, so a precisely measured 0.06 passes by declaration rather than by weakness: at 2800 trials it fails 72% of the time only because the bound is still wide, and at the 16800 trials fraction_sign_test contributes it passes 78% of the time with that procedure's measured design effect of about 1.18 (85% if its tests were independent). Treating 0.06 as material inflation would mean declaring a tolerance of 0.055 and a budget several times larger. That budget was not taken; the criterion is sized to separate rates at or below 0.065 from rates at or above 0.07.",
+    "overall_status": "per procedure: 'fail' if any judged criterion failed; otherwise 'pass' only if every judged criterion passed; otherwise 'not_certified'. 'reported' rows are not judged. calibration_status.json exports every criterion's verdict beside the overall status.",
+    "declared_operating_characteristics_at_2800_trials": {
+      "pass_probability_at_0.05": 0.9601,
+      "fail_probability_at_0.06": 0.7222,
+      "fail_probability_at_0.07": 0.9965,
+      "fail_probability_at_0.08": 1.0,
+      "method": "exact enumeration of the implemented rule; identical for the per-test max(normal, Clopper-Pearson) bound with one test per replicate and for the family Clopper-Pearson bound"
+    }
   },
   "acceptance_criteria": [
     {
@@ -112,7 +113,13 @@
       "tolerance": 0.065,
       "expected_verdict": {
         "screened_fraction_sign_test": "fail"
-      }
+      },
+      "sanity_check_for": [
+        "fraction_sign_test",
+        "log_ratio_sign_test",
+        "guild_mcnemar"
+      ],
+      "sanity_check_reason": "the study and experiment flips negate a unit's contrast without changing its magnitude, so every scored count is fixed and each exact sign test sees exactly Binomial(n, 1/2), its own null. Its rejection rate is then its exact size, at most 0.05 and known analytically (fraction about 0.048, log-ratio about 0.043, McNemar about 0.047 on the pinned corpus). The simulated rate only re-estimates that constant, so for these three procedures this criterion checks the implementation, not the method, and is excluded from the overall status unless it fails. It stays judged for screened_fraction_sign_test, whose selection breaks the construction."
     },
     {
       "id": "family_error",
@@ -157,7 +164,8 @@
   "not_covered": [
     "the enrichment arm's hypergeometric urn (#131) and the composition arm's native transform (owners' adapters)",
     "the aggregated profile-support rule of #177, whose code is not on main",
-    "any claim that a calibrated procedure makes its biological interpretation valid"
+    "any claim that a calibrated procedure makes its biological interpretation valid",
+    "dependence between studies (shared cohorts, reused datasets, overlapping populations): a flip of whole studies treats studies as independent, so no criterion here can detect inflation from cohort-level dependence (#182 'study/cohort blocks', #360)"
   ],
   "amendments": [
     {
@@ -196,6 +204,14 @@
       "reason": "the #240 review of 2026-10-03 ran the supported quick command (5 null and 5 power replicates, seed 1) and found calibration_status.json exporting guild_mcnemar as pass: the clustered variance is zero when no replicate rejects, so 0/10 gave an upper bound of 0, and the export dropped the failed family_error criterion. #241 consumed that as an unqualified pass.",
       "known_when_amended": "the full-budget v2 report and the quick-run counterexample. The full-budget report was regenerated after this amendment; its verdicts are in calibration_criteria.tsv beside the code commit that produced them.",
       "unchanged": "the tolerances, the nominal level, the replicate budgets, the null and injection designs, and every procedure"
+    },
+    {
+      "date": "2026-10-09",
+      "protocol": "calibration-v2",
+      "change": "(1) operating characteristics are computed by exact enumeration of the implemented rules instead of a normal approximation, and the null budget rose from 1200 to 1400 replicates per scenario. (2) per_test_level is a sanity check, not a judged criterion, for fraction_sign_test, log_ratio_sign_test and guild_mcnemar; the analytic exact size is reported beside the simulated rate. (3) cohort-level dependence is listed as not covered.",
+      "reason": "#361: at 2400 trials the implemented per-test rule (max of normal and Clopper-Pearson bounds, added 2026-10-08) and the family rule both pass a true rate of 0.05 with probability 0.925, below the declared requirement of 0.95; the reported 0.958 came from a normal model of a rule no longer in use. #360: the study flip makes each exact sign test see its own null, so its per-test rate is its exact size by construction and is not evidence about the method.",
+      "known_when_amended": "the full-budget results at 1200 replicates (every published procedure passing, the screened control failing) and the #240 review of 2026-10-09. The budget was set from the requirement, by enumeration, before the 1400-replicate run.",
+      "unchanged": "the tolerance of 0.065, the required operating characteristics, the nominal level, the power budget, the null and injection designs, and every procedure"
     }
   ]
 }
