@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import argparse
 import csv
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -134,11 +134,16 @@ FOCUS_PANELS: tuple[FocusPanel, ...] = (
 
 @dataclass(frozen=True)
 class MissingConditions:
-    """Requested panel conditions that are not drawn, split by cause."""
+    """Requested conditions without their own drawn row, split by display state."""
 
     absent_from_corpus: tuple[str, ...]
     blank_after_masking: tuple[str, ...]
     cut_by_display: tuple[str, ...]
+    pooled_in_other: tuple[str, ...] = ()
+    pooled_not_drawn: tuple[str, ...] = ()
+    left_out_of_panel: tuple[str, ...] = ()
+    # The panel names the pooled Other row itself, and it is not drawn.
+    other_not_drawn: bool = False
 
 
 def missing_conditions(
@@ -147,25 +152,51 @@ def missing_conditions(
     corpus_conditions: Collection[str],
     drawn_conditions: Sequence[str],
     blank_conditions: Collection[str] = (),
+    pooled_conditions: Collection[str] = (),
+    combined_conditions: Collection[str] = (),
 ) -> MissingConditions:
-    """Split undrawn panel conditions into the three causes that look alike.
+    """Split undrawn panel conditions by why they have no row of their own.
 
     A requested condition can be undrawn because the export does not hold it,
     because it is held and every cell fell below the min-studies threshold so the
-    row was dropped as blank, or because the top-N cut never selected it. Testing
+    row was dropped as blank, because the top-N cut never selected it, because it
+    was assigned to the pooled Other row, or because the combined figure draws it
+    but the panel's own cut does not. Testing
     membership of the drawn conditions alone cannot tell these apart, since that
     set is already the cut one — and naming the wrong cause states something
     false about the data. `blank_conditions` is the matrix's own record of rows it
     dropped as entirely blank, so the second case is read from the build rather
-    than guessed at.
+    than guessed at. ``pooled_conditions`` lists actual Other membership from the
+    full matrix build; the presence of an Other row alone cannot establish it.
+    ``drawn_conditions`` belongs to the figure being annotated, which may omit
+    the combined figure's Other row. ``combined_conditions`` are the rows the
+    combined figure draws: one of those missing from a panel was removed by the
+    panel's own cut, not by the top-N width cut, so it is reported apart from
+    ``cut_by_display``. Other membership is assignment, not contribution: site
+    binning or masking can leave a pooled condition with no profile in any drawn
+    Other cell, so the note says "assigned to" and claims no more. A panel may
+    name ``OTHER_LABEL`` itself; it is never a corpus condition, so it is
+    reported only as drawn or not. Repeated requests are counted once.
     """
     drawn = set(drawn_conditions)
     blank = set(blank_conditions)
+    pooled = set(pooled_conditions)
+    combined = set(combined_conditions)
+    requested = tuple(dict.fromkeys(requested))
     held = [name for name in requested if name in corpus_conditions and name not in drawn]
+    left_out = tuple(name for name in held if name in combined)
+    held = [name for name in held if name not in combined]
+    pooled_missing = tuple(name for name in held if name in pooled)
     return MissingConditions(
-        absent_from_corpus=tuple(name for name in requested if name not in corpus_conditions),
-        blank_after_masking=tuple(name for name in held if name in blank),
-        cut_by_display=tuple(name for name in held if name not in blank),
+        absent_from_corpus=tuple(
+            name for name in requested if name not in corpus_conditions and name != OTHER_LABEL
+        ),
+        blank_after_masking=tuple(name for name in held if name in blank and name not in pooled),
+        cut_by_display=tuple(name for name in held if name not in blank and name not in pooled),
+        pooled_in_other=pooled_missing if OTHER_LABEL in drawn else (),
+        pooled_not_drawn=pooled_missing if OTHER_LABEL not in drawn else (),
+        left_out_of_panel=left_out,
+        other_not_drawn=OTHER_LABEL in requested and OTHER_LABEL not in drawn,
     )
 
 
@@ -189,6 +220,23 @@ def missing_condition_note(
         parts.append(
             f"Sampled in this export but outside the top-{max_conditions} condition "
             f"cut, so not drawn: {', '.join(missing.cut_by_display)}."
+        )
+    if missing.pooled_in_other:
+        parts.append(
+            "Assigned to the pooled Other row rather than drawn as a row of its own: "
+            f"{', '.join(missing.pooled_in_other)}."
+        )
+    if missing.pooled_not_drawn:
+        parts.append(
+            "Assigned to the pooled Other row, which is not drawn in this panel: "
+            f"{', '.join(missing.pooled_not_drawn)}."
+        )
+    if missing.other_not_drawn:
+        parts.append("The pooled Other row is not drawn in this panel.")
+    if missing.left_out_of_panel:
+        parts.append(
+            "Drawn in the combined figure but left out of this panel's cut: "
+            f"{', '.join(missing.left_out_of_panel)}."
         )
     return " ".join(parts) if parts else None
 
@@ -232,7 +280,7 @@ class ShiftResult:
     studies: int
 
 
-def _study_contrasts(
+def study_trait_contrasts(
     profiles: list[Profile], trait_order: Sequence[str]
 ) -> dict[str, dict[str, float]]:
     """Per study, the increased minus decreased mean fraction for each trait.
@@ -256,21 +304,19 @@ def _study_contrasts(
     return contrasts
 
 
-def compute_direction_shifts(
-    profiles: list[Profile], trait_order: Sequence[str] = TRAIT_ORDER
-) -> ShiftResult:
-    """Score every study once per trait by the sign of its paired contrast.
+def tally_direction_signs(
+    contrasts: Mapping[str, Mapping[str, float]], trait_order: Sequence[str]
+) -> dict[str, tuple[int, int, int]]:
+    """Per trait, the number of studies shifted up, shifted down, and tied.
 
     A study counts as shifted up for a trait when its mean increased fraction
     exceeds its mean decreased fraction, and down when the reverse holds; ties
-    (including sub-tolerance float residue, see ``SIGN_TOLERANCE``) are recorded
-    separately and excluded from the test. Each trait then gets a two-sided exact
-    binomial test against a half-and-half null, and the six p-values are
-    Benjamini-Hochberg corrected together because the six traits are one family
-    of tests.
-    """
-    contrasts = _study_contrasts(profiles, trait_order)
+    (including sub-tolerance float residue, see ``SIGN_TOLERANCE``) are counted
+    separately and are excluded from any test built on this tally.
 
+    Shared with ``bsdbng.trait_screen`` so that the widened trait family of #255
+    votes by exactly this rule rather than by a second copy of it.
+    """
     tallies: dict[str, tuple[int, int, int]] = {}
     for trait in trait_order:
         up = down = tied = 0
@@ -285,6 +331,24 @@ def compute_direction_shifts(
             else:
                 tied += 1
         tallies[trait] = (up, down, tied)
+    return tallies
+
+
+def compute_direction_shifts(
+    profiles: list[Profile], trait_order: Sequence[str] = TRAIT_ORDER
+) -> ShiftResult:
+    """Score every study once per trait by the sign of its paired contrast.
+
+    A study counts as shifted up for a trait when its mean increased fraction
+    exceeds its mean decreased fraction, and down when the reverse holds; ties
+    (including sub-tolerance float residue, see ``SIGN_TOLERANCE``) are recorded
+    separately and excluded from the test. Each trait then gets a two-sided exact
+    binomial test against a half-and-half null, and the p-values of
+    ``trait_order`` are Benjamini-Hochberg corrected together as one family.
+    The widened family of #255 is corrected separately in ``bsdbng.trait_screen``.
+    """
+    contrasts = study_trait_contrasts(profiles, trait_order)
+    tallies = tally_direction_signs(contrasts, trait_order)
 
     p_values: list[float] = []
     for trait in trait_order:
@@ -535,9 +599,15 @@ def write_shift_figure(
 def uncovered_conditions(
     matrix: GuildMatrix, panels: Sequence[FocusPanel] = FOCUS_PANELS
 ) -> list[str]:
-    """Drawn conditions that appear in none of the focus cuts."""
+    """Drawn conditions that appear in none of the focus cuts.
+
+    A panel naming a body site the matrix does not draw is skipped rather than cut
+    (#324), so it covers nothing here either.
+    """
     covered: set[str] = set()
     for panel in panels:
+        if any(site not in matrix.body_sites for site in panel.sites or ()):
+            continue
         covered.update(
             subset_matrix(matrix, conditions=panel.conditions, sites=panel.sites).conditions
         )
@@ -728,6 +798,25 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _absent_site_reason(
+    site: str,
+    *,
+    dropped: bool,
+    pooled: bool,
+    other_drawn: bool,
+    max_body_sites: int,
+    min_site_conditions: int,
+) -> str:
+    """Why a body site a focus panel names is not in the figure (#324, #413)."""
+    if dropped:
+        return f"{site} (dropped: fewer than {min_site_conditions} conditions)"
+    if pooled and other_drawn:
+        return f"{site} (pooled into {OTHER_LABEL} by the top-{max_body_sites} body-site cut)"
+    if pooled:
+        return f"{site} (outside the top-{max_body_sites} body-site cut)"
+    return f"{site} (not in this figure's body sites)"
+
+
 def main() -> int:
     args = build_parser().parse_args()
     profiles, stats = load_profiles(
@@ -772,6 +861,12 @@ def main() -> int:
         )
 
     corpus_conditions = {profile.condition for profile in profiles if profile.condition}
+    pooled_conditions = {
+        name
+        for pool in matrix.pooled
+        if pool.kind == "condition" and pool.bucketed
+        for name in pool.pooled_names
+    }
 
     result = compute_direction_shifts(profiles, TRAIT_ORDER)
 
@@ -846,15 +941,41 @@ def main() -> int:
         else f"drawn conditions in no focus panel: {', '.join(uncovered)}"
     )
     for panel in FOCUS_PANELS:
-        cut = subset_matrix(matrix, conditions=panel.conditions, sites=panel.sites)
-        if not cut.conditions or not cut.body_sites:
-            print(f"focus panel {panel.slug}: nothing drawn, skipped")
+        # A panel naming a body site the figure does not draw (e.g. Other under
+        # --drop-other-body-sites, or a site too few conditions reach) cannot be
+        # cut; drawing the remaining sites would mislabel it, so skip it (#324).
+        absent_sites = [site for site in panel.sites or () if site not in matrix.body_sites]
+        if absent_sites:
+            pooled_sites = {
+                name
+                for pool in matrix.pooled
+                if pool.kind == "body_site"
+                for name in pool.pooled_names
+            }
+            reasons = [
+                _absent_site_reason(
+                    site,
+                    dropped=site in matrix.dropped_body_sites,
+                    pooled=site in pooled_sites,
+                    other_drawn=OTHER_LABEL in matrix.body_sites,
+                    max_body_sites=args.max_body_sites,
+                    min_site_conditions=args.min_site_conditions,
+                )
+                for site in absent_sites
+            ]
+            print(
+                f"focus panel {panel.slug}: names body sites this figure does not draw, "
+                f"skipped: {', '.join(reasons)}"
+            )
             continue
+        cut = subset_matrix(matrix, conditions=panel.conditions, sites=panel.sites)
         missing = missing_conditions(
             panel.conditions or (),
             corpus_conditions=corpus_conditions,
-            drawn_conditions=matrix.conditions,
+            drawn_conditions=cut.conditions,
             blank_conditions=matrix.dropped_empty_conditions,
+            pooled_conditions=pooled_conditions,
+            combined_conditions=matrix.conditions,
         )
         note = missing_condition_note(
             missing, max_conditions=args.max_conditions, min_studies=args.min_studies
@@ -874,6 +995,25 @@ def main() -> int:
                 f"focus panel {panel.slug}: in the corpus but outside the top-"
                 f"{args.max_conditions} cut: {', '.join(missing.cut_by_display)}"
             )
+        if missing.pooled_in_other:
+            print(
+                f"focus panel {panel.slug}: assigned to Other: {', '.join(missing.pooled_in_other)}"
+            )
+        if missing.pooled_not_drawn:
+            print(
+                f"focus panel {panel.slug}: assigned to Other, not drawn in this panel: "
+                f"{', '.join(missing.pooled_not_drawn)}"
+            )
+        if missing.other_not_drawn:
+            print(f"focus panel {panel.slug}: the pooled Other row is not drawn")
+        if missing.left_out_of_panel:
+            print(
+                f"focus panel {panel.slug}: drawn in the combined figure, not in this panel: "
+                f"{', '.join(missing.left_out_of_panel)}"
+            )
+        if not cut.conditions or not cut.body_sites:
+            print(f"focus panel {panel.slug}: nothing drawn, skipped")
+            continue
         print(
             f"focus panel {panel.slug}: {len(cut.conditions)} conditions x "
             f"{len(cut.body_sites)} body sites ({', '.join(cut.body_sites)})"

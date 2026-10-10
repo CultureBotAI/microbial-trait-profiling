@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import sys
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TextIO
@@ -164,23 +165,41 @@ def column_term_id(column: str) -> str:
     return column.rsplit("|", 1)[-1]
 
 
-def _select_trait_columns(
-    header: list[str], guilds: dict[str, tuple[str, ...]]
-) -> tuple[list[int], dict[str, list[int]], int]:
-    """Map trait columns to positions, dropping MediaDive growth-medium columns."""
-    wanted: dict[str, set[str]] = {g: set(ids) for g, ids in guilds.items()}
-    total_positions: list[int] = []
-    guild_positions: dict[str, list[int]] = {guild: [] for guild in guilds}
-    matched_columns: defaultdict[tuple[str, str], list[str]] = defaultdict(list)
-    mediadive_excluded = 0
+def retained_trait_columns(header: Sequence[str]) -> tuple[list[int], list[str], int]:
+    """The trait columns a profile matrix retains, in header order.
 
+    One rule, in one place: drop the three identifier columns, drop every
+    MediaDive growth-medium column (#121), keep the rest. What survives is both
+    the denominator universe of every fraction in this package and the candidate
+    space of the widened trait screen (#255), so the two cannot drift apart.
+
+    Returns the retained positions, their column names, and how many MediaDive
+    columns were excluded.
+    """
+    positions: list[int] = []
+    columns: list[str] = []
+    mediadive_excluded = 0
     for index, column in enumerate(header):
         if column in PROFILE_ID_COLUMNS:
             continue
         if MEDIADIVE_MARKER in column.lower():
             mediadive_excluded += 1
             continue
-        total_positions.append(index)
+        positions.append(index)
+        columns.append(column)
+    return positions, columns, mediadive_excluded
+
+
+def _select_trait_columns(
+    header: list[str], guilds: dict[str, tuple[str, ...]]
+) -> tuple[list[int], dict[str, list[int]], int]:
+    """Map trait columns to positions, dropping MediaDive growth-medium columns."""
+    wanted: dict[str, set[str]] = {g: set(ids) for g, ids in guilds.items()}
+    guild_positions: dict[str, list[int]] = {guild: [] for guild in guilds}
+    matched_columns: defaultdict[tuple[str, str], list[str]] = defaultdict(list)
+    total_positions, total_columns, mediadive_excluded = retained_trait_columns(header)
+
+    for index, column in zip(total_positions, total_columns, strict=True):
         term = column_term_id(column)
         for guild, ids in wanted.items():
             if column in ids or term in ids:

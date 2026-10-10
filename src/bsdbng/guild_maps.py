@@ -59,6 +59,8 @@ class PooledLabels:
     kept_labels: int = 0
     # Whether the remainder went into an Other bucket or was dropped outright.
     bucketed: bool = True
+    # Exact labels outside the top-N cut, even when the Other row is later masked.
+    pooled_names: tuple[str, ...] = ()
 
     @property
     def pooled_share(self) -> float:
@@ -121,6 +123,7 @@ def _pooling(
         kept=limit,
         pooled_labels=len(pooled),
         pooled_profiles=sum(pooled.values()),
+        pooled_names=tuple(sorted(pooled)),
         total_profiles=sum(counts.values()),
         kept_labels=len(keep),
         bucketed=bucketed,
