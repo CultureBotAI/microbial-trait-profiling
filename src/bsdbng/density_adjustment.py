@@ -126,6 +126,16 @@ def load_non_media_profile_matrix(
     columns_path: Path,
 ) -> tuple[pd.DataFrame, list[str]]:
     """Load wide study trait profiles restricted to the non-MediaDive traits."""
+    if not profiles_path.exists():
+        gz_candidate = profiles_path.with_name(f"{profiles_path.name}.gz")
+        if gz_candidate.exists():
+            profiles_path = gz_candidate
+        else:
+            raise FileNotFoundError(f"Profiles file not found: {profiles_path} (or {gz_candidate})")
+
+    if not columns_path.exists():
+        raise FileNotFoundError(f"Columns file not found: {columns_path}")
+
     non_media_cols = get_non_media_trait_columns(columns_path)
     profiles_df = pd.read_csv(profiles_path, sep="\t")
 

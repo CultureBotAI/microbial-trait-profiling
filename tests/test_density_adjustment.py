@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -182,8 +183,9 @@ def test_compute_correlation_metrics_synthetic() -> None:
     assert metrics_sp.n_traits == 4
 
     # Test invalid method
+    bad_method: Any = "invalid"
     with pytest.raises(ValueError, match="Unsupported correlation method"):
-        compute_correlation_metrics(x, cols, method="invalid")  # type: ignore[arg-type]
+        compute_correlation_metrics(x, cols, method=bad_method)
 
 
 def test_normalize_traits_by_profile_composition() -> None:
@@ -314,13 +316,21 @@ def test_evaluate_table1_paired_effects_nan_fallback() -> None:
 
 
 @pytest.mark.skipif(
-    not (DEFAULT_PROFILES_PATH.exists() and DEFAULT_COLUMNS_PATH.exists()),
+    not (
+        (DEFAULT_PROFILES_PATH.exists() or Path(f"{DEFAULT_PROFILES_PATH}.gz").exists())
+        and DEFAULT_COLUMNS_PATH.exists()
+    ),
     reason="Derived data files not available in test environment",
 )
 def test_full_density_audit_integration(tmp_path: Path) -> None:
     """Verify full density audit run against real derived data and validate core findings (#375)."""
+    prof_path = (
+        DEFAULT_PROFILES_PATH
+        if DEFAULT_PROFILES_PATH.exists()
+        else Path(f"{DEFAULT_PROFILES_PATH}.gz")
+    )
     results = run_density_audit(
-        profiles_path=DEFAULT_PROFILES_PATH,
+        profiles_path=prof_path,
         columns_path=DEFAULT_COLUMNS_PATH,
         output_dir=tmp_path,
     )
@@ -362,10 +372,9 @@ def test_full_density_audit_integration(tmp_path: Path) -> None:
     for eff in t1_effects:
         assert eff.trait_id in TABLE_1_TRAITS
         assert eff.status in {
-            "collapsed (artifact removed)",
-            "survived (biological signal)",
-            "enhanced depletion (genuine signal)",
-            "unaffected non-significant",
-            "emerged post-adjustment",
-            "insufficient pairs",
+            "insufficient non-zero pairs",
+            "collapsed (attenuated to nonsignificant)",
+            "enhanced (significant, larger magnitude)",
+            "survived (significant post-adjustment)",
+            "attenuated (nonsignificant post-adjustment)",
         }
