@@ -551,4 +551,3 @@ def test_evaluate_conditional_twin_test_unknown_depth_columns_and_missing_keys()
     summary_no_id = evaluate_conditional_twin_test(df_no_id, TWIN_A, TWIN_B)
     assert summary_no_id.n_paired_experiments == 0
     assert np.isnan(summary_no_id.paired_correlation)
-
