@@ -38,10 +38,10 @@ Restricting the trait universe to non-MediaDive traits (`object_category != 'MET
 | :--- | :--- | :--- | :--- |
 | **Median Pairwise Correlation** | $+0.7065$ | $+0.6117$ | Pervasive positive correlation across trait pairs. |
 | **Mean Pairwise Correlation** | $+0.6044$ | $+0.5497$ | Substantial global positive shift. |
-| **Pairs Exceeding $+0.5$** | $68.0\%$ | $63.1\%$ | Majority of trait pairs exhibit strong positive correlation. |
-| **Pairs Exceeding $+0.9$** | $18.2\%$ | $3.4\%$ | Substantial number of near-redundant pairs in raw counts. |
-| **PC1 Variance Explained** | **$66.80\%$** | **$60.50\%$** | A single global axis accounts for over $66\%$ of total trait variation. |
-| **PC1–PC5 Variance Explained** | **$89.35\%$** | — | Top 5 components explain $\approx 89\%$ of total variance. |
+| **Pairs Exceeding $+0.5$** | 68.0% | 63.1% | Majority of trait pairs exhibit strong positive correlation. |
+| **Pairs Exceeding $+0.9$** | 18.2% | 3.4% | Substantial number of near-redundant pairs in raw counts. |
+| **PC1 Variance Explained** | **66.80%** | **60.50%** | A single global axis accounts for over 66% of total trait variation. |
+| **PC1–PC5 Variance Explained** | **89.35%** | — | Top 5 components explain $\approx 89\%$ of total variance. |
 
 ### Effective Number of Independent Tests ($M_{\text{eff}}$)
 
@@ -99,17 +99,17 @@ We evaluated whether genuine biological signals survive PC1 density adjustment i
 
 | Trait Identifier | Trait Label | Raw Mean $\Delta$ | Raw Wilcoxon $p$ | Adj Mean $\Delta$ | Adj Wilcoxon $p$ | Relative Change | Adjustment Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `METPO:1000608` | Facultatively aerobic | $+229.70$ | $1.82 \times 10^{-11}$ | $+123.53$ | **$1.39 \times 10^{-8}$** | $-46.2\%$ | **Survived (significant post-adjustment)** |
-| `METPO:2000103\|GO:0030245` | Cellulose catabolic process | $-2.58$ | $1.83 \times 10^{-4}$ | **$-4.83$** | **$6.88 \times 10^{-11}$** | $+87.6\%$ | **Enhanced (significant, larger magnitude)** |
-| `METPO:1000668` | Coccus shaped | $+74.07$ | $4.96 \times 10^{-4}$ | $-12.52$ | **$5.76 \times 10^{-1}$** | $-116.9\%$ | **Collapsed (attenuated to nonsignificant)** |
-| `METPO:1000683` | Sphere shaped | $+4.85$ | $2.66 \times 10^{-3}$ | $-0.16$ | **$5.52 \times 10^{-1}$** | $-103.3\%$ | **Collapsed (attenuated to nonsignificant)** |
-| `METPO:2000103\|pathways:arsenate_reduction` | Arsenate reduction | $+1.63$ | $4.04 \times 10^{-8}$ | $+0.86$ | **$5.70 \times 10^{-4}$** | $-47.0\%$ | **Survived (significant post-adjustment)** |
-| `METPO:1000623` | Moderately halophilic | $+9.22$ | $4.68 \times 10^{-8}$ | $+3.26$ | **$3.72 \times 10^{-10}$** | $-64.7\%$ | **Survived (significant post-adjustment)** |
+| `METPO:1000608` | Facultatively aerobic | $+229.70$ | $1.82 \times 10^{-11}$ | $+123.53$ | **$1.39 \times 10^{-8}$** | -46.2% | **Survived (significant post-adjustment)** |
+| `METPO:2000103\|GO:0030245` | Cellulose catabolic process | $-2.58$ | $1.83 \times 10^{-4}$ | **$-4.83$** | **$6.88 \times 10^{-11}$** | +87.6% | **Enhanced (significant, larger magnitude)** |
+| `METPO:1000668` | Coccus shaped | $+74.07$ | $4.96 \times 10^{-4}$ | $-12.52$ | **$5.76 \times 10^{-1}$** | -116.9% | **Collapsed (attenuated to nonsignificant)** |
+| `METPO:1000683` | Sphere shaped | $+4.85$ | $2.66 \times 10^{-3}$ | $-0.16$ | **$5.52 \times 10^{-1}$** | -103.3% | **Collapsed (attenuated to nonsignificant)** |
+| `METPO:2000103\|pathways:arsenate_reduction` | Arsenate reduction | $+1.63$ | $4.04 \times 10^{-8}$ | $+0.86$ | **$5.70 \times 10^{-4}$** | -47.0% | **Survived (significant post-adjustment)** |
+| `METPO:1000623` | Moderately halophilic | $+9.22$ | $4.68 \times 10^{-8}$ | $+3.26$ | **$3.72 \times 10^{-10}$** | -64.7% | **Survived (significant post-adjustment)** |
 
 ### Key Methodological Takeaways
 1. **Cellulose Catabolism Depletion Is Strengthened:** When the positive curation baseline is removed, the depletion of cellulose-degrading bacteria in disease signatures becomes substantially sharper ($p = 6.88 \times 10^{-11}$). In raw data, the global positive density drift masked the true magnitude of cellulose depletion.
 2. **Morphological Signals Attenuate to Nonsignificance:** *Coccus shaped* ($p = 0.576$) and *sphere shaped* ($p = 0.552$) collapse to nonsignificance after removing PC1, demonstrating that their raw enrichment signal was driven by the shared curation density component.
-3. **Physiological Signals Survive with Attenuated Magnitude:** *Facultatively aerobic*, *moderately halophilic*, and *arsenate reduction* maintain statistical significance in raw count profiles, though their mean effect magnitudes attenuate by $46\text{–}65\%$.
+3. **Physiological Signals Survive with Attenuated Magnitude:** *Facultatively aerobic*, *moderately halophilic*, and *arsenate reduction* maintain statistical significance in raw count profiles, though their mean effect magnitudes attenuate by 46–65%.
 4. **Representation Sensitivity (#375):** The survival versus collapse of specific traits (e.g., *facultatively aerobic* and *arsenate reduction*) is sensitive to profile representation (raw count sums vs. binarized presence/absence per #365 opt-in flags). Pipelines should report both representations.
 
 ---
