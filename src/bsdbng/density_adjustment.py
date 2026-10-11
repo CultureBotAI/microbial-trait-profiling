@@ -116,7 +116,16 @@ def get_non_media_trait_columns(columns_path: Path) -> list[str]:
 
     Non-MediaDive traits are defined as columns where object_category != 'METPO:1004005'.
     """
+    if not columns_path.exists():
+        gz_candidate = columns_path.with_name(f"{columns_path.name}.gz")
+        if gz_candidate.exists():
+            columns_path = gz_candidate
+        else:
+            raise FileNotFoundError(f"Columns file not found: {columns_path} (or {gz_candidate})")
+
     df = pd.read_csv(columns_path, sep="\t")
+    if "object_category" not in df.columns or "column_id" not in df.columns:
+        raise ValueError(f"Columns file missing required columns: {columns_path}")
     filtered = df[df["object_category"] != "METPO:1004005"]
     return [str(c) for c in filtered["column_id"].tolist()]
 
@@ -134,7 +143,11 @@ def load_non_media_profile_matrix(
             raise FileNotFoundError(f"Profiles file not found: {profiles_path} (or {gz_candidate})")
 
     if not columns_path.exists():
-        raise FileNotFoundError(f"Columns file not found: {columns_path}")
+        gz_candidate = columns_path.with_name(f"{columns_path.name}.gz")
+        if gz_candidate.exists():
+            columns_path = gz_candidate
+        else:
+            raise FileNotFoundError(f"Columns file not found: {columns_path} (or {gz_candidate})")
 
     non_media_cols = get_non_media_trait_columns(columns_path)
     profiles_df = pd.read_csv(profiles_path, sep="\t")
@@ -190,9 +203,16 @@ def compute_correlation_metrics(
     Constant columns (zero variance) are excluded before correlation estimation (#378),
     preventing spurious eigenvalues of 1.0 from artificially inflating effective test counts.
     """
+    if trait_matrix.ndim != 2:
+        raise ValueError(f"trait_matrix must be 2D, got shape {trait_matrix.shape}")
     n_samples, n_traits = trait_matrix.shape
     if n_traits < 2:
         raise ValueError("Need at least 2 traits to compute correlation metrics.")
+    if len(column_ids) != n_traits:
+        raise ValueError(
+            f"column_ids length ({len(column_ids)}) does not match "
+            f"trait_matrix columns ({n_traits})"
+        )
 
     # Drop constant columns before correlating (#378)
     stds = np.std(trait_matrix, axis=0)
@@ -226,7 +246,14 @@ def compute_correlation_metrics(
         corr = np.corrcoef(reduced_matrix.T)
     elif method == "spearman":
         res = stats.spearmanr(reduced_matrix)
-        corr = res.statistic if hasattr(res, "statistic") else np.array(res[0])
+        stat = getattr(res, "statistic", None)
+        if stat is None:
+            stat = res[0]
+        if n_varying == 2 or np.ndim(stat) == 0:
+            s_val = float(stat)
+            corr = np.array([[1.0, s_val], [s_val, 1.0]], dtype=float)
+        else:
+            corr = np.asarray(stat, dtype=float)
     else:
         raise ValueError(f"Unsupported correlation method: {method}")
 
@@ -297,7 +324,7 @@ def regress_out_pc1(trait_matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray, f
             0.0,
         )
 
-    x = trait_matrix.astype(float)
+    x = np.nan_to_num(trait_matrix.astype(float), nan=0.0)
     mu = x.mean(axis=0)
     std = x.std(axis=0, ddof=1)
     std = np.nan_to_num(std, nan=1.0)
@@ -343,6 +370,10 @@ def normalize_traits_by_profile_composition(
     if not cols_list:
         raise ValueError("cols must not be empty")
 
+    missing = [c for c in cols_list if c not in df.columns]
+    if missing:
+        raise ValueError(f"DataFrame missing {len(missing)} requested columns: {missing[:5]}")
+
     sub = df[cols_list].to_numpy(dtype=float)
     sub = np.nan_to_num(sub, nan=0.0)
     row_sums = sub.sum(axis=1, keepdims=True)
@@ -380,16 +411,18 @@ def evaluate_table1_paired_effects(
         adj_df["experiment_id"] = profiles_df["experiment_id"].values
         adj_df["inc_dec"] = profiles_df["inc_dec"].values
 
-        pvt_raw = profiles_df.pivot(
+        pvt_raw = profiles_df.pivot_table(
             index=["study_id", "experiment_id"],
             columns="inc_dec",
             values=t1_keys,
+            aggfunc="mean",
         ).dropna()
 
-        pvt_adj = adj_df.pivot(
+        pvt_adj = adj_df.pivot_table(
             index=["study_id", "experiment_id"],
             columns="inc_dec",
             values=t1_keys,
+            aggfunc="mean",
         ).dropna()
 
     results: list[Table1TraitEffect] = []
@@ -413,9 +446,9 @@ def evaluate_table1_paired_effects(
             raw_mean = float(np.mean(raw_diff)) if len(raw_diff) > 0 else 0.0
             adj_mean = float(np.mean(adj_diff)) if len(adj_diff) > 0 else 0.0
 
-            # Wilcoxon signed-rank test on non-zero differences
-            nz_raw = raw_diff[raw_diff != 0.0]
-            nz_adj = adj_diff[adj_diff != 0.0]
+            # Wilcoxon signed-rank test on finite non-zero differences
+            nz_raw = raw_diff[np.isfinite(raw_diff) & (raw_diff != 0.0)]
+            nz_adj = adj_diff[np.isfinite(adj_diff) & (adj_diff != 0.0)]
 
             # Use NaN when <= 10 non-zero pairs instead of fabricating 1.0 (#383)
             raw_p = float(stats.wilcoxon(nz_raw).pvalue) if len(nz_raw) > 10 else float("nan")
@@ -515,7 +548,9 @@ def evaluate_conditional_twin_test(
         r_az = float(np.corrcoef(vec_a, depth)[0, 1])
         r_bz = float(np.corrcoef(vec_b, depth)[0, 1])
         denom = math.sqrt(max(0.0, (1.0 - r_az**2) * (1.0 - r_bz**2)))
-        partial_r = float((corr_prof - r_az * r_bz) / denom) if denom > 1e-12 else 0.0
+        partial_r = (
+            float(np.clip((corr_prof - r_az * r_bz) / denom, -1.0, 1.0)) if denom > 1e-12 else 0.0
+        )
     else:
         partial_r = float("nan")
 
@@ -538,10 +573,11 @@ def evaluate_conditional_twin_test(
         and "dec" in profiles_df["inc_dec"].values
     )
     if has_paired_directions:
-        pvt = profiles_df.pivot(
+        pvt = profiles_df.pivot_table(
             index=["study_id", "experiment_id"],
             columns="inc_dec",
             values=[trait_a, trait_b],
+            aggfunc="mean",
         ).dropna()
     else:
         pvt = pd.DataFrame()
@@ -616,7 +652,7 @@ def run_density_audit(
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     profiles_df, non_media_cols = load_non_media_profile_matrix(profiles_path, columns_path)
-    raw_matrix = profiles_df[non_media_cols].values.astype(float)
+    raw_matrix = np.nan_to_num(profiles_df[non_media_cols].to_numpy(dtype=float), nan=0.0)
 
     # 1. Baseline metrics (Pearson & Spearman)
     raw_pearson = compute_correlation_metrics(raw_matrix, non_media_cols, method="pearson")

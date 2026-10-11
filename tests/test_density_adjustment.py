@@ -551,3 +551,86 @@ def test_evaluate_conditional_twin_test_unknown_depth_columns_and_missing_keys()
     summary_no_id = evaluate_conditional_twin_test(df_no_id, TWIN_A, TWIN_B)
     assert summary_no_id.n_paired_experiments == 0
     assert np.isnan(summary_no_id.paired_correlation)
+
+
+def test_compute_correlation_metrics_spearman_two_traits() -> None:
+    """Verify compute_correlation_metrics handles 2-trait spearman correlation without crashing."""
+    rng = np.random.default_rng(42)
+    x = np.column_stack(
+        [np.arange(20, dtype=float), np.arange(20, dtype=float) * 2.0 + rng.normal(size=20)]
+    )
+    cols = ["trait_1", "trait_2"]
+
+    metrics = compute_correlation_metrics(x, cols, method="spearman")
+    assert metrics.n_samples == 20
+    assert metrics.n_traits == 2
+    assert metrics.constant_traits_excluded == 0
+    assert 0.8 < metrics.median_pairwise_r <= 1.0
+    assert 0.8 < metrics.mean_pairwise_r <= 1.0
+
+
+def test_compute_correlation_metrics_shape_and_length_validation() -> None:
+    """Verify compute_correlation_metrics rejects 1D/3D matrices and column length mismatches."""
+    # 1D array
+    with pytest.raises(ValueError, match="trait_matrix must be 2D"):
+        compute_correlation_metrics(np.array([1.0, 2.0]), ["c1", "c2"])
+
+    # Column length mismatch
+    mat = np.ones((10, 3))
+    with pytest.raises(ValueError, match=r"column_ids length.*does not match"):
+        compute_correlation_metrics(mat, ["c1", "c2"])
+
+
+def test_normalize_traits_by_profile_composition_missing_columns() -> None:
+    """Verify normalize_traits_by_profile_composition raises ValueError when columns are missing."""
+    df = pd.DataFrame({"t1": [1.0, 2.0]})
+    with pytest.raises(ValueError, match="DataFrame missing 1 requested columns"):
+        normalize_traits_by_profile_composition(df, ["t1", "t_nonexistent"])
+
+
+def test_columns_file_gzip_and_schema_validation(tmp_path: Path) -> None:
+    """Verify get_non_media_trait_columns handles gzipped files and catches invalid schemas."""
+    # Gzipped columns file
+    gz_path = tmp_path / "columns.tsv.gz"
+    df_valid = pd.DataFrame(
+        {
+            "column_id": ["t1", "m1"],
+            "object_category": ["cat1", "METPO:1004005"],
+        }
+    )
+    df_valid.to_csv(gz_path, sep="\t", index=False, compression="gzip")
+
+    # Pass uncompressed path, should automatically find .gz
+    uncompressed_path = tmp_path / "columns.tsv"
+    cols = get_non_media_trait_columns(uncompressed_path)
+    assert cols == ["t1"]
+
+    # Schema missing required columns
+    bad_schema = tmp_path / "bad_schema.tsv"
+    pd.DataFrame({"wrong_col": [1, 2]}).to_csv(bad_schema, sep="\t", index=False)
+    with pytest.raises(ValueError, match="missing required columns"):
+        get_non_media_trait_columns(bad_schema)
+
+
+def test_evaluate_table1_and_twins_duplicate_experiments() -> None:
+    """Verify evaluate_table1_paired_effects and evaluate_conditional_twin_test
+    handle duplicate keys.
+    """
+    cols = list(TABLE_1_TRAITS.keys())
+    # DataFrame with duplicate (study_id, experiment_id, inc_dec) entries
+    df_dup = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s1", "s1"],
+            "experiment_id": ["e1", "e1", "e1", "e1"],
+            "inc_dec": ["inc", "inc", "dec", "dec"],
+            **{c: [2.0, 4.0, 1.0, 3.0] for c in cols},
+        }
+    )
+    adj_mat = df_dup[cols].to_numpy(dtype=float)
+
+    # Should aggregate duplicate keys via pivot_table without raising ValueError
+    effects = evaluate_table1_paired_effects(df_dup, adj_mat, cols)
+    assert len(effects) == len(cols)
+
+    twin_summary = evaluate_conditional_twin_test(df_dup, TWIN_A, TWIN_B)
+    assert twin_summary.n_paired_experiments == 1

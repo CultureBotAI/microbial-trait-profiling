@@ -41,7 +41,7 @@ Restricting the trait universe to non-MediaDive traits (`object_category != 'MET
 | **Pairs Exceeding $+0.5$** | 68.0% | 63.1% | Majority of trait pairs exhibit strong positive correlation. |
 | **Pairs Exceeding $+0.9$** | 18.2% | 3.4% | Substantial number of near-redundant pairs in raw counts. |
 | **PC1 Variance Explained** | **66.80%** | **60.50%** | A single global axis accounts for over 66% of total trait variation. |
-| **PC1–PC5 Variance Explained** | **89.35%** | — | Top 5 components explain $\approx 89\%$ of total variance. |
+| **PC1–PC5 Variance Explained** | **89.35%** | — | Top 5 components explain $\approx 89$% of total variance. |
 
 ### Effective Number of Independent Tests ($M_{\text{eff}}$)
 
