@@ -177,6 +177,14 @@ validate-studies:
 validate-studies-linkml:
 	just timed validate-studies-linkml "uv run linkml validate -s {{schema}} -C Study data/studies/*.yaml"
 
+# Inventory the measured evidence that could independently test the trait signals
+# (#191): what each study's curated metadata mentions, which experiments are
+# stratified by a measured marker, which inferred-function traits exist, and which
+# external cohorts overlap the discovery corpus. Acquires no new data.
+[positional-arguments]
+validation-evidence *ARGS:
+	uv run python -m bsdbng.validation_evidence "$@"
+
 stats:
 	@uv run python -c "from bsdbng.stats import print_stats; print_stats()"
 

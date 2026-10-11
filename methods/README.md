@@ -46,6 +46,12 @@ preserves the follow-up questions and Rosalind's revised response, including its
 prediction and discriminating-evidence tables. It is archived without a separate
 evidence review.
 
+[`validation_feasibility.md`](validation_feasibility.md) documents
+`just validation-evidence`: what measured inflammation, SCFA, redox, exposure and
+covariate evidence is reachable, which BugSigDB experiments are stratified by a
+measured marker, what the SCFA-related annotations actually assert, which external
+cohorts overlap the discovery corpus, and the protocol a real validation would need.
+
 The gram-stain directional Sankey diagrams live on the
 `147-add-gram-stain-directional-sankey-gram-positive-gram-negative-x-increased-decreased`
 branch together with their own methods file; they are not part of this branch.
