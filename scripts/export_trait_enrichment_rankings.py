@@ -25,7 +25,7 @@ from typing import Any
 
 import pandas as pd
 
-from bsdbng.enrichment_results import (
+from mtp.enrichment_results import (
     META_RESULT_STATUS,
     META_SIGNIFICANT_HITS,
     META_TESTS_PERFORMED,
@@ -34,7 +34,7 @@ from bsdbng.enrichment_results import (
     MalformedResultsError,
     load_results_tsv,
 )
-from bsdbng.paths import DERIVED_DATA_DIR
+from mtp.paths import DERIVED_DATA_DIR
 
 DEFAULT_INPUT_CANDIDATES = [
     DERIVED_DATA_DIR / "trait_enrichment_report_p0.001.txt",

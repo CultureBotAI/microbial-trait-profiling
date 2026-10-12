@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 
 import httpx
 
-from bsdbng.paths import REPO_ROOT
+from mtp.paths import REPO_ROOT
 
 BENCHMARK_DIR = REPO_ROOT / "data" / "benchmarks"
 REPORT_PATH = REPO_ROOT / "docs" / "bugsigdb-access-benchmark.md"

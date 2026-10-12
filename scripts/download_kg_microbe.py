@@ -33,7 +33,7 @@ from datetime import UTC, datetime
 
 import gdown
 
-from bsdbng.paths import REPO_ROOT
+from mtp.paths import REPO_ROOT
 
 OUT_DIR = REPO_ROOT / "data" / "kg-microbe"
 PROVENANCE_PATH = OUT_DIR / "provenance.json"
