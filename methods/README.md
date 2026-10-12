@@ -21,6 +21,11 @@ PNG export needs a headless Chrome (kaleido 1.x); run `just get-chrome` once —
 it fetches a version-pinned Chrome for Testing build (~170 MB) that kaleido
 then prefers over a system Chrome, which is what makes the renders reproducible.
 
+[`integrated_evidence.md`](integrated_evidence.md) documents
+`just integrated-evidence`: the shared result contract in which every method keeps its
+own row, family, units and states, with nothing pooled across methods and every absent
+input recorded as a state rather than a blank.
+
 [`three_arm_statistics.md`](three_arm_statistics.md) is not about one figure. It
 records how the three analyses built on `study_trait_profiles_wide.tsv` differ,
 and defines the shared corpus, paired quantities and evidence levels required

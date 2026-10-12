@@ -4,6 +4,10 @@ import sys
 from typing import Any
 
 from mtp.guild_maps import (
+    CELL_BELOW_MIN_STUDIES,
+    CELL_NO_SIGNAL,
+    CELL_NOT_SAMPLED,
+    CELL_VALUE,
     CLUSTER_GAP_ROWS,
     GUILD_COLORSCALES,
     GUILD_ORDER,
@@ -24,6 +28,7 @@ from mtp.guild_maps import (
     _coverage_note,
     _guild_of_column,
     _insert_cluster_gaps,
+    _odds_ratio_label,
     _pooling,
     _sign,
     _site_blocks,
@@ -34,6 +39,8 @@ from mtp.guild_maps import (
     _write_matrix_tsv,
     build_matrix,
     build_parser,
+    cell_status,
+    cell_status_rows,
     compute_correlation,
     main,
     study_direction_means,
@@ -45,6 +52,10 @@ from mtp.guild_maps import (
 )
 
 __all__ = [
+    "CELL_BELOW_MIN_STUDIES",
+    "CELL_NOT_SAMPLED",
+    "CELL_NO_SIGNAL",
+    "CELL_VALUE",
     "CLUSTER_GAP_ROWS",
     "GUILD_COLORSCALES",
     "GUILD_ORDER",
@@ -65,6 +76,7 @@ __all__ = [
     "_coverage_note",
     "_guild_of_column",
     "_insert_cluster_gaps",
+    "_odds_ratio_label",
     "_pooling",
     "_sign",
     "_site_blocks",
@@ -75,6 +87,8 @@ __all__ = [
     "_write_matrix_tsv",
     "build_matrix",
     "build_parser",
+    "cell_status",
+    "cell_status_rows",
     "compute_correlation",
     "main",
     "study_direction_means",

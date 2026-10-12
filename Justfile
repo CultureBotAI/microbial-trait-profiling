@@ -330,6 +330,13 @@ calibration-flip-assignments *ARGS:
 
 pipeline: download ingest
 
+# The integrated evidence table (#178): one row per method result, each keeping its
+# own family, units and states. Reads the other analyses' status files from
+# data/derived/ when they exist; anything absent is recorded as pending, never as a
+# negative result. Nothing is pooled across methods.
+[positional-arguments]
+integrated-evidence *ARGS:
+	uv run python -m bsdbng.integrated_evidence --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
 # --- linkml-store over MongoDB (localhost:27017/bsdbng.studies) ---
 # Run once to populate the collection:
 mongo-load:

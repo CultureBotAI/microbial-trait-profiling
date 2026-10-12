@@ -53,6 +53,7 @@ def test_mtp_modules_can_be_imported_directly() -> None:
         "enrichment_stats",
         "guild_maps",
         "ingest",
+        "integrated_evidence",
         "log_ratio_sensitivity",
         "ora_calibration",
         "ora_calibration.adapters",

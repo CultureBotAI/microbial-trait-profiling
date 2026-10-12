@@ -1,5 +1,6 @@
 """Table 1 trait selection, the paired directional shift, and its FDR control."""
 
+import csv
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,7 @@ from bsdbng.table1_trait_maps import (
     missing_condition_note,
     missing_conditions,
     trait_colorscale,
+    write_shift_table,
 )
 from bsdbng.trait_guilds import (
     TABLE1_TRAIT_COLORS,
@@ -219,6 +221,21 @@ def test_direction_shift_counts_studies_and_matches_scipy(corpus: tuple[Path, Pa
     assert [by_trait[t].p_value for t in TRAIT_ORDER] == pytest.approx(expected_p)
     assert [by_trait[t].q_value for t in TRAIT_ORDER] == pytest.approx(expected_q)
     assert aerobic.p_value == pytest.approx(0.25)
+
+
+def test_every_shift_row_names_its_correction_family(
+    corpus: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Each exported q says which family it was corrected in and its size (#289)."""
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    result = compute_direction_shifts(profiles, TRAIT_ORDER)
+    shifts_path = write_shift_table(result, tmp_path, "v")[0]
+    with shifts_path.open(encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    assert len(rows) == len(TRAIT_ORDER)
+    assert {(r["family_id"], r["family_size"], r["correction_method"]) for r in rows} == {
+        ("table1_six_fractions", str(len(TRAIT_ORDER)), "Benjamini-Hochberg")
+    }
 
 
 def test_contrast_correlation_is_computed_across_studies(corpus: tuple[Path, Path]) -> None:

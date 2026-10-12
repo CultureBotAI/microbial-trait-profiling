@@ -1,14 +1,18 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
-import math
 from pathlib import Path
 
 import pytest
 from scipy.stats import binomtest
 
 from bsdbng.guild_maps import (
+    CELL_BELOW_MIN_STUDIES,
+    CELL_NO_SIGNAL,
+    CELL_NOT_SAMPLED,
+    CELL_VALUE,
     OTHER_LABEL,
     build_matrix,
+    cell_status,
     compute_correlation,
     study_direction_means,
     subset_matrix,
@@ -170,8 +174,9 @@ def test_correlation_counts_studies_by_shift_direction(corpus: tuple[Path, Path]
     assert result.mcnemar_p == pytest.approx(float(binomtest(2, 2, p=0.5).pvalue))
     assert result.mcnemar_p == pytest.approx(0.5)
     # The paired odds ratio is the discordant ratio; with no reverse-discordant
-    # studies it is infinite.
-    assert result.odds_ratio == math.inf
+    # studies it has no value, and an undefined statistic is missing rather than
+    # infinite - float("inf") in a TSV cell is a sentinel value (#294).
+    assert result.odds_ratio is None
 
 
 def test_study_means_reject_an_unpaired_corpus() -> None:
@@ -352,6 +357,24 @@ def test_subset_derives_the_other_axis_and_drops_blank_bands(corpus: tuple[Path,
 
     with pytest.raises(ValueError, match="Nowhere"):
         subset_matrix(matrix, sites=["Nowhere"])
+
+
+def test_cell_status_separates_the_three_reasons_a_cell_is_blank() -> None:
+    """A blank cell is one of three different claims, not one (#294).
+
+    Both the figure writer and the integrated evidence table classify cells
+    here, so the distinction has to hold in one place: a cell held back for too
+    little support, a cell sampled in which nothing carried the annotation, and
+    a cell nothing was sampled in.
+    """
+    assert cell_status(0.42, False, 7) == CELL_VALUE
+    # A zero mean is a value, not an absence.
+    assert cell_status(0.0, False, 7) == CELL_VALUE
+    assert cell_status(None, True, 7) == CELL_NO_SIGNAL
+    assert cell_status(None, False, 2) == CELL_BELOW_MIN_STUDIES
+    assert cell_status(None, False, 0) == CELL_NOT_SAMPLED
+    # The support state must come from the study count, not from the value.
+    assert cell_status(None, False, 1) != cell_status(None, False, 0)
 
 
 def _guild_profile(

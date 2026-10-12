@@ -113,6 +113,52 @@ class CorpusStats:
     kept_profiles: int
 
 
+@dataclass(frozen=True)
+class PairExclusion:
+    """Experiments kept for a paired contrast, and what was removed."""
+
+    profiles: list[Profile]
+    zero_total_experiments: int
+    studies_before: int
+    studies_after: int
+
+    @property
+    def studies_lost(self) -> int:
+        return self.studies_before - self.studies_after
+
+
+def drop_zero_total_pairs(profiles: Sequence[Profile]) -> PairExclusion:
+    """Remove whole experiments whose retained-annotation total is zero on a side.
+
+    ``Profile.fraction`` returns 0.0 when the total is zero, so such a profile
+    enters a contrast as a measured share of nothing. It is not: the share is
+    undefined. Scoring it as zero makes the contrast exactly zero, which the
+    sign test then counts as a tie, so all-tied studies and zero-annotation
+    studies collapse into one number - the collapse the shared comparison basis
+    of #178 forbids (#294).
+
+    The whole experiment goes, not the offending side, so the corpus stays
+    paired. On the pinned corpus this removes 94 of 2,335 experiments and takes
+    the study count from 959 to 939.
+    """
+    by_experiment: defaultdict[tuple[str, str], list[Profile]] = defaultdict(list)
+    for profile in profiles:
+        by_experiment[(profile.study_id, profile.experiment_id)].append(profile)
+    kept: list[Profile] = []
+    zero_total = 0
+    for sides in by_experiment.values():
+        if any(side.total <= 0 for side in sides):
+            zero_total += 1
+        else:
+            kept.extend(sides)
+    return PairExclusion(
+        profiles=kept,
+        zero_total_experiments=zero_total,
+        studies_before=len({p.study_id for p in profiles}),
+        studies_after=len({p.study_id for p in kept}),
+    )
+
+
 class ExperimentMetadata:
     """Per-experiment condition, body site, and host species from experiments.tsv."""
 
@@ -193,13 +239,25 @@ def retained_trait_columns(header: Sequence[str]) -> tuple[list[int], list[str],
     return positions, columns, mediadive_excluded
 
 
+@dataclass(frozen=True)
+class TraitColumnSelection:
+    """Where a guild's declared terms were found in the profile matrix header."""
+
+    total_positions: list[int]
+    guild_positions: dict[str, list[int]]
+    mediadive_excluded: int
+    #: guild -> ((declared term id, raw matrix column), ...), in header order. The
+    #: raw column is the only key a result can be joined back to the matrix on.
+    matched_columns: dict[str, tuple[tuple[str, str], ...]]
+
+
 def _select_trait_columns(
     header: list[str], guilds: dict[str, tuple[str, ...]]
-) -> tuple[list[int], dict[str, list[int]], int]:
+) -> TraitColumnSelection:
     """Map trait columns to positions, dropping MediaDive growth-medium columns."""
     wanted: dict[str, set[str]] = {g: set(ids) for g, ids in guilds.items()}
     guild_positions: dict[str, list[int]] = {guild: [] for guild in guilds}
-    matched_columns: defaultdict[tuple[str, str], list[str]] = defaultdict(list)
+    matched: defaultdict[str, list[tuple[str, str]]] = defaultdict(list)
     total_positions, total_columns, mediadive_excluded = retained_trait_columns(header)
 
     for index, column in zip(total_positions, total_columns, strict=True):
@@ -207,7 +265,7 @@ def _select_trait_columns(
         for guild, ids in wanted.items():
             if column in ids or term in ids:
                 guild_positions[guild].append(index)
-                matched_columns[(guild, column if column in ids else term)].append(column)
+                matched[guild].append((column if column in ids else term, column))
 
     for guild, positions in guild_positions.items():
         if not positions:
@@ -216,7 +274,11 @@ def _select_trait_columns(
 
     # Orthogonal check: a term that resolved to more than one column would be
     # counted twice in the guild sum and once in the denominator.
-    ambiguous = {key: cols for key, cols in matched_columns.items() if len(cols) > 1}
+    per_term: defaultdict[tuple[str, str], list[str]] = defaultdict(list)
+    for guild, pairs in matched.items():
+        for term, column in pairs:
+            per_term[(guild, term)].append(column)
+    ambiguous = {key: cols for key, cols in per_term.items() if len(cols) > 1}
     if ambiguous:
         detail = "; ".join(
             f"{guild}/{term} -> {sorted(cols)}" for (guild, term), cols in sorted(ambiguous.items())
@@ -224,7 +286,43 @@ def _select_trait_columns(
         msg = f"Trait terms resolved to more than one profile column: {detail}"
         raise ValueError(msg)
 
-    return total_positions, guild_positions, mediadive_excluded
+    return TraitColumnSelection(
+        total_positions=total_positions,
+        guild_positions=guild_positions,
+        mediadive_excluded=mediadive_excluded,
+        matched_columns={guild: tuple(pairs) for guild, pairs in sorted(matched.items())},
+    )
+
+
+def _read_profile_header(profile_path: Path) -> list[str]:
+    """Return the profile matrix header, rejecting a file that is not one."""
+    with profile_path.open(encoding="utf-8", newline="") as handle:
+        header = next(csv.reader(handle, delimiter="\t"), None)
+    if header is None:
+        msg = f"{profile_path} is empty"
+        raise ValueError(msg)
+    if header[:3] != list(PROFILE_ID_COLUMNS):
+        msg = f"{profile_path} must start with {PROFILE_ID_COLUMNS}"
+        raise ValueError(msg)
+    return header
+
+
+def resolve_trait_columns(
+    profile_path: Path = DEFAULT_PROFILE_PATH,
+    guilds: dict[str, tuple[str, ...]] | None = None,
+) -> dict[str, tuple[tuple[str, str], ...]]:
+    """Return the (declared term, raw matrix column) pairs each guild resolved to.
+
+    A consumer that needs to join a result back to the matrix needs the raw
+    column name, not the declared CURIE. Two of the six Table 1 traits are
+    carried as METPO-qualified composites (``METPO:2000103|GO:0030245`` and
+    ``METPO:2000103|pathways:arsenate_reduction``), so the declared term matches
+    the segment after the final pipe rather than the whole column, and a result
+    exported under the bare term cannot be joined to the matrix at all (#294).
+    """
+    header = _read_profile_header(profile_path)
+    selection = _select_trait_columns(header, OXYGEN_GUILDS if guilds is None else guilds)
+    return selection.matched_columns
 
 
 def load_profiles(
@@ -250,9 +348,10 @@ def load_profiles(
             msg = f"{profile_path} must start with {PROFILE_ID_COLUMNS}"
             raise ValueError(msg)
 
-        total_positions, guild_positions, mediadive_excluded = _select_trait_columns(
-            header, guild_map
-        )
+        selection = _select_trait_columns(header, guild_map)
+        total_positions = selection.total_positions
+        guild_positions = selection.guild_positions
+        mediadive_excluded = selection.mediadive_excluded
 
         profile_rows = 0
         unmatched = 0
@@ -350,3 +449,18 @@ def write_stats_report(
 ) -> None:
     """Print the corpus filter cascade so no reduction is silent."""
     print(format_stats_report(stats, vintage), file=stream)
+
+
+def format_pair_exclusion(exclusion: PairExclusion) -> str:
+    """Render the zero-total pair exclusion in one line, counts and rule together.
+
+    Every arm that applies the shared comparison basis reports the same reduction,
+    so the wording lives here rather than being retyped per caller (#294).
+    """
+    return (
+        f"Excluded {exclusion.zero_total_experiments} experiment pairs with a zero "
+        f"retained-annotation total on a side; studies {exclusion.studies_before} "
+        f"-> {exclusion.studies_after} ({exclusion.studies_lost} lost). The share of "
+        "a zero total is undefined, not zero, so the whole pair is dropped rather "
+        "than entering the contrast as a tie."
+    )
