@@ -598,4 +598,3 @@ def test_dropped_other_site_preserves_condition_pool_membership() -> None:
     condition_pool = next(pool for pool in matrix.pooled if pool.kind == "condition")
     assert condition_pool.bucketed
     assert condition_pool.pooled_names == ("PooledA", "PooledB")
-

@@ -464,4 +464,3 @@ def format_pair_exclusion(exclusion: PairExclusion) -> str:
         "a zero total is undefined, not zero, so the whole pair is dropped rather "
         "than entering the contrast as a tie."
     )
-

@@ -53,8 +53,8 @@ from mtp.guild_maps import (
 
 __all__ = [
     "CELL_BELOW_MIN_STUDIES",
-    "CELL_NO_SIGNAL",
     "CELL_NOT_SAMPLED",
+    "CELL_NO_SIGNAL",
     "CELL_VALUE",
     "CLUSTER_GAP_ROWS",
     "GUILD_COLORSCALES",
