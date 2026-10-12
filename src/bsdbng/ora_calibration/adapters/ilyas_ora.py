@@ -8,14 +8,14 @@ import numpy as np
 import pandas as pd
 from scipy.stats import hypergeom
 
-from bsdbng.calibration.protocol import MethodInferenceResult
-from bsdbng.calibration.scenarios import (
+from bsdbng.enrichment_stats import benjamini_hochberg
+from bsdbng.ora_calibration.protocol import MethodInferenceResult
+from bsdbng.ora_calibration.scenarios import (
     profile_identifiers,
     resolve_signature_sizes,
     shared_trait_columns,
     trait_population_counts,
 )
-from bsdbng.enrichment_stats import benjamini_hochberg
 from bsdbng.study_trait_profiles import direction_to_inc_dec
 
 RESULT_COLUMNS: list[str] = [

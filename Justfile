@@ -152,10 +152,10 @@ export-rankings: analyze analyze-depletion
 
 # Run the ORA harness benchmark check suite over synthetic null and mixed scenarios (Refs #263, #343, #348, #351).
 calibrate replicates="10" seed="42" scenario="all": taxa-trait-matrix study-trait-profiles-ora
-	just timed calibrate "uv run python -m bsdbng.calibration.harness \
+	just timed calibrate "uv run python -m bsdbng.ora_calibration.harness \
 	  --profiles data/derived/study_trait_profiles_ora_wide.tsv \
 	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
-	  --output-dir data/derived/calibration \
+	  --output-dir data/derived/ora_calibration \
 	  --replicates {{replicates}} \
 	  --seed {{seed}} \
 	  --scenario {{scenario}} \
