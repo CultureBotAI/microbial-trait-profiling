@@ -71,6 +71,19 @@ covariate evidence is reachable, which BugSigDB experiments are stratified by a
 measured marker, what the SCFA-related annotations actually assert, which external
 cohorts overlap the discovery corpus, and the protocol a real validation would need.
 
+[`biological_interpretation.md`](biological_interpretation.md) specifies project-wide
+biological interpretation standards, distinguishing organism trait annotation from in vivo
+metabolic flux, formalizing the 4 meanings of direction, providing defensible wording
+rules and caption contracts, and illustrating them with worked examples.
+
+[`biological_interpretation_audit.md`](biological_interpretation_audit.md) audits all
+claims across methods, protocols, and documentation against these standards (findings
+C01–C11, P01–P10, R01–R09, G01–G13), recording resolution status for each finding.
+
+[`table1_trait_semantics_audit.md`](../docs/table1_trait_semantics_audit.md) documents
+the semantic scope, source ontology mappings, approved vocabulary, and unverified
+inferences for each of the six Table 1 traits.
+
 The gram-stain directional Sankey diagrams live on the
 `147-add-gram-stain-directional-sankey-gram-positive-gram-negative-x-increased-decreased`
 branch together with their own methods file; they are not part of this branch.

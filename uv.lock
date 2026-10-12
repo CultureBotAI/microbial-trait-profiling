@@ -122,103 +122,6 @@ wheels = [
 ]
 
 [[package]]
-name = "bsdbng"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "httpx" },
-    { name = "kaleido" },
-    { name = "linkml" },
-    { name = "linkml-runtime" },
-    { name = "numpy" },
-    { name = "pandas" },
-    { name = "plotly" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "scipy", version = "1.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "ruff" },
-    { name = "types-pyyaml" },
-]
-kg = [
-    { name = "gdown" },
-]
-mongo = [
-    { name = "linkml-store", extra = ["llm", "mongodb"] },
-    { name = "pymongo" },
-    { name = "python-dotenv" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-    { name = "types-pyyaml" },
-]
-qa = [
-    { name = "bandit" },
-    { name = "deptry" },
-    { name = "detect-secrets" },
-    { name = "pip-audit" },
-    { name = "pytest-cov" },
-    { name = "types-pyyaml" },
-    { name = "uv" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "gdown", marker = "extra == 'kg'", specifier = ">=6.0.0" },
-    { name = "httpx", specifier = ">=0.28.0" },
-    { name = "kaleido", specifier = ">=1.0" },
-    { name = "linkml", specifier = ">=1.10.0" },
-    { name = "linkml-runtime", specifier = ">=1.8.3" },
-    { name = "linkml-store", extras = ["llm", "mongodb"], marker = "extra == 'mongo'", specifier = ">=0.3.0" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.15.0" },
-    { name = "numpy", specifier = ">=2.0" },
-    { name = "pandas", specifier = ">=3.0.0" },
-    { name = "plotly", specifier = ">=7.0" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.2.0" },
-    { name = "pydantic", specifier = ">=2.13.0" },
-    { name = "pymongo", marker = "extra == 'mongo'", specifier = ">=4.17.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
-    { name = "python-dotenv", marker = "extra == 'mongo'", specifier = ">=1.2.2" },
-    { name = "pyyaml", specifier = ">=6.0.2" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.10" },
-    { name = "scipy", specifier = ">=1.17.0" },
-    { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.12.20260408" },
-]
-provides-extras = ["dev", "kg", "mongo"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=1.15.0" },
-    { name = "pre-commit", specifier = ">=4.2.0" },
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "pytest-cov", specifier = ">=6.0.0" },
-    { name = "ruff", specifier = ">=0.15.10" },
-    { name = "types-pyyaml", specifier = ">=6.0.12.20260408" },
-]
-qa = [
-    { name = "bandit", extras = ["toml"], specifier = ">=1.8.3" },
-    { name = "deptry", specifier = ">=0.21.1" },
-    { name = "detect-secrets", specifier = "==1.5.0" },
-    { name = "pip-audit", specifier = ">=2.10.0" },
-    { name = "pytest-cov", specifier = ">=6.0.0" },
-    { name = "types-pyyaml", specifier = ">=6.0.12.20260408" },
-    { name = "uv", specifier = "==0.12.22" },
-]
-
-[[package]]
 name = "cachecontrol"
 version = "0.14.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1873,6 +1776,103 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ba/4e/13783aa7c17414d7186c72c49bc718366f75e49f0ea58d4f81cb63ac3187/msgpack-1.2.2-cp315-cp315t-win32.whl", hash = "sha256:8c6321a414f8b4a8dc43976b2fa8349156434ca9adedd9a187b796f7e1d3d3fc", size = 71790 },
     { url = "https://files.pythonhosted.org/packages/5e/9d/1d02994c7ae2603c98100984428ff0f67443572133bc18eca6058f732c1b/msgpack-1.2.2-cp315-cp315t-win_amd64.whl", hash = "sha256:6f53285f20d592ed309ee19e509cc4c77a3bda1db02ad67e8a0949bb227a5a6d", size = 78766 },
     { url = "https://files.pythonhosted.org/packages/60/54/89ed16e6f966a050dc78b0e94a545025211b07ce9f4bdfe07dff70c03fc2/msgpack-1.2.2-cp315-cp315t-win_arm64.whl", hash = "sha256:a378e12ccc06d76efde115caf4073b7e5ff3cc18291d1341f9e65fb882e3f754", size = 71819 },
+]
+
+[[package]]
+name = "mtp"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "httpx" },
+    { name = "kaleido" },
+    { name = "linkml" },
+    { name = "linkml-runtime" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "plotly" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "scipy", version = "1.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "types-pyyaml" },
+]
+kg = [
+    { name = "gdown" },
+]
+mongo = [
+    { name = "linkml-store", extra = ["llm", "mongodb"] },
+    { name = "pymongo" },
+    { name = "python-dotenv" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "types-pyyaml" },
+]
+qa = [
+    { name = "bandit" },
+    { name = "deptry" },
+    { name = "detect-secrets" },
+    { name = "pip-audit" },
+    { name = "pytest-cov" },
+    { name = "types-pyyaml" },
+    { name = "uv" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "gdown", marker = "extra == 'kg'", specifier = ">=6.0.0" },
+    { name = "httpx", specifier = ">=0.28.0" },
+    { name = "kaleido", specifier = ">=1.0" },
+    { name = "linkml", specifier = ">=1.10.0" },
+    { name = "linkml-runtime", specifier = ">=1.8.3" },
+    { name = "linkml-store", extras = ["llm", "mongodb"], marker = "extra == 'mongo'", specifier = ">=0.3.0" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.15.0" },
+    { name = "numpy", specifier = ">=2.0" },
+    { name = "pandas", specifier = ">=3.0.0" },
+    { name = "plotly", specifier = ">=7.0" },
+    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.2.0" },
+    { name = "pydantic", specifier = ">=2.13.0" },
+    { name = "pymongo", marker = "extra == 'mongo'", specifier = ">=4.17.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
+    { name = "python-dotenv", marker = "extra == 'mongo'", specifier = ">=1.2.2" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.10" },
+    { name = "scipy", specifier = ">=1.17.0" },
+    { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.12.20260408" },
+]
+provides-extras = ["dev", "kg", "mongo"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=1.15.0" },
+    { name = "pre-commit", specifier = ">=4.2.0" },
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest-cov", specifier = ">=6.0.0" },
+    { name = "ruff", specifier = ">=0.15.10" },
+    { name = "types-pyyaml", specifier = ">=6.0.12.20260408" },
+]
+qa = [
+    { name = "bandit", extras = ["toml"], specifier = ">=1.8.3" },
+    { name = "deptry", specifier = ">=0.21.1" },
+    { name = "detect-secrets", specifier = "==1.5.0" },
+    { name = "pip-audit", specifier = ">=2.10.0" },
+    { name = "pytest-cov", specifier = ">=6.0.0" },
+    { name = "types-pyyaml", specifier = ">=6.0.12.20260408" },
+    { name = "uv", specifier = "==0.12.22" },
 ]
 
 [[package]]

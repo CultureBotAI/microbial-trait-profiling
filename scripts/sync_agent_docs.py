@@ -25,14 +25,15 @@ COPILOT_HEADER = (
 PROJECT_CONVENTIONS = """
 ## Project conventions
 
-- Schema source of truth: `schema/bsdbng.yaml`
-- Generated Pydantic models: `src/bsdbng/datamodel/bsdbng_pydantic.py` (do not edit)
-- Load YAML via Pydantic: `from bsdbng.datamodel import Study`
-- Source code in `src/bsdbng/`, tests in `tests/`
+- Schema source of truth: `schema/mtp.yaml` (legacy: `schema/bsdbng.yaml`)
+- Generated Pydantic models: `src/mtp/datamodel/mtp_pydantic.py`
+  (legacy: `src/bsdbng/datamodel/bsdbng_pydantic.py`)
+- Load YAML via Pydantic: `from mtp.datamodel import Study`
+- Source code in `src/mtp/` (with compatibility shims in `src/bsdbng/`), tests in `tests/`
 - File types: CSV (input), YAML (output/schema), Python (code), JSON (logs)
 - No DuckDB, no Parquet, no Jupyter notebooks
 - No sentinel values — if data is missing, use `null`
-- Do not hardcode file paths — use `from bsdbng.paths import ...`
+- Do not hardcode file paths — use `from mtp.paths import ...`
 - Do not commit generated output files
 """
 

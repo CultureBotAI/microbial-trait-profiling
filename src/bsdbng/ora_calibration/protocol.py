@@ -1,36 +1,32 @@
-"""Statistical calibration protocol and interfaces for multi-method trait evaluation."""
+"""Compatibility shim.
 
-from __future__ import annotations
+Forwards bsdbng.ora_calibration.protocol
+to mtp.ora_calibration.protocol.
+"""
 
-from dataclasses import dataclass
-from typing import Any, Protocol
+import sys
+from typing import Any
 
-import pandas as pd
+from mtp.ora_calibration.protocol import (
+    MethodAdapter,
+    MethodInferenceResult,
+)
+
+__all__ = [
+    "MethodAdapter",
+    "MethodInferenceResult",
+]
+
+import mtp.ora_calibration.protocol as _target
+
+sys.modules[__name__] = _target
 
 
-@dataclass
-class MethodInferenceResult:
-    """Standardized output from a method adapter."""
-
-    method_id: str
-    owner: str
-    target_null: str
-    results_df: pd.DataFrame  # profile_id, trait, p_value, q_value, is_significant, effect_size
-    metadata: dict[str, Any]
+def __getattr__(name: str) -> Any:
+    return getattr(_target, name)
 
 
-class MethodAdapter(Protocol):
-    """Protocol that each framework adapter must satisfy."""
+if __name__ == "__main__":
+    import runpy
 
-    method_id: str
-    owner: str
-    target_null: str
-
-    def run_inference(
-        self,
-        profiles_df: pd.DataFrame,
-        taxa_matrix_df: pd.DataFrame,
-        config: dict[str, Any] | None = None,
-    ) -> MethodInferenceResult:
-        """Run the end-to-end inference procedure on provided inputs."""
-        ...
+    runpy.run_module("mtp.ora_calibration.protocol", run_name="__main__")

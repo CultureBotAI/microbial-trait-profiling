@@ -1,5 +1,23 @@
-"""bsdbng package."""
+"""Compatibility shim forwarding bsdbng to mtp."""
 
-__all__ = ["__version__"]
+from typing import Any
 
-__version__ = "0.1.0"
+from mtp import (
+    __version__,
+)
+
+__all__ = [
+    "__version__",
+]
+
+
+def __getattr__(name: str) -> Any:
+    import mtp as _target
+
+    return getattr(_target, name)
+
+
+if __name__ == "__main__":
+    import runpy
+
+    runpy.run_module("mtp", run_name="__main__")
