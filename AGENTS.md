@@ -43,7 +43,7 @@ instead of fixing the root cause:
 - Agent installs a dependency that isn't in `pyproject.toml`
 - Agent uses `pip install` instead of `uv sync`
 - Agent creates a `.py` script in the repo root instead of putting it in
-  `src/bsdbng/`
+  `src/mtp/`
 
 ### Why this matters
 
