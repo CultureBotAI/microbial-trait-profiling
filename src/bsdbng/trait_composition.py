@@ -219,7 +219,8 @@ def compute_log_ratio_shifts(
     return LogRatioResult(summaries, all_studies, len(summaries))
 
 
-def _sha256(path: Path) -> str:
+def file_sha256(path: Path) -> str:
+    """The hex SHA-256 of a file, for the provenance blocks that identify inputs."""
     with path.open("rb") as handle:
         return hashlib.file_digest(handle, "sha256").hexdigest()
 
@@ -269,11 +270,11 @@ def write_log_ratio_outputs(
     provenance = {
         **scope,
         "profile_path": str(profile_path),
-        "profile_sha256": _sha256(profile_path),
+        "profile_sha256": file_sha256(profile_path),
         "experiments_path": str(experiments_path),
-        "experiments_sha256": _sha256(experiments_path),
-        "analysis_source_sha256": _sha256(Path(__file__)),
-        "shared_loader_source_sha256": _sha256(Path(__file__).with_name("trait_guilds.py")),
+        "experiments_sha256": file_sha256(experiments_path),
+        "analysis_source_sha256": file_sha256(Path(__file__)),
+        "shared_loader_source_sha256": file_sha256(Path(__file__).with_name("trait_guilds.py")),
         "code_commit": code_commit,
         "bugsigdb_vintage": read_bugsigdb_vintage(full_dump_path),
         "input_filter_counts_before_site_selection": asdict(corpus_stats) if corpus_stats else None,

@@ -27,15 +27,34 @@ and defines the shared corpus, paired quantities and evidence levels required
 before choosing comparison thresholds or ranking scores. It also explains why
 the native p-values are not on comparable scales.
 
+[`contrast_orientation.md`](contrast_orientation.md) documents
+`just contrast-orientation`: what each BugSigDB experiment compares, which way its
+direction points, the disease-versus-healthy population with its review, and the
+six Table 1 directions and 15 ratios on that population beside the historical corpus.
+
 [`table1_paired_log_ratios.md`](table1_paired_log_ratios.md) documents
 `just table1-compositional-stats`: paired log-ratio direction tests for all 15
 Table 1 trait pairs, with explicit references, zero exclusions, study-level
 coverage, and a separate correction family. It emits statistics and a Markdown
 report without rendering figures.
 
+[`calibration.md`](calibration.md) documents `just calibration-report`: what the
+directional tests do when their own nulls are true, their power against a declared
+injected effect, and what selecting traits on the data costs, against criteria fixed
+in [`calibration_protocol.json`](calibration_protocol.json). That protocol is on its
+second version; every amendment, what prompted it and what was already known when it
+was made are recorded in its `amendments` array rather than edited in quietly.
+`just calibration-flip-assignments` writes only the shared flip-assignment table the
+other two arms would need to be measured on the same null (#263).
+
 [`table1_log_ratio_validation.md`](table1_log_ratio_validation.md) records the
 pinned-corpus rerun of all 15 ratios alongside the original six fraction
 directions, including study coverage, uncertainty and interpretation limits.
+
+[`table1_log_ratio_sensitivity.md`](table1_log_ratio_sensitivity.md) documents
+`just table1-log-ratio-sensitivity`: predeclared scenarios separating population,
+estimand, reference, stratum and single-study effects on the 15 ratios, with the
+protocol in [`table1_log_ratio_sensitivity_protocol.json`](table1_log_ratio_sensitivity_protocol.json).
 
 The [GPT Rosalind discussion and review](../docs/rosalind-six-trait-interpretation.md)
 archives proposed biological explanations for the six traits, with a separate
@@ -45,6 +64,12 @@ The [second exchange](../docs/rosalind-six-trait-interpretation-response-2.md)
 preserves the follow-up questions and Rosalind's revised response, including its
 prediction and discriminating-evidence tables. It is archived without a separate
 evidence review.
+
+[`validation_feasibility.md`](validation_feasibility.md) documents
+`just validation-evidence`: what measured inflammation, SCFA, redox, exposure and
+covariate evidence is reachable, which BugSigDB experiments are stratified by a
+measured marker, what the SCFA-related annotations actually assert, which external
+cohorts overlap the discovery corpus, and the protocol a real validation would need.
 
 The gram-stain directional Sankey diagrams live on the
 `147-add-gram-stain-directional-sankey-gram-positive-gram-negative-x-increased-decreased`
