@@ -5,8 +5,6 @@ import pytest
 import yaml
 
 from bsdbng.study_trait_profiles import (
-    DEFAULT_ORA_OUTPUT_PATH,
-    DEFAULT_OUTPUT_PATH,
     create_study_trait_profiles,
     main,
 )
@@ -545,8 +543,15 @@ def test_create_study_trait_profiles_distinct_taxa_dedup(tmp_path: Path) -> None
     assert rows[0]["METPO:1"] == "1"
 
 
-def test_create_study_trait_profiles_ora_output_redirection(tmp_path: Path) -> None:
+def test_create_study_trait_profiles_ora_output_redirection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Issues #384 & #385: ORA output redirects away from default composition-arm path
+    mock_default = tmp_path / "default_wide.tsv"
+    mock_ora = tmp_path / "default_ora_wide.tsv"
+    monkeypatch.setattr("bsdbng.study_trait_profiles.DEFAULT_OUTPUT_PATH", mock_default)
+    monkeypatch.setattr("bsdbng.study_trait_profiles.DEFAULT_ORA_OUTPUT_PATH", mock_ora)
+
     study_dir = tmp_path / "studies"
     study_dir.mkdir()
     _write_study_yaml(study_dir)
@@ -561,10 +566,10 @@ def test_create_study_trait_profiles_ora_output_redirection(tmp_path: Path) -> N
     stats = create_study_trait_profiles(
         study_dir=study_dir,
         taxa_trait_matrix_path=taxa_trait_matrix_path,
-        output_path=DEFAULT_OUTPUT_PATH,
+        output_path=mock_default,
         binary=True,
     )
-    assert stats.output_path == DEFAULT_ORA_OUTPUT_PATH
+    assert stats.output_path == mock_ora
 
 
 def test_main_cli_error_handling() -> None:
