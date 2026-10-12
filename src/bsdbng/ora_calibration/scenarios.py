@@ -16,7 +16,44 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from bsdbng.calibration.study_flip import flip_profile_dataframe
+
+def flip_profile_dataframe(
+    profiles_df: pd.DataFrame,
+    rng: np.random.Generator,
+    *,
+    unit: str = "study",
+) -> pd.DataFrame:
+    """Exchange direction labels within a random half of units in a DataFrame (#263).
+
+    Supports both 'inc'/'dec' and 'increased'/'decreased' encodings.
+    """
+    if unit not in ("study", "experiment"):
+        raise ValueError(f"unknown flip unit {unit!r}")
+    if profiles_df.empty:
+        return profiles_df.copy()
+
+    df = profiles_df.copy()
+    if unit == "study":
+        units = sorted(df["study_id"].unique(), key=repr)
+        flipped_keys = {u for u in units if rng.random() < 0.5}
+        flip_mask = df["study_id"].isin(flipped_keys)
+    else:
+        row_keys = list(zip(df["study_id"], df["experiment_id"], strict=True))
+        unique_exps = sorted(set(row_keys), key=repr)
+        flipped_keys = {u for u in unique_exps if rng.random() < 0.5}
+        flip_mask = pd.Series([k in flipped_keys for k in row_keys], index=df.index)
+
+    swap_map = {
+        "inc": "dec",
+        "dec": "inc",
+        "increased": "decreased",
+        "decreased": "increased",
+    }
+    df.loc[flip_mask, "inc_dec"] = df.loc[flip_mask, "inc_dec"].map(
+        lambda val: swap_map.get(str(val), str(val))
+    )
+    return df
+
 
 PROFILE_METADATA_COLUMNS: list[str] = [
     "study_id",

@@ -1,6 +1,6 @@
 """Framework adapters for statistical calibration (#348, #351)."""
 
-from bsdbng.calibration.adapters.ilyas_ora import (
+from bsdbng.ora_calibration.adapters.ilyas_ora import (
     DEFAULT_MAX_FOLD,
     DEFAULT_MIN_FOLD,
     TEST_SCOPE_DEPLETION,

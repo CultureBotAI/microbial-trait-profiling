@@ -16,23 +16,25 @@ import pytest
 from bsdbng.calibration import (
     SEED,
     SHARED_FLIP_REPLICATES,
+    flip_directions,
+    replicate_rng,
+)
+from bsdbng.ora_calibration import (
     IlyasORAAdapter,
     compute_type_i_error,
-    flip_directions,
     generate_complete_null_ora_profiles,
     generate_mixed_signal_ora_profiles,
     generate_study_flip_null_ora_profiles,
-    replicate_rng,
 )
-from bsdbng.calibration.harness import (
+from bsdbng.ora_calibration.harness import (
     EXIT_FAILURE,
     EXIT_SUCCESS,
     NULL_PVALUES_FILENAME,
     SUMMARY_FILENAME,
     run_ora_calibration_benchmark,
 )
-from bsdbng.calibration.harness import main as harness_main
-from bsdbng.calibration.study_flip import flip_profile_dataframe
+from bsdbng.ora_calibration.harness import main as harness_main
+from bsdbng.ora_calibration.scenarios import flip_profile_dataframe
 from bsdbng.paths import DERIVED_DATA_DIR
 from bsdbng.trait_guilds import Profile
 
@@ -379,10 +381,10 @@ def test_cli_failed_run_removes_stale_results(
 def test_standard_module_command_executes_benchmark(
     synthetic_calibration_data: CalibrationData, tmp_path: Path
 ) -> None:
-    """``python -m bsdbng.calibration.harness`` (what ``just calibrate`` runs) must do work."""
+    """``python -m bsdbng.ora_calibration.harness`` (what ``just calibrate`` runs) must do work."""
     profiles, taxa = _write_inputs(tmp_path, synthetic_calibration_data)
     out = tmp_path / "out"
-    module_cmd = [sys.executable, "-m", "bsdbng.calibration.harness"]
+    module_cmd = [sys.executable, "-m", "bsdbng.ora_calibration.harness"]
 
     proc = subprocess.run(
         [*module_cmd, *_cli_args(profiles, taxa, out)],

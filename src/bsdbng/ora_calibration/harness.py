@@ -31,16 +31,17 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from bsdbng.calibration.adapters.ilyas_ora import IlyasORAAdapter
-from bsdbng.calibration.metrics import (
+from bsdbng.calibration import replicate_rng
+from bsdbng.ora_calibration.adapters.ilyas_ora import IlyasORAAdapter
+from bsdbng.ora_calibration.metrics import (
     FDRMetric,
     TypeIErrorMetric,
     compute_discrete_ecdf,
     compute_empirical_fdr,
     compute_type_i_error,
 )
-from bsdbng.calibration.protocol import MethodAdapter
-from bsdbng.calibration.scenarios import (
+from bsdbng.ora_calibration.protocol import MethodAdapter
+from bsdbng.ora_calibration.scenarios import (
     generate_complete_null_ora_profiles,
     generate_mixed_signal_ora_profiles,
     generate_study_flip_null_ora_profiles,
@@ -48,7 +49,6 @@ from bsdbng.calibration.scenarios import (
     shared_trait_columns,
     trait_population_counts,
 )
-from bsdbng.calibration.study_flip import replicate_rng
 from bsdbng.paths import DERIVED_DATA_DIR
 
 logger = logging.getLogger(__name__)

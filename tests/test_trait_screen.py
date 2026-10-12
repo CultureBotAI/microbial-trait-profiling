@@ -164,6 +164,49 @@ def test_the_widened_screen_votes_exactly_as_the_six_trait_arm_does() -> None:
             assert row.p_value == pytest.approx(shift.p_value)
 
 
+def test_the_six_study_corpus_gives_the_hand_computed_sign_test() -> None:
+    """Pins the shared rule itself, which comparing the two arms cannot (#330).
+
+    Both arms call the same tally, so agreement between them says nothing about
+    whether that tally is right. By hand: A is 8/13 vs 5/13 in every study, so
+    6 up, 0 down, and the two-sided exact binomial p is 2 * 0.5**6 = 1/32; B is
+    the mirror; C is 0 vs 0 everywhere, so 6 tied and untested. With C held at
+    p = 1 in a family of 3, BH gives A and B q = (1/32) * 3/2 = 3/64.
+    """
+    rows = {row.trait: row for row in run_screen(_six_study_corpus(), ["A", "B", "C"]).rows}
+    assert (rows["A"].studies_up, rows["A"].studies_down, rows["A"].studies_tied) == (6, 0, 0)
+    assert (rows["B"].studies_up, rows["B"].studies_down, rows["B"].studies_tied) == (0, 6, 0)
+    assert (rows["C"].studies_up, rows["C"].studies_down, rows["C"].studies_tied) == (0, 0, 6)
+    assert rows["A"].p_value == pytest.approx(1 / 32)
+    assert rows["B"].p_value == pytest.approx(1 / 32)
+    assert rows["A"].bh_q_nominal == pytest.approx(3 / 64)
+    assert rows["B"].bh_q_nominal == pytest.approx(3 / 64)
+    # Exact Clopper-Pearson for 6 of 6 is (0.025 ** (1 / 6), 1); testing the
+    # down count instead of the up count would put it at (0, 0.459) (#415).
+    assert rows["A"].ci_low == pytest.approx(0.025 ** (1 / 6))
+    assert rows["A"].ci_high == pytest.approx(1.0)
+
+
+def test_ties_are_left_out_of_the_binomial_n() -> None:
+    """The manifest's test is of non-tied studies; a unanimous fixture cannot show it (#415).
+
+    M shifts up in four studies, down in one, and is tied in one: p is the
+    two-sided exact binomial of 4 of 5 = 0.375. Counting the tie as a trial
+    would give 4 of 6 = 0.6875.
+    """
+    up = ({"M": 2, "Z": 1}, {"M": 1, "Z": 2})
+    down = ({"M": 1, "Z": 2}, {"M": 2, "Z": 1})
+    tied = ({"M": 1, "Z": 2}, {"M": 1, "Z": 2})
+    profiles = []
+    for index, (inc, dec) in enumerate([up, up, up, up, down, tied]):
+        profiles.append(_profile(f"s{index}", "inc", inc))
+        profiles.append(_profile(f"s{index}", "dec", dec))
+    rows = {row.trait: row for row in run_screen(profiles, ["M", "Z"]).rows}
+    assert (rows["M"].studies_up, rows["M"].studies_down, rows["M"].studies_tied) == (4, 1, 1)
+    assert rows["M"].p_value == pytest.approx(0.375)
+    assert rows["M"].share_up == pytest.approx(0.8)
+
+
 def test_an_all_tied_trait_has_no_result_rather_than_a_share_of_zero() -> None:
     screen = run_screen(_six_study_corpus(), ["A", "B", "C"])
     rows = {row.trait: row for row in screen.rows}
@@ -177,17 +220,32 @@ def test_an_all_tied_trait_has_no_result_rather_than_a_share_of_zero() -> None:
     assert rows["B"].share_up == pytest.approx(0.0)
 
 
-def test_a_trait_no_study_contrasts_is_untestable_not_a_null_result() -> None:
+def test_a_trait_zero_on_both_sides_is_all_tied_not_a_null_result() -> None:
     profiles = [
         _profile("s0", "inc", {"A": 1, "D": 0}),
         _profile("s0", "dec", {"A": 2, "D": 0}),
     ]
-    # D is constant at zero everywhere, so no study produces a contrast sign for it.
+    # D is zero on both sides, so the study's contrast for it is exactly tied:
+    # a paired study always contributes a contrast for every candidate (#327).
     screen = run_screen(profiles, ["A", "D"])
     rows = {row.trait: row for row in screen.rows}
-    assert rows["D"].test_status in (ALL_TIED, NO_ELIGIBLE_STUDIES)
+    assert rows["D"].test_status == ALL_TIED
+    assert rows["D"].studies_tied == 1
     assert rows["D"].p_value is None
     assert rows["D"].share_up is None
+
+
+def test_no_eligible_studies_is_the_state_of_a_scope_with_no_paired_study() -> None:
+    """Every paired study contrasts every candidate, so this state is per-scope (#327).
+
+    It cannot single out one trait; it is what every candidate reads when the
+    profiles passed in hold no paired study at all. The CLI has no subset
+    option, so on the real pipeline this means load_profiles kept no paired
+    human study.
+    """
+    screen = run_screen([], ["A", "D"])
+    assert {row.test_status for row in screen.rows} == {NO_ELIGIBLE_STUDIES}
+    assert all(row.p_value is None and row.share_up is None for row in screen.rows)
 
 
 def test_untestable_candidates_still_count_toward_the_family_they_are_corrected_in() -> None:
@@ -343,6 +401,35 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
     assert contrast.li_ji == pytest.approx(112.0, abs=0.05)
     assert contrast.galwey == pytest.approx(110.1, abs=0.05)
     assert contrast.cheverud_nyholt == pytest.approx(294.4, abs=0.05)
+    # Li & Ji is 111.99999999999996 here, so a floor instead of a round would
+    # silently correct at 111; the 56 count below is unchanged from 110 to 113 (#416).
+    assert result.effective_family_size_used == 112
+    # The contrast-basis figures the methods note and report lead with (#326).
+    assert contrast.median_rho == pytest.approx(0.089, abs=0.001)
+    assert contrast.pc1_share == pytest.approx(0.206, abs=0.001)
+    assert contrast.share_rho_above_half == pytest.approx(0.076, abs=0.001)
+    assert (
+        sum(row.by_q_nominal is not None and row.by_q_nominal <= 0.05 for row in result.rows) == 18
+    )
+    assert (
+        sum(row.by_q_effective is not None and row.by_q_effective <= 0.05 for row in result.rows)
+        == 56
+    )
+    # Tallies and BY q at m = 317 for the six Table 1 traits, as published in #276.
+    expected = {
+        "facultatively_aerobic": (534, 383, 42, 0.0013864),
+        "moderately_halophilic": (485, 360, 114, 0.00553471),
+        "cellulose_catabolic_process": (334, 440, 185, 0.0315627),
+        "arsenate_reduction": (346, 270, 343, 0.101882),
+        "sphere_shaped": (467, 377, 115, 0.101343),
+        "coccus_shaped": (499, 416, 44, 0.206457),
+    }
+    table1 = {row.table1_slug: row for row in result.rows if row.table1_slug}
+    assert set(table1) == set(expected)
+    for slug, (up, down, tied, by_q) in expected.items():
+        row = table1[slug]
+        assert (row.studies_up, row.studies_down, row.studies_tied) == (up, down, tied), slug
+        assert row.by_q_nominal == pytest.approx(by_q, rel=1e-4), slug
     profiles = result.profile_dependence
     assert profiles is not None
     assert profiles.units == 5829
