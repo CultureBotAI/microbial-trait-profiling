@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from bsdbng.guild_maps import build_matrix, cell_status_rows, compute_correlation
-from bsdbng.integrated_evidence import (
+from mtp.guild_maps import build_matrix, cell_status_rows, compute_correlation
+from mtp.integrated_evidence import (
     ALL_TIED,
     ASSESSMENTS,
     CELL_STATES,
@@ -49,9 +49,9 @@ from bsdbng.integrated_evidence import (
     write_table,
     write_view,
 )
-from bsdbng.table1_trait_maps import compute_direction_shifts
-from bsdbng.trait_composition import compute_log_ratio_shifts
-from bsdbng.trait_guilds import (
+from mtp.table1_trait_maps import compute_direction_shifts
+from mtp.trait_composition import compute_log_ratio_shifts
+from mtp.trait_guilds import (
     OXYGEN_GUILDS,
     TABLE1_TRAITS,
     Profile,
