@@ -432,6 +432,7 @@ def test_compute_fold_enrichment() -> None:
     with pytest.raises(TypeError, match="must be an integer"):
         compute_fold_enrichment(bad_x, 100, 20, 10)
 
+
 def test_hypergeom_test() -> None:
     """Test hypergeom_test direction, aliases, and equivalence to sf/cdf."""
     M, K, N, x = 100, 20, 10, 4
