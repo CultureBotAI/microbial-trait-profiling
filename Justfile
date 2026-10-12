@@ -212,6 +212,11 @@ table1-compositional-stats *ARGS:
 trait-direction-screen *ARGS:
 	just timed trait-direction-screen "uv run python -m bsdbng.trait_screen --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\" $*"
 
+# Audit trait correlation, annotation density adjustment, and near-twin collinearity.
+[positional-arguments]
+audit-trait-density *ARGS:
+	just timed audit-trait-density "uv run python scripts/audit_trait_density_correlation.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\" $*"
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src

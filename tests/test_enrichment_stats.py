@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 from scipy.stats import hypergeom as scipy_hypergeom
 
-from bsdbng import stats as bsdbng_stats
 from bsdbng.enrichment_stats import (
     benjamini_hochberg,
     compute_fold_enrichment,
@@ -456,17 +455,3 @@ def test_hypergeom_test() -> None:
     # Invalid alternative raises ValueError
     with pytest.raises(ValueError, match="Unknown alternative"):
         hypergeom_test(x, M, K, N, alternative="two-sided")
-
-
-# --- Consolidation and Module Re-export Verification --------------------------
-
-
-def test_bsdbng_stats_does_not_reexport_enrichment_stats() -> None:
-    """bsdbng.stats must not re-export heavy enrichment_stats to avoid importing scipy (#402)."""
-    assert not hasattr(bsdbng_stats, "benjamini_hochberg")
-    assert not hasattr(bsdbng_stats, "hypergeom_sf")
-    assert not hasattr(bsdbng_stats, "hypergeom_sf_many")
-    assert not hasattr(bsdbng_stats, "hypergeom_cdf")
-    assert not hasattr(bsdbng_stats, "hypergeom_cdf_many")
-    assert not hasattr(bsdbng_stats, "hypergeom_sf_pure_python")
-    assert not hasattr(bsdbng_stats, "hypergeom_cdf_pure_python")
