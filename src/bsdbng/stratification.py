@@ -139,7 +139,7 @@ class StratumOutputs:
 
 
 def _run_script(script_path: Path, args: list[str]) -> None:
-    mod_name = f"_strat_{script_path.stem}"
+    mod_name = f"_strata_{script_path.stem}"
     if mod_name in sys.modules:
         module = sys.modules[mod_name]
     else:
