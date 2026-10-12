@@ -22,6 +22,9 @@ DEFAULT_EXPERIMENTS_PATH = DERIVED_DATA_DIR / "experiments.tsv"
 DEFAULT_FULL_DUMP_PATH = RAW_DATA_DIR / "full_dump.csv"
 
 PROFILE_ID_COLUMNS = ("study_id", "experiment_id", "inc_dec")
+PROFILE_METADATA_COLUMNS = frozenset(
+    {"study_id", "experiment_id", "inc_dec", "taxa_count", "taxon_count", "species_count"}
+)
 HUMAN_HOST_SPECIES = "Homo sapiens"
 MEDIADIVE_MARKER = "mediadive.medium"
 
@@ -180,7 +183,7 @@ def retained_trait_columns(header: Sequence[str]) -> tuple[list[int], list[str],
     columns: list[str] = []
     mediadive_excluded = 0
     for index, column in enumerate(header):
-        if column in PROFILE_ID_COLUMNS:
+        if column in PROFILE_METADATA_COLUMNS:
             continue
         if MEDIADIVE_MARKER in column.lower():
             mediadive_excluded += 1
