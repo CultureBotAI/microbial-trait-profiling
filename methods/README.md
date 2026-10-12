@@ -38,6 +38,15 @@ Table 1 trait pairs, with explicit references, zero exclusions, study-level
 coverage, and a separate correction family. It emits statistics and a Markdown
 report without rendering figures.
 
+[`calibration.md`](calibration.md) documents `just calibration-report`: what the
+directional tests do when their own nulls are true, their power against a declared
+injected effect, and what selecting traits on the data costs, against criteria fixed
+in [`calibration_protocol.json`](calibration_protocol.json). That protocol is on its
+second version; every amendment, what prompted it and what was already known when it
+was made are recorded in its `amendments` array rather than edited in quietly.
+`just calibration-flip-assignments` writes only the shared flip-assignment table the
+other two arms would need to be measured on the same null (#263).
+
 [`table1_log_ratio_validation.md`](table1_log_ratio_validation.md) records the
 pinned-corpus rerun of all 15 ratios alongside the original six fraction
 directions, including study coverage, uncertainty and interpretation limits.

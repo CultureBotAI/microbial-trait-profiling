@@ -204,6 +204,24 @@ validation-evidence *ARGS:
 stats:
 	@uv run python -c "from bsdbng.stats import print_stats; print_stats()"
 
+# Empirical calibration of this repository's directional tests (#182): rejection
+# rates when their own nulls are true, power under a declared injected effect, and
+# the cost of selecting traits on the data. Scenarios, tolerances and the replicate
+# budget are fixed in methods/calibration_protocol.json. About twenty-five minutes at
+# the declared budget of 1400 null and 400 power replicates; `just calibration-report
+# --replicates 5 --power-replicates 5` is the quick pass, and it reports every judged
+# criterion as insufficient_budget because five replicates can certify nothing.
+[positional-arguments]
+calibration-report *ARGS:
+	uv run python -m bsdbng.calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+
+# Just the shared flip-assignment artefact of #263: which studies each replicate of
+# complete_null_study_flip exchanges, for another arm to rerun its own pipeline on
+# the identical null. Seconds, not minutes.
+[positional-arguments]
+calibration-flip-assignments *ARGS:
+	uv run python -m bsdbng.calibration --flip-assignments-only --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+
 pipeline: download ingest
 
 # --- linkml-store over MongoDB (localhost:27017/bsdbng.studies) ---
