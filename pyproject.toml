@@ -22,14 +22,11 @@ dependencies = [
   "linkml>=1.10.0",
   "linkml-runtime>=1.8.3",
   # numpy arrives with scipy either way; it is declared because `bsdbng.enrichment_stats`
-  # imports it directly.
+  # and `bsdbng.calibration` import it directly.
   "numpy>=2.0",
+  "pandas>=3.0.0",
   "plotly>=7.0",
   "pydantic>=2.13.0",
-  # numpy arrives with scipy either way; it is declared because `bsdbng.calibration`
-  # imports it directly for `numpy.random.default_rng`, the seeded generator that
-  # replaced the stdlib `random` module and its global bandit B311 suppression.
-  "numpy>=2.0",
   "pyyaml>=6.0.2",
   "scipy>=1.17.0",
 ]
@@ -124,9 +121,9 @@ exclude = [
 module = "bsdbng.datamodel.bsdbng_pydantic"
 ignore_errors = true
 
-# scipy and plotly ship no type information; the repo's own code stays strict.
+# pandas, scipy and plotly ship no type information; the repo's own code stays strict.
 [[tool.mypy.overrides]]
-module = ["scipy.*", "plotly.*"]
+module = ["pandas", "scipy.*", "plotly.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

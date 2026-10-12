@@ -3,6 +3,8 @@ set shell := ["bash", "-cu"]
 schema := "schema/bsdbng.yaml"
 lintconfig := "schema/.linkmllint.yaml"
 logdir := "logs"
+p_threshold := "0.001"
+min_fold := "1.5"
 
 default: check
 
@@ -112,6 +114,42 @@ study-trait-profiles:
 study-trait-profiles-ora:
 	uv run python scripts/create_study_trait_profiles.py --binary --include-taxa-count --host-species "Homo sapiens"
 
+# Trait enrichment analysis (ORA) with hypergeometric test and Benjamini-Hochberg FDR.
+analyze: study-trait-profiles-ora
+	just timed analyze "uv run python scripts/trait_enrichment.py \
+	  --input data/derived/study_trait_profiles_ora_wide.tsv \
+	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
+	  --output data/derived/trait_enrichment_report.txt \
+	  --tsv-output data/derived/trait_enrichment_results.tsv \
+	  --all-results-output data/derived/trait_enrichment_all_results.tsv \
+	  --p-threshold {{p_threshold}} \
+	  --min-fold {{min_fold}}"
+	just timed export-rankings "uv run python scripts/export_trait_enrichment_rankings.py \
+	  --input data/derived/trait_enrichment_all_results.tsv \
+	  --all-results \
+	  --overall-output data/derived/trait_enrichment_traits_overall_ranked.tsv \
+	  --pair-output data/derived/trait_enrichment_trait_study_pairs_ranked.tsv"
+
+# Hypergeometric depletion analysis.
+analyze-depletion: study-trait-profiles-ora
+	just timed analyze-depletion "uv run python scripts/trait_depletion.py \
+	  --input data/derived/study_trait_profiles_ora_wide.tsv \
+	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
+	  --output data/derived/trait_depletion_report.txt \
+	  --tsv-output data/derived/trait_depletion_results.tsv \
+	  --all-results-output data/derived/trait_depletion_all_results.tsv \
+	  --p-threshold {{p_threshold}} \
+	  --max-fold 0.5"
+	just timed export-depletion-rankings "uv run python scripts/export_trait_enrichment_rankings.py \
+	  --input data/derived/trait_depletion_all_results.tsv \
+	  --all-results \
+	  --overall-output data/derived/trait_depletion_traits_overall_ranked.tsv \
+	  --pair-output data/derived/trait_depletion_trait_study_pairs_ranked.tsv"
+
+# Deliver full rankings and export summaries for both enrichment and depletion (#254, #349).
+export-rankings: analyze analyze-depletion
+	@echo "Complete exports and ranking summaries generated."
+
 # Predeclared sensitivity scenarios for the 15 log-ratios (#183): zero exclusions,
 # population-matched fractions, common-support references, fecal strata and
 # leave-one-study-out influence. Needs data/derived/bugsigdb_taxa.tsv (`just study-tsvs`).
@@ -119,7 +157,6 @@ study-trait-profiles-ora:
 [positional-arguments]
 table1-log-ratio-sensitivity *ARGS:
 	uv run python -m bsdbng.log_ratio_sensitivity --code-commit "$(git rev-parse HEAD)$(test -z "$(git status --porcelain)" || echo +dirty)" "$@"
-
 
 # PNG export (guild-maps, table1-trait-maps) runs through kaleido 1.x, which
 # drives a headless Chrome. This downloads (~170 MB) the version-pinned Chrome
