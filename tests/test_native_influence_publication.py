@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from bsdbng.contribution_inputs import digest
-from bsdbng.native_influence_publication import publish
-from bsdbng.native_taxon_influence import compressed_rows
-from bsdbng.taxon_contributions import write_table
+from mtp.contribution_inputs import digest
+from mtp.native_influence_publication import publish
+from mtp.native_taxon_influence import compressed_rows
+from mtp.taxon_contributions import write_table
 
 
 @pytest.fixture

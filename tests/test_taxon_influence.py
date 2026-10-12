@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from bsdbng.contribution_inputs import Base, Graph, count, load_graph, rows
-from bsdbng.taxon_contributions import export_ledger, reconcile
-from bsdbng.taxon_influence import (
+from mtp.contribution_inputs import Base, Graph, count, load_graph, rows
+from mtp.taxon_contributions import export_ledger, reconcile
+from mtp.taxon_influence import (
     adjust,
     comparison,
     describe,

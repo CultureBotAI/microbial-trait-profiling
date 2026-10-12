@@ -11,3 +11,4 @@
 - [ ] `just check` passes
 - [ ] New code has tests
 - [ ] No `noqa`, `type: ignore`, or `nosec` comments added
+- [ ] Biological claims and captions follow methods/biological_interpretation.md

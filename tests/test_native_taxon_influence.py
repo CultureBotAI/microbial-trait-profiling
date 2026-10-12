@@ -10,8 +10,8 @@ import numpy as np
 import pytest
 from scipy.stats import hypergeom, ttest_1samp
 
-from bsdbng.contribution_inputs import Base
-from bsdbng.native_taxon_influence import (
+from mtp.contribution_inputs import Base
+from mtp.native_taxon_influence import (
     composition_q_sensitivity_table,
     export_native,
     fold_pairs,
@@ -21,8 +21,8 @@ from bsdbng.native_taxon_influence import (
     run,
     transformed,
 )
-from bsdbng.taxon_contributions import write_table
-from bsdbng.taxon_influence import adjust, comparison
+from mtp.taxon_contributions import write_table
+from mtp.taxon_influence import adjust, comparison
 
 POLICY = {
     "minimum_profile_support": 1,
@@ -224,7 +224,7 @@ def test_native_run_refuses_changed_audit_inputs(tmp_path: Path) -> None:
 def test_native_mean_interval_targets_experiments_not_sign_share() -> None:
     base = corpus()
     records, pairs, _ = transformed(base, base.profiles, list(base.profiles), POLICY)
-    from bsdbng.taxon_influence import critical_t
+    from mtp.taxon_influence import critical_t
 
     values = list(pairs["A"].values())
     radius = critical_t(3) * stdev(values) / 2
@@ -279,7 +279,7 @@ def test_native_exports_end_to_end_with_an_empty_stratum(tmp_path: Path) -> None
     assert result["composition_comparisons"] == 8
     assert result["ora_comparisons"] == 8
     assert "Native lineage" in (tmp_path / "native_summary.md").read_text()
-    from bsdbng.contribution_inputs import rows
+    from mtp.contribution_inputs import rows
 
     comparisons = list(rows(tmp_path / "native_composition_comparison.tsv"))
     assert {r["shared_correction"] for r in comparisons} == {"BH2_directional_sign_test"}

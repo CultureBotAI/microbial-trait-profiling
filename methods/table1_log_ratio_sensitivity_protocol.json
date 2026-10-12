@@ -1,0 +1,151 @@
+{
+  "protocol": "log-ratio-sensitivity-v1",
+  "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/183",
+  "declaration_evidence": {
+    "claim": "the scenario grid was drafted before any sensitivity result was computed",
+    "verifiable_from_this_repository": false,
+    "why_not": "the protocol, the code, the results and the tests were all committed together in c70e342, so the repository carries no timestamp that orders the protocol before the first run. The previous declared_before_first_run: true was self-attested and has been removed rather than restated.",
+    "what_the_evidence_does_support": [
+      "issue #183 names the three axes (zero-exclusion rule, reference choice, eligible study population) before this branch existed, so the shape of the grid predates the results",
+      "every change made after a result was seen is listed in protocol_amendments with its date and the reviewing issue",
+      "the scenario list is enforced against the code by a test, so an undeclared scenario cannot be added silently"
+    ],
+    "drafted_by": "a coding agent (Claude Code), reviewed by the author"
+  },
+  "base_population": "human experiments with exactly one increased and one decreased profile (load_profiles, paired, human, blank counts rejected)",
+  "study_weighting": "mean of eligible experiment contrasts within study; each eligible study weighted equally",
+  "tie_tolerance": {"fraction": 1e-12, "log2_ratio": 1e-12},
+  "test": "two-sided exact binomial test of non-tied studies shifting up against 0.5, with an exact 95% Clopper-Pearson interval for that share",
+  "min_studies_for_a_test": 30,
+  "min_studies_note": "a scenario row with fewer eligible studies is reported descriptively with status insufficient_support and no p or q",
+  "min_studies_divergence_from_the_log_ratio_module": "compute_log_ratio_shifts applies no such minimum, so S2 is only an exact reproduction of it while every ratio clears 30 eligible studies. On the pinned v1.3.1 corpus the smallest is 243, so the guard is inactive and the reproduction is exact. The guard is kept rather than removed because S4 to S11 run on strata that genuinely fall below it -- 10 of S10's 15 rows do. The divergence is asserted by a test instead of being left to a fixture that sets min_studies=1.",
+  "scenarios": [
+    {
+      "id": "S0_historical_fraction",
+      "comparison": "fraction",
+      "population": "all complete pairs; a zero-total profile scores fraction 0 (the historical rule)",
+      "family": "BH over the six Table 1 traits",
+      "purpose": "reproduce the published six-trait directions exactly"
+    },
+    {
+      "id": "S1_fraction_baseline",
+      "comparison": "fraction",
+      "population": "complete pairs with a positive non-MediaDive total on both sides (shared comparison basis)",
+      "family": "BH over the six Table 1 traits",
+      "purpose": "effect of excluding zero-total pairs"
+    },
+    {
+      "id": "S2_ratio_complete_case",
+      "comparison": "log_ratio",
+      "population": "per ratio, pairs with all four named counts positive",
+      "family": "BY over the 15 ratios",
+      "purpose": "the existing complete-case analysis, retained as one labelled scenario"
+    },
+    {
+      "id": "S3_ratio_matched_fractions",
+      "comparison": "fraction",
+      "population": "per ratio, the numerator's and the reference's fractions on exactly that ratio's S2 pairs",
+      "family": "BY over the 30 matched fraction rows",
+      "purpose": "separate population change (S1 vs S3) from estimand change (S3 vs S2)"
+    },
+    {
+      "id": "S4_six_trait_common_support",
+      "comparison": "fraction and log_ratio",
+      "population": "pairs with all six traits positive on both sides",
+      "family": "BH over the six fractions; BY over the 15 ratios",
+      "purpose": "one population for every reference, so ratio orderings can be compared"
+    },
+    {
+      "id": "S5_triple_common_support",
+      "comparison": "log_ratio",
+      "population": "for each of the 20 trait triples, pairs with all three traits positive on both sides; A/B, B/C and A/C on that set",
+      "family": "BY over all 60 triple rows",
+      "purpose": "reference consistency within a triple on a shared population"
+    },
+    {
+      "id": "S6_feces_only",
+      "comparison": "log_ratio",
+      "population": "S2 restricted to the exact body-site label Feces",
+      "family": "BY over the 15 ratios",
+      "purpose": "stratum dependence"
+    },
+    {
+      "id": "S7_excluding_feces",
+      "comparison": "log_ratio",
+      "population": "S2 restricted to every exact body-site label other than Feces",
+      "family": "BY over the 15 ratios",
+      "purpose": "stratum dependence"
+    },
+    {
+      "id": "S8_leave_one_study_out",
+      "comparison": "log_ratio",
+      "population": "S2 with each eligible study, and then each large stratum, removed in turn",
+      "family": "BY over the 15 ratios, the other 14 p-values held at their S2 values",
+      "decision_rule": "a ratio crosses when its held-family BY q passes 0.05",
+      "purpose": "influence: how much has to change before a ratio crosses the decision rule",
+      "reported": [
+        "leave-one-study-out share and p ranges, and the largest absolute share shift, as a bound on single-study influence",
+        "the minimum number of study removals that crosses the decision rule, searched over both single-sign-group removal paths, which dominate every mixed removal set",
+        "the minimum number of studies whose contrast sign must reverse to cross the decision rule, which is exact because a flip holds the sample size fixed",
+        "leave-one-condition-out and leave-one-body-site-out for every stratum holding at least min_studies_for_a_test of the ratio's eligible studies"
+      ],
+      "not_reported": "a ranking of the most influential studies: every study in one sign group produces the identical share change, so any such ranking orders studies by their identifier"
+    },
+    {
+      "id": "S9_feces_any_label",
+      "comparison": "log_ratio",
+      "population": "S2 restricted to pairs whose body-site cell contains the label Feces among any others",
+      "family": "BY over the 15 ratios",
+      "purpose": "the fecal stratum without the exact-match artefact of S6"
+    },
+    {
+      "id": "S10_other_gut_no_feces",
+      "comparison": "log_ratio",
+      "population": "S2 restricted to pairs with no Feces label but at least one other_gut_labels label",
+      "family": "BY over the 15 ratios",
+      "purpose": "whether the fecal result extends to the rest of the lower gut"
+    },
+    {
+      "id": "S11_no_gut_label",
+      "comparison": "log_ratio",
+      "population": "S2 restricted to pairs with neither a Feces label nor any other_gut_labels label",
+      "family": "BY over the 15 ratios",
+      "purpose": "whether anything is detected away from the gut"
+    }
+  ],
+  "body_site_label_handling": {
+    "problem": "BugSigDB packs several body sites into one comma-joined metadata cell, and S6 and S7 match the whole cell. S7, declared as 'excluding Feces', therefore retains every multi-label experiment that names Feces alongside another site, and every experiment from the rest of the lower gut.",
+    "resolution": "S9, S10 and S11 partition the same pairs by label-set membership, so a cell naming Feces is fecal wherever else it also points, and the rest of the lower gut is its own stratum. S6 and S7 are kept unchanged as declared.",
+    "other_gut_labels": [
+      "Cecum mucosa", "Colon", "Colonic mucosa", "Colorectal mucosa", "Colorectum",
+      "Ileal mucosa", "Ileum", "Intestinal mucosa", "Intestine", "Meconium",
+      "Mucosa of ascending colon", "Mucosa of rectum", "Mucosa of sigmoid colon",
+      "Mucosa of small intestine", "Rectal lumen", "Rectum", "Right colon",
+      "Sigmoid colon", "Small intestine"
+    ],
+    "other_gut_labels_note": "Lower gastrointestinal labels as observed in the v1.3.1 export. Meconium is counted as lower-gut material, which is a judgement call; the number of pairs it alone contributes is reported in body_site_label_accounting. Upper gastrointestinal sites (stomach, duodenum, oesophagus) are deliberately left outside the gut strata.",
+    "reported_counts": "eligible studies per ratio per stratum in eligibility_by_stratum.tsv under stratum_kind gut_label_set; studies_total is not an eligible count and must not be quoted as one"
+  },
+  "decision_threshold_for_reporting": "q <= 0.05 is used only to count which rows would change status; no preferred scenario or cutoff is selected",
+  "protocol_amendments": [
+    {
+      "date": "2026-10-02",
+      "reviewing_issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/290",
+      "scenario": "S8_leave_one_study_out",
+      "change": "S8 was declared as leave-one-study-out alone. Review showed that on populations of 243 to 676 studies a single removal moves the share by about 1/n in either direction, so the scenario could not detect influence and its most-influential-study ranking was ordered by study identifier. S8 now also reports the minimum removals and minimum sign flips needed to cross the decision rule, and leave-one-condition-out and leave-one-body-site-out; the study ranking is removed.",
+      "declared_before_the_amended_run": false
+    },
+    {
+      "date": "2026-10-02",
+      "reviewing_issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/290",
+      "scenario": "S9_feces_any_label, S10_other_gut_no_feces, S11_no_gut_label",
+      "change": "Added after review. S6 and S7 match the whole comma-joined body-site cell, so S7 retained 15 multi-label pairs naming Feces and every other lower-gut pair, which made a claim that the signal is fecal unsupportable from S6/S7 alone. The three new strata partition the same pairs by label-set membership. S6 and S7 are unchanged.",
+      "declared_before_the_amended_run": false
+    }
+  ],
+  "not_done": [
+    "no pseudocounts or zero replacement",
+    "no scenario is chosen by its q-value",
+    "no claim of absolute abundance, independent replication, or generalisation to excluded studies"
+  ]
+}
