@@ -6,7 +6,7 @@ from typing import Any
 import pandas as pd
 import pytest
 
-from bsdbng.deck_visualizations import (
+from mtp.deck_visualizations import (
     TABLE_1_TRAITS,
     generate_all_deck_figures,
     generate_figure1_condition_anatomy_ora_heatmap,
