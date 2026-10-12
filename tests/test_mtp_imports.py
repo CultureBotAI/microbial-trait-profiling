@@ -46,6 +46,7 @@ def test_mtp_modules_can_be_imported_directly() -> None:
         "calibration",
         "contrast_orientation",
         "datamodel",
+        "deck_visualizations",
         "density_adjustment",
         "download",
         "enrichment_results",

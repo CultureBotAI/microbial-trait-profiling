@@ -223,6 +223,13 @@ guild-maps:
 table1-trait-maps:
 	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py"
 
+# Generate modern publication-ready figures inspired by the project slide deck (#347, #354).
+# Renders Figures 1-5 with zero synthetic data and dynamic M universe calculations.
+# Writes PNG figures to data/derived/deck_figures/.
+# Needs a local Chrome for the PNGs (`just get-chrome`).
+deck-figures: study-trait-profiles-ora
+	just timed deck-figures "uv run python scripts/generate_deck_visualizations.py"
+
 # Study-level paired log-ratios for all 15 Table 1 trait pairs; writes tables,
 # coverage/provenance and a Markdown report. No figure renderer is needed.
 [positional-arguments]
