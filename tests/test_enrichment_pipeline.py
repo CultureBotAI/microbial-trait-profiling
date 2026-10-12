@@ -268,6 +268,8 @@ def test_enrichment_pipeline_no_fdr_propagation(tmp_path: Path) -> None:
 
     overall_out = tmp_path / "overall.tsv"
 
+    pair_out = tmp_path / "pair.tsv"
+
     subprocess.run(
         [
             sys.executable,
@@ -279,7 +281,7 @@ def test_enrichment_pipeline_no_fdr_propagation(tmp_path: Path) -> None:
             "--overall-output",
             str(overall_out),
             "--pair-output",
-            str(tmp_path / "pairs.tsv"),
+            str(pair_out),
         ],
         check=True,
         capture_output=True,
@@ -343,6 +345,7 @@ def test_enrichment_pipeline_censorship_detection(tmp_path: Path) -> None:
     # Force using the report
     results_tsv.unlink()
     overall_out = tmp_path / "overall.tsv"
+    pair_out = tmp_path / "pair.tsv"
 
     subprocess.run(
         [
@@ -355,7 +358,7 @@ def test_enrichment_pipeline_censorship_detection(tmp_path: Path) -> None:
             "--overall-output",
             str(overall_out),
             "--pair-output",
-            str(tmp_path / "pairs.tsv"),
+            str(pair_out),
         ],
         check=True,
         capture_output=True,
@@ -428,6 +431,7 @@ def test_enrichment_pipeline_profile_fdr_propagation(tmp_path: Path) -> None:
     )
 
     overall_out = tmp_path / "overall.tsv"
+    pair_out = tmp_path / "pair.tsv"
 
     subprocess.run(
         [
@@ -440,7 +444,7 @@ def test_enrichment_pipeline_profile_fdr_propagation(tmp_path: Path) -> None:
             "--overall-output",
             str(overall_out),
             "--pair-output",
-            str(tmp_path / "pairs.tsv"),
+            str(pair_out),
         ],
         check=True,
         capture_output=True,
@@ -1609,7 +1613,7 @@ def test_unfiltered_export_rejects_truncated_file(tmp_path: Path) -> None:
             "--overall-output",
             str(tmp_path / "out.tsv"),
             "--pair-output",
-            str(tmp_path / "pairs.tsv"),
+            str(tmp_path / "pair_out.tsv"),
         ],
         capture_output=True,
         text=True,

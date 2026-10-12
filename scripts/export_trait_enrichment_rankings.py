@@ -876,12 +876,19 @@ def main(argv: list[str] | None = None) -> int:
         else DEFAULT_PAIR_OUTPUT_STEM
     )
 
+    write_overall = True
+    write_pair = True
+    if args.overall_output is not None and args.pair_output is None:
+        write_pair = False
+    elif args.pair_output is not None and args.overall_output is None:
+        write_overall = False
+
     overall_out = args.overall_output
-    if overall_out is None:
+    if overall_out is None and write_overall:
         overall_out = DERIVED_DATA_DIR / f"{overall_stem}{suffix}.tsv"
 
     pair_out = args.pair_output
-    if pair_out is None:
+    if pair_out is None and write_pair:
         pair_out = DERIVED_DATA_DIR / f"{pair_stem}{suffix}.tsv"
 
     def na(value: int | None) -> str:
@@ -921,8 +928,10 @@ def main(argv: list[str] | None = None) -> int:
         overall_warnings.append("Totals are censored due to source truncation.")
         pair_warnings.append("Data is censored due to source truncation.")
 
-    _write_table(overall_out, overall, overall_header, overall_warnings)
-    _write_table(pair_out, pairs, pair_header, pair_warnings)
+    if write_overall and overall_out is not None:
+        _write_table(overall_out, overall, overall_header, overall_warnings)
+    if write_pair and pair_out is not None:
+        _write_table(pair_out, pairs, pair_header, pair_warnings)
 
     print(f"Result status: {result_status}")
     print(f"Tests performed: {na(tests_performed)}")
@@ -931,8 +940,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Unique traits: {frame['trait'].nunique()}")
     print(f"Unique profiles: {frame['profile_id'].nunique()}")
     print(f"Ranked traits: {len(overall)}")
-    print(f"Wrote overall ranking: {overall_out}")
-    print(f"Wrote pair ranking: {pair_out}")
+    if write_overall and overall_out is not None:
+        print(f"Wrote overall ranking: {overall_out}")
+    if write_pair and pair_out is not None:
+        print(f"Wrote pair ranking: {pair_out}")
     return 0
 
 

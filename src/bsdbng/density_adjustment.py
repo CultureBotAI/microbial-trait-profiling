@@ -116,7 +116,16 @@ def get_non_media_trait_columns(columns_path: Path) -> list[str]:
 
     Non-MediaDive traits are defined as columns where object_category != 'METPO:1004005'.
     """
+    if not columns_path.exists():
+        gz_candidate = columns_path.with_name(f"{columns_path.name}.gz")
+        if gz_candidate.exists():
+            columns_path = gz_candidate
+        else:
+            raise FileNotFoundError(f"Columns file not found: {columns_path} (or {gz_candidate})")
+
     df = pd.read_csv(columns_path, sep="\t")
+    if "object_category" not in df.columns or "column_id" not in df.columns:
+        raise ValueError(f"Columns file missing required columns: {columns_path}")
     filtered = df[df["object_category"] != "METPO:1004005"]
     return [str(c) for c in filtered["column_id"].tolist()]
 
@@ -126,6 +135,20 @@ def load_non_media_profile_matrix(
     columns_path: Path,
 ) -> tuple[pd.DataFrame, list[str]]:
     """Load wide study trait profiles restricted to the non-MediaDive traits."""
+    if not profiles_path.exists():
+        gz_candidate = profiles_path.with_name(f"{profiles_path.name}.gz")
+        if gz_candidate.exists():
+            profiles_path = gz_candidate
+        else:
+            raise FileNotFoundError(f"Profiles file not found: {profiles_path} (or {gz_candidate})")
+
+    if not columns_path.exists():
+        gz_candidate = columns_path.with_name(f"{columns_path.name}.gz")
+        if gz_candidate.exists():
+            columns_path = gz_candidate
+        else:
+            raise FileNotFoundError(f"Columns file not found: {columns_path} (or {gz_candidate})")
+
     non_media_cols = get_non_media_trait_columns(columns_path)
     profiles_df = pd.read_csv(profiles_path, sep="\t")
 
@@ -162,6 +185,9 @@ def compute_effective_tests(
         return min(val, 1.0), min(val, 1.0), 1.0
 
     eval_list = [float(x) for x in eigenvalues]
+    if not any(x > 0.0 for x in eval_list):
+        return 0.0, 0.0, float(p)
+
     li_ji, galwey, nyholt = effective_family_size(eval_list)
     return min(li_ji, float(p)), min(galwey, float(p)), min(max(nyholt, 1.0), float(p))
 
@@ -177,9 +203,16 @@ def compute_correlation_metrics(
     Constant columns (zero variance) are excluded before correlation estimation (#378),
     preventing spurious eigenvalues of 1.0 from artificially inflating effective test counts.
     """
+    if trait_matrix.ndim != 2:
+        raise ValueError(f"trait_matrix must be 2D, got shape {trait_matrix.shape}")
     n_samples, n_traits = trait_matrix.shape
     if n_traits < 2:
         raise ValueError("Need at least 2 traits to compute correlation metrics.")
+    if len(column_ids) != n_traits:
+        raise ValueError(
+            f"column_ids length ({len(column_ids)}) does not match "
+            f"trait_matrix columns ({n_traits})"
+        )
 
     # Drop constant columns before correlating (#378)
     stds = np.std(trait_matrix, axis=0)
@@ -213,7 +246,14 @@ def compute_correlation_metrics(
         corr = np.corrcoef(reduced_matrix.T)
     elif method == "spearman":
         res = stats.spearmanr(reduced_matrix)
-        corr = res.statistic if hasattr(res, "statistic") else np.array(res[0])
+        stat = getattr(res, "statistic", None)
+        if stat is None:
+            stat = res[0]
+        if n_varying == 2 or np.ndim(stat) == 0:
+            s_val = float(stat)
+            corr = np.array([[1.0, s_val], [s_val, 1.0]], dtype=float)
+        else:
+            corr = np.asarray(stat, dtype=float)
     else:
         raise ValueError(f"Unsupported correlation method: {method}")
 
@@ -277,14 +317,26 @@ def regress_out_pc1(trait_matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray, f
     Returns:
         tuple of (adjusted_matrix, pc1_scores, pc1_variance_pct)
     """
-    x = trait_matrix.astype(float)
+    if trait_matrix.ndim != 2 or trait_matrix.shape[0] < 2 or trait_matrix.shape[1] < 1:
+        return (
+            trait_matrix.astype(float),
+            np.zeros(trait_matrix.shape[0], dtype=float),
+            0.0,
+        )
+
+    x = np.nan_to_num(trait_matrix.astype(float), nan=0.0)
     mu = x.mean(axis=0)
     std = x.std(axis=0, ddof=1)
+    std = np.nan_to_num(std, nan=1.0)
     std[std == 0.0] = 1.0
     z = (x - mu) / std
+    z = np.nan_to_num(z, nan=0.0)
 
     # SVD on standardized matrix
     u, s, _ = np.linalg.svd(z, full_matrices=False)
+    if len(s) == 0:
+        return x.copy(), np.zeros(x.shape[0], dtype=float), 0.0
+
     pc1_scores = u[:, 0] * s[0]
     total_var = float(np.sum(s**2))
     pc1_var_pct = float((s[0] ** 2) / total_var * 100.0) if total_var > 0 else 0.0
@@ -318,7 +370,12 @@ def normalize_traits_by_profile_composition(
     if not cols_list:
         raise ValueError("cols must not be empty")
 
+    missing = [c for c in cols_list if c not in df.columns]
+    if missing:
+        raise ValueError(f"DataFrame missing {len(missing)} requested columns: {missing[:5]}")
+
     sub = df[cols_list].to_numpy(dtype=float)
+    sub = np.nan_to_num(sub, nan=0.0)
     row_sums = sub.sum(axis=1, keepdims=True)
     safe_sums = np.where(row_sums == 0, 1.0, row_sums)
     norm = np.where(row_sums == 0, 0.0, sub / safe_sums)
@@ -331,46 +388,83 @@ def evaluate_table1_paired_effects(
     non_media_cols: list[str],
 ) -> list[Table1TraitEffect]:
     """Evaluate paired experiment contrasts (inc - dec) before and after PC1 adjustment."""
-    adj_df = pd.DataFrame(adj_matrix, columns=non_media_cols)
-    adj_df["study_id"] = profiles_df["study_id"].values
-    adj_df["experiment_id"] = profiles_df["experiment_id"].values
-    adj_df["inc_dec"] = profiles_df["inc_dec"].values
-
     t1_keys = [k for k in TABLE_1_TRAITS if k in non_media_cols]
+    has_paired_directions = (
+        not profiles_df.empty
+        and "study_id" in profiles_df.columns
+        and "experiment_id" in profiles_df.columns
+        and "inc_dec" in profiles_df.columns
+        and "inc" in profiles_df["inc_dec"].values
+        and "dec" in profiles_df["inc_dec"].values
+        and len(t1_keys) > 0
+        and adj_matrix.ndim == 2
+        and adj_matrix.shape[0] == len(profiles_df)
+        and adj_matrix.shape[1] == len(non_media_cols)
+    )
 
-    pvt_raw = profiles_df.pivot(
-        index=["study_id", "experiment_id"],
-        columns="inc_dec",
-        values=t1_keys,
-    ).dropna()
+    pvt_raw = pd.DataFrame()
+    pvt_adj = pd.DataFrame()
 
-    pvt_adj = adj_df.pivot(
-        index=["study_id", "experiment_id"],
-        columns="inc_dec",
-        values=t1_keys,
-    ).dropna()
+    if has_paired_directions:
+        adj_df = pd.DataFrame(adj_matrix, columns=non_media_cols)
+        adj_df["study_id"] = profiles_df["study_id"].values
+        adj_df["experiment_id"] = profiles_df["experiment_id"].values
+        adj_df["inc_dec"] = profiles_df["inc_dec"].values
+
+        pvt_raw = profiles_df.pivot_table(
+            index=["study_id", "experiment_id"],
+            columns="inc_dec",
+            values=t1_keys,
+            aggfunc="mean",
+        ).dropna()
+
+        pvt_adj = adj_df.pivot_table(
+            index=["study_id", "experiment_id"],
+            columns="inc_dec",
+            values=t1_keys,
+            aggfunc="mean",
+        ).dropna()
 
     results: list[Table1TraitEffect] = []
     for trait_id in t1_keys:
         label = TABLE_1_TRAITS[trait_id]
 
-        raw_diff = (pvt_raw[(trait_id, "inc")] - pvt_raw[(trait_id, "dec")]).values
-        adj_diff = (pvt_adj[(trait_id, "inc")] - pvt_adj[(trait_id, "dec")]).values
-
-        raw_mean = float(np.mean(raw_diff))
-        adj_mean = float(np.mean(adj_diff))
-
-        # Wilcoxon signed-rank test on non-zero differences
-        nz_raw = raw_diff[raw_diff != 0.0]
-        nz_adj = adj_diff[adj_diff != 0.0]
-
-        # Use NaN when <= 10 non-zero pairs instead of fabricating 1.0 (#383)
-        raw_p = float(stats.wilcoxon(nz_raw).pvalue) if len(nz_raw) > 10 else float("nan")
-        adj_p = float(stats.wilcoxon(nz_adj).pvalue) if len(nz_adj) > 10 else float("nan")
-
-        rel_change = (
-            float((adj_mean - raw_mean) / abs(raw_mean) * 100.0) if abs(raw_mean) > 1e-9 else 0.0
+        can_eval = (
+            has_paired_directions
+            and not pvt_raw.empty
+            and not pvt_adj.empty
+            and (trait_id, "inc") in pvt_raw.columns
+            and (trait_id, "dec") in pvt_raw.columns
+            and (trait_id, "inc") in pvt_adj.columns
+            and (trait_id, "dec") in pvt_adj.columns
         )
+
+        if can_eval:
+            raw_diff = (pvt_raw[(trait_id, "inc")] - pvt_raw[(trait_id, "dec")]).values
+            adj_diff = (pvt_adj[(trait_id, "inc")] - pvt_adj[(trait_id, "dec")]).values
+
+            raw_mean = float(np.mean(raw_diff)) if len(raw_diff) > 0 else 0.0
+            adj_mean = float(np.mean(adj_diff)) if len(adj_diff) > 0 else 0.0
+
+            # Wilcoxon signed-rank test on finite non-zero differences
+            nz_raw = raw_diff[np.isfinite(raw_diff) & (raw_diff != 0.0)]
+            nz_adj = adj_diff[np.isfinite(adj_diff) & (adj_diff != 0.0)]
+
+            # Use NaN when <= 10 non-zero pairs instead of fabricating 1.0 (#383)
+            raw_p = float(stats.wilcoxon(nz_raw).pvalue) if len(nz_raw) > 10 else float("nan")
+            adj_p = float(stats.wilcoxon(nz_adj).pvalue) if len(nz_adj) > 10 else float("nan")
+
+            rel_change = (
+                float((adj_mean - raw_mean) / abs(raw_mean) * 100.0)
+                if abs(raw_mean) > 1e-9
+                else 0.0
+            )
+        else:
+            raw_mean = 0.0
+            adj_mean = 0.0
+            raw_p = float("nan")
+            adj_p = float("nan")
+            rel_change = 0.0
 
         # Classify status using general statistical criteria rather than hardcoded trait IDs (#383)
         if math.isnan(adj_p):
@@ -420,42 +514,110 @@ def evaluate_conditional_twin_test(
     vec_a = profiles_df[trait_a].values.astype(float)
     vec_b = profiles_df[trait_b].values.astype(float)
 
+    std_a = float(np.std(vec_a)) if len(vec_a) > 0 else 0.0
+    std_b = float(np.std(vec_b)) if len(vec_b) > 0 else 0.0
+
     # Profile-level bivariate correlation
-    corr_prof = float(np.corrcoef(vec_a, vec_b)[0, 1])
-    r2_prof = corr_prof**2
-    vif_prof = float(1.0 / (1.0 - r2_prof)) if (1.0 - r2_prof) > 0 else float("inf")
+    if len(vec_a) >= 2 and std_a > 0.0 and std_b > 0.0:
+        corr_prof = float(np.corrcoef(vec_a, vec_b)[0, 1])
+        r2_prof = corr_prof**2
+        vif_prof = float(1.0 / (1.0 - r2_prof)) if (1.0 - r2_prof) > 1e-12 else float("inf")
+    else:
+        corr_prof = float("nan")
+        r2_prof = float("nan")
+        vif_prof = float("nan")
 
     # Partial correlation controlling for profile annotation depth
     if columns_for_depth:
-        depth = profiles_df[list(columns_for_depth)].sum(axis=1).values.astype(float)
+        valid_depth_cols = [c for c in columns_for_depth if c in profiles_df.columns]
+        if valid_depth_cols:
+            depth = profiles_df[valid_depth_cols].sum(axis=1).values.astype(float)
+        else:
+            depth = vec_a + vec_b
     else:
         depth = vec_a + vec_b
 
-    r_az = float(np.corrcoef(vec_a, depth)[0, 1]) if np.std(depth) > 0 else 0.0
-    r_bz = float(np.corrcoef(vec_b, depth)[0, 1]) if np.std(depth) > 0 else 0.0
-    denom = math.sqrt(max(0.0, (1.0 - r_az**2) * (1.0 - r_bz**2)))
-    partial_r = float((corr_prof - r_az * r_bz) / denom) if denom > 0 else 0.0
+    std_depth = float(np.std(depth)) if len(depth) > 0 else 0.0
+    if (
+        len(vec_a) >= 2
+        and std_a > 0.0
+        and std_b > 0.0
+        and std_depth > 0.0
+        and not math.isnan(corr_prof)
+    ):
+        r_az = float(np.corrcoef(vec_a, depth)[0, 1])
+        r_bz = float(np.corrcoef(vec_b, depth)[0, 1])
+        denom = math.sqrt(max(0.0, (1.0 - r_az**2) * (1.0 - r_bz**2)))
+        partial_r = (
+            float(np.clip((corr_prof - r_az * r_bz) / denom, -1.0, 1.0)) if denom > 1e-12 else 0.0
+        )
+    else:
+        partial_r = float("nan")
 
     # Profile OLS regression: A ~ B
-    slope_prof, intercept_prof, _, _, _ = stats.linregress(vec_b, vec_a)
+    if len(vec_b) >= 2 and std_b > 0.0:
+        res_prof = stats.linregress(vec_b, vec_a)
+        slope_prof = float(res_prof.slope)
+        intercept_prof = float(res_prof.intercept)
+    else:
+        slope_prof = 0.0
+        intercept_prof = float(np.mean(vec_a)) if len(vec_a) > 0 else 0.0
 
     # Paired experiment contrasts
-    pvt = profiles_df.pivot(
-        index=["study_id", "experiment_id"],
-        columns="inc_dec",
-        values=[trait_a, trait_b],
-    ).dropna()
+    has_paired_directions = (
+        not profiles_df.empty
+        and "study_id" in profiles_df.columns
+        and "experiment_id" in profiles_df.columns
+        and "inc_dec" in profiles_df.columns
+        and "inc" in profiles_df["inc_dec"].values
+        and "dec" in profiles_df["inc_dec"].values
+    )
+    if has_paired_directions:
+        pvt = profiles_df.pivot_table(
+            index=["study_id", "experiment_id"],
+            columns="inc_dec",
+            values=[trait_a, trait_b],
+            aggfunc="mean",
+        ).dropna()
+    else:
+        pvt = pd.DataFrame()
 
-    delta_a = (pvt[(trait_a, "inc")] - pvt[(trait_a, "dec")]).values.astype(float)
-    delta_b = (pvt[(trait_b, "inc")] - pvt[(trait_b, "dec")]).values.astype(float)
+    can_eval_paired = (
+        not pvt.empty
+        and (trait_a, "inc") in pvt.columns
+        and (trait_a, "dec") in pvt.columns
+        and (trait_b, "inc") in pvt.columns
+        and (trait_b, "dec") in pvt.columns
+    )
+
+    if can_eval_paired:
+        delta_a = (pvt[(trait_a, "inc")] - pvt[(trait_a, "dec")]).values.astype(float)
+        delta_b = (pvt[(trait_b, "inc")] - pvt[(trait_b, "dec")]).values.astype(float)
+    else:
+        delta_a = np.array([], dtype=float)
+        delta_b = np.array([], dtype=float)
 
     n_paired = len(delta_a)
-    corr_paired = float(np.corrcoef(delta_a, delta_b)[0, 1]) if n_paired > 1 else 0.0
-    r2_paired = corr_paired**2
-    vif_paired = float(1.0 / (1.0 - r2_paired)) if (1.0 - r2_paired) > 0 else float("inf")
+    std_delta_a = float(np.std(delta_a)) if n_paired > 0 else 0.0
+    std_delta_b = float(np.std(delta_b)) if n_paired > 0 else 0.0
+
+    if n_paired >= 2 and std_delta_a > 0.0 and std_delta_b > 0.0:
+        corr_paired = float(np.corrcoef(delta_a, delta_b)[0, 1])
+        r2_paired = corr_paired**2
+        vif_paired = float(1.0 / (1.0 - r2_paired)) if (1.0 - r2_paired) > 1e-12 else float("inf")
+    else:
+        corr_paired = float("nan")
+        r2_paired = float("nan")
+        vif_paired = float("nan")
 
     # Paired regression: delta_A ~ delta_B
-    slope_paired, _, _, pval_paired_slope, _ = stats.linregress(delta_b, delta_a)
+    if n_paired >= 2 and std_delta_b > 0.0:
+        res_paired = stats.linregress(delta_b, delta_a)
+        slope_paired = float(res_paired.slope)
+        pval_paired_slope = float(res_paired.pvalue)
+    else:
+        slope_paired = 0.0
+        pval_paired_slope = float("nan")
 
     return ConditionalTwinSummary(
         trait_a=trait_a,
@@ -465,13 +627,13 @@ def evaluate_conditional_twin_test(
         profile_correlation=corr_prof,
         profile_partial_r_depth=partial_r,
         vif_profile=vif_prof,
-        profile_slope_a_on_b=float(slope_prof),
-        profile_intercept_a_on_b=float(intercept_prof),
+        profile_slope_a_on_b=slope_prof,
+        profile_intercept_a_on_b=intercept_prof,
         n_paired_experiments=n_paired,
         paired_correlation=corr_paired,
         vif_paired=vif_paired,
-        paired_slope_a_on_b=float(slope_paired),
-        paired_slope_pvalue=float(pval_paired_slope),
+        paired_slope_a_on_b=slope_paired,
+        paired_slope_pvalue=pval_paired_slope,
     )
 
 
@@ -490,7 +652,7 @@ def run_density_audit(
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     profiles_df, non_media_cols = load_non_media_profile_matrix(profiles_path, columns_path)
-    raw_matrix = profiles_df[non_media_cols].values.astype(float)
+    raw_matrix = np.nan_to_num(profiles_df[non_media_cols].to_numpy(dtype=float), nan=0.0)
 
     # 1. Baseline metrics (Pearson & Spearman)
     raw_pearson = compute_correlation_metrics(raw_matrix, non_media_cols, method="pearson")

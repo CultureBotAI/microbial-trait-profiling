@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -182,8 +183,9 @@ def test_compute_correlation_metrics_synthetic() -> None:
     assert metrics_sp.n_traits == 4
 
     # Test invalid method
+    bad_method: Any = "invalid"
     with pytest.raises(ValueError, match="Unsupported correlation method"):
-        compute_correlation_metrics(x, cols, method="invalid")  # type: ignore[arg-type]
+        compute_correlation_metrics(x, cols, method=bad_method)
 
 
 def test_normalize_traits_by_profile_composition() -> None:
@@ -314,13 +316,21 @@ def test_evaluate_table1_paired_effects_nan_fallback() -> None:
 
 
 @pytest.mark.skipif(
-    not (DEFAULT_PROFILES_PATH.exists() and DEFAULT_COLUMNS_PATH.exists()),
+    not (
+        (DEFAULT_PROFILES_PATH.exists() or Path(f"{DEFAULT_PROFILES_PATH}.gz").exists())
+        and DEFAULT_COLUMNS_PATH.exists()
+    ),
     reason="Derived data files not available in test environment",
 )
 def test_full_density_audit_integration(tmp_path: Path) -> None:
     """Verify full density audit run against real derived data and validate core findings (#375)."""
+    prof_path = (
+        DEFAULT_PROFILES_PATH
+        if DEFAULT_PROFILES_PATH.exists()
+        else Path(f"{DEFAULT_PROFILES_PATH}.gz")
+    )
     results = run_density_audit(
-        profiles_path=DEFAULT_PROFILES_PATH,
+        profiles_path=prof_path,
         columns_path=DEFAULT_COLUMNS_PATH,
         output_dir=tmp_path,
     )
@@ -362,10 +372,265 @@ def test_full_density_audit_integration(tmp_path: Path) -> None:
     for eff in t1_effects:
         assert eff.trait_id in TABLE_1_TRAITS
         assert eff.status in {
-            "collapsed (artifact removed)",
-            "survived (biological signal)",
-            "enhanced depletion (genuine signal)",
-            "unaffected non-significant",
-            "emerged post-adjustment",
-            "insufficient pairs",
+            "insufficient non-zero pairs",
+            "collapsed (attenuated to nonsignificant)",
+            "enhanced (significant, larger magnitude)",
+            "survived (significant post-adjustment)",
+            "attenuated (nonsignificant post-adjustment)",
         }
+
+
+def test_compute_effective_tests_non_positive_evals() -> None:
+    """Verify compute_effective_tests handles zero or all-negative eigenvalues safely."""
+    # Zero eigenvalues: should return (0.0, 0.0, float(p)) without ZeroDivisionError
+    res_zero = compute_effective_tests([0.0, 0.0])
+    assert res_zero == (0.0, 0.0, 2.0)
+
+    # Negative eigenvalues
+    res_neg = compute_effective_tests([-1.0, -2.0])
+    assert res_neg == (0.0, 0.0, 2.0)
+
+    # Single non-positive eigenvalue
+    res_single = compute_effective_tests([0.0])
+    assert res_single == (0.0, 0.0, 1.0)
+
+
+def test_regress_out_pc1_degenerate_shapes() -> None:
+    """Verify regress_out_pc1 handles matrices with < 2 rows or 0 columns safely."""
+    # Single sample
+    one_row = np.array([[1.0, 2.0, 3.0]])
+    res_one, scores_one, var_one = regress_out_pc1(one_row)
+    assert res_one.shape == (1, 3)
+    assert len(scores_one) == 1
+    assert var_one == 0.0
+
+    # Zero samples
+    zero_row = np.empty((0, 3))
+    res_zero, scores_zero, var_zero = regress_out_pc1(zero_row)
+    assert res_zero.shape == (0, 3)
+    assert len(scores_zero) == 0
+    assert var_zero == 0.0
+
+    # Constant matrix (zero variance across all samples)
+    const_mat = np.full((10, 4), 5.0)
+    res_const, scores_const, var_const = regress_out_pc1(const_mat)
+    assert res_const.shape == (10, 4)
+    assert len(scores_const) == 10
+    assert var_const == 0.0
+    assert np.allclose(res_const, const_mat)
+
+
+def test_evaluate_table1_paired_effects_degenerate() -> None:
+    """Verify evaluate_table1_paired_effects handles empty or single-direction DataFrames safely."""
+    cols = list(TABLE_1_TRAITS.keys())
+
+    # Empty DataFrame
+    empty_df = pd.DataFrame(columns=["study_id", "experiment_id", "inc_dec", *cols])
+    adj_empty = np.empty((0, len(cols)))
+    effects_empty = evaluate_table1_paired_effects(empty_df, adj_empty, cols)
+    assert len(effects_empty) == len(cols)
+    for eff in effects_empty:
+        assert eff.raw_mean_diff == 0.0
+        assert np.isnan(eff.raw_wilcoxon_p)
+        assert eff.status == "insufficient non-zero pairs"
+
+    # Single-direction DataFrame (inc only, no dec)
+    single_dir_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s2"],
+            "experiment_id": ["e1", "e2"],
+            "inc_dec": ["inc", "inc"],
+            **{c: [1.0, 2.0] for c in cols},
+        }
+    )
+    adj_single = single_dir_df[cols].to_numpy(dtype=float)
+    effects_single = evaluate_table1_paired_effects(single_dir_df, adj_single, cols)
+    assert len(effects_single) == len(cols)
+    for eff in effects_single:
+        assert eff.status == "insufficient non-zero pairs"
+
+
+def test_evaluate_conditional_twin_test_constant_and_unpaired() -> None:
+    """Verify evaluate_conditional_twin_test handles constant traits and unpaired data."""
+    # Constant traits: correlation is NaN, VIF is NaN (not Inf)
+    const_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1"],
+            "experiment_id": ["e1", "e1"],
+            "inc_dec": ["inc", "dec"],
+            TWIN_A: [5.0, 5.0],
+            TWIN_B: [5.0, 5.0],
+        }
+    )
+    summary_const = evaluate_conditional_twin_test(const_df, TWIN_A, TWIN_B)
+    assert np.isnan(summary_const.profile_correlation)
+    assert np.isnan(summary_const.vif_profile)
+    assert np.isnan(summary_const.profile_partial_r_depth)
+    assert summary_const.profile_slope_a_on_b == 0.0
+    assert np.isnan(summary_const.paired_slope_pvalue)
+
+    # Single direction data (no paired contrasts)
+    unpaired_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s2"],
+            "experiment_id": ["e1", "e2"],
+            "inc_dec": ["inc", "inc"],
+            TWIN_A: [1.0, 2.0],
+            TWIN_B: [3.0, 4.0],
+        }
+    )
+    summary_unpaired = evaluate_conditional_twin_test(unpaired_df, TWIN_A, TWIN_B)
+    assert summary_unpaired.n_paired_experiments == 0
+    assert np.isnan(summary_unpaired.paired_correlation)
+    assert np.isnan(summary_unpaired.vif_paired)
+    assert summary_unpaired.paired_slope_a_on_b == 0.0
+    assert np.isnan(summary_unpaired.paired_slope_pvalue)
+
+
+def test_evaluate_table1_paired_effects_missing_keys_and_mismatched_shape() -> None:
+    """Verify evaluate_table1_paired_effects handles missing IDs or shape mismatches safely."""
+    cols = list(TABLE_1_TRAITS.keys())
+
+    # Missing study_id column
+    df_no_study = pd.DataFrame(
+        {
+            "experiment_id": ["e1", "e2"],
+            "inc_dec": ["inc", "dec"],
+            **{c: [1.0, 2.0] for c in cols},
+        }
+    )
+    adj_mat = np.ones((2, len(cols)))
+    effects_no_study = evaluate_table1_paired_effects(df_no_study, adj_mat, cols)
+    assert len(effects_no_study) == len(cols)
+    assert all(e.status == "insufficient non-zero pairs" for e in effects_no_study)
+
+    # Mismatched row count (e.g. 3 rows in adj_mat, 2 rows in df)
+    df_valid = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1"],
+            "experiment_id": ["e1", "e1"],
+            "inc_dec": ["inc", "dec"],
+            **{c: [1.0, 2.0] for c in cols},
+        }
+    )
+    adj_bad_rows = np.ones((3, len(cols)))
+    effects_bad_rows = evaluate_table1_paired_effects(df_valid, adj_bad_rows, cols)
+    assert len(effects_bad_rows) == len(cols)
+    assert all(e.status == "insufficient non-zero pairs" for e in effects_bad_rows)
+
+
+def test_evaluate_conditional_twin_test_unknown_depth_columns_and_missing_keys() -> None:
+    """Verify evaluate_conditional_twin_test handles unknown depth columns and missing IDs."""
+    # Unknown depth columns should safely fall back to vec_a + vec_b
+    df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1"],
+            "experiment_id": ["e1", "e1"],
+            "inc_dec": ["inc", "dec"],
+            TWIN_A: [2.0, 4.0],
+            TWIN_B: [1.0, 3.0],
+        }
+    )
+    summary = evaluate_conditional_twin_test(
+        df, TWIN_A, TWIN_B, columns_for_depth=["non_existent_col_1", "non_existent_col_2"]
+    )
+    assert summary.n_paired_experiments == 1
+    assert summary.trait_a == TWIN_A
+    assert summary.trait_b == TWIN_B
+    # Depth fell back to vec_a + vec_b, standard deviation is > 0, partial_r evaluated
+    assert not np.isnan(summary.profile_correlation)
+
+    # Missing study_id in df
+    df_no_id = pd.DataFrame(
+        {
+            TWIN_A: [2.0, 4.0],
+            TWIN_B: [1.0, 3.0],
+            "inc_dec": ["inc", "dec"],
+        }
+    )
+    summary_no_id = evaluate_conditional_twin_test(df_no_id, TWIN_A, TWIN_B)
+    assert summary_no_id.n_paired_experiments == 0
+    assert np.isnan(summary_no_id.paired_correlation)
+
+
+def test_compute_correlation_metrics_spearman_two_traits() -> None:
+    """Verify compute_correlation_metrics handles 2-trait spearman correlation without crashing."""
+    rng = np.random.default_rng(42)
+    x = np.column_stack(
+        [np.arange(20, dtype=float), np.arange(20, dtype=float) * 2.0 + rng.normal(size=20)]
+    )
+    cols = ["trait_1", "trait_2"]
+
+    metrics = compute_correlation_metrics(x, cols, method="spearman")
+    assert metrics.n_samples == 20
+    assert metrics.n_traits == 2
+    assert metrics.constant_traits_excluded == 0
+    assert 0.8 < metrics.median_pairwise_r <= 1.0
+    assert 0.8 < metrics.mean_pairwise_r <= 1.0
+
+
+def test_compute_correlation_metrics_shape_and_length_validation() -> None:
+    """Verify compute_correlation_metrics rejects 1D/3D matrices and column length mismatches."""
+    # 1D array
+    with pytest.raises(ValueError, match="trait_matrix must be 2D"):
+        compute_correlation_metrics(np.array([1.0, 2.0]), ["c1", "c2"])
+
+    # Column length mismatch
+    mat = np.ones((10, 3))
+    with pytest.raises(ValueError, match=r"column_ids length.*does not match"):
+        compute_correlation_metrics(mat, ["c1", "c2"])
+
+
+def test_normalize_traits_by_profile_composition_missing_columns() -> None:
+    """Verify normalize_traits_by_profile_composition raises ValueError when columns are missing."""
+    df = pd.DataFrame({"t1": [1.0, 2.0]})
+    with pytest.raises(ValueError, match="DataFrame missing 1 requested columns"):
+        normalize_traits_by_profile_composition(df, ["t1", "t_nonexistent"])
+
+
+def test_columns_file_gzip_and_schema_validation(tmp_path: Path) -> None:
+    """Verify get_non_media_trait_columns handles gzipped files and catches invalid schemas."""
+    # Gzipped columns file
+    gz_path = tmp_path / "columns.tsv.gz"
+    df_valid = pd.DataFrame(
+        {
+            "column_id": ["t1", "m1"],
+            "object_category": ["cat1", "METPO:1004005"],
+        }
+    )
+    df_valid.to_csv(gz_path, sep="\t", index=False, compression="gzip")
+
+    # Pass uncompressed path, should automatically find .gz
+    uncompressed_path = tmp_path / "columns.tsv"
+    cols = get_non_media_trait_columns(uncompressed_path)
+    assert cols == ["t1"]
+
+    # Schema missing required columns
+    bad_schema = tmp_path / "bad_schema.tsv"
+    pd.DataFrame({"wrong_col": [1, 2]}).to_csv(bad_schema, sep="\t", index=False)
+    with pytest.raises(ValueError, match="missing required columns"):
+        get_non_media_trait_columns(bad_schema)
+
+
+def test_evaluate_table1_and_twins_duplicate_experiments() -> None:
+    """Verify evaluate_table1_paired_effects and evaluate_conditional_twin_test
+    handle duplicate keys.
+    """
+    cols = list(TABLE_1_TRAITS.keys())
+    # DataFrame with duplicate (study_id, experiment_id, inc_dec) entries
+    df_dup = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s1", "s1"],
+            "experiment_id": ["e1", "e1", "e1", "e1"],
+            "inc_dec": ["inc", "inc", "dec", "dec"],
+            **{c: [2.0, 4.0, 1.0, 3.0] for c in cols},
+        }
+    )
+    adj_mat = df_dup[cols].to_numpy(dtype=float)
+
+    # Should aggregate duplicate keys via pivot_table without raising ValueError
+    effects = evaluate_table1_paired_effects(df_dup, adj_mat, cols)
+    assert len(effects) == len(cols)
+
+    twin_summary = evaluate_conditional_twin_test(df_dup, TWIN_A, TWIN_B)
+    assert twin_summary.n_paired_experiments == 1
