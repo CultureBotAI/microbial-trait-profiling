@@ -167,6 +167,27 @@ calibrate replicates="10" seed="42" scenario="all": taxa-trait-matrix study-trai
 	  --min-fold 1.5 \
 	  --max-fold 0.67"
 
+# Run ORA background stratification and annotation-density sensitivity evaluation (#118).
+analyze-strata: study-trait-profiles-ora
+	just timed analyze-strata "uv run python scripts/run_stratified_enrichment.py \
+	  --profiles data/derived/study_trait_profiles_ora_wide.tsv \
+	  --experiments data/derived/experiments.tsv \
+	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
+	  --output-dir data/derived \
+	  --p-threshold {{p_threshold}} \
+	  --min-fold {{min_fold}}"
+
+# Run site-stratified enrichment for an anatomical site (e.g. Feces, Saliva) (#118).
+analyze-site SITE: study-trait-profiles-ora
+	just timed analyze-site "uv run python scripts/run_stratified_enrichment.py \
+	  --profiles data/derived/study_trait_profiles_ora_wide.tsv \
+	  --experiments data/derived/experiments.tsv \
+	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
+	  --output-dir data/derived/sites/{{SITE}} \
+	  --site {{SITE}} \
+	  --p-threshold {{p_threshold}} \
+	  --min-fold {{min_fold}}"
+
 # Predeclared sensitivity scenarios for the 15 log-ratios (#183): zero exclusions,
 # population-matched fractions, common-support references, fecal strata and
 # leave-one-study-out influence. Needs data/derived/bugsigdb_taxa.tsv (`just study-tsvs`).
