@@ -62,6 +62,7 @@ def test_mtp_modules_can_be_imported_directly() -> None:
         "ora_calibration.scenarios",
         "paths",
         "stats",
+        "stratification",
         "study_trait_profiles",
         "study_tsv",
         "table1_trait_maps",

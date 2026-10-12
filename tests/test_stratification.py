@@ -20,7 +20,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from bsdbng.stratification import (
+from mtp.stratification import (
     ANNOTATION_DENSITY_NOTE,
     PRECAUTIONARY_NOTE,
     PRIMARY_STRATA,
