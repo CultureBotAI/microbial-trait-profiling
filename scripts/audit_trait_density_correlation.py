@@ -13,7 +13,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from bsdbng.density_adjustment import (
+from mtp.density_adjustment import (
     DEFAULT_COLUMNS_PATH,
     DEFAULT_OUTPUT_DIR,
     DEFAULT_PROFILES_PATH,

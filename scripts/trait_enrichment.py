@@ -23,25 +23,25 @@ from typing import Any, TextIO
 
 from scipy.stats import hypergeom as _scipy_hypergeom
 
-from bsdbng.enrichment_results import (
+from mtp.enrichment_results import (
     META_RESULT_STATUS,
     META_SIGNIFICANT_HITS,
     META_TESTS_PERFORMED,
     classify_result_status,
 )
-from bsdbng.enrichment_stats import (
+from mtp.enrichment_stats import (
     benjamini_hochberg,
 )
-from bsdbng.enrichment_stats import (
+from mtp.enrichment_stats import (
     hypergeom_cdf as _core_hypergeom_cdf,
 )
-from bsdbng.enrichment_stats import (
+from mtp.enrichment_stats import (
     hypergeom_cdf_many as _core_hypergeom_cdf_many,
 )
-from bsdbng.enrichment_stats import (
+from mtp.enrichment_stats import (
     hypergeom_sf as _core_hypergeom_sf,
 )
-from bsdbng.enrichment_stats import (
+from mtp.enrichment_stats import (
     hypergeom_sf_many as _core_hypergeom_sf_many,
 )
 
