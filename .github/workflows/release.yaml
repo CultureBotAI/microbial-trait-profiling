@@ -23,7 +23,7 @@ jobs:
         run: uv tool install rust-just==1.39.0
 
       - name: Sync environment
-        run: uv sync --all-extras --group dev --group qa
+        run: uv sync --locked --all-extras --group dev --group qa
 
       - name: Run checks
         run: just check

@@ -65,7 +65,7 @@ qa = [
   "pip-audit>=2.10.0",
   "pytest-cov>=6.0.0",
   "types-PyYAML>=6.0.12.20260408",
-  "uv==0.11.15",
+  "uv==0.12.22",
 ]
 
 [tool.setuptools]
@@ -150,7 +150,6 @@ quiet-level = 3
 
 [tool.bandit]
 exclude_dirs = ["tests", ".venv"]
-skips = []
 
 [tool.deptry]
 exclude = [
