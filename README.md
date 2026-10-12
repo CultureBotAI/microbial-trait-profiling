@@ -23,7 +23,7 @@ not direct in vivo physiological or metabolic measurements.
 
 You need two tools installed. Everything else is managed automatically — with
 one exception: the figure recipes (`just guild-maps`, `just table1-trait-maps`)
-render PNGs through a headless Chrome, fetched version-pinned by
+render PNG files through a headless Chrome, fetched version-pinned by
 `just get-chrome` (see `methods/README.md`).
 
 | Tool | What it does | Install |

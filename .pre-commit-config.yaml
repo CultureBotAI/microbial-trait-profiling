@@ -29,8 +29,9 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        args: [--baseline, .secrets.baseline]
         exclude: ^data/.*/provenance\.json$
+        # Only reviewed public checksum values are baselined; new values still fail.
+        args: [--baseline, .secrets.baseline]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.13
     hooks:
