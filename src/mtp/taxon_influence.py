@@ -416,6 +416,16 @@ def effect_rows(base: Base, remaining: dict[Key, dict[str, int]], keys: list[Key
     before_totals = {key: sum(base.profiles[key].values()) for key in keys}
     after_totals = {key: sum(remaining[key].values()) for key in keys}
     traits = list(base.traits.values())
+    valid_before = {
+        key[:2]
+        for key in keys
+        if key[2] == "inc" and before_totals[key] > 0 and before_totals[(*key[:2], "dec")] > 0
+    }
+    valid_after = {
+        key[:2]
+        for key in keys
+        if key[2] == "inc" and after_totals[key] > 0 and after_totals[(*key[:2], "dec")] > 0
+    }
     for representation in ("shared_fraction", "native_noel_zero_fraction", "shared_log2_ratio"):
         features = (
             list(combinations(traits, 2))
@@ -427,13 +437,19 @@ def effect_rows(base: Base, remaining: dict[Key, dict[str, int]], keys: list[Key
             native_zero = representation == "native_noel_zero_fraction"
             before = pair_values(base.profiles, keys, trait, other, native_zero, before_totals)
             after = pair_values(remaining, keys, trait, other, native_zero, after_totals)
+            if native_zero:
+                before_cmp = {p: v for p, v in before.items() if p in valid_before}
+                after_cmp = {p: v for p, v in after.items() if p in valid_after}
+            else:
+                before_cmp = before
+                after_cmp = after
             row = dict(
                 representation=representation,
                 trait_key=trait,
                 denominator_trait=other,
                 unit="log2_ratio_contrast" if other else "fraction_difference",
                 correction="BY15" if other else "BH6",
-                **comparison(before, after),
+                **comparison(before_cmp, after_cmp),
             )
             family.append(row)
         if representation == "native_noel_zero_fraction":
