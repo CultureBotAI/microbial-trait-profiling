@@ -7,10 +7,10 @@
     "experiments.tsv": "403afea98d9b0a5b56939f68bcc9aace56a8eda350232a586806fe7bf30ad230",
     "bugsigdb_taxa.tsv": "e7fa982b23ea82456247bcd841fd97d4fe71518e09eaaa27aee65d9adb271c59",
     "taxa_trait_matrix.tsv": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178",
-    "table1_taxon_influence_protocol.json": "24a3a461ee39572024d4582970818a5b8a7378b38f42c3be6fb10e2ea28b5fb1"
+    "table1_taxon_influence_protocol.json": "f125dfe1b1e524f5bc2e9441136ba1f6cac2a363f3b85554c4178e34b06331ba"
   },
   "protocol": {
-    "version": "190-v2",
+    "version": "190-v1",
     "kg_build": "20260120",
     "kg_md5": {
       "merged-kg_nodes.tsv": "dd76b4656f9341db25a7c4afa96cd58e",
@@ -41,9 +41,7 @@
     ],
     "minimum_lineage_studies": 3,
     "top_lineages_per_rank": 10,
-    "include_trait_leading_genus": true,
-    "scenario_rule": "inventory every resolved genus/family; run the ten largest per rank by propagated full non-MediaDive contribution count plus the four predicted genera and their resolved families, then add each Table 1 trait's leading genus by propagated contribution count summed across both directions; each selected lineage requires three supporting studies; ties by taxon ID; no effect or significance selection",
-    "rule_declaration": "Issue #190 comment https://github.com/CultureBotAI/microbial-trait-profiling/issues/190#issuecomment-5703892447, recorded before the 190-v2 run",
+    "scenario_rule": "inventory every resolved genus/family; run the ten largest per rank by propagated full non-MediaDive contribution count plus the four predicted genera and their resolved families, each requiring three supporting studies; ties by taxon ID; no effect or significance selection",
     "predicted_genera": [
       "Streptococcus",
       "Enterococcus",
@@ -392,9 +390,9 @@
   "agent_field_continued_records": 190505,
   "mismatches": 0,
   "code_sha256": {
-    "contribution_inputs.py": "b559082cd9767770aa71572b84a09de8b4a6a08aaa3afc6edfab2089a63b16f7",
-    "taxon_contributions.py": "36b1135d650063b5ab57e7965398a5d14a1f403fce59d26a46bc0ff9c28bc2a8",
-    "taxon_influence.py": "3ecb4f626698dd1ba00a2456cd898d75116085dad44527f848f132d6f13b0412"
+    "contribution_inputs.py": "1a3586b3a8ce010c3bc3ac4b7d74c5106358f330ff0b78f3b0bc2acd829624f7",
+    "taxon_contributions.py": "72ddd6eb96011c0d5749d33010ac9cd511285e186e4471e187a8548d6810f932",
+    "taxon_influence.py": "542cf8e4e81a3e56a4fa89a7cae56ce951cb45b2d948017b90ba41cc45595a43"
   },
   "rows": {
     "profile_reported_taxa": 42267,
@@ -404,8 +402,8 @@
   },
   "influence": {
     "scenarios": 1233,
-    "run_scenarios": 24,
-    "effect_rows": 2700,
+    "run_scenarios": 22,
+    "effect_rows": 2484,
     "native_noel": "zero-total convention preserved; six-trait directional family",
     "native_jed": "not_rerun: transformed scale and correction family need owner integration",
     "native_ora": "not_rerun: both background count contracts exported for Ilyas"

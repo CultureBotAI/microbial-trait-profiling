@@ -1,13 +1,15 @@
 """Source-count conservation, lineage attribution and matched-population inference."""
 
+import csv
+import gzip
 from collections import Counter
 from pathlib import Path
 
 import pytest
 
-from bsdbng.contribution_inputs import Base, Graph, count, load_graph, rows
-from bsdbng.taxon_contributions import export_ledger, reconcile
-from bsdbng.taxon_influence import (
+from mtp.contribution_inputs import Base, Graph, count, load_graph, rows
+from mtp.taxon_contributions import export_ledger, reconcile
+from mtp.taxon_influence import (
     adjust,
     comparison,
     describe,
@@ -71,9 +73,6 @@ def test_rollup_reconciles_and_exposes_parent_child_repetition(
     assert ledger.reconstructed[FAMILY] == Counter({A: 2, B: 1, OTHER: 3})
     counts = export_ledger(base, graph, ledger, tmp_path)
     assert counts["profile_counts"] == 4
-    import csv
-    import gzip
-
     with gzip.open(tmp_path / "profile_counts.tsv.gz", "rt", encoding="utf-8") as handle:
         records = list(csv.DictReader(handle, delimiter="\t"))
     first = next(r for r in records if r["direction"] == "inc" and r["trait_key"] == A)
@@ -81,6 +80,42 @@ def test_rollup_reconciles_and_exposes_parent_child_repetition(
     assert first["distinct_source_taxa"] == "2"
     assert first["repeated_propagated_counts"] == "3"
     assert first["original_assertion_count"] == ""
+
+
+def test_exported_source_contributions_sum_to_profile_counts(
+    corpus: tuple[Base, Graph],
+    tmp_path: Path,
+) -> None:
+    base, graph = corpus
+    export_ledger(base, graph, reconcile(base, graph), tmp_path)
+
+    source_counts: Counter[tuple[str, str]] = Counter()
+    with gzip.open(tmp_path / "source_contributions.tsv.gz", "rt", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle, delimiter="\t"):
+            source_counts[(row["reported_taxon"], row["trait_key"])] += count(
+                row["count_contribution"]
+            )
+
+    reconstructed: Counter[tuple[str, str, str, str]] = Counter()
+    with gzip.open(tmp_path / "profile_reported_taxa.tsv.gz", "rt", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle, delimiter="\t"):
+            for trait in base.traits.values():
+                key = (row["study_id"], row["experiment_id"], row["direction"], trait)
+                reconstructed[key] += source_counts[(row["reported_taxon"], trait)]
+
+    expected: dict[tuple[str, str, str, str], int] = {}
+    with gzip.open(tmp_path / "profile_counts.tsv.gz", "rt", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle, delimiter="\t"):
+            key = (
+                row["study_id"],
+                row["experiment_id"],
+                row["direction"],
+                row["trait_key"],
+            )
+            expected[key] = count(row["profile_count"])
+
+    assert set(reconstructed).issubset(expected)
+    assert all(reconstructed[key] == profile_count for key, profile_count in expected.items())
 
 
 def test_lineage_removal_reaches_higher_rank_records_and_full_denominator(

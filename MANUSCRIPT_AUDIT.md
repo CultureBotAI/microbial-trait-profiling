@@ -5,7 +5,7 @@
 
 This file maps the manuscript onto this repository: where the manuscript lives, which commits and
 data releases its numbers are pinned to, which of its published numbers are known to need
-correction, and which open bsdbng issues bear on which manuscript claims. It exists because the
+correction, and which open project issues bear on which manuscript claims. It exists because the
 manuscript is maintained *outside* this repo, so contributors here otherwise cannot see which
 claims their branches and issues affect. Update it when the manuscript's pins move or when an
 issue listed here is closed.
@@ -30,8 +30,8 @@ Both analysis arms are now computed on the **same corpus**: BugSigDBExports **v1
 
 | item | pin |
 |---|---|
-| Analysis A (composition / paired contrast) | `clustered-heatmap-generation` (CultureBotAI/bsdbng); manuscript pins the v1.3.1 regeneration `3afeecd`. Safe despite later commits: no analysis artifact has changed since, and the tip `c519f52` (2026-09-02) is documentation-only |
-| Analysis B (ORA / enrichment) | `enrichment-analysis-heatmap-cluster` (CultureBotAI/bsdbng) @ `c75744a` (2026-08-31 v1.3.1 rerun; also the tip). Note: authored `Zoo Bot <bot@example.com>`, landed without an issue or PR — see #155 |
+| Analysis A (composition / paired contrast) | `clustered-heatmap-generation` (CultureBotAI/microbial-trait-profiling); manuscript pins the v1.3.1 regeneration `3afeecd`. Safe despite later commits: no analysis artifact has changed since, and the tip `c519f52` (2026-09-02) is documentation-only |
+| Analysis B (ORA / enrichment) | `enrichment-analysis-heatmap-cluster` (CultureBotAI/microbial-trait-profiling) @ `c75744a` (2026-08-31 v1.3.1 rerun; also the tip). Note: authored `Zoo Bot <bot@example.com>`, landed without an issue or PR — see #155 |
 | KG-Microbe inputs | unchanged since April: `merged-kg_edges.tsv` md5 `555ecf5ba5d89288cdc44e368375374f`, `merged-kg_nodes.tsv` md5 `dd76b4656f9341db25a7c4afa96cd58e` |
 | Corpus | 5,829 profiles in the wide matrix, of which 4,670 (= 2 × 2,335 pairs) enter the paired analyses; 4,517 testable; 315 traits tested by A, 267 significant traits exported by B |
 
@@ -116,7 +116,7 @@ of A's per-trait dz (sampling variance taken as 1/n).
 5. Title page, funding, ethics, conflicts; cover letter; figure paste from the staging doc
    (needs a human with Doc access).
 
-## Which open bsdbng issues bear on which manuscript claims
+## Which open project issues bear on which manuscript claims
 
 **Directly threaten Table 1 / headline numbers**
 

@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from bsdbng.contribution_inputs import digest
-from bsdbng.native_influence_publication import publish
-from bsdbng.native_taxon_influence import compressed_rows
-from bsdbng.taxon_contributions import write_table
+from mtp.contribution_inputs import digest
+from mtp.native_influence_publication import publish
+from mtp.native_taxon_influence import compressed_rows
+from mtp.taxon_contributions import write_table
 
 
 @pytest.fixture
@@ -47,6 +47,36 @@ def run_directory(tmp_path: Path) -> Path:
             },
         ],
     )
+    write_table(
+        source / "source_contributions.tsv.gz",
+        ["reported_taxon", "trait_key", "count_contribution"],
+        [{"reported_taxon": "taxon", "trait_key": "A", "count_contribution": 1}],
+    )
+    write_table(
+        source / "profile_reported_taxa.tsv.gz",
+        ["study_id", "experiment_id", "direction", "reported_taxon"],
+        [
+            {
+                "study_id": "study",
+                "experiment_id": "experiment",
+                "direction": "inc",
+                "reported_taxon": "taxon",
+            }
+        ],
+    )
+    write_table(
+        source / "profile_counts.tsv.gz",
+        ["study_id", "experiment_id", "direction", "trait_key", "profile_count"],
+        [
+            {
+                "study_id": "study",
+                "experiment_id": "experiment",
+                "direction": "inc",
+                "trait_key": "A",
+                "profile_count": 1,
+            }
+        ],
+    )
     (source / "native_manifest.json").write_text(
         json.dumps(
             {
@@ -76,6 +106,10 @@ def test_publication_preserves_comparisons_and_full_family_metadata(run_director
     assert selected == [{"trait_key": "A", "value": "1"}]
     comparisons = list(compressed_rows(destination / "native_composition_comparison.tsv.gz"))
     assert len(comparisons) == 2
+    reconciliation = result["source_reconciliation"]
+    assert isinstance(reconciliation, dict)
+    assert reconciliation["source_contribution_rows"] == 1
+    assert reconciliation["mismatches"] == 0
     assert "FULL native families" in (destination / "README.md").read_text()
     summary = (destination / "README.md").read_text()
     assert "See run_manifest.json and native_composition_comparison.tsv.gz." in summary
@@ -87,6 +121,16 @@ def test_publication_rejects_changed_outputs_before_writing(run_directory: Path)
     with pytest.raises(ValueError, match="artifact changed"):
         publish(run_directory, destination)
     assert not destination.exists()
+
+
+def test_publication_rejects_source_contribution_mismatch(run_directory: Path) -> None:
+    write_table(
+        run_directory / "source_contributions.tsv.gz",
+        ["reported_taxon", "trait_key", "count_contribution"],
+        [{"reported_taxon": "taxon", "trait_key": "A", "count_contribution": 2}],
+    )
+    with pytest.raises(ValueError, match="do not reconcile"):
+        publish(run_directory, run_directory.parent / "review")
 
 
 def test_publication_rejects_incomplete_runs(run_directory: Path) -> None:

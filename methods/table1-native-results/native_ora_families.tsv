@@ -95,14 +95,6 @@ exclude_family_NCBITaxon:90964	saliva	fixed_baseline	316	312	6025587	34457	98904
 exclude_family_NCBITaxon:90964	saliva	recomputed_remaining	316	312	5661147	34457	98904
 exclude_family_NCBITaxon:90964	parkinsons_feces	fixed_baseline	198	196	4372064	24213	62132
 exclude_family_NCBITaxon:90964	parkinsons_feces	recomputed_remaining	198	196	3994524	24213	62132
-exclude_genus_NCBITaxon:1263	pooled	fixed_baseline	4670	4509	106993585	555765	1429353
-exclude_genus_NCBITaxon:1263	pooled	recomputed_remaining	4670	4509	106833509	555765	1429353
-exclude_genus_NCBITaxon:1263	feces	fixed_baseline	2920	2839	65108392	348760	899963
-exclude_genus_NCBITaxon:1263	feces	recomputed_remaining	2920	2839	64982127	348760	899963
-exclude_genus_NCBITaxon:1263	saliva	fixed_baseline	316	312	6025587	34477	98904
-exclude_genus_NCBITaxon:1263	saliva	recomputed_remaining	316	312	6021747	34477	98904
-exclude_genus_NCBITaxon:1263	parkinsons_feces	fixed_baseline	198	195	4372064	24165	61815
-exclude_genus_NCBITaxon:1263	parkinsons_feces	recomputed_remaining	198	195	4361969	24165	61815
 exclude_genus_NCBITaxon:1279	pooled	fixed_baseline	4670	4493	106993585	554279	1424281
 exclude_genus_NCBITaxon:1279	pooled	recomputed_remaining	4670	4493	97792537	554279	1424281
 exclude_genus_NCBITaxon:1279	feces	fixed_baseline	2920	2844	65108392	348908	901548
@@ -191,11 +183,3 @@ exclude_genus_NCBITaxon:590	saliva	fixed_baseline	316	311	6025587	34413	98587
 exclude_genus_NCBITaxon:590	saliva	recomputed_remaining	316	311	5915707	34413	98587
 exclude_genus_NCBITaxon:590	parkinsons_feces	fixed_baseline	198	196	4372064	24226	62132
 exclude_genus_NCBITaxon:590	parkinsons_feces	recomputed_remaining	198	196	4264931	24226	62132
-exclude_genus_NCBITaxon:662	pooled	fixed_baseline	4670	4517	106993585	556407	1431889
-exclude_genus_NCBITaxon:662	pooled	recomputed_remaining	4670	4517	105808863	556407	1431889
-exclude_genus_NCBITaxon:662	feces	fixed_baseline	2920	2847	65108392	349392	902499
-exclude_genus_NCBITaxon:662	feces	recomputed_remaining	2920	2847	64393249	349392	902499
-exclude_genus_NCBITaxon:662	saliva	fixed_baseline	316	312	6025587	34478	98904
-exclude_genus_NCBITaxon:662	saliva	recomputed_remaining	316	312	5957715	34478	98904
-exclude_genus_NCBITaxon:662	parkinsons_feces	fixed_baseline	198	196	4372064	24243	62132
-exclude_genus_NCBITaxon:662	parkinsons_feces	recomputed_remaining	198	196	4326816	24243	62132

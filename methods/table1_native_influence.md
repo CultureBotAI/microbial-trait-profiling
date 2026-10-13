@@ -44,7 +44,10 @@ tree. This is also the final step of the native recipe. The committed
 `methods/table1-native-results/` directory is an explicitly reviewed historical snapshot
 rather than the recipe's write target.
 The bundle contains every six-trait comparison, native Table 1 statistics, full
-native family sizes and run manifests. Large full-profile data remain in the
+native family sizes and run manifests. Its README includes a six-row pooled
+baseline-versus-exclusion native q-value table that names the highest-q
+exclusion and every exclusion that removes baseline `q <= 0.05` membership.
+Large full-profile data remain in the
 generated-data directory under the repository's existing convention.
 The bundle also includes the complete `scenarios.tsv` inventory, with lineage
 names and selection/support status for candidates outside the declared panel.
@@ -149,3 +152,10 @@ two pinned KG file checksums, and the two native source-code revisions. Windows
 and POSIX filename spellings are recorded because detect-secrets 1.5.0 uses native
 path separators. Changed values and other lines remain scanned. This replaces the
 earlier whole-line checksum exemptions and addresses the relevant #180 check gate.
+
+Before publishing the compact bundle, the publisher re-sums every
+`source_contributions.tsv.gz` row through `profile_reported_taxa.tsv.gz` and
+requires exact equality with every row in `profile_counts.tsv.gz`. The
+publication manifest records all three SHA-256 hashes, row counts and zero
+mismatches, so source-count reconciliation is enforced on the actual run rather
+than asserted only in prose.
