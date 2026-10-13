@@ -17,7 +17,6 @@ def test_file_sha256_empty_file(tmp_path: Path) -> None:
     empty_file = tmp_path / "empty.txt"
     empty_file.write_bytes(b"")
     expected = hashlib.sha256(b"").hexdigest()
-    assert expected == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     assert file_sha256(empty_file) == expected
     # Also verify str argument works
     assert file_sha256(str(empty_file)) == expected
