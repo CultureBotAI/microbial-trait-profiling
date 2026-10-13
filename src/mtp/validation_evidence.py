@@ -45,7 +45,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from mtp.paths import DERIVED_DATA_DIR, KG_MICROBE_DIR, REPO_ROOT
+from mtp.paths import DERIVED_DATA_DIR, KG_MICROBE_DIR, REPO_ROOT, file_sha256
 from mtp.trait_guilds import (
     DEFAULT_EXPERIMENTS_PATH,
     DEFAULT_FULL_DUMP_PATH,
@@ -1033,9 +1033,7 @@ def _write(
     return path
 
 
-def _sha256(path: Path) -> str:
-    with path.open("rb") as handle:
-        return hashlib.file_digest(handle, "sha256").hexdigest()
+_sha256 = file_sha256
 
 
 def write_external_snapshot(

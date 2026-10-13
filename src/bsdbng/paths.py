@@ -10,6 +10,7 @@ from mtp.paths import (
     REPO_ROOT,
     SCHEMA_PATH,
     STUDY_DATA_DIR,
+    file_sha256,
 )
 
 __all__ = [
@@ -19,6 +20,7 @@ __all__ = [
     "REPO_ROOT",
     "SCHEMA_PATH",
     "STUDY_DATA_DIR",
+    "file_sha256",
 ]
 
 import mtp.paths as _target

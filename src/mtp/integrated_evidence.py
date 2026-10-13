@@ -31,7 +31,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import json
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, fields, replace
@@ -47,7 +46,7 @@ from mtp.guild_maps import (
     cell_status_rows,
     compute_correlation,
 )
-from mtp.paths import DERIVED_DATA_DIR
+from mtp.paths import DERIVED_DATA_DIR, file_sha256
 from mtp.table1_trait_maps import SHIFT_FAMILY_ID, compute_direction_shifts
 from mtp.trait_composition import ANALYSIS_VERSION as LOG_RATIO_VERSION
 from mtp.trait_composition import compute_log_ratio_shifts
@@ -1374,9 +1373,7 @@ def write_view(
     return path
 
 
-def _sha256(path: Path) -> str:
-    with path.open("rb") as handle:
-        return hashlib.file_digest(handle, "sha256").hexdigest()
+_sha256 = file_sha256
 
 
 def main(argv: Sequence[str] | None = None) -> int:

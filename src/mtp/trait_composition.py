@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import json
 import math
 from collections import defaultdict
@@ -22,6 +21,7 @@ from statistics import fmean, median
 from scipy.stats import binomtest, false_discovery_control
 
 from mtp.paths import DERIVED_DATA_DIR
+from mtp.paths import file_sha256 as file_sha256
 from mtp.trait_guilds import (
     DEFAULT_EXPERIMENTS_PATH,
     DEFAULT_FULL_DUMP_PATH,
@@ -217,12 +217,6 @@ def compute_log_ratio_shifts(
         for summary, q in zip(summaries, adjusted, strict=True)
     ]
     return LogRatioResult(summaries, all_studies, len(summaries))
-
-
-def file_sha256(path: Path) -> str:
-    """The hex SHA-256 of a file, for the provenance blocks that identify inputs."""
-    with path.open("rb") as handle:
-        return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
 def _display(value: float | None) -> str:
