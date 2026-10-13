@@ -50,7 +50,7 @@ kg = [
 # deprecated it), so with the plotly floor, kaleido must sit on the v1 line; the
 # two floors are a pair.
 viz = [
-  "kaleido>=1.0",
+  "kaleido>=1.5.0",
   "plotly>=7.0",
 ]
 mongo = [
