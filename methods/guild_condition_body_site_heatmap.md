@@ -132,15 +132,18 @@ occupies every cell; that formulation was rejected.
 
 The paired odds ratio mitigates study-level dependence, but it does **not**
 escape compositionality: both signs derive from shares of the same profile
-denominator, so a higher aerobe share mechanically depresses the anaerobe share
-within a profile. On this corpus 76 per cent of the scored studies (710 of 932)
-carry opposite signs for the two guilds, so a large part of the discordance is
-structural, and the odds ratio should be read as "the discordance runs more
+denominator. An increase in one guild's counts can lower the other guild's share
+without a change in the latter's counts. This does not force every pair of
+components to correlate negatively. On this corpus 76 per cent of the scored
+studies (710 of 932) carry opposite signs for the two guilds; that observation
+alone does not quantify the structural contribution. The odds ratio reads as
+"the discordance runs more
 often in the aerobe-up direction than the reverse", not as independent
 confirmation of the oxygen hypothesis. The Table 1 directional-shift figure
-tests each trait against itself across directions and is the cleaner statistic
-for direction; this figure's value is the condition-by-body-site map, not the
-test.
+tests each trait against itself across directions, but remains dependent on the
+same profile denominators. The [paired log-ratio analysis](table1_paired_log_ratios.md)
+illustrates reference-explicit tests over the individual Table 1 traits; it does
+not independently validate the oxygen guild hypothesis.
 
 Rank correlations were computed across the 86 condition-by-body-site cells that
 survived masking, using only cells where both members of a pair were present so

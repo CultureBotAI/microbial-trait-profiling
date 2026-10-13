@@ -1,4 +1,4 @@
-# Contributing to bsdbng
+# Contributing to microbial-trait-profiling
 
 ## Setup
 
@@ -15,8 +15,8 @@ brew install just
 curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
 
 # Clone and set up
-git clone https://github.com/turbomam/bsdbng.git
-cd bsdbng
+git clone https://github.com/CultureBotAI/microbial-trait-profiling.git
+cd microbial-trait-profiling
 uv sync --all-extras --group dev --group qa
 just install-hooks    # install pre-commit hooks
 just check            # verify everything works
@@ -74,8 +74,8 @@ All three should print version numbers. If any fails, it's not on your PATH.
 #### Step 5: Clone and check
 
 ```bash
-git clone https://github.com/turbomam/bsdbng.git
-cd bsdbng
+git clone https://github.com/CultureBotAI/microbial-trait-profiling.git
+cd microbial-trait-profiling
 uv sync --all-extras --group dev --group qa
 just check
 ```
@@ -108,7 +108,7 @@ The `.env` file is gitignored and will not be committed. Never commit API keys.
 
 ### 1. Pick an issue
 
-All work starts from a [GitHub issue](https://github.com/turbomam/bsdbng/issues).
+All work starts from a [GitHub issue](https://github.com/CultureBotAI/microbial-trait-profiling/issues).
 Don't start work without one. If you want to do something that doesn't have an
 issue, open one first.
 
@@ -120,8 +120,9 @@ If BugSigDB is unreachable while reproducing pipeline steps, see the README sect
 ```bash
 git checkout main
 git pull
-git checkout -b issue-<number>-<short-slug>
-# Example: git checkout -b issue-30-aggregate-tables
+gh issue develop <number> --repo CultureBotAI/microbial-trait-profiling \
+  --name issue-<number>-<short-slug> --checkout
+# Example: gh issue develop 30 --repo CultureBotAI/microbial-trait-profiling --name issue-30-aggregate-tables --checkout
 ```
 
 ### 3. Write code
@@ -149,7 +150,14 @@ If you want to auto-fix formatting:
 just format
 ```
 
-### 5. Commit and push
+### 5. Follow biological interpretation standards
+
+If your contribution adds or modifies prose describing biological results, figure captions, or methods:
+- Adhere to [`methods/biological_interpretation.md`](methods/biological_interpretation.md) for approved phrasing, evidence chains, and caption contracts.
+- Consult [`docs/table1_trait_semantics_audit.md`](docs/table1_trait_semantics_audit.md) for trait definitions and supported interpretations.
+- Maintain distinction between reported taxon annotation patterns and in vivo physiological measurements.
+
+### 6. Commit and push
 
 ```bash
 git add <your files>
@@ -157,7 +165,7 @@ git commit -m "Short description of what and why"
 git push -u origin issue-<number>-<short-slug>
 ```
 
-### 6. Open a PR
+### 7. Open a PR
 
 - Reference the issue: "Closes #30" in the PR body
 - Wait for CI to pass

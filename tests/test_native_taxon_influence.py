@@ -10,8 +10,9 @@ import numpy as np
 import pytest
 from scipy.stats import hypergeom, ttest_1samp
 
-from bsdbng.contribution_inputs import Base
-from bsdbng.native_taxon_influence import (
+from mtp.contribution_inputs import Base
+from mtp.native_taxon_influence import (
+    composition_q_sensitivity_table,
     export_native,
     fold_pairs,
     hypergeom_probabilities,
@@ -20,8 +21,8 @@ from bsdbng.native_taxon_influence import (
     run,
     transformed,
 )
-from bsdbng.taxon_contributions import write_table
-from bsdbng.taxon_influence import adjust, comparison
+from mtp.taxon_contributions import write_table
+from mtp.taxon_influence import TIE, adjust, comparison, directional_counts
 
 POLICY = {
     "minimum_profile_support": 1,
@@ -39,6 +40,56 @@ def test_parallel_native_probabilities_are_identical(tail: str) -> None:
     assert np.array_equal(serial, parallel)
 
 
+@pytest.mark.parametrize("tail", ["enrichment", "depletion"])
+def test_parallel_native_probabilities_match_measured_run_triples(tail: str) -> None:
+    """Counts sampled across the pooled 190-v2 baseline, not fabricated triples."""
+    measured = np.asarray(
+        [
+            (67, 3850392, 1770),
+            (2, 3850392, 932),
+            (1513, 3850392, 54969),
+            (4303, 3939949, 59732),
+            (19, 102531, 27395),
+            (4, 25729, 10173),
+            (16, 3850392, 348),
+            (5, 177825, 195),
+            (21, 25729, 88583),
+            (1, 3850392, 40),
+            (46, 3850392, 2477),
+            (109, 3850392, 1821),
+            (11, 177825, 2932),
+            (5, 25729, 48306),
+            (1, 177825, 1000),
+            (36, 102531, 17744),
+            (9644, 3939949, 136208),
+            (8, 3850392, 70),
+            (1, 177825, 1647),
+            (14, 25729, 7282),
+            (1, 102531, 838),
+            (2, 3939949, 166),
+            (9, 171652, 3899),
+            (4, 3850392, 586),
+            (94, 25729, 428932),
+            (1, 25729, 25041),
+            (29, 102531, 14680),
+            (720, 3939949, 167392),
+            (7, 102531, 3197),
+            (5, 171652, 2806),
+            (1, 3850392, 191),
+            (1, 171652, 1099),
+        ],
+        dtype=np.int64,
+    )
+    triples = np.tile(measured, (160, 1))
+    serial = hypergeom_probabilities(triples, 106993585, tail, workers=1)
+    parallel = hypergeom_probabilities(triples, 106993585, tail, workers=4)
+    assert np.array_equal(serial, parallel)
+
+
+def test_native_and_shared_direction_counts_use_the_same_tie_tolerance() -> None:
+    assert directional_counts([-2 * TIE, -TIE / 2, 0.0, TIE / 2, 2 * TIE]) == (1, 1)
+
+
 def corpus() -> Base:
     profiles = {}
     for i, (inc, dec) in enumerate(((8, 2), (7, 3), (1, 4), (0, 0))):
@@ -49,6 +100,32 @@ def corpus() -> Base:
                 "C": 0,
             }
     return Base(["A", "B", "C"], {"a": "A", "c": "C"}, profiles, {}, {}, {}, {}, {}, [])
+
+
+def test_composition_q_sensitivity_table_reports_significance_losses() -> None:
+    base = corpus()
+    composition = [
+        {
+            "scenario": scenario,
+            "scope": "pooled",
+            "reference": "refitted",
+            "trait_key": trait,
+            "native_before_status": "tested",
+            "native_before_q": baseline_q,
+            "native_after_status": after_status,
+            "native_after_q": after_q,
+        }
+        for trait, baseline_q, scenarios in (
+            ("A", 0.01, (("baseline", "tested", 0.01), ("exclude_X", "tested", 0.08))),
+            ("C", 0.2, (("baseline", "tested", 0.2), ("exclude_X", "untestable", 1.0))),
+        )
+        for scenario, after_status, after_q in scenarios
+    ]
+
+    table = "\n".join(composition_q_sensitivity_table(base, composition))
+
+    assert "| a | 0.01 | 0.08 | exclude_X | 1 | exclude_X |" in table
+    assert "| c | 0.2 | 1 | exclude_X | n/a | baseline not significant |" in table
 
 
 def test_native_composition_matches_log_zscore_and_t_test() -> None:
@@ -197,7 +274,7 @@ def test_native_run_refuses_changed_audit_inputs(tmp_path: Path) -> None:
 def test_native_mean_interval_targets_experiments_not_sign_share() -> None:
     base = corpus()
     records, pairs, _ = transformed(base, base.profiles, list(base.profiles), POLICY)
-    from bsdbng.taxon_influence import critical_t
+    from mtp.taxon_influence import critical_t
 
     values = list(pairs["A"].values())
     radius = critical_t(3) * stdev(values) / 2
@@ -252,7 +329,7 @@ def test_native_exports_end_to_end_with_an_empty_stratum(tmp_path: Path) -> None
     assert result["composition_comparisons"] == 8
     assert result["ora_comparisons"] == 8
     assert "Native lineage" in (tmp_path / "native_summary.md").read_text()
-    from bsdbng.contribution_inputs import rows
+    from mtp.contribution_inputs import rows
 
     comparisons = list(rows(tmp_path / "native_composition_comparison.tsv"))
     assert {r["shared_correction"] for r in comparisons} == {"BH2_directional_sign_test"}
