@@ -6,12 +6,14 @@ import sys
 from typing import Any
 
 from mtp.native_influence_publication import (
+    interpretation_handoff,
     main,
     publish,
     reconcile_exported_source_counts,
 )
 
 __all__ = [
+    "interpretation_handoff",
     "main",
     "publish",
     "reconcile_exported_source_counts",

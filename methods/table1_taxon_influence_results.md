@@ -97,6 +97,29 @@ backgrounds: Ruminococcus is 0.00193 [-0.27173, 0.27559] with the fixed baseline
 diagnostics do not show a large matched change from either leading-genus removal, but
 they do not establish lineage independence or a causal mechanism.
 
+## Cross-scale interpretation flags
+
+Two rows require explicit qualification before these results enter an integrated table
+or manuscript claim. Their exact source fields are published in
+[`table1-native-results/interpretation_handoff.tsv`](table1-native-results/interpretation_handoff.tsv).
+
+**Arsenate reduction is Escherichia-sensitive on this corpus.** Escherichia supplies
+58.7% of the increased-arm propagated counts. Its exclusion changes the matched
+study-weighted raw-fraction mean by -0.0065 percentage points, leaving -0.0007 pp
+[-0.0019, 0.0005]. The matched-corpus native transformed q-value likewise changes
+from 3.34e-05 to 0.674 under this genus exclusion. This supports describing an
+Escherichia-sensitive annotation signal, not a lineage-independent arsenate mechanism.
+Taxon removal is an influence diagnostic rather than causal attribution, and unresolved
+higher-rank assertions remain in the denominator.
+
+**Sphere shaped does not reproduce as a nonzero study-weighted raw-fraction mean.**
+Its baseline mean is 0.0213 pp [-0.0174, 0.0601], so that interval crosses zero before
+any exclusion. This does not make every sphere-shaped statistic null: the separate
+study-level directional sign test has q = 0.00288, and the experiment-weighted native
+transformed analysis has q = 3.34e-05. The tests differ in transformation, weighting,
+estimand and uncertainty. The raw-fraction interval is therefore cross-scale
+non-reproduction, not refutation or independent replication of the native result.
+
 These tables illustrate why count concentration and fraction influence are distinct:
 Staphylococcus contributes the largest coccus annotation mass, while removing
 Streptococcaceae produces the largest matched coccus fraction change in this panel.

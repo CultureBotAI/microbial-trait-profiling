@@ -47,6 +47,9 @@ The bundle contains every six-trait comparison, native Table 1 statistics, full
 native family sizes and run manifests. Its README includes a six-row pooled
 baseline-versus-exclusion native q-value table that names the highest-q
 exclusion and every exclusion that removes baseline `q <= 0.05` membership.
+It also includes `interpretation_handoff.tsv`, which records the measured #213
+arsenate/Escherichia and sphere-shaped cross-scale flags without merging the
+study-weighted raw-fraction and native transformed estimands.
 Large full-profile data remain in the
 generated-data directory under the repository's existing convention.
 The bundle also includes the complete `scenarios.tsv` inventory, with lineage
@@ -132,6 +135,7 @@ ORA cells alone is not an explanation of the signal.
 | `<scenario>/native_ora_profiles.tsv.gz` | All six traits and both directions; observed/expected counts, folds, both tails' p/q/status/membership and null count intervals, separately by scope/background. Join baseline and scenario rows by study/experiment/direction/trait/scope/background. |
 | `native_ora_families.tsv` | Complete native family sizes, active profile counts and population totals. |
 | `native_ora_fold_comparison.tsv` | Six-trait study-weighted fold comparisons and native significant-cell counts by direction at both thresholds. |
+| `interpretation_handoff.tsv` | Two #213 interpretation flags with exact raw-fraction effects/intervals, directional q-values, native q-values and manuscript boundaries. |
 | `native_manifest.json`, `native_summary.md` | Reproducibility record and measured interpretation. |
 
 Supply these alongside the original ledger/shared effects to #178. Join on the
