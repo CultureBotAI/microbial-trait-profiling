@@ -56,7 +56,7 @@ viz = [
 mongo = [
   "linkml-store[llm,mongodb]>=0.3.0",
   "pymongo>=4.17.0",
-  "python-dotenv>=1.2.2",
+  "python-dotenv>=1.2.4",
 ]
 
 [dependency-groups]
