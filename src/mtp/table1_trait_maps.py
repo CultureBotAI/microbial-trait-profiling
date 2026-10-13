@@ -27,6 +27,7 @@ import csv
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from scipy.stats import binomtest, false_discovery_control, spearmanr
 
@@ -34,6 +35,7 @@ from mtp.guild_maps import (
     OTHER_LABEL,
     SIGN_TOLERANCE,
     build_matrix,
+    require_plotly,
     study_direction_means,
     subset_matrix,
     write_body_site_panels,
@@ -53,6 +55,11 @@ from mtp.trait_guilds import (
     read_bugsigdb_vintage,
     write_stats_report,
 )
+
+if TYPE_CHECKING:
+    # plotly is the optional "viz" extra, so it is imported for annotations only;
+    # the figure builders import it at call time behind require_plotly().
+    from plotly.graph_objects import Figure
 
 TRAIT_ORDER: tuple[str, ...] = tuple(TABLE1_TRAITS)
 OUTPUT_PREFIX = "table1_traits"
@@ -261,15 +268,24 @@ class TraitShift:
     studies_up: int
     studies_down: int
     studies_tied: int
-    share_up: float
-    ci_low: float
-    ci_high: float
-    p_value: float
-    q_value: float
+    # None when no study is scored: the share and its interval are undefined, and
+    # the trait keeps its place in the six-trait family at p = 1 without a p or q
+    # being reported for it.
+    share_up: float | None
+    ci_low: float | None
+    ci_high: float | None
+    p_value: float | None
+    q_value: float | None
 
     @property
     def studies_scored(self) -> int:
         return self.studies_up + self.studies_down
+
+    @property
+    def status(self) -> str:
+        if self.studies_scored:
+            return "tested"
+        return "all_tied" if self.studies_tied else "no_studies"
 
 
 @dataclass(frozen=True)
@@ -363,12 +379,13 @@ def compute_direction_shifts(
     for index, trait in enumerate(trait_order):
         up, down, tied = tallies[trait]
         scored = up + down
+        share: float | None = None
+        low: float | None = None
+        high: float | None = None
         if scored:
             test = binomtest(up, scored, p=0.5)
             interval = test.proportion_ci(confidence_level=CONFIDENCE_LEVEL)
             share, low, high = up / scored, float(interval.low), float(interval.high)
-        else:
-            share = low = high = 0.0
         shifts.append(
             TraitShift(
                 trait=trait,
@@ -378,8 +395,8 @@ def compute_direction_shifts(
                 share_up=share,
                 ci_low=low,
                 ci_high=high,
-                p_value=p_values[index],
-                q_value=q_values[index],
+                p_value=p_values[index] if scored else None,
+                q_value=q_values[index] if scored else None,
             )
         )
 
@@ -443,9 +460,14 @@ def write_shift_table(result: ShiftResult, output_dir: Path, vintage: str | None
                 "family_id",
                 "family_size",
                 "correction_method",
+                "status",
                 "bugsigdb_vintage",
             ]
         )
+
+        def cell(value: float | None, spec: str) -> str:
+            return "" if value is None else format(value, spec)
+
         for shift in result.shifts:
             writer.writerow(
                 [
@@ -455,14 +477,15 @@ def write_shift_table(result: ShiftResult, output_dir: Path, vintage: str | None
                     shift.studies_down,
                     shift.studies_tied,
                     shift.studies_scored,
-                    f"{shift.share_up:.6f}",
-                    f"{shift.ci_low:.6f}",
-                    f"{shift.ci_high:.6f}",
-                    f"{shift.p_value:.6g}",
-                    f"{shift.q_value:.6g}",
+                    cell(shift.share_up, ".6f"),
+                    cell(shift.ci_low, ".6f"),
+                    cell(shift.ci_high, ".6f"),
+                    cell(shift.p_value, ".6g"),
+                    cell(shift.q_value, ".6g"),
                     SHIFT_FAMILY_ID,
                     len(result.shifts),
                     SHIFT_CORRECTION,
+                    shift.status,
                     vintage or "",
                 ]
             )
@@ -479,16 +502,22 @@ def write_shift_table(result: ShiftResult, output_dir: Path, vintage: str | None
     return [shifts_path, spearman_path]
 
 
-def write_shift_figure(
-    result: ShiftResult, output_path: Path, vintage: str | None, trait_order: Sequence[str]
-) -> Path:
-    """Render all six traits' directional shifts and their correlations in one figure.
+def build_shift_figure(
+    result: ShiftResult, vintage: str | None, trait_order: Sequence[str]
+) -> Figure:
+    """Build all six traits' directional shifts and their correlations as one figure.
 
     Left panel: the share of studies whose paired contrast is positive, with an
     exact binomial 95% interval, against the half-and-half null. Right panel: the
     rank correlation between traits across per-study contrasts, which is what
     shows that coccus shaped and sphere shaped are close to the same measurement.
+
+    Separate from ``write_shift_figure`` so the undefined-share branches below -
+    the absent marker, the absent error bar, the fallback annotation column and
+    the "share undefined" text - are reachable in a test without a kaleido image
+    export (#289). Nothing between the two functions depends on the output path.
     """
+    require_plotly()
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -508,6 +537,8 @@ def write_shift_figure(
         ),
     )
 
+    # A trait with no scored study has no share. It keeps its row but no marker: a
+    # marker at 0 would read as every study shifting down.
     figure.add_trace(
         go.Scatter(
             x=[s.share_up for s in ordered],
@@ -521,8 +552,14 @@ def write_shift_figure(
             error_x={
                 "type": "data",
                 "symmetric": False,
-                "array": [s.ci_high - s.share_up for s in ordered],
-                "arrayminus": [s.share_up - s.ci_low for s in ordered],
+                "array": [
+                    None if s.ci_high is None or s.share_up is None else s.ci_high - s.share_up
+                    for s in ordered
+                ],
+                "arrayminus": [
+                    None if s.ci_low is None or s.share_up is None else s.share_up - s.ci_low
+                    for s in ordered
+                ],
                 "color": "#666666",
                 "thickness": 1.5,
                 "width": 6,
@@ -536,14 +573,18 @@ def write_shift_figure(
     figure.add_vline(x=0.5, line={"color": "#999999", "dash": "dash"}, row=1, col=1)
     # One annotation column to the right of the widest interval, so the counts
     # line up instead of tracking each trait's own error bar.
-    annotation_x = max(s.ci_high for s in ordered) + 0.012
+    annotation_x = max((s.ci_high for s in ordered if s.ci_high is not None), default=0.5) + 0.012
     for shift, label in zip(ordered, labels, strict=True):
         figure.add_annotation(
             x=annotation_x,
             y=label,
             xref="x",
             yref="y",
-            text=f"{shift.studies_up}/{shift.studies_scored} studies, q={shift.q_value:.2g}",
+            text=(
+                f"{shift.studies_up}/{shift.studies_scored} studies, q={shift.q_value:.2g}"
+                if shift.q_value is not None
+                else f"no scored study ({shift.studies_tied} tied); share undefined"
+            ),
             showarrow=False,
             xanchor="left",
             font={"size": 12},
@@ -605,7 +646,14 @@ def write_shift_figure(
     figure.update_yaxes(autorange="reversed", row=1, col=1)
     figure.update_xaxes(tickangle=-40, row=1, col=2)
     figure.update_yaxes(autorange="reversed", row=1, col=2)
+    return figure
 
+
+def write_shift_figure(
+    result: ShiftResult, output_path: Path, vintage: str | None, trait_order: Sequence[str]
+) -> Path:
+    """Render the directional-shift figure to an image file."""
+    figure = build_shift_figure(result, vintage, trait_order)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.write_image(str(output_path), scale=2)
     return output_path
@@ -899,7 +947,11 @@ def main() -> int:
     for shift in result.shifts:
         print(
             f"  {shift.trait:<28} up {shift.studies_up:>5} / down {shift.studies_down:>5}"
-            f"  share {shift.share_up:.3f}  q {shift.q_value:.3g}"
+            + (
+                f"  share {shift.share_up:.3f}  q {shift.q_value:.3g}"
+                if shift.share_up is not None and shift.q_value is not None
+                else f"  {shift.status}"
+            )
         )
     for path in written:
         print(path)

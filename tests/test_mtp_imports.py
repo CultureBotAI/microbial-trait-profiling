@@ -77,6 +77,7 @@ def test_mtp_modules_can_be_imported_directly() -> None:
         "trait_composition",
         "trait_guilds",
         "trait_screen",
+        "trait_terms",
         "validate",
         "validation_evidence",
     ],

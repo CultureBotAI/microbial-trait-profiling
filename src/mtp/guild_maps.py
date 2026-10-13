@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import importlib.util
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
@@ -189,6 +190,12 @@ def build_matrix(
     single row, not a site-level pattern, and it still costs one column per group
     and direction.
     """
+    # Columns are encoded as "site|group_direction", so a body site containing the
+    # separator would be split in the wrong place and silently mislabel its cells.
+    unsafe = sorted({p.body_site for p in profiles if "|" in p.body_site})
+    if unsafe:
+        raise ValueError(f"body-site labels contain '|': {', '.join(unsafe)}")
+
     condition_counts: defaultdict[str, int] = defaultdict(int)
     body_site_counts: defaultdict[str, int] = defaultdict(int)
     for profile in profiles:
@@ -360,14 +367,39 @@ class CorrelationResult:
     """Guild-by-direction association and cross-cell rank correlations."""
 
     table: dict[str, int]
-    #: The discordant ratio, or None when no study is discordant in the reverse
-    #: direction and the ratio is undefined. An undefined statistic is missing,
-    #: not infinite; writing float("inf") into a TSV is a sentinel value (#294).
+    #: ``None`` when the discordant ratio is undefined, never ``inf``: with no
+    #: study shifting the guilds the other way, 0/0 has no value to report.
     odds_ratio: float | None
-    mcnemar_p: float
+    #: ``None`` when no study is discordant, so no McNemar test exists. Writing
+    #: 1.0 there would read as "tested, no difference" rather than "not tested".
+    mcnemar_p: float | None
     discordant: tuple[int, int]
     spearman: dict[str, tuple[float, float, int]]
     studies: int
+    #: ``tested``, ``all_tied`` (studies scored, none discordant) or
+    #: ``no_studies``. The same vocabulary the Table 1 arm uses.
+    status: str
+    #: Studies held out of the rank correlations for carrying no guild
+    #: annotation on either side. The McNemar already drops them as ties.
+    excluded_no_annotation: int = 0
+
+
+def require_plotly() -> None:
+    """Fail with the install command when the figure extra is absent (#288).
+
+    plotly and kaleido are a ``viz`` extra rather than runtime dependencies, so
+    an ingest-only install does not pull a headless-Chrome driver. Every figure
+    function imports plotly lazily and calls this first, so the missing extra
+    reads as a setup step rather than as a stack trace.
+    """
+    if importlib.util.find_spec("plotly") is not None:
+        return
+    msg = (
+        "Rendering a figure needs the 'viz' extra (plotly and kaleido). Install it "
+        "with `uv sync --all-extras`, or `uv sync --extra viz`. PNG export also "
+        "needs a headless Chrome: `just get-chrome`."
+    )
+    raise ModuleNotFoundError(msg)
 
 
 #: Per-cell render states of an aggregated matrix. Once the value is blank, a
@@ -452,7 +484,9 @@ def _sign(value: float) -> int:
     return 1 if value > 0 else -1
 
 
-def compute_correlation(profiles: list[Profile], matrix: GuildMatrix) -> CorrelationResult:
+def compute_correlation(
+    profiles: list[Profile], _matrix: GuildMatrix | None = None
+) -> CorrelationResult:
     """Test whether aerobes shift toward the increased side more often than anaerobes.
 
     Scoring counts studies, not experiments or trait assertions. A study is
@@ -491,48 +525,78 @@ def compute_correlation(profiles: list[Profile], matrix: GuildMatrix) -> Correla
         else:
             anaerobe_up_aerobe_down += 1
 
+    # An undefined result is reported as undefined, not as a number that reads
+    # like one (#289). This is the fault the Table 1 arm already fixed; the guild
+    # arm carried it until now. Neither branch fires on the pinned corpus.
     n_discordant = aerobe_up_anaerobe_down + anaerobe_up_aerobe_down
     mcnemar_p = (
         float(binomtest(aerobe_up_anaerobe_down, n_discordant, p=0.5).pvalue)
         if n_discordant
-        else 1.0
+        else None
     )
     odds_ratio = (
         aerobe_up_anaerobe_down / anaerobe_up_aerobe_down if anaerobe_up_aerobe_down else None
     )
+    if not signs:
+        status = "no_studies"
+    elif not n_discordant:
+        status = "all_tied"
+    else:
+        status = "tested"
 
-    # Rank correlation across condition x body-site cells. Only cells where both
-    # members of a pair survived masking are used, so the series stay aligned.
-    per_cell: defaultdict[tuple[str, str], dict[str, float]] = defaultdict(dict)
-    for row_index, row in enumerate(matrix.values):
-        condition = matrix.conditions[row_index]
-        for index, column in enumerate(matrix.columns):
-            site, suffix = column.split("|", 1)
-            value = row[index]
-            if value is not None:
-                per_cell[(condition, site)][suffix] = value
+    # Rank correlations across studies, one observation per study (#165). An
+    # earlier version correlated condition x body-site cells, which counted a
+    # study once per cell it reached and so treated dependent cells as independent.
+    # Each pair uses the studies carrying both series; a constant series has no
+    # defined rank correlation and its pair is omitted rather than written as nan.
+    #
+    # A study whose every guild fraction is zero carries no oxygen annotation on
+    # either side. That zero is missingness, not a measured share, so it is
+    # dropped rather than ranked (#289). The McNemar above already drops these as
+    # ties; excluding them here makes both statistics describe one population.
+    # They are 15 of 959 on the pinned corpus, and keeping them as identical
+    # (0, 0) points attenuates the within-side correlations from -0.710 to -0.635.
+    direction_keys = [f"{guild}_{d}" for guild in GUILD_ORDER for d in DIRECTIONS]
+    per_study: dict[str, dict[str, float]] = {}
+    excluded_no_annotation = 0
+    for study, per_key in study_means.items():
+        if all(per_key.get(key, 0.0) == 0.0 for key in direction_keys):
+            excluded_no_annotation += 1
+            continue
+        row = dict(per_key)
+        for guild in GUILD_ORDER:
+            inc, dec = per_key.get(f"{guild}_inc"), per_key.get(f"{guild}_dec")
+            if inc is not None and dec is not None:
+                row[f"{guild}_contrast"] = inc - dec
+        per_study[study] = row
 
-    suffixes = [f"{guild}_{d}" for guild in GUILD_ORDER for d in DIRECTIONS]
+    directions = [f"{guild}_{d}" for guild in GUILD_ORDER for d in DIRECTIONS]
+    pairs = [(left, right) for i, left in enumerate(directions) for right in directions[i + 1 :]]
+    # The Table 1 template: the two guilds' per-study contrasts against each other.
+    pairs.append(("aerobe_contrast", "anaerobe_contrast"))
     spearman: dict[str, tuple[float, float, int]] = {}
-    for i, left in enumerate(suffixes):
-        for right in suffixes[i + 1 :]:
-            paired = [
-                (cell[left], cell[right])
-                for cell in per_cell.values()
-                if left in cell and right in cell
-            ]
-            if len(paired) < 3:
-                continue
-            rho, p_value = spearmanr([x for x, _ in paired], [y for _, y in paired])
-            spearman[f"{left}~{right}"] = (float(rho), float(p_value), len(paired))
+    for left, right in pairs:
+        paired = [
+            (row[left], row[right]) for row in per_study.values() if left in row and right in row
+        ]
+        if len(paired) < 3:
+            continue
+        left_values = [x for x, _ in paired]
+        right_values = [y for _, y in paired]
+        if len(set(left_values)) < 2 or len(set(right_values)) < 2:
+            continue
+        rho, p_value = spearmanr(left_values, right_values)
+        spearman[f"{left}~{right}"] = (float(rho), float(p_value), len(paired))
 
     return CorrelationResult(
         table=table,
-        odds_ratio=None if odds_ratio is None else float(odds_ratio),
+        odds_ratio=odds_ratio,
         mcnemar_p=mcnemar_p,
         discordant=(aerobe_up_anaerobe_down, anaerobe_up_aerobe_down),
         spearman=spearman,
         studies=len(study_means),
+        status=status,
+        excluded_no_annotation=excluded_no_annotation,
     )
 
 
@@ -618,21 +682,21 @@ def write_outputs(
         writer.writerow(
             [
                 "mcnemar_odds_ratio",
-                "aerobe_vs_anaerobe_paired_signs",
+                f"aerobe_vs_anaerobe_paired_signs ({correlation.status})",
                 "" if correlation.odds_ratio is None else f"{correlation.odds_ratio:.6f}",
-                f"{correlation.mcnemar_p:.6g}",
+                "" if correlation.mcnemar_p is None else f"{correlation.mcnemar_p:.6g}",
                 up_down + down_up,
                 vintage or "",
             ]
         )
-        for pair, (rho, p_value, n_cells) in sorted(correlation.spearman.items()):
+        for pair, (rho, p_value, n_studies) in sorted(correlation.spearman.items()):
             writer.writerow(
                 [
-                    "spearman_rho",
+                    "spearman_rho_across_studies",
                     pair,
                     f"{rho:.6f}",
                     f"{p_value:.6g}",
-                    n_cells,
+                    n_studies,
                     vintage or "",
                 ]
             )
@@ -820,6 +884,7 @@ def write_figure(
     figure where the traits are rare, and the state is still recorded in the
     emitted cell-status table.
     """
+    require_plotly()
     import plotly.graph_objects as go
 
     scales: dict[str, object] = dict(GUILD_COLORSCALES) if colorscales is None else colorscales
@@ -1118,6 +1183,7 @@ def write_body_site_panels(
     colour there, but with the site named once above the panel and the columns
     labelled by trait and direction alone.
     """
+    require_plotly()
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -1358,18 +1424,25 @@ def main() -> int:
             f"{len(matrix.dropped_site_conditions)} "
             f"({', '.join(sorted(matrix.dropped_site_conditions))})"
         )
-    correlation = compute_correlation(profiles, matrix)
+    correlation = compute_correlation(profiles)
     written = write_outputs(matrix, correlation, args.output_dir, vintage)
     written.append(
         write_figure(matrix, args.output_dir / "guild_condition_body_site_heatmap.png", vintage)
     )
 
     up_down, down_up = correlation.discordant
+    ratio = "undefined" if correlation.odds_ratio is None else f"{correlation.odds_ratio:.3f}"
+    p_text = "not tested" if correlation.mcnemar_p is None else f"p={correlation.mcnemar_p:.3g}"
     print(
         f"\nMcNemar (exact, paired signs): discordant {up_down}/{down_up}, "
-        f"odds ratio {_odds_ratio_label(correlation.odds_ratio)} "
-        f"(p={correlation.mcnemar_p:.3g}) over {correlation.studies} studies"
+        f"odds ratio {ratio} ({p_text}) over {correlation.studies} studies "
+        f"[{correlation.status}]"
     )
+    if correlation.excluded_no_annotation:
+        print(
+            f"rank correlations exclude {correlation.excluded_no_annotation} studies "
+            "carrying no guild annotation on either side"
+        )
     for path in written:
         print(path)
     return 0

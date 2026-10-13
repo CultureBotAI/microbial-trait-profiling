@@ -1,7 +1,11 @@
 """Table 1 trait selection, the paired directional shift, and its FDR control."""
 
+from __future__ import annotations
+
 import csv
+from math import isnan
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from scipy.stats import binomtest, false_discovery_control
@@ -32,6 +36,9 @@ from bsdbng.trait_guilds import (
     column_term_id,
     load_profiles,
 )
+
+if TYPE_CHECKING:
+    from plotly.graph_objects import Figure
 
 # Two of the six traits reach the profile matrix behind a METPO qualifier, so the
 # fixture uses the qualified spelling to prove the suffix lookup is what resolves
@@ -200,7 +207,11 @@ def test_direction_shift_counts_studies_and_matches_scipy(corpus: tuple[Path, Pa
     sphere = by_trait["sphere_shaped"]
     assert (sphere.studies_up, sphere.studies_down, sphere.studies_tied) == (0, 0, 3)
     assert sphere.studies_scored == 0
-    assert sphere.p_value == 1.0
+    assert sphere.status == "all_tied"
+    # Undefined, not a share of zero (which would read as every study down).
+    assert sphere.share_up is None
+    assert sphere.p_value is None
+    assert sphere.q_value is None
 
     # Ties are excluded from the test rather than split between the two sides.
     arsenate = by_trait["arsenate_reduction"]
@@ -218,9 +229,37 @@ def test_direction_shift_counts_studies_and_matches_scipy(corpus: tuple[Path, Pa
         for t in TRAIT_ORDER
     ]
     expected_q = [float(q) for q in false_discovery_control(expected_p, method="bh")]
-    assert [by_trait[t].p_value for t in TRAIT_ORDER] == pytest.approx(expected_p)
-    assert [by_trait[t].q_value for t in TRAIT_ORDER] == pytest.approx(expected_q)
+    # The untested trait holds its place in the family at p = 1 but reports neither.
+    tested = [i for i, t in enumerate(TRAIT_ORDER) if by_trait[t].studies_scored]
+    assert [by_trait[TRAIT_ORDER[i]].p_value for i in tested] == pytest.approx(
+        [expected_p[i] for i in tested]
+    )
+    assert [by_trait[TRAIT_ORDER[i]].q_value for i in tested] == pytest.approx(
+        [expected_q[i] for i in tested]
+    )
     assert aerobic.p_value == pytest.approx(0.25)
+
+
+def test_the_shift_table_leaves_undefined_values_blank(
+    tmp_path: Path, corpus: tuple[Path, Path]
+) -> None:
+    """#165: an all-tied trait is written as blank with its status, not as share 0."""
+    from bsdbng.table1_trait_maps import write_shift_table
+
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    shifts_path, _ = write_shift_table(
+        compute_direction_shifts(profiles, TRAIT_ORDER), tmp_path, "v"
+    )
+    header, *rows = shifts_path.read_text(encoding="utf-8").splitlines()
+    columns = header.split("\t")
+    sphere = dict(
+        zip(
+            columns, next(r for r in rows if r.startswith("sphere_shaped")).split("\t"), strict=True
+        )
+    )
+    assert sphere["share_up"] == ""
+    assert sphere["bh_q"] == ""
+    assert sphere["status"] == "all_tied"
 
 
 def test_every_shift_row_names_its_correction_family(
@@ -322,7 +361,8 @@ def test_float_residue_contrasts_are_ties_not_signs() -> None:
     result = compute_direction_shifts(study, ("facultatively_aerobic",))
     (shift,) = result.shifts
     assert (shift.studies_up, shift.studies_down, shift.studies_tied) == (0, 0, 1)
-    assert shift.p_value == 1.0
+    assert shift.p_value is None
+    assert shift.status == "all_tied"
 
 
 def test_undrawn_panel_conditions_separate_all_three_causes() -> None:
@@ -406,6 +446,175 @@ def test_no_note_when_every_requested_condition_is_drawn() -> None:
         )
         is None
     )
+
+
+def _trait_profile(study: str, direction: str, counts: dict[str, int], total: int = 100) -> Profile:
+    """One profile on a fixed denominator, so a trait contrast can be held constant."""
+    return Profile(
+        study_id=study,
+        experiment_id=f"{study}-1",
+        inc_dec=direction,
+        condition="X",
+        body_site="Feces",
+        guild_counts={**dict.fromkeys(TRAIT_ORDER, 0), **counts},
+        total=total,
+    )
+
+
+# Per study: (facultatively_aerobic, cellulose, coccus) increased then decreased
+# counts on a total of 100. The facultatively aerobic contrast is +0.10 in every
+# study - constant but NOT zero and NOT absent - while the other two vary.
+_FLAT_CONTRAST_STUDIES = {
+    "bsdb:1": ((30, 10, 5), (20, 40, 20)),
+    "bsdb:2": ((30, 20, 15), (20, 30, 20)),
+    "bsdb:3": ((30, 30, 25), (20, 20, 10)),
+    "bsdb:4": ((30, 40, 35), (20, 10, 5)),
+}
+
+
+def _flat_contrast_profiles(*, hold_facultative_flat: bool) -> list[Profile]:
+    rows = dict(_FLAT_CONTRAST_STUDIES)
+    if not hold_facultative_flat:
+        # One study's increased facultative count differs, so its contrast varies.
+        (_, cellulose_inc, coccus_inc), decreased = rows["bsdb:1"]
+        rows["bsdb:1"] = ((45, cellulose_inc, coccus_inc), decreased)
+    keys = ("facultatively_aerobic", "cellulose_catabolic_process", "coccus_shaped")
+    profiles: list[Profile] = []
+    for study, (increased, decreased) in rows.items():
+        profiles.append(_trait_profile(study, "inc", dict(zip(keys, increased, strict=True))))
+        profiles.append(_trait_profile(study, "dec", dict(zip(keys, decreased, strict=True))))
+    return profiles
+
+
+def test_a_constant_trait_contrast_is_omitted_from_the_correlations_not_written_as_nan() -> None:
+    """The Table 1 copy of the constant-series skip, on a non-zero flat series (#289).
+
+    ``test_contrast_correlation_is_computed_across_studies`` reaches this branch
+    through a trait that is absent from the whole fixture, where a flat series and
+    an unmeasured one look alike. Here the flat trait is measured in every study
+    and shifts up in every study; only its *variance* is zero. The fixture carries
+    four studies, so the pair clears the ``len(paired) < 3`` sample-size guard,
+    and the control run varies the same trait and recovers its pairs at the same n.
+    """
+    result = compute_direction_shifts(
+        _flat_contrast_profiles(hold_facultative_flat=True), TRAIT_ORDER
+    )
+
+    assert result.studies == 4
+    assert set(result.spearman) == {"cellulose_catabolic_process~coccus_shaped"}
+    assert result.spearman["cellulose_catabolic_process~coccus_shaped"][2] == 4
+    assert not [key for key, (rho, _p, _n) in result.spearman.items() if isnan(rho)]
+
+    # The skip is confined to the correlation panel: the flat trait is still
+    # tested and still reported, with every one of the four studies scored up.
+    flat = next(s for s in result.shifts if s.trait == "facultatively_aerobic")
+    assert (flat.studies_up, flat.studies_down, flat.studies_tied) == (4, 0, 0)
+    assert flat.status == "tested"
+    assert flat.q_value is not None
+
+    control = compute_direction_shifts(
+        _flat_contrast_profiles(hold_facultative_flat=False), TRAIT_ORDER
+    )
+
+    assert set(control.spearman) == {
+        "cellulose_catabolic_process~coccus_shaped",
+        "facultatively_aerobic~cellulose_catabolic_process",
+        "facultatively_aerobic~coccus_shaped",
+    }
+    assert {n for _rho, _p, n in control.spearman.values()} == {4}
+    assert not [key for key, (rho, _p, _n) in control.spearman.items() if isnan(rho)]
+
+
+def _shift_annotations(figure: Figure) -> dict[str, str]:
+    """The per-trait annotation column, keyed by the trait label it sits beside.
+
+    The subplot titles are annotations too, but they are placed against the paper
+    rather than the left panel's axes, so the axis reference separates them.
+    """
+    return {a.y: a.text for a in figure.layout.annotations if a.xref == "x" and a.yref == "y"}
+
+
+def _annotation_column_x(figure: Figure) -> float:
+    """The single x the per-trait annotations share, asserted to be shared."""
+    xs = sorted({a.x for a in figure.layout.annotations if a.xref == "x"})
+    assert len(xs) == 1, f"annotations spread across {len(xs)} columns: {xs}"
+    return float(xs[0])
+
+
+def test_an_unscored_trait_gets_no_marker_and_an_undefined_share_annotation() -> None:
+    """A cut selecting no study still has to draw its rows, with no marker (#289).
+
+    A body-site or condition cut can select an empty profile list, which is the
+    only way a trait reaches ``studies_scored == 0`` with no tie either: the
+    per-study means fill every trait key, so a trait present in the corpus always
+    lands up, down or tied. The state is taken from ``compute_direction_shifts``
+    rather than built here, so the figure is checked against what the production
+    statistic actually produces.
+    """
+    from bsdbng.table1_trait_maps import build_shift_figure
+
+    result = compute_direction_shifts([], TRAIT_ORDER)
+
+    assert result.studies == 0
+    assert {s.status for s in result.shifts} == {"no_studies"}
+    assert {s.share_up for s in result.shifts} == {None}
+    assert result.spearman == {}
+
+    figure = build_shift_figure(result, "v1.3.1", TRAIT_ORDER)
+    scatter = figure.data[0]
+
+    # No marker anywhere: a point at 0 would read as every study shifting down.
+    assert list(scatter.x) == [None] * len(TRAIT_ORDER)
+    assert list(scatter.error_x.array) == [None] * len(TRAIT_ORDER)
+    assert list(scatter.error_x.arrayminus) == [None] * len(TRAIT_ORDER)
+
+    # Every ci_high is None, so the annotation column falls back to its default
+    # position instead of collapsing onto the axis origin.
+    annotations = _shift_annotations(figure)
+    assert set(annotations) == {TABLE1_TRAIT_LABELS[t] for t in TRAIT_ORDER}
+    assert set(annotations.values()) == {"no scored study (0 tied); share undefined"}
+    assert _annotation_column_x(figure) == pytest.approx(0.512)
+
+
+def test_only_the_all_tied_trait_loses_its_marker(corpus: tuple[Path, Path]) -> None:
+    """The undefined-share branches are per trait, not per figure.
+
+    On the shared fixture sphere shaped ties in every study while the other five
+    are scored, so the same figure must carry five markers and one gap, and the
+    annotation column must still be placed from the scored traits' intervals.
+    """
+    from bsdbng.table1_trait_maps import build_shift_figure
+
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    result = compute_direction_shifts(profiles, TRAIT_ORDER)
+    by_trait = {s.trait: s for s in result.shifts}
+    assert by_trait["sphere_shaped"].status == "all_tied"
+    assert by_trait["sphere_shaped"].studies_tied == 3
+
+    figure = build_shift_figure(result, "v1.3.1", TRAIT_ORDER)
+    scatter = figure.data[0]
+    missing = [t for t, value in zip(TRAIT_ORDER, scatter.x, strict=True) if value is None]
+    assert missing == ["sphere_shaped"]
+    assert [t for t, v in zip(TRAIT_ORDER, scatter.error_x.array, strict=True) if v is None] == [
+        "sphere_shaped"
+    ]
+    assert [
+        t for t, v in zip(TRAIT_ORDER, scatter.error_x.arrayminus, strict=True) if v is None
+    ] == ["sphere_shaped"]
+
+    annotations = _shift_annotations(figure)
+    assert (
+        annotations[TABLE1_TRAIT_LABELS["sphere_shaped"]]
+        == "no scored study (3 tied); share undefined"
+    )
+    scored = annotations[TABLE1_TRAIT_LABELS["facultatively_aerobic"]]
+    assert scored.startswith("3/3 studies, q=")
+
+    # The column sits past the widest scored interval, not at the no-data default.
+    widest = max(s.ci_high for s in result.shifts if s.ci_high is not None)
+    column_x = _annotation_column_x(figure)
+    assert column_x == pytest.approx(widest + 0.012)
+    assert column_x != pytest.approx(0.512)
 
 
 def test_repeated_requests_preserve_first_occurrence_order_in_every_category() -> None:

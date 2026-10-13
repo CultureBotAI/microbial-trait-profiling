@@ -1,9 +1,11 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
+from math import isnan
 from pathlib import Path
+from statistics import fmean
 
 import pytest
-from scipy.stats import binomtest
+from scipy.stats import binomtest, spearmanr
 
 from bsdbng.guild_maps import (
     CELL_BELOW_MIN_STUDIES,
@@ -14,6 +16,7 @@ from bsdbng.guild_maps import (
     build_matrix,
     cell_status,
     compute_correlation,
+    require_plotly,
     study_direction_means,
     subset_matrix,
 )
@@ -152,8 +155,7 @@ def test_rows_with_no_surviving_cells_are_dropped(corpus: tuple[Path, Path]) -> 
 
 def test_correlation_counts_studies_by_shift_direction(corpus: tuple[Path, Path]) -> None:
     profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
-    matrix = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
-    result = compute_correlation(profiles, matrix)
+    result = compute_correlation(profiles)
 
     # Both surviving studies put aerobes higher on the increased side and
     # anaerobes higher on the decreased side.
@@ -173,9 +175,123 @@ def test_correlation_counts_studies_by_shift_direction(corpus: tuple[Path, Path]
     assert result.discordant == (2, 0)
     assert result.mcnemar_p == pytest.approx(float(binomtest(2, 2, p=0.5).pvalue))
     assert result.mcnemar_p == pytest.approx(0.5)
-    # The paired odds ratio is the discordant ratio; with no reverse-discordant
-    # studies it has no value, and an undefined statistic is missing rather than
-    # infinite - float("inf") in a TSV cell is a sentinel value (#294).
+    assert result.status == "tested"
+    # The paired odds ratio is the discordant ratio. With no reverse-discordant
+    # study the denominator is zero, so the ratio has no value - reported as
+    # undefined rather than as infinity, which would print as a number (#289).
+    assert result.odds_ratio is None
+
+
+def test_a_guild_result_with_no_discordant_study_is_undefined_not_unity() -> None:
+    """No discordant study means no McNemar test, not a test that found nothing.
+
+    Writing ``p = 1.0`` here would read as "tested, no difference"; the truth is
+    that the test does not exist. This is the fault the Table 1 arm already
+    fixed, checked here for the guild arm (#289). It does not fire on the pinned
+    corpus, which is why it needs a fixture.
+    """
+    profiles: list[Profile] = []
+    for index in range(4):
+        study = f"bsdb:{index}"
+        # Both guilds shift the same way in every study, so no study is
+        # discordant and the discordant table is empty on both sides.
+        profiles.append(
+            Profile(
+                study_id=study,
+                experiment_id=f"{study}-1",
+                inc_dec="inc",
+                guild_counts={"aerobe": 8, "anaerobe": 8},
+                total=16,
+                condition="c",
+                body_site="s",
+            )
+        )
+        profiles.append(
+            Profile(
+                study_id=study,
+                experiment_id=f"{study}-1",
+                inc_dec="dec",
+                guild_counts={"aerobe": 4, "anaerobe": 4},
+                total=16,
+                condition="c",
+                body_site="s",
+            )
+        )
+
+    result = compute_correlation(profiles)
+
+    assert result.discordant == (0, 0)
+    assert result.mcnemar_p is None
+    assert result.odds_ratio is None
+    assert result.status == "all_tied"
+
+
+def test_a_study_with_no_guild_annotation_is_not_ranked_as_a_zero() -> None:
+    """An unannotated study is missing data, not a measured share of zero (#289).
+
+    Ranking it as (0, 0) would put every such study at one identical point and
+    pull the rank correlation toward that block. The McNemar already drops them
+    as ties, so the two statistics would otherwise describe different populations.
+    """
+
+    def study(name: str, aerobe_inc: int, anaerobe_inc: int) -> list[Profile]:
+        return [
+            Profile(
+                study_id=name,
+                experiment_id=f"{name}-1",
+                inc_dec="inc",
+                guild_counts={"aerobe": aerobe_inc, "anaerobe": anaerobe_inc},
+                total=20,
+                condition="c",
+                body_site="s",
+            ),
+            Profile(
+                study_id=name,
+                experiment_id=f"{name}-1",
+                inc_dec="dec",
+                guild_counts={"aerobe": anaerobe_inc, "anaerobe": aerobe_inc},
+                total=20,
+                condition="c",
+                body_site="s",
+            ),
+        ]
+
+    annotated: list[Profile] = []
+    for index, (aerobe, anaerobe) in enumerate([(9, 1), (7, 3), (3, 7), (1, 9)]):
+        annotated.extend(study(f"bsdb:a{index}", aerobe, anaerobe))
+    unannotated = [p for index in range(3) for p in study(f"bsdb:z{index}", 0, 0)]
+
+    with_blanks = compute_correlation(annotated + unannotated)
+    without_blanks = compute_correlation(annotated)
+
+    assert with_blanks.excluded_no_annotation == 3
+    assert without_blanks.excluded_no_annotation == 0
+    # The blank studies are held out, so both runs rank the same four studies and
+    # agree on every correlation - including the count behind each one.
+    assert with_blanks.spearman == without_blanks.spearman
+    for _rho, _p, n_studies in with_blanks.spearman.values():
+        assert n_studies == 4
+
+
+def test_a_guild_result_with_no_scored_study_reports_no_studies() -> None:
+    """A corpus where every guild contrast ties yields no scored study at all."""
+    profiles = [
+        Profile(
+            study_id="bsdb:1",
+            experiment_id="bsdb:1-1",
+            inc_dec=direction,
+            guild_counts={"aerobe": 5, "anaerobe": 5},
+            total=20,
+            condition="c",
+            body_site="s",
+        )
+        for direction in ("inc", "dec")
+    ]
+
+    result = compute_correlation(profiles)
+
+    assert result.status == "no_studies"
+    assert result.mcnemar_p is None
     assert result.odds_ratio is None
 
 
@@ -357,6 +473,196 @@ def test_subset_derives_the_other_axis_and_drops_blank_bands(corpus: tuple[Path,
 
     with pytest.raises(ValueError, match="Nowhere"):
         subset_matrix(matrix, sites=["Nowhere"])
+
+
+def _study_guild_profile(
+    study: str, experiment: str, direction: str, aerobe: int, anaerobe: int, condition: str
+) -> Profile:
+    return Profile(
+        study_id=study,
+        experiment_id=experiment,
+        inc_dec=direction,
+        condition=condition,
+        body_site="Feces",
+        guild_counts={"aerobe": aerobe, "anaerobe": anaerobe},
+        total=aerobe + anaerobe + 10,
+    )
+
+
+def test_rank_correlations_count_each_study_once_across_its_cells() -> None:
+    """#165: a study reaching several condition cells is one observation, not several.
+
+    The fixture deliberately does not mirror the decreased side, so the two guild
+    contrasts are not perfect opposites and rho is a value rather than -1 by
+    construction (#289). The expectation is recomputed here from the four
+    study-level contrasts, so counting bsdb:1 once per condition - the bug this
+    test exists to catch - gives six observations and a different rho, and fails.
+    """
+    # (aerobe_inc, anaerobe_inc, aerobe_dec, anaerobe_dec) per experiment.
+    spans = {
+        "A": (9, 1, 2, 6),
+        "B": (7, 2, 3, 5),
+        "C": (8, 3, 1, 7),
+    }
+    profiles: list[Profile] = []
+    for index, (condition, (a_inc, n_inc, a_dec, n_dec)) in enumerate(spans.items()):
+        profiles += [
+            _study_guild_profile("bsdb:1", f"bsdb:1-{index}", "inc", a_inc, n_inc, condition),
+            _study_guild_profile("bsdb:1", f"bsdb:1-{index}", "dec", a_dec, n_dec, condition),
+        ]
+    others = {
+        "bsdb:2": (6, 3, 4, 4),
+        "bsdb:3": (2, 7, 5, 2),
+        # bsdb:4 shifts BOTH guilds up, so the two contrast series are not
+        # perfectly inversely ranked and rho is -0.8 rather than a forced -1.
+        "bsdb:4": (6, 6, 2, 2),
+    }
+    for study, (a_inc, n_inc, a_dec, n_dec) in others.items():
+        profiles += [
+            _study_guild_profile(study, f"{study}-1", "inc", a_inc, n_inc, "A"),
+            _study_guild_profile(study, f"{study}-1", "dec", a_dec, n_dec, "A"),
+        ]
+
+    result = compute_correlation(profiles)
+
+    # Four studies, however many cells each reaches.
+    assert {n for _rho, _p, n in result.spearman.values()} == {4}
+
+    # Recompute the expectation independently: one contrast per study, where a
+    # study's contrast averages its experiments' fractions on each side.
+    def share(aerobe: int, anaerobe: int, guild: str) -> float:
+        count = aerobe if guild == "aerobe" else anaerobe
+        return count / (aerobe + anaerobe + 10)
+
+    def contrast(experiments: list[tuple[int, int, int, int]], guild: str) -> float:
+        increased = fmean([share(a_inc, n_inc, guild) for a_inc, n_inc, _, _ in experiments])
+        decreased = fmean([share(a_dec, n_dec, guild) for _, _, a_dec, n_dec in experiments])
+        return increased - decreased
+
+    by_study = [list(spans.values()), *([value] for value in others.values())]
+    expected_rho, _ = spearmanr(
+        [contrast(experiments, "aerobe") for experiments in by_study],
+        [contrast(experiments, "anaerobe") for experiments in by_study],
+    )
+
+    rho, _p, n_studies = result.spearman["aerobe_contrast~anaerobe_contrast"]
+    assert n_studies == 4
+    assert rho == pytest.approx(float(expected_rho))
+    # Not the degenerate -1 that a mirrored fixture would force regardless of code.
+    assert -1.0 < rho < 1.0
+
+
+def test_a_body_site_containing_the_column_separator_is_rejected() -> None:
+    profiles = [
+        Profile("bsdb:1", "bsdb:1-1", "inc", "A", "Plaque | saliva", {"aerobe": 1}, 2),
+        Profile("bsdb:1", "bsdb:1-1", "dec", "A", "Plaque | saliva", {"aerobe": 1}, 2),
+    ]
+    with pytest.raises(ValueError, match="Plaque"):
+        build_matrix(profiles, max_conditions=5, max_body_sites=5, min_studies=1)
+
+
+def test_a_missing_viz_extra_names_the_install_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    """plotly is a 'viz' extra, so its absence must read as a setup step (#288)."""
+    import importlib.util
+
+    real_find_spec = importlib.util.find_spec
+
+    def without_plotly(name: str, package: str | None = None) -> object | None:
+        if name == "plotly":
+            return None
+        return real_find_spec(name, package)
+
+    monkeypatch.setattr(importlib.util, "find_spec", without_plotly)
+    with pytest.raises(ModuleNotFoundError, match="viz"):
+        require_plotly()
+
+
+def test_require_plotly_passes_when_the_extra_is_installed() -> None:
+    """The guard is a probe, not a second import path: present means it does nothing."""
+    require_plotly()
+
+
+def _fixed_total_profile(
+    study: str, direction: str, aerobe: int, anaerobe: int, total: int = 20
+) -> Profile:
+    """One profile on a fixed denominator, so a guild fraction can be held constant.
+
+    ``_study_guild_profile`` derives the total from the two counts, which makes every
+    fraction move when either count does. Pinning the total is what lets a
+    fixture vary one direction's series while holding another's flat.
+    """
+    return Profile(
+        study_id=study,
+        experiment_id=f"{study}-1",
+        inc_dec=direction,
+        condition="A",
+        body_site="Feces",
+        guild_counts={"aerobe": aerobe, "anaerobe": anaerobe},
+        total=total,
+    )
+
+
+# (aerobe_inc, anaerobe_inc, aerobe_dec, anaerobe_dec) per study, on a total of 20.
+# aerobe_inc is 4 in every study, so the aerobe increased series is constant at
+# 0.20 while the other three series take four distinct values each.
+_CONSTANT_SERIES_STUDIES = {
+    "bsdb:1": (4, 1, 2, 7),
+    "bsdb:2": (4, 2, 3, 5),
+    "bsdb:3": (4, 3, 5, 4),
+    "bsdb:4": (4, 6, 9, 1),
+}
+_VARYING_FIRST_STUDY = (1, 1, 2, 7)
+
+
+def _constant_series_profiles(*, hold_aerobe_inc_constant: bool) -> list[Profile]:
+    rows = dict(_CONSTANT_SERIES_STUDIES)
+    if not hold_aerobe_inc_constant:
+        # One study's increased aerobe count differs, so that series varies too.
+        rows["bsdb:1"] = _VARYING_FIRST_STUDY
+    profiles: list[Profile] = []
+    for study, (a_inc, n_inc, a_dec, n_dec) in rows.items():
+        profiles.append(_fixed_total_profile(study, "inc", a_inc, n_inc))
+        profiles.append(_fixed_total_profile(study, "dec", a_dec, n_dec))
+    return profiles
+
+
+def test_a_constant_guild_series_is_omitted_from_the_correlations_not_written_as_nan() -> None:
+    """Spearman against a flat series is undefined; the pair must be absent (#289).
+
+    ``spearmanr`` returns nan for a constant input rather than raising, so
+    dropping the guard writes nan into the correlation table and into the figure.
+    The fixture carries four studies, so the pair is past the ``len(paired) < 3``
+    sample-size guard: the control run below varies the same series and recovers
+    every pair at the same n, which is what separates the two guards.
+    """
+    result = compute_correlation(_constant_series_profiles(hold_aerobe_inc_constant=True))
+
+    # The studies are in the ranked population: none is dropped as unannotated.
+    assert result.studies == 4
+    assert result.excluded_no_annotation == 0
+
+    # Exact key set, because "aerobe_inc" is a substring of "anaerobe_inc" and a
+    # substring test would wrongly pass by also excluding the anaerobe pairs.
+    assert set(result.spearman) == {
+        "aerobe_dec~anaerobe_inc",
+        "aerobe_dec~anaerobe_dec",
+        "anaerobe_inc~anaerobe_dec",
+        "aerobe_contrast~anaerobe_contrast",
+    }
+    assert {n for _rho, _p, n in result.spearman.values()} == {4}
+    assert not [key for key, (rho, _p, _n) in result.spearman.items() if isnan(rho)]
+
+    control = compute_correlation(_constant_series_profiles(hold_aerobe_inc_constant=False))
+
+    # Same four studies, same denominators: only the constancy changed, and the
+    # three aerobe_inc pairs come back with the same n.
+    assert set(control.spearman) == set(result.spearman) | {
+        "aerobe_inc~aerobe_dec",
+        "aerobe_inc~anaerobe_inc",
+        "aerobe_inc~anaerobe_dec",
+    }
+    assert {n for _rho, _p, n in control.spearman.values()} == {4}
+    assert not [key for key, (rho, _p, _n) in control.spearman.items() if isnan(rho)]
 
 
 def test_cell_status_separates_the_three_reasons_a_cell_is_blank() -> None:
