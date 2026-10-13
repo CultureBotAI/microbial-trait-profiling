@@ -20,7 +20,8 @@ from statistics import fmean, median
 
 from scipy.stats import binomtest, false_discovery_control
 
-from mtp.paths import DERIVED_DATA_DIR, file_sha256 as file_sha256
+from mtp.paths import DERIVED_DATA_DIR
+from mtp.paths import file_sha256 as file_sha256
 from mtp.trait_guilds import (
     DEFAULT_EXPERIMENTS_PATH,
     DEFAULT_FULL_DUMP_PATH,

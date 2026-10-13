@@ -50,4 +50,3 @@ def test_file_sha256_missing_file_raises(tmp_path: Path) -> None:
 def test_file_sha256_shim_parity() -> None:
     """Shim bsdbng.paths.file_sha256 is identical object to mtp.paths.file_sha256."""
     assert bsdbng.paths.file_sha256 is mtp.paths.file_sha256
-
