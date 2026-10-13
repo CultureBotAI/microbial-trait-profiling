@@ -16,7 +16,6 @@ Writes machine-readable calibration artifacts:
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import logging
 import platform
@@ -49,7 +48,7 @@ from mtp.ora_calibration.scenarios import (
     shared_trait_columns,
     trait_population_counts,
 )
-from mtp.paths import DERIVED_DATA_DIR
+from mtp.paths import DERIVED_DATA_DIR, file_sha256
 
 logger = logging.getLogger(__name__)
 
@@ -165,12 +164,7 @@ def _clear_previous_outputs(output_dir: Path) -> None:
             p.unlink()
 
 
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+_sha256 = file_sha256
 
 
 def _software_versions() -> dict[str, str]:

@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import json
 import math
 from collections import Counter, defaultdict
@@ -30,7 +29,7 @@ from statistics import fmean, median
 
 from scipy.stats import binomtest, false_discovery_control
 
-from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
+from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT, file_sha256
 from mtp.trait_composition import _matched_profiles
 from mtp.trait_guilds import (
     DEFAULT_EXPERIMENTS_PATH,
@@ -1082,9 +1081,7 @@ def _write_rows(path: Path, rows: Sequence[dict[str, object]]) -> Path:
     return path
 
 
-def _sha256(path: Path) -> str:
-    with path.open("rb") as handle:
-        return hashlib.file_digest(handle, "sha256").hexdigest()
+_sha256 = file_sha256
 
 
 def _display(value: float | None, spec: str = ".3g") -> str:

@@ -33,7 +33,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import json
 import math
 from collections.abc import Sequence
@@ -44,7 +43,7 @@ from statistics import fmean, median
 from scipy.linalg import eigvalsh
 from scipy.stats import binomtest, spearmanr
 
-from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
+from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT, file_sha256
 from mtp.table1_trait_maps import study_trait_contrasts, tally_direction_signs
 from mtp.trait_guilds import (
     DEFAULT_EXPERIMENTS_PATH,
@@ -474,9 +473,7 @@ def _cell(value: float | int | str | bool | None, digits: str = ".6g") -> str:
     return str(value)
 
 
-def _sha256(path: Path) -> str:
-    with path.open("rb") as handle:
-        return hashlib.file_digest(handle, "sha256").hexdigest()
+_sha256 = file_sha256
 
 
 def _family_rows(result: ScreenResult) -> list[dict[str, str]]:

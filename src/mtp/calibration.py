@@ -51,9 +51,9 @@ import numpy as np
 from scipy.stats import beta, binom, binomtest, false_discovery_control, norm
 
 from mtp.guild_maps import GuildMatrix, build_matrix, compute_correlation
-from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
+from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT, file_sha256
 from mtp.table1_trait_maps import compute_direction_shifts
-from mtp.trait_composition import compute_log_ratio_shifts, file_sha256
+from mtp.trait_composition import compute_log_ratio_shifts
 from mtp.trait_guilds import (
     DEFAULT_EXPERIMENTS_PATH,
     DEFAULT_FULL_DUMP_PATH,

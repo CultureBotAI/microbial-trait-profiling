@@ -50,7 +50,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
-from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
+from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT, file_sha256
 from mtp.table1_trait_maps import compute_direction_shifts
 from mtp.trait_composition import compute_log_ratio_shifts
 from mtp.trait_guilds import (
@@ -1146,9 +1146,7 @@ def _write_table(path: Path, rows: Sequence[Mapping[str, object]]) -> Path:
     return path
 
 
-def _sha256(path: Path) -> str:
-    with path.open("rb") as handle:
-        return hashlib.file_digest(handle, "sha256").hexdigest()
+_sha256 = file_sha256
 
 
 def main(argv: Sequence[str] | None = None) -> int:
