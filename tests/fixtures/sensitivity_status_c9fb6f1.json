@@ -1,0 +1,246 @@
+{
+  "bugsigdb_vintage": "2026-04-24_00:41_UTC",
+  "code_commit": "c9fb6f1018c42d93cad936a579ee8388b45dc563",
+  "profile_sha256": "6e70724ee807cf24e9c1f371a51421fa5b09d6283fa7f3abcd6620e5492c6a73",
+  "experiments_sha256": "403afea98d9b0a5b56939f68bcc9aace56a8eda350232a586806fe7bf30ad230",
+  "taxa_sha256": "e7fa982b23ea82456247bcd841fd97d4fe71518e09eaaa27aee65d9adb271c59",
+  "analysis_source_sha256": "842652980b2c2c5fd93b739b428cfb9e7732761b958a26d169329117de557aac",
+  "corpus": {
+    "profile_rows": 7329,
+    "experiments_seen": 3494,
+    "unmatched_experiments": 0,
+    "dropped_non_human": 1500,
+    "dropped_unpaired": 1159,
+    "mediadive_columns_excluded": 2333,
+    "trait_columns_used": 317,
+    "kept_experiments": 2335,
+    "kept_profiles": 4670
+  },
+  "complete_pairs": 2335,
+  "studies": 959,
+  "version": "log-ratio-sensitivity-v1",
+  "protocol": "methods/table1_log_ratio_sensitivity_protocol.json",
+  "protocol_sha256": "08a07a11651f6aa3b2041556cdbda2310457ebc731cad7911c9f116113d6a51f",
+  "row_fields": [
+    "scenario",
+    "comparison",
+    "numerator",
+    "reference",
+    "population",
+    "effect_units",
+    "studies_total",
+    "studies_eligible",
+    "studies_partially_observed",
+    "pairs_total",
+    "pairs_eligible",
+    "studies_up",
+    "studies_down",
+    "studies_tied",
+    "mean_effect",
+    "median_effect",
+    "share_up",
+    "ci_low",
+    "ci_high",
+    "p_value",
+    "status",
+    "family",
+    "family_size",
+    "correction",
+    "q_value"
+  ],
+  "family_status_is_authoritative_for": "#178",
+  "family_status": {
+    "S0:six_fractions": {
+      "scenario": "S0_historical_fraction",
+      "family_size": 6,
+      "correction": "Benjamini-Hochberg",
+      "tested": 6,
+      "q_at_or_below_0.05": 6
+    },
+    "S10:fifteen_ratios": {
+      "scenario": "S10_other_gut_no_feces",
+      "family_size": 15,
+      "correction": "Benjamini-Yekutieli",
+      "insufficient_support": 10,
+      "tested": 5
+    },
+    "S11:fifteen_ratios": {
+      "scenario": "S11_no_gut_label",
+      "family_size": 15,
+      "correction": "Benjamini-Yekutieli",
+      "tested": 15
+    },
+    "S1:six_fractions": {
+      "scenario": "S1_fraction_baseline",
+      "family_size": 6,
+      "correction": "Benjamini-Hochberg",
+      "tested": 6,
+      "q_at_or_below_0.05": 6
+    },
+    "S2:fifteen_ratios": {
+      "scenario": "S2_ratio_complete_case",
+      "family_size": 15,
+      "correction": "Benjamini-Yekutieli",
+      "tested": 15,
+      "q_at_or_below_0.05": 3
+    },
+    "S3:thirty_matched_fractions": {
+      "scenario": "S3_ratio_matched_fractions",
+      "family_size": 30,
+      "correction": "Benjamini-Yekutieli",
+      "tested": 30,
+      "q_at_or_below_0.05": 6
+    },
+    "S4:fifteen_ratios": {
+      "scenario": "S4_six_trait_common_support",
+      "family_size": 15,
+      "correction": "Benjamini-Yekutieli",
+      "tested": 15,
+      "q_at_or_below_0.05": 4
+    },
+    "S4:six_fractions": {
+      "scenario": "S4_six_trait_common_support",
+      "family_size": 6,
+      "correction": "Benjamini-Hochberg",
+      "tested": 6,
+      "q_at_or_below_0.05": 2
+    },
+    "S5:sixty_triple_ratios": {
+      "scenario": "S5_triple_common_support",
+      "family_size": 60,
+      "correction": "Benjamini-Yekutieli",
+      "tested": 60,
+      "q_at_or_below_0.05": 13
+    },
+    "S6:fifteen_ratios": {
+      "scenario": "S6_feces_only",
+      "family_size": 15,
+      "correction": "Benjamini-Yekutieli",
+      "tested": 15,
+      "q_at_or_below_0.05": 4
+    },
+    "S7:fifteen_ratios": {
+      "scenario": "S7_excluding_feces",
+      "family_size": 15,
+      "correction": "Benjamini-Yekutieli",
+      "tested": 15
+    },
+    "S9:fifteen_ratios": {
+      "scenario": "S9_feces_any_label",
+      "family_size": 15,
+      "correction": "Benjamini-Yekutieli",
+      "tested": 15,
+      "q_at_or_below_0.05": 4
+    }
+  },
+  "scenario_status": {
+    "S0_historical_fraction": {
+      "tested": 6,
+      "q_at_or_below_0.05": 6
+    },
+    "S10_other_gut_no_feces": {
+      "insufficient_support": 10,
+      "tested": 5
+    },
+    "S11_no_gut_label": {
+      "tested": 15
+    },
+    "S1_fraction_baseline": {
+      "tested": 6,
+      "q_at_or_below_0.05": 6
+    },
+    "S2_ratio_complete_case": {
+      "tested": 15,
+      "q_at_or_below_0.05": 3
+    },
+    "S3_ratio_matched_fractions": {
+      "tested": 30,
+      "q_at_or_below_0.05": 6
+    },
+    "S4_six_trait_common_support": {
+      "tested": 21,
+      "q_at_or_below_0.05": 6
+    },
+    "S5_triple_common_support": {
+      "tested": 60,
+      "q_at_or_below_0.05": 13
+    },
+    "S6_feces_only": {
+      "tested": 15,
+      "q_at_or_below_0.05": 4
+    },
+    "S7_excluding_feces": {
+      "tested": 15
+    },
+    "S9_feces_any_label": {
+      "tested": 15,
+      "q_at_or_below_0.05": 4
+    }
+  },
+  "population_comparison_summary": {
+    "lost before correction": 19,
+    "retained": 6,
+    "lost at correction": 5
+  },
+  "population_estimate_agreement": {
+    "consistent": 23,
+    "side reversed, intervals overlap": 6,
+    "shifted and side reversed": 1
+  },
+  "body_site_label_accounting": {
+    "pairs_total": 2335,
+    "exact_label_feces_pairs": 1460,
+    "exact_label_feces_studies": 602,
+    "pairs_outside_exact_label_feces": 875,
+    "studies_outside_exact_label_feces": 381,
+    "feces_labelled_pairs_inside_s7": 15,
+    "feces_labelled_studies_inside_s7": 10,
+    "other_gut_pairs_inside_s7": 105,
+    "other_gut_studies_inside_s7": 47,
+    "other_gut_pairs_labelled_only_meconium": 11,
+    "multi_label_pairs": 73
+  },
+  "influence_decision_rule": "BY over the 15 S2 ratios with the other p-values held at their full-data values; a ratio crosses when q <= 0.05",
+  "influence_summary": {
+    "ratios_crossed_by_one_study_removal": 0,
+    "min_removals_to_cross": [
+      7,
+      9,
+      15,
+      19,
+      21,
+      24,
+      26,
+      28,
+      32,
+      33,
+      35,
+      43,
+      61,
+      62
+    ],
+    "min_flips_to_cross": [
+      4,
+      5,
+      8,
+      9,
+      10,
+      12,
+      13,
+      14,
+      15,
+      17,
+      18,
+      19,
+      24,
+      33
+    ],
+    "ratios_never_crossing_by_removal": 0,
+    "stratum_removals_crossing_rule": 6,
+    "stratum_removals_tested": 59,
+    "ratio_stratum_cells_below_min_studies_not_tested": 4615
+  },
+  "calibration_status": "not assessed (#182)",
+  "orientation_status": "not verified as disease versus control (#188)",
+  "coverage_status": "profile totals and reported taxa only; #184 sidecar pending"
+}

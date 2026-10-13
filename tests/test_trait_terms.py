@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from bsdbng.trait_terms import (
+from mtp.trait_terms import (
     EXPECTED_LABELS,
     check_term_labels,
     file_md5,

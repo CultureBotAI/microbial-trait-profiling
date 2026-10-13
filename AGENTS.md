@@ -43,7 +43,7 @@ instead of fixing the root cause:
 - Agent installs a dependency that isn't in `pyproject.toml`
 - Agent uses `pip install` instead of `uv sync`
 - Agent creates a `.py` script in the repo root instead of putting it in
-  `src/bsdbng/`
+  `src/mtp/`
 
 ### Why this matters
 
@@ -102,6 +102,19 @@ Every data pipeline step must be checked for silent data loss or corruption:
 - **Every field in the output YAML must be traceable to a specific CSV
   column.** If you can't say which column a value came from, the mapping
   is undocumented and fragile.
+
+## Biological interpretation and review
+
+Every biological claim, figure caption, and summary text generated in this repository must adhere to the project-wide biological interpretation guide in [`methods/biological_interpretation.md`](methods/biological_interpretation.md) and trait semantics in [`docs/table1_trait_semantics_audit.md`](docs/table1_trait_semantics_audit.md):
+
+- **Distinguish annotation from measurement**: BugSigDB signatures record reported taxon abundance shifts from literature; KG-Microbe records organism-level trait annotations from microbiological databases. We measure the alignment between reported taxa and trait annotations, not in vivo physiological activity, cell density, or metabolite flux.
+- **Directional terminology**: Use precise terms corresponding to the specific pipeline quantity:
+  - *Experiment/signature direction*: taxa reported increased or decreased in cases vs controls.
+  - *Study fraction difference*: $\Delta = f_{\text{increased}} - f_{\text{decreased}}$ (paired within study).
+  - *Log-ratio direction*: $\ln(\text{trait}_A / \text{trait}_B)$ paired shift between increased and decreased sets.
+  - *ORA enrichment/depletion*: statistical over- or under-representation of trait-bearing taxa relative to background.
+- **No speculative causal or clinical leaps**: Never assert that microbes "produce more SCFA", "cause inflammation", or "drive disease" based solely on trait-annotation enrichment or sign tests without direct physiological validation (see [`methods/validation_feasibility.md`](methods/validation_feasibility.md)).
+- **Defensible wording**: State findings as "taxa annotated as [trait] were more frequently reported increased than decreased" or "enriched among increased taxa". Do not use uncalibrated terms like "dysbiosis signature" or "pathogenic shift".
 
 ## After a release
 

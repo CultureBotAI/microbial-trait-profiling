@@ -11,13 +11,19 @@ enrichment analyses.
 The Python package remains `bsdbng`; existing imports, schema identifiers,
 environment variables, and release asset names retain that name for compatibility.
 
+All biological claims, figure captions, and pipeline interpretations follow the
+project-wide biological interpretation guide in [`methods/biological_interpretation.md`](methods/biological_interpretation.md)
+and trait semantics in [`docs/table1_trait_semantics_audit.md`](docs/table1_trait_semantics_audit.md). In short:
+results quantify reported taxon annotation patterns across literature cohorts,
+not direct in vivo physiological or metabolic measurements.
+
 ## Quick start
 
 ### Prerequisites
 
 You need two tools installed. Everything else is managed automatically — with
 one exception: the figure recipes (`just guild-maps`, `just table1-trait-maps`)
-render PNGs through a headless Chrome, fetched version-pinned by
+render PNG files through a headless Chrome, fetched version-pinned by
 `just get-chrome` (see `methods/README.md`).
 
 | Tool | What it does | Install |

@@ -1,0 +1,46 @@
+{
+  "native_manifest_sha256": "7164d50ccafcfc0bc41c818fdf11ba133d17a6bb01784e6e4e678c6994f92560",
+  "publisher_sha256": "41d5506f38670e2d68f769728e01d938b70d04f6889ef8c9804d918bcb9c244f",
+  "source_reconciliation": {
+    "source_contribution_rows": 73758,
+    "profile_reported_taxon_rows": 42267,
+    "profile_count_rows": 28020,
+    "mismatches": 0,
+    "sha256": {
+      "source_contributions.tsv.gz": "8d9160230f732c6d0fb31df33538ff362010893ce6f7817cad05656cbc69d71d",
+      "profile_reported_taxa.tsv.gz": "592b250243a5eedb1a1cd98c83fcf65bc5a5d21412606616a519519a25806ae3",
+      "profile_counts.tsv.gz": "5469d883c752102a0ac1e55baf317d43b83e67c50ac4688a55dd310f660b0644"
+    }
+  },
+  "interpretation_source_sha256": {
+    "effects.tsv.gz": "eab91d9db5f65abf0a5b4ae86876f86907f93bfe3230e7d61a232b437e9e96c7",
+    "contributing_universe.tsv": "2c0e641aa9a8e9f0ea0e949f297a9b5b2bf88ba8721fb2e1a66de87f53152322",
+    "native_composition_comparison.tsv": "e1f5ef0f7cfb94b22dfd513f0e98151928b47e943e2253a59f618b098bf796a4"
+  },
+  "tables": {
+    "native_table1_stats.tsv.gz": {
+      "rows": 552,
+      "sha256": "963483a4a7183347082de309ddc276e783912b59f1172b653c1d5c1052379908"
+    },
+    "native_composition_comparison.tsv.gz": {
+      "rows": 1104,
+      "sha256": "823f19195b2581e30f995108c4d67aa05256b2d378c462ab1c2373e746d546fd"
+    },
+    "native_ora_fold_comparison.tsv.gz": {
+      "rows": 1104,
+      "sha256": "0c305c9cdcfe95b7d479bdef296649b1d7667a25dcdda6fa64534ee8a7cb8bfd"
+    },
+    "native_ora_families.tsv": {
+      "rows": 184,
+      "sha256": "652ed2d36c1e6a46b20487b56e654fd27246826d86f3cb6585146d10f014c87d"
+    },
+    "scenarios.tsv": {
+      "rows": 1233,
+      "sha256": "5334cec76071466c88ba1c8703318bc5eb1ed8d93f2f72a30616cc2a52144c54"
+    },
+    "interpretation_handoff.tsv": {
+      "rows": 2,
+      "sha256": "1869a70ea449463237d6af871b88ed23eb7ec0544ac0a040acf462792ccc1246"
+    }
+  }
+}
