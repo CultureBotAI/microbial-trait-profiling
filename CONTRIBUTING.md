@@ -150,7 +150,14 @@ If you want to auto-fix formatting:
 just format
 ```
 
-### 5. Commit and push
+### 5. Follow biological interpretation standards
+
+If your contribution adds or modifies prose describing biological results, figure captions, or methods:
+- Adhere to [`methods/biological_interpretation.md`](methods/biological_interpretation.md) for approved phrasing, evidence chains, and caption contracts.
+- Consult [`docs/table1_trait_semantics_audit.md`](docs/table1_trait_semantics_audit.md) for trait definitions and supported interpretations.
+- Maintain distinction between reported taxon annotation patterns and in vivo physiological measurements.
+
+### 6. Commit and push
 
 ```bash
 git add <your files>
@@ -158,7 +165,7 @@ git commit -m "Short description of what and why"
 git push -u origin issue-<number>-<short-slug>
 ```
 
-### 6. Open a PR
+### 7. Open a PR
 
 - Reference the issue: "Closes #30" in the PR body
 - Wait for CI to pass

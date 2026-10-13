@@ -1,0 +1,99 @@
+{
+  "version": "calibration-v2",
+  "protocol": "methods/calibration_protocol.json",
+  "bugsigdb_vintage": "2026-04-24_00:41_UTC",
+  "code_commit": "da8e1c1a4fd6615faf10b5c40015f911a27195ad",
+  "seed": 1,
+  "replicates_declared": {
+    "null": 1200,
+    "power": 400,
+    "shared_flip_artifact": 100,
+    "seed": 182
+  },
+  "replicates_completed": {
+    "complete_null_study_flip": 5,
+    "complete_null_experiment_flip": 5,
+    "injected_1.1x_study_flip": 5,
+    "injected_1.3x_study_flip": 5,
+    "injected_2x_study_flip": 5,
+    "injected_4x_study_flip": 5
+  },
+  "inputs": {
+    "profile_path": "data/derived/study_trait_profiles_wide.tsv",
+    "profile_sha256": "6e70724ee807cf24e9c1f371a51421fa5b09d6283fa7f3abcd6620e5492c6a73",
+    "experiments_path": "data/derived/experiments.tsv",
+    "experiments_sha256": "403afea98d9b0a5b56939f68bcc9aace56a8eda350232a586806fe7bf30ad230",
+    "full_dump_path": "data/raw/full_dump.csv",
+    "full_dump_sha256": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788",
+    "protocol_sha256": "404bcda9e886484d33188df6be511a6e63832ec57340cd2c81714f1a575ff5b5",
+    "analysis_source_sha256": "95facb790f923a9b64b3803a9c2ba3bae3a19be88c0305e9bde259ea82e7468e"
+  },
+  "corpus": {
+    "profile_rows": 7329,
+    "experiments_seen": 3494,
+    "unmatched_experiments": 0,
+    "dropped_non_human": 1500,
+    "dropped_unpaired": 1159,
+    "mediadive_columns_excluded": 2333,
+    "trait_columns_used": 317,
+    "kept_experiments": 2335,
+    "kept_profiles": 4670
+  },
+  "procedures": {
+    "fraction_sign_test": {
+      "tested_level": "study",
+      "family": "Benjamini-Hochberg over six Table 1 traits"
+    },
+    "log_ratio_sign_test": {
+      "tested_level": "study",
+      "family": "Benjamini-Yekutieli over 15 trait pairs"
+    },
+    "guild_mcnemar": {
+      "tested_level": "study",
+      "family": "single test"
+    },
+    "screened_fraction_sign_test": {
+      "tested_level": "study",
+      "family": "Benjamini-Hochberg over 3 traits selected in the replicate"
+    }
+  },
+  "calibration_status_rule": "per procedure: 'fail' if any judged criterion failed; otherwise 'pass' only if every judged criterion passed; otherwise 'not_certified' (a criterion was insufficient_budget or not_evaluated). 'reported' rows are not judged.",
+  "calibration_status": {
+    "fraction_sign_test": {
+      "overall": "not_certified",
+      "criteria": {
+        "per_test_level": "insufficient_budget",
+        "family_error": "insufficient_budget",
+        "power_reported": "insufficient_budget"
+      }
+    },
+    "log_ratio_sign_test": {
+      "overall": "not_certified",
+      "criteria": {
+        "per_test_level": "insufficient_budget",
+        "family_error": "insufficient_budget",
+        "power_reported": "insufficient_budget"
+      }
+    },
+    "guild_mcnemar": {
+      "overall": "not_certified",
+      "criteria": {
+        "per_test_level": "insufficient_budget",
+        "family_error": "insufficient_budget"
+      }
+    },
+    "screened_fraction_sign_test": {
+      "overall": "not_certified",
+      "criteria": {
+        "per_test_level": "insufficient_budget",
+        "family_error": "insufficient_budget",
+        "selection_inflation_measured": "reported"
+      }
+    }
+  },
+  "not_calibrated_here": [
+    "the enrichment arm's hypergeometric urn (#131)",
+    "the composition arm's native transformed test",
+    "the aggregated profile-support rule (#177)"
+  ]
+}

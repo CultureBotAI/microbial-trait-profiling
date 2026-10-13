@@ -1,12 +1,22 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
-import math
 from pathlib import Path
 
 import pytest
 from scipy.stats import binomtest
 
-from bsdbng.guild_maps import OTHER_LABEL, build_matrix, compute_correlation, study_direction_means
+from bsdbng.guild_maps import (
+    CELL_BELOW_MIN_STUDIES,
+    CELL_NO_SIGNAL,
+    CELL_NOT_SAMPLED,
+    CELL_VALUE,
+    OTHER_LABEL,
+    build_matrix,
+    cell_status,
+    compute_correlation,
+    study_direction_means,
+    subset_matrix,
+)
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
     OXYGEN_GUILDS,
@@ -164,8 +174,9 @@ def test_correlation_counts_studies_by_shift_direction(corpus: tuple[Path, Path]
     assert result.mcnemar_p == pytest.approx(float(binomtest(2, 2, p=0.5).pvalue))
     assert result.mcnemar_p == pytest.approx(0.5)
     # The paired odds ratio is the discordant ratio; with no reverse-discordant
-    # studies it is infinite.
-    assert result.odds_ratio == math.inf
+    # studies it has no value, and an undefined statistic is missing rather than
+    # infinite - float("inf") in a TSV cell is a sentinel value (#294).
+    assert result.odds_ratio is None
 
 
 def test_study_means_reject_an_unpaired_corpus() -> None:
@@ -320,3 +331,270 @@ def test_rows_kept_only_by_no_signal_cells_go_with_the_shading(tmp_path: Path) -
     )
     assert unshaded.conditions == []
     assert "Periodontitis" in unshaded.dropped_empty_conditions
+
+
+def test_subset_derives_the_other_axis_and_drops_blank_bands(corpus: tuple[Path, Path]) -> None:
+    """A cut named on one axis takes the other axis from where values were drawn."""
+    profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
+    matrix = build_matrix(profiles, max_conditions=10, max_body_sites=10, min_studies=1)
+
+    by_condition = subset_matrix(matrix, conditions=["Asthma"])
+    assert by_condition.conditions == ["Asthma"]
+    # Only the sites Asthma was actually drawn in survive, and every column that
+    # remains belongs to one of them.
+    assert by_condition.body_sites
+    assert set(by_condition.body_sites) <= set(matrix.body_sites)
+    assert all(
+        column.split("|", 1)[0] in by_condition.body_sites for column in by_condition.columns
+    )
+    assert any(value is not None for row in by_condition.values for value in row)
+
+    # Naming the axis the other way round drops the conditions with nothing in it.
+    by_site = subset_matrix(matrix, sites=by_condition.body_sites)
+    assert by_site.body_sites == by_condition.body_sites
+    assert "Asthma" in by_site.conditions
+    assert all(any(v is not None for v in row) for row in by_site.values)
+
+    with pytest.raises(ValueError, match="Nowhere"):
+        subset_matrix(matrix, sites=["Nowhere"])
+
+
+def test_cell_status_separates_the_three_reasons_a_cell_is_blank() -> None:
+    """A blank cell is one of three different claims, not one (#294).
+
+    Both the figure writer and the integrated evidence table classify cells
+    here, so the distinction has to hold in one place: a cell held back for too
+    little support, a cell sampled in which nothing carried the annotation, and
+    a cell nothing was sampled in.
+    """
+    assert cell_status(0.42, False, 7) == CELL_VALUE
+    # A zero mean is a value, not an absence.
+    assert cell_status(0.0, False, 7) == CELL_VALUE
+    assert cell_status(None, True, 7) == CELL_NO_SIGNAL
+    assert cell_status(None, False, 2) == CELL_BELOW_MIN_STUDIES
+    assert cell_status(None, False, 0) == CELL_NOT_SAMPLED
+    # The support state must come from the study count, not from the value.
+    assert cell_status(None, False, 1) != cell_status(None, False, 0)
+
+
+def _guild_profile(
+    study: str,
+    condition: str,
+    site: str,
+    *,
+    signal: int = 5,
+    experiment: str = "1",
+    direction: str = "inc",
+) -> Profile:
+    return Profile(
+        study_id=study,
+        experiment_id=f"{study}-{experiment}",
+        inc_dec=direction,
+        condition=condition,
+        body_site=site,
+        guild_counts={"aerobe": signal},
+        total=10,
+    )
+
+
+@pytest.mark.parametrize("mark_no_signal", [False, True])
+def test_subsets_apply_the_combined_matrix_no_signal_policy(mark_no_signal: bool) -> None:
+    """No-signal cells keep both rows and derived sites only while shaded."""
+    matrix = build_matrix(
+        [
+            _guild_profile("1", "A", "Feces"),
+            _guild_profile("2", "A", "Saliva", signal=0),
+            _guild_profile("3", "B", "Saliva"),
+            _guild_profile("4", "NoSig", "Saliva", signal=0),
+            _guild_profile("5", "Outside", "Feces"),
+        ],
+        max_conditions=10,
+        max_body_sites=10,
+        min_studies=1,
+        guild_order=("aerobe",),
+        include_other_conditions=False,
+        include_other_body_sites=False,
+        mark_no_signal=mark_no_signal,
+    )
+    assert matrix.mark_no_signal is mark_no_signal
+
+    by_condition = subset_matrix(matrix, conditions=["A"])
+    assert by_condition.conditions == ["A"]
+    assert by_condition.body_sites == (["Feces", "Saliva"] if mark_no_signal else ["Feces"])
+    assert by_condition.mark_no_signal is mark_no_signal
+
+    by_site = subset_matrix(matrix, sites=["Saliva"])
+    assert set(by_site.conditions) == ({"A", "B", "NoSig"} if mark_no_signal else {"B"})
+    assert by_site.mark_no_signal is mark_no_signal
+    assert "Outside" not in by_site.conditions
+
+    only_no_signal = subset_matrix(matrix, conditions=["NoSig"])
+    assert only_no_signal.conditions == (["NoSig"] if mark_no_signal else [])
+    assert only_no_signal.body_sites == (["Saliva"] if mark_no_signal else [])
+    if mark_no_signal:
+        assert only_no_signal.values == [[None, None]]
+        assert only_no_signal.study_counts == [[1, 0]]
+        assert only_no_signal.sampled_no_signal == [[True, False]]
+
+
+def test_subset_preserves_cell_evidence_and_cluster_labels_when_sites_are_reordered() -> None:
+    matrix = build_matrix(
+        [
+            _guild_profile("1", "A", "Feces", signal=2),
+            _guild_profile("2", "A", "Feces", signal=6),
+            _guild_profile("3", "A", "Saliva", signal=0),
+            _guild_profile("4", "B", "Saliva", signal=8),
+            _guild_profile("5", "C", "Feces", signal=9),
+        ],
+        max_conditions=10,
+        max_body_sites=10,
+        min_studies=1,
+        guild_order=("aerobe",),
+        include_other_conditions=False,
+        include_other_body_sites=False,
+    )
+    cut = subset_matrix(matrix, conditions=["B", "A"], sites=["Saliva", "Feces"])
+    assert cut.conditions == [name for name in matrix.conditions if name in {"A", "B"}]
+    assert cut.body_sites == ["Saliva", "Feces"]
+    assert cut.columns == [
+        "Saliva|aerobe_inc",
+        "Saliva|aerobe_dec",
+        "Feces|aerobe_inc",
+        "Feces|aerobe_dec",
+    ]
+    a_row = cut.conditions.index("A")
+    b_row = cut.conditions.index("B")
+    assert cut.values[a_row] == [None, None, pytest.approx(0.4), None]
+    assert cut.study_counts[a_row] == [1, 0, 2, 0]
+    assert cut.sampled_no_signal[a_row] == [True, False, False, False]
+    assert cut.values[b_row] == [pytest.approx(0.8), None, None, None]
+    assert cut.study_counts[b_row] == [1, 0, 0, 0]
+    assert cut.sampled_no_signal[b_row] == [False, False, False, False]
+    assert cut.row_clusters == [
+        matrix.row_clusters[matrix.conditions.index(name)] for name in cut.conditions
+    ]
+
+
+def test_site_block_drops_are_distinct_from_study_masking() -> None:
+    profiles = [
+        _guild_profile(study, condition, site)
+        for condition, site in [
+            ("SiteDropped", "Rare"),
+            ("Kept", "Shared"),
+            ("Both", "Shared"),
+            ("Both", "Elsewhere"),
+        ]
+        for study in ("1", "2")
+    ]
+    profiles.append(_guild_profile("3", "Masked", "Rare"))
+    matrix = build_matrix(
+        profiles,
+        max_conditions=10,
+        max_body_sites=10,
+        min_studies=2,
+        min_site_conditions=2,
+        guild_order=("aerobe",),
+        include_other_conditions=False,
+        include_other_body_sites=False,
+        mark_no_signal=False,
+    )
+    assert matrix.body_sites == ["Shared"]
+    assert set(matrix.conditions) == {"Kept", "Both"}
+    assert set(matrix.dropped_body_sites) == {"Rare", "Elsewhere"}
+    assert matrix.dropped_site_conditions == ["SiteDropped"]
+    assert matrix.dropped_empty_conditions == ["Masked"]
+
+
+def test_excluded_sites_require_real_per_cell_study_support() -> None:
+    """Site exclusions must not manufacture support by pooling sites or repeats."""
+    matrix = build_matrix(
+        [
+            _guild_profile("1", "Supported", "Saliva"),
+            _guild_profile("2", "Supported", "Saliva"),
+            _guild_profile("1", "Repeated", "Saliva", experiment="1"),
+            _guild_profile("1", "Repeated", "Saliva", experiment="2"),
+            _guild_profile("1", "SplitSites", "Saliva"),
+            _guild_profile("2", "SplitSites", "Feces"),
+            _guild_profile("1", "SplitDirections", "Saliva", direction="inc"),
+            _guild_profile("2", "SplitDirections", "Saliva", direction="dec"),
+        ],
+        max_conditions=10,
+        max_body_sites=0,
+        min_studies=2,
+        guild_order=("aerobe",),
+        include_other_conditions=False,
+        include_other_body_sites=False,
+        mark_no_signal=False,
+    )
+    assert matrix.conditions == []
+    assert matrix.body_sites == []
+    assert matrix.dropped_site_conditions == ["Supported"]
+    assert set(matrix.dropped_empty_conditions) == {"Repeated", "SplitSites", "SplitDirections"}
+
+
+def test_site_cap_does_not_drop_a_condition_drawn_in_a_retained_site() -> None:
+    matrix = build_matrix(
+        [
+            _guild_profile("1", "Both", "Feces"),
+            _guild_profile("2", "Both", "Saliva"),
+            _guild_profile("3", "SiteDropped", "Saliva"),
+            _guild_profile("4", "Anchor", "Feces"),
+            _guild_profile("5", "Anchor", "Feces"),
+        ],
+        max_conditions=10,
+        max_body_sites=1,
+        min_studies=1,
+        guild_order=("aerobe",),
+        include_other_conditions=False,
+        include_other_body_sites=False,
+        mark_no_signal=False,
+    )
+    assert matrix.body_sites == ["Feces"]
+    assert set(matrix.conditions) == {"Both", "Anchor"}
+    assert matrix.dropped_site_conditions == ["SiteDropped"]
+    assert matrix.dropped_empty_conditions == []
+
+
+@pytest.mark.parametrize("mark_no_signal", [False, True])
+@pytest.mark.parametrize("max_body_sites", [0, 10])
+def test_site_drop_attribution_honors_no_signal_shading(
+    mark_no_signal: bool, max_body_sites: int
+) -> None:
+    matrix = build_matrix(
+        [_guild_profile("1", "NoSig", "Saliva", signal=0)],
+        max_conditions=10,
+        max_body_sites=max_body_sites,
+        min_studies=3,
+        min_site_conditions=2,
+        guild_order=("aerobe",),
+        include_other_conditions=False,
+        include_other_body_sites=False,
+        mark_no_signal=mark_no_signal,
+    )
+    assert matrix.conditions == []
+    assert matrix.dropped_site_conditions == (["NoSig"] if mark_no_signal else [])
+    if mark_no_signal:
+        assert "NoSig" not in matrix.dropped_empty_conditions
+
+
+def test_dropped_other_site_preserves_condition_pool_membership() -> None:
+    matrix = build_matrix(
+        [
+            *[_guild_profile(str(study), "Anchor", "Feces") for study in range(4)],
+            _guild_profile("4", "PooledA", "Feces"),
+            _guild_profile("5", "PooledB", "Feces"),
+        ],
+        max_conditions=1,
+        max_body_sites=0,
+        min_studies=2,
+        min_site_conditions=3,
+        guild_order=("aerobe",),
+        mark_no_signal=False,
+    )
+    assert matrix.conditions == []
+    assert matrix.dropped_body_sites == [OTHER_LABEL]
+    assert set(matrix.dropped_site_conditions) == {"Anchor", OTHER_LABEL}
+    assert matrix.dropped_empty_conditions == []
+    condition_pool = next(pool for pool in matrix.pooled if pool.kind == "condition")
+    assert condition_pool.bucketed
+    assert condition_pool.pooled_names == ("PooledA", "PooledB")

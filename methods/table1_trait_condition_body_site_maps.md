@@ -1,7 +1,8 @@
 # Manuscript Table 1 traits by condition and body site, and their paired directional shift
 
-Figures: `table1_traits_condition_body_site_heatmap.png`,
-`table1_traits_first_last_body_site_panels.png`, and
+Figures: `table1_traits_condition_body_site_heatmap.png`, the four cuts
+`table1_traits_focus_feces.png`, `table1_traits_focus_feces_other.png`,
+`table1_traits_focus_cervical.png`, and `table1_traits_focus_oral.png`, and
 `table1_traits_direction_shift.png`. Produced by
 `src/bsdbng/table1_trait_maps.py`, driven by `just table1-trait-maps`. How this
 analysis differs from the composition and enrichment arms is set out in
@@ -116,16 +117,88 @@ range a single extreme cell was flattening the rest of the distribution to one
 pale tint, so ramps are cut at the 98th percentile of that trait's observed cells
 and cells above the cut saturate at the top colour.
 
-## Second figure: two body sites in detail
+## Second set of figures: four cuts of the same matrix
 
 Sixty columns across one figure leaves each column too narrow to label legibly,
-so the first and last body-site blocks are redrawn on their own at readable width,
-where the twelve trait-by-direction columns can actually be read. On this run
-those are Feces, the largest block in the corpus, and the pooled Other block. The
-panels are a
-redraw and not a re-analysis: they use the same cell values, the same per-trait
-colour scales, the same 98th-percentile range cut, and the same masking as the
-combined heatmap.
+and the Feces block, which carries 43 of the 51 drawn conditions, sets the eye's
+scale so that every other block reads as empty beside it. The combined heatmap
+therefore answers what was measured where rather than showing a result. The same
+matrix is cut into four smaller heatmaps, each holding conditions that were
+sampled in the same places:
+
+- `focus_feces`, the 43 conditions drawn in Feces, on that block alone.
+- `focus_feces_other`, the same conditions plus those drawn only in the pooled
+  Other block, 49 in total, over the two blocks. That is 49 of the combined
+  figure's 51 conditions: cervical glandular intraepithelial neoplasia and oral
+  squamous cell carcinoma carry no Feces or Other cell, so neither appears here.
+- `focus_cervical`, cervical glandular intraepithelial neoplasia and human
+  papilloma virus infection, over Uterine cervix, Vagina, and Other.
+- `focus_oral`, asked for as the cluster of gingivitis, periodontitis, smoking
+  behavior, and rheumatoid arthritis. On this corpus it draws two of those four.
+  Gingivitis and periodontitis are both in the pinned v1.3.1 export — 2 and 7
+  human paired studies respectively, 9 studies in all under those exact condition
+  labels — but neither reaches the drawn matrix, for two different reasons given
+  below. The figure names each with its own reason rather than drawing a smaller
+  group under the same title.
+
+That last cut is worth stating plainly, because it was proposed from a figure
+built on the unpinned devel export. There, gingivitis, periodontitis, smoking
+behavior, and rheumatoid arthritis clustered together, and rheumatoid arthritis
+grouping with three oral conditions rather than with the other systemic diseases
+was the observation the cut was meant to show. That observation cannot be checked
+here, but the reason is the display rules, not the vintage, and the two conditions
+fail different rules:
+
+- **Periodontitis is cut by width.** Of 451 distinct conditions it ranks 62nd on
+  20 profiles — the same profile count as the 60th-ranked condition, losing its
+  place only to the deterministic alphabetical tiebreak in `_top_labels`. Raising
+  `--max-conditions` to 62 draws it, which is measured, not inferred.
+- **Gingivitis is cut by support, so no width draws it.** It ranks 212nd on 4
+  profiles, and its two studies sit in different body sites, leaving at most one
+  study per cell against `--min-studies 3`. Widening the cut to 250 or beyond
+  admits the row and then drops it again as entirely blank. Only lowering
+  `--min-studies`, which would weaken every other cell in the figure, would draw
+  it.
+
+So drawing all four together is not a matter of widening the cut. It needs a
+corpus where gingivitis carries at least three studies in one body site.
+
+With `--include-other-conditions`, conditions outside the width cut are
+assigned to a pooled Other row. The panel note uses the build's recorded
+membership to distinguish this from omission and reports whether that row is
+drawn in the particular panel. Assignment is not contribution: when a pooled
+condition's body site is binned out, or its Other cells are masked, none of its
+profiles reach a drawn Other cell, so the note says "assigned to" rather than
+"included in". A masked pool or a condition-focused cut that excludes Other
+does not display those conditions. Repeated requested labels are reported once,
+in their first-request order.
+
+Each cut fixes one axis and derives the other from the data: naming conditions
+keeps the body sites those conditions were actually drawn in, naming body sites
+keeps the conditions drawn in them, and rows or column blocks left carrying no
+value are dropped either way. So a cut never asserts that a condition was studied
+in a site where it was not, and never renders a blank band.
+
+Every cell is the same size in every figure, the combined one included. A cut
+holding only a few conditions is padded with blank rows rather than stretched to
+fill the panel, so a cell in the two-row oral cut is the same square as a cell in
+the 43-row Feces cut and the two can be compared by eye. The six colour bars lie
+flat in a band under each cut rather than stacked down its side: stacked, their
+height would set the figure's height, and a two-row cut would have to be padded
+out with empty rows to give them room or let them collapse into hairlines.
+
+The cuts are a redraw and not a re-analysis. They use the same cell values, the
+same masking, the same row order and cluster ids from the single clustering of
+the full matrix, and the same per-trait colour ranges, taken from the full matrix
+rather than recomputed per cut, so a given cell is the same colour in every
+figure it appears in.
+
+What these figures do not yet do is state a condition's increased-versus-decreased
+signature directly: they place the two directions side by side and leave the
+comparison to the reader. The paired contrast that would state it is already
+computed for the third figure, one value per study per trait, and could be drawn
+per condition on a diverging scale; that is a change of quantity, not of layout,
+and is not attempted here.
 
 ## Third figure: paired directional shift
 
@@ -198,7 +271,7 @@ these historical fraction results or turn them into absolute abundance claims.
 ## Reproducing
 
 All statistics use scipy (binomtest, false_discovery_control, spearmanr) rather
-than hand-rolled implementations. The three figures and their six backing tables
+than hand-rolled implementations. The six figures and their six backing tables
 are produced by `src/bsdbng/table1_trait_maps.py`, driven deterministically by
 `just table1-trait-maps`, which shares its matrix construction, masking, row
 clustering, and table writing with `src/bsdbng/guild_maps.py` rather than

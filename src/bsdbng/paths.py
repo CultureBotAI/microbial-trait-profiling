@@ -1,11 +1,36 @@
-"""Project path helpers."""
+"""Compatibility shim forwarding bsdbng.paths to mtp.paths."""
 
-from __future__ import annotations
+import sys
+from typing import Any
 
-from pathlib import Path
+from mtp.paths import (
+    DERIVED_DATA_DIR,
+    KG_MICROBE_DIR,
+    RAW_DATA_DIR,
+    REPO_ROOT,
+    SCHEMA_PATH,
+    STUDY_DATA_DIR,
+)
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-RAW_DATA_DIR = REPO_ROOT / "data" / "raw"
-STUDY_DATA_DIR = REPO_ROOT / "data" / "studies"
-DERIVED_DATA_DIR = REPO_ROOT / "data" / "derived"
-SCHEMA_PATH = REPO_ROOT / "schema" / "bsdbng.yaml"
+__all__ = [
+    "DERIVED_DATA_DIR",
+    "KG_MICROBE_DIR",
+    "RAW_DATA_DIR",
+    "REPO_ROOT",
+    "SCHEMA_PATH",
+    "STUDY_DATA_DIR",
+]
+
+import mtp.paths as _target
+
+sys.modules[__name__] = _target
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target, name)
+
+
+if __name__ == "__main__":
+    import runpy
+
+    runpy.run_module("mtp.paths", run_name="__main__")

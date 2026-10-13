@@ -106,7 +106,7 @@ def test_ingest_produces_yaml(tmp_path: Path) -> None:
     raw_dir.mkdir()
     _write_full_dump(raw_dir)
 
-    written = ingest(raw_dir, study_dir)
+    written = ingest(raw_dir, study_dir, tmp_path / "derived")
     assert len(written) == 1
 
     study = yaml.safe_load(written[0].read_text())
@@ -176,7 +176,7 @@ def test_ingest_no_placeholder_taxon_names(tmp_path: Path) -> None:
     raw_dir.mkdir()
     _write_full_dump(raw_dir)
 
-    written = ingest(raw_dir, study_dir)
+    written = ingest(raw_dir, study_dir, tmp_path / "derived")
     assert written, "ingest() should write at least one YAML study file"
 
     for path in written:
@@ -197,7 +197,7 @@ def test_ingest_yaml_round_trips_through_pydantic(tmp_path: Path) -> None:
     raw_dir.mkdir()
     _write_full_dump(raw_dir)
 
-    written = ingest(raw_dir, study_dir)
+    written = ingest(raw_dir, study_dir, tmp_path / "derived")
     study_data = yaml.safe_load(written[0].read_text())
 
     from bsdbng.datamodel import Study
