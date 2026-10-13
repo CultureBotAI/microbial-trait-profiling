@@ -10,6 +10,7 @@ from mtp.taxon_influence import (
     concentration,
     critical_t,
     describe,
+    directional_counts,
     directional_test,
     effect_rows,
     overlap,
@@ -22,6 +23,7 @@ from mtp.taxon_influence import (
     source_occurrences,
     study_means,
     taxonomic_counts,
+    trait_leading_genera,
 )
 
 __all__ = [
@@ -31,6 +33,7 @@ __all__ = [
     "concentration",
     "critical_t",
     "describe",
+    "directional_counts",
     "directional_test",
     "effect_rows",
     "overlap",
@@ -43,6 +46,7 @@ __all__ = [
     "source_occurrences",
     "study_means",
     "taxonomic_counts",
+    "trait_leading_genera",
 ]
 
 import mtp.taxon_influence as _target

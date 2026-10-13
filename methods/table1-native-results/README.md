@@ -1,13 +1,13 @@
 # Native lineage influence completion
 
-These reruns extend the reconciled 190-v1 audit using protocol 190-native-v1. The 22 exclusion scenarios, four scopes, raw trait keys and human paired corpus are unchanged. This is matched-corpus sensitivity analysis, not a reproduction of published results with other filters. See run_manifest.json for hashes, the implementation revision, model policies and result files.
+These reruns extend the reconciled 190-v2 audit using protocol 190-native-v2. The 24 rule-declared exclusion scenarios, four scopes, raw trait keys and human paired corpus are unchanged. This is matched-corpus sensitivity analysis, not a reproduction of published results with other filters. See run_manifest.json for hashes, the implementation revision, model policies and result files. This historical manifest predates the explicit dirty-tree field: its commit identifies the revision but does not prove the checkout was clean. The current publisher requires a recorded clean state.
 
 ## Composition
 
 Native effects are experiment-weighted increased-minus-decreased z-score contrasts. Native p-values test the mean; native BH families contain all supported variable traits, not just Table 1. Zero-total profiles remain as zero fractions. Study-weighted comparisons, sign tests and conditional intervals are separately labeled in native_composition_comparison.tsv.gz. Refitted scales and fixed baseline SD comparisons must not be conflated.
 
 | Trait | Pooled native effect | Native p | Native q | Largest matched change, fixed baseline SD | Exclusion |
-| --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- |
 | facultatively_aerobic | 0.18631 | 5.35241e-12 | 1.68601e-09 | -0.0544385 | exclude_family_NCBITaxon:543 |
 | cellulose_catabolic_process | -0.164876 | 2.10484e-09 | 3.31512e-07 | 0.00949518 | exclude_family_NCBITaxon:543 |
 | coccus_shaped | 0.156906 | 2.35116e-08 | 2.46872e-06 | -0.0657366 | exclude_family_NCBITaxon:1300 |
@@ -15,7 +15,7 @@ Native effects are experiment-weighted increased-minus-decreased z-score contras
 | arsenate_reduction | 0.147797 | 5.2978e-07 | 3.33761e-05 | -0.197758 | exclude_family_NCBITaxon:543 |
 | moderately_halophilic | 0.131709 | 1.7926e-06 | 9.41115e-05 | -0.0530599 | exclude_family_NCBITaxon:81852 |
 
-The displayed maximum is descriptive selection within the predeclared panel, not an explanation or causal attribution. The TSV retains all opposite, null and untestable results, eligibility components, intervals and family membership.
+The displayed maximum is descriptive selection within the rule-declared panel, not an explanation or causal attribution. The TSV retains all opposite, null and untestable results, eligibility components, intervals and family membership.
 
 ## Baseline-versus-exclusion native q-values
 
@@ -59,8 +59,8 @@ For #179, these are annotation influence diagnostics. Higher-rank direct asserti
 
 ## Review Bundle
 
-The `.tsv.gz` comparison files contain all six traits, scenarios and scopes, including null and untestable results. `native_table1_stats.tsv.gz` is the six-trait subset of the native composition table; its q-values were computed over the FULL native families, whose sizes remain attached. The separate ORA family table includes both backgrounds and both tail-family sizes. `scenarios.tsv` supplies lineage names, support and selection status for the full genus/family inventory, including lineages outside the panel.
+The `.tsv.gz` comparison files contain all six traits, scenarios and scopes, including null and untestable results. `native_table1_stats.tsv.gz` is the six-trait subset of the native composition table; its q-values were computed over the FULL native families, whose sizes remain attached. The separate ORA family table includes both backgrounds and both tail-family sizes. `scenarios.tsv` supplies lineage names, support and selection status for the full genus/family inventory, including lineages outside the rule-declared panel.
 
-The full 317-trait composition table, profile-level ORA results and source ledger are generated under `data/derived/table1_taxon_influence/`, following the repository's untracked generated-data convention. Regenerate them with `just table1-taxon-influence <pinned-KG-directory>`. This compact review bundle does not discard any six-trait influence comparison. `run_manifest.json` records hashes for the full data; `publication_manifest.json` identifies these review copies. All full-run file hashes were checked before publication.
+The full 317-trait composition table, profile-level ORA results and source ledger are generated under `data/derived/table1_taxon_influence/`, following the repository's untracked generated-data convention. Regenerate the default input chain with `just table1-taxon-influence`, or use `just table1-taxon-influence-from <pinned-KG-directory>` for already materialized inputs. The recipe writes a candidate review bundle under the untracked run directory; this committed directory is an explicitly reviewed snapshot. This compact review bundle does not discard any six-trait influence comparison. `run_manifest.json` records hashes for the full data; `publication_manifest.json` identifies these review copies. All full-run file hashes were checked before publication.
 
 Publication also re-sums the complete source-contribution ledger through the profile/reported-taxon links and requires exact equality with every exported profile/trait count. The publication manifest records those file hashes and row counts.

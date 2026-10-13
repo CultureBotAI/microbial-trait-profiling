@@ -2,17 +2,18 @@
 
 Issue [#190](https://github.com/CultureBotAI/microbial-trait-profiling/issues/190).
 The [measured run summary](table1_taxon_influence_results.md) records the reconciled
-corpus, observed contribution patterns, conditional uncertainty and remaining work.
-The [native rerun extension](table1_native_influence.md) now adds composition and
-both ORA background treatments. Statements below about missing native results
-describe the original contribution/shared-effect stage; consult the completed
-`native_manifest.json` and native summary for the extension and its review limits.
-Run `just table1-taxon-influence`, or pass a directory containing the **same pinned**
-KG files: `just table1-taxon-influence C:/path/to/pinned-kg`.
-The recipe writes TSVs, compressed TSVs, `manifest.json` and
-`influence_summary.md` to `data/derived/table1_taxon_influence/`. It neither
-downloads a replacement KG nor changes input profiles. `just check` validates
-the implementation; the full recipe additionally validates the local corpus.
+corpus, observed contribution patterns, conditional uncertainty and remaining work;
+the [native rerun extension](table1_native_influence.md) adds composition and both ORA
+background treatments under its separately pinned model contract.
+Run `just table1-taxon-influence` to materialize the complete input chain in a clean
+clone. To use an existing directory containing the **same pinned** KG files and
+already materialized derived inputs, run
+`just table1-taxon-influence-from C:/path/to/pinned-kg C:/path/to/derived`.
+The audit writes TSVs, compressed TSVs, `manifest.json` and `influence_summary.md`
+to `data/derived/table1_taxon_influence/`. The default recipe materializes its
+declared inputs; the `-from` entry point neither downloads a replacement KG nor
+changes input profiles. `just check` validates the implementation; the full recipe
+additionally validates the local corpus.
 
 This is a provisional annotation influence diagnostic. The archived Rosalind
 discussion and separate review in [PR #192](https://github.com/CultureBotAI/microbial-trait-profiling/pull/192)
@@ -77,7 +78,7 @@ does not recover a human profile count.
 | `contributing_universe.tsv` | Full positive contribution universe for each declared scope, trait, direction and resolution level; no display cutoff. |
 | `concentration.tsv` | All six traits and both directions; resolved/unresolved mass, resolved taxon count, HHI and largest share conditional on resolved mass. |
 | `cross_trait_overlap.tsv` | All 15 trait pairs at species/genus/family, separately by curated direction and scope. |
-| `scenarios.tsv`, `predictions.tsv` | Full lineage inventory, support, selection/status and the four predicted genera, whether or not resolved. |
+| `scenarios.tsv`, `predictions.tsv` | Full lineage inventory, support, selection reasons/status and the four predicted genera, whether or not resolved. |
 | `effects.tsv.gz` | Scenario/scope/representation/feature effects, uncertainty, directional support, eligibility changes and separate correction families. |
 
 `distinct_source_taxa` includes directly reported source taxa; `descendant_source_taxa`
@@ -95,7 +96,7 @@ Neither statistic tests independence. Source concentration uses provenance-cell
 incidence: multiple provenance cells can support one deduplicated count unit, so its
 denominator differs from the taxonomic count denominator.
 
-## Predeclared exclusions and scope
+## Rule-declared exclusions and scope
 
 [`table1_taxon_influence_protocol.json`](table1_taxon_influence_protocol.json) is an
 input, hashed before effects are calculated. It declares pooled human paired profiles,
@@ -106,11 +107,15 @@ even outside those three strata. An empty stratum produces untestable results.
 The full genus/family inventory is retained. The exclusion panel comprises the ten
 largest genera and ten largest families by **full non-MediaDive propagated contribution
 count**, plus Streptococcus, Enterococcus, Staphylococcus, Veillonella and their resolved
-families. A lineage needs contributions in at least three retained studies. Ties are
-broken by taxon ID; signs, effects and p-values do not select scenarios. This bounded
-panel tests the named predictions alongside other large contributors. It does not
-claim exhaustive influence testing of every lineage or freedom from data selection.
-Unselected and unsupported lineages remain explicitly recorded.
+families. The rule-declared extension adds the leading genus for each of the six Table 1
+trait keys by propagated contribution count summed across both directions. A lineage
+needs contributions in at least three retained studies. Ties are broken by taxon ID;
+signs, effects and p-values do not select scenarios. The extension was recorded on
+[#190](https://github.com/CultureBotAI/microbial-trait-profiling/issues/190#issuecomment-5703892447)
+before the extended run. This bounded panel tests the named predictions alongside large
+overall and per-trait contributors. It does not claim exhaustive influence testing of
+every lineage or freedom from data selection. Unselected and unsupported lineages
+remain explicitly recorded.
 
 For each lineage, removal deletes all known source-taxon/trait units whose source
 falls within that lineage, wherever they propagate, including into higher-rank
@@ -131,11 +136,11 @@ Each scenario directory contains:
 | `pair_eligibility.tsv.gz` | Original/remaining totals and zero-valued six-trait keys for each arm; establishes the precise membership and exclusion reason for every fraction and all 15 ratios. |
 | `ora_background_counts.tsv` | Full count backgrounds separately labeled `fixed_baseline` and `recomputed_remaining`, per scope, using both arms of all retained profiles including zero totals. |
 
-The ORA exports are count contracts for Ilyas, not native ORA reruns or odds ratios.
+`ora_background_counts.tsv` is a count contract, not a native ORA result or odds ratio.
 A fixed baseline asks about residual annotations against the original corpus; a
 recomputed background asks about residual annotations against the residual corpus.
-Their native tests, support rules, sampling units and correction families must be
-declared by the ORA implementation. Do not mix these backgrounds in a shared ranking.
+The native extension consumes both contracts and exports separately labeled profile
+tests and full correction-family metadata. Do not mix the backgrounds in a shared ranking.
 
 ## Effects, uncertainty and integration
 
@@ -178,9 +183,9 @@ does not establish that a lineage explains a signal.
 
 For #178, join on the **full qualified trait key**, scenario, exact scope, representation
 and population; retain the effect unit, all uncertainty/support fields, family identity,
-input hashes, missingness and ambiguity flags. Native Jed transformed statistics
-require a pinned transformation/reference-population policy and full native correction
-family; they remain explicitly **not rerun** here. Native ORA remains with Ilyas.
-Their absence must remain a missing native result, not be replaced by the shared
-sign-test p-value. These owner integrations, #188/#189 prerequisites and review of
-resolved source semantics remain required before closing #190 or assigning mechanisms.
+input hashes, missingness and ambiguity flags. The native extension supplies the pinned
+transformed-composition and ORA reruns. Its experiment-weighted t/BH statistics and
+profile-level ORA families remain distinct from the study-weighted sign-test BH6 fields;
+none substitutes for another. Baseline parity (#210), native-owner review, the #188/#189
+prerequisites and review of resolved source semantics remain required before manuscript
+adoption or assigning mechanisms.

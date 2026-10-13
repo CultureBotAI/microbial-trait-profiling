@@ -23,7 +23,14 @@ from scipy.stats import hypergeom, ttest_1samp
 from mtp.contribution_inputs import Base, Key, Pair, digest, load_base, rows
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
 from mtp.taxon_contributions import Record, write_table
-from mtp.taxon_influence import adjust, comparison, critical_t, directional_test, scope_keys
+from mtp.taxon_influence import (
+    adjust,
+    comparison,
+    critical_t,
+    directional_counts,
+    directional_test,
+    scope_keys,
+)
 
 INPUT_NAMES = (
     "study_trait_profiles_wide.tsv",
@@ -161,7 +168,7 @@ def transformed(
         valid = eligible and len(items) >= policy["minimum_pairs"] and sd > 1e-8
         effect = float(np.mean(items)) if items else 0.0
         radius = critical_t(len(items) - 1) * sd / math.sqrt(len(items)) if len(items) > 1 else None
-        positive, negative = sum(v > 0 for v in items), sum(v < 0 for v in items)
+        positive, negative = directional_counts(items)
         share = directional_test(positive, negative) if positive + negative else None
         records[trait] = {
             "trait_key": trait,
@@ -685,7 +692,13 @@ def export_native(base: Base, audit: Record, protocol: Record, output: Path) -> 
     }
 
 
-def run(inputs: Path, output: Path, protocol_path: Path, code_commit: str = "") -> None:
+def run(
+    inputs: Path,
+    output: Path,
+    protocol_path: Path,
+    code_commit: str = "",
+    code_dirty: bool = False,
+) -> None:
     audit = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
     if not audit["completed"] or audit["mismatches"]:
         raise ValueError("A completed, exactly reconciled contribution audit is required")
@@ -705,6 +718,7 @@ def run(inputs: Path, output: Path, protocol_path: Path, code_commit: str = "") 
         "contribution_manifest_sha256": digest(output / "manifest.json"),
         "input_sha256": {name: digest(inputs / name) for name in INPUT_NAMES},
         "code_commit": code_commit,
+        "code_dirty": code_dirty,
         "runtime": {
             "python": platform.python_version(),
             "scipy": importlib.metadata.version("scipy"),
@@ -729,13 +743,18 @@ def run(inputs: Path, output: Path, protocol_path: Path, code_commit: str = "") 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--code-commit", required=True)
+    parser.add_argument(
+        "--code-dirty",
+        action="store_true",
+        help="Record tracked staged or unstaged changes in the implementation checkout.",
+    )
     parser.add_argument("--inputs", type=Path, default=DERIVED_DATA_DIR)
     parser.add_argument("--output", type=Path, default=DERIVED_DATA_DIR / "table1_taxon_influence")
     parser.add_argument(
         "--protocol", type=Path, default=REPO_ROOT / "methods/table1_native_influence_protocol.json"
     )
     args = parser.parse_args()
-    run(args.inputs, args.output, args.protocol, args.code_commit)
+    run(args.inputs, args.output, args.protocol, args.code_commit, args.code_dirty)
 
 
 if __name__ == "__main__":

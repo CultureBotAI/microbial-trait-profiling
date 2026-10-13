@@ -1,5 +1,5 @@
 {
-  "version": "190-v1",
+  "version": "190-v2",
   "kg_build": "20260120",
   "kg_md5": {
     "merged-kg_nodes.tsv": "dd76b4656f9341db25a7c4afa96cd58e",
@@ -14,7 +14,9 @@
   ],
   "minimum_lineage_studies": 3,
   "top_lineages_per_rank": 10,
-  "scenario_rule": "inventory every resolved genus/family; run the ten largest per rank by propagated full non-MediaDive contribution count plus the four predicted genera and their resolved families, each requiring three supporting studies; ties by taxon ID; no effect or significance selection",
+  "include_trait_leading_genus": true,
+  "scenario_rule": "inventory every resolved genus/family; run the ten largest per rank by propagated full non-MediaDive contribution count plus the four predicted genera and their resolved families, then add each Table 1 trait's leading genus by propagated contribution count summed across both directions; each selected lineage requires three supporting studies; ties by taxon ID; no effect or significance selection",
+  "rule_declaration": "Issue #190 comment https://github.com/CultureBotAI/microbial-trait-profiling/issues/190#issuecomment-5703892447, recorded before the 190-v2 run",
   "predicted_genera": ["Streptococcus", "Enterococcus", "Staphylococcus", "Veillonella"],
   "orientation_status": "unreviewed_pending_188",
   "semantics_status": "raw_keys_only_pending_189",

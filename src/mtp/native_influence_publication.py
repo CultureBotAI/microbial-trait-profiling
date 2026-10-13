@@ -63,6 +63,8 @@ def publish(source: Path, destination: Path) -> dict[str, object]:
     audit = json.loads((source / "manifest.json").read_text(encoding="utf-8"))
     if not native["completed"] or not audit["completed"] or audit["mismatches"]:
         raise ValueError("Only completed, reconciled runs may be published")
+    if native.get("code_dirty", True):
+        raise ValueError("Review bundles cannot be published from a dirty or unrecorded tree")
     if digest(source / "manifest.json") != native["contribution_manifest_sha256"]:
         raise ValueError("The parent contribution manifest has changed")
     source_reconciliation = reconcile_exported_source_counts(source)
@@ -118,8 +120,11 @@ def publish(source: Path, destination: Path) -> dict[str, object]:
         "the full genus/family inventory, including lineages outside the panel.\n\n"
         "The full 317-trait composition table, profile-level ORA results and source "
         "ledger are generated under `data/derived/table1_taxon_influence/`, following "
-        "the repository's untracked generated-data convention. Regenerate them with "
-        "`just table1-taxon-influence <pinned-KG-directory>`. This compact review bundle "
+        "the repository's untracked generated-data convention. Regenerate the default "
+        "input chain with `just table1-taxon-influence`, or use `just table1-taxon-influence-from "
+        "<pinned-KG-directory>` for already materialized inputs. The recipe writes a candidate "
+        "review bundle under the untracked run directory; this committed directory is "
+        "an explicitly reviewed snapshot. This compact review bundle "
         "does not discard any six-trait influence comparison. `run_manifest.json` "
         "records hashes for the full data; `publication_manifest.json` identifies "
         "these review copies. All full-run file hashes were checked before publication.\n\n"
@@ -151,9 +156,13 @@ def publish(source: Path, destination: Path) -> dict[str, object]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=ROOT / "data/derived/table1_taxon_influence")
-    parser.add_argument("--destination", type=Path, default=ROOT / "methods/table1-native-results")
+    parser.add_argument(
+        "--destination",
+        type=Path,
+        help="Output directory. Defaults to <source>/review under untracked derived data.",
+    )
     args = parser.parse_args()
-    publish(args.source, args.destination)
+    publish(args.source, args.destination or args.source / "review")
 
 
 if __name__ == "__main__":

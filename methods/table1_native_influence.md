@@ -1,17 +1,23 @@
 # Native Table 1 lineage influence
 
-This completes the statistical rerun extension to [#190's contribution audit](table1_taxon_influence.md).
-The original source ledger and shared-fraction results are unchanged. The
-[native protocol](table1_native_influence_protocol.json) was declared before the
-native rerun: it fixes the same 22 exclusions, four exact scopes, 317 retained
-columns and 4,670 human paired profiles from 959 studies. Nothing is selected by
-the new effects, directions or p-values. See the generated
+This documents the statistical rerun extension to [#190's contribution audit](table1_taxon_influence.md).
+The committed bundle is a measured matched-corpus snapshot, not a claim of baseline
+parity with the differently filtered published Table 1 analysis (tracked in #210).
+The source ledger is unchanged. The
+[native protocol](table1_native_influence_protocol.json) applies the same rule-declared
+exclusions as the shared-fraction rerun, with four exact scopes, 317 retained columns
+and 4,670 human paired profiles from 959 studies. Nothing is selected by the new effects,
+directions or p-values. See the generated
 [native summary and review tables](table1-native-results/README.md) for results.
 
 ## Reproduction
 
-Run the complete pipeline with `just table1-taxon-influence <pinned-KG-directory>`.
-It now performs the source reconciliation, shared effects and native extension.
+On a clean clone, run the complete pipeline with `just table1-taxon-influence`.
+Its declared dependency chain downloads the pinned KG, generates the taxa-trait matrix
+and study profiles, and then performs the source reconciliation, shared effects and
+native extension. To use already materialized inputs, run `just
+table1-taxon-influence-from <pinned-KG-directory> <derived-input-directory>
+<audit-output-directory>`.
 For an already completed, unchanged contribution audit, use
 `just table1-native-influence <derived-input-directory> <audit-output-directory>`.
 Both paths use the same native implementation. The second recipe checks the
@@ -21,16 +27,22 @@ and remaining six-trait counts and full totals against the scenario ledger.
 Changed inputs, duplicate removal entries, negative counts, missing profile
 records or inconsistent totals stop the run. No replacement KG is downloaded.
 
-`native_manifest.json` records the source manifest hash, protocol, runtime versions,
-code commit and source-file hashes, removal-ledger input hashes and result hashes.
+A newly generated `native_manifest.json` records the source manifest hash, protocol,
+runtime versions, code commit, tracked/untracked dirty state and source-file hashes,
+removal-ledger input hashes and result hashes. The committed snapshot predates the
+dirty-state field, so its commit field alone is not evidence that its checkout was clean;
+the current publisher treats that missing state as unrecorded and will not republish it.
 It starts with `completed: false`; a failed/interrupted run must not be integrated.
 The historical contribution manifest's `not_rerun` statements describe that earlier
 stage, not the native extension. Only a completed native manifest establishes that
 the native files exist and match the recorded inputs.
 
 `just table1-native-summary <audit-output-directory>` verifies all native input and
-output artifact hashes and publishes the compact review bundle in
-`methods/table1-native-results/`. This is also the final step of the native recipe.
+output artifact hashes and writes the compact review bundle to the untracked
+`<audit-output-directory>/review/` directory. It refuses a run recorded from a dirty
+tree. This is also the final step of the native recipe. The committed
+`methods/table1-native-results/` directory is an explicitly reviewed historical snapshot
+rather than the recipe's write target.
 The bundle contains every six-trait comparison, native Table 1 statistics, full
 native family sizes and run manifests. Its README includes a six-row pooled
 baseline-versus-exclusion native q-value table that names the highest-q
@@ -59,13 +71,18 @@ unselected traits have no native p/q. q=1 does not make an untestable result nul
 evidence. Tests do not use the six-trait-only family.
 
 Native mean intervals target experiment-weighted effects; exact binomial intervals
-describe the positive share of non-tied experiments. Experiments from one study
+describe the positive share of experiment contrasts after applying the same `1e-12`
+tie tolerance used by the shared summaries. The unit still differs: shared directional
+counts first average experiments within study, while native directional counts retain
+experiments. Experiments from one study
 are not necessarily independent, so native uncertainty has the existing #133
 limitation. Separate study-weighted comparisons average experiments within study
 and then studies equally, using the original audit's conditional mean and
 directional-share intervals. Their sign-test p-values are **not native t-test
 p-values**; their BH6 families are separate for each scope/scenario/reference and
-before/after/matched/change population.
+before/after/matched/change population. In the comparison tables, `native_*_p/q`
+belong to the experiment-weighted native t/BH family; unprefixed `*_p/q` belong to the
+study-weighted sign-test/BH6 family and must not be substituted for one another.
 
 Two reference policies are exported: refitted z-scores and contrasts divided by
 the fixed baseline SD. The latter isolates change on a common scale; a change in

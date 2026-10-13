@@ -17,6 +17,7 @@ from mtp.taxon_influence import (
     removal,
     run_influence,
     scenarios,
+    trait_leading_genera,
 )
 
 A = "METPO:1000608"
@@ -193,6 +194,22 @@ def test_rank_resolution_and_scenario_support_are_not_name_heuristics(
     assert graph.ranked(SPECIES1, "genus", base.ranks) == ("", "ambiguous_rank")
 
 
+def test_trait_leader_can_extend_the_overall_genus_ranking(
+    corpus: tuple[Base, Graph],
+) -> None:
+    base, graph = corpus
+    ledger = reconcile(base, graph)
+    second_genus = "NCBITaxon:20"
+    second_family = "NCBITaxon:200"
+    graph.parents[SPECIES2] = {second_genus}
+    graph.parents[second_genus] = {second_family}
+    graph.ancestor_cache.clear()
+    base.ranks.update({second_genus: "genus", second_family: "family"})
+    leaders = trait_leading_genera(base, graph, ledger, minimum=1)
+    assert leaders[A] == GENUS
+    assert leaders[B] == second_genus
+
+
 def test_pinned_header_and_agent_continuations_preserve_edge_identity(tmp_path: Path) -> None:
     edges, nodes = tmp_path / "edges.tsv", tmp_path / "nodes.tsv"
     edges.write_text(
@@ -243,12 +260,15 @@ def test_influence_exports_counts_backgrounds_missingness_and_summary(
     protocol = {
         "minimum_lineage_studies": 1,
         "top_lineages_per_rank": 1,
+        "include_trait_leading_genus": True,
         "predicted_genera": [],
         "scopes": [{"id": "pooled", "condition": "*", "body_site": "*"}],
     }
     result = run_influence(base, graph, reconcile(base, graph), protocol, tmp_path)
     assert result["run_scenarios"] == 2
     assert result["effect_rows"] == 81
+    selected = next(r for r in rows(tmp_path / "scenarios.tsv") if r["lineage"] == GENUS)
+    assert "trait_leader:" in selected["selection_reasons"]
     background = list(rows(tmp_path / "exclude_genus_NCBITaxon_10" / "ora_background_counts.tsv"))
     original = next(
         r for r in background if r["trait_key"] == OTHER and r["treatment"] == "fixed_baseline"

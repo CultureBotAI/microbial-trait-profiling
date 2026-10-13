@@ -1,17 +1,23 @@
 # Table 1 source contributions and lineage influence
 
-Historical contribution/shared-effect run. The [native extension](table1_native_influence.md)
-adds the previously missing native reruns without changing this source ledger or
-its measured shared effects. Native outputs and review limitations are recorded
-separately; the original missing-native statements below are retained as run history.
+This summary reports the extended 190-v2 contribution/shared-effect run and its
+[native extension](table1_native_influence.md). The source ledger and baseline effects
+are unchanged from 190-v1; the rule-declared exclusion panel and all scenario-dependent
+shared and native outputs were rerun.
 
-Reconciled 4,670 human paired profiles from 959 studies across all 317 non-MediaDive traits. Enumerated 1233 resolved genus/family lineages; 22 entered the predeclared panel with at least three supporting studies. See manifest.json for hashes, exact scopes and protocol.
+Reconciled 4,670 human paired profiles from 959 studies across all 317 non-MediaDive traits. Enumerated 1233 resolved genus/family lineages; 24 entered the rule-declared panel with at least three supporting studies. The per-trait leading-genus extension was [recorded on #190](https://github.com/CultureBotAI/microbial-trait-profiling/issues/190#issuecomment-5703892447) before this run. See manifest.json for hashes, exact scopes and protocol.
 
 The full contributing universe, concentration and all 15 cross-trait overlaps precede any display cutoff. Effects include all six raw annotation keys, both curated directions, shared fractions, all 15 log ratios and Noel's native zero-total convention. Each scenario preserves matched-pair changes and eligibility changes separately.
 
 These are provisional annotation influence diagnostics. Contrast orientation (#188) and source semantics (#189) remain unreviewed. Explicit reported ranks only resolve part of the pinned taxonomy; unresolved rank and source identity remain visible. Original source assertions cannot be counted from KG edge IDs alone. Higher-rank direct annotations are retained and flagged when their allocation to an excluded lineage is ambiguous.
 
-Native Jed transformed statistics and native ORA reruns remain for their owners; no substitute native q-values are supplied. Fixed and recomputed ORA backgrounds are distinct export contracts. Conditional intervals and separate BH6/BY15 families do not validate the full selection pipeline (#182). Loss of significance is not proof of explanation. These outputs feed #178 and the evidence limits in #179; they do not validate the Rosalind mechanisms, oxygen exposure, SCFA production, or causal ecological readouts.
+Native transformed statistics and native ORA reruns are published in the
+[compact review bundle](table1-native-results/README.md). Fixed and recomputed ORA
+backgrounds remain distinct analyses. Conditional intervals and separate native,
+BH6 and BY15 families do not validate the full selection pipeline (#182). Loss of
+significance is not proof of explanation. These outputs feed #178 and the evidence
+limits in #179; they do not validate the Rosalind mechanisms, oxygen exposure, SCFA
+production, or causal ecological readouts.
 
 Largest contributing resolved genus, with share of **all** propagated counts:
 
@@ -30,7 +36,7 @@ Largest contributing resolved genus, with share of **all** propagated counts:
 | METPO:1000623 | inc | Vibrio | 8.9% | 76.6% |
 | METPO:1000623 | dec | Vibrio | 7.4% | 74.9% |
 
-Measured run: implementation commit `8c78a5a`, protocol `190-v1`, pinned KG build
+Measured run: implementation commit `3d19615`, protocol `190-v2`, pinned KG build
 20260120. Input and implementation hashes match the completed local manifest.
 Regenerate the full backing tables using the recipe in
 [the methods](table1_taxon_influence.md); generated data remain under
@@ -40,7 +46,7 @@ The contribution ledger contains 73,758 reported/source/trait rows and 12,154
 supporting KG edge records; neither is a patient or organism count. Shared fractions
 retain 2,241 pairs from 939 studies. The native Noel convention starts from all
 2,335 pairs / 959 studies: 94 pairs have a zero full total in at least one arm.
-The complete output contains 2,484 scenario/scope/representation/feature rows.
+The complete output contains 2,700 scenario/scope/representation/feature rows.
 
 Pooled shared fraction mean contrasts below are **percentage points**, with
 conditional 95% Student t intervals across equally weighted study averages.
@@ -57,13 +63,13 @@ mean-effect interval excludes zero.
 | METPO:2000103\|pathways:arsenate_reduction | 0.0064 [0.0033, 0.0096] | 2241 / 939 |
 | METPO:1000623 | 0.0186 [0.0044, 0.0328] | 2241 / 939 |
 
-Largest absolute matched changes **within the declared 22-scenario panel** follow.
+Largest absolute matched changes **within the rule-declared 24-scenario panel** follow.
 This is a descriptive selection, not a calibrated ranking or an exhaustive lineage
-screen. The panel uses global denominator contribution counts plus the four named
-predictions; it does not necessarily contain each trait's leading genus (for example,
-Ruminococcus and Vibrio). The full universe is available for separately declared
-extensions. These conditional intervals do not account for selecting this display.
-All opposite, null and untestable results remain in the backing TSVs.
+screen. The panel uses global denominator contribution counts, the four named
+predictions and each trait's leading genus. The last rule added Ruminococcus for
+cellulose catabolism and Vibrio for moderate halophily. These conditional intervals do
+not account for selecting this display. All opposite, null and untestable results
+remain in the backing TSVs.
 
 | Trait key | Excluded lineage | Matched change [95% CI], pp | Remaining pairs / studies | Newly lost pairs |
 | --- | --- | --- | --- | --- |
@@ -74,6 +80,23 @@ All opposite, null and untestable results remain in the backing TSVs.
 | METPO:2000103\|pathways:arsenate_reduction | Escherichia | -0.0065 [-0.0092, -0.0037] | 2237 / 937 | 4 |
 | METPO:1000623 | Enterococcaceae | -0.0082 [-0.0121, -0.0043] | 2233 / 938 | 8 |
 
+The two newly added leading-genus scenarios produced small pooled matched changes in
+both the shared fraction and native fixed-baseline-SD representations; every listed
+conditional interval includes zero. The native q-value is the post-exclusion refitted
+native model's full-family q-value, not a test of the matched change.
+
+| Trait key | Excluded lineage | Shared matched change [95% CI], pp | Remaining pairs / studies; lost | Native fixed-SD matched change [95% CI] | Native after q |
+| --- | --- | --- | --- | --- | --- |
+| METPO:2000103\|GO:0030245 | Ruminococcus | 0.0002 [-0.0260, 0.0264] | 2233 / 938; 8 | 0.00526 [-0.01983, 0.03035] | 3.24e-7 |
+| METPO:1000623 | Vibrio | -0.0007 [-0.0022, 0.0008] | 2241 / 939; 0 | -0.00467 [-0.01058, 0.00124] | 1.38e-4 |
+
+Study-weighted native ORA matched-fold intervals also include zero under both
+backgrounds: Ruminococcus is 0.00193 [-0.27173, 0.27559] with the fixed baseline and
+-0.08143 [-0.35649, 0.19364] after recomputing the remaining background; Vibrio is
+-0.00437 [-0.01397, 0.00522] and 0.00436 [-0.00699, 0.01571], respectively. These
+diagnostics do not show a large matched change from either leading-genus removal, but
+they do not establish lineage independence or a causal mechanism.
+
 These tables illustrate why count concentration and fraction influence are distinct:
 Staphylococcus contributes the largest coccus annotation mass, while removing
 Streptococcaceae produces the largest matched coccus fraction change in this panel.
@@ -83,7 +106,7 @@ matched pairs after Enterobacteriaceae removal, with a further -0.0770 pp from
 eligibility changes. This does not establish that oxygen exposure or a biological
 mechanism caused the original associations.
 
-Native Jed transformed results and native ORA reruns remain missing pending owner
-integration. The run does not complete #188, #189, #182, or all acceptance criteria
-of #190. #178 must preserve these missing native results; #179 must preserve the
-annotation-level inference, anatomical/corpus restrictions and unresolved provenance.
+The run does not complete #188, #189, #182, #184 or native-owner review. #178 must
+preserve the distinction among shared, native composition and the two ORA backgrounds;
+#179 must preserve the annotation-level inference, anatomical/corpus restrictions and
+unresolved provenance.

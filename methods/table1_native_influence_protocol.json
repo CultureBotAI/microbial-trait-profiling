@@ -1,8 +1,8 @@
 {
-  "version": "190-native-v1",
+  "version": "190-native-v2",
   "composition_source_commit": "b931b3abb70f850d1c7318433557169286f6c64d",
   "ora_source_commit": "3ae7ac847d5d1ebc3bdd388bb2793d5e60bfdc81",
-  "corpus": "Reuse the reconciled 190-v1 human paired corpus and exact scopes; not a reproduction of differently filtered published outputs",
+  "corpus": "Reuse the reconciled 190-v2 human paired corpus, rule-declared exclusion panel and exact scopes; not a reproduction of differently filtered published outputs",
   "composition": {
     "minimum_profile_support": 6,
     "maximum_profile_support_fraction": 0.95,

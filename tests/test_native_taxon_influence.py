@@ -22,7 +22,7 @@ from mtp.native_taxon_influence import (
     transformed,
 )
 from mtp.taxon_contributions import write_table
-from mtp.taxon_influence import adjust, comparison
+from mtp.taxon_influence import TIE, adjust, comparison, directional_counts
 
 POLICY = {
     "minimum_profile_support": 1,
@@ -38,6 +38,56 @@ def test_parallel_native_probabilities_are_identical(tail: str) -> None:
     serial = hypergeom_probabilities(triples, 60, tail, workers=1)
     parallel = hypergeom_probabilities(triples, 60, tail, workers=4)
     assert np.array_equal(serial, parallel)
+
+
+@pytest.mark.parametrize("tail", ["enrichment", "depletion"])
+def test_parallel_native_probabilities_match_measured_run_triples(tail: str) -> None:
+    """Counts sampled across the pooled 190-v2 baseline, not fabricated triples."""
+    measured = np.asarray(
+        [
+            (67, 3850392, 1770),
+            (2, 3850392, 932),
+            (1513, 3850392, 54969),
+            (4303, 3939949, 59732),
+            (19, 102531, 27395),
+            (4, 25729, 10173),
+            (16, 3850392, 348),
+            (5, 177825, 195),
+            (21, 25729, 88583),
+            (1, 3850392, 40),
+            (46, 3850392, 2477),
+            (109, 3850392, 1821),
+            (11, 177825, 2932),
+            (5, 25729, 48306),
+            (1, 177825, 1000),
+            (36, 102531, 17744),
+            (9644, 3939949, 136208),
+            (8, 3850392, 70),
+            (1, 177825, 1647),
+            (14, 25729, 7282),
+            (1, 102531, 838),
+            (2, 3939949, 166),
+            (9, 171652, 3899),
+            (4, 3850392, 586),
+            (94, 25729, 428932),
+            (1, 25729, 25041),
+            (29, 102531, 14680),
+            (720, 3939949, 167392),
+            (7, 102531, 3197),
+            (5, 171652, 2806),
+            (1, 3850392, 191),
+            (1, 171652, 1099),
+        ],
+        dtype=np.int64,
+    )
+    triples = np.tile(measured, (160, 1))
+    serial = hypergeom_probabilities(triples, 106993585, tail, workers=1)
+    parallel = hypergeom_probabilities(triples, 106993585, tail, workers=4)
+    assert np.array_equal(serial, parallel)
+
+
+def test_native_and_shared_direction_counts_use_the_same_tie_tolerance() -> None:
+    assert directional_counts([-2 * TIE, -TIE / 2, 0.0, TIE / 2, 2 * TIE]) == (1, 1)
 
 
 def corpus() -> Base:
