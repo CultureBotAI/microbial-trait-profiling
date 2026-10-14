@@ -47,6 +47,7 @@ def test_mtp_modules_can_be_imported_directly() -> None:
         "contrast_orientation",
         "contribution_inputs",
         "corpus_identity",
+        "coupling",
         "datamodel",
         "deck_visualizations",
         "density_adjustment",

@@ -19,6 +19,10 @@ data/raw/*.csv
 data/studies/*.yaml
 data/derived/*
 !data/derived/.gitkeep
+# Cited summary tables opted in per path (CONTRIBUTING.md, "Generated outputs on main").
+!data/derived/trait_coupling_loto_matrix.tsv
+!data/derived/trait_coupling_lco_summary.tsv
+!data/derived/trait_coupling_report.txt
 data/benchmarks/*
 data/kg-microbe/*.tsv
 logs/

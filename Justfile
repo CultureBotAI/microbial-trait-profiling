@@ -277,6 +277,10 @@ trait-direction-screen *ARGS:
 audit-trait-density *ARGS:
 	just timed audit-trait-density "uv run python scripts/audit_trait_density_correlation.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\" $*"
 
+# Audit trait coupling sensitivity via LOTO, LCO, and three-arm evaluation (#260).
+audit-trait-coupling: study-trait-profiles
+	uv run python scripts/audit_trait_coupling.py
+
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
