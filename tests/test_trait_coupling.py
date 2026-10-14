@@ -231,3 +231,26 @@ def test_full_coupling_audit_on_production_data(tmp_path: Path) -> None:
     assert pytest.approx(rule.min_adjacent_distance, abs=1e-5) == 0.002040
     assert pytest.approx(rule.delta_effect, abs=1e-5) == 0.000237
     assert rule.passes_stability_criterion is True
+
+
+def test_cli_writes_where_the_committed_outputs_live() -> None:
+    """`just audit-trait-coupling` must refresh the committed files (#477)."""
+    import importlib.util
+
+    from mtp.coupling import DEFAULT_OUTPUT_DIR
+    from mtp.paths import DERIVED_DATA_DIR
+
+    script = Path(__file__).resolve().parents[1] / "scripts" / "audit_trait_coupling.py"
+    spec = importlib.util.spec_from_file_location("audit_trait_coupling", script)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module.parse_args([]).output_dir == DEFAULT_OUTPUT_DIR == DERIVED_DATA_DIR
+    for name in (
+        "trait_coupling_loto_matrix.tsv",
+        "trait_coupling_lco_summary.tsv",
+        "trait_coupling_report.txt",
+    ):
+        assert (DEFAULT_OUTPUT_DIR / name).is_file(), name

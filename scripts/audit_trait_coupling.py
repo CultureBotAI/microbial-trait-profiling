@@ -14,15 +14,11 @@ import argparse
 import sys
 from pathlib import Path
 
-from mtp.coupling import run_coupling_audit
-from mtp.density_adjustment import (
-    DEFAULT_COLUMNS_PATH,
-    DEFAULT_OUTPUT_DIR,
-    DEFAULT_PROFILES_PATH,
-)
+from mtp.coupling import DEFAULT_OUTPUT_DIR, run_coupling_audit
+from mtp.density_adjustment import DEFAULT_COLUMNS_PATH, DEFAULT_PROFILES_PATH
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Audit trait coupling sensitivity via LOTO, LCO, and multi-arm evaluation."
     )
@@ -44,7 +40,7 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_OUTPUT_DIR,
         help=f"Directory to write output TSVs and reports (default: {DEFAULT_OUTPUT_DIR})",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def main() -> int:
