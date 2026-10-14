@@ -306,9 +306,12 @@ def fraction_sign_records(
     columns: FeatureColumns,
     q_threshold: float | None,
     strict_q_threshold: float | None,
+    exclude_zero_totals: bool = True,
 ) -> list[Record]:
     """The six Table 1 traits' study-level directional consistency test."""
-    result = compute_direction_shifts(list(profiles))
+    if exclude_zero_totals:
+        profiles = drop_zero_total_pairs(profiles).profiles
+    result = compute_direction_shifts(list(profiles), exclude_zero_totals=exclude_zero_totals)
     studies = len({p.study_id for p in profiles})
     experiments = len({(p.study_id, p.experiment_id) for p in profiles})
     records = []

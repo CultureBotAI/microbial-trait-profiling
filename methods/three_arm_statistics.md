@@ -98,10 +98,12 @@ Unavailable effect intervals must be labeled as unavailable.
 For a given comparison row, every implementation must use the **same eligible
 experiment IDs and study weights**, not merely the same studies. An excluded
 experiment removes both directions. Record eligible/excluded pairs and studies,
-partially observed studies and ties. Current fraction code maps a zero-total
-profile to zero; the shared definition above requires exclusion of its complete
-pair instead. Historical fraction outputs therefore need an explicit eligibility
-audit and rerun, rather than relabeling them as this new baseline.
+partially observed studies and ties. Fraction analyses exclude complete
+experiment pairs whenever either side's retained total is zero via
+`drop_zero_total_pairs`, conforming to the shared comparison basis above and
+avoiding artificial ties (#228). Historical fraction analyses that mapped
+zero-total profiles to zero (such as scenario S0 in `mtp.log_ratio_sensitivity`)
+are retained for historical audit only and are distinct from this baseline.
 
 The fraction and ratio populations also need separate names. First retain the
 full fraction-eligible analysis. For each A/B comparison, additionally calculate
