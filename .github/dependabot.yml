@@ -12,7 +12,9 @@ updates:
       interval: "weekly"
     ignore:
       # Both are pinned to match a hook rev in .pre-commit-config.yaml, which
-      # Dependabot does not bump. Bump them by hand, together with the hook rev
-      # (tests/test_tool_pins.py checks they agree).
+      # the uv ecosystem does not bump. Bump them by hand, together with the
+      # hook rev (tests/test_tool_pins.py checks they agree). Deliberately, this
+      # also suppresses their Dependabot security PRs; pip-audit in CI still
+      # fails on a known vulnerability.
       - dependency-name: "uv"
       - dependency-name: "detect-secrets"

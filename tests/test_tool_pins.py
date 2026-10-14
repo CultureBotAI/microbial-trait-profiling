@@ -16,14 +16,25 @@ PINNED_HOOKS = {
 }
 
 
-def _pyproject_pins() -> dict[str, str]:
+def _normalize(name: str) -> str:
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def _pyproject_pins() -> dict[str, set[str]]:
     data = tomllib.loads((ROOT / "pyproject.toml").read_text())
-    pins: dict[str, str] = {}
-    for group in data.get("dependency-groups", {}).values():
+    groups = [
+        data.get("project", {}).get("dependencies", []),
+        *data.get("project", {}).get("optional-dependencies", {}).values(),
+        *data.get("dependency-groups", {}).values(),
+    ]
+    pins: dict[str, set[str]] = {}
+    for group in groups:
         for spec in group:
-            match = re.fullmatch(r"([A-Za-z0-9_.-]+)(?:\[[^\]]*\])?==([^\s;]+)", spec)
+            if not isinstance(spec, str):  # PEP 735 {include-group = ...}
+                continue
+            match = re.match(r"\s*([A-Za-z0-9_.-]+)\s*(?:\[[^\]]*\])?\s*==\s*([^\s;,]+)", spec)
             if match:
-                pins[match.group(1)] = match.group(2)
+                pins.setdefault(_normalize(match.group(1)), set()).add(match.group(2))
     return pins
 
 
@@ -34,9 +45,9 @@ def _hook_revs() -> dict[str, str]:
 
 @pytest.mark.parametrize("name", sorted(PINNED_HOOKS))
 def test_pyproject_pin_matches_hook_rev(name: str) -> None:
-    pin = _pyproject_pins().get(name)
-    assert pin is not None, f"{name} is no longer pinned with == in pyproject.toml"
+    pins = _pyproject_pins().get(name)
+    assert pins, f"{name} is no longer pinned with == in pyproject.toml"
     rev = _hook_revs()[PINNED_HOOKS[name]]
-    assert rev.removeprefix("v") == pin, (
-        f"{name}: pyproject.toml pins {pin} but .pre-commit-config.yaml uses rev {rev}"
+    assert pins == {rev.removeprefix("v")}, (
+        f"{name}: pyproject.toml pins {sorted(pins)} but .pre-commit-config.yaml uses rev {rev}"
     )
