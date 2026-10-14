@@ -59,6 +59,7 @@ def test_mtp_modules_can_be_imported_directly() -> None:
         "log_ratio_sensitivity",
         "native_influence_publication",
         "native_taxon_influence",
+        "ontology_audit",
         "ora_calibration",
         "ora_calibration.adapters",
         "ora_calibration.adapters.ilyas_ora",
