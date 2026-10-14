@@ -6,6 +6,7 @@ import csv
 import json
 from dataclasses import fields, replace
 from pathlib import Path
+from typing import TypedDict
 
 import pytest
 
@@ -59,8 +60,14 @@ from mtp.trait_guilds import (
     resolve_trait_columns,
 )
 
+
+class _Thresholds(TypedDict):
+    q_threshold: float
+    strict_q_threshold: float
+
+
 #: Both decision thresholds every record builder now takes (#294).
-THRESHOLDS = {"q_threshold": 0.05, "strict_q_threshold": 0.001}
+THRESHOLDS: _Thresholds = {"q_threshold": 0.05, "strict_q_threshold": 0.001}
 
 TRAITS = tuple(TABLE1_TRAITS)
 #: A per-assessment status as `read_status` now returns it. #182 has a verdict
@@ -850,11 +857,16 @@ def test_a_zero_total_pair_is_excluded_rather_than_counted_as_a_tie() -> None:
     assert exclusion.studies_after == len({p.study_id for p in scored})
     assert all(p.study_id != "bsdb:blank" for p in exclusion.profiles)
 
-    # Kept as a tie, the blank study would inflate the tie count; excluded, the
-    # tallies match the corpus that has a defined share.
-    with_blank = fraction_sign_records(scored + blank, source="x", columns={}, **THRESHOLDS)
+    # Kept as a tie under historical scoring, the blank study would inflate the tie count;
+    # excluded under the shared comparison basis, the tallies match the corpus that has
+    # a defined share (#294, #228).
+    with_historical = fraction_sign_records(
+        scored + blank, source="x", columns={}, exclude_zero_totals=False, **THRESHOLDS
+    )
     without = fraction_sign_records(exclusion.profiles, source="x", columns={}, **THRESHOLDS)
-    assert {r.trait: r.ties for r in with_blank} != {r.trait: r.ties for r in without}
+    assert {r.trait: r.ties for r in with_historical} != {r.trait: r.ties for r in without}
+    with_blank = fraction_sign_records(scored + blank, source="x", columns={}, **THRESHOLDS)
+    assert {r.trait: r.ties for r in with_blank} == {r.trait: r.ties for r in without}
 
 
 def test_each_row_is_decided_at_both_thresholds_with_their_sources() -> None:
