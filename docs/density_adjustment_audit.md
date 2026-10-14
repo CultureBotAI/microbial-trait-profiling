@@ -186,9 +186,9 @@ $$s = \arg\max_{m \in \mathcal{C}_k} \sum_{i=1}^N \mathbf{X}_{im}$$
 
 #### Rule 2: Collapsed Count Semantics
 We evaluated two distinct count collapse semantics:
-1. **Deduplicated Max Count (Upper-Bound Union, Recommended):**
+1. **Max Member Count (Lower Bound on the Union, Recommended):**
    $$C_{ik} = \max_{m \in \mathcal{C}_k} \mathbf{X}_{im}$$
-   *Interpretation:* Represents the deduplicated upper bound of taxa annotated with any trait in cluster $\mathcal{C}_k$ within profile $i$. Because parent-child terms or synonyms are often co-annotated on the exact same taxa, summing counts ($\sum_m \mathbf{X}_{im}$) causes severe double-counting and artificial variance inflation. Taking the maximum bounds the true set union without assuming disjoint sets.
+   *Interpretation:* The count of the best-annotated member. The number of taxa annotated with any trait in $\mathcal{C}_k$ is at least this (the union contains its largest member) and at most $\sum_m \mathbf{X}_{im}$; the max equals the union only when members' taxa are nested. Summing double-counts taxa co-annotated with several members, so the max is the conservative choice.
 2. **Native Surviving Representative Count:**
    $$C_{ik} = \mathbf{X}_{is}$$
    *Interpretation:* Directly takes the raw count of the surviving highest-evidence feature $s$, ignoring the subordinate features.

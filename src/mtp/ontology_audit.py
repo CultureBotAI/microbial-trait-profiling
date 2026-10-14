@@ -233,6 +233,11 @@ def build_redundant_pairs_table(
     if clusters is None:
         clusters = CANONICAL_REDUNDANCY_CLUSTERS
 
+    if not columns_path.exists():
+        # Same .gz fallback as load_non_media_profile_matrix, which accepted this path.
+        gz_candidate = columns_path.with_name(f"{columns_path.name}.gz")
+        if gz_candidate.exists():
+            columns_path = gz_candidate
     cols_df = pd.read_csv(columns_path, sep="\t")
     col_label_map = dict(zip(cols_df["column_id"], cols_df["column_label"], strict=False))
 
@@ -302,7 +307,7 @@ def collapse_trait_matrix(
         non_media_cols: Ordered list of non-MediaDive trait column identifiers.
         clusters: List of RedundancyCluster definitions.
         count_semantics:
-            - 'max': Deduplicated union count across all cluster members (C_i = max_{m} C_im).
+            - 'max': Largest member count (C_i = max_{m} C_im), a lower bound on the union.
               Ensures taxa annotated under either term are captured without double counting.
             - 'native': Pure representative count (C_i = C_{i, survivor}).
 

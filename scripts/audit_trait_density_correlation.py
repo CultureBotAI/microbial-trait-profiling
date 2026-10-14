@@ -97,7 +97,7 @@ def write_consolidated_report(
         f"Pairs exceeding +0.9: {raw.pct_pairs_gt_09:.1f}%",
         f"PC1 variance explained: {raw.pc1_variance_pct:.2f}% | "
         f"PC1-PC5 variance explained: {raw.pc1_5_variance_pct:.2f}%",
-        f"Effective number of independent tests: "
+        "Effective number of independent tests: "
         f"Li & Ji (2005) = {raw.m_eff_li_ji:.1f}, "
         f"Galwey (2009) = {raw.m_eff_galwey:.1f}, "
         f"Cheverud/Nyholt = {raw.m_eff_nyholt:.1f}",
@@ -168,24 +168,30 @@ def write_consolidated_report(
             "     total annotation evidence / profile counts survives (e.g. coccus over sphere;",
             "     motile over flagellated/gliding/axially filamented).",
             "  2. Count Semantics:",
-            "     - Deduplicated Max Count (Upper-bound union): C_i = max_{m} C_im per profile.",
+            "     - Max Member Count (lower bound on the union): C_i = max_{m} C_im per profile.",
             "       Avoids artificial inflation from double-counting co-annotated taxa.",
             "     - Native Surviving Representative Count: C_i = C_{i, survivor}.",
             "",
             "Dimensionality Comparison (Raw vs Collapsed vs PC1 Adjusted):",
-            f"  - Raw Uncollapsed (P=317):       PC1 var = {raw.pc1_variance_pct:.2f}% | "
+            f"  - Raw Uncollapsed (P={raw.n_traits}):       "
+            f"PC1 var = {raw.pc1_variance_pct:.2f}% | "
             f"Med r = {raw.median_pairwise_r:+.4f} | M_eff (Galwey) = {raw.m_eff_galwey:.1f}",
-            f"  - Collapsed Native (P=301):      PC1 var = {nat_m.pc1_variance_pct:.2f}% | "
+            f"  - Collapsed Native (P={bounded_space}):      "
+            f"PC1 var = {nat_m.pc1_variance_pct:.2f}% | "
             f"Med r = {nat_m.median_pairwise_r:+.4f} | M_eff (Galwey) = {nat_m.m_eff_galwey:.1f}",
-            f"  - Collapsed Deduplicated (P=301): PC1 var = {max_m.pc1_variance_pct:.2f}% | "
+            f"  - Collapsed Deduplicated (P={bounded_space}): "
+            f"PC1 var = {max_m.pc1_variance_pct:.2f}% | "
             f"Med r = {max_m.median_pairwise_r:+.4f} | M_eff (Galwey) = {max_m.m_eff_galwey:.1f}",
-            f"  - Collapsed + PC1 Adj (P=301):   PC1 var = {adj_col_m.pc1_variance_pct:.2f}% | "
+            f"  - Collapsed + PC1 Adj (P={bounded_space}):   "
+            f"PC1 var = {adj_col_m.pc1_variance_pct:.2f}% | "
             f"Med r = {adj_col_m.median_pairwise_r:+.4f} | "
             f"M_eff (Galwey) = {adj_col_m.m_eff_galwey:.1f}",
             "",
             "Critical Finding on Redundancy vs Density:",
-            "  Branch collapsing bounds distinct trait space to 301 features, but DOES NOT",
-            "  attenuate the dominant positive correlation axis (PC1 still explains 61.35%).",
+            f"  Branch collapsing bounds distinct trait space to {bounded_space} features, "
+            "but DOES NOT",
+            "  attenuate the dominant positive correlation axis (PC1 still explains "
+            f"{max_m.pc1_variance_pct:.2f}%).",
             "  The correlation structure is driven by curation density effort across profiles,",
             "  not ontology redundancy. Density adjustment remains strictly necessary.",
             "",
@@ -204,9 +210,11 @@ def write_consolidated_report(
             "4. Coccus and sphere exhibit severe collinearity (VIF ~ 5.88); "
             "conditional testing confirms",
             "   unstable coefficients when included simultaneously.",
-            "5. Ontology redundancy accounts for 24 redundant pairs (16 features collapsed "
-            "into 10 clusters),",
-            "   bounding distinct trait space to 301 features. Collapsing alone does not "
+            f"5. Ontology redundancy accounts for {n_pairs} "
+            f"redundant pairs ({n_collapsed} features "
+            f"collapsed into {n_clusters} clusters),",
+            f"   bounding distinct trait space to {bounded_space} features. "
+            "Collapsing alone does not "
             "collapse PC1;",
             "   both ontology collapsing and density adjustment are necessary and complementary.",
             "=" * 80,
