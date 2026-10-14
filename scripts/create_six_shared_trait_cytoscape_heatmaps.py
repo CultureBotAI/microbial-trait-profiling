@@ -1563,8 +1563,8 @@ def write_pattern_heatmap(
     subtitle = (
         "Approach 2: rows are condition/body-site pairs and columns are the six "
         "traits. Cell color is Fisher evidence, -log10(p), so darker cells have "
-        "smaller p-values. Cells are shown for exploratory review only when Fisher "
-        f"p<{P_VALUE_CUTOFF:g}, n>=3, and s>=2; BH q-values are written to the TSV."
+        "smaller p-values. Cells are shown for exploratory review only when nominal Fisher "
+        f"p < {P_VALUE_CUTOFF:g}, n>=3, and s>=2; BH q-values are written to the TSV."
     )
     plot_matrix_heatmap(
         matrix,
@@ -1616,8 +1616,9 @@ def write_contrast_heatmap(
     subtitle = (
         "Color and numbers show increased minus decreased positive-z fractions. "
         "Red favors increased profiles; blue favors decreased profiles. "
-        f"A dark border marks BH q<={Q_VALUE_CUTOFF:g} ({bh_selected_cell_count} cells); "
-        f"{nominal_p_value_cell_count} cells met nominal Fisher p<{P_VALUE_CUTOFF:g}. "
+        f"A dark border marks BH-adjusted q <= {Q_VALUE_CUTOFF:g} "
+        f"({bh_selected_cell_count} cells); "
+        f"{nominal_p_value_cell_count} cells met nominal Fisher p < {P_VALUE_CUTOFF:g}. "
         f"Shown cells require |effect|>{SIGNED_EFFECT_ABS_CUTOFF:g}, >=3 positive-z profiles "
         "in either direction, and >=2 total studies. Gray = unavailable, insufficient support, "
         "or below the effect cutoff. "
@@ -1679,9 +1680,9 @@ def write_contrast_heatmap(
         f"{UNDEFINED_SPEARMAN_DISTANCE:g}; exact-distance tie excess is "
         f"{clustering.linkage_distance_tie_fraction:.1%}. No dendrogram cut or branch label is "
         f"interpreted. {condition_label_source} "
-        f"Gray cells remain missing; dark borders mark BH q<={Q_VALUE_CUTOFF:g} "
+        f"Gray cells remain missing; dark borders mark BH-adjusted q <= {Q_VALUE_CUTOFF:g} "
         f"({bh_selected_cell_count} cells), versus {nominal_p_value_cell_count} cells at "
-        f"nominal Fisher p<{P_VALUE_CUTOFF:g}."
+        f"nominal Fisher p < {P_VALUE_CUTOFF:g}."
     )
     plot_clustered_contrast_heatmap(
         clustering,
@@ -2247,6 +2248,37 @@ def select_oral_contrast_cells(cells: pd.DataFrame) -> pd.DataFrame:
     for flag in ("displayed_in_heatmap", "selected_after_bh"):
         if not pd.api.types.is_bool_dtype(selected[flag]) or selected[flag].isna().any():
             raise ValueError(f"Expected complete Boolean flags: {flag}")
+    if "nominal_p_value_selected" not in selected.columns:
+        if "significant_in_heatmap" in selected.columns:
+            selected["nominal_p_value_selected"] = selected["significant_in_heatmap"].astype(bool)
+        elif (
+            "passes_nominal_p_value_cutoff" in selected.columns
+            and "passes_support" in selected.columns
+        ):
+            selected["nominal_p_value_selected"] = selected["passes_support"].astype(
+                bool
+            ) & selected["passes_nominal_p_value_cutoff"].astype(bool)
+        elif "passes_p_value_cutoff" in selected.columns and "passes_support" in selected.columns:
+            selected["nominal_p_value_selected"] = selected["passes_support"].astype(
+                bool
+            ) & selected["passes_p_value_cutoff"].astype(bool)
+        else:
+            support = (
+                selected["passes_support"].astype(bool)
+                if "passes_support" in selected.columns
+                else pd.Series(True, index=selected.index)
+            )
+            selected["nominal_p_value_selected"] = support & (
+                selected["fisher_p_value"] < P_VALUE_CUTOFF
+            )
+    else:
+        selected["nominal_p_value_selected"] = selected["nominal_p_value_selected"].astype(bool)
+
+    if "significant_in_heatmap" not in selected.columns:
+        selected["significant_in_heatmap"] = selected["nominal_p_value_selected"]
+    else:
+        selected["significant_in_heatmap"] = selected["significant_in_heatmap"].astype(bool)
+
     selected["oral_site"] = selected["body_site_group"].isin(ORAL_BODY_SITE_GROUPS)
     selected["oral_disease"] = selected["condition"].map(
         lambda label: any(
@@ -2321,12 +2353,14 @@ def write_oral_trait_heatmaps(
         for row in rows.itertuples(index=False)
     }
     significant_count = int(borders.to_numpy().sum())
+    nominal_count = int(cells["nominal_p_value_selected"].sum())
     family_size = int((source["view_key"] == "individual_conditions_direction_contrast").sum())
     subtitle = (
         "Oral sampling site OR oral disease. Red: increased; blue: decreased positive-z "
         "profile fraction. Numbers are increased minus decreased fractions; "
         "max n = largest per-trait study count in each row. "
-        f"Dark border: source BH q <= {Q_VALUE_CUTOFF:g} ({significant_count} oral cells); "
+        f"Dark border: BH-adjusted q <= {Q_VALUE_CUTOFF:g} ({significant_count} oral cells); "
+        f"{nominal_count} oral cells met nominal Fisher p < {P_VALUE_CUTOFF:g}; "
         f"original {family_size}-cell family retained. Gray: unavailable or below source support "
         "(>=3 positive-z profiles in either direction and >=2 studies), not nonsignificant. "
         "Source tests are profile-level diagnostics."
@@ -2382,6 +2416,9 @@ def write_oral_trait_heatmaps(
         "selected_cells": len(cells),
         "displayed_cells": int(cells["displayed_in_heatmap"].sum()),
         "bh_significant_displayed_cells": significant_count,
+        "bh_selected_cell_count": int(cells["selected_after_bh"].sum()),
+        "nominal_p_value_cell_count": nominal_count,
+        "significant_cell_count": nominal_count,
         "oral_site_only_rows": int((rows["oral_site"] & ~rows["oral_disease"]).sum()),
         "oral_disease_only_rows": int((~rows["oral_site"] & rows["oral_disease"]).sum()),
         "both_rows": int((rows["oral_site"] & rows["oral_disease"]).sum()),

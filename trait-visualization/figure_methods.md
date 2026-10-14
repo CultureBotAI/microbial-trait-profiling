@@ -1595,6 +1595,44 @@ The Fisher contingency tables count profiles rather than independent studies;
 BH-bordered cells are profile-level diagnostics and do not establish
 study-level replication.
 
+### Focused Oral Six-Trait Contrast Heatmap
+
+The focused oral analysis in `trait-profile-investigation/six-shared-traits/oral/`
+presents an auditable subset of the individual-condition signed direction contrasts
+from artifact commit `fb7afae18d37881ae071c256cbc93c8adb5cb8b8`. Rows are included
+if sampled at `Oral cavity / dental` or labeled with an explicitly oral diagnosis
+(e.g., periodontitis, dental caries, gingivitis, root caries).
+
+#### Correction Family and Significance Terminology
+
+To prevent selection distortion and maintain full provenance integrity, oral filtering
+retains the original 2,379-cell individual-view BH family. It does not recompute FDR
+or relax significance criteria on the oral subset:
+
+- **BH-adjusted q ≤ 0.05**: Significance borders strictly mark BH-adjusted
+  `q <= 0.05` (`selected_after_bh`). Across the 79 supported oral cells, exactly **0**
+  meet this threshold. All four BH-significant cells in the individual-condition
+  dataset are fecal.
+- **Nominal Fisher p < 0.01**: Uncorrected significance is explicitly labeled
+  `nominal Fisher p < 0.01` (`nominal_p_value_selected`), distinguishing exploratory
+  raw-p screening from multiplicity-corrected discoveries. Exactly **1** oral cell
+  passes nominal screening: `Squamous cell carcinoma | Oral cavity / dental` × `coccus shaped`
+  (effect −0.6, p = 0.002815, q = 0.291120). Its nominal flag is true, but it
+  correctly lacks a dark BH border because q > 0.05. This row is distinct from the
+  separate `Oral squamous cell carcinoma` row.
+- **Distinction from Approach 2 display filtering**: In Approach 2 trait-pattern
+  heatmaps, nominal Fisher `p < 0.01`, `n >= 3`, and `s >= 2` act as exploratory
+  display filters determining which cells are colored. In contrast, in Approach 4
+  signed-contrast figures, all supported cells above the absolute effect cutoff are
+  colored and dark borders represent BH-adjusted `q <= 0.05`.
+- **Distinction from pooled trait selection**: The six traits were selected by
+  pooled across-disease association, which does not imply individual-condition or
+  oral subset significance.
+- **Compatibility aliases**: Downstream exports and manifests provide
+  `nominal_p_value_selected` and `nominal_p_value_cell_count` as primary fields, while
+  retaining `significant_in_heatmap` and `significant_cell_count` as deprecated
+  backward-compatibility aliases.
+
 ### Inferred Guild Evidence Outputs
 
 Both v2 folders write inferred-evidence TSVs that connect enriched traits back

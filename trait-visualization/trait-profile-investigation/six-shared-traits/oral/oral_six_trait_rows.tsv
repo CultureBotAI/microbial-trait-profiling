@@ -1,7 +1,7 @@
 condition_body_site_pair	condition	body_site_group	max_trait_study_count	oral_site	oral_disease	inclusion_reason	supported_traits	in_main_figure
 Aggressive periodontitis | Oral cavity / dental	Aggressive periodontitis	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
 Chronic periodontitis | Oral cavity / dental	Chronic periodontitis	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
-Dental caries | Oral cavity / dental	Dental caries	Oral cavity / dental	2	True	True	oral site and oral disease	2	True
+Dental caries | Oral cavity / dental	Dental caries	Oral cavity / dental	2	True	True	oral site and oral disease	1	True
 Dental fluorosis | Oral cavity / dental	Dental fluorosis	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
 Gingivitis | Oral cavity / dental	Gingivitis	Oral cavity / dental	2	True	True	oral site and oral disease	3	True
 Halitosis | Oral cavity / dental	Halitosis	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
@@ -23,7 +23,7 @@ Arthritis | Oral cavity / dental	Arthritis	Oral cavity / dental	4	True	False	ora
 Atopic asthma | Oral cavity / dental	Atopic asthma	Oral cavity / dental	1	True	False	oral site	0	False
 Behcet's syndrome | Oral cavity / dental	Behcet's syndrome	Oral cavity / dental	1	True	False	oral site	0	False
 CD4-positive T-lymphocyte count | Oral cavity / dental	CD4-positive T-lymphocyte count	Oral cavity / dental	1	True	False	oral site	0	False
-COVID-19 | Oral cavity / dental	COVID-19	Oral cavity / dental	2	True	False	oral site	3	True
+COVID-19 | Oral cavity / dental	COVID-19	Oral cavity / dental	2	True	False	oral site	2	True
 Carotid artery intima media thickness | Oral cavity / dental	Carotid artery intima media thickness	Oral cavity / dental	1	True	False	oral site	0	False
 Chronic hepatitis B virus infection | Oral cavity / dental	Chronic hepatitis B virus infection	Oral cavity / dental	2	True	False	oral site	4	True
 Chronic kidney disease | Oral cavity / dental	Chronic kidney disease	Oral cavity / dental	1	True	False	oral site	0	False
@@ -31,17 +31,17 @@ Chronic otitis media | Oral cavity / dental	Chronic otitis media	Oral cavity / d
 Coinfection,Age | Oral cavity / dental	Coinfection,Age	Oral cavity / dental	1	True	False	oral site	0	False
 Colorectal cancer | Oral cavity / dental	Colorectal cancer	Oral cavity / dental	4	True	False	oral site	6	True
 Down syndrome | Oral cavity / dental	Down syndrome	Oral cavity / dental	1	True	False	oral site	0	False
-Esophageal cancer | Oral cavity / dental	Esophageal cancer	Oral cavity / dental	2	True	False	oral site	4	True
+Esophageal cancer | Oral cavity / dental	Esophageal cancer	Oral cavity / dental	2	True	False	oral site	3	True
 Esophageal squamous cell carcinoma | Oral cavity / dental	Esophageal squamous cell carcinoma	Oral cavity / dental	3	True	False	oral site	4	True
 Ethnic group | Oral cavity / dental	Ethnic group	Oral cavity / dental	1	True	False	oral site	0	False
 Gastric cancer | Oral cavity / dental	Gastric cancer	Oral cavity / dental	2	True	False	oral site	2	True
-Glaucoma | Oral cavity / dental	Glaucoma	Oral cavity / dental	3	True	False	oral site	6	True
+Glaucoma | Oral cavity / dental	Glaucoma	Oral cavity / dental	3	True	False	oral site	4	True
 HIV infection | Oral cavity / dental	HIV infection	Oral cavity / dental	1	True	False	oral site	0	False
 Head and neck carcinoma | Oral cavity / dental	Head and neck carcinoma	Oral cavity / dental	2	True	False	oral site	1	True
 Head and neck squamous cell carcinoma | Oral cavity / dental	Head and neck squamous cell carcinoma	Oral cavity / dental	2	True	False	oral site	3	True
 Health study participation | Oral cavity / dental	Health study participation	Oral cavity / dental	1	True	False	oral site	0	False
 Health trait | Oral cavity / dental	Health trait	Oral cavity / dental	1	True	False	oral site	0	False
-Human papilloma virus infection | Oral cavity / dental	Human papilloma virus infection	Oral cavity / dental	3	True	False	oral site	4	True
+Human papilloma virus infection | Oral cavity / dental	Human papilloma virus infection	Oral cavity / dental	3	True	False	oral site	2	True
 Human papillomavirus | Oral cavity / dental	Human papillomavirus	Oral cavity / dental	1	True	False	oral site	0	False
 Hypertrophy | Oral cavity / dental	Hypertrophy	Oral cavity / dental	1	True	False	oral site	0	False
 Hypothyroidism | Oral cavity / dental	Hypothyroidism	Oral cavity / dental	1	True	False	oral site	0	False
@@ -67,7 +67,7 @@ Premature birth | Oral cavity / dental	Premature birth	Oral cavity / dental	1	Tr
 Primary bacterial infectious disease | Oral cavity / dental	Primary bacterial infectious disease	Oral cavity / dental	1	True	False	oral site	0	False
 Psoriasis | Oral cavity / dental	Psoriasis	Oral cavity / dental	1	True	False	oral site	0	False
 Response to allogeneic hematopoietic stem cell transplant | Oral cavity / dental	Response to allogeneic hematopoietic stem cell transplant	Oral cavity / dental	2	True	False	oral site	0	False
-Rheumatoid arthritis | Oral cavity / dental	Rheumatoid arthritis	Oral cavity / dental	7	True	False	oral site	5	True
+Rheumatoid arthritis | Oral cavity / dental	Rheumatoid arthritis	Oral cavity / dental	7	True	False	oral site	4	True
 SARS coronavirus | Oral cavity / dental	SARS coronavirus	Oral cavity / dental	1	True	False	oral site	0	False
 Sensory perception of bitter taste | Oral cavity / dental	Sensory perception of bitter taste	Oral cavity / dental	1	True	False	oral site	0	False
 Sjogren syndrome | Oral cavity / dental	Sjogren syndrome	Oral cavity / dental	1	True	False	oral site	0	False
@@ -78,4 +78,4 @@ Smoking status measurement | Oral cavity / dental	Smoking status measurement	Ora
 Squamous cell carcinoma | Oral cavity / dental	Squamous cell carcinoma	Oral cavity / dental	5	True	False	oral site	5	True
 Systemic lupus erythematosus | Oral cavity / dental	Systemic lupus erythematosus	Oral cavity / dental	1	True	False	oral site	0	False
 Treatment | Oral cavity / dental	Treatment	Oral cavity / dental	1	True	False	oral site	0	False
-Type II diabetes mellitus | Oral cavity / dental	Type II diabetes mellitus	Oral cavity / dental	3	True	False	oral site	1	True
+Type II diabetes mellitus | Oral cavity / dental	Type II diabetes mellitus	Oral cavity / dental	3	True	False	oral site	0	False

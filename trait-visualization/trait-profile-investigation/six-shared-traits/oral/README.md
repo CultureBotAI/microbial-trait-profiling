@@ -44,11 +44,24 @@ are not resolved by this focused display. The separate methods review in
 [issue #256](https://github.com/CultureBotAI/microbial-trait-profiling/issues/256)
 remains applicable.
 
-Dark borders indicate source BH q <= 0.05. **None of the 79 supported oral cells
-meet that threshold.** The correction across the original 2,379 individual-view
-cells is retained; filtering does not refit the tests or recompute BH. The six
-traits were selected by a separate pooled analysis; their pooled significance
-does not imply significance within these oral rows.
+Dark borders indicate BH-adjusted q ≤ 0.05 (0 BH-selected cells across 79
+supported oral cells). **None of the 79 supported oral cells meet that
+threshold.** The correction across the original 2,379 individual-view cells is
+retained; filtering does not refit the tests or recompute BH. All four
+BH-selected cells in the full individual-condition view are fecal.
+
+| Cohort | Supported cells | Nominal Fisher p < 0.01 | BH-adjusted q ≤ 0.05 |
+| --- | ---: | ---: | ---: |
+| All body sites (full individual view) | 597 | 21 | 4 |
+| Oral cavity / dental | 79 | 1 | 0 |
+
+The single oral cell meeting nominal Fisher p < 0.01 is `Squamous cell carcinoma | Oral cavity / dental` × `coccus shaped` (METPO:1000668; effect −0.6, p = 0.002815, q = 0.291120). Its nominal flag `nominal_p_value_selected` is true, but it correctly has no dark BH border because q > 0.05. This source diagnosis is distinct from the separate `Oral squamous cell carcinoma` row (which has no supported cells in this snapshot).
+
+### Terminology and analysis distinctions
+
+- **Signed contrast significance borders (Approach 4)**: A dark border strictly marks BH-adjusted q ≤ 0.05 (`selected_after_bh`) evaluated over the full 2,379-cell family. Nominal Fisher p < 0.01 is audit-only and does not trigger a border.
+- **Trait-pattern display filtering (Approach 2)**: In trait-pattern figures, nominal Fisher p < 0.01, n ≥ 3, and s ≥ 2 are exploratory display filters for coloring cells. This display filtering rule must not be conflated with the signed-contrast BH border rule.
+- **Pooled trait selection**: The six traits were prioritized by a separate pooled across-disease association analysis; their pooled significance does not imply significance within these individual condition rows or the oral subset.
 
 Source support requires at least three positive-z profiles in either direction
 and at least two studies. Gray cells represent missing source records or cells
@@ -60,9 +73,13 @@ traits. The row audit names it `max_trait_study_count`. Study counts must not be
 across overlapping condition rows.
 
 [Cell audit](oral_six_trait_cells.tsv) preserves source counts, p/q values, flags,
-inclusion reasons, and figure membership. The legacy `significant_in_heatmap`
-column refers to source raw-p screening; borders use `selected_after_bh` instead.
+inclusion reasons, and figure membership. `nominal_p_value_selected` explicitly
+records nominal Fisher p < 0.01; `significant_in_heatmap` is retained as a
+deprecated compatibility alias. Borders use `selected_after_bh`.
 [Row audit](oral_six_trait_rows.tsv) records support and main-figure membership.
+[Provenance JSON](oral_six_trait_provenance.json) tracks `nominal_p_value_cell_count`
+alongside deprecated `significant_cell_count`, and `bh_selected_cell_count`
+alongside `bh_significant_displayed_cells`.
 
 ## Regenerate
 
