@@ -599,6 +599,20 @@ def export_native(base: Base, audit: Record, protocol: Record, output: Path) -> 
             print(f"  Scope {scope}: {len(keys)} profiles", flush=True)
             before, bpairs, bscales = baseline_composition[scope]
             after, apairs, ascales = transformed(base, remaining, keys, protocol["composition"])
+            before_totals = {key: sum(base.profiles[key].values()) for key in keys}
+            after_totals = {key: sum(remaining[key].values()) for key in keys}
+            valid_before = {
+                key[:2]
+                for key in keys
+                if key[2] == "inc"
+                and before_totals[key] > 0
+                and before_totals[(*key[:2], "dec")] > 0
+            }
+            valid_after = {
+                key[:2]
+                for key in keys
+                if key[2] == "inc" and after_totals[key] > 0 and after_totals[(*key[:2], "dec")] > 0
+            }
             native_stats.extend(dict(scenario=name, scope=scope, **r) for r in after.values())
             for trait in base.traits.values():
                 native = {
@@ -619,6 +633,11 @@ def export_native(base: Base, audit: Record, protocol: Record, output: Path) -> 
                     ("refitted", apairs[trait]),
                     ("fixed_baseline_sd", anchored),
                 ):
+                    before_input = (
+                        bpairs[trait] if reference == "refitted" or bscales[trait] else {}
+                    )
+                    before_cmp = {p: v for p, v in before_input.items() if p in valid_before}
+                    after_cmp = {p: v for p, v in values.items() if p in valid_after}
                     native_comparisons.append(
                         dict(
                             scenario=name,
@@ -626,10 +645,7 @@ def export_native(base: Base, audit: Record, protocol: Record, output: Path) -> 
                             trait_key=trait,
                             reference=reference,
                             **{f"native_{k}": v for k, v in native.items()},
-                            **comparison(
-                                bpairs[trait] if reference == "refitted" or bscales[trait] else {},
-                                values,
-                            ),
+                            **comparison(before_cmp, after_cmp),
                         )
                     )
             for treatment in protocol["ora"]["backgrounds"]:

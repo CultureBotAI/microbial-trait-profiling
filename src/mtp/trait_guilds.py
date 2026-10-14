@@ -94,7 +94,12 @@ class Profile:
     total: int
 
     def fraction(self, guild: str) -> float:
-        """Return this guild's share of the profile's total trait signal."""
+        """Return this guild's share of the profile's total trait signal.
+
+        For paired contrasts across experiments, callers must filter zero-total
+        pairs via ``drop_zero_total_pairs`` to satisfy the shared comparison
+        basis of methods/three_arm_statistics.md (#228).
+        """
         if self.total <= 0:
             return 0.0
         return self.guild_counts.get(guild, 0) / self.total

@@ -369,6 +369,30 @@ def test_float_residue_contrasts_are_ties_not_signs() -> None:
     assert shift.status == "all_tied"
 
 
+def test_zero_total_pairs_are_excluded_by_default_from_direction_shifts() -> None:
+    """A pair with total=0 on a side has an undefined share and must be excluded (#228)."""
+    profiles = [
+        _paired_profile("bsdb:1", "bsdb:1-1", "inc", 8, total=10),
+        _paired_profile("bsdb:1", "bsdb:1-1", "dec", 2, total=10),
+        _paired_profile("bsdb:2", "bsdb:2-1", "inc", 0, total=0),
+        _paired_profile("bsdb:2", "bsdb:2-1", "dec", 5, total=10),
+    ]
+    # Default exclude_zero_totals=True: bsdb:2 is excluded, bsdb:1 is scored as up.
+    result = compute_direction_shifts(profiles, ("facultatively_aerobic",))
+    assert result.studies == 1
+    (shift,) = result.shifts
+    assert (shift.studies_up, shift.studies_down, shift.studies_tied) == (1, 0, 0)
+
+    # Historical exclude_zero_totals=False: bsdb:2 is included with fraction 0.0 on inc,
+    # resulting in inc (0.0) - dec (0.5) = -0.5 (down).
+    hist_result = compute_direction_shifts(
+        profiles, ("facultatively_aerobic",), exclude_zero_totals=False
+    )
+    assert hist_result.studies == 2
+    (hist_shift,) = hist_result.shifts
+    assert (hist_shift.studies_up, hist_shift.studies_down, hist_shift.studies_tied) == (1, 1, 0)
+
+
 def test_undrawn_panel_conditions_separate_all_three_causes() -> None:
     missing = missing_conditions(
         ("Gingivitis", "Periodontitis", "Rheumatoid arthritis", "Never studied"),

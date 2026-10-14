@@ -52,6 +52,9 @@ second version; every amendment, what prompted it and what was already known whe
 was made are recorded in its `amendments` array rather than edited in quietly.
 `just calibration-flip-assignments` writes only the shared flip-assignment table the
 other two arms would need to be measured on the same null (#263).
+[`calibration_screen.md`](calibration_screen.md) documents
+`just calibration-screen`: the 317-trait directional screen run under that same
+study-flip null, counting the traits each correction calls when nothing is there.
 
 [`table1_log_ratio_validation.md`](table1_log_ratio_validation.md) records the
 pinned-corpus rerun of all 15 ratios alongside the original six fraction

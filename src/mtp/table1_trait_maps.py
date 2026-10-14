@@ -33,6 +33,7 @@ from typing import TYPE_CHECKING
 
 from scipy.stats import binomtest, false_discovery_control, spearmanr
 
+from mtp.corpus_identity import corpus_identity, summary_lines, write_identity
 from mtp.guild_maps import (
     OTHER_LABEL,
     SIGN_TOLERANCE,
@@ -53,6 +54,7 @@ from mtp.trait_guilds import (
     TABLE1_TRAIT_LABELS,
     TABLE1_TRAITS,
     Profile,
+    drop_zero_total_pairs,
     load_profiles,
     read_bugsigdb_vintage,
     write_stats_report,
@@ -306,14 +308,25 @@ class ShiftResult:
 
 
 def study_trait_contrasts(
-    profiles: list[Profile], trait_order: Sequence[str]
+    profiles: list[Profile],
+    trait_order: Sequence[str],
+    *,
+    exclude_zero_totals: bool = True,
 ) -> dict[str, dict[str, float]]:
     """Per study, the increased minus decreased mean fraction for each trait.
 
     Collapsing to one value per study first is the fix issue #133 asks for: 56.2%
     of studies contribute more than one experiment on the pinned v1.3.1 corpus,
     so treating experiments as independent overstates the sample size.
+
+    By default, experiments whose retained-annotation total is zero on either
+    side are excluded via ``drop_zero_total_pairs`` to satisfy the shared
+    comparison basis of methods/three_arm_statistics.md (#228). Passing
+    ``exclude_zero_totals=False`` reproduces the historical S0 behavior where
+    zero-total profiles were evaluated as 0.0 fraction.
     """
+    if exclude_zero_totals:
+        profiles = drop_zero_total_pairs(profiles).profiles
     means = study_direction_means(profiles, trait_order)
     contrasts: dict[str, dict[str, float]] = {}
     for study, per_key in means.items():
@@ -360,7 +373,10 @@ def tally_direction_signs(
 
 
 def compute_direction_shifts(
-    profiles: list[Profile], trait_order: Sequence[str] = TRAIT_ORDER
+    profiles: list[Profile],
+    trait_order: Sequence[str] = TRAIT_ORDER,
+    *,
+    exclude_zero_totals: bool = True,
 ) -> ShiftResult:
     """Score every study once per trait by the sign of its paired contrast.
 
@@ -371,8 +387,15 @@ def compute_direction_shifts(
     binomial test against a half-and-half null, and the p-values of
     ``trait_order`` are Benjamini-Hochberg corrected together as one family.
     The widened family of #255 is corrected separately in ``mtp.trait_screen``.
+
+    By default, experiments whose retained-annotation total is zero on either
+    side are excluded via ``drop_zero_total_pairs`` to satisfy the shared
+    comparison basis of methods/three_arm_statistics.md (#228). Passing
+    ``exclude_zero_totals=False`` reproduces the historical S0 behavior.
     """
-    contrasts = study_trait_contrasts(profiles, trait_order)
+    contrasts = study_trait_contrasts(
+        profiles, trait_order, exclude_zero_totals=exclude_zero_totals
+    )
     tallies = tally_direction_signs(contrasts, trait_order)
 
     p_values: list[float] = []
@@ -748,6 +771,7 @@ def build_parser() -> argparse.ArgumentParser:
             "The state stays in the emitted cell-status table either way."
         ),
     )
+    parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     return parser
 
 
@@ -780,6 +804,8 @@ def main() -> int:
     )
     vintage = read_bugsigdb_vintage(args.full_dump_input)
     write_stats_report(stats, vintage)
+    identity = corpus_identity(args.profile_input, bugsigdb_vintage=vintage)
+    print("\n".join(summary_lines(identity)))
 
     matrix = build_matrix(
         profiles,
@@ -967,6 +993,7 @@ def main() -> int:
                 else f"  {shift.status}"
             )
         )
+    written.append(write_identity(identity, args.output_dir, code_commit=args.code_commit))
     for path in written:
         print(path)
     return 0

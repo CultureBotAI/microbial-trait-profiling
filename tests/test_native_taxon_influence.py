@@ -338,10 +338,145 @@ def test_native_exports_end_to_end_with_an_empty_stratum(tmp_path: Path) -> None
         r["reference"]: r for r in comparisons if r["scope"] == "pooled" and r["trait_key"] == "C"
     }
     refitted = zero_reference["refitted"]
-    assert refitted["before_pairs"] == refitted["after_pairs"] == "4"
+    assert refitted["before_pairs"] == refitted["after_pairs"] == "3"
     assert refitted["lost_pairs"] == refitted["gained_pairs"] == "0"
     assert float(refitted["before_effect"]) == float(refitted["after_effect"]) == 0
     assert refitted["before_p"] == refitted["after_p"] == ""
     fixed = zero_reference["fixed_baseline_sd"]
     assert fixed["before_pairs"] == fixed["after_pairs"] == "0"
     assert fixed["before_effect"] == fixed["after_effect"] == ""
+
+
+def test_zero_total_lineage_exclusion_reported_as_lost_pairs_not_matched_change(
+    tmp_path: Path,
+) -> None:
+    """Pairs whose total becomes zero after an exclusion are lost pairs,
+    not matched change (#209).
+    """
+    # 6-pair toy corpus where one exclusion empties the decreased arm of 2 pairs.
+    # Pairs 0..3: both arms have nonzero totals before and after.
+    # Pairs 4..5: baseline has nonzero totals on both arms; exclusion empties the decreased arm.
+    profiles = {}
+    for i in range(4):
+        profiles[(f"s{i}", f"e{i}", "inc")] = {"A": 5, "B": 5}
+        profiles[(f"s{i}", f"e{i}", "dec")] = {"A": 2, "B": 8}
+    for i in range(4, 6):
+        profiles[(f"s{i}", f"e{i}", "inc")] = {"A": 5, "B": 5}
+        profiles[(f"s{i}", f"e{i}", "dec")] = {"A": 2, "B": 2}
+    base = Base(["A", "B"], {"a": "A", "b": "B"}, profiles, {}, {}, {}, {}, {}, [])
+
+    remaining = {}
+    for i in range(4):
+        remaining[(f"s{i}", f"e{i}", "inc")] = {"A": 5, "B": 5}
+        remaining[(f"s{i}", f"e{i}", "dec")] = {"A": 2, "B": 8}
+    for i in range(4, 6):
+        remaining[(f"s{i}", f"e{i}", "inc")] = {"A": 5, "B": 5}
+        remaining[(f"s{i}", f"e{i}", "dec")] = {"A": 0, "B": 0}
+
+    keys = list(profiles)
+
+    # 1. Effect rows across representations (shared_fraction, native_noel_zero_fraction)
+    from mtp.taxon_influence import effect_rows
+
+    rows = effect_rows(base, remaining, keys)
+    for rep in ("shared_fraction", "native_noel_zero_fraction"):
+        rep_rows = [r for r in rows if r["representation"] == rep and r["trait_key"] == "A"]
+        assert len(rep_rows) == 1
+        row = rep_rows[0]
+        assert row["lost_pairs"] == 2
+        assert row["gained_pairs"] == 0
+        assert row["matched_change_effect"] == pytest.approx(0.0)
+
+    # 2. Native export comparisons (fixed_baseline_sd and refitted)
+    base.reported = {}
+    for i in range(4):
+        base.reported[(f"s{i}", f"e{i}", "inc")] = {"taxon_other": {"sig"}}
+        base.reported[(f"s{i}", f"e{i}", "dec")] = {"taxon_other": {"sig"}}
+    for i in range(4, 6):
+        base.reported[(f"s{i}", f"e{i}", "inc")] = {"taxon_other": {"sig"}}
+        base.reported[(f"s{i}", f"e{i}", "dec")] = {"taxon_X": {"sig"}}
+
+    base.metadata = {k[:2]: {"condition": "c", "body_site": "site"} for k in base.profiles}
+    base_dir = tmp_path / "baseline"
+    base_dir.mkdir()
+    write_table(
+        base_dir / "removed_source_counts.tsv.gz",
+        ["reported_taxon", "trait_key", "removed_count"],
+        [],
+    )
+    base_entries = [
+        {
+            "study_id": k[0],
+            "experiment_id": k[1],
+            "direction": k[2],
+            "trait_key": t,
+            "original_count": p[t],
+            "remaining_count": p[t],
+            "original_total": sum(p.values()),
+            "remaining_total": sum(p.values()),
+        }
+        for k, p in base.profiles.items()
+        for t in base.traits.values()
+    ]
+    write_table(base_dir / "profile_counts.tsv.gz", list(base_entries[0]), base_entries)
+
+    excl_dir = tmp_path / "exclude_lineage"
+    excl_dir.mkdir()
+    write_table(
+        excl_dir / "removed_source_counts.tsv.gz",
+        ["reported_taxon", "trait_key", "removed_count"],
+        [
+            {"reported_taxon": "taxon_X", "trait_key": "A", "removed_count": 2},
+            {"reported_taxon": "taxon_X", "trait_key": "B", "removed_count": 2},
+        ],
+    )
+    excl_entries = [
+        {
+            "study_id": k[0],
+            "experiment_id": k[1],
+            "direction": k[2],
+            "trait_key": t,
+            "original_count": base.profiles[k][t],
+            "remaining_count": remaining[k][t],
+            "original_total": sum(base.profiles[k].values()),
+            "remaining_total": sum(remaining[k].values()),
+        }
+        for k in base.profiles
+        for t in base.traits.values()
+    ]
+    write_table(excl_dir / "profile_counts.tsv.gz", list(excl_entries[0]), excl_entries)
+    write_table(
+        tmp_path / "scenarios.tsv",
+        ["scenario", "status"],
+        [{"scenario": "exclude_lineage", "status": "run"}],
+    )
+    audit = {"protocol": {"scopes": [{"id": "pooled", "condition": "*", "body_site": "*"}]}}
+    export_native(
+        base,
+        audit,
+        {"composition": POLICY, "ora": {"backgrounds": ["fixed_baseline"]}},
+        tmp_path,
+    )
+    from mtp.contribution_inputs import rows as load_rows
+
+    native_cmps = list(load_rows(tmp_path / "native_composition_comparison.tsv"))
+    fixed_row = next(
+        r
+        for r in native_cmps
+        if r["reference"] == "fixed_baseline_sd"
+        and r["scenario"] == "exclude_lineage"
+        and r["trait_key"] == "A"
+    )
+    assert fixed_row["lost_pairs"] == "2"
+    assert fixed_row["gained_pairs"] == "0"
+    assert float(fixed_row["matched_change_effect"]) == pytest.approx(0.0)
+
+    refitted_row = next(
+        r
+        for r in native_cmps
+        if r["reference"] == "refitted"
+        and r["scenario"] == "exclude_lineage"
+        and r["trait_key"] == "A"
+    )
+    assert refitted_row["lost_pairs"] == "2"
+    assert refitted_row["gained_pairs"] == "0"
