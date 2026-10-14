@@ -23,6 +23,11 @@ data/derived/*
 !data/derived/trait_coupling_loto_matrix.tsv
 !data/derived/trait_coupling_lco_summary.tsv
 !data/derived/trait_coupling_report.txt
+!data/derived/density_adjustment/
+data/derived/density_adjustment/*
+!data/derived/density_adjustment/ontology_redundancy_pairs.tsv
+!data/derived/density_adjustment/ontology_redundancy_summary.tsv
+!data/derived/density_adjustment/ontology_collapsing_comparison.tsv
 data/benchmarks/*
 data/kg-microbe/*.tsv
 logs/

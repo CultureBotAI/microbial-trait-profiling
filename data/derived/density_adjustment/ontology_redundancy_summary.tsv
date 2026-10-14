@@ -1,0 +1,16 @@
+metric	value
+total_non_media_traits	317.0
+redundant_clusters_count	10.0
+redundant_pairs_count	24.0
+redundant_features_collapsed	16.0
+bounded_distinct_trait_space	301.0
+raw_pc1_variance_pct	60.8159
+collapsed_native_pc1_variance_pct	61.325
+collapsed_max_pc1_variance_pct	61.3536
+collapsed_adj_pc1_variance_pct	24.1584
+raw_median_pairwise_r	0.6
+collapsed_max_median_pairwise_r	0.6102
+collapsed_adj_median_pairwise_r	-0.0267
+raw_test_pair_r	0.8936
+collapsed_max_test_pair_r	0.8936
+collapsed_adj_test_pair_r	0.5268
