@@ -56,6 +56,11 @@ other two arms would need to be measured on the same null (#263).
 `just calibration-screen`: the 317-trait directional screen run under that same
 study-flip null, counting the traits each correction calls when nothing is there.
 
+[`calibration_composition.md`](calibration_composition.md) documents
+`just calibrate-composition`: the paired composition arm calibrated against the
+shared study-flip complete null (#263), measuring empirical Type I error control,
+family-wise error rates, and Table 1 canonical trait calibration.
+
 [`table1_log_ratio_validation.md`](table1_log_ratio_validation.md) records the
 pinned-corpus rerun of all 15 ratios alongside the original six fraction
 directions as a matched-corpus Table 1-trait analog sensitivity analysis (not a

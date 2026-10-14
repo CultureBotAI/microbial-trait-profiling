@@ -19,6 +19,15 @@ data/raw/*.csv
 data/studies/*.yaml
 data/derived/*
 !data/derived/.gitkeep
+# Cited summary tables opted in per path (CONTRIBUTING.md, "Generated outputs on main").
+!data/derived/calibration/
+data/derived/calibration/*
+!data/derived/calibration/composition/
+data/derived/calibration/composition/*
+!data/derived/calibration/composition/composition_calibration_summary.json
+!data/derived/calibration/composition/composition_calibration_summary.tsv
+!data/derived/calibration/composition/composition_calibration_replicates.tsv
+!data/derived/calibration/composition/table1_composition_calibration.tsv
 data/benchmarks/*
 data/kg-microbe/*.tsv
 logs/
