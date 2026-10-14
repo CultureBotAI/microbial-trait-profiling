@@ -150,8 +150,8 @@ security:
 	tmpdir="$(mktemp -d)" && \
 	trap 'rm -rf "$tmpdir"' EXIT && \
 	reqfile="$tmpdir/requirements.txt" && \
-	uv export --quiet --frozen --no-dev --format requirements.txt \
-	  --no-emit-project --no-emit-workspace --no-emit-local \
+	uv export --quiet --frozen --no-dev --format requirements-txt \
+	  --no-emit-project --no-emit-workspace \
 	  --output-file "$reqfile" && \
 	uv run pip-audit -r "$reqfile" --disable-pip \
 	  --cache-dir "$tmpdir/pip-audit-cache"
