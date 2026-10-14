@@ -158,32 +158,23 @@ def load_composition_trait_columns(
     columns_path: Path = DEFAULT_COLUMNS_PATH,
     profiles_df: pd.DataFrame | None = None,
 ) -> list[str]:
-    """Load non-MediaDive trait columns retained for composition calibration."""
-    if columns_path.is_file():
-        cols_df = pd.read_csv(columns_path, sep="\t")
-        if "object_category" in cols_df.columns and "column_id" in cols_df.columns:
-            non_media = cols_df[cols_df["object_category"] != "METPO:1004005"]["column_id"]
-            traits = [str(c) for c in non_media.tolist()]
-            if profiles_df is not None:
-                return [t for t in traits if t in profiles_df.columns]
-            return traits
+    """Load non-MediaDive trait columns retained for composition calibration.
 
+    The columns file defines the trait family, and so m for BH/BY. A missing
+    or malformed file is an error rather than a silent fallback to every
+    profile column (#469).
+    """
+    if not columns_path.is_file():
+        raise FileNotFoundError(f"Trait columns file not found: {columns_path}")
+    cols_df = pd.read_csv(columns_path, sep="\t")
+    missing = {"object_category", "column_id"} - set(cols_df.columns)
+    if missing:
+        raise ValueError(f"{columns_path} lacks required columns: {sorted(missing)}")
+    non_media = cols_df[cols_df["object_category"] != "METPO:1004005"]["column_id"]
+    traits = [str(c) for c in non_media.tolist()]
     if profiles_df is not None:
-        meta_cols = {
-            "_norm_dir",
-            "body_site",
-            "condition",
-            "experiment_id",
-            "inc_dec",
-            "signature_size",
-            "study_id",
-            "taxa_count",
-        }
-        return [
-            c for c in profiles_df.columns if c not in meta_cols and "mediadive" not in c.lower()
-        ]
-
-    raise ValueError(f"Could not resolve trait columns: {columns_path} not found")
+        return [t for t in traits if t in profiles_df.columns]
+    return traits
 
 
 def run_composition_calibration(
@@ -563,7 +554,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"  {t['trait_name']:<28}: "
             f"obs_t={t['observed_t']:+6.3f} (q={t['observed_bh_q']:.2e}) | "
             f"null_t range=[{t['null_min_t']:+6.3f}, {t['null_max_t']:+6.3f}] | "
-            f"reaching |t_obs|={t['null_reps_reaching_observed']}/100 | "
+            f"reaching |t_obs|={t['null_reps_reaching_observed']}/{args.replicates} | "
             f"survives={t['survives_null_calibration']}"
         )
 

@@ -24,6 +24,9 @@ from mtp.composition_calibration import (
     stream_key,
 )
 from mtp.composition_calibration.composition import (
+    load_composition_trait_columns,
+)
+from mtp.composition_calibration.composition import (
     main as composition_main,
 )
 
@@ -251,3 +254,13 @@ def test_bsdbng_shim_exports() -> None:
     assert bsdbng_cc.JedCompositionAdapter is JedCompositionAdapter
     assert hasattr(bsdbng_cc, "run_composition_calibration")
     assert bsdbng_cc.run_composition_calibration is run_composition_calibration
+
+
+def test_missing_or_malformed_columns_file_is_an_error(tmp_path: Path) -> None:
+    """The columns file sets m for BH/BY; never fall back silently (#469)."""
+    with pytest.raises(FileNotFoundError):
+        load_composition_trait_columns(tmp_path / "absent.tsv")
+    bad = tmp_path / "bad.tsv"
+    bad.write_text("column_id\nfoo\n")
+    with pytest.raises(ValueError, match="object_category"):
+        load_composition_trait_columns(bad)

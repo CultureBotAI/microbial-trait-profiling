@@ -108,8 +108,8 @@ Across 100 Monte Carlo replicates (`stream_key: complete_null_study_flip`, `seed
 ### Type I Error Rate across Null Hypotheses
 
 Across the 31,700 null hypothesis tests:
-- $\alpha = 0.05$: 1,458 rejections $\implies \hat{\alpha} = 0.0460$ (Nominal 0.050)
-- $\alpha = 0.01$: 257 rejections $\implies \hat{\alpha} = 0.0081$ (Nominal 0.010)
+- $\alpha = 0.05$: 1,457 rejections $\implies \hat{\alpha} = 0.0460$ (Nominal 0.050)
+- $\alpha = 0.01$: 258 rejections $\implies \hat{\alpha} = 0.0081$ (Nominal 0.010)
 - $\alpha = 0.001$: 21 rejections $\implies \hat{\alpha} = 0.0007$ (Nominal 0.001)
 
 All empirical rejection rates are strictly bounded by nominal significance levels, demonstrating that one-sample study-level t-testing is well-calibrated and slightly conservative under empirical direction exchangeability.
