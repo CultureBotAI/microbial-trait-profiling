@@ -241,7 +241,7 @@ get-chrome:
 # matrix, study-count matrix, and correlation table to data/derived/guild_maps/.
 # Needs a local Chrome for the PNG (`just get-chrome`).
 guild-maps:
-	just timed guild-maps "uv run python scripts/create_guild_maps.py"
+	just timed guild-maps "uv run python scripts/create_guild_maps.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\""
 
 # Same inputs and same corpus filters as guild-maps, but over the six individual
 # traits of manuscript Table 1 instead of the two pooled oxygen guilds. Writes the
@@ -249,7 +249,7 @@ guild-maps:
 # their backing tables to data/derived/table1_traits/.
 # Needs a local Chrome for the PNG files (`just get-chrome`).
 table1-trait-maps:
-	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py"
+	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\""
 
 # Generate modern publication-ready figures inspired by the project slide deck (#347, #354).
 # Renders Figures 1-5 with zero synthetic data and dynamic M universe calculations.

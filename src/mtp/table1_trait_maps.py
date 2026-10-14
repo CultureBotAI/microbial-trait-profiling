@@ -31,6 +31,7 @@ from typing import TYPE_CHECKING
 
 from scipy.stats import binomtest, false_discovery_control, spearmanr
 
+from mtp.corpus_identity import corpus_identity, summary_lines, write_identity
 from mtp.guild_maps import (
     OTHER_LABEL,
     SIGN_TOLERANCE,
@@ -734,6 +735,7 @@ def build_parser() -> argparse.ArgumentParser:
             "The state stays in the emitted cell-status table either way."
         ),
     )
+    parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     return parser
 
 
@@ -766,6 +768,8 @@ def main() -> int:
     )
     vintage = read_bugsigdb_vintage(args.full_dump_input)
     write_stats_report(stats, vintage)
+    identity = corpus_identity(args.profile_input, bugsigdb_vintage=vintage)
+    print("\n".join(summary_lines(identity)))
 
     matrix = build_matrix(
         profiles,
@@ -953,6 +957,7 @@ def main() -> int:
                 else f"  {shift.status}"
             )
         )
+    written.append(write_identity(identity, args.output_dir, code_commit=args.code_commit))
     for path in written:
         print(path)
     return 0
