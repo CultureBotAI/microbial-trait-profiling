@@ -1,4 +1,8 @@
-# Manuscript Table 1 traits by condition and body site, and their paired directional shift
+# Matched-corpus Table 1-trait analog by condition and body site, and paired directional shift
+
+> [!IMPORTANT]
+> **Matched-Corpus Table 1-Trait Analog (Issue #210)**
+> The figures and numbers described here are a matched-corpus Table 1-trait analog sensitivity analysis, not a reproduction of the published Table 1 baseline. They use the pinned human paired KG-Microbe profile corpus (959 studies, 2,335 pairs) and do not reproduce published Table 1 baseline values (e.g. facultatively aerobic $q = 2.8 \times 10^{-10}$).
 
 Figures: `table1_traits_condition_body_site_heatmap.png`, the four cuts
 `table1_traits_focus_feces.png`, `table1_traits_focus_feces_other.png`,
@@ -10,7 +14,7 @@ analysis differs from the composition and enrichment arms is set out in
 
 The figures described here repeat the oxygen guild analysis
 ([`guild_condition_body_site_heatmap.md`](guild_condition_body_site_heatmap.md))
-over the six individual traits of manuscript Table 1 rather than over the two
+over the six individual traits named in manuscript Table 1 rather than over the two
 pooled oxygen guilds, with all six traits combined into one figure each. The
 traits are facultatively aerobic (METPO:1000608), cellulose catabolic process
 (GO:0030245), coccus shaped (METPO:1000668), sphere shaped (METPO:1000683),
@@ -255,7 +259,8 @@ in only 334 of 774 studies (0.432, q = 0.00031). These directions agree
 trait-for-trait with the composition arm's paired t-test on the same matrix,
 which also places cellulose catabolic process alone on the decreased side — the
 same corpus and the same six traits, so this is a robustness check against
-study-level dependence (issue #133), not an independent line of evidence. The
+study-level dependence (issue #133), not an independent line of evidence and
+not a reproduction of the published Table 1 baseline. The
 effect sizes are small: every trait sits within about eight points of 0.5, and
 the significance comes from the number of studies rather than from the size of
 the shift, which is worth stating explicitly next to the q-values.

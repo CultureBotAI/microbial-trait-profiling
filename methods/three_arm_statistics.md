@@ -54,7 +54,7 @@ here; the first comparison displays every declared candidate in manifest order.
 | Source manifest | Pin the profile matrix, experiment metadata, source/code versions, trait mapping and retained-column list, with hashes. Materialize the base list of `(study_id, experiment_id)` pairs and both direction records; matching row counts alone is insufficient. |
 | Base population | Human experiments with exactly one increased and one decreased profile and consistent pair metadata. Reject ambiguous keys and malformed, missing or negative counts; never silently coerce them to zero. Record all filtering and available annotation-coverage information. Unknown coverage remains flagged. |
 | Analysis scope | The initial comparison pools the full base population. A body-site or condition-by-body-site analysis is a separately identified scope using exact source labels and its own eligible-pair list. Missing labels remain explicit. Heatmap top-N cuts, masking and an Other display group never define the analysis population. |
-| Candidate families | Keep the six Table 1 trait IDs and all 15 unordered pairs as separate feature types. Freeze the source qualifiers and ID mapping in `TABLE1_TRAITS`; orient every ratio in that declared trait order, with an explicit numerator and reference. A larger trait screen requires its own candidate manifest: the directional arm's full-trait screen declares one in [`trait_screen_manifest.json`](trait_screen_manifest.json) and is corrected in its own family, separate from the six (#255). |
+| Candidate families | Keep the six traits named in Table 1 and all 15 unordered pairs as separate feature types for the matched-corpus Table 1-trait analog sensitivity analysis. Freeze the source qualifiers and ID mapping in `TABLE1_TRAITS`; orient every ratio in that declared trait order, with an explicit numerator and reference. A larger trait screen requires its own candidate manifest: the directional arm's full-trait screen declares one in [`trait_screen_manifest.json`](trait_screen_manifest.json) and is corrected in its own family, separate from the six (#255). |
 | Fraction denominator | For each profile, sum every column in the declared non-MediaDive trait universe, including traits outside Table 1. That is 317 retained columns in the matrix identified below, with 2,333 MediaDive columns excluded. Selecting six traits or a ratio must not redefine this total. |
 | ORA background | For the harmonized baseline, fix the background to all valid profiles in the full paired human base population, using that same retained-column universe. Record its trait totals, grand total and contributing profile IDs. Do not rebuild it from a displayed stratum or a ratio's positive-count subset. Alternative backgrounds are separately versioned sensitivity scenarios. |
 | Weighting | Average eligible experiment contrasts within a study, then give each eligible study equal weight within the declared scope. Pool a study's experiments directly across conditions; do not count each condition-study group as another study. Identify shared cohorts where known when assessing independence and uncertainty. |
@@ -321,8 +321,10 @@ pair family. These are different, conditional hypotheses, not corrected versions
 of the six original fraction hypotheses or independent replication.
 
 The [pinned-corpus validation table](table1_log_ratio_validation.md) reports all
-15 comparisons alongside the original six fraction directions, with source
-fingerprints and the study populations retained by each ratio.
+15 comparisons alongside the original six fraction directions as a matched-corpus
+Table 1-trait analog sensitivity analysis (not a reproduction of the published
+Table 1 baseline), with source fingerprints and the study populations retained
+by each ratio.
 
 Reference choice, zero exclusions, shared annotations and selection of these six
 traits remain interpretation limits. The ratio cannot distinguish an absolute

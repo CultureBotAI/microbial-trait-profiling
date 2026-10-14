@@ -1,4 +1,8 @@
-"""Source-lineage removal and conditional, study-weighted influence summaries."""
+"""Source-lineage removal and conditional, study-weighted influence summaries.
+
+Matched-corpus Table 1-trait analog sensitivity analysis (not a reproduction of
+the published Table 1 baseline).
+"""
 
 from __future__ import annotations
 
@@ -704,7 +708,15 @@ def run_influence(
         "native_ora": "not_rerun: both background count contracts exported for Ilyas",
     }
     summary = (
-        "# Table 1 source contributions and lineage influence\n\n"
+        "# Matched-corpus Table 1-trait analog source contributions and lineage influence\n\n"
+        "> [!IMPORTANT]\n"
+        "> **Matched-Corpus Table 1-Trait Analog (Issue #210)**\n"
+        "> The taxon contribution and lineage influence audits reported here are a "
+        "matched-corpus Table 1-trait analog sensitivity analysis, not influence on "
+        "the published manuscript Table 1. They use the pinned human paired KG-Microbe "
+        "profile corpus and are not a reproduction of the published Table 1 baseline "
+        "(they do not reproduce published Table 1 baseline values such as facultatively "
+        "aerobic $q = 2.8 \\times 10^{-10}$).\n\n"
         f"Reconciled {len(base.profiles):,} human paired profiles from "
         f"{len({k[0] for k in base.profiles}):,} studies across all "
         f"{len(base.columns)} non-MediaDive traits. "

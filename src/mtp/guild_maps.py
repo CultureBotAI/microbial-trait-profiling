@@ -173,8 +173,9 @@ def build_matrix(
     """Aggregate profiles into the condition x (group x direction) grid per body site.
 
     ``guild_order`` names the trait groups to unroll into columns. It is the two
-    oxygen guilds by default and the six Table 1 traits for the Table 1 figure;
-    the aggregation, masking, and clustering are identical either way.
+    oxygen guilds by default and the six Table 1-named traits for the
+    matched-corpus analog figure; the aggregation, masking, and clustering are
+    identical either way.
 
     The two ``include_other_*`` flags decide, per axis, what happens to the labels
     the top-N cuts leave out: pooled into an Other row or column block, or dropped
@@ -615,8 +616,9 @@ def write_matrix_outputs(
 ) -> list[Path]:
     """Write the value matrix, the study-count matrix, cell status, and row clusters.
 
-    Shared by the oxygen guild figure and the Table 1 trait figure so the two
-    read from one implementation; only the file-name prefix differs.
+    Shared by the oxygen guild figure and the matched-corpus Table 1-trait
+    analog figure so the two read from one implementation; only the file-name
+    prefix differs.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     value_rows = [["" if v is None else f"{v:.6f}" for v in row] for row in matrix.values]
@@ -875,8 +877,8 @@ def write_figure(
     ``shared_range`` the traces share the range 0 to the largest observed value,
     which makes a cell in one group directly comparable in magnitude to a cell in
     another; that only holds where the groups are commensurable, as the two oxygen
-    guilds are. The Table 1 traits differ in corpus-wide prevalence by more than
-    an order of magnitude, so they are drawn on per-trait ranges instead and each
+    guilds are. The Table 1-named traits differ in corpus-wide prevalence by more
+    than an order of magnitude, so they are drawn on per-trait ranges instead and each
     colour bar carries its own maximum.
 
     Cells where the site was sampled but carried no trait of the group are filled

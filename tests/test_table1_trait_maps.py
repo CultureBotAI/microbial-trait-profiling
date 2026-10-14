@@ -20,8 +20,11 @@ from bsdbng.guild_maps import (
     write_body_site_panels,
 )
 from bsdbng.table1_trait_maps import (
+    ANALYSIS_LABEL,
+    ANALYSIS_NOTE,
     TRAIT_ORDER,
     MissingConditions,
+    build_shift_figure,
     compute_direction_shifts,
     missing_condition_note,
     missing_conditions,
@@ -36,6 +39,7 @@ from bsdbng.trait_guilds import (
     column_term_id,
     load_profiles,
 )
+from mtp.paths import REPO_ROOT
 
 if TYPE_CHECKING:
     from plotly.graph_objects import Figure
@@ -1152,3 +1156,38 @@ def test_absent_site_reason_names_the_actual_cause(
         )
         == reason
     )
+
+
+def test_public_labels_call_this_a_matched_corpus_analog(corpus: tuple[Path, Path]) -> None:
+    assert ANALYSIS_LABEL == "Matched-corpus Table 1-trait analog"
+    assert "not a reproduction of the published Table 1 baseline" in ANALYSIS_NOTE
+    parser = table1_trait_maps.build_parser()
+    assert parser.description is not None
+    assert "matched-corpus table 1-trait analog" in parser.description.lower()
+    assert "not a reproduction of the published table 1 baseline" in parser.description.lower()
+
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    result = compute_direction_shifts(profiles, TRAIT_ORDER)
+    figure = build_shift_figure(result, "v1.3.1", TRAIT_ORDER)
+    assert figure.layout.title.text is not None
+    assert ANALYSIS_LABEL in figure.layout.title.text
+    assert ANALYSIS_NOTE in figure.layout.title.text
+
+
+@pytest.mark.parametrize(
+    "relative_doc_path",
+    [
+        "methods/table1_trait_condition_body_site_maps.md",
+        "methods/table1_log_ratio_validation.md",
+        "methods/table1-native-results/README.md",
+        "methods/table1_native_influence.md",
+        "methods/table1_taxon_influence_results.md",
+        "methods/table1_taxon_influence.md",
+    ],
+)
+def test_methods_with_table1_numbers_carry_the_analog_label(relative_doc_path: str) -> None:
+    doc_path = REPO_ROOT / relative_doc_path
+    assert doc_path.exists(), f"Expected documentation file {relative_doc_path} to exist"
+    content = doc_path.read_text(encoding="utf-8").lower()
+    assert "matched-corpus table 1-trait analog" in content
+    assert "not a reproduction of the published table 1 baseline" in content

@@ -42,10 +42,12 @@ GRAM_GUILDS: dict[str, tuple[str, ...]] = {
     "gram negative": ("METPO:1000699",),
 }
 
-# The six traits of manuscript Table 1, each its own single-member group rather
-# than pooled into a guild. Slugs, display names, and colours are taken verbatim
-# from Jed's six_shared_trait_selection.tsv on origin/clustered-heatmap-generation
-# so the same trait is the same colour in both arms' manuscript figures.
+# The six traits named in manuscript Table 1, each its own single-member group rather
+# than pooled into a guild. Used in the matched-corpus Table 1-trait analog
+# sensitivity analysis (not a reproduction of published Table 1 baseline values).
+# Slugs, display names, and colours are taken verbatim from Jed's
+# six_shared_trait_selection.tsv on origin/clustered-heatmap-generation so the
+# same trait is the same colour in both arms' manuscript figures.
 # Two of the six are carried in the profile matrix as METPO-qualified columns
 # (METPO:2000103|GO:0030245 and METPO:2000103|pathways:arsenate_reduction), which
 # is why term lookup below also matches the segment after the final pipe.
