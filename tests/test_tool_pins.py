@@ -60,16 +60,26 @@ def test_pyproject_pin_matches_hook_rev(name: str) -> None:
     )
 
 
-def _locked_versions() -> dict[str, str]:
+def _locked_versions() -> dict[str, set[str]]:
     lock = tomllib.loads((ROOT / "uv.lock").read_text())
-    return {_normalize(pkg["name"]): pkg["version"] for pkg in lock["package"] if "version" in pkg}
+    versions: dict[str, set[str]] = {}
+    for pkg in lock["package"]:
+        if "version" in pkg:
+            versions.setdefault(_normalize(pkg["name"]), set()).add(pkg["version"])
+    return versions
 
 
 @pytest.mark.parametrize("name", sorted(LOCKED_HOOKS))
 def test_hook_rev_matches_locked_version(name: str) -> None:
     locked = _locked_versions().get(name)
     assert locked, f"{name} is not in uv.lock"
-    rev = _hook_revs()[LOCKED_HOOKS[name]]
-    assert rev.removeprefix("v") == locked, (
-        f"{name}: uv.lock resolves {locked} but .pre-commit-config.yaml uses rev {rev}"
+    assert len(locked) == 1, f"{name} resolves to several versions in uv.lock: {sorted(locked)}"
+    revs = _hook_revs()
+    assert LOCKED_HOOKS[name] in revs, (
+        f"{LOCKED_HOOKS[name]} is missing from .pre-commit-config.yaml"
+    )
+    rev = revs[LOCKED_HOOKS[name]]
+    assert {rev.removeprefix("v")} == locked, (
+        f"{name}: uv.lock resolves {sorted(locked)} but .pre-commit-config.yaml uses rev {rev}; "
+        "on a Dependabot bump, set the hook rev to the new version on the same PR"
     )
