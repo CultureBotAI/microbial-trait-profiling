@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
-from bsdbng.calibration import SEED, flip_assignments, flip_directions, replicate_rng
-from bsdbng.screen_calibration import (
+from mtp.calibration import SEED, flip_assignments
+from mtp.screen_calibration import (
     CORRECTIONS,
     STREAM,
     THRESHOLDS,
     ReplicateCount,
     count_calls,
+    replicate_flipped_profiles,
     run_null_screens,
     summarize,
 )
-from bsdbng.trait_guilds import Profile
-from bsdbng.trait_screen import run_screen
+from mtp.trait_guilds import Profile
+from mtp.trait_screen import run_screen
 
 COLUMNS = ["A", "B", "C"]
 
@@ -45,10 +46,18 @@ def test_every_correction_and_threshold_is_counted_once() -> None:
 
 def test_the_null_replicates_are_the_shared_artefacts_flips() -> None:
     """Replicate i here must flip exactly the studies replicate i of the artefact flips."""
-    profiles = _shifted_corpus(12)
+    # Synthetic corpus with multiple experiments in some studies (#339)
+    profiles = [
+        _profile("s0", "inc", {"A": 9, "B": 5, "C": 4}),
+        _profile("s0", "dec", {"A": 1, "B": 5, "C": 6}),
+        Profile("s0", "s0-2", "inc", "X", "Feces", {"A": 8, "B": 4, "C": 3}, 15),
+        Profile("s0", "s0-2", "dec", "X", "Feces", {"A": 2, "B": 4, "C": 5}, 11),
+        _profile("s1", "inc", {"A": 7, "B": 6, "C": 5}),
+        _profile("s1", "dec", {"A": 3, "B": 6, "C": 4}),
+    ]
     artefact = flip_assignments(profiles, replicates=3, seed=SEED, stream=STREAM)
     for index in range(3):
-        flipped = flip_directions(profiles, replicate_rng(SEED, STREAM, index), unit="study")
+        flipped = replicate_flipped_profiles(profiles, index)
         changed = {
             before.study_id
             for before, after in zip(profiles, flipped, strict=True)
@@ -89,3 +98,7 @@ def test_the_summary_reports_family_error_with_an_exact_interval() -> None:
     assert row["replicates_reaching_observed"] == 1
     assert row["mean_null_calls"] == 0.8
     assert row["max_null_calls"] == 3
+
+    # When observed calls are 0, reaching observed is None (not applicable) (#342)
+    (zero_row,) = summarize(counts, {("by_q_nominal", 0.05): 0})
+    assert zero_row["replicates_reaching_observed"] is None

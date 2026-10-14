@@ -61,6 +61,11 @@ anything, which is below the 0.065 tolerance of
 [`calibration_protocol.json`](calibration_protocol.json), but this screen is not
 one of that protocol's declared procedures and no verdict is issued against it.
 
+Like the calibration harness ([`calibration.md`](calibration.md)), the study-flip
+null treats studies as independent. It cannot detect dependence *between*
+studies (shared cohorts, overlapping populations, or reused datasets); any
+resulting inflation remains out of reach of this null.
+
 ## Reproducing
 
 `just calibration-screen` writes `screen_null_replicates.tsv` (long: seed,

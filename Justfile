@@ -470,4 +470,4 @@ clean-all: clean-raw clean-studies clean-derived clean-logs
 # beside the observed calls. Replicate i is replicate i of the shared flip artefact.
 [positional-arguments]
 calibration-screen *ARGS:
-	uv run python -m bsdbng.screen_calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+	uv run python -m mtp.screen_calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
