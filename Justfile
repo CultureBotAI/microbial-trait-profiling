@@ -140,7 +140,14 @@ download-kg-force:
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
-	uv run pip-audit
+	tmpdir="$(mktemp -d)" && \
+	trap 'rm -rf "$tmpdir"' EXIT && \
+	reqfile="$tmpdir/requirements.txt" && \
+	uv export --quiet --frozen --no-dev --format requirements-txt \
+	  --no-emit-project --no-emit-workspace \
+	  --output-file "$reqfile" && \
+	uv run pip-audit -r "$reqfile" --disable-pip \
+	  --cache-dir "$tmpdir/pip-audit-cache"
 
 precommit:
 	uv run pre-commit run --all-files
