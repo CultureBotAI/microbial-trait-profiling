@@ -4,7 +4,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "pip"
+  # "uv" (not "pip") so each bump regenerates uv.lock as well as pyproject.toml;
+  # CI syncs with `uv sync --locked` and fails on a stale lock (#420).
+  - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # Both are pinned to match a hook rev in .pre-commit-config.yaml, which
+      # Dependabot does not bump. Bump them by hand, together with the hook rev
+      # (tests/test_tool_pins.py checks they agree).
+      - dependency-name: "uv"
+      - dependency-name: "detect-secrets"
