@@ -9,7 +9,13 @@ description = "Integration and comparative analysis of microbial trait annotatio
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
-  { name = "Mark Miller" }
+  # Keep in step with CITATION.cff.
+  { name = "Jed Dongjin Kim-Ozaeta" },
+  { name = "Ilyas Abdolcader" },
+  { name = "Noel Sason" },
+  { name = "Anthea Guo" },
+  { name = "Mark Andrew Miller" },
+  { name = "Marcin P. Joachimiak" },
 ]
 dependencies = [
   "httpx>=0.28.0",
