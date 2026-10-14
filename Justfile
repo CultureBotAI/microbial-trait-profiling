@@ -105,13 +105,17 @@ table1-trait-maps:
 	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py"
 
 # Frozen inputs for #174; never overwrite the user's active derived matrix.
+# Dependencies on historical commits outside main are pinned via permanent git tags (#207):
+#   - issue174-baseline: commit a2b2df98e9beec98b772c9cb5af7aa090d033a98 (baseline composition scripts & metadata)
+#   - issue174-ora: commit 3ae7ac847d5d1ebc3bdd388bb2793d5e60bfdc81 (pre-#133 ORA model & reference tables)
+#   - issue174-matrix: commit c75744aa3c43eec90bd63858c2b77ebaf6a40236 (contains blob d837f449e7e967c478d10f92938923e57eec9a19)
 composition-prepare:
 	mkdir -p .tmp/issue174/baseline .tmp/issue174/ora
-	git archive a2b2df98e9beec98b772c9cb5af7aa090d033a98 scripts/create_trait_profile_infographic.py scripts/create_study_trait_profile_heatmap.py trait-visualization/study_trait_profile_paired_enrichment_metadata.tsv trait-visualization/study_trait_profile_study_metadata.tsv trait-visualization/study_trait_profile_trait_metadata.tsv 'trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats*.tsv' | tar -x -C .tmp/issue174/baseline
-	git archive 3ae7ac8 scripts/trait_enrichment.py data/derived/trait_enrichment_results.tsv data/derived/trait_depletion_results.tsv | tar -x -C .tmp/issue174/ora
-	git show d837f449e7e967c478d10f92938923e57eec9a19 > .tmp/issue174/study_trait_profiles_wide.tsv
-	git rev-parse HEAD > .tmp/issue174/code_commit.txt
-	git rev-parse 3ae7ac8 > .tmp/issue174/ora_commit.txt
+	git archive issue174-baseline scripts/create_trait_profile_infographic.py scripts/create_study_trait_profile_heatmap.py trait-visualization/study_trait_profile_paired_enrichment_metadata.tsv trait-visualization/study_trait_profile_study_metadata.tsv trait-visualization/study_trait_profile_trait_metadata.tsv 'trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats*.tsv' | tar -x -C .tmp/issue174/baseline
+	git archive issue174-ora scripts/trait_enrichment.py data/derived/trait_enrichment_results.tsv data/derived/trait_depletion_results.tsv | tar -x -C .tmp/issue174/ora
+	git show issue174-matrix:data/derived/study_trait_profiles_wide.tsv > .tmp/issue174/study_trait_profiles_wide.tsv
+	git rev-parse 3b733760d6a883008a5b131fbdde70d7039871a6 > .tmp/issue174/code_commit.txt
+	git rev-parse issue174-ora > .tmp/issue174/ora_commit.txt
 
 # Keep the pre-#133 ORA model fixed; include q<=0.05 for integration comparisons.
 composition-ora-reference: composition-prepare
@@ -127,8 +131,9 @@ composition-test:
 	MPLBACKEND=Agg uv run pytest tests/test_trait_composition.py tests/test_trait_profile_infographic.py tests/test_study_trait_profile_heatmap.py tests/test_composition_consumers.py
 
 # Frozen downstream code, caches, and guild definitions. Does not change active data.
+# Depends on permanent tag issue174-baseline (commit a2b2df98e9beec98b772c9cb5af7aa090d033a98).
 composition-downstream-prepare: composition-prepare
-	git archive a2b2df98e9beec98b772c9cb5af7aa090d033a98 scripts/create_condition_trait_module_heatmap.py scripts/analyze_enrichment_infographic_followup.py scripts/create_condition_body_site_guild_maps.py scripts/sankey_v3_rollups.py scripts/create_six_shared_trait_sankeys.py scripts/create_six_shared_trait_cytoscape_heatmaps.py scripts/create_six_shared_trait_graphs.py scripts/create_six_shared_trait_static_graphs.py scripts/create_pd_cellulose_analysis.py trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv trait-visualization/trait-profile-investigation/aerobe-enrichment-v2/guild_trait_selection.tsv trait-visualization/trait-profile-investigation/anaerobe-depletion-v2/guild_trait_selection.tsv | tar -x -C .tmp/issue174/baseline
+	git archive issue174-baseline scripts/create_condition_trait_module_heatmap.py scripts/analyze_enrichment_infographic_followup.py scripts/create_condition_body_site_guild_maps.py scripts/sankey_v3_rollups.py scripts/create_six_shared_trait_sankeys.py scripts/create_six_shared_trait_cytoscape_heatmaps.py scripts/create_six_shared_trait_graphs.py scripts/create_six_shared_trait_static_graphs.py scripts/create_pd_cellulose_analysis.py trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv trait-visualization/trait-profile-investigation/aerobe-enrichment-v2/guild_trait_selection.tsv trait-visualization/trait-profile-investigation/anaerobe-depletion-v2/guild_trait_selection.tsv | tar -x -C .tmp/issue174/baseline
 
 # Both stages use the identical frozen matrix; data-root supplies auxiliary inputs only.
 composition-downstream data-root="data": composition-downstream-prepare

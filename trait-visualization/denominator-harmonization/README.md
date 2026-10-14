@@ -162,7 +162,10 @@ Run `just sync`, `just composition-denominator-audit`,
 `just composition-downstream /path/to/data`, then `just check`.
 See [methods and captions](../../methods/composition_denominator_harmonization.md)
 and [provenance.json](provenance.json) for the exact matrix, metadata, source
-hashes, package versions, and fixed modeling choices. The baseline numerical
+hashes, package versions, and fixed modeling choices. Historical baseline commits
+are pinned via permanent tags (`issue174-baseline`, `issue174-ora`, and `issue174-matrix`).
+Implementation and input file digests are LF-normalized to ensure cross-platform parity
+with git blobs on both Windows and POSIX checkouts. The baseline numerical
 validation is enforced by the recipe, not just asserted in this report.
 
 The matrix is the exact Git blob cited in #174, not the newer local active

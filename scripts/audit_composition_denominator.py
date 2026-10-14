@@ -50,8 +50,10 @@ def write_table(frame: pd.DataFrame, name: str, *, index: bool = False) -> None:
 
 
 def sha256(path: Path) -> str:
-    with path.open("rb") as handle:
-        return hashlib.file_digest(handle, "sha256").hexdigest()
+    content = path.read_bytes()
+    if b"\r\n" in content:
+        content = content.replace(b"\r\n", b"\n")
+    return hashlib.sha256(content).hexdigest()
 
 
 def strata(pairs: pd.DataFrame):
@@ -547,10 +549,6 @@ def main() -> None:
             "at rtol=1e-9, atol=1e-12"
         ),
         "ora_validation": "q<=0.001 membership and q match frozen global-BH/fold>=1.5 output",
-        "kg_inputs": (
-            "reuse the cited committed matrix; original KG TSVs unavailable locally; "
-            "their recorded MD5 hashes remain in provenance.json"
-        ),
     }
     (OUTPUT / "provenance.json").write_text(
         json.dumps(provenance, indent=2) + "\n", encoding="utf-8"
