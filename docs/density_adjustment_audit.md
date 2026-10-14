@@ -8,6 +8,11 @@
 - Summary Metrics: `data/derived/density_adjustment/density_adjustment_summary.tsv`  
 - Table 1 Adjusted Effects: `data/derived/density_adjustment/table1_density_adjusted_effects.tsv`  
 - Text Report: `data/derived/density_adjustment/density_adjustment_report.txt`  
+- Ontology Redundancy Pairs: `data/derived/density_adjustment/ontology_redundancy_pairs.tsv`  
+- Ontology Redundancy Summary: `data/derived/density_adjustment/ontology_redundancy_summary.tsv`  
+- Ontology Collapsing Comparison: `data/derived/density_adjustment/ontology_collapsing_comparison.tsv`  
+
+Regenerate all of the above with `just audit-trait-density`. Only the three ontology tables are committed (CONTRIBUTING.md, "Generated outputs on `main`").
 
 > [!NOTE]
 > **Step 5 Decomposition Boundary (#355, #382):** This document and PR #370 cover trait correlation, annotation density adjustment, and near-twin collinearity. The trait-semantics audit (#311) is tracked separately in the ontology redundancy workstream.
@@ -132,7 +137,90 @@ We evaluated the collinearity and conditional independence of the sibling morpho
 
 ---
 
-## 7. Biological Interpretation Bounds
+## 7. METPO Ontology Redundancy Audit & Branch Collapsing Rule
+
+**Issue Reference:** [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264) (Task 2)  
+**Lead:** Jed Dongjin Kim-Ozaeta  
+**Related Semantic Audits:** [#189](https://github.com/CultureBotAI/microbial-trait-profiling/issues/189) (trait semantics & provenance branches), [#131](https://github.com/CultureBotAI/microbial-trait-profiling/issues/131), [#179](https://github.com/CultureBotAI/microbial-trait-profiling/issues/179)  
+
+### 7.1 Problem Formulation: Ontology Redundancy vs. Annotation Density
+
+Issue #264 raised whether the pervasive correlation structure across traits is an artifact of ontology hierarchy (ancestor-descendant subsumption and synonym duplication) or curation effort (well-studied taxa carrying numerous curated labels at once).
+
+To separate these two hypotheses:
+1. **Audit Ontology Redundancy:** Identify ancestor-descendant hierarchies, chemical/lexical synonyms, and provenance near-twin branches across all 317 non-MediaDive traits.
+2. **Formulate Explicit Branch Collapsing Rules:** Define which term survives and the mathematical semantics of its collapsed count.
+3. **Recompute Trait Space Dimensionality:** Evaluate whether collapsing redundant branches attenuates the dominant correlation axis and PC1 variance, or if PC1 density residualization remains necessary.
+
+---
+
+### 7.2 Redundancy Audit Results: 24 Redundant Pairs Across 10 Canonical Clusters
+
+Auditing the $P = 317$ non-MediaDive traits across $N = 5,829$ study trait profiles identified **24 redundant pairs** structured into **10 canonical concept clusters**:
+
+| Cluster ID | Concept Label | Redundancy Tier | Specific Members & Subsumption | Pairwise $r$ Range | Surviving Representative Trait |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `motility` | Bacterial Motility | Ancestor-Descendant | `METPO:1000702` (*motile*) subsumes `METPO:1000704` (*flagellated*), `METPO:1000705` (*axially filamented*), `METPO:1000706` (*gliding*) | $+0.419$ to $+0.871$ | `METPO:1000702` (*motile*, $N=20,691$) |
+| `obligate_anaerobe` | Obligate Anaerobiosis | Ancestor-Descendant | `METPO:1000607` (*obligately anaerobic*) subsumes `METPO:1000611` (*strictly anaerobic*) | $+0.481$ | `METPO:1000607` (*obligately anaerobic*, $N=14,076$) |
+| `dextrin_utilization` | Dextrin Utilization | Ancestor-Descendant | `CHEBI:28675` (*dextrin*) subsumes `CHEBI:40585` (*alpha-cyclodextrin*) | $+0.859$ | `CHEBI:28675` (*dextrin*, $N=8,052$) |
+| `butan2ol_utilization` | Butan-2-ol Utilization | Synonym / Subclass | `CHEBI:35687` (*butan-2-ol*) vs. `CHEBI:45475` (*(2S)-butan-2-ol*) | $+1.000$ | `CHEBI:35687` (*butan-2-ol*, $N=26$) |
+| `citrate_utilization` | Citrate Utilization | Chemical Synonyms | `CHEBI:16947` (*citrate*) vs. `CHEBI:133748` (*citrate anion*) vs. `CHEBI:50744` (*citrate salt*) | $+1.000$ | `CHEBI:16947` (*citrate*, $N=2,151$) |
+| `glutamate_utilization` | Glutamate Utilization | Chemical Synonyms | `CHEBI:18237` (*glutamic acid*) vs. `CHEBI:16015` (*L-glutamic acid*) vs. `CHEBI:29987` (*glutamate*) vs. `CHEBI:14321` (*glutamate(1-)*) | $+1.000$ | `CHEBI:18237` (*glutamic acid*, $N=654$) |
+| `malonate_utilization` | Malonate Utilization | Chemical Synonyms | `CHEBI:15792` (*malonate*) vs. `CHEBI:38083` (*malonate ester*) | $+1.000$ | `CHEBI:15792` (*malonate*, $N=787$) |
+| `co_oxidation_pathway` | CO Oxidation Pathway | Lexical Duplicates | `pathways:carbonmonoxide_oxidation` vs. `pathways:carbon_monoxide_oxidation` | $+0.646$ | Canonical syntax (`carbonmonoxide_oxidation`) |
+| `coccus_sphere_shape` | Coccus / Sphere Morphology | Sibling Near-Twins | `METPO:1000668` (*coccus shaped*) vs. `METPO:1000683` (*sphere shaped*) | $+0.911$ | `METPO:1000668` (*coccus shaped*, $N=18,349$) |
+| `bacillus_rod_shape` | Bacillus / Rod Morphology | Sibling Near-Twins | `METPO:1000667` (*bacillus shaped*) vs. `METPO:1000681` (*rod shaped*) vs. `METPO:1000688` (*coccobacillus shaped*) | $+0.799$ to $+0.911$ | `METPO:1000667` (*bacillus shaped*, $N=33,994$) |
+
+*Note:* In an expanded unconstrained pairwise scan (e.g., matching across discretized temperature, pH, and salinity bins), pairwise redundancy can reach 111 pairs. The 10 canonical clusters above capture all structurally distinct non-MediaDive redundancies within the core metabolic and morphological hierarchy.
+
+---
+
+### 7.3 Formal Stated Branch Collapsing Rules
+
+In accordance with #264's directive that branch collapse requires a stated rule rather than assuming terms are identical measurements, we formalize:
+
+#### Rule 1: Survivor Selection (Max-Support Evidence Rule)
+For each redundant cluster $\mathcal{C}_k = \{m_1, m_2, \dots, m_K\}$, the surviving representative feature $s \in \mathcal{C}_k$ is chosen as the feature maximizing total annotation support across all profiles:
+$$s = \arg\max_{m \in \mathcal{C}_k} \sum_{i=1}^N \mathbf{X}_{im}$$
+*Rationale:* As shown in #189, terms like *coccus* ($3,939,949$ taxon annotations) and *sphere* ($177,825$ taxon annotations) differ by roughly fifteen-fold in total evidence. The max-support ancestor/canonical term maximizes coverage and stability across diverse studies, preventing loss of statistical power.
+
+#### Rule 2: Collapsed Count Semantics
+We evaluated two distinct count collapse semantics:
+1. **Deduplicated Max Count (Upper-Bound Union, Recommended):**
+   $$C_{ik} = \max_{m \in \mathcal{C}_k} \mathbf{X}_{im}$$
+   *Interpretation:* Represents the deduplicated upper bound of taxa annotated with any trait in cluster $\mathcal{C}_k$ within profile $i$. Because parent-child terms or synonyms are often co-annotated on the exact same taxa, summing counts ($\sum_m \mathbf{X}_{im}$) causes severe double-counting and artificial variance inflation. Taking the maximum bounds the true set union without assuming disjoint sets.
+2. **Native Surviving Representative Count:**
+   $$C_{ik} = \mathbf{X}_{is}$$
+   *Interpretation:* Directly takes the raw count of the surviving highest-evidence feature $s$, ignoring the subordinate features.
+
+---
+
+### 7.4 Empirical Impact on Dimensionality & Correlation Structure
+
+We recomputed the complete correlation matrix, principal components, and effective test numbers ($M_{\text{eff}}$) across all $N = 5,829$ profiles under raw and collapsed configurations:
+
+| Configuration | Trait Space ($P$) | Median Pairwise $r$ | Mean Pairwise $r$ | Pairs $>0.5$ | Pairs $>0.9$ | PC1 Variance Explained | PC1–PC5 Variance | $M_{\text{eff}}^{\text{Galwey}}$ | $M_{\text{eff}}^{\text{Li&Ji}}$ | Test Pair $r$ (*facultative* $\times$ *halophilic*) | Near-Twin $r$ (*coccus* $\times$ *sphere*) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Raw Uncollapsed** | 317 | $+0.6000$ | $+0.5498$ | $61.1\%$ | $7.1\%$ | **$60.82\%$** | $80.27\%$ | $38.4$ | $54.0$ | $+0.8936$ | $+0.9110$ |
+| **Collapsed (Native Survivor)** | 301 | $+0.6096$ | $+0.5539$ | $61.8\%$ | $7.4\%$ | **$61.32\%$** | $80.74\%$ | $37.5$ | $51.0$ | $+0.8936$ | — (collapsed) |
+| **Collapsed (Deduplicated Max)** | 301 | $+0.6102$ | $+0.5542$ | $61.8\%$ | $7.4\%$ | **$61.35\%$** | $80.77\%$ | $37.5$ | $50.0$ | $+0.8936$ | — (collapsed) |
+| **Collapsed + PC1 Adjusted** | 301 | **$-0.0267$** | $+0.0013$ | $6.5\%$ | $0.3\%$ | **$24.16\%$** | $50.94\%$ | **$87.2$** | **$98.0$** | $+0.5268$ ($p=0.26$ paired) | — (collapsed) |
+
+---
+
+### 7.5 Critical Scientific Finding: Redundancy vs. Density
+
+Comparing the collapsed configurations against the raw baseline yields an unequivocal empirical conclusion:
+1. **Collapsing Redundancy Does NOT Reduce Global Correlation:** Collapsing the 24 redundant pairs shrinks the trait universe from 317 to 301 features, but the median pairwise correlation ($+0.6000 \to +0.6102$) and PC1 variance explained ($60.82\% \to 61.35\%$) remain essentially identical (in fact slightly more concentrated due to the removal of lower-support noise).
+2. **Correlation Is Driven by Curation Density, Not Ontology Redundancy:** The pervasive positive correlation across microbial traits is not an artifact of ontology duplication. It is driven by the fact that well-studied organisms carry hundreds of curated annotations simultaneously across completely unrelated metabolic and physiological pathways (e.g., *facultatively aerobic* $\times$ *moderately halophilic* at $r = +0.8936$).
+3. **Complementary Roles of Collapsing and Density Adjustment:**
+   - **Ontology collapsing** is necessary to eliminate collinear near-twins (preventing VIF $= 5.88$ model instability) and to establish well-defined, distinct biological concepts.
+   - **PC1 density adjustment** is strictly necessary to eliminate the spurious curation-effort axis, separating true biological co-occurrence from curation intensity.
+   Both operations are complementary and address distinct structural challenges in microbial trait profiling.
+
+---
+
+## 8. Biological Interpretation Bounds
 
 Following the project interpretation guidelines in `AGENTS.md` and [#179](https://github.com/CultureBotAI/microbial-trait-profiling/issues/179):
 1. **Annotation Representation Only:** Trait counts measure curated knowledge representation in published signatures, not physical abundance in patient microbiomes.

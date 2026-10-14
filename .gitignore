@@ -19,6 +19,12 @@ data/raw/*.csv
 data/studies/*.yaml
 data/derived/*
 !data/derived/.gitkeep
+# Cited summary tables opted in per path (CONTRIBUTING.md, "Generated outputs on main").
+!data/derived/density_adjustment/
+data/derived/density_adjustment/*
+!data/derived/density_adjustment/ontology_redundancy_pairs.tsv
+!data/derived/density_adjustment/ontology_redundancy_summary.tsv
+!data/derived/density_adjustment/ontology_collapsing_comparison.tsv
 data/benchmarks/*
 data/kg-microbe/*.tsv
 logs/
