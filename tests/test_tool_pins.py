@@ -1,4 +1,4 @@
-"""Tools pinned in pyproject.toml must match their pre-commit hook revs (#410, #420)."""
+"""Tools pinned in pyproject.toml must match their pre-commit hook revs (#410, #420, #445)."""
 
 import re
 import tomllib
@@ -13,6 +13,13 @@ ROOT = Path(__file__).resolve().parents[1]
 PINNED_HOOKS = {
     "uv": "https://github.com/astral-sh/uv-pre-commit",
     "detect-secrets": "https://github.com/Yelp/detect-secrets",  # pragma: allowlist secret
+}
+
+# Tools with a >= floor in pyproject: the hook rev must equal the version uv.lock resolves,
+# so `uv run <tool>` and the pre-commit hook in CI run the same release.
+LOCKED_HOOKS = {
+    "ruff": "https://github.com/astral-sh/ruff-pre-commit",
+    "bandit": "https://github.com/PyCQA/bandit",
 }
 
 
@@ -50,4 +57,19 @@ def test_pyproject_pin_matches_hook_rev(name: str) -> None:
     rev = _hook_revs()[PINNED_HOOKS[name]]
     assert pins == {rev.removeprefix("v")}, (
         f"{name}: pyproject.toml pins {sorted(pins)} but .pre-commit-config.yaml uses rev {rev}"
+    )
+
+
+def _locked_versions() -> dict[str, str]:
+    lock = tomllib.loads((ROOT / "uv.lock").read_text())
+    return {_normalize(pkg["name"]): pkg["version"] for pkg in lock["package"] if "version" in pkg}
+
+
+@pytest.mark.parametrize("name", sorted(LOCKED_HOOKS))
+def test_hook_rev_matches_locked_version(name: str) -> None:
+    locked = _locked_versions().get(name)
+    assert locked, f"{name} is not in uv.lock"
+    rev = _hook_revs()[LOCKED_HOOKS[name]]
+    assert rev.removeprefix("v") == locked, (
+        f"{name}: uv.lock resolves {locked} but .pre-commit-config.yaml uses rev {rev}"
     )
