@@ -4,10 +4,32 @@ message: >-
   If you use this software, please cite it using the
   metadata from this file.
 type: software
+abstract: >-
+  Integration and comparative analysis of microbial trait annotations.
 authors:
-  - given-names: Mark
+  - given-names: Jed Dongjin
+    family-names: Kim-Ozaeta
+    affiliation: University of California, Berkeley
+  - given-names: Ilyas
+    family-names: Abdolcader
+    affiliation: University of California, Berkeley
+  - given-names: Noel
+    family-names: Sason
+    affiliation: University of California, Berkeley
+  - given-names: Anthea
+    family-names: Guo
+    affiliation: University of California, Berkeley
+  - given-names: Mark Andrew
     family-names: Miller
     email: MAM@lbl.gov
     affiliation: Lawrence Berkeley National Laboratory
+  - given-names: Marcin P.
+    family-names: Joachimiak
+    affiliation: Lawrence Berkeley National Laboratory
 repository-code: https://github.com/CultureBotAI/microbial-trait-profiling
 license: MIT
+keywords:
+  - microbiome
+  - BugSigDB
+  - microbial traits
+  - knowledge graph
