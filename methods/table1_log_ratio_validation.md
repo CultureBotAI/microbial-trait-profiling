@@ -1,6 +1,10 @@
-# Pinned-corpus validation of the 15 Table 1 log-ratios
+# Pinned-corpus validation of the 15 Table 1-trait log-ratios (matched-corpus analog)
 
-The 2026-09-13 rerun reports all 15 unordered pairs among the six Table 1 traits.
+> [!IMPORTANT]
+> **Matched-Corpus Table 1-Trait Analog (Issue #210)**
+> The pinned-corpus analyses reported here are a matched-corpus Table 1-trait analog sensitivity analysis, not a reproduction of the published Table 1 baseline. They use the pinned human paired KG-Microbe profile corpus (959 studies, 2,335 pairs) and do not reproduce published Table 1 baseline values (e.g. facultatively aerobic $q = 2.8 \times 10^{-10}$).
+
+The 2026-09-13 rerun reports all 15 unordered pairs among the six Table 1-named traits.
 Three ratios have BY q <= 0.05 and none have BY q <= 0.001. These are exploratory,
 relative annotation comparisons conditional on positive counts. Both cutoffs
 are reported for transparency; no cutoff was selected to define a preferred set.
@@ -70,7 +74,7 @@ Abbreviations keep the comparison table readable; they are not new trait groups.
 Qualified source columns are resolved by the shared loader. In particular,
 cellulose and arsenate columns carry a `METPO:2000103|` prefix in this matrix.
 
-## Original fraction directions
+## Original fraction directions (matched-corpus analog)
 
 Each study contributes the sign of its mean increased-minus-decreased trait
 fraction. The null concerns the share of non-tied studies shifting up, and BH
@@ -87,9 +91,10 @@ from the directional test. The exact 95% interval is for the share up.
 | HAL | 485/360/114 | 845 | 0.574 (0.540, 0.608) | 1.928e-5 | 5.785e-5 |
 
 All six have BH q <= 0.05; FA, CEL and HAL also have BH q <= 0.001. This describes
-the original fraction hypotheses and their correction family.
+the matched-corpus Table 1-trait analog fraction hypotheses and their correction
+family, not a reproduction of the published Table 1 baseline.
 
-## All 15 paired log-ratios
+## All 15 paired log-ratios (matched-corpus analog)
 
 For A/B, the experiment contrast is
 `log2(A_inc/B_inc) - log2(A_dec/B_dec)`; eligible contrasts are averaged once per

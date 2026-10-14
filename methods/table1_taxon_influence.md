@@ -1,4 +1,8 @@
-# Table 1 taxon contributions and lineage influence
+# Matched-corpus Table 1-trait analog taxon contributions and lineage influence
+
+> [!IMPORTANT]
+> **Matched-Corpus Table 1-Trait Analog (Issue #210)**
+> The taxon contribution and lineage influence audits reported here are a matched-corpus Table 1-trait analog sensitivity analysis, not influence on the published manuscript Table 1. They use the pinned human paired KG-Microbe profile corpus and are not a reproduction of the published Table 1 baseline (they do not reproduce published Table 1 baseline values such as facultatively aerobic $q = 2.8 \times 10^{-10}$).
 
 Issue [#190](https://github.com/CultureBotAI/microbial-trait-profiling/issues/190).
 The [measured run summary](table1_taxon_influence_results.md) records the reconciled
@@ -186,6 +190,6 @@ and population; retain the effect unit, all uncertainty/support fields, family i
 input hashes, missingness and ambiguity flags. The native extension supplies the pinned
 transformed-composition and ORA reruns. Its experiment-weighted t/BH statistics and
 profile-level ORA families remain distinct from the study-weighted sign-test BH6 fields;
-none substitutes for another. Baseline parity (#210), native-owner review, the #188/#189
+none substitutes for another. Matched-corpus analog scope (#210; not a reproduction of the published Table 1 baseline), native-owner review, the #188/#189
 prerequisites and review of resolved source semantics remain required before manuscript
 adoption or assigning mechanisms.

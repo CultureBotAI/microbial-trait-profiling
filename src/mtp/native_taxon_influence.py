@@ -1,4 +1,8 @@
-"""Pinned native statistical contracts on the reconciled lineage-removal corpus."""
+"""Pinned native statistical contracts on the matched-corpus Table 1-trait analog.
+
+Sensitivity analysis on the reconciled lineage-removal corpus (not a reproduction
+of the published Table 1 baseline).
+"""
 
 from __future__ import annotations
 
@@ -359,8 +363,10 @@ def composition_q_sensitivity_table(base: Base, composition: list[Record]) -> li
         "## Baseline-versus-exclusion native q-values",
         "",
         "This table directly checks whether any predeclared genus/family exclusion causes "
-        "a Table 1 trait that is significant at pooled baseline to lose native q<=0.05 "
-        "membership. Q-values come from the complete supported-trait family, not a six-trait "
+        "a Table 1-named trait that is significant at pooled baseline to lose native q<=0.05 "
+        "membership. These baseline q-values are calculated on the matched-corpus Table 1-trait "
+        "analog, not a reproduction of the published Table 1 baseline. "
+        "Q-values come from the complete supported-trait family, not a six-trait "
         "recalculation. `NA` means the exclusion result was not tested or not selected.",
         "",
         "| Trait | Baseline q | Highest exclusion q | Highest-q exclusion | "
@@ -430,6 +436,15 @@ def composition_q_sensitivity_table(base: Base, composition: list[Record]) -> li
 def native_summary(base: Base, composition: list[Record], ora: list[Record]) -> str:
     lines = [
         "# Native lineage influence completion",
+        "",
+        "> [!IMPORTANT]",
+        "> **Matched-Corpus Table 1-Trait Analog (Issue #210)**",
+        "> The native composition and ORA reruns / taxon contribution audits reported here "
+        "are a matched-corpus Table 1-trait analog sensitivity analysis, not influence on "
+        "the published manuscript Table 1. They use the pinned human paired KG-Microbe "
+        "profile corpus and are not a reproduction of the published Table 1 baseline "
+        "(they do not reproduce published Table 1 baseline values such as facultatively "
+        "aerobic $q = 2.8 \\times 10^{-10}$).",
         "",
         "These reruns extend the reconciled 190-v1 audit using protocol 190-native-v1. "
         "The 22 exclusion scenarios, four scopes, raw trait keys and human paired corpus "

@@ -154,10 +154,10 @@ studies (710 of 932) carry opposite signs for the two guilds; that observation
 alone does not quantify the structural contribution. The odds ratio reads as
 "the discordance runs more
 often in the aerobe-up direction than the reverse", not as independent
-confirmation of the oxygen hypothesis. The Table 1 directional-shift figure
-tests each trait against itself across directions, but remains dependent on the
-same profile denominators. The [paired log-ratio analysis](table1_paired_log_ratios.md)
-illustrates reference-explicit tests over the individual Table 1 traits; it does
+confirmation of the oxygen hypothesis. The matched-corpus Table 1-trait analog
+directional-shift figure tests each trait against itself across directions, but
+remains dependent on the same profile denominators. The [paired log-ratio analysis](table1_paired_log_ratios.md)
+illustrates reference-explicit tests over the individual Table 1-named traits; it does
 not independently validate the oxygen guild hypothesis.
 
 Rank correlations are computed across studies, one observation per study, using
@@ -165,7 +165,7 @@ each study's mean guild fraction per direction and its paired contrast (the mean
 increased minus mean decreased fraction). An earlier version correlated the 86
 condition-by-body-site cells that survived masking; one study reaches many cells,
 so that counted dependent cells as independent observations, and it is replaced
-here by the per-study template the Table 1 figure already uses (#165). Fifteen of
+here by the per-study template the matched-corpus Table 1-trait analog figure already uses (#165). Fifteen of
 the 959 studies carry no oxygen annotation on either side. Their zero is
 missingness rather than a measured share, so they are excluded from the rank
 correlations, which leaves 944 (#289). The McNemar already dropped them as ties,

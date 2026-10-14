@@ -1,8 +1,8 @@
-"""Manuscript Table 1 traits: condition-by-body-site heatmap and directional shift.
+"""Matched-corpus Table 1-trait analog: heatmap and directional shift.
 
 This is the oxygen guild pair of figures (`mtp.guild_maps`) re-run over the six
-individual traits of manuscript Table 1 rather than over the two pooled oxygen
-guilds, with all six combined into a single figure each:
+individual traits named in manuscript Table 1 rather than over the two pooled
+oxygen guilds, with all six combined into a single figure each:
 
 1. facultatively aerobic (METPO:1000608)
 2. cellulose catabolic process (GO:0030245)
@@ -13,11 +13,13 @@ guilds, with all six combined into a single figure each:
 
 The corpus definition, the study-level averaging, the masking rules, and the row
 clustering are the same code path as the guild figure, so the two are directly
-comparable. Two things necessarily differ. The six traits are single terms rather
-than pooled guilds, and their corpus-wide prevalence spans more than an order of
-magnitude, so the heatmap gives each trait its own colour range instead of one
-shared range. And there is no aerobe-versus-anaerobe contrast to test, so the
-companion figure reports each trait's own paired directional shift.
+comparable as a matched-corpus analog. This does not claim to reproduce the
+published Table 1 baseline. Two things necessarily differ. The six traits are
+single terms rather than pooled guilds, and their corpus-wide prevalence spans
+more than an order of magnitude, so the heatmap gives each trait its own colour
+range instead of one shared range. And there is no aerobe-versus-anaerobe
+contrast to test, so the companion figure reports each trait's own paired
+directional shift.
 """
 
 from __future__ import annotations
@@ -64,6 +66,11 @@ if TYPE_CHECKING:
 TRAIT_ORDER: tuple[str, ...] = tuple(TABLE1_TRAITS)
 OUTPUT_PREFIX = "table1_traits"
 CONFIDENCE_LEVEL = 0.95
+ANALYSIS_LABEL = "Matched-corpus Table 1-trait analog"
+ANALYSIS_NOTE = (
+    "Uses the pinned human paired KG-Microbe profile corpus; it is not a "
+    "reproduction of the published Table 1 baseline."
+)
 
 
 @dataclass(frozen=True)
@@ -636,7 +643,12 @@ def build_shift_figure(
         f"BugSigDB {vintage or 'vintage unknown'}."
     )
     figure.update_layout(
-        title={"text": f"Table 1 traits: paired directional shift<br><sub>{subtitle}</sub>"},
+        title={
+            "text": (
+                f"{ANALYSIS_LABEL}: paired directional shift<br>"
+                f"<sub>{ANALYSIS_NOTE} {subtitle}</sub>"
+            )
+        },
         width=1650,
         height=640,
         margin={"l": 290, "r": 120, "t": 170, "b": 90},
@@ -662,8 +674,10 @@ def write_shift_figure(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Generate the manuscript Table 1 trait pair: a condition x body-site "
-            "heatmap with all six traits combined, and their paired directional shifts."
+            "Generate the matched-corpus Table 1-trait analog: a condition x "
+            "body-site heatmap with all six traits combined, and their paired "
+            "directional shifts. This is not a reproduction of the published "
+            "Table 1 baseline."
         )
     )
     parser.add_argument("--profile-input", type=Path, default=DEFAULT_PROFILE_PATH)
@@ -817,7 +831,7 @@ def main() -> int:
             vintage,
             guild_order=TRAIT_ORDER,
             colorscales={trait: trait_colorscale(trait) for trait in TRAIT_ORDER},
-            title="Manuscript Table 1 traits by condition and body site",
+            title=f"{ANALYSIS_LABEL}: condition and body site",
             group_noun="trait",
             value_phrase="trait fraction",
             shared_range=False,
@@ -924,7 +938,7 @@ def main() -> int:
                 sites=cut.body_sites,
                 guild_order=TRAIT_ORDER,
                 colorscales={trait: trait_colorscale(trait) for trait in TRAIT_ORDER},
-                title=f"Manuscript Table 1 traits: {panel.subtitle}",
+                title=f"{ANALYSIS_LABEL}: {panel.subtitle}",
                 group_noun="trait",
                 value_phrase="trait fraction",
                 colorbar_labels={t: t.replace("_", " ") for t in TRAIT_ORDER},
