@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import re
+from collections.abc import Sequence
 from pathlib import Path
 from textwrap import fill, shorten
 
@@ -360,11 +361,12 @@ def compute_trait_stats(
     trait_metadata: pd.DataFrame | None = None,
     annotation_counts: pd.Series | None = None,
     *,
+    study_ids: pd.Series | Sequence[object] | None = None,
     stratum_kind: str = "pooled",
     stratum: str = "pooled",
     selected_profile_count: int | None = None,
 ) -> pd.DataFrame:
-    """Calculate paired one-sample t-test summaries for each trait column."""
+    """Calculate paired and study-averaged one-sample t-test summaries for each trait column."""
     if trait_metadata is None:
         trait_metadata = metadata_from_trait_ids(pd.Index(matrix.columns))
     trait_metadata = trait_metadata.reindex(matrix.columns)
@@ -372,18 +374,64 @@ def compute_trait_stats(
         annotation_counts = pd.Series(pd.NA, index=matrix.columns)
     annotation_counts = annotation_counts.reindex(matrix.columns)
 
+    if study_ids is None:
+        study_series = pd.Series(matrix.index, index=matrix.index)
+    elif isinstance(study_ids, pd.Series):
+        if study_ids.index.equals(matrix.index):
+            study_series = study_ids.copy()
+        elif matrix.index.isin(study_ids.index).all():
+            study_series = study_ids.loc[matrix.index].copy()
+        else:
+            study_series = study_ids.reindex(matrix.index).copy()
+    else:
+        study_series = pd.Series(list(study_ids), index=matrix.index)
+
+    study_series = study_series.fillna(pd.Series(matrix.index, index=matrix.index))
+    study_matrix = matrix.groupby(study_series, sort=False).mean()
+    study_count = len(study_matrix)
+
     records: list[dict[str, object]] = []
     for column in matrix.columns:
         values = matrix[column].to_numpy(dtype=float)
-        if len(values) < 3 or np.isclose(values.std(ddof=1), 0.0):
+        pair_n = len(values)
+        mean_contrast = float(values.mean())
+        median_contrast = float(np.median(values))
+        std_contrast = float(values.std(ddof=1)) if pair_n >= 2 else 0.0
+
+        if pair_n < 2 or np.isclose(std_contrast, 0.0):
             t_stat = float("nan")
             p_value = float("nan")
+            ci95_lower = float("nan")
+            ci95_upper = float("nan")
         else:
             result = stats.ttest_1samp(values, 0.0)
             t_stat = float(result.statistic)
             p_value = float(result.pvalue)
+            se = std_contrast / np.sqrt(pair_n)
+            t_crit = float(stats.t.ppf(0.975, pair_n - 1))
+            ci95_lower = mean_contrast - t_crit * se
+            ci95_upper = mean_contrast + t_crit * se
 
-        mean_contrast = float(values.mean())
+        study_values = study_matrix[column].to_numpy(dtype=float)
+        study_n = len(study_values)
+        study_mean = float(study_values.mean())
+        study_median = float(np.median(study_values))
+        study_std = float(study_values.std(ddof=1)) if study_n >= 2 else 0.0
+
+        if study_n < 2 or np.isclose(study_std, 0.0):
+            study_t_stat = float("nan")
+            study_p_value = float("nan")
+            study_ci95_lower = float("nan")
+            study_ci95_upper = float("nan")
+        else:
+            study_result = stats.ttest_1samp(study_values, 0.0)
+            study_t_stat = float(study_result.statistic)
+            study_p_value = float(study_result.pvalue)
+            study_se = study_std / np.sqrt(study_n)
+            study_t_crit = float(stats.t.ppf(0.975, study_n - 1))
+            study_ci95_lower = study_mean - study_t_crit * study_se
+            study_ci95_upper = study_mean + study_t_crit * study_se
+
         metadata_row = trait_metadata.loc[column]
         annotated_profile_count = annotation_counts.loc[column]
         annotated_profile_fraction = (
@@ -398,7 +446,7 @@ def compute_trait_stats(
                 "stratum_kind": stratum_kind,
                 "stratum": stratum,
                 "selected_trait_rank": metadata_row.get("selected_trait_rank", pd.NA),
-                "pair_count": len(values),
+                "pair_count": pair_n,
                 "profile_count": selected_profile_count
                 if selected_profile_count is not None
                 else pd.NA,
@@ -409,16 +457,26 @@ def compute_trait_stats(
                 "composition_variance": metadata_row.get("composition_variance", pd.NA),
                 "selection_score": metadata_row.get("selection_score", pd.NA),
                 "mean_increased_minus_decreased": mean_contrast,
-                "median_increased_minus_decreased": float(np.median(values)),
-                "std_increased_minus_decreased": float(values.std(ddof=1)),
+                "median_increased_minus_decreased": median_contrast,
+                "std_increased_minus_decreased": std_contrast,
+                "ci95_lower": ci95_lower,
+                "ci95_upper": ci95_upper,
                 "positive_pair_fraction": float(np.mean(values > 0)),
                 "negative_pair_fraction": float(np.mean(values < 0)),
                 "nonzero_pair_fraction": float(np.mean(values != 0)),
                 "t_statistic": t_stat,
                 "p_value": p_value,
+                "study_count": study_count,
+                "study_mean_increased_minus_decreased": study_mean,
+                "study_median_increased_minus_decreased": study_median,
+                "study_std_increased_minus_decreased": study_std,
+                "study_ci95_lower": study_ci95_lower,
+                "study_ci95_upper": study_ci95_upper,
+                "study_t_statistic": study_t_stat,
+                "study_p_value": study_p_value,
                 "direction": (
                     "trait enriched in increased profiles"
-                    if mean_contrast >= 0
+                    if study_mean >= 0
                     else "trait enriched in decreased profiles"
                 ),
             }
@@ -429,6 +487,12 @@ def compute_trait_stats(
     clipped_p = stats_df["p_value"].clip(lower=np.finfo(float).tiny, upper=1.0)
     stats_df["minus_log10_p"] = -np.log10(clipped_p)
     stats_df["abs_t_statistic"] = stats_df["t_statistic"].abs()
+
+    stats_df["study_q_value"] = benjamini_hochberg(stats_df["study_p_value"].fillna(1.0))
+    clipped_study_p = stats_df["study_p_value"].clip(lower=np.finfo(float).tiny, upper=1.0)
+    stats_df["study_minus_log10_p"] = -np.log10(clipped_study_p)
+    stats_df["study_abs_t_statistic"] = stats_df["study_t_statistic"].abs()
+
     ordered_columns = [
         "trait",
         "trait_label",
@@ -446,6 +510,8 @@ def compute_trait_stats(
         "mean_increased_minus_decreased",
         "median_increased_minus_decreased",
         "std_increased_minus_decreased",
+        "ci95_lower",
+        "ci95_upper",
         "positive_pair_fraction",
         "negative_pair_fraction",
         "nonzero_pair_fraction",
@@ -454,11 +520,22 @@ def compute_trait_stats(
         "q_value",
         "minus_log10_p",
         "abs_t_statistic",
+        "study_count",
+        "study_mean_increased_minus_decreased",
+        "study_median_increased_minus_decreased",
+        "study_std_increased_minus_decreased",
+        "study_ci95_lower",
+        "study_ci95_upper",
+        "study_t_statistic",
+        "study_p_value",
+        "study_q_value",
+        "study_minus_log10_p",
+        "study_abs_t_statistic",
         "direction",
     ]
     return stats_df[ordered_columns].sort_values(
-        ["p_value", "abs_t_statistic", "trait_label"],
-        ascending=[True, False, True],
+        ["study_p_value", "study_abs_t_statistic", "p_value", "abs_t_statistic", "trait_label"],
+        ascending=[True, False, True, False, True],
     )
 
 
@@ -556,6 +633,11 @@ def compute_stratum_trait_stats(
     profile_zscores = build_zscore_matrix(selected_profile_matrix, trait_metadata.index)
     pair_matrix = build_pair_matrix_from_profiles(profile_zscores, pair_metadata)
     annotation_counts = annotation_counts_for_traits(selected_profile_matrix, trait_metadata.index)
+    study_ids = (
+        pair_metadata.loc[pair_matrix.index, "study_id"]
+        if "study_id" in pair_metadata.columns
+        else None
+    )
     return compute_trait_stats(
         pair_matrix,
         trait_metadata,
@@ -563,6 +645,7 @@ def compute_stratum_trait_stats(
         stratum_kind=stratum_kind,
         stratum=stratum,
         selected_profile_count=len(selected_profile_matrix),
+        study_ids=study_ids,
     )
 
 
@@ -769,14 +852,27 @@ def add_anatomical_outline(ax: plt.Axes) -> None:
 def plot_top_traits(ax: plt.Axes, trait_stats: pd.DataFrame) -> None:
     """Plot panel A: traits with strongest paired contrast evidence."""
     top_traits = trait_stats.head(TOP_N_TRAITS).iloc[::-1].copy()
-    colors = [
-        INCREASED_BLUE if value >= 0 else DECREASED_RED
-        for value in top_traits["mean_increased_minus_decreased"]
-    ]
+    score_col = (
+        "study_minus_log10_p" if "study_minus_log10_p" in top_traits.columns else "minus_log10_p"
+    )
+    mean_col = (
+        "study_mean_increased_minus_decreased"
+        if "study_mean_increased_minus_decreased" in top_traits.columns
+        else "mean_increased_minus_decreased"
+    )
+    ci_low_col = "study_ci95_lower" if "study_ci95_lower" in top_traits.columns else "ci95_lower"
+    ci_high_col = "study_ci95_upper" if "study_ci95_upper" in top_traits.columns else "ci95_upper"
+
+    colors = [INCREASED_BLUE if value >= 0 else DECREASED_RED for value in top_traits[mean_col]]
     labels = [trait_label(label, 38) for label in top_traits["trait_label"]]
-    bars = ax.barh(labels, top_traits["minus_log10_p"], color=colors, edgecolor="white")
+    bars = ax.barh(labels, top_traits[score_col], color=colors, edgecolor="white")
     ax.set_title("A. Top Profile-Differentiating Traits", fontsize=14, fontweight="bold", pad=8)
-    ax.set_xlabel("-log10(p) from paired increased-minus-decreased profile contrast")
+    if score_col == "study_minus_log10_p":
+        ax.set_xlabel(
+            "-log10(study-level p) from paired increased-minus-decreased profile contrast"
+        )
+    else:
+        ax.set_xlabel("-log10(p) from paired increased-minus-decreased profile contrast")
     ax.grid(axis="x", color=SLATE_200, linewidth=0.8)
     ax.set_axisbelow(True)
     ax.tick_params(axis="y", labelsize=9)
@@ -797,9 +893,16 @@ def plot_top_traits(ax: plt.Axes, trait_stats: pd.DataFrame) -> None:
         fontsize=9,
     )
 
-    x_offset = max(top_traits["minus_log10_p"]) * 0.015
+    max_p = float(top_traits[score_col].max()) if not top_traits.empty else 1.0
+    x_offset = max_p * 0.015
     for bar, row in zip(bars, top_traits.itertuples(index=False), strict=True):
-        label = f"mean {row.mean_increased_minus_decreased:+.2f}"
+        mean_val = getattr(row, mean_col)
+        ci_low = getattr(row, ci_low_col, float("nan"))
+        ci_high = getattr(row, ci_high_col, float("nan"))
+        if pd.notna(ci_low) and pd.notna(ci_high):
+            label = f"mean {mean_val:+.2f} [{ci_low:+.2f}, {ci_high:+.2f}]"
+        else:
+            label = f"mean {mean_val:+.2f}"
         ax.text(
             bar.get_width() + x_offset,
             bar.get_y() + bar.get_height() / 2,
@@ -809,6 +912,7 @@ def plot_top_traits(ax: plt.Axes, trait_stats: pd.DataFrame) -> None:
             fontsize=8.2,
             color=SLATE_700,
         )
+    ax.set_xlim(0, max_p * 1.38)
 
 
 def plot_condition_summary(ax: plt.Axes, condition_summary: pd.DataFrame) -> None:
@@ -974,10 +1078,20 @@ def plot_story_box(
     )
     ax.add_patch(box)
 
-    top_increased = trait_stats[trait_stats["mean_increased_minus_decreased"] > 0].iloc[0]
-    top_decreased = trait_stats[trait_stats["mean_increased_minus_decreased"] < 0].iloc[0]
+    mean_col = (
+        "study_mean_increased_minus_decreased"
+        if "study_mean_increased_minus_decreased" in trait_stats.columns
+        else "mean_increased_minus_decreased"
+    )
+    q_col = "study_q_value" if "study_q_value" in trait_stats.columns else "q_value"
+    top_increased = trait_stats[trait_stats[mean_col] > 0].iloc[0]
+    top_decreased = trait_stats[trait_stats[mean_col] < 0].iloc[0]
     top_condition = condition_summary.iloc[0]
     top_body_site = body_site_summary.iloc[0]
+    inc_mean = getattr(top_increased, mean_col)
+    inc_q = getattr(top_increased, q_col)
+    dec_mean = getattr(top_decreased, mean_col)
+    dec_q = getattr(top_decreased, q_col)
     bullets = [
         (
             "Scope",
@@ -990,11 +1104,11 @@ def plot_story_box(
             "Strongest split",
             (
                 f"{trait_label(top_increased.trait_label, 42)} is enriched in inc "
-                f"profiles (mean {top_increased.mean_increased_minus_decreased:+.2f}, "
-                f"q={format_q(float(top_increased.q_value))}); "
+                f"profiles (mean {inc_mean:+.2f}, "
+                f"study q={format_q(float(inc_q))}); "
                 f"{trait_label(top_decreased.trait_label, 42)} is enriched in dec "
-                f"profiles (mean {top_decreased.mean_increased_minus_decreased:+.2f}, "
-                f"q={format_q(float(top_decreased.q_value))})."
+                f"profiles (mean {dec_mean:+.2f}, "
+                f"study q={format_q(float(dec_q))})."
             ),
         ),
         (
@@ -1016,8 +1130,9 @@ def plot_story_box(
         (
             "Caveat",
             (
-                "P-values and q-values are descriptive screens over selected profile traits, "
-                "not new differential abundance tests."
+                "P-values and q-values reflect study-averaged paired profile contrasts "
+                "over selected traits, serving as descriptive screens rather than new "
+                "differential abundance tests."
             ),
         ),
     ]
@@ -1146,6 +1261,7 @@ def main() -> None:
         pooled_profile_matrix,
         pooled_trait_metadata.index,
     )
+    study_ids = metadata.loc[matrix.index, "study_id"] if "study_id" in metadata.columns else None
     trait_stats = compute_trait_stats(
         matrix,
         pooled_trait_metadata,
@@ -1153,6 +1269,7 @@ def main() -> None:
         stratum_kind="pooled",
         stratum="pooled",
         selected_profile_count=len(pooled_profile_matrix),
+        study_ids=study_ids,
     )
     scored = add_pair_scores(matrix, metadata)
     condition_summary = summarize_groups(

@@ -119,8 +119,19 @@ have both an increased and a decreased BugSigDB profile. For each matched
 study/experiment pair and each selected trait, the plotted statistic is `increased
 profile z-score - decreased profile z-score`. Positive values therefore indicate
 traits enriched in the increased profile relative to the decreased profile from the
-same study and experiment; negative values indicate the reverse. This paired contrast
-removes between-study baseline differences before visual clustering.
+same study and experiment; negative values indicate the reverse.
+
+On a per-row (per-pair) basis, this matched subtraction eliminates study- and
+experiment-specific baseline differences (such as extraction protocols, sequencing
+platforms, or shared host backgrounds common to both increased and decreased arms)
+prior to visual clustering. Note that across the balanced corpus, profile
+z-scores are standardized to mean zero ($\sum z_{\text{inc}} + \sum z_{\text{dec}} = 0$).
+Consequently, the aggregate sum across all $N$ pairs satisfies
+$\sum (z_{\text{inc}} - z_{\text{dec}}) = \sum z_{\text{inc}} - (-\sum z_{\text{inc}}) = 2 \sum z_{\text{inc}}$,
+yielding the algebraic identity $\text{mean}(z_{\text{inc}} - z_{\text{dec}}) \equiv 2 \times \text{mean}(z_{\text{inc}})$.
+Thus, while pairing removes baseline offsets individually within each experiment vector,
+the aggregate mean contrast directly reflects twice the increased profiles' average
+standardized trait abundance.
 
 The current paired matrix contains 2,335 matched study/experiment pairs from 959
 studies and the same 60 selected traits. The full paired matrix is written without
@@ -395,14 +406,24 @@ enrichment-analysis infographic but uses the full profile table from
 are matched BugSigDB study/experiment pairs with the increased profile z-score
 minus the decreased profile z-score for each eligible selected trait.
 
-Panel A ranks eligible traits by one-sample paired t-test signal against zero
-over the matched increased-minus-decreased rows. The plotted value is `-log10(p)`,
-and bar color encodes whether the trait is enriched in increased profiles or
-decreased profiles. The
-companion table
-`trait_profile_paired_contrast_trait_stats.tsv` records the mean, median,
-standard deviation, direction, p-value, and Benjamini-Hochberg q-value for each
-trait.
+Panel A ranks eligible traits by one-sample paired t-test signal against zero.
+Because multiple experiment pairs frequently originate from the same publication or study
+(e.g., 2,335 pairs derived from 959 studies), pairs within a study share technical and
+biological idiosyncrasies. To prevent repeated experiments from artificially inflating degrees
+of freedom, contrasts are aggregated by study ID (`.groupby(study_ids).mean()`) prior to
+hypothesis testing. The plotted value in Panel A is `-log10(study-level p)`, bar color encodes
+direction (enriched in increased vs. decreased profiles), and bar annotations report the
+study-level effect and 95% confidence interval as `mean {m:+.2f} [{ci_lower:+.2f}, {ci_upper:+.2f}]`
+computed via the Student's t-distribution ($SE = s / \sqrt{N}$, $t_{\text{crit}} = t_{0.975, N-1}$).
+
+The companion table `trait_profile_paired_contrast_trait_stats.tsv` records both study-level
+statistics (`study_count`, `study_mean_increased_minus_decreased`, `study_median_increased_minus_decreased`,
+`study_std_increased_minus_decreased`, `study_ci95_lower`, `study_ci95_upper`, `study_t_statistic`,
+`study_p_value`, `study_q_value`, `study_minus_log10_p`, `study_abs_t_statistic`) and pair-level
+statistics (`pair_count`, `mean_increased_minus_decreased`, `median_increased_minus_decreased`,
+`std_increased_minus_decreased`, `ci95_lower`, `ci95_upper`, `positive_pair_fraction`,
+`negative_pair_fraction`, `nonzero_pair_fraction`, `t_statistic`, `p_value`, `q_value`,
+`minus_log10_p`, `abs_t_statistic`), preserving full backwards compatibility for downstream consumers.
 
 The same script also writes explicit paired-contrast trait-stat tables for
 downstream evidence-matrix assembly. `trait_profile_paired_contrast_trait_stats.tsv`
