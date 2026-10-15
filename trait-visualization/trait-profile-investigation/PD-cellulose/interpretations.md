@@ -4,7 +4,7 @@
 
 This folder focuses on the direction-specific connection between Parkinson's disease (PD), fecal profiles, and the cellulose catabolic process trait from the six-shared-traits analysis.
 
-The main result is that the cellulose catabolic process signal is concentrated in PD decreased fecal profiles rather than acting as a broad PD marker across directions. The within-direction PD-versus-other-feces comparisons are nominally significant, but the study-clustered PD-by-direction interactions do not cross the conventional `p<0.05` threshold. The result therefore supports a decreased-profile concentration of the PD signal, not a definitive PD-specific direction interaction.
+The main cellulose result is that the cellulose catabolic process signal is concentrated in PD decreased fecal profiles rather than acting as a broad PD marker across directions. The within-direction PD-versus-other-feces comparisons are nominally significant, but the study-clustered PD-by-direction interactions do not cross the conventional `p<0.05` threshold. In the separate global FDR screen across 56 conditions and all six traits, PD-cellulose does not pass `q<=0.05`; only PD-moderately-halophilic does. The result therefore supports a decreased-profile concentration of the PD cellulose signal, not a definitive PD-specific interaction or an FDR-confirmed PD-cellulose biomarker.
 
 ## Direction-Specific Cytoscape Signal
 
@@ -30,6 +30,32 @@ Among the six traits in PD feces, cellulose has a profile-level increased-minus-
 The study-weighted summary therefore supports increased-profile skew for moderately halophilic, facultatively aerobic, and arsenate reduction, and decreased-profile skew for cellulose catabolic process. Coccus shaped and sphere shaped remain directionally uncertain. These are aggregate trait contrasts, not species-level contribution tests, and they do not replace the profile-level `-0.609` cellulose result.
 
 See `pd_six_trait_direction_lollipop.png` and `pd_species_six_traits_influence_heatmap_traits.tsv`.
+
+## Cross-Condition FDR Evidence Landscape
+
+The condition-taxon-trait evidence landscape shows every eligible result while preserving the global multiple-testing boundary. It includes `56` human fecal conditions with at least three studies containing both increased and decreased signatures, `264` eligible condition-taxon comparisons, and `336` condition-trait comparisons. Genus and species IDs remain separate.
+
+Condition-taxon direction is tested with an exact McNemar/binomial test on discordant paired studies. Condition-trait contrasts are tested with a two-sided Wilcoxon signed-rank test across paired study-level increased-minus-decreased z scores. Benjamini-Hochberg correction is applied separately across the complete eligible taxon family and the complete trait family.
+
+The figure uses three evidence tiers:
+
+- Filled points are FDR-significant at `q<=0.05`.
+- Hollow amber points have `0.05<q<=0.20` and are exploratory, not significant.
+- Grey points have `q>0.20` and show the remaining tested background.
+
+Only one result passes the global FDR threshold: Parkinson's disease to moderately halophilic (`mean contrast=+0.530`, raw `p=0.000143`, `q=0.048`, `n=45` paired studies). Four results are retained only as exploratory follow-up hypotheses:
+
+| evidence tier | condition | taxon or trait | effect | raw p | global q | study support |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| significant | Parkinson's disease | moderately halophilic | `+0.530` | `0.000143` | `0.048` | `45` |
+| exploratory | Parkinson's disease | *Roseburia* genus | `-0.333` directional study fraction | `0.000729` | `0.192` | `20` reporting studies |
+| exploratory | Parkinson's disease | arsenate reduction | `+0.506` | `0.00159` | `0.164` | `45` |
+| exploratory | COVID-19 | cellulose catabolic process | `-1.307` | `0.00195` | `0.164` | `11` |
+| exploratory | colorectal cancer | cellulose catabolic process | `-0.821` | `0.00194` | `0.164` | `24` |
+
+No condition-taxon comparison passes `q<=0.05`; consequently, no genus, species, or KG-Microbe taxon-to-trait provenance link is presented as an inferential discovery. The significant-only node and edge tables contain only PD to moderately halophilic. The raw p-values and earlier confidence intervals provide descriptive context, but they do not supersede the global q-values.
+
+See `pd_condition_taxon_trait_network.png`, `pd_condition_taxon_trait_network_methods.md`, `pd_condition_taxon_trait_network_condition_taxon_tests.tsv`, and `pd_condition_taxon_trait_network_condition_trait_tests.tsv`.
 
 ## PD vs Other Fecal Profiles
 
@@ -69,6 +95,8 @@ See `pd_cellulose_taxon_driver_bar.png`, `pd_cellulose_taxon_six_trait_heatmap.p
 Among `60` cellulose-annotated taxon labels observed in PD feces, `30` are reported in only one direction. Nine of those direction-exclusive labels occur in at least two studies; the other `21` are supported by one study each.
 
 *Roseburia faecis* has the strongest repeated-study species-level decreased-only pattern in this shortlist: `6/123` decreased PD profiles from `5/46` decreased-direction studies, compared with no increased PD profiles. Its decreased reporting rate is `4.9%` in PD feces versus `0.7%` in the non-PD fecal background. This is a selected descriptive candidate, not a formally established biomarker; formal inference would need study clustering and multiple-testing control across the full candidate set.
+
+The separate global direction screen tests the *Roseburia* genus, not *R. faecis* specifically. The genus favors decreased reporting in `17` discordant studies versus `2` favoring increased, but its global `q=0.192`; it is therefore exploratory rather than significant. This genus result must not be transferred to every *Roseburia* species.
 
 See `pd_cellulose_direction_exclusive_taxa_context.md`.
 
@@ -118,11 +146,11 @@ An exact species result was preferred. When unavailable, a genus or family resul
 
 The contributor analysis selects `28` species and `25` families across the six PD traits. To remove rows containing only small dots, the heatmap retains `11/53` taxa—`3` species and `8` families—with at least one absolute increased-versus-decreased full-cell contributor-share difference of `5` percentage points. The complete direction-difference audit still retains `149/318` taxon-trait pairs whose share changes between directions. Equal pairs, including the `169` pairs absent in both directions, are omitted. Its first row uses paired red/blue circles for the directional background and a grey outer portion for unresolved or ambiguous rank mass; contributor circles remain fractions of the full count, so unresolved mass is not silently renormalized away.
 
-The specificity strip uses `253` PD fecal profiles and `3,419` other fecal profiles as the respective denominators and colors by the normalized prevalence difference (`PD prevalence - other-feces prevalence`) rather than a count ratio. Raw count displays with a zero denominator, such as `1/0`, are rendered as `---`; thus an undefined or infinite ratio cannot dominate the color scale. The prevalence difference remains descriptive rather than inferential because profiles and experiments repeat within studies.
+The specificity strip uses `253` PD fecal profiles and `3,419` other fecal profiles as the respective denominators and colors by the normalized prevalence difference (`PD prevalence - other-feces prevalence`) rather than a count ratio. The color scale is clipped at `+/-5` percentage points so one extreme row does not compress the remaining colors. Raw count displays with a zero denominator, such as `1/0`, are rendered as `---`; thus an undefined or infinite ratio cannot dominate the color scale. The prevalence difference remains descriptive rather than inferential because profiles and experiments repeat within studies.
 
 Only `3/15` trait co-carriage pairs change across directions, and every change is one additional increased-direction family: Bifidobacteriaceae. Facultatively aerobic plus coccus shaped changes from `27` decreased to `28` increased shared taxa, facultatively aerobic plus moderately halophilic also changes from `27` to `28`, and coccus shaped plus moderately halophilic changes from `18` to `19`. The other `12` pairs are retained in the all-edges audit but omitted from the network.
 
-No contributor-level or co-carriage-edge significance test is supported by these propagated counts: they are neither independent samples nor original assertions, and the taxa were selected using the same counts displayed. In the separate paired, study-weighted aggregate analysis, 95% intervals exclude zero for moderately halophilic (`0.473`, interval `0.208` to `0.738`), facultatively aerobic (`0.412`, `0.045` to `0.778`), and arsenate reduction (`0.516`, `0.043` to `0.989`) toward increased profiles, and for cellulose catabolic process (`-0.698`, `-1.200` to `-0.196`) toward decreased profiles. Those are trait-level contextual patterns, not tests of individual contributors, and no additional multiple-testing correction is introduced here.
+No contributor-level or co-carriage-edge significance test is supported by these propagated counts: they are neither independent samples nor original assertions, and the taxa were selected using the same counts displayed. In the separate paired, study-weighted aggregate analysis, 95% intervals exclude zero for moderately halophilic (`0.473`, interval `0.208` to `0.738`), facultatively aerobic (`0.412`, `0.045` to `0.778`), and arsenate reduction (`0.516`, `0.043` to `0.989`) toward increased profiles, and for cellulose catabolic process (`-0.698`, `-1.200` to `-0.196`) toward decreased profiles. Those intervals are trait-level contextual patterns, not contributor-level tests or globally adjusted discoveries. In the complete cross-condition FDR screen, only PD-moderately-halophilic passes `q<=0.05`.
 
 Species-level attribution is particularly limited where unresolved or ambiguous mass is high: sphere shaped is `80.3%` unresolved in increased and `70.6%` in decreased profiles; decreased arsenate reduction is `65.7%` unresolved. Count selection also favors frequently reported or broadly annotated taxa, and species/family parent-descendant labels cannot be summed as disjoint contributors.
 
@@ -140,6 +168,16 @@ See `pd_trait_contributors_species_family_dot_heatmap.png`, `pd_trait_contributo
 
 - `pd_cellulose_direction_specificity.png`: two-panel direction-specific summary.
 - `pd_six_trait_direction_lollipop.png`: all-six-trait PD feces direction contrast.
+- `pd_condition_taxon_trait_network.png`: all-test FDR-tiered condition-taxon-trait evidence landscape.
+- `pd_condition_taxon_trait_network.svg`: vector evidence landscape.
+- `pd_condition_taxon_trait_network_methods.md`: statistical universe, thresholds, result counts, and interpretation boundary.
+- `pd_condition_taxon_trait_network_condition_eligibility.tsv`: all conditions and eligibility or exclusion reasons.
+- `pd_condition_taxon_trait_network_condition_taxon_tests.tsv`: complete condition-taxon test audit.
+- `pd_condition_taxon_trait_network_condition_trait_tests.tsv`: complete condition-trait test audit.
+- `pd_condition_taxon_trait_network_study_trait_contrasts.tsv`: study-level trait contrasts used by the Wilcoxon tests.
+- `pd_condition_taxon_trait_network_nodes.tsv`: significant-only node table.
+- `pd_condition_taxon_trait_network_edges.tsv`: significant-only edge table.
+- `pd_condition_taxon_trait_network_taxon_selection.tsv`: FDR-selected taxon table, currently empty.
 - `pd_cellulose_cytoscape_highlight.png`: focused Cytoscape-style PD-cellulose highlight.
 - `pd_cellulose_taxon_driver_bar.png`: observed cellulose-carrier taxa by direction.
 - `pd_cellulose_taxon_six_trait_heatmap.png`: six-trait annotation context for top taxa.
@@ -159,6 +197,7 @@ See `pd_trait_contributors_species_family_dot_heatmap.png`, `pd_trait_contributo
 - `pd_trait_contributors_species_family_dot_heatmap.png`: selected species/family contributor view with specificity strip.
 - `pd_trait_contributors_direction_differences.tsv`: change-only taxon-trait direction pairs.
 - `pd_trait_contributors_heatmap_taxa.tsv`: taxa retained by the large direction-difference filter.
+- `pd_trait_contributors_taxon_specificity.tsv`: raw occurrence counts, display values, and normalized prevalence metrics.
 - `pd_trait_contributors_trait_cocarriage_all_edges.tsv`: all 15 direction-specific co-carriage pairs.
 - `pd_trait_contributors_trait_cocarriage_network.png`: direction-changing co-carriage pairs among selected contributors.
 - `pd_trait_contributors.md`: contributor-analysis interpretation and audit-file index.
