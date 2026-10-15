@@ -512,31 +512,38 @@ def build_coupling_report_text(
     lco_rows: list[LCOSummaryRow],
     rule_result: DecisionRuleResult,
     rule_result_reverse: DecisionRuleResult,
+    code_commit: str = "",
 ) -> str:
     """Format comprehensive text report for trait coupling audit."""
     lines: list[str] = [
         "=" * 80,
         "TRAIT COUPLING SENSITIVITY AUDIT REPORT (Issue #260)",
         "=" * 80,
-        "",
-        "1. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA EFFECT MATRIX (6 x 6):",
-        "   Rows: Dropped Trait | Columns: Evaluated Trait",
-        "-" * 80,
-        delta_eff_mat.to_string(),
-        "",
-        "2. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA Q-VALUE MATRIX (6 x 6):",
-        "   Rows: Dropped Trait | Columns: Evaluated Trait",
-        "-" * 80,
-        delta_q_mat.to_string(),
-        "",
-        "3. LEAVE-CLUSTER-OUT (LCO) - DROPPING COCCUS + SPHERE SIMULTANEOUSLY:",
-        "-" * 80,
-        (
-            f"{'Arm':<14} | {'Trait Name':<28} | {'Base Stat':<10} | {'LCO Stat':<10} | "
-            f"{'Delta Stat':<11} | {'Base q':<9} | {'LCO q':<9}"
-        ),
-        "-" * 80,
     ]
+    if code_commit:
+        lines.append(f"Code commit: {code_commit}")
+    lines.extend(
+        [
+            "",
+            "1. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA EFFECT MATRIX (6 x 6):",
+            "   Rows: Dropped Trait | Columns: Evaluated Trait",
+            "-" * 80,
+            delta_eff_mat.to_string(),
+            "",
+            "2. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA Q-VALUE MATRIX (6 x 6):",
+            "   Rows: Dropped Trait | Columns: Evaluated Trait",
+            "-" * 80,
+            delta_q_mat.to_string(),
+            "",
+            "3. LEAVE-CLUSTER-OUT (LCO) - DROPPING COCCUS + SPHERE SIMULTANEOUSLY:",
+            "-" * 80,
+            (
+                f"{'Arm':<14} | {'Trait Name':<28} | {'Base Stat':<10} | {'LCO Stat':<10} | "
+                f"{'Delta Stat':<11} | {'Base q':<9} | {'LCO q':<9}"
+            ),
+            "-" * 80,
+        ]
+    )
 
     for row in lco_rows:
         lines.append(
@@ -599,6 +606,7 @@ def run_coupling_audit(
     profiles_path: Path = DEFAULT_PROFILES_PATH,
     columns_path: Path = DEFAULT_COLUMNS_PATH,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
+    code_commit: str = "",
 ) -> dict[str, Any]:
     """Execute complete trait coupling audit and write derived datasets."""
     output_dir = Path(output_dir)
@@ -669,6 +677,7 @@ def run_coupling_audit(
         lco_rows=lco_rows,
         rule_result=rule_result,
         rule_result_reverse=rule_result_rev,
+        code_commit=code_commit,
     )
     report_txt_path.write_text(report_text, encoding="utf-8")
 
