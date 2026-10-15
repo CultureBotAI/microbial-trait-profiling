@@ -272,22 +272,22 @@ def compute_ora_arm(
         folds: list[float] = []
 
         for k_val, N_val in zip(k_obs, N_arr, strict=True):
+            if N_val > 0 and K > 0:
+                exp_k = (N_val * K) / M
+                folds.append(k_val / exp_k if exp_k > 0 else 0.0)
             if k_val > 0 and N_val > 0 and K > 0:
                 p = float(hypergeom.sf(k_val - 1, M, K, N_val))
                 valid_p.append(p)
-                exp_k = (N_val * K) / M
-                folds.append(k_val / exp_k if exp_k > 0 else 0.0)
 
+        mean_fold = float(np.mean(folds)) if folds else 0.0
         n_tested = len(valid_p)
         if n_tested > 0:
             q_arr = benjamini_hochberg(valid_p)
             hits_q05 = float(np.sum(np.array(q_arr) <= 0.05))
-            mean_fold = float(np.mean(folds))
             _, fisher_p = stats.combine_pvalues(valid_p, method="fisher")
             fisher_p_val = float(fisher_p) if not np.isnan(fisher_p) else 1.0
         else:
             hits_q05 = 0.0
-            mean_fold = 0.0
             fisher_p_val = 1.0
 
         p_vals.append(fisher_p_val)
