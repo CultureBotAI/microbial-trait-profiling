@@ -16,6 +16,8 @@ from matplotlib.patches import Circle, FancyBboxPatch, PathPatch
 from matplotlib.path import Path as MplPath
 from scipy import stats
 
+from mtp.composition_denominators import retained_trait_counts, trait_fractions
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
@@ -164,7 +166,7 @@ def load_profile_matrix(path: Path = PROFILE_MATRIX_PATH) -> pd.DataFrame:
         )
     ]
     values.index = profile_ids
-    return values.groupby(level=0, sort=False).sum()
+    return retained_trait_counts(values.groupby(level=0, sort=False).sum())
 
 
 def split_profile_ids(value: object) -> list[str]:
@@ -190,8 +192,8 @@ def select_stratum_traits(
     max_profile_support_fraction: float = MAX_STRATIFIED_PROFILE_SUPPORT_FRACTION,
 ) -> pd.DataFrame:
     """Select supported variable traits within a stratum's profile-count matrix."""
-    row_sums = profile_matrix.sum(axis=1).replace(0, pd.NA)
-    composition = profile_matrix.div(row_sums, axis=0).fillna(0.0)
+    profile_matrix = retained_trait_counts(profile_matrix)
+    composition = trait_fractions(profile_matrix)
     profile_support = profile_matrix.gt(0).sum(axis=0).astype(int)
     total_signal = profile_matrix.sum(axis=0).astype(float)
     composition_variance = composition.var(axis=0)
@@ -254,10 +256,9 @@ def select_stratum_traits(
 
 def build_zscore_matrix(profile_matrix: pd.DataFrame, selected_traits: pd.Index) -> pd.DataFrame:
     """Create column z-scores from log-scaled trait fractions."""
-    row_sums = profile_matrix.sum(axis=1).replace(0, pd.NA)
-    composition = profile_matrix[selected_traits].div(row_sums, axis=0).fillna(0.0)
+    composition = trait_fractions(profile_matrix).loc[:, selected_traits]
     scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
-    zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, pd.NA)
+    zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, float("nan"))
     return zscores.fillna(0.0)
 
 

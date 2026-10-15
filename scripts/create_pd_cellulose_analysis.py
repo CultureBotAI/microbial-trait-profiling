@@ -13,6 +13,8 @@ from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 from scipy import stats
 
+from mtp.composition_denominators import load_retained_profiles, trait_fractions
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
@@ -107,24 +109,10 @@ def load_profile_metadata() -> pd.DataFrame:
 
 def build_zscore_matrix(metadata: pd.DataFrame, trait_ids: list[str]) -> pd.DataFrame:
     """Recreate the six-shared-traits z-score transform."""
-    profile_counts = read_tsv(
-        PROFILE_MATRIX_PATH,
-        usecols=["study_id", "experiment_id", "inc_dec", *trait_ids],
-    )
-    profile_ids = [
-        f"{study_id}|{experiment_id}|{inc_dec}"
-        for study_id, experiment_id, inc_dec in profile_counts[
-            ["study_id", "experiment_id", "inc_dec"]
-        ].itertuples(index=False, name=None)
-    ]
-    values = profile_counts[trait_ids].apply(pd.to_numeric, errors="coerce").fillna(0.0)
-    values.index = profile_ids
-    values = values.groupby(level=0, sort=False).sum()
-    values = values.loc[metadata.index, trait_ids]
-    row_sums = metadata["total_trait_signal"].replace(0, pd.NA)
-    composition = values.div(row_sums, axis=0).fillna(0.0)
+    values = load_retained_profiles(PROFILE_MATRIX_PATH, metadata)
+    composition = trait_fractions(values).loc[:, trait_ids]
     scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
-    zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, pd.NA)
+    zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, float("nan"))
     return zscores.fillna(0.0)
 
 

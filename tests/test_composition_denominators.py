@@ -6,7 +6,10 @@ zero-signal handling, cache validation, and key alignment.
 
 from __future__ import annotations
 
+import importlib.util
+import sys
 from pathlib import Path
+from types import ModuleType
 
 import pandas as pd
 import pytest
@@ -18,6 +21,21 @@ from mtp.composition_denominators import (
     trait_fractions,
     validate_cached_totals,
 )
+
+SCRIPTS_DIR = Path(__file__).resolve().parents[1] / "scripts"
+
+
+def _load_script_module(module_name: str) -> ModuleType:
+    if str(SCRIPTS_DIR) not in sys.path:
+        sys.path.insert(0, str(SCRIPTS_DIR))
+    module_path = SCRIPTS_DIR / f"{module_name}.py"
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_denominator_definition_constant() -> None:
@@ -136,3 +154,200 @@ def test_load_retained_profiles(tmp_path: Path) -> None:
     assert loaded.index.tolist() == ["s1|e1|inc", "s2|e2|dec"]
     assert loaded.loc["s1|e1|inc", "trait_x"] == 10
     assert loaded.loc["s2|e2|dec", "trait_y"] == 40
+
+
+def test_study_heatmap_caller_excludes_mediadive_from_denominator() -> None:
+    study_heatmap = _load_script_module("create_study_trait_profile_heatmap")
+
+    selected = pd.Index(["METPO:1000608", "METPO:1000668"])
+    base = pd.DataFrame(
+        {
+            "METPO:1000608": [10.0, 20.0, 30.0],
+            "METPO:1000668": [30.0, 20.0, 10.0],
+        },
+        index=["p1", "p2", "p3"],
+    )
+    with_media = base.assign(**{"METPO:2000517|mediadive.medium:1": [900.0, 5.0, 500.0]})
+
+    pd.testing.assert_frame_equal(
+        study_heatmap.build_plot_matrix(base, selected),
+        study_heatmap.build_plot_matrix(with_media, selected),
+    )
+
+
+def test_infographic_caller_excludes_mediadive_from_denominator() -> None:
+    infographic = _load_script_module("create_trait_profile_infographic")
+
+    selected = pd.Index(["METPO:1000608", "METPO:1000668"])
+    base = pd.DataFrame(
+        {
+            "METPO:1000608": [10.0, 20.0, 30.0],
+            "METPO:1000668": [30.0, 20.0, 10.0],
+        },
+        index=["p1", "p2", "p3"],
+    )
+    with_media = base.assign(**{"METPO:2000517|mediadive.medium:1": [900.0, 5.0, 500.0]})
+
+    pd.testing.assert_frame_equal(
+        infographic.build_zscore_matrix(base, selected),
+        infographic.build_zscore_matrix(with_media, selected),
+    )
+
+
+def test_condition_module_heatmap_caller_excludes_mediadive() -> None:
+    module_heatmap = _load_script_module("create_condition_trait_module_heatmap")
+
+    selected = pd.Index(["METPO:1000608", "METPO:1000668"])
+    base = pd.DataFrame(
+        {
+            "METPO:1000608": [10.0, 20.0, 30.0, 40.0],
+            "METPO:1000668": [30.0, 20.0, 10.0, 0.0],
+        },
+        index=["s1|inc", "s2|inc", "s3|dec", "s4|dec"],
+    )
+    with_media = base.assign(**{"METPO:2000517|mediadive.medium:1": [900.0, 5.0, 500.0, 100.0]})
+
+    pd.testing.assert_frame_equal(
+        module_heatmap.build_plot_matrix(base, selected),
+        module_heatmap.build_plot_matrix(with_media, selected),
+    )
+
+
+def test_enrichment_followup_caller_excludes_mediadive() -> None:
+    followup = _load_script_module("analyze_enrichment_infographic_followup")
+
+    target_cond = followup.TARGET_CONDITIONS[0]
+    other_cond = followup.TARGET_CONDITIONS[1]
+    guild_trait = next(iter(next(iter(followup.GUILD_TRAITS.values()))))
+    metadata = pd.DataFrame(
+        {
+            "profile_id": ["p1", "p2", "p3"],
+            "study_id": ["s1", "s2", "s3"],
+            "experiment_id": ["e1", "e2", "e3"],
+            "inc_dec": ["inc", "dec", "inc"],
+            "direction_label": ["increased", "decreased", "increased"],
+            "condition": [target_cond, target_cond, other_cond],
+            "title": ["t1", "t2", "t3"],
+            "experiment_label": ["l1", "l2", "l3"],
+            "body_site": ["Feces", "Feces", "Feces"],
+            "location": ["USA", "USA", "USA"],
+            "profile_trait_count": [2, 2, 2],
+            "total_trait_signal": [40.0, 40.0, 40.0],
+        },
+        index=["p1", "p2", "p3"],
+    )
+    base = pd.DataFrame(
+        {
+            guild_trait: [10.0, 20.0, 15.0],
+            "METPO:1000668": [30.0, 20.0, 25.0],
+        },
+        index=["p1", "p2", "p3"],
+    )
+    with_media = base.assign(**{"METPO:2000517|mediadive.medium:1": [900.0, 5.0, 500.0]})
+
+    neighbors_base, centroids_base, cross_base = followup.compute_profile_neighbors(
+        base, metadata, top_n=2, min_condition_profiles=1
+    )
+    neighbors_media, centroids_media, cross_media = followup.compute_profile_neighbors(
+        with_media, metadata, top_n=2, min_condition_profiles=1
+    )
+    pd.testing.assert_frame_equal(neighbors_base, neighbors_media)
+    pd.testing.assert_frame_equal(centroids_base, centroids_media)
+    pd.testing.assert_frame_equal(cross_base, cross_media)
+    pd.testing.assert_frame_equal(
+        followup.summarize_guild_connections(base, metadata),
+        followup.summarize_guild_connections(with_media, metadata),
+    )
+
+
+def test_six_shared_sankeys_and_pd_callers_exclude_mediadive(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pd_cellulose = _load_script_module("create_pd_cellulose_analysis")
+    pd_taxon = _load_script_module("create_pd_six_trait_taxon_heatmap")
+    sankeys = _load_script_module("create_six_shared_trait_sankeys")
+
+    shared_ids = [t.trait_id for t in sankeys.SHARED_TRAITS]
+    rows = {
+        "study_id": ["s1", "s1", "s2"],
+        "experiment_id": ["e1", "e1", "e2"],
+        "inc_dec": ["inc", "dec", "inc"],
+        shared_ids[0]: [10.0, 20.0, 30.0],
+        shared_ids[1]: [5.0, 15.0, 25.0],
+        shared_ids[2]: [5.0, 5.0, 5.0],
+        shared_ids[3]: [10.0, 10.0, 10.0],
+        shared_ids[4]: [5.0, 10.0, 15.0],
+        shared_ids[5]: [5.0, 0.0, 5.0],
+        "OTHER_TRAIT": [60.0, 40.0, 10.0],
+    }
+    base_tsv = tmp_path / "base_profiles.tsv"
+    media_tsv = tmp_path / "media_profiles.tsv"
+    pd.DataFrame(rows).to_csv(base_tsv, sep="\t", index=False)
+    pd.DataFrame({**rows, "mediadive.medium:1": [900.0, 10.0, 400.0]}).to_csv(
+        media_tsv, sep="\t", index=False
+    )
+
+    metadata = pd.DataFrame(
+        {"total_trait_signal": [100.0, 100.0, 100.0]},
+        index=["s1|e1|inc", "s1|e1|dec", "s2|e2|inc"],
+    )
+
+    monkeypatch.setattr(sankeys, "PROFILE_MATRIX_PATH", base_tsv)
+    raw_base = sankeys.load_raw_trait_counts(sankeys.SHARED_TRAITS, metadata)
+    z_base = sankeys.build_zscore_matrix(raw_base, metadata)
+
+    monkeypatch.setattr(sankeys, "PROFILE_MATRIX_PATH", media_tsv)
+    raw_media = sankeys.load_raw_trait_counts(sankeys.SHARED_TRAITS, metadata)
+    z_media = sankeys.build_zscore_matrix(raw_media, metadata)
+    assert "OTHER_TRAIT" in raw_media.columns
+    assert "mediadive.medium:1" not in raw_media.columns
+    pd.testing.assert_frame_equal(z_base, z_media)
+
+    monkeypatch.setattr(pd_cellulose, "PROFILE_MATRIX_PATH", base_tsv)
+    pd_z_base = pd_cellulose.build_zscore_matrix(metadata, shared_ids[:2])
+    monkeypatch.setattr(pd_cellulose, "PROFILE_MATRIX_PATH", media_tsv)
+    pd_z_media = pd_cellulose.build_zscore_matrix(metadata, shared_ids[:2])
+    pd.testing.assert_frame_equal(pd_z_base, pd_z_media)
+
+    counts_base, cols_base = pd_taxon.read_profile_counts(base_tsv)
+    counts_media, cols_media = pd_taxon.read_profile_counts(media_tsv)
+    assert cols_base == cols_media
+    pd.testing.assert_frame_equal(counts_base, counts_media)
+
+    ref_base = pd_taxon.fixed_reference(counts_base, shared_ids[:2], metadata.index)
+    with_injected_media = counts_base.assign(**{"mediadive.medium:1": [900.0, 10.0, 400.0]})
+    ref_media = pd_taxon.fixed_reference(with_injected_media, shared_ids[:2], metadata.index)
+    pd.testing.assert_frame_equal(ref_base[0], ref_media[0])
+    pd.testing.assert_series_equal(ref_base[1], ref_media[1])
+
+
+def test_jed_composition_excludes_mediadive_from_denominator() -> None:
+    from mtp.composition_calibration.adapters.jed_composition import (
+        JedCompositionAdapter,
+        compute_profile_zscores,
+    )
+
+    base = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2"],
+            "experiment_id": ["e1", "e1", "e2", "e2"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "trait_a": [10.0, 20.0, 15.0, 25.0],
+            "trait_b": [30.0, 20.0, 25.0, 15.0],
+        },
+        index=["p1", "p2", "p3", "p4"],
+    )
+    with_media = base.assign(**{"mediadive.medium:1": [900.0, 5.0, 500.0, 10.0]})
+
+    z_base = compute_profile_zscores(base, ["trait_a", "trait_b"])
+    z_media = compute_profile_zscores(with_media, ["trait_a", "trait_b", "mediadive.medium:1"])
+    pd.testing.assert_frame_equal(z_base, z_media)
+
+    adapter = JedCompositionAdapter()
+    res_base = adapter.run_inference(base, pd.DataFrame(), {"traits": ["trait_a", "trait_b"]})
+    res_media = adapter.run_inference(
+        with_media,
+        pd.DataFrame(),
+        {"traits": ["trait_a", "trait_b", "mediadive.medium:1"]},
+    )
+    pd.testing.assert_frame_equal(res_base.results_df, res_media.results_df)

@@ -15,6 +15,12 @@ import seaborn as sns
 from matplotlib.patches import Patch
 from scipy.cluster.hierarchy import leaves_list, linkage
 
+from mtp.composition_denominators import (
+    DENOMINATOR_DEFINITION,
+    retained_trait_counts,
+    trait_fractions,
+)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
@@ -208,7 +214,8 @@ def load_profile_matrix(profile_path: Path) -> tuple[pd.DataFrame, pd.DataFrame,
         )
     ]
     values.index = profile_ids
-    profile_matrix = values.groupby(level=0, sort=False).sum()
+    profile_matrix = retained_trait_counts(values.groupby(level=0, sort=False).sum())
+    trait_columns = profile_matrix.columns.tolist()
 
     metadata = profiles[PROFILE_METADATA_COLUMNS].copy()
     metadata["profile_id"] = profile_ids
@@ -218,6 +225,7 @@ def load_profile_matrix(profile_path: Path) -> tuple[pd.DataFrame, pd.DataFrame,
     )
     metadata["total_trait_signal"] = profile_matrix.sum(axis=1)
     metadata["trait_count"] = profile_matrix.gt(0).sum(axis=1)
+    metadata["denominator_definition"] = DENOMINATOR_DEFINITION
     return profile_matrix, metadata, trait_columns
 
 
@@ -277,8 +285,11 @@ def select_traits(
     include_media_traits: bool,
 ) -> tuple[pd.Index, pd.DataFrame]:
     """Select traits that vary across the selected study profiles."""
-    row_sums = selected_profile_matrix.sum(axis=1).replace(0, pd.NA)
-    composition = selected_profile_matrix.div(row_sums, axis=0).fillna(0)
+    if include_media_traits:
+        msg = "MediaDive traits cannot be included in the harmonized composition arm."
+        raise ValueError(msg)
+    selected_profile_matrix = retained_trait_counts(selected_profile_matrix)
+    composition = trait_fractions(selected_profile_matrix)
     support = selected_profile_matrix.gt(0).sum(axis=0).astype(int)
     total_signal = selected_profile_matrix.sum(axis=0).astype(float)
     variance = composition.var(axis=0)
@@ -371,8 +382,7 @@ def build_plot_matrix(
     selected_traits: pd.Index,
 ) -> pd.DataFrame:
     """Create column z-scores from log-scaled trait fractions."""
-    row_sums = selected_profile_matrix.sum(axis=1).replace(0, pd.NA)
-    composition = selected_profile_matrix[selected_traits].div(row_sums, axis=0).fillna(0)
+    composition = trait_fractions(selected_profile_matrix).loc[:, selected_traits]
     scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
     zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, pd.NA)
     return zscores.fillna(0)
@@ -831,7 +841,7 @@ def save_heatmap(
         colors_ratio=(0.03, 0.03),
         cbar_kws={
             "label": (
-                "Column z-score of log1p trait fraction per 1,000 profile counts; "
+                "Column z-score of log1p non-MediaDive trait fraction per 1,000 retained counts; "
                 "display capped at +/-1"
             )
         },
@@ -959,8 +969,8 @@ def save_paired_enrichment_heatmap(
         colors_ratio=(0.03, 0.03),
         cbar_kws={
             "label": (
-                "Paired enrichment statistic: increased profile z-score - "
-                "decreased profile z-score; display capped at +/-1"
+                "Paired enrichment statistic: increased minus decreased non-MediaDive "
+                "profile z-score; display capped at +/-1"
             )
         },
     )
@@ -1211,9 +1221,11 @@ def main() -> None:
     parser.add_argument(
         "--include-media-traits",
         action="store_true",
-        help="Include MediaDive growth-medium traits in the selected traits.",
+        help="Rejected: MediaDive growth-medium traits are excluded before normalization.",
     )
     args = parser.parse_args()
+    if args.include_media_traits:
+        parser.error("MediaDive is excluded before composition normalization (#174).")
 
     profile_matrix, profile_metadata, _trait_columns = load_profile_matrix(
         args.study_trait_profiles_input
