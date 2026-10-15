@@ -15,6 +15,8 @@ import seaborn as sns
 from matplotlib.patches import Patch
 from scipy.cluster.hierarchy import leaves_list, linkage
 
+from mtp.composition_denominators import retained_totals
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
@@ -216,7 +218,7 @@ def load_profile_matrix(profile_path: Path) -> tuple[pd.DataFrame, pd.DataFrame,
     metadata["direction_label"] = (
         metadata["inc_dec"].map(DIRECTION_LABELS).fillna(metadata["inc_dec"])
     )
-    metadata["total_trait_signal"] = profile_matrix.sum(axis=1)
+    metadata["total_trait_signal"] = retained_totals(profile_matrix)
     metadata["trait_count"] = profile_matrix.gt(0).sum(axis=1)
     return profile_matrix, metadata, trait_columns
 
@@ -277,7 +279,7 @@ def select_traits(
     include_media_traits: bool,
 ) -> tuple[pd.Index, pd.DataFrame]:
     """Select traits that vary across the selected study profiles."""
-    row_sums = selected_profile_matrix.sum(axis=1).replace(0, pd.NA)
+    row_sums = retained_totals(selected_profile_matrix).replace(0, pd.NA)
     composition = selected_profile_matrix.div(row_sums, axis=0).fillna(0)
     support = selected_profile_matrix.gt(0).sum(axis=0).astype(int)
     total_signal = selected_profile_matrix.sum(axis=0).astype(float)
@@ -371,7 +373,7 @@ def build_plot_matrix(
     selected_traits: pd.Index,
 ) -> pd.DataFrame:
     """Create column z-scores from log-scaled trait fractions."""
-    row_sums = selected_profile_matrix.sum(axis=1).replace(0, pd.NA)
+    row_sums = retained_totals(selected_profile_matrix).replace(0, pd.NA)
     composition = selected_profile_matrix[selected_traits].div(row_sums, axis=0).fillna(0)
     scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
     zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, pd.NA)

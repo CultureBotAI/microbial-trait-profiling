@@ -16,6 +16,8 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.patches import Patch
 
+from mtp.composition_denominators import retained_totals
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = (
     REPO_ROOT
@@ -353,7 +355,7 @@ def load_profiles(
         metadata["inc_dec"].map(INC_DEC_TO_DIRECTION).fillna(metadata["inc_dec"])
     )
     metadata["profile_trait_count"] = values.gt(0).sum(axis=1).to_numpy(dtype=int)
-    metadata["total_trait_signal"] = values.sum(axis=1).to_numpy(dtype=float)
+    metadata["total_trait_signal"] = retained_totals(values).to_numpy(dtype=float)
     metadata = metadata.merge(experiments, on=["study_id", "experiment_id"], how="left")
     metadata = metadata.merge(studies, on="study_id", how="left", suffixes=("", "_study"))
     for column in [
@@ -1181,7 +1183,7 @@ def summarize_guild_connections(values: pd.DataFrame, metadata: pd.DataFrame) ->
         if not available_traits:
             continue
         guild_values = values.loc[target_metadata.index, available_traits].copy()
-        row_totals = values.loc[target_metadata.index].sum(axis=1).replace(0, np.nan)
+        row_totals = retained_totals(values.loc[target_metadata.index]).replace(0, np.nan)
         relative_values = guild_values.div(row_totals, axis=0).fillna(0)
         for condition, group in target_metadata.groupby("condition", sort=False):
             condition_values = guild_values.loc[group.index]

@@ -18,6 +18,7 @@ DENOMINATOR_DEFINITION = "sum of all retained non-MediaDive trait columns before
 __all__ = [
     "DENOMINATOR_DEFINITION",
     "load_retained_profiles",
+    "retained_totals",
     "retained_trait_counts",
     "trait_fractions",
     "validate_cached_totals",
@@ -30,6 +31,15 @@ def retained_trait_counts(counts: pd.DataFrame) -> pd.DataFrame:
     return counts.loc[:, columns]
 
 
+def retained_totals(counts: pd.DataFrame) -> pd.Series:
+    """Per-profile denominator: the sum of every retained non-MediaDive column.
+
+    Use this instead of ``counts.sum(axis=1)`` whenever a row total divides trait
+    counts, including when MediaDive columns are kept as selectable traits (#514).
+    """
+    return retained_trait_counts(counts).sum(axis=1)
+
+
 def trait_fractions(counts: pd.DataFrame) -> pd.DataFrame:
     """Normalize retained counts; a zero retained denominator yields all-zero fractions.
 
@@ -38,7 +48,7 @@ def trait_fractions(counts: pd.DataFrame) -> pd.DataFrame:
     final z-scores need not be zero. No biological signal is inferred from media.
     """
     retained = retained_trait_counts(counts)
-    totals = retained.sum(axis=1)
+    totals = retained_totals(counts)
     return retained.div(totals.where(totals.ne(0)), axis=0).fillna(0.0)
 
 
@@ -48,7 +58,7 @@ def validate_cached_totals(counts: pd.DataFrame, metadata: pd.DataFrame) -> None
         raise ValueError("Profile keys must be unique before checking cached totals")
     if not metadata.index.isin(counts.index).all():
         raise ValueError("Cached metadata contains profile keys missing from the raw matrix")
-    expected = retained_trait_counts(counts).sum(axis=1).reindex(metadata.index)
+    expected = retained_totals(counts).reindex(metadata.index)
     cached = pd.to_numeric(metadata["total_trait_signal"], errors="raise")
     mismatch = expected.ne(cached) | cached.isna()
     if mismatch.any():

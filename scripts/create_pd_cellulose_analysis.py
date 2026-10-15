@@ -13,6 +13,8 @@ from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 from scipy import stats
 
+from mtp.composition_denominators import load_retained_profiles
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
@@ -102,7 +104,11 @@ def load_profile_metadata() -> pd.DataFrame:
         metadata["total_trait_signal"],
         errors="coerce",
     ).fillna(0.0)
-    return metadata[metadata["inc_dec"].isin(DIRECTION_LABELS)].copy()
+    metadata = metadata[metadata["inc_dec"].isin(DIRECTION_LABELS)].copy()
+    # The cached totals divide trait counts below; reject a cache that includes
+    # MediaDive columns or comes from a different matrix (#514).
+    load_retained_profiles(PROFILE_MATRIX_PATH, metadata)
+    return metadata
 
 
 def build_zscore_matrix(metadata: pd.DataFrame, trait_ids: list[str]) -> pd.DataFrame:

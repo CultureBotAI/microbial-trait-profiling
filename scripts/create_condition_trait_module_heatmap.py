@@ -14,6 +14,8 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.patches import FancyBboxPatch, Patch, Rectangle
 
+from mtp.composition_denominators import retained_totals
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
@@ -227,7 +229,7 @@ def load_aggregated_study_profiles(
     profile_metadata = profile_metadata.rename(
         columns={"inc": "increased_profile_count", "dec": "decreased_profile_count"}
     )
-    profile_metadata["total_trait_signal"] = study_matrix.sum(axis=1)
+    profile_metadata["total_trait_signal"] = retained_totals(study_matrix)
     profile_metadata["trait_count"] = study_matrix.gt(0).sum(axis=1)
     return study_matrix, profile_metadata
 
@@ -274,7 +276,7 @@ def build_condition_modules(
         location=("location", most_common_label),
         host_species=("host_species", most_common_label),
     )
-    group_metadata["total_trait_signal"] = group_matrix.sum(axis=1)
+    group_metadata["total_trait_signal"] = retained_totals(group_matrix)
     group_metadata["trait_count"] = group_matrix.gt(0).sum(axis=1)
 
     eligible = group_metadata[
@@ -313,7 +315,7 @@ def select_traits(
     include_media_traits: bool,
 ) -> tuple[pd.Index, pd.DataFrame]:
     """Select condition-discriminating trait columns."""
-    row_sums = group_matrix.sum(axis=1).replace(0, pd.NA)
+    row_sums = retained_totals(group_matrix).replace(0, pd.NA)
     composition = group_matrix.div(row_sums, axis=0).fillna(0)
     support = group_matrix.gt(0).sum(axis=0).astype(int)
     total_signal = group_matrix.sum(axis=0).astype(float)
@@ -374,7 +376,7 @@ def select_traits(
 
 def build_plot_matrix(group_matrix: pd.DataFrame, selected_traits: pd.Index) -> pd.DataFrame:
     """Create column-scaled log composition values for plotting."""
-    row_sums = group_matrix.sum(axis=1).replace(0, pd.NA)
+    row_sums = retained_totals(group_matrix).replace(0, pd.NA)
     composition = group_matrix[selected_traits].div(row_sums, axis=0).fillna(0)
     scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
     zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0).replace(0, pd.NA)

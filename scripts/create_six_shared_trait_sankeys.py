@@ -42,6 +42,7 @@ from create_six_shared_trait_cytoscape_heatmaps import (
 )
 from create_six_shared_trait_graphs import HTML_FILENAME, write_six_shared_trait_graphs
 from create_six_shared_trait_static_graphs import write_six_shared_trait_static_graphs
+from mtp.composition_denominators import load_retained_profiles
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -173,7 +174,11 @@ def load_profile_metadata() -> pd.DataFrame:
         metadata["total_trait_signal"],
         errors="coerce",
     ).fillna(0.0)
-    return metadata[metadata["inc_dec"].isin(DIRECTION_LABELS)].copy()
+    metadata = metadata[metadata["inc_dec"].isin(DIRECTION_LABELS)].copy()
+    # The cached totals divide trait counts below; reject a cache that includes
+    # MediaDive columns or comes from a different matrix (#514).
+    load_retained_profiles(PROFILE_MATRIX_PATH, metadata)
+    return metadata
 
 
 def load_raw_trait_counts(traits: tuple[SharedTrait, ...], metadata: pd.DataFrame) -> pd.DataFrame:

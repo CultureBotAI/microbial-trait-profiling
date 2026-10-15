@@ -15,6 +15,8 @@ from matplotlib.patches import FancyBboxPatch, PathPatch, Rectangle
 from matplotlib.path import Path as MplPath
 from scipy import stats
 
+from mtp.composition_denominators import load_retained_profiles
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
@@ -323,6 +325,8 @@ def build_zscore_matrix(metadata: pd.DataFrame, traits: pd.DataFrame) -> pd.Data
     if len(missing_profiles):
         raise ValueError(f"Profile matrix is missing {len(missing_profiles)} metadata profiles")
     values = values.loc[metadata.index]
+    # Reject cached totals that include MediaDive or come from another matrix (#514).
+    load_retained_profiles(PROFILE_MATRIX_PATH, metadata)
     totals = pd.to_numeric(metadata["total_trait_signal"], errors="coerce").replace(0, pd.NA)
     composition = values.div(totals, axis=0).fillna(0.0)
     scaled = (composition * 1000).map(math.log1p)
