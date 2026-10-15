@@ -1,7 +1,8 @@
 # BugSigDB Data Access Methods
 
-This note documents the public BugSigDB data surfaces and the source decision
-used for the `clustered-heatmap-generation` regeneration workflow.
+This note documents the available ways to access BugSigDB data, what we
+learned about each, and the criteria for choosing among them in `microbial-trait-profiling`
+(including the `clustered-heatmap-generation` workflow).
 
 ## Current Decision
 
@@ -102,6 +103,31 @@ python scripts/benchmark_bugsigdb_access.py
 
 The visible figure outputs default to Homo sapiens experiments when
 `data/raw/full_dump.csv` is available.
+
+- **45 captured** in `schema/bsdbng.yaml` (study, experiment, signature, taxon levels)
+- **6 not captured** (curatorial metadata): Signature page name, Curated date, Curator, Revision editor, State, Reviewer
+- **State column** should be used to filter: only ingest Complete records
+  (not yet implemented — tracked in issue #64)
+
+## Current approach in microbial-trait-profiling
+
+`microbial-trait-profiling` currently uses `full_dump.csv` (from BugSigDBExports) as the
+primary input, with the three raw CSVs downloaded but unused. The merge
+from separate CSVs is a `NotImplementedError` stub.
+
+**Planned change (issue #64):** switch to using the three separate CSVs
+as primary input, implementing the join in Python, so we control filtering
+and don't lose 60 studies to upstream decisions.
+
+## Selection criteria
+
+- source fidelity
+- reproducibility
+- freshness
+- developer time
+- machine-time performance
+- good citizenship toward upstream infrastructure
+- fit for purpose
 
 ## Sources
 

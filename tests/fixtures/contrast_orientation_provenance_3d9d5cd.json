@@ -1,0 +1,68 @@
+{
+  "classifier_version": "contrast-orientation-v2",
+  "direction_convention": "inc = higher abundance in Group 1 than in Group 0 (BugSigDB)",
+  "bugsigdb_vintage": "2026-04-24_00:41_UTC",
+  "code_commit": "3d9d5cd56f8d54904a15015b30e31d4ed835fe89",
+  "full_dump_sha256": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788",
+  "profile_sha256": "6e70724ee807cf24e9c1f371a51421fa5b09d6283fa7f3abcd6620e5492c6a73",
+  "experiments_sha256": "403afea98d9b0a5b56939f68bcc9aace56a8eda350232a586806fe7bf30ad230",
+  "analysis_source_sha256": "64caafcd06ab35b70ad88579a5b9e50968147f0887490bc0476ffd74e95411b6",
+  "analysed_experiments": 2335,
+  "analysis_population": "disease_vs_healthy experiments; reversed ones relabelled so inc = higher in disease",
+  "class_counts": [
+    {
+      "contrast_class": "disease_vs_healthy",
+      "orientation": "native",
+      "experiments": 1003,
+      "studies": 569
+    },
+    {
+      "contrast_class": "disease_vs_healthy",
+      "orientation": "reversed",
+      "experiments": 1,
+      "studies": 1
+    },
+    {
+      "contrast_class": "disease_vs_disease",
+      "orientation": "not_applicable",
+      "experiments": 260,
+      "studies": 173
+    },
+    {
+      "contrast_class": "treatment_exposure",
+      "orientation": "not_applicable",
+      "experiments": 366,
+      "studies": 174
+    },
+    {
+      "contrast_class": "longitudinal_timepoint",
+      "orientation": "not_applicable",
+      "experiments": 200,
+      "studies": 105
+    },
+    {
+      "contrast_class": "other",
+      "orientation": "not_applicable",
+      "experiments": 275,
+      "studies": 105
+    },
+    {
+      "contrast_class": "unresolved",
+      "orientation": "not_applicable",
+      "experiments": 230,
+      "studies": 136
+    }
+  ],
+  "review": {
+    "path": "methods/contrast_orientation_review.tsv",
+    "sha256": "93318337e4226e9c28493ea454d6c0c4bd4c922db6117fcd7f88d79227b68841",
+    "reviewed_experiments": 60,
+    "agreed": 43,
+    "disagreed": 17
+  },
+  "limitations": [
+    "lexical rules over group names; not a curated re-reading of each paper",
+    "the export has no Group 0 definition",
+    "validation status: stratified-sample review only; every other experiment is not_reviewed in the manifest"
+  ]
+}

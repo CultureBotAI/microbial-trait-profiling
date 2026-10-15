@@ -74,12 +74,20 @@ linkml_meta = LinkMLMeta({'default_prefix': 'bsdbng',
      'imports': ['linkml:types'],
      'license': 'MIT',
      'name': 'bsdbng',
-     'prefixes': {'EFO': {'prefix_prefix': 'EFO',
+     'prefixes': {'CHEBI': {'prefix_prefix': 'CHEBI',
+                            'prefix_reference': 'http://purl.obolibrary.org/obo/CHEBI_'},
+                  'EFO': {'prefix_prefix': 'EFO',
                           'prefix_reference': 'http://identifiers.org/efo/'},
+                  'ENVO': {'prefix_prefix': 'ENVO',
+                           'prefix_reference': 'http://purl.obolibrary.org/obo/ENVO_'},
+                  'METPO': {'prefix_prefix': 'METPO',
+                            'prefix_reference': 'http://purl.obolibrary.org/obo/METPO_'},
                   'NCBITaxon': {'prefix_prefix': 'NCBITaxon',
                                 'prefix_reference': 'http://purl.obolibrary.org/obo/NCBITaxon_'},
                   'UBERON': {'prefix_prefix': 'UBERON',
                              'prefix_reference': 'http://purl.obolibrary.org/obo/UBERON_'},
+                  'biolink': {'prefix_prefix': 'biolink',
+                              'prefix_reference': 'https://w3id.org/biolink/vocab/'},
                   'bsdb': {'prefix_prefix': 'bsdb',
                            'prefix_reference': 'https://bugsigdb.org/Study_'},
                   'bsdbng': {'prefix_prefix': 'bsdbng',
@@ -122,6 +130,102 @@ class TaxonomicRankEnum(str, Enum):
     superkingdom = "superkingdom"
 
 
+class BiolinkCategoryEnum(str, Enum):
+    """
+    Common Biolink categories used by KG-Microbe nodes.
+    """
+    biolinkCOLONOrganismTaxon = "biolink:OrganismTaxon"
+    """
+    A taxonomic grouping of organisms.
+    """
+    biolinkCOLONPhenotype = "biolink:Phenotype"
+    """
+    An observable characteristic or trait.
+    """
+    biolinkCOLONPhenotypicQuality = "biolink:PhenotypicQuality"
+    """
+    A phenotype quality term.
+    """
+    biolinkCOLONOntologyClass = "biolink:OntologyClass"
+    """
+    A general ontology class.
+    """
+    biolinkCOLONChemicalEntity = "biolink:ChemicalEntity"
+    """
+    A chemical substance.
+    """
+    biolinkCOLONSmallMolecule = "biolink:SmallMolecule"
+    """
+    A small molecule.
+    """
+    biolinkCOLONEnvironment = "biolink:Environment"
+    """
+    An environment or habitat.
+    """
+    biolinkCOLONBiologicalProcess = "biolink:BiologicalProcess"
+    """
+    A biological process.
+    """
+    biolinkCOLONMolecularActivity = "biolink:MolecularActivity"
+    """
+    A molecular function or activity.
+    """
+    biolinkCOLONMacromolecularComplex = "biolink:MacromolecularComplex"
+    """
+    A macromolecular complex.
+    """
+    biolinkCOLONAttribute = "biolink:Attribute"
+    """
+    An attribute or quality.
+    """
+    biolinkCOLONNamedThing = "biolink:NamedThing"
+    """
+    A generic named entity.
+    """
+
+
+class BiolinkPredicateEnum(str, Enum):
+    """
+    Common relationship predicates used by KG-Microbe edges.
+    """
+    biolinkCOLONsubclass_of = "biolink:subclass_of"
+    """
+    Taxonomic hierarchy relationship.
+    """
+    biolinkCOLONhas_phenotype = "biolink:has_phenotype"
+    """
+    Taxon has a phenotype or trait.
+    """
+    biolinkCOLONcapable_of = "biolink:capable_of"
+    """
+    Taxon is capable of an activity.
+    """
+    biolinkCOLONinteracts_with = "biolink:interacts_with"
+    """
+    Taxon interacts with an entity.
+    """
+    biolinkCOLONproduces = "biolink:produces"
+    """
+    Taxon produces a substance.
+    """
+    biolinkCOLONlocation_of = "biolink:location_of"
+    """
+    Environment is location of taxon.
+    """
+    biolinkCOLONlocated_in = "biolink:located_in"
+    """
+    Taxon is located in an environment.
+    """
+    biolinkCOLONaffects = "biolink:affects"
+    """
+    Taxon affects another entity.
+    """
+    biolinkCOLONparticipates_in = "biolink:participates_in"
+    """
+    Taxon participates in a process.
+    """
+
+
 
 class NamedThing(ConfiguredBaseModel):
     """
@@ -131,7 +235,7 @@ class NamedThing(ConfiguredBaseModel):
          'from_schema': 'https://w3id.org/bsdbng/schema',
          'title': 'Named Thing'})
 
-    id: str = Field(default=..., title="ID", description="""Stable identifier for this entity.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NamedThing']} })
+    id: str = Field(default=..., title="ID", description="""Stable identifier for this entity.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NamedThing', 'Node']} })
 
 
 class Study(NamedThing):
@@ -160,7 +264,7 @@ class Study(NamedThing):
     journal: Optional[str] = Field(default=None, title="Journal", description="""Journal of publication.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Study']} })
     keywords: Optional[str] = Field(default=None, title="Keywords", description="""Keywords associated with the study.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Study']} })
     experiments: list[Experiment] = Field(default=..., title="Experiments", description="""Semantic experiment units recorded for the study.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Study']} })
-    id: str = Field(default=..., title="ID", description="""BugSigDB study identifier. Usually numeric (e.g. bsdb:10202341) but some entries use DOIs or PMC IDs (e.g. bsdb:PMC11017998).""", json_schema_extra = { "linkml_meta": {'domain_of': ['NamedThing']} })
+    id: str = Field(default=..., title="ID", description="""BugSigDB study identifier. Usually numeric (e.g. bsdb:10202341) but some entries use DOIs or PMC IDs (e.g. bsdb:PMC11017998).""", json_schema_extra = { "linkml_meta": {'domain_of': ['NamedThing', 'Node']} })
 
     @field_validator('doi')
     def pattern_doi(cls, v):
@@ -231,7 +335,7 @@ class Experiment(NamedThing):
     inverse_simpson: Optional[DiversityDirectionEnum] = Field(default=None, title="Inverse Simpson", description="""Direction of change in inverse Simpson index between groups.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Experiment']} })
     richness: Optional[DiversityDirectionEnum] = Field(default=None, title="Richness", description="""Direction of change in observed species richness between groups.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Experiment']} })
     signatures: list[Signature] = Field(default=..., title="Signatures", description="""Signatures associated with the experiment.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Experiment']} })
-    id: str = Field(default=..., title="ID", description="""BugSigDB experiment identifier, e.g. bsdb:10202341-1.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NamedThing']} })
+    id: str = Field(default=..., title="ID", description="""BugSigDB experiment identifier, e.g. bsdb:10202341-1.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NamedThing', 'Node']} })
 
     @field_validator('body_site_ontology_id')
     def pattern_body_site_ontology_id(cls, v):
@@ -277,7 +381,7 @@ class Signature(NamedThing):
     signature_source: Optional[str] = Field(default=None, title="Source", description="""Source of the signature within the publication (e.g. Table S6, Figure 3).""", json_schema_extra = { "linkml_meta": {'domain_of': ['Signature']} })
     signature_description: Optional[str] = Field(default=None, title="Description", description="""Free-text description of the signature from BugSigDB curators.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Signature']} })
     taxa: list[Taxon] = Field(default=..., title="Taxa", description="""Taxa listed in the signature.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Signature']} })
-    id: str = Field(default=..., title="ID", description="""BugSigDB signature identifier, e.g. bsdb:10202341-1-1.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NamedThing']} })
+    id: str = Field(default=..., title="ID", description="""BugSigDB signature identifier, e.g. bsdb:10202341-1-1.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NamedThing', 'Node']} })
 
     @field_validator('id')
     def pattern_id(cls, v):
@@ -310,9 +414,9 @@ class Taxon(NamedThing):
                                            'required': False}},
          'title': 'Taxon'})
 
-    taxon_name: str = Field(default=..., title="Taxon Name", description="""Reported taxon label.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Taxon']} })
-    taxonomic_rank: Optional[TaxonomicRankEnum] = Field(default=None, title="Taxonomic Rank", description="""Taxonomic rank of the reported taxon.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Taxon'], 'recommended': True} })
-    id: str = Field(default=..., title="ID", description="""NCBITaxon CURIE, e.g. NCBITaxon:9606.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NamedThing'], 'recommended': True} })
+    taxon_name: str = Field(default=..., title="Taxon Name", description="""Reported taxon label.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Taxon', 'TaxonTraitMatrixRow']} })
+    taxonomic_rank: Optional[TaxonomicRankEnum] = Field(default=None, title="Taxonomic Rank", description="""Taxonomic rank of the reported taxon.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Taxon', 'TaxonTraitMatrixRow'], 'recommended': True} })
+    id: str = Field(default=..., title="ID", description="""NCBITaxon CURIE, e.g. NCBITaxon:9606.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NamedThing', 'Node'], 'recommended': True} })
 
     @field_validator('id')
     def pattern_id(cls, v):
@@ -328,6 +432,118 @@ class Taxon(NamedThing):
         return v
 
 
+class Node(ConfiguredBaseModel):
+    """
+    A node in the KG-Microbe knowledge graph. Nodes can represent taxa, phenotypes, traits, chemicals, environments, or other entities.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/bsdbng/schema',
+         'slot_usage': {'category': {'name': 'category', 'required': True},
+                        'id': {'identifier': True, 'name': 'id', 'required': True}},
+         'title': 'KG-Microbe Node'})
+
+    id: str = Field(default=..., title="ID", description="""Stable identifier for this entity.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NamedThing', 'Node']} })
+    category: str = Field(default=..., title="Category", description="""Biolink category of a KG-Microbe node.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Node']} })
+    name: Optional[str] = Field(default=None, title="Name", description="""Human-readable node label.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Node']} })
+    xref: Optional[list[str]] = Field(default=None, title="Cross Reference", description="""Cross-reference to another database.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Node']} })
+    provided_by: Optional[list[str]] = Field(default=None, title="Provided By", description="""Data source or provenance for a node or edge.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Node', 'Edge']} })
+    synonym: Optional[list[str]] = Field(default=None, title="Synonym", description="""Alternative node label.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Node']} })
+
+
+class Edge(ConfiguredBaseModel):
+    """
+    An edge or relationship in the KG-Microbe knowledge graph connecting two nodes.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/bsdbng/schema',
+         'slot_usage': {'object': {'name': 'object', 'required': True},
+                        'predicate': {'name': 'predicate', 'required': True},
+                        'subject': {'name': 'subject', 'required': True}},
+         'title': 'KG-Microbe Edge'})
+
+    edge_id: Optional[str] = Field(default=None, title="Edge ID", description="""Stable identifier for a KG-Microbe edge.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Edge']} })
+    subject: str = Field(default=..., title="Subject", description="""Subject node of a KG-Microbe relationship.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Edge']} })
+    predicate: str = Field(default=..., title="Predicate", description="""Relationship predicate.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Edge']} })
+    object: str = Field(default=..., title="Object", description="""Object node of a KG-Microbe relationship.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Edge']} })
+    relation: Optional[str] = Field(default=None, title="Relation", description="""Ontology relation term supporting the predicate.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Edge']} })
+    provided_by: Optional[list[str]] = Field(default=None, title="Provided By", description="""Data source or provenance for a node or edge.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Node', 'Edge']} })
+
+
+class Phenotype(ConfiguredBaseModel):
+    """
+    A microbial phenotype or trait from the microbial phenotypes ontology associated with a taxon in KG-Microbe.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/bsdbng/schema',
+         'slot_usage': {'phenotype_id': {'name': 'phenotype_id', 'required': True}},
+         'title': 'KG-Microbe Phenotype'})
+
+    phenotype_id: str = Field(default=..., title="Phenotype ID", description="""METPO phenotype or trait identifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Phenotype']} })
+    phenotype_name: Optional[str] = Field(default=None, title="Phenotype Name", description="""Human-readable phenotype or trait label.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Phenotype']} })
+    count: Optional[int] = Field(default=None, title="Count", description="""Number of taxa at or below a row taxon that have the trait assertion.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['Phenotype', 'KgTraitAssertion']} })
+    from_descendants: Optional[bool] = Field(default=None, title="From Descendants", description="""Whether the trait assertion count includes descendant taxa.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Phenotype', 'KgTraitAssertion']} })
+
+    @field_validator('phenotype_id')
+    def pattern_phenotype_id(cls, v):
+        pattern=re.compile(r"^METPO:[0-9]+$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid phenotype_id format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid phenotype_id format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
+class KgTraitAssertion(ConfiguredBaseModel):
+    """
+    Normalized representation of one dynamic trait column in the taxa-by-traits matrix. Direct phenotype columns use a METPO object such as METPO:1000615. Relation-value columns combine a METPO predicate with a specific KG object, such as METPO:2000006 plus a CHEBI carbon source or METPO:2000517 plus a MediaDive growth medium.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/bsdbng/schema',
+         'slot_usage': {'count': {'name': 'count', 'required': True},
+                        'object_id': {'name': 'object_id', 'required': True},
+                        'trait_assertion_id': {'name': 'trait_assertion_id',
+                                               'required': True}},
+         'title': 'KG-Microbe Trait Assertion'})
+
+    trait_assertion_id: str = Field(default=..., title="Trait Assertion ID", description="""Stable key for a generated trait matrix column. Direct METPO phenotype columns use the METPO object CURIE; relation-value columns combine the predicate and object identifiers.""", json_schema_extra = { "linkml_meta": {'domain_of': ['KgTraitAssertion']} })
+    trait_label: Optional[str] = Field(default=None, title="Trait Label", description="""Human-readable label for a generated trait matrix column.""", json_schema_extra = { "linkml_meta": {'domain_of': ['KgTraitAssertion']} })
+    predicate_id: Optional[str] = Field(default=None, title="Predicate ID", description="""Predicate used by the KG-Microbe assertion. Direct phenotype assertions may use biolink:has_phenotype, while relation-value assertions use METPO predicates such as METPO:2000006, METPO:2000103, or METPO:2000517.""", json_schema_extra = { "linkml_meta": {'domain_of': ['KgTraitAssertion']} })
+    predicate_name: Optional[str] = Field(default=None, title="Predicate Name", description="""Human-readable predicate label.""", json_schema_extra = { "linkml_meta": {'domain_of': ['KgTraitAssertion']} })
+    object_id: str = Field(default=..., title="Object ID", description="""KG object identifier for a trait assertion. This may be a METPO phenotype, CHEBI chemical, GO process, pathway identifier, MediaDive medium, or other KG-Microbe object.""", json_schema_extra = { "linkml_meta": {'domain_of': ['KgTraitAssertion']} })
+    object_name: Optional[str] = Field(default=None, title="Object Name", description="""Human-readable object label.""", json_schema_extra = { "linkml_meta": {'domain_of': ['KgTraitAssertion']} })
+    object_category: Optional[str] = Field(default=None, title="Object Category", description="""Biolink category of the KG object.""", json_schema_extra = { "linkml_meta": {'domain_of': ['KgTraitAssertion']} })
+    count: int = Field(default=..., title="Count", description="""Number of taxa at or below a row taxon that have the trait assertion.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['Phenotype', 'KgTraitAssertion']} })
+    from_descendants: Optional[bool] = Field(default=None, title="From Descendants", description="""Whether the trait assertion count includes descendant taxa.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Phenotype', 'KgTraitAssertion']} })
+
+
+class TaxonTraitMatrixRow(ConfiguredBaseModel):
+    """
+    One BugSigDB-reported taxon row in a taxa-by-traits matrix. Trait columns in the generated TSV are dynamic KG-Microbe phenotype or trait assertion labels; the trait_counts slot provides the normalized representation of the same counts.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/bsdbng/schema',
+         'slot_usage': {'taxon_id': {'name': 'taxon_id', 'required': True},
+                        'taxon_name': {'name': 'taxon_name', 'required': True}},
+         'title': 'Taxon Trait Matrix Row'})
+
+    taxon_id: str = Field(default=..., title="Taxon ID", description="""NCBITaxon identifier for a matrix row.""", json_schema_extra = { "linkml_meta": {'domain_of': ['TaxonTraitMatrixRow']} })
+    taxon_name: str = Field(default=..., title="Taxon Name", description="""Reported taxon label.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Taxon', 'TaxonTraitMatrixRow']} })
+    taxonomic_rank: Optional[TaxonomicRankEnum] = Field(default=None, title="Taxonomic Rank", description="""Taxonomic rank of the reported taxon.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Taxon', 'TaxonTraitMatrixRow']} })
+    trait_counts: Optional[list[KgTraitAssertion]] = Field(default=None, title="Trait Counts", description="""Normalized KG-Microbe trait assertion counts for a matrix row.""", json_schema_extra = { "linkml_meta": {'domain_of': ['TaxonTraitMatrixRow']} })
+
+    @field_validator('taxon_id')
+    def pattern_taxon_id(cls, v):
+        pattern=re.compile(r"^NCBITaxon:[0-9]+$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid taxon_id format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid taxon_id format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
 # Model rebuild
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 NamedThing.model_rebuild()
@@ -335,3 +551,8 @@ Study.model_rebuild()
 Experiment.model_rebuild()
 Signature.model_rebuild()
 Taxon.model_rebuild()
+Node.model_rebuild()
+Edge.model_rebuild()
+Phenotype.model_rebuild()
+KgTraitAssertion.model_rebuild()
+TaxonTraitMatrixRow.model_rebuild()

@@ -35,13 +35,15 @@ repos:
     hooks:
       - id: detect-secrets
         exclude: ^data/.*/provenance\.json$
+        # Only reviewed public checksum values are baselined; new values still fail.
+        args: [--baseline, .secrets.baseline]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.10
     hooks:
       - id: ruff-check
       - id: ruff-format
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.8.17
+    rev: 0.12.22
     hooks:
       - id: uv-lock
   - repo: https://github.com/PyCQA/bandit

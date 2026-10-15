@@ -1,0 +1,116 @@
+"""Compatibility shim forwarding bsdbng.guild_maps to mtp.guild_maps."""
+
+import sys
+from typing import Any
+
+from mtp.guild_maps import (
+    CELL_BELOW_MIN_STUDIES,
+    CELL_NO_SIGNAL,
+    CELL_NOT_SAMPLED,
+    CELL_VALUE,
+    CLUSTER_GAP_ROWS,
+    GUILD_COLORSCALES,
+    GUILD_ORDER,
+    LEGEND_ROW_PITCH,
+    MIN_PANEL_ROWS,
+    NO_SIGNAL_COLOR,
+    OTHER_LABEL,
+    PANEL_BOTTOM_MARGIN,
+    PANEL_TOP_MARGIN,
+    PERCENT_TICKS,
+    ROW_HEIGHT,
+    SIGN_TOLERANCE,
+    CorrelationResult,
+    GuildMatrix,
+    PooledLabels,
+    _binned,
+    _cluster_rows,
+    _coverage_note,
+    _guild_of_column,
+    _insert_cluster_gaps,
+    _odds_ratio_label,
+    _pooling,
+    _sign,
+    _site_blocks,
+    _site_of_column,
+    _top_labels,
+    _upper_range,
+    _wrapped,
+    _write_matrix_tsv,
+    build_matrix,
+    build_parser,
+    cell_status,
+    cell_status_rows,
+    compute_correlation,
+    main,
+    require_plotly,
+    study_direction_means,
+    subset_matrix,
+    write_body_site_panels,
+    write_figure,
+    write_matrix_outputs,
+    write_outputs,
+)
+
+__all__ = [
+    "CELL_BELOW_MIN_STUDIES",
+    "CELL_NOT_SAMPLED",
+    "CELL_NO_SIGNAL",
+    "CELL_VALUE",
+    "CLUSTER_GAP_ROWS",
+    "GUILD_COLORSCALES",
+    "GUILD_ORDER",
+    "LEGEND_ROW_PITCH",
+    "MIN_PANEL_ROWS",
+    "NO_SIGNAL_COLOR",
+    "OTHER_LABEL",
+    "PANEL_BOTTOM_MARGIN",
+    "PANEL_TOP_MARGIN",
+    "PERCENT_TICKS",
+    "ROW_HEIGHT",
+    "SIGN_TOLERANCE",
+    "CorrelationResult",
+    "GuildMatrix",
+    "PooledLabels",
+    "_binned",
+    "_cluster_rows",
+    "_coverage_note",
+    "_guild_of_column",
+    "_insert_cluster_gaps",
+    "_odds_ratio_label",
+    "_pooling",
+    "_sign",
+    "_site_blocks",
+    "_site_of_column",
+    "_top_labels",
+    "_upper_range",
+    "_wrapped",
+    "_write_matrix_tsv",
+    "build_matrix",
+    "build_parser",
+    "cell_status",
+    "cell_status_rows",
+    "compute_correlation",
+    "main",
+    "require_plotly",
+    "study_direction_means",
+    "subset_matrix",
+    "write_body_site_panels",
+    "write_figure",
+    "write_matrix_outputs",
+    "write_outputs",
+]
+
+import mtp.guild_maps as _target
+
+sys.modules[__name__] = _target
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target, name)
+
+
+if __name__ == "__main__":
+    import runpy
+
+    runpy.run_module("mtp.guild_maps", run_name="__main__")

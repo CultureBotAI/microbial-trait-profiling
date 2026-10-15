@@ -19,7 +19,7 @@ import time
 import yaml
 from linkml_store import Client
 
-from bsdbng.paths import SCHEMA_PATH, STUDY_DATA_DIR
+from mtp.paths import SCHEMA_PATH, STUDY_DATA_DIR
 
 DEFAULT_MONGO_URI = "mongodb://localhost:27017/bsdbng"
 COLLECTION_NAME = "studies"

@@ -2,5 +2,20 @@
 # Figure acronym, statistical term, Cytoscape layout, and quoted study arm code.
 extend-ignore-re = ['\bPNGs\b', '\bnonsignificant\b', '\bcose\b', '\bBA\b']
 
+[default.extend-identifiers]
+PNGs = "PNGs"
+
+[default.extend-words]
+nonsignificant = "nonsignificant"
+# Without this, typos rewrites the `fac_aer` fixture prefix in
+# tests/test_table1_trait_maps.py to `fac_are`.
+# Aerobe abbreviation used in trait fixtures.
+aer = "aer"
+# BugSigDB grades oral mucositis as "Muc0-1" and "Muc2". Those group names are quoted
+# verbatim in methods/contrast_orientation_review.tsv, and typos rewrites them to
+# "Much0-1" and "Much2", which changes curated data into something the export does not
+# contain.
+muc = "muc"
+
 [files]
 extend-exclude = ["uv.lock", ".venv"]

@@ -3,9 +3,9 @@ requires = ["setuptools>=82.0.1", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "bsdbng"
+name = "mtp"
 version = "0.1.0"
-description = "Strict BugSigDB ingestion and normalization"
+description = "Integration and comparative analysis of microbial trait annotations"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
@@ -17,9 +17,10 @@ dependencies = [
   "linkml>=1.10.0",
   "linkml-runtime>=1.8.3",
   "matplotlib>=3.10.0",
-  "numpy>=2.4.0",
+  "numpy>=2.0",
   "pandas>=3.0.0",
   "pillow>=12.0.0",
+  "plotly>=7.0",
   "pydantic>=2.13.0",
   "pyyaml>=6.0.2",
   "scipy>=1.17.0",
@@ -36,6 +37,18 @@ dev = [
 ]
 kg = [
   "gdown>=6.0.0",
+]
+# Figure rendering only (#288). Installing the package for the ingest and schema
+# side should not pull a headless-Chrome driver, and plotly is imported lazily
+# inside the figure functions, so the analysis modules import without it.
+# kaleido 1.x renders figures by driving a headless Chrome/Chromium (fetch a
+# version-pinned copy with `just get-chrome`). The 0.2.x line bundled its own
+# renderer, but plotly 7.0 removed the kaleido-v0 code path (6.x had only
+# deprecated it), so with the plotly floor, kaleido must sit on the v1 line; the
+# two floors are a pair.
+viz = [
+  "kaleido>=1.0",
+  "plotly>=7.0",
 ]
 mongo = [
   "linkml-store[llm,mongodb]>=0.3.0",
@@ -56,9 +69,12 @@ dev = [
 qa = [
   "bandit[toml]>=1.8.3",
   "deptry>=0.21.1",
+  # Keep these maintenance CLIs aligned with .pre-commit-config.yaml.
+  "detect-secrets==1.5.0",
   "pip-audit>=2.10.0",
   "pytest-cov>=6.0.0",
   "types-PyYAML>=6.0.12.20260408",
+  "uv==0.12.22",
 ]
 
 [tool.setuptools]
@@ -71,7 +87,11 @@ where = ["src"]
 target-version = "py311"
 line-length = 100
 src = ["src", "tests", "scripts"]
-exclude = ["src/bsdbng/datamodel/bsdbng_pydantic.py"]
+exclude = [
+  "src/bsdbng/datamodel/bsdbng_pydantic.py",
+  "src/mtp/datamodel/bsdbng_pydantic.py",
+  "src/mtp/datamodel/mtp_pydantic.py",
+]
 
 [tool.ruff.lint]
 select = [
@@ -104,7 +124,24 @@ pretty = true
 mypy_path = "src"
 exclude = [
   "src/bsdbng/datamodel/bsdbng_pydantic\\.py$",
+  "src/mtp/datamodel/.*_pydantic\\.py$",
 ]
+
+# `exclude` only keeps the generated model out of the files mypy crawls; it is
+# still followed as an import of datamodel, and on a cold cache its
+# errors surface. Silencing them here keeps its types available to callers,
+# which `follow_imports = "skip"` would not.
+[[tool.mypy.overrides]]
+module = [
+  "bsdbng.datamodel.bsdbng_pydantic",
+  "mtp.datamodel.mtp_pydantic",
+]
+ignore_errors = true
+
+# pandas, scipy and plotly ship no type information; the repo's own code stays strict.
+[[tool.mypy.overrides]]
+module = ["pandas", "scipy.*", "plotly.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -114,8 +151,12 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["bsdbng"]
-omit = ["src/bsdbng/datamodel/bsdbng_pydantic.py"]
+source = ["mtp", "bsdbng"]
+omit = [
+  "src/bsdbng/datamodel/bsdbng_pydantic.py",
+  "src/mtp/datamodel/bsdbng_pydantic.py",
+  "src/mtp/datamodel/mtp_pydantic.py",
+]
 
 [tool.coverage.report]
 show_missing = true
@@ -130,13 +171,13 @@ quiet-level = 3
 
 [tool.bandit]
 exclude_dirs = ["tests", ".venv"]
-skips = []
 
 [tool.deptry]
 exclude = [
   ".venv",
   "tests",
   "src/bsdbng/datamodel",
+  "src/mtp/datamodel",
 ]
 ignore = [
   "DEP002",
