@@ -230,13 +230,15 @@ def test_other_consumers_reject_mediadive_cached_totals(
     metadata.index = counts(True).index
     metadata["total_trait_signal"] = counts(True).sum(axis=1)  # stale: includes MediaDive
 
-    with pytest.raises(ValueError, match="non-MediaDive denominator"):
-        if script == "create_pd_cellulose_analysis.py":
-            metadata["condition"] = "c"
-            metadata["body_site_group"] = "Feces"
-            metadata_path = tmp_path / "metadata.tsv"
-            metadata.to_csv(metadata_path, sep="\t")
-            monkeypatch.setattr(module, "PROFILE_METADATA_PATH", metadata_path)
+    if script == "create_pd_cellulose_analysis.py":
+        metadata["condition"] = "c"
+        metadata["body_site_group"] = "Feces"
+        metadata_path = tmp_path / "metadata.tsv"
+        metadata.to_csv(metadata_path, sep="\t")
+        monkeypatch.setattr(module, "PROFILE_METADATA_PATH", metadata_path)
+        with pytest.raises(ValueError, match="non-MediaDive denominator"):
             module.load_profile_metadata()
-        else:
-            module.build_zscore_matrix(metadata, pd.DataFrame({"trait_id": list(TRAITS)}))
+    else:
+        traits = pd.DataFrame({"trait_id": list(TRAITS)})
+        with pytest.raises(ValueError, match="non-MediaDive denominator"):
+            module.build_zscore_matrix(metadata, traits)
