@@ -769,7 +769,7 @@ questions: the aerobe v2 map asks whether aerobe-associated traits are
 enriched in increased profiles, while the anaerobe map asks whether
 anaerobe-associated traits are enriched in decreased profiles. Broad condition
 labels can contain many studies, experiments, profile directions, and body-site
-contexts, so the same label can support reciprocal or mixed dysbiosis patterns.
+contexts, so the same label can show reciprocal or mixed direction patterns.
 
 ### All BugSigDB Condition-to-Body-Site Direction Maps
 

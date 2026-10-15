@@ -18,19 +18,22 @@ authors = [
   { name = "Marcin P. Joachimiak" },
 ]
 dependencies = [
-  "defusedxml>=0.7.1",
   "httpx>=0.28.0",
   "linkml>=1.10.0",
   "linkml-runtime>=1.8.3",
-  "matplotlib>=3.10.0",
+  # numpy arrives with scipy either way; it is declared because `mtp.enrichment_stats`
+  # and `mtp.calibration` import it directly.
   "numpy>=2.0",
   "pandas>=3.0.6",
-  "pillow>=12.0.0",
   "plotly>=7.0",
   "pydantic>=2.13.0",
   "pyyaml>=6.0.2",
+  # scipy stays a runtime dependency on purpose (#288): the analysis modules
+  # guild_maps, table1_trait_maps and trait_composition all import it at module
+  # level, so it is not optional for anything except a bare ingest-only install,
+  # and the repo's rule is that statistics come from scipy rather than being
+  # hand-rolled (#135).
   "scipy>=1.17.0",
-  "seaborn>=0.13.0",
 ]
 
 [project.optional-dependencies]
@@ -52,9 +55,15 @@ kg = [
 # renderer, but plotly 7.0 removed the kaleido-v0 code path (6.x had only
 # deprecated it), so with the plotly floor, kaleido must sit on the v1 line; the
 # two floors are a pair.
+# matplotlib, seaborn, pillow and defusedxml are imported only by the figure
+# scripts under scripts/, never by src/ (#521).
 viz = [
+  "defusedxml>=0.7.1",
   "kaleido>=1.0",
+  "matplotlib>=3.10.0",
+  "pillow>=12.0.0",
   "plotly>=7.0",
+  "seaborn>=0.13.0",
 ]
 mongo = [
   "linkml-store[llm,mongodb]>=0.3.0",

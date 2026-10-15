@@ -152,7 +152,7 @@ At the taxa-list level, overlap should still be interpreted cautiously. The sign
 
 `autism_autoimmune_taxa_signed_pattern_labels.tsv` extracts the heatmap labels that directly support the red/blue readout above so the visual pattern can be audited without manually reading the plot.
 
-The most defensible interpretation is that the exact autism and autoimmune disease labels share a candidate gut dysbiosis axis involving increased-profile facultative or aerotolerant trait enrichment. This analysis does not show that autism and autoimmune disease are causally linked, driven by the same taxa, or even consistently connected across broader ASD metadata. The autoimmune subset is small, and many taxa are locally unresolved as `taxon_<NCBI id>`, so the taxa-level results should be treated as candidate NCBI IDs for follow-up rather than polished biological names.
+The most defensible interpretation is that the exact autism and autoimmune disease labels both show taxa annotated as facultative or aerotolerant enriched among increased profiles. This analysis does not show that autism and autoimmune disease are causally linked, driven by the same taxa, or even consistently connected across broader ASD metadata. The autoimmune subset is small, so the taxa-level results are candidates for follow-up.
 
 ## Heatmap
 

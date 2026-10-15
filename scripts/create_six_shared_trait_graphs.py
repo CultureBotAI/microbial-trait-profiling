@@ -1,5 +1,4 @@
 """Create Cytoscape.js graph versions of the six shared trait Sankey outputs."""
-# ruff: noqa: E501
 
 from __future__ import annotations
 
@@ -16,7 +15,7 @@ OUTPUT_DIR = REPO_ROOT / "trait-visualization" / "trait-profile-investigation" /
 HTML_FILENAME = "six_shared_traits_profile_graphs.html"
 DATA_FILENAME = "six_shared_traits_profile_graph_data.json"
 MANIFEST_FILENAME = "six_shared_trait_graph_manifest.tsv"
-CYTOSCAPE_CDN = "https://cdn.jsdelivr.net/npm/cytoscape/dist/cytoscape.min.js"
+CYTOSCAPE_CDN = "https://cdn.jsdelivr.net/npm/cytoscape@3.34.3/dist/cytoscape.min.js"
 
 
 @dataclass(frozen=True)
@@ -563,7 +562,7 @@ def build_graph_payload(output_dir: Path = OUTPUT_DIR) -> tuple[dict[str, object
 
 def html_template() -> str:
     """Return the static Cytoscape graph explorer template."""
-    return r"""<!doctype html>
+    return """<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -581,7 +580,8 @@ def html_template() -> str:
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe \
+UI", sans-serif;
       color: var(--ink);
       background: #ffffff;
     }
@@ -770,13 +770,16 @@ def html_template() -> str:
 </head>
 <body>
   <div id="load-error" class="error">
-    Cytoscape.js did not load. This explorer uses the Cytoscape.js package from jsDelivr; open it with network access or vendor the package locally.
+    Cytoscape.js did not load. This explorer uses the Cytoscape.js package from jsDelivr; open it \
+with network access or vendor the package locally.
   </div>
   <header class="topbar">
     <div>
       <h1>Six shared traits Cytoscape graph explorer</h1>
       <p class="subtitle">
-        Condition nodes connect into trait/body-site bundle nodes adjacent to the body-site nodes, then each bundle links directly to its corresponding body-site node. Source and body-site connector widths use separate scales.
+        Condition nodes connect into trait/body-site bundle nodes adjacent to the body-site \
+nodes, then each bundle links directly to its corresponding body-site node. Source and body-site \
+connector widths use separate scales.
       </p>
     </div>
     <div class="controls">
@@ -808,11 +811,16 @@ def html_template() -> str:
       </section>
       <section class="section">
         <h2>Legend</h2>
-        <div class="legend-item"><span class="line-sample" style="border-top-width: 3px;"></span><span>condition/source scale: small n</span></div>
-        <div class="legend-item"><span class="line-sample" style="border-top-width: 11px;"></span><span>condition/source scale: large n</span></div>
-        <div class="legend-item"><span class="line-sample" style="border-top-width: 3px;"></span><span>trait/body-site scale: small n</span></div>
-        <div class="legend-item"><span class="line-sample" style="border-top-width: 12px;"></span><span>trait/body-site scale: large n</span></div>
-        <p class="note">Bundle diamonds are borderless and adjacent to each body-site node. Each body site has at most six bundle endpoints, one for each trait color scale.</p>
+        <div class="legend-item"><span class="line-sample" style="border-top-width: \
+3px;"></span><span>condition/source scale: small n</span></div>
+        <div class="legend-item"><span class="line-sample" style="border-top-width: \
+11px;"></span><span>condition/source scale: large n</span></div>
+        <div class="legend-item"><span class="line-sample" style="border-top-width: \
+3px;"></span><span>trait/body-site scale: small n</span></div>
+        <div class="legend-item"><span class="line-sample" style="border-top-width: \
+12px;"></span><span>trait/body-site scale: large n</span></div>
+        <p class="note">Bundle diamonds are borderless and adjacent to each body-site node. Each \
+body site has at most six bundle endpoints, one for each trait color scale.</p>
       </section>
       <section class="section">
         <h2>Selected Element</h2>
@@ -918,7 +926,8 @@ def html_template() -> str:
         {
           selector: 'edge[edgeType="source"]',
           style: {
-            "width": `mapData(n, ${sourceRange[0]}, ${sourceRange[1]}, ${sourceRange[2]}, ${sourceRange[3]})`,
+            "width": `mapData(n, ${sourceRange[0]}, ${sourceRange[1]}, ${sourceRange[2]}, \
+${sourceRange[3]})`,
             "opacity": 0.74,
             "z-index": 1
           }
@@ -926,7 +935,8 @@ def html_template() -> str:
         {
           selector: 'edge[edgeType="body_site_connector"]',
           style: {
-            "width": `mapData(n, ${bundleRange[0]}, ${bundleRange[1]}, ${bundleRange[2]}, ${bundleRange[3]})`,
+            "width": `mapData(n, ${bundleRange[0]}, ${bundleRange[1]}, ${bundleRange[2]}, \
+${bundleRange[3]})`,
             "opacity": 0.92,
             "curve-style": "straight",
             "target-arrow-shape": "none",
@@ -1021,7 +1031,8 @@ def html_template() -> str:
         cy.elements().removeClass("hidden");
         cy.edges().forEach((edge) => {
           const traitVisible = traits.has(edge.data("traitId"));
-          const sourceTooSmall = edge.data("edgeType") === "source" && Number(edge.data("n")) < minN;
+          const sourceTooSmall = edge.data("edgeType") === "source" && Number(edge.data("n")) < \
+minN;
           if (!traitVisible || sourceTooSmall) {
             edge.addClass("hidden");
           }
@@ -1066,7 +1077,8 @@ def html_template() -> str:
       cy.elements().removeClass("matched");
       if (term.length < 2) return;
       cy.nodes().forEach((node) => {
-        const text = `${node.data("fullLabel") || ""} ${node.data("traitLabel") || ""}`.toLowerCase();
+        const text = `${node.data("fullLabel") || ""} ${node.data("traitLabel") || \
+""}`.toLowerCase();
         if (text.includes(term)) node.addClass("matched");
       });
     }
@@ -1109,13 +1121,15 @@ def html_template() -> str:
       if (data.s !== undefined) rows.push(["s", Number(data.s).toLocaleString()]);
       if (data.bg !== undefined) rows.push(["bg", Number(data.bg).toLocaleString()]);
       if (data.links !== undefined) rows.push(["links", Number(data.links).toLocaleString()]);
-      if (data.sourceLinks !== undefined) rows.push(["source links", Number(data.sourceLinks).toLocaleString()]);
+      if (data.sourceLinks !== undefined) rows.push(["source links", \
+Number(data.sourceLinks).toLocaleString()]);
       if (data.signal !== undefined) rows.push(["z shade", data.signal]);
       if (data.contrast !== undefined) rows.push(["contrast", data.contrast]);
 
       document.getElementById("details").innerHTML = `
         <dl>
-          ${rows.map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}
+          ${rows.map(([key, value]) => \
+`<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}
         </dl>
       `;
     }
@@ -1138,7 +1152,8 @@ def html_template() -> str:
       cy.on("select", "node, edge", (event) => renderDetails(event.target));
       cy.on("unselect", "node, edge", () => {
         if (cy.$(":selected").length === 0) {
-          document.getElementById("details").textContent = "Select a node or edge to inspect counts and labels.";
+          document.getElementById("details").textContent = "Select a node or edge to inspect \
+counts and labels.";
         }
       });
       applyFilters();

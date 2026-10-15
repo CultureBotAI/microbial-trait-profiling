@@ -1,7 +1,7 @@
 {
   "title": "Six shared traits Cytoscape graph explorer",
   "description": "Graph versions of the all-six-trait grouped and individual-condition Sankey maps. Condition links fan into body-site trait bundles adjacent to the body-site nodes, with short direct bundle-to-body-site connectors.",
-  "cytoscapePackage": "https://cdn.jsdelivr.net/npm/cytoscape/dist/cytoscape.min.js",
+  "cytoscapePackage": "https://cdn.jsdelivr.net/npm/cytoscape@3.34.3/dist/cytoscape.min.js",
   "sharedSignalMax": 3.2206,
   "traits": [
     {

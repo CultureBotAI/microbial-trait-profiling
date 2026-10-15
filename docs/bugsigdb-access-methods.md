@@ -83,22 +83,18 @@ The intended branch refresh command is:
 just refresh-v131-trait-visualization
 ```
 
-On this Windows workspace, the equivalent commands were run with the repo
-virtual environment and the existing KG-Microbe TSVs from `Downloads`:
+The same steps, one recipe at a time (`download-kg` fetches the KG-Microbe
+edges and nodes that `taxa-trait-matrix` reads):
 
 ```bash
-python -c "from bsdbng.download import download_exports; download_exports(force=True)"
-python -c "from bsdbng.ingest import ingest; ingest()"
-python -m bsdbng.study_tsv
-python scripts/create_taxa_trait_matrix.py --edges C:/Users/kimoz/Downloads/merged-kg_edges.tsv --nodes C:/Users/kimoz/Downloads/merged-kg_nodes.tsv
-python scripts/create_study_trait_profiles.py
-python scripts/create_clustered_heatmap.py
-python scripts/create_condition_taxon_heatmap.py
-python scripts/create_taxa_guild_heatmap.py
-python scripts/create_study_trait_profile_heatmap.py
-python scripts/create_condition_trait_module_heatmap.py
-python scripts/regenerate_trait_profile_investigation.py
-python scripts/benchmark_bugsigdb_access.py
+just download
+just ingest
+just study-tsvs
+just taxa-trait-matrix
+just study-trait-profiles
+just trait-heatmaps
+just trait-profile-investigation
+just benchmark-bugsigdb-access
 ```
 
 The visible figure outputs default to Homo sapiens experiments when
