@@ -149,7 +149,7 @@ def compute_composition_arm(
     p_vals: list[float] = []
     stats_list: list[dict[str, float]] = []
     for t in focal_traits:
-        diffs = (pvt_z[(t, "inc")] - pvt_z[(t, "dec")]).values
+        diffs = (pvt_z[(t, "inc")] - pvt_z[(t, "dec")]).to_numpy(dtype=float)
         tt = stats.ttest_1samp(diffs, 0.0)
         p_val = float(tt.pvalue) if not np.isnan(tt.pvalue) else 1.0
         p_vals.append(p_val)
@@ -469,7 +469,9 @@ def evaluate_decision_rule(
     target_name = TABLE_1_TRAITS.get(target_trait_id, target_trait_id)
     dropped_name = TABLE_1_TRAITS.get(dropped_trait_id, dropped_trait_id)
 
-    d_eff = float(comp_delta_eff_matrix.loc[dropped_name, target_name])
+    d_eff = float(
+        comp_delta_eff_matrix.loc[[dropped_name], [target_name]].to_numpy(dtype=float).item()
+    )
     abs_d_eff = abs(d_eff)
 
     effects = sorted([res.primary_stat for res in base_comp.values()])

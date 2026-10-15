@@ -1508,7 +1508,7 @@ support, with at most 24 rows displayed. The companion table retains the
 original support-strength components as `n`, `signal`, and `strength` columns,
 and also records BH q-values computed within each heatmap view.
 
-Two signed direction contrast heatmaps are written:
+Two primary signed direction contrast heatmaps are written:
 `six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap.png`
 and
 `six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap.png`.
@@ -1516,73 +1516,171 @@ Rows are condition/body-site pairs and columns are the six shared traits. The
 annotation reports the increased-profile positive-z fraction minus the
 decreased-profile positive-z fraction. Color encodes this same effect on a fixed
 -1 to +1 scale; red favors increased profiles and blue favors decreased profiles.
-Supported effects with finite two-sided Fisher exact p-values are displayed only
-when their absolute magnitude is strictly greater than 0.01. Support requires at
-least 3 positive-z profiles in either direction and at least 2 total studies. A
-dark border marks a displayed cell with BH-adjusted `q <= 0.05`; nominal
-`p < 0.01` counts are reported separately and do not control the border.
-Unbordered cells remain descriptive effects. Gray cells are unavailable,
-insufficiently supported, or at or below the effect cutoff.
-Conditions are chosen from the full increased and decreased
-`*_profile_sankey_edges.tsv` tables before graph display selection: every
-condition/body-site row with at least one supported, testable six-trait cell
-above the effect cutoff is included.
+Supported effects with finite two-sided Fisher exact p-values are displayed when
+the absolute increased-minus-decreased positive-z fraction is strictly greater
+than 0.01, including nonsignificant results above that effect cutoff. Support
+requires at least 3 positive-z profiles in either direction and at least 2 total
+studies. A dark cell border marks BH-adjusted `q <= 0.05`; the manifest separately
+reports how many cells passed the nominal Fisher `p < 0.01` threshold. Unbordered
+cells are descriptive effects. The figure legend reports the displayed condition-label,
+anatomy-group, row, cell, and BH-border counts. The
+signed contrast table contains candidate edge records rather than a complete
+Cartesian grid. Its `blank_reason` is
+`low positive-z profile or study support` for a present candidate that fails
+support, `absolute effect <=0.01` for a supported finite candidate removed by the
+effect cutoff, and empty (`NA` in the TSV) for a displayed candidate. A
+condition/body-site/trait combination for which neither direction emitted a
+candidate edge is absent from the table rather than assigned a blank reason.
+Absent records, present under-supported candidates, and cutoff-filtered effects
+appear gray in the image. A direction may have zero positive-z profiles while
+the cell remains colored when total profiles exist, the other direction meets
+support, and the absolute contrast exceeds 0.01.
 
-Grouped condition text is assigned upstream by the ordered, case-insensitive
-substring rules in `v3_fully_grouped_condition_display_label`: the first matching
-rule wins and unmatched labels become `Other specific clinical labels`.
-Individual-condition views retain the original curated condition label. The
-`*_profile_sankey_condition_rollups.tsv` files audit raw labels, display labels,
-rules, profile counts, and study counts. These fixed condition labels and the
-grouped v3 anatomy labels are not inferred from the dendrogram.
+Conditions are not selected with a top-N disease filter. Signed contrasts read
+the full increased and decreased Sankey edge tables before graph display
+selection, after upstream removal of unknown raw condition labels. Every
+condition/body-site row with at least one displayed cell is included.
+The grouped view applies the v3 clinical condition rollup rules; the individual
+view retains the original curated BugSigDB condition label. Both use the same
+grouped v3 body-site labels. These condition and anatomy labels are fixed upstream
+categories, not names inferred from dendrogram branches or descriptions of every
+row on a branch. Grouped conditions are assigned by the ordered, case-insensitive
+substring rules in `v3_fully_grouped_condition_display_label`; the first matching
+rule wins and unmatched labels become `Other specific clinical labels`. The
+per-trait `*_profile_sankey_condition_rollups.tsv` files audit the raw label,
+display label, applied rule, profile count, and study count. Individual-condition
+ranked rows are grouped by body site, then ordered
+by nominal-p trait count, trait coverage, BH-selected count, evidence,
+support, and effect size. Full overview PNGs retain all rows. Both views also
+have readable `*_page_NN.png` files with at most 24 rows each. Grouped pages
+follow the corrected clustered order; individual pages retain the ranked order.
+Their paths and counts appear in `six_shared_trait_signed_direction_heatmap_pages.tsv`.
 
-The grouped-condition signed direction heatmap is one clustered
-diagram, not a paged set. Its rows use average linkage on Spearman-correlation
-distance across the six signed trait deltas, with unavailable cells treated as
-neutral zero for clustering. The left dendrogram clusters the condition/anatomy
-rows. Every internal branch is tested for overrepresentation of each eligible
-upstream anatomy and grouped-condition label relative to rows outside the branch
-using a one-sided Fisher exact test. BH adjustment is applied across the complete
-branch-by-label family. A branch is colored and labeled only when `q <= 0.05`,
-it contains at least three rows and two matching rows, and the label describes
-at least two-thirds of its rows. Every qualifying nested branch is shown, with
-compact labels placed directly inside the dendrogram and connected to the tested
-branch nodes. Visible labels report the matching-row fraction and adjusted q-value;
-unlabeled branches are not interpreted. The full hypothesis family and selection flags are retained in
-`six_shared_traits_grouped_signed_direction_branch_label_tests.tsv`. The
-`six_shared_traits_grouped_signed_direction_cluster_rows.tsv` plus
-`six_shared_traits_grouped_signed_direction_cluster_summary.tsv` record displayed
-significant-branch membership and label statistics. A small preview PNG links to
-the larger clustered PNG in the six-shared-traits README. The
-individual-condition signed direction heatmap still receives additional readable
-`*_page_NN.png` files with at most 24 rows each. The page manifest is
-`six_shared_trait_signed_direction_heatmap_pages.tsv` and records only those
-individual-condition pages.
+The primary grouped heatmap is a single clustered diagram with a smaller
+`_heatmap_preview.png` linked to its full-resolution PNG in the README. Compact
+clustered companions use `_signed_direction_contrast_clustered_heatmap.png`
+suffixes. Clustered views use average-linkage hierarchical clustering on pairwise-complete Spearman
+distance, `1 - rho`; columns remain in the fixed six-trait order. At least 3
+shared supported traits are required to define a pairwise correlation. Missing
+cells are not filled with zero. Before distances are constructed, rows are
+sorted lexicographically by their exact condition/body-site pair labels. This
+canonical input order makes SciPy's choices among exact distance ties
+reproducible under input-row permutations, but it does not make the tied
+topology statistically stable. Therefore, the dendrogram is not cut into
+clusters and no cluster IDs or branch labels are reported. A branch label would
+only be shown after a predeclared, multiplicity-adjusted enrichment analysis
+supported that label; the present dendrogram is an ordering device only.
 
-A branch without significant anatomy or condition enrichment can receive a
-descriptive signed-trait-pattern title only when that direction is significantly
-enriched relative to displayed rows outside the branch. Every internal
-branch-by-trait-by-direction combination is tested with a one-sided Fisher exact
-test, and BH adjustment is applied across that complete family. Displayed titles
-require `q <= 0.05`, at least three displayed rows in the same direction, at least
-two-thirds directional agreement, and at least one same-direction cell already
-selected by the heatmap-wide BH procedure. The title reports the matching-row
-fraction, branch-pattern q-value, and BH-cell count. All qualifying trait patterns
-are retained, including patterns on nested branches and multiple traits on the
-same branch. Tests and display-selection flags are written to
-`six_shared_traits_grouped_signed_direction_branch_pattern_tests.tsv`.
+The earlier branch-label, trait-pattern, cluster-row, and cluster-summary tables
+are preserved in the [September 23 branch-label archive](trait-profile-investigation/six-shared-traits/archive/2026-09-23-branch-labels/README.md).
+They document the prior clustering procedure and are not evidence for branch
+labels on the current figures.
+
+Rows with no defined Spearman distance to any other row are excluded from the
+linkage and displayed in a separate `Insufficient overlap (not clustered)`
+block. For the remaining linkage rows, a row pair with too little overlap or
+constant ranks receives neutral clustering distance 1. The figure subtitle and
+manifest report undefined-pair counts and fractions before exclusion and within
+the linkage subset, as well as the exact-distance tie excess fraction, defined
+as `(linkage pairs - distinct distances) / linkage pairs`. Inclusion status,
+exclusion reason, supported-trait count, defined-neighbor count, canonical input
+order, and displayed row order are recorded in
+`six_shared_trait_signed_direction_cluster_tree_leaves.tsv`. The complete
+linkage merges among included rows are exported in
+`six_shared_trait_signed_direction_cluster_tree_nodes.tsv`.
+
+The raw individual-condition tree is compared with the grouped-condition tree
+in `six_shared_trait_signed_direction_cluster_comparison.tsv`. Each individual
+condition/body-site vector is mapped to its grouped aggregate using the grouped
+edge table's `raw_conditions` field. The table reports their Spearman
+correlation and distance, cluster orders, the nearest individual-condition
+neighbor, and separate counts of source and displayed individual conditions.
+`grouped_contributing_individual_condition_count` counts distinct raw conditions
+in the full condition rollup map for that grouped condition/body-site pair;
+`grouped_displayed_individual_condition_count` counts only the individual rows
+that meet heatmap display requirements and enter this comparison. A grouped
+aggregate can therefore include conditions absent from the displayed individual
+heatmap.
+
+Ranks and diagnostic flags require a finite comparison with at least 5 shared
+supported traits; lower-overlap comparisons remain exported but are marked
+ineligible. The within-group 1.5-IQR outlier threshold is computed only from
+eligible distances and requires at least 4 such comparisons. Lower-overlap
+distances do not affect that threshold. A separate flag records nonpositive
+individual-versus-grouped correlation among eligible rows.
+
+The grouped aggregate includes the individual row being compared, so this is not
+an independent comparison. One displayed contributor does not imply that the
+aggregate contains only that condition; source contributor counts establish the
+extent of the rollup. These are exploratory pattern diagnostics, not formal
+biological outlier tests. The six-shared-traits README embeds the grouped
+clustered overview and links directly to the full-resolution individual PNG.
+
+Issue #256 / PR #257 introduced pooled, denominator-harmonized, study-weighted
+fraction contrasts and paired log-ratios. It did not emit condition-by-anatomy
+replacements for this figure. Those pooled quantities are not substituted into
+the profile-level positive-z prevalence contrast here because the estimand and
+sampling unit differ; the manifest records that scope distinction explicitly.
+
 BH q-values are computed across the full cell table within each condition-label
 mode. The companion table records raw delta, raw Fisher p-value, BH q-value,
-signed `-log10(p)`, display and significance flags, grouped Spearman-cluster
-metadata, and page number for each cell.
+signed `-log10(p)`, display and nominal/BH flags, ranked page number, and
+clustered row order for each cell. Dark borders use `selected_after_bh`; the
+explicit nominal flag is `nominal_p_value_selected`, while
+`significant_in_heatmap` remains only as a deprecated compatibility alias.
+Floating-point fields are exported at 12 significant digits to prevent
+last-bit textual churn without implying additional precision.
+The Fisher contingency tables count profiles rather than independent studies;
+BH-bordered cells are profile-level diagnostics and do not establish
+study-level replication.
 
-Every signed heatmap includes a legend reporting the number of shown condition
-labels, anatomy groups, condition-by-anatomy rows, displayed cells, nominal-p
-cells, BH-bordered cells, and shown-row cells hidden by the effect cutoff. Issue
-#256 / PR #257 introduced pooled, denominator-harmonized, study-weighted fraction
-and log-ratio quantities but no condition-by-anatomy replacement for this
-profile-level positive-z prevalence contrast, so those distinct estimands are
-not mixed into these heatmaps.
+### Focused Oral Six-Trait Contrast Heatmap
+
+The focused oral analysis in `trait-profile-investigation/six-shared-traits/oral/`
+presents an auditable subset of the saved individual-condition signed direction
+contrasts. The [oral provenance JSON](trait-profile-investigation/six-shared-traits/oral/oral_six_trait_provenance.json)
+records the source artifact commit and hashes of the contrast and trait-selection
+files used for each rendering. Rows are included if sampled at `Oral cavity /
+dental` or labeled with an explicitly oral diagnosis (e.g., periodontitis,
+dental caries, gingivitis, root caries).
+
+The saved subset contains 80 condition/site rows and 381 source cell records.
+Its main figure contains 28 rows and 70 displayed cells. Display requires at
+least three positive-z profiles in either direction, at least two studies, a
+finite Fisher test, and an absolute increased-minus-decreased positive-z
+fraction greater than 0.01. Displayed-cell counts therefore include the effect
+cutoff as well as support. All 13 oral-disease rows are retained in the main
+figure, including eight without displayed cells; 15 other rows have displayed
+cells. The full individual-condition view has 567 displayed cells.
+
+#### Correction Family and Significance Terminology
+
+Oral filtering retains the source 2,379-cell individual-view BH family. It does
+not recompute FDR or relax significance criteria on the oral subset:
+
+- **BH-adjusted q ≤ 0.05**: Significance borders strictly mark BH-adjusted
+  `q <= 0.05` (`selected_after_bh`). Across the 70 displayed oral cells, exactly **0**
+  meet this threshold. All four BH-significant cells in the individual-condition
+  dataset are fecal.
+- **Nominal Fisher p < 0.01**: Uncorrected significance is explicitly labeled
+  `nominal Fisher p < 0.01` (`nominal_p_value_selected`), distinguishing exploratory
+  raw-p screening from multiplicity-corrected discoveries. Exactly **1** oral cell
+  passes nominal screening: `Squamous cell carcinoma | Oral cavity / dental` × `coccus shaped`
+  (effect −0.6, p = 0.002815, q = 0.291120). Its nominal flag is true, but it
+  correctly lacks a dark BH border because q > 0.05. This row is distinct from the
+  separate `Oral squamous cell carcinoma` row.
+- **Distinction from Approach 2 display filtering**: In Approach 2 trait-pattern
+  heatmaps, nominal Fisher `p < 0.01`, `n >= 3`, and `s >= 2` act as exploratory
+  display filters determining which cells are colored. In contrast, in Approach 4
+  signed-contrast figures, all supported cells above the absolute effect cutoff are
+  colored and dark borders represent BH-adjusted `q <= 0.05`.
+- **Distinction from pooled trait selection**: The six traits were selected by
+  pooled across-disease association, which does not imply individual-condition or
+  oral subset significance.
+- **Compatibility aliases**: Downstream exports and manifests provide
+  `nominal_p_value_selected` and `nominal_p_value_cell_count` as primary fields, while
+  retaining `significant_in_heatmap` and `significant_cell_count` as deprecated
+  backward-compatibility aliases.
 
 ### Inferred Guild Evidence Outputs
 

@@ -123,7 +123,9 @@ def profile_identifiers(profiles_df: pd.DataFrame) -> np.ndarray:
     if missing:
         raise ValueError(f"Profiles table is missing identifier columns: {missing}")
     parts = [profiles_df[col].astype(str) for col in PROFILE_ID_COLUMNS]
-    ids = parts[0].str.cat(parts[1:], sep=":")
+    ids = parts[0]
+    for part in parts[1:]:
+        ids = ids.str.cat(part, sep=":")
     id_array: np.ndarray = ids.to_numpy(dtype=object)
     return id_array
 

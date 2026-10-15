@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -200,8 +201,13 @@ def test_normalize_traits_by_profile_composition() -> None:
         }
     )
 
-    # Test with Sequence[str]: list, tuple, pd.Index (#379)
-    for cols in [["t1", "t2"], ("t1", "t2"), pd.Index(["t1", "t2"])]:
+    # Test sequence and pandas Index inputs (#379).
+    column_cases: list[Sequence[str] | pd.Index[str]] = [
+        ["t1", "t2"],
+        ("t1", "t2"),
+        pd.Index(["t1", "t2"]),
+    ]
+    for cols in column_cases:
         norm = normalize_traits_by_profile_composition(prof_df, cols)
         assert norm.shape == (2, 2)
         # Row 1 sum is 4.0, normalized row should sum to 1.0 (0.5, 0.5)

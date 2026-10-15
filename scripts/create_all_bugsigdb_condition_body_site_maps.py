@@ -1363,7 +1363,7 @@ def write_readme(
         lines.extend(
             [
                 f"- `{config.output_stem}.png`: displayed {config.focus_label}-profile map.",
-                f"- `{config.output_stem}_edges.tsv`: display-candidate edge table ",
+                f"- `{config.output_stem}_edges.tsv`: display-candidate edge table",
                 f"  for the {config.focus_label}-profile map; {displayed} rows are drawn.",
                 (f"- `{config.output_stem}_v2.png`: uncapped v2 {config.focus_label}-profile map."),
                 (

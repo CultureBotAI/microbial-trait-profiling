@@ -64,6 +64,18 @@ trait-profile-investigation:
 six-shared-trait-heatmaps:
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py
 
+# Check regenerated clustering and oral exports against a saved contrast table.
+audit-six-trait-diagnostics baseline:
+	uv run python scripts/adhoc/audit_clustering_stack.py --baseline-contrasts "{{baseline}}"
+
+# Focused view of saved Jed contrasts; preserves their original Fisher/BH inference.
+oral-six-trait-heatmap:
+	source_commit="uncommitted" && \
+	if git diff --quiet HEAD -- trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_trait_condition_body_site_direction_contrasts.tsv trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_trait_selection.tsv; then \
+	  source_commit="$(git rev-parse HEAD)"; \
+	fi && \
+	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py --oral-only --source-commit "$source_commit"
+
 # Trace PD lollipop traits to observed taxa and profile evidence.
 pd-trait-taxa:
 	uv run python scripts/lookup_pd_trait_taxa.py

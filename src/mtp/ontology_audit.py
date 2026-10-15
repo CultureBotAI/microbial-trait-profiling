@@ -260,8 +260,8 @@ def build_redundant_pairs_table(
                 if c1 not in profiles_df.columns or c2 not in profiles_df.columns:
                     continue
 
-                v1 = profiles_df[c1].values.astype(float)
-                v2 = profiles_df[c2].values.astype(float)
+                v1 = profiles_df[c1].to_numpy(dtype=float)
+                v2 = profiles_df[c2].to_numpy(dtype=float)
 
                 r_val = float(np.corrcoef(v1, v2)[0, 1]) if len(v1) > 1 else 0.0
                 sup1 = int(np.sum(v1))
