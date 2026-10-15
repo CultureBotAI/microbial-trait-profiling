@@ -24,7 +24,7 @@ dependencies = [
   # numpy arrives with scipy either way; it is declared because `mtp.enrichment_stats`
   # and `mtp.calibration` import it directly.
   "numpy>=2.0",
-  "pandas>=3.0.0",
+  "pandas>=3.0.6",
   "plotly>=7.0",
   "pydantic>=2.13.0",
   "pyyaml>=6.0.2",
@@ -39,9 +39,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "mypy>=1.15.0",
-  "pre-commit>=4.2.0",
-  "pytest>=8.3.5",
-  "ruff>=0.15.10",
+  "pre-commit>=4.6.2",
+  "pytest>=9.1.1",
+  "ruff>=0.17.0",
   "types-PyYAML>=6.0.12.20260408",
 ]
 kg = [
@@ -68,14 +68,14 @@ mongo = [
 [dependency-groups]
 dev = [
   "mypy>=1.15.0",
-  "pre-commit>=4.2.0",
-  "pytest>=8.3.5",
+  "pre-commit>=4.6.2",
+  "pytest>=9.1.1",
   "pytest-cov>=6.0.0",
-  "ruff>=0.15.10",
+  "ruff>=0.17.0",
   "types-PyYAML>=6.0.12.20260408",
 ]
 qa = [
-  "bandit[toml]>=1.8.3",
+  "bandit[toml]>=1.9.4",
   "deptry>=0.21.1",
   # Keep these maintenance CLIs aligned with .pre-commit-config.yaml.
   "detect-secrets==1.5.0",

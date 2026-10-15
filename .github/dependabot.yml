@@ -20,3 +20,7 @@ updates:
       # the qa group and does not see them.
       - dependency-name: "uv"
       - dependency-name: "detect-secrets"
+    # ruff and bandit are not ignored, but their hook revs must equal the
+    # versions uv.lock resolves (tests/test_tool_pins.py). A Dependabot PR that
+    # bumps either fails that test until the matching rev in
+    # .pre-commit-config.yaml is bumped on the same PR (#445, #484).
