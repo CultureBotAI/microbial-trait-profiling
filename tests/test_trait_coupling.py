@@ -247,10 +247,43 @@ def test_cli_writes_where_the_committed_outputs_live() -> None:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
-    assert module.parse_args([]).output_dir == DEFAULT_OUTPUT_DIR == DERIVED_DATA_DIR
+    args_empty = module.parse_args([])
+    assert args_empty.output_dir == DEFAULT_OUTPUT_DIR == DERIVED_DATA_DIR
+    assert args_empty.code_commit == ""
+
+    args_commit = module.parse_args(["--code-commit", "deadbeef+dirty"])
+    assert args_commit.code_commit == "deadbeef+dirty"
+
     for name in (
         "trait_coupling_loto_matrix.tsv",
         "trait_coupling_lco_summary.tsv",
         "trait_coupling_report.txt",
     ):
         assert (DEFAULT_OUTPUT_DIR / name).is_file(), name
+
+
+def test_build_coupling_report_text_records_code_commit() -> None:
+    """Report text must include Code commit: <hash> when provided (#477)."""
+    from mtp.coupling import DecisionRuleResult, build_coupling_report_text
+
+    dummy_df = pd.DataFrame()
+    dummy_rule = DecisionRuleResult(
+        target_trait_id="t1",
+        target_trait_name="Trait 1",
+        dropped_trait_id="t2",
+        dropped_trait_name="Trait 2",
+        delta_effect=0.001,
+        abs_delta_effect=0.001,
+        min_adjacent_distance=0.005,
+        passes_stability_criterion=True,
+        adjacent_distances=[0.005],
+        sorted_effects=[0.01, 0.015],
+        verdict="Passes",
+    )
+    text_without = build_coupling_report_text(dummy_df, dummy_df, [], dummy_rule, dummy_rule)
+    assert "Code commit:" not in text_without
+
+    text_with = build_coupling_report_text(
+        dummy_df, dummy_df, [], dummy_rule, dummy_rule, code_commit="abc123commit"
+    )
+    assert "Code commit: abc123commit" in text_with

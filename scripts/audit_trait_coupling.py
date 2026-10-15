@@ -40,6 +40,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_OUTPUT_DIR,
         help=f"Directory to write output TSVs and reports (default: {DEFAULT_OUTPUT_DIR})",
     )
+    parser.add_argument(
+        "--code-commit",
+        type=str,
+        default="",
+        help="Code commit hash for provenance tracking",
+    )
     return parser.parse_args(argv)
 
 
@@ -50,6 +56,7 @@ def main() -> int:
             profiles_path=args.profiles,
             columns_path=args.columns,
             output_dir=args.output_dir,
+            code_commit=args.code_commit,
         )
     except Exception as exc:
         sys.stderr.write(f"Error during trait coupling audit: {exc}\n")
