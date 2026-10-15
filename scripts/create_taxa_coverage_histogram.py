@@ -27,7 +27,6 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
 OUTPUT_DIR = INVESTIGATION_DIR / "taxa-coverage"
-ROOT_INVESTIGATION_DIR = REPO_ROOT / "trait-profile-investigation"
 
 TAXA_PATH = REPO_ROOT / "data" / "derived" / "taxa.tsv"
 TAXA_TRAIT_MATRIX_PATH = REPO_ROOT / "data" / "derived" / "taxa_trait_matrix.tsv"
@@ -577,32 +576,6 @@ def plot_trait_count_distribution(taxa_master: pd.DataFrame, output_path: Path) 
     print(f"  Saved Figure 3: {output_path} and .svg")
 
 
-def copy_outputs_to_mirrors() -> None:
-    """Mirror output files to top-level trait-profile-investigation directories for seamless discovery."""
-    targets = [
-        INVESTIGATION_DIR,
-        ROOT_INVESTIGATION_DIR,
-    ]
-    files_to_copy = [
-        "taxa_coverage_histogram_rank_stratified.png",
-        "taxa_coverage_histogram_rank_stratified.svg",
-        "taxa_coverage_occurrences_vs_unique.png",
-        "taxa_coverage_occurrences_vs_unique.svg",
-        "taxa_trait_count_distribution.png",
-        "taxa_trait_count_distribution.svg",
-        "taxa_coverage_by_rank.tsv",
-        "top_zero_trait_bugsigdb_taxa.tsv",
-        "taxa_kgmicrobe_coverage_details.tsv",
-    ]
-
-    for target_dir in targets:
-        target_dir.mkdir(parents=True, exist_ok=True)
-        for fname in files_to_copy:
-            src = OUTPUT_DIR / fname
-            if src.exists():
-                dst = target_dir / fname
-                shutil.copy2(src, dst)
-        print(f"  Mirrored core outputs to {target_dir}")
 
 
 def main() -> None:
@@ -645,8 +618,6 @@ def main() -> None:
     fig3_path = out_dir / "taxa_trait_count_distribution.png"
     plot_trait_count_distribution(taxa_master, fig3_path)
 
-    # 4. Mirror outputs to investigation folders
-    copy_outputs_to_mirrors()
 
     print("=================================================================")
     print("Approach A Taxa Coverage Analysis Complete Successfully!")
