@@ -1,4 +1,8 @@
-"""Pinned native statistical contracts on the reconciled lineage-removal corpus."""
+"""Pinned native statistical contracts on the matched-corpus Table 1-trait analog.
+
+Sensitivity analysis on the reconciled lineage-removal corpus (not a reproduction
+of the published Table 1 baseline).
+"""
 
 from __future__ import annotations
 
@@ -359,8 +363,10 @@ def composition_q_sensitivity_table(base: Base, composition: list[Record]) -> li
         "## Baseline-versus-exclusion native q-values",
         "",
         "This table directly checks whether any predeclared genus/family exclusion causes "
-        "a Table 1 trait that is significant at pooled baseline to lose native q<=0.05 "
-        "membership. Q-values come from the complete supported-trait family, not a six-trait "
+        "a Table 1-named trait that is significant at pooled baseline to lose native q<=0.05 "
+        "membership. These baseline q-values are calculated on the matched-corpus Table 1-trait "
+        "analog, not a reproduction of the published Table 1 baseline. "
+        "Q-values come from the complete supported-trait family, not a six-trait "
         "recalculation. `NA` means the exclusion result was not tested or not selected.",
         "",
         "| Trait | Baseline q | Highest exclusion q | Highest-q exclusion | "
@@ -430,6 +436,15 @@ def composition_q_sensitivity_table(base: Base, composition: list[Record]) -> li
 def native_summary(base: Base, composition: list[Record], ora: list[Record]) -> str:
     lines = [
         "# Native lineage influence completion",
+        "",
+        "> [!IMPORTANT]",
+        "> **Matched-Corpus Table 1-Trait Analog (Issue #210)**",
+        "> The native composition and ORA reruns / taxon contribution audits reported here "
+        "are a matched-corpus Table 1-trait analog sensitivity analysis, not influence on "
+        "the published manuscript Table 1. They use the pinned human paired KG-Microbe "
+        "profile corpus and are not a reproduction of the published Table 1 baseline "
+        "(they do not reproduce published Table 1 baseline values such as facultatively "
+        "aerobic $q = 2.8 \\times 10^{-10}$).",
         "",
         "These reruns extend the reconciled 190-v1 audit using protocol 190-native-v1. "
         "The 22 exclusion scenarios, four scopes, raw trait keys and human paired corpus "
@@ -584,6 +599,20 @@ def export_native(base: Base, audit: Record, protocol: Record, output: Path) -> 
             print(f"  Scope {scope}: {len(keys)} profiles", flush=True)
             before, bpairs, bscales = baseline_composition[scope]
             after, apairs, ascales = transformed(base, remaining, keys, protocol["composition"])
+            before_totals = {key: sum(base.profiles[key].values()) for key in keys}
+            after_totals = {key: sum(remaining[key].values()) for key in keys}
+            valid_before = {
+                key[:2]
+                for key in keys
+                if key[2] == "inc"
+                and before_totals[key] > 0
+                and before_totals[(*key[:2], "dec")] > 0
+            }
+            valid_after = {
+                key[:2]
+                for key in keys
+                if key[2] == "inc" and after_totals[key] > 0 and after_totals[(*key[:2], "dec")] > 0
+            }
             native_stats.extend(dict(scenario=name, scope=scope, **r) for r in after.values())
             for trait in base.traits.values():
                 native = {
@@ -604,6 +633,11 @@ def export_native(base: Base, audit: Record, protocol: Record, output: Path) -> 
                     ("refitted", apairs[trait]),
                     ("fixed_baseline_sd", anchored),
                 ):
+                    before_input = (
+                        bpairs[trait] if reference == "refitted" or bscales[trait] else {}
+                    )
+                    before_cmp = {p: v for p, v in before_input.items() if p in valid_before}
+                    after_cmp = {p: v for p, v in values.items() if p in valid_after}
                     native_comparisons.append(
                         dict(
                             scenario=name,
@@ -611,10 +645,7 @@ def export_native(base: Base, audit: Record, protocol: Record, output: Path) -> 
                             trait_key=trait,
                             reference=reference,
                             **{f"native_{k}": v for k, v in native.items()},
-                            **comparison(
-                                bpairs[trait] if reference == "refitted" or bscales[trait] else {},
-                                values,
-                            ),
+                            **comparison(before_cmp, after_cmp),
                         )
                     )
             for treatment in protocol["ora"]["backgrounds"]:

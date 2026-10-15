@@ -1,0 +1,240 @@
+{
+  "method_id": "jed_composition_ttest",
+  "owner": "Jed",
+  "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/263",
+  "seed": 182,
+  "stream": "complete_null_study_flip",
+  "unit": "study",
+  "replicates_requested": 100,
+  "replicates_completed": 100,
+  "n_studies": 959,
+  "n_pairs": 2335,
+  "n_traits": 317,
+  "pseudocount_scale": 1000.0,
+  "type_i_error_metrics": {
+    "alpha_0.05": {
+      "empirical_type_i": 0.045962145110410094,
+      "nominal_alpha": 0.05,
+      "total_null_tests": 31700
+    },
+    "alpha_0.01": {
+      "empirical_type_i": 0.008138801261829653,
+      "nominal_alpha": 0.01,
+      "total_null_tests": 31700
+    },
+    "alpha_0.001": {
+      "empirical_type_i": 0.0006624605678233438,
+      "nominal_alpha": 0.001,
+      "total_null_tests": 31700
+    }
+  },
+  "observed_calls": {
+    "BH_q_0.05": 132,
+    "BY_q_0.05": 90,
+    "BH_q_0.01": 95,
+    "BY_q_0.01": 58,
+    "BH_q_0.001": 49,
+    "BY_q_0.001": 29
+  },
+  "summary": [
+    {
+      "correction": "BH",
+      "threshold": 0.05,
+      "n_tests": 317,
+      "replicates": 100,
+      "mean_null_calls": 0.09,
+      "max_null_calls": 7,
+      "replicates_with_any_call": 3,
+      "family_error": 0.03,
+      "family_error_ci_low": 0.006229971538306225,
+      "family_error_ci_high": 0.08517605297428034,
+      "observed_calls": 132,
+      "replicates_reaching_observed": 0
+    },
+    {
+      "correction": "BH",
+      "threshold": 0.01,
+      "n_tests": 317,
+      "replicates": 100,
+      "mean_null_calls": 0.05,
+      "max_null_calls": 5,
+      "replicates_with_any_call": 1,
+      "family_error": 0.01,
+      "family_error_ci_low": 0.00025314603268189283,
+      "family_error_ci_high": 0.054459385392080735,
+      "observed_calls": 95,
+      "replicates_reaching_observed": 0
+    },
+    {
+      "correction": "BH",
+      "threshold": 0.001,
+      "n_tests": 317,
+      "replicates": 100,
+      "mean_null_calls": 0.0,
+      "max_null_calls": 0,
+      "replicates_with_any_call": 0,
+      "family_error": 0.0,
+      "family_error_ci_low": 0.0,
+      "family_error_ci_high": 0.03621669264519054,
+      "observed_calls": 49,
+      "replicates_reaching_observed": 0
+    },
+    {
+      "correction": "BY",
+      "threshold": 0.05,
+      "n_tests": 317,
+      "replicates": 100,
+      "mean_null_calls": 0.02,
+      "max_null_calls": 2,
+      "replicates_with_any_call": 1,
+      "family_error": 0.01,
+      "family_error_ci_low": 0.00025314603268189283,
+      "family_error_ci_high": 0.054459385392080735,
+      "observed_calls": 90,
+      "replicates_reaching_observed": 0
+    },
+    {
+      "correction": "BY",
+      "threshold": 0.01,
+      "n_tests": 317,
+      "replicates": 100,
+      "mean_null_calls": 0.0,
+      "max_null_calls": 0,
+      "replicates_with_any_call": 0,
+      "family_error": 0.0,
+      "family_error_ci_low": 0.0,
+      "family_error_ci_high": 0.03621669264519054,
+      "observed_calls": 58,
+      "replicates_reaching_observed": 0
+    },
+    {
+      "correction": "BY",
+      "threshold": 0.001,
+      "n_tests": 317,
+      "replicates": 100,
+      "mean_null_calls": 0.0,
+      "max_null_calls": 0,
+      "replicates_with_any_call": 0,
+      "family_error": 0.0,
+      "family_error_ci_low": 0.0,
+      "family_error_ci_high": 0.03621669264519054,
+      "observed_calls": 29,
+      "replicates_reaching_observed": 0
+    }
+  ],
+  "table1_traits": [
+    {
+      "trait_id": "METPO:1000608",
+      "trait_name": "facultatively aerobic",
+      "observed_effect": 0.05547231164169147,
+      "observed_t": 1.6626715627393436,
+      "observed_p": 0.09670530627826518,
+      "observed_bh_q": 0.18356635982161712,
+      "observed_by_q": 1.0,
+      "null_mean_t": -0.05980510343843157,
+      "null_min_t": -2.895504123016211,
+      "null_max_t": 3.320239148094021,
+      "null_type_i_alpha_05": 0.09,
+      "null_reps_reaching_observed": 11,
+      "survives_null_calibration": false
+    },
+    {
+      "trait_id": "METPO:2000103|GO:0030245",
+      "trait_name": "cellulose catabolic process",
+      "observed_effect": -0.12868160163070053,
+      "observed_t": -3.7700999759195217,
+      "observed_p": 0.00017316971332126125,
+      "observed_bh_q": 0.0010559939729149718,
+      "observed_by_q": 0.006692566556955516,
+      "null_mean_t": 0.025486755799871662,
+      "null_min_t": -2.0177850472737946,
+      "null_max_t": 3.289258357519092,
+      "null_type_i_alpha_05": 0.06,
+      "null_reps_reaching_observed": 0,
+      "survives_null_calibration": true
+    },
+    {
+      "trait_id": "METPO:1000668",
+      "trait_name": "coccus shaped",
+      "observed_effect": 0.12959444266280074,
+      "observed_t": 3.76414049090452,
+      "observed_p": 0.00017728948509408484,
+      "observed_bh_q": 0.0010559939729149718,
+      "observed_by_q": 0.006692566556955516,
+      "null_mean_t": 0.14514036073463593,
+      "null_min_t": -2.4208840142901615,
+      "null_max_t": 2.3483592521591805,
+      "null_type_i_alpha_05": 0.05,
+      "null_reps_reaching_observed": 0,
+      "survives_null_calibration": true
+    },
+    {
+      "trait_id": "METPO:1000683",
+      "trait_name": "sphere shaped",
+      "observed_effect": 0.15034689371265525,
+      "observed_t": 4.663045823245848,
+      "observed_p": 3.5573330711015995e-06,
+      "observed_bh_q": 5.3698789692343194e-05,
+      "observed_by_q": 0.00034032649168623714,
+      "null_mean_t": 0.0007827554281119223,
+      "null_min_t": -3.8220404223750797,
+      "null_max_t": 2.075394586608424,
+      "null_type_i_alpha_05": 0.03,
+      "null_reps_reaching_observed": 0,
+      "survives_null_calibration": true
+    },
+    {
+      "trait_id": "METPO:2000103|pathways:arsenate_reduction",
+      "trait_name": "arsenate reduction",
+      "observed_effect": 0.15944206714376274,
+      "observed_t": 4.341204701880321,
+      "observed_p": 1.5677081771829477e-05,
+      "observed_bh_q": 0.00016565449738899812,
+      "observed_by_q": 0.0010498674970412468,
+      "null_mean_t": 0.025148089876456656,
+      "null_min_t": -2.86820370198138,
+      "null_max_t": 2.5967568783826986,
+      "null_type_i_alpha_05": 0.04,
+      "null_reps_reaching_observed": 0,
+      "survives_null_calibration": true
+    },
+    {
+      "trait_id": "METPO:1000623",
+      "trait_name": "moderately halophilic",
+      "observed_effect": 0.1593861208175701,
+      "observed_t": 4.798275849954119,
+      "observed_p": 1.8553449150704916e-06,
+      "observed_bh_q": 3.538739156246148e-05,
+      "observed_by_q": 0.00022427445552086422,
+      "null_mean_t": 0.04331603921523487,
+      "null_min_t": -2.239156323940775,
+      "null_max_t": 3.2329111852195,
+      "null_type_i_alpha_05": 0.06,
+      "null_reps_reaching_observed": 0,
+      "survives_null_calibration": true
+    }
+  ],
+  "provenance": {
+    "started_utc": "2026-10-14T02:28:04.873783+00:00",
+    "finished_utc": "2026-10-14T02:28:11.164660+00:00",
+    "elapsed_seconds": 6.297,
+    "software": {
+      "python": "3.11.14",
+      "bsdbng": "0.1.0",
+      "numpy": "2.4.4",
+      "pandas": "3.0.2",
+      "scipy": "1.17.1"
+    },
+    "inputs": {
+      "profiles": {
+        "path": "data\\derived\\study_trait_profiles_wide.tsv",
+        "sha256": "1c822e7f4275eea60dd5e25b5f438faf0eb09874b6e286b80936b3fb3d216461",
+        "rows": 5829
+      },
+      "columns": {
+        "path": "data\\derived\\taxa_trait_matrix_columns.tsv",
+        "sha256": "70b8bc1c2889d0e451bcaf604e0a986d4c29ffb802efeae5bdc64b67fc446ed3"
+      }
+    }
+  }
+}

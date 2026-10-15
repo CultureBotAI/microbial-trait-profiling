@@ -10,6 +10,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 FIGURE_ROOT = REPO_ROOT / "trait-visualization" / "trait-profile-investigation"
 FOOTER_LINE_COLOR = (203, 213, 225)
 TOP_LABEL_FOLDERS: set[str] = set()
+UNLABELED_FOLDERS = {
+    "PD-cellulose",
+    "six-shared-traits",
+    "taxa-coverage",
+    "taxa-oxygen-switches",
+}
 UNLABELED_FIGURES = {
     Path("profile_enrichment_guild_assignment_summary.png"),
     Path("trait_profile_paired_contrast_infographic.png"),
@@ -300,7 +306,11 @@ def process_figure(relative_path: Path, label: str) -> str:
 
 
 def main() -> None:
-    existing_figures = {path.relative_to(FIGURE_ROOT) for path in FIGURE_ROOT.rglob("*.png")}
+    existing_figures = {
+        path.relative_to(FIGURE_ROOT)
+        for path in FIGURE_ROOT.rglob("*.png")
+        if path.relative_to(FIGURE_ROOT).parts[0] not in UNLABELED_FOLDERS
+    }
     labelable_figures = existing_figures - UNLABELED_FIGURES
     missing_labels = sorted(labelable_figures - set(FIGURE_LABELS))
     stale_labels = sorted(set(FIGURE_LABELS) - labelable_figures)

@@ -20,6 +20,7 @@ from statistics import fmean, median
 
 from scipy.stats import binomtest, false_discovery_control
 
+from mtp.corpus_identity import corpus_identity, summary_lines
 from mtp.paths import DERIVED_DATA_DIR
 from mtp.paths import file_sha256 as file_sha256
 from mtp.trait_guilds import (
@@ -271,6 +272,9 @@ def write_log_ratio_outputs(
         "shared_loader_source_sha256": file_sha256(Path(__file__).with_name("trait_guilds.py")),
         "code_commit": code_commit,
         "bugsigdb_vintage": read_bugsigdb_vintage(full_dump_path),
+        "corpus_identity": corpus_identity(
+            profile_path, bugsigdb_vintage=read_bugsigdb_vintage(full_dump_path)
+        ).as_record(),
         "input_filter_counts_before_site_selection": asdict(corpus_stats) if corpus_stats else None,
         "trait_ids": TABLE1_TRAITS,
         "host": "Homo sapiens",
@@ -344,7 +348,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     profiles, stats = load_profiles(
         args.profile_input, args.experiments_input, TABLE1_TRAITS, reject_missing_counts=True
     )
-    write_stats_report(stats, read_bugsigdb_vintage(args.full_dump_input))
+    vintage = read_bugsigdb_vintage(args.full_dump_input)
+    write_stats_report(stats, vintage)
+    identity = corpus_identity(args.profile_input, bugsigdb_vintage=vintage)
+    print("\n".join(summary_lines(identity)))
     if args.body_site is not None:
         profiles = [p for p in profiles if p.body_site == args.body_site]
     result = compute_log_ratio_shifts(profiles)

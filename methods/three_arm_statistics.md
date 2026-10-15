@@ -54,8 +54,8 @@ here; the first comparison displays every declared candidate in manifest order.
 | Source manifest | Pin the profile matrix, experiment metadata, source/code versions, trait mapping and retained-column list, with hashes. Materialize the base list of `(study_id, experiment_id)` pairs and both direction records; matching row counts alone is insufficient. |
 | Base population | Human experiments with exactly one increased and one decreased profile and consistent pair metadata. Reject ambiguous keys and malformed, missing or negative counts; never silently coerce them to zero. Record all filtering and available annotation-coverage information. Unknown coverage remains flagged. |
 | Analysis scope | The initial comparison pools the full base population. A body-site or condition-by-body-site analysis is a separately identified scope using exact source labels and its own eligible-pair list. Missing labels remain explicit. Heatmap top-N cuts, masking and an Other display group never define the analysis population. |
-| Candidate families | Keep the six Table 1 trait IDs and all 15 unordered pairs as separate feature types. Freeze the source qualifiers and ID mapping in `TABLE1_TRAITS`; orient every ratio in that declared trait order, with an explicit numerator and reference. A larger trait screen requires its own candidate manifest: the directional arm's full-trait screen declares one in [`trait_screen_manifest.json`](trait_screen_manifest.json) and is corrected in its own family, separate from the six (#255). |
-| Fraction denominator | For each profile, sum every column in the declared non-MediaDive trait universe, including traits outside Table 1. That is 317 retained columns in the inspected matrix, with 2,290 MediaDive columns excluded. Selecting six traits or a ratio must not redefine this total. |
+| Candidate families | Keep the six traits named in Table 1 and all 15 unordered pairs as separate feature types for the matched-corpus Table 1-trait analog sensitivity analysis. Freeze the source qualifiers and ID mapping in `TABLE1_TRAITS`; orient every ratio in that declared trait order, with an explicit numerator and reference. A larger trait screen requires its own candidate manifest: the directional arm's full-trait screen declares one in [`trait_screen_manifest.json`](trait_screen_manifest.json) and is corrected in its own family, separate from the six (#255). |
+| Fraction denominator | For each profile, sum every column in the declared non-MediaDive trait universe, including traits outside Table 1. That is 317 retained columns in the matrix identified below, with 2,333 MediaDive columns excluded. Selecting six traits or a ratio must not redefine this total. |
 | ORA background | For the harmonized baseline, fix the background to all valid profiles in the full paired human base population, using that same retained-column universe. Record its trait totals, grand total and contributing profile IDs. Do not rebuild it from a displayed stratum or a ratio's positive-count subset. Alternative backgrounds are separately versioned sensitivity scenarios. |
 | Weighting | Average eligible experiment contrasts within a study, then give each eligible study equal weight within the declared scope. Pool a study's experiments directly across conditions; do not count each condition-study group as another study. Identify shared cohorts where known when assessing independence and uncertainty. |
 
@@ -98,10 +98,12 @@ Unavailable effect intervals must be labeled as unavailable.
 For a given comparison row, every implementation must use the **same eligible
 experiment IDs and study weights**, not merely the same studies. An excluded
 experiment removes both directions. Record eligible/excluded pairs and studies,
-partially observed studies and ties. Current fraction code maps a zero-total
-profile to zero; the shared definition above requires exclusion of its complete
-pair instead. Historical fraction outputs therefore need an explicit eligibility
-audit and rerun, rather than relabeling them as this new baseline.
+partially observed studies and ties. Fraction analyses exclude complete
+experiment pairs whenever either side's retained total is zero via
+`drop_zero_total_pairs`, conforming to the shared comparison basis above and
+avoiding artificial ties (#228). Historical fraction analyses that mapped
+zero-total profiles to zero (such as scenario S0 in `mtp.log_ratio_sensitivity`)
+are retained for historical audit only and are distinct from this baseline.
 
 The fraction and ratio populations also need separate names. First retain the
 full fraction-eligible analysis. For each A/B comparison, additionally calculate
@@ -319,8 +321,10 @@ pair family. These are different, conditional hypotheses, not corrected versions
 of the six original fraction hypotheses or independent replication.
 
 The [pinned-corpus validation table](table1_log_ratio_validation.md) reports all
-15 comparisons alongside the original six fraction directions, with source
-fingerprints and the study populations retained by each ratio.
+15 comparisons alongside the original six fraction directions as a matched-corpus
+Table 1-trait analog sensitivity analysis (not a reproduction of the published
+Table 1 baseline), with source fingerprints and the study populations retained
+by each ratio.
 
 Reference choice, zero exclusions, shared annotations and selection of these six
 traits remain interpretation limits. The ratio cannot distinguish an absolute
@@ -339,6 +343,51 @@ composition and enrichment figures come from those arms' committed v1.3.1
 regenerations (`3afeecd` and `c75744a` respectively). Matching the source dump is
 necessary for harmonized comparisons, but not sufficient: input fingerprints,
 filters, trait identities, denominators and tested populations must also align.
+
+### The matrix the counts in this note were measured on
+
+Naming the dump does not identify the matrix. The matrix every arm consumes is a
+**join** of the BugSigDB dump with a KG-Microbe build, and the KG side is pinned
+by Drive file id and checksum but carries **no release tag**, so two runs can both
+be "on pinned v1.3.1" and read different matrices. That is what produced the
+disagreement this section was rewritten to settle (#222): an earlier revision of
+this note reported 2,290 MediaDive columns, and the run below measures 2,333.
+
+| | |
+|---|---|
+| matrix | `data/derived/study_trait_profiles_wide.tsv` |
+| sha256 | `6e70724ee807cf24e9c1f371a51421fa5b09d6283fa7f3abcd6620e5492c6a73` |
+| header columns | 2,653 = 3 identifier + **2,333 MediaDive** + **317 retained** |
+| profile rows | 7,329 |
+| BugSigDB vintage | `2026-04-24_00:41_UTC` (v1.3.1) |
+| KG-Microbe nodes | md5 `dd76b4656f9341db25a7c4afa96cd58e` |
+| KG-Microbe edges | md5 `555ecf5ba5d89288cdc44e368375374f` |
+| KG-Microbe release | **not recorded by the download** |
+
+Filter cascade on that matrix: 7,329 profile rows read, 3,494 experiments after
+the metadata join with none unmatched, **1,500 rows dropped as non-human**, 1,159
+experiments dropped as unpaired, leaving **2,335 experiments, 4,670 profiles and
+959 studies**. Every recipe prints this block and writes it to a
+`corpus_identity.json` beside its outputs, so a number can be traced to the file
+it came from rather than to a vintage string.
+
+Two further points, because matching one field does not establish the rest:
+
+- The 317 **retained column names** are identical between this matrix and the
+  committed `study_trait_profiles_wide.tsv.gz`. That does **not** make them the
+  same corpus. The `.gz` holds 12,108 rows to this matrix's 7,329, the 7,329 are a
+  strict subset of them, and of those shared rows **one differs**:
+  `bsdb:25487798-1 inc` disagrees on 81 of the 317 retained columns, its retained
+  total 12,587 here against 12,931 there. So the populations differ by design and
+  the values differ in one place.
+- Earlier revisions of the per-figure notes stated that the v1.3.1 wide matrix is
+  "already human-only upstream, so the host filter drops 0 rows". That is not true
+  of this matrix: the host filter drops 1,500 rows. Those notes have been
+  regenerated from the run described here.
+
+**Which corpus the project should standardise on is still open** — the committed
+`.gz` or a regeneration — and belongs with #115. Until it is settled, each note
+states the matrix it was measured on rather than implying there is only one.
 
 ## Provenance of this note
 

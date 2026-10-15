@@ -1,8 +1,8 @@
-"""Manuscript Table 1 traits: condition-by-body-site heatmap and directional shift.
+"""Matched-corpus Table 1-trait analog: heatmap and directional shift.
 
 This is the oxygen guild pair of figures (`mtp.guild_maps`) re-run over the six
-individual traits of manuscript Table 1 rather than over the two pooled oxygen
-guilds, with all six combined into a single figure each:
+individual traits named in manuscript Table 1 rather than over the two pooled
+oxygen guilds, with all six combined into a single figure each:
 
 1. facultatively aerobic (METPO:1000608)
 2. cellulose catabolic process (GO:0030245)
@@ -13,11 +13,13 @@ guilds, with all six combined into a single figure each:
 
 The corpus definition, the study-level averaging, the masking rules, and the row
 clustering are the same code path as the guild figure, so the two are directly
-comparable. Two things necessarily differ. The six traits are single terms rather
-than pooled guilds, and their corpus-wide prevalence spans more than an order of
-magnitude, so the heatmap gives each trait its own colour range instead of one
-shared range. And there is no aerobe-versus-anaerobe contrast to test, so the
-companion figure reports each trait's own paired directional shift.
+comparable as a matched-corpus analog. This does not claim to reproduce the
+published Table 1 baseline. Two things necessarily differ. The six traits are
+single terms rather than pooled guilds, and their corpus-wide prevalence spans
+more than an order of magnitude, so the heatmap gives each trait its own colour
+range instead of one shared range. And there is no aerobe-versus-anaerobe
+contrast to test, so the companion figure reports each trait's own paired
+directional shift.
 """
 
 from __future__ import annotations
@@ -31,6 +33,7 @@ from typing import TYPE_CHECKING
 
 from scipy.stats import binomtest, false_discovery_control, spearmanr
 
+from mtp.corpus_identity import corpus_identity, summary_lines, write_identity
 from mtp.guild_maps import (
     OTHER_LABEL,
     SIGN_TOLERANCE,
@@ -51,6 +54,7 @@ from mtp.trait_guilds import (
     TABLE1_TRAIT_LABELS,
     TABLE1_TRAITS,
     Profile,
+    drop_zero_total_pairs,
     load_profiles,
     read_bugsigdb_vintage,
     write_stats_report,
@@ -64,6 +68,11 @@ if TYPE_CHECKING:
 TRAIT_ORDER: tuple[str, ...] = tuple(TABLE1_TRAITS)
 OUTPUT_PREFIX = "table1_traits"
 CONFIDENCE_LEVEL = 0.95
+ANALYSIS_LABEL = "Matched-corpus Table 1-trait analog"
+ANALYSIS_NOTE = (
+    "Uses the pinned human paired KG-Microbe profile corpus; it is not a "
+    "reproduction of the published Table 1 baseline."
+)
 
 
 @dataclass(frozen=True)
@@ -299,14 +308,25 @@ class ShiftResult:
 
 
 def study_trait_contrasts(
-    profiles: list[Profile], trait_order: Sequence[str]
+    profiles: list[Profile],
+    trait_order: Sequence[str],
+    *,
+    exclude_zero_totals: bool = True,
 ) -> dict[str, dict[str, float]]:
     """Per study, the increased minus decreased mean fraction for each trait.
 
     Collapsing to one value per study first is the fix issue #133 asks for: 56.2%
     of studies contribute more than one experiment on the pinned v1.3.1 corpus,
     so treating experiments as independent overstates the sample size.
+
+    By default, experiments whose retained-annotation total is zero on either
+    side are excluded via ``drop_zero_total_pairs`` to satisfy the shared
+    comparison basis of methods/three_arm_statistics.md (#228). Passing
+    ``exclude_zero_totals=False`` reproduces the historical S0 behavior where
+    zero-total profiles were evaluated as 0.0 fraction.
     """
+    if exclude_zero_totals:
+        profiles = drop_zero_total_pairs(profiles).profiles
     means = study_direction_means(profiles, trait_order)
     contrasts: dict[str, dict[str, float]] = {}
     for study, per_key in means.items():
@@ -353,7 +373,10 @@ def tally_direction_signs(
 
 
 def compute_direction_shifts(
-    profiles: list[Profile], trait_order: Sequence[str] = TRAIT_ORDER
+    profiles: list[Profile],
+    trait_order: Sequence[str] = TRAIT_ORDER,
+    *,
+    exclude_zero_totals: bool = True,
 ) -> ShiftResult:
     """Score every study once per trait by the sign of its paired contrast.
 
@@ -364,8 +387,15 @@ def compute_direction_shifts(
     binomial test against a half-and-half null, and the p-values of
     ``trait_order`` are Benjamini-Hochberg corrected together as one family.
     The widened family of #255 is corrected separately in ``mtp.trait_screen``.
+
+    By default, experiments whose retained-annotation total is zero on either
+    side are excluded via ``drop_zero_total_pairs`` to satisfy the shared
+    comparison basis of methods/three_arm_statistics.md (#228). Passing
+    ``exclude_zero_totals=False`` reproduces the historical S0 behavior.
     """
-    contrasts = study_trait_contrasts(profiles, trait_order)
+    contrasts = study_trait_contrasts(
+        profiles, trait_order, exclude_zero_totals=exclude_zero_totals
+    )
     tallies = tally_direction_signs(contrasts, trait_order)
 
     p_values: list[float] = []
@@ -636,7 +666,12 @@ def build_shift_figure(
         f"BugSigDB {vintage or 'vintage unknown'}."
     )
     figure.update_layout(
-        title={"text": f"Table 1 traits: paired directional shift<br><sub>{subtitle}</sub>"},
+        title={
+            "text": (
+                f"{ANALYSIS_LABEL}: paired directional shift<br>"
+                f"<sub>{ANALYSIS_NOTE} {subtitle}</sub>"
+            )
+        },
         width=1650,
         height=640,
         margin={"l": 290, "r": 120, "t": 170, "b": 90},
@@ -662,8 +697,10 @@ def write_shift_figure(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Generate the manuscript Table 1 trait pair: a condition x body-site "
-            "heatmap with all six traits combined, and their paired directional shifts."
+            "Generate the matched-corpus Table 1-trait analog: a condition x "
+            "body-site heatmap with all six traits combined, and their paired "
+            "directional shifts. This is not a reproduction of the published "
+            "Table 1 baseline."
         )
     )
     parser.add_argument("--profile-input", type=Path, default=DEFAULT_PROFILE_PATH)
@@ -734,6 +771,7 @@ def build_parser() -> argparse.ArgumentParser:
             "The state stays in the emitted cell-status table either way."
         ),
     )
+    parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     return parser
 
 
@@ -766,6 +804,8 @@ def main() -> int:
     )
     vintage = read_bugsigdb_vintage(args.full_dump_input)
     write_stats_report(stats, vintage)
+    identity = corpus_identity(args.profile_input, bugsigdb_vintage=vintage)
+    print("\n".join(summary_lines(identity)))
 
     matrix = build_matrix(
         profiles,
@@ -817,7 +857,7 @@ def main() -> int:
             vintage,
             guild_order=TRAIT_ORDER,
             colorscales={trait: trait_colorscale(trait) for trait in TRAIT_ORDER},
-            title="Manuscript Table 1 traits by condition and body site",
+            title=f"{ANALYSIS_LABEL}: condition and body site",
             group_noun="trait",
             value_phrase="trait fraction",
             shared_range=False,
@@ -924,7 +964,7 @@ def main() -> int:
                 sites=cut.body_sites,
                 guild_order=TRAIT_ORDER,
                 colorscales={trait: trait_colorscale(trait) for trait in TRAIT_ORDER},
-                title=f"Manuscript Table 1 traits: {panel.subtitle}",
+                title=f"{ANALYSIS_LABEL}: {panel.subtitle}",
                 group_noun="trait",
                 value_phrase="trait fraction",
                 colorbar_labels={t: t.replace("_", " ") for t in TRAIT_ORDER},
@@ -953,6 +993,7 @@ def main() -> int:
                 else f"  {shift.status}"
             )
         )
+    written.append(write_identity(identity, args.output_dir, code_commit=args.code_commit))
     for path in written:
         print(path)
     return 0

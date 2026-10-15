@@ -11,8 +11,9 @@ BugSigDB vintage the numbers came from.
 | `table1_traits_condition_body_site_heatmap.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | `table1_traits_first_last_body_site_panels.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | `table1_traits_direction_shift.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
-| Table 1 source contributions and genus/family influence TSVs | `src/mtp/taxon_contributions.py` | `just table1-taxon-influence` | [`table1_taxon_influence.md`](table1_taxon_influence.md); [measured results and cross-scale interpretation flags](table1_taxon_influence_results.md) |
+| Matched-corpus Table 1-trait analog source contributions and genus/family influence TSVs | `src/mtp/taxon_contributions.py` | `just table1-taxon-influence` | [`table1_taxon_influence.md`](table1_taxon_influence.md); [measured results and cross-scale interpretation flags](table1_taxon_influence_results.md) |
 | `trait_direction_screen.tsv` (no figure) | `src/bsdbng/trait_screen.py` | `just trait-direction-screen` | [`trait_direction_screen.md`](trait_direction_screen.md) |
+| `trait_coupling_loto_matrix.tsv`, `trait_coupling_lco_summary.tsv`, `trait_coupling_report.txt` (no figure) | `src/mtp/coupling.py` | `just audit-trait-coupling` | [`trait_coupling_sensitivity.md`](trait_coupling_sensitivity.md) |
 
 Figures write to `data/derived/guild_maps/` and `data/derived/table1_traits/`
 alongside the tab-separated tables backing them, so every number quoted in a
@@ -40,7 +41,7 @@ six Table 1 directions and 15 ratios on that population beside the historical co
 
 [`table1_paired_log_ratios.md`](table1_paired_log_ratios.md) documents
 `just table1-compositional-stats`: paired log-ratio direction tests for all 15
-Table 1 trait pairs, with explicit references, zero exclusions, study-level
+Table 1-trait pairs as a matched-corpus analog, with explicit references, zero exclusions, study-level
 coverage, and a separate correction family. It emits statistics and a Markdown
 report without rendering figures.
 
@@ -52,10 +53,20 @@ second version; every amendment, what prompted it and what was already known whe
 was made are recorded in its `amendments` array rather than edited in quietly.
 `just calibration-flip-assignments` writes only the shared flip-assignment table the
 other two arms would need to be measured on the same null (#263).
+[`calibration_screen.md`](calibration_screen.md) documents
+`just calibration-screen`: the 317-trait directional screen run under that same
+study-flip null, counting the traits each correction calls when nothing is there.
+
+[`calibration_composition.md`](calibration_composition.md) documents
+`just calibrate-composition`: the paired composition arm calibrated against the
+shared study-flip complete null (#263), measuring empirical Type I error control,
+family-wise error rates, and Table 1 canonical trait calibration.
 
 [`table1_log_ratio_validation.md`](table1_log_ratio_validation.md) records the
 pinned-corpus rerun of all 15 ratios alongside the original six fraction
-directions, including study coverage, uncertainty and interpretation limits.
+directions as a matched-corpus Table 1-trait analog sensitivity analysis (not a
+reproduction of the published Table 1 baseline), including study coverage,
+uncertainty and interpretation limits.
 
 [`table1_log_ratio_sensitivity.md`](table1_log_ratio_sensitivity.md) documents
 `just table1-log-ratio-sensitivity`: predeclared scenarios separating population,

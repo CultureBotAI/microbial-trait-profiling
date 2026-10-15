@@ -1,4 +1,8 @@
-# Table 1 source contributions and lineage influence
+# Matched-corpus Table 1-trait analog source contributions and lineage influence
+
+> [!IMPORTANT]
+> **Matched-Corpus Table 1-Trait Analog (Issue #210)**
+> The source contributions and lineage influence results reported here are a matched-corpus Table 1-trait analog sensitivity analysis, not influence on the published manuscript Table 1. They use the pinned human paired KG-Microbe profile corpus and are not a reproduction of the published Table 1 baseline (they do not reproduce published Table 1 baseline values such as facultatively aerobic $q = 2.8 \times 10^{-10}$).
 
 This summary reports the extended 190-v2 contribution/shared-effect run and its
 [native extension](table1_native_influence.md). The source ledger and baseline effects

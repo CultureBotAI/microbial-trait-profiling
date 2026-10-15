@@ -4,7 +4,23 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "pip"
+  # "uv" (not "pip") so each bump regenerates uv.lock as well as pyproject.toml;
+  # CI syncs with `uv sync --locked` and fails on a stale lock (#420).
+  - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # Both are pinned to match a hook rev in .pre-commit-config.yaml, which
+      # the uv ecosystem does not bump. Bump them by hand, together with the
+      # hook rev (tests/test_tool_pins.py checks they agree). Deliberately, this
+      # also suppresses their Dependabot security PRs. Their only remaining
+      # vulnerability check is the pre-commit `pip-audit` hook, which audits the
+      # environment CI syncs with `--group qa`; `just security` exports without
+      # the qa group and does not see them.
+      - dependency-name: "uv"
+      - dependency-name: "detect-secrets"
+    # ruff and bandit are not ignored, but their hook revs must equal the
+    # versions uv.lock resolves (tests/test_tool_pins.py). A Dependabot PR that
+    # bumps either fails that test until the matching rev in
+    # .pre-commit-config.yaml is bumped on the same PR (#445, #484).
