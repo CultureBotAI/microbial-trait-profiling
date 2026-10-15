@@ -235,9 +235,15 @@ def build_redundant_pairs_table(
 
     if not columns_path.exists():
         # Same .gz fallback as load_non_media_profile_matrix, which accepted this path.
-        gz_candidate = columns_path.with_name(f"{columns_path.name}.gz")
+        gz_candidate = (
+            columns_path
+            if columns_path.suffix == ".gz"
+            else columns_path.with_name(f"{columns_path.name}.gz")
+        )
         if gz_candidate.exists():
             columns_path = gz_candidate
+        else:
+            raise FileNotFoundError(f"Columns file not found: {columns_path} (or {gz_candidate})")
     cols_df = pd.read_csv(columns_path, sep="\t")
     col_label_map = dict(zip(cols_df["column_id"], cols_df["column_label"], strict=False))
 
@@ -358,6 +364,23 @@ def run_ontology_redundancy_audit(
       dict containing summary metrics and output paths.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
+    if not profiles_path.exists():
+        gz_prof = (
+            profiles_path
+            if profiles_path.suffix == ".gz"
+            else profiles_path.with_name(f"{profiles_path.name}.gz")
+        )
+        if gz_prof.exists():
+            profiles_path = gz_prof
+    if not columns_path.exists():
+        gz_cols = (
+            columns_path
+            if columns_path.suffix == ".gz"
+            else columns_path.with_name(f"{columns_path.name}.gz")
+        )
+        if gz_cols.exists():
+            columns_path = gz_cols
+
     profiles_df, non_media_cols = load_non_media_profile_matrix(profiles_path, columns_path)
     clusters = CANONICAL_REDUNDANCY_CLUSTERS
 
