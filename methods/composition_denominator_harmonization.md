@@ -40,11 +40,11 @@ display selection does not define a statistical correction family.
 ## Reproduction and provenance
 
 Run `just sync`, `just composition-denominator-audit`, and `just check`.
-The audit requires the repository history containing composition commit
-`a2b2df98e9beec98b772c9cb5af7aa090d033a98` and ORA commit
-`3ae7ac847d5d1ebc3bdd388bb2793d5e60bfdc81`; fetch the analysis branches if
-using a shallow or single-branch clone. It extracts snapshots into
-`.tmp/issue174/` and does not replace `data/derived/study_trait_profiles_wide.tsv`.
+The audit pins historical baseline commits via permanent tags:
+- `issue174-baseline` (`a2b2df98e9beec98b772c9cb5af7aa090d033a98`) for composition scripts and metadata;
+- `issue174-ora` (`3ae7ac847d5d1ebc3bdd388bb2793d5e60bfdc81`) for pre-#133 ORA reference outputs;
+- `issue174-matrix` (`c75744aa3c43eec90bd63858c2b77ebaf6a40236`) containing the frozen wide matrix blob `d837f449e7e967c478d10f92938923e57eec9a19`.
+It extracts snapshots into `.tmp/issue174/` and does not replace `data/derived/study_trait_profiles_wide.tsv`.
 
 The matrix is verified as Git blob
 `d837f449e7e967c478d10f92938923e57eec9a19`, SHA256
@@ -54,11 +54,12 @@ and the original study-level condition/body-site labels fixed. This yields
 2,335 pairs from 959 studies. Only the five strata emitted by the original
 run are compared, not older orphaned statistics files in its Git tree.
 
-Input hashes, implementation base commit and source-file hashes, package
-versions, denominator definition, and pairing filters are recorded in
+Input hashes, implementation base commit and LF-normalized source-file hashes,
+package versions, denominator definition, and pairing filters are recorded in
 `trait-visualization/denominator-harmonization/provenance.json`; tested family
-sizes are in `correction_families.tsv`. The original BugSigDB provenance
-records v1.3.1, tag commit `5815c2638d6b56134ac8db19edc2bb3c4b17f1ca`.
+sizes are in `correction_families.tsv`. LF normalization ensures source digests
+match git blobs identically across Windows CRLF and POSIX checkouts. The original
+BugSigDB provenance records v1.3.1, tag commit `5815c2638d6b56134ac8db19edc2bb3c4b17f1ca`.
 The KG-Microbe provenance records edges MD5
 `555ecf5ba5d89288cdc44e368375374f` and nodes MD5
 `dd76b4656f9341db25a7c4afa96cd58e`. A subsequent raw-input replay verifies
