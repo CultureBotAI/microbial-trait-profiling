@@ -199,6 +199,15 @@ calibrate replicates="10" seed="42" scenario="all": taxa-trait-matrix study-trai
 	  --min-fold 1.5 \
 	  --max-fold 0.67"
 
+# Run paired composition arm calibration against the study-flip complete null (#263).
+calibrate-composition replicates="100" seed="182": study-trait-profiles
+	just timed calibrate-composition "uv run python -m mtp.composition_calibration.composition \
+	  --profiles data/derived/study_trait_profiles_wide.tsv \
+	  --columns data/derived/taxa_trait_matrix_columns.tsv \
+	  --output-dir data/derived/calibration/composition \
+	  --replicates {{replicates}} \
+	  --seed {{seed}}"
+
 # Run ORA background stratification and annotation-density sensitivity evaluation (#118).
 analyze-strata: study-trait-profiles-ora
 	just timed analyze-strata "uv run python scripts/run_stratified_enrichment.py \
