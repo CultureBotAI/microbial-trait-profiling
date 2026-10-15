@@ -26,15 +26,23 @@ from mtp.paths import REPO_ROOT
 BENCHMARK_DIR = REPO_ROOT / "data" / "benchmarks"
 REPORT_PATH = REPO_ROOT / "docs" / "bugsigdb-access-benchmark.md"
 USER_AGENT = "bsdbng-benchmark/0.1"
-ZENODO_RECORD_ID = "15272273"
+BUGSIGDB_EXPORTS_VERSION = "v1.3.1"
+BUGSIGDB_EXPORTS_DOI = "10.5281/zenodo.19740674"
+ZENODO_RECORD_ID = "19740674"
 
 RAW_CSV_URLS = [
-    "https://bugsigdb.org/w/images/csv_reports/studies.csv",
-    "https://bugsigdb.org/w/images/csv_reports/experiments.csv",
-    "https://bugsigdb.org/w/images/csv_reports/signatures.csv",
+    "https://bugsigdb-csv.s3.us-east-va.perf.cloud.ovh.us/studies.csv",
+    "https://bugsigdb-csv.s3.us-east-va.perf.cloud.ovh.us/experiments.csv",
+    "https://bugsigdb-csv.s3.us-east-va.perf.cloud.ovh.us/signatures.csv",
 ]
-FULL_DUMP_URL = "https://raw.githubusercontent.com/waldronlab/BugSigDBExports/devel/full_dump.csv"
-BUGSIGDB_EXPORTS_CONTENTS_API = "https://api.github.com/repos/waldronlab/BugSigDBExports/contents"
+FULL_DUMP_URL = (
+    "https://raw.githubusercontent.com/waldronlab/BugSigDBExports/"
+    f"{BUGSIGDB_EXPORTS_VERSION}/full_dump.csv"
+)
+BUGSIGDB_EXPORTS_CONTENTS_API = (
+    "https://api.github.com/repos/waldronlab/BugSigDBExports/contents"
+    f"?ref={BUGSIGDB_EXPORTS_VERSION}"
+)
 ZENODO_API = f"https://zenodo.org/api/records/{ZENODO_RECORD_ID}"
 
 
@@ -67,7 +75,8 @@ def _download_bytes(url: str, client: httpx.Client) -> tuple[int, float]:
 def _list_gh_contents(client: httpx.Client, api_url: str) -> list[dict]:
     """Fetch a GitHub contents listing, following Link header pagination."""
     entries: list[dict] = []
-    url: str | None = f"{api_url}?per_page=100"
+    separator = "&" if "?" in api_url else "?"
+    url: str | None = f"{api_url}{separator}per_page=100"
     while url:
         response = client.get(url, follow_redirects=True)
         response.raise_for_status()
@@ -103,7 +112,7 @@ def benchmark_full_dump(client: httpx.Client) -> MethodResult:
     start = time.perf_counter()
     size, _seconds = _download_bytes(FULL_DUMP_URL, client)
     return MethodResult(
-        name="bugsigdbexports_full_dump",
+        name=f"bugsigdbexports_{BUGSIGDB_EXPORTS_VERSION.replace('.', '_')}_full_dump",
         files=1,
         declared_bytes=size,
         downloaded_bytes=size,
@@ -124,7 +133,7 @@ def benchmark_gmt_bundle(client: httpx.Client) -> MethodResult:
         size, _seconds = _download_bytes(entry["download_url"], client)
         total_bytes += size
     return MethodResult(
-        name="bugsigdbexports_gmt_bundle",
+        name=f"bugsigdbexports_{BUGSIGDB_EXPORTS_VERSION.replace('.', '_')}_gmt_bundle",
         files=len(entries),
         declared_bytes=declared_total,
         downloaded_bytes=total_bytes,
@@ -141,7 +150,7 @@ def benchmark_zenodo_release(client: httpx.Client) -> MethodResult:
         size, _seconds = _download_bytes(f["links"]["self"], client)
         total_bytes += size
     return MethodResult(
-        name=f"zenodo_release_{ZENODO_RECORD_ID}",
+        name=f"zenodo_release_{BUGSIGDB_EXPORTS_VERSION.replace('.', '_')}",
         files=len(files),
         declared_bytes=declared_total,
         downloaded_bytes=total_bytes,
@@ -199,12 +208,15 @@ def _write_report(results: list[MethodResult]) -> None:
             "",
             "## Notes",
             "",
-            "- `raw_csv_exports` is the source-faithful path and remains the "
-            "recommended first ingestion surface.",
-            "- `bugsigdbexports_full_dump` is the convenience single-file path.",
-            "- `bugsigdbexports_gmt_bundle` is the heaviest path and is optimized "
+            "- `raw_csv_exports` is the live source-faithful path and remains "
+            "the preferred surface once separate-table ingestion is implemented.",
+            f"- `bugsigdbexports_{BUGSIGDB_EXPORTS_VERSION.replace('.', '_')}_full_dump` "
+            "is the citable convenience single-file path currently used by bsdbng.",
+            f"- `bugsigdbexports_{BUGSIGDB_EXPORTS_VERSION.replace('.', '_')}_gmt_bundle` "
+            "is the heaviest path and is optimized "
             "for set-based analysis, not canonical ingestion.",
-            f"- `zenodo_release_{ZENODO_RECORD_ID}` is the reproducible pinned-release path.",
+            f"- `zenodo_release_{BUGSIGDB_EXPORTS_VERSION.replace('.', '_')}` "
+            f"is the reproducible pinned-release path ({BUGSIGDB_EXPORTS_DOI}).",
             "",
         ]
     )

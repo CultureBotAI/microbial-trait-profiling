@@ -1,0 +1,282 @@
+target_taxon_name	condition	body_site_group	decreased_profile_count	increased_profile_count	decreased_study_count	increased_study_count	total_profile_count	increased_profile_tendency
+Fusobacterium nucleatum	Colorectal cancer	Feces	0	12	0	7	12	1.0
+Parvimonas micra	Colorectal cancer	Feces	0	7	0	5	7	1.0
+Escherichia coli	Colorectal cancer	Feces	0	5	0	4	5	1.0
+Prevotella intermedia	Colorectal cancer	Feces	0	5	0	4	5	1.0
+Enterocloster bolteae	COVID-19	Feces	0	4	0	3	4	1.0
+Klebsiella pneumoniae	Parkinson's disease	Feces	0	4	0	3	4	1.0
+Streptococcus anginosus	Rheumatoid arthritis	Subgingival dental plaque	0	4	0	3	4	1.0
+Porphyromonas gingivalis	Colorectal cancer	Saliva	0	6	0	2	6	1.0
+Escherichia coli	Ulcerative colitis	Feces	0	3	0	2	3	1.0
+Eggerthella lenta	Colorectal cancer	Feces	0	2	0	2	2	1.0
+Eggerthella lenta	HIV infection	Feces	0	2	0	2	2	1.0
+Eggerthella lenta	Irritable bowel syndrome	Feces	0	2	0	2	2	1.0
+Enterocloster bolteae	Colorectal cancer	Feces	0	2	0	2	2	1.0
+Parvimonas micra	Periodontitis	Subgingival dental plaque	0	2	0	2	2	1.0
+Porphyromonas gingivalis	Periodontitis	Subgingival dental plaque	0	2	0	2	2	1.0
+Streptococcus anginosus	Colorectal cancer	Feces	0	2	0	2	2	1.0
+Escherichia coli	Aging	Feces	0	7	0	1	7	1.0
+Klebsiella pneumoniae	Aging	Feces	0	7	0	1	7	1.0
+Enterocloster bolteae	Tumor stage	Feces	0	6	0	1	6	1.0
+Escherichia coli	Response to diet	Feces	0	5	0	1	5	1.0
+Prevotella intermedia	Colorectal cancer	Other	0	5	0	1	5	1.0
+Eggerthella lenta	Treatment refractory schizophrenia	Feces	0	4	0	1	4	1.0
+Klebsiella pneumoniae	Response to diet	Feces	0	4	0	1	4	1.0
+Streptococcus anginosus	Gastric cancer	Other	0	4	0	1	4	1.0
+Enterocloster bolteae	Glucose	Feces	0	3	0	1	3	1.0
+Escherichia coli	Glucose	Feces	0	3	0	1	3	1.0
+Escherichia coli	Psoriasis vulgaris	Feces	0	3	0	1	3	1.0
+Parvimonas micra	Colorectal carcinoma	Feces	0	3	0	1	3	1.0
+Parvimonas micra	Squamous cell carcinoma	Mouth	0	3	0	1	3	1.0
+Streptococcus anginosus	SARS coronavirus	Saliva	0	3	0	1	3	1.0
+Veillonella dispar	Antimicrobial agent	Feces	0	3	0	1	3	1.0
+Veillonella dispar	Diarrhea	Feces	0	3	0	1	3	1.0
+Veillonella dispar	Esophageal squamous cell carcinoma	Other	0	3	0	1	3	1.0
+Veillonella dispar	Type II diabetes mellitus	Feces	0	3	0	1	3	1.0
+Eggerthella lenta	Multiple sclerosis	Feces	0	2	0	1	2	1.0
+Enterocloster bolteae	Autism	Feces	0	2	0	1	2	1.0
+Escherichia coli	Age at assessment	Other	0	2	0	1	2	1.0
+Escherichia coli	Autoimmune disease	Feces	0	2	0	1	2	1.0
+Escherichia coli	Polycystic ovary syndrome	Feces	0	2	0	1	2	1.0
+Escherichia coli	Treatment refractory schizophrenia	Feces	0	2	0	1	2	1.0
+Fusobacterium nucleatum	Dental fluorosis	Saliva	0	2	0	1	2	1.0
+Fusobacterium nucleatum	Mucositis	Subgingival dental plaque	0	2	0	1	2	1.0
+Klebsiella pneumoniae	Multiple myeloma	Feces	0	2	0	1	2	1.0
+Klebsiella pneumoniae	Tumor stage	Feces	0	2	0	1	2	1.0
+Klebsiella pneumoniae	Urinary tract infection	Other	0	2	0	1	2	1.0
+Parvimonas micra	Mucositis	Subgingival dental plaque	0	2	0	1	2	1.0
+Porphyromonas gingivalis	Mucositis	Subgingival dental plaque	0	2	0	1	2	1.0
+Streptococcus anginosus	Oral squamous cell carcinoma	Oral cavity	0	2	0	1	2	1.0
+Streptococcus anginosus	Remission	Feces	0	2	0	1	2	1.0
+Veillonella dispar	Atopic asthma	Other	0	2	0	1	2	1.0
+Veillonella dispar	Food allergy,Dermatitis	Feces	0	2	0	1	2	1.0
+Veillonella dispar	Oral mucositis	Mouth	0	2	0	1	2	1.0
+Veillonella dispar	Osteoarthritis,Rheumatoid arthritis	Saliva	0	2	0	1	2	1.0
+Veillonella dispar	Ulcerative colitis	Feces	0	2	0	1	2	1.0
+Eggerthella lenta	Allergic asthma	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	Antimicrobial agent	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	Asthma,Allergic rhinitis,Food allergy,Dermatitis	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	COVID-19	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	Chronic constipation	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	Chronic fatigue syndrome	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	Colorectal cancer	Other	0	1	0	1	1	1.0
+Eggerthella lenta	Depressive disorder	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	Kidney disease	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	Lifestyle measurement	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	Polycystic ovary syndrome	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	Population	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	Relapsing-remitting multiple sclerosis	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	Remission	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	Socioeconomic status	Feces	0	1	0	1	1	1.0
+Eggerthella lenta	Type II diabetes mellitus	Feces	0	1	0	1	1	1.0
+Enterocloster bolteae	Chronic fatigue syndrome	Feces	0	1	0	1	1	1.0
+Enterocloster bolteae	Colorectal adenocarcinoma	Feces	0	1	0	1	1	1.0
+Enterocloster bolteae	Depressive disorder	Feces	0	1	0	1	1	1.0
+Enterocloster bolteae	Diet	Feces	0	1	0	1	1	1.0
+Enterocloster bolteae	HIV infection	Feces	0	1	0	1	1	1.0
+Enterocloster bolteae	Irritable bowel syndrome	Feces	0	1	0	1	1	1.0
+Enterocloster bolteae	Ischemic stroke	Feces	0	1	0	1	1	1.0
+Enterocloster bolteae	Kidney disease	Feces	0	1	0	1	1	1.0
+Enterocloster bolteae	Pulmonary tuberculosis	Feces	0	1	0	1	1	1.0
+Enterocloster bolteae	Relapsing-remitting multiple sclerosis	Feces	0	1	0	1	1	1.0
+Escherichia coli	Allergic asthma	Feces	0	1	0	1	1	1.0
+Escherichia coli	Antimicrobial agent	Feces	0	1	0	1	1	1.0
+Escherichia coli	Asthma	Other	0	1	0	1	1	1.0
+Escherichia coli	Asthma,Allergic rhinitis,Food allergy,Dermatitis	Feces	0	1	0	1	1	1.0
+Escherichia coli	Blastocystis hominis infectious disease	Feces	0	1	0	1	1	1.0
+Escherichia coli	Breast cancer	Feces	0	1	0	1	1	1.0
+Escherichia coli	Cervical cancer	Feces	0	1	0	1	1	1.0
+Escherichia coli	Chronic inflammatory demyelinating polyradiculoneuropathy	Feces	0	1	0	1	1	1.0
+Escherichia coli	Diet	Feces	0	1	0	1	1	1.0
+Escherichia coli	Diet measurement	Feces	0	1	0	1	1	1.0
+Escherichia coli	Dry eye syndrome	Other	0	1	0	1	1	1.0
+Escherichia coli	Epilepsy	Feces	0	1	0	1	1	1.0
+Escherichia coli	Gastric cancer	Feces	0	1	0	1	1	1.0
+Escherichia coli	HIV infection	Feces	0	1	0	1	1	1.0
+Escherichia coli	HIV infection,Antimicrobial agent	Feces	0	1	0	1	1	1.0
+Escherichia coli	Health study participation	Other	0	1	0	1	1	1.0
+Escherichia coli	Health-related quality of life measurement	Feces	0	1	0	1	1	1.0
+Escherichia coli	Inflammatory bowel disease	Feces	0	1	0	1	1	1.0
+Escherichia coli	Meibomian cyst	Other	0	1	0	1	1	1.0
+Escherichia coli	Microbiome	Other	0	1	0	1	1	1.0
+Escherichia coli	Peutz-Jeghers Polyp	Feces	0	1	0	1	1	1.0
+Escherichia coli	Relapsing-remitting multiple sclerosis	Feces	0	1	0	1	1	1.0
+Escherichia coli	Response to immunochemotherapy	Feces	0	1	0	1	1	1.0
+Escherichia coli	Socioeconomic status	Feces	0	1	0	1	1	1.0
+Escherichia coli	Squamous cell carcinoma	Mouth	0	1	0	1	1	1.0
+Escherichia coli	Urinary tract infection	Other	0	1	0	1	1	1.0
+Escherichia coli	Vitiligo	Feces	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Breast cancer	Feces	0	1	0	1	1	1.0
+Fusobacterium nucleatum	COVID-19	Other	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Cervical glandular intraepithelial neoplasia,Cervical cancer	Uterine cervix	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Chronic periodontitis	Subgingival dental plaque	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Colorectal carcinoma	Other	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Dry eye syndrome	Other	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Gastric cancer	Other	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Gingivitis	Other	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Human papilloma virus infection	Other	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Hypertrophy	Saliva	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Oral cavity carcinoma	Mouth	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Oral mucositis	Other	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Pancreatic carcinoma	Feces	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Periodontitis	Saliva	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Response to diet	Feces	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Type II diabetes mellitus	Saliva	0	1	0	1	1	1.0
+Fusobacterium nucleatum	Type II diabetes mellitus	Subgingival dental plaque	0	1	0	1	1	1.0
+Klebsiella pneumoniae	Chronic inflammatory demyelinating polyradiculoneuropathy	Feces	0	1	0	1	1	1.0
+Klebsiella pneumoniae	Diet	Feces	0	1	0	1	1	1.0
+Klebsiella pneumoniae	Epilepsy	Feces	0	1	0	1	1	1.0
+Klebsiella pneumoniae	HIV infection	Feces	0	1	0	1	1	1.0
+Klebsiella pneumoniae	Lower respiratory tract disease	Other	0	1	0	1	1	1.0
+Klebsiella pneumoniae	Obesity	Feces	0	1	0	1	1	1.0
+Klebsiella pneumoniae	Peutz-Jeghers Polyp	Feces	0	1	0	1	1	1.0
+Klebsiella pneumoniae	Response to antibiotic	Feces	0	1	0	1	1	1.0
+Klebsiella pneumoniae	SARS-CoV-2-related disease	Other	0	1	0	1	1	1.0
+Parvimonas micra	Chronic periodontitis	Subgingival dental plaque	0	1	0	1	1	1.0
+Parvimonas micra	Dry eye syndrome	Other	0	1	0	1	1	1.0
+Parvimonas micra	Epilepsy	Feces	0	1	0	1	1	1.0
+Parvimonas micra	Human papilloma virus infection	Other	0	1	0	1	1	1.0
+Parvimonas micra	Human papilloma virus infection	Uterine cervix	0	1	0	1	1	1.0
+Parvimonas micra	Hypertrophy	Saliva	0	1	0	1	1	1.0
+Parvimonas micra	Oral mucositis	Other	0	1	0	1	1	1.0
+Parvimonas micra	Oral squamous cell carcinoma	Oral cavity	0	1	0	1	1	1.0
+Parvimonas micra	Periodontitis	Saliva	0	1	0	1	1	1.0
+Parvimonas micra	Rheumatoid arthritis	Saliva	0	1	0	1	1	1.0
+Parvimonas micra	Type II diabetes mellitus	Saliva	0	1	0	1	1	1.0
+Porphyromonas gingivalis	Aggressive periodontitis	Subgingival dental plaque	0	1	0	1	1	1.0
+Porphyromonas gingivalis	COVID-19	Nasopharynx	0	1	0	1	1	1.0
+Porphyromonas gingivalis	Colorectal cancer	Feces	0	1	0	1	1	1.0
+Porphyromonas gingivalis	Gingivitis	Subgingival dental plaque	0	1	0	1	1	1.0
+Porphyromonas gingivalis	HIV infection	Saliva	0	1	0	1	1	1.0
+Porphyromonas gingivalis	Health study participation	Other	0	1	0	1	1	1.0
+Porphyromonas gingivalis	Human papilloma virus infection	Mouth	0	1	0	1	1	1.0
+Porphyromonas gingivalis	Post-COVID-19 disorder	Feces	0	1	0	1	1	1.0
+Porphyromonas gingivalis	Psoriasis	Saliva	0	1	0	1	1	1.0
+Porphyromonas gingivalis	Response to diet	Feces	0	1	0	1	1	1.0
+Porphyromonas gingivalis	Smoking behavior	Saliva	0	1	0	1	1	1.0
+Porphyromonas gingivalis	Type II diabetes mellitus	Saliva	0	1	0	1	1	1.0
+Prevotella intermedia	Atopic asthma	Other	0	1	0	1	1	1.0
+Prevotella intermedia	Chronic periodontitis	Subgingival dental plaque	0	1	0	1	1	1.0
+Prevotella intermedia	Endometriosis	Feces	0	1	0	1	1	1.0
+Prevotella intermedia	Gingivitis	Other	0	1	0	1	1	1.0
+Prevotella intermedia	Gingivitis	Subgingival dental plaque	0	1	0	1	1	1.0
+Prevotella intermedia	Head and neck squamous cell carcinoma	Oral cavity	0	1	0	1	1	1.0
+Prevotella intermedia	Hypertrophy	Saliva	0	1	0	1	1	1.0
+Prevotella intermedia	Mucositis	Subgingival dental plaque	0	1	0	1	1	1.0
+Prevotella intermedia	Periodontitis	Subgingival dental plaque	0	1	0	1	1	1.0
+Prevotella intermedia	Rheumatoid arthritis	Saliva	0	1	0	1	1	1.0
+Prevotella intermedia	Rosacea	Other	0	1	0	1	1	1.0
+Streptococcus anginosus	Colorectal carcinoma	Feces	0	1	0	1	1	1.0
+Streptococcus anginosus	Dental caries	Other	0	1	0	1	1	1.0
+Streptococcus anginosus	Dysmenorrhea	Feces	0	1	0	1	1	1.0
+Streptococcus anginosus	Epilepsy	Feces	0	1	0	1	1	1.0
+Streptococcus anginosus	Human papilloma virus infection	Uterine cervix	0	1	0	1	1	1.0
+Streptococcus anginosus	Ischemic stroke	Saliva	0	1	0	1	1	1.0
+Streptococcus anginosus	Lifestyle measurement	Vagina	0	1	0	1	1	1.0
+Streptococcus anginosus	Mucositis	Subgingival dental plaque	0	1	0	1	1	1.0
+Streptococcus anginosus	Multiple myeloma	Feces	0	1	0	1	1	1.0
+Streptococcus anginosus	Parkinson's disease	Feces	0	1	0	1	1	1.0
+Streptococcus anginosus	Periodontitis	Saliva	0	1	0	1	1	1.0
+Streptococcus anginosus	Ulcerative colitis	Feces	0	1	0	1	1	1.0
+Veillonella dispar	Autoimmune Hepatitis	Feces	0	1	0	1	1	1.0
+Veillonella dispar	Breast carcinoma	Feces	0	1	0	1	1	1.0
+Veillonella dispar	Colorectal cancer	Other	0	1	0	1	1	1.0
+Veillonella dispar	Diabetic nephropathy	Feces	0	1	0	1	1	1.0
+Veillonella dispar	Glucose metabolism measurement	Feces	0	1	0	1	1	1.0
+Veillonella dispar	Iron deficiency anemia	Feces	0	1	0	1	1	1.0
+Veillonella dispar	Rheumatoid arthritis	Subgingival dental plaque	0	1	0	1	1	1.0
+Veillonella dispar	Smoking behaviour measurement	Other	0	1	0	1	1	1.0
+Veillonella dispar	Stroke	Feces	0	1	0	1	1	1.0
+Veillonella dispar	Type II diabetes mellitus	Subgingival dental plaque	0	1	0	1	1	1.0
+Eggerthella lenta	Tumor stage	Feces	1	5	1	1	6	0.6666666666666666
+Fusobacterium nucleatum	Population	Saliva	1	5	1	1	6	0.6666666666666666
+Parvimonas micra	Lifestyle measurement	Vagina	1	3	1	1	4	0.5
+Fusobacterium nucleatum	Ovarian cancer	Other	2	4	1	2	6	0.3333333333333333
+Eggerthella lenta	Obesity	Feces	1	2	1	2	3	0.3333333333333333
+Escherichia coli	Irritable bowel syndrome	Feces	1	2	1	2	3	0.3333333333333333
+Streptococcus anginosus	COVID-19	Other	1	2	1	2	3	0.3333333333333333
+Escherichia coli	Population	Saliva	4	8	1	1	12	0.3333333333333333
+Fusobacterium nucleatum	Nasopharyngeal squamous cell carcinoma	Saliva	1	2	1	1	3	0.3333333333333333
+Klebsiella pneumoniae	Population	Saliva	5	8	1	1	13	0.23076923076923078
+Eggerthella lenta	Parkinson's disease	Feces	1	1	1	1	2	0.0
+Escherichia coli	Lifestyle measurement	Feces	1	1	1	1	2	0.0
+Escherichia coli	Ovarian cancer	Other	1	1	1	1	2	0.0
+Escherichia coli	Response to transplant	Feces	1	1	1	1	2	0.0
+Escherichia coli	Tumor stage	Feces	1	1	1	1	2	0.0
+Fusobacterium nucleatum	Colorectal cancer	Other	1	1	1	1	2	0.0
+Fusobacterium nucleatum	Smoking behavior	Saliva	1	1	1	1	2	0.0
+Klebsiella pneumoniae	Health-related quality of life measurement	Feces	1	1	1	1	2	0.0
+Parvimonas micra	Smoking behavior	Saliva	1	1	1	1	2	0.0
+Porphyromonas gingivalis	Periodontitis	Saliva	1	1	1	1	2	0.0
+Prevotella intermedia	Gastric cancer	Other	1	1	1	1	2	0.0
+Prevotella intermedia	Periodontitis	Saliva	1	1	1	1	2	0.0
+Veillonella dispar	COVID-19	Other	1	1	1	1	2	0.0
+Veillonella dispar	Health study participation	Feces	1	1	1	1	2	0.0
+Veillonella dispar	Human papilloma virus infection	Mouth	1	1	1	1	2	0.0
+Veillonella dispar	Obesity	Feces	1	1	1	1	2	0.0
+Veillonella dispar	Smoking behavior	Saliva	1	1	1	1	2	0.0
+Veillonella dispar	Tumor stage	Feces	1	1	1	1	2	0.0
+Escherichia coli	Parkinson's disease	Feces	2	1	2	1	3	-0.3333333333333333
+Escherichia coli	Obesity	Feces	10	4	3	2	14	-0.42857142857142855
+Escherichia coli	Chronic constipation	Feces	3	1	3	1	4	-0.5
+Escherichia coli	Colorectal cancer	Other	3	1	1	1	4	-0.5
+Fusobacterium nucleatum	Cervical glandular intraepithelial neoplasia	Vagina	3	1	1	1	4	-0.5
+Streptococcus anginosus	Cervical glandular intraepithelial neoplasia	Vagina	3	1	1	1	4	-0.5
+Veillonella dispar	Gingivitis	Other	4	0	1	0	4	-1.0
+Prevotella intermedia	COVID-19	Other	3	0	1	0	3	-1.0
+Enterocloster bolteae	COVID-19	Other	2	0	1	0	2	-1.0
+Escherichia coli	Age	Feces	2	0	1	0	2	-1.0
+Fusobacterium nucleatum	Chronic constipation	Feces	2	0	1	0	2	-1.0
+Klebsiella pneumoniae	Chronic constipation	Feces	2	0	2	0	2	-1.0
+Klebsiella pneumoniae	Polycystic ovary syndrome	Feces	2	0	1	0	2	-1.0
+Parvimonas micra	Population	Saliva	2	0	1	0	2	-1.0
+Streptococcus anginosus	Human immunodeficiency virus	Feces	2	0	1	0	2	-1.0
+Streptococcus anginosus	Smoking behaviour measurement	Other	2	0	1	0	2	-1.0
+Veillonella dispar	Health-related quality of life measurement	Feces	2	0	1	0	2	-1.0
+Veillonella dispar	Human immunodeficiency virus	Feces	2	0	1	0	2	-1.0
+Veillonella dispar	Oral squamous cell carcinoma	Oral cavity	2	0	1	0	2	-1.0
+Veillonella dispar	Pneumonia	Other	2	0	1	0	2	-1.0
+Eggerthella lenta	Breast carcinoma	Feces	1	0	1	0	1	-1.0
+Eggerthella lenta	Diet measurement	Feces	1	0	1	0	1	-1.0
+Eggerthella lenta	Glaucoma	Other	1	0	1	0	1	-1.0
+Eggerthella lenta	HIV infection,Antimicrobial agent	Feces	1	0	1	0	1	-1.0
+Eggerthella lenta	Ulcerative colitis	Feces	1	0	1	0	1	-1.0
+Enterocloster bolteae	Chronic constipation	Feces	1	0	1	0	1	-1.0
+Enterocloster bolteae	Non-small cell lung carcinoma,Renal cell carcinoma,Disease progression measurement	Feces	1	0	1	0	1	-1.0
+Enterocloster bolteae	Obesity	Feces	1	0	1	0	1	-1.0
+Enterocloster bolteae	Psoriasis	Feces	1	0	1	0	1	-1.0
+Escherichia coli	Acne	Other	1	0	1	0	1	-1.0
+Escherichia coli	Breast carcinoma	Other	1	0	1	0	1	-1.0
+Escherichia coli	Delivery method	Feces	1	0	1	0	1	-1.0
+Escherichia coli	Human immunodeficiency virus	Feces	1	0	1	0	1	-1.0
+Escherichia coli	Pancreatic ductal adenocarcinoma	Other	1	0	1	0	1	-1.0
+Escherichia coli	Pulmonary non-tuberculous mycobacterial infection	Other	1	0	1	0	1	-1.0
+Escherichia coli	Schizophrenia	Feces	1	0	1	0	1	-1.0
+Escherichia coli	Smoking behaviour measurement	Other	1	0	1	0	1	-1.0
+Klebsiella pneumoniae	COVID-19	Feces	1	0	1	0	1	-1.0
+Klebsiella pneumoniae	Response to transplant	Feces	1	0	1	0	1	-1.0
+Parvimonas micra	Chronic constipation	Feces	1	0	1	0	1	-1.0
+Parvimonas micra	Environmental factor	Feces	1	0	1	0	1	-1.0
+Parvimonas micra	Squamous cell carcinoma	Saliva	1	0	1	0	1	-1.0
+Parvimonas micra	Vitiligo	Feces	1	0	1	0	1	-1.0
+Parvimonas micra	Vulvovaginitis	Other	1	0	1	0	1	-1.0
+Porphyromonas gingivalis	Lower respiratory tract disease	Other	1	0	1	0	1	-1.0
+Porphyromonas gingivalis	Oral mucositis	Other	1	0	1	0	1	-1.0
+Porphyromonas gingivalis	Type II diabetes mellitus	Subgingival dental plaque	1	0	1	0	1	-1.0
+Prevotella intermedia	Chronic kidney disease	Other	1	0	1	0	1	-1.0
+Prevotella intermedia	HIV infection	Saliva	1	0	1	0	1	-1.0
+Prevotella intermedia	Post-COVID-19 disorder	Feces	1	0	1	0	1	-1.0
+Prevotella intermedia	Pulmonary non-tuberculous mycobacterial infection	Other	1	0	1	0	1	-1.0
+Prevotella intermedia	Rheumatoid arthritis	Subgingival dental plaque	1	0	1	0	1	-1.0
+Prevotella intermedia	Smoking behavior	Saliva	1	0	1	0	1	-1.0
+Prevotella intermedia	Systemic lupus erythematosus	Subgingival dental plaque	1	0	1	0	1	-1.0
+Streptococcus anginosus	Birth measurement	Other	1	0	1	0	1	-1.0
+Streptococcus anginosus	Gastric adenocarcinoma	Other	1	0	1	0	1	-1.0
+Streptococcus anginosus	Periodontitis	Subgingival dental plaque	1	0	1	0	1	-1.0
+Streptococcus anginosus	Psoriasis	Feces	1	0	1	0	1	-1.0
+Streptococcus anginosus	Systemic lupus erythematosus	Subgingival dental plaque	1	0	1	0	1	-1.0
+Streptococcus anginosus	Tumor stage	Feces	1	0	1	0	1	-1.0
+Veillonella dispar	Autoimmune disease	Feces	1	0	1	0	1	-1.0
+Veillonella dispar	Colorectal cancer	Feces	1	0	1	0	1	-1.0
+Veillonella dispar	Parkinson's disease	Feces	1	0	1	0	1	-1.0
+Veillonella dispar	Response to immunochemotherapy	Feces	1	0	1	0	1	-1.0

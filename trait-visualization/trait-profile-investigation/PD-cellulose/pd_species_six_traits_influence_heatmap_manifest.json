@@ -1,0 +1,85 @@
+{
+  "method": "fixed-reference leave-one-reported-species-out influence",
+  "traits": 6,
+  "species": 5,
+  "cells": 30,
+  "displayed_cells": 9,
+  "audited_cells_for_displayed_species": 30,
+  "direct_annotation_cells": 9,
+  "denominator_only_cells": 21,
+  "species_removed_all_low_support": 52,
+  "species_removed_by_explicit_exclusion": 1,
+  "excluded_taxon_ids": [
+    "NCBITaxon:33039"
+  ],
+  "excluded_taxon_names": [
+    "Mediterraneibacter torques"
+  ],
+  "species_removed_below_absolute_influence_threshold": 2,
+  "absolute_influence_display_threshold_z": 0.01,
+  "display_rule": "mean influence > +0.01 or < -0.01",
+  "non_mediadive_columns": 317,
+  "minimum_support_studies": 3,
+  "row_filter": "exclude explicit taxon removals, species whose six cells are all low support, and species with no mean influence beyond +/-0.01",
+  "row_order": "descending BugSigDB PD log2(increased/decreased) profile-count ratio; ties by increased-minus-decreased count, total direction profiles, and taxon name",
+  "literature_review_date": "2026-09-22",
+  "literature_review_method": "targeted narrative direction review",
+  "displayed_row_annotations": [
+    "BugSigDB PD increased/decreased recurrence",
+    "literature direction and Hamming agreement versus BugSigDB"
+  ],
+  "direction_hamming_encoding": {
+    "0": "similar",
+    "1": "different"
+  },
+  "pd_specificity_displayed": false,
+  "pd_literature_reference_taxa": 20,
+  "displayed_species_with_literature_reference": 5,
+  "literature_bug_sig_direction_agreement_counts": {
+    "agrees": 4,
+    "differs": 1
+  },
+  "input_sha256_chunks": {
+    "data/derived/study_trait_profiles_wide.tsv": [
+      "6e70724e",
+      "e807cf24",
+      "e9c1f371",
+      "a51421fa",
+      "5b09d628",
+      "3fa7f3ab",
+      "cd6620e5",
+      "492c6a73"
+    ],
+    "data/derived/taxa_trait_matrix.tsv": [
+      "f6de0576",
+      "63f3a3b0",
+      "026579df",
+      "af341745",
+      "faac27df",
+      "7f9c0afd",
+      "6f5fa3e6",
+      "aa034178"
+    ],
+    "data/derived/taxa.tsv": [
+      "e7fa982b",
+      "23ea8245",
+      "6247bcd8",
+      "41fd97d4",
+      "fe71518e",
+      "09eaaa27",
+      "aee65d9a",
+      "db271c59"
+    ],
+    "trait-visualization/trait-profile-investigation/PD-cellulose/pd_six_trait_taxon_profile_evidence.tsv": [
+      "ebf128f1",
+      "73c658b7",
+      "115d5fd4",
+      "44e00fbc",
+      "b677afa2",
+      "0d8842b7",
+      "ffa5bb3c",
+      "4ad89fce"
+    ]
+  },
+  "sha256_chunk_encoding": "concatenate each path's eight chunks in order"
+}

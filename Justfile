@@ -57,6 +57,76 @@ format:
 	uv run ruff check --fix src tests scripts
 	uv run ruff format src tests scripts
 
+trait-profile-investigation:
+	uv run python scripts/regenerate_trait_profile_investigation.py
+
+# Regenerate six-trait pattern and full-table signed direction heatmaps.
+six-shared-trait-heatmaps:
+	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py
+
+# Check regenerated clustering and oral exports against a saved contrast table.
+audit-six-trait-diagnostics baseline:
+	uv run python scripts/adhoc/audit_clustering_stack.py --baseline-contrasts "{{baseline}}"
+
+# Focused view of saved Jed contrasts; preserves their original Fisher/BH inference.
+oral-six-trait-heatmap:
+	source_commit="uncommitted" && \
+	if git diff --quiet HEAD -- trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_trait_condition_body_site_direction_contrasts.tsv trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_trait_selection.tsv; then \
+	  source_commit="$(git rev-parse HEAD)"; \
+	fi && \
+	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py --oral-only --source-commit "$source_commit"
+
+# Trace PD lollipop traits to observed taxa and profile evidence.
+pd-trait-taxa:
+	uv run python scripts/lookup_pd_trait_taxa.py
+
+# Plot thresholded species-only and rank-grouped species/genus/family PD influence contrasts.
+pd-trait-taxa-heatmap:
+	uv run python scripts/create_pd_six_trait_taxon_heatmap.py
+	uv run python scripts/create_pd_exploratory_taxa_influence_heatmap.py
+
+# Refresh PD trait contributor dot heatmap with specificity and co-carriage checks.
+pd-trait-contributors:
+	uv run python scripts/create_pd_trait_contributors.py
+
+# Test all eligible fecal condition-taxon and condition-trait pairs, apply global
+# BH correction, and redraw the FDR-tiered evidence landscape.
+pd-significant-ecological-network:
+	uv run python scripts/create_pd_significant_condition_taxon_trait_network.py
+
+# Redraw the combined ecological-reporter figure after retaining conditions with
+# a descriptive 95% interval excluding zero for at least one of the six traits.
+pd-ecological-reporter-combined:
+	uv run python scripts/create_pd_ecological_reporter_combined.py
+
+# Overlay increased (solid) and decreased (dashed) high-support Sankey links.
+six-shared-trait-combined-sankey:
+	uv run python scripts/create_six_shared_trait_sankeys.py --combined-high-support-only
+
+# Redraw the saved increased, decreased and combined high-support selections.
+six-shared-trait-high-support-sankeys:
+	uv run python scripts/create_six_shared_trait_sankeys.py --high-support-layouts-only
+
+trait-heatmaps:
+	uv run python scripts/create_clustered_heatmap.py
+	uv run python scripts/create_condition_taxon_heatmap.py
+	uv run python scripts/create_taxa_guild_heatmap.py
+	uv run python scripts/create_study_trait_profile_heatmap.py
+	uv run python scripts/create_condition_trait_module_heatmap.py
+
+trait-visualization:
+	just download-kg
+	just pipeline
+	just study-tsvs
+	just taxa-trait-matrix
+	just study-trait-profiles
+	just trait-heatmaps
+	just trait-profile-investigation
+
+refresh-v131-trait-visualization:
+	just clean-all
+	just trait-visualization
+
 typecheck:
 	uv run mypy src tests
 

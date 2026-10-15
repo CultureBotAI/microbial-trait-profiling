@@ -1,0 +1,8 @@
+taxon_id	target_taxon_name	taxon_name	taxonomic_rank	bugsigdb_study_count	bugsigdb_profile_count	decreased	increased	dominant_direction	decreased_fraction	depletion_bias	decreased_to_increased_ratio	trait_count
+NCBITaxon:39491	Agathobacter rectalis	Agathobacter rectalis	species	43	85	67	18	decreased	0.788235294117647	0.5764705882352941	3.7222222222222223	9
+NCBITaxon:166486	Roseburia intestinalis	Roseburia intestinalis	species	35	64	46	18	decreased	0.71875	0.4375	2.5555555555555554	9
+NCBITaxon:360807	Roseburia inulinivorans	Roseburia inulinivorans	species	38	63	45	18	decreased	0.7142857142857143	0.42857142857142855	2.5	11
+NCBITaxon:39485	Lachnospira eligens	Lachnospira eligens	species	54	90	64	26	decreased	0.7111111111111111	0.4222222222222222	2.4615384615384617	10
+NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii	species	42	71	45	26	decreased	0.6338028169014085	0.2676056338028169	1.7307692307692308	9
+NCBITaxon:853	Faecalibacterium prausnitzii	Faecalibacterium prausnitzii	species	95	171	108	63	decreased	0.631578947368421	0.2631578947368421	1.7142857142857142	10
+NCBITaxon:39488	Anaerobutyricum hallii	Anaerobutyricum hallii	species	54	94	50	44	mixed	0.5319148936170213	0.06382978723404255	1.1363636363636365	10

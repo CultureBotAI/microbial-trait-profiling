@@ -682,9 +682,7 @@ def generate_figure4_annotation_density_pc1_landscape(
     # Load matrix and profiles
     matrix_df = pd.read_csv(taxa_matrix_path, sep="\t")
     trait_cols = [c for c in matrix_df.columns if c.startswith("METPO:")]
-    trait_counts = matrix_df[trait_cols].apply(
-        lambda col: (pd.to_numeric(col, errors="coerce") > 0).sum()
-    )
+    trait_counts = matrix_df[trait_cols].apply(pd.to_numeric, errors="coerce").gt(0).sum()
 
     profiles_df = pd.read_csv(profiles_path, sep="\t")
     common_traits = [c for c in trait_cols if c in profiles_df.columns]

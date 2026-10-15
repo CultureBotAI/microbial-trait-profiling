@@ -55,9 +55,15 @@ kg = [
 # renderer, but plotly 7.0 removed the kaleido-v0 code path (6.x had only
 # deprecated it), so with the plotly floor, kaleido must sit on the v1 line; the
 # two floors are a pair.
+# matplotlib, seaborn, pillow and defusedxml are imported only by the figure
+# scripts under scripts/, never by src/ (#521).
 viz = [
+  "defusedxml>=0.7.1",
   "kaleido>=1.0",
+  "matplotlib>=3.10.0",
+  "pillow>=12.0.0",
   "plotly>=7.0",
+  "seaborn>=0.13.0",
 ]
 mongo = [
   "linkml-store[llm,mongodb]>=0.3.0",
@@ -68,6 +74,7 @@ mongo = [
 [dependency-groups]
 dev = [
   "mypy>=1.15.0",
+  "pandas-stubs>=3.0.5.260914",
   "pre-commit>=4.6.2",
   "pytest>=9.1.1",
   "pytest-cov>=6.0.0",

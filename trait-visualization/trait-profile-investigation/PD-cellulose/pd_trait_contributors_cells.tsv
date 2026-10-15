@@ -1,0 +1,637 @@
+scope	rank	taxon	name	display_name	direction	trait_key	trait_slug	trait_label	count	share	studies	status
+parkinsons_feces	species	NCBITaxon:1280	Staphylococcus aureus	Staphylococcus aureus (1280)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	5736	0.0532758716772	7	resolved
+parkinsons_feces	species	NCBITaxon:1280	Staphylococcus aureus	Staphylococcus aureus (1280)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	14340	0.207636505799	11	resolved
+parkinsons_feces	species	NCBITaxon:1280	Staphylococcus aureus	Staphylococcus aureus (1280)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1280	Staphylococcus aureus	Staphylococcus aureus (1280)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1280	Staphylococcus aureus	Staphylococcus aureus (1280)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	24024	0.384907474165	7	resolved
+parkinsons_feces	species	NCBITaxon:1280	Staphylococcus aureus	Staphylococcus aureus (1280)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	60060	0.582106477219	11	resolved
+parkinsons_feces	species	NCBITaxon:1280	Staphylococcus aureus	Staphylococcus aureus (1280)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1280	Staphylococcus aureus	Staphylococcus aureus (1280)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1280	Staphylococcus aureus	Staphylococcus aureus (1280)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1280	Staphylococcus aureus	Staphylococcus aureus (1280)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1280	Staphylococcus aureus	Staphylococcus aureus (1280)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	16	0.00339198643205	7	resolved
+parkinsons_feces	species	NCBITaxon:1280	Staphylococcus aureus	Staphylococcus aureus (1280)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	40	0.0184586986617	11	resolved
+parkinsons_feces	species	NCBITaxon:562	Escherichia coli	Escherichia coli (562)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	33497	0.311119573496	14	resolved
+parkinsons_feces	species	NCBITaxon:562	Escherichia coli	Escherichia coli (562)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	6232	0.0902364507768	5	resolved
+parkinsons_feces	species	NCBITaxon:562	Escherichia coli	Escherichia coli (562)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:562	Escherichia coli	Escherichia coli (562)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:562	Escherichia coli	Escherichia coli (562)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	43	0.000688936954258	14	resolved
+parkinsons_feces	species	NCBITaxon:562	Escherichia coli	Escherichia coli (562)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	8	7.75366603022e-05	5	resolved
+parkinsons_feces	species	NCBITaxon:562	Escherichia coli	Escherichia coli (562)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:562	Escherichia coli	Escherichia coli (562)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:562	Escherichia coli	Escherichia coli (562)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	602	0.67869222097	14	resolved
+parkinsons_feces	species	NCBITaxon:562	Escherichia coli	Escherichia coli (562)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	112	0.268585131894	5	resolved
+parkinsons_feces	species	NCBITaxon:562	Escherichia coli	Escherichia coli (562)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	215	0.0455798176807	14	resolved
+parkinsons_feces	species	NCBITaxon:562	Escherichia coli	Escherichia coli (562)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	40	0.0184586986617	5	resolved
+parkinsons_feces	species	NCBITaxon:1311	Streptococcus agalactiae	Streptococcus agalactiae (1311)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	5600	0.052012705961	13	resolved
+parkinsons_feces	species	NCBITaxon:1311	Streptococcus agalactiae	Streptococcus agalactiae (1311)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	6944	0.100545878401	13	resolved
+parkinsons_feces	species	NCBITaxon:1311	Streptococcus agalactiae	Streptococcus agalactiae (1311)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1311	Streptococcus agalactiae	Streptococcus agalactiae (1311)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1311	Streptococcus agalactiae	Streptococcus agalactiae (1311)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	5725	0.0917247456541	13	resolved
+parkinsons_feces	species	NCBITaxon:1311	Streptococcus agalactiae	Streptococcus agalactiae (1311)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	7099	0.0688040939357	13	resolved
+parkinsons_feces	species	NCBITaxon:1311	Streptococcus agalactiae	Streptococcus agalactiae (1311)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1311	Streptococcus agalactiae	Streptococcus agalactiae (1311)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1311	Streptococcus agalactiae	Streptococcus agalactiae (1311)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1311	Streptococcus agalactiae	Streptococcus agalactiae (1311)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1311	Streptococcus agalactiae	Streptococcus agalactiae (1311)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	25	0.00529997880008	13	resolved
+parkinsons_feces	species	NCBITaxon:1311	Streptococcus agalactiae	Streptococcus agalactiae (1311)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	31	0.0143054914629	13	resolved
+parkinsons_feces	species	NCBITaxon:1313	Streptococcus pneumoniae	Streptococcus pneumoniae (1313)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	5375	0.0499229097394	13	resolved
+parkinsons_feces	species	NCBITaxon:1313	Streptococcus pneumoniae	Streptococcus pneumoniae (1313)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	6665	0.0965060886437	13	resolved
+parkinsons_feces	species	NCBITaxon:1313	Streptococcus pneumoniae	Streptococcus pneumoniae (1313)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1313	Streptococcus pneumoniae	Streptococcus pneumoniae (1313)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1313	Streptococcus pneumoniae	Streptococcus pneumoniae (1313)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	5675	0.0909236561724	13	resolved
+parkinsons_feces	species	NCBITaxon:1313	Streptococcus pneumoniae	Streptococcus pneumoniae (1313)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	7037	0.0682031848183	13	resolved
+parkinsons_feces	species	NCBITaxon:1313	Streptococcus pneumoniae	Streptococcus pneumoniae (1313)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1313	Streptococcus pneumoniae	Streptococcus pneumoniae (1313)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1313	Streptococcus pneumoniae	Streptococcus pneumoniae (1313)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1313	Streptococcus pneumoniae	Streptococcus pneumoniae (1313)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1313	Streptococcus pneumoniae	Streptococcus pneumoniae (1313)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1313	Streptococcus pneumoniae	Streptococcus pneumoniae (1313)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1309	Streptococcus mutans	Streptococcus mutans (1309)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	3588	0.0333252837479	14	resolved
+parkinsons_feces	species	NCBITaxon:1309	Streptococcus mutans	Streptococcus mutans (1309)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	4278	0.0619434429434	13	resolved
+parkinsons_feces	species	NCBITaxon:1309	Streptococcus mutans	Streptococcus mutans (1309)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1309	Streptococcus mutans	Streptococcus mutans (1309)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1309	Streptococcus mutans	Streptococcus mutans (1309)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	4264	0.068316910999	14	resolved
+parkinsons_feces	species	NCBITaxon:1309	Streptococcus mutans	Streptococcus mutans (1309)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	5084	0.049274547622	13	resolved
+parkinsons_feces	species	NCBITaxon:1309	Streptococcus mutans	Streptococcus mutans (1309)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1309	Streptococcus mutans	Streptococcus mutans (1309)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1309	Streptococcus mutans	Streptococcus mutans (1309)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1309	Streptococcus mutans	Streptococcus mutans (1309)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1309	Streptococcus mutans	Streptococcus mutans (1309)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	26	0.00551197795209	14	resolved
+parkinsons_feces	species	NCBITaxon:1309	Streptococcus mutans	Streptococcus mutans (1309)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	31	0.0143054914629	13	resolved
+parkinsons_feces	species	NCBITaxon:1351	Enterococcus faecalis	Enterococcus faecalis (1351)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	780	0.00724462690171	12	resolved
+parkinsons_feces	species	NCBITaxon:1351	Enterococcus faecalis	Enterococcus faecalis (1351)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	897	0.0129881412623	12	resolved
+parkinsons_feces	species	NCBITaxon:1351	Enterococcus faecalis	Enterococcus faecalis (1351)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1351	Enterococcus faecalis	Enterococcus faecalis (1351)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1351	Enterococcus faecalis	Enterococcus faecalis (1351)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	760	0.0121765601218	12	resolved
+parkinsons_feces	species	NCBITaxon:1351	Enterococcus faecalis	Enterococcus faecalis (1351)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	874	0.00847088013802	12	resolved
+parkinsons_feces	species	NCBITaxon:1351	Enterococcus faecalis	Enterococcus faecalis (1351)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1351	Enterococcus faecalis	Enterococcus faecalis (1351)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1351	Enterococcus faecalis	Enterococcus faecalis (1351)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1351	Enterococcus faecalis	Enterococcus faecalis (1351)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1351	Enterococcus faecalis	Enterococcus faecalis (1351)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	240	0.0508797964808	12	resolved
+parkinsons_feces	species	NCBITaxon:1351	Enterococcus faecalis	Enterococcus faecalis (1351)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	276	0.127365020766	12	resolved
+parkinsons_feces	species	NCBITaxon:1310	Streptococcus sobrinus	Streptococcus sobrinus (1310)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	25	0.000232199580183	13	resolved
+parkinsons_feces	species	NCBITaxon:1310	Streptococcus sobrinus	Streptococcus sobrinus (1310)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	31	0.000448865528575	13	resolved
+parkinsons_feces	species	NCBITaxon:1310	Streptococcus sobrinus	Streptococcus sobrinus (1310)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1310	Streptococcus sobrinus	Streptococcus sobrinus (1310)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1310	Streptococcus sobrinus	Streptococcus sobrinus (1310)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	1225	0.0196266923015	13	resolved
+parkinsons_feces	species	NCBITaxon:1310	Streptococcus sobrinus	Streptococcus sobrinus (1310)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	1519	0.0147222733749	13	resolved
+parkinsons_feces	species	NCBITaxon:1310	Streptococcus sobrinus	Streptococcus sobrinus (1310)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1310	Streptococcus sobrinus	Streptococcus sobrinus (1310)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1310	Streptococcus sobrinus	Streptococcus sobrinus (1310)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1310	Streptococcus sobrinus	Streptococcus sobrinus (1310)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1310	Streptococcus sobrinus	Streptococcus sobrinus (1310)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1310	Streptococcus sobrinus	Streptococcus sobrinus (1310)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1639	Listeria monocytogenes	Listeria monocytogenes (1639)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	360	0.00334367395464	7	resolved
+parkinsons_feces	species	NCBITaxon:1639	Listeria monocytogenes	Listeria monocytogenes (1639)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	810	0.0117284218757	10	resolved
+parkinsons_feces	species	NCBITaxon:1639	Listeria monocytogenes	Listeria monocytogenes (1639)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1639	Listeria monocytogenes	Listeria monocytogenes (1639)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1639	Listeria monocytogenes	Listeria monocytogenes (1639)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1639	Listeria monocytogenes	Listeria monocytogenes (1639)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1639	Listeria monocytogenes	Listeria monocytogenes (1639)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1639	Listeria monocytogenes	Listeria monocytogenes (1639)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1639	Listeria monocytogenes	Listeria monocytogenes (1639)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1639	Listeria monocytogenes	Listeria monocytogenes (1639)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1639	Listeria monocytogenes	Listeria monocytogenes (1639)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	16	0.00339198643205	7	resolved
+parkinsons_feces	species	NCBITaxon:1639	Listeria monocytogenes	Listeria monocytogenes (1639)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	36	0.0166128287956	10	resolved
+parkinsons_feces	species	NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae (573)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	840	0.00780190589415	15	resolved
+parkinsons_feces	species	NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae (573)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	100	0.00144795331799	5	resolved
+parkinsons_feces	species	NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae (573)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae (573)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae (573)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae (573)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae (573)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae (573)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae (573)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae (573)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae (573)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	126	0.0267118931524	15	resolved
+parkinsons_feces	species	NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae (573)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	15	0.00692201199815	5	resolved
+parkinsons_feces	species	NCBITaxon:1264	Ruminococcus albus	Ruminococcus albus (1264)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1264	Ruminococcus albus	Ruminococcus albus (1264)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1264	Ruminococcus albus	Ruminococcus albus (1264)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	96	0.0391996733361	16	resolved
+parkinsons_feces	species	NCBITaxon:1264	Ruminococcus albus	Ruminococcus albus (1264)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	138	0.040780141844	14	resolved
+parkinsons_feces	species	NCBITaxon:1264	Ruminococcus albus	Ruminococcus albus (1264)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	64	0.00102539453657	16	resolved
+parkinsons_feces	species	NCBITaxon:1264	Ruminococcus albus	Ruminococcus albus (1264)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	92	0.000891671593475	14	resolved
+parkinsons_feces	species	NCBITaxon:1264	Ruminococcus albus	Ruminococcus albus (1264)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1264	Ruminococcus albus	Ruminococcus albus (1264)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1264	Ruminococcus albus	Ruminococcus albus (1264)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1264	Ruminococcus albus	Ruminococcus albus (1264)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1264	Ruminococcus albus	Ruminococcus albus (1264)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1264	Ruminococcus albus	Ruminococcus albus (1264)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1161942	Ruminococcus champanellensis	Ruminococcus champanellensis (1161942)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1161942	Ruminococcus champanellensis	Ruminococcus champanellensis (1161942)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1161942	Ruminococcus champanellensis	Ruminococcus champanellensis (1161942)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	64	0.0261331155574	16	resolved
+parkinsons_feces	species	NCBITaxon:1161942	Ruminococcus champanellensis	Ruminococcus champanellensis (1161942)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	92	0.0271867612293	14	resolved
+parkinsons_feces	species	NCBITaxon:1161942	Ruminococcus champanellensis	Ruminococcus champanellensis (1161942)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	64	0.00102539453657	16	resolved
+parkinsons_feces	species	NCBITaxon:1161942	Ruminococcus champanellensis	Ruminococcus champanellensis (1161942)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	92	0.000891671593475	14	resolved
+parkinsons_feces	species	NCBITaxon:1161942	Ruminococcus champanellensis	Ruminococcus champanellensis (1161942)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	32	0.00844550013196	16	resolved
+parkinsons_feces	species	NCBITaxon:1161942	Ruminococcus champanellensis	Ruminococcus champanellensis (1161942)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	46	0.0141104294479	14	resolved
+parkinsons_feces	species	NCBITaxon:1161942	Ruminococcus champanellensis	Ruminococcus champanellensis (1161942)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1161942	Ruminococcus champanellensis	Ruminococcus champanellensis (1161942)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1161942	Ruminococcus champanellensis	Ruminococcus champanellensis (1161942)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1161942	Ruminococcus champanellensis	Ruminococcus champanellensis (1161942)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii (40518)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii (40518)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii (40518)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	68	0.0277664352797	17	resolved
+parkinsons_feces	species	NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii (40518)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	96	0.0283687943262	14	resolved
+parkinsons_feces	species	NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii (40518)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	68	0.00108948169511	17	resolved
+parkinsons_feces	species	NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii (40518)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	96	0.000930439923626	14	resolved
+parkinsons_feces	species	NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii (40518)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii (40518)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii (40518)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii (40518)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii (40518)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii (40518)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:287	Pseudomonas aeruginosa	Pseudomonas aeruginosa (287)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	96	0.000891646387903	10	resolved
+parkinsons_feces	species	NCBITaxon:287	Pseudomonas aeruginosa	Pseudomonas aeruginosa (287)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	12	0.000173754398158	2	resolved
+parkinsons_feces	species	NCBITaxon:287	Pseudomonas aeruginosa	Pseudomonas aeruginosa (287)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:287	Pseudomonas aeruginosa	Pseudomonas aeruginosa (287)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:287	Pseudomonas aeruginosa	Pseudomonas aeruginosa (287)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	32	0.000512697268285	10	resolved
+parkinsons_feces	species	NCBITaxon:287	Pseudomonas aeruginosa	Pseudomonas aeruginosa (287)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	4	3.87683301511e-05	2	resolved
+parkinsons_feces	species	NCBITaxon:287	Pseudomonas aeruginosa	Pseudomonas aeruginosa (287)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:287	Pseudomonas aeruginosa	Pseudomonas aeruginosa (287)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:287	Pseudomonas aeruginosa	Pseudomonas aeruginosa (287)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:287	Pseudomonas aeruginosa	Pseudomonas aeruginosa (287)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:287	Pseudomonas aeruginosa	Pseudomonas aeruginosa (287)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	128	0.0271358914564	10	resolved
+parkinsons_feces	species	NCBITaxon:287	Pseudomonas aeruginosa	Pseudomonas aeruginosa (287)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	16	0.0073834794647	2	resolved
+parkinsons_feces	species	NCBITaxon:438033	Ruminococcus gauvreauii	Ruminococcus gauvreauii (438033)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:438033	Ruminococcus gauvreauii	Ruminococcus gauvreauii (438033)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:438033	Ruminococcus gauvreauii	Ruminococcus gauvreauii (438033)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:438033	Ruminococcus gauvreauii	Ruminococcus gauvreauii (438033)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:438033	Ruminococcus gauvreauii	Ruminococcus gauvreauii (438033)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	64	0.00102539453657	16	resolved
+parkinsons_feces	species	NCBITaxon:438033	Ruminococcus gauvreauii	Ruminococcus gauvreauii (438033)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	96	0.000930439923626	15	resolved
+parkinsons_feces	species	NCBITaxon:438033	Ruminococcus gauvreauii	Ruminococcus gauvreauii (438033)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	32	0.00844550013196	16	resolved
+parkinsons_feces	species	NCBITaxon:438033	Ruminococcus gauvreauii	Ruminococcus gauvreauii (438033)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	48	0.0147239263804	15	resolved
+parkinsons_feces	species	NCBITaxon:438033	Ruminococcus gauvreauii	Ruminococcus gauvreauii (438033)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:438033	Ruminococcus gauvreauii	Ruminococcus gauvreauii (438033)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:438033	Ruminococcus gauvreauii	Ruminococcus gauvreauii (438033)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:438033	Ruminococcus gauvreauii	Ruminococcus gauvreauii (438033)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1265	Ruminococcus flavefaciens	Ruminococcus flavefaciens (1265)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1265	Ruminococcus flavefaciens	Ruminococcus flavefaciens (1265)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1265	Ruminococcus flavefaciens	Ruminococcus flavefaciens (1265)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	64	0.0261331155574	16	resolved
+parkinsons_feces	species	NCBITaxon:1265	Ruminococcus flavefaciens	Ruminococcus flavefaciens (1265)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	94	0.0277777777778	15	resolved
+parkinsons_feces	species	NCBITaxon:1265	Ruminococcus flavefaciens	Ruminococcus flavefaciens (1265)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	32	0.000512697268285	16	resolved
+parkinsons_feces	species	NCBITaxon:1265	Ruminococcus flavefaciens	Ruminococcus flavefaciens (1265)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	47	0.000455527879275	15	resolved
+parkinsons_feces	species	NCBITaxon:1265	Ruminococcus flavefaciens	Ruminococcus flavefaciens (1265)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1265	Ruminococcus flavefaciens	Ruminococcus flavefaciens (1265)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1265	Ruminococcus flavefaciens	Ruminococcus flavefaciens (1265)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1265	Ruminococcus flavefaciens	Ruminococcus flavefaciens (1265)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1265	Ruminococcus flavefaciens	Ruminococcus flavefaciens (1265)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1265	Ruminococcus flavefaciens	Ruminococcus flavefaciens (1265)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:288965	Acetivibrio clariflavus	Acetivibrio clariflavus (288965)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:288965	Acetivibrio clariflavus	Acetivibrio clariflavus (288965)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:288965	Acetivibrio clariflavus	Acetivibrio clariflavus (288965)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	93	0.0379746835443	16	resolved
+parkinsons_feces	species	NCBITaxon:288965	Acetivibrio clariflavus	Acetivibrio clariflavus (288965)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	114	0.0336879432624	11	resolved
+parkinsons_feces	species	NCBITaxon:288965	Acetivibrio clariflavus	Acetivibrio clariflavus (288965)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:288965	Acetivibrio clariflavus	Acetivibrio clariflavus (288965)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:288965	Acetivibrio clariflavus	Acetivibrio clariflavus (288965)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:288965	Acetivibrio clariflavus	Acetivibrio clariflavus (288965)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:288965	Acetivibrio clariflavus	Acetivibrio clariflavus (288965)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:288965	Acetivibrio clariflavus	Acetivibrio clariflavus (288965)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:288965	Acetivibrio clariflavus	Acetivibrio clariflavus (288965)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:288965	Acetivibrio clariflavus	Acetivibrio clariflavus (288965)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:316	Stutzerimonas stutzeri	Stutzerimonas stutzeri (316)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	80	0.000743038656586	10	resolved
+parkinsons_feces	species	NCBITaxon:316	Stutzerimonas stutzeri	Stutzerimonas stutzeri (316)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	10	0.000144795331799	2	resolved
+parkinsons_feces	species	NCBITaxon:316	Stutzerimonas stutzeri	Stutzerimonas stutzeri (316)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:316	Stutzerimonas stutzeri	Stutzerimonas stutzeri (316)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:316	Stutzerimonas stutzeri	Stutzerimonas stutzeri (316)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:316	Stutzerimonas stutzeri	Stutzerimonas stutzeri (316)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:316	Stutzerimonas stutzeri	Stutzerimonas stutzeri (316)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:316	Stutzerimonas stutzeri	Stutzerimonas stutzeri (316)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:316	Stutzerimonas stutzeri	Stutzerimonas stutzeri (316)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:316	Stutzerimonas stutzeri	Stutzerimonas stutzeri (316)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:316	Stutzerimonas stutzeri	Stutzerimonas stutzeri (316)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	80	0.0169599321603	10	resolved
+parkinsons_feces	species	NCBITaxon:316	Stutzerimonas stutzeri	Stutzerimonas stutzeri (316)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	10	0.00461467466544	2	resolved
+parkinsons_feces	species	NCBITaxon:1234680	Streptococcus rubneri	Streptococcus rubneri (1234680)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	25	0.000232199580183	13	resolved
+parkinsons_feces	species	NCBITaxon:1234680	Streptococcus rubneri	Streptococcus rubneri (1234680)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	31	0.000448865528575	13	resolved
+parkinsons_feces	species	NCBITaxon:1234680	Streptococcus rubneri	Streptococcus rubneri (1234680)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1234680	Streptococcus rubneri	Streptococcus rubneri (1234680)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1234680	Streptococcus rubneri	Streptococcus rubneri (1234680)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	25	0.000400544740848	13	resolved
+parkinsons_feces	species	NCBITaxon:1234680	Streptococcus rubneri	Streptococcus rubneri (1234680)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	31	0.000300454558671	13	resolved
+parkinsons_feces	species	NCBITaxon:1234680	Streptococcus rubneri	Streptococcus rubneri (1234680)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	25	0.00659804697809	13	resolved
+parkinsons_feces	species	NCBITaxon:1234680	Streptococcus rubneri	Streptococcus rubneri (1234680)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	31	0.00950920245399	13	resolved
+parkinsons_feces	species	NCBITaxon:1234680	Streptococcus rubneri	Streptococcus rubneri (1234680)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1234680	Streptococcus rubneri	Streptococcus rubneri (1234680)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1234680	Streptococcus rubneri	Streptococcus rubneri (1234680)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1234680	Streptococcus rubneri	Streptococcus rubneri (1234680)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1111760	Streptococcus troglodytae	Streptococcus troglodytae (1111760)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	25	0.000232199580183	13	resolved
+parkinsons_feces	species	NCBITaxon:1111760	Streptococcus troglodytae	Streptococcus troglodytae (1111760)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	31	0.000448865528575	13	resolved
+parkinsons_feces	species	NCBITaxon:1111760	Streptococcus troglodytae	Streptococcus troglodytae (1111760)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1111760	Streptococcus troglodytae	Streptococcus troglodytae (1111760)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1111760	Streptococcus troglodytae	Streptococcus troglodytae (1111760)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	25	0.000400544740848	13	resolved
+parkinsons_feces	species	NCBITaxon:1111760	Streptococcus troglodytae	Streptococcus troglodytae (1111760)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	31	0.000300454558671	13	resolved
+parkinsons_feces	species	NCBITaxon:1111760	Streptococcus troglodytae	Streptococcus troglodytae (1111760)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	25	0.00659804697809	13	resolved
+parkinsons_feces	species	NCBITaxon:1111760	Streptococcus troglodytae	Streptococcus troglodytae (1111760)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	31	0.00950920245399	13	resolved
+parkinsons_feces	species	NCBITaxon:1111760	Streptococcus troglodytae	Streptococcus troglodytae (1111760)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1111760	Streptococcus troglodytae	Streptococcus troglodytae (1111760)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1111760	Streptococcus troglodytae	Streptococcus troglodytae (1111760)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1111760	Streptococcus troglodytae	Streptococcus troglodytae (1111760)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:831	Butyrivibrio fibrisolvens	Butyrivibrio fibrisolvens (831)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:831	Butyrivibrio fibrisolvens	Butyrivibrio fibrisolvens (831)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:831	Butyrivibrio fibrisolvens	Butyrivibrio fibrisolvens (831)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	46	0.0187831768069	13	resolved
+parkinsons_feces	species	NCBITaxon:831	Butyrivibrio fibrisolvens	Butyrivibrio fibrisolvens (831)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	120	0.0354609929078	21	resolved
+parkinsons_feces	species	NCBITaxon:831	Butyrivibrio fibrisolvens	Butyrivibrio fibrisolvens (831)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:831	Butyrivibrio fibrisolvens	Butyrivibrio fibrisolvens (831)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:831	Butyrivibrio fibrisolvens	Butyrivibrio fibrisolvens (831)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:831	Butyrivibrio fibrisolvens	Butyrivibrio fibrisolvens (831)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:831	Butyrivibrio fibrisolvens	Butyrivibrio fibrisolvens (831)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:831	Butyrivibrio fibrisolvens	Butyrivibrio fibrisolvens (831)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:831	Butyrivibrio fibrisolvens	Butyrivibrio fibrisolvens (831)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:831	Butyrivibrio fibrisolvens	Butyrivibrio fibrisolvens (831)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:236753	Fastidiosipila sanguinis	Fastidiosipila sanguinis (236753)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:236753	Fastidiosipila sanguinis	Fastidiosipila sanguinis (236753)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:236753	Fastidiosipila sanguinis	Fastidiosipila sanguinis (236753)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:236753	Fastidiosipila sanguinis	Fastidiosipila sanguinis (236753)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:236753	Fastidiosipila sanguinis	Fastidiosipila sanguinis (236753)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	31	0.000496675478651	16	resolved
+parkinsons_feces	species	NCBITaxon:236753	Fastidiosipila sanguinis	Fastidiosipila sanguinis (236753)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	38	0.000368299136435	11	resolved
+parkinsons_feces	species	NCBITaxon:236753	Fastidiosipila sanguinis	Fastidiosipila sanguinis (236753)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	31	0.00818157825284	16	resolved
+parkinsons_feces	species	NCBITaxon:236753	Fastidiosipila sanguinis	Fastidiosipila sanguinis (236753)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	38	0.0116564417178	11	resolved
+parkinsons_feces	species	NCBITaxon:236753	Fastidiosipila sanguinis	Fastidiosipila sanguinis (236753)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:236753	Fastidiosipila sanguinis	Fastidiosipila sanguinis (236753)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:236753	Fastidiosipila sanguinis	Fastidiosipila sanguinis (236753)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:236753	Fastidiosipila sanguinis	Fastidiosipila sanguinis (236753)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:301302	Roseburia faecis	Roseburia faecis (301302)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:301302	Roseburia faecis	Roseburia faecis (301302)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:301302	Roseburia faecis	Roseburia faecis (301302)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	23	0.00939158840343	13	resolved
+parkinsons_feces	species	NCBITaxon:301302	Roseburia faecis	Roseburia faecis (301302)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	95	0.028073286052	25	resolved
+parkinsons_feces	species	NCBITaxon:301302	Roseburia faecis	Roseburia faecis (301302)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:301302	Roseburia faecis	Roseburia faecis (301302)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:301302	Roseburia faecis	Roseburia faecis (301302)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:301302	Roseburia faecis	Roseburia faecis (301302)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:301302	Roseburia faecis	Roseburia faecis (301302)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:301302	Roseburia faecis	Roseburia faecis (301302)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:301302	Roseburia faecis	Roseburia faecis (301302)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:301302	Roseburia faecis	Roseburia faecis (301302)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:501571	Butyricicoccus pullicaecorum	Butyricicoccus pullicaecorum (501571)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:501571	Butyricicoccus pullicaecorum	Butyricicoccus pullicaecorum (501571)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:501571	Butyricicoccus pullicaecorum	Butyricicoccus pullicaecorum (501571)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:501571	Butyricicoccus pullicaecorum	Butyricicoccus pullicaecorum (501571)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:501571	Butyricicoccus pullicaecorum	Butyricicoccus pullicaecorum (501571)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	19	0.000304414003044	11	resolved
+parkinsons_feces	species	NCBITaxon:501571	Butyricicoccus pullicaecorum	Butyricicoccus pullicaecorum (501571)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	34	0.000329530806284	13	resolved
+parkinsons_feces	species	NCBITaxon:501571	Butyricicoccus pullicaecorum	Butyricicoccus pullicaecorum (501571)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	19	0.00501451570335	11	resolved
+parkinsons_feces	species	NCBITaxon:501571	Butyricicoccus pullicaecorum	Butyricicoccus pullicaecorum (501571)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	34	0.0104294478528	13	resolved
+parkinsons_feces	species	NCBITaxon:501571	Butyricicoccus pullicaecorum	Butyricicoccus pullicaecorum (501571)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:501571	Butyricicoccus pullicaecorum	Butyricicoccus pullicaecorum (501571)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:501571	Butyricicoccus pullicaecorum	Butyricicoccus pullicaecorum (501571)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:501571	Butyricicoccus pullicaecorum	Butyricicoccus pullicaecorum (501571)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1408	Bacillus pumilus	Bacillus pumilus (1408)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1408	Bacillus pumilus	Bacillus pumilus (1408)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1408	Bacillus pumilus	Bacillus pumilus (1408)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	9	0.00367496937526	8	resolved
+parkinsons_feces	species	NCBITaxon:1408	Bacillus pumilus	Bacillus pumilus (1408)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	18	0.00531914893617	10	resolved
+parkinsons_feces	species	NCBITaxon:1408	Bacillus pumilus	Bacillus pumilus (1408)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1408	Bacillus pumilus	Bacillus pumilus (1408)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1408	Bacillus pumilus	Bacillus pumilus (1408)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1408	Bacillus pumilus	Bacillus pumilus (1408)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1408	Bacillus pumilus	Bacillus pumilus (1408)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1408	Bacillus pumilus	Bacillus pumilus (1408)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1408	Bacillus pumilus	Bacillus pumilus (1408)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	18	0.00381598473606	8	resolved
+parkinsons_feces	species	NCBITaxon:1408	Bacillus pumilus	Bacillus pumilus (1408)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	36	0.0166128287956	10	resolved
+parkinsons_feces	species	NCBITaxon:1912855	Faecalimonas umbilicata	Faecalimonas umbilicata (1912855)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1912855	Faecalimonas umbilicata	Faecalimonas umbilicata (1912855)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1912855	Faecalimonas umbilicata	Faecalimonas umbilicata (1912855)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1912855	Faecalimonas umbilicata	Faecalimonas umbilicata (1912855)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1912855	Faecalimonas umbilicata	Faecalimonas umbilicata (1912855)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1912855	Faecalimonas umbilicata	Faecalimonas umbilicata (1912855)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1912855	Faecalimonas umbilicata	Faecalimonas umbilicata (1912855)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	21	0.0055423594616	12	resolved
+parkinsons_feces	species	NCBITaxon:1912855	Faecalimonas umbilicata	Faecalimonas umbilicata (1912855)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	57	0.0174846625767	20	resolved
+parkinsons_feces	species	NCBITaxon:1912855	Faecalimonas umbilicata	Faecalimonas umbilicata (1912855)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1912855	Faecalimonas umbilicata	Faecalimonas umbilicata (1912855)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1912855	Faecalimonas umbilicata	Faecalimonas umbilicata (1912855)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1912855	Faecalimonas umbilicata	Faecalimonas umbilicata (1912855)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:49338	Desulfitobacterium hafniense	Desulfitobacterium hafniense (49338)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:49338	Desulfitobacterium hafniense	Desulfitobacterium hafniense (49338)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:49338	Desulfitobacterium hafniense	Desulfitobacterium hafniense (49338)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:49338	Desulfitobacterium hafniense	Desulfitobacterium hafniense (49338)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:49338	Desulfitobacterium hafniense	Desulfitobacterium hafniense (49338)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:49338	Desulfitobacterium hafniense	Desulfitobacterium hafniense (49338)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:49338	Desulfitobacterium hafniense	Desulfitobacterium hafniense (49338)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:49338	Desulfitobacterium hafniense	Desulfitobacterium hafniense (49338)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:49338	Desulfitobacterium hafniense	Desulfitobacterium hafniense (49338)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	18	0.0202931228861	11	resolved
+parkinsons_feces	species	NCBITaxon:49338	Desulfitobacterium hafniense	Desulfitobacterium hafniense (49338)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	27	0.0647482014388	10	resolved
+parkinsons_feces	species	NCBITaxon:49338	Desulfitobacterium hafniense	Desulfitobacterium hafniense (49338)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:49338	Desulfitobacterium hafniense	Desulfitobacterium hafniense (49338)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:34073	Variovorax paradoxus	Variovorax paradoxus (34073)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:34073	Variovorax paradoxus	Variovorax paradoxus (34073)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:34073	Variovorax paradoxus	Variovorax paradoxus (34073)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:34073	Variovorax paradoxus	Variovorax paradoxus (34073)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:34073	Variovorax paradoxus	Variovorax paradoxus (34073)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:34073	Variovorax paradoxus	Variovorax paradoxus (34073)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:34073	Variovorax paradoxus	Variovorax paradoxus (34073)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:34073	Variovorax paradoxus	Variovorax paradoxus (34073)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:34073	Variovorax paradoxus	Variovorax paradoxus (34073)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	15	0.0169109357384	9	resolved
+parkinsons_feces	species	NCBITaxon:34073	Variovorax paradoxus	Variovorax paradoxus (34073)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	3	0.00719424460432	3	resolved
+parkinsons_feces	species	NCBITaxon:34073	Variovorax paradoxus	Variovorax paradoxus (34073)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	15	0.00317998728005	9	resolved
+parkinsons_feces	species	NCBITaxon:34073	Variovorax paradoxus	Variovorax paradoxus (34073)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	3	0.00138440239963	3	resolved
+parkinsons_feces	species	NCBITaxon:1275	Kocuria rosea	Kocuria rosea (1275)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1275	Kocuria rosea	Kocuria rosea (1275)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1275	Kocuria rosea	Kocuria rosea (1275)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1275	Kocuria rosea	Kocuria rosea (1275)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1275	Kocuria rosea	Kocuria rosea (1275)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	5	8.01089481695e-05	4	resolved
+parkinsons_feces	species	NCBITaxon:1275	Kocuria rosea	Kocuria rosea (1275)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	1	9.69208253777e-06	1	resolved
+parkinsons_feces	species	NCBITaxon:1275	Kocuria rosea	Kocuria rosea (1275)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1275	Kocuria rosea	Kocuria rosea (1275)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1275	Kocuria rosea	Kocuria rosea (1275)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	5	0.00563697857948	4	resolved
+parkinsons_feces	species	NCBITaxon:1275	Kocuria rosea	Kocuria rosea (1275)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	1	0.00239808153477	1	resolved
+parkinsons_feces	species	NCBITaxon:1275	Kocuria rosea	Kocuria rosea (1275)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	species	NCBITaxon:1275	Kocuria rosea	Kocuria rosea (1275)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:90964	Staphylococcaceae	Staphylococcaceae (90964)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	6432	0.0597403079895	7	resolved
+parkinsons_feces	family	NCBITaxon:90964	Staphylococcaceae	Staphylococcaceae (90964)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	15993	0.231571174145	11	resolved
+parkinsons_feces	family	NCBITaxon:90964	Staphylococcaceae	Staphylococcaceae (90964)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:90964	Staphylococcaceae	Staphylococcaceae (90964)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:90964	Staphylococcaceae	Staphylococcaceae (90964)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	25136	0.402723704238	7	resolved
+parkinsons_feces	family	NCBITaxon:90964	Staphylococcaceae	Staphylococcaceae (90964)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	62701	0.607703267201	11	resolved
+parkinsons_feces	family	NCBITaxon:90964	Staphylococcaceae	Staphylococcaceae (90964)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	168	0.0443388756928	7	resolved
+parkinsons_feces	family	NCBITaxon:90964	Staphylococcaceae	Staphylococcaceae (90964)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	399	0.122392638037	11	resolved
+parkinsons_feces	family	NCBITaxon:90964	Staphylococcaceae	Staphylococcaceae (90964)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	8	0.00901916572717	7	resolved
+parkinsons_feces	family	NCBITaxon:90964	Staphylococcaceae	Staphylococcaceae (90964)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	19	0.0455635491607	11	resolved
+parkinsons_feces	family	NCBITaxon:90964	Staphylococcaceae	Staphylococcaceae (90964)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	40	0.00847996608014	7	resolved
+parkinsons_feces	family	NCBITaxon:90964	Staphylococcaceae	Staphylococcaceae (90964)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	97	0.0447623442547	11	resolved
+parkinsons_feces	family	NCBITaxon:1300	Streptococcaceae	Streptococcaceae (1300)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	19028	0.176731744469	17	resolved
+parkinsons_feces	family	NCBITaxon:1300	Streptococcaceae	Streptococcaceae (1300)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	23598	0.341688023978	17	resolved
+parkinsons_feces	family	NCBITaxon:1300	Streptococcaceae	Streptococcaceae (1300)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1300	Streptococcaceae	Streptococcaceae (1300)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1300	Streptococcaceae	Streptococcaceae (1300)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	24739	0.396363053753	17	resolved
+parkinsons_feces	family	NCBITaxon:1300	Streptococcaceae	Streptococcaceae (1300)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	30792	0.298438605503	17	resolved
+parkinsons_feces	family	NCBITaxon:1300	Streptococcaceae	Streptococcaceae (1300)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	743	0.196093956189	15	resolved
+parkinsons_feces	family	NCBITaxon:1300	Streptococcaceae	Streptococcaceae (1300)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	928	0.284662576687	15	resolved
+parkinsons_feces	family	NCBITaxon:1300	Streptococcaceae	Streptococcaceae (1300)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1300	Streptococcaceae	Streptococcaceae (1300)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1300	Streptococcaceae	Streptococcaceae (1300)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	87	0.0184439262243	16	resolved
+parkinsons_feces	family	NCBITaxon:1300	Streptococcaceae	Streptococcaceae (1300)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	120	0.0553760959852	15	resolved
+parkinsons_feces	family	NCBITaxon:543	Enterobacteriaceae	Enterobacteriaceae (543)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	48766	0.452937789088	15	resolved
+parkinsons_feces	family	NCBITaxon:543	Enterobacteriaceae	Enterobacteriaceae (543)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	8010	0.115981060771	6	resolved
+parkinsons_feces	family	NCBITaxon:543	Enterobacteriaceae	Enterobacteriaceae (543)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:543	Enterobacteriaceae	Enterobacteriaceae (543)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:543	Enterobacteriaceae	Enterobacteriaceae (543)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	147	0.00235520307618	14	resolved
+parkinsons_feces	family	NCBITaxon:543	Enterobacteriaceae	Enterobacteriaceae (543)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	20	0.000193841650755	5	resolved
+parkinsons_feces	family	NCBITaxon:543	Enterobacteriaceae	Enterobacteriaceae (543)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	68	0.0179466877804	13	resolved
+parkinsons_feces	family	NCBITaxon:543	Enterobacteriaceae	Enterobacteriaceae (543)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	8	0.00245398773006	4	resolved
+parkinsons_feces	family	NCBITaxon:543	Enterobacteriaceae	Enterobacteriaceae (543)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	638	0.719278466742	14	resolved
+parkinsons_feces	family	NCBITaxon:543	Enterobacteriaceae	Enterobacteriaceae (543)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	116	0.278177458034	5	resolved
+parkinsons_feces	family	NCBITaxon:543	Enterobacteriaceae	Enterobacteriaceae (543)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	555	0.117659529362	15	resolved
+parkinsons_feces	family	NCBITaxon:543	Enterobacteriaceae	Enterobacteriaceae (543)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	79	0.0364559298569	6	resolved
+parkinsons_feces	family	NCBITaxon:33958	Lactobacillaceae	Lactobacillaceae (33958)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	5313	0.0493470547805	17	resolved
+parkinsons_feces	family	NCBITaxon:33958	Lactobacillaceae	Lactobacillaceae (33958)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	6255	0.09056948004	12	resolved
+parkinsons_feces	family	NCBITaxon:33958	Lactobacillaceae	Lactobacillaceae (33958)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:33958	Lactobacillaceae	Lactobacillaceae (33958)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:33958	Lactobacillaceae	Lactobacillaceae (33958)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	817	0.0130898021309	12	resolved
+parkinsons_feces	family	NCBITaxon:33958	Lactobacillaceae	Lactobacillaceae (33958)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	1075	0.0104189887281	11	resolved
+parkinsons_feces	family	NCBITaxon:33958	Lactobacillaceae	Lactobacillaceae (33958)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	133	0.0351016099235	12	resolved
+parkinsons_feces	family	NCBITaxon:33958	Lactobacillaceae	Lactobacillaceae (33958)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	175	0.0536809815951	11	resolved
+parkinsons_feces	family	NCBITaxon:33958	Lactobacillaceae	Lactobacillaceae (33958)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:33958	Lactobacillaceae	Lactobacillaceae (33958)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:33958	Lactobacillaceae	Lactobacillaceae (33958)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	33	0.00699597201611	17	resolved
+parkinsons_feces	family	NCBITaxon:33958	Lactobacillaceae	Lactobacillaceae (33958)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	31	0.0143054914629	12	resolved
+parkinsons_feces	family	NCBITaxon:81852	Enterococcaceae	Enterococcaceae (81852)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	2320	0.021548121041	12	resolved
+parkinsons_feces	family	NCBITaxon:81852	Enterococcaceae	Enterococcaceae (81852)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	2717	0.0393408916497	12	resolved
+parkinsons_feces	family	NCBITaxon:81852	Enterococcaceae	Enterococcaceae (81852)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:81852	Enterococcaceae	Enterococcaceae (81852)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:81852	Enterococcaceae	Enterococcaceae (81852)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	2602	0.0416886966274	12	resolved
+parkinsons_feces	family	NCBITaxon:81852	Enterococcaceae	Enterococcaceae (81852)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	3057	0.029628696318	12	resolved
+parkinsons_feces	family	NCBITaxon:81852	Enterococcaceae	Enterococcaceae (81852)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	264	0.0696753760887	12	resolved
+parkinsons_feces	family	NCBITaxon:81852	Enterococcaceae	Enterococcaceae (81852)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	333	0.102147239264	12	resolved
+parkinsons_feces	family	NCBITaxon:81852	Enterococcaceae	Enterococcaceae (81852)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:81852	Enterococcaceae	Enterococcaceae (81852)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:81852	Enterococcaceae	Enterococcaceae (81852)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	308	0.065295738817	12	resolved
+parkinsons_feces	family	NCBITaxon:81852	Enterococcaceae	Enterococcaceae (81852)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	364	0.167974157822	12	resolved
+parkinsons_feces	family	NCBITaxon:186817	Bacillaceae	Bacillaceae (186817)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	1764	0.0163840023777	8	resolved
+parkinsons_feces	family	NCBITaxon:186817	Bacillaceae	Bacillaceae (186817)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	3672	0.0531688458364	10	resolved
+parkinsons_feces	family	NCBITaxon:186817	Bacillaceae	Bacillaceae (186817)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	59	0.0240914659045	8	resolved
+parkinsons_feces	family	NCBITaxon:186817	Bacillaceae	Bacillaceae (186817)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	126	0.0372340425532	10	resolved
+parkinsons_feces	family	NCBITaxon:186817	Bacillaceae	Bacillaceae (186817)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	64	0.00102539453657	7	resolved
+parkinsons_feces	family	NCBITaxon:186817	Bacillaceae	Bacillaceae (186817)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	144	0.00139565988544	10	resolved
+parkinsons_feces	family	NCBITaxon:186817	Bacillaceae	Bacillaceae (186817)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	48	0.0126682501979	7	resolved
+parkinsons_feces	family	NCBITaxon:186817	Bacillaceae	Bacillaceae (186817)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	108	0.0331288343558	10	resolved
+parkinsons_feces	family	NCBITaxon:186817	Bacillaceae	Bacillaceae (186817)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	48	0.054114994363	7	resolved
+parkinsons_feces	family	NCBITaxon:186817	Bacillaceae	Bacillaceae (186817)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	108	0.258992805755	10	resolved
+parkinsons_feces	family	NCBITaxon:186817	Bacillaceae	Bacillaceae (186817)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	194	0.0411278354887	8	resolved
+parkinsons_feces	family	NCBITaxon:186817	Bacillaceae	Bacillaceae (186817)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	414	0.191047531149	10	resolved
+parkinsons_feces	family	NCBITaxon:641	Vibrionaceae	Vibrionaceae (641)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	4298	0.0399197518251	8	resolved
+parkinsons_feces	family	NCBITaxon:641	Vibrionaceae	Vibrionaceae (641)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	614	0.00889043337243	2	resolved
+parkinsons_feces	family	NCBITaxon:641	Vibrionaceae	Vibrionaceae (641)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:641	Vibrionaceae	Vibrionaceae (641)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:641	Vibrionaceae	Vibrionaceae (641)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:641	Vibrionaceae	Vibrionaceae (641)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:641	Vibrionaceae	Vibrionaceae (641)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:641	Vibrionaceae	Vibrionaceae (641)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:641	Vibrionaceae	Vibrionaceae (641)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:641	Vibrionaceae	Vibrionaceae (641)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:641	Vibrionaceae	Vibrionaceae (641)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	630	0.133559465762	8	resolved
+parkinsons_feces	family	NCBITaxon:641	Vibrionaceae	Vibrionaceae (641)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	90	0.0415320719889	2	resolved
+parkinsons_feces	family	NCBITaxon:216572	Oscillospiraceae	Oscillospiraceae (216572)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	64	0.000594430925269	18	resolved
+parkinsons_feces	family	NCBITaxon:216572	Oscillospiraceae	Oscillospiraceae (216572)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	120	0.00173754398158	25	resolved
+parkinsons_feces	family	NCBITaxon:216572	Oscillospiraceae	Oscillospiraceae (216572)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	1038	0.423846467946	17	resolved
+parkinsons_feces	family	NCBITaxon:216572	Oscillospiraceae	Oscillospiraceae (216572)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	1341	0.396276595745	16	resolved
+parkinsons_feces	family	NCBITaxon:216572	Oscillospiraceae	Oscillospiraceae (216572)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	579	0.00927661619803	17	resolved
+parkinsons_feces	family	NCBITaxon:216572	Oscillospiraceae	Oscillospiraceae (216572)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	815	0.00789904726829	18	resolved
+parkinsons_feces	family	NCBITaxon:216572	Oscillospiraceae	Oscillospiraceae (216572)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	95	0.0250725785168	16	resolved
+parkinsons_feces	family	NCBITaxon:216572	Oscillospiraceae	Oscillospiraceae (216572)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	132	0.040490797546	15	resolved
+parkinsons_feces	family	NCBITaxon:216572	Oscillospiraceae	Oscillospiraceae (216572)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:216572	Oscillospiraceae	Oscillospiraceae (216572)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:216572	Oscillospiraceae	Oscillospiraceae (216572)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:216572	Oscillospiraceae	Oscillospiraceae (216572)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186803	Lachnospiraceae	Lachnospiraceae (186803)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	105	0.000975238236769	12	resolved
+parkinsons_feces	family	NCBITaxon:186803	Lachnospiraceae	Lachnospiraceae (186803)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	286	0.00414114648944	20	resolved
+parkinsons_feces	family	NCBITaxon:186803	Lachnospiraceae	Lachnospiraceae (186803)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	381	0.155573703552	18	resolved
+parkinsons_feces	family	NCBITaxon:186803	Lachnospiraceae	Lachnospiraceae (186803)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	1049	0.309988179669	27	resolved
+parkinsons_feces	family	NCBITaxon:186803	Lachnospiraceae	Lachnospiraceae (186803)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	386	0.00618441079869	17	resolved
+parkinsons_feces	family	NCBITaxon:186803	Lachnospiraceae	Lachnospiraceae (186803)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	1130	0.0109520532677	24	resolved
+parkinsons_feces	family	NCBITaxon:186803	Lachnospiraceae	Lachnospiraceae (186803)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	21	0.0055423594616	12	resolved
+parkinsons_feces	family	NCBITaxon:186803	Lachnospiraceae	Lachnospiraceae (186803)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	57	0.0174846625767	20	resolved
+parkinsons_feces	family	NCBITaxon:186803	Lachnospiraceae	Lachnospiraceae (186803)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186803	Lachnospiraceae	Lachnospiraceae (186803)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186803	Lachnospiraceae	Lachnospiraceae (186803)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186803	Lachnospiraceae	Lachnospiraceae (186803)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1903411	Yersiniaceae	Yersiniaceae (1903411)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	2852	0.0264893281073	10	resolved
+parkinsons_feces	family	NCBITaxon:1903411	Yersiniaceae	Yersiniaceae (1903411)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	322	0.00466240968391	2	resolved
+parkinsons_feces	family	NCBITaxon:1903411	Yersiniaceae	Yersiniaceae (1903411)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	110	0.0449162923642	10	resolved
+parkinsons_feces	family	NCBITaxon:1903411	Yersiniaceae	Yersiniaceae (1903411)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	10	0.00295508274232	2	resolved
+parkinsons_feces	family	NCBITaxon:1903411	Yersiniaceae	Yersiniaceae (1903411)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	51	0.000817111271329	9	resolved
+parkinsons_feces	family	NCBITaxon:1903411	Yersiniaceae	Yersiniaceae (1903411)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	6	5.81524952266e-05	2	resolved
+parkinsons_feces	family	NCBITaxon:1903411	Yersiniaceae	Yersiniaceae (1903411)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1903411	Yersiniaceae	Yersiniaceae (1903411)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1903411	Yersiniaceae	Yersiniaceae (1903411)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1903411	Yersiniaceae	Yersiniaceae (1903411)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1903411	Yersiniaceae	Yersiniaceae (1903411)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	22	0.00466398134407	10	resolved
+parkinsons_feces	family	NCBITaxon:1903411	Yersiniaceae	Yersiniaceae (1903411)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	2	0.000922934933087	2	resolved
+parkinsons_feces	family	NCBITaxon:712	Pasteurellaceae	Pasteurellaceae (712)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	2117	0.0196626604499	9	resolved
+parkinsons_feces	family	NCBITaxon:712	Pasteurellaceae	Pasteurellaceae (712)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	856	0.012394480402	6	resolved
+parkinsons_feces	family	NCBITaxon:712	Pasteurellaceae	Pasteurellaceae (712)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:712	Pasteurellaceae	Pasteurellaceae (712)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:712	Pasteurellaceae	Pasteurellaceae (712)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	151	0.00241929023472	9	resolved
+parkinsons_feces	family	NCBITaxon:712	Pasteurellaceae	Pasteurellaceae (712)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	61	0.000591217034804	6	resolved
+parkinsons_feces	family	NCBITaxon:712	Pasteurellaceae	Pasteurellaceae (712)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:712	Pasteurellaceae	Pasteurellaceae (712)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:712	Pasteurellaceae	Pasteurellaceae (712)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:712	Pasteurellaceae	Pasteurellaceae (712)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:712	Pasteurellaceae	Pasteurellaceae (712)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	47	0.00996396014416	9	resolved
+parkinsons_feces	family	NCBITaxon:712	Pasteurellaceae	Pasteurellaceae (712)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	20	0.00922934933087	6	resolved
+parkinsons_feces	family	NCBITaxon:186822	Paenibacillaceae	Paenibacillaceae (186822)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	648	0.00601861311835	7	resolved
+parkinsons_feces	family	NCBITaxon:186822	Paenibacillaceae	Paenibacillaceae (186822)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	1458	0.0211111593762	10	resolved
+parkinsons_feces	family	NCBITaxon:186822	Paenibacillaceae	Paenibacillaceae (186822)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	64	0.0261331155574	7	resolved
+parkinsons_feces	family	NCBITaxon:186822	Paenibacillaceae	Paenibacillaceae (186822)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	144	0.0425531914894	10	resolved
+parkinsons_feces	family	NCBITaxon:186822	Paenibacillaceae	Paenibacillaceae (186822)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186822	Paenibacillaceae	Paenibacillaceae (186822)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186822	Paenibacillaceae	Paenibacillaceae (186822)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186822	Paenibacillaceae	Paenibacillaceae (186822)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186822	Paenibacillaceae	Paenibacillaceae (186822)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186822	Paenibacillaceae	Paenibacillaceae (186822)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186822	Paenibacillaceae	Paenibacillaceae (186822)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	8	0.00169599321603	7	resolved
+parkinsons_feces	family	NCBITaxon:186822	Paenibacillaceae	Paenibacillaceae (186822)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	18	0.00830641439778	10	resolved
+parkinsons_feces	family	NCBITaxon:186820	Listeriaceae	Listeriaceae (186820)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	544	0.00505266286479	7	resolved
+parkinsons_feces	family	NCBITaxon:186820	Listeriaceae	Listeriaceae (186820)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	1224	0.0177229486121	10	resolved
+parkinsons_feces	family	NCBITaxon:186820	Listeriaceae	Listeriaceae (186820)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186820	Listeriaceae	Listeriaceae (186820)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186820	Listeriaceae	Listeriaceae (186820)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186820	Listeriaceae	Listeriaceae (186820)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186820	Listeriaceae	Listeriaceae (186820)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186820	Listeriaceae	Listeriaceae (186820)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186820	Listeriaceae	Listeriaceae (186820)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186820	Listeriaceae	Listeriaceae (186820)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186820	Listeriaceae	Listeriaceae (186820)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	40	0.00847996608014	7	resolved
+parkinsons_feces	family	NCBITaxon:186820	Listeriaceae	Listeriaceae (186820)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	90	0.0415320719889	10	resolved
+parkinsons_feces	family	NCBITaxon:481	Neisseriaceae	Neisseriaceae (481)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	91	0.000845206471867	8	resolved
+parkinsons_feces	family	NCBITaxon:481	Neisseriaceae	Neisseriaceae (481)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	7	0.000101356732259	1	resolved
+parkinsons_feces	family	NCBITaxon:481	Neisseriaceae	Neisseriaceae (481)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:481	Neisseriaceae	Neisseriaceae (481)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:481	Neisseriaceae	Neisseriaceae (481)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	1274	0.0204117599936	8	resolved
+parkinsons_feces	family	NCBITaxon:481	Neisseriaceae	Neisseriaceae (481)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	98	0.000949824088702	1	resolved
+parkinsons_feces	family	NCBITaxon:481	Neisseriaceae	Neisseriaceae (481)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	39	0.0102929532858	8	resolved
+parkinsons_feces	family	NCBITaxon:481	Neisseriaceae	Neisseriaceae (481)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	3	0.000920245398773	1	resolved
+parkinsons_feces	family	NCBITaxon:481	Neisseriaceae	Neisseriaceae (481)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:481	Neisseriaceae	Neisseriaceae (481)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:481	Neisseriaceae	Neisseriaceae (481)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:481	Neisseriaceae	Neisseriaceae (481)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31977	Veillonellaceae	Veillonellaceae (31977)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31977	Veillonellaceae	Veillonellaceae (31977)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31977	Veillonellaceae	Veillonellaceae (31977)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31977	Veillonellaceae	Veillonellaceae (31977)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31977	Veillonellaceae	Veillonellaceae (31977)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	404	0.0064728030121	11	resolved
+parkinsons_feces	family	NCBITaxon:31977	Veillonellaceae	Veillonellaceae (31977)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	634	0.00614478032895	12	resolved
+parkinsons_feces	family	NCBITaxon:31977	Veillonellaceae	Veillonellaceae (31977)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	110	0.0290314067036	11	resolved
+parkinsons_feces	family	NCBITaxon:31977	Veillonellaceae	Veillonellaceae (31977)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	178	0.0546012269939	12	resolved
+parkinsons_feces	family	NCBITaxon:31977	Veillonellaceae	Veillonellaceae (31977)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31977	Veillonellaceae	Veillonellaceae (31977)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31977	Veillonellaceae	Veillonellaceae (31977)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31977	Veillonellaceae	Veillonellaceae (31977)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:468	Moraxellaceae	Moraxellaceae (468)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	15	0.00013931974811	9	resolved
+parkinsons_feces	family	NCBITaxon:468	Moraxellaceae	Moraxellaceae (468)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	2	2.89590663597e-05	2	resolved
+parkinsons_feces	family	NCBITaxon:468	Moraxellaceae	Moraxellaceae (468)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:468	Moraxellaceae	Moraxellaceae (468)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:468	Moraxellaceae	Moraxellaceae (468)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	873	0.0139870223504	10	resolved
+parkinsons_feces	family	NCBITaxon:468	Moraxellaceae	Moraxellaceae (468)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	110	0.00106612907916	2	resolved
+parkinsons_feces	family	NCBITaxon:468	Moraxellaceae	Moraxellaceae (468)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	169	0.0446027975719	10	resolved
+parkinsons_feces	family	NCBITaxon:468	Moraxellaceae	Moraxellaceae (468)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	22	0.00674846625767	2	resolved
+parkinsons_feces	family	NCBITaxon:468	Moraxellaceae	Moraxellaceae (468)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:468	Moraxellaceae	Moraxellaceae (468)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:468	Moraxellaceae	Moraxellaceae (468)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	49	0.0103879584482	10	resolved
+parkinsons_feces	family	NCBITaxon:468	Moraxellaceae	Moraxellaceae (468)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	6	0.00276880479926	2	resolved
+parkinsons_feces	family	NCBITaxon:1903409	Erwiniaceae	Erwiniaceae (1903409)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	936	0.00869355228206	9	resolved
+parkinsons_feces	family	NCBITaxon:1903409	Erwiniaceae	Erwiniaceae (1903409)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	100	0.00144795331799	2	resolved
+parkinsons_feces	family	NCBITaxon:1903409	Erwiniaceae	Erwiniaceae (1903409)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1903409	Erwiniaceae	Erwiniaceae (1903409)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1903409	Erwiniaceae	Erwiniaceae (1903409)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1903409	Erwiniaceae	Erwiniaceae (1903409)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1903409	Erwiniaceae	Erwiniaceae (1903409)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1903409	Erwiniaceae	Erwiniaceae (1903409)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1903409	Erwiniaceae	Erwiniaceae (1903409)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1903409	Erwiniaceae	Erwiniaceae (1903409)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1903409	Erwiniaceae	Erwiniaceae (1903409)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	20	0.00423998304007	9	resolved
+parkinsons_feces	family	NCBITaxon:1903409	Erwiniaceae	Erwiniaceae (1903409)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	2	0.000922934933087	2	resolved
+parkinsons_feces	family	NCBITaxon:135621	Pseudomonadaceae	Pseudomonadaceae (135621)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	400	0.00371519328293	10	resolved
+parkinsons_feces	family	NCBITaxon:135621	Pseudomonadaceae	Pseudomonadaceae (135621)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	50	0.000723976658993	2	resolved
+parkinsons_feces	family	NCBITaxon:135621	Pseudomonadaceae	Pseudomonadaceae (135621)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	16	0.00653327888934	10	resolved
+parkinsons_feces	family	NCBITaxon:135621	Pseudomonadaceae	Pseudomonadaceae (135621)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	2	0.000591016548463	2	resolved
+parkinsons_feces	family	NCBITaxon:135621	Pseudomonadaceae	Pseudomonadaceae (135621)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	80	0.00128174317071	10	resolved
+parkinsons_feces	family	NCBITaxon:135621	Pseudomonadaceae	Pseudomonadaceae (135621)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	10	9.69208253777e-05	2	resolved
+parkinsons_feces	family	NCBITaxon:135621	Pseudomonadaceae	Pseudomonadaceae (135621)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:135621	Pseudomonadaceae	Pseudomonadaceae (135621)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:135621	Pseudomonadaceae	Pseudomonadaceae (135621)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:135621	Pseudomonadaceae	Pseudomonadaceae (135621)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:135621	Pseudomonadaceae	Pseudomonadaceae (135621)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	432	0.0915836336655	10	resolved
+parkinsons_feces	family	NCBITaxon:135621	Pseudomonadaceae	Pseudomonadaceae (135621)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	54	0.0249192431934	2	resolved
+parkinsons_feces	family	NCBITaxon:267890	Shewanellaceae	Shewanellaceae (267890)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	798	0.00741181059945	8	resolved
+parkinsons_feces	family	NCBITaxon:267890	Shewanellaceae	Shewanellaceae (267890)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	114	0.0016506667825	2	resolved
+parkinsons_feces	family	NCBITaxon:267890	Shewanellaceae	Shewanellaceae (267890)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:267890	Shewanellaceae	Shewanellaceae (267890)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:267890	Shewanellaceae	Shewanellaceae (267890)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:267890	Shewanellaceae	Shewanellaceae (267890)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:267890	Shewanellaceae	Shewanellaceae (267890)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:267890	Shewanellaceae	Shewanellaceae (267890)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:267890	Shewanellaceae	Shewanellaceae (267890)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:267890	Shewanellaceae	Shewanellaceae (267890)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:267890	Shewanellaceae	Shewanellaceae (267890)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	42	0.00890396438414	8	resolved
+parkinsons_feces	family	NCBITaxon:267890	Shewanellaceae	Shewanellaceae (267890)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	6	0.00276880479926	2	resolved
+parkinsons_feces	family	NCBITaxon:31953	Bifidobacteriaceae	Bifidobacteriaceae (31953)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	655	0.0060836290008	17	resolved
+parkinsons_feces	family	NCBITaxon:31953	Bifidobacteriaceae	Bifidobacteriaceae (31953)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	14	0.000202713464518	2	resolved
+parkinsons_feces	family	NCBITaxon:31953	Bifidobacteriaceae	Bifidobacteriaceae (31953)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31953	Bifidobacteriaceae	Bifidobacteriaceae (31953)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31953	Bifidobacteriaceae	Bifidobacteriaceae (31953)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	266	0.00426179604262	9	resolved
+parkinsons_feces	family	NCBITaxon:31953	Bifidobacteriaceae	Bifidobacteriaceae (31953)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31953	Bifidobacteriaceae	Bifidobacteriaceae (31953)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31953	Bifidobacteriaceae	Bifidobacteriaceae (31953)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31953	Bifidobacteriaceae	Bifidobacteriaceae (31953)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31953	Bifidobacteriaceae	Bifidobacteriaceae (31953)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:31953	Bifidobacteriaceae	Bifidobacteriaceae (31953)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	19	0.00402798388806	9	resolved
+parkinsons_feces	family	NCBITaxon:31953	Bifidobacteriaceae	Bifidobacteriaceae (31953)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1570339	Peptoniphilaceae	Peptoniphilaceae (1570339)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	10	9.28798320733e-05	5	resolved
+parkinsons_feces	family	NCBITaxon:1570339	Peptoniphilaceae	Peptoniphilaceae (1570339)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	30	0.000434385995396	8	resolved
+parkinsons_feces	family	NCBITaxon:1570339	Peptoniphilaceae	Peptoniphilaceae (1570339)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1570339	Peptoniphilaceae	Peptoniphilaceae (1570339)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1570339	Peptoniphilaceae	Peptoniphilaceae (1570339)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	243	0.00389329488104	6	resolved
+parkinsons_feces	family	NCBITaxon:1570339	Peptoniphilaceae	Peptoniphilaceae (1570339)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	523	0.00506895916726	9	resolved
+parkinsons_feces	family	NCBITaxon:1570339	Peptoniphilaceae	Peptoniphilaceae (1570339)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	37	0.00976510952758	6	resolved
+parkinsons_feces	family	NCBITaxon:1570339	Peptoniphilaceae	Peptoniphilaceae (1570339)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	75	0.0230061349693	8	resolved
+parkinsons_feces	family	NCBITaxon:1570339	Peptoniphilaceae	Peptoniphilaceae (1570339)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1570339	Peptoniphilaceae	Peptoniphilaceae (1570339)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1570339	Peptoniphilaceae	Peptoniphilaceae (1570339)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1570339	Peptoniphilaceae	Peptoniphilaceae (1570339)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:119060	Burkholderiaceae	Burkholderiaceae (119060)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	540	0.00501551093196	9	resolved
+parkinsons_feces	family	NCBITaxon:119060	Burkholderiaceae	Burkholderiaceae (119060)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	41	0.000593660860374	2	resolved
+parkinsons_feces	family	NCBITaxon:119060	Burkholderiaceae	Burkholderiaceae (119060)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:119060	Burkholderiaceae	Burkholderiaceae (119060)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:119060	Burkholderiaceae	Burkholderiaceae (119060)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:119060	Burkholderiaceae	Burkholderiaceae (119060)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:119060	Burkholderiaceae	Burkholderiaceae (119060)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:119060	Burkholderiaceae	Burkholderiaceae (119060)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:119060	Burkholderiaceae	Burkholderiaceae (119060)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:119060	Burkholderiaceae	Burkholderiaceae (119060)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:119060	Burkholderiaceae	Burkholderiaceae (119060)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	135	0.0286198855205	9	resolved
+parkinsons_feces	family	NCBITaxon:119060	Burkholderiaceae	Burkholderiaceae (119060)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	9	0.00415320719889	1	resolved
+parkinsons_feces	family	NCBITaxon:186818	Caryophanaceae	Caryophanaceae (186818)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	24	0.000222911596976	7	resolved
+parkinsons_feces	family	NCBITaxon:186818	Caryophanaceae	Caryophanaceae (186818)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	60	0.000868771990791	11	resolved
+parkinsons_feces	family	NCBITaxon:186818	Caryophanaceae	Caryophanaceae (186818)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186818	Caryophanaceae	Caryophanaceae (186818)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186818	Caryophanaceae	Caryophanaceae (186818)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	96	0.00153809180485	7	resolved
+parkinsons_feces	family	NCBITaxon:186818	Caryophanaceae	Caryophanaceae (186818)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	240	0.00232609980907	11	resolved
+parkinsons_feces	family	NCBITaxon:186818	Caryophanaceae	Caryophanaceae (186818)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	64	0.0168910002639	7	resolved
+parkinsons_feces	family	NCBITaxon:186818	Caryophanaceae	Caryophanaceae (186818)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	160	0.0490797546012	11	resolved
+parkinsons_feces	family	NCBITaxon:186818	Caryophanaceae	Caryophanaceae (186818)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186818	Caryophanaceae	Caryophanaceae (186818)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186818	Caryophanaceae	Caryophanaceae (186818)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	16	0.00339198643205	7	resolved
+parkinsons_feces	family	NCBITaxon:186818	Caryophanaceae	Caryophanaceae (186818)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	40	0.0184586986617	11	resolved
+parkinsons_feces	family	NCBITaxon:186827	Aerococcaceae	Aerococcaceae (186827)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	60	0.00055727899244	8	resolved
+parkinsons_feces	family	NCBITaxon:186827	Aerococcaceae	Aerococcaceae (186827)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	126	0.00182442118066	10	resolved
+parkinsons_feces	family	NCBITaxon:186827	Aerococcaceae	Aerococcaceae (186827)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186827	Aerococcaceae	Aerococcaceae (186827)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186827	Aerococcaceae	Aerococcaceae (186827)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	80	0.00128174317071	8	resolved
+parkinsons_feces	family	NCBITaxon:186827	Aerococcaceae	Aerococcaceae (186827)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	168	0.00162826986635	10	resolved
+parkinsons_feces	family	NCBITaxon:186827	Aerococcaceae	Aerococcaceae (186827)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	80	0.0211137503299	8	resolved
+parkinsons_feces	family	NCBITaxon:186827	Aerococcaceae	Aerococcaceae (186827)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	168	0.0515337423313	10	resolved
+parkinsons_feces	family	NCBITaxon:186827	Aerococcaceae	Aerococcaceae (186827)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186827	Aerococcaceae	Aerococcaceae (186827)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186827	Aerococcaceae	Aerococcaceae (186827)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:186827	Aerococcaceae	Aerococcaceae (186827)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	0	0	0	absent
+parkinsons_feces	family	NCBITaxon:1268	Micrococcaceae	Micrococcaceae (1268)	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	25	0.000232199580183	4	resolved
+parkinsons_feces	family	NCBITaxon:1268	Micrococcaceae	Micrococcaceae (1268)	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	5	7.23976658993e-05	1	resolved
+parkinsons_feces	family	NCBITaxon:1268	Micrococcaceae	Micrococcaceae (1268)	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	5	0.00204164965292	4	resolved
+parkinsons_feces	family	NCBITaxon:1268	Micrococcaceae	Micrococcaceae (1268)	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	1	0.000295508274232	1	resolved
+parkinsons_feces	family	NCBITaxon:1268	Micrococcaceae	Micrococcaceae (1268)	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	327	0.00523912521029	5	resolved
+parkinsons_feces	family	NCBITaxon:1268	Micrococcaceae	Micrococcaceae (1268)	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	65	0.000629985364955	1	resolved
+parkinsons_feces	family	NCBITaxon:1268	Micrococcaceae	Micrococcaceae (1268)	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	190	0.0501451570335	4	resolved
+parkinsons_feces	family	NCBITaxon:1268	Micrococcaceae	Micrococcaceae (1268)	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	38	0.0116564417178	1	resolved
+parkinsons_feces	family	NCBITaxon:1268	Micrococcaceae	Micrococcaceae (1268)	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	10	0.011273957159	4	resolved
+parkinsons_feces	family	NCBITaxon:1268	Micrococcaceae	Micrococcaceae (1268)	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	2	0.00479616306954	1	resolved
+parkinsons_feces	family	NCBITaxon:1268	Micrococcaceae	Micrococcaceae (1268)	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	10	0.00211999152003	4	resolved
+parkinsons_feces	family	NCBITaxon:1268	Micrococcaceae	Micrococcaceae (1268)	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	2	0.000922934933087	1	resolved

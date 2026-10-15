@@ -256,14 +256,15 @@ def compute_annotation_density_deciles(
     df["density_decile"] = pd.qcut(ranks, q=actual_bins, labels=list(range(1, actual_bins + 1)))
 
     rows: list[dict[str, Any]] = []
-    for decile, group in df.groupby("density_decile", observed=False):
+    for decile in range(1, actual_bins + 1):
+        group = df.loc[df["density_decile"].eq(decile)]
         t_total = group["trait_total"]
         n_traits = len(group)
         stat_col = "best_qvalue" if "best_qvalue" in group.columns else "best_pvalue"
         sig_count = (group[stat_col] <= 0.05).sum() if stat_col in group.columns else n_traits
         rows.append(
             {
-                "decile": int(decile),
+                "decile": decile,
                 "min_trait_total": int(t_total.min()) if n_traits > 0 else 0,
                 "max_trait_total": int(t_total.max()) if n_traits > 0 else 0,
                 "total_traits": n_traits,

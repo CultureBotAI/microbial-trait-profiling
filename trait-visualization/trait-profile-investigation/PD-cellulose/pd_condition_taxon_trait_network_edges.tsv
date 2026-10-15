@@ -1,0 +1,2 @@
+source	target	source_layer	target_layer	edge_class	evidence_type	direction	effect	p_value	q_value	study_support	annotation_count	statistically_significant	line_style
+condition::Parkinson's disease	trait::METPO:1000623	condition	trait	FDR-significant condition-trait contrast	two-sided Wilcoxon signed-rank test vs zero	increased	0.52957757	0.00014279378	0.04797871	45	NA	True	solid

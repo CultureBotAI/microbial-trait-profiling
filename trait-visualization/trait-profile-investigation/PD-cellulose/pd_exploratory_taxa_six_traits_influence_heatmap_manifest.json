@@ -1,0 +1,89 @@
+{
+  "method": "exploratory fixed-reference leave-one-reported-taxon-out influence",
+  "taxonomic_ranks": [
+    "species",
+    "genus",
+    "family"
+  ],
+  "minimum_support_studies": 2,
+  "absolute_influence_display_threshold_z": 0.01,
+  "display_rule": "mean influence > +0.01 or < -0.01",
+  "excluded_taxon_names": [
+    "Mediterraneibacter torques"
+  ],
+  "rows_before_display_filter": 198,
+  "rows_removed_by_explicit_exclusion": 1,
+  "rows_removed_below_absolute_influence_threshold": 146,
+  "max_displayed_rows": 30,
+  "eligible_rows_before_display_cap": 51,
+  "displayed_rows": 30,
+  "traits": 6,
+  "cells": 180,
+  "displayed_cells": 71,
+  "audited_cells_for_displayed_taxa": 180,
+  "direct_annotation_cells": 71,
+  "denominator_only_cells": 109,
+  "rows_removed_all_low_support": 0,
+  "literature_reference_taxa": 20,
+  "displayed_rows_with_literature_reference": 23,
+  "literature_bug_sig_direction_agreement_counts": {
+    "agrees": 21,
+    "not in literature reference": 7,
+    "differs": 2
+  },
+  "status_counts": {
+    "mixed": 167,
+    "dec": 6,
+    "low support": 6,
+    "inc": 1
+  },
+  "selection": "DOI-backed PD literature matches first, then top-supported non-literature species/genus/family roll-ups",
+  "row_order": "species block, genus block, family block; selection order within rank",
+  "direction_hamming_encoding": {
+    "0": "similar",
+    "1": "different"
+  },
+  "input_sha256_chunks": {
+    "data/derived/study_trait_profiles_wide.tsv": [
+      "6e70724e",
+      "e807cf24",
+      "e9c1f371",
+      "a51421fa",
+      "5b09d628",
+      "3fa7f3ab",
+      "cd6620e5",
+      "492c6a73"
+    ],
+    "data/derived/taxa_trait_matrix.tsv": [
+      "f6de0576",
+      "63f3a3b0",
+      "026579df",
+      "af341745",
+      "faac27df",
+      "7f9c0afd",
+      "6f5fa3e6",
+      "aa034178"
+    ],
+    "data/derived/taxa.tsv": [
+      "e7fa982b",
+      "23ea8245",
+      "6247bcd8",
+      "41fd97d4",
+      "fe71518e",
+      "09eaaa27",
+      "aee65d9a",
+      "db271c59"
+    ],
+    "trait-visualization/trait-profile-investigation/PD-cellulose/pd_six_trait_taxon_profile_evidence.tsv": [
+      "ebf128f1",
+      "73c658b7",
+      "115d5fd4",
+      "44e00fbc",
+      "b677afa2",
+      "0d8842b7",
+      "ffa5bb3c",
+      "4ad89fce"
+    ]
+  },
+  "sha256_chunk_encoding": "concatenate each path's eight chunks in order"
+}

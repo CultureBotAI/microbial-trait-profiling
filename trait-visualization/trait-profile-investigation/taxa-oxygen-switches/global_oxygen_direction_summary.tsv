@@ -1,0 +1,5 @@
+oxygen_class	taxon_profile_count	study_count	taxon_count	increased_taxon_profile_count	decreased_taxon_profile_count	direction_balance
+anaerobic_only	11863	774	847	6040	5823	0.018292168928601533
+mixed_oxygen_annotation	8126	789	366	4457	3669	0.09697268028550332
+unannotated	4214	482	1903	2125	2089	0.00854295206454675
+aerobic_only	4122	506	1059	2158	1964	0.047064531780688985

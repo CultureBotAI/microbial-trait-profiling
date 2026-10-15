@@ -173,8 +173,8 @@ def test_evaluate_loto_structure(
     assert eff_mat.shape == (4, 4)
 
     # Diagonal must be NaN (cannot drop trait and evaluate itself)
-    for col in eff_mat.columns:
-        assert np.isnan(eff_mat.loc[col, col])
+    diagonal = eff_mat.loc[eff_mat.columns, eff_mat.columns].to_numpy(dtype=float).diagonal()
+    assert np.isnan(diagonal).all()
 
 
 def test_evaluate_lco_structure(

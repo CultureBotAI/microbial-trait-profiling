@@ -356,7 +356,7 @@ def regress_out_pc1(trait_matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray, f
 
 def normalize_traits_by_profile_composition(
     df: pd.DataFrame,
-    cols: Sequence[str],
+    cols: Sequence[str] | pd.Index[str],
 ) -> np.ndarray:
     """Normalize trait counts per profile by total annotation depth (profile composition / TSS).
 
@@ -440,8 +440,12 @@ def evaluate_table1_paired_effects(
         )
 
         if can_eval:
-            raw_diff = (pvt_raw[(trait_id, "inc")] - pvt_raw[(trait_id, "dec")]).values
-            adj_diff = (pvt_adj[(trait_id, "inc")] - pvt_adj[(trait_id, "dec")]).values
+            raw_diff = (pvt_raw[(trait_id, "inc")] - pvt_raw[(trait_id, "dec")]).to_numpy(
+                dtype=float
+            )
+            adj_diff = (pvt_adj[(trait_id, "inc")] - pvt_adj[(trait_id, "dec")]).to_numpy(
+                dtype=float
+            )
 
             raw_mean = float(np.mean(raw_diff)) if len(raw_diff) > 0 else 0.0
             adj_mean = float(np.mean(adj_diff)) if len(adj_diff) > 0 else 0.0
@@ -511,8 +515,8 @@ def evaluate_conditional_twin_test(
     if trait_a not in profiles_df.columns or trait_b not in profiles_df.columns:
         raise ValueError(f"Missing twin columns: {trait_a} or {trait_b}")
 
-    vec_a = profiles_df[trait_a].values.astype(float)
-    vec_b = profiles_df[trait_b].values.astype(float)
+    vec_a = profiles_df[trait_a].to_numpy(dtype=float)
+    vec_b = profiles_df[trait_b].to_numpy(dtype=float)
 
     std_a = float(np.std(vec_a)) if len(vec_a) > 0 else 0.0
     std_b = float(np.std(vec_b)) if len(vec_b) > 0 else 0.0
@@ -531,7 +535,7 @@ def evaluate_conditional_twin_test(
     if columns_for_depth:
         valid_depth_cols = [c for c in columns_for_depth if c in profiles_df.columns]
         if valid_depth_cols:
-            depth = profiles_df[valid_depth_cols].sum(axis=1).values.astype(float)
+            depth = profiles_df[valid_depth_cols].sum(axis=1).to_numpy(dtype=float)
         else:
             depth = vec_a + vec_b
     else:
@@ -591,8 +595,8 @@ def evaluate_conditional_twin_test(
     )
 
     if can_eval_paired:
-        delta_a = (pvt[(trait_a, "inc")] - pvt[(trait_a, "dec")]).values.astype(float)
-        delta_b = (pvt[(trait_b, "inc")] - pvt[(trait_b, "dec")]).values.astype(float)
+        delta_a = (pvt[(trait_a, "inc")] - pvt[(trait_a, "dec")]).to_numpy(dtype=float)
+        delta_b = (pvt[(trait_b, "inc")] - pvt[(trait_b, "dec")]).to_numpy(dtype=float)
     else:
         delta_a = np.array([], dtype=float)
         delta_b = np.array([], dtype=float)

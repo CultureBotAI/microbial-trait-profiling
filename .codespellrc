@@ -1,7 +1,9 @@
 [codespell]
 skip = .venv,uv.lock
 quiet-level = 3
+ignore-regex = 10\.\d{4,9}/\S+
+# Medical term and spelling preserved in a quoted source-study title.
 # "protectin" is BugSigDB's own misspelling of "calprotectin" in the group
 # description of bsdb:35888992-6. The #292 fixtures reproduce source strings
 # verbatim, so correcting it here would make the fixture stop matching the corpus.
-ignore-words-list = protectin
+ignore-words-list = infarction,homogenous,protectin
