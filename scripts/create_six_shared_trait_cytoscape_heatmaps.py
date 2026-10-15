@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import argparse
+import hashlib
+import json
 import math
-import re
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import wrap
@@ -14,7 +16,7 @@ import pandas as pd
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch, Rectangle
-from scipy.cluster.hierarchy import dendrogram, linkage
+from scipy.cluster.hierarchy import dendrogram, leaves_list, linkage
 from scipy.spatial.distance import squareform
 from scipy.stats import fisher_exact
 
@@ -28,33 +30,24 @@ PATTERN_TABLE_FILENAME = "six_shared_trait_condition_body_site_trait_pattern_mat
 CONTRAST_TABLE_FILENAME = "six_shared_trait_condition_body_site_direction_contrasts.tsv"
 SELECTED_CELLS_FILENAME = "six_shared_trait_condition_body_site_bh_selected_cells.tsv"
 CONTRAST_PAGES_FILENAME = "six_shared_trait_signed_direction_heatmap_pages.tsv"
-GROUPED_CONTRAST_CLUSTER_ROWS_FILENAME = (
-    "six_shared_traits_grouped_signed_direction_cluster_rows.tsv"
-)
-GROUPED_CONTRAST_CLUSTER_SUMMARY_FILENAME = (
-    "six_shared_traits_grouped_signed_direction_cluster_summary.tsv"
-)
-GROUPED_CONTRAST_BRANCH_TESTS_FILENAME = (
-    "six_shared_traits_grouped_signed_direction_branch_label_tests.tsv"
-)
-GROUPED_CONTRAST_PATTERN_TESTS_FILENAME = (
-    "six_shared_traits_grouped_signed_direction_branch_pattern_tests.tsv"
-)
+CLUSTER_TREE_NODES_FILENAME = "six_shared_trait_signed_direction_cluster_tree_nodes.tsv"
+CLUSTER_TREE_LEAVES_FILENAME = "six_shared_trait_signed_direction_cluster_tree_leaves.tsv"
+CLUSTER_COMPARISON_FILENAME = "six_shared_trait_signed_direction_cluster_comparison.tsv"
 CONTRAST_ROWS_PER_PAGE = 24
+EXPORT_FLOAT_SIGNIFICANT_DIGITS = 12
 
 MIN_POSITIVE_PROFILES = 3
 MIN_STUDIES = 2
 P_VALUE_CUTOFF = 0.01
 Q_VALUE_CUTOFF = 0.05
 SIGNED_EFFECT_ABS_CUTOFF = 0.01
-MIN_SIGNIFICANT_BRANCH_ROWS = 3
-MIN_SIGNIFICANT_BRANCH_LABEL_COUNT = 2
-MIN_SIGNIFICANT_BRANCH_LABEL_PURITY = 2.0 / 3.0
-MIN_PATTERN_DIRECTION_ROWS = 3
-MIN_PATTERN_DIRECTION_PURITY = 2.0 / 3.0
-MIN_PATTERN_BH_SELECTED_CELLS = 1
 MAX_MINUS_LOG10_P = 10.0
 MAX_PATTERN_ROWS = 24
+MIN_SPEARMAN_OVERLAP = 3
+MIN_DIAGNOSTIC_SHARED_TRAITS = 5
+UNDEFINED_SPEARMAN_DISTANCE = 1.0
+CLUSTER_LINKAGE_METHOD = "average"
+OUTLIER_IQR_MULTIPLIER = 1.5
 
 SLATE_50 = "#f8fafc"
 SLATE_100 = "#f1f5f9"
@@ -63,7 +56,26 @@ SLATE_500 = "#64748b"
 SLATE_700 = "#334155"
 SLATE_900 = "#0f172a"
 SIGNIFICANCE_BORDER = "#111827"
-
+ORAL_BODY_SITE_GROUPS = frozenset({"Oral cavity / dental"})
+# Exact source labels: nonspecific mucositis, Sjogren syndrome and head/neck
+# cancer qualify through oral sampling, not through an assumed oral diagnosis.
+ORAL_DISEASE_LABELS = frozenset(
+    {
+        "aggressive periodontitis",
+        "chronic periodontitis",
+        "dental caries",
+        "dental fluorosis",
+        "gingivitis",
+        "halitosis",
+        "oral cavity carcinoma",
+        "oral leukoplakia",
+        "oral mucositis",
+        "oral squamous cell carcinoma",
+        "periapical periodontitis",
+        "periodontitis",
+        "root caries",
+    }
+)
 LEGACY_CORRELATION_OUTPUTS = (
     "six_shared_trait_condition_body_site_trait_correlations.tsv",
     "six_shared_trait_condition_body_site_trait_vectors.tsv",
@@ -80,6 +92,11 @@ LEGACY_CORRELATION_OUTPUTS = (
     ),
 )
 
+OBSOLETE_CLUSTER_OUTPUTS = (
+    "six_shared_trait_grouped_signed_direction_cluster_membership.tsv",
+    "six_shared_trait_grouped_signed_direction_cluster_enrichment.tsv",
+)
+
 
 @dataclass(frozen=True)
 class ContrastMode:
@@ -93,6 +110,48 @@ class ContrastMode:
 
 
 @dataclass(frozen=True)
+class SpearmanClustering:
+    """Auditable row clustering for one signed direction matrix."""
+
+    matrix: pd.DataFrame
+    distances: pd.DataFrame
+    overlaps: pd.DataFrame
+    defined_correlations: pd.DataFrame
+    clusterable_matrix: pd.DataFrame
+    linkage_matrix: np.ndarray
+    clustered_row_labels: list[str]
+    insufficient_row_labels: list[str]
+    tree_nodes: pd.DataFrame
+    tree_leaves: pd.DataFrame
+    pair_count: int
+    undefined_pair_count: int
+    undefined_pair_fraction: float
+    distinct_distance_count: int
+    distance_tie_excess_count: int
+    distance_tie_fraction: float
+    linkage_pair_count: int
+    linkage_undefined_pair_count: int
+    linkage_undefined_pair_fraction: float
+    linkage_distinct_distance_count: int
+    linkage_distance_tie_excess_count: int
+    linkage_distance_tie_fraction: float
+
+
+@dataclass(frozen=True)
+class ContrastHeatmapOutputs:
+    """Files, counts, and clustering emitted for one contrast mode."""
+
+    overview_path: Path
+    clustered_path: Path
+    preview_path: Path | None
+    row_labels: list[str]
+    displayed_cell_count: int
+    tested_cell_count: int
+    clustering: SpearmanClustering
+    legend: ContrastLegendSummary
+
+
+@dataclass(frozen=True)
 class ContrastLegendSummary:
     """Counts and display rules shown in a signed-contrast figure legend."""
 
@@ -101,7 +160,6 @@ class ContrastLegendSummary:
     anatomy_group_count: int
     row_count: int
     displayed_cell_count: int
-    nominal_p_value_cell_count: int
     displayed_bh_selected_cell_count: int
     effect_cutoff_hidden_cell_count: int
 
@@ -130,8 +188,14 @@ def read_tsv(path: Path) -> pd.DataFrame:
 
 
 def write_tsv(table: pd.DataFrame, path: Path) -> None:
-    """Write TSVs with explicit missing values instead of trailing empty fields."""
-    table.replace("", pd.NA).to_csv(path, sep="\t", index=False, na_rep="NA")
+    """Write TSVs with explicit missing values and stable float precision."""
+    table.replace("", pd.NA).to_csv(
+        path,
+        sep="\t",
+        index=False,
+        na_rep="NA",
+        float_format=f"%.{EXPORT_FLOAT_SIGNIFICANT_DIGITS}g",
+    )
 
 
 def relative_path(path: Path, repo_root: Path = REPO_ROOT) -> str:
@@ -158,23 +222,6 @@ def wrap_label(value: object, width: int = 24) -> str:
     """Wrap labels for compact heatmap axes."""
     text = str(value)
     return "\n".join(wrap(text, width=width, break_long_words=False)) or text
-
-
-def compact_dendrogram_label(value: object, *, width: int) -> str:
-    """Return a compact branch title for placement inside the dendrogram."""
-    text = str(value)
-    matches = re.findall(
-        r"(Increased|Decreased)-associated (.*?) "
-        r"\((\d+/\d+) rows; q=([^;]+); (\d+) BH cells?\)",
-        text,
-    )
-    if not matches:
-        return wrap_label(text, width=width)
-    lines = []
-    for direction, trait, row_fraction, q_value, bh_count in matches:
-        lines.append(wrap_label(f"{direction}: {trait}", width=width))
-        lines.append(f"{row_fraction} | q={q_value} | {bh_count} BH")
-    return "\n".join(lines)
 
 
 def format_p_value(value: float) -> str:
@@ -233,8 +280,7 @@ def finalize_inferential_cells(cells: pd.DataFrame) -> pd.DataFrame:
     output["passes_p_value_cutoff"] = output["passes_nominal_p_value_cutoff"]
     output["nominal_p_value_selected"] = support & output["passes_nominal_p_value_cutoff"]
     output["displayed_in_heatmap"] = output["nominal_p_value_selected"]
-    # Compatibility alias for existing consumers. This is a nominal-p flag, not
-    # the multiplicity-adjusted selection used for signed-heatmap borders.
+    # Compatibility alias retained for downstream readers; this is nominal, not BH significance.
     output["significant_in_heatmap"] = output["nominal_p_value_selected"]
     output["selected_after_bh"] = support & finite_q & (q_values <= Q_VALUE_CUTOFF)
 
@@ -274,8 +320,8 @@ def finalize_inferential_cells(cells: pd.DataFrame) -> pd.DataFrame:
 
 
 def clean_legacy_outputs(output_dir: Path = OUTPUT_DIR) -> None:
-    """Remove the superseded correlation heatmap outputs from the prior workflow."""
-    for filename in LEGACY_CORRELATION_OUTPUTS:
+    """Remove outputs superseded by the current heatmap workflow."""
+    for filename in (*LEGACY_CORRELATION_OUTPUTS, *OBSOLETE_CLUSTER_OUTPUTS):
         path = output_dir / filename
         if path.exists():
             path.unlink()
@@ -386,7 +432,6 @@ def summarize_contrast_legend(
         anatomy_group_count=int(rows["body_site_group"].nunique()),
         row_count=len(rows),
         displayed_cell_count=int(displayed.sum()),
-        nominal_p_value_cell_count=int(selected["nominal_p_value_selected"].sum()),
         displayed_bh_selected_cell_count=int((displayed & bh_selected).sum()),
         effect_cutoff_hidden_cell_count=int(cutoff_hidden.sum()),
     )
@@ -397,9 +442,6 @@ def add_contrast_legend(
     summary: ContrastLegendSummary,
     *,
     clustered: bool,
-    significant_branch_count: int = 0,
-    significant_metadata_label_count: int = 0,
-    significant_trait_pattern_count: int = 0,
 ) -> None:
     """Add a count-aware signed-contrast legend below a heatmap."""
     handles: list[Patch | Line2D] = [
@@ -428,30 +470,15 @@ def add_contrast_legend(
                 f"({summary.effect_cutoff_hidden_cell_count} shown-row cells at cutoff)"
             ),
         ),
-        Line2D(
-            [0],
-            [0],
-            color=SLATE_500,
-            linewidth=1.2,
-            linestyle=":",
-            label=(
-                f"Nominal Fisher p < {P_VALUE_CUTOFF:g}: "
-                f"{summary.nominal_p_value_cell_count} cells (audit only)"
-            ),
-        ),
     ]
     if clustered:
         handles.append(
             Line2D(
                 [0],
                 [0],
-                color="black",
+                color=SLATE_500,
                 linewidth=1.2,
-                label=(
-                    f"Labeled branches: {significant_branch_count} "
-                    f"({significant_metadata_label_count} metadata labels; "
-                    f"{significant_trait_pattern_count} trait patterns)"
-                ),
+                label="Dendrogram branches: ordering only; no cluster labels",
             )
         )
     legend = fig.legend(
@@ -698,7 +725,7 @@ def select_contrast_rows(cells: pd.DataFrame) -> list[str]:
         .agg(
             body_site_group=("body_site_group", "first"),
             displayed_trait_count=("displayed_in_heatmap", "sum"),
-            significant_trait_count=("significant_in_heatmap", "sum"),
+            nominal_p_value_trait_count=("nominal_p_value_selected", "sum"),
             bh_selected_trait_count=("selected_after_bh", "sum"),
             positive_support=("display_positive_support", "sum"),
             max_abs_delta=("display_abs_delta", "max"),
@@ -709,7 +736,7 @@ def select_contrast_rows(cells: pd.DataFrame) -> list[str]:
         .sort_values(
             [
                 "body_site_group",
-                "significant_trait_count",
+                "nominal_p_value_trait_count",
                 "displayed_trait_count",
                 "bh_selected_trait_count",
                 "total_evidence",
@@ -724,558 +751,498 @@ def select_contrast_rows(cells: pd.DataFrame) -> list[str]:
     return stats.index.astype(str).tolist()
 
 
-def top_values(values: pd.Series, *, max_items: int = 3) -> str:
-    """Return a semicolon-delimited descriptive summary for cluster audits."""
-    counts = values.astype(str).value_counts()
-    if counts.empty:
-        return "NA"
-    return "; ".join(f"{label} ({count})" for label, count in counts.head(max_items).items())
+def pairwise_spearman(
+    left: np.ndarray,
+    right: np.ndarray,
+    *,
+    min_overlap: int = MIN_SPEARMAN_OVERLAP,
+) -> tuple[float, int, str]:
+    """Return pairwise-complete Spearman rho and an audit status."""
+    finite = np.isfinite(left) & np.isfinite(right)
+    overlap = int(finite.sum())
+    if overlap < min_overlap:
+        return math.nan, overlap, f"fewer than {min_overlap} shared supported traits"
+
+    left_ranks = pd.Series(left[finite]).rank(method="average").to_numpy(dtype=float)
+    right_ranks = pd.Series(right[finite]).rank(method="average").to_numpy(dtype=float)
+    if np.ptp(left_ranks) == 0.0 or np.ptp(right_ranks) == 0.0:
+        return math.nan, overlap, "constant ranks across shared supported traits"
+
+    rho = float(np.corrcoef(left_ranks, right_ranks)[0, 1])
+    return float(np.clip(rho, -1.0, 1.0)), overlap, "comparable"
 
 
-def spearman_row_linkage(matrix: pd.DataFrame) -> np.ndarray | None:
-    """Cluster rows with average linkage on Spearman-correlation distance."""
-    if len(matrix.index) < 2:
-        return None
-    values = matrix.fillna(0.0).astype(float)
-    correlations = values.T.corr(method="spearman").fillna(0.0).clip(-1.0, 1.0)
-    correlation_values = correlations.to_numpy(dtype=float, copy=True)
-    np.fill_diagonal(correlation_values, 1.0)
-    distances = np.clip(1.0 - correlation_values, 0.0, 2.0)
-    condensed = squareform(distances, checks=False)
-    return linkage(condensed, method="average")
+def spearman_distance_matrices(
+    matrix: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Calculate pairwise-complete Spearman distance without filling blank cells."""
+    labels = matrix.index.astype(str).tolist()
+    values = matrix.to_numpy(dtype=float)
+    row_count = len(labels)
+    distances = np.zeros((row_count, row_count), dtype=float)
+    overlaps = np.zeros((row_count, row_count), dtype=int)
+    defined = np.zeros((row_count, row_count), dtype=bool)
 
+    for left_index in range(row_count):
+        overlaps[left_index, left_index] = int(np.isfinite(values[left_index]).sum())
+        defined[left_index, left_index] = True
+        for right_index in range(left_index + 1, row_count):
+            rho, overlap, status = pairwise_spearman(
+                values[left_index],
+                values[right_index],
+            )
+            distance = 1.0 - rho if status == "comparable" else UNDEFINED_SPEARMAN_DISTANCE
+            distances[left_index, right_index] = distance
+            distances[right_index, left_index] = distance
+            overlaps[left_index, right_index] = overlap
+            overlaps[right_index, left_index] = overlap
+            is_defined = status == "comparable"
+            defined[left_index, right_index] = is_defined
+            defined[right_index, left_index] = is_defined
 
-def contrast_row_stats(cells: pd.DataFrame) -> pd.DataFrame:
-    """Summarize displayed contrast rows for ordering and cluster audits."""
-    frame = cells.copy()
-    frame["positive_support"] = (
-        frame["increased_positive_profile_count"] + frame["decreased_positive_profile_count"]
-    ).where(frame["displayed_in_heatmap"], 0)
-    frame["abs_delta"] = (
-        frame["increased_minus_decreased_positive_fraction"]
-        .abs()
-        .where(
-            frame["displayed_in_heatmap"],
-            0.0,
-        )
+    return (
+        pd.DataFrame(distances, index=labels, columns=labels),
+        pd.DataFrame(overlaps, index=labels, columns=labels),
+        pd.DataFrame(defined, index=labels, columns=labels),
     )
-    frame["abs_evidence"] = (
-        frame["plot_signed_minus_log10_fisher_p_value"]
-        .abs()
-        .where(
-            frame["displayed_in_heatmap"],
-            0.0,
-        )
-    )
-    return frame.groupby("condition_body_site_pair", sort=False).agg(
-        condition=("condition", "first"),
-        body_site_group=("body_site_group", "first"),
-        displayed_trait_count=("displayed_in_heatmap", "sum"),
-        significant_trait_count=("significant_in_heatmap", "sum"),
-        bh_selected_trait_count=("selected_after_bh", "sum"),
-        positive_support=("positive_support", "sum"),
-        total_abs_delta=("abs_delta", "sum"),
-        max_abs_delta=("abs_delta", "max"),
-        total_evidence=("abs_evidence", "sum"),
-        max_evidence=("abs_evidence", "max"),
-    )
 
 
-def clustered_contrast_rows(
+def build_spearman_clustering(
     matrix: pd.DataFrame,
     cells: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, np.ndarray | None]:
-    """Return row order and supported metadata or trait-pattern branch labels."""
-    linkage_matrix = spearman_row_linkage(matrix)
-    stats = contrast_row_stats(cells)
-    if linkage_matrix is None:
-        row_order = list(matrix.index)
-        branch_tests = pd.DataFrame()
-        pattern_tests = pd.DataFrame()
-        selected_branches: list[dict[str, object]] = []
-    else:
-        dendrogram_data = dendrogram(linkage_matrix, labels=list(matrix.index), no_plot=True)
-        row_order = [str(label) for label in dendrogram_data["ivl"]]
-        row_count = len(matrix.index)
-        leaves_by_node: dict[int, frozenset[int]] = {
-            index: frozenset({index}) for index in range(row_count)
-        }
-        for offset, linkage_row in enumerate(linkage_matrix):
-            node_id = row_count + offset
-            left_id = int(linkage_row[0])
-            right_id = int(linkage_row[1])
-            leaves_by_node[node_id] = leaves_by_node[left_id] | leaves_by_node[right_id]
-
-        metadata = stats.reindex(matrix.index)
-        dimensions = {
-            "anatomy": "body_site_group",
-            "condition": "condition",
-        }
-        test_records: list[dict[str, object]] = []
-        root_node_id = row_count + len(linkage_matrix) - 1
-        for node_id, leaf_indices in leaves_by_node.items():
-            branch_size = len(leaf_indices)
-            if (
-                node_id < row_count
-                or node_id == root_node_id
-                or branch_size < MIN_SIGNIFICANT_BRANCH_ROWS
-            ):
-                continue
-            branch_positions = sorted(leaf_indices)
-            outside_size = row_count - branch_size
-            for dimension, column in dimensions.items():
-                values = metadata[column].astype(str)
-                totals = values.value_counts()
-                branch_values = values.iloc[branch_positions]
-                for label_value, total_label_count in totals.items():
-                    if int(total_label_count) < MIN_SIGNIFICANT_BRANCH_LABEL_COUNT:
-                        continue
-                    in_branch_count = int(branch_values.eq(label_value).sum())
-                    outside_label_count = int(total_label_count) - in_branch_count
-                    result = fisher_exact(
-                        [
-                            [in_branch_count, branch_size - in_branch_count],
-                            [outside_label_count, outside_size - outside_label_count],
-                        ],
-                        alternative="greater",
-                    )
-                    test_records.append(
-                        {
-                            "branch_node_id": node_id,
-                            "label_dimension": dimension,
-                            "label_value": label_value,
-                            "branch_row_count": branch_size,
-                            "in_branch_label_count": in_branch_count,
-                            "outside_branch_label_count": outside_label_count,
-                            "total_label_count": int(total_label_count),
-                            "branch_label_purity": in_branch_count / branch_size,
-                            "label_coverage": in_branch_count / int(total_label_count),
-                            "fisher_odds_ratio": float(result.statistic),
-                            "fisher_p_value": float(result.pvalue),
-                        }
-                    )
-
-        branch_tests = pd.DataFrame.from_records(test_records)
-        selected_branches = []
-        leaf_positions = {
-            leaf_index: position for position, leaf_index in enumerate(dendrogram_data["leaves"])
-        }
-        metadata_candidates: list[dict[str, object]] = []
-        if not branch_tests.empty:
-            branch_tests["fisher_q_value"] = benjamini_hochberg(branch_tests["fisher_p_value"])
-            branch_tests["passes_bh"] = branch_tests["fisher_q_value"] <= Q_VALUE_CUTOFF
-            branch_tests["passes_label_count"] = (
-                branch_tests["in_branch_label_count"] >= MIN_SIGNIFICANT_BRANCH_LABEL_COUNT
-            )
-            branch_tests["passes_label_purity"] = (
-                branch_tests["branch_label_purity"] >= MIN_SIGNIFICANT_BRANCH_LABEL_PURITY
-            )
-            branch_tests["passes_display_criteria"] = (
-                branch_tests["passes_bh"]
-                & branch_tests["passes_label_count"]
-                & branch_tests["passes_label_purity"]
-            )
-            branch_tests["branch_selected_for_display"] = False
-            branch_tests["included_in_branch_label"] = False
-
-            qualifying = branch_tests[branch_tests["passes_display_criteria"]].copy()
-            qualifying = qualifying.sort_values(
-                [
-                    "branch_node_id",
-                    "label_dimension",
-                    "fisher_q_value",
-                    "branch_label_purity",
-                    "label_coverage",
-                    "label_value",
-                ],
-                ascending=[True, True, True, False, False, True],
-            )
-            best_by_dimension = qualifying.drop_duplicates(
-                ["branch_node_id", "label_dimension"],
-                keep="first",
-            )
-            for node_id, group in best_by_dimension.groupby("branch_node_id", sort=True):
-                leaf_indices = leaves_by_node[int(node_id)]
-                positions = sorted(leaf_positions[index] for index in leaf_indices)
-                label_parts = []
-                for row in group.sort_values("label_dimension").itertuples(index=False):
-                    dimension_label = "Anatomy" if row.label_dimension == "anatomy" else "Condition"
-                    label_parts.append(
-                        f"{dimension_label}: {row.label_value} "
-                        f"({row.in_branch_label_count}/{row.branch_row_count} rows, "
-                        f"q={row.fisher_q_value:.2g})"
-                    )
-                metadata_candidates.append(
-                    {
-                        "branch_node_id": int(node_id),
-                        "leaf_indices": leaf_indices,
-                        "leaf_start": min(positions),
-                        "leaf_end": max(positions),
-                        "row_count": len(leaf_indices),
-                        "cluster_label": "; ".join(label_parts),
-                        "label_source": "metadata_enrichment",
-                        "minimum_q_value": float(group["fisher_q_value"].min()),
-                        "maximum_label_purity": float(group["branch_label_purity"].max()),
-                        "metadata_test_indices": group.index.tolist(),
-                        "pattern_test_indices": [],
-                        "pattern_bh_selected_cell_count": 0,
-                    }
-                )
-
-            selected_branches.extend(metadata_candidates)
-
-        visible_cells = cells[
-            cells["displayed_in_heatmap"] & cells["condition_body_site_pair"].isin(matrix.index)
-        ].copy()
-        visible_delta = pd.to_numeric(
-            visible_cells["increased_minus_decreased_positive_fraction"],
-            errors="coerce",
-        )
-        visible_cells["pattern_direction"] = np.where(
-            visible_delta > 0,
-            "increased",
-            "decreased",
-        )
-        global_trait_cells = {
-            str(trait_id): trait_cells
-            for trait_id, trait_cells in visible_cells.groupby("trait_id", sort=True)
-        }
-        pattern_records: list[dict[str, object]] = []
-        for node_id, leaf_indices in leaves_by_node.items():
-            branch_size = len(leaf_indices)
-            if (
-                node_id < row_count
-                or node_id == root_node_id
-                or branch_size < MIN_SIGNIFICANT_BRANCH_ROWS
-            ):
-                continue
-            branch_labels = {str(matrix.index[index]) for index in leaf_indices}
-            branch_cells = visible_cells[
-                visible_cells["condition_body_site_pair"].isin(branch_labels)
-            ]
-            for trait_id, trait_cells in branch_cells.groupby("trait_id", sort=True):
-                all_trait_cells = global_trait_cells[str(trait_id)]
-                displayed_count = len(trait_cells)
-                outside_displayed_count = len(all_trait_cells) - displayed_count
-                for direction in ("increased", "decreased"):
-                    direction_cells = trait_cells[trait_cells["pattern_direction"].eq(direction)]
-                    direction_count = len(direction_cells)
-                    global_direction_count = int(
-                        all_trait_cells["pattern_direction"].eq(direction).sum()
-                    )
-                    outside_direction_count = global_direction_count - direction_count
-                    result = fisher_exact(
-                        [
-                            [direction_count, displayed_count - direction_count],
-                            [
-                                outside_direction_count,
-                                outside_displayed_count - outside_direction_count,
-                            ],
-                        ],
-                        alternative="greater",
-                    )
-                    bh_count = int(direction_cells["selected_after_bh"].sum())
-                    nominal_count = int(direction_cells["nominal_p_value_selected"].sum())
-                    pattern_records.append(
-                        {
-                            "branch_node_id": node_id,
-                            "trait_id": trait_id,
-                            "trait_label": str(trait_cells["trait_label"].iloc[0]),
-                            "pattern_direction": direction,
-                            "branch_row_count": branch_size,
-                            "displayed_trait_row_count": displayed_count,
-                            "direction_row_count": direction_count,
-                            "direction_purity": direction_count / displayed_count,
-                            "outside_displayed_trait_row_count": outside_displayed_count,
-                            "outside_direction_row_count": outside_direction_count,
-                            "fisher_odds_ratio": float(result.statistic),
-                            "fisher_p_value": float(result.pvalue),
-                            "bh_selected_direction_cell_count": bh_count,
-                            "nominal_direction_cell_count": nominal_count,
-                            "mean_signed_effect": float(
-                                pd.to_numeric(
-                                    direction_cells["increased_minus_decreased_positive_fraction"],
-                                    errors="coerce",
-                                ).mean()
-                            ),
-                        }
-                    )
-
-        pattern_tests = pd.DataFrame.from_records(pattern_records)
-        if not pattern_tests.empty:
-            pattern_tests["fisher_q_value"] = benjamini_hochberg(pattern_tests["fisher_p_value"])
-            pattern_tests["passes_bh"] = pattern_tests["fisher_q_value"] <= Q_VALUE_CUTOFF
-            pattern_tests["passes_direction_rows"] = (
-                pattern_tests["direction_row_count"] >= MIN_PATTERN_DIRECTION_ROWS
-            )
-            pattern_tests["passes_direction_purity"] = (
-                pattern_tests["direction_purity"] >= MIN_PATTERN_DIRECTION_PURITY
-            )
-            pattern_tests["passes_bh_cell_support"] = (
-                pattern_tests["bh_selected_direction_cell_count"] >= MIN_PATTERN_BH_SELECTED_CELLS
-            )
-            pattern_tests["passes_display_criteria"] = (
-                pattern_tests["passes_bh"]
-                & pattern_tests["passes_direction_rows"]
-                & pattern_tests["passes_direction_purity"]
-                & pattern_tests["passes_bh_cell_support"]
-            )
-            pattern_tests["branch_selected_for_display"] = False
-            pattern_tests["included_in_branch_label"] = False
-            qualifying_patterns = pattern_tests[pattern_tests["passes_display_criteria"]].copy()
-            qualifying_patterns["absolute_mean_effect"] = qualifying_patterns[
-                "mean_signed_effect"
-            ].abs()
-            qualifying_patterns = qualifying_patterns.sort_values(
-                [
-                    "branch_node_id",
-                    "fisher_q_value",
-                    "bh_selected_direction_cell_count",
-                    "direction_purity",
-                    "direction_row_count",
-                    "absolute_mean_effect",
-                    "trait_label",
-                ],
-                ascending=[True, True, False, False, False, False, True],
-            )
-            pattern_candidates: list[dict[str, object]] = []
-            for node_id, group in qualifying_patterns.groupby("branch_node_id", sort=True):
-                leaf_indices = leaves_by_node[int(node_id)]
-                positions = sorted(leaf_positions[index] for index in leaf_indices)
-                label_parts = []
-                for row in group.itertuples(index=False):
-                    direction_title = (
-                        "Increased-associated"
-                        if row.pattern_direction == "increased"
-                        else "Decreased-associated"
-                    )
-                    cell_word = "cell" if row.bh_selected_direction_cell_count == 1 else "cells"
-                    label_parts.append(
-                        f"{direction_title} {row.trait_label} "
-                        f"({row.direction_row_count}/{row.displayed_trait_row_count} rows; "
-                        f"q={row.fisher_q_value:.2g}; "
-                        f"{row.bh_selected_direction_cell_count} BH {cell_word})"
-                    )
-                pattern_candidates.append(
-                    {
-                        "branch_node_id": int(node_id),
-                        "leaf_indices": leaf_indices,
-                        "leaf_start": min(positions),
-                        "leaf_end": max(positions),
-                        "row_count": len(leaf_indices),
-                        "cluster_label": "Pattern: " + "; ".join(label_parts),
-                        "label_source": "bh_supported_trait_pattern",
-                        "minimum_q_value": float(group["fisher_q_value"].min()),
-                        "maximum_label_purity": float(group["direction_purity"].max()),
-                        "metadata_test_indices": [],
-                        "pattern_test_indices": group.index.tolist(),
-                        "pattern_bh_selected_cell_count": int(
-                            group["bh_selected_direction_cell_count"].sum()
-                        ),
-                    }
-                )
-
-            selected_branches.extend(pattern_candidates)
-
-        candidates_by_node: dict[int, dict[str, object]] = {}
-        for candidate in selected_branches:
-            node_id = int(candidate["branch_node_id"])
-            if node_id not in candidates_by_node:
-                candidates_by_node[node_id] = candidate.copy()
-                continue
-            combined = candidates_by_node[node_id]
-            combined["cluster_label"] = f"{combined['cluster_label']}; {candidate['cluster_label']}"
-            combined["label_source"] = "+".join(
-                sorted(
-                    {
-                        str(combined["label_source"]),
-                        str(candidate["label_source"]),
-                    }
-                )
-            )
-            combined["minimum_q_value"] = min(
-                float(combined["minimum_q_value"]),
-                float(candidate["minimum_q_value"]),
-            )
-            combined["maximum_label_purity"] = max(
-                float(combined["maximum_label_purity"]),
-                float(candidate["maximum_label_purity"]),
-            )
-            combined["metadata_test_indices"] = list(combined["metadata_test_indices"]) + list(
-                candidate["metadata_test_indices"]
-            )
-            combined["pattern_test_indices"] = list(combined["pattern_test_indices"]) + list(
-                candidate["pattern_test_indices"]
-            )
-            combined["pattern_bh_selected_cell_count"] = int(
-                combined["pattern_bh_selected_cell_count"]
-            ) + int(candidate["pattern_bh_selected_cell_count"])
-
-        selected_branches = list(candidates_by_node.values())
-        for branch in selected_branches:
-            branch_leaves = set(branch["leaf_indices"])
-            branch["nesting_depth"] = sum(
-                branch_leaves < set(other["leaf_indices"])
-                for other in selected_branches
-                if other is not branch
-            )
-        selected_branches.sort(
-            key=lambda row: (
-                -int(row["row_count"]),
-                int(row["leaf_start"]),
-                int(row["branch_node_id"]),
-            )
-        )
-        for cluster_id, branch in enumerate(selected_branches, start=1):
-            branch["spearman_cluster"] = cluster_id
-            if branch["metadata_test_indices"]:
-                in_branch = branch_tests["branch_node_id"].eq(branch["branch_node_id"])
-                branch_tests.loc[in_branch, "branch_selected_for_display"] = True
-                branch_tests.loc[branch["metadata_test_indices"], "included_in_branch_label"] = True
-            if branch["pattern_test_indices"]:
-                in_branch = pattern_tests["branch_node_id"].eq(branch["branch_node_id"])
-                pattern_tests.loc[in_branch, "branch_selected_for_display"] = True
-                pattern_tests.loc[branch["pattern_test_indices"], "included_in_branch_label"] = True
-
-    ordered_stats = stats.reindex(row_order)
-    row_records = ordered_stats.reset_index().rename(
-        columns={"condition_body_site_pair": "row_label"}
-    )
-    row_records.insert(0, "row_order", np.arange(1, len(row_records) + 1))
-    row_records.insert(
-        1, "spearman_cluster", pd.Series(pd.NA, index=row_records.index, dtype="Int64")
-    )
-    row_records.insert(
-        2, "branch_node_id", pd.Series(pd.NA, index=row_records.index, dtype="Int64")
-    )
-    row_records["cluster_label"] = pd.NA
-    memberships: dict[str, list[dict[str, object]]] = {
-        str(label): [] for label in row_records["row_label"]
+    *,
+    view_key: str,
+    view_label: str,
+) -> SpearmanClustering:
+    """Cluster informative rows after canonicalizing the linkage input order."""
+    ranked_order = {
+        str(label): order for order, label in enumerate(matrix.index.astype(str), start=1)
     }
-    summary_records: list[dict[str, object]] = []
-    original_labels = list(matrix.index)
-    for branch in selected_branches:
-        cluster_id = int(branch["spearman_cluster"])
-        labels = [original_labels[index] for index in branch["leaf_indices"]]
-        in_branch = row_records["row_label"].isin(labels)
-        row_records.loc[in_branch, "spearman_cluster"] = cluster_id
-        row_records.loc[in_branch, "branch_node_id"] = int(branch["branch_node_id"])
-        row_records.loc[in_branch, "cluster_label"] = branch["cluster_label"]
-        for label in labels:
-            memberships[str(label)].append(branch)
-        group = row_records.loc[in_branch]
-        dominant_body_site = group["body_site_group"].astype(str).value_counts().index[0]
-        dominant_condition = group["condition"].astype(str).value_counts().index[0]
-        metadata_indices = branch["metadata_test_indices"]
-        if metadata_indices:
-            label_tests = branch_tests.loc[metadata_indices].sort_values("label_dimension")
+    canonical_matrix = matrix.copy()
+    canonical_matrix.index = canonical_matrix.index.astype(str)
+    canonical_matrix = canonical_matrix.sort_index()
+    distances, overlaps, defined = spearman_distance_matrices(canonical_matrix)
+
+    row_count = len(canonical_matrix)
+    peer_defined_counts = defined.sum(axis=1).astype(int) - 1
+    clusterable_labels = peer_defined_counts[peer_defined_counts > 0].index.astype(str).tolist()
+    insufficient_labels = peer_defined_counts[peer_defined_counts == 0].index.astype(str).tolist()
+    clusterable_matrix = canonical_matrix.loc[clusterable_labels]
+    clusterable_distances = distances.loc[clusterable_labels, clusterable_labels]
+    clusterable_defined = defined.loc[clusterable_labels, clusterable_labels]
+    clusterable_count = len(clusterable_matrix)
+
+    if clusterable_count > 1:
+        condensed = squareform(clusterable_distances.to_numpy(dtype=float), checks=False)
+        linkage_matrix = linkage(
+            condensed,
+            method=CLUSTER_LINKAGE_METHOD,
+            optimal_ordering=True,
+        )
+        leaf_ids = leaves_list(linkage_matrix).astype(int).tolist()
+    else:
+        linkage_matrix = np.empty((0, 4), dtype=float)
+        leaf_ids = list(range(clusterable_count))
+
+    clustered_labels = [str(clusterable_matrix.index[leaf_id]) for leaf_id in leaf_ids]
+    final_labels = clustered_labels + insufficient_labels
+    linkage_order = {label: order for order, label in enumerate(clustered_labels, start=1)}
+    final_order = {label: order for order, label in enumerate(final_labels, start=1)}
+    clusterable_leaf_id = {
+        str(label): leaf_id for leaf_id, label in enumerate(clusterable_matrix.index.astype(str))
+    }
+
+    row_metadata = (
+        cells.drop_duplicates("condition_body_site_pair")
+        .set_index("condition_body_site_pair")[["condition", "body_site_group"]]
+        .reindex(canonical_matrix.index)
+    )
+    leaf_records: list[dict[str, object]] = []
+    for canonical_order, label in enumerate(canonical_matrix.index.astype(str), start=1):
+        row_position = canonical_order - 1
+        peer_defined = defined.iloc[row_position].to_numpy(dtype=bool).copy()
+        peer_defined[row_position] = False
+        if peer_defined.any():
+            peer_distances = distances.iloc[row_position].to_numpy(dtype=float).copy()
+            peer_distances[~peer_defined] = np.inf
+            nearest_position = int(np.argmin(peer_distances))
+            nearest_label: object = str(canonical_matrix.index[nearest_position])
+            nearest_distance: object = float(peer_distances[nearest_position])
         else:
-            label_tests = pd.DataFrame(columns=["label_dimension"])
-        anatomy_test = label_tests[label_tests["label_dimension"].eq("anatomy")]
-        condition_test = label_tests[label_tests["label_dimension"].eq("condition")]
-        pattern_indices = branch["pattern_test_indices"]
-        if pattern_indices:
-            selected_patterns = pattern_tests.loc[pattern_indices]
-        else:
-            selected_patterns = pd.DataFrame()
-        if metadata_indices and pattern_indices:
-            cluster_label_rule = (
-                "all qualifying metadata and signed-trait titles are shown on nested tracks; "
-                "metadata uses one-sided Fisher branch enrichment with global BH q<=0.05, "
-                ">=3 rows, >=2 matching rows, and purity >=2/3; trait directions use "
-                "one-sided Fisher enrichment versus outside displayed rows with global "
-                "branch-pattern BH q<=0.05, >=3 matching rows, purity >=2/3, and >=1 "
-                "same-direction heatmap-wide BH-selected cell"
-            )
-        elif metadata_indices:
-            cluster_label_rule = (
-                "one-sided Fisher branch enrichment; BH q<=0.05; >=3 rows; >=2 matching "
-                "rows; label purity >=2/3; all qualifying nested branches shown"
-            )
-        else:
-            cluster_label_rule = (
-                "one-sided Fisher enrichment of a signed trait direction versus displayed "
-                "rows outside the branch; global branch-pattern BH q<=0.05; >=3 "
-                "direction-matching displayed rows; direction purity >=2/3; >=1 "
-                "same-direction cell selected at heatmap-wide BH q<=0.05; all qualifying "
-                "nested branches shown"
-            )
-        minimum_q_value = float(branch["minimum_q_value"])
-        summary_records.append(
+            nearest_label = pd.NA
+            nearest_distance = math.nan
+        included = label in clusterable_leaf_id
+        leaf_records.append(
             {
-                "spearman_cluster": cluster_id,
-                "branch_node_id": int(branch["branch_node_id"]),
-                "leaf_start": int(branch["leaf_start"]),
-                "leaf_end": int(branch["leaf_end"]),
-                "nesting_depth": int(branch["nesting_depth"]),
-                "cluster_label": branch["cluster_label"],
-                "cluster_label_supported": True,
-                "cluster_label_source": branch["label_source"],
-                "cluster_label_rule": cluster_label_rule,
-                "row_count": len(group),
-                "displayed_cell_count": int(group["displayed_trait_count"].sum()),
-                "nominal_p_value_cell_count": int(group["significant_trait_count"].sum()),
-                "bh_selected_cell_count": int(group["bh_selected_trait_count"].sum()),
-                "minimum_branch_label_q_value": (
-                    minimum_q_value if math.isfinite(minimum_q_value) else pd.NA
-                ),
-                "maximum_branch_label_purity": branch["maximum_label_purity"],
-                "pattern_bh_selected_cell_count": branch["pattern_bh_selected_cell_count"],
-                "metadata_label_count": len(label_tests),
-                "trait_pattern_count": len(selected_patterns),
-                "pattern_traits": (
-                    "; ".join(selected_patterns["trait_label"].astype(str))
-                    if not selected_patterns.empty
-                    else pd.NA
-                ),
-                "pattern_directions": (
-                    "; ".join(selected_patterns["pattern_direction"].astype(str))
-                    if not selected_patterns.empty
-                    else pd.NA
-                ),
-                "anatomy_label": (
-                    anatomy_test.iloc[0]["label_value"] if not anatomy_test.empty else pd.NA
-                ),
-                "anatomy_label_count": (
-                    int(anatomy_test.iloc[0]["in_branch_label_count"])
-                    if not anatomy_test.empty
-                    else pd.NA
-                ),
-                "anatomy_label_q_value": (
-                    anatomy_test.iloc[0]["fisher_q_value"] if not anatomy_test.empty else pd.NA
-                ),
-                "condition_label": (
-                    condition_test.iloc[0]["label_value"] if not condition_test.empty else pd.NA
-                ),
-                "condition_label_count": (
-                    int(condition_test.iloc[0]["in_branch_label_count"])
-                    if not condition_test.empty
-                    else pd.NA
-                ),
-                "condition_label_q_value": (
-                    condition_test.iloc[0]["fisher_q_value"] if not condition_test.empty else pd.NA
-                ),
-                "dominant_body_site_group": dominant_body_site,
-                "dominant_grouped_condition": dominant_condition,
-                "top_body_site_groups": top_values(group["body_site_group"]),
-                "top_grouped_conditions": top_values(group["condition"]),
+                "view_key": view_key,
+                "view_label": view_label,
+                "leaf_id": clusterable_leaf_id.get(label, pd.NA),
+                "ranked_heatmap_order": ranked_order[label],
+                "canonical_input_order": canonical_order,
+                "linkage_leaf_order": linkage_order.get(label, pd.NA),
+                "clustered_heatmap_order": final_order[label],
+                "condition_body_site_pair": label,
+                "condition": row_metadata.loc[label, "condition"],
+                "body_site_group": row_metadata.loc[label, "body_site_group"],
+                "supported_trait_count": int(canonical_matrix.loc[label].notna().sum()),
+                "defined_spearman_neighbor_count": int(peer_defined.sum()),
+                "included_in_clustering": included,
+                "low_information_for_clustering": not included,
+                "clustering_exclusion_reason": ""
+                if included
+                else "no defined Spearman distance to any other row",
+                "nearest_defined_neighbor": nearest_label,
+                "nearest_defined_neighbor_distance": nearest_distance,
             }
         )
-    row_records["supported_branch_count"] = row_records["row_label"].map(
-        lambda label: len(memberships[str(label)])
+
+    node_records = [
+        {
+            "view_key": view_key,
+            "view_label": view_label,
+            "node_id": clusterable_count + merge_index,
+            "left_child_id": int(merge[0]),
+            "right_child_id": int(merge[1]),
+            "merge_distance": float(merge[2]),
+            "leaf_count": int(merge[3]),
+        }
+        for merge_index, merge in enumerate(linkage_matrix)
+    ]
+    tree_nodes = pd.DataFrame.from_records(
+        node_records,
+        columns=[
+            "view_key",
+            "view_label",
+            "node_id",
+            "left_child_id",
+            "right_child_id",
+            "merge_distance",
+            "leaf_count",
+        ],
     )
-    row_records["supported_branch_node_ids"] = row_records["row_label"].map(
-        lambda label: (
-            "; ".join(str(branch["branch_node_id"]) for branch in memberships[str(label)]) or pd.NA
+    tree_leaves = (
+        pd.DataFrame.from_records(
+            leaf_records,
+            columns=[
+                "view_key",
+                "view_label",
+                "leaf_id",
+                "ranked_heatmap_order",
+                "canonical_input_order",
+                "linkage_leaf_order",
+                "clustered_heatmap_order",
+                "condition_body_site_pair",
+                "condition",
+                "body_site_group",
+                "supported_trait_count",
+                "defined_spearman_neighbor_count",
+                "included_in_clustering",
+                "low_information_for_clustering",
+                "clustering_exclusion_reason",
+                "nearest_defined_neighbor",
+                "nearest_defined_neighbor_distance",
+            ],
+        )
+        .sort_values("clustered_heatmap_order")
+        .reset_index(drop=True)
+    )
+
+    pair_count = row_count * (row_count - 1) // 2
+    if pair_count:
+        row_triangle = np.triu_indices(row_count, k=1)
+        undefined_pair_count = int((~defined.to_numpy(dtype=bool)[row_triangle]).sum())
+        distance_values = distances.to_numpy(dtype=float)[row_triangle]
+        distinct_distance_count = int(np.unique(distance_values).size)
+    else:
+        undefined_pair_count = 0
+        distinct_distance_count = 0
+    undefined_pair_fraction = undefined_pair_count / pair_count if pair_count else 0.0
+    distance_tie_excess_count = max(0, pair_count - distinct_distance_count)
+    distance_tie_fraction = distance_tie_excess_count / pair_count if pair_count else 0.0
+
+    linkage_pair_count = clusterable_count * (clusterable_count - 1) // 2
+    if linkage_pair_count:
+        linkage_triangle = np.triu_indices(clusterable_count, k=1)
+        linkage_defined_values = clusterable_defined.to_numpy(dtype=bool)[linkage_triangle]
+        linkage_distance_values = clusterable_distances.to_numpy(dtype=float)[linkage_triangle]
+        linkage_undefined_pair_count = int((~linkage_defined_values).sum())
+        linkage_distinct_distance_count = int(np.unique(linkage_distance_values).size)
+    else:
+        linkage_undefined_pair_count = 0
+        linkage_distinct_distance_count = 0
+    linkage_undefined_pair_fraction = (
+        linkage_undefined_pair_count / linkage_pair_count if linkage_pair_count else 0.0
+    )
+    linkage_distance_tie_excess_count = max(
+        0,
+        linkage_pair_count - linkage_distinct_distance_count,
+    )
+    linkage_distance_tie_fraction = (
+        linkage_distance_tie_excess_count / linkage_pair_count if linkage_pair_count else 0.0
+    )
+
+    return SpearmanClustering(
+        matrix=canonical_matrix,
+        distances=distances,
+        overlaps=overlaps,
+        defined_correlations=defined,
+        clusterable_matrix=clusterable_matrix,
+        linkage_matrix=linkage_matrix,
+        clustered_row_labels=clustered_labels,
+        insufficient_row_labels=insufficient_labels,
+        tree_nodes=tree_nodes,
+        tree_leaves=tree_leaves,
+        pair_count=pair_count,
+        undefined_pair_count=undefined_pair_count,
+        undefined_pair_fraction=undefined_pair_fraction,
+        distinct_distance_count=distinct_distance_count,
+        distance_tie_excess_count=distance_tie_excess_count,
+        distance_tie_fraction=distance_tie_fraction,
+        linkage_pair_count=linkage_pair_count,
+        linkage_undefined_pair_count=linkage_undefined_pair_count,
+        linkage_undefined_pair_fraction=linkage_undefined_pair_fraction,
+        linkage_distinct_distance_count=linkage_distinct_distance_count,
+        linkage_distance_tie_excess_count=linkage_distance_tie_excess_count,
+        linkage_distance_tie_fraction=linkage_distance_tie_fraction,
+    )
+
+
+def split_joined_labels(value: object) -> list[str]:
+    """Split semicolon-delimited rollup labels while preserving literal commas."""
+    if pd.isna(value):
+        return []
+    return [part.strip() for part in str(value).split(";") if part.strip()]
+
+
+def build_condition_rollup_map(grouped_edges: pd.DataFrame) -> pd.DataFrame:
+    """Map raw conditions to the grouped label used at the same body site."""
+    records: list[dict[str, str]] = []
+    has_raw_conditions = "raw_conditions" in grouped_edges
+    for row in grouped_edges.itertuples(index=False):
+        raw_value = row.raw_conditions if has_raw_conditions else row.condition
+        for raw_condition in split_joined_labels(raw_value):
+            records.append(
+                {
+                    "raw_condition": raw_condition,
+                    "body_site_group": str(row.body_site_group),
+                    "grouped_condition": str(row.condition),
+                    "grouped_condition_body_site_pair": pair_label(
+                        row.condition,
+                        row.body_site_group,
+                    ),
+                }
+            )
+    mapping = pd.DataFrame.from_records(records).drop_duplicates()
+    if mapping.empty:
+        return mapping
+    ambiguity = mapping.groupby(["raw_condition", "body_site_group"])[
+        "grouped_condition_body_site_pair"
+    ].nunique()
+    if (ambiguity > 1).any():
+        examples = ", ".join(
+            f"{condition} | {body_site}"
+            for condition, body_site in ambiguity[ambiguity > 1].index[:5]
+        )
+        raise ValueError(f"Raw condition/body-site pairs map to multiple grouped rows: {examples}")
+    return mapping.drop_duplicates(["raw_condition", "body_site_group"])
+
+
+def compare_grouped_and_individual_clusters(
+    grouped: SpearmanClustering,
+    individual: SpearmanClustering,
+    rollup_map: pd.DataFrame,
+) -> pd.DataFrame:
+    """Compare each raw-condition vector with its grouped aggregate and nearest peer."""
+    mapping_by_key = {
+        (row.raw_condition, row.body_site_group): (
+            row.grouped_condition,
+            row.grouped_condition_body_site_pair,
+        )
+        for row in rollup_map.itertuples(index=False)
+    }
+    grouped_order = dict(
+        zip(
+            grouped.tree_leaves["condition_body_site_pair"],
+            grouped.tree_leaves["clustered_heatmap_order"],
+            strict=True,
         )
     )
-    row_records["supported_branch_labels"] = row_records["row_label"].map(
-        lambda label: (
-            " | ".join(str(branch["cluster_label"]) for branch in memberships[str(label)]) or pd.NA
+    individual_order = dict(
+        zip(
+            individual.tree_leaves["condition_body_site_pair"],
+            individual.tree_leaves["clustered_heatmap_order"],
+            strict=True,
         )
     )
-    summary = pd.DataFrame.from_records(summary_records)
-    return row_records, summary, branch_tests, pattern_tests, linkage_matrix
+    individual_metadata = individual.tree_leaves.set_index("condition_body_site_pair")
+    records: list[dict[str, object]] = []
+    for individual_pair in individual.matrix.index.astype(str):
+        condition = str(individual_metadata.loc[individual_pair, "condition"])
+        body_site = str(individual_metadata.loc[individual_pair, "body_site_group"])
+        grouped_condition, grouped_pair = mapping_by_key.get(
+            (condition, body_site),
+            (pd.NA, pd.NA),
+        )
+
+        individual_position = individual.matrix.index.get_loc(individual_pair)
+        peer_defined = (
+            individual.defined_correlations.iloc[individual_position].to_numpy(dtype=bool).copy()
+        )
+        peer_defined[individual_position] = False
+        if peer_defined.any():
+            peer_distances = (
+                individual.distances.iloc[individual_position].to_numpy(dtype=float).copy()
+            )
+            peer_distances[~peer_defined] = np.inf
+            nearest_position = int(np.argmin(peer_distances))
+            nearest_pair: object = str(individual.matrix.index[nearest_position])
+            nearest_distance: object = float(peer_distances[nearest_position])
+        else:
+            nearest_pair = pd.NA
+            nearest_distance = math.nan
+
+        if pd.isna(grouped_pair):
+            rho = math.nan
+            shared_traits = 0
+            status = "no grouped condition mapping"
+        elif grouped_pair not in grouped.matrix.index:
+            rho = math.nan
+            shared_traits = 0
+            status = "grouped row did not meet display support"
+        else:
+            rho, shared_traits, status = pairwise_spearman(
+                individual.matrix.loc[individual_pair].to_numpy(dtype=float),
+                grouped.matrix.loc[grouped_pair].to_numpy(dtype=float),
+            )
+        records.append(
+            {
+                "individual_condition": condition,
+                "body_site_group": body_site,
+                "individual_condition_body_site_pair": individual_pair,
+                "grouped_condition": grouped_condition,
+                "grouped_condition_body_site_pair": grouped_pair,
+                "shared_supported_trait_count": shared_traits,
+                "individual_vs_grouped_spearman_rho": rho,
+                "individual_vs_grouped_spearman_distance": (
+                    1.0 - rho if math.isfinite(rho) else math.nan
+                ),
+                "comparison_status": status,
+                "individual_clustered_heatmap_order": individual_order[individual_pair],
+                "grouped_clustered_heatmap_order": grouped_order.get(grouped_pair, pd.NA),
+                "nearest_individual_condition_body_site_pair": nearest_pair,
+                "nearest_individual_spearman_distance": nearest_distance,
+            }
+        )
+
+    comparison = pd.DataFrame.from_records(
+        records,
+        columns=[
+            "individual_condition",
+            "body_site_group",
+            "individual_condition_body_site_pair",
+            "grouped_condition",
+            "grouped_condition_body_site_pair",
+            "shared_supported_trait_count",
+            "individual_vs_grouped_spearman_rho",
+            "individual_vs_grouped_spearman_distance",
+            "comparison_status",
+            "individual_clustered_heatmap_order",
+            "grouped_clustered_heatmap_order",
+            "nearest_individual_condition_body_site_pair",
+            "nearest_individual_spearman_distance",
+        ],
+    )
+    grouped_by_individual_pair = dict(
+        zip(
+            comparison["individual_condition_body_site_pair"],
+            comparison["grouped_condition_body_site_pair"],
+            strict=True,
+        )
+    )
+    comparison["nearest_individual_has_same_grouped_condition"] = [
+        (
+            grouped_by_individual_pair.get(nearest_pair) == grouped_pair
+            if pd.notna(nearest_pair) and pd.notna(grouped_pair)
+            else pd.NA
+        )
+        for nearest_pair, grouped_pair in zip(
+            comparison["nearest_individual_condition_body_site_pair"],
+            comparison["grouped_condition_body_site_pair"],
+            strict=True,
+        )
+    ]
+    source_contributor_counts = (
+        rollup_map.groupby("grouped_condition_body_site_pair")["raw_condition"].nunique()
+        if not rollup_map.empty
+        else pd.Series(dtype="Int64")
+    )
+    comparison["grouped_contributing_individual_condition_count"] = (
+        comparison["grouped_condition_body_site_pair"]
+        .map(source_contributor_counts)
+        .astype("Int64")
+    )
+    comparison["grouped_displayed_individual_condition_count"] = (
+        comparison.groupby(
+            "grouped_condition_body_site_pair",
+            dropna=False,
+        )["individual_condition_body_site_pair"]
+        .transform("nunique")
+        .where(comparison["grouped_condition_body_site_pair"].notna(), pd.NA)
+        .astype("Int64")
+    )
+    comparison["pattern_diagnostic_eligible"] = comparison["comparison_status"].eq(
+        "comparable"
+    ) & comparison["shared_supported_trait_count"].ge(MIN_DIAGNOSTIC_SHARED_TRAITS)
+    comparison["_eligible_distance"] = comparison["individual_vs_grouped_spearman_distance"].where(
+        comparison["pattern_diagnostic_eligible"]
+    )
+    comparison["global_difference_rank"] = (
+        comparison["_eligible_distance"]
+        .rank(
+            method="min",
+            ascending=False,
+        )
+        .astype("Int64")
+    )
+    comparison["within_group_difference_rank"] = (
+        comparison.groupby(
+            "grouped_condition_body_site_pair",
+            dropna=False,
+        )["_eligible_distance"]
+        .rank(
+            method="min",
+            ascending=False,
+        )
+        .astype("Int64")
+    )
+    comparison["within_group_outlier_threshold"] = comparison.groupby(
+        "grouped_condition_body_site_pair",
+        dropna=False,
+    )[
+        "_eligible_distance"
+    ].transform(
+        lambda values: (
+            values.quantile(0.75)
+            + OUTLIER_IQR_MULTIPLIER * (values.quantile(0.75) - values.quantile(0.25))
+            if values.notna().sum() >= 4
+            else math.nan
+        )
+    )
+    comparison["within_group_iqr_outlier"] = (
+        comparison["pattern_diagnostic_eligible"]
+        & (
+            comparison["individual_vs_grouped_spearman_distance"]
+            > comparison["within_group_outlier_threshold"]
+        )
+    ).fillna(False)
+    comparison["discordant_or_inverse_pattern"] = (
+        comparison["pattern_diagnostic_eligible"]
+        & (comparison["individual_vs_grouped_spearman_rho"] <= 0.0)
+    ).fillna(False)
+    return comparison.drop(columns="_eligible_distance").sort_values(
+        ["global_difference_rank", "individual_condition_body_site_pair"],
+        na_position="last",
+    )
 
 
 def cell_matrix(
@@ -1304,10 +1271,10 @@ def flag_matrix(
     *,
     flag_column: str,
 ) -> pd.DataFrame:
-    """Pivot a boolean cell flag into row x trait layout."""
+    """Pivot a visible Boolean cell flag into a row x trait matrix."""
     trait_ids = trait_order["trait_id"].tolist()
-    flags = cells[cells[flag_column]].copy()
-    matrix = flags.pivot_table(
+    flagged = cells[cells[flag_column] & cells["displayed_in_heatmap"]].copy()
+    matrix = flagged.pivot_table(
         index="condition_body_site_pair",
         columns="trait_id",
         values=flag_column,
@@ -1357,7 +1324,7 @@ def plot_matrix_heatmap(
     vmin: float | None = None,
     vmax: float | None = None,
     compact: bool = False,
-    border_mask: pd.DataFrame | None = None,
+    significance_borders: pd.DataFrame | None = None,
     contrast_legend: ContrastLegendSummary | None = None,
 ) -> None:
     """Render one row x six-trait heatmap with blank nonsignificant cells."""
@@ -1405,17 +1372,6 @@ def plot_matrix_heatmap(
 
     for y_index, row_label in enumerate(matrix.index):
         for x_index, trait_id in enumerate(trait_order["trait_id"]):
-            if border_mask is not None and bool(border_mask.loc[row_label, trait_id]):
-                ax.add_patch(
-                    Rectangle(
-                        (x_index - 0.5, y_index - 0.5),
-                        1,
-                        1,
-                        fill=False,
-                        edgecolor=SIGNIFICANCE_BORDER,
-                        linewidth=1.8,
-                    )
-                )
             text = annotations.loc[row_label, trait_id]
             if not text:
                 continue
@@ -1434,6 +1390,23 @@ def plot_matrix_heatmap(
                 fontsize=7.2,
                 color=text_color,
             )
+
+    if significance_borders is not None:
+        for y_index, row_label in enumerate(matrix.index):
+            for x_index, trait_id in enumerate(trait_order["trait_id"]):
+                if not significance_borders.loc[row_label, trait_id]:
+                    continue
+                ax.add_patch(
+                    Rectangle(
+                        (x_index - 0.5, y_index - 0.5),
+                        1,
+                        1,
+                        fill=False,
+                        edgecolor=SIGNIFICANCE_BORDER,
+                        linewidth=1.8,
+                        zorder=4,
+                    )
+                )
 
     fig.text(
         0.04,
@@ -1466,293 +1439,187 @@ def plot_matrix_heatmap(
     plt.close(fig)
 
 
-def plot_grouped_clustered_contrast_heatmap(
-    matrix: pd.DataFrame,
-    annotations: pd.DataFrame,
-    border_mask: pd.DataFrame,
+def plot_clustered_contrast_heatmap(
+    clustering: SpearmanClustering,
+    significance_borders: pd.DataFrame,
     trait_order: pd.DataFrame,
-    cluster_summary: pd.DataFrame,
-    linkage_matrix: np.ndarray | None,
     output_path: Path,
     *,
-    legend: ContrastLegendSummary,
+    title: str,
+    subtitle: str,
+    contrast_legend: ContrastLegendSummary,
+    annotations: pd.DataFrame | None = None,
     preview: bool = False,
 ) -> None:
-    """Render the grouped signed direction heatmap with a left Spearman dendrogram."""
-    row_count = max(1, len(matrix.index))
-    significant_branch_count = len(cluster_summary)
-    significant_metadata_label_count = int(
-        cluster_summary.get("metadata_label_count", pd.Series(dtype=int)).sum()
-    )
-    significant_trait_pattern_count = int(
-        cluster_summary.get("trait_pattern_count", pd.Series(dtype=int)).sum()
-    )
-    label_track_count = (
-        int(cluster_summary["nesting_depth"].max()) + 1 if not cluster_summary.empty else 1
-    )
-    if preview:
-        fig_height = 8.5
-        fig_width = 13.8
-        left = 0.08
-        right = 0.92
-        top = 0.86
-        bottom = 0.23
-        label_width = 0.01
-        dendrogram_width = 4.2
-        show_row_labels = False
-        show_cell_text = False
-    else:
-        fig_height = max(9.5, 3.2 + 0.34 * row_count)
-        fig_width = 22.0
-        left = 0.04
-        right = 0.965
-        top = 1 - 1.55 / fig_height
-        bottom = 1.8 / fig_height
-        label_width = 3.2
-        dendrogram_width = 4.8
-        show_row_labels = True
-        show_cell_text = True
-
-    fig = plt.figure(figsize=(fig_width, fig_height), facecolor="white")
+    """Render a signed heatmap with readable labels and its Spearman row dendrogram."""
+    row_count = max(1, len(clustering.matrix))
+    clusterable_count = len(clustering.clusterable_matrix)
+    insufficient_count = len(clustering.insufficient_row_labels)
+    row_font_size = 7.0
+    wrapped_labels = {label: wrap_label(label, width=42) for label in clustering.matrix.index}
+    max_label_lines = max((label.count("\n") + 1 for label in wrapped_labels.values()), default=1)
+    row_height = (max_label_lines * row_font_size * 1.2 + 4.0) / 72.0
+    subtitle_lines = wrap(subtitle, width=130)
+    top_margin = 0.9 + len(subtitle_lines) * 9.0 * 1.2 / 72.0
+    bottom_margin = 3.0
+    fig_height = 8.5 if preview else max(8.0, top_margin + row_count * row_height + bottom_margin)
+    fig = plt.figure(figsize=(13.8, fig_height), facecolor="white")
     grid = fig.add_gridspec(
         1,
-        4,
-        width_ratios=[dendrogram_width, 6.0, label_width, 0.32],
-        left=left,
-        right=right,
-        top=top,
-        bottom=bottom,
-        wspace=0.035,
+        2,
+        width_ratios=[1.7, 6.0],
+        left=0.04,
+        right=0.96 if preview else 0.69,
+        top=1.0 - top_margin / fig_height,
+        bottom=bottom_margin / fig_height,
+        wspace=0.02,
     )
-    dendro_ax = fig.add_subplot(grid[0, 0])
-    ax = fig.add_subplot(grid[0, 1])
-    row_label_spacer_ax = fig.add_subplot(grid[0, 2])
-    cbar_ax = fig.add_subplot(grid[0, 3])
+    dendrogram_axis = fig.add_subplot(grid[0, 0])
+    heatmap_axis = fig.add_subplot(grid[0, 1])
 
-    y_extent = row_count * 10
-    branch_node_x: dict[int, float] = {}
-    branch_node_y: dict[int, float] = {}
-    if linkage_matrix is not None:
-        dendrogram_data = dendrogram(
-            linkage_matrix,
+    if clusterable_count > 1:
+        tree = dendrogram(
+            clustering.linkage_matrix,
             orientation="left",
             no_labels=True,
             color_threshold=0,
             above_threshold_color=SLATE_500,
-            ax=dendro_ax,
+            link_color_func=lambda _node_id: SLATE_500,
+            ax=dendrogram_axis,
         )
-        dendro_ax.set_ylim(y_extent, 0)
-        branch_node_y.update(
-            {
-                int(leaf_index): position * 10 + 5
-                for position, leaf_index in enumerate(dendrogram_data["leaves"])
-            }
-        )
-        for offset, linkage_row in enumerate(linkage_matrix):
-            node_id = row_count + offset
-            left_node = int(linkage_row[0])
-            right_node = int(linkage_row[1])
-            branch_node_x[node_id] = float(linkage_row[2])
-            branch_node_y[node_id] = (branch_node_y[left_node] + branch_node_y[right_node]) / 2
+        row_positions = [int(value) for value in tree["leaves"]]
+    else:
+        row_positions = list(range(clusterable_count))
+    dendrogram_axis.set_ylim(0, 10 * row_count)
+    dendrogram_axis.set_xlabel("1 - Spearman rho", fontsize=7.5, color=SLATE_700)
+    dendrogram_axis.tick_params(axis="x", labelsize=6.5, colors=SLATE_500)
+    dendrogram_axis.tick_params(axis="y", left=False, labelleft=False)
+    for spine in dendrogram_axis.spines.values():
+        spine.set_visible(False)
 
-    branches_to_plot = (
-        cluster_summary.sort_values(["nesting_depth", "leaf_start", "branch_node_id"])
-        if not cluster_summary.empty
-        else cluster_summary
-    )
-    for branch in branches_to_plot.itertuples(index=False):
-        track = int(branch.nesting_depth)
-        node_id = int(branch.branch_node_id)
-        node_y = branch_node_y.get(
-            node_id,
-            (int(branch.leaf_start) + int(branch.leaf_end) + 1) * 5,
-        )
-        node_x = branch_node_x.get(node_id, 0.0)
-        track_spacing = 0.88 / max(1, label_track_count)
-        label_x = 0.03 + track * track_spacing
-        label_text = compact_dendrogram_label(
-            branch.cluster_label,
-            width=27 if not preview else 23,
-        )
-        dendro_ax.annotate(
-            label_text,
-            xy=(node_x, node_y),
-            xycoords="data",
-            xytext=(label_x, node_y),
-            textcoords=dendro_ax.get_yaxis_transform(),
-            ha="left",
-            va="center",
-            fontsize=8.0 if not preview else 6.7,
-            color="black",
-            fontweight="bold",
-            bbox={
-                "boxstyle": "round,pad=0.14",
-                "facecolor": "white",
-                "edgecolor": "black",
-                "linewidth": 1.2,
-                "alpha": 0.96,
-            },
-            arrowprops={
-                "arrowstyle": "-",
-                "color": "black",
-                "linewidth": 0.9,
-                "shrinkA": 2,
-                "shrinkB": 1,
-            },
-            annotation_clip=False,
-            clip_on=False,
-            zorder=5,
-        )
-    dendro_ax.axis("off")
-    row_label_spacer_ax.patch.set_alpha(0)
-    row_label_spacer_ax.set_zorder(-1)
-    row_label_spacer_ax.axis("off")
-
+    clustered_labels = [str(clustering.clusterable_matrix.index[index]) for index in row_positions]
+    ordered_labels = clustered_labels + clustering.insufficient_row_labels
+    ordered_matrix = clustering.matrix.loc[ordered_labels]
+    ordered_borders = significance_borders.reindex(ordered_matrix.index)
     cmap = plt.get_cmap("RdBu_r").copy()
     cmap.set_bad(SLATE_100)
-    values = np.ma.masked_invalid(matrix.to_numpy(dtype=float))
-    image = ax.imshow(
+    values = ordered_matrix.to_numpy(dtype=float)
+    if ordered_matrix.empty:
+        values = np.full((1, len(trait_order)), np.nan)
+    image = heatmap_axis.imshow(
         values,
-        origin="lower",
         aspect="auto",
         cmap=cmap,
         vmin=-1.0,
         vmax=1.0,
-        extent=[-0.5, len(trait_order) - 0.5, 0, y_extent],
+        origin="lower",
+        extent=(-0.5, len(trait_order) - 0.5, 0, 10 * row_count),
     )
-    ax.set_ylim(y_extent, 0)
-    ax.set_xticks(
+    heatmap_axis.set_xticks(
         np.arange(len(trait_order)),
         [wrap_label(label, width=16) for label in trait_order["trait_label"]],
     )
-    ax.tick_params(axis="x", labelrotation=35, labelsize=8.5 if not preview else 7.2)
-    if show_row_labels:
-        ax.set_yticks(
-            np.arange(len(matrix.index)) * 10 + 5,
-            [wrap_label(label, width=48) for label in matrix.index],
-        )
-        ax.yaxis.tick_right()
-        ax.yaxis.set_label_position("right")
-        ax.tick_params(
-            axis="y",
-            which="major",
-            left=False,
-            right=False,
-            labelleft=False,
-            labelright=True,
-            labelsize=7.3,
-            pad=7,
-        )
+    if preview:
+        heatmap_axis.set_yticks([])
     else:
-        ax.set_yticks([])
-    ax.set_xlabel("Six shared traits", color=SLATE_700)
-    ax.set_ylabel(
-        "" if preview else "Spearman-clustered grouped condition | anatomy rows",
-        color=SLATE_700,
-        labelpad=18,
+        heatmap_axis.set_yticks(
+            5 + 10 * np.arange(len(ordered_matrix)),
+            [wrapped_labels[label] for label in ordered_matrix.index],
+        )
+    heatmap_axis.yaxis.tick_right()
+    heatmap_axis.yaxis.set_label_position("right")
+    heatmap_axis.tick_params(axis="x", labelrotation=35, labelsize=8.0)
+    heatmap_axis.tick_params(axis="y", labelsize=row_font_size, pad=2)
+    heatmap_axis.set_xlabel("Six shared traits", color=SLATE_700)
+    heatmap_axis.set_ylabel(
+        "" if preview else "Condition | body-site pair", color=SLATE_700, labelpad=8
     )
-    ax.set_xticks(np.arange(-0.5, len(trait_order), 1), minor=True)
-    ax.set_yticks(np.arange(0, y_extent + 1, 10), minor=True)
-    ax.grid(which="minor", color="white", linewidth=1.1)
-    ax.tick_params(which="minor", bottom=False, left=False, right=False)
-    for spine in ax.spines.values():
+    heatmap_axis.set_xticks(np.arange(-0.5, len(trait_order), 1), minor=True)
+    heatmap_axis.set_yticks(np.arange(0, 10 * row_count + 1, 10), minor=True)
+    heatmap_axis.grid(which="minor", color="white", linewidth=0.7)
+    heatmap_axis.tick_params(which="minor", bottom=False, left=False)
+    for spine in heatmap_axis.spines.values():
         spine.set_visible(False)
 
-    if show_cell_text:
-        for y_index, row_label in enumerate(matrix.index):
-            y_value = y_index * 10 + 5
-            for x_index, trait_id in enumerate(trait_order["trait_id"]):
-                if bool(border_mask.loc[row_label, trait_id]):
-                    ax.add_patch(
-                        Rectangle(
-                            (x_index - 0.5, y_index * 10),
-                            1,
-                            10,
-                            fill=False,
-                            edgecolor=SIGNIFICANCE_BORDER,
-                            linewidth=1.9,
-                        )
+    if insufficient_count:
+        boundary = 10 * clusterable_count
+        dendrogram_axis.axhspan(boundary, 10 * row_count, color=SLATE_100, zorder=-1)
+        dendrogram_axis.axhline(boundary, color=SLATE_500, linewidth=0.9)
+        dendrogram_axis.text(
+            0.5,
+            boundary + 5 * insufficient_count,
+            "Insufficient overlap\n(not clustered)",
+            transform=dendrogram_axis.get_yaxis_transform(),
+            ha="center",
+            va="center",
+            fontsize=7.2,
+            color=SLATE_700,
+        )
+        heatmap_axis.axhline(boundary, color=SLATE_500, linewidth=1.0)
+
+    for y_index, row_label in enumerate(ordered_matrix.index):
+        for x_index, trait_id in enumerate(trait_order["trait_id"]):
+            if ordered_borders.loc[row_label, trait_id]:
+                heatmap_axis.add_patch(
+                    Rectangle(
+                        (x_index - 0.5, y_index * 10),
+                        1,
+                        10,
+                        fill=False,
+                        edgecolor=SIGNIFICANCE_BORDER,
+                        linewidth=0.85 if preview else 1.1,
+                        zorder=4,
                     )
+                )
+            if annotations is not None and not preview:
                 text = annotations.loc[row_label, trait_id]
                 if not text:
                     continue
-                value = matrix.loc[row_label, trait_id]
+                value = ordered_matrix.loc[row_label, trait_id]
                 text_color = SLATE_900
                 if pd.notna(value):
                     red, green, blue, _alpha = image.cmap(image.norm(float(value)))
                     luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
                     text_color = "white" if luminance < 0.56 else SLATE_900
-                ax.text(
+                heatmap_axis.text(
                     x_index,
-                    y_value,
+                    y_index * 10 + 5,
                     text,
                     ha="center",
                     va="center",
                     fontsize=6.7,
                     color=text_color,
                 )
-    else:
-        for y_index, row_label in enumerate(matrix.index):
-            for x_index, trait_id in enumerate(trait_order["trait_id"]):
-                if bool(border_mask.loc[row_label, trait_id]):
-                    ax.add_patch(
-                        Rectangle(
-                            (x_index - 0.5, y_index * 10),
-                            1,
-                            10,
-                            fill=False,
-                            edgecolor=SIGNIFICANCE_BORDER,
-                            linewidth=0.85,
-                        )
-                    )
 
-    title = "Grouped signed direction contrast: Spearman-clustered condition/anatomy rows"
-    subtitle = (
-        "Rows are fixed upstream grouped condition/body-site pairs with at least one displayed "
-        f"cell (|effect|>{SIGNED_EFFECT_ABS_CUTOFF:g}). The dendrogram orders rows using average "
-        "linkage on Spearman-correlation distance across signed trait deltas; missing cells are "
-        "neutral zero for clustering. A boxed title requires either BH-significant metadata "
-        "enrichment or BH-significant enrichment of a recurring signed-trait direction versus "
-        "the rest of the dendrogram (>=3 rows, >=67% agreement, and >=1 same-direction "
-        "BH-selected cell). Titles report their support; unlabeled branches are not interpreted. "
-        "Dark cell borders mark BH q<=0.05."
-    )
     fig.text(
         0.04,
-        0.985 if preview else 1 - 0.12 / fig_height,
-        title if not preview else "Grouped signed direction contrast preview",
+        1.0 - 0.2 / fig_height,
+        title,
         ha="left",
         va="top",
-        fontsize=15.5 if not preview else 13.0,
+        fontsize=15.5,
         fontweight="bold",
         color=SLATE_900,
     )
     fig.text(
         0.04,
-        0.94 if preview else 1 - 0.52 / fig_height,
-        "\n".join(wrap(subtitle, width=145 if not preview else 105)),
+        1.0 - 0.65 / fig_height,
+        "\n".join(subtitle_lines),
         ha="left",
         va="top",
-        fontsize=8.7 if not preview else 7.6,
+        fontsize=9.0,
         color=SLATE_500,
     )
-    cbar = fig.colorbar(image, cax=cbar_ax)
-    cbar.set_label("Increased - decreased positive-z fraction", color=SLATE_700)
-    cbar.ax.tick_params(labelsize=7.5)
-    cbar.outline.set_edgecolor(SLATE_200)
-    add_contrast_legend(
-        fig,
-        legend,
-        clustered=True,
-        significant_branch_count=significant_branch_count,
-        significant_metadata_label_count=significant_metadata_label_count,
-        significant_trait_pattern_count=significant_trait_pattern_count,
-    )
+    colorbar_axis = fig.add_axes((0.30, 1.5 / fig_height, 0.30, 0.08 / fig_height))
+    colorbar = fig.colorbar(image, cax=colorbar_axis, orientation="horizontal")
+    colorbar.set_label("Increased - decreased positive-z fraction", color=SLATE_700)
+    colorbar.ax.tick_params(labelsize=7)
+    colorbar.outline.set_edgecolor(SLATE_200)
+    add_contrast_legend(fig, contrast_legend, clustered=True)
+    fig.legends[-1].set_bbox_to_anchor((0.5, 0.1 / fig_height))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(
-        output_path, dpi=220 if not preview else 180, bbox_inches="tight", facecolor="white"
-    )
+    fig.savefig(output_path, dpi=180 if preview else 240, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
 
@@ -1778,8 +1645,8 @@ def write_pattern_heatmap(
     subtitle = (
         "Approach 2: rows are condition/body-site pairs and columns are the six "
         "traits. Cell color is Fisher evidence, -log10(p), so darker cells have "
-        "smaller p-values. Cells are shown for exploratory review only when Fisher "
-        f"p<{P_VALUE_CUTOFF:g}, n>=3, and s>=2; BH q-values are written to the TSV."
+        "smaller p-values. Cells are shown for exploratory review only when nominal Fisher "
+        f"p < {P_VALUE_CUTOFF:g}, n>=3, and s>=2; BH q-values are written to the TSV."
     )
     plot_matrix_heatmap(
         matrix,
@@ -1801,7 +1668,7 @@ def write_contrast_heatmap(
     mode: ContrastMode,
     trait_order: pd.DataFrame,
     output_dir: Path,
-) -> tuple[Path, int, int, int, dict[str, object]]:
+) -> ContrastHeatmapOutputs:
     """Write one approach-4 signed direction contrast heatmap."""
     row_labels = select_contrast_rows(cells)
     matrix = cell_matrix(
@@ -1811,7 +1678,7 @@ def write_contrast_heatmap(
         value_column="increased_minus_decreased_positive_fraction",
     )
     annotations = annotation_matrix(cells, row_labels, trait_order, mode="contrast")
-    border_mask = flag_matrix(
+    bh_borders = flag_matrix(
         cells,
         row_labels,
         trait_order,
@@ -1821,138 +1688,51 @@ def write_contrast_heatmap(
         output_dir
         / f"six_shared_traits_{mode.key}_condition_body_site_signed_direction_contrast_heatmap.png"
     )
+    clustered_output_path = output_path.with_name(
+        output_path.name.replace("_contrast_heatmap.png", "_contrast_clustered_heatmap.png")
+    )
+    preview_path = (
+        output_path.with_stem(f"{output_path.stem}_preview") if mode.key == "grouped" else None
+    )
     displayed_cells = int(cells["displayed_in_heatmap"].sum())
-    nominal_p_value_cells = int(cells["nominal_p_value_selected"].sum())
+    nominal_p_value_cell_count = int(cells["nominal_p_value_selected"].sum())
+    bh_selected_cell_count = int(cells["selected_after_bh"].sum())
     legend = summarize_contrast_legend(cells, row_labels, mode)
-    if mode.key == "grouped":
-        (
-            row_clusters,
-            cluster_summary,
-            branch_tests,
-            pattern_tests,
-            row_linkage,
-        ) = clustered_contrast_rows(matrix, cells)
-        ordered_labels = row_clusters["row_label"].astype(str).tolist()
-        matrix = matrix.reindex(ordered_labels)
-        annotations = annotations.reindex(ordered_labels)
-        border_mask = border_mask.reindex(ordered_labels).fillna(False).astype(bool)
-
-        cluster_by_row = row_clusters.set_index("row_label")["spearman_cluster"].to_dict()
-        cluster_label_by_row = row_clusters.set_index("row_label")["cluster_label"].to_dict()
-        in_rows = cells["condition_body_site_pair"].map(cluster_by_row)
-        cells["spearman_cluster"] = in_rows.astype("Int64")
-        cells["spearman_cluster_label"] = cells["condition_body_site_pair"].map(
-            cluster_label_by_row
-        )
-        branch_by_row = row_clusters.set_index("row_label")["branch_node_id"].to_dict()
-        cells["spearman_branch_node_id"] = (
-            cells["condition_body_site_pair"].map(branch_by_row).astype("Int64")
-        )
-        order_by_row = row_clusters.set_index("row_label")["row_order"].to_dict()
-        cells["spearman_cluster_row_order"] = (
-            cells["condition_body_site_pair"].map(order_by_row).astype("Int64")
-        )
-
-        cluster_rows_path = output_dir / GROUPED_CONTRAST_CLUSTER_ROWS_FILENAME
-        cluster_summary_path = output_dir / GROUPED_CONTRAST_CLUSTER_SUMMARY_FILENAME
-        branch_tests_path = output_dir / GROUPED_CONTRAST_BRANCH_TESTS_FILENAME
-        pattern_tests_path = output_dir / GROUPED_CONTRAST_PATTERN_TESTS_FILENAME
-        write_tsv(row_clusters, cluster_rows_path)
-        write_tsv(cluster_summary, cluster_summary_path)
-        write_tsv(branch_tests, branch_tests_path)
-        write_tsv(pattern_tests, pattern_tests_path)
-
-        preview_path = output_path.with_stem(f"{output_path.stem}_preview")
-        plot_grouped_clustered_contrast_heatmap(
-            matrix,
-            annotations,
-            border_mask,
-            trait_order,
-            cluster_summary,
-            row_linkage,
-            output_path,
-            legend=legend,
-        )
-        plot_grouped_clustered_contrast_heatmap(
-            matrix,
-            annotations,
-            border_mask,
-            trait_order,
-            cluster_summary,
-            row_linkage,
-            preview_path,
-            legend=legend,
-            preview=True,
-        )
-        for page_path in output_dir.glob(f"{output_path.stem}_page_*.png"):
-            page_path.unlink()
-        extra = {
-            "display_rule": (
-                "supported testable cells with absolute effect above cutoff; BH q cutoff marks "
-                "dark borders; nominal p cutoff is audit-only"
-            ),
-            "page_count": 0,
-            "preview_png_path": preview_path,
-            "cluster_rows_path": cluster_rows_path,
-            "cluster_summary_path": cluster_summary_path,
-            "branch_tests_path": branch_tests_path,
-            "pattern_tests_path": pattern_tests_path,
-            "clustering_method": "row average linkage on Spearman-correlation distance",
-            "cluster_label_rule": (
-                "metadata titles require one-sided Fisher branch enrichment with global BH "
-                "q<=0.05, >=3 branch rows, >=2 matching rows, and purity >=2/3; descriptive "
-                "trait-pattern titles require one-sided Fisher enrichment versus outside rows "
-                "with global branch-pattern BH q<=0.05, >=3 same-direction displayed rows, "
-                "direction purity >=2/3, and >=1 same-direction cell selected at heatmap-wide "
-                "BH q<=0.05; every qualifying nested branch and trait pattern displayed"
-            ),
-            "significant_branch_count": len(cluster_summary),
-            "metadata_enrichment_branch_count": int(
-                cluster_summary.get("cluster_label_source", pd.Series(dtype=str))
-                .astype(str)
-                .str.contains("metadata_enrichment", regex=False)
-                .sum()
-            ),
-            "trait_pattern_branch_count": int(
-                cluster_summary.get("cluster_label_source", pd.Series(dtype=str))
-                .astype(str)
-                .str.contains("bh_supported_trait_pattern", regex=False)
-                .sum()
-            ),
-            "metadata_label_count": int(
-                cluster_summary.get("metadata_label_count", pd.Series(dtype=int)).sum()
-            ),
-            "trait_pattern_label_count": int(
-                cluster_summary.get("trait_pattern_count", pd.Series(dtype=int)).sum()
-            ),
-            "legend": legend,
-        }
-        return output_path, len(row_labels), displayed_cells, len(cells), extra
-
     subtitle = (
         "Color and numbers show increased minus decreased positive-z fractions. "
         "Red favors increased profiles; blue favors decreased profiles. "
-        f"Dark borders mark BH q<={Q_VALUE_CUTOFF:g}; {nominal_p_value_cells} cells meet "
-        f"nominal Fisher p<{P_VALUE_CUTOFF:g}. Shown cells require "
-        f"|effect|>{SIGNED_EFFECT_ABS_CUTOFF:g}, >=3 positive-z profiles in either direction, "
-        "and >=2 total studies. Gray = unavailable, insufficient support, or below cutoff. "
+        f"A dark border marks BH-adjusted q <= {Q_VALUE_CUTOFF:g} "
+        f"({bh_selected_cell_count} cells); "
+        f"{nominal_p_value_cell_count} cells met nominal Fisher p < {P_VALUE_CUTOFF:g}. "
+        f"Shown cells require |effect|>{SIGNED_EFFECT_ABS_CUTOFF:g}, >=3 positive-z profiles "
+        "in either direction, and >=2 total studies. Gray = unavailable, insufficient support, "
+        "or below the effect cutoff. "
         "Raw p and BH q are in the TSV."
     )
-    plot_matrix_heatmap(
+    clustering = build_spearman_clustering(
         matrix,
-        annotations,
-        trait_order,
-        output_path,
-        title=f"Signed direction contrast: {mode.label}",
-        subtitle=subtitle,
-        colorbar_label="Increased - decreased positive-z fraction",
-        cmap_name="RdBu_r",
-        vmin=-1.0,
-        vmax=1.0,
-        compact=True,
-        border_mask=border_mask,
-        contrast_legend=legend,
+        cells,
+        view_key=f"{mode.key}_direction_contrast",
+        view_label=mode.label,
     )
+    if mode.key == "grouped":
+        row_labels = clustering.clustered_row_labels + clustering.insufficient_row_labels
+    else:
+        plot_matrix_heatmap(
+            matrix,
+            annotations,
+            trait_order,
+            output_path,
+            title=f"Signed direction contrast: {mode.label}",
+            subtitle=subtitle,
+            colorbar_label="Increased - decreased positive-z fraction",
+            cmap_name="RdBu_r",
+            vmin=-1.0,
+            vmax=1.0,
+            compact=True,
+            significance_borders=bh_borders,
+            contrast_legend=legend,
+        )
     pages = contrast_row_pages(row_labels)
     for page, labels in enumerate(pages, start=1):
         page_legend = summarize_contrast_legend(cells, labels, mode)
@@ -1968,30 +1748,62 @@ def write_contrast_heatmap(
             vmin=-1.0,
             vmax=1.0,
             compact=True,
-            border_mask=border_mask.loc[labels],
+            significance_borders=bh_borders.loc[labels],
             contrast_legend=page_legend,
         )
-    extra = {
-        "display_rule": (
-            "supported testable cells with absolute effect above cutoff; BH q cutoff marks "
-            "dark borders; nominal p cutoff is audit-only"
-        ),
-        "page_count": len(pages),
-        "preview_png_path": "",
-        "cluster_rows_path": "",
-        "cluster_summary_path": "",
-        "branch_tests_path": "",
-        "pattern_tests_path": "",
-        "clustering_method": "",
-        "cluster_label_rule": "not applicable; rows are ranked, not clustered",
-        "significant_branch_count": 0,
-        "metadata_enrichment_branch_count": 0,
-        "trait_pattern_branch_count": 0,
-        "metadata_label_count": 0,
-        "trait_pattern_label_count": 0,
-        "legend": legend,
-    }
-    return output_path, len(row_labels), displayed_cells, len(cells), extra
+    condition_label_source = (
+        "Grouped condition text is the fixed upstream rollup, not a cluster name."
+        if mode.key == "grouped"
+        else "Individual condition text is the original curated label, not a cluster name."
+    )
+    clustered_subtitle = (
+        "Average linkage uses pairwise-complete Spearman distance after ascending label sort "
+        "for deterministic tie breaking. "
+        f"Before exclusion, {clustering.undefined_pair_count}/{clustering.pair_count} "
+        f"({clustering.undefined_pair_fraction:.1%}) row-pair correlations were undefined; "
+        f"{len(clustering.insufficient_row_labels)} rows with no defined neighbor are shown "
+        "separately and not linked. Among linked rows, "
+        f"{clustering.linkage_undefined_pair_count}/{clustering.linkage_pair_count} "
+        f"({clustering.linkage_undefined_pair_fraction:.1%}) distances use neutral "
+        f"{UNDEFINED_SPEARMAN_DISTANCE:g}; exact-distance tie excess is "
+        f"{clustering.linkage_distance_tie_fraction:.1%}. No dendrogram cut or branch label is "
+        f"interpreted. {condition_label_source} "
+        f"Gray cells remain missing; dark borders mark BH-adjusted q <= {Q_VALUE_CUTOFF:g} "
+        f"({bh_selected_cell_count} cells), versus {nominal_p_value_cell_count} cells at "
+        f"nominal Fisher p < {P_VALUE_CUTOFF:g}."
+    )
+    plot_clustered_contrast_heatmap(
+        clustering,
+        bh_borders,
+        trait_order,
+        clustered_output_path,
+        title=f"Clustered signed direction contrast: {mode.label}",
+        subtitle=clustered_subtitle,
+        contrast_legend=legend,
+    )
+    if preview_path is not None:
+        for path, preview in ((output_path, False), (preview_path, True)):
+            plot_clustered_contrast_heatmap(
+                clustering,
+                bh_borders,
+                trait_order,
+                path,
+                title=f"Grouped signed direction contrast{' preview' if preview else ''}",
+                subtitle=clustered_subtitle,
+                contrast_legend=legend,
+                annotations=annotations,
+                preview=preview,
+            )
+    return ContrastHeatmapOutputs(
+        overview_path=output_path,
+        clustered_path=clustered_output_path,
+        preview_path=preview_path,
+        row_labels=row_labels,
+        displayed_cell_count=displayed_cells,
+        tested_cell_count=len(cells),
+        clustering=clustering,
+        legend=legend,
+    )
 
 
 def contrast_row_pages(row_labels: list[str]) -> list[list[str]]:
@@ -2016,62 +1828,64 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
     old_marker = "## Condition-Body-Site Trait Correlation Heatmaps"
     content = readme_path.read_text(encoding="utf-8")
     split_marker = old_marker if old_marker in content else new_marker
-    prefix = content.split(split_marker, maxsplit=1)[0].rstrip()
+    prefix, prior_section = content.split(split_marker, maxsplit=1)
+    next_section_start = prior_section.find("\n## ")
+    suffix = ""
+    if next_section_start >= 0:
+        suffix = prior_section[next_section_start + 1 :].strip()
     lines = [
-        "",
-        "",
         new_marker,
         "",
         f"- Manifest: `{MANIFEST_FILENAME}`",
         f"- Pattern matrix table: `{PATTERN_TABLE_FILENAME}`",
         f"- Signed contrast table: `{CONTRAST_TABLE_FILENAME}`",
-        f"- Grouped signed-direction cluster rows: `{GROUPED_CONTRAST_CLUSTER_ROWS_FILENAME}`",
-        "- Grouped signed-direction cluster summary: "
-        f"`{GROUPED_CONTRAST_CLUSTER_SUMMARY_FILENAME}`",
-        f"- Grouped dendrogram branch-label tests: `{GROUPED_CONTRAST_BRANCH_TESTS_FILENAME}`",
-        f"- Grouped dendrogram trait-pattern tests: `{GROUPED_CONTRAST_PATTERN_TESTS_FILENAME}`",
         f"- BH-selected cell table: `{SELECTED_CELLS_FILENAME}`",
+        f"- Cluster-tree nodes: `{CLUSTER_TREE_NODES_FILENAME}`",
+        f"- Cluster-tree leaves and row order: `{CLUSTER_TREE_LEAVES_FILENAME}`",
+        f"- Individual-versus-grouped comparison: `{CLUSTER_COMPARISON_FILENAME}`",
         "",
         "Trait-pattern heatmaps use the six-shared-trait display-edge TSVs that feed "
         "the Cytoscape graph views. Signed contrasts use the full increased and decreased "
         "edge TSVs before graph display selection. They preserve condition/body-site/trait records "
         "instead of correlating already-collapsed condition and body-site nodes.",
         "",
-        "Signed contrasts display supported, testable effects whose absolute magnitude is "
-        f"greater than {SIGNED_EFFECT_ABS_CUTOFF:g}, including nonsignificant results. Gray "
-        "cells are unavailable, under-supported, or at or below the effect cutoff. "
-        "Trait-pattern heatmaps continue to mask cells that fail the nominal p-value threshold.",
+        "Signed contrasts display supported, testable effects above the absolute-effect cutoff, "
+        "including nonsignificant results. Gray cells are unavailable, under-supported, or at "
+        "or below the cutoff. Trait-pattern heatmaps continue to mask cells that fail their "
+        "nominal p-value display threshold.",
         "",
-        "### How Conditions and Cluster Labels Are Chosen",
+        "### How Conditions and Blank Cells Are Chosen",
         "",
-        "The signed heatmaps do not choose a top-N disease list. They read the full increased "
-        "and decreased Sankey edge tables before graph display selection and include every "
-        "condition/body-site row with at least one supported, finite cell above the absolute-"
-        "effect cutoff. The grouped view uses the fixed upstream v3 clinical rollup; the "
-        "individual view retains the original curated condition label. Both use the upstream "
-        "grouped v3 anatomy label. These condition and anatomy names are not inferred from the "
-        "dendrogram.",
-        "",
+        "The signed heatmaps do not choose a top-N list of diseases. They read the full "
+        "increased and decreased Sankey edge tables before graph display selection, discard "
+        "unknown raw condition labels upstream, and include every condition/body-site row "
+        f"with at least one supported, finite cell whose absolute effect is >"
+        f"{SIGNED_EFFECT_ABS_CUTOFF:g}. The grouped view applies the v3 clinical "
+        "condition rollup rules; the individual view keeps the original curated condition "
+        "label. Both views use the same grouped v3 body-site labels. These are fixed upstream "
+        "labels, not names inferred from the dendrogram or summaries of every row on a branch.",
         "Grouped conditions are assigned by the ordered, case-insensitive substring rules in "
-        "`v3_fully_grouped_condition_display_label`: the first matching rule wins and unmatched "
-        "labels become `Other specific clinical labels`. The per-trait "
-        "`*_profile_sankey_condition_rollups.tsv` files audit each raw label, displayed label, "
-        "rule, profile count, and study count. Every internal dendrogram branch is tested for "
-        "one-sided enrichment of each eligible anatomy and grouped-condition label versus all "
-        "rows outside that branch. BH adjustment covers the complete tested branch-by-label "
-        "family. A branch is named only when q<=0.05, it has at least 3 rows and 2 matching "
-        "rows, and the label describes at least two-thirds of the branch. Every qualifying "
-        "nested label is placed directly inside the dendrogram and connected to its branch node. "
-        "Each visible label reports its matching-row fraction and adjusted q-value; unlabeled "
-        "branches are not interpreted.",
-        "A branch without significant anatomy/condition enrichment may instead receive a "
-        "descriptive trait-pattern title. Each branch/trait/direction is tested for one-sided "
-        "enrichment against displayed rows outside the branch, with BH adjustment across the "
-        "complete branch-pattern family. A displayed pattern requires q<=0.05, at least three "
-        "same-direction displayed cells, at least two-thirds directional agreement, and at least "
-        "one same-direction cell already selected at heatmap-wide BH q<=0.05. Pattern titles "
-        "report the matching-row fraction, branch-pattern q-value, and BH-cell count. The "
-        "pattern-test TSV records every test and selection flag.",
+        "`v3_fully_grouped_condition_display_label`; the first matching rule wins and an "
+        "unmatched label becomes `Other specific clinical labels`. The per-trait "
+        "`*_profile_sankey_condition_rollups.tsv` files audit every raw condition, displayed "
+        "label, rule, profile count, and study count. Individual-condition rollup files record "
+        "that the raw curated label was retained.",
+        "",
+        "The signed contrast table contains candidate edge records, not a complete Cartesian "
+        "grid. Its exported `blank_reason` is `low positive-z profile or study support` for "
+        "a present candidate that fails display support and is empty (`NA` in the TSV) for a "
+        "displayed candidate. A condition/body-site/trait combination for which neither "
+        "direction emitted a candidate edge is absent from the table rather than assigned a "
+        "blank reason. In the image, both an absent record and a present under-supported "
+        "candidate appear gray. A present supported candidate with absolute effect at or below "
+        f"{SIGNED_EFFECT_ABS_CUTOFF:g} has `blank_reason=absolute effect <="
+        f"{SIGNED_EFFECT_ABS_CUTOFF:g}` and also appears gray. A direction can have zero "
+        "positive-z profiles while the cell "
+        "remains colored when total profiles exist and the other direction meets support. "
+        "Finite effects above the display cutoff that miss either statistical cutoff remain "
+        "colored and numbered. In "
+        "trait-pattern heatmaps only, gray can also mean that the raw one-sided Fisher test "
+        f"did not pass p<{P_VALUE_CUTOFF:g}.",
         "",
         "- `trait_pattern`: Approach 2. Rows are condition/body-site pairs and "
         "columns are the six traits. Cell color is Fisher evidence, `-log10(p)`, "
@@ -2083,80 +1897,131 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "`increased_fraction - decreased_fraction` on a fixed -1 to +1 scale. Red "
         "favors increased profiles and blue favors decreased profiles. "
         f"A dark border marks BH-adjusted q<={Q_VALUE_CUTOFF:g}; the nominal Fisher "
-        f"p<{P_VALUE_CUTOFF:g} flag is reported separately. Unbordered cells are descriptive "
-        f"effects. Cells also require absolute effect >{SIGNED_EFFECT_ABS_CUTOFF:g}.",
-        "- Condition/body-site rows are chosen from the full increased and decreased edge TSVs, "
-        "not from the graph display subset. A row is retained when at least one trait cell has "
-        "a finite increased-vs-decreased Fisher test, absolute effect above the cutoff, at "
-        "least 3 positive-z profiles in either direction, and at least 2 total studies.",
-        "- The grouped signed-direction heatmap is a single clustered diagram. Rows use average "
-        "linkage on Spearman-correlation distance across the six signed trait deltas; missing "
-        "or unsupported cells are neutral zero for clustering. The left dendrogram orders "
-        "condition/anatomy rows. Only branches passing the multiplicity-adjusted enrichment, "
-        "minimum-size, and minimum-purity rules receive an anatomy/condition title. Other branches "
-        "can receive a descriptive trait-pattern title only under branch-pattern BH significance, "
-        "BH-cell support, recurrence, and directional-purity rules. All qualifying nested labels "
-        "are overlaid compactly inside the dendrogram and connected to their tested nodes; the "
-        "two audit TSVs preserve every rejected and accepted metadata or trait-pattern candidate.",
-        "- Individual-condition signed-direction heatmaps still receive readable pages containing "
-        f"at most {CONTRAST_ROWS_PER_PAGE} rows each. `{CONTRAST_PAGES_FILENAME}` records only "
-        "those individual-condition page paths and counts.",
+        f"p<{P_VALUE_CUTOFF:g} count is reported separately below. Unbordered cells are "
+        f"descriptive effects. Cells require a finite test, absolute effect >"
+        f"{SIGNED_EFFECT_ABS_CUTOFF:g}, "
+        "at least 3 positive-z profiles in "
+        "either direction, and at least 2 total studies. Every condition/body-site row "
+        "with a displayed cell is included, without a row cap. The primary grouped figure "
+        "uses the audited clustered row order and has a compact preview. Individual rows are "
+        "grouped by body site and ranked by nominal-p trait count, coverage, and evidence "
+        "within each site.",
+        "- `signed_direction_contrast_clustered`: Both views also retain diagnostic overviews. "
+        "The primary grouped figure, its preview, and these diagnostics cluster rows "
+        "with average linkage on pairwise-complete Spearman distance (`1 - rho`). A pairwise "
+        f"correlation requires at least {MIN_SPEARMAN_OVERLAP} shared supported traits. Blank "
+        "cells are never filled with zero. Rows are sorted by exact condition/body-site pair "
+        "label before distance construction so SciPy's tied-distance choices are reproducible. "
+        "Rows with no defined Spearman distance to any other row are excluded from linkage and "
+        "shown in a separate `Insufficient overlap (not clustered)` block. Remaining undefined "
+        f"row-pair distances use neutral distance {UNDEFINED_SPEARMAN_DISTANCE:g}. Figure "
+        "subtitles and the manifest report undefined-pair and exact-distance tie fractions. "
+        "No dendrogram cut, cluster ID, or branch label is interpreted. Trait columns remain "
+        "in the fixed six-trait order. The previous branch-label tables are preserved as "
+        "[historical outputs](archive/2026-09-23-branch-labels/README.md); their branch q-values "
+        "are not evidence for labels in the corrected figures.",
+        f"- Readable pages contain at most {CONTRAST_ROWS_PER_PAGE} rows each. "
+        f"`{CONTRAST_PAGES_FILENAME}` records their paths and counts; `heatmap_page` in "
+        "the contrast table locates each displayed row. Grouped pages follow the clustered "
+        "order; individual pages retain the ranked order. The original PNGs show full overviews.",
         f"- BH q-values are computed within each heatmap view. "
-        f"`selected_after_bh=True` marks supported cells with q<={Q_VALUE_CUTOFF:g}; visible "
-        "selected cells receive the dark border and selected candidates are collected in the "
-        "BH-selected cell table. `nominal_p_value_selected` is the explicit nominal flag; "
-        "`significant_in_heatmap` remains a compatibility alias for that nominal flag.",
+        f"`selected_after_bh=True` marks supported cells with q<={Q_VALUE_CUTOFF:g}; "
+        "those cells receive the dark border and are also collected in the BH-selected cell "
+        "table. `nominal_p_value_selected` is the explicit nominal flag; "
+        "`significant_in_heatmap` is retained as a deprecated compatibility alias.",
+        "- The Fisher tables count profiles, not independent studies. A BH-bordered cell is "
+        "therefore a profile-level diagnostic and does not establish study-level replication.",
         "- Issue #256 / PR #257 adds pooled, denominator-harmonized, study-weighted fraction "
         "and log-ratio quantities, but no condition-by-anatomy replacement for this heatmap. "
-        "Those pooled quantities are not mixed into this profile-level positive-z prevalence "
-        "contrast because the estimands and sampling units differ.",
+        "Those pooled quantities are therefore not mixed into this profile-level positive-z "
+        "prevalence contrast; the estimands and sampling units remain explicitly separate.",
         "",
+        "| heatmap | type | primary PNG | clustered diagnostic PNG | displayed cells | "
+        "nominal p<0.01 cells | BH-selected cells | tested cells | rows | condition labels | "
+        "anatomy groups |",
+        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
-    grouped = manifest[manifest["view_key"].eq("grouped_direction_contrast")]
-    if not grouped.empty and str(grouped.iloc[0].get("preview_png_path", "")):
-        preview_path = Path(str(grouped.iloc[0]["preview_png_path"])).name
-        full_path = Path(str(grouped.iloc[0]["png_path"])).name
+    for row in manifest.itertuples(index=False):
+        clustered_path = getattr(row, "clustered_png_path", pd.NA)
+        clustered_text = "" if pd.isna(clustered_path) else f"`{clustered_path}`"
+        nominal_count = getattr(row, "nominal_p_value_cell_count", row.significant_cell_count)
+        condition_count = getattr(row, "condition_label_count", pd.NA)
+        anatomy_count = getattr(row, "anatomy_group_count", pd.NA)
+        condition_text = "" if pd.isna(condition_count) else str(int(condition_count))
+        anatomy_text = "" if pd.isna(anatomy_count) else str(int(anatomy_count))
+        lines.append(
+            f"| {row.view_label} | {row.heatmap_type} | `{row.png_path}` | "
+            f"{clustered_text} | "
+            f"{row.displayed_cell_count} | {int(nominal_count)} | "
+            f"{row.bh_selected_cell_count} | "
+            f"{row.tested_cell_count} | {row.row_count} | {condition_text} | {anatomy_text} |"
+        )
+    clustered_rows = manifest[manifest["heatmap_type"] == "signed_direction_contrast"]
+    if not clustered_rows.empty:
+        individual_rows = clustered_rows[
+            clustered_rows["view_key"] == "individual_conditions_direction_contrast"
+        ]
+        individual_row_count = (
+            int(individual_rows.iloc[0]["row_count"]) if not individual_rows.empty else 0
+        )
         lines.extend(
             [
-                "### Grouped Signed-Direction Cluster Preview",
                 "",
-                f"[![Grouped signed-direction cluster preview]({preview_path})]({full_path})",
+                "### Clustered Direction Overviews",
+                "",
+                f"The grouped view is previewed below. The {individual_row_count}-row individual "
+                "view is linked directly because a page-width thumbnail is illegible. Use the "
+                "readable pages below when numeric annotations need to be read.",
                 "",
             ]
         )
-    lines.extend(
-        [
-            "| heatmap | type | PNG | displayed cells | nominal p<0.01 cells | "
-            "BH-selected cells | tested cells | rows | condition labels | anatomy groups | "
-            "supported dendrogram branches | metadata labels | trait-pattern labels |",
-            "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | "
-            "---: | ---: |",
-        ]
-    )
-    for row in manifest.itertuples(index=False):
-        nominal_count = (
-            "" if pd.isna(row.nominal_p_value_cell_count) else int(row.nominal_p_value_cell_count)
+        for row in clustered_rows.itertuples(index=False):
+            image_name = Path(row.clustered_png_path).name
+            lines.extend([f"#### {row.view_label}", ""])
+            if row.view_key == "grouped_direction_contrast":
+                image_name = Path(row.png_path).name
+                preview_name = Path(row.preview_png_path).name
+                lines.extend(
+                    [
+                        f'<a href="{image_name}"><img src="{preview_name}" '
+                        f'alt="{row.view_label}" width="760"></a>',
+                        "",
+                    ]
+                )
+            else:
+                lines.extend(
+                    [
+                        f"[Open the full-resolution clustered heatmap]({image_name}).",
+                        "",
+                    ]
+                )
+        lines.extend(
+            [
+                "### Clustering Diagnostics",
+                "",
+                "The undefined fraction covers every candidate row pair before low-information "
+                "rows are excluded. Tie excess is `(linkage pairs - distinct distances) / "
+                "linkage pairs`; it is zero only when every linkage distance is unique.",
+                "",
+                "| view | rows linked | insufficient-overlap rows | undefined candidate pairs | "
+                "candidate tie excess | undefined linkage pairs | linkage tie excess |",
+                "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+            ]
         )
-        condition_count = (
-            "" if pd.isna(row.condition_label_count) else int(row.condition_label_count)
-        )
-        anatomy_count = "" if pd.isna(row.anatomy_group_count) else int(row.anatomy_group_count)
-        branch_count = (
-            "" if pd.isna(row.significant_branch_count) else int(row.significant_branch_count)
-        )
-        metadata_label_count = (
-            "" if pd.isna(row.metadata_label_count) else int(row.metadata_label_count)
-        )
-        pattern_label_count = (
-            "" if pd.isna(row.trait_pattern_label_count) else int(row.trait_pattern_label_count)
-        )
-        lines.append(
-            f"| {row.view_label} | {row.heatmap_type} | `{row.png_path}` | "
-            f"{row.displayed_cell_count} | {nominal_count} | "
-            f"{row.bh_selected_cell_count} | {row.tested_cell_count} | {row.row_count} | "
-            f"{condition_count} | {anatomy_count} | {branch_count} | "
-            f"{metadata_label_count} | {pattern_label_count} |"
-        )
+        for row in clustered_rows.itertuples(index=False):
+            lines.append(
+                f"| {row.view_label} | {int(row.clustered_row_count)} | "
+                f"{int(row.insufficient_overlap_row_count)} | "
+                f"{int(row.undefined_spearman_pair_count)}/{int(row.spearman_pair_count)} "
+                f"({row.undefined_spearman_pair_fraction:.1%}) | "
+                f"{int(row.distance_tie_excess_count)}/{int(row.spearman_pair_count)} "
+                f"({row.distance_tie_fraction:.1%}) | "
+                f"{int(row.linkage_undefined_spearman_pair_count)}/"
+                f"{int(row.linkage_pair_count)} "
+                f"({row.linkage_undefined_spearman_pair_fraction:.1%}) | "
+                f"{int(row.linkage_distance_tie_excess_count)}/{int(row.linkage_pair_count)} "
+                f"({row.linkage_distance_tie_fraction:.1%}) |"
+            )
     lines.append("")
     pages_path = output_dir / CONTRAST_PAGES_FILENAME
     if pages_path.exists():
@@ -2164,13 +2029,54 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         for page in read_tsv(pages_path).itertuples(index=False):
             lines.append(
                 f"- [{page.view_label}, page {page.page}]({Path(page.png_path).name}) "
-                f"({page.row_count} rows; {page.condition_label_count} condition labels; "
-                f"{page.anatomy_group_count} anatomy groups; "
-                f"{page.displayed_cell_count} displayed cells; "
-                f"{page.bh_selected_cell_count} BH-bordered cells)"
+                f"({page.row_count} rows, {page.displayed_cell_count} filled cells)"
             )
         lines.append("")
-    readme_path.write_text(prefix + "\n".join(lines), encoding="utf-8")
+    comparison_path = output_dir / CLUSTER_COMPARISON_FILENAME
+    if comparison_path.exists():
+        comparison = read_tsv(comparison_path)
+        comparable = comparison[comparison["pattern_diagnostic_eligible"].astype(bool)].head(10)
+        if not comparable.empty:
+            lines.extend(
+                [
+                    "### Largest Individual-versus-Grouped Pattern Differences",
+                    "",
+                    f"These are the ten largest finite `1 - rho` distances among rows with at "
+                    f"least {MIN_DIAGNOSTIC_SHARED_TRAITS} shared supported traits, not a "
+                    "formal biological outlier test. Lower-overlap rows remain in the complete "
+                    "table but are ineligible for ranks and diagnostic flags. Each individual "
+                    "row is compared with a grouped aggregate that includes that row, so the "
+                    "comparison is not independent. Source contributors count distinct raw "
+                    "condition labels in the full grouped input, including labels absent from "
+                    "the displayed individual rows. Displayed contributors count only those "
+                    "rows present in the individual heatmap; one displayed contributor does "
+                    "not imply a one-condition aggregate. Within-group IQR thresholds require "
+                    "at least four eligible comparisons and exclude lower-overlap distances. "
+                    "The complete table also records each row's nearest Spearman neighbor.",
+                    "",
+                    "| individual condition | grouped condition | body site | shared traits | "
+                    "source contributors | displayed contributors | rho | distance | "
+                    "discordant | IQR outlier |",
+                    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |",
+                ]
+            )
+            for row in comparable.itertuples(index=False):
+                lines.append(
+                    f"| {row.individual_condition} | {row.grouped_condition} | "
+                    f"{row.body_site_group} | {row.shared_supported_trait_count} | "
+                    f"{row.grouped_contributing_individual_condition_count} | "
+                    f"{row.grouped_displayed_individual_condition_count} | "
+                    f"{row.individual_vs_grouped_spearman_rho:.3f} | "
+                    f"{row.individual_vs_grouped_spearman_distance:.3f} | "
+                    f"{row.discordant_or_inverse_pattern} | "
+                    f"{row.within_group_iqr_outlier} |"
+                )
+            lines.append("")
+
+    updated = prefix.rstrip() + "\n\n" + "\n".join(lines).rstrip() + "\n"
+    if suffix:
+        updated += "\n" + suffix + "\n"
+    readme_path.write_text(updated, encoding="utf-8")
 
 
 def write_six_shared_trait_cytoscape_heatmaps(
@@ -2187,6 +2093,10 @@ def write_six_shared_trait_cytoscape_heatmaps(
     contrast_tables: list[pd.DataFrame] = []
     manifest_records: list[dict[str, object]] = []
     page_records: list[dict[str, object]] = []
+    cluster_tree_nodes: list[pd.DataFrame] = []
+    cluster_tree_leaves: list[pd.DataFrame] = []
+    clusterings: dict[str, SpearmanClustering] = {}
+    contrast_source_edges: dict[str, pd.DataFrame] = {}
 
     for view in graph_manifest.itertuples(index=False):
         display_edges = read_tsv(resolve_repo_path(view.source_display_edges_path, repo_root))
@@ -2207,6 +2117,8 @@ def write_six_shared_trait_cytoscape_heatmaps(
                 "condition_mode": view.condition_mode,
                 "row_count": row_count,
                 "displayed_cell_count": displayed_count,
+                "nominal_p_value_cell_count": int(cells["nominal_p_value_selected"].sum()),
+                "significant_cell_count": int(cells["significant_in_heatmap"].sum()),
                 "bh_selected_cell_count": int(cells["selected_after_bh"].sum()),
                 "tested_cell_count": tested_count,
                 "min_positive_profiles": MIN_POSITIVE_PROFILES,
@@ -2224,58 +2136,70 @@ def write_six_shared_trait_cytoscape_heatmaps(
         decreased_view = views_by_key[mode.decreased_view_key]
         increased_path = full_edges_path(increased_view.source_display_edges_path, repo_root)
         decreased_path = full_edges_path(decreased_view.source_display_edges_path, repo_root)
+        increased_edges = read_tsv(increased_path)
+        decreased_edges = read_tsv(decreased_path)
+        contrast_source_edges[mode.key] = pd.concat(
+            [increased_edges, decreased_edges],
+            ignore_index=True,
+        )
         cells = prepare_contrast_cells(
-            read_tsv(increased_path),
-            read_tsv(decreased_path),
+            increased_edges,
+            decreased_edges,
             mode,
             trait_order,
         )
-        output_path, row_count, displayed_count, tested_count, extra = write_contrast_heatmap(
+        outputs = write_contrast_heatmap(
             cells,
             mode,
             trait_order,
             output_dir,
         )
+        clusterings[mode.key] = outputs.clustering
+        cluster_tree_nodes.append(outputs.clustering.tree_nodes)
+        cluster_tree_leaves.append(outputs.clustering.tree_leaves)
+        clustered_order = dict(
+            zip(
+                outputs.clustering.tree_leaves["condition_body_site_pair"],
+                outputs.clustering.tree_leaves["clustered_heatmap_order"],
+                strict=True,
+            )
+        )
+        cells["clustered_heatmap_order"] = (
+            cells["condition_body_site_pair"].map(clustered_order).astype("Int64")
+        )
         cells["heatmap_page"] = pd.Series(pd.NA, index=cells.index, dtype="Int64")
-        if mode.key != "grouped":
-            for page, labels in enumerate(
-                contrast_row_pages(select_contrast_rows(cells)),
-                start=1,
-            ):
-                in_page = cells["condition_body_site_pair"].isin(labels)
-                page_cells = cells.loc[in_page]
-                cells.loc[in_page, "heatmap_page"] = page
-                page_records.append(
-                    {
-                        "view_key": f"{mode.key}_direction_contrast",
-                        "view_label": mode.label,
-                        "page": page,
-                        "row_count": len(labels),
-                        "condition_label_count": int(page_cells["condition"].nunique()),
-                        "anatomy_group_count": int(page_cells["body_site_group"].nunique()),
-                        "displayed_cell_count": int(page_cells["displayed_in_heatmap"].sum()),
-                        "nominal_p_value_cell_count": int(
-                            page_cells["nominal_p_value_selected"].sum()
-                        ),
-                        "bh_selected_cell_count": int(
-                            (
-                                page_cells["displayed_in_heatmap"] & page_cells["selected_after_bh"]
-                            ).sum()
-                        ),
-                        "significant_cell_count": int(page_cells["nominal_p_value_selected"].sum()),
-                        "absolute_effect_cutoff": SIGNED_EFFECT_ABS_CUTOFF,
-                        "png_path": relative_path(contrast_page_path(output_path, page), repo_root),
-                    }
-                )
+        for page, labels in enumerate(contrast_row_pages(outputs.row_labels), start=1):
+            in_page = cells["condition_body_site_pair"].isin(labels)
+            page_legend = summarize_contrast_legend(cells, labels, mode)
+            cells.loc[in_page, "heatmap_page"] = page
+            page_records.append(
+                {
+                    "view_key": f"{mode.key}_direction_contrast",
+                    "view_label": mode.label,
+                    "page": page,
+                    "row_count": len(labels),
+                    "condition_label_count": page_legend.condition_label_count,
+                    "anatomy_group_count": page_legend.anatomy_group_count,
+                    "displayed_cell_count": int(cells.loc[in_page, "displayed_in_heatmap"].sum()),
+                    "nominal_p_value_cell_count": int(
+                        cells.loc[in_page, "nominal_p_value_selected"].sum()
+                    ),
+                    "significant_cell_count": int(
+                        cells.loc[in_page, "significant_in_heatmap"].sum()
+                    ),
+                    "bh_selected_cell_count": int(
+                        (
+                            cells.loc[in_page, "selected_after_bh"]
+                            & cells.loc[in_page, "displayed_in_heatmap"]
+                        ).sum()
+                    ),
+                    "png_path": relative_path(
+                        contrast_page_path(outputs.overview_path, page),
+                        repo_root,
+                    ),
+                }
+            )
         contrast_tables.append(cells)
-        preview_path = extra.get("preview_png_path", "")
-        cluster_rows_path = extra.get("cluster_rows_path", "")
-        cluster_summary_path = extra.get("cluster_summary_path", "")
-        branch_tests_path = extra.get("branch_tests_path", "")
-        pattern_tests_path = extra.get("pattern_tests_path", "")
-        legend = extra["legend"]
-        if not isinstance(legend, ContrastLegendSummary):
-            raise TypeError("Signed-contrast output is missing its legend summary")
         manifest_records.append(
             {
                 "view_key": f"{mode.key}_direction_contrast",
@@ -2283,49 +2207,86 @@ def write_six_shared_trait_cytoscape_heatmaps(
                 "heatmap_type": "signed_direction_contrast",
                 "focus_direction": "increased_vs_decreased",
                 "condition_mode": mode.condition_mode,
-                "row_count": row_count,
-                "condition_label_count": legend.condition_label_count,
-                "anatomy_group_count": legend.anatomy_group_count,
-                "displayed_cell_count": displayed_count,
-                "nominal_p_value_cell_count": legend.nominal_p_value_cell_count,
-                "bh_selected_cell_count": legend.displayed_bh_selected_cell_count,
-                "bh_selected_candidate_cell_count": int(cells["selected_after_bh"].sum()),
-                "tested_cell_count": tested_count,
+                "row_count": len(outputs.row_labels),
+                "condition_label_count": outputs.legend.condition_label_count,
+                "anatomy_group_count": outputs.legend.anatomy_group_count,
+                "displayed_cell_count": outputs.displayed_cell_count,
+                "nominal_p_value_cell_count": int(cells["nominal_p_value_selected"].sum()),
+                "bh_selected_cell_count": int(cells["selected_after_bh"].sum()),
+                "tested_cell_count": outputs.tested_cell_count,
                 "min_positive_profiles": MIN_POSITIVE_PROFILES,
                 "min_studies": MIN_STUDIES,
                 "p_value_cutoff": P_VALUE_CUTOFF,
                 "q_value_cutoff": Q_VALUE_CUTOFF,
                 "absolute_effect_cutoff": SIGNED_EFFECT_ABS_CUTOFF,
                 "color_value": "increased_minus_decreased_positive_fraction",
-                "display_rule": extra["display_rule"],
-                "significant_cell_count": legend.nominal_p_value_cell_count,
-                "filled_fraction": displayed_count / (row_count * len(trait_order))
-                if row_count
+                "display_rule": (
+                    "supported testable cells with absolute effect above cutoff; BH q cutoff "
+                    "marks dark borders; nominal p cutoff is audit-only"
+                ),
+                "significant_cell_count": int(cells["significant_in_heatmap"].sum()),
+                "filled_fraction": outputs.displayed_cell_count
+                / (len(outputs.row_labels) * len(trait_order))
+                if outputs.row_labels
                 else 0,
-                "page_count": extra["page_count"],
-                "png_path": relative_path(output_path, repo_root),
-                "preview_png_path": relative_path(preview_path, repo_root)
-                if isinstance(preview_path, Path)
-                else "",
-                "cluster_rows_path": relative_path(cluster_rows_path, repo_root)
-                if isinstance(cluster_rows_path, Path)
-                else "",
-                "cluster_summary_path": relative_path(cluster_summary_path, repo_root)
-                if isinstance(cluster_summary_path, Path)
-                else "",
-                "branch_label_tests_path": relative_path(branch_tests_path, repo_root)
-                if isinstance(branch_tests_path, Path)
-                else "",
-                "branch_pattern_tests_path": relative_path(pattern_tests_path, repo_root)
-                if isinstance(pattern_tests_path, Path)
-                else "",
-                "clustering_method": extra["clustering_method"],
-                "cluster_label_rule": extra["cluster_label_rule"],
-                "significant_branch_count": extra["significant_branch_count"],
-                "metadata_enrichment_branch_count": extra["metadata_enrichment_branch_count"],
-                "trait_pattern_branch_count": extra["trait_pattern_branch_count"],
-                "metadata_label_count": extra["metadata_label_count"],
-                "trait_pattern_label_count": extra["trait_pattern_label_count"],
+                "page_count": len(contrast_row_pages(outputs.row_labels)),
+                "png_path": relative_path(outputs.overview_path, repo_root),
+                "clustered_png_path": relative_path(outputs.clustered_path, repo_root),
+                "preview_png_path": (
+                    relative_path(outputs.preview_path, repo_root)
+                    if outputs.preview_path is not None
+                    else ""
+                ),
+                "primary_row_order": "clustered" if mode.key == "grouped" else "ranked",
+                "cluster_metric": "pairwise-complete Spearman distance (1-rho)",
+                "cluster_linkage": CLUSTER_LINKAGE_METHOD,
+                "cluster_min_shared_traits": MIN_SPEARMAN_OVERLAP,
+                "cluster_input_order": (
+                    "condition_body_site_pair ascending before distance construction"
+                ),
+                "undefined_cluster_distance": UNDEFINED_SPEARMAN_DISTANCE,
+                "clustered_row_count": len(outputs.clustering.clustered_row_labels),
+                "insufficient_overlap_row_count": len(outputs.clustering.insufficient_row_labels),
+                "spearman_pair_count": outputs.clustering.pair_count,
+                "undefined_spearman_pair_count": outputs.clustering.undefined_pair_count,
+                "undefined_spearman_pair_fraction": (outputs.clustering.undefined_pair_fraction),
+                "distinct_spearman_distance_count": (outputs.clustering.distinct_distance_count),
+                "distance_tie_excess_count": outputs.clustering.distance_tie_excess_count,
+                "distance_tie_fraction": outputs.clustering.distance_tie_fraction,
+                "linkage_pair_count": outputs.clustering.linkage_pair_count,
+                "linkage_undefined_spearman_pair_count": (
+                    outputs.clustering.linkage_undefined_pair_count
+                ),
+                "linkage_undefined_spearman_pair_fraction": (
+                    outputs.clustering.linkage_undefined_pair_fraction
+                ),
+                "linkage_distinct_distance_count": (
+                    outputs.clustering.linkage_distinct_distance_count
+                ),
+                "linkage_distance_tie_excess_count": (
+                    outputs.clustering.linkage_distance_tie_excess_count
+                ),
+                "linkage_distance_tie_fraction": (outputs.clustering.linkage_distance_tie_fraction),
+                "dendrogram_cut_applied": False,
+                "dendrogram_branch_label_rule": (
+                    "none; dendrogram orders rows and has no interpreted branch labels"
+                ),
+                "estimand_scope_note": (
+                    "profile-level positive-z prevalence contrast; not the pooled study-weighted "
+                    "denominator-harmonized fraction estimand from issue 256"
+                ),
+                "cluster_tree_nodes_path": relative_path(
+                    output_dir / CLUSTER_TREE_NODES_FILENAME,
+                    repo_root,
+                ),
+                "cluster_tree_leaves_path": relative_path(
+                    output_dir / CLUSTER_TREE_LEAVES_FILENAME,
+                    repo_root,
+                ),
+                "cluster_comparison_path": relative_path(
+                    output_dir / CLUSTER_COMPARISON_FILENAME,
+                    repo_root,
+                ),
                 "source_display_edges_path": "",
                 "source_increased_edges_path": relative_path(increased_path, repo_root),
                 "source_decreased_edges_path": relative_path(decreased_path, repo_root),
@@ -2334,6 +2295,14 @@ def write_six_shared_trait_cytoscape_heatmaps(
 
     pattern_table = pd.concat(pattern_tables, ignore_index=True)
     contrast_table = pd.concat(contrast_tables, ignore_index=True)
+    tree_nodes = pd.concat(cluster_tree_nodes, ignore_index=True)
+    tree_leaves = pd.concat(cluster_tree_leaves, ignore_index=True)
+    rollup_map = build_condition_rollup_map(contrast_source_edges["grouped"])
+    cluster_comparison = compare_grouped_and_individual_clusters(
+        clusterings["grouped"],
+        clusterings["individual_conditions"],
+        rollup_map,
+    )
     manifest = pd.DataFrame.from_records(manifest_records)
     selected_cells = pd.concat(
         [
@@ -2352,6 +2321,9 @@ def write_six_shared_trait_cytoscape_heatmaps(
     write_tsv(contrast_table, output_dir / CONTRAST_TABLE_FILENAME)
     write_tsv(selected_cells, output_dir / SELECTED_CELLS_FILENAME)
     write_tsv(manifest, output_dir / MANIFEST_FILENAME)
+    write_tsv(tree_nodes, output_dir / CLUSTER_TREE_NODES_FILENAME)
+    write_tsv(tree_leaves, output_dir / CLUSTER_TREE_LEAVES_FILENAME)
+    write_tsv(cluster_comparison, output_dir / CLUSTER_COMPARISON_FILENAME)
     write_tsv(
         pd.DataFrame.from_records(
             page_records,
@@ -2364,9 +2336,8 @@ def write_six_shared_trait_cytoscape_heatmaps(
                 "anatomy_group_count",
                 "displayed_cell_count",
                 "nominal_p_value_cell_count",
-                "bh_selected_cell_count",
                 "significant_cell_count",
-                "absolute_effect_cutoff",
+                "bh_selected_cell_count",
                 "png_path",
             ],
         ),
@@ -2376,8 +2347,225 @@ def write_six_shared_trait_cytoscape_heatmaps(
     return manifest
 
 
+def select_oral_contrast_cells(cells: pd.DataFrame) -> pd.DataFrame:
+    """Select oral site OR an explicit oral diagnosis without changing inference."""
+    selected = cells.loc[cells["view_key"] == "individual_conditions_direction_contrast"].copy()
+    keys = ["condition", "body_site_group", "trait_id"]
+    missing_keys = selected[keys].isna().any().any() or any(
+        selected[key].astype(str).str.strip().eq("").any() for key in keys
+    )
+    if missing_keys or selected.duplicated(keys).any():
+        raise ValueError("Individual contrast keys must be present and unique")
+    expected_pairs = selected["condition"] + " | " + selected["body_site_group"]
+    if (
+        selected["condition_body_site_pair"].isna().any()
+        or not selected["condition_body_site_pair"].eq(expected_pairs).all()
+        or selected[["condition_body_site_pair", "condition", "body_site_group"]]
+        .drop_duplicates()
+        .duplicated("condition_body_site_pair")
+        .any()
+    ):
+        raise ValueError("Condition/body-site pair labels must be canonical and unambiguous")
+    for flag in ("displayed_in_heatmap", "selected_after_bh"):
+        if not pd.api.types.is_bool_dtype(selected[flag]) or selected[flag].isna().any():
+            raise ValueError(f"Expected complete Boolean flags: {flag}")
+    if "nominal_p_value_selected" not in selected.columns:
+        if "significant_in_heatmap" in selected.columns:
+            selected["nominal_p_value_selected"] = selected["significant_in_heatmap"].astype(bool)
+        elif (
+            "passes_nominal_p_value_cutoff" in selected.columns
+            and "passes_support" in selected.columns
+        ):
+            selected["nominal_p_value_selected"] = selected["passes_support"].astype(
+                bool
+            ) & selected["passes_nominal_p_value_cutoff"].astype(bool)
+        elif "passes_p_value_cutoff" in selected.columns and "passes_support" in selected.columns:
+            selected["nominal_p_value_selected"] = selected["passes_support"].astype(
+                bool
+            ) & selected["passes_p_value_cutoff"].astype(bool)
+        else:
+            support = (
+                selected["passes_support"].astype(bool)
+                if "passes_support" in selected.columns
+                else pd.Series(True, index=selected.index)
+            )
+            selected["nominal_p_value_selected"] = support & (
+                selected["fisher_p_value"] < P_VALUE_CUTOFF
+            )
+    else:
+        selected["nominal_p_value_selected"] = selected["nominal_p_value_selected"].astype(bool)
+
+    if "significant_in_heatmap" not in selected.columns:
+        selected["significant_in_heatmap"] = selected["nominal_p_value_selected"]
+    else:
+        selected["significant_in_heatmap"] = selected["significant_in_heatmap"].astype(bool)
+
+    selected["oral_site"] = selected["body_site_group"].isin(ORAL_BODY_SITE_GROUPS)
+    selected["oral_disease"] = selected["condition"].map(
+        lambda label: any(
+            term.strip().casefold() in ORAL_DISEASE_LABELS for term in str(label).split(",")
+        )
+    )
+    selected = selected.loc[selected["oral_site"] | selected["oral_disease"]].copy()
+    selected["inclusion_reason"] = np.select(
+        [selected["oral_site"] & selected["oral_disease"], selected["oral_site"]],
+        ["oral site and oral disease", "oral site"],
+        default="oral disease",
+    )
+    return selected
+
+
+def write_oral_trait_heatmaps(
+    source_dir: Path = OUTPUT_DIR,
+    *,
+    source_commit: str = "unrecorded",
+) -> Path:
+    """Render an auditable oral view of the saved individual-condition results."""
+    source_path = source_dir / CONTRAST_TABLE_FILENAME
+    source = read_tsv(source_path)
+    cells = select_oral_contrast_cells(source)
+    if cells.empty:
+        raise ValueError("No oral-site or oral-disease cells in the source table")
+    traits = read_trait_order(source_dir)
+    if (
+        len(traits) != 6
+        or traits["trait_id"].isna().any()
+        or traits["trait_id"].astype(str).str.strip().eq("").any()
+        or traits["trait_id"].duplicated().any()
+        or not cells["trait_id"].isin(traits["trait_id"]).all()
+    ):
+        raise ValueError("Oral heatmap requires six distinct, nonempty source trait IDs")
+    output_dir = source_dir / "oral"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    rows = (
+        cells.groupby(["condition_body_site_pair", "condition", "body_site_group"], sort=False)
+        .agg(
+            max_trait_study_count=("study_count", "max"),
+            oral_site=("oral_site", "any"),
+            oral_disease=("oral_disease", "any"),
+            inclusion_reason=("inclusion_reason", "first"),
+            supported_traits=("displayed_in_heatmap", "sum"),
+        )
+        .reset_index()
+        .sort_values(
+            ["oral_disease", "condition", "body_site_group"], ascending=[False, True, True]
+        )
+    )
+    # Keep oral diagnoses with no displayed cells visible in the main figure.
+    # Other entirely hidden rows remain in the complete figure, pages, and audit table.
+    rows["in_main_figure"] = rows["oral_disease"] | (rows["supported_traits"] > 0)
+    labels = rows["condition_body_site_pair"].tolist()
+    main_labels = rows.loc[rows["in_main_figure"], "condition_body_site_pair"].tolist()
+    cells["in_main_figure"] = cells["condition_body_site_pair"].isin(main_labels)
+    cells["oral_heatmap_order"] = cells["condition_body_site_pair"].map(
+        {label: index + 1 for index, label in enumerate(labels)}
+    )
+    matrix = cell_matrix(
+        cells, labels, traits, value_column="increased_minus_decreased_positive_fraction"
+    )
+    annotations = annotation_matrix(cells, labels, traits, mode="contrast")
+    borders = flag_matrix(cells, labels, traits, flag_column="selected_after_bh") & matrix.notna()
+    display_labels = {
+        row.condition_body_site_pair: (
+            f"{row.condition} | "
+            f"{'Oral' if row.oral_site else row.body_site_group} | "
+            f"max n={row.max_trait_study_count}"
+        )
+        for row in rows.itertuples(index=False)
+    }
+    significant_count = int(borders.to_numpy().sum())
+    nominal_count = int(cells["nominal_p_value_selected"].sum())
+    family_size = int((source["view_key"] == "individual_conditions_direction_contrast").sum())
+    subtitle = (
+        "Oral sampling site OR oral disease. Red: increased; blue: decreased positive-z "
+        "profile fraction. Numbers are increased minus decreased fractions; "
+        "max n = largest per-trait study count in each row. "
+        f"Dark border: BH-adjusted q <= {Q_VALUE_CUTOFF:g} ({significant_count} oral cells); "
+        f"{nominal_count} oral cells met nominal Fisher p < {P_VALUE_CUTOFF:g}; "
+        f"original {family_size}-cell family retained. Displayed cells retain source support "
+        "(>=3 positive-z profiles in either direction and >=2 studies) and require "
+        f"|effect|>{SIGNED_EFFECT_ABS_CUTOFF:g}. Gray: unavailable, below source support, "
+        "or at/below the absolute-effect cutoff; it does not indicate nonsignificance. "
+        "Source tests are profile-level diagnostics."
+    )
+    figures = [("oral_six_trait_heatmap.png", main_labels, "Oral microbiomes and oral diseases")]
+    figures.append(("oral_six_trait_heatmap_all_rows.pdf", labels, "Oral selection: all rows"))
+    for page, page_labels in enumerate(contrast_row_pages(labels), start=1):
+        figures.append(
+            (
+                f"oral_six_trait_heatmap_page_{page:02d}.png",
+                page_labels,
+                f"Oral selection: page {page}",
+            )
+        )
+    for filename, selected_labels, title in figures:
+        caption = subtitle
+        if filename == "oral_six_trait_heatmap.png":
+            caption += (
+                f" Main view: {len(main_labels)} of {len(labels)} rows; "
+                "all oral diagnoses plus other rows with displayed cells. "
+                "Full coverage in pages/TSV."
+            )
+        plot_matrix_heatmap(
+            matrix.loc[selected_labels].rename(index=display_labels),
+            annotations.loc[selected_labels].rename(index=display_labels),
+            traits,
+            output_dir / filename,
+            title=title,
+            subtitle=caption,
+            colorbar_label="Increased - decreased positive-z profile fraction",
+            cmap_name="RdBu_r",
+            vmin=-1.0,
+            vmax=1.0,
+            significance_borders=borders.loc[selected_labels].rename(index=display_labels),
+        )
+    write_tsv(cells, output_dir / "oral_six_trait_cells.tsv")
+    write_tsv(rows, output_dir / "oral_six_trait_rows.tsv")
+    provenance = {
+        "source_table": source_path.name,
+        "source_table_sha256": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+        "source_trait_table": TRAIT_SELECTION_FILENAME,
+        "source_trait_table_sha256": hashlib.sha256(
+            (source_dir / TRAIT_SELECTION_FILENAME).read_bytes()
+        ).hexdigest(),
+        "source_artifact_commit": source_commit,
+        "selection": "oral_site OR oral_disease; individual condition labels only",
+        "oral_body_site_groups": sorted(ORAL_BODY_SITE_GROUPS),
+        "oral_disease_labels_casefolded": sorted(ORAL_DISEASE_LABELS),
+        "source_individual_bh_family_size": family_size,
+        "inference": "source Fisher p and BH q retained; no subset refit or correction",
+        "q_cutoff": Q_VALUE_CUTOFF,
+        "selected_rows": len(rows),
+        "main_figure_rows": len(main_labels),
+        "selected_cells": len(cells),
+        "displayed_cells": int(cells["displayed_in_heatmap"].sum()),
+        "bh_significant_displayed_cells": significant_count,
+        "bh_selected_cell_count": int(cells["selected_after_bh"].sum()),
+        "nominal_p_value_cell_count": nominal_count,
+        "significant_cell_count": nominal_count,
+        "oral_site_only_rows": int((rows["oral_site"] & ~rows["oral_disease"]).sum()),
+        "oral_disease_only_rows": int((~rows["oral_site"] & rows["oral_disease"]).sum()),
+        "both_rows": int((rows["oral_site"] & rows["oral_disease"]).sum()),
+        "figures": [filename for filename, _, _ in figures],
+    }
+    (output_dir / "oral_six_trait_provenance.json").write_text(
+        json.dumps(provenance, indent=2) + "\n", encoding="utf-8"
+    )
+    print(json.dumps(provenance, indent=2))
+    return output_dir / "oral_six_trait_heatmap.png"
+
+
 def main() -> None:
     """Write the Cytoscape-derived heatmap outputs."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--oral-only", action="store_true", help="Plot the saved oral subset")
+    parser.add_argument(
+        "--source-commit", default="unrecorded", help="Saved table's artifact commit"
+    )
+    args = parser.parse_args()
+    if args.oral_only:
+        print(f"Wrote oral heatmap: {write_oral_trait_heatmaps(source_commit=args.source_commit)}")
+        return
     manifest = write_six_shared_trait_cytoscape_heatmaps()
     print(f"Wrote Cytoscape heatmaps: {len(manifest)}")
     print(f"Wrote manifest: {OUTPUT_DIR / MANIFEST_FILENAME}")

@@ -7,6 +7,12 @@ repos:
       - id: check-json
       - id: check-merge-conflict
       - id: check-added-large-files
+        exclude: '^trait-visualization/trait-profile-investigation/six-shared-traits/.*heatmap.*\.png$'
+      - id: check-added-large-files
+        name: check six-trait heatmap sizes (2 MiB)
+        # Full-resolution scientific figures retain a bounded size check (#508).
+        files: '^trait-visualization/trait-profile-investigation/six-shared-traits/.*heatmap.*\.png$'
+        args: [--maxkb=2048, --enforce-all]
       - id: end-of-file-fixer
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
@@ -22,19 +28,25 @@ repos:
     hooks:
       - id: codespell
         # Preserve source labels and opaque IDs in generated scientific artifacts.
-        exclude: '^trait-visualization/.*\.(tsv|csv|svg|json|html)$'
+        exclude: '^(trait-visualization|trait-profile-investigation)/.*\.(tsv|csv|svg|json|html)$'
         additional_dependencies:
           - tomli
   - repo: https://github.com/crate-ci/typos
     rev: v1.31.1
     hooks:
       - id: typos
-        exclude: '^trait-visualization/.*\.(tsv|csv|svg|json|html)$'
+        exclude: '^(trait-visualization|trait-profile-investigation)/.*\.(tsv|csv|svg|json|html)$'
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        exclude: ^data/.*/provenance\.json$
+        # Generated public checksums/commit IDs, not credential-bearing inputs (#259).
+        exclude: |
+          (?x)^(
+            data/.*/provenance\.json
+            |trait-visualization/trait-profile-investigation/
+            six-shared-traits/oral/oral_six_trait_provenance\.json
+          )$
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.10
     hooks:

@@ -1,0 +1,48 @@
+{
+  "source_table": "six_shared_trait_condition_body_site_direction_contrasts.tsv",
+  "source_table_sha256": "446ff0dfd059548117903a9348615993c6864aa10104bafe5a1c484e77f6ffff",
+  "source_trait_table": "six_shared_trait_selection.tsv",
+  "source_trait_table_sha256": "6ab4bb1b1f370a09be2923572b1c626fde192b56893ff8290ea6beea04f40c1a",
+  "source_artifact_commit": "uncommitted",
+  "selection": "oral_site OR oral_disease; individual condition labels only",
+  "oral_body_site_groups": [
+    "Oral cavity / dental"
+  ],
+  "oral_disease_labels_casefolded": [
+    "aggressive periodontitis",
+    "chronic periodontitis",
+    "dental caries",
+    "dental fluorosis",
+    "gingivitis",
+    "halitosis",
+    "oral cavity carcinoma",
+    "oral leukoplakia",
+    "oral mucositis",
+    "oral squamous cell carcinoma",
+    "periapical periodontitis",
+    "periodontitis",
+    "root caries"
+  ],
+  "source_individual_bh_family_size": 2379,
+  "inference": "source Fisher p and BH q retained; no subset refit or correction",
+  "q_cutoff": 0.05,
+  "selected_rows": 80,
+  "main_figure_rows": 28,
+  "selected_cells": 381,
+  "displayed_cells": 70,
+  "bh_significant_displayed_cells": 0,
+  "bh_selected_cell_count": 0,
+  "nominal_p_value_cell_count": 1,
+  "significant_cell_count": 1,
+  "oral_site_only_rows": 67,
+  "oral_disease_only_rows": 0,
+  "both_rows": 13,
+  "figures": [
+    "oral_six_trait_heatmap.png",
+    "oral_six_trait_heatmap_all_rows.pdf",
+    "oral_six_trait_heatmap_page_01.png",
+    "oral_six_trait_heatmap_page_02.png",
+    "oral_six_trait_heatmap_page_03.png",
+    "oral_six_trait_heatmap_page_04.png"
+  ]
+}
