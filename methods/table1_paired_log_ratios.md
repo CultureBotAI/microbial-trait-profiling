@@ -1,4 +1,4 @@
-# Paired log-ratio direction consistency for Table 1 traits
+# Paired log-ratio direction consistency for Table 1-trait pairs (matched-corpus analog)
 
 Run `just table1-compositional-stats`. The implementation is
 `src/bsdbng/trait_composition.py`. It writes `trait_log_ratio_stats.tsv`,
@@ -7,8 +7,10 @@ Run `just table1-compositional-stats`. The implementation is
 
 The shared loader retains human samples and paired increased/decreased profiles,
 resolves qualified trait identifiers, and excludes MediaDive columns. This
-analysis uses the six existing Table 1 traits and all 15 unordered pairs. It
-does not assume any one of those traits is biologically stable.
+analysis uses the six traits named in manuscript Table 1 and all 15 unordered
+pairs as a matched-corpus analog sensitivity analysis (not a reproduction of
+published Table 1 baseline values). It does not assume any one of those traits is
+biologically stable.
 
 ## Hypothesis and sampling unit
 
@@ -71,7 +73,8 @@ ratio result with them requires both the reference and its coverage exclusions;
 a changed conclusion cannot automatically be attributed to normalization alone.
 
 The [pinned-corpus validation table](table1_log_ratio_validation.md) records all
-15 ratio results and the original fraction directions from the same input files.
+15 ratio results and the original fraction directions from the same input files
+as a matched-corpus Table 1-trait analog sensitivity analysis.
 Matched-population sensitivity analysis is tracked in
 [#183](https://github.com/CultureBotAI/microbial-trait-profiling/issues/183).
 

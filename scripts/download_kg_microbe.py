@@ -33,9 +33,9 @@ from datetime import UTC, datetime
 
 import gdown
 
-from mtp.paths import REPO_ROOT
+from mtp.paths import KG_MICROBE_DIR
 
-OUT_DIR = REPO_ROOT / "data" / "kg-microbe"
+OUT_DIR = KG_MICROBE_DIR
 PROVENANCE_PATH = OUT_DIR / "provenance.json"
 
 

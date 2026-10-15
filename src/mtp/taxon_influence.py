@@ -1,4 +1,8 @@
-"""Source-lineage removal and conditional, study-weighted influence summaries."""
+"""Source-lineage removal and conditional, study-weighted influence summaries.
+
+Matched-corpus Table 1-trait analog sensitivity analysis (not a reproduction of
+the published Table 1 baseline).
+"""
 
 from __future__ import annotations
 
@@ -416,6 +420,16 @@ def effect_rows(base: Base, remaining: dict[Key, dict[str, int]], keys: list[Key
     before_totals = {key: sum(base.profiles[key].values()) for key in keys}
     after_totals = {key: sum(remaining[key].values()) for key in keys}
     traits = list(base.traits.values())
+    valid_before = {
+        key[:2]
+        for key in keys
+        if key[2] == "inc" and before_totals[key] > 0 and before_totals[(*key[:2], "dec")] > 0
+    }
+    valid_after = {
+        key[:2]
+        for key in keys
+        if key[2] == "inc" and after_totals[key] > 0 and after_totals[(*key[:2], "dec")] > 0
+    }
     for representation in ("shared_fraction", "native_noel_zero_fraction", "shared_log2_ratio"):
         features = (
             list(combinations(traits, 2))
@@ -427,13 +441,19 @@ def effect_rows(base: Base, remaining: dict[Key, dict[str, int]], keys: list[Key
             native_zero = representation == "native_noel_zero_fraction"
             before = pair_values(base.profiles, keys, trait, other, native_zero, before_totals)
             after = pair_values(remaining, keys, trait, other, native_zero, after_totals)
+            if native_zero:
+                before_cmp = {p: v for p, v in before.items() if p in valid_before}
+                after_cmp = {p: v for p, v in after.items() if p in valid_after}
+            else:
+                before_cmp = before
+                after_cmp = after
             row = dict(
                 representation=representation,
                 trait_key=trait,
                 denominator_trait=other,
                 unit="log2_ratio_contrast" if other else "fraction_difference",
                 correction="BY15" if other else "BH6",
-                **comparison(before, after),
+                **comparison(before_cmp, after_cmp),
             )
             family.append(row)
         if representation == "native_noel_zero_fraction":
@@ -688,7 +708,15 @@ def run_influence(
         "native_ora": "not_rerun: both background count contracts exported for Ilyas",
     }
     summary = (
-        "# Table 1 source contributions and lineage influence\n\n"
+        "# Matched-corpus Table 1-trait analog source contributions and lineage influence\n\n"
+        "> [!IMPORTANT]\n"
+        "> **Matched-Corpus Table 1-Trait Analog (Issue #210)**\n"
+        "> The taxon contribution and lineage influence audits reported here are a "
+        "matched-corpus Table 1-trait analog sensitivity analysis, not influence on "
+        "the published manuscript Table 1. They use the pinned human paired KG-Microbe "
+        "profile corpus and are not a reproduction of the published Table 1 baseline "
+        "(they do not reproduce published Table 1 baseline values such as facultatively "
+        "aerobic $q = 2.8 \\times 10^{-10}$).\n\n"
         f"Reconciled {len(base.profiles):,} human paired profiles from "
         f"{len({k[0] for k in base.profiles}):,} studies across all "
         f"{len(base.columns)} non-MediaDive traits. "

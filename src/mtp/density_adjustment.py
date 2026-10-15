@@ -235,7 +235,7 @@ def compute_correlation_metrics(
             m_eff_galwey=float(len(varying_indices)),
             m_eff_nyholt=float(len(varying_indices)),
             test_pair_r=0.0,
-            near_twin_r=0.0,
+            near_twin_r=float("nan"),
         )
 
     reduced_matrix = trait_matrix[:, varying_indices]
@@ -284,7 +284,7 @@ def compute_correlation_metrics(
         idx_b = reduced_cols.index(TEST_PAIR_B)
         test_pair_r = float(corr[idx_a, idx_b])
 
-    near_twin_r = 0.0
+    near_twin_r = float("nan")
     if TWIN_A in reduced_cols and TWIN_B in reduced_cols:
         idx_twin_a = reduced_cols.index(TWIN_A)
         idx_twin_b = reduced_cols.index(TWIN_B)

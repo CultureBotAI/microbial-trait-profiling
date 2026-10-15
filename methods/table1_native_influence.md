@@ -1,8 +1,12 @@
-# Native Table 1 lineage influence
+# Native Table 1-trait analog lineage influence
+
+> [!IMPORTANT]
+> **Matched-Corpus Table 1-Trait Analog (Issue #210)**
+> The native lineage influence reruns documented here are a matched-corpus Table 1-trait analog sensitivity analysis, not influence on the published manuscript Table 1. They use the pinned human paired KG-Microbe profile corpus and are not a reproduction of the published Table 1 baseline (they do not reproduce published Table 1 baseline values such as facultatively aerobic $q = 2.8 \times 10^{-10}$).
 
 This documents the statistical rerun extension to [#190's contribution audit](table1_taxon_influence.md).
-The committed bundle is a measured matched-corpus snapshot, not a claim of baseline
-parity with the differently filtered published Table 1 analysis (tracked in #210).
+The committed bundle is a measured matched-corpus Table 1-trait analog sensitivity analysis snapshot,
+not a reproduction of the published Table 1 baseline (tracked in #210).
 The source ledger is unchanged. The
 [native protocol](table1_native_influence_protocol.json) applies the same rule-declared
 exclusions as the shared-fraction rerun, with four exact scopes, 317 retained columns

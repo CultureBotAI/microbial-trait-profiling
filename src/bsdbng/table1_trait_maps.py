@@ -4,6 +4,8 @@ import sys
 from typing import Any
 
 from mtp.table1_trait_maps import (
+    ANALYSIS_LABEL,
+    ANALYSIS_NOTE,
     CONFIDENCE_LEVEL,
     FOCUS_PANELS,
     OUTPUT_PREFIX,
@@ -29,6 +31,8 @@ from mtp.table1_trait_maps import (
 )
 
 __all__ = [
+    "ANALYSIS_LABEL",
+    "ANALYSIS_NOTE",
     "CONFIDENCE_LEVEL",
     "FOCUS_PANELS",
     "OUTPUT_PREFIX",

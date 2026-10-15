@@ -257,6 +257,15 @@ calibrate replicates="10" seed="42" scenario="all": taxa-trait-matrix study-trai
 	  --min-fold 1.5 \
 	  --max-fold 0.67"
 
+# Run paired composition arm calibration against the study-flip complete null (#263).
+calibrate-composition replicates="100" seed="182": study-trait-profiles
+	just timed calibrate-composition "uv run python -m mtp.composition_calibration.composition \
+	  --profiles data/derived/study_trait_profiles_wide.tsv \
+	  --columns data/derived/taxa_trait_matrix_columns.tsv \
+	  --output-dir data/derived/calibration/composition \
+	  --replicates {{replicates}} \
+	  --seed {{seed}}"
+
 # Run ORA background stratification and annotation-density sensitivity evaluation (#118).
 analyze-strata: study-trait-profiles-ora
 	just timed analyze-strata "uv run python scripts/run_stratified_enrichment.py \
@@ -299,7 +308,7 @@ get-chrome:
 # matrix, study-count matrix, and correlation table to data/derived/guild_maps/.
 # Needs a local Chrome for the PNG (`just get-chrome`).
 guild-maps:
-	just timed guild-maps "uv run python scripts/create_guild_maps.py"
+	just timed guild-maps "uv run python scripts/create_guild_maps.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\""
 
 # Same inputs and same corpus filters as guild-maps, but over the six individual
 # traits of manuscript Table 1 instead of the two pooled oxygen guilds. Writes the
@@ -307,7 +316,7 @@ guild-maps:
 # their backing tables to data/derived/table1_traits/.
 # Needs a local Chrome for the PNG files (`just get-chrome`).
 table1-trait-maps:
-	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py"
+	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\""
 
 # Generate modern publication-ready figures inspired by the project slide deck (#347, #354).
 # Renders Figures 1-5 with zero synthetic data and dynamic M universe calculations.
@@ -334,6 +343,11 @@ trait-direction-screen *ARGS:
 [positional-arguments]
 audit-trait-density *ARGS:
 	just timed audit-trait-density "uv run python scripts/audit_trait_density_correlation.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\" $*"
+
+# Audit trait coupling sensitivity via LOTO, LCO, and three-arm evaluation (#260).
+[positional-arguments]
+audit-trait-coupling *ARGS: study-trait-profiles
+	just timed audit-trait-coupling "uv run python scripts/audit_trait_coupling.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\" $*"
 
 security:
 	uv run bandit -c pyproject.toml -r src scripts
@@ -522,3 +536,10 @@ clean-logs:
 	rm -f {{logdir}}/pipeline.log
 
 clean-all: clean-raw clean-studies clean-derived clean-logs
+
+# The widened directional screen of #255 run under the directional arm's complete
+# study-flip null (#263): how many traits each correction calls when nothing is there,
+# beside the observed calls. Replicate i is replicate i of the shared flip artefact.
+[positional-arguments]
+calibration-screen *ARGS:
+	uv run python -m mtp.screen_calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"

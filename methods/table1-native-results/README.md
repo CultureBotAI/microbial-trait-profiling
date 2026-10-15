@@ -1,5 +1,9 @@
 # Native lineage influence completion
 
+> [!IMPORTANT]
+> **Matched-Corpus Table 1-Trait Analog (Issue #210)**
+> The native composition and ORA reruns / taxon contribution audits reported here are a matched-corpus Table 1-trait analog sensitivity analysis, not influence on the published manuscript Table 1. They use the pinned human paired KG-Microbe profile corpus and are not a reproduction of the published Table 1 baseline (they do not reproduce published Table 1 baseline values such as facultatively aerobic $q = 2.8 \times 10^{-10}$).
+
 These reruns extend the reconciled 190-v2 audit using protocol 190-native-v2. The 24 rule-declared exclusion scenarios, four scopes, raw trait keys and human paired corpus are unchanged. This is matched-corpus sensitivity analysis, not a reproduction of published results with other filters. See run_manifest.json for hashes, the implementation revision, model policies and result files. This historical manifest predates the explicit dirty-tree field: its commit identifies the revision but does not prove the checkout was clean. The current publisher requires a recorded clean state.
 
 ## Composition
@@ -19,7 +23,7 @@ The displayed maximum is descriptive selection within the rule-declared panel, n
 
 ## Baseline-versus-exclusion native q-values
 
-This table directly checks whether any predeclared genus/family exclusion causes a Table 1 trait that is significant at pooled baseline to lose native q<=0.05 membership. Q-values come from the complete supported-trait family, not a six-trait recalculation. `NA` means the exclusion result was not tested or not selected.
+This table directly checks whether any predeclared genus/family exclusion causes a Table 1-named trait that is significant at pooled baseline to lose native q<=0.05 membership. These baseline q-values are calculated on the matched-corpus Table 1-trait analog (e.g. facultatively aerobic native $q = 1.69 \times 10^{-9}$), not a reproduction of the published Table 1 baseline (where facultatively aerobic $q = 2.8 \times 10^{-10}$). Q-values come from the complete supported-trait family, not a six-trait recalculation. `NA` means the exclusion result was not tested or not selected.
 
 | Trait | Baseline q | Highest exclusion q | Highest-q exclusion | Exclusions losing q<=0.05 | Losing exclusions |
 | --- | ---: | ---: | --- | ---: | --- |

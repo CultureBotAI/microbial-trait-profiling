@@ -153,7 +153,34 @@ def test_historical_scenario_reproduces_the_published_fraction_directions(
         "S0_historical_fraction",
         run_scenarios(complete_pairs(profiles, TRAITS), TRAITS, min_studies=1),
     )
-    shifts = {shift.trait: shift for shift in compute_direction_shifts(profiles, TRAITS).shifts}
+    shifts = {
+        shift.trait: shift
+        for shift in compute_direction_shifts(profiles, TRAITS, exclude_zero_totals=False).shifts
+    }
+    for row in rows:
+        shift = shifts[row.numerator]
+        assert (row.studies_up, row.studies_down, row.studies_tied) == (
+            shift.studies_up,
+            shift.studies_down,
+            shift.studies_tied,
+        )
+        if row.q_value is not None:
+            assert row.q_value == pytest.approx(shift.q_value)
+
+
+@pytest.mark.parametrize("corpus", [_corpus, _signal_corpus], ids=["flat", "signal"])
+def test_baseline_scenario_reproduces_the_conforming_fraction_directions(
+    corpus: Callable[[], list[Profile]],
+) -> None:
+    profiles = corpus()
+    rows = _rows(
+        "S1_fraction_baseline",
+        run_scenarios(complete_pairs(profiles, TRAITS), TRAITS, min_studies=1),
+    )
+    shifts = {
+        shift.trait: shift
+        for shift in compute_direction_shifts(profiles, TRAITS, exclude_zero_totals=True).shifts
+    }
     for row in rows:
         shift = shifts[row.numerator]
         assert (row.studies_up, row.studies_down, row.studies_tied) == (

@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-from mtp.paths import REPO_ROOT
+from mtp.paths import KG_MICROBE_DIR, REPO_ROOT
 
 TAXON_PREFIX = "NCBITaxon:"
 TRAIT_PREFIX = "METPO:"
@@ -16,7 +16,7 @@ SUBCLASS_OF = "biolink:subclass_of"
 TRAIT_KEY_SEPARATOR = "|"
 
 DEFAULT_TAXA_PATH = REPO_ROOT / "data" / "derived" / "bugsigdb_taxa.tsv"
-DEFAULT_KG_DIR = REPO_ROOT / "data" / "kg-microbe"
+DEFAULT_KG_DIR = KG_MICROBE_DIR
 DEFAULT_OUTPUT_PATH = REPO_ROOT / "data" / "derived" / "taxa_trait_matrix.tsv"
 EDGES_FILENAME = "merged-kg_edges.tsv"
 NODES_FILENAME = "merged-kg_nodes.tsv"
