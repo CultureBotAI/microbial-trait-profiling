@@ -13,7 +13,9 @@ from textwrap import wrap
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.patches import Rectangle
+from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch, Rectangle
 from scipy.cluster.hierarchy import dendrogram, leaves_list, linkage
 from scipy.spatial.distance import squareform
 from scipy.stats import fisher_exact
@@ -38,6 +40,7 @@ MIN_POSITIVE_PROFILES = 3
 MIN_STUDIES = 2
 P_VALUE_CUTOFF = 0.01
 Q_VALUE_CUTOFF = 0.05
+SIGNED_EFFECT_ABS_CUTOFF = 0.01
 MAX_MINUS_LOG10_P = 10.0
 MAX_PATTERN_ROWS = 24
 MIN_SPEARMAN_OVERLAP = 3
@@ -144,6 +147,20 @@ class ContrastHeatmapOutputs:
     displayed_cell_count: int
     tested_cell_count: int
     clustering: SpearmanClustering
+    legend: ContrastLegendSummary
+
+
+@dataclass(frozen=True)
+class ContrastLegendSummary:
+    """Counts and display rules shown in a signed-contrast figure legend."""
+
+    condition_label_kind: str
+    condition_label_count: int
+    anatomy_group_count: int
+    row_count: int
+    displayed_cell_count: int
+    displayed_bh_selected_cell_count: int
+    effect_cutoff_hidden_cell_count: int
 
 
 CONTRAST_MODES = (
@@ -258,16 +275,19 @@ def finalize_inferential_cells(cells: pd.DataFrame) -> pd.DataFrame:
     output["plot_minus_log10_fisher_p_value"] = output["minus_log10_fisher_p_value"].clip(
         upper=MAX_MINUS_LOG10_P
     )
-    output["passes_p_value_cutoff"] = finite_p & (p_values < P_VALUE_CUTOFF)
-    output["displayed_in_heatmap"] = support & output["passes_p_value_cutoff"]
-    output["significant_in_heatmap"] = output["displayed_in_heatmap"]
+    output["passes_nominal_p_value_cutoff"] = finite_p & (p_values < P_VALUE_CUTOFF)
+    output["passes_p_value_cutoff"] = output["passes_nominal_p_value_cutoff"]
+    output["nominal_p_value_selected"] = support & output["passes_nominal_p_value_cutoff"]
+    output["displayed_in_heatmap"] = output["nominal_p_value_selected"]
+    # Compatibility alias retained for downstream readers; this is nominal, not BH significance.
+    output["significant_in_heatmap"] = output["nominal_p_value_selected"]
     output["selected_after_bh"] = support & finite_q & (q_values <= Q_VALUE_CUTOFF)
 
     output["blank_reason"] = ""
     output.loc[~support, "blank_reason"] = "low positive-z profile or study support"
     output.loc[support & ~finite_p, "blank_reason"] = "Fisher p=NA"
     output.loc[
-        support & finite_p & ~output["passes_p_value_cutoff"],
+        support & finite_p & ~output["passes_nominal_p_value_cutoff"],
         "blank_reason",
     ] = f"Fisher p>={P_VALUE_CUTOFF:g}"
 
@@ -275,15 +295,24 @@ def finalize_inferential_cells(cells: pd.DataFrame) -> pd.DataFrame:
         delta = pd.to_numeric(
             output["increased_minus_decreased_positive_fraction"],
             errors="coerce",
-        ).fillna(0.0)
-        direction = np.sign(delta)
+        )
+        direction = np.sign(delta.fillna(0.0))
         output["signed_minus_log10_fisher_p_value"] = (
             direction * output["minus_log10_fisher_p_value"]
         )
         output["plot_signed_minus_log10_fisher_p_value"] = (
             direction * output["plot_minus_log10_fisher_p_value"]
         )
-        output["displayed_in_heatmap"] = support & finite_p
+        output["passes_absolute_effect_cutoff"] = np.isfinite(delta) & (
+            delta.abs() > SIGNED_EFFECT_ABS_CUTOFF
+        )
+        output["displayed_in_heatmap"] = (
+            support & finite_p & output["passes_absolute_effect_cutoff"]
+        )
+        output.loc[
+            support & finite_p & ~output["passes_absolute_effect_cutoff"],
+            "blank_reason",
+        ] = f"absolute effect <={SIGNED_EFFECT_ABS_CUTOFF:g}"
         output.loc[output["displayed_in_heatmap"], "blank_reason"] = ""
 
     return output
@@ -378,6 +407,95 @@ def signed_direction_p_value(
 def pair_label(condition: object, body_site_group: object) -> str:
     """Return the row label used by condition/body-site heatmaps."""
     return f"{condition} | {body_site_group}"
+
+
+def summarize_contrast_legend(
+    cells: pd.DataFrame,
+    row_labels: list[str],
+    mode: ContrastMode,
+) -> ContrastLegendSummary:
+    """Summarize the visible condition/anatomy scope and signed-cell rules."""
+    selected = cells[cells["condition_body_site_pair"].isin(row_labels)].copy()
+    rows = selected.drop_duplicates("condition_body_site_pair")
+    displayed = selected["displayed_in_heatmap"].astype(bool)
+    bh_selected = selected["selected_after_bh"].astype(bool)
+    cutoff_hidden = (
+        selected["passes_support"].astype(bool)
+        & np.isfinite(pd.to_numeric(selected["fisher_p_value"], errors="coerce"))
+        & ~selected["passes_absolute_effect_cutoff"].astype(bool)
+    )
+    label_kind = "grouped condition labels" if mode.key == "grouped" else "individual labels"
+    return ContrastLegendSummary(
+        condition_label_kind=label_kind,
+        condition_label_count=int(rows["condition"].nunique()),
+        anatomy_group_count=int(rows["body_site_group"].nunique()),
+        row_count=len(rows),
+        displayed_cell_count=int(displayed.sum()),
+        displayed_bh_selected_cell_count=int((displayed & bh_selected).sum()),
+        effect_cutoff_hidden_cell_count=int(cutoff_hidden.sum()),
+    )
+
+
+def add_contrast_legend(
+    fig: Figure,
+    summary: ContrastLegendSummary,
+    *,
+    clustered: bool,
+) -> None:
+    """Add a count-aware signed-contrast legend below a heatmap."""
+    handles: list[Patch | Line2D] = [
+        Patch(
+            facecolor="#d6604d",
+            edgecolor=SLATE_200,
+            label=(
+                f"Colored: |effect| > {SIGNED_EFFECT_ABS_CUTOFF:g} "
+                f"({summary.displayed_cell_count} cells)"
+            ),
+        ),
+        Patch(
+            facecolor="white",
+            edgecolor=SIGNIFICANCE_BORDER,
+            linewidth=1.8,
+            label=(
+                f"Dark border: BH-adjusted q <= {Q_VALUE_CUTOFF:g} "
+                f"({summary.displayed_bh_selected_cell_count} cells)"
+            ),
+        ),
+        Patch(
+            facecolor=SLATE_100,
+            edgecolor=SLATE_200,
+            label=(
+                "Gray: absent, under-supported, or below effect cutoff "
+                f"({summary.effect_cutoff_hidden_cell_count} shown-row cells at cutoff)"
+            ),
+        ),
+    ]
+    if clustered:
+        handles.append(
+            Line2D(
+                [0],
+                [0],
+                color=SLATE_500,
+                linewidth=1.2,
+                label="Dendrogram branches: ordering only; no cluster labels",
+            )
+        )
+    legend = fig.legend(
+        handles=handles,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.005),
+        ncol=2,
+        frameon=True,
+        fontsize=7.8,
+        title=(
+            f"Shown: {summary.condition_label_count} {summary.condition_label_kind} | "
+            f"{summary.anatomy_group_count} anatomy groups | "
+            f"{summary.row_count} condition x anatomy rows"
+        ),
+        title_fontsize=8.2,
+    )
+    legend.get_frame().set_edgecolor(SLATE_200)
+    legend.get_frame().set_facecolor("white")
 
 
 def prepare_pattern_cells(
@@ -606,7 +724,7 @@ def select_contrast_rows(cells: pd.DataFrame) -> list[str]:
         .agg(
             body_site_group=("body_site_group", "first"),
             displayed_trait_count=("displayed_in_heatmap", "sum"),
-            significant_trait_count=("significant_in_heatmap", "sum"),
+            nominal_p_value_trait_count=("nominal_p_value_selected", "sum"),
             bh_selected_trait_count=("selected_after_bh", "sum"),
             positive_support=("display_positive_support", "sum"),
             max_abs_delta=("display_abs_delta", "max"),
@@ -617,7 +735,7 @@ def select_contrast_rows(cells: pd.DataFrame) -> list[str]:
         .sort_values(
             [
                 "body_site_group",
-                "significant_trait_count",
+                "nominal_p_value_trait_count",
                 "displayed_trait_count",
                 "bh_selected_trait_count",
                 "total_evidence",
@@ -1104,9 +1222,9 @@ def flag_matrix(
     *,
     flag_column: str,
 ) -> pd.DataFrame:
-    """Pivot a Boolean cell flag into a row x trait matrix."""
+    """Pivot a visible Boolean cell flag into a row x trait matrix."""
     trait_ids = trait_order["trait_id"].tolist()
-    flagged = cells[cells[flag_column]].copy()
+    flagged = cells[cells[flag_column] & cells["displayed_in_heatmap"]].copy()
     matrix = flagged.pivot_table(
         index="condition_body_site_pair",
         columns="trait_id",
@@ -1158,6 +1276,7 @@ def plot_matrix_heatmap(
     vmax: float | None = None,
     compact: bool = False,
     significance_borders: pd.DataFrame | None = None,
+    contrast_legend: ContrastLegendSummary | None = None,
 ) -> None:
     """Render one row x six-trait heatmap with blank nonsignificant cells."""
     row_count = max(1, len(matrix.index))
@@ -1166,6 +1285,8 @@ def plot_matrix_heatmap(
     fig.subplots_adjust(left=0.34, right=0.90, top=0.82, bottom=0.18)
     if compact:
         fig.subplots_adjust(top=1 - 1.15 / fig_height, bottom=1.2 / fig_height)
+    if contrast_legend is not None:
+        fig.subplots_adjust(bottom=max(fig.subplotpars.bottom, 1.9 / fig_height))
     fig.patch.set_facecolor("white")
     ax.set_facecolor(SLATE_100)
 
@@ -1261,6 +1382,8 @@ def plot_matrix_heatmap(
     cbar.set_label(colorbar_label, color=SLATE_700)
     cbar.ax.tick_params(labelsize=8)
     cbar.outline.set_edgecolor(SLATE_200)
+    if contrast_legend is not None:
+        add_contrast_legend(fig, contrast_legend, clustered=False)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=220, bbox_inches="tight", facecolor="white")
@@ -1275,6 +1398,7 @@ def plot_clustered_contrast_heatmap(
     *,
     title: str,
     subtitle: str,
+    contrast_legend: ContrastLegendSummary,
 ) -> None:
     """Render a compact signed heatmap with its Spearman row dendrogram."""
     row_count = max(1, len(clustering.matrix))
@@ -1289,7 +1413,7 @@ def plot_clustered_contrast_heatmap(
         left=0.04,
         right=0.69,
         top=0.84,
-        bottom=0.18,
+        bottom=0.25,
         wspace=0.02,
     )
     dendrogram_axis = fig.add_subplot(grid[0, 0])
@@ -1405,11 +1529,12 @@ def plot_clustered_contrast_heatmap(
         fontsize=9.0,
         color=SLATE_500,
     )
-    colorbar_axis = fig.add_axes((0.30, 0.065, 0.30, 0.014))
+    colorbar_axis = fig.add_axes((0.30, 0.115, 0.30, 0.014))
     colorbar = fig.colorbar(image, cax=colorbar_axis, orientation="horizontal")
     colorbar.set_label("Increased - decreased positive-z fraction", color=SLATE_700)
     colorbar.ax.tick_params(labelsize=7)
     colorbar.outline.set_edgecolor(SLATE_200)
+    add_contrast_legend(fig, contrast_legend, clustered=True)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=240, bbox_inches="tight", facecolor="white")
@@ -1438,8 +1563,8 @@ def write_pattern_heatmap(
     subtitle = (
         "Approach 2: rows are condition/body-site pairs and columns are the six "
         "traits. Cell color is Fisher evidence, -log10(p), so darker cells have "
-        "smaller p-values. Cells are shown for exploratory review only when Fisher "
-        f"p<{P_VALUE_CUTOFF:g}, n>=3, and s>=2; BH q-values are written to the TSV."
+        "smaller p-values. Cells are shown for exploratory review only when nominal Fisher "
+        f"p < {P_VALUE_CUTOFF:g}, n>=3, and s>=2; BH q-values are written to the TSV."
     )
     plot_matrix_heatmap(
         matrix,
@@ -1485,15 +1610,18 @@ def write_contrast_heatmap(
         output_path.name.replace("_contrast_heatmap.png", "_contrast_clustered_heatmap.png")
     )
     displayed_cells = int(cells["displayed_in_heatmap"].sum())
-    raw_p_value_cell_count = int(cells["significant_in_heatmap"].sum())
+    nominal_p_value_cell_count = int(cells["nominal_p_value_selected"].sum())
     bh_selected_cell_count = int(cells["selected_after_bh"].sum())
+    legend = summarize_contrast_legend(cells, row_labels, mode)
     subtitle = (
         "Color and numbers show increased minus decreased positive-z fractions. "
         "Red favors increased profiles; blue favors decreased profiles. "
-        f"A dark border marks BH q<={Q_VALUE_CUTOFF:g} ({bh_selected_cell_count} cells); "
-        f"{raw_p_value_cell_count} cells met uncorrected Fisher p<{P_VALUE_CUTOFF:g}. "
-        "All testable cells with >=3 positive-z profiles in either direction and >=2 total "
-        "studies are shown. Gray = unavailable or insufficient support, not nonsignificance. "
+        f"A dark border marks BH-adjusted q <= {Q_VALUE_CUTOFF:g} "
+        f"({bh_selected_cell_count} cells); "
+        f"{nominal_p_value_cell_count} cells met nominal Fisher p < {P_VALUE_CUTOFF:g}. "
+        f"Shown cells require |effect|>{SIGNED_EFFECT_ABS_CUTOFF:g}, >=3 positive-z profiles "
+        "in either direction, and >=2 total studies. Gray = unavailable, insufficient support, "
+        "or below the effect cutoff. "
         "Raw p and BH q are in the TSV."
     )
     plot_matrix_heatmap(
@@ -1509,9 +1637,11 @@ def write_contrast_heatmap(
         vmax=1.0,
         compact=True,
         significance_borders=bh_borders,
+        contrast_legend=legend,
     )
     pages = contrast_row_pages(row_labels)
     for page, labels in enumerate(pages, start=1):
+        page_legend = summarize_contrast_legend(cells, labels, mode)
         plot_matrix_heatmap(
             matrix.loc[labels],
             annotations.loc[labels],
@@ -1525,12 +1655,18 @@ def write_contrast_heatmap(
             vmax=1.0,
             compact=True,
             significance_borders=bh_borders.loc[labels],
+            contrast_legend=page_legend,
         )
     clustering = build_spearman_clustering(
         matrix,
         cells,
         view_key=f"{mode.key}_direction_contrast",
         view_label=mode.label,
+    )
+    condition_label_source = (
+        "Grouped condition text is the fixed upstream rollup, not a cluster name."
+        if mode.key == "grouped"
+        else "Individual condition text is the original curated label, not a cluster name."
     )
     clustered_subtitle = (
         "Average linkage uses pairwise-complete Spearman distance after ascending label sort "
@@ -1542,10 +1678,11 @@ def write_contrast_heatmap(
         f"{clustering.linkage_undefined_pair_count}/{clustering.linkage_pair_count} "
         f"({clustering.linkage_undefined_pair_fraction:.1%}) distances use neutral "
         f"{UNDEFINED_SPEARMAN_DISTANCE:g}; exact-distance tie excess is "
-        f"{clustering.linkage_distance_tie_fraction:.1%}. No dendrogram cut is interpreted. "
-        f"Gray cells remain missing; dark borders mark BH q<={Q_VALUE_CUTOFF:g} "
-        f"({bh_selected_cell_count} cells), versus {raw_p_value_cell_count} cells at "
-        f"uncorrected Fisher p<{P_VALUE_CUTOFF:g}."
+        f"{clustering.linkage_distance_tie_fraction:.1%}. No dendrogram cut or branch label is "
+        f"interpreted. {condition_label_source} "
+        f"Gray cells remain missing; dark borders mark BH-adjusted q <= {Q_VALUE_CUTOFF:g} "
+        f"({bh_selected_cell_count} cells), versus {nominal_p_value_cell_count} cells at "
+        f"nominal Fisher p < {P_VALUE_CUTOFF:g}."
     )
     plot_clustered_contrast_heatmap(
         clustering,
@@ -1554,6 +1691,7 @@ def write_contrast_heatmap(
         clustered_output_path,
         title=f"Clustered signed direction contrast: {mode.label}",
         subtitle=clustered_subtitle,
+        contrast_legend=legend,
     )
     return ContrastHeatmapOutputs(
         overview_path=output_path,
@@ -1562,6 +1700,7 @@ def write_contrast_heatmap(
         displayed_cell_count=displayed_cells,
         tested_cell_count=len(cells),
         clustering=clustering,
+        legend=legend,
     )
 
 
@@ -1608,18 +1747,27 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "edge TSVs before graph display selection. They preserve condition/body-site/trait records "
         "instead of correlating already-collapsed condition and body-site nodes.",
         "",
-        "Signed contrasts display all supported, testable effects, including nonsignificant "
-        "results. Gray cells are unavailable or under-supported. Trait-pattern heatmaps "
-        "continue to mask cells that fail the raw p-value threshold.",
+        "Signed contrasts display supported, testable effects above the absolute-effect cutoff, "
+        "including nonsignificant results. Gray cells are unavailable, under-supported, or at "
+        "or below the cutoff. Trait-pattern heatmaps continue to mask cells that fail their "
+        "nominal p-value display threshold.",
         "",
         "### How Conditions and Blank Cells Are Chosen",
         "",
         "The signed heatmaps do not choose a top-N list of diseases. They read the full "
         "increased and decreased Sankey edge tables before graph display selection, discard "
         "unknown raw condition labels upstream, and include every condition/body-site row "
-        "with at least one supported, finite cell. The grouped view applies the v3 clinical "
+        f"with at least one supported, finite cell whose absolute effect is >"
+        f"{SIGNED_EFFECT_ABS_CUTOFF:g}. The grouped view applies the v3 clinical "
         "condition rollup rules; the individual view keeps the original curated condition "
-        "label. Both views use the same grouped v3 body-site labels.",
+        "label. Both views use the same grouped v3 body-site labels. These are fixed upstream "
+        "labels, not names inferred from the dendrogram or summaries of every row on a branch.",
+        "Grouped conditions are assigned by the ordered, case-insensitive substring rules in "
+        "`v3_fully_grouped_condition_display_label`; the first matching rule wins and an "
+        "unmatched label becomes `Other specific clinical labels`. The per-trait "
+        "`*_profile_sankey_condition_rollups.tsv` files audit every raw condition, displayed "
+        "label, rule, profile count, and study count. Individual-condition rollup files record "
+        "that the raw curated label was retained.",
         "",
         "The signed contrast table contains candidate edge records, not a complete Cartesian "
         "grid. Its exported `blank_reason` is `low positive-z profile or study support` for "
@@ -1627,10 +1775,13 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "displayed candidate. A condition/body-site/trait combination for which neither "
         "direction emitted a candidate edge is absent from the table rather than assigned a "
         "blank reason. In the image, both an absent record and a present under-supported "
-        "candidate appear gray. A direction can have zero positive-z profiles while the cell "
+        "candidate appear gray. A present supported candidate with absolute effect at or below "
+        f"{SIGNED_EFFECT_ABS_CUTOFF:g} has `blank_reason=absolute effect <="
+        f"{SIGNED_EFFECT_ABS_CUTOFF:g}` and also appears gray. A direction can have zero "
+        "positive-z profiles while the cell "
         "remains colored when total profiles exist and the other direction meets support. "
-        "Finite tests that miss either statistical cutoff are still colored and numbered. A "
-        "white cell containing `+0.00` is a measured null contrast, not missing data. In "
+        "Finite effects above the display cutoff that miss either statistical cutoff remain "
+        "colored and numbered. In "
         "trait-pattern heatmaps only, gray can also mean that the raw one-sided Fisher test "
         f"did not pass p<{P_VALUE_CUTOFF:g}.",
         "",
@@ -1643,13 +1794,14 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "pairs and columns are traits. Cell color and numbers are "
         "`increased_fraction - decreased_fraction` on a fixed -1 to +1 scale. Red "
         "favors increased profiles and blue favors decreased profiles. "
-        f"A dark border marks BH q<={Q_VALUE_CUTOFF:g}; the uncorrected Fisher "
+        f"A dark border marks BH-adjusted q<={Q_VALUE_CUTOFF:g}; the nominal Fisher "
         f"p<{P_VALUE_CUTOFF:g} count is reported separately below. Unbordered cells are "
-        "descriptive effects. Cells require a finite test, "
+        f"descriptive effects. Cells require a finite test, absolute effect >"
+        f"{SIGNED_EFFECT_ABS_CUTOFF:g}, "
         "at least 3 positive-z profiles in "
         "either direction, and at least 2 total studies. Every condition/body-site row "
-        "with a supported cell is included, without a row cap. Rows are grouped by body "
-        "site and ranked by significant-trait count, coverage, and evidence within each site.",
+        "with a displayed cell is included, without a row cap. Rows are grouped by body "
+        "site and ranked by nominal-p trait count, coverage, and evidence within each site.",
         "- `signed_direction_contrast_clustered`: A separate compact overview clusters rows "
         "with average linkage on pairwise-complete Spearman distance (`1 - rho`). A pairwise "
         f"correlation requires at least {MIN_SPEARMAN_OVERLAP} shared supported traits. Blank "
@@ -1659,42 +1811,60 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "shown in a separate `Insufficient overlap (not clustered)` block. Remaining undefined "
         f"row-pair distances use neutral distance {UNDEFINED_SPEARMAN_DISTANCE:g}. Figure "
         "subtitles and the manifest report undefined-pair and exact-distance tie fractions. "
-        "No dendrogram cut or cluster IDs are interpreted. Trait columns remain in the fixed "
-        "six-trait order.",
+        "No dendrogram cut, cluster ID, or branch label is interpreted. A branch would only be "
+        "named after a predeclared, multiplicity-adjusted enrichment analysis supported such a "
+        "label; no such label is shown here. Trait columns remain in the fixed six-trait order.",
         f"- Readable pages contain at most {CONTRAST_ROWS_PER_PAGE} rows each. "
         f"`{CONTRAST_PAGES_FILENAME}` records their paths and counts; `heatmap_page` in "
         "the contrast table locates each displayed row. The original PNGs show full overviews.",
         f"- BH q-values are computed within each heatmap view. "
         f"`selected_after_bh=True` marks supported cells with q<={Q_VALUE_CUTOFF:g}; "
         "those cells receive the dark border and are also collected in the BH-selected cell "
-        "table. `significant_in_heatmap` retains the uncorrected raw-p flag for audit only.",
+        "table. `nominal_p_value_selected` is the explicit nominal flag; "
+        "`significant_in_heatmap` is retained as a deprecated compatibility alias.",
         "- The Fisher tables count profiles, not independent studies. A BH-bordered cell is "
         "therefore a profile-level diagnostic and does not establish study-level replication.",
+        "- Issue #256 / PR #257 adds pooled, denominator-harmonized, study-weighted fraction "
+        "and log-ratio quantities, but no condition-by-anatomy replacement for this heatmap. "
+        "Those pooled quantities are therefore not mixed into this profile-level positive-z "
+        "prevalence contrast; the estimands and sampling units remain explicitly separate.",
         "",
         "| heatmap | type | full/ranked PNG | clustered PNG | displayed cells | "
-        "raw p<0.01 cells | BH-selected cells | tested cells | rows |",
-        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |",
+        "nominal p<0.01 cells | BH-selected cells | tested cells | rows | condition labels | "
+        "anatomy groups |",
+        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in manifest.itertuples(index=False):
         clustered_path = getattr(row, "clustered_png_path", pd.NA)
         clustered_text = "" if pd.isna(clustered_path) else f"`{clustered_path}`"
+        nominal_count = getattr(row, "nominal_p_value_cell_count", row.significant_cell_count)
+        condition_count = getattr(row, "condition_label_count", pd.NA)
+        anatomy_count = getattr(row, "anatomy_group_count", pd.NA)
+        condition_text = "" if pd.isna(condition_count) else str(int(condition_count))
+        anatomy_text = "" if pd.isna(anatomy_count) else str(int(anatomy_count))
         lines.append(
             f"| {row.view_label} | {row.heatmap_type} | `{row.png_path}` | "
             f"{clustered_text} | "
-            f"{row.displayed_cell_count} | {int(row.significant_cell_count)} | "
+            f"{row.displayed_cell_count} | {int(nominal_count)} | "
             f"{row.bh_selected_cell_count} | "
-            f"{row.tested_cell_count} | {row.row_count} |"
+            f"{row.tested_cell_count} | {row.row_count} | {condition_text} | {anatomy_text} |"
         )
     clustered_rows = manifest[manifest["heatmap_type"] == "signed_direction_contrast"]
     if not clustered_rows.empty:
+        individual_rows = clustered_rows[
+            clustered_rows["view_key"] == "individual_conditions_direction_contrast"
+        ]
+        individual_row_count = (
+            int(individual_rows.iloc[0]["row_count"]) if not individual_rows.empty else 0
+        )
         lines.extend(
             [
                 "",
                 "### Clustered Direction Overviews",
                 "",
-                "The grouped view is previewed below. The 125-row individual view is linked "
-                "directly because a page-width thumbnail is illegible. Use the ranked pages "
-                "below when numeric annotations need to be read.",
+                f"The grouped view is previewed below. The {individual_row_count}-row individual "
+                "view is linked directly because a page-width thumbnail is illegible. Use the "
+                "ranked pages below when numeric annotations need to be read.",
                 "",
             ]
         )
@@ -1832,6 +2002,7 @@ def write_six_shared_trait_cytoscape_heatmaps(
                 "condition_mode": view.condition_mode,
                 "row_count": row_count,
                 "displayed_cell_count": displayed_count,
+                "nominal_p_value_cell_count": int(cells["nominal_p_value_selected"].sum()),
                 "significant_cell_count": int(cells["significant_in_heatmap"].sum()),
                 "bh_selected_cell_count": int(cells["selected_after_bh"].sum()),
                 "tested_cell_count": tested_count,
@@ -1884,6 +2055,7 @@ def write_six_shared_trait_cytoscape_heatmaps(
         cells["heatmap_page"] = pd.Series(pd.NA, index=cells.index, dtype="Int64")
         for page, labels in enumerate(contrast_row_pages(outputs.row_labels), start=1):
             in_page = cells["condition_body_site_pair"].isin(labels)
+            page_legend = summarize_contrast_legend(cells, labels, mode)
             cells.loc[in_page, "heatmap_page"] = page
             page_records.append(
                 {
@@ -1891,9 +2063,20 @@ def write_six_shared_trait_cytoscape_heatmaps(
                     "view_label": mode.label,
                     "page": page,
                     "row_count": len(labels),
+                    "condition_label_count": page_legend.condition_label_count,
+                    "anatomy_group_count": page_legend.anatomy_group_count,
                     "displayed_cell_count": int(cells.loc[in_page, "displayed_in_heatmap"].sum()),
+                    "nominal_p_value_cell_count": int(
+                        cells.loc[in_page, "nominal_p_value_selected"].sum()
+                    ),
                     "significant_cell_count": int(
                         cells.loc[in_page, "significant_in_heatmap"].sum()
+                    ),
+                    "bh_selected_cell_count": int(
+                        (
+                            cells.loc[in_page, "selected_after_bh"]
+                            & cells.loc[in_page, "displayed_in_heatmap"]
+                        ).sum()
                     ),
                     "png_path": relative_path(
                         contrast_page_path(outputs.overview_path, page),
@@ -1910,17 +2093,21 @@ def write_six_shared_trait_cytoscape_heatmaps(
                 "focus_direction": "increased_vs_decreased",
                 "condition_mode": mode.condition_mode,
                 "row_count": len(outputs.row_labels),
+                "condition_label_count": outputs.legend.condition_label_count,
+                "anatomy_group_count": outputs.legend.anatomy_group_count,
                 "displayed_cell_count": outputs.displayed_cell_count,
+                "nominal_p_value_cell_count": int(cells["nominal_p_value_selected"].sum()),
                 "bh_selected_cell_count": int(cells["selected_after_bh"].sum()),
                 "tested_cell_count": outputs.tested_cell_count,
                 "min_positive_profiles": MIN_POSITIVE_PROFILES,
                 "min_studies": MIN_STUDIES,
                 "p_value_cutoff": P_VALUE_CUTOFF,
                 "q_value_cutoff": Q_VALUE_CUTOFF,
+                "absolute_effect_cutoff": SIGNED_EFFECT_ABS_CUTOFF,
                 "color_value": "increased_minus_decreased_positive_fraction",
                 "display_rule": (
-                    "all supported testable cells; BH q cutoff marks dark borders; "
-                    "raw p cutoff is audit-only"
+                    "supported testable cells with absolute effect above cutoff; BH q cutoff "
+                    "marks dark borders; nominal p cutoff is audit-only"
                 ),
                 "significant_cell_count": int(cells["significant_in_heatmap"].sum()),
                 "filled_fraction": outputs.displayed_cell_count
@@ -1960,6 +2147,13 @@ def write_six_shared_trait_cytoscape_heatmaps(
                 ),
                 "linkage_distance_tie_fraction": (outputs.clustering.linkage_distance_tie_fraction),
                 "dendrogram_cut_applied": False,
+                "dendrogram_branch_label_rule": (
+                    "none; dendrogram orders rows and has no interpreted branch labels"
+                ),
+                "estimand_scope_note": (
+                    "profile-level positive-z prevalence contrast; not the pooled study-weighted "
+                    "denominator-harmonized fraction estimand from issue 256"
+                ),
                 "cluster_tree_nodes_path": relative_path(
                     output_dir / CLUSTER_TREE_NODES_FILENAME,
                     repo_root,
@@ -2017,8 +2211,12 @@ def write_six_shared_trait_cytoscape_heatmaps(
                 "view_label",
                 "page",
                 "row_count",
+                "condition_label_count",
+                "anatomy_group_count",
                 "displayed_cell_count",
+                "nominal_p_value_cell_count",
                 "significant_cell_count",
+                "bh_selected_cell_count",
                 "png_path",
             ],
         ),
@@ -2050,6 +2248,37 @@ def select_oral_contrast_cells(cells: pd.DataFrame) -> pd.DataFrame:
     for flag in ("displayed_in_heatmap", "selected_after_bh"):
         if not pd.api.types.is_bool_dtype(selected[flag]) or selected[flag].isna().any():
             raise ValueError(f"Expected complete Boolean flags: {flag}")
+    if "nominal_p_value_selected" not in selected.columns:
+        if "significant_in_heatmap" in selected.columns:
+            selected["nominal_p_value_selected"] = selected["significant_in_heatmap"].astype(bool)
+        elif (
+            "passes_nominal_p_value_cutoff" in selected.columns
+            and "passes_support" in selected.columns
+        ):
+            selected["nominal_p_value_selected"] = selected["passes_support"].astype(
+                bool
+            ) & selected["passes_nominal_p_value_cutoff"].astype(bool)
+        elif "passes_p_value_cutoff" in selected.columns and "passes_support" in selected.columns:
+            selected["nominal_p_value_selected"] = selected["passes_support"].astype(
+                bool
+            ) & selected["passes_p_value_cutoff"].astype(bool)
+        else:
+            support = (
+                selected["passes_support"].astype(bool)
+                if "passes_support" in selected.columns
+                else pd.Series(True, index=selected.index)
+            )
+            selected["nominal_p_value_selected"] = support & (
+                selected["fisher_p_value"] < P_VALUE_CUTOFF
+            )
+    else:
+        selected["nominal_p_value_selected"] = selected["nominal_p_value_selected"].astype(bool)
+
+    if "significant_in_heatmap" not in selected.columns:
+        selected["significant_in_heatmap"] = selected["nominal_p_value_selected"]
+    else:
+        selected["significant_in_heatmap"] = selected["significant_in_heatmap"].astype(bool)
+
     selected["oral_site"] = selected["body_site_group"].isin(ORAL_BODY_SITE_GROUPS)
     selected["oral_disease"] = selected["condition"].map(
         lambda label: any(
@@ -2124,12 +2353,14 @@ def write_oral_trait_heatmaps(
         for row in rows.itertuples(index=False)
     }
     significant_count = int(borders.to_numpy().sum())
+    nominal_count = int(cells["nominal_p_value_selected"].sum())
     family_size = int((source["view_key"] == "individual_conditions_direction_contrast").sum())
     subtitle = (
         "Oral sampling site OR oral disease. Red: increased; blue: decreased positive-z "
         "profile fraction. Numbers are increased minus decreased fractions; "
         "max n = largest per-trait study count in each row. "
-        f"Dark border: source BH q <= {Q_VALUE_CUTOFF:g} ({significant_count} oral cells); "
+        f"Dark border: BH-adjusted q <= {Q_VALUE_CUTOFF:g} ({significant_count} oral cells); "
+        f"{nominal_count} oral cells met nominal Fisher p < {P_VALUE_CUTOFF:g}; "
         f"original {family_size}-cell family retained. Gray: unavailable or below source support "
         "(>=3 positive-z profiles in either direction and >=2 studies), not nonsignificant. "
         "Source tests are profile-level diagnostics."
@@ -2185,6 +2416,9 @@ def write_oral_trait_heatmaps(
         "selected_cells": len(cells),
         "displayed_cells": int(cells["displayed_in_heatmap"].sum()),
         "bh_significant_displayed_cells": significant_count,
+        "bh_selected_cell_count": int(cells["selected_after_bh"].sum()),
+        "nominal_p_value_cell_count": nominal_count,
+        "significant_cell_count": nominal_count,
         "oral_site_only_rows": int((rows["oral_site"] & ~rows["oral_disease"]).sum()),
         "oral_disease_only_rows": int((~rows["oral_site"] & rows["oral_disease"]).sum()),
         "both_rows": int((rows["oral_site"] & rows["oral_disease"]).sum()),
