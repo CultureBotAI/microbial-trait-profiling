@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from mtp.taxa_trait_matrix import make_trait_key
-from mtp.trait_guilds import TABLE1_TRAITS, column_term_id
+from mtp.trait_guilds import MEDIADIVE_MARKER, TABLE1_TRAITS, column_term_id
 
 Key = tuple[str, str, str]
 Pair = tuple[str, str]
@@ -76,7 +76,7 @@ def load_base(
     for row in rows(profile_path):
         key3 = (row.pop("study_id"), row.pop("experiment_id"), row.pop("inc_dec"))
         if not columns:
-            columns = [c for c in row if "mediadive.medium" not in c.lower()]
+            columns = [c for c in row if MEDIADIVE_MARKER not in c.lower()]
         values = {c: count(v) for c, v in row.items()}
         if key3 in profiles or key3[2] not in {"inc", "dec"}:
             raise ValueError(f"Duplicate/invalid profile key: {key3}")
