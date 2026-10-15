@@ -53,6 +53,7 @@ def test_mtp_modules_can_be_imported_directly() -> None:
         "composition_calibration.protocol",
         "composition_calibration.scenarios",
         "corpus_identity",
+        "coupling",
         "datamodel",
         "deck_visualizations",
         "density_adjustment",
