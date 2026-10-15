@@ -1,6 +1,6 @@
 # Literature-review prompts
 
-Prompts shared by Jed Dongjin Kim-Ozaeta on 2026-10-14 for the PD-cellulose figures. Each prompt is saved verbatim, with a header naming the figure it is about; only Markdown headings were added to prompt 4.
+Prompts shared by Jed Dongjin Kim-Ozaeta on 2026-10-14 for the PD-cellulose figures. Each prompt keeps its original wording, with a header naming the figure it is about. Curly quotation marks were normalized to straight ones, and Markdown headings were added to prompt 4.
 
 | File | Figure | Signal(s) |
 |---|---|---|

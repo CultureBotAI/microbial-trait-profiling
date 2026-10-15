@@ -1,6 +1,6 @@
 # Prompt 1 — Parkinson's disease: moderately halophilic and arsenate reduction
 
-Shared by Jed Dongjin Kim-Ozaeta on 2026-10-14. Saved verbatim; see [README](README.md) for status.
+Shared by Jed Dongjin Kim-Ozaeta on 2026-10-14. Wording unchanged (quotation marks normalized to straight quotes); see [README](README.md) for status.
 
 Figure: [`pd_condition_taxon_trait_network.png`](https://github.com/CultureBotAI/microbial-trait-profiling/blob/205257c5ec887bdf145e2c66e12f17ee005fafa0/trait-visualization/trait-profile-investigation/PD-cellulose/pd_condition_taxon_trait_network.png) (Panel B), on branch `clustered-heatmap-generation` at `205257c`.
 
