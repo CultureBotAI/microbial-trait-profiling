@@ -45,7 +45,7 @@ instead of fixing the root cause:
 - Agent installs a dependency that isn't in `pyproject.toml`
 - Agent uses `pip install` instead of `uv sync`
 - Agent creates a `.py` script in the repo root instead of putting it in
-  `src/bsdbng/`
+  `src/mtp/`
 
 ### Why this matters
 
@@ -60,7 +60,7 @@ Every change requires an issue, a linked branch, and a linked PR:
 1. **Create or identify a GitHub issue** before writing any code.
 2. **Create a branch linked to the issue** using `gh issue develop`:
    ```bash
-   gh issue develop <number> --repo turbomam/bsdbng --checkout
+   gh issue develop <number> --repo CultureBotAI/microbial-trait-profiling --checkout
    ```
    This formally links the branch to the issue in GitHub's Development
    sidebar. Do not create branches manually with `git checkout -b`.
@@ -105,16 +105,29 @@ Every data pipeline step must be checked for silent data loss or corruption:
   column.** If you can't say which column a value came from, the mapping
   is undocumented and fragile.
 
+## Biological interpretation and review
+
+Every biological claim, figure caption, and summary text generated in this repository must adhere to the project-wide biological interpretation guide in [`methods/biological_interpretation.md`](methods/biological_interpretation.md) and trait semantics in [`docs/table1_trait_semantics_audit.md`](docs/table1_trait_semantics_audit.md):
+
+- **Distinguish annotation from measurement**: BugSigDB signatures record reported taxon abundance shifts from literature; KG-Microbe records organism-level trait annotations from microbiological databases. We measure the alignment between reported taxa and trait annotations, not in vivo physiological activity, cell density, or metabolite flux.
+- **Directional terminology**: Use precise terms corresponding to the specific pipeline quantity:
+  - *Experiment/signature direction*: taxa reported increased or decreased in cases vs controls.
+  - *Study fraction difference*: $\Delta = f_{\text{increased}} - f_{\text{decreased}}$ (paired within study).
+  - *Log-ratio direction*: $\ln(\text{trait}_A / \text{trait}_B)$ paired shift between increased and decreased sets.
+  - *ORA enrichment/depletion*: statistical over- or under-representation of trait-bearing taxa relative to background.
+- **No speculative causal or clinical leaps**: Never assert that microbes "produce more SCFA", "cause inflammation", or "drive disease" based solely on trait-annotation enrichment or sign tests without direct physiological validation (see [`methods/validation_feasibility.md`](methods/validation_feasibility.md)).
+- **Defensible wording**: State findings as "taxa annotated as [trait] were more frequently reported increased than decreased" or "enriched among increased taxa". Do not use uncalibrated terms like "dysbiosis signature" or "pathogenic shift".
+
 ## After a release
 
 When a new release is tagged, check the release assets:
 
-1. Check for new releases: `gh release list --repo turbomam/bsdbng --limit 1`
+1. Check for new releases: `gh release list --repo CultureBotAI/microbial-trait-profiling --limit 1`
 2. **Ask the user before downloading** — releases can be large
 3. Download selected assets:
    ```bash
    mkdir -p release-assets
-   gh release download <tag> --repo turbomam/bsdbng --dir release-assets \
+   gh release download <tag> --repo CultureBotAI/microbial-trait-profiling --dir release-assets \
      --pattern 'bsdbng-studies-*.tar.gz' \
      --pattern 'bsdbng-stats-*.txt' \
      --pattern 'bsdbng-ingest-log-*.json'
@@ -142,12 +155,13 @@ If your agent doesn't know about this project's conventions, tell it:
 
 ## Project conventions
 
-- Schema source of truth: `schema/bsdbng.yaml`
-- Generated Pydantic models: `src/bsdbng/datamodel/bsdbng_pydantic.py` (do not edit)
-- Load YAML via Pydantic: `from bsdbng.datamodel import Study`
-- Source code in `src/bsdbng/`, tests in `tests/`
+- Schema source of truth: `schema/mtp.yaml` (legacy: `schema/bsdbng.yaml`)
+- Generated Pydantic models: `src/mtp/datamodel/mtp_pydantic.py`
+  (legacy: `src/bsdbng/datamodel/bsdbng_pydantic.py`)
+- Load YAML via Pydantic: `from mtp.datamodel import Study`
+- Source code in `src/mtp/` (with compatibility shims in `src/bsdbng/`), tests in `tests/`
 - File types: CSV (input), YAML (output/schema), Python (code), JSON (logs)
 - No DuckDB, no Parquet, no Jupyter notebooks
 - No sentinel values — if data is missing, use `null`
-- Do not hardcode file paths — use `from bsdbng.paths import ...`
+- Do not hardcode file paths — use `from mtp.paths import ...`
 - Do not commit generated output files

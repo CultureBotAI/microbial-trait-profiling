@@ -7,12 +7,21 @@ repos:
       - id: check-json
       - id: check-merge-conflict
       - id: check-added-large-files
-        exclude: '^trait-visualization/trait-profile-investigation/six-shared-traits/.*heatmap.*\.png$'
+        exclude: |
+          (?x)^(
+            trait-visualization/trait-profile-investigation/six-shared-traits/.*heatmap.*\.png
+            |data/derived/study_trait_profiles_wide\.tsv\.gz
+          )$
       - id: check-added-large-files
         name: check six-trait heatmap sizes (2 MiB)
         # Full-resolution scientific figures retain a bounded size check (#508).
         files: '^trait-visualization/trait-profile-investigation/six-shared-traits/.*heatmap.*\.png$'
         args: [--maxkb=2048, --enforce-all]
+      - id: check-added-large-files
+        name: check published profile bundle size (5 MiB)
+        # Preserve the committed input bundle while checking future growth (#508).
+        files: '^data/derived/study_trait_profiles_wide\.tsv\.gz$'
+        args: [--maxkb=5120, --enforce-all]
       - id: end-of-file-fixer
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
@@ -47,13 +56,15 @@ repos:
             |trait-visualization/trait-profile-investigation/
             six-shared-traits/oral/oral_six_trait_provenance\.json
           )$
+        # Only reviewed public checksum values are baselined; new values still fail.
+        args: [--baseline, .secrets.baseline]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.10
     hooks:
       - id: ruff-check
       - id: ruff-format
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.8.17
+    rev: 0.12.22
     hooks:
       - id: uv-lock
   - repo: https://github.com/PyCQA/bandit

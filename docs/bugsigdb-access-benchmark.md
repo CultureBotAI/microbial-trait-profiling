@@ -10,7 +10,8 @@ Generated at: `2026-08-26T19:42:10+00:00`
 - files downloaded sequentially
 - bytes read fully but not persisted to disk
 - timings include manifest resolution for methods that require API discovery
-- host environment: local workstation run from `bsdbng`
+- host environment: local workstation run from `bsdbng`, this repository's former
+  name at the time of the run
 
 ## Results
 
