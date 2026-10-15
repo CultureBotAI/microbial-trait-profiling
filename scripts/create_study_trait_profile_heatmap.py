@@ -15,7 +15,7 @@ import seaborn as sns
 from matplotlib.patches import Patch
 from scipy.cluster.hierarchy import leaves_list, linkage
 
-from mtp.composition_denominators import retained_totals
+from mtp.composition_denominators import retained_totals, retained_trait_counts
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
@@ -219,7 +219,7 @@ def load_profile_matrix(profile_path: Path) -> tuple[pd.DataFrame, pd.DataFrame,
         metadata["inc_dec"].map(DIRECTION_LABELS).fillna(metadata["inc_dec"])
     )
     metadata["total_trait_signal"] = retained_totals(profile_matrix)
-    metadata["trait_count"] = profile_matrix.gt(0).sum(axis=1)
+    metadata["trait_count"] = retained_trait_counts(profile_matrix).gt(0).sum(axis=1)
     return profile_matrix, metadata, trait_columns
 
 
