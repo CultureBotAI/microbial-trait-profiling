@@ -23,6 +23,7 @@ cd "${REPO_ROOT}"
 
 echo "=== [Noel / Directional Consistency Arm] Checking prerequisite derived tables ==="
 for required_file in \
+    "data/raw/download_provenance.json" \
     "data/derived/study_trait_profiles_wide.tsv" \
     "data/derived/taxa_trait_matrix.tsv" \
     "data/derived/experiments.tsv" \
@@ -50,7 +51,7 @@ echo "=== [5/9] Classifying experiment contrast orientation & disease-vs-healthy
 just contrast-orientation
 
 echo "=== [6/9] Computing source-count reconciliation & genus/family taxon influence (#190) ==="
-just table1-taxon-influence
+just table1-taxon-influence-from "data/kg-microbe" "data/derived" "data/derived/table1_taxon_influence"
 
 echo "=== [7/9] Inventorying validation evidence & building integrated cross-arm evidence table (#178, #191) ==="
 just validation-evidence
