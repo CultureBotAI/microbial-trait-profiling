@@ -190,7 +190,7 @@ BugSigDB direction is a recurrence summary, not a pooled abundance effect: `incr
 - Interpretation: BugSigDB PD occurrence agrees with literature (decreased); treat this as a higher-priority taxon for trait-level follow-up. KG-Microbe direct six-trait annotations: cellulose catabolic process; coccus shaped; facultatively aerobic; sphere shaped. Strongest current influence: cellulose catabolic process (-0.13 fixed-reference z, dec).
 
 ### Enterobacteriaceae
-- Literature match: Enterobacteriaceae (increased; family; exact); source(s): [10.1002/mds.26069](https://doi.org/10.1002/mds.26069); [10.1016/j.parkreldis.2016.08.019](https://doi.org/10.1016/j.parkreldis.2016.08.019)
+- Literature match: Enterobacteriaceae (increased; family; exact); source(s): [10.1016/j.parkreldis.2016.08.019](https://doi.org/10.1016/j.parkreldis.2016.08.019); [10.1002/mds.26069](https://doi.org/10.1002/mds.26069)
 - BugSigDB PD direction: increased (18/2 increased/decreased profiles); Hamming distance: 0 (similar); agreement: agrees
 - KG-Microbe direct six-trait annotations: arsenate reduction; coccus shaped; facultatively aerobic; moderately halophilic; sphere shaped
 - Interpretation: BugSigDB PD occurrence agrees with literature (increased); treat this as a higher-priority taxon for trait-level follow-up. KG-Microbe direct six-trait annotations: arsenate reduction; coccus shaped; facultatively aerobic; moderately halophilic; sphere shaped. Strongest current influence: arsenate reduction (+0.20 fixed-reference z, mixed).

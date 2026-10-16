@@ -13,6 +13,7 @@ from mtp.corpus_identity import (
     measure_matrix,
     read_kg_inputs,
     summary_lines,
+    verify_provenance_source_hashes,
     write_identity,
 )
 
@@ -26,6 +27,7 @@ __all__ = [
     "measure_matrix",
     "read_kg_inputs",
     "summary_lines",
+    "verify_provenance_source_hashes",
     "write_identity",
 ]
 

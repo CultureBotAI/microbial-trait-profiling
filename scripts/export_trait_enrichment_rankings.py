@@ -211,6 +211,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         dest="unfiltered",
         help="Process an unfiltered results TSV containing all tested pairs.",
     )
+    parser.add_argument(
+        "--fdr-scope",
+        choices=["global", "profile"],
+        default=None,
+        help="Explicit FDR multiplicity scope ('global' or 'profile'; overrides metadata if set).",
+    )
     return parser.parse_args(argv)
 
 
@@ -536,7 +542,8 @@ def build_overall_table(
     trait_totals: dict[str, int] | None = None,
 ) -> pd.DataFrame:
     _ = total_profiles  # Reserved for future weighting
-    _ = fdr_scope  # Stat type already implies scope
+    if fdr_scope not in {"global", "profile"}:
+        raise ValueError(f"Unsupported fdr_scope: {fdr_scope!r}; expected 'global' or 'profile'.")
     columns = overall_columns(stat_type, censored=bool(max_traits), body_site_group=body_site_group)
     if frame.empty:
         return pd.DataFrame(columns=columns)
@@ -641,14 +648,13 @@ def build_overall_table(
         overall = overall.merge(censored_counts, on="trait", how="left")
         overall["n_censored_profiles"] = overall["n_censored_profiles"].fillna(0).astype(int)
 
-    # #119: Calculate prevalence fraction.
-    # Denominator is the number of profiles where the trait was testable
-    # (i.e., appeared at least once).
-    overall["prevalence"] = overall["hit_rows"] / overall["testable_profiles"]
+    # #119: Calculate prevalence fraction using the per-trait tested profile denominator
+    # (n_profiles_tested) so it matches the per-trait ORA testing scope.
+    overall["prevalence"] = overall["hit_rows"] / overall["n_profiles_tested"]
 
     # Add human-readable prevalence summary
     overall["prevalence_summary"] = (
-        overall["hit_rows"].astype(str) + " / " + overall["testable_profiles"].astype(str)
+        overall["hit_rows"].astype(str) + " / " + overall["n_profiles_tested"].astype(str)
     )
 
     # #115: Minimum hit thresholding for overall ranking to reduce noise.
@@ -742,7 +748,7 @@ def main(argv: list[str] | None = None) -> int:
     min_fold = meta["min_fold"] if meta["min_fold"] is not None else DEFAULT_MIN_FOLD
     max_fold = meta["max_fold"] if meta["max_fold"] is not None else DEFAULT_MAX_FOLD
     testable_profiles = meta["testable_profiles"]
-    fdr_scope = meta["fdr_scope"]
+    fdr_scope = args.fdr_scope or meta["fdr_scope"]
     max_traits = meta.get("max_traits")
     tests_performed: int | None = meta["tests_performed"]
     analyzer_hits: int | None = meta["significant_hits"]
@@ -769,7 +775,7 @@ def main(argv: list[str] | None = None) -> int:
                 min_fold = results_meta["min_fold"]
             if results_meta.get("max_fold") is not None:
                 max_fold = results_meta["max_fold"]
-            fdr_scope = results_meta.get("fdr_scope", fdr_scope)
+            fdr_scope = args.fdr_scope or results_meta.get("fdr_scope", fdr_scope)
             testable_profiles = results_meta.get("testable_profiles") or testable_profiles
 
             if args.unfiltered or "all_results" in str(results_path):

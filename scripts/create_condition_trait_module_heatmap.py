@@ -199,8 +199,18 @@ def format_trait_label(column_id: str, row: pd.Series) -> str:
 def load_aggregated_study_profiles(
     profile_path: Path,
     human_experiment_ids: set[str] | None = None,
+    direction: str = "all",
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Aggregate increased/decreased experiment profiles to study-level trait profiles."""
+    """Aggregate experiment profiles to study-level trait profiles.
+
+    By default (`direction="all"`), increased and decreased profiles within each
+    study are summed to measure direction-agnostic study trait load. Pass
+    `direction="inc"` or `direction="dec"` to restrict aggregation to a single
+    direction (#134).
+    """
+    if direction not in {"all", "inc", "dec"}:
+        msg = f"Unsupported direction filter: {direction!r}; expected 'all', 'inc', or 'dec'."
+        raise ValueError(msg)
     profiles = pd.read_csv(profile_path, sep="\t")
     unfiltered_profile_count = len(profiles)
     unfiltered_study_count = profiles["study_id"].nunique()
@@ -214,6 +224,11 @@ def load_aggregated_study_profiles(
             f"{len(profiles):,}/{unfiltered_profile_count:,} profiles from "
             f"{profiles['study_id'].nunique():,}/{unfiltered_study_count:,} studies."
         )
+    if direction != "all":
+        profiles = profiles[profiles["inc_dec"] == direction].copy()
+        if profiles.empty:
+            msg = f"No profiles remained after filtering for direction={direction!r}."
+            raise ValueError(msg)
 
     trait_columns = [
         column for column in profiles.columns if column not in PROFILE_METADATA_COLUMNS
@@ -228,9 +243,9 @@ def load_aggregated_study_profiles(
         experiment_count=("experiment_id", "nunique"),
     )
     direction_counts = pd.crosstab(profiles["study_id"], profiles["inc_dec"])
-    for direction in ["inc", "dec"]:
-        if direction not in direction_counts.columns:
-            direction_counts[direction] = 0
+    for dir_label in ["inc", "dec"]:
+        if dir_label not in direction_counts.columns:
+            direction_counts[dir_label] = 0
     profile_metadata = profile_metadata.join(direction_counts[["inc", "dec"]], how="left").fillna(0)
     profile_metadata = profile_metadata.rename(
         columns={"inc": "increased_profile_count", "dec": "decreased_profile_count"}
@@ -496,7 +511,8 @@ def save_heatmap(
         colors_ratio=(0.03, 0.03),
     )
     cluster.fig.suptitle(
-        "Condition/Disease Trait Modules\nBugSigDB Condition Groups by Aggregate Trait Composition",
+        "Condition/Disease Trait Modules\n"
+        "BugSigDB Condition Groups by Aggregate Study Trait Load (Increased + Decreased Combined)",
         y=1.08,
         fontsize=16,
         fontweight="bold",
@@ -888,6 +904,15 @@ def main() -> None:
         help="Include groups where a grouping field is unknown.",
     )
     parser.add_argument(
+        "--direction",
+        choices=("all", "inc", "dec"),
+        default="all",
+        help=(
+            "Profile direction filter before study aggregation: "
+            "all (direction-agnostic study trait load), inc, or dec (#134)."
+        ),
+    )
+    parser.add_argument(
         "--include-media-traits",
         action="store_true",
         help="Rejected: MediaDive growth-medium traits are excluded before normalization.",
@@ -906,6 +931,7 @@ def main() -> None:
     study_matrix, profile_metadata = load_aggregated_study_profiles(
         args.study_trait_profiles_input,
         human_experiment_ids,
+        direction=args.direction,
     )
     study_metadata = profile_metadata.join(load_study_titles(args.studies_input), how="left")
     study_metadata = study_metadata.join(load_raw_study_metadata(args.full_dump_input), how="left")
