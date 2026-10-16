@@ -24,6 +24,7 @@ cd "${REPO_ROOT}"
 
 echo "=== [Jed / Paired Composition Arm] Checking prerequisite derived tables ==="
 for required_file in \
+    "data/raw/download_provenance.json" \
     "data/derived/study_trait_profiles_wide.tsv" \
     "data/derived/taxa_trait_matrix.tsv" \
     "data/derived/taxa_trait_matrix_columns.tsv" \

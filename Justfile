@@ -6,6 +6,7 @@ lintconfig := "schema/.linkmllint.yaml"
 logdir := "logs"
 p_threshold := "0.001"
 min_fold := "1.5"
+code_paths := "src scripts methods schema Justfile pyproject.toml uv.lock"
 
 default: check
 
@@ -185,7 +186,7 @@ study-tsvs: ingest
 # to data/derived/contrast_orientation/.
 [positional-arguments]
 contrast-orientation *ARGS:
-	uv run python -m mtp.contrast_orientation --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+	uv run python -m mtp.contrast_orientation --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 
 # Redraw the stratified hand-review sample behind methods/contrast_orientation_review.tsv.
 # Writes an unfilled template to /dev/stdout's sibling path given by SAMPLE; the seed and
@@ -216,15 +217,13 @@ table1-taxon-influence-from kg_dir inputs="data/derived" output="data/derived/ta
 
 # Requires an unchanged, completed contribution ledger; no KG reload is needed.
 table1-native-influence inputs="data/derived" output="data/derived/table1_taxon_influence":
-	git_status="$(git status --porcelain)" && \
 	dirty_flag="" && \
-	if [ -n "$git_status" ]; then dirty_flag="--code-dirty"; fi && \
+	if ! (git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}}); then dirty_flag="--code-dirty"; fi && \
 	uv run python -m mtp.native_taxon_influence --inputs "{{inputs}}" --output "{{output}}" --code-commit "$(git rev-parse HEAD)" $dirty_flag
 	just table1-native-summary "{{output}}"
 
 table1-native-summary output="data/derived/table1_taxon_influence":
-	git_status="$(git status --porcelain)" && \
-	if [ -n "$git_status" ]; then echo "Refusing to publish from a dirty tree" >&2; exit 1; fi
+	if ! (git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}}); then echo "Refusing to publish from a dirty tree" >&2; exit 1; fi
 	uv run python -m mtp.native_influence_publication --source "{{output}}" --destination "{{output}}/review"
 
 study-trait-profiles-ora:
@@ -271,7 +270,7 @@ export-rankings: analyze analyze-depletion
 	@echo "Complete exports and ranking summaries generated."
 
 # Run the ORA harness benchmark check suite over synthetic null and mixed scenarios (Refs #263, #343, #348, #351).
-calibrate replicates="10" seed="42" scenario="all": taxa-trait-matrix study-trait-profiles-ora
+calibrate replicates="10" seed="42" scenario="all": study-trait-profiles-ora
 	just timed calibrate "uv run python -m mtp.ora_calibration.harness \
 	  --profiles data/derived/study_trait_profiles_ora_wide.tsv \
 	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
@@ -323,7 +322,7 @@ analyze-site SITE: study-trait-profiles-ora
 # Scenarios are fixed in methods/table1_log_ratio_sensitivity_protocol.json.
 [positional-arguments]
 table1-log-ratio-sensitivity *ARGS:
-	uv run python -m mtp.log_ratio_sensitivity --code-commit "$(git rev-parse HEAD)$(test -z "$(git status --porcelain)" || echo +dirty)" "$@"
+	uv run python -m mtp.log_ratio_sensitivity --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 
 # PNG export (guild-maps, table1-trait-maps) runs through kaleido 1.x, which
 # drives a headless Chrome. This downloads (~170 MB) the version-pinned Chrome
@@ -338,7 +337,7 @@ get-chrome:
 # matrix, study-count matrix, and correlation table to data/derived/guild_maps/.
 # Needs a local Chrome for the PNG (`just get-chrome`).
 guild-maps:
-	just timed guild-maps "uv run python scripts/create_guild_maps.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\""
+	just timed guild-maps "uv run python scripts/create_guild_maps.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\""
 
 # Same inputs and same corpus filters as guild-maps, but over the six individual
 # traits of manuscript Table 1 instead of the two pooled oxygen guilds. Writes the
@@ -346,7 +345,7 @@ guild-maps:
 # their backing tables to data/derived/table1_traits/.
 # Needs a local Chrome for the PNG files (`just get-chrome`).
 table1-trait-maps:
-	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\""
+	just timed table1-trait-maps "uv run python scripts/create_table1_trait_maps.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\""
 
 # Generate modern publication-ready figures inspired by the project slide deck (#347, #354).
 # Renders Figures 1-5 with zero synthetic data and dynamic M universe calculations.
@@ -359,7 +358,7 @@ deck-figures: study-trait-profiles-ora
 # coverage/provenance and a Markdown report. No figure renderer is needed.
 [positional-arguments]
 table1-compositional-stats *ARGS:
-	uv run python -m mtp.trait_composition --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+	uv run python -m mtp.trait_composition --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 
 # The study sign test over every retained non-MediaDive trait, not just the six
 # of Table 1 (#255), with the significant set reported at both the nominal and
@@ -367,17 +366,17 @@ table1-compositional-stats *ARGS:
 # methods/trait_screen_manifest.json. No figure renderer is needed.
 [positional-arguments]
 trait-direction-screen *ARGS:
-	just timed trait-direction-screen "uv run python -m mtp.trait_screen --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\" $*"
+	just timed trait-direction-screen "uv run python -m mtp.trait_screen --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\" $*"
 
 # Audit trait correlation, annotation density adjustment, and near-twin collinearity.
 [positional-arguments]
 audit-trait-density *ARGS:
-	just timed audit-trait-density "uv run python scripts/audit_trait_density_correlation.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\" $*"
+	just timed audit-trait-density "uv run python scripts/audit_trait_density_correlation.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\" $*"
 
 # Audit trait coupling sensitivity via LOTO, LCO, and three-arm evaluation (#260).
 [positional-arguments]
 audit-trait-coupling *ARGS:
-	just timed audit-trait-coupling "uv run python scripts/audit_trait_coupling.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\" $*"
+	just timed audit-trait-coupling "uv run python scripts/audit_trait_coupling.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\" $*"
 
 security:
 	uv run bandit -c pyproject.toml -r src scripts
@@ -450,14 +449,14 @@ stats:
 # criterion as insufficient_budget because five replicates can certify nothing.
 [positional-arguments]
 calibration-report *ARGS:
-	uv run python -m mtp.calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+	uv run python -m mtp.calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 
 # Just the shared flip-assignment artefact of #263: which studies each replicate of
 # complete_null_study_flip exchanges, for another arm to rerun its own pipeline on
 # the identical null. Seconds, not minutes.
 [positional-arguments]
 calibration-flip-assignments *ARGS:
-	uv run python -m mtp.calibration --flip-assignments-only --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+	uv run python -m mtp.calibration --flip-assignments-only --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 
 pipeline: download ingest
 
@@ -467,7 +466,7 @@ pipeline: download ingest
 # negative result. Nothing is pooled across methods.
 [positional-arguments]
 integrated-evidence *ARGS:
-	uv run python -m bsdbng.integrated_evidence --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+	uv run python -m mtp.integrated_evidence --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 # --- linkml-store over MongoDB (localhost:27017/bsdbng.studies) ---
 # Run once to populate the collection:
 mongo-load:
@@ -573,4 +572,4 @@ clean-all: clean-raw clean-studies clean-derived clean-logs
 # beside the observed calls. Replicate i is replicate i of the shared flip artefact.
 [positional-arguments]
 calibration-screen *ARGS:
-	uv run python -m mtp.screen_calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)" "$@"
+	uv run python -m mtp.screen_calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"

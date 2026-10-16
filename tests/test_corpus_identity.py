@@ -20,6 +20,7 @@ from mtp.corpus_identity import (
     verify_provenance_source_hashes,
     write_identity,
 )
+from mtp.download import BUGSIGDB_EXPORTS_VERSION, PINNED_FULL_DUMP_MD5
 from mtp.paths import file_sha256
 from mtp.trait_composition import (
     LogRatioResult,
@@ -377,3 +378,31 @@ def test_export_trait_enrichment_rankings_uses_n_profiles_tested_denominator() -
             total_profiles=50,
             fdr_scope="invalid",
         )
+
+
+def test_rerun_recipe_hygiene_invariants() -> None:
+    """Justfile and arm rerun scripts preserve pinned inputs and scope cleanliness checks."""
+    repo_root = Path(__file__).resolve().parents[1]
+    justfile_text = (repo_root / "Justfile").read_text(encoding="utf-8")
+    assert 'code_paths := "src scripts methods schema Justfile pyproject.toml uv.lock"' in (
+        justfile_text
+    )
+    assert "git status --porcelain" not in justfile_text
+    assert "bsdbng.integrated_evidence" not in justfile_text
+    assert "python -m mtp.integrated_evidence" in justfile_text
+    assert (
+        'calibrate replicates="10" seed="42" scenario="all": study-trait-profiles-ora'
+        in justfile_text
+    )
+
+    noel_script = (repo_root / "scripts" / "rerun_directional_consistency_arm_noel.sh").read_text(
+        encoding="utf-8"
+    )
+    assert 'just table1-taxon-influence-from "data/kg-microbe" "data/derived"' in noel_script
+    assert "\njust table1-taxon-influence\n" not in noel_script
+
+    prov_path = repo_root / "data" / "raw" / "download_provenance.json"
+    assert prov_path.exists()
+    prov = json.loads(prov_path.read_text(encoding="utf-8"))
+    assert prov["bugsigdb_release"]["version"] == BUGSIGDB_EXPORTS_VERSION
+    assert prov["full_dump.csv"]["md5"] == PINNED_FULL_DUMP_MD5
