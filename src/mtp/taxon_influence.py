@@ -18,6 +18,7 @@ from scipy.stats import binomtest, t
 
 from mtp.contribution_inputs import RANKS, Base, Graph, Key, Pair, encoded
 from mtp.taxon_contributions import PROFILE_FIELDS, Ledger, Record, profile_record, write_table
+from mtp.trait_composition import paired_log2_ratio_change
 
 TIE = 1e-12
 
@@ -134,11 +135,11 @@ def pair_values(
             else (sum(inc.values()), sum(dec.values()))
         )
         if denominator:
-            if min(inc[trait], dec[trait], inc[denominator], dec[denominator]) <= 0:
-                continue
-            values[pair] = math.log2(inc[trait] / inc[denominator]) - math.log2(
-                dec[trait] / dec[denominator]
+            contrast = paired_log2_ratio_change(
+                inc[trait], inc[denominator], dec[trait], dec[denominator]
             )
+            if contrast is not None:
+                values[pair] = contrast
         elif itotal and dtotal:
             values[pair] = inc[trait] / itotal - dec[trait] / dtotal
         elif native_zero:

@@ -1,3 +1,4 @@
+import hashlib
 import json
 from collections.abc import Callable
 from pathlib import Path
@@ -327,3 +328,161 @@ def test_live_downloads_are_not_integrity_checked(
     download_exports(tmp_path, source="live")
 
     assert (tmp_path / FULL_DUMP_NAME).read_bytes() == b"whatever devel says"
+
+
+@pytest.fixture
+def pinned_test_bytes(monkeypatch: pytest.MonkeyPatch) -> bytes:
+    """Use small pinned content while exercising the real size and checksum checks."""
+    content = SNAPSHOT_HEADER + b"BSDB ID,Study\nbsdb:1/1/1,Example\n"
+    monkeypatch.setattr(dl, "PINNED_FULL_DUMP_BYTES", len(content))
+    monkeypatch.setattr(
+        dl,
+        "PINNED_FULL_DUMP_MD5",
+        hashlib.md5(content, usedforsecurity=False).hexdigest(),
+    )
+    return content
+
+
+@pytest.mark.parametrize(
+    "cache_headers",
+    [{}, {"etag": '"known"'}, {"last_modified": "Fri, 24 Apr 2026 00:41:00 GMT"}],
+    ids=["no-validator", "etag", "last-modified"],
+)
+@pytest.mark.parametrize("corruption", ["truncated", "wrong-checksum"])
+def test_corrupt_pinned_cache_is_rejected_before_reuse(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pinned_test_bytes: bytes,
+    cache_headers: dict[str, str],
+    corruption: str,
+) -> None:
+    """Neither a cache hit nor a potential HTTP 304 may bless modified bytes (#535)."""
+    _seed_raw_dir(tmp_path)
+    content = b"truncated" if corruption == "truncated" else b"x" * len(pinned_test_bytes)
+    (tmp_path / FULL_DUMP_NAME).write_bytes(content)
+    provenance_path = tmp_path / PROVENANCE_FILE
+    provenance_path.write_text(
+        json.dumps({FULL_DUMP_NAME: {"url": PINNED_FULL_DUMP_URL, **cache_headers}})
+    )
+    original_provenance = provenance_path.read_bytes()
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(304)
+
+    _mock_client(monkeypatch, handler)
+
+    with pytest.raises(dl.IntegrityError):
+        download_exports(tmp_path, source="pinned")
+
+    assert requests == [], "Invalid cache must fail before conditional HTTP validation"
+    assert (tmp_path / FULL_DUMP_NAME).read_bytes() == content
+    assert provenance_path.read_bytes() == original_provenance
+
+
+@pytest.mark.parametrize(
+    ("cache_headers", "request_headers"),
+    [
+        ({}, {}),
+        ({"etag": '"known"'}, {"if-none-match": '"known"'}),
+        (
+            {"last_modified": "Fri, 24 Apr 2026 00:41:00 GMT"},
+            {"if-modified-since": "Fri, 24 Apr 2026 00:41:00 GMT"},
+        ),
+    ],
+    ids=["no-validator", "etag-304", "last-modified-304"],
+)
+def test_verified_pinned_cache_is_reused(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pinned_test_bytes: bytes,
+    cache_headers: dict[str, str],
+    request_headers: dict[str, str],
+) -> None:
+    """Verified pinned bytes can still be skipped or reused after HTTP 304 (#535)."""
+    _seed_raw_dir(tmp_path)
+    (tmp_path / FULL_DUMP_NAME).write_bytes(pinned_test_bytes)
+    (tmp_path / PROVENANCE_FILE).write_text(
+        json.dumps({FULL_DUMP_NAME: {"url": PINNED_FULL_DUMP_URL, **cache_headers}})
+    )
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(304)
+
+    _mock_client(monkeypatch, handler)
+
+    result = download_exports(tmp_path, source="pinned")
+
+    assert result == [tmp_path / name for name in (*EXPORT_FILES, FULL_DUMP_NAME)]
+    assert (tmp_path / FULL_DUMP_NAME).read_bytes() == pinned_test_bytes
+    if request_headers:
+        assert len(requests) == 1
+        assert str(requests[0].url) == PINNED_FULL_DUMP_URL
+        for name, value in request_headers.items():
+            assert requests[0].headers[name] == value
+    else:
+        assert requests == []
+
+
+def test_forced_pinned_download_replaces_corrupt_cache_with_verified_bytes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pinned_test_bytes: bytes,
+) -> None:
+    """Force refresh is an explicit recovery path and never uses stale validators (#535)."""
+    _seed_raw_dir(tmp_path)
+    (tmp_path / PROVENANCE_FILE).write_text(
+        json.dumps({FULL_DUMP_NAME: {"url": PINNED_FULL_DUMP_URL, "etag": '"known"'}})
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert "if-none-match" not in request.headers
+        assert "if-modified-since" not in request.headers
+        return httpx.Response(200, content=pinned_test_bytes)
+
+    _mock_client(monkeypatch, handler)
+
+    download_exports(tmp_path, source="pinned", force=True)
+
+    assert (tmp_path / FULL_DUMP_NAME).read_bytes() == pinned_test_bytes
+    provenance = json.loads((tmp_path / PROVENANCE_FILE).read_text())
+    assert provenance[FULL_DUMP_NAME]["integrity_verified"] is True
+
+
+def test_pinned_304_without_a_cached_file_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An unexpected 304 cannot turn a missing pinned input into a successful download."""
+    for name in EXPORT_FILES:
+        (tmp_path / name).write_text("existing")
+    _mock_client(monkeypatch, lambda _request: httpx.Response(304))
+
+    with pytest.raises(dl.IntegrityError, match="HTTP 304 without a local cached file"):
+        download_exports(tmp_path, source="pinned")
+
+
+def test_forced_pinned_304_cannot_reuse_corrupt_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Even an unsolicited 304 during force refresh cannot bypass byte verification."""
+    _seed_raw_dir(tmp_path)
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if str(request.url) == PINNED_FULL_DUMP_URL:
+            assert "if-none-match" not in request.headers
+            assert "if-modified-since" not in request.headers
+            return httpx.Response(304)
+        return httpx.Response(200, content=b"wiki")
+
+    _mock_client(monkeypatch, handler)
+
+    with pytest.raises(dl.IntegrityError, match="bytes, expected"):
+        download_exports(tmp_path, source="pinned", force=True)
+
+    assert str(requests[-1].url) == PINNED_FULL_DUMP_URL
+    assert (tmp_path / FULL_DUMP_NAME).read_text() == "existing"

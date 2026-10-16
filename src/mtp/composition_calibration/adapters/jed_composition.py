@@ -24,7 +24,7 @@ from scipy import stats
 from mtp.composition_calibration.protocol import MethodInferenceResult
 from mtp.composition_denominators import retained_trait_counts, trait_fractions
 from mtp.enrichment_stats import benjamini_hochberg
-from mtp.ora_calibration.scenarios import shared_trait_columns
+from mtp.ora_calibration.scenarios import PROFILE_METADATA_COLUMNS, shared_trait_columns
 from mtp.study_trait_profiles import direction_to_inc_dec
 
 logger = logging.getLogger(__name__)
@@ -47,6 +47,7 @@ RESULT_COLUMNS: list[str] = [
 ]
 
 DEFAULT_PSEUDOCOUNT_SCALE = 1000.0
+PROFILE_NONTRAIT_COLUMNS = frozenset([*PROFILE_METADATA_COLUMNS, "_norm_dir", "profile_id"])
 
 
 @dataclass(frozen=True)
@@ -88,19 +89,21 @@ def compute_profile_zscores(
     trait_columns: Sequence[str],
     pseudocount_scale: float = DEFAULT_PSEUDOCOUNT_SCALE,
 ) -> pd.DataFrame:
-    """Normalize counts to profile fractions, apply log1p, and standardize columns."""
-    present_traits = [c for c in trait_columns if c in profiles_df.columns]
-    if profiles_df.empty or not present_traits:
-        return pd.DataFrame(columns=list(trait_columns), index=profiles_df.index)
+    """Normalize over all retained traits before selecting and standardizing columns.
+
+    ``trait_columns`` defines the tested family, not the denominator universe.
+    Profile identifiers and the shared profile metadata fields are never counts.
+    """
+    traits = _retained_requested_traits(profiles_df, trait_columns)
+    if profiles_df.empty or not traits:
+        return pd.DataFrame(columns=traits, index=profiles_df.index, dtype=float)
 
     retained = retained_trait_counts(
-        profiles_df[present_traits].apply(pd.to_numeric, errors="coerce").fillna(0.0)
+        profiles_df.drop(columns=list(PROFILE_NONTRAIT_COLUMNS), errors="ignore")
+        .apply(pd.to_numeric, errors="coerce")
+        .fillna(0.0)
     )
-    traits = list(retained.columns)
-    if not traits:
-        return pd.DataFrame(columns=[], index=profiles_df.index)
-
-    fractions = trait_fractions(retained).to_numpy(dtype=float)
+    fractions = trait_fractions(retained).loc[:, traits].to_numpy(dtype=float)
 
     # Log1p transformation scaled by pseudocount multiplier
     log_fractions = np.log1p(pseudocount_scale * fractions)
@@ -115,6 +118,12 @@ def compute_profile_zscores(
     return zscores
 
 
+def _retained_requested_traits(profiles_df: pd.DataFrame, requested: Sequence[str]) -> list[str]:
+    """Apply the same trait-column contract even when no profile rows remain."""
+    retained_columns = retained_trait_counts(profiles_df.iloc[:0]).columns
+    return [c for c in requested if c in retained_columns and c not in PROFILE_NONTRAIT_COLUMNS]
+
+
 def compute_composition_contrasts(
     profiles_df: pd.DataFrame,
     trait_columns: Sequence[str],
@@ -122,27 +131,16 @@ def compute_composition_contrasts(
 ) -> CompositionContrastData:
     """Compute matched experiment pair differences and study mean contrasts."""
     paired_df = filter_paired_profiles(profiles_df)
-    present_traits = [c for c in trait_columns if c in paired_df.columns]
-    if paired_df.empty or not present_traits:
-        empty_df = pd.DataFrame(columns=list(trait_columns))
-        return CompositionContrastData(
-            pair_contrasts=empty_df,
-            study_contrasts=empty_df,
-            n_pairs=0,
-            n_studies=0,
-            trait_columns=list(trait_columns),
-        )
-
-    zscores = compute_profile_zscores(paired_df, present_traits, pseudocount_scale)
+    zscores = compute_profile_zscores(paired_df, trait_columns, pseudocount_scale)
     traits = list(zscores.columns)
-    if not traits:
-        empty_df = pd.DataFrame(columns=[])
+    if paired_df.empty or not traits:
+        empty_df = pd.DataFrame(columns=traits, dtype=float)
         return CompositionContrastData(
             pair_contrasts=empty_df,
             study_contrasts=empty_df,
             n_pairs=0,
             n_studies=0,
-            trait_columns=[],
+            trait_columns=traits,
         )
 
     norm_dir = (
@@ -213,26 +211,18 @@ class JedCompositionAdapter:
 
         # Determine trait universe: either specified in config or shared traits
         if config.get("traits"):
-            candidate_columns = [c for c in config["traits"] if c in profiles_df.columns]
+            candidate_columns = [
+                c
+                for c in config["traits"]
+                if c in profiles_df.columns and c not in PROFILE_NONTRAIT_COLUMNS
+            ]
         elif not taxa_matrix_df.empty:
             candidate_columns = shared_trait_columns(profiles_df, taxa_matrix_df)
         else:
-            meta_cols = {
-                "study_id",
-                "experiment_id",
-                "inc_dec",
-                "condition",
-                "body_site",
-                "taxa_count",
-                "signature_size",
-                "_norm_dir",
-            }
-            candidate_columns = [c for c in profiles_df.columns if c not in meta_cols]
-        trait_columns = (
-            retained_trait_counts(profiles_df[candidate_columns]).columns.tolist()
-            if candidate_columns and not profiles_df.empty
-            else [c for c in candidate_columns if "mediadive.medium:" not in str(c).lower()]
-        )
+            candidate_columns = [
+                c for c in profiles_df.columns if c not in PROFILE_NONTRAIT_COLUMNS
+            ]
+        trait_columns = _retained_requested_traits(profiles_df, candidate_columns)
 
         metadata: dict[str, Any] = {
             "method_id": self.method_id,

@@ -42,9 +42,10 @@ sync:
 lock *ARGS:
 	uv run --frozen --group qa uv lock "$@"
 
-# Print a candidate baseline for review; never overwrite the audited file here.
-secrets-scan:
-	uv run --group qa detect-secrets scan
+# Print candidates by default; --baseline updates entries for explicit audit (#537).
+[positional-arguments]
+secrets-scan *ARGS:
+	uv run --group qa detect-secrets scan "$@"
 
 secrets-audit:
 	uv run --group qa detect-secrets audit .secrets.baseline
@@ -67,6 +68,19 @@ six-shared-trait-heatmaps:
 # Check regenerated clustering and oral exports against a saved contrast table.
 audit-six-trait-diagnostics baseline:
 	uv run python scripts/adhoc/audit_clustering_stack.py --baseline-contrasts "{{baseline}}"
+
+# Preserve final source identity separately from historical result provenance (#207).
+# Fetch the named archive tags first; this recipe reads local git objects only.
+audit-retired-composition-prs:
+	mkdir -p .tmp/retired-composition-prs
+	git archive --format=tar archive/pr-197-20261016 > .tmp/retired-composition-prs/pr197.tar
+	git archive --format=tar archive/pr-526-20261016 > .tmp/retired-composition-prs/pr526.tar
+	uv run python scripts/adhoc/audit_retired_composition_prs.py \
+	  --pr197 .tmp/retired-composition-prs/pr197.tar \
+	  --pr197-commit 865b15fcdc2be0bc9f0be976a37dbd0a2ed9f33d \
+	  --pr526 .tmp/retired-composition-prs/pr526.tar \
+	  --pr526-commit cf4679c5a8becc638f88d749386a40fa3599aa24 \
+	  --output docs/reviews/2026-10-16-composition-archive-manifest.json
 
 # Focused view of saved Jed contrasts; preserves their original Fisher/BH inference.
 oral-six-trait-heatmap:
