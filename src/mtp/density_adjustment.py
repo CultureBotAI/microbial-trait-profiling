@@ -31,6 +31,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from mtp.composition_denominators import MEDIADIVE_MARKER, trait_fractions
 from mtp.paths import DERIVED_DATA_DIR
 from mtp.trait_screen import effective_family_size
 
@@ -126,7 +127,10 @@ def get_non_media_trait_columns(columns_path: Path) -> list[str]:
     df = pd.read_csv(columns_path, sep="\t")
     if "object_category" not in df.columns or "column_id" not in df.columns:
         raise ValueError(f"Columns file missing required columns: {columns_path}")
-    filtered = df[df["object_category"] != "METPO:1004005"]
+    filtered = df[
+        (df["object_category"] != "METPO:1004005")
+        & (~df["column_id"].astype(str).str.lower().str.contains(MEDIADIVE_MARKER, regex=False))
+    ]
     return [str(c) for c in filtered["column_id"].tolist()]
 
 
@@ -374,12 +378,8 @@ def normalize_traits_by_profile_composition(
     if missing:
         raise ValueError(f"DataFrame missing {len(missing)} requested columns: {missing[:5]}")
 
-    sub = df[cols_list].to_numpy(dtype=float)
-    sub = np.nan_to_num(sub, nan=0.0)
-    row_sums = sub.sum(axis=1, keepdims=True)
-    safe_sums = np.where(row_sums == 0, 1.0, row_sums)
-    norm = np.where(row_sums == 0, 0.0, sub / safe_sums)
-    return norm
+    fractions = trait_fractions(df[cols_list])
+    return fractions.to_numpy(dtype=float)
 
 
 def evaluate_table1_paired_effects(

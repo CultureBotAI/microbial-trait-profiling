@@ -351,3 +351,157 @@ def test_jed_composition_excludes_mediadive_from_denominator() -> None:
         {"traits": ["trait_a", "trait_b", "mediadive.medium:1"]},
     )
     pd.testing.assert_frame_equal(res_base.results_df, res_media.results_df)
+
+
+def test_pd_network_and_calibration_and_cache_loaders_exclude_mediadive(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from mtp.composition_calibration.composition import (
+        load_composition_trait_columns,
+        run_composition_calibration,
+    )
+    from mtp.density_adjustment import (
+        get_non_media_trait_columns,
+        normalize_traits_by_profile_composition,
+    )
+
+    pd_network = _load_script_module("create_pd_significant_condition_taxon_trait_network")
+    followup = _load_script_module("analyze_enrichment_infographic_followup")
+    aerobe = _load_script_module("investigate_facultative_aerobe_expansion")
+    anaerobe = _load_script_module("investigate_gut_anaerobe_depletion")
+
+    # 1. PD significant condition taxon-trait network
+    shared_ids = ["METPO:1000608", "METPO:1000668"]
+    rows = {
+        "study_id": ["s1", "s1", "s2"],
+        "experiment_id": ["e1", "e1", "e2"],
+        "inc_dec": ["inc", "dec", "inc"],
+        shared_ids[0]: [10.0, 20.0, 30.0],
+        shared_ids[1]: [30.0, 20.0, 10.0],
+        "OTHER_TRAIT": [60.0, 60.0, 60.0],
+    }
+    base_tsv = tmp_path / "pd_net_base.tsv"
+    media_tsv = tmp_path / "pd_net_media.tsv"
+    pd.DataFrame(rows).to_csv(base_tsv, sep="\t", index=False)
+    pd.DataFrame({**rows, "mediadive.medium:1": [900.0, 5.0, 500.0]}).to_csv(
+        media_tsv, sep="\t", index=False
+    )
+    metadata = pd.DataFrame(
+        {"total_trait_signal": [100.0, 100.0, 100.0]},
+        index=["s1|e1|inc", "s1|e1|dec", "s2|e2|inc"],
+    )
+    traits_df = pd.DataFrame({"trait_id": shared_ids})
+    monkeypatch.setattr(pd_network, "PROFILE_MATRIX_PATH", base_tsv)
+    z_base = pd_network.build_zscore_matrix(metadata, traits_df)
+    monkeypatch.setattr(pd_network, "PROFILE_MATRIX_PATH", media_tsv)
+    z_media = pd_network.build_zscore_matrix(metadata, traits_df)
+    pd.testing.assert_frame_equal(z_base, z_media)
+
+    # 2. Enrichment followup recomputes trait count and total signal from retained counts
+    target_cond = followup.TARGET_CONDITIONS[0]
+    other_cond = followup.TARGET_CONDITIONS[1]
+    guild_trait = next(iter(next(iter(followup.GUILD_TRAITS.values()))))
+    stale_meta = pd.DataFrame(
+        {
+            "profile_id": ["p1", "p2", "p3"],
+            "study_id": ["s1", "s2", "s3"],
+            "experiment_id": ["e1", "e2", "e3"],
+            "inc_dec": ["inc", "dec", "inc"],
+            "direction_label": ["increased", "decreased", "increased"],
+            "condition": [target_cond, target_cond, other_cond],
+            "title": ["t1", "t2", "t3"],
+            "experiment_label": ["l1", "l2", "l3"],
+            "body_site": ["Feces", "Feces", "Feces"],
+            "location": ["USA", "USA", "USA"],
+            "profile_trait_count": [99, 99, 99],
+            "total_trait_signal": [999.0, 999.0, 999.0],
+        },
+        index=["p1", "p2", "p3"],
+    )
+    vals = pd.DataFrame(
+        {
+            guild_trait: [10.0, 20.0, 15.0],
+            "METPO:1000668": [30.0, 0.0, 25.0],
+            "METPO:2000517|mediadive.medium:1": [500.0, 600.0, 700.0],
+        },
+        index=["p1", "p2", "p3"],
+    )
+    neighbors, _, _ = followup.compute_profile_neighbors(
+        vals, stale_meta, top_n=2, min_condition_profiles=1
+    )
+    p1_rows = neighbors[neighbors["neighbor_profile_id"] == "p1"]
+    assert (p1_rows["profile_trait_count"] == 2).all()
+    assert (p1_rows["total_trait_signal"] == 40.0).all()
+
+    # 3. Composition calibration & density adjustment filter mediadive.medium: columns
+    cat_tsv = tmp_path / "cats.tsv"
+    pd.DataFrame(
+        {
+            "column_id": ["trait_a", "trait_b", "METPO:2000517|mediadive.medium:1"],
+            "object_category": ["METPO:1000608", "METPO:1000668", "METPO:9999999"],
+        }
+    ).to_csv(cat_tsv, sep="\t", index=False)
+    assert load_composition_trait_columns(cat_tsv) == ["trait_a", "trait_b"]
+    assert get_non_media_trait_columns(cat_tsv) == ["trait_a", "trait_b"]
+
+    calib_profiles = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2"],
+            "experiment_id": ["e1", "e1", "e2", "e2"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "condition": ["cond1", "cond1", "cond1", "cond1"],
+            "trait_a": [10.0, 20.0, 15.0, 25.0],
+            "trait_b": [30.0, 20.0, 25.0, 15.0],
+            "mediadive.medium:1": [900.0, 5.0, 500.0, 10.0],
+        }
+    )
+    calib_meta, calib_summary, _, _, _ = run_composition_calibration(
+        calib_profiles,
+        ["trait_a", "trait_b", "mediadive.medium:1"],
+        replicates=4,
+        seed=42,
+    )
+    assert calib_meta["n_traits"] == 2
+    assert (calib_summary["n_tests"] == 2).all()
+
+    norm_base = normalize_traits_by_profile_composition(
+        calib_profiles.drop(columns=["mediadive.medium:1"]),
+        ["trait_a", "trait_b"],
+    )
+    norm_media = normalize_traits_by_profile_composition(
+        calib_profiles,
+        ["trait_a", "trait_b", "mediadive.medium:1"],
+    )
+    assert norm_base.shape == norm_media.shape == (4, 2)
+    assert norm_base == pytest.approx(norm_media)
+
+    # 4. Cached heatmap loaders in aerobe & anaerobe scripts reject missing denominator_definition
+    vis_dir = tmp_path / "vis"
+    vis_dir.mkdir()
+    pd.DataFrame({"display_a": [0.5, -0.5]}, index=["p1", "p2"]).to_csv(
+        vis_dir / "study_trait_profile_clustered_heatmap_matrix.tsv", sep="\t"
+    )
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s2"],
+            "experiment_id": ["e1", "e2"],
+            "inc_dec": ["inc", "dec"],
+            "total_trait_signal": [40.0, 40.0],
+        },
+        index=["p1", "p2"],
+    ).to_csv(vis_dir / "study_trait_profile_study_metadata.tsv", sep="\t")
+    pd.DataFrame(
+        {
+            "trait_id": ["trait_a"],
+            "display_label": ["display_a"],
+            "object_name": ["Trait A"],
+        },
+        index=["trait_a"],
+    ).to_csv(vis_dir / "study_trait_profile_trait_metadata.tsv", sep="\t")
+
+    monkeypatch.setattr(aerobe, "VIS_DIR", vis_dir)
+    monkeypatch.setattr(anaerobe, "VIS_DIR", vis_dir)
+    with pytest.raises(ValueError, match="missing the harmonized non-MediaDive denominator marker"):
+        aerobe.load_study_heatmap()
+    with pytest.raises(ValueError, match="missing the harmonized non-MediaDive denominator marker"):
+        anaerobe.load_study_heatmap()

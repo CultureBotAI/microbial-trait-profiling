@@ -7,14 +7,22 @@ from pathlib import Path
 from typing import Any
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.patches import Circle, PathPatch
 from matplotlib.path import Path as MplPath
 
+from mtp.composition_denominators import (
+    DENOMINATOR_DEFINITION,
+    load_retained_profiles,
+    trait_fractions,
+)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 OUTPUT_DIR = VIS_DIR / "trait-profile-investigation" / "aerobe-enrichment-v2"
+PROFILE_MATRIX_PATH = REPO_ROOT / "data/derived/study_trait_profiles_wide.tsv"
 
 GUILD_TRAITS = {
     "METPO:1000608": "facultatively aerobic",
@@ -254,13 +262,53 @@ def profile_id_from_taxa_row(row: pd.Series) -> str:
 
 def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     matrix = read_tsv(VIS_DIR / "study_trait_profile_clustered_heatmap_matrix.tsv", index_col=0)
+    matrix = matrix.apply(pd.to_numeric, errors="coerce").fillna(0.0)
     metadata = read_tsv(VIS_DIR / "study_trait_profile_study_metadata.tsv", index_col=0)
     trait_metadata = read_tsv(VIS_DIR / "study_trait_profile_trait_metadata.tsv", index_col=0)
 
+    if len(matrix) != len(metadata):
+        raise ValueError("Heatmap matrix and metadata have different profile row counts")
+    if (
+        "denominator_definition" not in metadata.columns
+        or not metadata["denominator_definition"].eq(DENOMINATOR_DEFINITION).all()
+    ):
+        raise ValueError(
+            "Heatmap metadata is missing the harmonized non-MediaDive denominator marker"
+        )
+    matrix_keys = matrix.index.to_series().map(lambda value: str(value).split(" | ", 1)[0])
+    expected_keys = (
+        metadata[["study_id", "experiment_id"]].astype(str).agg("/".join, axis=1).to_numpy()
+    )
+    if not (
+        matrix.index.equals(metadata.index) or np.array_equal(matrix_keys.to_numpy(), expected_keys)
+    ):
+        raise ValueError("Heatmap matrix row keys do not match profile metadata")
     matrix.index = metadata.index
+
+    if "trait_id" in trait_metadata.columns:
+        trait_metadata = trait_metadata.set_index("trait_id", drop=False)
+    column_to_id = {
+        row["display_label"]: str(trait_id) for trait_id, row in trait_metadata.iterrows()
+    }
     column_labels = {
         row["display_label"]: row["object_name"] for _, row in trait_metadata.iterrows()
     }
+    if not set(matrix.columns).issubset(column_to_id):
+        raise ValueError("Heatmap matrix has columns missing from trait metadata")
+    counts = load_retained_profiles(PROFILE_MATRIX_PATH, metadata)
+    trait_ids = [column_to_id[column] for column in matrix.columns]
+    expected_comp = trait_fractions(counts).loc[metadata.index, trait_ids]
+    expected_scaled = (expected_comp * 1000).apply(lambda column: column.map(math.log1p))
+    expected_z = (
+        (expected_scaled - expected_scaled.mean(axis=0))
+        / expected_scaled.std(axis=0, ddof=0).replace(0, float("nan"))
+    ).fillna(0.0)
+    expected_z.columns = matrix.columns
+    if not np.allclose(matrix.to_numpy(dtype=float), expected_z.to_numpy(dtype=float), atol=1e-9):
+        raise ValueError(
+            "Stale or incompatible study_trait_profile_clustered_heatmap_matrix.tsv; "
+            "regenerate from the non-MediaDive raw profile matrix."
+        )
     matrix = matrix.rename(columns=column_labels)
     return matrix, metadata, trait_metadata
 

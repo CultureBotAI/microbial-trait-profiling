@@ -14,7 +14,11 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.patches import FancyBboxPatch, Patch, Rectangle
 
-from mtp.composition_denominators import retained_trait_counts, trait_fractions
+from mtp.composition_denominators import (
+    DENOMINATOR_DEFINITION,
+    retained_trait_counts,
+    trait_fractions,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
@@ -233,6 +237,7 @@ def load_aggregated_study_profiles(
     )
     profile_metadata["total_trait_signal"] = study_matrix.sum(axis=1)
     profile_metadata["trait_count"] = study_matrix.gt(0).sum(axis=1)
+    profile_metadata["denominator_definition"] = DENOMINATOR_DEFINITION
     return study_matrix, profile_metadata
 
 
@@ -281,6 +286,7 @@ def build_condition_modules(
     )
     group_metadata["total_trait_signal"] = group_matrix.sum(axis=1)
     group_metadata["trait_count"] = group_matrix.gt(0).sum(axis=1)
+    group_metadata["denominator_definition"] = DENOMINATOR_DEFINITION
 
     eligible = group_metadata[
         (group_metadata["study_count"] >= min_studies)

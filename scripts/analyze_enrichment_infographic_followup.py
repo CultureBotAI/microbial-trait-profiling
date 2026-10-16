@@ -350,9 +350,12 @@ def load_profiles(
         )
     ]
     values.index = profile_ids
+    values = values.groupby(level=0, sort=False).sum()
 
     metadata = profiles[PROFILE_METADATA_COLUMNS].copy()
     metadata["profile_id"] = profile_ids
+    metadata = metadata.drop_duplicates(subset="profile_id", keep="first")
+    metadata = metadata.set_index("profile_id", drop=False).loc[values.index].reset_index(drop=True)
     metadata["direction_label"] = (
         metadata["inc_dec"].map(INC_DEC_TO_DIRECTION).fillna(metadata["inc_dec"])
     )
@@ -566,6 +569,9 @@ def compute_profile_neighbors(
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Find the most similar individual profiles to each target condition centroid."""
     values = retained_trait_counts(values)
+    metadata = metadata.loc[values.index].copy()
+    metadata["profile_trait_count"] = values.gt(0).sum(axis=1).astype(int)
+    metadata["total_trait_signal"] = values.sum(axis=1).astype(float)
     active_profile_ids = metadata.index[metadata["profile_trait_count"] > 0].tolist()
     active_values = np.log1p(values.loc[active_profile_ids].to_numpy(dtype="float32"))
     normalized = l2_normalize(active_values)
@@ -766,6 +772,7 @@ def select_heatmap_traits(
     fill_with_high_signal_traits: bool = True,
 ) -> list[str]:
     """Select infographic and target-condition traits for the companion heatmap."""
+    values = retained_trait_counts(values)
     target_profile_ids = metadata.index[metadata["condition"].isin(TARGET_CONDITIONS)]
     target_values = values.loc[target_profile_ids]
     support = target_values.gt(0).sum(axis=0).astype(int)
@@ -791,9 +798,6 @@ def select_heatmap_traits(
         },
         index=target_values.columns,
     ).join(trait_labels[["display_name", "display_category"]], how="left")
-    trait_summary = trait_summary[
-        ~trait_summary.index.to_series().str.contains("mediadive.medium", regex=False)
-    ].copy()
     trait_summary["selection_score"] = (
         trait_summary["target_condition_support"] * np.log1p(trait_summary["target_total_signal"])
         + trait_summary["target_profile_support"]

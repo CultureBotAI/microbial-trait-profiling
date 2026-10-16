@@ -17,6 +17,7 @@ DENOMINATOR_DEFINITION = "sum of all retained non-MediaDive trait columns before
 
 __all__ = [
     "DENOMINATOR_DEFINITION",
+    "MEDIADIVE_MARKER",
     "load_retained_profiles",
     "retained_trait_counts",
     "trait_fractions",
