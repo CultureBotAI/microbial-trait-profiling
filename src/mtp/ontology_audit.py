@@ -172,14 +172,15 @@ CANONICAL_REDUNDANCY_CLUSTERS: list[RedundancyCluster] = [
         cluster_id="co_oxidation_pathway",
         cluster_label="Carbon Monoxide Oxidation Pathway",
         tier="lexical_synonym",
-        surviving_trait="METPO:2000103|pathways:carbonmonoxide_oxidation",
-        surviving_label="carbonmonoxide_oxidation",
-        collapsed_traits=["METPO:2000103|pathways:carbon_monoxide_oxidation"],
-        selection_rule="canonical_syntax",
+        surviving_trait="METPO:2000103|pathways:carbon_monoxide_oxidation",
+        surviving_label="carbon_monoxide_oxidation",
+        collapsed_traits=["METPO:2000103|pathways:carbonmonoxide_oxidation"],
+        selection_rule="max_support_canonical",
         rationale=(
             "METPO:2000103|pathways:carbon_monoxide_oxidation and "
             "METPO:2000103|pathways:carbonmonoxide_oxidation are lexical duplicates differing "
-            "only by an underscore."
+            "only by an underscore; carbon_monoxide_oxidation has higher profile support and "
+            "canonical word-separated syntax."
         ),
     ),
     RedundancyCluster(
@@ -193,8 +194,7 @@ CANONICAL_REDUNDANCY_CLUSTERS: list[RedundancyCluster] = [
         rationale=(
             "METPO:1000668 (coccus shaped, Madin et al.) and METPO:1000683 (sphere shaped, "
             "Bactotraits) are sibling terms under METPO:1000666 (cell shape) with r = +0.911. "
-            "Coccus has 18,349 profile counts and 3.9M taxon annotations vs sphere (11,178 "
-            "profile counts, 178k annotations). Under max-support rule, coccus survives."
+            "Under the max-support rule, coccus shaped survives over sphere shaped."
         ),
     ),
     RedundancyCluster(
@@ -206,9 +206,8 @@ CANONICAL_REDUNDANCY_CLUSTERS: list[RedundancyCluster] = [
         collapsed_traits=["METPO:1000681", "METPO:1000688"],
         selection_rule="max_support_provenance",
         rationale=(
-            "METPO:1000667 (bacillus shaped, Madin et al., 33,994 profile counts), "
-            "METPO:1000681 (rod shaped, Bactotraits, 20,294 profile counts), and "
-            "METPO:1000688 (coccobacillus shaped, 2,752 profile counts) are highly collinear "
+            "METPO:1000667 (bacillus shaped, Madin et al.), METPO:1000681 (rod shaped, "
+            "Bactotraits), and METPO:1000688 (coccobacillus shaped) are highly collinear "
             "sibling morphological traits (r = +0.911 bacillus vs rod). "
             "Bacillus has highest support."
         ),

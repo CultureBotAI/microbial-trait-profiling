@@ -132,3 +132,48 @@ def test_the_printed_summary_states_the_matrix_and_both_inputs(tmp_path: Path) -
     assert "1 MediaDive" in text
     assert "2 retained" in text
     assert "merged-kg_nodes.tsv" in text
+    assert "declared md5" in text
+
+
+def test_measure_matrix_rejects_unaccounted_metadata_column_and_skips_blank_lines(
+    tmp_path: Path,
+) -> None:
+    """measure_matrix must use retained_trait_columns and skip trailing blank lines (#334, #338)."""
+    valid = tmp_path / "valid_with_blanks.tsv"
+    valid.write_text(
+        "study_id\texperiment_id\tinc_dec\tMETPO:1\nbsdb:1\tbsdb:1-1\tinc\t0\n\n   \n",
+        encoding="utf-8",
+    )
+    identity = measure_matrix(valid)
+    assert identity.profile_rows == 1
+
+    bad = tmp_path / "extra_metadata_col.tsv"
+    bad.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tMETPO:1\nbsdb:1\tbsdb:1-1\tinc\t5\t0\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="not the 5 columns in the header"):
+        measure_matrix(bad)
+
+
+def test_sidecar_size_verification_and_release_tag_constant(tmp_path: Path) -> None:
+    """Sidecar declared size is checked against on-disk file size (#335, #336)."""
+    nodes = tmp_path / "merged-kg_nodes.tsv"
+    nodes.write_bytes(b"12345")
+    sidecar = tmp_path / "provenance.json"
+    sidecar.write_text(
+        json.dumps(
+            {
+                "release": "20260120",
+                "files": {"merged-kg_nodes.tsv": {"md5": "abc", "size": 999}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    matrix = _matrix(tmp_path / "m.tsv", mediadive=1, retained=1, rows=1)
+    ident = corpus_identity(matrix, bugsigdb_vintage="v", kg_provenance_path=sidecar)
+    assert ident.kg_release_tag == "20260120"
+    assert ident.kg_inputs[0].present is True
+    assert ident.kg_inputs[0].size_matches is False
+    text = "\n".join(summary_lines(ident))
+    assert "[size mismatch vs sidecar]" in text

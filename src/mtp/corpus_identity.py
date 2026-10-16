@@ -21,12 +21,14 @@ given number came from.
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from mtp.paths import KG_MICROBE_DIR, file_sha256
-from mtp.trait_guilds import MEDIADIVE_MARKER, PROFILE_ID_COLUMNS
+from mtp.paths import KG_MICROBE_DIR
+from mtp.trait_guilds import PROFILE_ID_COLUMNS, retained_trait_columns
 
 DEFAULT_KG_PROVENANCE_PATH = KG_MICROBE_DIR / "provenance.json"
 #: What a release tag reads as when the sidecar does not carry one. Recorded
@@ -82,6 +84,7 @@ class KgInput:
     fetched_at: str | None
     drive_file_id: str | None
     present: bool
+    size_matches: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -111,25 +114,31 @@ class CorpusIdentity:
 
 
 def measure_matrix(profile_path: Path) -> MatrixIdentity:
-    """Read ``profile_path`` once for its shape, and hash it."""
-    identifier = mediadive = retained = 0
+    """Read ``profile_path`` once for its shape and SHA-256."""
+    digest = hashlib.sha256()
+    bytes_read = 0
     rows = 0
-    with profile_path.open(encoding="utf-8", newline="") as handle:
-        reader = csv.reader(handle, delimiter="\t")
+    with profile_path.open("rb") as raw_handle:
+
+        def _hashing_lines() -> Iterator[str]:
+            nonlocal bytes_read
+            for raw_line in raw_handle:
+                digest.update(raw_line)
+                bytes_read += len(raw_line)
+                yield raw_line.decode("utf-8")
+
+        reader = csv.reader(_hashing_lines(), delimiter="\t")
         header = next(reader)
-        for column in header:
-            if column in PROFILE_ID_COLUMNS:
-                identifier += 1
-            elif MEDIADIVE_MARKER in column.lower():
-                mediadive += 1
-            else:
-                retained += 1
-        for _ in reader:
-            rows += 1
+        identifier = sum(1 for column in header if column in PROFILE_ID_COLUMNS)
+        _, retained_cols, mediadive = retained_trait_columns(header)
+        retained = len(retained_cols)
+        for row in reader:
+            if any(cell.strip() for cell in row):
+                rows += 1
     identity = MatrixIdentity(
         path=str(profile_path),
-        sha256=file_sha256(profile_path),
-        bytes=profile_path.stat().st_size,
+        sha256=digest.hexdigest(),
+        bytes=bytes_read,
         header_columns=len(header),
         identifier_columns=identifier,
         mediadive_columns=mediadive,
@@ -159,14 +168,23 @@ def read_kg_inputs(provenance_path: Path) -> tuple[str, list[KgInput]]:
     if isinstance(files, dict):
         for name, entry in sorted(files.items()):
             details = entry if isinstance(entry, dict) else {}
+            file_path = provenance_path.parent / name
+            present = file_path.is_file()
+            declared_size = _as_int(details.get("size"))
+            size_matches = (
+                file_path.stat().st_size == declared_size
+                if present and declared_size is not None
+                else None
+            )
             inputs.append(
                 KgInput(
                     name=name,
                     declared_md5=_as_str(details.get("md5")),
-                    declared_size=_as_int(details.get("size")),
+                    declared_size=declared_size,
                     fetched_at=_as_str(details.get("fetched_at")),
                     drive_file_id=_as_str(details.get("file_id")),
-                    present=(provenance_path.parent / name).is_file(),
+                    present=present,
+                    size_matches=size_matches,
                 )
             )
     return release, inputs
@@ -217,6 +235,14 @@ def write_identity(
     return path
 
 
+def _kg_input_status(item: KgInput) -> str:
+    if not item.present:
+        return "  [file not present]"
+    if item.size_matches is False:
+        return "  [size mismatch vs sidecar]"
+    return ""
+
+
 def summary_lines(identity: CorpusIdentity) -> list[str]:
     """The identity as a recipe prints it, so a run states its own corpus."""
     matrix = identity.matrix
@@ -231,8 +257,8 @@ def summary_lines(identity: CorpusIdentity) -> list[str]:
         f"KG-Microbe:        {identity.kg_release_tag}",
     ]
     lines.extend(
-        f"  {item.name:<22} md5 {item.declared_md5 or '(not recorded)'}"
-        f"{'' if item.present else '  [file not present]'}"
+        f"  {item.name:<22} declared md5 {item.declared_md5 or '(not recorded)'}"
+        f"{_kg_input_status(item)}"
         for item in identity.kg_inputs
     )
     return lines

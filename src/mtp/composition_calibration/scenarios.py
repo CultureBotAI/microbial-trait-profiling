@@ -2,24 +2,11 @@
 
 from __future__ import annotations
 
-import hashlib
-
 import numpy as np
 import pandas as pd
 
-
-def stream_key(name: str) -> int:
-    """A stable integer stream ID for a named scenario, independent of its position."""
-    return int.from_bytes(hashlib.sha256(name.encode("utf-8")).digest()[:8], "big")
-
-
-def replicate_rng(seed: int, stream: str, replicate: int) -> np.random.Generator:
-    """The generator for one replicate of one named stream.
-
-    numpy.random.default_rng takes the whole triple as seed entropy, so every
-    (seed, stream, replicate) is independently reproducible across arms.
-    """
-    return np.random.default_rng([seed, stream_key(stream), replicate])
+from mtp.calibration import _stream_key as stream_key
+from mtp.calibration import replicate_rng
 
 
 def generate_study_flip_null_profiles(

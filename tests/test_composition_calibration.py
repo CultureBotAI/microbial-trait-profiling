@@ -264,3 +264,78 @@ def test_missing_or_malformed_columns_file_is_an_error(tmp_path: Path) -> None:
     bad.write_text("column_id\nfoo\n")
     with pytest.raises(ValueError, match="object_category"):
         load_composition_trait_columns(bad)
+
+
+def test_study_flip_signs_match_shared_flip_assignments(
+    synthetic_paired_profiles: pd.DataFrame,
+) -> None:
+    """Study-flip draws in composition calibration match flip_assignments (#470)."""
+    from mtp.calibration import SEED, flip_assignments
+    from mtp.trait_guilds import Profile
+
+    paired_df = filter_paired_profiles(synthetic_paired_profiles)
+    profiles = [
+        Profile(
+            str(row["study_id"]),
+            str(row["experiment_id"]),
+            "inc" if row["inc_dec"] == "increased" else "dec",
+            str(row["condition"]),
+            str(row["body_site"]),
+            {"trait_A": int(row["trait_A"])},
+            int(row["taxa_count"]),
+        )
+        for _, row in paired_df.iterrows()
+    ]
+    shared = flip_assignments(profiles, replicates=5, seed=SEED, stream=STREAM)
+    study_keys = sorted(paired_df["study_id"].astype(str).unique(), key=repr)
+
+    for rep in range(5):
+        rng = replicate_rng(SEED, STREAM, rep)
+        draws = [rng.random() for _ in study_keys]
+        comp_flipped = {s for s, d in zip(study_keys, draws, strict=True) if d < 0.5}
+        shared_flipped = {
+            str(r["study_id"]) for r in shared if r["replicate"] == rep and r["flipped"] == 1
+        }
+        assert comp_flipped == shared_flipped
+
+
+def test_fast_path_matches_full_profile_relabeling(
+    synthetic_paired_profiles: pd.DataFrame,
+) -> None:
+    """Fast-path sign multiplication must match relabeling inc_dec and running adapter (#470)."""
+    traits = ["trait_A", "trait_B", "trait_C"]
+    paired_df = filter_paired_profiles(synthetic_paired_profiles)
+    _, _, _, null_pvals_df, _ = run_composition_calibration(
+        profiles_df=paired_df,
+        trait_columns=traits,
+        replicates=4,
+        seed=182,
+        stream=STREAM,
+    )
+    adapter = JedCompositionAdapter()
+    for rep in range(4):
+        rng = replicate_rng(182, STREAM, rep)
+        relabeled = generate_study_flip_null_profiles(paired_df, rng, unit="study")
+        res = adapter.run_inference(relabeled, pd.DataFrame(), config={"traits": traits})
+        ref_df = res.results_df.set_index("trait").loc[traits]
+        fast_df = null_pvals_df[null_pvals_df["replicate"] == rep].set_index("trait").loc[traits]
+        assert np.allclose(fast_df["null_t_statistic"].to_numpy(), ref_df["t_statistic"].to_numpy())
+        assert np.allclose(fast_df["null_p_value"].to_numpy(), ref_df["p_value"].to_numpy())
+
+
+def test_replicates_reaching_observed_is_none_when_observed_is_zero(
+    synthetic_paired_profiles: pd.DataFrame,
+) -> None:
+    """When observed_calls == 0, replicates_reaching_observed is None (#469)."""
+    traits = ["trait_A", "trait_B", "trait_C"]
+    summary_dict, _, _, _, _ = run_composition_calibration(
+        profiles_df=synthetic_paired_profiles,
+        trait_columns=traits,
+        replicates=3,
+        seed=182,
+        stream=STREAM,
+    )
+    zero_rows = [r for r in summary_dict["summary"] if r["observed_calls"] == 0]
+    assert zero_rows
+    for row in zero_rows:
+        assert row["replicates_reaching_observed"] is None

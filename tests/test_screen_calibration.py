@@ -83,7 +83,8 @@ def test_flipping_whole_studies_destroys_a_perfectly_consistent_signal() -> None
     assert nominal["observed_calls"] == 3
     assert nominal["replicates"] == 20
     assert float(str(nominal["mean_null_calls"])) < 3
-    assert run_null_screens(profiles, COLUMNS, replicates=3, seed=1) == counts[: 3 * 6]
+    per_rep = len(CORRECTIONS) * len(THRESHOLDS)
+    assert run_null_screens(profiles, COLUMNS, replicates=3, seed=1) == counts[: 3 * per_rep]
 
 
 def test_the_summary_reports_family_error_with_an_exact_interval() -> None:

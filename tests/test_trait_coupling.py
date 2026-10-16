@@ -404,9 +404,33 @@ def test_build_coupling_report_text_content() -> None:
     assert "Direct Test (Drop Sphere -> Coccus Effect Shift):" in text
     assert "Reverse Test (Drop Coccus -> Sphere Effect Shift):" in text
     assert "Passes stability criterion" in text
+    assert "max |Delta| = 0.001000" in text
+    assert "2 LOTO pairs is 0.000200" in text
+    assert "(0.002000)" in text
 
     for line in text.splitlines():
         assert line == line.rstrip(), f"Line contains trailing whitespace: {line!r}"
+
+
+def test_bh_q_values_adjust_over_full_trait_universe(
+    synthetic_coupling_data: tuple[pd.DataFrame, pd.DataFrame, list[str]],
+) -> None:
+    """BH q-values for focal traits must be adjusted over all of trait_universe (#478)."""
+    from mtp.enrichment_stats import benjamini_hochberg
+
+    profiles_df, paired_df, traits = synthetic_coupling_data
+    focal = ["t1"]
+
+    for fn, df in (
+        (compute_composition_arm, profiles_df),
+        (compute_directional_arm, profiles_df),
+        (compute_ora_arm, paired_df),
+    ):
+        all_res = fn(df, traits, traits)
+        focal_res = fn(df, traits, focal)
+        expected_q = benjamini_hochberg([all_res[t].p_value for t in traits])[0]
+        assert focal_res["t1"].q_value == pytest.approx(float(expected_q))
+        assert focal_res["t1"].q_value == pytest.approx(all_res["t1"].q_value)
 
 
 @pytest.fixture

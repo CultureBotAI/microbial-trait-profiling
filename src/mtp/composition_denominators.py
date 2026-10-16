@@ -66,6 +66,6 @@ def load_retained_profiles(path: Path, metadata: pd.DataFrame) -> pd.DataFrame:
     keys = ["study_id", "experiment_id", "inc_dec"]
     counts = frame.drop(columns=keys).apply(pd.to_numeric, errors="raise")
     counts.index = frame[keys].astype(str).agg("|".join, axis=1)
-    counts = retained_trait_counts(counts.groupby(level=0, sort=False).sum())
+    counts = retained_trait_counts(counts)
     validate_cached_totals(counts, metadata)
     return counts.loc[metadata.index]
