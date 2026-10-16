@@ -163,6 +163,24 @@ def _summarize(studies: list[StudyLogRatio]) -> LogRatioSummary:
     )
 
 
+def paired_log2_ratio_change(
+    numerator_inc: int,
+    reference_inc: int,
+    numerator_dec: int,
+    reference_dec: int,
+) -> float | None:
+    """Return the increased-minus-decreased log2 ratio for four positive counts.
+
+    A nonpositive count excludes the whole pair, without a pseudocount. Taking
+    logs before subtraction avoids overflow or underflow in intermediate ratios.
+    """
+    counts = (numerator_inc, reference_inc, numerator_dec, reference_dec)
+    if min(counts) <= 0:
+        return None
+    a_inc, b_inc, a_dec, b_dec = (math.log2(count) for count in counts)
+    return math.fsum((a_inc, -b_inc, -a_dec, b_dec))
+
+
 def compute_log_ratio_shifts(
     profiles: Sequence[Profile], traits: Sequence[str] = tuple(TABLE1_TRAITS)
 ) -> LogRatioResult:
@@ -186,16 +204,14 @@ def compute_log_ratio_shifts(
         for inc, dec in pairs:
             study = inc.study_id
             totals[study] += 1
-            counts = (
+            contrast = paired_log2_ratio_change(
                 inc.guild_counts[numerator],
                 inc.guild_counts[reference],
                 dec.guild_counts[numerator],
                 dec.guild_counts[reference],
             )
-            if min(counts) == 0:
-                continue
-            a_inc, b_inc, a_dec, b_dec = (math.log2(count) for count in counts)
-            contrasts[study].append(math.fsum((a_inc, -b_inc, -a_dec, b_dec)))
+            if contrast is not None:
+                contrasts[study].append(contrast)
         studies = [
             StudyLogRatio(
                 numerator=numerator,

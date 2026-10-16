@@ -208,7 +208,9 @@ def download_exports(
 
     Uses ETag and Last-Modified headers for conditional requests when
     provenance data is available. Skips download on 304 Not Modified.
-    Falls back to skipping files that already exist when no provenance.
+    Verifies pinned cached bytes before reuse; corrupt caches raise
+    ``IntegrityError`` and can be replaced with a verified ``force=True`` fetch.
+    Unpinned files without provenance retain skip-if-present behavior.
     Retries with exponential backoff on rate-limit (429) or server errors.
     Writes a provenance JSON sidecar recording the resolved release, the
     BugSigDB snapshot timestamp, download timestamps and cache headers.
@@ -257,6 +259,10 @@ def download_exports(
             # Build conditional request headers from cached provenance
             cond_headers: dict[str, str] = {}
             if dest.exists() and not force and reusable:
+                if is_pinned_target:
+                    # A matching URL or ETag identifies the remote object, not
+                    # the bytes currently on disk. Never reuse a corrupt cache.
+                    verify_pinned_dump(dest.read_bytes())
                 etag = file_prov.get("etag")
                 last_modified = file_prov.get("last_modified")
                 if etag:
@@ -292,6 +298,12 @@ def download_exports(
 
             if resp.status_code == 304:
                 # Upstream hasn't changed
+                if is_pinned_target:
+                    if not dest.is_file():
+                        raise IntegrityError(
+                            f"{FULL_DUMP_NAME} returned HTTP 304 without a local cached file."
+                        )
+                    verify_pinned_dump(dest.read_bytes())
                 downloaded.append(dest)
                 continue
 

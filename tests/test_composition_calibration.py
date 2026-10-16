@@ -87,6 +87,128 @@ def test_compute_profile_zscores(synthetic_paired_profiles: pd.DataFrame) -> Non
         assert abs(zscores[t].std(ddof=0) - 1.0) < 1e-10
 
 
+@pytest.mark.parametrize("selected", [["trait_A"], ["trait_C", "trait_A"]])
+def test_selected_traits_preserve_full_denominator(
+    synthetic_paired_profiles: pd.DataFrame, selected: list[str]
+) -> None:
+    """Testing one trait must not turn every positive fraction into one (#534)."""
+    all_traits = ["trait_A", "trait_B", "trait_C", "trait_const"]
+    full = compute_profile_zscores(synthetic_paired_profiles, all_traits)
+    subset = compute_profile_zscores(synthetic_paired_profiles, selected)
+    pd.testing.assert_frame_equal(subset, full[selected])
+    assert not subset["trait_A"].eq(0).all()
+
+    full_contrasts = compute_composition_contrasts(synthetic_paired_profiles, all_traits)
+    subset_contrasts = compute_composition_contrasts(synthetic_paired_profiles, selected)
+    pd.testing.assert_frame_equal(
+        subset_contrasts.pair_contrasts, full_contrasts.pair_contrasts[selected]
+    )
+    pd.testing.assert_frame_equal(
+        subset_contrasts.study_contrasts, full_contrasts.study_contrasts[selected]
+    )
+    assert subset_contrasts.n_pairs == full_contrasts.n_pairs == 4
+    assert subset_contrasts.n_studies == full_contrasts.n_studies == 3
+
+
+def test_denominator_keeps_untested_counts_and_excludes_numeric_metadata() -> None:
+    """Untested biological counts matter; signature size and media do not (#534)."""
+    profiles = pd.DataFrame(
+        {
+            "trait_A": [10.0, 10.0, 10.0, 0.0],
+            "untested_trait": [10.0, 90.0, 990.0, 0.0],
+            "study_id": [1, 2, 3, 4],
+            "experiment_id": [11, 12, 13, 14],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "n_taxa": [900, 1, 80, 500],
+            "taxa_count": [90, 10, 800, 50],
+            "signature_size": [9, 100, 8, 5],
+            "profile_id": [100, 200, 300, 400],
+            "host_species": [9606, 9606, 9606, 9606],
+            "_norm_dir": ["inc", "dec", "inc", "dec"],
+            "mediadive.medium:1": [10000.0, 0.0, 50.0, 800.0],
+        }
+    )
+    observed = compute_profile_zscores(profiles, ["trait_A"])
+    transformed = np.log1p(1000 * np.array([0.5, 0.1, 0.01, 0.0]))
+    expected = (transformed - transformed.mean()) / transformed.std(ddof=0)
+    assert observed["trait_A"].to_numpy() == pytest.approx(expected)
+
+    biological_only = profiles[["trait_A", "untested_trait"]]
+    pd.testing.assert_frame_equal(observed, compute_profile_zscores(biological_only, ["trait_A"]))
+
+
+def test_adapter_subset_changes_test_family_without_changing_raw_inference(
+    synthetic_paired_profiles: pd.DataFrame,
+) -> None:
+    """Multiplicity uses selected traits while their effects and p-values stay fixed."""
+    adapter = JedCompositionAdapter()
+    full = adapter.run_inference(synthetic_paired_profiles, pd.DataFrame())
+    subset = adapter.run_inference(
+        synthetic_paired_profiles, pd.DataFrame(), {"traits": ["trait_A"]}
+    )
+    assert full.metadata["n_tests"] == 4
+    assert subset.metadata["n_tests"] == 1
+    raw_columns = [
+        "effect_size",
+        "t_statistic",
+        "p_value",
+        "mean_contrast",
+        "median_contrast",
+        "std_contrast",
+        "ci95_lower",
+        "ci95_upper",
+        "n_studies",
+        "n_pairs",
+    ]
+    pd.testing.assert_frame_equal(
+        subset.results_df.set_index("trait")[raw_columns],
+        full.results_df.set_index("trait").loc[["trait_A"], raw_columns],
+    )
+    assert subset.results_df.iloc[0]["effect_size"] > 0
+
+
+@pytest.mark.parametrize("corpus", ["paired", "empty", "unpaired"])
+@pytest.mark.parametrize(
+    ("selected", "expected"),
+    [
+        (["n_taxa", "profile_id", "_norm_dir"], []),
+        (["MediaDive.Medium", "missing_trait"], []),
+        (["profile_id", "trait_A", "MediaDive.Medium", "missing_trait"], ["trait_A"]),
+    ],
+)
+def test_nontrait_requests_do_not_become_empty_or_phantom_contrasts(
+    synthetic_paired_profiles: pd.DataFrame,
+    corpus: str,
+    selected: list[str],
+    expected: list[str],
+) -> None:
+    """Empty cohorts and rejected trait requests retain one output schema (#534)."""
+    profiles = synthetic_paired_profiles.assign(
+        n_taxa=200, profile_id=123, **{"MediaDive.Medium": 999}
+    )
+    profiles["_norm_dir"] = profiles["inc_dec"].map({"increased": "inc", "decreased": "dec"})
+    if corpus == "empty":
+        profiles = profiles.iloc[:0]
+    elif corpus == "unpaired":
+        profiles = profiles.loc[profiles["_norm_dir"].eq("inc")]
+
+    zscores = compute_profile_zscores(profiles, selected)
+    assert zscores.columns.tolist() == expected
+    assert zscores.index.equals(profiles.index)
+    contrasts = compute_composition_contrasts(profiles, selected)
+    assert contrasts.trait_columns == expected
+    assert contrasts.pair_contrasts.columns.tolist() == expected
+    assert contrasts.study_contrasts.columns.tolist() == expected
+
+    result = JedCompositionAdapter().run_inference(profiles, pd.DataFrame(), {"traits": selected})
+    assert result.metadata["n_trait_columns"] == len(expected)
+    if not expected or corpus != "paired":
+        assert contrasts.n_pairs == 0
+        assert contrasts.n_studies == 0
+        assert result.results_df.empty
+        assert result.metadata["n_tests"] == 0
+
+
 def test_compute_composition_contrasts(synthetic_paired_profiles: pd.DataFrame) -> None:
     """Verify matched experiment differences and study aggregation."""
     traits = ["trait_A", "trait_B", "trait_C"]

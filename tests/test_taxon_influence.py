@@ -165,6 +165,17 @@ def test_log_ratio_orientation_and_four_positive_rule() -> None:
     assert pair_values(profiles, list(profiles), A, B) == {}
 
 
+def test_influence_log_ratio_handles_large_counts_and_reference_reversal() -> None:
+    """Both analysis arms share finite log2 contrasts even when ratios overflow (#202)."""
+    large = 2**2000
+    profiles = {
+        ("s", "e", "inc"): {A: large, B: 1, OTHER: 90},
+        ("s", "e", "dec"): {A: large // 4, B: 1, OTHER: 0},
+    }
+    assert pair_values(profiles, list(profiles), A, B) == {("s", "e"): 2.0}
+    assert pair_values(profiles, list(profiles), B, A) == {("s", "e"): -2.0}
+
+
 def test_intervals_target_different_parameters_and_keep_untestable() -> None:
     result = describe({("s1", "e"): 0.01, ("s2", "e"): 0.03})
     assert result["effect"] == pytest.approx(0.02)

@@ -11,6 +11,7 @@ import pytest
 from bsdbng.table1_trait_maps import compute_direction_shifts
 from bsdbng.trait_composition import compute_log_ratio_shifts, main
 from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
+from mtp.trait_composition import paired_log2_ratio_change
 
 
 def _profile(
@@ -26,6 +27,22 @@ def _profile(
     return Profile(
         study, experiment, direction, condition, "Feces", {"A": a, "B": b, "C": c}, a + b + c
     )
+
+
+@pytest.mark.parametrize("position", range(4))
+@pytest.mark.parametrize("nonpositive", [0, -1])
+def test_paired_log_ratio_excludes_any_nonpositive_count(position: int, nonpositive: int) -> None:
+    counts = [8, 2, 2, 2]
+    counts[position] = nonpositive
+    assert paired_log2_ratio_change(*counts) is None
+
+
+def test_paired_log_ratio_preserves_direction_without_intermediate_overflow() -> None:
+    large = 2**2000
+    assert paired_log2_ratio_change(large, 1, large // 4, 1) == 2.0
+    assert paired_log2_ratio_change(1, large, 1, large // 4) == -2.0
+    profiles = [_profile("s1", "inc", large, 1), _profile("s1", "dec", large // 4, 1)]
+    assert compute_log_ratio_shifts(profiles, ("A", "B")).studies[0].mean_log2_ratio_change == 2.0
 
 
 def test_closure_moves_unchanged_traits_together_but_not_their_ratio() -> None:
