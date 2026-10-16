@@ -43,6 +43,7 @@ from mtp.composition_calibration.adapters.jed_composition import (
     compute_composition_contrasts,
 )
 from mtp.composition_calibration.scenarios import replicate_rng
+from mtp.composition_denominators import MEDIADIVE_MARKER
 from mtp.density_adjustment import TABLE_1_TRAITS
 from mtp.enrichment_stats import benjamini_hochberg
 from mtp.paths import DERIVED_DATA_DIR
@@ -170,7 +171,12 @@ def load_composition_trait_columns(
     missing = {"object_category", "column_id"} - set(cols_df.columns)
     if missing:
         raise ValueError(f"{columns_path} lacks required columns: {sorted(missing)}")
-    non_media = cols_df[cols_df["object_category"] != "METPO:1004005"]["column_id"]
+    is_media_id = (
+        cols_df["column_id"].astype(str).str.lower().str.contains(MEDIADIVE_MARKER, regex=False)
+    )
+    non_media = cols_df[(cols_df["object_category"] != "METPO:1004005") & (~is_media_id)][
+        "column_id"
+    ]
     traits = [str(c) for c in non_media.tolist()]
     if profiles_df is not None:
         return [t for t in traits if t in profiles_df.columns]
@@ -192,7 +198,7 @@ def run_composition_calibration(
     pd.DataFrame,
 ]:
     """Run full calibration battery for the paired composition arm."""
-    traits = list(trait_columns)
+    traits = [t for t in trait_columns if MEDIADIVE_MARKER not in str(t).lower()]
     m = len(traits)
     if m == 0:
         raise ValueError("Trait list cannot be empty")

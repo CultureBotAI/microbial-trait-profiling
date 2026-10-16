@@ -27,6 +27,7 @@ from create_pd_cellulose_analysis import (
     read_tsv,
     write_tsv,
 )
+from mtp.composition_denominators import retained_trait_counts, trait_fractions
 
 PROFILE_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
 STEM = "pd_species_six_traits_influence_heatmap"
@@ -266,17 +267,13 @@ def profile_id(study_id: object, experiment_id: object, inc_dec: object) -> str:
 
 def read_profile_counts(path: Path) -> tuple[pd.DataFrame, list[str]]:
     """Read the complete non-MediaDive count matrix with one row per profile."""
-    columns = pd.read_csv(path, sep="\t", nrows=0).columns.tolist()
-    trait_columns = [
-        column
-        for column in columns
-        if column not in PROFILE_COLUMNS and "mediadive.medium" not in column
-    ]
-    profiles = pd.read_csv(path, sep="\t", usecols=[*PROFILE_COLUMNS, *trait_columns])
+    profiles = pd.read_csv(path, sep="\t")
+    raw_trait_columns = [column for column in profiles.columns if column not in PROFILE_COLUMNS]
     ids = [profile_id(*values) for values in profiles[PROFILE_COLUMNS].itertuples(index=False)]
-    values = profiles[trait_columns].apply(pd.to_numeric, errors="coerce").fillna(0.0)
+    values = profiles[raw_trait_columns].apply(pd.to_numeric, errors="coerce").fillna(0.0)
     values.index = ids
-    return values.groupby(level=0, sort=False).sum(), trait_columns
+    retained = retained_trait_counts(values.groupby(level=0, sort=False).sum())
+    return retained, retained.columns.tolist()
 
 
 def read_taxon_vectors(path: Path, trait_columns: list[str]) -> pd.DataFrame:
@@ -373,16 +370,12 @@ def fixed_reference(
     reference_ids: pd.Index,
 ) -> tuple[pd.DataFrame, pd.Series, pd.Series, pd.Series]:
     """Transform profile fractions and fit one fixed human-corpus reference."""
-    missing = [trait for trait in trait_ids if trait not in profile_counts]
+    retained = retained_trait_counts(profile_counts)
+    missing = [trait for trait in trait_ids if trait not in retained]
     if missing:
         raise ValueError(f"Missing selected trait columns: {missing}")
-    totals = profile_counts.sum(axis=1).astype(float)
-    fractions = (
-        profile_counts[trait_ids]
-        .astype(float)
-        .div(totals.where(totals.ne(0), np.nan), axis=0)
-        .fillna(0.0)
-    )
+    totals = retained.sum(axis=1).astype(float)
+    fractions = trait_fractions(retained).loc[:, trait_ids]
     transformed = np.log1p(TRANSFORM_SCALE * fractions)
     reference = transformed.loc[reference_ids.intersection(transformed.index)]
     means = reference.mean(axis=0)

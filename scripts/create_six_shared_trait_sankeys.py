@@ -42,6 +42,11 @@ from create_six_shared_trait_cytoscape_heatmaps import (
 )
 from create_six_shared_trait_graphs import HTML_FILENAME, write_six_shared_trait_graphs
 from create_six_shared_trait_static_graphs import write_six_shared_trait_static_graphs
+from mtp.composition_denominators import (
+    load_retained_profiles,
+    trait_fractions,
+    validate_cached_totals,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -177,36 +182,21 @@ def load_profile_metadata() -> pd.DataFrame:
 
 
 def load_raw_trait_counts(traits: tuple[SharedTrait, ...], metadata: pd.DataFrame) -> pd.DataFrame:
-    """Load raw count columns for the requested traits and align to profile metadata."""
+    """Load every retained trait so the six displayed traits never define the total."""
     trait_ids = [trait.trait_id for trait in traits]
-    profile_counts = read_tsv(PROFILE_MATRIX_PATH, usecols=PROFILE_METADATA_COLUMNS + trait_ids)
-    profile_ids = [
-        f"{study_id}|{experiment_id}|{inc_dec}"
-        for study_id, experiment_id, inc_dec in profile_counts[PROFILE_METADATA_COLUMNS].itertuples(
-            index=False, name=None
-        )
-    ]
-    values = profile_counts[trait_ids].apply(pd.to_numeric, errors="coerce").fillna(0.0)
-    values.index = profile_ids
-    values = values.groupby(level=0, sort=False).sum()
-
-    missing_profiles = metadata.index.difference(values.index)
-    if not missing_profiles.empty:
-        examples = ", ".join(missing_profiles[:5].tolist())
-        msg = (
-            f"{len(missing_profiles):,} metadata profiles were not found in "
-            f"{PROFILE_MATRIX_PATH}: {examples}"
-        )
-        raise ValueError(msg)
-    return values.loc[metadata.index, trait_ids].copy()
+    values = load_retained_profiles(PROFILE_MATRIX_PATH, metadata)
+    if not set(trait_ids).issubset(values.columns):
+        raise ValueError("Shared trait columns missing from the full raw matrix")
+    return values
 
 
 def build_zscore_matrix(raw_trait_counts: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
     """Create z-scores from log-scaled trait fractions using all-trait row totals."""
-    row_sums = metadata["total_trait_signal"].replace(0, pd.NA)
-    composition = raw_trait_counts.div(row_sums, axis=0).fillna(0.0)
+    validate_cached_totals(raw_trait_counts, metadata)
+    trait_ids = [trait.trait_id for trait in SHARED_TRAITS]
+    composition = trait_fractions(raw_trait_counts.loc[metadata.index]).loc[:, trait_ids]
     scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
-    zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, pd.NA)
+    zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, float("nan"))
     return zscores.fillna(0.0)
 
 

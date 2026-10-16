@@ -16,6 +16,8 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.patches import Patch
 
+from mtp.composition_denominators import retained_trait_counts, trait_fractions
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = (
     REPO_ROOT
@@ -338,6 +340,8 @@ def load_profiles(
     values = (
         profiles[trait_columns].apply(pd.to_numeric, errors="coerce").fillna(0).astype("float32")
     )
+    values = retained_trait_counts(values)
+    trait_columns = values.columns.tolist()
     profile_ids = [
         profile_id_from_parts(study_id, experiment_id, inc_dec)
         for study_id, experiment_id, inc_dec in profiles[PROFILE_METADATA_COLUMNS].itertuples(
@@ -346,9 +350,12 @@ def load_profiles(
         )
     ]
     values.index = profile_ids
+    values = values.groupby(level=0, sort=False).sum()
 
     metadata = profiles[PROFILE_METADATA_COLUMNS].copy()
     metadata["profile_id"] = profile_ids
+    metadata = metadata.drop_duplicates(subset="profile_id", keep="first")
+    metadata = metadata.set_index("profile_id", drop=False).loc[values.index].reset_index(drop=True)
     metadata["direction_label"] = (
         metadata["inc_dec"].map(INC_DEC_TO_DIRECTION).fillna(metadata["inc_dec"])
     )
@@ -561,6 +568,10 @@ def compute_profile_neighbors(
     min_condition_profiles: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Find the most similar individual profiles to each target condition centroid."""
+    values = retained_trait_counts(values)
+    metadata = metadata.loc[values.index].copy()
+    metadata["profile_trait_count"] = values.gt(0).sum(axis=1).astype(int)
+    metadata["total_trait_signal"] = values.sum(axis=1).astype(float)
     active_profile_ids = metadata.index[metadata["profile_trait_count"] > 0].tolist()
     active_values = np.log1p(values.loc[active_profile_ids].to_numpy(dtype="float32"))
     normalized = l2_normalize(active_values)
@@ -761,6 +772,7 @@ def select_heatmap_traits(
     fill_with_high_signal_traits: bool = True,
 ) -> list[str]:
     """Select infographic and target-condition traits for the companion heatmap."""
+    values = retained_trait_counts(values)
     target_profile_ids = metadata.index[metadata["condition"].isin(TARGET_CONDITIONS)]
     target_values = values.loc[target_profile_ids]
     support = target_values.gt(0).sum(axis=0).astype(int)
@@ -786,9 +798,6 @@ def select_heatmap_traits(
         },
         index=target_values.columns,
     ).join(trait_labels[["display_name", "display_category"]], how="left")
-    trait_summary = trait_summary[
-        ~trait_summary.index.to_series().str.contains("mediadive.medium", regex=False)
-    ].copy()
     trait_summary["selection_score"] = (
         trait_summary["target_condition_support"] * np.log1p(trait_summary["target_total_signal"])
         + trait_summary["target_profile_support"]
@@ -1174,6 +1183,7 @@ def save_traits_vs_organisms_heatmap(
 
 def summarize_guild_connections(values: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
     """Summarize how predefined guild trait sets score target-condition profiles."""
+    values = retained_trait_counts(values)
     records: list[dict[str, object]] = []
     target_metadata = metadata[metadata["condition"].isin(TARGET_CONDITIONS)].copy()
     for guild_name, traits in GUILD_TRAITS.items():
@@ -1181,8 +1191,7 @@ def summarize_guild_connections(values: pd.DataFrame, metadata: pd.DataFrame) ->
         if not available_traits:
             continue
         guild_values = values.loc[target_metadata.index, available_traits].copy()
-        row_totals = values.loc[target_metadata.index].sum(axis=1).replace(0, np.nan)
-        relative_values = guild_values.div(row_totals, axis=0).fillna(0)
+        relative_values = trait_fractions(values.loc[target_metadata.index])[available_traits]
         for condition, group in target_metadata.groupby("condition", sort=False):
             condition_values = guild_values.loc[group.index]
             condition_relative = relative_values.loc[group.index]
@@ -1314,10 +1323,10 @@ def write_report(
             "",
             "## Similar Profiles",
             "",
-            "Profile similarity uses cosine similarity over log1p-transformed full trait "
-            "vectors. For each target condition, the query vector is the centroid of its "
-            "active profiles, and the top five individual profiles exclude the same exact "
-            "condition label.",
+            "Profile similarity uses cosine similarity over log1p-transformed full "
+            "non-MediaDive trait vectors. For each target condition, the query vector is the "
+            "centroid of its active profiles, and the top five individual profiles exclude the "
+            "same exact condition label.",
             "",
             "| query condition | rank | neighbor condition | similarity | study title | "
             "experiment |",

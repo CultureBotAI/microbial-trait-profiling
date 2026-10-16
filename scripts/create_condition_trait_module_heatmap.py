@@ -14,6 +14,12 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.patches import FancyBboxPatch, Patch, Rectangle
 
+from mtp.composition_denominators import (
+    DENOMINATOR_DEFINITION,
+    retained_trait_counts,
+    trait_fractions,
+)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
@@ -212,7 +218,9 @@ def load_aggregated_study_profiles(
     trait_columns = [
         column for column in profiles.columns if column not in PROFILE_METADATA_COLUMNS
     ]
-    values = profiles[trait_columns].apply(pd.to_numeric, errors="coerce").fillna(0)
+    values = retained_trait_counts(
+        profiles[trait_columns].apply(pd.to_numeric, errors="coerce").fillna(0)
+    )
     study_matrix = values.groupby(profiles["study_id"], sort=False).sum()
 
     profile_metadata = profiles.groupby("study_id", sort=False).agg(
@@ -229,6 +237,7 @@ def load_aggregated_study_profiles(
     )
     profile_metadata["total_trait_signal"] = study_matrix.sum(axis=1)
     profile_metadata["trait_count"] = study_matrix.gt(0).sum(axis=1)
+    profile_metadata["denominator_definition"] = DENOMINATOR_DEFINITION
     return study_matrix, profile_metadata
 
 
@@ -254,6 +263,7 @@ def build_condition_modules(
     max_groups: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Aggregate study profiles into condition/body-site modules."""
+    study_matrix = retained_trait_counts(study_matrix)
     metadata = study_metadata.copy()
     for field in group_by:
         metadata[field] = metadata[field].map(clean_value)
@@ -276,6 +286,7 @@ def build_condition_modules(
     )
     group_metadata["total_trait_signal"] = group_matrix.sum(axis=1)
     group_metadata["trait_count"] = group_matrix.gt(0).sum(axis=1)
+    group_metadata["denominator_definition"] = DENOMINATOR_DEFINITION
 
     eligible = group_metadata[
         (group_metadata["study_count"] >= min_studies)
@@ -313,8 +324,10 @@ def select_traits(
     include_media_traits: bool,
 ) -> tuple[pd.Index, pd.DataFrame]:
     """Select condition-discriminating trait columns."""
-    row_sums = group_matrix.sum(axis=1).replace(0, pd.NA)
-    composition = group_matrix.div(row_sums, axis=0).fillna(0)
+    if include_media_traits:
+        raise ValueError("MediaDive cannot be included in harmonized composition analyses")
+    group_matrix = retained_trait_counts(group_matrix)
+    composition = trait_fractions(group_matrix)
     support = group_matrix.gt(0).sum(axis=0).astype(int)
     total_signal = group_matrix.sum(axis=0).astype(float)
     variance = composition.var(axis=0)
@@ -374,8 +387,7 @@ def select_traits(
 
 def build_plot_matrix(group_matrix: pd.DataFrame, selected_traits: pd.Index) -> pd.DataFrame:
     """Create column-scaled log composition values for plotting."""
-    row_sums = group_matrix.sum(axis=1).replace(0, pd.NA)
-    composition = group_matrix[selected_traits].div(row_sums, axis=0).fillna(0)
+    composition = trait_fractions(group_matrix).loc[:, selected_traits]
     scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
     zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0).replace(0, pd.NA)
     return zscores.fillna(0).clip(-2.5, 2.5)
@@ -878,9 +890,11 @@ def main() -> None:
     parser.add_argument(
         "--include-media-traits",
         action="store_true",
-        help="Include MediaDive growth-medium traits in the selected traits.",
+        help="Rejected: MediaDive growth-medium traits are excluded before normalization.",
     )
     args = parser.parse_args()
+    if args.include_media_traits:
+        parser.error("MediaDive is excluded before composition normalization (#174).")
 
     group_by = normalize_group_fields(args.group_by)
     experiment_hosts = load_raw_experiment_hosts(args.full_dump_input)

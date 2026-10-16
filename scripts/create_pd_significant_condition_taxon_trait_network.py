@@ -15,6 +15,8 @@ from matplotlib.patches import FancyBboxPatch, PathPatch, Rectangle
 from matplotlib.path import Path as MplPath
 from scipy import stats
 
+from mtp.composition_denominators import load_retained_profiles, trait_fractions
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
@@ -307,26 +309,10 @@ def build_condition_taxon_tests(
 def build_zscore_matrix(metadata: pd.DataFrame, traits: pd.DataFrame) -> pd.DataFrame:
     """Recreate the globally normalized six-trait profile z-scores."""
     trait_ids = traits["trait_id"].tolist()
-    profile_counts = read_tsv(
-        PROFILE_MATRIX_PATH,
-        usecols=["study_id", "experiment_id", "inc_dec", *trait_ids],
-    )
-    profile_counts["profile_id"] = (
-        profile_counts["study_id"].astype(str)
-        + "|"
-        + profile_counts["experiment_id"].astype(str)
-        + "|"
-        + profile_counts["inc_dec"].astype(str)
-    )
-    values = profile_counts.groupby("profile_id", sort=False)[trait_ids].sum()
-    missing_profiles = metadata.index.difference(values.index)
-    if len(missing_profiles):
-        raise ValueError(f"Profile matrix is missing {len(missing_profiles)} metadata profiles")
-    values = values.loc[metadata.index]
-    totals = pd.to_numeric(metadata["total_trait_signal"], errors="coerce").replace(0, pd.NA)
-    composition = values.div(totals, axis=0).fillna(0.0)
-    scaled = (composition * 1000).map(math.log1p)
-    zscores = (scaled - scaled.mean()) / scaled.std(ddof=0).replace(0, pd.NA)
+    values = load_retained_profiles(PROFILE_MATRIX_PATH, metadata)
+    composition = trait_fractions(values).loc[:, trait_ids]
+    scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
+    zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, float("nan"))
     return zscores.fillna(0.0)
 
 
