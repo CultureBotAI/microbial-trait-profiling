@@ -1,15 +1,15 @@
 analysis	trait_id	trait_label	trait_slug	trait_color	focus_direction	raw_body_site	raw_body_site_group	body_site_group	body_site_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
-facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	1658
+facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	1670
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	157	204
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	66	75
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	43	49
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Oral cavity	Oral cavity	Oral cavity / dental	oral/dental rollup	82	11	46	60
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nasopharynx	Nasopharynx	Upper airway / nasal	upper-airway/nasal rollup	74	15	49	54
-facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mouth	Mouth	Oral cavity / dental	oral/dental rollup	74	14	36	50
+facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mouth	Mouth	Oral cavity / dental	oral/dental rollup	74	14	36	53
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	70	18	35	36
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	30	30
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	61	10	32	42
-facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Rectum	Other	Lower GI tract	lower-gi rollup	43	7	21	26
+facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Rectum	Other	Lower GI tract	lower-gi rollup	43	7	21	27
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin of body	Other	Skin	skin rollup	43	7	23	34
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	40	8	20	26
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Intestine	Other	Lower GI tract	lower-gi rollup	39	8	21	19
@@ -30,7 +30,7 @@ facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultativel
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bulbar conjunctiva	Other	Ocular / eye	ocular/eye body-site group	18	4	10	16
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colorectal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	4	12	9
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Duodenal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	3	10	7
-facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bronchus	Other	Bronchial / tracheal	bronchial/tracheal body-site group	18	1	9	14
+facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bronchus	Other	Bronchial / tracheal	bronchial/tracheal body-site group	18	1	9	15
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Uterus	Other	Vaginal / reproductive	vaginal/reproductive rollup	17	6	12	12
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Sputum	Other	Lower airway / lung	lower-airway/lung rollup	17	5	11	9
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Surface of tongue	Other	Oral cavity / dental	oral/dental rollup	16	1	10	0
@@ -43,11 +43,11 @@ facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultativel
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Breast,Milk	Other	Breast / milk	breast/milk body-site group	12	1	6	8
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bronchus,Mouth	Other	Oral cavity / dental	oral/dental rollup	12	1	7	12
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nasopharynx,Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	12	1	6	8
-facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colonic mucosa	Other	Lower GI tract	lower-gi rollup	10	3	5	4
+facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colonic mucosa	Other	Lower GI tract	lower-gi rollup	10	3	5	5
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Conjunctival sac	Other	Ocular / eye	ocular/eye body-site group	10	2	5	9
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	5	6
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Endocervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	10	2	8	9
-facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Intestinal mucosa	Other	Lower GI tract	lower-gi rollup	10	2	5	6
+facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Intestinal mucosa	Other	Lower GI tract	lower-gi rollup	10	2	5	9
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	2	9
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Margin of eyelid	Other	Ocular / eye	ocular/eye body-site group	10	1	6	4
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Saliva,Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	1	5	4
@@ -139,15 +139,15 @@ facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultativel
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	1	1	1	0
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nasopharyngeal gland	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	1	1
 facultatively_aerobic_increased_individual_conditions	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Prostate gland	Other	Reproductive / genital	reproductive/genital body-site group	1	1	1	1
-cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	1479
+cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	1486
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	157	34
-cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	66	28
-cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	43	16
+cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	66	29
+cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	43	17
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Oral cavity	Oral cavity	Oral cavity / dental	oral/dental rollup	82	11	46	9
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Nasopharynx	Nasopharynx	Upper airway / nasal	upper-airway/nasal rollup	74	15	49	5
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Mouth	Mouth	Oral cavity / dental	oral/dental rollup	74	14	36	12
-cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	70	18	35	5
-cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	30	13
+cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	70	18	35	6
+cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	30	14
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	61	10	32	12
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Rectum	Other	Lower GI tract	lower-gi rollup	43	7	21	11
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Skin of body	Other	Skin	skin rollup	43	7	23	4
@@ -182,7 +182,7 @@ cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:003
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Mouth mucosa	Other	Oral cavity / dental	oral/dental rollup	13	1	6	1
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Breast,Milk	Other	Breast / milk	breast/milk body-site group	12	1	6	4
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Bronchus,Mouth	Other	Oral cavity / dental	oral/dental rollup	12	1	7	0
-cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Nasopharynx,Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	12	1	6	3
+cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Nasopharynx,Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	12	1	6	2
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Colonic mucosa	Other	Lower GI tract	lower-gi rollup	10	3	5	4
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Conjunctival sac	Other	Ocular / eye	ocular/eye body-site group	10	2	5	4
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	5	3
@@ -205,7 +205,7 @@ cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:003
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Pharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	8	1	4	1
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Mucosa of stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	7	2	5	0
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Skin of penis	Other	Skin	skin rollup	7	2	3	2
-cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Tear film	Other	Ocular / eye	ocular/eye body-site group	7	2	4	0
+cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Tear film	Other	Ocular / eye	ocular/eye body-site group	7	2	4	1
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Cheek,Forehead	Other	Oral cavity / dental	oral/dental body-site group	7	1	3	0
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Oral opening	Other	Oral cavity / dental	oral/dental rollup	7	1	5	1
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Skin epithelium	Other	Skin	skin rollup	7	1	3	3
@@ -279,20 +279,20 @@ cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:003
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	1	1	1	1
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Nasopharyngeal gland	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	1	1
 cellulose_catabolic_process_increased_individual_conditions	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	increased	Prostate gland	Other	Reproductive / genital	reproductive/genital body-site group	1	1	1	0
-coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	1589
+coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	1612
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	157	141
-coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	66	64
+coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	66	66
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	43	40
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Oral cavity	Oral cavity	Oral cavity / dental	oral/dental rollup	82	11	46	48
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Nasopharynx	Nasopharynx	Upper airway / nasal	upper-airway/nasal rollup	74	15	49	46
-coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Mouth	Mouth	Oral cavity / dental	oral/dental rollup	74	14	36	42
-coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	70	18	35	37
-coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	30	31
+coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Mouth	Mouth	Oral cavity / dental	oral/dental rollup	74	14	36	43
+coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	70	18	35	38
+coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	30	33
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	61	10	32	34
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Rectum	Other	Lower GI tract	lower-gi rollup	43	7	21	20
-coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Skin of body	Other	Skin	skin rollup	43	7	23	30
+coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Skin of body	Other	Skin	skin rollup	43	7	23	29
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	40	8	20	17
-coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Intestine	Other	Lower GI tract	lower-gi rollup	39	8	21	18
+coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Intestine	Other	Lower GI tract	lower-gi rollup	39	8	21	19
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Vagina,Uterine cervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	39	1	24	15
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Colon	Other	Lower GI tract	lower-gi rollup	38	8	19	16
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Lung	Other	Lower airway / lung	lower-airway/lung rollup	37	8	21	16
@@ -304,11 +304,11 @@ coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Vaginal fluid	Other	Vaginal / reproductive	vaginal/reproductive rollup	26	6	14	7
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Meconium	Other	Birth-associated samples	birth-associated body-site group	25	8	13	12
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	25	5	13	20
-coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Conjunctiva	Other	Ocular / eye	ocular/eye body-site group	20	3	13	11
+coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Conjunctiva	Other	Ocular / eye	ocular/eye body-site group	20	3	13	12
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Gastric juice	Other	Stomach / esophagus	stomach/esophagus body-site group	20	2	13	9
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Urine	Other	Urinary tract	urinary rollup	19	5	10	8
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Bulbar conjunctiva	Other	Ocular / eye	ocular/eye body-site group	18	4	10	12
-coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Colorectal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	4	12	9
+coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Colorectal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	4	12	10
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Duodenal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	3	10	8
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Bronchus	Other	Bronchial / tracheal	bronchial/tracheal body-site group	18	1	9	12
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Uterus	Other	Vaginal / reproductive	vaginal/reproductive rollup	17	6	12	7
@@ -361,7 +361,7 @@ coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Gingiva	Other	Oral cavity / dental	oral/dental body-site group	5	1	3	3
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Meconium,Feces	Other	Feces	feces/stool rollup	5	1	2	0
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Upper respiratory tract	Other	Upper airway / nasal	upper-airway/nasal rollup	5	1	2	4
-coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Dental pulp	Other	Oral cavity / dental	oral/dental body-site group	4	1	2	0
+coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Dental pulp	Other	Oral cavity / dental	oral/dental body-site group	4	1	2	1
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Mucosa of ascending colon	Other	Lower GI tract	lower-gi rollup	4	1	3	4
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Mucosa of oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	4	1	2	3
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Renal pelvis/ureter	Other	Urinary tract	urinary body-site group	4	1	2	1
@@ -416,18 +416,18 @@ coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Feces,Mucosa of small intestine	Other	Feces	feces/stool rollup	1	1	0	0
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Hypopharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	1	1
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Lower part of vagina,Upper part of vagina,Cervical mucus	Other	Vaginal / reproductive	vaginal/reproductive rollup	1	1	1	0
-coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	1	1	1	0
+coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	1	1	1	1
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Nasopharyngeal gland	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	1	1
 coccus_shaped_increased_individual_conditions	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Prostate gland	Other	Reproductive / genital	reproductive/genital body-site group	1	1	1	1
-sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	1470
-sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	157	131
+sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	1491
+sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	157	132
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	66	50
-sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	43	36
+sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	43	37
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Oral cavity	Oral cavity	Oral cavity / dental	oral/dental rollup	82	11	46	40
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Nasopharynx	Nasopharynx	Upper airway / nasal	upper-airway/nasal rollup	74	15	49	36
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Mouth	Mouth	Oral cavity / dental	oral/dental rollup	74	14	36	34
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	70	18	35	35
-sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	30	40
+sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	30	36
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	61	10	32	27
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Rectum	Other	Lower GI tract	lower-gi rollup	43	7	21	21
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Skin of body	Other	Skin	skin rollup	43	7	23	16
@@ -445,7 +445,7 @@ sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Meconium	Other	Birth-associated samples	birth-associated body-site group	25	8	13	14
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	25	5	13	19
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Conjunctiva	Other	Ocular / eye	ocular/eye body-site group	20	3	13	15
-sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Gastric juice	Other	Stomach / esophagus	stomach/esophagus body-site group	20	2	13	10
+sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Gastric juice	Other	Stomach / esophagus	stomach/esophagus body-site group	20	2	13	11
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Urine	Other	Urinary tract	urinary rollup	19	5	10	6
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Bulbar conjunctiva	Other	Ocular / eye	ocular/eye body-site group	18	4	10	3
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Colorectal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	4	12	7
@@ -531,7 +531,7 @@ sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Inferior nasal concha	Other	Upper airway / nasal	upper-airway/nasal rollup	2	1	1	1
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Margin of eyelid,Conjunctival sac	Other	Ocular / eye	ocular/eye body-site group	2	1	1	2
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Mesenteric lymph node	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	2	1	1	1
-sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Middle ear	Other	Ear	ear body-site group	2	1	1	1
+sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Middle ear	Other	Ear	ear body-site group	2	1	1	0
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Mucosa	Other	Unlocalized mucosal samples	unlocalized-mucosal body-site group	2	1	1	0
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Mucosa of oral region	Other	Oral cavity / dental	oral/dental rollup	2	1	1	2
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Ocular surface region	Other	Ocular / eye	ocular/eye body-site group	2	1	1	0
@@ -559,7 +559,7 @@ sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	1	1	1	1
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Nasopharyngeal gland	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	1	1
 sphere_shaped_increased_individual_conditions	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	increased	Prostate gland	Other	Reproductive / genital	reproductive/genital body-site group	1	1	1	1
-arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	924
+arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	927
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	157	63
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	66	27
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	43	22
@@ -570,12 +570,12 @@ arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsena
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	30	11
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	61	10	32	14
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Rectum	Other	Lower GI tract	lower-gi rollup	43	7	21	14
-arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Skin of body	Other	Skin	skin rollup	43	7	23	8
+arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Skin of body	Other	Skin	skin rollup	43	7	23	9
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	40	8	20	21
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Intestine	Other	Lower GI tract	lower-gi rollup	39	8	21	8
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Vagina,Uterine cervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	39	1	24	7
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Colon	Other	Lower GI tract	lower-gi rollup	38	8	19	14
-arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Lung	Other	Lower airway / lung	lower-airway/lung rollup	37	8	21	11
+arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Lung	Other	Lower airway / lung	lower-airway/lung rollup	37	8	21	12
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Thyroid gland	Other	Thyroid tissue	thyroid-tissue body-site group	33	1	13	9
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Posterior fornix of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	31	8	17	13
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Ileum,Right colon,Rectum	Other	Lower GI tract	lower-gi rollup	31	1	15	3
@@ -607,7 +607,7 @@ arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsena
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Conjunctival sac	Other	Ocular / eye	ocular/eye body-site group	10	2	5	6
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	5	5
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Endocervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	10	2	8	2
-arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Intestinal mucosa	Other	Lower GI tract	lower-gi rollup	10	2	5	2
+arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Intestinal mucosa	Other	Lower GI tract	lower-gi rollup	10	2	5	3
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	2	0
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Margin of eyelid	Other	Ocular / eye	ocular/eye body-site group	10	1	6	0
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Saliva,Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	1	5	0
@@ -696,12 +696,12 @@ arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsena
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Feces,Mucosa of small intestine	Other	Feces	feces/stool rollup	1	1	0	0
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Hypopharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	1	0
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Lower part of vagina,Upper part of vagina,Cervical mucus	Other	Vaginal / reproductive	vaginal/reproductive rollup	1	1	1	1
-arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	1	1	1	0
+arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	1	1	1	1
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Nasopharyngeal gland	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	1	1
 arsenate_reduction_increased_individual_conditions	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	increased	Prostate gland	Other	Reproductive / genital	reproductive/genital body-site group	1	1	1	0
-moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	1541
-moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	157	143
-moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	66	58
+moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	1555
+moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	157	142
+moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	66	60
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	43	50
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Oral cavity	Oral cavity	Oral cavity / dental	oral/dental rollup	82	11	46	33
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Nasopharynx	Nasopharynx	Upper airway / nasal	upper-airway/nasal rollup	74	15	49	32
@@ -712,7 +712,7 @@ moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately h
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Rectum	Other	Lower GI tract	lower-gi rollup	43	7	21	27
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Skin of body	Other	Skin	skin rollup	43	7	23	22
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	40	8	20	26
-moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Intestine	Other	Lower GI tract	lower-gi rollup	39	8	21	21
+moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Intestine	Other	Lower GI tract	lower-gi rollup	39	8	21	22
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Vagina,Uterine cervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	39	1	24	28
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Colon	Other	Lower GI tract	lower-gi rollup	38	8	19	17
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Lung	Other	Lower airway / lung	lower-airway/lung rollup	37	8	21	22
@@ -720,14 +720,14 @@ moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately h
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Posterior fornix of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	31	8	17	20
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Ileum,Right colon,Rectum	Other	Lower GI tract	lower-gi rollup	31	1	15	9
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Tongue	Other	Oral cavity / dental	oral/dental rollup	29	8	13	12
-moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Nasal cavity	Other	Upper airway / nasal	upper-airway/nasal rollup	29	5	17	16
-moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Vaginal fluid	Other	Vaginal / reproductive	vaginal/reproductive rollup	26	6	14	9
+moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Nasal cavity	Other	Upper airway / nasal	upper-airway/nasal rollup	29	5	17	14
+moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Vaginal fluid	Other	Vaginal / reproductive	vaginal/reproductive rollup	26	6	14	10
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Meconium	Other	Birth-associated samples	birth-associated body-site group	25	8	13	15
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	25	5	13	9
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Conjunctiva	Other	Ocular / eye	ocular/eye body-site group	20	3	13	15
-moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Gastric juice	Other	Stomach / esophagus	stomach/esophagus body-site group	20	2	13	13
+moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Gastric juice	Other	Stomach / esophagus	stomach/esophagus body-site group	20	2	13	12
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Urine	Other	Urinary tract	urinary rollup	19	5	10	11
-moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Bulbar conjunctiva	Other	Ocular / eye	ocular/eye body-site group	18	4	10	11
+moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Bulbar conjunctiva	Other	Ocular / eye	ocular/eye body-site group	18	4	10	10
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Colorectal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	4	12	10
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Duodenal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	3	10	11
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Bronchus	Other	Bronchial / tracheal	bronchial/tracheal body-site group	18	1	9	14
@@ -735,7 +735,7 @@ moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately h
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Sputum	Other	Lower airway / lung	lower-airway/lung rollup	17	5	11	8
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Surface of tongue	Other	Oral cavity / dental	oral/dental rollup	16	1	10	0
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Breast	Other	Breast / milk	breast/milk body-site group	15	3	8	8
-moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Colorectum	Other	Lower GI tract	lower-gi rollup	15	2	9	4
+moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Colorectum	Other	Lower GI tract	lower-gi rollup	15	2	9	5
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Blood serum	Other	Blood	blood rollup	15	1	9	8
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Wall of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	14	2	8	1
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Endothelium of trachea	Other	Bronchial / tracheal	bronchial/tracheal body-site group	13	1	6	5
@@ -748,7 +748,7 @@ moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately h
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	5	10
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Endocervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	10	2	8	8
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Intestinal mucosa	Other	Lower GI tract	lower-gi rollup	10	2	5	9
-moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	2	8
+moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	2	7
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Margin of eyelid	Other	Ocular / eye	ocular/eye body-site group	10	1	6	2
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Saliva,Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	1	5	2
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Feces,Blood	Other	Feces	feces/stool rollup	9	2	5	0
@@ -756,14 +756,14 @@ moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately h
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Milk	Other	Breast / milk	breast/milk body-site group	8	2	3	5
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Amniotic fluid,Feces	Other	Feces	feces/stool rollup	8	1	4	4
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Bile	Other	Hepatobiliary / pancreas	hepatobiliary/pancreas body-site group	8	1	5	4
-moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	External ear	Other	Ear	ear body-site group	8	1	5	4
+moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	External ear	Other	Ear	ear body-site group	8	1	5	3
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Internal cheek pouch	Other	Oral cavity / dental	oral/dental body-site group	8	1	4	0
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Lower lip,Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	8	1	5	6
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Margin of eyelid,Conjunctiva	Other	Ocular / eye	ocular/eye body-site group	8	1	4	4
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Nasopharynx,Oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	8	1	4	8
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Pancreas	Other	Hepatobiliary / pancreas	hepatobiliary/pancreas body-site group	8	1	4	2
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Pharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	8	1	4	5
-moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Mucosa of stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	7	2	5	3
+moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Mucosa of stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	7	2	5	4
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Skin of penis	Other	Skin	skin rollup	7	2	3	2
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Tear film	Other	Ocular / eye	ocular/eye body-site group	7	2	4	6
 moderately_halophilic_increased_individual_conditions	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	increased	Cheek,Forehead	Other	Oral cavity / dental	oral/dental body-site group	7	1	3	3

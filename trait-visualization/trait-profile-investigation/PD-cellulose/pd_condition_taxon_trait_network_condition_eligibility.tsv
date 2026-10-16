@@ -1,5 +1,5 @@
 condition	paired_study_count	passes_min_paired_studies	fdr_selected_taxon_count	fdr_selected_trait_count	displayed_in_network	exclusion_reason
-Parkinson's disease	45	True	0	1	True	NA
+Parkinson's disease	45	True	0	0	False	no association passes global BH q<=0.05
 Obesity	31	True	0	0	False	no association passes global BH q<=0.05
 Colorectal cancer	24	True	0	0	False	no association passes global BH q<=0.05
 HIV infection	17	True	0	0	False	no association passes global BH q<=0.05

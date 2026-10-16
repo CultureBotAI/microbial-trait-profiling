@@ -23,7 +23,7 @@ OUTPUT_DIR = INVESTIGATION_DIR / "PD-cellulose"
 
 PROFILE_MATRIX_PATH = REPO_ROOT / "data/derived/study_trait_profiles_wide.tsv"
 PROFILE_METADATA_PATH = VIS_DIR / "study_trait_profile_study_metadata.tsv"
-TAXA_PATH = REPO_ROOT / "data/derived/taxa.tsv"
+TAXA_PATH = REPO_ROOT / "data/derived/bugsigdb_taxa.tsv"
 TAXA_TRAIT_MATRIX_PATH = REPO_ROOT / "data/derived/taxa_trait_matrix.tsv"
 
 PD_CONDITION = "Parkinson's disease"

@@ -1,13 +1,13 @@
 analysis	trait_id	trait_label	trait_slug	trait_color	focus_direction	raw_body_site	raw_body_site_group	body_site_group	body_site_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Feces	Feces	Feces	feces/stool rollup	3672	666	1776	1470
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	142	131
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Feces	Feces	Feces	feces/stool rollup	3672	666	1776	1491
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	142	132
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	58	50
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	39	36
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	39	37
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Oral cavity	Oral cavity	Oral cavity / dental	oral/dental rollup	82	11	36	40
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Nasopharynx	Nasopharynx	Upper airway / nasal	upper-airway/nasal rollup	74	15	25	36
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Mouth	Mouth	Oral cavity / dental	oral/dental rollup	74	14	38	34
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	70	18	35	35
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	34	40
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	34	36
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	61	10	29	27
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Rectum	Other	Lower GI tract	lower-gi rollup	43	7	22	21
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Skin of body	Other	Skin	skin rollup	43	7	20	16
@@ -25,7 +25,7 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Meconium	Other	Birth-associated samples	birth-associated body-site group	25	8	12	14
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	25	5	12	19
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Conjunctiva	Other	Ocular / eye	ocular/eye body-site group	20	3	7	15
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Gastric juice	Other	Stomach / esophagus	stomach/esophagus body-site group	20	2	7	10
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Gastric juice	Other	Stomach / esophagus	stomach/esophagus body-site group	20	2	7	11
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Urine	Other	Urinary tract	urinary rollup	19	5	9	6
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Bulbar conjunctiva	Other	Ocular / eye	ocular/eye body-site group	18	4	8	3
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Colorectal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	4	6	7
@@ -111,7 +111,7 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Inferior nasal concha	Other	Upper airway / nasal	upper-airway/nasal rollup	2	1	1	1
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Margin of eyelid,Conjunctival sac	Other	Ocular / eye	ocular/eye body-site group	2	1	1	2
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Mesenteric lymph node	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	2	1	1	1
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Middle ear	Other	Ear	ear body-site group	2	1	1	1
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Middle ear	Other	Ear	ear body-site group	2	1	1	0
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Mucosa	Other	Unlocalized mucosal samples	unlocalized-mucosal body-site group	2	1	1	0
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Mucosa of oral region	Other	Oral cavity / dental	oral/dental rollup	2	1	1	2
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Ocular surface region	Other	Ocular / eye	ocular/eye body-site group	2	1	1	0

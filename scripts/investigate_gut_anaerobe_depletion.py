@@ -293,11 +293,16 @@ def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
             "Heatmap metadata is missing the harmonized non-MediaDive denominator marker"
         )
     matrix_keys = matrix.index.to_series().map(lambda value: str(value).split(" | ", 1)[0])
+    matrix_pair_keys = matrix.index.to_series().map(
+        lambda value: "/".join(part.strip() for part in str(value).split(" | ")[:2])
+    )
     expected_keys = (
         metadata[["study_id", "experiment_id"]].astype(str).agg("/".join, axis=1).to_numpy()
     )
     if not (
-        matrix.index.equals(metadata.index) or np.array_equal(matrix_keys.to_numpy(), expected_keys)
+        matrix.index.equals(metadata.index)
+        or np.array_equal(matrix_keys.to_numpy(), expected_keys)
+        or np.array_equal(matrix_pair_keys.to_numpy(), expected_keys)
     ):
         raise ValueError("Heatmap matrix row keys do not match profile metadata")
     matrix.index = metadata.index
@@ -771,7 +776,7 @@ def build_guild_trait_selection(study_trait_metadata: pd.DataFrame) -> pd.DataFr
 def load_profile_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
     """Load all taxon/profile occurrences and join scored profile metadata."""
     taxa = read_tsv(
-        REPO_ROOT / "data/derived/taxa.tsv",
+        REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
         usecols=[
             "study_id",
             "experiment_id",
@@ -1195,7 +1200,7 @@ def load_target_taxa_trait_counts() -> pd.DataFrame:
 
 def load_target_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
     taxa = read_tsv(
-        REPO_ROOT / "data/derived/taxa.tsv",
+        REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
         usecols=[
             "study_id",
             "experiment_id",

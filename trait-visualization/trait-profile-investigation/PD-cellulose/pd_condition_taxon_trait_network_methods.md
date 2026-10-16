@@ -15,12 +15,12 @@
 
 - Eligible conditions represented in the evidence landscape: `56`.
 - FDR-selected condition-taxon results: `0` involving `0` genera and `0` species.
-- FDR-selected condition-trait results: `1`.
+- FDR-selected condition-trait results: `0`.
 - Exploratory condition-taxon results: `1`.
-- Exploratory condition-trait results: `3`.
-- Conditions in the significant-only node/edge tables: `1`.
+- Exploratory condition-trait results: `4`.
+- Conditions in the significant-only node/edge tables: `0`.
 - Dashed KG-Microbe annotation links: `0`.
-- Network nodes/edges: `2` / `1`.
+- Network nodes/edges: `0` / `0`.
 
 ## Interpretation boundary
 

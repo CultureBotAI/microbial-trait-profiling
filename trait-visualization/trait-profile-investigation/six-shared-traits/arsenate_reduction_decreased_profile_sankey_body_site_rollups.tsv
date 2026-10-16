@@ -1,5 +1,5 @@
 analysis	trait_id	trait_label	trait_slug	trait_color	focus_direction	raw_body_site	raw_body_site_group	body_site_group	body_site_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
-arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Feces	Feces	Feces	feces/stool rollup	3672	666	1776	924
+arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Feces	Feces	Feces	feces/stool rollup	3672	666	1776	927
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	142	63
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	58	27
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	39	22
@@ -10,12 +10,12 @@ arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate 
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	34	11
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	61	10	29	14
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Rectum	Other	Lower GI tract	lower-gi rollup	43	7	22	14
-arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Skin of body	Other	Skin	skin rollup	43	7	20	8
+arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Skin of body	Other	Skin	skin rollup	43	7	20	9
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	40	8	20	21
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Intestine	Other	Lower GI tract	lower-gi rollup	39	8	18	8
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Vagina,Uterine cervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	39	1	15	7
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Colon	Other	Lower GI tract	lower-gi rollup	38	8	19	14
-arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Lung	Other	Lower airway / lung	lower-airway/lung rollup	37	8	16	11
+arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Lung	Other	Lower airway / lung	lower-airway/lung rollup	37	8	16	12
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Thyroid gland	Other	Thyroid tissue	thyroid-tissue body-site group	33	1	20	9
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Posterior fornix of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	31	8	14	13
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Ileum,Right colon,Rectum	Other	Lower GI tract	lower-gi rollup	31	1	16	3
@@ -47,7 +47,7 @@ arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate 
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Conjunctival sac	Other	Ocular / eye	ocular/eye body-site group	10	2	5	6
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	5	5
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Endocervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	10	2	2	2
-arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Intestinal mucosa	Other	Lower GI tract	lower-gi rollup	10	2	5	2
+arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Intestinal mucosa	Other	Lower GI tract	lower-gi rollup	10	2	5	3
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	8	0
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Margin of eyelid	Other	Ocular / eye	ocular/eye body-site group	10	1	4	0
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Saliva,Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	1	5	0
@@ -136,6 +136,6 @@ arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate 
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Feces,Mucosa of small intestine	Other	Feces	feces/stool rollup	1	1	1	0
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Hypopharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	0	0
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Lower part of vagina,Upper part of vagina,Cervical mucus	Other	Vaginal / reproductive	vaginal/reproductive rollup	1	1	0	1
-arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	1	1	0	0
+arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	1	1	0	1
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Nasopharyngeal gland	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	0	1
 arsenate_reduction_decreased	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	decreased	Prostate gland	Other	Reproductive / genital	reproductive/genital body-site group	1	1	0	0

@@ -1,13 +1,13 @@
 analysis	trait_id	trait_label	trait_slug	trait_color	focus_direction	raw_body_site	raw_body_site_group	body_site_group	body_site_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
-cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Feces	Feces	Feces	feces/stool rollup	3672	666	1776	1479
+cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Feces	Feces	Feces	feces/stool rollup	3672	666	1776	1486
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	142	34
-cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	58	28
-cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	39	16
+cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	58	29
+cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	39	17
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Oral cavity	Oral cavity	Oral cavity / dental	oral/dental rollup	82	11	36	9
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Nasopharynx	Nasopharynx	Upper airway / nasal	upper-airway/nasal rollup	74	15	25	5
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Mouth	Mouth	Oral cavity / dental	oral/dental rollup	74	14	38	12
-cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	70	18	35	5
-cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	34	13
+cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	70	18	35	6
+cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	34	14
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	61	10	29	12
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Rectum	Other	Lower GI tract	lower-gi rollup	43	7	22	11
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Skin of body	Other	Skin	skin rollup	43	7	20	4
@@ -42,7 +42,7 @@ cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabol
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Mouth mucosa	Other	Oral cavity / dental	oral/dental rollup	13	1	7	1
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Breast,Milk	Other	Breast / milk	breast/milk body-site group	12	1	6	4
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Bronchus,Mouth	Other	Oral cavity / dental	oral/dental rollup	12	1	5	0
-cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Nasopharynx,Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	12	1	6	3
+cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Nasopharynx,Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	12	1	6	2
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Colonic mucosa	Other	Lower GI tract	lower-gi rollup	10	3	5	4
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Conjunctival sac	Other	Ocular / eye	ocular/eye body-site group	10	2	5	4
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	5	3
@@ -65,7 +65,7 @@ cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabol
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Pharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	8	1	4	1
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Mucosa of stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	7	2	2	0
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Skin of penis	Other	Skin	skin rollup	7	2	4	2
-cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Tear film	Other	Ocular / eye	ocular/eye body-site group	7	2	3	0
+cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Tear film	Other	Ocular / eye	ocular/eye body-site group	7	2	3	1
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Cheek,Forehead	Other	Oral cavity / dental	oral/dental body-site group	7	1	4	0
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Oral opening	Other	Oral cavity / dental	oral/dental rollup	7	1	2	1
 cellulose_catabolic_process_decreased	METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	decreased	Skin epithelium	Other	Skin	skin rollup	7	1	4	3

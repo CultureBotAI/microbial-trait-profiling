@@ -1,17 +1,17 @@
 condition	inc_dec	direction_label	profile_count	enriched_profile_count	zero_enriched_profile_count	enriched_profile_fraction	study_count	enriched_study_count	max_enriched_guild_trait_count
-Parkinson's disease	dec	decreased profiles	133	113	20	0.849624060150376	51	44	2
+Parkinson's disease	dec	decreased profiles	133	112	21	0.8421052631578947	51	44	2
 Parkinson's disease	inc	increased profiles	141	84	57	0.5957446808510638	55	36	2
 Colorectal cancer	inc	increased profiles	115	83	32	0.7217391304347827	48	36	2
-Obesity	dec	decreased profiles	83	74	9	0.891566265060241	33	31	2
+Obesity	dec	decreased profiles	83	73	10	0.8795180722891566	33	30	2
 Colorectal cancer	dec	decreased profiles	101	65	36	0.6435643564356436	46	39	2
 Obesity	inc	increased profiles	91	65	26	0.7142857142857143	33	23	2
-COVID-19	dec	decreased profiles	72	47	25	0.6527777777777778	32	24	2
+COVID-19	dec	decreased profiles	72	46	26	0.6388888888888888	32	23	2
 Chronic constipation	inc	increased profiles	54	44	10	0.8148148148148148	14	13	2
 Irritable bowel syndrome	dec	decreased profiles	50	44	6	0.88	17	16	2
 HIV infection	dec	decreased profiles	47	43	4	0.9148936170212766	23	21	2
+Antimicrobial agent	dec	decreased profiles	56	40	16	0.7142857142857143	19	17	2
 Age	inc	increased profiles	54	40	14	0.7407407407407407	9	9	2
-Antimicrobial agent	dec	decreased profiles	56	38	18	0.6785714285714286	19	16	2
-COVID-19	inc	increased profiles	75	36	39	0.48	31	18	2
+COVID-19	inc	increased profiles	75	35	40	0.4666666666666667	31	18	2
 Diet	inc	increased profiles	52	35	17	0.6730769230769231	16	15	2
 Irritable bowel syndrome	inc	increased profiles	51	35	16	0.6862745098039216	15	11	2
 Diet	dec	decreased profiles	40	35	5	0.875	16	16	2
@@ -20,11 +20,11 @@ HIV infection	inc	increased profiles	48	31	17	0.6458333333333334	24	20	2
 Antimicrobial agent	inc	increased profiles	49	30	19	0.6122448979591837	17	14	2
 Age	dec	decreased profiles	44	29	15	0.6590909090909091	9	7	2
 Gestational diabetes	dec	decreased profiles	36	28	8	0.7777777777777778	10	9	2
-Polycystic ovary syndrome	dec	decreased profiles	36	28	8	0.7777777777777778	11	10	2
+Polycystic ovary syndrome	dec	decreased profiles	36	27	9	0.75	11	9	2
 Gestational diabetes	inc	increased profiles	41	26	15	0.6341463414634146	11	8	2
-Human papilloma virus infection	inc	increased profiles	45	25	20	0.5555555555555556	19	14	2
+Cervical glandular intraepithelial neoplasia	inc	increased profiles	31	26	5	0.8387096774193549	9	9	2
 Crohn's disease	dec	decreased profiles	33	25	8	0.7575757575757576	8	8	2
-Cervical glandular intraepithelial neoplasia	inc	increased profiles	31	25	6	0.8064516129032258	9	9	2
+Human papilloma virus infection	inc	increased profiles	45	24	21	0.5333333333333333	19	13	2
 Crohn's disease	inc	increased profiles	30	24	6	0.8	7	6	2
 Metabolic toxicity	inc	increased profiles	26	23	3	0.8846153846153846	1	1	2
 Type II diabetes mellitus	inc	increased profiles	30	22	8	0.7333333333333333	14	9	2
@@ -33,20 +33,20 @@ Polycystic ovary syndrome	inc	increased profiles	38	20	18	0.5263157894736842	12	
 Time	inc	increased profiles	20	20	0	1.0	1	1	1
 Gastric cancer	inc	increased profiles	36	19	17	0.5277777777777778	12	10	2
 Endometriosis	inc	increased profiles	27	19	8	0.7037037037037037	11	8	2
-Ethnic group	inc	increased profiles	24	19	5	0.7916666666666666	7	7	2
 Ulcerative colitis	dec	decreased profiles	21	19	2	0.9047619047619048	5	4	2
+Ethnic group	inc	increased profiles	24	18	6	0.75	7	7	2
 Human papilloma virus infection	dec	decreased profiles	34	17	17	0.5	17	12	2
 Schizophrenia	dec	decreased profiles	26	17	9	0.6538461538461539	15	10	2
 Response to antiviral drug	dec	decreased profiles	18	17	1	0.9444444444444444	4	4	2
 Gastric cancer	dec	decreased profiles	35	16	19	0.45714285714285713	11	6	2
+Schizophrenia	inc	increased profiles	25	16	9	0.64	15	11	2
 Pancreatic carcinoma	inc	increased profiles	17	16	1	0.9411764705882353	5	5	2
 Metabolic toxicity	dec	decreased profiles	27	15	12	0.5555555555555556	1	1	2
-Asthma	inc	increased profiles	26	15	11	0.5769230769230769	10	8	2
-Schizophrenia	inc	increased profiles	25	15	10	0.6	15	11	2
 Waist circumference	inc	increased profiles	25	15	10	0.6	1	1	2
 Asthma	dec	decreased profiles	24	15	9	0.625	9	7	2
 Ethnic group	dec	decreased profiles	20	15	5	0.75	6	5	2
 Rheumatoid arthritis	inc	increased profiles	20	15	5	0.75	11	9	2
+Asthma	inc	increased profiles	26	14	12	0.5384615384615384	10	8	2
 Cervical glandular intraepithelial neoplasia	dec	decreased profiles	24	14	10	0.5833333333333334	6	5	2
 Colorectal adenoma	inc	increased profiles	19	14	5	0.7368421052631579	7	5	2
 Periodontitis	inc	increased profiles	19	14	5	0.7368421052631579	7	5	2
@@ -55,7 +55,6 @@ Atopic eczema	inc	increased profiles	22	13	9	0.5909090909090909	8	7	2
 Response to diet	dec	decreased profiles	19	13	6	0.6842105263157895	6	6	2
 Breast cancer	dec	decreased profiles	17	13	4	0.7647058823529411	6	5	2
 Age-related macular degeneration	dec	decreased profiles	14	13	1	0.9285714285714286	5	5	2
-Tumor stage	dec	decreased profiles	14	13	1	0.9285714285714286	1	1	2
 Tumor stage	inc	increased profiles	14	13	1	0.9285714285714286	1	1	2
 Stroke	inc	increased profiles	29	12	17	0.41379310344827586	5	3	2
 Aging	inc	increased profiles	25	12	13	0.48	4	4	2
@@ -63,12 +62,11 @@ Response to diet	inc	increased profiles	22	12	10	0.5454545454545454	6	5	2
 Aging	dec	decreased profiles	19	12	7	0.631578947368421	4	2	2
 Food allergy	dec	decreased profiles	15	12	3	0.8	8	8	2
 Stroke	dec	decreased profiles	15	12	3	0.8	5	3	2
+Tumor stage	dec	decreased profiles	14	12	2	0.8571428571428571	1	1	2
 Dry eye syndrome	inc	increased profiles	28	11	17	0.39285714285714285	10	7	2
 Ovarian cancer	inc	increased profiles	27	11	16	0.4074074074074074	4	2	2
 Waist circumference	dec	decreased profiles	21	11	10	0.5238095238095238	1	1	2
 Atopic eczema	dec	decreased profiles	18	11	7	0.6111111111111112	7	7	2
-Smoking behavior	inc	increased profiles	17	11	6	0.6470588235294118	10	6	2
-Atopic asthma	inc	increased profiles	16	11	5	0.6875	2	2	2
 Periodontitis	dec	decreased profiles	16	11	5	0.6875	7	7	2
 Psoriasis	dec	decreased profiles	16	11	5	0.6875	8	7	2
 Smoking behavior	dec	decreased profiles	15	11	4	0.7333333333333333	9	7	2
@@ -76,11 +74,12 @@ Constipation	dec	decreased profiles	14	11	3	0.7857142857142857	5	4	2
 Food allergy	inc	increased profiles	14	11	3	0.7857142857142857	7	5	2
 Phenylketonuria	dec	decreased profiles	14	11	3	0.7857142857142857	2	2	2
 Psoriasis	inc	increased profiles	14	11	3	0.7857142857142857	7	6	2
+Psoriasis vulgaris	inc	increased profiles	14	11	3	0.7857142857142857	1	1	2
 Human immunodeficiency virus	dec	decreased profiles	11	11	0	1.0	2	2	2
 Psoriasis vulgaris	dec	decreased profiles	11	11	0	1.0	1	1	2
 Breast cancer	inc	increased profiles	18	10	8	0.5555555555555556	6	4	2
+Smoking behavior	inc	increased profiles	17	10	7	0.5882352941176471	10	5	2
 Cesarean section	dec	decreased profiles	16	10	6	0.625	7	4	2
-Psoriasis vulgaris	inc	increased profiles	14	10	4	0.7142857142857143	1	1	2
 Acute lymphoblastic leukemia	inc	increased profiles	13	10	3	0.7692307692307693	5	3	2
 Schizophrenia,Metabolic syndrome	inc	increased profiles	13	10	3	0.7692307692307693	1	1	2
 Attention deficit-hyperactivity disorder	inc	increased profiles	12	10	2	0.8333333333333334	3	3	2
@@ -90,10 +89,9 @@ Lewy body dementia	inc	increased profiles	10	10	0	1.0	1	1	2
 Ovarian cancer	dec	decreased profiles	18	9	9	0.5	4	3	2
 Response to transplant	inc	increased profiles	18	9	9	0.5	8	5	2
 Ulcerative colitis	inc	increased profiles	18	9	9	0.5	4	3	2
-Glaucoma	inc	increased profiles	16	9	7	0.5625	5	4	2
+Atopic asthma	inc	increased profiles	16	9	7	0.5625	2	2	2
 Helminthiasis	dec	decreased profiles	15	9	6	0.6	1	1	2
 Response to allogeneic hematopoietic stem cell transplant	dec	decreased profiles	15	9	6	0.6	5	3	2
-Atopic asthma	dec	decreased profiles	14	9	5	0.6428571428571429	2	2	2
 Response to antiviral drug	inc	increased profiles	14	9	5	0.6428571428571429	4	3	2
 Response to transplant	dec	decreased profiles	13	9	4	0.6923076923076923	6	5	2
 Multiple sclerosis	dec	decreased profiles	11	9	2	0.8181818181818182	4	3	2
@@ -103,7 +101,9 @@ High altitude adaptation	inc	increased profiles	10	9	1	0.9	1	1	2
 Response to ketogenic diet	dec	decreased profiles	10	9	1	0.9	2	2	2
 Non-alcoholic fatty liver disease	dec	decreased profiles	22	8	14	0.36363636363636365	7	6	2
 Rheumatoid arthritis	dec	decreased profiles	19	8	11	0.42105263157894735	10	7	2
+Glaucoma	inc	increased profiles	16	8	8	0.5	5	4	2
 Lung cancer	inc	increased profiles	16	8	8	0.5	7	5	2
+Atopic asthma	dec	decreased profiles	14	8	6	0.5714285714285714	2	2	2
 Endometriosis	dec	decreased profiles	14	8	6	0.5714285714285714	9	6	2
 Cesarean section	inc	increased profiles	13	8	5	0.6153846153846154	6	4	2
 Colorectal adenoma	dec	decreased profiles	13	8	5	0.6153846153846154	4	4	2
@@ -111,7 +111,6 @@ Treatment	dec	decreased profiles	13	8	5	0.6153846153846154	3	3	2
 Head and neck squamous cell carcinoma	inc	increased profiles	12	8	4	0.6666666666666666	3	3	2
 Oral squamous cell carcinoma	dec	decreased profiles	12	8	4	0.6666666666666666	6	4	2
 Cervical cancer	dec	decreased profiles	11	8	3	0.7272727272727273	5	5	2
-Oral squamous cell carcinoma	inc	increased profiles	11	8	3	0.7272727272727273	6	6	2
 Esophageal squamous cell carcinoma	dec	decreased profiles	10	8	2	0.8	3	3	2
 Obstructive sleep apnea	inc	increased profiles	10	8	2	0.8	1	1	2
 Squamous cell carcinoma	inc	increased profiles	10	8	2	0.8	5	5	2
@@ -124,9 +123,9 @@ Colorectal carcinoma	dec	decreased profiles	8	8	0	1.0	3	3	2
 Inflammatory bowel disease	dec	decreased profiles	8	8	0	1.0	3	3	2
 Socioeconomic status	dec	decreased profiles	8	8	0	1.0	7	7	2
 Pancreatic carcinoma	dec	decreased profiles	16	7	9	0.4375	5	4	2
-Cervical cancer	inc	increased profiles	11	7	4	0.6363636363636364	5	4	2
 Constipation	inc	increased profiles	11	7	4	0.6363636363636364	5	4	2
 Lung cancer	dec	decreased profiles	11	7	4	0.6363636363636364	7	5	2
+Oral squamous cell carcinoma	inc	increased profiles	11	7	4	0.6363636363636364	6	5	2
 Chlamydia trachomatis infectious disease	inc	increased profiles	10	7	3	0.7	2	1	1
 Oral mucositis	inc	increased profiles	10	7	3	0.7	3	2	2
 Delivery method	inc	increased profiles	9	7	2	0.7777777777777778	3	3	2
@@ -143,6 +142,7 @@ Papillary thyroid carcinoma	dec	decreased profiles	20	6	14	0.3	1	1	2
 Eczema	dec	decreased profiles	15	6	9	0.4	3	2	2
 Inflammatory bowel disease	inc	increased profiles	15	6	9	0.4	3	2	2
 Bipolar disorder	inc	increased profiles	11	6	5	0.5454545454545454	3	3	2
+Cervical cancer	inc	increased profiles	11	6	5	0.5454545454545454	5	4	2
 Response to allogeneic hematopoietic stem cell transplant	inc	increased profiles	10	6	4	0.6	4	4	2
 Ischemic stroke	inc	increased profiles	9	6	3	0.6666666666666666	3	3	2
 Response to immunochemotherapy	dec	decreased profiles	9	6	3	0.6666666666666666	9	6	2
@@ -160,13 +160,11 @@ Remission	inc	increased profiles	6	6	0	1.0	1	1	2
 Short stature	inc	increased profiles	6	6	0	1.0	1	1	2
 Non-alcoholic fatty liver disease	inc	increased profiles	22	5	17	0.22727272727272727	6	3	2
 Bacterial vaginosis	inc	increased profiles	13	5	8	0.38461538461538464	4	3	2
-Helminthiasis	inc	increased profiles	12	5	7	0.4166666666666667	1	1	2
 Squamous cell carcinoma	dec	decreased profiles	12	5	7	0.4166666666666667	5	3	2
 Epilepsy	inc	increased profiles	11	5	6	0.45454545454545453	4	3	2
 Head and neck squamous cell carcinoma	dec	decreased profiles	11	5	6	0.45454545454545453	3	2	2
 Attention deficit-hyperactivity disorder	dec	decreased profiles	10	5	5	0.5	3	3	2
 Diabetes mellitus	dec	decreased profiles	10	5	5	0.5	3	2	2
-Human immunodeficiency virus	inc	increased profiles	10	5	5	0.5	2	2	2
 Breastfeeding duration	dec	decreased profiles	8	5	3	0.625	2	2	2
 Hypertension	inc	increased profiles	8	5	3	0.625	2	1	1
 Hypertrophy	inc	increased profiles	8	5	3	0.625	1	1	2
@@ -174,6 +172,7 @@ Acute respiratory failure	dec	decreased profiles	7	5	2	0.7142857142857143	1	1	2
 Alzheimer's disease	dec	decreased profiles	7	5	2	0.7142857142857143	5	4	2
 Alzheimer's disease	inc	increased profiles	7	5	2	0.7142857142857143	5	3	2
 Depressive disorder	inc	increased profiles	7	5	2	0.7142857142857143	2	2	2
+Female infertility	dec	decreased profiles	7	5	2	0.7142857142857143	1	1	2
 Response to ketogenic diet	inc	increased profiles	7	5	2	0.7142857142857143	2	2	2
 Chlamydia trachomatis infectious disease	dec	decreased profiles	6	5	1	0.8333333333333334	2	2	1
 Diabetic nephropathy	dec	decreased profiles	6	5	1	0.8333333333333334	1	1	2
@@ -190,10 +189,10 @@ Unipolar depression	dec	decreased profiles	5	5	0	1.0	2	2	2
 Papillary thyroid carcinoma	inc	increased profiles	13	4	9	0.3076923076923077	1	1	2
 Chronic kidney disease	inc	increased profiles	12	4	8	0.3333333333333333	7	4	2
 Glaucoma	dec	decreased profiles	12	4	8	0.3333333333333333	5	3	2
-Obstructive sleep apnea	dec	decreased profiles	12	4	8	0.3333333333333333	1	1	2
+Helminthiasis	inc	increased profiles	12	4	8	0.3333333333333333	1	1	2
 Diabetes mellitus	inc	increased profiles	10	4	6	0.4	3	1	2
 Gastric adenocarcinoma	inc	increased profiles	10	4	6	0.4	3	1	2
-Response to drug	inc	increased profiles	10	4	6	0.4	1	1	2
+Human immunodeficiency virus	inc	increased profiles	10	4	6	0.4	2	2	2
 Delivery method	dec	decreased profiles	9	4	5	0.4444444444444444	3	3	2
 Eczema	inc	increased profiles	9	4	5	0.4444444444444444	3	2	2
 Oral mucositis	dec	decreased profiles	8	4	4	0.5	3	3	2
@@ -201,7 +200,6 @@ Pregnancy	inc	increased profiles	8	4	4	0.5	4	3	2
 Chronic obstructive pulmonary disease	inc	increased profiles	7	4	3	0.5714285714285714	4	3	2
 Dental caries	inc	increased profiles	7	4	3	0.5714285714285714	2	2	2
 Endometrial cancer	inc	increased profiles	7	4	3	0.5714285714285714	3	2	2
-Female infertility	dec	decreased profiles	7	4	3	0.5714285714285714	1	1	2
 Gastric adenocarcinoma	dec	decreased profiles	7	4	3	0.5714285714285714	3	2	2
 Glucose	inc	increased profiles	7	4	3	0.5714285714285714	1	1	2
 Graft versus host disease	inc	increased profiles	7	4	3	0.5714285714285714	4	3	2
@@ -231,7 +229,7 @@ Iron deficiency anemia	inc	increased profiles	4	4	0	1.0	2	2	1
 Methamphetamine dependence	dec	decreased profiles	4	4	0	1.0	1	1	2
 Non-alcoholic steatohepatitis	inc	increased profiles	4	4	0	1.0	2	2	2
 Obsessive-compulsive disorder	inc	increased profiles	4	4	0	1.0	1	1	2
-Pneumonia	dec	decreased profiles	4	4	0	1.0	3	3	2
+Pneumonia	dec	decreased profiles	4	4	0	1.0	3	3	1
 Preeclampsia	dec	decreased profiles	4	4	0	1.0	1	1	2
 Preeclampsia	inc	increased profiles	4	4	0	1.0	1	1	2
 Relapsing-remitting multiple sclerosis	inc	increased profiles	4	4	0	1.0	1	1	2
@@ -244,7 +242,7 @@ Type I diabetes mellitus	inc	increased profiles	4	4	0	1.0	4	4	2
 Vesicle membrane	inc	increased profiles	4	4	0	1.0	1	1	2
 Age-related macular degeneration	inc	increased profiles	13	3	10	0.23076923076923078	5	2	2
 Phenylketonuria	inc	increased profiles	13	3	10	0.23076923076923078	1	1	2
-Helicobacter pylori	inc	increased profiles	11	3	8	0.2727272727272727	1	1	2
+Obstructive sleep apnea	dec	decreased profiles	12	3	9	0.25	1	1	2
 Treatment	inc	increased profiles	11	3	8	0.2727272727272727	3	2	2
 Bacterial vaginosis	dec	decreased profiles	9	3	6	0.3333333333333333	4	2	1
 Hypertension	dec	decreased profiles	9	3	6	0.3333333333333333	2	1	2
@@ -291,9 +289,12 @@ Mucositis	inc	increased profiles	3	3	0	1.0	1	1	2
 Nutraceutical,Colorectal cancer	dec	decreased profiles	3	3	0	1.0	1	1	2
 Sleep duration	inc	increased profiles	3	3	0	1.0	1	1	2
 Diarrhea	inc	increased profiles	13	2	11	0.15384615384615385	3	2	2
+Helicobacter pylori	inc	increased profiles	11	2	9	0.18181818181818182	1	1	2
+Response to drug	inc	increased profiles	10	2	8	0.2	1	1	2
 Female infertility	inc	increased profiles	8	2	6	0.25	1	1	2
 Gingivitis	dec	decreased profiles	8	2	6	0.25	2	1	1
 Viral disease	inc	increased profiles	8	2	6	0.25	1	1	1
+Acne	dec	decreased profiles	7	2	5	0.2857142857142857	3	2	2
 Chlamydia trachomatis	dec	decreased profiles	7	2	5	0.2857142857142857	2	2	2
 Colorectal carcinoma	inc	increased profiles	7	2	5	0.2857142857142857	3	2	2
 Dental caries	dec	decreased profiles	7	2	5	0.2857142857142857	2	1	1
@@ -312,8 +313,8 @@ Human papillomavirus	dec	decreased profiles	5	2	3	0.4	2	1	2
 Intestinal polyp	dec	decreased profiles	5	2	3	0.4	2	1	2
 Spontaneous preterm birth	dec	decreased profiles	5	2	3	0.4	2	1	2
 Vitiligo	inc	increased profiles	5	2	3	0.4	3	2	2
+Air pollution	inc	increased profiles	4	2	2	0.5	2	2	1
 Anorexia nervosa	dec	decreased profiles	4	2	2	0.5	3	2	2
-Autoimmune disease	inc	increased profiles	4	2	2	0.5	2	2	2
 Body mass index,Physical activity	inc	increased profiles	4	2	2	0.5	1	1	2
 Cannabis use	inc	increased profiles	4	2	2	0.5	1	1	2
 Cardiovascular disease	inc	increased profiles	4	2	2	0.5	1	1	2
@@ -367,7 +368,6 @@ Gestational age	inc	increased profiles	2	2	0	1.0	1	1	1
 Gingivitis	inc	increased profiles	2	2	0	1.0	2	2	1
 Graves ophthalmopathy	inc	increased profiles	2	2	0	1.0	1	1	2
 HIV-1 infection	dec	decreased profiles	2	2	0	1.0	1	1	2
-Hidradenitis suppurativa	dec	decreased profiles	2	2	0	1.0	1	1	1
 High fat diet	dec	decreased profiles	2	2	0	1.0	1	1	2
 Intestinal helminthiasis	dec	decreased profiles	2	2	0	1.0	1	1	1
 Leukemia	inc	increased profiles	2	2	0	1.0	2	2	2
@@ -394,13 +394,12 @@ Streptococcal infection	dec	decreased profiles	2	2	0	1.0	2	2	1
 Viral pneumonia	inc	increased profiles	2	2	0	1.0	1	1	2
 Vulvovaginitis	dec	decreased profiles	2	2	0	1.0	2	2	1
 Common variable immunodeficiency	inc	increased profiles	8	1	7	0.125	1	1	1
-Acne	dec	decreased profiles	7	1	6	0.14285714285714285	3	1	2
 Acne	inc	increased profiles	6	1	5	0.16666666666666666	3	1	2
 Hypothyroidism	dec	decreased profiles	6	1	5	0.16666666666666666	1	1	1
 Contraception	inc	increased profiles	5	1	4	0.2	1	1	1
 Multiple myeloma	inc	increased profiles	5	1	4	0.2	2	1	2
 Aggressive periodontitis	dec	decreased profiles	4	1	3	0.25	1	1	1
-Air pollution	inc	increased profiles	4	1	3	0.25	2	1	1
+Autoimmune disease	inc	increased profiles	4	1	3	0.25	2	1	2
 Esophageal cancer	dec	decreased profiles	4	1	3	0.25	2	1	2
 Iron deficiency anemia	dec	decreased profiles	4	1	3	0.25	2	1	1
 SARS-CoV-2-related disease	dec	decreased profiles	4	1	3	0.25	2	1	1
@@ -418,7 +417,6 @@ Nutraceutical	inc	increased profiles	3	1	2	0.3333333333333333	1	1	1
 Nutraceutical,Colorectal cancer	inc	increased profiles	3	1	2	0.3333333333333333	1	1	1
 Response to antibiotic	inc	increased profiles	3	1	2	0.3333333333333333	2	1	2
 Systemic lupus erythematosus	inc	increased profiles	3	1	2	0.3333333333333333	1	1	2
-Allergic asthma	inc	increased profiles	2	1	1	0.5	1	1	1
 Atrial fibrillation	inc	increased profiles	2	1	1	0.5	1	1	1
 Attention deficit hyperactivity disorder	dec	decreased profiles	2	1	1	0.5	2	1	2
 Attention deficit hyperactivity disorder	inc	increased profiles	2	1	1	0.5	2	1	2
@@ -427,6 +425,7 @@ CD4-positive T-lymphocyte count	inc	increased profiles	2	1	1	0.5	1	1	1
 Chronic kidney disease,Stage 5 chronic kidney disease	dec	decreased profiles	2	1	1	0.5	1	1	1
 Colorectal cancer,Diabetes mellitus	dec	decreased profiles	2	1	1	0.5	1	1	2
 Encephalitis	dec	decreased profiles	2	1	1	0.5	1	1	1
+Hidradenitis suppurativa	dec	decreased profiles	2	1	1	0.5	1	1	1
 Intestinal helminthiasis	inc	increased profiles	2	1	1	0.5	1	1	2
 Juvenile idiopathic arthritis	inc	increased profiles	2	1	1	0.5	1	1	2
 Leukemia	dec	decreased profiles	2	1	1	0.5	2	1	2
@@ -501,7 +500,7 @@ Hashimoto's thyroiditis	dec	decreased profiles	1	1	0	1.0	1	1	1
 Hashimoto's thyroiditis	inc	increased profiles	1	1	0	1.0	1	1	2
 Henoch-Schoenlein purpura	dec	decreased profiles	1	1	0	1.0	1	1	2
 Henoch-Schoenlein purpura	inc	increased profiles	1	1	0	1.0	1	1	2
-Hepatitis	inc	increased profiles	1	1	0	1.0	1	1	2
+Hepatitis	inc	increased profiles	1	1	0	1.0	1	1	1
 Hormone replacement therapy	dec	decreased profiles	1	1	0	1.0	1	1	1
 Hypertrophy	dec	decreased profiles	1	1	0	1.0	1	1	2
 Keratoconjunctivitis	dec	decreased profiles	1	1	0	1.0	1	1	1
@@ -541,7 +540,7 @@ Sjogren syndrome	dec	decreased profiles	1	1	0	1.0	1	1	1
 Social anxiety disorder	dec	decreased profiles	1	1	0	1.0	1	1	1
 Social anxiety disorder	inc	increased profiles	1	1	0	1.0	1	1	2
 Survival time	dec	decreased profiles	1	1	0	1.0	1	1	2
-Thyroid carcinoma	dec	decreased profiles	1	1	0	1.0	1	1	2
+Thyroid carcinoma	dec	decreased profiles	1	1	0	1.0	1	1	1
 Urolithiasis,Nephrolithiasis	dec	decreased profiles	1	1	0	1.0	1	1	2
 Urolithiasis,Nephrolithiasis	inc	increased profiles	1	1	0	1.0	1	1	2
 Vaginal inflammation	inc	increased profiles	1	1	0	1.0	1	1	2
@@ -569,6 +568,7 @@ Oral leukoplakia	inc	increased profiles	3	0	3	0.0	1	0	0
 Pulmonary non-tuberculous mycobacterial infection	inc	increased profiles	3	0	3	0.0	2	0	0
 Acute graft vs. host disease	inc	increased profiles	2	0	2	0.0	1	0	0
 Age at assessment	inc	increased profiles	2	0	2	0.0	1	0	0
+Allergic asthma	inc	increased profiles	2	0	2	0.0	1	0	0
 Blastocystis hominis infectious disease	inc	increased profiles	2	0	2	0.0	1	0	0
 Cervical glandular intraepithelial neoplasia,Human papilloma virus infection	inc	increased profiles	2	0	2	0.0	1	0	0
 Chronic otitis media	inc	increased profiles	2	0	2	0.0	1	0	0

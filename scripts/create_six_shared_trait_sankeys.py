@@ -157,8 +157,12 @@ def reset_output_dir() -> None:
 
     for path in OUTPUT_DIR.iterdir():
         if path.is_file() or path.is_symlink():
+            if path.name == "six-shared-traits-interpretations.md":
+                continue
             path.unlink()
         elif path.is_dir():
+            if path.name in ("archive", "oral"):
+                continue
             msg = f"Refusing to remove nested directory in output path: {path}"
             raise RuntimeError(msg)
 

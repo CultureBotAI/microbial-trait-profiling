@@ -32,9 +32,9 @@ METPO:1000885"	"pH optimum mid1
 METPO:1000456"	"cellobiose
 CHEBI:17057"	"D-salicin
 CHEBI:17814"	"spore forming
-METPO:1000871"	"moderately halophilic
-METPO:1000623"	"xylan catabolic process
-GO:0045493"	"rhamnose
+METPO:1000871"	"xylan catabolic process
+GO:0045493"	"moderately halophilic
+METPO:1000623"	"rhamnose
 CHEBI:26546"	"cell width medium
 METPO:1000889"	"trehalose
 CHEBI:27082"	"heterotrophic
@@ -45,7 +45,7 @@ METPO:1000887"	"coccobacillus shaped
 METPO:1000688"	"mannitol
 CHEBI:29864"
 Faecalibacterium prausnitzii (NCBITaxon:853)	1	1	1	1	1	1	1	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Escherichia coli (NCBITaxon:562)	1	1	1	1	1	1	1	1	0	1	0	1	1	1	1	1	1	1	0	0	1	0	0	0	0	0	1	0	0	1	0	0	0	1	1	0	0	0	0	1	0	1	0	1	0
+Escherichia coli (NCBITaxon:562)	1	1	1	1	1	1	1	1	0	1	0	1	1	1	1	1	1	1	0	0	1	0	0	0	0	0	1	0	0	1	0	0	0	1	0	1	0	0	0	1	0	1	0	1	0
 Mediterraneibacter torques (NCBITaxon:33039)	1	1	1	1	0	1	0	0	0	1	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
 Mediterraneibacter gnavus (NCBITaxon:33038)	1	1	1	1	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 Anaerobutyricum hallii (NCBITaxon:39488)	1	1	1	0	1	1	0	0	1	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
@@ -58,10 +58,10 @@ Rothia mucilaginosa (NCBITaxon:43675)	1	0	1	1	0	1	0	0	0	1	0	1	1	0	0	0	0	1	0	0	1	
 Collinsella aerofaciens (NCBITaxon:74426)	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 Segatella copri (NCBITaxon:165179)	1	1	1	1	1	0	1	1	0	0	0	0	0	0	0	0	1	0	1	1	0	1	1	1	1	1	0	0	1	0	0	1	1	0	0	0	1	1	0	0	0	0	0	0	0
 Streptococcus salivarius (NCBITaxon:1304)	1	1	1	1	0	1	0	0	1	1	0	1	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Phocaeicola vulgatus (NCBITaxon:821)	1	1	1	1	1	1	1	0	1	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
+Phocaeicola vulgatus (NCBITaxon:821)	1	1	1	1	1	1	1	0	1	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
 Bifidobacterium longum (NCBITaxon:216816)	1	1	1	1	1	1	1	0	0	0	0	1	1	0	1	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Bacteroides fragilis (NCBITaxon:817)	1	1	1	1	1	1	1	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
-Bacteroides ovatus (NCBITaxon:28116)	1	1	1	1	1	0	1	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
+Bacteroides fragilis (NCBITaxon:817)	1	1	1	1	1	1	1	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
+Bacteroides ovatus (NCBITaxon:28116)	1	1	1	1	1	0	1	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
 Ruminococcus bromii (NCBITaxon:40518)	1	1	1	1	0	1	0	0	0	1	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
 Parabacteroides distasonis (NCBITaxon:823)	1	1	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 Blautia obeum (NCBITaxon:40520)	1	1	1	1	0	1	0	0	0	1	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0
@@ -76,13 +76,13 @@ Fusobacterium nucleatum (NCBITaxon:851)	1	1	1	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	
 Bacteroides caccae (NCBITaxon:47678)	1	1	1	1	1	0	1	0	1	0	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 Eubacterium ventriosum (NCBITaxon:39496)	0	1	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 Dorea formicigenerans (NCBITaxon:39486)	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Bacteroides thetaiotaomicron (NCBITaxon:818)	1	1	1	1	1	0	1	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
+Bacteroides thetaiotaomicron (NCBITaxon:818)	1	1	1	1	1	0	1	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
 Alistipes shahii (NCBITaxon:328814)	1	1	1	1	1	0	1	1	0	0	0	0	0	0	1	0	1	0	0	0	0	1	0	1	0	0	0	1	0	1	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 Odoribacter splanchnicus (NCBITaxon:28118)	1	1	0	1	1	0	1	1	0	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 Alistipes putredinis (NCBITaxon:28117)	1	1	1	1	1	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 Phocaeicola plebeius (NCBITaxon:310297)	1	1	1	1	1	0	1	1	0	0	0	0	0	0	0	0	1	0	1	1	0	1	1	1	1	1	0	1	1	1	0	1	0	0	0	0	1	1	0	0	0	0	0	0	0
 Bifidobacterium pseudocatenulatum (NCBITaxon:28026)	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Klebsiella pneumoniae (NCBITaxon:573)	1	1	1	1	1	0	1	0	0	0	0	1	1	1	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
+Klebsiella pneumoniae (NCBITaxon:573)	1	1	1	1	1	0	1	0	0	0	0	1	1	1	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 Bifidobacterium adolescentis (NCBITaxon:1680)	1	1	1	1	1	1	0	0	0	0	1	0	0	0	0	1	1	0	1	1	1	1	1	1	1	1	0	0	0	0	1	1	1	0	0	0	0	0	1	0	0	0	0	0	1
 Parabacteroides merdae (NCBITaxon:46503)	1	1	1	1	1	1	1	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 Streptococcus anginosus (NCBITaxon:1328)	1	1	1	1	0	1	0	0	1	1	0	1	1	0	0	0	0	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
@@ -91,8 +91,8 @@ Eggerthella lenta (NCBITaxon:84112)	1	1	1	1	1	1	0	0	0	0	0	1	0	0	0	0	0	0	0	0	1	0	
 Dialister invisus (NCBITaxon:218538)	1	1	1	0	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 [Clostridium] leptum (NCBITaxon:1535)	1	1	1	0	1	1	0	1	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 Prevotella sp. (NCBITaxon:59823)	1	1	0	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Bacteroides eggerthii (NCBITaxon:28111)	1	1	1	1	1	0	1	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
-Bacteroides xylanisolvens (NCBITaxon:371601)	1	1	1	1	1	0	1	1	0	0	1	0	0	0	0	0	1	0	1	1	0	1	1	1	1	1	0	1	1	1	1	1	1	0	0	1	1	0	1	0	0	1	1	0	1
+Bacteroides eggerthii (NCBITaxon:28111)	1	1	1	1	1	0	1	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
+Bacteroides xylanisolvens (NCBITaxon:371601)	1	1	1	1	1	0	1	1	0	0	1	0	0	0	0	0	1	0	1	1	0	1	1	1	1	1	0	1	1	1	1	1	1	0	1	0	1	0	1	0	0	1	1	0	1
 Parvimonas micra (NCBITaxon:33033)	1	1	1	1	0	1	0	0	1	1	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 Flavonifractor plautii (NCBITaxon:292800)	0	1	1	0	1	1	1	1	0	0	1	0	0	1	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	1	0	0	0	0	0
 Streptococcus thermophilus (NCBITaxon:1308)	1	1	1	1	0	1	0	0	1	1	0	1	1	0	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	1	0
@@ -108,18 +108,18 @@ Veillonella atypica (NCBITaxon:39777)	1	1	1	1	0	0	1	0	1	1	0	0	0	0	0	0	0	0	0	0	0	
 Bifidobacterium bifidum (NCBITaxon:1681)	1	1	1	1	1	1	1	0	0	0	0	0	0	1	1	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 Fusicatenibacter saccharivorans (NCBITaxon:1150298)	1	1	0	1	1	1	0	1	0	0	0	0	0	0	0	0	1	0	1	1	0	0	1	1	1	1	0	1	1	0	0	1	1	0	0	0	1	1	1	0	0	0	0	0	0
 Streptococcus mitis (NCBITaxon:28037)	1	1	1	1	0	1	0	0	1	1	0	1	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Cutibacterium acnes (NCBITaxon:1747)	1	1	1	1	1	1	0	0	0	1	0	1	0	0	0	1	1	0	0	0	1	0	0	0	0	0	1	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	1	0	0
+Cutibacterium acnes (NCBITaxon:1747)	1	1	1	1	1	1	0	0	0	1	0	1	0	0	0	1	1	0	0	0	1	0	0	0	0	0	1	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	1	0	0
 Megamonas funiformis (NCBITaxon:437897)	1	1	0	1	1	0	1	0	1	0	0	0	0	0	0	0	1	0	1	1	0	0	1	1	1	1	0	1	1	0	0	0	1	0	0	0	0	0	1	0	0	0	0	0	1
 Solobacterium moorei (NCBITaxon:102148)	1	1	1	0	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 [Eubacterium] siraeum (NCBITaxon:39492)	1	1	1	1	1	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	1	0	0	0	0
-Lactobacillus gasseri (NCBITaxon:1596)	1	1	1	1	1	1	0	0	1	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
+Lactobacillus gasseri (NCBITaxon:1596)	1	1	1	1	1	1	0	0	1	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 Streptococcus sanguinis (NCBITaxon:1305)	1	1	1	1	0	1	0	1	0	1	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 Prevotella intermedia (NCBITaxon:28131)	1	1	1	1	1	0	1	1	0	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Gardnerella vaginalis (NCBITaxon:2702)	1	1	1	1	1	1	1	1	0	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1	0	0	0	0	0	0	1	1	0	0
+Gardnerella vaginalis (NCBITaxon:2702)	1	1	1	1	1	1	1	1	0	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	1	0	0	0	0	0	1	1	0	0
 Porphyromonas endodontalis (NCBITaxon:28124)	1	1	0	1	1	0	1	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 Bilophila wadsworthia (NCBITaxon:35833)	1	1	1	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 [Ruminococcus] lactaris (NCBITaxon:46228)	1	1	1	1	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Citrobacter freundii (NCBITaxon:546)	1	0	1	1	1	0	1	0	0	0	0	0	1	1	1	0	0	1	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
+Citrobacter freundii (NCBITaxon:546)	1	0	1	1	1	0	1	0	0	0	0	0	1	1	1	0	0	1	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 Enterocloster bolteae (NCBITaxon:208479)	0	1	1	0	1	1	0	1	0	0	1	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	1	0	0	0	0	0
 [Clostridium] symbiosum (NCBITaxon:1512)	0	1	1	0	1	1	0	1	0	0	1	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	1	0	0	0	0	0
 Roseburia hominis (NCBITaxon:301301)	1	1	1	0	1	1	1	1	0	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0

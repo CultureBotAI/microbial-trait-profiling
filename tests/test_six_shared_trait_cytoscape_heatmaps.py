@@ -998,8 +998,8 @@ def test_oral_and_full_contrast_nominal_p_versus_bh_border_regression() -> None:
     contrasts = pd.read_csv(source_path, sep="\t")
 
     individual = contrasts[contrasts["view_key"] == "individual_conditions_direction_contrast"]
-    assert len(individual) == 2379
-    assert individual["passes_support"].sum() == 597
+    assert len(individual) == 2388
+    assert individual["passes_support"].sum() == 599
     assert individual["nominal_p_value_selected"].sum() == 21
     assert individual["significant_in_heatmap"].sum() == 21
     assert individual["selected_after_bh"].sum() == 4
@@ -1012,17 +1012,17 @@ def test_oral_and_full_contrast_nominal_p_versus_bh_border_regression() -> None:
     assert oral_site["nominal_p_value_selected"].sum() == 1
     assert oral_site["significant_in_heatmap"].sum() == 1
     assert oral_site["selected_after_bh"].sum() == 0
-    assert oral_site["displayed_in_heatmap"].sum() == 70
+    assert oral_site["displayed_in_heatmap"].sum() == 69
 
     # Oral export subset via select_oral_contrast_cells
     oral_export = heatmaps.select_oral_contrast_cells(contrasts)
-    assert len(oral_export) == 381
+    assert len(oral_export) == 385
     assert oral_export["condition_body_site_pair"].nunique() == 80
     assert oral_export["passes_support"].sum() == 79
     assert oral_export["nominal_p_value_selected"].sum() == 1
     assert oral_export["significant_in_heatmap"].sum() == 1
     assert oral_export["selected_after_bh"].sum() == 0
-    assert oral_export["displayed_in_heatmap"].sum() == 70
+    assert oral_export["displayed_in_heatmap"].sum() == 69
     assert (oral_export["nominal_p_value_selected"] == oral_export["significant_in_heatmap"]).all()
 
     # Verified regression cell: Squamous cell carcinoma | Oral cavity / dental x coccus shaped
@@ -1037,7 +1037,7 @@ def test_oral_and_full_contrast_nominal_p_versus_bh_border_regression() -> None:
     assert cell["increased_minus_decreased_positive_fraction"] == -0.6
     assert math.isclose(cell["fisher_p_value"], 0.00281452293836, rel_tol=1e-6)
     assert cell["fisher_p_value"] < heatmaps.P_VALUE_CUTOFF
-    assert math.isclose(cell["fisher_q_value"], 0.291119568277, rel_tol=1e-6)
+    assert math.isclose(cell["fisher_q_value"], 0.292220903339, rel_tol=1e-6)
     assert cell["fisher_q_value"] > heatmaps.Q_VALUE_CUTOFF
     assert bool(cell["passes_support"]) is True
     assert bool(cell["nominal_p_value_selected"]) is True

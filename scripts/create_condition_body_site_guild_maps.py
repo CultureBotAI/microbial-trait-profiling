@@ -265,11 +265,16 @@ def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame]:
             "Heatmap metadata is missing the harmonized non-MediaDive denominator marker"
         )
     matrix_keys = matrix.index.to_series().map(lambda value: str(value).split(" | ", 1)[0])
+    matrix_pair_keys = matrix.index.to_series().map(
+        lambda value: "/".join(part.strip() for part in str(value).split(" | ")[:2])
+    )
     expected_keys = (
         metadata[["study_id", "experiment_id"]].astype(str).agg("/".join, axis=1).to_numpy()
     )
     if not (
-        matrix.index.equals(metadata.index) or np.array_equal(matrix_keys.to_numpy(), expected_keys)
+        matrix.index.equals(metadata.index)
+        or np.array_equal(matrix_keys.to_numpy(), expected_keys)
+        or np.array_equal(matrix_pair_keys.to_numpy(), expected_keys)
     ):
         raise ValueError("Heatmap matrix row keys do not match profile metadata")
     matrix.index = metadata.index
