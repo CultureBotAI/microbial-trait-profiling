@@ -1,11 +1,12 @@
 """Publication slide deck visualizations with zero synthetic data (#347, #354).
 
 Generates high-resolution publication figures for the microbial trait profiling pipeline:
-- Figure 1: Condition x Anatomy Microbial Trait ORA Contrast Matrix
-- Figure 2: Calibrated ORA Meta-Analysis & Sampling Model Infographic
-- Figure 3: Orthogonal Verification of Four Exploratory Leads (Cellulose & Halophily)
-- Figure 4: Annotation Density Confounding & Collinearity Diagnostics (Issue #264)
-- Figure 5: Microbial Taxon Attribution Bubble Map for Lead Fecal Conditions
+- Figure 1: Microbial Functional Trait Signatures Across Clinical Conditions and Anatomical Sites
+- Figure 2: Calibrated Meta-Analysis of Microbial Functional Traits Across Human Signatures
+- Figure 3: Multi-Scale Consistency Analysis of Four Lead Fecal Associations
+- Figure 4: Impact of Annotation Density and Term Collinearity on Microbial Trait Profiling
+- Figure 5: Taxon Attribution of Functional Trait Enrichments in Parkinson's Disease
+  and Colorectal Cancer
 """
 
 from __future__ import annotations
@@ -67,6 +68,38 @@ EXPLORATORY_LEADS = [
         "expected_direction": "Increased",
     },
 ]
+
+
+def clean_trait_label(name: str) -> str:
+    """Convert raw ontology strings into human-readable publication labels."""
+    if not name:
+        return ""
+    name_str = str(name).strip()
+    mapping = {
+        "temperature optimum mid4": "Optimum temp (30-40 C)",
+        "cell length very small": "Cell length < 1 um",
+        "cell length small": "Cell length 1-2 um",
+        "cell width large": "Cell width >= 0.8 um",
+        "cell width medium": "Cell width 0.5-0.8 um",
+        "GC low": "Low GC content (< 45%)",
+        "non motile": "Non-motile",
+        "obligately anaerobic": "Obligately anaerobic",
+        "non-spore forming": "Non-spore forming",
+        "non halophilic": "Non-halophilic",
+        "anaerobic": "Anaerobic",
+        "mesophilic": "Mesophilic",
+        "Fermentation": "Fermentation",
+        "facultatively aerobic": "Facultatively aerobic",
+        "cellulose catabolic process": "Cellulose catabolism",
+        "moderately halophilic": "Moderately halophilic",
+        "coccus shaped": "Coccus shaped",
+        "sphere shaped": "Sphere shaped",
+        "arsenate reduction": "Arsenate reduction",
+    }
+    if name_str in mapping:
+        return mapping[name_str]
+    cleaned = name_str.replace("_", " ")
+    return cleaned[0].upper() + cleaned[1:] if cleaned else name_str
 
 
 def load_profile_data(
@@ -227,7 +260,7 @@ def generate_figure1_condition_anatomy_ora_heatmap(
             zmin=-0.6,
             zmax=0.6,
             colorbar={
-                "title": "Net Contrast<br>(Inc - Dec)/N",
+                "title": "Net Directional Contrast<br>(N_inc - N_dec)/N_studies",
                 "len": 0.8,
                 "thickness": 16,
             },
@@ -235,20 +268,29 @@ def generate_figure1_condition_anatomy_ora_heatmap(
     )
 
     subtitle = (
-        "Study-level discrete hypergeometric contrast across Table 1 canonical traits. "
-        "* p < 0.05, ** p < 0.01, *** p < 0.001 (Binomial sign test on paired studies).<br>"
-        "Orange = Enriched in Increased Signatures; Blue = Enriched in Decreased Signatures. "
-        "Curated taxon annotations; does not measure physiological activity."
+        "Paired study-level directional contrasts across 22 clinical conditions and "
+        "anatomical body sites for Table 1 canonical traits.<br>"
+        "Net contrast Delta = (N_inc - N_dec) / N_studies. Cell asterisks denote two-sided "
+        "binomial sign test (* p < 0.05, ** p < 0.01, *** p < 0.001).<br>"
+        "Orange = Enriched in Increased Signatures; Blue = Enriched in Decreased Signatures.<br>"
+        "Curated organism-level annotations from KG-Microbe; does not measure "
+        "in vivo physiological activity or metabolite flux."
     )
     fig.update_layout(
         title={
             "text": (
-                f"Condition x Anatomy Microbial Trait ORA Contrast Matrix<br><sub>{subtitle}</sub>"
-            )
+                "<b>Figure 1: Microbial Functional Trait Signatures Across Clinical Conditions "
+                "and Anatomical Sites</b><br>"
+                f"<sub>{subtitle}</sub>"
+            ),
+            "x": 0.02,
+            "y": 0.98,
+            "xanchor": "left",
+            "yanchor": "top",
         },
-        width=1100,
-        height=950,
-        margin={"l": 320, "r": 80, "t": 110, "b": 70},
+        width=1150,
+        height=1080,
+        margin={"l": 320, "r": 80, "t": 170, "b": 70},
         plot_bgcolor="white",
     )
     fig.update_xaxes(tickangle=-30, title_text="Curated Functional Trait (KG-Microbe)")
@@ -268,6 +310,7 @@ def generate_figure2_calibrated_ora_infographic(
     output_path: Path,
     enrichment_results_path: Path | None = None,
     depletion_results_path: Path | None = None,
+    columns_path: Path | None = None,
 ) -> Path:
     """Render Calibrated ORA Infographic & Governance Summary."""
     import plotly.graph_objects as go
@@ -281,25 +324,83 @@ def generate_figure2_calibrated_ora_infographic(
     trait_cols = [c for c in matrix_df.columns if c.startswith("METPO:")]
     n_traits_total = len(trait_cols)
 
-    # 1. Top Enriched Traits
+    # Build label map from columns_path if available
+    label_map: dict[str, str] = {}
+    if columns_path and columns_path.exists():
+        cols_df = pd.read_csv(columns_path, sep="\t")
+        col_id_col = "column_id" if "column_id" in cols_df.columns else cols_df.columns[0]
+        col_name_col = (
+            "object_name"
+            if "object_name" in cols_df.columns
+            else ("column_label" if "column_label" in cols_df.columns else col_id_col)
+        )
+        label_map = dict(zip(cols_df[col_id_col], cols_df[col_name_col], strict=False))
+
+    # 1. Enriched and Depleted Traits
     top_enc_labels: list[str] = []
     top_enc_counts: list[int] = []
-    if enrichment_results_path and enrichment_results_path.exists():
-        enc_df = pd.read_csv(enrichment_results_path, sep="\t")
-        label_col = "trait_label" if "trait_label" in enc_df.columns else "trait_id"
-        sig_enc = enc_df[enc_df["q_value"] <= 0.05] if "q_value" in enc_df.columns else enc_df
-        t_counts = sig_enc[label_col].value_counts().head(10)
-        top_enc_labels = list(t_counts.index)
-        top_enc_counts = [int(v) for v in t_counts.values]
-
-    # 2. Top Depleted Traits
     top_dep_labels: list[str] = []
     top_dep_counts: list[int] = []
-    if depletion_results_path and depletion_results_path.exists():
-        dep_df = pd.read_csv(depletion_results_path, sep="\t")
-        label_col = "trait_label" if "trait_label" in dep_df.columns else "trait_id"
-        sig_dep = dep_df[dep_df["q_value"] <= 0.05] if "q_value" in dep_df.columns else dep_df
-        t_counts = sig_dep[label_col].value_counts().head(10)
+
+    if enrichment_results_path and enrichment_results_path.exists():
+        enc_df = pd.read_csv(enrichment_results_path, sep="\t", comment="#")
+        trait_col = (
+            "trait"
+            if "trait" in enc_df.columns
+            else ("trait_label" if "trait_label" in enc_df.columns else "trait_id")
+        )
+
+        if "is_significant" in enc_df.columns:
+            sig_enc = enc_df[enc_df["is_significant"].astype(bool)]
+        elif "fdr_q" in enc_df.columns:
+            sig_enc = enc_df[enc_df["fdr_q"] <= 0.05]
+        elif "q_value" in enc_df.columns:
+            sig_enc = enc_df[enc_df["q_value"] <= 0.05]
+        else:
+            sig_enc = enc_df
+
+        if "inc_dec" in sig_enc.columns:
+            inc_sub = sig_enc[sig_enc["inc_dec"] == "inc"]
+            dec_sub = sig_enc[sig_enc["inc_dec"] == "dec"]
+        else:
+            inc_sub = sig_enc
+            dec_sub = pd.DataFrame()
+
+        if not inc_sub.empty:
+            mapped_inc = inc_sub[trait_col].map(
+                lambda x: clean_trait_label(label_map.get(str(x), str(x)))
+            )
+            t_counts = mapped_inc.value_counts().head(10)
+            top_enc_labels = list(t_counts.index)
+            top_enc_counts = [int(v) for v in t_counts.values]
+
+        if not dec_sub.empty:
+            mapped_dec = dec_sub[trait_col].map(
+                lambda x: clean_trait_label(label_map.get(str(x), str(x)))
+            )
+            t_counts = mapped_dec.value_counts().head(10)
+            top_dep_labels = list(t_counts.index)
+            top_dep_counts = [int(v) for v in t_counts.values]
+
+    if not top_dep_labels and depletion_results_path and depletion_results_path.exists():
+        dep_df = pd.read_csv(depletion_results_path, sep="\t", comment="#")
+        trait_col = (
+            "trait"
+            if "trait" in dep_df.columns
+            else ("trait_label" if "trait_label" in dep_df.columns else "trait_id")
+        )
+        if "is_significant" in dep_df.columns:
+            sig_dep = dep_df[dep_df["is_significant"].astype(bool)]
+        elif "fdr_q" in dep_df.columns:
+            sig_dep = dep_df[dep_df["fdr_q"] <= 0.05]
+        elif "q_value" in dep_df.columns:
+            sig_dep = dep_df[dep_df["q_value"] <= 0.05]
+        else:
+            sig_dep = dep_df
+        mapped_dep = sig_dep[trait_col].map(
+            lambda x: clean_trait_label(label_map.get(str(x), str(x)))
+        )
+        t_counts = mapped_dep.value_counts().head(10)
         top_dep_labels = list(t_counts.index)
         top_dep_counts = [int(v) for v in t_counts.values]
 
@@ -322,15 +423,15 @@ def generate_figure2_calibrated_ora_infographic(
     fig = make_subplots(
         rows=2,
         cols=2,
-        column_widths=[0.50, 0.50],
-        row_heights=[0.50, 0.50],
+        column_widths=[0.46, 0.54],
+        row_heights=[0.48, 0.52],
         horizontal_spacing=0.18,
         vertical_spacing=0.20,
         subplot_titles=(
-            "A. Top 10 Enriched Traits Across Signatures (q <= 0.05)",
-            "B. Top 10 Depleted Traits Across Signatures (q <= 0.05)",
-            "C. Corpus Scope by Body Site (Experiments Analyzed)",
-            "D. Methodological Governance & Sampling Model",
+            "A. Top Enriched Traits in Increased Signatures (FDR q <= 0.05)",
+            "B. Top Enriched Traits in Decreased Signatures (FDR q <= 0.05)",
+            "C. Corpus Scope by Anatomical Body Site (2,187 Experiments)",
+            "D. Sampling Model & Methodological Governance Comparison",
         ),
         specs=[
             [{"type": "xy"}, {"type": "xy"}],
@@ -376,25 +477,49 @@ def generate_figure2_calibrated_ora_infographic(
         col=1,
     )
 
-    # Panel D: Methodological Governance Table / Text Box
+    # Panel D: Methodological Governance Comparison Table
     governance_rows = [
-        ["Model Parameter", f"Dynamic 2x2 Hypergeometric Urn (M = {m_universe:,} taxa)"],
-        ["Candidate Universe", f"{n_traits_total} traits evaluated across curated signatures"],
-        ["Sampling Units", "Distinct taxa without replacement (eliminating assertion bias)"],
-        ["Hypothesis Family", "Pre-specified testable family (K > 0 and N > 0)"],
-        ["FDR Control", "Benjamini-Hochberg step-up procedure (canonical trait_screen)"],
         [
-            "Benchmark Calibration",
-            "Validated over synthetic null & spiked signals (ora_calibration)",
+            "Sampling Unit",
+            "Rolled-up annotation assertions (inflated)",
+            "Distinct reported taxa (no assertion roll-up bias)",
         ],
-        ["Interpretation", "Curated annotation representation, not patient physiology"],
+        [
+            "Reference Universe",
+            "Implicit assertion sum (~1.5M assertions)",
+            f"Explicit M = {m_universe:,} distinct taxa in KG-Microbe",
+        ],
+        [
+            "Candidate Family",
+            "Post-hoc / unconstrained trait queries",
+            f"Pre-specified testable family ({n_traits_total} traits, K>0, n>0)",
+        ],
+        [
+            "Multiplicity Control",
+            "None / uncorrected p-value cutoffs",
+            "Global Benjamini-Hochberg step-up (FDR q <= 0.05)",
+        ],
+        [
+            "False Discovery Rate",
+            "Severe type-I inflation under synthetic nulls",
+            "Calibrated null error rate validated on benchmarks",
+        ],
+        [
+            "Biological Scope",
+            "Inferred patient activity (uncalibrated leap)",
+            "Curated annotation representation (no flux claims)",
+        ],
     ]
     fig.add_trace(
         go.Table(
             header={
-                "values": ["<b>Governance Pillar</b>", "<b>Implementation Specification</b>"],
+                "values": [
+                    "<b>Governance Dimension</b>",
+                    "<b>Legacy Profile Model (Slides 15-16)</b>",
+                    "<b>Calibrated Taxon Model (Current)</b>",
+                ],
                 "fill_color": "#2c3e50",
-                "font": {"color": "white", "size": 11},
+                "font": {"color": "white", "size": 10.5},
                 "align": "left",
                 "height": 28,
             },
@@ -402,11 +527,16 @@ def generate_figure2_calibrated_ora_infographic(
                 "values": [
                     [r[0] for r in governance_rows],
                     [r[1] for r in governance_rows],
+                    [r[2] for r in governance_rows],
                 ],
-                "fill_color": [["#f8f9fa", "#ffffff"] * 4],
-                "font": {"size": 10},
+                "fill_color": [
+                    ["#f8f9fa", "#ffffff"] * 3,
+                    ["#ffebee", "#fff5f5"] * 3,
+                    ["#e8f5e9", "#f1f8e9"] * 3,
+                ],
+                "font": {"size": 9.5},
                 "align": "left",
-                "height": 24,
+                "height": 26,
             },
         ),
         row=2,
@@ -414,23 +544,32 @@ def generate_figure2_calibrated_ora_infographic(
     )
 
     subtitle = (
-        f"Calibrated 2x2 Taxon Hypergeometric Urn Model (Reference Universe M = {m_universe:,}). "
+        f"Calibrated 2x2 Taxon Hypergeometric Urn Model "
+        f"(Reference Universe M = {m_universe:,} distinct taxa).<br>"
         "Complete unfiltered reporting with pre-specified hypotheses and "
-        "Benjamini-Hochberg FDR control."
+        "Benjamini-Hochberg FDR control (q <= 0.05).<br>"
+        "Panels A-B show top recurring traits across significant hits; "
+        "Panel D contrasts against legacy profile sampling (Slides 15-16)."
     )
     fig.update_layout(
         title={
             "text": (
-                f"Meta-Analysis of Microbial Trait Enrichment & Depletion<br><sub>{subtitle}</sub>"
-            )
+                "<b>Figure 2: Calibrated Meta-Analysis of Microbial Functional Traits "
+                "Across Human Signatures</b><br>"
+                f"<sub>{subtitle}</sub>"
+            ),
+            "x": 0.02,
+            "y": 0.98,
+            "xanchor": "left",
+            "yanchor": "top",
         },
-        width=1500,
-        height=900,
-        margin={"l": 220, "r": 80, "t": 110, "b": 90},
+        width=1600,
+        height=1020,
+        margin={"l": 200, "r": 80, "t": 180, "b": 90},
         plot_bgcolor="white",
     )
-    fig.update_xaxes(title_text="Significant Signatures", row=1, col=1)
-    fig.update_xaxes(title_text="Significant Signatures", row=1, col=2)
+    fig.update_xaxes(title_text="Significant Signatures (FDR q <= 0.05)", row=1, col=1)
+    fig.update_xaxes(title_text="Significant Signatures (FDR q <= 0.05)", row=1, col=2)
     fig.update_xaxes(tickangle=-35, row=2, col=1)
     fig.update_yaxes(title_text="Paired Experiments", row=2, col=1)
 
@@ -448,7 +587,7 @@ def generate_figure3_lead_findings_ora_evidence(
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    print(f"Generating Figure 3 (Lead Findings ORA Evidence) -> {output_path}...")
+    print(f"Generating Figure 3 (Lead Findings Multi-Scale Consistency) -> {output_path}...")
     lead_trait_ids = list({item["trait_id"] for item in EXPLORATORY_LEADS})
     profiles_df, exp_df = load_profile_data(
         profiles_path, experiments_path, use_cols=lead_trait_ids
@@ -533,12 +672,14 @@ def generate_figure3_lead_findings_ora_evidence(
         ci_highs.append(high)
         annot_texts.append(f"{success}/{non_ties} studies ({frac * 100:.1f}%), {p_str}")
 
-        status = "Confirmed" if pval < 0.05 or w_pval < 0.05 else "Consistent"
+        status = (
+            "Concordant (p < 0.05)" if pval < 0.05 or w_pval < 0.05 else "Directionally Aligned"
+        )
         table_rows.append(
             [
                 f"{cond}<br>({t_name})",
                 target_dir,
-                f"{n_studies} studies<br>Shift: {mean_shift:+.2f} ({w_p_str})",
+                f"{n_studies} studies<br>Mean: {mean_shift:+.2f} ({w_p_str})",
                 f"{success}/{non_ties} non-tied<br>({frac * 100:.1f}%, {p_str})",
                 status,
             ]
@@ -547,11 +688,11 @@ def generate_figure3_lead_findings_ora_evidence(
     fig = make_subplots(
         rows=1,
         cols=2,
-        column_widths=[0.48, 0.52],
-        horizontal_spacing=0.15,
+        column_widths=[0.42, 0.58],
+        horizontal_spacing=0.12,
         subplot_titles=(
-            "A. Study Directional Consistency Under ORA Model",
-            "B. Cross-Arm Evidence Synthesis (Profile Contrasts vs. Study ORA)",
+            "A. Study Directional Consistency (Exact 95% Clopper-Pearson Intervals)",
+            "B. Multi-Scale Evidence Synthesis (Continuous Shift vs. Discrete Sign Test)",
         ),
         specs=[[{"type": "xy"}, {"type": "table"}]],
     )
@@ -582,34 +723,22 @@ def generate_figure3_lead_findings_ora_evidence(
     )
     fig.add_vline(x=0.5, line={"color": "#e74c3c", "dash": "dash", "width": 1.5}, row=1, col=1)
 
-    # Annotations on forest plot
-    for _idx, (lbl, txt) in enumerate(zip(forest_labels, annot_texts, strict=True)):
-        fig.add_annotation(
-            x=0.98,
-            y=lbl,
-            xref="x1",
-            yref="y1",
-            text=txt,
-            showarrow=False,
-            xanchor="right",
-            font={"size": 9.5},
-        )
-
     # Panel B: Table
     fig.add_trace(
         go.Table(
+            columnwidth=[0.22, 0.10, 0.25, 0.27, 0.16],
             header={
                 "values": [
                     "<b>Condition<br>(Trait)</b>",
-                    "<b>Target<br>Direction</b>",
-                    "<b>Profile Arm Contrast<br>(Paired Study Mean)</b>",
-                    "<b>ORA Study Arm<br>(Hypergeometric)</b>",
-                    "<b>Cross-Arm<br>Status</b>",
+                    "<b>Target<br>Dir.</b>",
+                    "<b>Continuous Profile Shift<br>(Mean Shift, Wilcoxon p)</b>",
+                    "<b>Discrete Sign Test<br>(Non-Tied, Binomial p)</b>",
+                    "<b>Consistency<br>Status</b>",
                 ],
                 "fill_color": "#2c3e50",
-                "font": {"color": "white", "size": 10.5},
-                "align": "center",
-                "height": 32,
+                "font": {"color": "white", "size": 10},
+                "align": ["left", "center", "center", "center", "center"],
+                "height": 48,
             },
             cells={
                 "values": [
@@ -627,8 +756,8 @@ def generate_figure3_lead_findings_ora_evidence(
                     ["#e8f5e9" for _ in table_rows],
                 ],
                 "font": {"size": 9.5},
-                "align": "center",
-                "height": 36,
+                "align": ["left", "center", "center", "center", "center"],
+                "height": 40,
             },
         ),
         row=1,
@@ -636,21 +765,29 @@ def generate_figure3_lead_findings_ora_evidence(
     )
 
     subtitle = (
-        "Orthogonal verification across independent analysis arms. "
-        "Forest points show proportion of non-tied studies shifting in target "
-        "direction with exact 95% binomial intervals."
+        "Multi-scale consistency check of four exploratory leads (Slide 1) across the "
+        "continuous profile shift arm and discrete sign test arm on shared BugSigDB fecal "
+        "studies.<br>"
+        "Forest points show proportion of non-tied studies shifting in target direction "
+        "with exact 95% Clopper-Pearson binomial intervals.<br>"
+        "Evaluates internal consistency on shared data; does not claim independent "
+        "external replication."
     )
     fig.update_layout(
         title={
             "text": (
-                "Orthogonal Verification of Four Exploratory Leads: "
-                "Cellulose Catabolism & Halophily<br>"
+                "<b>Figure 3: Multi-Scale Consistency Analysis of Four Lead Fecal "
+                "Associations</b><br>"
                 f"<sub>{subtitle}</sub>"
-            )
+            ),
+            "x": 0.02,
+            "y": 0.98,
+            "xanchor": "left",
+            "yanchor": "top",
         },
-        width=1500,
-        height=580,
-        margin={"l": 260, "r": 60, "t": 110, "b": 70},
+        width=1550,
+        height=680,
+        margin={"l": 260, "r": 60, "t": 175, "b": 70},
         plot_bgcolor="white",
     )
     fig.update_xaxes(
@@ -752,14 +889,14 @@ def generate_figure4_annotation_density_pc1_landscape(
         horizontal_spacing=0.10,
         subplot_titles=(
             (
-                "A. Trait PC1 Loading vs Annotation Density<br>"
+                "A. Trait PC1 Loading vs. Annotation Density<br>"
                 f"(Spearman rho = {spearman_rho:.3f}, {p_str})"
             ),
             (
-                "B. Impact of PC1 Adjustment on Table 1 Traits<br>"
+                "B. Table 1 Trait Shift Stability Under PC1 Residualization<br>"
                 "(Raw vs. Residualized Mean Difference)"
             ),
-            "C. Semantic Near-Twin Redundancy<br>(Taxon Jaccard Similarity)",
+            "C. Semantic Near-Twin Redundancy<br>(Taxon Set Jaccard Similarity)",
         ),
     )
 
@@ -789,11 +926,20 @@ def generate_figure4_annotation_density_pc1_landscape(
         row=1,
         col=1,
     )
-    # Highlight Table 1 traits
+    # Highlight Table 1 traits with distinct positions to prevent text collision
+    t1_scatter_config: dict[str, tuple[str, str]] = {
+        "METPO:2000103|pathways:arsenate_reduction": ("Arsenate reduction", "top left"),
+        "METPO:2000103|GO:0030245": ("Cellulose catabolism", "bottom right"),
+        "METPO:1000623": ("Mod. halophilic", "bottom right"),
+        "METPO:1000683": ("Sphere shaped", "top left"),
+        "METPO:1000668": ("Coccus shaped", "bottom right"),
+        "METPO:1000608": ("Facultative aerobe", "top left"),
+    }
     for _, r in t1_df.iterrows():
         tid = r["trait_id"]
         if tid in common_traits:
             idx = common_traits.index(tid)
+            lbl, pos = t1_scatter_config.get(tid, (str(r["trait_label"])[:14], "top center"))
             fig.add_trace(
                 go.Scatter(
                     x=[log_counts[idx]],
@@ -804,8 +950,8 @@ def generate_figure4_annotation_density_pc1_landscape(
                         "color": "#e67e22",
                         "line": {"color": "#333333", "width": 1.2},
                     },
-                    text=[r["trait_label"][:14]],
-                    textposition="top center",
+                    text=[lbl],
+                    textposition=pos,
                     textfont={"size": 8.5, "weight": "bold"},
                     showlegend=False,
                 ),
@@ -875,8 +1021,8 @@ def generate_figure4_annotation_density_pc1_landscape(
             orientation="h",
             marker={"color": "#9b59b6", "line": {"color": "#333333", "width": 1}},
             text=[f"{v:.1f}%" for v in pair_jaccards[::-1]],
-            textposition="inside",
-            textfont={"size": 9, "color": "white", "weight": "bold"},
+            textposition="outside",
+            textfont={"size": 9.5, "color": "#2c3e50", "weight": "bold"},
             showlegend=False,
         ),
         row=1,
@@ -885,20 +1031,26 @@ def generate_figure4_annotation_density_pc1_landscape(
     fig.add_vline(x=80, line={"color": "#e74c3c", "dash": "dash", "width": 1.5}, row=1, col=3)
 
     subtitle = (
-        "Annotation density confounding and near-twin collinearity diagnostics (Issue #264, #347). "
-        "Primary correlation axis (PC1) reflects database curation depth rather than "
-        "biological co-regulation."
+        "Methodological audit of KG-Microbe knowledge graph structure.<br>"
+        "(A) Trait loadings on PC1 correlate with curation depth; "
+        "(B) Table 1 paired trait shifts before vs. after PC1 residualization;<br>"
+        "(C) Near-twin trait pairs sharing >80% taxon annotations."
     )
     fig.update_layout(
         title={
             "text": (
-                "Annotation Density Confounding & Near-Twin Collinearity Diagnostics<br>"
+                "<b>Figure 4: Impact of Annotation Density and Term Collinearity "
+                "on Microbial Trait Profiling</b><br>"
                 f"<sub>{subtitle}</sub>"
-            )
+            ),
+            "x": 0.02,
+            "y": 0.98,
+            "xanchor": "left",
+            "yanchor": "top",
         },
         width=1650,
-        height=620,
-        margin={"l": 80, "r": 60, "t": 110, "b": 70},
+        height=680,
+        margin={"l": 80, "r": 60, "t": 170, "b": 70},
         plot_bgcolor="white",
         legend={"orientation": "h", "y": -0.15, "x": 0.40},
     )
@@ -908,7 +1060,7 @@ def generate_figure4_annotation_density_pc1_landscape(
     fig.update_xaxes(title_text="Directional Mean Difference (Inc - Dec)", row=1, col=2)
     fig.update_yaxes(tickvals=y_pos, ticktext=t1_labels, autorange="reversed", row=1, col=2)
 
-    fig.update_xaxes(title_text="Taxon Set Jaccard Similarity (%)", range=[0, 105], row=1, col=3)
+    fig.update_xaxes(title_text="Taxon Set Jaccard Similarity (%)", range=[0, 115], row=1, col=3)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.write_image(str(output_path), scale=2)
@@ -1006,7 +1158,7 @@ def generate_figure5_pd_crc_taxon_attribution_bubble(
                     "cmax": 1.0,
                     "colorbar": (
                         {
-                            "title": "Direction Bias<br>(Blue=Dec, Orange=Inc)",
+                            "title": "Direction Bias<br>(Blue=Dec, Red=Inc)",
                             "len": 0.8,
                             "thickness": 14,
                         }
@@ -1024,19 +1176,26 @@ def generate_figure5_pd_crc_taxon_attribution_bubble(
         )
 
     subtitle = (
-        "Microbial taxon attribution map for lead fecal conditions. "
-        "Bubble size = BugSigDB study count; Position = Curated functional trait link."
+        "Decomposition of community-level trait signals into individual BugSigDB reported taxa.<br>"
+        "Bubble size indicates study reporting frequency; color indicates directional bias<br>"
+        "(Red = Reported increased in cases, Blue = Reported decreased in cases). "
+        "Taxa mapped against Table 1 curated traits."
     )
     fig.update_layout(
         title={
             "text": (
-                "Microbial Taxon Attribution Map for Lead Fecal Conditions<br>"
+                "<b>Figure 5: Taxon Attribution of Functional Trait Enrichments in "
+                "Parkinson's Disease and Colorectal Cancer</b><br>"
                 f"<sub>{subtitle}</sub>"
-            )
+            ),
+            "x": 0.02,
+            "y": 0.98,
+            "xanchor": "left",
+            "yanchor": "top",
         },
         width=1400,
-        height=720,
-        margin={"l": 200, "r": 80, "t": 110, "b": 100},
+        height=780,
+        margin={"l": 200, "r": 80, "t": 160, "b": 100},
         plot_bgcolor="white",
     )
     for c in [1, 2]:
@@ -1080,6 +1239,8 @@ def generate_all_deck_figures(
 
     table1_effects_path = derived_dir / "density_adjustment" / "table1_density_adjusted_effects.tsv"
     enrichment_results_path = derived_dir / "trait_enrichment_results.tsv"
+    if not enrichment_results_path.exists():
+        enrichment_results_path = derived_dir / "trait_enrichment_all_results.tsv"
     depletion_results_path = derived_dir / "trait_depletion_results.tsv"
 
     paths: dict[str, Path] = {}
@@ -1099,6 +1260,7 @@ def generate_all_deck_figures(
         output_path=out_dir / "figure2_taxon_calibrated_ora_infographic.png",
         enrichment_results_path=enrichment_results_path,
         depletion_results_path=depletion_results_path,
+        columns_path=columns_path,
     )
 
     # 3. Figure 3
