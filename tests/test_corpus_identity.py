@@ -6,6 +6,8 @@ from pathlib import Path
 import pytest
 
 from mtp.corpus_identity import (
+    DEFAULT_KG_PROVENANCE_PATH,
+    PINNED_KG_MICROBE_RELEASE,
     UNKNOWN_RELEASE,
     corpus_identity,
     measure_matrix,
@@ -59,6 +61,36 @@ def test_a_header_that_does_not_add_up_raises(tmp_path: Path) -> None:
         broken.check()
 
 
+def test_measure_matrix_rejects_duplicate_or_missing_identifier_headers(tmp_path: Path) -> None:
+    """measure_matrix must fail on real malformed input (#334)."""
+    dup_path = tmp_path / "dup.tsv"
+    dup_path.write_text(
+        "study_id\tstudy_id\tfoo\tbar\tmediadive.medium:1\nbsdb:1\tbsdb:1\t0\t0\t0\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="not the 5 columns in the header"):
+        measure_matrix(dup_path)
+
+    missing_id_path = tmp_path / "missing_id.tsv"
+    missing_id_path.write_text(
+        "study_id\texperiment_id\tMETPO:1\nbsdb:1\tbsdb:1-1\t0\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="expected 3 identifier columns"):
+        measure_matrix(missing_id_path)
+
+
+def test_measure_matrix_ignores_blank_lines(tmp_path: Path) -> None:
+    """Blank lines are skipped just like load_profiles (#338)."""
+    path = tmp_path / "blank_lines.tsv"
+    path.write_text(
+        "study_id\texperiment_id\tinc_dec\tMETPO:1\n\nbsdb:1\tbsdb:1-1\tinc\t0\n\n",
+        encoding="utf-8",
+    )
+    identity = measure_matrix(path)
+    assert identity.profile_rows == 1
+
+
 def test_a_missing_release_tag_is_recorded_rather_than_omitted(tmp_path: Path) -> None:
     """ "Not known" and "not applicable" differ, so the record says which (#222)."""
     sidecar = tmp_path / "provenance.json"
@@ -83,6 +115,21 @@ def test_a_declared_release_tag_is_used_when_present(tmp_path: Path) -> None:
     release, _ = read_kg_inputs(sidecar)
 
     assert release == "kg-microbe-2026-04"
+
+
+def test_pinned_20260120_release_is_resolved_from_tracked_or_legacy_sidecar(
+    tmp_path: Path,
+) -> None:
+    """Tracked provenance.json and legacy sidecars matching 20260120 resolve to 20260120 (#336)."""
+    tracked_release, _ = read_kg_inputs(DEFAULT_KG_PROVENANCE_PATH)
+    assert tracked_release == PINNED_KG_MICROBE_RELEASE
+
+    legacy_sidecar = tmp_path / "legacy_provenance.json"
+    legacy_data = json.loads(DEFAULT_KG_PROVENANCE_PATH.read_text(encoding="utf-8"))
+    legacy_data.pop("release", None)
+    legacy_sidecar.write_text(json.dumps(legacy_data), encoding="utf-8")
+    inferred_release, _ = read_kg_inputs(legacy_sidecar)
+    assert inferred_release == PINNED_KG_MICROBE_RELEASE
 
 
 def test_an_absent_or_malformed_sidecar_does_not_fail_the_run(tmp_path: Path) -> None:
@@ -112,6 +159,7 @@ def test_the_written_record_names_both_sides_of_the_join(tmp_path: Path) -> None
     assert record["matrix"]["sha256"] == identity.matrix.sha256
     assert record["bugsigdb_vintage"] == "v"
     assert record["kg_microbe"]["inputs"][0]["declared_md5"] == "abc"
+    assert "sidecar" in record["kg_microbe"]["provenance_source"]
     assert record["code_commit"] == "deadbeef"
     # A vintage alone does not identify a matrix, and the record says so.
     assert "join" in record["note"]
@@ -132,3 +180,4 @@ def test_the_printed_summary_states_the_matrix_and_both_inputs(tmp_path: Path) -
     assert "1 MediaDive" in text
     assert "2 retained" in text
     assert "merged-kg_nodes.tsv" in text
+    assert "declared md5 (sidecar)" in text

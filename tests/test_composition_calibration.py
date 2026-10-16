@@ -386,3 +386,90 @@ def test_missing_or_malformed_columns_file_is_an_error(tmp_path: Path) -> None:
     bad.write_text("column_id\nfoo\n")
     with pytest.raises(ValueError, match="object_category"):
         load_composition_trait_columns(bad)
+
+
+def test_replicates_reaching_observed_is_none_when_observed_calls_zero(
+    synthetic_paired_profiles: pd.DataFrame,
+) -> None:
+    """When observed_calls == 0, replicates_reaching_observed is None (#469)."""
+    traits = ["trait_A", "trait_B", "trait_C"]
+    summary_dict, summary_df, _replicates_df, _null_pvals_df, _table1_df = (
+        run_composition_calibration(
+            profiles_df=synthetic_paired_profiles,
+            trait_columns=traits,
+            replicates=3,
+            seed=182,
+            stream=STREAM,
+        )
+    )
+    zero_rows = [row for row in summary_dict["summary"] if row["observed_calls"] == 0]
+    assert zero_rows
+    for row in zero_rows:
+        assert row["replicates_reaching_observed"] is None
+    df_zero = summary_df[summary_df["observed_calls"] == 0]
+    assert df_zero["replicates_reaching_observed"].isna().all()
+
+
+def test_composition_flips_match_calibration_flip_assignments_and_relabel_contrasts(
+    synthetic_paired_profiles: pd.DataFrame,
+) -> None:
+    """Composition study flips match flip_assignments and relabelled contrasts (#470)."""
+    from mtp.calibration import SEED as CALIBRATION_SEED
+    from mtp.calibration import flip_assignments
+    from mtp.trait_guilds import Profile
+
+    paired_df = filter_paired_profiles(synthetic_paired_profiles)
+    traits = ["trait_A", "trait_B", "trait_C"]
+    profiles = [
+        Profile(
+            study_id=str(row["study_id"]),
+            experiment_id=str(row["experiment_id"]),
+            inc_dec="inc" if row["inc_dec"] == "increased" else "dec",
+            condition=str(row["condition"]),
+            body_site=str(row["body_site"]),
+            guild_counts={t: int(row[t]) for t in traits},
+            total=int(row["taxa_count"]),
+        )
+        for _, row in paired_df.iterrows()
+    ]
+    artefact = flip_assignments(profiles, replicates=5, seed=CALIBRATION_SEED, stream=STREAM)
+
+    contrast_data = compute_composition_contrasts(paired_df, traits)
+    study_keys = sorted(contrast_data.study_contrasts.index.astype(str), key=repr)
+    study_mat = contrast_data.study_contrasts.loc[study_keys, traits].to_numpy(dtype=float)
+
+    for rep in range(5):
+        expected_flipped = {
+            str(r["study_id"]) for r in artefact if r["replicate"] == rep and r["flipped"] == 1
+        }
+
+        # Check generate_study_flip_null_profiles against shared artefact
+        flipped_df = generate_study_flip_null_profiles(
+            paired_df,
+            replicate_rng(CALIBRATION_SEED, STREAM, rep),
+            unit="study",
+        )
+        actual_flipped = {
+            s_id
+            for s_id in study_keys
+            if not (
+                paired_df.loc[paired_df["study_id"] == s_id, "inc_dec"].values
+                == flipped_df.loc[flipped_df["study_id"] == s_id, "inc_dec"].values
+            ).all()
+        }
+        assert actual_flipped == expected_flipped
+
+        # Check vectorized sign flip against relabel-and-rerun contrasts
+        rng = replicate_rng(CALIBRATION_SEED, STREAM, rep)
+        draws = np.array([rng.random() for _ in study_keys])
+        vectorized_flipped = {s_id for s_id, d in zip(study_keys, draws, strict=True) if d < 0.5}
+        assert vectorized_flipped == expected_flipped
+
+        signs = np.where(draws < 0.5, -1.0, 1.0)[:, np.newaxis]
+        sim_mat = study_mat * signs
+        relabelled_contrasts = (
+            compute_composition_contrasts(flipped_df, traits)
+            .study_contrasts.loc[study_keys, traits]
+            .to_numpy(dtype=float)
+        )
+        assert np.allclose(sim_mat, relabelled_contrasts)

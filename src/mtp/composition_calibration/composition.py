@@ -111,7 +111,7 @@ class SummaryRow:
     family_error_ci_low: float
     family_error_ci_high: float
     observed_calls: int
-    replicates_reaching_observed: int
+    replicates_reaching_observed: int | None
 
 
 @dataclass(frozen=True)
@@ -339,11 +339,15 @@ def run_composition_calibration(
                     family_error_ci_low=float(ci.low),
                     family_error_ci_high=float(ci.high),
                     observed_calls=seen,
-                    replicates_reaching_observed=reached,
+                    replicates_reaching_observed=reached if seen > 0 else None,
                 )
             )
 
     summary_df = pd.DataFrame([asdict(row) for row in summary_rows])
+    if "replicates_reaching_observed" in summary_df.columns:
+        summary_df["replicates_reaching_observed"] = summary_df[
+            "replicates_reaching_observed"
+        ].astype("Int64")
     replicates_df = pd.DataFrame([asdict(rec) for rec in replicate_records])
     null_pvals_df = pd.DataFrame(null_p_records)
 
@@ -545,13 +549,18 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     print("\n--- Paired Composition Arm Calibration Summary (#263) ---")
     for row in summary_dict["summary"]:
+        reaching = (
+            "N/A"
+            if row["replicates_reaching_observed"] is None
+            else f"{row['replicates_reaching_observed']}/{row['replicates']}"
+        )
         print(
             f"  {row['correction']:4} q<={row['threshold']:<6}: "
             f"observed {row['observed_calls']:>3}  |  "
             f"null mean {row['mean_null_calls']:.2f}  max {row['max_null_calls']:>2}  |  "
             f"any-call share {row['family_error']:.3f} "
             f"(95% CI {row['family_error_ci_low']:.3f}-{row['family_error_ci_high']:.3f}) | "
-            f"reaching observed: {row['replicates_reaching_observed']}/{row['replicates']}"
+            f"reaching observed: {reaching}"
         )
 
     print("\n--- Table 1 Canonical Traits Calibration ---")

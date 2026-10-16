@@ -167,7 +167,7 @@ Auditing the $P = 317$ non-MediaDive traits across $N = 5,829$ study trait profi
 | `citrate_utilization` | Citrate Utilization | Chemical Synonyms | `CHEBI:16947` (*citrate*) vs. `CHEBI:133748` (*citrate anion*) vs. `CHEBI:50744` (*citrate salt*) | $+1.000$ | `CHEBI:16947` (*citrate*, $N=2,151$) |
 | `glutamate_utilization` | Glutamate Utilization | Chemical Synonyms | `CHEBI:18237` (*glutamic acid*) vs. `CHEBI:16015` (*L-glutamic acid*) vs. `CHEBI:29987` (*glutamate*) vs. `CHEBI:14321` (*glutamate(1-)*) | $+1.000$ | `CHEBI:18237` (*glutamic acid*, $N=654$) |
 | `malonate_utilization` | Malonate Utilization | Chemical Synonyms | `CHEBI:15792` (*malonate*) vs. `CHEBI:38083` (*malonate ester*) | $+1.000$ | `CHEBI:15792` (*malonate*, $N=787$) |
-| `co_oxidation_pathway` | CO Oxidation Pathway | Lexical Duplicates | `pathways:carbonmonoxide_oxidation` vs. `pathways:carbon_monoxide_oxidation` | $+0.646$ | Canonical syntax (`carbonmonoxide_oxidation`) |
+| `co_oxidation_pathway` | CO Oxidation Pathway | Lexical Duplicates | `pathways:carbonmonoxide_oxidation` vs. `pathways:carbon_monoxide_oxidation` | $+0.646$ | `METPO:2000103\|pathways:carbon_monoxide_oxidation` (*carbon_monoxide_oxidation*, $N=1,241$) |
 | `coccus_sphere_shape` | Coccus / Sphere Morphology | Sibling Near-Twins | `METPO:1000668` (*coccus shaped*) vs. `METPO:1000683` (*sphere shaped*) | $+0.911$ | `METPO:1000668` (*coccus shaped*, $N=18,349$) |
 | `bacillus_rod_shape` | Bacillus / Rod Morphology | Sibling Near-Twins | `METPO:1000667` (*bacillus shaped*) vs. `METPO:1000681` (*rod shaped*) vs. `METPO:1000688` (*coccobacillus shaped*) | $+0.799$ to $+0.911$ | `METPO:1000667` (*bacillus shaped*, $N=33,994$) |
 

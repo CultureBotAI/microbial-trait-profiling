@@ -172,14 +172,15 @@ CANONICAL_REDUNDANCY_CLUSTERS: list[RedundancyCluster] = [
         cluster_id="co_oxidation_pathway",
         cluster_label="Carbon Monoxide Oxidation Pathway",
         tier="lexical_synonym",
-        surviving_trait="METPO:2000103|pathways:carbonmonoxide_oxidation",
-        surviving_label="carbonmonoxide_oxidation",
-        collapsed_traits=["METPO:2000103|pathways:carbon_monoxide_oxidation"],
-        selection_rule="canonical_syntax",
+        surviving_trait="METPO:2000103|pathways:carbon_monoxide_oxidation",
+        surviving_label="carbon_monoxide_oxidation",
+        collapsed_traits=["METPO:2000103|pathways:carbonmonoxide_oxidation"],
+        selection_rule="max_support_canonical",
         rationale=(
-            "METPO:2000103|pathways:carbon_monoxide_oxidation and "
-            "METPO:2000103|pathways:carbonmonoxide_oxidation are lexical duplicates differing "
-            "only by an underscore."
+            "METPO:2000103|pathways:carbon_monoxide_oxidation (1,241 profile count support) and "
+            "METPO:2000103|pathways:carbonmonoxide_oxidation (1,005 profile count support) are "
+            "lexical duplicates differing only by an underscore; carbon_monoxide_oxidation "
+            "survives under the max-support rule."
         ),
     ),
     RedundancyCluster(
@@ -208,9 +209,9 @@ CANONICAL_REDUNDANCY_CLUSTERS: list[RedundancyCluster] = [
         rationale=(
             "METPO:1000667 (bacillus shaped, Madin et al., 33,994 profile counts), "
             "METPO:1000681 (rod shaped, Bactotraits, 20,294 profile counts), and "
-            "METPO:1000688 (coccobacillus shaped, 2,752 profile counts) are highly collinear "
-            "sibling morphological traits (r = +0.911 bacillus vs rod). "
-            "Bacillus has highest support."
+            "METPO:1000688 (coccobacillus shaped, 13,744 profile counts across 2,752 nonzero "
+            "profiles) are highly collinear sibling morphological traits (r = +0.911 bacillus "
+            "vs rod). Bacillus has highest support."
         ),
     ),
 ]

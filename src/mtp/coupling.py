@@ -1,16 +1,21 @@
 """Trait coupling sensitivity: Leave-One-Trait-Out (LOTO) and Leave-Cluster-Out (LCO).
 
-Addresses Issue #260:
+Addresses Issue #260 (and follow-ups #478, #479):
 1. Measures trait coupling across non-MediaDive traits (317 columns):
    - Leave-One-Trait-Out (LOTO): For each of the six canonical Table 1 traits,
      removes it from the trait universe, renormalizes profile denominators,
-     and evaluates the resulting delta in effect size and FDR q-value.
+     and evaluates the resulting delta in effect size and focal-set FDR q-value.
    - Leave-Cluster-Out (LCO): Removes correlated near-twins (coccus shaped +
      sphere shaped) simultaneously and evaluates the shifts for remaining traits.
 2. Evaluates sensitivity across all three analytical arms:
    - Composition arm: Paired profile fraction log-ratio contrast, z-score, paired t-test.
    - Directional arm: Study-level sign test over paired contrasts, Clopper-Pearson / binomial test.
    - ORA arm: Profile-level hypergeometric enrichment against background urn M = sum(X).
+   Note (#478): Within this module, arm-level BH q-values are computed as a focal-set
+   sensitivity check over the evaluated Table 1 traits (m = 6 in baseline, m = 5 in LOTO,
+   m = 4 in LCO) on all-profile statistics, rather than full-family Table 1 BH q-values
+   across all 317 non-MediaDive (or 2,607 total) columns. Consequently, delta_q combines
+   denominator perturbation with the focal BH family-size step.
 3. Evaluates the formal stability decision rule:
    - Tests whether dropping sphere moves coccus by more than the minimum distance
      between adjacent Table 1 rows.
@@ -31,6 +36,7 @@ from mtp.density_adjustment import (
     DEFAULT_COLUMNS_PATH,
     DEFAULT_PROFILES_PATH,
     TABLE_1_TRAITS,
+    evaluate_conditional_twin_test,
     load_non_media_profile_matrix,
 )
 from mtp.enrichment_stats import benjamini_hochberg
@@ -109,6 +115,7 @@ class DecisionRuleResult:
     adjacent_distances: list[float]
     sorted_effects: list[float]
     verdict: str
+    min_adjacent_pair: tuple[str, str] = ("", "")
 
 
 def compute_composition_arm(
@@ -116,13 +123,15 @@ def compute_composition_arm(
     trait_universe: list[str],
     focal_traits: list[str],
 ) -> dict[str, ArmResult]:
-    """Compute paired composition arm effects, t-statistics, and FDR q-values.
+    """Compute paired composition arm effects, t-statistics, and focal-set FDR q-values.
 
     Profile fractions are normalized over trait_universe:
         f_{i, t} = X_{i, t} / sum_{k in trait_universe} X_{i, k}
-    Transformed via log1p(1000 * f) and standardized to z-scores.
+    Transformed via log1p(1000 * f) and standardized to z-scores across all profiles.
     Paired contrast is computed per experiment: z_inc - z_dec.
     One-sample t-test evaluates significance across paired experiments.
+    Returned q_value is a focal-set Benjamini-Hochberg adjustment over focal_traits
+    (m = len(focal_traits), a sensitivity check distinct from full-family Table 1 q-values).
     """
     counts_all = profiles_df[trait_universe].values.astype(float)
     totals = counts_all.sum(axis=1)
@@ -190,6 +199,8 @@ def compute_directional_arm(
         up: Delta f_{s, t} > sign_tol
         down: Delta f_{s, t} < -sign_tol
     Exact two-sided binomial test on up vs. down (p = 0.5).
+    Returned q_value is a focal-set Benjamini-Hochberg adjustment over focal_traits
+    (m = len(focal_traits), a sensitivity check distinct from full-family Table 1 q-values).
     """
     counts_all = profiles_df[trait_universe].values.astype(float)
     totals = counts_all.sum(axis=1)
@@ -255,7 +266,8 @@ def compute_ora_arm(
     One-sided hypergeometric p-value: P(X >= k_{i, t} | M, K_t, N_i).
     Hits evaluated at profile-level BH q <= 0.05.
     Overall primary statistic: mean fold enrichment across tested profiles.
-    Fisher's combined test evaluates global significance.
+    Fisher's combined test evaluates global significance, with focal-set BH q_value
+    computed over focal_traits (m = len(focal_traits)).
     """
     counts_universe = paired_profiles_df[trait_universe].values.astype(int)
     M = int(counts_universe.sum())
@@ -321,6 +333,10 @@ def evaluate_loto(
     focal_traits: list[str],
 ) -> tuple[list[LOTORow], dict[str, pd.DataFrame]]:
     """Evaluate Leave-One-Trait-Out (LOTO) for all focal traits across three arms.
+
+    Note (#478): base_q uses a focal-set BH family of size m = len(focal_traits)
+    (6 for Table 1), whereas loto_q uses the remaining focal family of size m - 1 (5).
+    Thus delta_q reflects both denominator perturbation and the focal family-size change.
 
     Returns:
         tuple of (list of LOTORow, dict mapping arm to delta_matrix DataFrame)
@@ -407,7 +423,11 @@ def evaluate_lco(
     focal_traits: list[str],
     cluster_to_drop: dict[str, str],
 ) -> list[LCOSummaryRow]:
-    """Evaluate Leave-Cluster-Out (LCO) by removing correlated traits simultaneously."""
+    """Evaluate Leave-Cluster-Out (LCO) by removing correlated traits simultaneously.
+
+    Note (#478): base_q uses a focal-set BH family of size m = len(focal_traits),
+    whereas lco_q uses the reduced focal family of size len(lco_focal).
+    """
     cluster_ids = set(cluster_to_drop.keys())
     cluster_label = " + ".join(cluster_to_drop.values())
 
@@ -474,9 +494,12 @@ def evaluate_decision_rule(
     )
     abs_d_eff = abs(d_eff)
 
-    effects = sorted([res.primary_stat for res in base_comp.values()])
+    sorted_pairs = sorted((res.primary_stat, res.trait_name) for res in base_comp.values())
+    effects = [pair[0] for pair in sorted_pairs]
     adjacent_dists = [effects[i + 1] - effects[i] for i in range(len(effects) - 1)]
-    min_adj_dist = min(adjacent_dists)
+    min_idx = int(np.argmin(adjacent_dists))
+    min_adj_dist = adjacent_dists[min_idx]
+    min_adj_pair = (sorted_pairs[min_idx][1], sorted_pairs[min_idx + 1][1])
 
     passes = abs_d_eff < min_adj_dist
 
@@ -505,6 +528,7 @@ def evaluate_decision_rule(
         adjacent_distances=adjacent_dists,
         sorted_effects=effects,
         verdict=verdict,
+        min_adjacent_pair=min_adj_pair,
     )
 
 
@@ -515,8 +539,69 @@ def build_coupling_report_text(
     rule_result: DecisionRuleResult,
     rule_result_reverse: DecisionRuleResult,
     code_commit: str = "",
+    loto_rows: list[LOTORow] | None = None,
+    corpus_metrics: dict[str, float | int] | None = None,
 ) -> str:
     """Format comprehensive text report for trait coupling audit."""
+    base_m = delta_eff_mat.shape[0] if not delta_eff_mat.empty else len(TABLE_1_TRAITS)
+    loto_m = max(base_m - 1, 1)
+    lco_traits = {r.trait_id for r in lco_rows}
+    lco_m = len(lco_traits) if lco_traits else max(base_m - len(CANONICAL_LCO_CLUSTER), 1)
+
+    comp_loto_vals = (
+        delta_eff_mat.to_numpy(dtype=float) if not delta_eff_mat.empty else np.array([])
+    )
+    finite_comp_loto = np.abs(comp_loto_vals[~np.isnan(comp_loto_vals)])
+    n_loto_pairs = int(finite_comp_loto.size)
+    max_comp_loto = float(finite_comp_loto.max()) if n_loto_pairs > 0 else 0.0
+
+    comp_lco_deltas = [abs(r.delta_stat) for r in lco_rows if r.arm == "composition"]
+    max_comp_lco = max(comp_lco_deltas, default=0.0)
+    max_comp_overall = max(max_comp_loto, max_comp_lco)
+
+    dir_deltas = [abs(r.delta_stat) for r in (loto_rows or []) if r.arm == "directional"] + [
+        abs(r.delta_stat) for r in lco_rows if r.arm == "directional"
+    ]
+    max_dir_delta = max(dir_deltas, default=0.0)
+
+    ora_deltas = [abs(r.delta_stat) for r in (loto_rows or []) if r.arm == "ora"] + [
+        abs(r.delta_stat) for r in lco_rows if r.arm == "ora"
+    ]
+    max_ora_delta = max(ora_deltas, default=0.0)
+
+    pair_suffix = (
+        f" (between {rule_result.min_adjacent_pair[0]} and {rule_result.min_adjacent_pair[1]})"
+        if rule_result.min_adjacent_pair[0] and rule_result.min_adjacent_pair[1]
+        else ""
+    )
+
+    if corpus_metrics is not None:
+        n_cols_val = int(corpus_metrics.get("n_traits", base_m))
+        total_counts = float(corpus_metrics.get("total_annotations", 0.0))
+        coccus_counts = float(corpus_metrics.get("coccus_annotations", 0.0))
+        twin_r = float(corpus_metrics.get("coccus_sphere_r", float("nan")))
+        twin_vif = float(corpus_metrics.get("coccus_sphere_vif", float("nan")))
+        twin_stats_str = (
+            f" (r = {twin_r:+.3f}, VIF = {twin_vif:.2f}, Issue #264)"
+            if not (np.isnan(twin_r) or np.isnan(twin_vif))
+            else " (Issue #264)"
+        )
+        if total_counts >= 1e6:
+            total_str = f"{total_counts / 1e6:.2f}M annotations"
+        else:
+            total_str = f"{total_counts:,.0f} annotations"
+        if coccus_counts >= 1e6:
+            coccus_str = f" ({coccus_counts / 1e6:.2f}M counts)"
+        elif coccus_counts > 0:
+            coccus_str = f" ({coccus_counts:,.0f} counts)"
+        else:
+            coccus_str = ""
+        cols_str = f"{n_cols_val} columns ({total_str})"
+    else:
+        twin_stats_str = " (Issue #264)"
+        cols_str = f"{base_m} evaluated columns"
+        coccus_str = ""
+
     lines: list[str] = [
         "=" * 80,
         "TRAIT COUPLING SENSITIVITY AUDIT REPORT (Issue #260)",
@@ -534,10 +619,18 @@ def build_coupling_report_text(
             "",
             "2. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA Q-VALUE MATRIX (6 x 6):",
             "   Rows: Dropped Trait | Columns: Evaluated Trait",
+            (
+                f"   Note (#478): Focal-set BH sensitivity check "
+                f"(m={base_m} baseline -> m={loto_m} LOTO; not full-family Table 1 q)"
+            ),
             "-" * 80,
             delta_q_mat.to_string(),
             "",
             "3. LEAVE-CLUSTER-OUT (LCO) - DROPPING COCCUS + SPHERE SIMULTANEOUSLY:",
+            (
+                f"   Note (#478): Base q and LCO q are focal-set BH sensitivity checks "
+                f"(m={base_m} baseline -> m={lco_m} LCO; not full-family Table 1 q)"
+            ),
             "-" * 80,
             (
                 f"{'Arm':<14} | {'Trait Name':<28} | {'Base Stat':<10} | {'LCO Stat':<10} | "
@@ -565,8 +658,10 @@ def build_coupling_report_text(
                 f"Inter-trait adjacent distances:  "
                 f"{[round(x, 4) for x in rule_result.adjacent_distances]}"
             ),
-            f"Minimum adjacent row distance:   {rule_result.min_adjacent_distance:.6f} "
-            f"(between coccus shaped and arsenate reduction)",
+            (
+                f"Minimum adjacent row distance:   "
+                f"{rule_result.min_adjacent_distance:.6f}{pair_suffix}"
+            ),
             "",
             "Direct Test (Drop Sphere -> Coccus Effect Shift):",
             f"  Delta effect(coccus):            {rule_result.delta_effect:+.6f}",
@@ -580,23 +675,36 @@ def build_coupling_report_text(
             "",
             "5. METHODOLOGICAL & BIOLOGICAL SYNTHESIS:",
             "-" * 80,
-            "a. Denominator Coupling Invariance:",
-            "   Across all three arms, denominator coupling induced by dropping any single Table 1",
-            "   trait (or the coccus+sphere cluster) produces minuscule effect shifts "
-            "(|Delta| < 0.0012).",
-            "   In the composition arm, the maximum effect perturbation across all 30",
-            "   LOTO pairs is 0.000636, roughly one-third of the tightest Table 1 inter-trait gap",
-            "   (0.002040). Effect rankings and statistical significance are completely preserved.",
+            "a. Denominator Coupling Sensitivity by Analytical Arm:",
+            (
+                f"   In the composition arm, denominator coupling induced by dropping any single "
+                f"Table 1 trait across all {n_loto_pairs} LOTO pairs produces a maximum "
+                f"|Delta effect| of {max_comp_loto:.6f} (and up to {max_comp_lco:.6f} under LCO; "
+                f"overall composition |Delta effect| <= {max_comp_overall:.6f}), compared against "
+                f"the tightest Table 1 inter-trait gap of {rule_result.min_adjacent_distance:.6f}."
+            ),
+            (
+                f"   In the directional sign-test arm, maximum |Delta share_up| is "
+                f"{max_dir_delta:.6f}; in the ORA arm, maximum |Delta mean_fold| is "
+                f"{max_ora_delta:.6f} as removing high-count traits shrinks the shared "
+                f"background urn M. Note that focal-set BH q-values above are evaluated over "
+                f"m={base_m} (baseline), m={loto_m} (LOTO), and m={lco_m} (LCO) traits as a "
+                f"sensitivity check rather than full-family Table 1 q-values."
+            ),
             "",
             "b. Distinction Between Redundancy and Denominator Coupling:",
-            "   Coccus and sphere correlate strongly (r = +0.910, VIF = 5.88, Issue #264) due to",
-            "   semantic/curation redundancy in METPO mappings, NOT denominator distortion.",
-            "   Because total non-MediaDive annotation counts are distributed across 317 columns",
-            "   (tens of millions of annotations), removing even a high-annotation trait like",
-            "   coccus (3.94M counts) shrinks the denominator smoothly without tilting relative",
-            "   compositions. Therefore, while coccus and sphere should not be claimed as",
-            "   independent biological mechanisms (due to semantic overlap), their Table 1",
-            "   statistics are structurally stable.",
+            (
+                f"   Coccus and sphere correlate strongly{twin_stats_str} due to "
+                f"semantic/curation redundancy in METPO mappings, NOT denominator distortion."
+            ),
+            (
+                f"   Because total non-MediaDive annotation counts are distributed across "
+                f"{cols_str}, removing even a high-annotation trait like "
+                f"coccus{coccus_str} shrinks the denominator smoothly without tilting relative "
+                f"compositions. Therefore, while coccus and sphere should not be claimed as "
+                f"independent biological mechanisms (due to semantic overlap), their Table 1 "
+                f"statistics are structurally stable."
+            ),
             "=" * 80,
         ]
     )
@@ -662,6 +770,34 @@ def run_coupling_audit(
         dropped_trait_id=COCCUS_ID,
     )
 
+    # Compute dynamic corpus metrics for report prose (#479)
+    total_annotations = float(profiles_df[valid_cols].to_numpy(dtype=float).sum())
+    coccus_annotations = (
+        float(profiles_df[COCCUS_ID].to_numpy(dtype=float).sum())
+        if COCCUS_ID in profiles_df.columns
+        else 0.0
+    )
+    if COCCUS_ID in profiles_df.columns and SPHERE_ID in profiles_df.columns:
+        twin_summary = evaluate_conditional_twin_test(
+            profiles_df,
+            trait_a=COCCUS_ID,
+            trait_b=SPHERE_ID,
+            columns_for_depth=valid_cols,
+        )
+        coccus_sphere_r = twin_summary.profile_correlation
+        coccus_sphere_vif = twin_summary.vif_profile
+    else:
+        coccus_sphere_r = float("nan")
+        coccus_sphere_vif = float("nan")
+
+    corpus_metrics: dict[str, float | int] = {
+        "n_traits": len(valid_cols),
+        "total_annotations": total_annotations,
+        "coccus_annotations": coccus_annotations,
+        "coccus_sphere_r": coccus_sphere_r,
+        "coccus_sphere_vif": coccus_sphere_vif,
+    }
+
     # 5. Export TSVs and Report
     loto_df = pd.DataFrame([asdict(r) for r in loto_rows])
     lco_df = pd.DataFrame([asdict(r) for r in lco_rows])
@@ -680,6 +816,8 @@ def run_coupling_audit(
         rule_result=rule_result,
         rule_result_reverse=rule_result_rev,
         code_commit=code_commit,
+        loto_rows=loto_rows,
+        corpus_metrics=corpus_metrics,
     )
     report_txt_path.write_text(report_text, encoding="utf-8")
 
