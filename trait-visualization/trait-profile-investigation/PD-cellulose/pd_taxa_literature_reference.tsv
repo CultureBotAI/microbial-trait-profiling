@@ -1,21 +1,21 @@
 literature_taxon	literature_rank	literature_direction	literature_evidence	doi_citations	match_terms
-Akkermansia	genus	increased	Often reported as enriched in PD fecal microbiome studies.	10.1186/s13073-017-0428-y;10.1002/mds.28119;10.1038/s41467-022-34667-x	Akkermansia;Akkermansia muciniphila
-Bifidobacterium	genus	increased	Reported as increased at genus/family level, although one cohort showed attenuation after excluding selected medication users.	10.1002/mds.26942;10.1016/j.parkreldis.2016.08.019	Bifidobacterium;Bifidobacteriaceae
+Akkermansia	genus	increased	Reported as enriched in several PD fecal microbiome cohorts (10.1186/s13073-017-0428-y; 10.1002/mds.28119), although a large metagenomic cohort reported a null species-level result after FDR correction (10.1038/s41467-022-34667-x).	10.1186/s13073-017-0428-y;10.1002/mds.28119	Akkermansia;Akkermansia muciniphila
+Bifidobacterium	genus	increased	Reported as increased at genus/family level (10.1002/mds.26942 full-text verified; 10.1016/j.parkreldis.2016.08.019 abstract-verified), although one cohort showed attenuation after excluding selected medication users.	10.1002/mds.26942;10.1016/j.parkreldis.2016.08.019	Bifidobacterium;Bifidobacteriaceae
 Lactobacillus	genus	increased	Reported as increased in PD and related motor phenotype studies.	10.1371/journal.pone.0142164;10.1002/mds.26942	Lactobacillus;Lactobacillaceae
-Enterobacteriaceae	family	increased	Reported as enriched in PD and linked with postural instability/gait phenotype.	10.1002/mds.26069;10.1016/j.parkreldis.2016.08.019	Enterobacteriaceae;Escherichia;Escherichia coli;Shigella;Escherichia-Shigella
-Escherichia-Shigella	genus group	increased	Reported as increased in PD metagenomic profiles.	10.1007/s11427-016-9001-4	Escherichia-Shigella;Escherichia;Escherichia coli;Shigella
+Enterobacteriaceae	family	increased	Reported as increased in PD fecal samples (10.1016/j.parkreldis.2016.08.019 abstract-verified); in 10.1002/mds.26069, abundance correlated positively with postural instability and gait difficulty severity rather than overall PD case-control enrichment.	10.1016/j.parkreldis.2016.08.019;10.1002/mds.26069	Enterobacteriaceae;Escherichia;Escherichia coli;Shigella;Escherichia-Shigella
+Escherichia-Shigella	genus group	increased	Reported as increased in a PD fecal 16S rRNA cohort (24 PD, 14 controls; abstract-verified).	10.1007/s11427-016-9001-4	Escherichia-Shigella;Escherichia;Escherichia coli;Shigella
 Streptococcus	genus	increased	Often increased, with species-level heterogeneity across cohorts.	10.1007/s11427-016-9001-4;10.1038/s41467-022-34667-x	Streptococcus
-Enterococcus	genus	increased	Reported as increased in PD metagenomic profiles.	10.1007/s11427-016-9001-4	Enterococcus
-Proteus	genus	increased	Reported as increased in PD metagenomic profiles.	10.1007/s11427-016-9001-4	Proteus
-Alistipes	genus/species	increased	Reported as increased in PD, including species-level signals.	10.1093/brain/awaa201;10.1038/s41467-022-34667-x	Alistipes;Alistipes finegoldii;Alistipes indistinctus
+Enterococcus	genus	increased	Reported as increased in a PD fecal 16S rRNA cohort (24 PD, 14 controls; abstract-verified).	10.1007/s11427-016-9001-4	Enterococcus
+Proteus	genus	increased	Reported as increased in a PD fecal 16S rRNA cohort (24 PD, 14 controls; abstract-verified).	10.1007/s11427-016-9001-4	Proteus
+Alistipes	genus/species	increased	Reported as increased in PD, including species-level signals (10.1093/brain/awaa201 abstract-verified; 10.1038/s41467-022-34667-x full-text verified).	10.1093/brain/awaa201;10.1038/s41467-022-34667-x	Alistipes;Alistipes finegoldii;Alistipes indistinctus
 Methanobrevibacter	genus	increased	Reported as increased in PD metagenomic species-level analyses.	10.1038/s41467-022-34667-x	Methanobrevibacter;Methanobrevibacter smithii
 Prevotella	genus/family	decreased	Prevotella/Prevotellaceae depletion is a repeated PD microbiome finding.	10.1002/mds.26069;10.1186/s13073-017-0428-y	Prevotella;Prevotella copri;Prevotellaceae
-Faecalibacterium	genus/species	decreased	Reported as depleted in PD, including F. prausnitzii.	10.1016/j.parkreldis.2016.08.019;10.1007/s11427-016-9001-4;10.1002/mds.28119	Faecalibacterium;Faecalibacterium prausnitzii
+Faecalibacterium	genus/species	decreased	Reported as depleted in PD, including F. prausnitzii (10.1016/j.parkreldis.2016.08.019 and 10.1007/s11427-016-9001-4 abstract-verified; 10.1002/mds.28119 full-text verified).	10.1016/j.parkreldis.2016.08.019;10.1007/s11427-016-9001-4;10.1002/mds.28119	Faecalibacterium;Faecalibacterium prausnitzii
 Roseburia	genus	decreased	Reported as depleted at genus level, with R. faecis also decreased in a large species-level PD metagenomic study.	10.1002/mds.26307;10.1002/mds.28119;10.1038/s41467-022-34667-x	Roseburia
 Blautia	genus	decreased	Reported as depleted in PD gut microbiome cohorts.	10.1002/mds.26307;10.1007/s11427-016-9001-4	Blautia
 Ruminococcus	genus	decreased	Reported as decreased at genus level; species assignments may vary by taxonomy.	10.1007/s11427-016-9001-4	Ruminococcus;Ruminococcus bromii;Ruminococcus torques
-Lachnospiraceae	family	decreased	Reported as depleted in PD gut microbiome cohorts.	10.1002/mds.26307;10.1002/mds.26942	Lachnospiraceae
+Lachnospiraceae	family	decreased	Reported as depleted in PD gut microbiome cohorts (10.1002/mds.26942 full-text verified; 10.1002/mds.26307 family-level synthesis).	10.1002/mds.26307;10.1002/mds.26942	Lachnospiraceae
 Coprococcus	genus	decreased	Reported as depleted in PD gut microbiome cohorts.	10.1002/mds.26307	Coprococcus
-Dorea	genus	decreased	Reported as depleted in PD gut microbiome cohorts.	10.1002/mds.26307	Dorea
+Dorea	genus	decreased	Cited in PD gut microbiome synthesis of Lachnospiraceae-affiliated genera (10.1002/mds.26307; unverified in primary full text).	10.1002/mds.26307	Dorea
 Bacteroides fragilis group	species group	decreased	Reported as decreased in a PD gut microbiome cohort.	10.1371/journal.pone.0142164	Bacteroides fragilis;Bacteroides fragilis group
 Helicobacter pylori	species	associated	Associated with PD risk, severity, or levodopa response; not expected to behave like a fecal trait-row species.	10.1111/hel.12398;10.1016/j.clineuro.2018.09.039	Helicobacter pylori

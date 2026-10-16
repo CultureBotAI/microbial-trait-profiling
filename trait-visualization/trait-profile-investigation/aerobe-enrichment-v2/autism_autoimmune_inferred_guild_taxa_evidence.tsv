@@ -1,67 +1,67 @@
 condition_group	condition	focus_direction	trait_id	trait_name	trait_category	taxon_id	taxon_name	taxonomic_rank	taxon_profile_count	study_count	trait_annotation_count
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	2	4306
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	3	1	1
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	3	1	34
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:85023	Microbacteriaceae	family	3	1	222
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	2	762
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	2	2	122
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	2	1	1
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1760	Actinomycetes	class	1	1	2367
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	2394
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186817	Bacillaceae	family	1	1	500
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	1
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	17
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	122
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	227
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	1	1	43
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	4
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	17
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	8
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:620	Shigella	genus	1	1	10
-Autism / autism spectrum disorder	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186824	Thermoactinomycetaceae	family	1	1	25
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	2	2507
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	3	1	27
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	3	1	109
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:85023	Microbacteriaceae	family	3	1	1
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	2	83
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	2	2	75
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	2	1	7
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1760	Actinomycetes	class	1	1	196
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	197
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186817	Bacillaceae	family	1	1	204
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	12
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	75
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:872	Desulfovibrio	genus	1	1	3
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	1206
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	1	1	119
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	800
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	60
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:821	Phocaeicola vulgatus	species	1	1	3
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:620	Shigella	genus	1	1	47
-Autism / autism spectrum disorder	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:191303	Turicibacter	genus	1	1	1
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	2	425
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	3	1	7
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	3	1	64
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:85023	Microbacteriaceae	family	3	1	24
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	2	49
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	2	2	76
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	2	1	3
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1760	Actinomycetes	class	1	1	330
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	331
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186817	Bacillaceae	family	1	1	28
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	7
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1485	Clostridium	genus	1	1	2
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	76
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:872	Desulfovibrio	genus	1	1	1
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	7
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	1	1	79
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	5
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	1
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	63
-Autism / autism spectrum disorder	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186824	Thermoactinomycetaceae	family	1	1	2
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	2	4306
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	3	1	1
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	3	1	34
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:85023	Microbacteriaceae	family	3	1	222
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	2	762
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	2	2	122
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	2	1	1
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1760	Actinomycetes	class	1	1	2367
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	2394
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186817	Bacillaceae	family	1	1	500
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	1
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	17
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	122
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	227
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	1	1	43
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	4
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	17
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	8
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:620	Shigella	genus	1	1	10
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186824	Thermoactinomycetaceae	family	1	1	25
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	2	2507
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	3	1	27
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	3	1	109
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:85023	Microbacteriaceae	family	3	1	1
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	2	83
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	2	2	75
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	2	1	7
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1760	Actinomycetes	class	1	1	196
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	197
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186817	Bacillaceae	family	1	1	204
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	12
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	75
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:872	Desulfovibrio	genus	1	1	3
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	1206
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	1	1	119
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	800
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	60
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:821	Phocaeicola vulgatus	species	1	1	3
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:620	Shigella	genus	1	1	47
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:191303	Turicibacter	genus	1	1	1
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	2	425
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	3	1	7
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	3	1	64
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:85023	Microbacteriaceae	family	3	1	24
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	2	49
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	2	2	76
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	2	1	3
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1760	Actinomycetes	class	1	1	330
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	331
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186817	Bacillaceae	family	1	1	28
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	7
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1485	Clostridium	genus	1	1	2
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	76
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:872	Desulfovibrio	genus	1	1	1
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	7
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	1	1	79
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	5
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	1
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	63
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186824	Thermoactinomycetaceae	family	1	1	2
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	3	2	2
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	3	1	2190
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	1	2507

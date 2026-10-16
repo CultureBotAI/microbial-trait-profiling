@@ -12,49 +12,85 @@ This follow-up starts from aerobe v2 trait enrichment in increased profiles and 
 
 | condition group | exact condition label | profiles | studies | increased / decreased profiles | increased - decreased trait z | body-site groups |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
-| Autism / autism spectrum disorder | Autism | 14 | 4 | 8 / 6 | 0.744 | Feces |
-| Autism / autism spectrum disorder | Autism spectrum disorder | 13 | 3 | 8 / 5 | -0.005 | Feces |
+| Autism | Autism | 14 | 4 | 8 / 6 | 0.744 | Feces |
+| Autism spectrum disorder | Autism spectrum disorder | 13 | 3 | 8 / 5 | -0.005 | Feces |
 | Autoimmune disease | Autoimmune disease | 8 | 2 | 4 / 4 | 0.421 | Feces |
 
 ## Top Taxa
 
-The tables below count unique taxon/profile occurrences after deduplicating the same taxon within the same study/experiment/direction profile.
+The tables below count unique taxon/profile occurrences after deduplicating the same taxon within the same study/experiment/direction profile. Exact `Autism` and `Autism spectrum disorder` are reported separately rather than pooled because their directional skews diverge (`Autism` has a positive increased-minus-decreased trait z shift, whereas `Autism spectrum disorder` is slightly negative/decreased-skewed across observed taxa; #128).
 
-### Autism / autism spectrum disorder
+### Autism
 
 Top increased taxa:
 
 | taxon | rank | profiles | studies | selected traits |
 | --- | --- | ---: | ---: | --- |
-| Parabacteroides | genus | 4 | 3 |  |
-| Clostridium | genus | 3 | 3 | microaerophilic |
 | Pseudomonadota | phylum | 3 | 2 | facultatively aerobic; aerobic; microaerophilic |
-| Coprococcus | genus | 3 | 2 |  |
 | Bifidobacteriaceae | family | 3 | 1 | facultatively aerobic; aerobic; microaerophilic |
 | Enterococcus | genus | 3 | 1 | facultatively aerobic; aerobic; microaerophilic |
 | Microbacteriaceae | family | 3 | 1 | facultatively aerobic; aerobic; microaerophilic |
-| Alistipes | genus | 3 | 1 |  |
-| Bacteroides | genus | 2 | 2 | facultatively aerobic; aerobic; microaerophilic |
 | Bacteroidota | phylum | 2 | 2 | facultatively aerobic; aerobic; microaerophilic |
 | Corynebacteriaceae | family | 2 | 2 | facultatively aerobic; aerobic; microaerophilic |
-| Erysipelotrichaceae | family | 2 | 2 | facultatively aerobic; aerobic; microaerophilic |
+| Bifidobacterium | genus | 2 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Enterocloster bolteae | species | 2 | 1 |  |
+| Thermoanaerobacteraceae | family | 2 | 1 |  |
+| Actinomycetes | class | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Actinomycetota | phylum | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Bacillaceae | family | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
 
 Top decreased taxa:
 
 | taxon | rank | profiles | studies | selected traits |
 | --- | --- | ---: | ---: | --- |
 | Bacillota | phylum | 2 | 2 | facultatively aerobic; aerobic; microaerophilic |
-| Lactobacillus | genus | 2 | 2 | facultatively aerobic; aerobic; microaerophilic |
 | Streptococcus | genus | 2 | 2 | facultatively aerobic; aerobic; microaerophilic |
-| Lachnospiraceae | family | 2 | 2 | facultatively aerobic; microaerophilic |
 | Dialister | genus | 2 | 2 | aerobic |
-| Prevotella | genus | 2 | 2 |  |
-| Ruminococcus | genus | 2 | 2 |  |
 | Veillonella | genus | 2 | 2 |  |
 | Actinomyces | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
 | Actinomycetota | phylum | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
-| Aerococcus | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
 | Bacteroidales | order | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Bacteroidota | phylum | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Bifidobacterium | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Escherichia | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Helcococcus | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Lactobacillus | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+
+### Autism spectrum disorder
+
+Top increased taxa:
+
+| taxon | rank | profiles | studies | selected traits |
+| --- | --- | ---: | ---: | --- |
+| Coprococcus | genus | 3 | 2 |  |
+| Parabacteroides | genus | 3 | 2 |  |
+| Alistipes | genus | 3 | 1 |  |
+| Clostridium | genus | 2 | 2 | microaerophilic |
+| Phascolarctobacterium | genus | 2 | 2 |  |
+| Moraxella | genus | 2 | 1 | aerobic; microaerophilic |
+| Clostridioides | genus | 2 | 1 | facultatively aerobic |
+| Altererythrobacter | genus | 2 | 1 |  |
+| Hungatella | genus | 2 | 1 |  |
+| Thomasclavelia | genus | 2 | 1 |  |
+| Bacteroides | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Comamonas | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+
+Top decreased taxa:
+
+| taxon | rank | profiles | studies | selected traits |
+| --- | --- | ---: | ---: | --- |
+| Prevotella | genus | 2 | 2 |  |
+| Aerococcus | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Corynebacterium | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Erysipelotrichaceae | family | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Lactobacillus | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Lactococcus | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Listeria | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Methylobacterium | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Microbacterium | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Pseudomonas | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Staphylococcus | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Gemella morbillorum | species | 1 | 1 | facultatively aerobic; microaerophilic |
 
 ### Autoimmune disease
 

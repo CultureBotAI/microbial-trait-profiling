@@ -100,7 +100,7 @@ Issue #264 posed the diagnostic question: *Does the observed correlation between
 
 ## 5. Survival of Convergent Six Trait Signals
 
-We evaluated whether genuine biological signals survive PC1 density adjustment in paired experiment comparisons (increased vs. decreased, $N = 2,335$ pairs):
+We evaluated which candidate trait signals survive PC1 density adjustment in paired experiment comparisons (increased vs. decreased, $N = 2,335$ pairs):
 
 | Trait Identifier | Trait Label | Raw Mean $\Delta$ | Raw Wilcoxon $p$ | Adj Mean $\Delta$ | Adj Wilcoxon $p$ | Relative Change | Adjustment Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -112,10 +112,10 @@ We evaluated whether genuine biological signals survive PC1 density adjustment i
 | `METPO:1000623` | Moderately halophilic | $+11.77$ | $1.18 \times 10^{-6}$ | $+3.92$ | **$3.31 \times 10^{-9}$** | -66.7% | **Survived (significant post-adjustment)** |
 
 ### Key Methodological Takeaways
-1. **Cellulose Catabolism Depletion Is Strengthened:** When the positive curation baseline is removed, the depletion of cellulose-degrading bacteria in disease signatures becomes substantially sharper ($p = 2.26 \times 10^{-6}$ vs. raw $p = 2.95 \times 10^{-2}$). In raw data, the global positive density drift masked the true magnitude of cellulose depletion.
+1. **Cellulose Catabolism Depletion Is Strengthened:** When the positive curation baseline is removed, the negative paired contrast for *cellulose catabolic process* in disease signatures becomes sharper ($p = 2.26 \times 10^{-6}$ vs. raw $p = 2.95 \times 10^{-2}$). In raw count data, global positive density drift partially offsets the negative paired contrast for cellulose catabolism.
 2. **Morphological Signals Attenuate Substantially in Magnitude:** *Coccus shaped* (-53.8%, $p = 6.24 \times 10^{-4}$) and *sphere shaped* (-74.9%, $p = 1.09 \times 10^{-3}$) lose 54–75% of their raw mean difference after removing PC1 in raw count profiles (and collapse to nonsignificance under binarized presence/absence profiles per #375).
 3. **Physiological Signals Survive with Attenuated Magnitude:** *Facultatively aerobic*, *moderately halophilic*, and *arsenate reduction* maintain statistical significance in raw count profiles, though their mean effect magnitudes attenuate by 41–67%.
-4. **Representation Sensitivity (#375):** The survival versus collapse of specific traits is sensitive to profile representation (raw count sums vs. binarized presence/absence per #365 opt-in flags). Pipelines should report both representations.
+4. **Representation Sensitivity (#375):** The survival versus collapse of specific traits (e.g., *facultatively aerobic* and *arsenate reduction*) is sensitive to profile representation (raw count sums vs. binarized presence/absence per #365 opt-in flags). Pipelines should report both representations.
 
 ---
 
@@ -210,12 +210,12 @@ We recomputed the complete correlation matrix, principal components, and effecti
 
 ### 7.5 Critical Scientific Finding: Redundancy vs. Density
 
-Comparing the collapsed configurations against the raw baseline yields an unequivocal empirical conclusion:
+Comparing the collapsed configurations against the raw baseline shows a consistent empirical pattern:
 1. **Collapsing Redundancy Does NOT Reduce Global Correlation:** Collapsing the 24 redundant pairs shrinks the trait universe from 317 to 301 features, but the median pairwise correlation ($+0.7059 \to +0.7103$) and PC1 variance explained ($66.59\% \to 66.90\%$) remain essentially identical (in fact slightly more concentrated due to the removal of lower-support noise).
 2. **Correlation Is Driven by Curation Density, Not Ontology Redundancy:** The pervasive positive correlation across microbial traits is not an artifact of ontology duplication. It is driven by the fact that well-studied organisms carry hundreds of curated annotations simultaneously across completely unrelated metabolic and physiological pathways (e.g., *facultatively aerobic* $\times$ *moderately halophilic* at $r = +0.8958$).
 3. **Complementary Roles of Collapsing and Density Adjustment:**
    - **Ontology collapsing** is necessary to eliminate collinear near-twins (preventing VIF $= 2.74$ model instability) and to establish well-defined, distinct biological concepts.
-   - **PC1 density adjustment** is strictly necessary to eliminate the spurious curation-effort axis, separating true biological co-occurrence from curation intensity.
+   - **PC1 density adjustment** is necessary to remove the primary curation-effort axis, separating residual trait co-annotation structure from overall curation intensity.
    Both operations are complementary and address distinct structural challenges in microbial trait profiling.
 
 ---

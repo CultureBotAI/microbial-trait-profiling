@@ -25,7 +25,8 @@ from investigate_facultative_aerobe_expansion import (
 
 OUTPUT_DIR = FACULTATIVE_OUTPUT_DIR
 CONDITION_GROUPS = {
-    "Autism / autism spectrum disorder": ("Autism", "Autism spectrum disorder"),
+    "Autism": ("Autism",),
+    "Autism spectrum disorder": ("Autism spectrum disorder",),
     "Autoimmune disease": ("Autoimmune disease",),
 }
 CONDITION_ORDER = [
@@ -848,7 +849,11 @@ def write_readme(
             "## Top Taxa",
             "",
             "The tables below count unique taxon/profile occurrences after deduplicating "
-            "the same taxon within the same study/experiment/direction profile.",
+            "the same taxon within the same study/experiment/direction profile. "
+            "Exact `Autism` and `Autism spectrum disorder` are reported separately rather "
+            "than pooled because their directional skews diverge (`Autism` has a positive "
+            "increased-minus-decreased trait z shift, whereas `Autism spectrum disorder` "
+            "is slightly negative/decreased-skewed across observed taxa; #128).",
             "",
         ]
     )

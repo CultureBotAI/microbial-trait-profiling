@@ -1,143 +1,151 @@
 condition_group	direction	taxon_id	taxon_name	taxonomic_rank	profile_count	study_count	experiment_count	signature_count	exact_conditions	body_site_groups	mean_profile_guild_z	guild_trait_presence_count	guild_trait_names	is_focal_target_taxon	focal_target_taxon_name
-Autism / autism spectrum disorder	increased	NCBITaxon:375288	Parabacteroides	genus	4	3	4	4	Autism; Autism spectrum disorder	Feces	-0.37906425921377784	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1485	Clostridium	genus	3	3	3	3	Autism; Autism spectrum disorder	Feces	-0.4877135608451136	1	microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1224	Pseudomonadota	phylum	3	2	3	3	Autism	Feces	0.6142735817144378	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:33042	Coprococcus	genus	3	2	3	3	Autism spectrum disorder	Feces	-0.502500314400382	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:31953	Bifidobacteriaceae	family	3	1	3	3	Autism	Feces	0.5723092160014954	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1350	Enterococcus	genus	3	1	3	3	Autism	Feces	0.5530148219411137	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:85023	Microbacteriaceae	family	3	1	3	3	Autism	Feces	0.5723092160014954	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:239759	Alistipes	genus	3	1	3	3	Autism spectrum disorder	Feces	-1.0338876792896399	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:816	Bacteroides	genus	2	2	2	2	Autism; Autism spectrum disorder	Feces	-0.06621105160418805	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:976	Bacteroidota	phylum	2	2	2	2	Autism	Feces	0.29993737255177805	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1653	Corynebacteriaceae	family	2	2	2	2	Autism	Feces	0.8014382695699068	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:128827	Erysipelotrichaceae	family	2	2	2	2	Autism; Autism spectrum disorder	Feces	0.32458297893937116	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:872	Desulfovibrio	genus	2	2	2	2	Autism; Autism spectrum disorder	Feces	0.2432531234206859	2	facultatively aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:33024	Phascolarctobacterium	genus	2	2	2	2	Autism spectrum disorder	Feces	-0.37532308536147635	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1678	Bifidobacterium	genus	2	1	2	2	Autism	Feces	0.5009513898945708	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:475	Moraxella	genus	2	1	2	2	Autism spectrum disorder	Feces	0.5606773646818466	2	aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1870884	Clostridioides	genus	2	1	2	2	Autism spectrum disorder	Feces	-0.7208210164322718	1	facultatively aerobic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:361177	Altererythrobacter	genus	2	1	2	2	Autism spectrum disorder	Feces	0.5606773646818466	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:208479	Enterocloster bolteae	species	2	1	2	2	Autism	Feces	0.5009513898945708	0		True	Enterocloster bolteae
-Autism / autism spectrum disorder	increased	NCBITaxon:1649459	Hungatella	genus	2	1	2	2	Autism spectrum disorder	Feces	-0.7208210164322718	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:186814	Thermoanaerobacteraceae	family	2	1	2	2	Autism	Feces	0.5009513898945708	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:3025755	Thomasclavelia	genus	2	1	2	2	Autism spectrum disorder	Feces	-0.7208210164322718	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1760	Actinomycetes	class	1	1	1	1	Autism	Feces	0.36858887785800204	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:201174	Actinomycetota	phylum	1	1	1	1	Autism	Feces	0.36858887785800204	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:186817	Bacillaceae	family	1	1	1	1	Autism	Feces	0.7150248682153447	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:200643	Bacteroidia	class	1	1	1	1	Autism	Feces	0.8878516709244689	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:283	Comamonas	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1716	Corynebacterium	genus	1	1	1	1	Autism	Feces	0.8878516709244689	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:543	Enterobacteriaceae	family	1	1	1	1	Autism	Feces	0.7150248682153447	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:81852	Enterococcaceae	family	1	1	1	1	Autism	Feces	0.7150248682153447	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:561	Escherichia	genus	1	1	1	1	Autism	Feces	0.01394017896174371	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:570	Klebsiella	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.34274227869210727	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1578	Lactobacillus	genus	1	1	1	1	Autism	Feces	0.8878516709244689	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:620	Shigella	genus	1	1	1	1	Autism	Feces	0.01394017896174371	2	facultatively aerobic; aerobic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:186824	Thermoactinomycetaceae	family	1	1	1	1	Autism	Feces	0.7150248682153447	2	aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:239934	Akkermansia	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.6847872603863503	1	aerobic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:821	Phocaeicola vulgatus	species	1	1	1	1	Autism	Feces	0.5523651571779742	1	facultatively aerobic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:191303	Turicibacter	genus	1	1	1	1	Autism	Feces	0.5523651571779742	1	facultatively aerobic	False	
-Autism / autism spectrum disorder	increased	NCBITaxon:258514	Acetanaerobacterium	genus	1	1	1	1	Autism	Feces	0.5523651571779742	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:447020	Adlercreutzia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.42081063219760795	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:286729	Alkaliflexus	genus	1	1	1	1	Autism	Feces	0.5523651571779742	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:2569097	Anaerobutyricum	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.34274227869210727	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:291645	Bacteroides nordii	species	1	1	1	1	Autism spectrum disorder	Feces	-1.1343385828049772	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:397864	Barnesiella	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1470349	Candidatus Stoquefichus	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:102106	Collinsella	genus	1	1	1	1	Autism	Feces	0.8878516709244689	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1348911	Coprobacter	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:213117	Desulfohalobiaceae	family	1	1	1	1	Autism	Feces	0.7150248682153447	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:876	Desulfovibrio desulfuricans	species	1	1	1	1	Autism	Feces	0.5523651571779742	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:58621	Desulfovibrio intestinalis	species	1	1	1	1	Autism	Feces	0.5523651571779742	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:901	Desulfovibrio piger	species	1	1	1	1	Autism	Feces	0.5523651571779742	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:189330	Dorea	genus	1	1	1	1	Autism	Feces	0.8878516709244689	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1472762	Enorma	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:2719313	Enterocloster	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.34274227869210727	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1730	Eubacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.42081063219760795	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:203492	Fusobacteriaceae	family	1	1	1	1	Autism	Feces	0.7150248682153447	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:848	Fusobacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1506553	Lachnoclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.34274227869210727	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:158846	Megamonas	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:2039302	Monoglobus	genus	1	1	1	1	Autism spectrum disorder	Feces	-1.0988997541724363	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:2888809	Novisyntrophococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.42081063219760795	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:283168	Odoribacter	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:577309	Paraprevotella	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1481960	Peptoclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:2740	Peptococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1501226	Romboutsia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.7005440971660853	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1508657	Ruminiclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1266	Sarcina	genus	1	1	1	1	Autism spectrum disorder	Feces	-1.0988997541724363	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:1769710	Sellimonas	genus	1	1	1	1	Autism spectrum disorder	Feces	0.42081063219760795	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:172900	Victivallis	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
-Autism / autism spectrum disorder	increased	NCBITaxon:707003	uncultured Oscillospiraceae bacterium	species	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1239	Bacillota	phylum	2	2	2	2	Autism	Feces	0.6781862935139833	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1578	Lactobacillus	genus	2	2	2	2	Autism; Autism spectrum disorder	Feces	0.6481418481961814	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1301	Streptococcus	genus	2	2	2	2	Autism	Feces	0.6781862935139833	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:186803	Lachnospiraceae	family	2	2	2	2	Autism; Autism spectrum disorder	Feces	-0.13804876125668836	2	facultatively aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:39948	Dialister	genus	2	2	2	2	Autism	Feces	-0.03422263444905105	1	aerobic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:838	Prevotella	genus	2	2	2	2	Autism spectrum disorder	Feces	-0.342349581181392	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1263	Ruminococcus	genus	2	2	2	2	Autism; Autism spectrum disorder	Feces	0.6481418481961814	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:29465	Veillonella	genus	2	2	2	2	Autism	Feces	-0.019043176380081517	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1654	Actinomyces	genus	1	1	1	1	Autism	Feces	0.6933657515829528	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:201174	Actinomycetota	phylum	1	1	1	1	Autism	Feces	0.6630068354450137	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1375	Aerococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:171549	Bacteroidales	order	1	1	1	1	Autism	Feces	-0.7314521043431158	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:976	Bacteroidota	phylum	1	1	1	1	Autism	Feces	0.04750958792558194	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1678	Bifidobacterium	genus	1	1	1	1	Autism	Feces	0.6630068354450137	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1716	Corynebacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:561	Escherichia	genus	1	1	1	1	Autism	Feces	0.6933657515829528	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:31983	Helcococcus	genus	1	1	1	1	Autism	Feces	0.6630068354450137	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1357	Lactococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	1.1459506004727644	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1243	Leuconostoc	genus	1	1	1	1	Autism	Feces	0.6630068354450137	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1637	Listeria	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:407	Methylobacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:33882	Microbacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:286	Pseudomonas	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1279	Staphylococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:46255	Weissella	genus	1	1	1	1	Autism	Feces	0.6630068354450137	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:29391	Gemella morbillorum	species	1	1	1	1	Autism spectrum disorder	Feces	1.1459506004727644	2	facultatively aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:909932	Negativicutes	class	1	1	1	1	Autism	Feces	-0.7314521043431158	2	aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1660	Schaalia odontolytica	species	1	1	1	1	Autism spectrum disorder	Feces	1.1459506004727644	2	facultatively aerobic; microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1485	Clostridium	genus	1	1	1	1	Autism	Feces	0.6630068354450137	1	microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:543311	Parvimonas	genus	1	1	1	1	Autism	Feces	0.6933657515829528	1	microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:162289	Peptoniphilus	genus	1	1	1	1	Autism	Feces	0.6933657515829528	1	microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:171552	Prevotellaceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	1	aerobic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:48736	Ralstonia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	1	aerobic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:909929	Selenomonadales	order	1	1	1	1	Autism	Feces	-0.7314521043431158	1	microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:157	Treponema	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	1	microaerophilic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:31977	Veillonellaceae	family	1	1	1	1	Autism	Feces	-0.7314521043431158	1	aerobic	False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:239759	Alistipes	genus	1	1	1	1	Autism	Feces	-0.7314521043431158	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:114627	Alkaliphilus	genus	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:2569097	Anaerobutyricum	genus	1	1	1	1	Autism spectrum disorder	Feces	-1.317976023310133	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:52784	Anaerofilum	genus	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:207244	Anaerostipes	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:109326	Anaerovorax	genus	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1683	Bifidobacterium angulatum	species	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1679	Bifidobacterium longum subsp. longum	species	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:35832	Bilophila	genus	1	1	1	1	Autism	Feces	-0.7314521043431158	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:118747	Bulleidia	genus	1	1	1	1	Autism	Feces	0.6933657515829528	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:102106	Collinsella	genus	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:33042	Coprococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	-1.317976023310133	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:84107	Coriobacteriaceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:218538	Dialister invisus	species	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:253238	Ethanoligenens	genus	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:39497	Eubacterium xylanophilum	species	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:204475	Gemmiger	genus	1	1	1	1	Autism	Feces	-1.317976023310133	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1506553	Lachnoclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:28050	Lachnospira	genus	1	1	1	1	Autism spectrum disorder	Feces	-1.317976023310133	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:39485	Lachnospira eligens	species	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:877420	Lachnospiraceae bacterium NK4A136	species	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:475961	Longilinea	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:248744	Marvinbryantia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:33038	Mediterraneibacter gnavus	species	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:375288	Parabacteroides	genus	1	1	1	1	Autism	Feces	-0.7314521043431158	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:113286	Pseudoramibacter	genus	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:399320	Sphaerochaeta	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:3025755	Thomasclavelia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1506577	Tyzzerella	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:1535	[Clostridium] leptum	species	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
-Autism / autism spectrum disorder	decreased	NCBITaxon:35517	[Eubacterium] brachy	species	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism	increased	NCBITaxon:1224	Pseudomonadota	phylum	3	2	3	3	Autism	Feces	0.6142735817144378	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:31953	Bifidobacteriaceae	family	3	1	3	3	Autism	Feces	0.5723092160014954	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:1350	Enterococcus	genus	3	1	3	3	Autism	Feces	0.5530148219411137	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:85023	Microbacteriaceae	family	3	1	3	3	Autism	Feces	0.5723092160014954	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:976	Bacteroidota	phylum	2	2	2	2	Autism	Feces	0.29993737255177805	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:1653	Corynebacteriaceae	family	2	2	2	2	Autism	Feces	0.8014382695699068	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:1678	Bifidobacterium	genus	2	1	2	2	Autism	Feces	0.5009513898945708	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:208479	Enterocloster bolteae	species	2	1	2	2	Autism	Feces	0.5009513898945708	0		True	Enterocloster bolteae
+Autism	increased	NCBITaxon:186814	Thermoanaerobacteraceae	family	2	1	2	2	Autism	Feces	0.5009513898945708	0		False	
+Autism	increased	NCBITaxon:1760	Actinomycetes	class	1	1	1	1	Autism	Feces	0.36858887785800204	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:201174	Actinomycetota	phylum	1	1	1	1	Autism	Feces	0.36858887785800204	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:186817	Bacillaceae	family	1	1	1	1	Autism	Feces	0.7150248682153447	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:816	Bacteroides	genus	1	1	1	1	Autism	Feces	0.5523651571779742	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:200643	Bacteroidia	class	1	1	1	1	Autism	Feces	0.8878516709244689	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:1716	Corynebacterium	genus	1	1	1	1	Autism	Feces	0.8878516709244689	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:543	Enterobacteriaceae	family	1	1	1	1	Autism	Feces	0.7150248682153447	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:81852	Enterococcaceae	family	1	1	1	1	Autism	Feces	0.7150248682153447	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1	1	Autism	Feces	0.7150248682153447	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:561	Escherichia	genus	1	1	1	1	Autism	Feces	0.01394017896174371	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:1578	Lactobacillus	genus	1	1	1	1	Autism	Feces	0.8878516709244689	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:872	Desulfovibrio	genus	1	1	1	1	Autism	Feces	0.5523651571779742	2	facultatively aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:620	Shigella	genus	1	1	1	1	Autism	Feces	0.01394017896174371	2	facultatively aerobic; aerobic	False	
+Autism	increased	NCBITaxon:186824	Thermoactinomycetaceae	family	1	1	1	1	Autism	Feces	0.7150248682153447	2	aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:1485	Clostridium	genus	1	1	1	1	Autism	Feces	0.01394017896174371	1	microaerophilic	False	
+Autism	increased	NCBITaxon:821	Phocaeicola vulgatus	species	1	1	1	1	Autism	Feces	0.5523651571779742	1	facultatively aerobic	False	
+Autism	increased	NCBITaxon:191303	Turicibacter	genus	1	1	1	1	Autism	Feces	0.5523651571779742	1	facultatively aerobic	False	
+Autism	increased	NCBITaxon:258514	Acetanaerobacterium	genus	1	1	1	1	Autism	Feces	0.5523651571779742	0		False	
+Autism	increased	NCBITaxon:286729	Alkaliflexus	genus	1	1	1	1	Autism	Feces	0.5523651571779742	0		False	
+Autism	increased	NCBITaxon:102106	Collinsella	genus	1	1	1	1	Autism	Feces	0.8878516709244689	0		False	
+Autism	increased	NCBITaxon:213117	Desulfohalobiaceae	family	1	1	1	1	Autism	Feces	0.7150248682153447	0		False	
+Autism	increased	NCBITaxon:876	Desulfovibrio desulfuricans	species	1	1	1	1	Autism	Feces	0.5523651571779742	0		False	
+Autism	increased	NCBITaxon:58621	Desulfovibrio intestinalis	species	1	1	1	1	Autism	Feces	0.5523651571779742	0		False	
+Autism	increased	NCBITaxon:901	Desulfovibrio piger	species	1	1	1	1	Autism	Feces	0.5523651571779742	0		False	
+Autism	increased	NCBITaxon:189330	Dorea	genus	1	1	1	1	Autism	Feces	0.8878516709244689	0		False	
+Autism	increased	NCBITaxon:203492	Fusobacteriaceae	family	1	1	1	1	Autism	Feces	0.7150248682153447	0		False	
+Autism	increased	NCBITaxon:375288	Parabacteroides	genus	1	1	1	1	Autism	Feces	0.5523651571779742	0		False	
+Autism	decreased	NCBITaxon:1239	Bacillota	phylum	2	2	2	2	Autism	Feces	0.6781862935139833	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:1301	Streptococcus	genus	2	2	2	2	Autism	Feces	0.6781862935139833	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:39948	Dialister	genus	2	2	2	2	Autism	Feces	-0.03422263444905105	1	aerobic	False	
+Autism	decreased	NCBITaxon:29465	Veillonella	genus	2	2	2	2	Autism	Feces	-0.019043176380081517	0		False	
+Autism	decreased	NCBITaxon:1654	Actinomyces	genus	1	1	1	1	Autism	Feces	0.6933657515829528	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:201174	Actinomycetota	phylum	1	1	1	1	Autism	Feces	0.6630068354450137	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:171549	Bacteroidales	order	1	1	1	1	Autism	Feces	-0.7314521043431158	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:976	Bacteroidota	phylum	1	1	1	1	Autism	Feces	0.04750958792558194	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:1678	Bifidobacterium	genus	1	1	1	1	Autism	Feces	0.6630068354450137	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:561	Escherichia	genus	1	1	1	1	Autism	Feces	0.6933657515829528	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:31983	Helcococcus	genus	1	1	1	1	Autism	Feces	0.6630068354450137	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:1578	Lactobacillus	genus	1	1	1	1	Autism	Feces	0.6630068354450137	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:1243	Leuconostoc	genus	1	1	1	1	Autism	Feces	0.6630068354450137	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:46255	Weissella	genus	1	1	1	1	Autism	Feces	0.6630068354450137	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:186803	Lachnospiraceae	family	1	1	1	1	Autism	Feces	-0.9093743834607256	2	facultatively aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:909932	Negativicutes	class	1	1	1	1	Autism	Feces	-0.7314521043431158	2	aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:1485	Clostridium	genus	1	1	1	1	Autism	Feces	0.6630068354450137	1	microaerophilic	False	
+Autism	decreased	NCBITaxon:543311	Parvimonas	genus	1	1	1	1	Autism	Feces	0.6933657515829528	1	microaerophilic	False	
+Autism	decreased	NCBITaxon:162289	Peptoniphilus	genus	1	1	1	1	Autism	Feces	0.6933657515829528	1	microaerophilic	False	
+Autism	decreased	NCBITaxon:909929	Selenomonadales	order	1	1	1	1	Autism	Feces	-0.7314521043431158	1	microaerophilic	False	
+Autism	decreased	NCBITaxon:31977	Veillonellaceae	family	1	1	1	1	Autism	Feces	-0.7314521043431158	1	aerobic	False	
+Autism	decreased	NCBITaxon:239759	Alistipes	genus	1	1	1	1	Autism	Feces	-0.7314521043431158	0		False	
+Autism	decreased	NCBITaxon:114627	Alkaliphilus	genus	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
+Autism	decreased	NCBITaxon:52784	Anaerofilum	genus	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
+Autism	decreased	NCBITaxon:109326	Anaerovorax	genus	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
+Autism	decreased	NCBITaxon:1683	Bifidobacterium angulatum	species	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
+Autism	decreased	NCBITaxon:1679	Bifidobacterium longum subsp. longum	species	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
+Autism	decreased	NCBITaxon:35832	Bilophila	genus	1	1	1	1	Autism	Feces	-0.7314521043431158	0		False	
+Autism	decreased	NCBITaxon:118747	Bulleidia	genus	1	1	1	1	Autism	Feces	0.6933657515829528	0		False	
+Autism	decreased	NCBITaxon:102106	Collinsella	genus	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
+Autism	decreased	NCBITaxon:218538	Dialister invisus	species	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
+Autism	decreased	NCBITaxon:253238	Ethanoligenens	genus	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
+Autism	decreased	NCBITaxon:204475	Gemmiger	genus	1	1	1	1	Autism	Feces	-1.317976023310133	0		False	
+Autism	decreased	NCBITaxon:375288	Parabacteroides	genus	1	1	1	1	Autism	Feces	-0.7314521043431158	0		False	
+Autism	decreased	NCBITaxon:113286	Pseudoramibacter	genus	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
+Autism	decreased	NCBITaxon:1263	Ruminococcus	genus	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
+Autism	decreased	NCBITaxon:1535	[Clostridium] leptum	species	1	1	1	1	Autism	Feces	0.6630068354450137	0		False	
+Autism spectrum disorder	increased	NCBITaxon:33042	Coprococcus	genus	3	2	3	3	Autism spectrum disorder	Feces	-0.502500314400382	0		False	
+Autism spectrum disorder	increased	NCBITaxon:375288	Parabacteroides	genus	3	2	3	3	Autism spectrum disorder	Feces	-0.689540731344362	0		False	
+Autism spectrum disorder	increased	NCBITaxon:239759	Alistipes	genus	3	1	3	3	Autism spectrum disorder	Feces	-1.0338876792896399	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1485	Clostridium	genus	2	2	2	2	Autism spectrum disorder	Feces	-0.7385404307485423	1	microaerophilic	False	
+Autism spectrum disorder	increased	NCBITaxon:33024	Phascolarctobacterium	genus	2	2	2	2	Autism spectrum disorder	Feces	-0.37532308536147635	0		False	
+Autism spectrum disorder	increased	NCBITaxon:475	Moraxella	genus	2	1	2	2	Autism spectrum disorder	Feces	0.5606773646818466	2	aerobic; microaerophilic	False	
+Autism spectrum disorder	increased	NCBITaxon:1870884	Clostridioides	genus	2	1	2	2	Autism spectrum disorder	Feces	-0.7208210164322718	1	facultatively aerobic	False	
+Autism spectrum disorder	increased	NCBITaxon:361177	Altererythrobacter	genus	2	1	2	2	Autism spectrum disorder	Feces	0.5606773646818466	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1649459	Hungatella	genus	2	1	2	2	Autism spectrum disorder	Feces	-0.7208210164322718	0		False	
+Autism spectrum disorder	increased	NCBITaxon:3025755	Thomasclavelia	genus	2	1	2	2	Autism spectrum disorder	Feces	-0.7208210164322718	0		False	
+Autism spectrum disorder	increased	NCBITaxon:816	Bacteroides	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.6847872603863503	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	increased	NCBITaxon:283	Comamonas	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	increased	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	increased	NCBITaxon:570	Klebsiella	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.34274227869210727	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	increased	NCBITaxon:872	Desulfovibrio	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	2	facultatively aerobic; microaerophilic	False	
+Autism spectrum disorder	increased	NCBITaxon:239934	Akkermansia	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.6847872603863503	1	aerobic	False	
+Autism spectrum disorder	increased	NCBITaxon:447020	Adlercreutzia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.42081063219760795	0		False	
+Autism spectrum disorder	increased	NCBITaxon:2569097	Anaerobutyricum	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.34274227869210727	0		False	
+Autism spectrum disorder	increased	NCBITaxon:291645	Bacteroides nordii	species	1	1	1	1	Autism spectrum disorder	Feces	-1.1343385828049772	0		False	
+Autism spectrum disorder	increased	NCBITaxon:397864	Barnesiella	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1470349	Candidatus Stoquefichus	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1348911	Coprobacter	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1472762	Enorma	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
+Autism spectrum disorder	increased	NCBITaxon:2719313	Enterocloster	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.34274227869210727	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1730	Eubacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.42081063219760795	0		False	
+Autism spectrum disorder	increased	NCBITaxon:848	Fusobacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1506553	Lachnoclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.34274227869210727	0		False	
+Autism spectrum disorder	increased	NCBITaxon:158846	Megamonas	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
+Autism spectrum disorder	increased	NCBITaxon:2039302	Monoglobus	genus	1	1	1	1	Autism spectrum disorder	Feces	-1.0988997541724363	0		False	
+Autism spectrum disorder	increased	NCBITaxon:2888809	Novisyntrophococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.42081063219760795	0		False	
+Autism spectrum disorder	increased	NCBITaxon:283168	Odoribacter	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
+Autism spectrum disorder	increased	NCBITaxon:577309	Paraprevotella	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1481960	Peptoclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
+Autism spectrum disorder	increased	NCBITaxon:2740	Peptococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1501226	Romboutsia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.7005440971660853	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1508657	Ruminiclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1266	Sarcina	genus	1	1	1	1	Autism spectrum disorder	Feces	-1.0988997541724363	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1769710	Sellimonas	genus	1	1	1	1	Autism spectrum disorder	Feces	0.42081063219760795	0		False	
+Autism spectrum disorder	increased	NCBITaxon:172900	Victivallis	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
+Autism spectrum disorder	increased	NCBITaxon:707003	uncultured Oscillospiraceae bacterium	species	1	1	1	1	Autism spectrum disorder	Feces	-0.06585891033660242	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:838	Prevotella	genus	2	2	2	2	Autism spectrum disorder	Feces	-0.342349581181392	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:1375	Aerococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:1716	Corynebacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:1578	Lactobacillus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:1357	Lactococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	1.1459506004727644	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:1637	Listeria	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:407	Methylobacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:33882	Microbacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:286	Pseudomonas	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:1279	Staphylococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:29391	Gemella morbillorum	species	1	1	1	1	Autism spectrum disorder	Feces	1.1459506004727644	2	facultatively aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:186803	Lachnospiraceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	2	facultatively aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:1660	Schaalia odontolytica	species	1	1	1	1	Autism spectrum disorder	Feces	1.1459506004727644	2	facultatively aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:171552	Prevotellaceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	1	aerobic	False	
+Autism spectrum disorder	decreased	NCBITaxon:48736	Ralstonia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	1	aerobic	False	
+Autism spectrum disorder	decreased	NCBITaxon:157	Treponema	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	1	microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:2569097	Anaerobutyricum	genus	1	1	1	1	Autism spectrum disorder	Feces	-1.317976023310133	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:207244	Anaerostipes	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:33042	Coprococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	-1.317976023310133	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:84107	Coriobacteriaceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:39497	Eubacterium xylanophilum	species	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:1506553	Lachnoclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:28050	Lachnospira	genus	1	1	1	1	Autism spectrum disorder	Feces	-1.317976023310133	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:39485	Lachnospira eligens	species	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:877420	Lachnospiraceae bacterium NK4A136	species	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:475961	Longilinea	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:248744	Marvinbryantia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:33038	Mediterraneibacter gnavus	species	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:1263	Ruminococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:399320	Sphaerochaeta	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:3025755	Thomasclavelia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:1506577	Tyzzerella	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:35517	[Eubacterium] brachy	species	1	1	1	1	Autism spectrum disorder	Feces	0.6332768609473489	0		False	
 Autoimmune disease	increased	NCBITaxon:816	Bacteroides	genus	3	2	3	3	Autoimmune disease	Feces	0.3174072673720177	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autoimmune disease	increased	NCBITaxon:28116	Bacteroides ovatus	species	3	2	3	3	Autoimmune disease	Feces	0.3174072673720177	0		False	
 Autoimmune disease	increased	NCBITaxon:1236	Gammaproteobacteria	class	3	1	3	3	Autoimmune disease	Feces	0.7169671353291943	3	facultatively aerobic; aerobic; microaerophilic	False	
