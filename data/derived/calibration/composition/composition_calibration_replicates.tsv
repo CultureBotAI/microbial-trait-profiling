@@ -209,9 +209,9 @@ seed	stream	unit	replicate	correction	threshold	n_tests	significant
 182	complete_null_study_flip	study	34	BY	0.01	317	0
 182	complete_null_study_flip	study	34	BH	0.001	317	0
 182	complete_null_study_flip	study	34	BY	0.001	317	0
-182	complete_null_study_flip	study	35	BH	0.05	317	7
-182	complete_null_study_flip	study	35	BY	0.05	317	2
-182	complete_null_study_flip	study	35	BH	0.01	317	5
+182	complete_null_study_flip	study	35	BH	0.05	317	0
+182	complete_null_study_flip	study	35	BY	0.05	317	0
+182	complete_null_study_flip	study	35	BH	0.01	317	0
 182	complete_null_study_flip	study	35	BY	0.01	317	0
 182	complete_null_study_flip	study	35	BH	0.001	317	0
 182	complete_null_study_flip	study	35	BY	0.001	317	0
@@ -323,7 +323,7 @@ seed	stream	unit	replicate	correction	threshold	n_tests	significant
 182	complete_null_study_flip	study	53	BY	0.01	317	0
 182	complete_null_study_flip	study	53	BH	0.001	317	0
 182	complete_null_study_flip	study	53	BY	0.001	317	0
-182	complete_null_study_flip	study	54	BH	0.05	317	0
+182	complete_null_study_flip	study	54	BH	0.05	317	1
 182	complete_null_study_flip	study	54	BY	0.05	317	0
 182	complete_null_study_flip	study	54	BH	0.01	317	0
 182	complete_null_study_flip	study	54	BY	0.01	317	0
@@ -467,9 +467,9 @@ seed	stream	unit	replicate	correction	threshold	n_tests	significant
 182	complete_null_study_flip	study	77	BY	0.01	317	0
 182	complete_null_study_flip	study	77	BH	0.001	317	0
 182	complete_null_study_flip	study	77	BY	0.001	317	0
-182	complete_null_study_flip	study	78	BH	0.05	317	0
-182	complete_null_study_flip	study	78	BY	0.05	317	0
-182	complete_null_study_flip	study	78	BH	0.01	317	0
+182	complete_null_study_flip	study	78	BH	0.05	317	4
+182	complete_null_study_flip	study	78	BY	0.05	317	2
+182	complete_null_study_flip	study	78	BH	0.01	317	2
 182	complete_null_study_flip	study	78	BY	0.01	317	0
 182	complete_null_study_flip	study	78	BH	0.001	317	0
 182	complete_null_study_flip	study	78	BY	0.001	317	0
@@ -491,7 +491,7 @@ seed	stream	unit	replicate	correction	threshold	n_tests	significant
 182	complete_null_study_flip	study	81	BY	0.01	317	0
 182	complete_null_study_flip	study	81	BH	0.001	317	0
 182	complete_null_study_flip	study	81	BY	0.001	317	0
-182	complete_null_study_flip	study	82	BH	0.05	317	1
+182	complete_null_study_flip	study	82	BH	0.05	317	0
 182	complete_null_study_flip	study	82	BY	0.05	317	0
 182	complete_null_study_flip	study	82	BH	0.01	317	0
 182	complete_null_study_flip	study	82	BY	0.01	317	0
