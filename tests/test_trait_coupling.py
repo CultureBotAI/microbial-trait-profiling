@@ -266,8 +266,8 @@ def test_full_coupling_audit_on_production_data(tmp_path: Path) -> None:
     rule = res["rule_result"]
     assert rule.target_trait_id == COCCUS_ID
     assert rule.dropped_trait_id == SPHERE_ID
-    assert pytest.approx(rule.min_adjacent_distance, abs=1e-5) == 0.002040
-    assert pytest.approx(rule.delta_effect, abs=1e-5) == 0.000237
+    assert pytest.approx(rule.min_adjacent_distance, abs=1e-5) == 0.003619
+    assert pytest.approx(rule.delta_effect, abs=1e-5) == 0.000012
     assert rule.passes_stability_criterion is True
 
 

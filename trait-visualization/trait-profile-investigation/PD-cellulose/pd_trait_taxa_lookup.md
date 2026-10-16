@@ -10,7 +10,7 @@ These are observed annotation carriers, not estimated causal contributions to th
 
 ## facultatively aerobic
 
-Mean-z difference (increased - decreased): +0.452. 110 annotated taxon labels observed in increased profiles; 157 across both directions.
+Mean-z difference (increased - decreased): +0.436. 110 annotated taxon labels observed in increased profiles; 157 across both directions.
 
 Top genus/species labels by occurrence in positive-z increased profiles:
 
@@ -31,7 +31,7 @@ Top genus/species labels by occurrence in positive-z increased profiles:
 
 ## moderately halophilic
 
-Mean-z difference (increased - decreased): +0.537. 80 annotated taxon labels observed in increased profiles; 103 across both directions.
+Mean-z difference (increased - decreased): +0.536. 80 annotated taxon labels observed in increased profiles; 103 across both directions.
 
 Top genus/species labels by occurrence in positive-z increased profiles:
 
@@ -52,7 +52,7 @@ Top genus/species labels by occurrence in positive-z increased profiles:
 
 ## coccus shaped
 
-Mean-z difference (increased - decreased): +0.017. 114 annotated taxon labels observed in increased profiles; 163 across both directions.
+Mean-z difference (increased - decreased): +0.006. 114 annotated taxon labels observed in increased profiles; 163 across both directions.
 
 Top genus/species labels by occurrence in positive-z increased profiles:
 
@@ -73,7 +73,7 @@ Top genus/species labels by occurrence in positive-z increased profiles:
 
 ## sphere shaped
 
-Mean-z difference (increased - decreased): -0.083. 54 annotated taxon labels observed in increased profiles; 74 across both directions.
+Mean-z difference (increased - decreased): -0.096. 54 annotated taxon labels observed in increased profiles; 74 across both directions.
 
 Top genus/species labels by occurrence in positive-z increased profiles:
 
@@ -81,7 +81,7 @@ Top genus/species labels by occurrence in positive-z increased profiles:
 | --- | --- | ---: | ---: | ---: | ---: |
 | Streptococcus | genus | 11 | 5 | 11 | 10 |
 | Peptoniphilus | genus | 9 | 0 | 9 | 1 |
-| Enterococcus | genus | 7 | 2 | 6 | 6 |
+| Enterococcus | genus | 7 | 2 | 5 | 5 |
 | Veillonella | genus | 5 | 2 | 5 | 4 |
 | Acidaminococcus | genus | 2 | 0 | 2 | 2 |
 | Acinetobacter | genus | 2 | 0 | 2 | 2 |
@@ -94,7 +94,7 @@ Top genus/species labels by occurrence in positive-z increased profiles:
 
 ## cellulose catabolic process
 
-Mean-z difference (increased - decreased): -0.609. 50 annotated taxon labels observed in increased profiles; 60 across both directions.
+Mean-z difference (increased - decreased): -0.620. 50 annotated taxon labels observed in increased profiles; 60 across both directions.
 
 Top genus/species labels by occurrence in positive-z increased profiles:
 
@@ -104,18 +104,18 @@ Top genus/species labels by occurrence in positive-z increased profiles:
 | Roseburia | genus | 4 | 31 | 4 | 4 |
 | Bacteroides | genus | 3 | 6 | 3 | 2 |
 | Clostridium | genus | 3 | 10 | 2 | 2 |
+| Mediterraneibacter torques | species | 3 | 1 | 2 | 2 |
 | Blautia | genus | 2 | 15 | 2 | 2 |
 | Butyrivibrio | genus | 2 | 3 | 2 | 2 |
 | Lachnospira | genus | 2 | 9 | 2 | 2 |
 | Ruminococcus | genus | 2 | 9 | 2 | 2 |
-| Mediterraneibacter torques | species | 3 | 1 | 1 | 1 |
 | Bacillus | genus | 2 | 0 | 1 | 1 |
 | Ruminococcus bromii | species | 2 | 2 | 1 | 1 |
 | Bacteroides cellulosilyticus | species | 1 | 2 | 1 | 1 |
 
 ## arsenate reduction
 
-Mean-z difference (increased - decreased): +0.391. 23 annotated taxon labels observed in increased profiles; 27 across both directions.
+Mean-z difference (increased - decreased): +0.401. 23 annotated taxon labels observed in increased profiles; 27 across both directions.
 
 Top genus/species labels by occurrence in positive-z increased profiles:
 
@@ -134,26 +134,26 @@ Annotation intersection is separate from all four traits having z>0 in a profile
 | Enterobacteriaceae | family | 18 | 2 | 5 |
 | Pseudomonadota | phylum | 15 | 1 | 4 |
 | Escherichia | genus | 9 | 2 | 4 |
-| Clostridia | class | 8 | 6 | 5 |
 | Actinomycetota | phylum | 8 | 0 | 2 |
+| Clostridia | class | 8 | 6 | 5 |
 | Eubacteriales | order | 7 | 7 | 1 |
 | Bacillota | phylum | 5 | 14 | 5 |
 | Bacilli | class | 4 | 3 | 3 |
-| Enterobacterales | order | 3 | 0 | 0 |
 | Gammaproteobacteria | class | 3 | 1 | 1 |
+| Enterobacterales | order | 3 | 0 | 0 |
 | Citrobacter | genus | 2 | 0 | 1 |
 | Burkholderiales | order | 2 | 0 | 1 |
-| Betaproteobacteria | class | 1 | 0 | 0 |
-| Actinomycetes | class | 1 | 0 | 1 |
 | Alphaproteobacteria | class | 1 | 0 | 1 |
-| Microbacteriaceae | family | 1 | 0 | 1 |
-| Pseudomonadales | order | 1 | 0 | 1 |
 | Bacillaceae | family | 1 | 1 | 0 |
+| Actinomycetes | class | 1 | 0 | 1 |
 | Escherichia coli | species | 1 | 2 | 1 |
-| Micrococcaceae | family | 0 | 2 | 0 |
+| Pseudomonadales | order | 1 | 0 | 1 |
+| Microbacteriaceae | family | 1 | 0 | 1 |
+| Betaproteobacteria | class | 1 | 0 | 0 |
 | Bacillales | order | 0 | 2 | 0 |
 | Comamonadaceae | family | 0 | 2 | 0 |
 | Staphylococcaceae | family | 0 | 1 | 0 |
+| Micrococcaceae | family | 0 | 2 | 0 |
 
 ## Complete Evidence
 

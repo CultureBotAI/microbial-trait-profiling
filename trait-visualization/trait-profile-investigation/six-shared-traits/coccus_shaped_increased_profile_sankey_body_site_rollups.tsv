@@ -1,18 +1,18 @@
 analysis	trait_id	trait_label	trait_slug	trait_color	focus_direction	raw_body_site	raw_body_site_group	body_site_group	body_site_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
-coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	1589
+coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	1612
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	157	141
-coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	66	64
+coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	66	66
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	43	40
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Oral cavity	Oral cavity	Oral cavity / dental	oral/dental rollup	82	11	46	48
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Nasopharynx	Nasopharynx	Upper airway / nasal	upper-airway/nasal rollup	74	15	49	46
-coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Mouth	Mouth	Oral cavity / dental	oral/dental rollup	74	14	36	42
-coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	70	18	35	37
-coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	30	31
+coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Mouth	Mouth	Oral cavity / dental	oral/dental rollup	74	14	36	43
+coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	70	18	35	38
+coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	30	33
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	61	10	32	34
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Rectum	Other	Lower GI tract	lower-gi rollup	43	7	21	20
-coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Skin of body	Other	Skin	skin rollup	43	7	23	30
+coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Skin of body	Other	Skin	skin rollup	43	7	23	29
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	40	8	20	17
-coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Intestine	Other	Lower GI tract	lower-gi rollup	39	8	21	18
+coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Intestine	Other	Lower GI tract	lower-gi rollup	39	8	21	19
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Vagina,Uterine cervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	39	1	24	15
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Colon	Other	Lower GI tract	lower-gi rollup	38	8	19	16
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Lung	Other	Lower airway / lung	lower-airway/lung rollup	37	8	21	16
@@ -24,11 +24,11 @@ coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increa
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Vaginal fluid	Other	Vaginal / reproductive	vaginal/reproductive rollup	26	6	14	7
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Meconium	Other	Birth-associated samples	birth-associated body-site group	25	8	13	12
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	25	5	13	20
-coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Conjunctiva	Other	Ocular / eye	ocular/eye body-site group	20	3	13	11
+coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Conjunctiva	Other	Ocular / eye	ocular/eye body-site group	20	3	13	12
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Gastric juice	Other	Stomach / esophagus	stomach/esophagus body-site group	20	2	13	9
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Urine	Other	Urinary tract	urinary rollup	19	5	10	8
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Bulbar conjunctiva	Other	Ocular / eye	ocular/eye body-site group	18	4	10	12
-coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Colorectal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	4	12	9
+coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Colorectal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	4	12	10
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Duodenal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	3	10	8
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Bronchus	Other	Bronchial / tracheal	bronchial/tracheal body-site group	18	1	9	12
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Uterus	Other	Vaginal / reproductive	vaginal/reproductive rollup	17	6	12	7
@@ -81,7 +81,7 @@ coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increa
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Gingiva	Other	Oral cavity / dental	oral/dental body-site group	5	1	3	3
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Meconium,Feces	Other	Feces	feces/stool rollup	5	1	2	0
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Upper respiratory tract	Other	Upper airway / nasal	upper-airway/nasal rollup	5	1	2	4
-coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Dental pulp	Other	Oral cavity / dental	oral/dental body-site group	4	1	2	0
+coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Dental pulp	Other	Oral cavity / dental	oral/dental body-site group	4	1	2	1
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Mucosa of ascending colon	Other	Lower GI tract	lower-gi rollup	4	1	3	4
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Mucosa of oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	4	1	2	3
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Renal pelvis/ureter	Other	Urinary tract	urinary body-site group	4	1	2	1
@@ -136,6 +136,6 @@ coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increa
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Feces,Mucosa of small intestine	Other	Feces	feces/stool rollup	1	1	0	0
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Hypopharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	1	1
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Lower part of vagina,Upper part of vagina,Cervical mucus	Other	Vaginal / reproductive	vaginal/reproductive rollup	1	1	1	0
-coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	1	1	1	0
+coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	1	1	1	1
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Nasopharyngeal gland	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	1	1
 coccus_shaped_increased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	increased	Prostate gland	Other	Reproductive / genital	reproductive/genital body-site group	1	1	1	1

@@ -210,3 +210,59 @@ def test_annotation_edges_are_explicitly_noninferential() -> None:
     assert pd.isna(annotation["q_value"])
     assert "species" in set(nodes["layer"])
     assert selected_taxa["taxon_id"].tolist() == ["taxon-1"]
+
+
+def test_build_network_tables_handles_empty_fdr_selection() -> None:
+    taxon_tests = pd.DataFrame(
+        {
+            "condition": ["Condition A"],
+            "taxon_id": ["taxon-1"],
+            "taxon_name": ["Taxon one"],
+            "taxonomic_rank": ["species"],
+            "direction": ["increased"],
+            "directional_difference_fraction": [0.4],
+            "p_value": [0.02],
+            "q_value": [0.06],
+            "reported_study_count": [8],
+            "test": ["paired taxon test"],
+            "selected_after_bh": [False],
+        }
+    )
+    trait_tests = pd.DataFrame(
+        {
+            "condition": ["Condition A"],
+            "trait_id": ["trait-1"],
+            "trait": ["trait one"],
+            "direction": ["increased"],
+            "mean_contrast": [0.5],
+            "p_value": [0.00017],
+            "q_value": [0.056],
+            "paired_study_count": [45],
+            "test": ["paired trait test"],
+            "selected_after_bh": [False],
+        }
+    )
+    annotated_taxa = pd.DataFrame(
+        {
+            "taxon_id": ["taxon-1"],
+            "taxon_name": ["Taxon one"],
+            "taxonomic_rank": ["species"],
+            "trait-1": [3],
+        }
+    )
+    traits = pd.DataFrame(
+        {"trait_id": ["trait-1"], "trait_label": ["trait one"], "trait_order": [0]}
+    )
+
+    nodes, edges, selected_taxa = network.build_network_tables(
+        taxon_tests,
+        trait_tests,
+        annotated_taxa,
+        traits,
+    )
+
+    assert nodes.empty
+    assert list(nodes.columns) == network.NODE_COLUMNS
+    assert edges.empty
+    assert list(edges.columns) == network.EDGE_COLUMNS
+    assert selected_taxa.empty

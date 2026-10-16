@@ -3,8 +3,8 @@
 The trait screen of #255 tests all 317 retained traits and corrects across the
 whole family, twice: Benjamini-Yekutieli and Benjamini-Hochberg at the nominal
 family size, and Benjamini-Yekutieli again at the effective family size estimated
-from the study contrasts (#265). On the pinned corpus it calls 18 traits at BY
-q <= 0.05 with m = 317 and 56 with m = 112. This module asks what those numbers
+from the study contrasts (#265). On the pinned corpus it calls 17 traits at BY
+q <= 0.05 with m = 317 and 59 with m = 112. This module asks what those numbers
 would be if no trait differed between the directions.
 
 The null is the directional arm's complete null of #182, reused rather than
@@ -19,7 +19,7 @@ the effective family size, so the effective-size column is calibrated as the
 procedure is actually run. Every call under this null is a false one, so the
 per-replicate count is the false-discovery count, and the share of replicates
 with any call is the family error of the whole screen. Neither is a verdict on
-the observed 18 or 56; they are what the same procedure produces with no signal.
+the observed 17 or 59; they are what the same procedure produces with no signal.
 """
 
 from __future__ import annotations
@@ -54,11 +54,12 @@ from mtp.trait_screen import (
 
 VERSION = "screen-calibration-v1"
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "calibration" / "screen"
+DEFAULT_SHARED_FLIPS_PATH = DERIVED_DATA_DIR / "calibration" / "calibration_flip_assignments.tsv"
 #: The stream whose replicates these are; the shared artefact of #263 names it too.
 STREAM = "complete_null_study_flip"
 UNIT = "study"
-#: The thresholds the screen's manifest reports, in its order.
-THRESHOLDS = (0.05, 0.001)
+#: Multi-threshold calibration grid across nominal and effective q columns (#341).
+THRESHOLDS = (0.10, 0.05, 0.01, 0.001)
 #: The q columns of the screen, each with the correction it applies and how the
 #: family size behind it is read off the result.
 CORRECTIONS = (
@@ -222,6 +223,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Study-flip replicates; the default matches the shared artefact of #263",
     )
     parser.add_argument("--seed", type=int, default=SEED)
+    parser.add_argument(
+        "--shared-flips",
+        type=Path,
+        default=DEFAULT_SHARED_FLIPS_PATH,
+        help="Shared flip-assignment TSV from #263 for provenance recording (#342)",
+    )
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
 
@@ -275,6 +282,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             "profile_sha256": file_sha256(args.profile_input),
             "experiments_sha256": file_sha256(args.experiments_input),
             "full_dump_sha256": file_sha256(args.full_dump_input),
+            "shared_flip_assignments_sha256": (
+                file_sha256(args.shared_flips) if args.shared_flips.is_file() else None
+            ),
             "analysis_source_sha256": file_sha256(Path(__file__)),
         },
         "code_commit": args.code_commit,

@@ -1,16 +1,16 @@
 label	display_trait_edge_count	display_trait_count	focus_enriched_profile_count	focus_enriched_study_count	profile_count	node_type	area_scale_max_profiles	radius_axis_units
-Metabolic / endocrine	12	6	1178	76	550	condition	1659.0	0.019576591057181857
-Neurologic / cognitive disease	12	6	1059	88	428	condition	1659.0	0.017269414300528644
-Infectious disease	36	6	1245	100	476	condition	1659.0	0.01821206536597414
-Cancer / neoplasia	42	6	1134	83	447	condition	1659.0	0.01764856852741626
-Colorectal neoplasia	18	6	540	53	195	condition	1659.0	0.011656630489041293
-Ocular / eye disease	6	6	138	14	42	condition	1659.0	0.005409789532394965
-Respiratory / airway disease	12	6	163	13	56	condition	1659.0	0.006246686885574905
-Reproductive / hormonal health	6	6	142	21	59	condition	1659.0	0.006411826023810551
-Feces	72	6	4077	306	1659	body_site_group	1659.0	0.034
-Upper airway / nasal	12	6	307	24	118	body_site_group	1659.0	0.009067691322449637
-Ocular / eye	6	6	138	14	42	body_site_group	1659.0	0.005409789532394965
-Oral cavity / dental	12	6	300	28	140	body_site_group	1659.0	0.009876879194160157
-Vaginal / reproductive	30	6	602	53	231	body_site_group	1659.0	0.012687081040036583
-Stomach / esophagus	6	6	98	9	28	body_site_group	1659.0	0.00441707465673909
-Lower GI tract	6	6	77	14	35	body_site_group	1659.0	0.004938439597080078
+Metabolic / endocrine	12	6	1190	77	550	condition	1631.0	0.019743915391137838
+Neurologic / cognitive disease	12	6	1069	88	428	condition	1631.0	0.01741701881641221
+Infectious disease	36	6	1254	100	476	condition	1631.0	0.018367726875090997
+Cancer / neoplasia	42	6	1134	83	447	condition	1631.0	0.01779941373665115
+Colorectal neoplasia	24	6	633	54	238	condition	1631.0	0.012987944228359237
+Ocular / eye disease	6	6	139	14	42	condition	1631.0	0.005456027890631392
+Reproductive / hormonal health	6	6	144	21	59	condition	1631.0	0.00646662895225412
+Respiratory / airway disease	6	6	80	13	28	condition	1631.0	0.004454828118146846
+Feces	66	6	4028	307	1631	body_site_group	1631.0	0.034
+Upper airway / nasal	12	6	304	24	118	body_site_group	1631.0	0.009145194367112293
+Ocular / eye	6	6	139	14	42	body_site_group	1631.0	0.005456027890631392
+Vaginal / reproductive	30	6	607	53	231	body_site_group	1631.0	0.012795519602126834
+Oral cavity / dental	12	6	301	28	140	body_site_group	1631.0	0.009961298500253811
+Stomach / esophagus	6	6	98	9	28	body_site_group	1631.0	0.004454828118146846
+Lower GI tract	12	6	166	15	78	body_site_group	1631.0	0.00743531269842499

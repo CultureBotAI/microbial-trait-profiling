@@ -1828,11 +1828,15 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
     old_marker = "## Condition-Body-Site Trait Correlation Heatmaps"
     content = readme_path.read_text(encoding="utf-8")
     split_marker = old_marker if old_marker in content else new_marker
-    prefix, prior_section = content.split(split_marker, maxsplit=1)
-    next_section_start = prior_section.find("\n## ")
-    suffix = ""
-    if next_section_start >= 0:
-        suffix = prior_section[next_section_start + 1 :].strip()
+    if split_marker in content:
+        prefix, prior_section = content.split(split_marker, maxsplit=1)
+        next_section_start = prior_section.find("\n## ")
+        suffix = ""
+        if next_section_start >= 0:
+            suffix = prior_section[next_section_start + 1 :].strip()
+    else:
+        prefix = content
+        suffix = ""
     lines = [
         new_marker,
         "",

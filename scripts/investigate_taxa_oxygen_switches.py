@@ -17,7 +17,7 @@ from create_condition_body_site_guild_maps import (
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROFILE_METADATA_PATH = REPO_ROOT / "trait-visualization/study_trait_profile_study_metadata.tsv"
-TAXA_PATH = REPO_ROOT / "data/derived/taxa.tsv"
+TAXA_PATH = REPO_ROOT / "data/derived/bugsigdb_taxa.tsv"
 TAXA_TRAIT_MATRIX_PATH = REPO_ROOT / "data/derived/taxa_trait_matrix.tsv"
 OUTPUT_DIR = REPO_ROOT / "trait-visualization/trait-profile-investigation/taxa-oxygen-switches"
 

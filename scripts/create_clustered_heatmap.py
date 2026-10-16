@@ -179,7 +179,7 @@ def main() -> None:
     parser.add_argument(
         "--input",
         type=Path,
-        default=REPO_ROOT / "data/derived/taxa.tsv",
+        default=REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
         help="Input taxa TSV path.",
     )
     parser.add_argument(

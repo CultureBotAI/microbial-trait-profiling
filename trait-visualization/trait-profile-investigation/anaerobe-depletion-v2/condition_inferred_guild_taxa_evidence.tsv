@@ -52,6 +52,32 @@ Inflammatory bowel disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	N
 Inflammatory bowel disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:2173	Methanobrevibacter smithii	species	1	1	25
 Inflammatory bowel disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:310297	Phocaeicola plebeius	species	1	1	2
 Inflammatory bowel disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1305	Streptococcus sanguinis	species	1	1	1
+Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	5	2	17
+Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:572511	Blautia	genus	3	2	1
+Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186801	Clostridia	class	2	2	125
+Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	2	2	58
+Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:946234	Flavonifractor	genus	2	1	2
+Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	75
+Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186804	Peptostreptococcaceae	family	1	1	21
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	5	2	173
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:572511	Blautia	genus	3	2	16
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1506553	Lachnoclostridium	genus	3	2	12
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186801	Clostridia	class	2	2	1264
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	2	2	592
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:946234	Flavonifractor	genus	2	1	4
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1769710	Sellimonas	genus	2	1	1
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28211	Alphaproteobacteria	class	1	1	95
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:207244	Anaerostipes	genus	1	1	6
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	356
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	22
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186806	Eubacteriaceae	family	1	1	32
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1378	Gemella	genus	1	1	1
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1392389	Intestinimonas	genus	1	1	1
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:459786	Oscillibacter	genus	1	1	3
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186804	Peptostreptococcaceae	family	1	1	269
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:204441	Rhodospirillales	order	1	1	22
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1508657	Ruminiclostridium	genus	1	1	11
+Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1547	Thomasclavelia ramosa	species	1	1	2
 Age-related macular degeneration	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:838	Prevotella	genus	6	1	5
 Age-related macular degeneration	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	3	2	17
 Age-related macular degeneration	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	2	2	38
@@ -105,32 +131,6 @@ Age-related macular degeneration	decreased	METPO:1000603	anaerobic	PhenotypicQua
 Age-related macular degeneration	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:995019	Sutterellaceae	family	1	1	9
 Age-related macular degeneration	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:29465	Veillonella	genus	1	1	29
 Age-related macular degeneration	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:39492	[Eubacterium] siraeum	species	1	1	3
-Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	5	2	17
-Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:572511	Blautia	genus	3	2	1
-Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186801	Clostridia	class	2	2	125
-Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	2	2	58
-Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:946234	Flavonifractor	genus	2	1	2
-Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	75
-Graft versus host disease	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:186804	Peptostreptococcaceae	family	1	1	21
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	5	2	173
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:572511	Blautia	genus	3	2	16
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1506553	Lachnoclostridium	genus	3	2	12
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186801	Clostridia	class	2	2	1264
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	2	2	592
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:946234	Flavonifractor	genus	2	1	4
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1769710	Sellimonas	genus	2	1	1
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:28211	Alphaproteobacteria	class	1	1	95
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:207244	Anaerostipes	genus	1	1	6
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	356
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	22
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186806	Eubacteriaceae	family	1	1	32
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1378	Gemella	genus	1	1	1
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1392389	Intestinimonas	genus	1	1	1
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:459786	Oscillibacter	genus	1	1	3
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:186804	Peptostreptococcaceae	family	1	1	269
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:204441	Rhodospirillales	order	1	1	22
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1508657	Ruminiclostridium	genus	1	1	11
-Graft versus host disease	decreased	METPO:1000603	anaerobic	PhenotypicQuality	NCBITaxon:1547	Thomasclavelia ramosa	species	1	1	2
 Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	8	2	38
 Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	6	2	2
 Diarrhea	decreased	METPO:1000607	obligately anaerobic	PhenotypicQuality	NCBITaxon:1263	Ruminococcus	genus	6	1	1

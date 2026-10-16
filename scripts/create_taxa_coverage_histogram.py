@@ -28,7 +28,7 @@ VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
 OUTPUT_DIR = INVESTIGATION_DIR / "taxa-coverage"
 
-TAXA_PATH = REPO_ROOT / "data" / "derived" / "taxa.tsv"
+TAXA_PATH = REPO_ROOT / "data" / "derived" / "bugsigdb_taxa.tsv"
 TAXA_TRAIT_MATRIX_PATH = REPO_ROOT / "data" / "derived" / "taxa_trait_matrix.tsv"
 
 # Standard taxonomic hierarchy (ascending order)

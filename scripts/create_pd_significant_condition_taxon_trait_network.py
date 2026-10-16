@@ -25,7 +25,7 @@ OUTPUT_DIR = INVESTIGATION_DIR / "PD-cellulose"
 
 PROFILE_MATRIX_PATH = REPO_ROOT / "data/derived/study_trait_profiles_wide.tsv"
 PROFILE_METADATA_PATH = VIS_DIR / "study_trait_profile_study_metadata.tsv"
-TAXA_PATH = REPO_ROOT / "data/derived/taxa.tsv"
+TAXA_PATH = REPO_ROOT / "data/derived/bugsigdb_taxa.tsv"
 TAXA_TRAIT_MATRIX_PATH = REPO_ROOT / "data/derived/taxa_trait_matrix.tsv"
 TRAIT_SUMMARY_PATH = SIX_SHARED_DIR / "six_shared_trait_summary.tsv"
 
@@ -401,6 +401,25 @@ def build_condition_trait_tests(
     return tests, study_contrasts
 
 
+NODE_COLUMNS = ["node_id", "label", "layer", "node_type", "taxonomic_rank"]
+EDGE_COLUMNS = [
+    "source",
+    "target",
+    "source_layer",
+    "target_layer",
+    "edge_class",
+    "evidence_type",
+    "direction",
+    "effect",
+    "p_value",
+    "q_value",
+    "study_support",
+    "annotation_count",
+    "statistically_significant",
+    "line_style",
+]
+
+
 def build_network_tables(
     taxon_tests: pd.DataFrame,
     trait_tests: pd.DataFrame,
@@ -415,7 +434,11 @@ def build_network_tables(
         key=lambda value: (value != PD_CONDITION, value),
     )
     if not displayed_conditions:
-        raise ValueError("No condition-taxon or condition-trait result passes BH q<=0.05")
+        return (
+            pd.DataFrame(columns=NODE_COLUMNS),
+            pd.DataFrame(columns=EDGE_COLUMNS),
+            selected_taxa,
+        )
 
     trait_names = dict(zip(traits["trait_id"], traits["trait_label"], strict=True))
     trait_ids = traits["trait_id"].tolist()
@@ -523,8 +546,8 @@ def build_network_tables(
                 "taxonomic_rank": pd.NA,
             }
         )
-    nodes_frame = pd.DataFrame.from_records(nodes).drop_duplicates("node_id")
-    edges_frame = pd.DataFrame.from_records(edges)
+    nodes_frame = pd.DataFrame.from_records(nodes, columns=NODE_COLUMNS).drop_duplicates("node_id")
+    edges_frame = pd.DataFrame.from_records(edges, columns=EDGE_COLUMNS)
     return nodes_frame, edges_frame, selected_taxa
 
 

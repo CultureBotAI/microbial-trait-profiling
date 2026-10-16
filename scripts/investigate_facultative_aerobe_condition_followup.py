@@ -126,7 +126,7 @@ def load_taxa_occurrences(profiles: pd.DataFrame) -> pd.DataFrame:
         "oxygen_tolerance_z_mean",
     ]
     taxa = pd.read_csv(
-        REPO_ROOT / "data/derived/taxa.tsv",
+        REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
         sep="\t",
         usecols=[
             "study_id",

@@ -1,6 +1,6 @@
 taxon_id	target_taxon_name	taxon_name	taxonomic_rank	bugsigdb_study_count	bugsigdb_profile_count	decreased	increased	dominant_direction	increased_fraction	increased_profile_tendency	increased_to_decreased_ratio	trait_count
-NCBITaxon:208479	Enterocloster bolteae	Enterocloster bolteae	species	23	33	6	27	increased	0.8181818181818182	0.6363636363636364	4.5	14
 NCBITaxon:84112	Eggerthella lenta	Eggerthella lenta	species	33	44	8	36	increased	0.8181818181818182	0.6363636363636364	4.5	14
+NCBITaxon:208479	Enterocloster bolteae	Enterocloster bolteae	species	23	33	6	27	increased	0.8181818181818182	0.6363636363636364	4.5	14
 NCBITaxon:851	Fusobacterium nucleatum	Fusobacterium nucleatum	species	35	58	11	47	increased	0.8103448275862069	0.6206896551724138	4.2727272727272725	13
 NCBITaxon:33033	Parvimonas micra	Parvimonas micra	species	29	41	9	32	increased	0.7804878048780488	0.5609756097560976	3.5555555555555554	13
 NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae	species	24	51	12	39	increased	0.7647058823529411	0.5294117647058824	3.25	24

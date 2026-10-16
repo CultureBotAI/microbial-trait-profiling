@@ -1,7 +1,7 @@
 trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction
-METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	2.780371580274397e-10	8.826576445315547e-13	0.1937720383281355	trait enriched in increased profiles
-METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	6.901231973484597e-07	4.381734586339426e-09	-0.1619379973065473	trait enriched in decreased profiles
-METPO:1000668	coccus shaped	coccus_shaped	#009e73	1.128868098086022e-06	1.0751124743676398e-08	0.1610708721976063	trait enriched in increased profiles
-METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	1.9473485986294815e-05	2.480982857010877e-07	0.1438191971504786	trait enriched in increased profiles
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	1.9473485986294815e-05	3.091029521634098e-07	0.1514114815413904	trait enriched in increased profiles
-METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	3.107093678754347e-05	5.918273673817805e-07	0.1381245355100493	trait enriched in increased profiles
+METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	1.686007827805464e-09	5.352405802557029e-12	0.1863100713633421	trait enriched in increased profiles
+METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	3.315124070453886e-07	2.104840679653261e-09	-0.1648757647076205	trait enriched in decreased profiles
+METPO:1000668	coccus shaped	coccus_shaped	#009e73	2.468720109771265e-06	2.3511620093059672e-08	0.1569061185937866	trait enriched in increased profiles
+METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	3.3376135009109666e-05	5.182605896223815e-07	0.1396517082374933	trait enriched in increased profiles
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	3.3376135009109666e-05	5.297799207795185e-07	0.1477973124166186	trait enriched in increased profiles
+METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	9.411149738395968e-05	1.7925999501706602e-06	0.1317090107285474	trait enriched in increased profiles

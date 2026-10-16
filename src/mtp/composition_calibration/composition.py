@@ -42,7 +42,7 @@ from mtp.composition_calibration.adapters.jed_composition import (
     JedCompositionAdapter,
     compute_composition_contrasts,
 )
-from mtp.composition_calibration.scenarios import replicate_rng
+from mtp.composition_calibration.scenarios import replicate_rng, study_flip_draw_order
 from mtp.composition_denominators import MEDIADIVE_MARKER
 from mtp.density_adjustment import TABLE_1_TRAITS
 from mtp.enrichment_stats import benjamini_hochberg
@@ -210,7 +210,8 @@ def run_composition_calibration(
     if study_contrasts.empty:
         raise ValueError("No paired studies available for composition inference")
 
-    study_keys = sorted(study_contrasts.index.astype(str), key=repr)
+    contrast_index = set(study_contrasts.index.astype(str))
+    study_keys = [k for k in study_flip_draw_order(profiles_df) if k in contrast_index]
     study_contrasts = study_contrasts.loc[study_keys]
     n_studies = len(study_keys)
     harmonic_sum = float(np.sum(1.0 / np.arange(1, m + 1)))

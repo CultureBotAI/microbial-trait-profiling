@@ -1,2 +1,2 @@
 trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	1.9473485986294815e-05	3.091029521634098e-07	0.1514114815413904	trait enriched in increased profiles
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	3.3376135009109666e-05	5.297799207795185e-07	0.1477973124166186	trait enriched in increased profiles
