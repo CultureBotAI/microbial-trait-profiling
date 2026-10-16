@@ -44,6 +44,16 @@ def test_canonical_redundancy_clusters_structure() -> None:
             "sibling_near_twin",
         }
         assert cluster.selection_rule
+        assert cluster.selection_rule.startswith("max_support")
+
+    by_id = {c.cluster_id: c for c in clusters}
+    co_ox = by_id["co_oxidation_pathway"]
+    assert co_ox.surviving_trait == "METPO:2000103|pathways:carbon_monoxide_oxidation"
+    assert co_ox.collapsed_traits == ["METPO:2000103|pathways:carbonmonoxide_oxidation"]
+    assert (
+        "13,744 profile counts across 2,752 nonzero profiles"
+        in by_id["bacillus_rod_shape"].rationale
+    )
 
 
 def test_collapse_trait_matrix_synthetic() -> None:
@@ -226,6 +236,12 @@ def test_ontology_redundancy_audit_integration(tmp_path: Path) -> None:
     ]:
         collapsed_row = comp_df[comp_df["configuration"] == cfg].iloc[0]
         assert np.isnan(collapsed_row["near_twin_r"])
+
+    # 6. Surviving trait has at least as much support as each collapsed member (#473)
+    pairs_df = results["df_pairs"]
+    survivor_pairs = pairs_df[pairs_df["trait_1"] == pairs_df["surviving_trait"]]
+    assert not survivor_pairs.empty
+    assert (survivor_pairs["support_trait_1"] >= survivor_pairs["support_trait_2"]).all()
 
 
 def test_build_redundant_pairs_table_gz_columns(tmp_path: Path) -> None:

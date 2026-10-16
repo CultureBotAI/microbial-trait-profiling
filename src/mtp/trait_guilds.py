@@ -215,8 +215,9 @@ def column_term_id(column: str) -> str:
     pair (``METPO:2000103|GO:0030245``). The qualifier says how the term was
     attached, not which term it is, so lookups key on the segment after the final
     pipe. Only ``mediadive.medium:372`` shares a suffix with another column across
-    the whole header (2,610 columns on the pinned v1.3.1 matrix), and MediaDive
-    columns are dropped before any lookup runs.
+    the whole header (2,653 columns on the regenerated v1.3.1 matrix; 2,610 on the
+    earlier committed ``.gz``), and MediaDive columns are dropped before any lookup
+    runs.
     """
     return column.rsplit("|", 1)[-1]
 

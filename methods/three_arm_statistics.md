@@ -360,16 +360,16 @@ this note reported 2,290 MediaDive columns, and the run below measures 2,333.
 | header columns | 2,653 = 3 identifier + **2,333 MediaDive** + **317 retained** |
 | profile rows | 7,329 |
 | BugSigDB vintage | `2026-04-24_00:41_UTC` (v1.3.1) |
-| KG-Microbe nodes | md5 `dd76b4656f9341db25a7c4afa96cd58e` |
-| KG-Microbe edges | md5 `555ecf5ba5d89288cdc44e368375374f` |
-| KG-Microbe release | **not recorded by the download** |
+| KG-Microbe nodes | declared md5 `dd76b4656f9341db25a7c4afa96cd58e` (declared by `data/kg-microbe/provenance.json` sidecar) |
+| KG-Microbe edges | declared md5 `555ecf5ba5d89288cdc44e368375374f` (declared by `data/kg-microbe/provenance.json` sidecar) |
+| KG-Microbe release | `20260120` (pinned Drive build folder in `scripts/download_kg_microbe.py`) |
 
-Filter cascade on that matrix: 7,329 profile rows read, 3,494 experiments after
-the metadata join with none unmatched, **1,500 rows dropped as non-human**, 1,159
-experiments dropped as unpaired, leaving **2,335 experiments, 4,670 profiles and
-959 studies**. Every recipe prints this block and writes it to a
-`corpus_identity.json` beside its outputs, so a number can be traced to the file
-it came from rather than to a vintage string.
+Filter cascade on that matrix: 7,329 profile rows read (0 unmatched in the
+metadata join), **1,500 rows dropped as non-human**, leaving 3,494 human
+experiments after the host filter, of which 1,159 are dropped as unpaired,
+leaving **2,335 experiments, 4,670 profiles and 959 studies**. Every recipe prints
+this block and writes it to a `corpus_identity.json` beside its outputs, so a
+number can be traced to the file it came from rather than to a vintage string.
 
 Two further points, because matching one field does not establish the rest:
 

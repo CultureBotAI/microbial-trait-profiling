@@ -20,7 +20,7 @@ from statistics import fmean, median
 
 from scipy.stats import binomtest, false_discovery_control
 
-from mtp.corpus_identity import corpus_identity, summary_lines
+from mtp.corpus_identity import CorpusIdentity, corpus_identity, summary_lines
 from mtp.paths import DERIVED_DATA_DIR
 from mtp.paths import file_sha256 as file_sha256
 from mtp.trait_guilds import (
@@ -234,6 +234,7 @@ def write_log_ratio_outputs(
     body_site: str | None = None,
     corpus_stats: CorpusStats | None = None,
     code_commit: str | None = None,
+    identity: CorpusIdentity | None = None,
 ) -> list[Path]:
     """Write statistics, study-level exclusions, source fingerprints and a report."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -262,19 +263,25 @@ def write_log_ratio_outputs(
         )
         writer.writeheader()
         writer.writerows(study_rows)
+    resolved_vintage = (
+        identity.bugsigdb_vintage if identity is not None else read_bugsigdb_vintage(full_dump_path)
+    )
+    resolved_identity = (
+        identity
+        if identity is not None
+        else corpus_identity(profile_path, bugsigdb_vintage=resolved_vintage)
+    )
     provenance = {
         **scope,
         "profile_path": str(profile_path),
-        "profile_sha256": file_sha256(profile_path),
+        "profile_sha256": resolved_identity.matrix.sha256,
         "experiments_path": str(experiments_path),
         "experiments_sha256": file_sha256(experiments_path),
         "analysis_source_sha256": file_sha256(Path(__file__)),
         "shared_loader_source_sha256": file_sha256(Path(__file__).with_name("trait_guilds.py")),
         "code_commit": code_commit,
-        "bugsigdb_vintage": read_bugsigdb_vintage(full_dump_path),
-        "corpus_identity": corpus_identity(
-            profile_path, bugsigdb_vintage=read_bugsigdb_vintage(full_dump_path)
-        ).as_record(),
+        "bugsigdb_vintage": resolved_vintage,
+        "corpus_identity": resolved_identity.as_record(),
         "input_filter_counts_before_site_selection": asdict(corpus_stats) if corpus_stats else None,
         "trait_ids": TABLE1_TRAITS,
         "host": "Homo sapiens",
@@ -345,13 +352,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--body-site", help="Exact source label; no display cuts or Other pooling")
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
+    vintage = read_bugsigdb_vintage(args.full_dump_input)
+    identity = corpus_identity(args.profile_input, bugsigdb_vintage=vintage)
+    print("\n".join(summary_lines(identity)))
     profiles, stats = load_profiles(
         args.profile_input, args.experiments_input, TABLE1_TRAITS, reject_missing_counts=True
     )
-    vintage = read_bugsigdb_vintage(args.full_dump_input)
     write_stats_report(stats, vintage)
-    identity = corpus_identity(args.profile_input, bugsigdb_vintage=vintage)
-    print("\n".join(summary_lines(identity)))
     if args.body_site is not None:
         profiles = [p for p in profiles if p.body_site == args.body_site]
     result = compute_log_ratio_shifts(profiles)
@@ -364,6 +371,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         body_site=args.body_site,
         corpus_stats=stats,
         code_commit=args.code_commit,
+        identity=identity,
     )
     for path in paths:
         print(path)
