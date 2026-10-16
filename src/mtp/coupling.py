@@ -133,10 +133,12 @@ def compute_composition_arm(
     Returned q_value is a focal-set Benjamini-Hochberg adjustment over focal_traits
     (m = len(focal_traits), a sensitivity check distinct from full-family Table 1 q-values).
     """
-    counts_all = profiles_df[trait_universe].to_numpy(dtype=float)
+    counts_all = profiles_df[trait_universe].values.astype(float)
     totals = counts_all.sum(axis=1)
     denom = np.where(totals > 0, totals, 1.0)
-    fractions = np.where(totals[:, None] > 0, counts_all / denom[:, None], 0.0)
+
+    focal_counts = profiles_df[focal_traits].values.astype(float)
+    fractions = np.where(totals[:, None] > 0, focal_counts / denom[:, None], 0.0)
 
     scaled = np.log1p(fractions * 1000.0)
     mu = scaled.mean(axis=0)
@@ -144,44 +146,41 @@ def compute_composition_arm(
     sd[sd == 0] = 1.0
     zscores = (scaled - mu) / sd
 
-    df_z = pd.DataFrame(zscores, columns=trait_universe)
+    df_z = pd.DataFrame(zscores, columns=focal_traits)
     df_z["study_id"] = profiles_df["study_id"].values
     df_z["experiment_id"] = profiles_df["experiment_id"].values
     df_z["inc_dec"] = profiles_df["inc_dec"].values
 
     pvt_z = df_z.pivot(
-        index=["study_id", "experiment_id"], columns="inc_dec", values=trait_universe
+        index=["study_id", "experiment_id"], columns="inc_dec", values=focal_traits
     ).dropna()
 
-    diffs_mat = (
-        pvt_z.xs("inc", axis=1, level=1)[trait_universe]
-        - pvt_z.xs("dec", axis=1, level=1)[trait_universe]
-    ).to_numpy(dtype=float)
-
-    effects = np.mean(diffs_mat, axis=0)
-    std_diffs = np.std(diffs_mat, axis=0, ddof=1)
-    valid_std = std_diffs > 1e-12
-    t_stats = np.zeros(len(trait_universe), dtype=float)
-    p_vals = np.ones(len(trait_universe), dtype=float)
-    if np.any(valid_std):
-        tt = stats.ttest_1samp(diffs_mat[:, valid_std], 0.0, axis=0)
-        t_stats[valid_std] = np.where(
-            np.isnan(tt.statistic), 0.0, np.asarray(tt.statistic, dtype=float)
-        )
-        p_vals[valid_std] = np.where(np.isnan(tt.pvalue), 1.0, np.asarray(tt.pvalue, dtype=float))
-    q_vals = benjamini_hochberg(p_vals.tolist()) if len(p_vals) > 0 else np.array([], dtype=float)
-
-    idx_map = {t: idx for idx, t in enumerate(trait_universe)}
-    results: dict[str, ArmResult] = {}
+    p_vals: list[float] = []
+    stats_list: list[dict[str, float]] = []
     for t in focal_traits:
-        idx = idx_map[t]
+        diffs = (pvt_z[(t, "inc")] - pvt_z[(t, "dec")]).to_numpy(dtype=float)
+        tt = stats.ttest_1samp(diffs, 0.0)
+        p_val = float(tt.pvalue) if not np.isnan(tt.pvalue) else 1.0
+        p_vals.append(p_val)
+        stats_list.append(
+            {
+                "effect": float(np.mean(diffs)),
+                "t_stat": float(tt.statistic) if not np.isnan(tt.statistic) else 0.0,
+                "p_val": p_val,
+            }
+        )
+
+    q_vals = benjamini_hochberg(p_vals) if len(p_vals) > 0 else []
+
+    results: dict[str, ArmResult] = {}
+    for idx, t in enumerate(focal_traits):
         results[t] = ArmResult(
             trait_id=t,
             trait_name=TABLE_1_TRAITS.get(t, t),
-            primary_stat=float(effects[idx]),
-            p_value=float(p_vals[idx]),
-            q_value=float(q_vals[idx]) if len(q_vals) > idx else float(p_vals[idx]),
-            extra_stat=float(t_stats[idx]),
+            primary_stat=stats_list[idx]["effect"],
+            p_value=stats_list[idx]["p_val"],
+            q_value=float(q_vals[idx]) if len(q_vals) > idx else stats_list[idx]["p_val"],
+            extra_stat=stats_list[idx]["t_stat"],
         )
     return results
 
@@ -203,58 +202,52 @@ def compute_directional_arm(
     Returned q_value is a focal-set Benjamini-Hochberg adjustment over focal_traits
     (m = len(focal_traits), a sensitivity check distinct from full-family Table 1 q-values).
     """
-    counts_all = profiles_df[trait_universe].to_numpy(dtype=float)
+    counts_all = profiles_df[trait_universe].values.astype(float)
     totals = counts_all.sum(axis=1)
     denom = np.where(totals > 0, totals, 1.0)
-    fractions = np.where(totals[:, None] > 0, counts_all / denom[:, None], 0.0)
 
-    df_frac = pd.DataFrame(fractions, columns=trait_universe)
+    focal_counts = profiles_df[focal_traits].values.astype(float)
+    fractions = np.where(totals[:, None] > 0, focal_counts / denom[:, None], 0.0)
+
+    df_frac = pd.DataFrame(fractions, columns=focal_traits)
     df_frac["study_id"] = profiles_df["study_id"].values
     df_frac["experiment_id"] = profiles_df["experiment_id"].values
     df_frac["inc_dec"] = profiles_df["inc_dec"].values
 
     pvt = df_frac.pivot(
-        index=["study_id", "experiment_id"], columns="inc_dec", values=trait_universe
+        index=["study_id", "experiment_id"], columns="inc_dec", values=focal_traits
     ).dropna()
 
-    pair_diff = (
-        pvt.xs("inc", axis=1, level=1)[trait_universe]
-        - pvt.xs("dec", axis=1, level=1)[trait_universe]
-    )
-    study_diff = pair_diff.groupby(level="study_id").mean().to_numpy(dtype=float)
-
-    up_arr = (study_diff > sign_tol).sum(axis=0)
-    down_arr = (study_diff < -sign_tol).sum(axis=0)
-    scored_arr = up_arr + down_arr
-
-    binom_cache: dict[tuple[int, int], float] = {}
     p_vals: list[float] = []
-    for up_val, scored_val in zip(up_arr, scored_arr, strict=True):
-        u_int = int(up_val)
-        n_int = int(scored_val)
-        if n_int <= 0:
-            p_vals.append(1.0)
-        else:
-            key = (u_int, n_int)
-            if key not in binom_cache:
-                binom_cache[key] = float(binomtest(u_int, n_int, p=0.5).pvalue)
-            p_vals.append(binom_cache[key])
-
-    q_vals = benjamini_hochberg(p_vals) if len(p_vals) > 0 else np.array([], dtype=float)
-
-    idx_map = {t: idx for idx, t in enumerate(trait_universe)}
-    results: dict[str, ArmResult] = {}
+    stats_list: list[dict[str, float]] = []
     for t in focal_traits:
-        idx = idx_map[t]
-        scored = int(scored_arr[idx])
-        share_up = float(up_arr[idx] / scored) if scored > 0 else 0.5
+        study_diff = (pvt[(t, "inc")] - pvt[(t, "dec")]).groupby("study_id").mean()
+        up = int((study_diff > sign_tol).sum())
+        down = int((study_diff < -sign_tol).sum())
+        scored = up + down
+        test = binomtest(up, scored, p=0.5) if scored > 0 else None
+        p_val = float(test.pvalue) if test else 1.0
+        p_vals.append(p_val)
+        share_up = float(up / scored) if scored > 0 else 0.5
+        stats_list.append(
+            {
+                "share_up": share_up,
+                "scored": float(scored),
+                "p_val": p_val,
+            }
+        )
+
+    q_vals = benjamini_hochberg(p_vals) if len(p_vals) > 0 else []
+
+    results: dict[str, ArmResult] = {}
+    for idx, t in enumerate(focal_traits):
         results[t] = ArmResult(
             trait_id=t,
             trait_name=TABLE_1_TRAITS.get(t, t),
-            primary_stat=share_up,
-            p_value=float(p_vals[idx]),
-            q_value=float(q_vals[idx]) if len(q_vals) > idx else float(p_vals[idx]),
-            extra_stat=float(scored),
+            primary_stat=stats_list[idx]["share_up"],
+            p_value=stats_list[idx]["p_val"],
+            q_value=float(q_vals[idx]) if len(q_vals) > idx else stats_list[idx]["p_val"],
+            extra_stat=stats_list[idx]["scored"],
         )
     return results
 
@@ -276,65 +269,59 @@ def compute_ora_arm(
     Fisher's combined test evaluates global significance, with focal-set BH q_value
     computed over focal_traits (m = len(focal_traits)).
     """
-    counts_universe = paired_profiles_df[trait_universe].to_numpy(dtype=int)
+    counts_universe = paired_profiles_df[trait_universe].values.astype(int)
     M = int(counts_universe.sum())
     N_arr = counts_universe.sum(axis=1)
-    K_arr = counts_universe.sum(axis=0)
-    pos_N = N_arr > 0
-    N_pos = N_arr[pos_N]
+    K_map = {t: int(paired_profiles_df[t].sum()) for t in focal_traits}
 
-    focal_set = set(focal_traits)
     p_vals: list[float] = []
-    focal_stats: dict[str, dict[str, float]] = {}
+    stats_list: list[dict[str, float]] = []
 
-    for idx, t in enumerate(trait_universe):
-        K = int(K_arr[idx])
-        k_obs = counts_universe[:, idx]
-        pos_k = pos_N & (k_obs > 0)
+    for t in focal_traits:
+        K = K_map[t]
+        k_obs = paired_profiles_df[t].values.astype(int)
+        valid_p: list[float] = []
+        folds: list[float] = []
 
-        if K > 0 and M > 0 and np.any(pos_k):
-            valid_p = hypergeom.sf(k_obs[pos_k] - 1, M, K, N_arr[pos_k])
+        for k_val, N_val in zip(k_obs, N_arr, strict=True):
+            if N_val > 0 and K > 0:
+                exp_k = (N_val * K) / M
+                folds.append(k_val / exp_k if exp_k > 0 else 0.0)
+            if k_val > 0 and N_val > 0 and K > 0:
+                p = float(hypergeom.sf(k_val - 1, M, K, N_val))
+                valid_p.append(p)
+
+        mean_fold = float(np.mean(folds)) if folds else 0.0
+        n_tested = len(valid_p)
+        if n_tested > 0:
+            q_arr = benjamini_hochberg(valid_p)
+            hits_q05 = float(np.sum(np.array(q_arr) <= 0.05))
             _, fisher_p = stats.combine_pvalues(valid_p, method="fisher")
             fisher_p_val = float(fisher_p) if not np.isnan(fisher_p) else 1.0
         else:
-            valid_p = np.array([], dtype=float)
+            hits_q05 = 0.0
             fisher_p_val = 1.0
 
         p_vals.append(fisher_p_val)
-
-        if t in focal_set:
-            if K > 0 and M > 0 and np.any(pos_N):
-                exp_k = (N_pos * K) / M
-                mean_fold = float(np.mean(k_obs[pos_N] / exp_k))
-            else:
-                mean_fold = 0.0
-
-            if valid_p.size > 0:
-                q_arr = benjamini_hochberg(valid_p.tolist())
-                hits_q05 = float(np.sum(np.asarray(q_arr) <= 0.05))
-            else:
-                hits_q05 = 0.0
-
-            focal_stats[t] = {
+        stats_list.append(
+            {
                 "mean_fold": mean_fold,
                 "hits_q05": hits_q05,
                 "fisher_p": fisher_p_val,
             }
+        )
 
-    q_vals = benjamini_hochberg(p_vals) if len(p_vals) > 0 else np.array([], dtype=float)
-    idx_map = {t: idx for idx, t in enumerate(trait_universe)}
+    q_vals = benjamini_hochberg(p_vals) if len(p_vals) > 0 else []
 
     results: dict[str, ArmResult] = {}
-    for t in focal_traits:
-        idx = idx_map[t]
-        st = focal_stats[t]
+    for idx, t in enumerate(focal_traits):
         results[t] = ArmResult(
             trait_id=t,
             trait_name=TABLE_1_TRAITS.get(t, t),
-            primary_stat=st["mean_fold"],
-            p_value=st["fisher_p"],
-            q_value=float(q_vals[idx]) if len(q_vals) > idx else st["fisher_p"],
-            extra_stat=st["hits_q05"],
+            primary_stat=stats_list[idx]["mean_fold"],
+            p_value=stats_list[idx]["fisher_p"],
+            q_value=float(q_vals[idx]) if len(q_vals) > idx else stats_list[idx]["fisher_p"],
+            extra_stat=stats_list[idx]["hits_q05"],
         )
     return results
 
@@ -659,25 +646,6 @@ def build_coupling_report_text(
             f"{row.lco_stat:+10.4f} | {row.delta_stat:+11.6f} | "
             f"{row.base_q:9.2e} | {row.lco_q:9.2e}"
         )
-
-    comp_eff_vals = (
-        delta_eff_mat.to_numpy(dtype=float)
-        if not delta_eff_mat.empty
-        else np.array([], dtype=float)
-    )
-    valid_eff = np.abs(comp_eff_vals[~np.isnan(comp_eff_vals)])
-    max_comp_loto_eff = float(np.max(valid_eff)) if valid_eff.size > 0 else 0.0
-    n_comp_loto_pairs = int(valid_eff.size)
-
-    comp_q_vals = (
-        delta_q_mat.to_numpy(dtype=float) if not delta_q_mat.empty else np.array([], dtype=float)
-    )
-    valid_q = np.abs(comp_q_vals[~np.isnan(comp_q_vals)])
-    max_comp_loto_q = float(np.max(valid_q)) if valid_q.size > 0 else 0.0
-
-    max_lco_stat = max((abs(r.delta_stat) for r in lco_rows), default=0.0)
-    max_any_shift = max(max_comp_loto_eff, max_lco_stat)
-    min_gap = rule_result.min_adjacent_distance
 
     lines.extend(
         [

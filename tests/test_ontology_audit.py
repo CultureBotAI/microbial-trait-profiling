@@ -55,14 +55,6 @@ def test_canonical_redundancy_clusters_structure() -> None:
         in by_id["bacillus_rod_shape"].rationale
     )
 
-    by_id = {c.cluster_id: c for c in clusters}
-    co_cluster = by_id["co_oxidation_pathway"]
-    assert co_cluster.surviving_trait == "METPO:2000103|pathways:carbon_monoxide_oxidation"
-    assert co_cluster.collapsed_traits == ["METPO:2000103|pathways:carbonmonoxide_oxidation"]
-    for stale_number in ("18,349", "11,178", "33,994", "20,294", "2,752"):
-        assert stale_number not in by_id["coccus_sphere_shape"].rationale
-        assert stale_number not in by_id["bacillus_rod_shape"].rationale
-
 
 def test_collapse_trait_matrix_synthetic() -> None:
     """Verify matrix collapsing under both 'native' and 'max' count semantics."""

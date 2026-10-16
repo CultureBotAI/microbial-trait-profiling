@@ -54,7 +54,7 @@ from mtp.trait_screen import (
 
 VERSION = "screen-calibration-v1"
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "calibration" / "screen"
-DEFAULT_SHARED_FLIPS_PATH = DERIVED_DATA_DIR / "calibration" / "shared_flip_assignments.tsv"
+DEFAULT_SHARED_FLIPS_PATH = DERIVED_DATA_DIR / "calibration" / "calibration_flip_assignments.tsv"
 #: The stream whose replicates these are; the shared artefact of #263 names it too.
 STREAM = "complete_null_study_flip"
 UNIT = "study"

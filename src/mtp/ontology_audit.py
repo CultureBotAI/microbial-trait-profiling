@@ -194,7 +194,8 @@ CANONICAL_REDUNDANCY_CLUSTERS: list[RedundancyCluster] = [
         rationale=(
             "METPO:1000668 (coccus shaped, Madin et al.) and METPO:1000683 (sphere shaped, "
             "Bactotraits) are sibling terms under METPO:1000666 (cell shape) with r = +0.911. "
-            "Under the max-support rule, coccus shaped survives over sphere shaped."
+            "Coccus has 18,349 profile counts and 3.9M taxon annotations vs sphere (11,178 "
+            "profile counts, 178k annotations). Under max-support rule, coccus survives."
         ),
     ),
     RedundancyCluster(

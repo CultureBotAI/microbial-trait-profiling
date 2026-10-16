@@ -37,7 +37,6 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from mtp.calibration import SEED
 from mtp.composition_calibration.adapters.jed_composition import (
     DEFAULT_PSEUDOCOUNT_SCALE,
     JedCompositionAdapter,
@@ -53,6 +52,7 @@ logger = logging.getLogger(__name__)
 
 STREAM = "complete_null_study_flip"
 UNIT = "study"
+SEED = 182
 DEFAULT_REPLICATES = 100
 DEFAULT_PROFILES_PATH = DERIVED_DATA_DIR / "study_trait_profiles_wide.tsv"
 DEFAULT_COLUMNS_PATH = DERIVED_DATA_DIR / "taxa_trait_matrix_columns.tsv"

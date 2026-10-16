@@ -21,9 +21,7 @@ given number came from.
 from __future__ import annotations
 
 import csv
-import hashlib
 import json
-from collections.abc import Iterator
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -103,7 +101,6 @@ class KgInput:
     fetched_at: str | None
     drive_file_id: str | None
     present: bool
-    size_matches: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -155,8 +152,8 @@ def measure_matrix(profile_path: Path) -> MatrixIdentity:
     )
     identity = MatrixIdentity(
         path=str(profile_path),
-        sha256=digest.hexdigest(),
-        bytes=bytes_read,
+        sha256=file_sha256(profile_path),
+        bytes=profile_path.stat().st_size,
         header_columns=len(header),
         identifier_columns=identifier,
         mediadive_columns=mediadive,
@@ -204,23 +201,14 @@ def read_kg_inputs(provenance_path: Path) -> tuple[str, list[KgInput]]:
     if isinstance(files, dict):
         for name, entry in sorted(files.items()):
             details = entry if isinstance(entry, dict) else {}
-            file_path = provenance_path.parent / name
-            present = file_path.is_file()
-            declared_size = _as_int(details.get("size"))
-            size_matches = (
-                file_path.stat().st_size == declared_size
-                if present and declared_size is not None
-                else None
-            )
             inputs.append(
                 KgInput(
                     name=name,
                     declared_md5=_as_str(details.get("md5")),
-                    declared_size=declared_size,
+                    declared_size=_as_int(details.get("size")),
                     fetched_at=_as_str(details.get("fetched_at")),
                     drive_file_id=_as_str(details.get("file_id")),
-                    present=present,
-                    size_matches=size_matches,
+                    present=(provenance_path.parent / name).is_file(),
                 )
             )
     return release, inputs
@@ -269,14 +257,6 @@ def write_identity(
     record = {**identity.as_record(), "code_commit": code_commit}
     path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     return path
-
-
-def _kg_input_status(item: KgInput) -> str:
-    if not item.present:
-        return "  [file not present]"
-    if item.size_matches is False:
-        return "  [size mismatch vs sidecar]"
-    return ""
 
 
 def summary_lines(identity: CorpusIdentity) -> list[str]:
