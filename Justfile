@@ -270,7 +270,7 @@ calibrate replicates="10" seed="42" scenario="all": taxa-trait-matrix study-trai
 	  --max-fold 0.67"
 
 # Run paired composition arm calibration against the study-flip complete null (#263).
-calibrate-composition replicates="100" seed="182": study-trait-profiles
+calibrate-composition replicates="100" seed="182":
 	just timed calibrate-composition "uv run python -m mtp.composition_calibration.composition \
 	  --profiles data/derived/study_trait_profiles_wide.tsv \
 	  --columns data/derived/taxa_trait_matrix_columns.tsv \
@@ -358,7 +358,7 @@ audit-trait-density *ARGS:
 
 # Audit trait coupling sensitivity via LOTO, LCO, and three-arm evaluation (#260).
 [positional-arguments]
-audit-trait-coupling *ARGS: study-trait-profiles
+audit-trait-coupling *ARGS:
 	just timed audit-trait-coupling "uv run python scripts/audit_trait_coupling.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo +dirty)\" $*"
 
 security:
