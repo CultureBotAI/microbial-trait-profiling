@@ -1,0 +1,48 @@
+{
+  "archives": {
+    "197": {
+      "archive_tag": "archive/pr-197-20261016",
+      "archived_implementation_sha256_lf": {
+        "Justfile": "143c5c9d9838a48d0e97510f9ca6cddddf7c332a62623090910dcd4413de6eb2",
+        "scripts/audit_composition_denominator.py": "a0502357429f5008f53de3ee887a34c5130bc06679e74f2869046894b33ba28a",
+        "scripts/create_study_trait_profile_heatmap.py": "ef83268d4dec7c59a245b7b7d99adc572c899ce89db6e5bd9fec88558ad43faf",
+        "scripts/create_trait_profile_infographic.py": "4a444aaa1824849d03f929dc53ac71ee302d2c4b985ab8775ec1d14e138c726c",
+        "src/bsdbng/table1_trait_maps.py": "1593ada24331d2695f87a0ab559145fc7a3b0008e586701a8da49a02ba62687a",
+        "src/bsdbng/trait_composition.py": "5379461ddb4a26485fb2ea65580b54a38394542841fad44da5226605ec8c9538",
+        "src/bsdbng/trait_guilds.py": "f723241bdd87576027118eb13664bc40315f23ce209c64a22e371b032baf48e8",
+        "uv.lock": "ea1d03cb248fdbb73416b9c1d9a56f5abadbaead5fee4a93eb20a02b0787debe"
+      },
+      "archived_replay_source_sha256_lf": {
+        "scripts/replay_composition_inputs.py": "4bbe7dfa7087b0db44440f375714ba73cd4975ccb75f6f023139f6b668fde86e",
+        "src/bsdbng/contribution_inputs.py": "1a3586b3a8ce010c3bc3ac4b7d74c5106358f330ff0b78f3b0bc2acd829624f7"
+      },
+      "git_archive_sha256": "46f9a5b5e1007e85973e9966017ceaa7ff45feb3c655d96246d6edafb291935d",
+      "git_commit": "865b15fcdc2be0bc9f0be976a37dbd0a2ed9f33d",
+      "historical_implementation_hash_corrections": {
+        "Justfile": {
+          "archived_source_sha256": "143c5c9d9838a48d0e97510f9ca6cddddf7c332a62623090910dcd4413de6eb2",
+          "historical_sha256": "cb79c3e70734681afaedda127093a9dd62625aecd8a9050fce1c9cd987b496da"
+        },
+        "uv.lock": {
+          "archived_source_sha256": "ea1d03cb248fdbb73416b9c1d9a56f5abadbaead5fee4a93eb20a02b0787debe",
+          "historical_sha256": "a9b1b48dcf9ec06baea80a314bc9ba97d6c59e981cd15932790c78d0946c4a47"
+        }
+      },
+      "historical_replay_hash_corrections": {},
+      "historical_results_bytes": 60023623,
+      "historical_results_directory": "trait-visualization/denominator-harmonization/",
+      "historical_results_file_count": 215,
+      "historical_results_inventory_sha256": "71979ad6b2f273891dec7a8249d1e653650298da804b9a5fc244feaf32b1e581"
+    },
+    "526": {
+      "archive_tag": "archive/pr-526-20261016",
+      "archived_caller_tests_sha256_lf": "55a7fdae971d2df8c8970c1059a53d6f4560c40247be8420acc024ab3d603131",
+      "git_archive_sha256": "35f1ab3ff12795496b8f3d349bed2454c1b271718839b4d08cdcb0ea4e6be4fa",
+      "git_commit": "cf4679c5a8becc638f88d749386a40fa3599aa24"
+    }
+  },
+  "audit_date": "2026-10-16",
+  "inventory_hash_encoding": "sorted path UTF-8 + NUL + raw file SHA256 digest",
+  "scope": "Final archived source identity and historical evidence preservation; not a rerun, validation of historical numerical claims, or adoption of those results into current main.",
+  "source_hash_normalization": "CRLF to LF before SHA256"
+}

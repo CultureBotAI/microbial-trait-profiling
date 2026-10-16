@@ -158,17 +158,17 @@ def test_load_retained_profiles(tmp_path: Path) -> None:
 
 def test_load_retained_profiles_rejects_duplicate_keys(tmp_path: Path) -> None:
     data = {
-        "study_id": ["s1", "s1"],
-        "experiment_id": ["e1", "e1"],
-        "inc_dec": ["inc", "inc"],
-        "trait_x": [10, 10],
-        "trait_y": [30, 30],
+        "study_id": ["s1", "s1", "s2"],
+        "experiment_id": ["e1", "e1", "e2"],
+        "inc_dec": ["inc", "inc", "dec"],
+        "trait_x": [5, 5, 20],
+        "trait_y": [15, 15, 40],
     }
     tsv_path = tmp_path / "dup_profiles.tsv"
     pd.DataFrame(data).to_csv(tsv_path, sep="\t", index=False)
     metadata = pd.DataFrame(
-        {"total_trait_signal": [80]},
-        index=["s1|e1|inc"],
+        {"total_trait_signal": [40, 60]},
+        index=["s1|e1|inc", "s2|e2|dec"],
     )
     with pytest.raises(ValueError, match="Profile keys must be unique"):
         load_retained_profiles(tsv_path, metadata)

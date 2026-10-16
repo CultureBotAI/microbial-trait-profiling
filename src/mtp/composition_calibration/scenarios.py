@@ -30,16 +30,17 @@ def generate_study_flip_null_profiles(
         keys = sorted(profiles_df["study_id"].astype(str).unique(), key=repr)
     else:
         keys = sorted(
-            zip(
-                profiles_df["study_id"].astype(str),
-                profiles_df["experiment_id"].astype(str),
-                strict=True,
+            set(
+                zip(
+                    profiles_df["study_id"].astype(str),
+                    profiles_df["experiment_id"].astype(str),
+                    strict=True,
+                )
             ),
             key=repr,
         )
 
-    draws = rng.random(len(keys))
-    flipped_keys = {key for key, d in zip(keys, draws, strict=True) if d < 0.5}
+    flipped_keys = {key for key in keys if rng.random() < 0.5}
 
     out_df = profiles_df.copy()
     if unit == "study":

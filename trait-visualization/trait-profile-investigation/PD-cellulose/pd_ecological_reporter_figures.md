@@ -25,10 +25,12 @@ mean(
 ) - cellulose catabolic process contrast
 ```
 
-A high positive value therefore requires both parts of the proposed pattern: the three
-positive-side traits are stronger in increased profiles, while cellulose catabolic process is
-stronger in decreased profiles. The composite is a descriptive, study-level summary. It is not
-a validated diagnostic score or a patient-level measurement.
+A positive composite means the mean contrast for the three selected traits exceeds the
+cellulose catabolic process contrast. It does not require opposite signs: contrasts of `+2`
+and `+1`, respectively, would yield a positive composite of `+1`. The proposed two-sided pattern
+requires a positive three-trait mean and a negative cellulose contrast; Panel B's upper-right
+quadrant identifies that combination. The composite is a descriptive, study-level summary of
+trait annotations, not a validated diagnostic score or a patient-level measurement.
 
 ## Combined Figure
 

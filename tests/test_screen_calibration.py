@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from mtp.calibration import SEED, flip_assignments
+from mtp.calibration import SEED, SHARED_FLIP_REPLICATES, flip_assignments
 from mtp.screen_calibration import (
     CORRECTIONS,
     STREAM,
@@ -11,6 +11,7 @@ from mtp.screen_calibration import (
     count_calls,
     replicate_flipped_profiles,
     run_null_screens,
+    shared_flip_artefact_provenance,
     summarize,
 )
 from mtp.trait_guilds import Profile
@@ -103,3 +104,18 @@ def test_the_summary_reports_family_error_with_an_exact_interval() -> None:
     # When observed calls are 0, reaching observed is None (not applicable) (#342)
     (zero_row,) = summarize(counts, {("by_q_nominal", 0.05): 0})
     assert zero_row["replicates_reaching_observed"] is None
+
+
+def test_shared_flip_artefact_provenance_records_seed_and_replicates() -> None:
+    matched = shared_flip_artefact_provenance(SEED, SHARED_FLIP_REPLICATES)
+    assert matched == {
+        "shared_flip_artefact_seed": SEED,
+        "shared_flip_artefact_replicates": SHARED_FLIP_REPLICATES,
+        "matches_shared_flip_artefact": True,
+    }
+    diff_seed = shared_flip_artefact_provenance(SEED + 1, SHARED_FLIP_REPLICATES)
+    assert diff_seed["matches_shared_flip_artefact"] is False
+    too_many = shared_flip_artefact_provenance(SEED, SHARED_FLIP_REPLICATES + 1)
+    assert too_many["matches_shared_flip_artefact"] is False
+    zero_reps = shared_flip_artefact_provenance(SEED, 0)
+    assert zero_reps["matches_shared_flip_artefact"] is False

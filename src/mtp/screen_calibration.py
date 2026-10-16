@@ -201,6 +201,15 @@ def _write(path: Path, rows: Sequence[Mapping[str, object]]) -> Path:
     return path
 
 
+def shared_flip_artefact_provenance(seed: int, replicates: int) -> dict[str, int | bool]:
+    """Verify and record shared flip artefact seed and replicate count (#342)."""
+    return {
+        "shared_flip_artefact_seed": SEED,
+        "shared_flip_artefact_replicates": SHARED_FLIP_REPLICATES,
+        "matches_shared_flip_artefact": (seed == SEED and 0 < replicates <= SHARED_FLIP_REPLICATES),
+    }
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile-input", type=Path, default=DEFAULT_PROFILE_PATH)
@@ -255,13 +264,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         _write(output / "screen_null_replicates.tsv", per_replicate),
         _write(output / "screen_null_summary.tsv", summary),
     ]
+    replicates_completed = len({c.replicate for c in counts})
     provenance = {
         "version": VERSION,
         "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/263",
         "seed": args.seed,
         "stream": STREAM,
         "unit": UNIT,
-        "replicates_completed": len({c.replicate for c in counts}),
+        "replicates_completed": replicates_completed,
+        **shared_flip_artefact_provenance(args.seed, replicates_completed),
         "rng": "numpy.random.default_rng([seed, sha256_64(stream), replicate])",
         "candidates": len(columns),
         "studies": observed_result.studies,

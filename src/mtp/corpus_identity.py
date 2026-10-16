@@ -27,16 +27,29 @@ from collections.abc import Iterator
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from mtp.paths import KG_MICROBE_DIR
-from mtp.trait_guilds import PROFILE_ID_COLUMNS, retained_trait_columns
+from mtp.paths import KG_MICROBE_DIR, file_sha256
+from mtp.trait_guilds import MEDIADIVE_MARKER, PROFILE_ID_COLUMNS, retained_trait_columns
 
 DEFAULT_KG_PROVENANCE_PATH = KG_MICROBE_DIR / "provenance.json"
+#: Pinned KG-Microbe build folder used by scripts/download_kg_microbe.py (#336).
+PINNED_KG_MICROBE_RELEASE = "20260120"
+_PINNED_20260120_FILES: dict[str, tuple[str, str]] = {
+    "merged-kg_nodes.tsv": (
+        "1lDVjE67E82LMUdNtqWGvyczrHvNu3BdY",  # pragma: allowlist secret
+        "dd76b4656f9341db25a7c4afa96cd58e",  # pragma: allowlist secret
+    ),
+    "merged-kg_edges.tsv": (
+        "1iIVd-FEleeRIv7CPS0l1F732p3J9JO5d",  # pragma: allowlist secret
+        "555ecf5ba5d89288cdc44e368375374f",  # pragma: allowlist secret
+    ),
+}
 #: What a release tag reads as when the sidecar does not carry one. Recorded
 #: rather than omitted, because "not known" and "not applicable" differ.
 UNKNOWN_RELEASE = "unknown: the KG-Microbe download records no release tag"
 
 __all__ = [
     "DEFAULT_KG_PROVENANCE_PATH",
+    "PINNED_KG_MICROBE_RELEASE",
     "UNKNOWN_RELEASE",
     "CorpusIdentity",
     "KgInput",
@@ -72,6 +85,12 @@ class MatrixIdentity:
                 f"= {total}, not the {self.header_columns} columns in the header"
             )
             raise ValueError(msg)
+        if self.identifier_columns != len(PROFILE_ID_COLUMNS):
+            msg = (
+                f"{self.path}: expected {len(PROFILE_ID_COLUMNS)} identifier columns "
+                f"{PROFILE_ID_COLUMNS}, got {self.identifier_columns}"
+            )
+            raise ValueError(msg)
 
 
 @dataclass(frozen=True)
@@ -104,6 +123,9 @@ class CorpusIdentity:
             "kg_microbe": {
                 "release_tag": self.kg_release_tag,
                 "provenance_path": self.kg_provenance_path,
+                "provenance_source": (
+                    "declared by download sidecar (not measured at matrix build time)"
+                ),
                 "inputs": [asdict(item) for item in self.kg_inputs],
             },
             "note": (
@@ -114,27 +136,23 @@ class CorpusIdentity:
 
 
 def measure_matrix(profile_path: Path) -> MatrixIdentity:
-    """Read ``profile_path`` once for its shape and SHA-256."""
-    digest = hashlib.sha256()
-    bytes_read = 0
+    """Read ``profile_path`` once for its shape, and hash it."""
     rows = 0
-    with profile_path.open("rb") as raw_handle:
-
-        def _hashing_lines() -> Iterator[str]:
-            nonlocal bytes_read
-            for raw_line in raw_handle:
-                digest.update(raw_line)
-                bytes_read += len(raw_line)
-                yield raw_line.decode("utf-8")
-
-        reader = csv.reader(_hashing_lines(), delimiter="\t")
-        header = next(reader)
-        identifier = sum(1 for column in header if column in PROFILE_ID_COLUMNS)
-        _, retained_cols, mediadive = retained_trait_columns(header)
-        retained = len(retained_cols)
+    with profile_path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.reader(handle, delimiter="\t")
+        header = next(reader, [])
         for row in reader:
-            if any(cell.strip() for cell in row):
+            if row:
                 rows += 1
+    unique_header = set(header)
+    identifier = sum(1 for column in unique_header if column in PROFILE_ID_COLUMNS)
+    _, retained_cols, _ = retained_trait_columns(header)
+    retained = len(set(retained_cols))
+    mediadive = sum(
+        1
+        for column in unique_header
+        if column not in PROFILE_ID_COLUMNS and MEDIADIVE_MARKER in column.lower()
+    )
     identity = MatrixIdentity(
         path=str(profile_path),
         sha256=digest.hexdigest(),
@@ -149,6 +167,19 @@ def measure_matrix(profile_path: Path) -> MatrixIdentity:
     return identity
 
 
+def _matches_pinned_20260120(files: dict[str, object]) -> bool:
+    """True when the sidecar's file IDs or MD5s match the pinned 20260120 KG build."""
+    if not _PINNED_20260120_FILES.keys() <= files.keys():
+        return False
+    for name, (expected_id, expected_md5) in _PINNED_20260120_FILES.items():
+        entry = files.get(name)
+        if not isinstance(entry, dict):
+            return False
+        if entry.get("file_id") != expected_id and entry.get("md5") != expected_md5:
+            return False
+    return True
+
+
 def read_kg_inputs(provenance_path: Path) -> tuple[str, list[KgInput]]:
     """The KG-Microbe files the sidecar describes, and its release tag if any."""
     if not provenance_path.is_file():
@@ -160,10 +191,15 @@ def read_kg_inputs(provenance_path: Path) -> tuple[str, list[KgInput]]:
     if not isinstance(recorded, dict):
         return f"{UNKNOWN_RELEASE} ({provenance_path} is not an object)", []
 
-    tag = recorded.get("release") or recorded.get("release_tag") or recorded.get("version")
-    release = tag if isinstance(tag, str) and tag else UNKNOWN_RELEASE
-
     files = recorded.get("files")
+    tag = recorded.get("release") or recorded.get("release_tag") or recorded.get("version")
+    if isinstance(tag, str) and tag:
+        release = tag
+    elif isinstance(files, dict) and _matches_pinned_20260120(files):
+        release = PINNED_KG_MICROBE_RELEASE
+    else:
+        release = UNKNOWN_RELEASE
+
     inputs: list[KgInput] = []
     if isinstance(files, dict):
         for name, entry in sorted(files.items()):
@@ -254,11 +290,11 @@ def summary_lines(identity: CorpusIdentity) -> list[str]:
         f"{matrix.retained_trait_columns} retained)",
         f"  profile rows     {matrix.profile_rows}",
         f"BugSigDB vintage:  {identity.bugsigdb_vintage or 'unknown'}",
-        f"KG-Microbe:        {identity.kg_release_tag}",
+        f"KG-Microbe:        {identity.kg_release_tag} (sidecar: {identity.kg_provenance_path})",
     ]
     lines.extend(
-        f"  {item.name:<22} declared md5 {item.declared_md5 or '(not recorded)'}"
-        f"{_kg_input_status(item)}"
+        f"  {item.name:<22} declared md5 (sidecar) {item.declared_md5 or '(not recorded)'}"
+        f"{'' if item.present else '  [file not present]'}"
         for item in identity.kg_inputs
     )
     return lines

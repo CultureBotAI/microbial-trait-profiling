@@ -177,10 +177,10 @@ CANONICAL_REDUNDANCY_CLUSTERS: list[RedundancyCluster] = [
         collapsed_traits=["METPO:2000103|pathways:carbonmonoxide_oxidation"],
         selection_rule="max_support_canonical",
         rationale=(
-            "METPO:2000103|pathways:carbon_monoxide_oxidation and "
-            "METPO:2000103|pathways:carbonmonoxide_oxidation are lexical duplicates differing "
-            "only by an underscore; carbon_monoxide_oxidation has higher profile support and "
-            "canonical word-separated syntax."
+            "METPO:2000103|pathways:carbon_monoxide_oxidation (1,241 profile count support) and "
+            "METPO:2000103|pathways:carbonmonoxide_oxidation (1,005 profile count support) are "
+            "lexical duplicates differing only by an underscore; carbon_monoxide_oxidation "
+            "survives under the max-support rule."
         ),
     ),
     RedundancyCluster(
@@ -206,10 +206,11 @@ CANONICAL_REDUNDANCY_CLUSTERS: list[RedundancyCluster] = [
         collapsed_traits=["METPO:1000681", "METPO:1000688"],
         selection_rule="max_support_provenance",
         rationale=(
-            "METPO:1000667 (bacillus shaped, Madin et al.), METPO:1000681 (rod shaped, "
-            "Bactotraits), and METPO:1000688 (coccobacillus shaped) are highly collinear "
-            "sibling morphological traits (r = +0.911 bacillus vs rod). "
-            "Bacillus has highest support."
+            "METPO:1000667 (bacillus shaped, Madin et al., 33,994 profile counts), "
+            "METPO:1000681 (rod shaped, Bactotraits, 20,294 profile counts), and "
+            "METPO:1000688 (coccobacillus shaped, 13,744 profile counts across 2,752 nonzero "
+            "profiles) are highly collinear sibling morphological traits (r = +0.911 bacillus "
+            "vs rod). Bacillus has highest support."
         ),
     ),
 ]

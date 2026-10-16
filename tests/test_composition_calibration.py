@@ -87,6 +87,128 @@ def test_compute_profile_zscores(synthetic_paired_profiles: pd.DataFrame) -> Non
         assert abs(zscores[t].std(ddof=0) - 1.0) < 1e-10
 
 
+@pytest.mark.parametrize("selected", [["trait_A"], ["trait_C", "trait_A"]])
+def test_selected_traits_preserve_full_denominator(
+    synthetic_paired_profiles: pd.DataFrame, selected: list[str]
+) -> None:
+    """Testing one trait must not turn every positive fraction into one (#534)."""
+    all_traits = ["trait_A", "trait_B", "trait_C", "trait_const"]
+    full = compute_profile_zscores(synthetic_paired_profiles, all_traits)
+    subset = compute_profile_zscores(synthetic_paired_profiles, selected)
+    pd.testing.assert_frame_equal(subset, full[selected])
+    assert not subset["trait_A"].eq(0).all()
+
+    full_contrasts = compute_composition_contrasts(synthetic_paired_profiles, all_traits)
+    subset_contrasts = compute_composition_contrasts(synthetic_paired_profiles, selected)
+    pd.testing.assert_frame_equal(
+        subset_contrasts.pair_contrasts, full_contrasts.pair_contrasts[selected]
+    )
+    pd.testing.assert_frame_equal(
+        subset_contrasts.study_contrasts, full_contrasts.study_contrasts[selected]
+    )
+    assert subset_contrasts.n_pairs == full_contrasts.n_pairs == 4
+    assert subset_contrasts.n_studies == full_contrasts.n_studies == 3
+
+
+def test_denominator_keeps_untested_counts_and_excludes_numeric_metadata() -> None:
+    """Untested biological counts matter; signature size and media do not (#534)."""
+    profiles = pd.DataFrame(
+        {
+            "trait_A": [10.0, 10.0, 10.0, 0.0],
+            "untested_trait": [10.0, 90.0, 990.0, 0.0],
+            "study_id": [1, 2, 3, 4],
+            "experiment_id": [11, 12, 13, 14],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "n_taxa": [900, 1, 80, 500],
+            "taxa_count": [90, 10, 800, 50],
+            "signature_size": [9, 100, 8, 5],
+            "profile_id": [100, 200, 300, 400],
+            "host_species": [9606, 9606, 9606, 9606],
+            "_norm_dir": ["inc", "dec", "inc", "dec"],
+            "mediadive.medium:1": [10000.0, 0.0, 50.0, 800.0],
+        }
+    )
+    observed = compute_profile_zscores(profiles, ["trait_A"])
+    transformed = np.log1p(1000 * np.array([0.5, 0.1, 0.01, 0.0]))
+    expected = (transformed - transformed.mean()) / transformed.std(ddof=0)
+    assert observed["trait_A"].to_numpy() == pytest.approx(expected)
+
+    biological_only = profiles[["trait_A", "untested_trait"]]
+    pd.testing.assert_frame_equal(observed, compute_profile_zscores(biological_only, ["trait_A"]))
+
+
+def test_adapter_subset_changes_test_family_without_changing_raw_inference(
+    synthetic_paired_profiles: pd.DataFrame,
+) -> None:
+    """Multiplicity uses selected traits while their effects and p-values stay fixed."""
+    adapter = JedCompositionAdapter()
+    full = adapter.run_inference(synthetic_paired_profiles, pd.DataFrame())
+    subset = adapter.run_inference(
+        synthetic_paired_profiles, pd.DataFrame(), {"traits": ["trait_A"]}
+    )
+    assert full.metadata["n_tests"] == 4
+    assert subset.metadata["n_tests"] == 1
+    raw_columns = [
+        "effect_size",
+        "t_statistic",
+        "p_value",
+        "mean_contrast",
+        "median_contrast",
+        "std_contrast",
+        "ci95_lower",
+        "ci95_upper",
+        "n_studies",
+        "n_pairs",
+    ]
+    pd.testing.assert_frame_equal(
+        subset.results_df.set_index("trait")[raw_columns],
+        full.results_df.set_index("trait").loc[["trait_A"], raw_columns],
+    )
+    assert subset.results_df.iloc[0]["effect_size"] > 0
+
+
+@pytest.mark.parametrize("corpus", ["paired", "empty", "unpaired"])
+@pytest.mark.parametrize(
+    ("selected", "expected"),
+    [
+        (["n_taxa", "profile_id", "_norm_dir"], []),
+        (["MediaDive.Medium", "missing_trait"], []),
+        (["profile_id", "trait_A", "MediaDive.Medium", "missing_trait"], ["trait_A"]),
+    ],
+)
+def test_nontrait_requests_do_not_become_empty_or_phantom_contrasts(
+    synthetic_paired_profiles: pd.DataFrame,
+    corpus: str,
+    selected: list[str],
+    expected: list[str],
+) -> None:
+    """Empty cohorts and rejected trait requests retain one output schema (#534)."""
+    profiles = synthetic_paired_profiles.assign(
+        n_taxa=200, profile_id=123, **{"MediaDive.Medium": 999}
+    )
+    profiles["_norm_dir"] = profiles["inc_dec"].map({"increased": "inc", "decreased": "dec"})
+    if corpus == "empty":
+        profiles = profiles.iloc[:0]
+    elif corpus == "unpaired":
+        profiles = profiles.loc[profiles["_norm_dir"].eq("inc")]
+
+    zscores = compute_profile_zscores(profiles, selected)
+    assert zscores.columns.tolist() == expected
+    assert zscores.index.equals(profiles.index)
+    contrasts = compute_composition_contrasts(profiles, selected)
+    assert contrasts.trait_columns == expected
+    assert contrasts.pair_contrasts.columns.tolist() == expected
+    assert contrasts.study_contrasts.columns.tolist() == expected
+
+    result = JedCompositionAdapter().run_inference(profiles, pd.DataFrame(), {"traits": selected})
+    assert result.metadata["n_trait_columns"] == len(expected)
+    if not expected or corpus != "paired":
+        assert contrasts.n_pairs == 0
+        assert contrasts.n_studies == 0
+        assert result.results_df.empty
+        assert result.metadata["n_tests"] == 0
+
+
 def test_compute_composition_contrasts(synthetic_paired_profiles: pd.DataFrame) -> None:
     """Verify matched experiment differences and study aggregation."""
     traits = ["trait_A", "trait_B", "trait_C"]
@@ -266,76 +388,88 @@ def test_missing_or_malformed_columns_file_is_an_error(tmp_path: Path) -> None:
         load_composition_trait_columns(bad)
 
 
-def test_study_flip_signs_match_shared_flip_assignments(
-    synthetic_paired_profiles: pd.DataFrame,
-) -> None:
-    """Study-flip draws in composition calibration match flip_assignments (#470)."""
-    from mtp.calibration import SEED, flip_assignments
-    from mtp.trait_guilds import Profile
-
-    paired_df = filter_paired_profiles(synthetic_paired_profiles)
-    profiles = [
-        Profile(
-            str(row["study_id"]),
-            str(row["experiment_id"]),
-            "inc" if row["inc_dec"] == "increased" else "dec",
-            str(row["condition"]),
-            str(row["body_site"]),
-            {"trait_A": int(row["trait_A"])},
-            int(row["taxa_count"]),
-        )
-        for _, row in paired_df.iterrows()
-    ]
-    shared = flip_assignments(profiles, replicates=5, seed=SEED, stream=STREAM)
-    study_keys = sorted(paired_df["study_id"].astype(str).unique(), key=repr)
-
-    for rep in range(5):
-        rng = replicate_rng(SEED, STREAM, rep)
-        draws = [rng.random() for _ in study_keys]
-        comp_flipped = {s for s, d in zip(study_keys, draws, strict=True) if d < 0.5}
-        shared_flipped = {
-            str(r["study_id"]) for r in shared if r["replicate"] == rep and r["flipped"] == 1
-        }
-        assert comp_flipped == shared_flipped
-
-
-def test_fast_path_matches_full_profile_relabeling(
-    synthetic_paired_profiles: pd.DataFrame,
-) -> None:
-    """Fast-path sign multiplication must match relabeling inc_dec and running adapter (#470)."""
-    traits = ["trait_A", "trait_B", "trait_C"]
-    paired_df = filter_paired_profiles(synthetic_paired_profiles)
-    _, _, _, null_pvals_df, _ = run_composition_calibration(
-        profiles_df=paired_df,
-        trait_columns=traits,
-        replicates=4,
-        seed=182,
-        stream=STREAM,
-    )
-    adapter = JedCompositionAdapter()
-    for rep in range(4):
-        rng = replicate_rng(182, STREAM, rep)
-        relabeled = generate_study_flip_null_profiles(paired_df, rng, unit="study")
-        res = adapter.run_inference(relabeled, pd.DataFrame(), config={"traits": traits})
-        ref_df = res.results_df.set_index("trait").loc[traits]
-        fast_df = null_pvals_df[null_pvals_df["replicate"] == rep].set_index("trait").loc[traits]
-        assert np.allclose(fast_df["null_t_statistic"].to_numpy(), ref_df["t_statistic"].to_numpy())
-        assert np.allclose(fast_df["null_p_value"].to_numpy(), ref_df["p_value"].to_numpy())
-
-
-def test_replicates_reaching_observed_is_none_when_observed_is_zero(
+def test_replicates_reaching_observed_is_none_when_observed_calls_zero(
     synthetic_paired_profiles: pd.DataFrame,
 ) -> None:
     """When observed_calls == 0, replicates_reaching_observed is None (#469)."""
     traits = ["trait_A", "trait_B", "trait_C"]
-    summary_dict, _, _, _, _ = run_composition_calibration(
-        profiles_df=synthetic_paired_profiles,
-        trait_columns=traits,
-        replicates=3,
-        seed=182,
-        stream=STREAM,
+    summary_dict, summary_df, _replicates_df, _null_pvals_df, _table1_df = (
+        run_composition_calibration(
+            profiles_df=synthetic_paired_profiles,
+            trait_columns=traits,
+            replicates=3,
+            seed=182,
+            stream=STREAM,
+        )
     )
-    zero_rows = [r for r in summary_dict["summary"] if r["observed_calls"] == 0]
+    zero_rows = [row for row in summary_dict["summary"] if row["observed_calls"] == 0]
     assert zero_rows
     for row in zero_rows:
         assert row["replicates_reaching_observed"] is None
+    df_zero = summary_df[summary_df["observed_calls"] == 0]
+    assert df_zero["replicates_reaching_observed"].isna().all()
+
+
+def test_composition_flips_match_calibration_flip_assignments_and_relabel_contrasts(
+    synthetic_paired_profiles: pd.DataFrame,
+) -> None:
+    """Composition study flips match flip_assignments and relabelled contrasts (#470)."""
+    from mtp.calibration import SEED as CALIBRATION_SEED
+    from mtp.calibration import flip_assignments
+    from mtp.trait_guilds import Profile
+
+    paired_df = filter_paired_profiles(synthetic_paired_profiles)
+    traits = ["trait_A", "trait_B", "trait_C"]
+    profiles = [
+        Profile(
+            study_id=str(row["study_id"]),
+            experiment_id=str(row["experiment_id"]),
+            inc_dec="inc" if row["inc_dec"] == "increased" else "dec",
+            condition=str(row["condition"]),
+            body_site=str(row["body_site"]),
+            guild_counts={t: int(row[t]) for t in traits},
+            total=int(row["taxa_count"]),
+        )
+        for _, row in paired_df.iterrows()
+    ]
+    artefact = flip_assignments(profiles, replicates=5, seed=CALIBRATION_SEED, stream=STREAM)
+
+    contrast_data = compute_composition_contrasts(paired_df, traits)
+    study_keys = sorted(contrast_data.study_contrasts.index.astype(str), key=repr)
+    study_mat = contrast_data.study_contrasts.loc[study_keys, traits].to_numpy(dtype=float)
+
+    for rep in range(5):
+        expected_flipped = {
+            str(r["study_id"]) for r in artefact if r["replicate"] == rep and r["flipped"] == 1
+        }
+
+        # Check generate_study_flip_null_profiles against shared artefact
+        flipped_df = generate_study_flip_null_profiles(
+            paired_df,
+            replicate_rng(CALIBRATION_SEED, STREAM, rep),
+            unit="study",
+        )
+        actual_flipped = {
+            s_id
+            for s_id in study_keys
+            if not (
+                paired_df.loc[paired_df["study_id"] == s_id, "inc_dec"].values
+                == flipped_df.loc[flipped_df["study_id"] == s_id, "inc_dec"].values
+            ).all()
+        }
+        assert actual_flipped == expected_flipped
+
+        # Check vectorized sign flip against relabel-and-rerun contrasts
+        rng = replicate_rng(CALIBRATION_SEED, STREAM, rep)
+        draws = np.array([rng.random() for _ in study_keys])
+        vectorized_flipped = {s_id for s_id, d in zip(study_keys, draws, strict=True) if d < 0.5}
+        assert vectorized_flipped == expected_flipped
+
+        signs = np.where(draws < 0.5, -1.0, 1.0)[:, np.newaxis]
+        sim_mat = study_mat * signs
+        relabelled_contrasts = (
+            compute_composition_contrasts(flipped_df, traits)
+            .study_contrasts.loc[study_keys, traits]
+            .to_numpy(dtype=float)
+        )
+        assert np.allclose(sim_mat, relabelled_contrasts)

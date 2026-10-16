@@ -221,6 +221,7 @@ def test_decision_rule_criterion() -> None:
     )
     assert res_pass.passes_stability_criterion is True
     assert res_pass.min_adjacent_distance == pytest.approx(0.07)
+    assert res_pass.min_adjacent_pair == ("t2", "t3")
     assert res_pass.abs_delta_effect == pytest.approx(0.01)
 
     # Case B: Perturbation is large (0.08 >= 0.07) -> fails
@@ -233,6 +234,7 @@ def test_decision_rule_criterion() -> None:
         base_comp, df_large, target_trait_id="t2", dropped_trait_id="t1"
     )
     assert res_fail.passes_stability_criterion is False
+    assert res_fail.min_adjacent_pair == ("t2", "t3")
     assert res_fail.abs_delta_effect == pytest.approx(0.08)
 
 
@@ -395,6 +397,7 @@ def test_build_coupling_report_text_content() -> None:
 
     assert "TRAIT COUPLING SENSITIVITY AUDIT REPORT (Issue #260)" in text
     assert "Code commit: commit_abc_test" in text
+    assert "focal-set BH sensitivity checks" in text
     assert "1. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA EFFECT MATRIX (6 x 6):" in text
     assert "2. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA Q-VALUE MATRIX (6 x 6):" in text
     assert "3. LEAVE-CLUSTER-OUT (LCO) - DROPPING COCCUS + SPHERE SIMULTANEOUSLY:" in text
@@ -404,9 +407,9 @@ def test_build_coupling_report_text_content() -> None:
     assert "Direct Test (Drop Sphere -> Coccus Effect Shift):" in text
     assert "Reverse Test (Drop Coccus -> Sphere Effect Shift):" in text
     assert "Passes stability criterion" in text
-    assert "max |Delta| = 0.001000" in text
-    assert "2 LOTO pairs is 0.000200" in text
-    assert "(0.002000)" in text
+    # Verify hard-coded pre-fix bounds (#479) are absent
+    assert "0.0012" not in text
+    assert "3.94M" not in text
 
     for line in text.splitlines():
         assert line == line.rstrip(), f"Line contains trailing whitespace: {line!r}"
@@ -521,11 +524,18 @@ def test_full_coupling_audit_on_synthetic_data(
     report = res["report_txt"].read_text(encoding="utf-8")
     assert "Code commit: test_commit_sha_123" in report
     assert "TRAIT COUPLING SENSITIVITY AUDIT REPORT (Issue #260)" in report
+    assert "focal-set BH sensitivity checks" in report
     assert "1. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA EFFECT MATRIX" in report
     assert "2. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA Q-VALUE MATRIX" in report
     assert "3. LEAVE-CLUSTER-OUT (LCO) - DROPPING COCCUS + SPHERE SIMULTANEOUSLY:" in report
     assert "4. FORMAL DECISION RULE EVALUATION:" in report
     assert "5. METHODOLOGICAL & BIOLOGICAL SYNTHESIS:" in report
+    assert "7 columns (" in report
+    assert "maximum |Delta effect|" in report
+    assert "maximum |Delta share_up|" in report
+    assert "maximum |Delta mean_fold|" in report
+    assert "0.0012" not in report
+    assert "3.94M" not in report
 
 
 def test_cli_main_invokes_audit_and_writes_output(

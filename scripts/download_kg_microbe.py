@@ -47,7 +47,7 @@ class DriveFile:
 
 # Drive file IDs from Marcin Joachimiak's published 20260120 build folder.
 # Not secrets; the detect-secrets pragma silences a base64-pattern false positive.
-KG_RELEASE_TAG = "20260120"
+KG_MICROBE_RELEASE = "20260120"
 _NODES_ID = "1lDVjE67E82LMUdNtqWGvyczrHvNu3BdY"  # pragma: allowlist secret
 _EDGES_ID = "1iIVd-FEleeRIv7CPS0l1F732p3J9JO5d"  # pragma: allowlist secret
 
@@ -68,7 +68,7 @@ def _md5(path) -> str:
 def _load_provenance() -> dict:
     if PROVENANCE_PATH.exists():
         return json.loads(PROVENANCE_PATH.read_text(encoding="utf-8"))
-    return {"release": KG_RELEASE_TAG, "files": {}}
+    return {"release": KG_MICROBE_RELEASE, "files": {}}
 
 
 def _should_skip(f: DriveFile, provenance: dict) -> bool:
@@ -94,7 +94,7 @@ def main() -> int:
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     provenance = _load_provenance()
-    provenance["release"] = KG_RELEASE_TAG
+    provenance["release"] = KG_MICROBE_RELEASE
     provenance["files"] = provenance.get("files", {})
 
     for f in FILES:

@@ -77,7 +77,10 @@ Rows represent the dropped trait; columns represent the evaluated trait:
 | **Arsenate reduction** | $+0.000155$ | $+0.000094$ | $+0.000142$ | $+0.000031$ | — | $+0.000088$ |
 | **Moderately halophilic** | $+0.000525$ | $+0.000222$ | $+0.000410$ | $+0.000291$ | $+0.000123$ | — |
 
-### Composition Arm: $6 \times 6$ Delta $q$-Value Matrix ($\Delta q$)
+### Composition Arm: $6 \times 6$ Delta $q$-Value Matrix ($\Delta q$, Focal-Set BH Sensitivity Check)
+
+> [!NOTE]
+> **Focal-Set BH Sensitivity Check vs. Full-Family Table 1 $q$-Values ([#478](https://github.com/CultureBotAI/microbial-trait-profiling/issues/478)):** Within `src/mtp/coupling.py`, arm-level $q$-values are computed via Benjamini-Hochberg over the evaluated focal trait set ($m = 6$ in baseline, $m = 5$ in LOTO, $m = 4$ in LCO) on all-profile experiment contrasts ($N = 5,829$ profiles, $2,335$ paired experiments), rather than the full 317-trait (or 2,607-column) Table 1 BH family (see [`methods/table1-native-results/README.md`](table1-native-results/README.md), where study-level *facultatively aerobic* has effect $+0.186$ and full-family $q = 1.69 \times 10^{-9}$). Because the focal BH family shrinks from $m = 6$ to $m = 5$ in LOTO (and $m = 4$ in LCO), $\Delta q = q_{\text{perturbed}} - q_{\text{base}}$ reflects both the denominator perturbation and the focal family-size step.
 
 | Dropped Trait | Facultatively aerobic | Cellulose catabolism | Coccus shaped | Sphere shaped | Arsenate reduction | Moderately halophilic |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -89,16 +92,16 @@ Rows represent the dropped trait; columns represent the evaluated trait:
 | **Moderately halophilic** | $-0.005814$ | $+2.03 \times 10^{-8}$ | $+4.00 \times 10^{-6}$ | $+8.93 \times 10^{-9}$ | $+4.00 \times 10^{-6}$ | — |
 
 **Key LOTO Observations:**
-- **Magnitude of perturbation:** The maximum absolute shift in effect size across all 30 LOTO evaluations is $|\Delta \text{effect}| = 0.000636$ (when dropping cellulose catabolism on coccus shaped).
-- **Statistical significance:** All Table 1 traits retain their statistical sign, order of magnitude, and significance status ($q \ll 0.05$ for the convergent five; $q \approx 0.15$ for facultatively aerobic).
+- **Magnitude of perturbation by arm:** In the composition arm, the maximum absolute shift in effect size across all 30 LOTO evaluations is $|\Delta \text{effect}| = 0.000636$ (when dropping cellulose catabolism on coccus shaped). In the directional sign-test arm, the maximum LOTO shift is $|\Delta \text{share\_up}| = 0.002183$; in the ORA arm, the maximum LOTO shift is $|\Delta \text{mean\_fold}| = 0.024908$ (when dropping coccus shaped on cellulose catabolism).
+- **Statistical significance (focal-set BH sensitivity check):** All evaluated traits retain their statistical sign, order of magnitude, and focal-set significance status ($q \ll 0.05$ for five traits; $q \approx 0.15$ for all-profile *facultatively aerobic* in this module's 6-trait z-contrast test).
 
 ---
 
 ## 4. Leave-Cluster-Out (LCO) Sensitivity
 
-We evaluated the collective impact of dropping the correlated near-twin cluster (*coccus shaped* + *sphere shaped*, carrying $>4.1$ million annotations) simultaneously across all three analytical arms:
+We evaluated the collective impact of dropping the correlated near-twin cluster (*coccus shaped* + *sphere shaped*, carrying $29,119$ combined profile counts — $14,689$ *coccus shaped* and $14,430$ *sphere shaped* — out of $415,436$ total non-MediaDive annotations, or $7.01\%$) simultaneously across all three analytical arms (where Baseline $q$ uses the $m = 6$ focal BH family and LCO $q$ uses the $m = 4$ remaining focal BH family):
 
-| Analytical Arm | Trait Name | Baseline Stat | LCO Stat | $\Delta \text{Stat}$ | Baseline $q$ | LCO $q$ | $\Delta q$ |
+| Analytical Arm | Trait Name | Baseline Stat | LCO Stat | $\Delta \text{Stat}$ | Baseline $q$ ($m=6$) | LCO $q$ ($m=4$) | $\Delta q$ |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Composition** | Facultatively aerobic | $+0.0367$ | $+0.0377$ | $+0.001008$ | $0.152$ | $0.141$ | $-0.0111$ |
 | **Composition** | Cellulose catabolism | $-0.1482$ | $-0.1476$ | $+0.000576$ | $2.73 \times 10^{-8}$ | $2.07 \times 10^{-8}$ | $-6.54 \times 10^{-9}$ |
@@ -114,9 +117,9 @@ We evaluated the collective impact of dropping the correlated near-twin cluster 
 | **ORA** | Moderately halophilic | $+1.4883$ | $+1.4988$ | $+0.010487$ | $1.000$ | $1.000$ | $-6.74 \times 10^{-13}$ |
 
 ### Cross-Arm Comparison
-- **Composition Arm:** Shifts are exceptionally small ($\le 0.0010$ in standardized effect size).
-- **Directional Arm:** Study share up shifts by at most $\pm 0.0027$ (reflecting shifts in only $1$ to $2$ marginal studies out of $>800$ scored studies).
-- **ORA Arm:** Mean fold enrichment shifts upward slightly ($+0.01$ to $+0.02$), as removing the massive coccus/sphere cluster reduces the urn background total $M$ by $10.8\%$, modestly raising relative representation of other traits.
+- **Composition Arm:** Shifts are exceptionally small ($|\Delta \text{effect}| \le 0.000636$ in LOTO and $\le 0.001008$ in LCO).
+- **Directional Arm:** Study share up shifts by at most $|\Delta \text{share\_up}| \le 0.002183$ in LOTO and $\le 0.002736$ in LCO (reflecting shifts in only $1$ to $2$ marginal studies out of $>600$–$900$ scored studies, with *facultatively aerobic* scored studies shifting from $916$ to $917$ under LCO).
+- **ORA Arm:** Mean fold enrichment shifts by up to $|\Delta \text{mean\_fold}| \le 0.024908$ in LOTO and $\le 0.022271$ in LCO, as removing the coccus/sphere cluster reduces the non-MediaDive background annotation pool by $\sim 7.0\%$, modestly raising relative representation of other traits (and shifting *facultatively aerobic* profile-level hits at $q \le 0.05$ from $33$ to $38$ under LCO).
 
 ---
 
@@ -150,19 +153,19 @@ A critical conceptual distinction emerges from the coupling audit:
 
 ```mermaid
 flowchart TD
-    A["Observed Trait Correlation (r = +0.910)"] --> B["Mechanism 1: Denominator Coupling"]
+    A["Observed Trait Correlation (r = +0.911)"] --> B["Mechanism 1: Denominator Coupling"]
     A --> C["Mechanism 2: Semantic Redundancy"]
     B --> D["Evaluated in #260 (LOTO / LCO)"]
     C --> E["Evaluated in #264 / #189"]
-    D --> F["Perturbation |Delta| < 0.0003<br/>Passes stability rule (0.000237 < 0.002040)<br/>Denominator closure is robust"]
+    D --> F["Composition |Delta| <= 0.000636 (LOTO) / <= 0.001008 (LCO)<br/>Twin LOTO |Delta| <= 0.000268 < 0.002040 (passes rule)<br/>Directional |Delta| <= 0.002736; ORA |Delta| <= 0.024908"]
     E --> G["VIF = 5.88<br/>Curators assign coccus and sphere to same taxa<br/>Fails semantic independence"]
 ```
 
 1. **Denominator Coupling is Structurally Robust:**
-   Because total non-MediaDive counts are distributed across 317 columns (over 38 million total annotations), removing any single trait—even one with millions of counts like *coccus* (3.94M)—shrinks the profile denominator smoothly without tilting the relative composition of remaining traits. The effect sizes and rankings in Table 1 are not artifacts of denominator closure.
+   Because total non-MediaDive counts are distributed across $317$ columns ($415,436$ total profile annotations), removing any single trait—even a high-annotation trait like *coccus shaped* ($14,689$ counts across $3,004$ nonzero profiles)—shrinks the profile denominator smoothly without tilting the relative composition of remaining traits. The effect sizes and rankings in Table 1 are not artifacts of denominator closure.
 
 2. **Semantic Redundancy Remains the Binding Constraint:**
-   While *coccus* and *sphere* are stable under denominator coupling, they remain **semantically redundant** in METPO ontology mappings ($r = +0.910$, VIF = $5.88$). Curators assign both labels to spherical cells. Therefore, *coccus* and *sphere* cannot be claimed as independent biological mechanisms in the narrative, but this is due to **ontological overlap** ([#189](https://github.com/CultureBotAI/microbial-trait-profiling/issues/189), [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264)), **not denominator distortion** ([#260](https://github.com/CultureBotAI/microbial-trait-profiling/issues/260)).
+   While *coccus* and *sphere* are stable under denominator coupling, they remain **semantically redundant** in METPO ontology mappings ($r = +0.911$, VIF = $5.88$). Curators assign both labels to spherical cells. Therefore, *coccus* and *sphere* cannot be claimed as independent biological mechanisms in the narrative, but this is due to **ontological overlap** ([#189](https://github.com/CultureBotAI/microbial-trait-profiling/issues/189), [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264)), **not denominator distortion** ([#260](https://github.com/CultureBotAI/microbial-trait-profiling/issues/260)).
 
 ---
 
