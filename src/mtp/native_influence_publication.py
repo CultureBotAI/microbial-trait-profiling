@@ -298,7 +298,7 @@ def publish(source: Path, destination: Path) -> dict[str, object]:
         "`interpretation_handoff.tsv` carries the two measured #213 flags without "
         "collapsing their scales or tests. "
         "`scenarios.tsv` supplies lineage names, support and selection status for "
-        "the full genus/family inventory, including lineages outside the panel.\n\n"
+        "the full genus/family inventory, including lineages outside the rule-declared panel.\n\n"
         "The full 317-trait composition table, profile-level ORA results and source "
         "ledger are generated under `data/derived/table1_taxon_influence/`, following "
         "the repository's untracked generated-data convention. Regenerate the default "

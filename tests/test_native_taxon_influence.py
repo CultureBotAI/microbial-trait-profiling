@@ -328,7 +328,15 @@ def test_native_exports_end_to_end_with_an_empty_stratum(tmp_path: Path) -> None
     assert result["composition_rows"] == 6
     assert result["composition_comparisons"] == 8
     assert result["ora_comparisons"] == 8
-    assert "Native lineage" in (tmp_path / "native_summary.md").read_text()
+    summary_text = (tmp_path / "native_summary.md").read_text()
+    assert "Native lineage" in summary_text
+    assert "protocol 190-native-v2" in summary_text
+    assert "0 rule-declared exclusion scenarios" in summary_text
+    assert "within the rule-declared panel" in summary_text
+    protocol_file = (
+        Path(__file__).resolve().parents[1] / "methods" / "table1_native_influence_protocol.json"
+    )
+    assert json.loads(protocol_file.read_text(encoding="utf-8"))["version"] == "190-native-v2"
     from mtp.contribution_inputs import rows
 
     comparisons = list(rows(tmp_path / "native_composition_comparison.tsv"))
