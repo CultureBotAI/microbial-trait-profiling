@@ -1,8 +1,12 @@
 """Which corpus a run read, recorded so a number can be traced to it (#222)."""
 
+import importlib.util
 import json
+import sys
 from pathlib import Path
+from typing import Any
 
+import pandas as pd
 import pytest
 
 from mtp.corpus_identity import (
@@ -13,7 +17,15 @@ from mtp.corpus_identity import (
     measure_matrix,
     read_kg_inputs,
     summary_lines,
+    verify_provenance_source_hashes,
     write_identity,
+)
+from mtp.paths import file_sha256
+from mtp.trait_composition import (
+    LogRatioResult,
+    LogRatioSummary,
+    StudyLogRatio,
+    write_log_ratio_outputs,
 )
 
 
@@ -181,3 +193,187 @@ def test_the_printed_summary_states_the_matrix_and_both_inputs(tmp_path: Path) -
     assert "2 retained" in text
     assert "merged-kg_nodes.tsv" in text
     assert "declared md5 (sidecar)" in text
+
+
+def test_verify_provenance_source_hashes_detects_stale_and_fresh_records(
+    tmp_path: Path,
+) -> None:
+    """Stale Justfile or source hashes in provenance records are flagged (#499)."""
+    justfile = tmp_path / "Justfile"
+    justfile.write_text("check:\n    pytest\n", encoding="utf-8")
+    current_sha = file_sha256(justfile)
+
+    fresh_record: dict[str, object] = {
+        "source_hashes": {"Justfile": current_sha},
+        "justfile_sha256": current_sha,
+    }
+    assert verify_provenance_source_hashes(fresh_record, repo_root=tmp_path) == {}
+
+    stale_record: dict[str, object] = {
+        "source_hashes": {"Justfile": "0" * 64, "missing.py": "f" * 64},
+    }
+    mismatches = verify_provenance_source_hashes(stale_record, repo_root=tmp_path)
+    assert set(mismatches) == {"Justfile", "missing.py"}
+    assert mismatches["Justfile"]["recorded"] == "0" * 64
+    assert mismatches["Justfile"]["actual"] == current_sha
+    assert mismatches["missing.py"]["actual"] == "(missing)"
+
+
+def test_log_ratio_outputs_include_corpus_identity(tmp_path: Path) -> None:
+    """write_log_ratio_outputs embeds corpus_identity in trait_log_ratio_provenance.json (#337)."""
+    matrix = _matrix(tmp_path / "m.tsv", mediadive=1, retained=2, rows=2)
+    experiments = tmp_path / "experiments.tsv"
+    experiments.write_text("study_id\texperiment_id\nhost\n", encoding="utf-8")
+    full_dump = tmp_path / "full_dump.csv"
+    full_dump.write_text("# v1.3.1\n", encoding="utf-8")
+    identity = corpus_identity(matrix, bugsigdb_vintage="v1.3.1")
+    summary = LogRatioSummary(
+        numerator="METPO:0",
+        reference="METPO:1",
+        studies_total=1,
+        studies_eligible=1,
+        studies_excluded=0,
+        studies_partially_observed=0,
+        studies_up=1,
+        studies_down=0,
+        studies_tied=0,
+        studies_scored=1,
+        paired_experiments=1,
+        eligible_experiments=1,
+        excluded_zero_experiments=0,
+        mean_log2_ratio_change=0.5,
+        median_log2_ratio_change=0.5,
+        share_ratio_up=1.0,
+        share_ci_low=0.025,
+        share_ci_high=1.0,
+        sign_p=1.0,
+        by_q=1.0,
+        status="tested",
+    )
+    study_row = StudyLogRatio(
+        numerator="METPO:0",
+        reference="METPO:1",
+        study_id="bsdb:0",
+        paired_experiments=1,
+        eligible_experiments=1,
+        excluded_zero_experiments=0,
+        mean_log2_ratio_change=0.5,
+    )
+    result = LogRatioResult(summaries=[summary], studies=[study_row], family_size=1)
+    write_log_ratio_outputs(
+        result,
+        tmp_path / "lr",
+        profile_path=matrix,
+        experiments_path=experiments,
+        full_dump_path=full_dump,
+        code_commit="abc1234",
+        identity=identity,
+    )
+    prov = json.loads((tmp_path / "lr" / "trait_log_ratio_provenance.json").read_text("utf-8"))
+    assert "corpus_identity" in prov
+    assert prov["corpus_identity"]["matrix"]["sha256"] == identity.matrix.sha256
+    assert prov["corpus_identity"]["bugsigdb_vintage"] == "v1.3.1"
+
+
+def _load_script_module(script_name: str) -> Any:
+    script_path = Path(__file__).resolve().parents[1] / "scripts" / script_name
+    spec = importlib.util.spec_from_file_location(script_path.stem, script_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_export_trait_enrichment_rankings_uses_n_profiles_tested_denominator() -> None:
+    """build_overall_table divides by per-trait n_profiles_tested and validates fdr_scope (#119)."""
+    mod = _load_script_module("export_trait_enrichment_rankings.py")
+    parsed = mod.parse_args(["--all-results", "--fdr-scope", "global"])
+    assert parsed.fdr_scope == "global"
+    assert parsed.unfiltered is True
+
+    df = pd.DataFrame(
+        [
+            {
+                "study_id": "s1",
+                "experiment_id": "e1",
+                "inc_dec": "inc",
+                "profile_id": "s1:e1:inc",
+                "trait": "METPO:1",
+                "p_value": 0.0001,
+                "fdr_q": 0.001,
+                "fold": 2.5,
+                "obs": 5.0,
+                "exp": 2.0,
+                "testable_profiles": 50,
+                "trait_total": 20,
+                "is_significant": True,
+            },
+            {
+                "study_id": "s2",
+                "experiment_id": "e1",
+                "inc_dec": "inc",
+                "profile_id": "s2:e1:inc",
+                "trait": "METPO:1",
+                "p_value": 0.0005,
+                "fdr_q": 0.005,
+                "fold": 2.0,
+                "obs": 4.0,
+                "exp": 2.0,
+                "testable_profiles": 50,
+                "trait_total": 20,
+                "is_significant": True,
+            },
+            {
+                "study_id": "s3",
+                "experiment_id": "e1",
+                "inc_dec": "inc",
+                "profile_id": "s3:e1:inc",
+                "trait": "METPO:1",
+                "p_value": 0.8,
+                "fdr_q": 0.9,
+                "fold": 0.5,
+                "obs": 1.0,
+                "exp": 2.0,
+                "testable_profiles": 50,
+                "trait_total": 20,
+                "is_significant": False,
+            },
+            {
+                "study_id": "s4",
+                "experiment_id": "e1",
+                "inc_dec": "dec",
+                "profile_id": "s4:e1:dec",
+                "trait": "METPO:1",
+                "p_value": 0.9,
+                "fdr_q": 0.95,
+                "fold": 0.5,
+                "obs": 1.0,
+                "exp": 2.0,
+                "testable_profiles": 50,
+                "trait_total": 20,
+                "is_significant": False,
+            },
+        ]
+    )
+    out = mod.build_overall_table(
+        df,
+        "fdr_q",
+        total_profiles=50,
+        fdr_scope="global",
+    )
+    row = out.iloc[0]
+    assert int(row["testable_profiles"]) == 50
+    assert int(row["n_profiles_tested"]) == 4
+    assert int(row["hit_rows"]) == 2
+    assert float(row["prevalence"]) == pytest.approx(0.5)
+    assert row["prevalence_summary"] == "2 / 4"
+
+    with pytest.raises(ValueError, match="Unsupported fdr_scope"):
+        mod.build_overall_table(
+            df,
+            "fdr_q",
+            total_profiles=50,
+            fdr_scope="invalid",
+        )

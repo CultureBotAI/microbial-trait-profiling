@@ -20,7 +20,7 @@ Issue [#263](https://github.com/CultureBotAI/microbial-trait-profiling/issues/26
 To resolve this question conclusively, we benchmarked the complete direction-label permutation null (`complete_null_study_flip` stream, seed 182, 100 Monte Carlo replicates) across the full corpus of 959 paired BugSigDB studies, 2,335 paired experiments, and 317 non-MediaDive traits (31,700 total hypothesis tests under the null):
 
 1. **Zero Runaway at $q \le 0.001$:**  
-   Across all 100 null replicates, the mean number of false discoveries at Benjamini-Hochberg $q \le 0.001$ was **0.00** (max: 0; 0/100 replicates produced any call; empirical family-wise error = **0.0%**, 95% Clopper-Pearson CI: 0.0%–3.6%). This definitively refutes the concern that permutation runaway produces spurious findings at stringent discovery thresholds.
+   Across all 100 null replicates, the mean number of false discoveries at Benjamini-Hochberg $q \le 0.001$ was **0.00** (max: 0; 0/100 replicates produced any call; empirical family-wise error = **0.0%**, 95% Clopper-Pearson CI: 0.0%–3.6%). Within the 100-replicate empirical null benchmark, no permutation runaway was observed at stringent discovery thresholds.
 
 2. **Conservative Control at $q \le 0.05$:**  
    At the standard Benjamini-Hochberg $q \le 0.05$ threshold, the mean number of false discoveries was **0.09** out of 317 tests (max: 7 in a single replicate; 97 out of 100 replicates produced exactly zero false calls; empirical family-wise error = **3.0%**, 95% CI: 0.6%–8.5%). With Benjamini-Yekutieli (BY) correction, the mean false call count fell to **0.02** (family-wise error = **1.0%**). None of the 100 null replicates reached or approached the 132 calls observed in unpermuted data.
@@ -38,7 +38,7 @@ To resolve this question conclusively, we benchmarked the complete direction-lab
    - *Sphere shaped* ($t = +4.663, q = 5.37 \times 10^{-5}$)
    - *Arsenate reduction* ($t = +4.341, q = 1.66 \times 10^{-4}$)
    - *Moderately halophilic* ($t = +4.798, q = 3.54 \times 10^{-5}$)  
-   *Facultatively aerobic* ($t = +1.663, p = 0.0967, q = 0.1836$) was not significant in the unpermuted paired composition arm (11/100 null replicates reached $|t_{\text{obs}}|$), directly mirroring the density adjustment findings in [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264) where this trait collapsed upon adjusting for curation effort.
+   *Facultatively aerobic* ($t = +1.663, p = 0.0967, q = 0.1836$) was not significant in the unpermuted paired composition arm (11/100 null replicates reached $|t_{\text{obs}}|$), consistent with the density adjustment findings in [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264) where this trait attenuated under curation-density controls.
 
 ---
 
@@ -131,16 +131,16 @@ We evaluated the observed effect size, t-statistic, and survival under null cali
 
 ### Key Observations:
 - **Consistent Convergence Across 5 Traits:**  
-  Cellulose depletion, coccus shape, spherical morphology, arsenate reduction, and moderate halophily all exhibit massive separation between the observed contrast and the empirical null distribution. In all five cases, not a single permuted replicate among the 100 reached the observed test statistic magnitude ($p_{\text{perm}} < 0.01$).
+  Cellulose depletion, coccus shape, spherical morphology, arsenate reduction, and moderate halophily each show clear separation between the observed contrast and the 100-replicate empirical null distribution. In all five cases, no permuted replicate among the 100 reached the observed test statistic magnitude ($p_{\text{perm}} < 0.01$).
 - **Facultatively Aerobic Concordance with #264:**  
-  In the paired composition arm, *facultatively aerobic* achieves an observed $t = +1.663$ with $p = 0.0967$ and BH $q = 0.1836$, failing to reach significance even before permutation testing. Under null study flips, 11% of replicates exceed the observed test statistic. This confirms the conclusion of Issue [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264): the apparent association of *facultatively aerobic* was driven by annotation density, and paired within-study contrast analysis does not find a robust shift.
+  In the paired composition arm, *facultatively aerobic* achieves an observed $t = +1.663$ with $p = 0.0967$ and BH $q = 0.1836$, failing to reach significance even before permutation testing. Under null study flips, 11% of replicates exceed the observed test statistic. This aligns with the findings of Issue [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264): the apparent unadjusted association of *facultatively aerobic* is sensitive to annotation density and profile representation, and paired within-study composition contrast analysis does not detect a significant shift.
 
 ---
 
 ## 6. Methodological Takeaways & Recommendations
 
-1. **Paired Composition Arm is Fully Calibrated:**  
-   The empirical benchmark firmly establishes that the paired composition adapter (`JedCompositionAdapter`, `jed_composition_ttest`) controls false discovery rates under the complete null. The concern raised in #263 regarding possible permutation runaway is resolved: at $q \le 0.001$, zero false discoveries are generated across 100 replicates, and at $q \le 0.05$, only 3% of null replicates generate any call.
+1. **Paired Composition Arm Empirical Null Calibration:**  
+   Across 100 study-flip replicates, the paired composition adapter (`JedCompositionAdapter`, `jed_composition_ttest`) maintains empirical false discovery rates at or below nominal thresholds under the study-level direction-flip null. In this benchmark (#263), zero false discoveries are generated across 100 replicates at $q \le 0.001$, and 3% of null replicates generate at least one call at $q \le 0.05$.
 
 2. **Study Aggregation is Statistically Essential:**  
    Aggregating matched experiment contrasts to study-level means ($\bar{\Delta}_{sj}$) before performing the Student's t-test successfully accounts for within-study correlation across multi-experiment datasets, preventing inflated degrees of freedom and ensuring valid empirical Type I error rates ($\hat{\alpha} = 0.0460 \le 0.05$).

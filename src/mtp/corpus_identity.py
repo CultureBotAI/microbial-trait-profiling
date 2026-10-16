@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import csv
 import json
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -56,6 +57,7 @@ __all__ = [
     "measure_matrix",
     "read_kg_inputs",
     "summary_lines",
+    "verify_provenance_source_hashes",
     "write_identity",
 ]
 
@@ -278,3 +280,37 @@ def summary_lines(identity: CorpusIdentity) -> list[str]:
         for item in identity.kg_inputs
     )
     return lines
+
+
+def verify_provenance_source_hashes(
+    record: Mapping[str, object],
+    repo_root: Path | None = None,
+) -> dict[str, dict[str, str]]:
+    """Return any recorded source-file SHA-256 entries that do not match disk (#499).
+
+    Inspects ``record["source_hashes"]`` (mapping relative paths to SHA-256 digests)
+    as well as top-level ``justfile_sha256`` if present. Returns a mapping of
+    relative path -> ``{"recorded": ..., "actual": ...}`` for every mismatched or
+    missing file (empty dict when all recorded source hashes are fresh).
+    """
+    root = repo_root if repo_root is not None else Path(__file__).resolve().parents[2]
+    candidates: dict[str, str] = {}
+    source_hashes = record.get("source_hashes")
+    if isinstance(source_hashes, Mapping):
+        for rel_path, digest in source_hashes.items():
+            if isinstance(rel_path, str) and isinstance(digest, str):
+                candidates[rel_path] = digest
+    justfile_digest = record.get("justfile_sha256")
+    if isinstance(justfile_digest, str) and "Justfile" not in candidates:
+        candidates["Justfile"] = justfile_digest
+
+    mismatches: dict[str, dict[str, str]] = {}
+    for rel_path, recorded_sha in candidates.items():
+        target = root / rel_path
+        actual_sha = file_sha256(target) if target.is_file() else "(missing)"
+        if actual_sha != recorded_sha:
+            mismatches[rel_path] = {
+                "recorded": recorded_sha,
+                "actual": actual_sha,
+            }
+    return mismatches

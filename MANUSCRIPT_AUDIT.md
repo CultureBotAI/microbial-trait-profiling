@@ -141,8 +141,8 @@ of A's per-trait dz (sampling variance taken as 1/n).
   inc/dec hit columns and on any use of the depletion arm (100,999 "depletions" at `c75744a` are
   still dominated by structural zeros).
 - **#134** — the condition-trait-module heatmap sums increased and decreased profiles together;
-  the "condition × body-site trait modules" interpretation rests on it.
-- **#128** — the autism case study pools two labels with opposite directional skew.
+  the "condition × body-site trait modules" interpretation rests on it. *(Update: `scripts/create_condition_trait_module_heatmap.py` and `trait-visualization/figure_methods.md` on `main` now explicitly label this metric as direction-agnostic study trait load and support `--direction {all,inc,dec}` ahead of the final reruns.)*
+- **#128** — the autism case study pools two labels with opposite directional skew. *(Update: `scripts/investigate_facultative_aerobe_condition_followup.py` and `autism_autoimmune_followup.md` on `main` now report `Autism` and `Autism spectrum disorder` separately.)*
 - **#155** — `c75744a` regressions: a duplicate Zenodo downloader with no checksum verification
   (main already has the hardened, SHA-pinned one from PR #150), deleted ORA methodology summary
   (Methods' citation target), weakened tests, renamed outputs (breaks the manuscript's provenance
@@ -150,7 +150,7 @@ of A's per-trait dz (sampling variance taken as 1/n).
 - **#142 / #144 / #147** — metadata joins and new directional figures that would extend the
   figure set.
 - **#118 / #119 / #123** — per-body-site stratification and rollup-statistic caveats for the ORA
-  arm's per-trait claims.
+  arm's per-trait claims. *(Update: `#119` per-trait `n_profiles_tested` prevalence denominator and explicit `--fdr-scope global` validation are now fixed in `scripts/export_trait_enrichment_rankings.py` and `Justfile` on `main` ahead of the ORA rerun.)*
 - **#127** — `plot_enrichment_histograms.py` counts experiments where it labels profiles,
   understating trait frequency in Figure 4's histograms.
 

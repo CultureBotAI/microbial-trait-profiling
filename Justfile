@@ -239,10 +239,12 @@ analyze: study-trait-profiles-ora
 	  --tsv-output data/derived/trait_enrichment_results.tsv \
 	  --all-results-output data/derived/trait_enrichment_all_results.tsv \
 	  --p-threshold {{p_threshold}} \
-	  --min-fold {{min_fold}}"
+	  --min-fold {{min_fold}} \
+	  --fdr-scope global"
 	just timed export-rankings "uv run python scripts/export_trait_enrichment_rankings.py \
 	  --input data/derived/trait_enrichment_all_results.tsv \
 	  --all-results \
+	  --fdr-scope global \
 	  --overall-output data/derived/trait_enrichment_traits_overall_ranked.tsv \
 	  --pair-output data/derived/trait_enrichment_trait_study_pairs_ranked.tsv"
 
@@ -255,10 +257,12 @@ analyze-depletion: study-trait-profiles-ora
 	  --tsv-output data/derived/trait_depletion_results.tsv \
 	  --all-results-output data/derived/trait_depletion_all_results.tsv \
 	  --p-threshold {{p_threshold}} \
-	  --max-fold 0.5"
+	  --max-fold 0.5 \
+	  --fdr-scope global"
 	just timed export-depletion-rankings "uv run python scripts/export_trait_enrichment_rankings.py \
 	  --input data/derived/trait_depletion_all_results.tsv \
 	  --all-results \
+	  --fdr-scope global \
 	  --overall-output data/derived/trait_depletion_traits_overall_ranked.tsv \
 	  --pair-output data/derived/trait_depletion_trait_study_pairs_ranked.tsv"
 

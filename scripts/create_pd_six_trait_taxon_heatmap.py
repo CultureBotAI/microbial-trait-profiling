@@ -73,8 +73,13 @@ PD_TAXA_LITERATURE_REFERENCE = [
         "literature_taxon": "Akkermansia",
         "literature_rank": "genus",
         "literature_direction": "increased",
-        "literature_evidence": "Often reported as enriched in PD fecal microbiome studies.",
-        "doi_citations": "10.1186/s13073-017-0428-y;10.1002/mds.28119;10.1038/s41467-022-34667-x",
+        "literature_evidence": (
+            "Reported as enriched in several PD fecal microbiome cohorts "
+            "(10.1186/s13073-017-0428-y; 10.1002/mds.28119), although a large "
+            "metagenomic cohort reported a null species-level result after FDR "
+            "correction (10.1038/s41467-022-34667-x)."
+        ),
+        "doi_citations": "10.1186/s13073-017-0428-y;10.1002/mds.28119",
         "match_terms": "Akkermansia;Akkermansia muciniphila",
     },
     {
@@ -82,8 +87,9 @@ PD_TAXA_LITERATURE_REFERENCE = [
         "literature_rank": "genus",
         "literature_direction": "increased",
         "literature_evidence": (
-            "Reported as increased at genus/family level, although one cohort showed "
-            "attenuation after excluding selected medication users."
+            "Reported as increased at genus/family level (10.1002/mds.26942 full-text "
+            "verified; 10.1016/j.parkreldis.2016.08.019 abstract-verified), although one "
+            "cohort showed attenuation after excluding selected medication users."
         ),
         "doi_citations": "10.1002/mds.26942;10.1016/j.parkreldis.2016.08.019",
         "match_terms": "Bifidobacterium;Bifidobacteriaceae",
@@ -101,9 +107,12 @@ PD_TAXA_LITERATURE_REFERENCE = [
         "literature_rank": "family",
         "literature_direction": "increased",
         "literature_evidence": (
-            "Reported as enriched in PD and linked with postural instability/gait phenotype."
+            "Reported as increased in PD fecal samples (10.1016/j.parkreldis.2016.08.019 "
+            "abstract-verified); in 10.1002/mds.26069, abundance correlated positively "
+            "with postural instability and gait difficulty severity rather than overall "
+            "PD case-control enrichment."
         ),
-        "doi_citations": "10.1002/mds.26069;10.1016/j.parkreldis.2016.08.019",
+        "doi_citations": "10.1016/j.parkreldis.2016.08.019;10.1002/mds.26069",
         "match_terms": (
             "Enterobacteriaceae;Escherichia;Escherichia coli;Shigella;Escherichia-Shigella"
         ),
@@ -112,7 +121,10 @@ PD_TAXA_LITERATURE_REFERENCE = [
         "literature_taxon": "Escherichia-Shigella",
         "literature_rank": "genus group",
         "literature_direction": "increased",
-        "literature_evidence": "Reported as increased in PD metagenomic profiles.",
+        "literature_evidence": (
+            "Reported as increased in a PD fecal 16S rRNA cohort (24 PD, 14 controls; "
+            "abstract-verified)."
+        ),
         "doi_citations": "10.1007/s11427-016-9001-4",
         "match_terms": "Escherichia-Shigella;Escherichia;Escherichia coli;Shigella",
     },
@@ -128,7 +140,10 @@ PD_TAXA_LITERATURE_REFERENCE = [
         "literature_taxon": "Enterococcus",
         "literature_rank": "genus",
         "literature_direction": "increased",
-        "literature_evidence": "Reported as increased in PD metagenomic profiles.",
+        "literature_evidence": (
+            "Reported as increased in a PD fecal 16S rRNA cohort (24 PD, 14 controls; "
+            "abstract-verified)."
+        ),
         "doi_citations": "10.1007/s11427-016-9001-4",
         "match_terms": "Enterococcus",
     },
@@ -136,7 +151,10 @@ PD_TAXA_LITERATURE_REFERENCE = [
         "literature_taxon": "Proteus",
         "literature_rank": "genus",
         "literature_direction": "increased",
-        "literature_evidence": "Reported as increased in PD metagenomic profiles.",
+        "literature_evidence": (
+            "Reported as increased in a PD fecal 16S rRNA cohort (24 PD, 14 controls; "
+            "abstract-verified)."
+        ),
         "doi_citations": "10.1007/s11427-016-9001-4",
         "match_terms": "Proteus",
     },
@@ -144,7 +162,11 @@ PD_TAXA_LITERATURE_REFERENCE = [
         "literature_taxon": "Alistipes",
         "literature_rank": "genus/species",
         "literature_direction": "increased",
-        "literature_evidence": "Reported as increased in PD, including species-level signals.",
+        "literature_evidence": (
+            "Reported as increased in PD, including species-level signals "
+            "(10.1093/brain/awaa201 abstract-verified; 10.1038/s41467-022-34667-x "
+            "full-text verified)."
+        ),
         "doi_citations": "10.1093/brain/awaa201;10.1038/s41467-022-34667-x",
         "match_terms": "Alistipes;Alistipes finegoldii;Alistipes indistinctus",
     },
@@ -170,7 +192,11 @@ PD_TAXA_LITERATURE_REFERENCE = [
         "literature_taxon": "Faecalibacterium",
         "literature_rank": "genus/species",
         "literature_direction": "decreased",
-        "literature_evidence": "Reported as depleted in PD, including F. prausnitzii.",
+        "literature_evidence": (
+            "Reported as depleted in PD, including F. prausnitzii "
+            "(10.1016/j.parkreldis.2016.08.019 and 10.1007/s11427-016-9001-4 "
+            "abstract-verified; 10.1002/mds.28119 full-text verified)."
+        ),
         "doi_citations": (
             "10.1016/j.parkreldis.2016.08.019;10.1007/s11427-016-9001-4;10.1002/mds.28119"
         ),
@@ -209,7 +235,10 @@ PD_TAXA_LITERATURE_REFERENCE = [
         "literature_taxon": "Lachnospiraceae",
         "literature_rank": "family",
         "literature_direction": "decreased",
-        "literature_evidence": "Reported as depleted in PD gut microbiome cohorts.",
+        "literature_evidence": (
+            "Reported as depleted in PD gut microbiome cohorts (10.1002/mds.26942 "
+            "full-text verified; 10.1002/mds.26307 family-level synthesis)."
+        ),
         "doi_citations": "10.1002/mds.26307;10.1002/mds.26942",
         "match_terms": "Lachnospiraceae",
     },
@@ -225,7 +254,10 @@ PD_TAXA_LITERATURE_REFERENCE = [
         "literature_taxon": "Dorea",
         "literature_rank": "genus",
         "literature_direction": "decreased",
-        "literature_evidence": "Reported as depleted in PD gut microbiome cohorts.",
+        "literature_evidence": (
+            "Cited in PD gut microbiome synthesis of Lachnospiraceae-affiliated genera "
+            "(10.1002/mds.26307; unverified in primary full text)."
+        ),
         "doi_citations": "10.1002/mds.26307",
         "match_terms": "Dorea",
     },
