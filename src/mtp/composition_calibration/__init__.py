@@ -34,6 +34,7 @@ from mtp.composition_calibration.scenarios import (
     generate_study_flip_null_profiles,
     replicate_rng,
     stream_key,
+    study_flip_draw_order,
 )
 
 __all__ = [
@@ -65,4 +66,5 @@ __all__ = [
     "run_composition_calibration",
     "save_composition_calibration_artifacts",
     "stream_key",
+    "study_flip_draw_order",
 ]

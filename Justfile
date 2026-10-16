@@ -378,6 +378,7 @@ audit-trait-coupling *ARGS:
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
+	uv run pre-commit run detect-secrets --all-files
 	tmpdir="$(mktemp -d)" && \
 	trap 'rm -rf "$tmpdir"' EXIT && \
 	reqfile="$tmpdir/requirements.txt" && \

@@ -22,6 +22,7 @@ from mtp.composition_calibration import (
     replicate_rng,
     run_composition_calibration,
     stream_key,
+    study_flip_draw_order,
 )
 from mtp.composition_calibration.composition import (
     load_composition_trait_columns,
@@ -473,3 +474,84 @@ def test_composition_flips_match_calibration_flip_assignments_and_relabel_contra
             .to_numpy(dtype=float)
         )
         assert np.allclose(sim_mat, relabelled_contrasts)
+
+
+def test_zero_total_paired_studies_do_not_desynchronize_flip_assignments(
+    synthetic_paired_profiles: pd.DataFrame,
+) -> None:
+    """Zero-total paired studies stay in contrasts but draw flips after non-zero studies (#543)."""
+    from mtp.calibration import SEED as CALIBRATION_SEED
+    from mtp.calibration import flip_assignments
+    from mtp.trait_guilds import Profile, drop_zero_total_pairs
+
+    zero_study_rows = pd.DataFrame(
+        {
+            "study_id": ["s0", "s0"],
+            "experiment_id": ["e0", "e0"],
+            "inc_dec": ["increased", "decreased"],
+            "condition": ["disease", "disease"],
+            "body_site": ["feces", "feces"],
+            "taxa_count": [0, 10],
+            "trait_A": [0, 2],
+            "trait_B": [0, 3],
+            "trait_C": [0, 1],
+            "trait_const": [0, 2],
+        }
+    )
+    with_zero = pd.concat([zero_study_rows, synthetic_paired_profiles], ignore_index=True)
+    paired_df = filter_paired_profiles(with_zero)
+    traits = ["trait_A", "trait_B", "trait_C"]
+
+    draw_order = study_flip_draw_order(paired_df)
+    assert draw_order == ["s1", "s2", "s3", "s0"]
+
+    profiles = [
+        Profile(
+            study_id=str(row["study_id"]),
+            experiment_id=str(row["experiment_id"]),
+            inc_dec="inc" if row["inc_dec"] == "increased" else "dec",
+            condition=str(row["condition"]),
+            body_site=str(row["body_site"]),
+            guild_counts={t: int(row[t]) for t in traits},
+            total=int(row["taxa_count"]),
+        )
+        for _, row in paired_df.iterrows()
+    ]
+    exclusion = drop_zero_total_pairs(profiles)
+    assert exclusion.zero_total_experiments == 1
+    assert exclusion.studies_lost == 1
+    artefact = flip_assignments(
+        exclusion.profiles, replicates=5, seed=CALIBRATION_SEED, stream=STREAM
+    )
+
+    contrast_data = compute_composition_contrasts(paired_df, traits)
+    assert contrast_data.n_studies == 4
+    contrast_index = set(contrast_data.study_contrasts.index.astype(str))
+    study_keys = [k for k in study_flip_draw_order(paired_df) if k in contrast_index]
+    assert study_keys == ["s1", "s2", "s3", "s0"]
+
+    for rep in range(5):
+        expected_nonzero_flipped = {
+            str(r["study_id"]) for r in artefact if r["replicate"] == rep and r["flipped"] == 1
+        }
+        rng = replicate_rng(CALIBRATION_SEED, STREAM, rep)
+        draws = np.array([rng.random() for _ in study_keys])
+        actual_nonzero_flipped = {
+            s_id for s_id, d in zip(study_keys, draws, strict=True) if s_id != "s0" and d < 0.5
+        }
+        assert actual_nonzero_flipped == expected_nonzero_flipped
+
+        flipped_df = generate_study_flip_null_profiles(
+            paired_df,
+            replicate_rng(CALIBRATION_SEED, STREAM, rep),
+            unit="study",
+        )
+        df_nonzero_flipped = {
+            s_id
+            for s_id in ["s1", "s2", "s3"]
+            if not np.array_equal(
+                paired_df.loc[paired_df["study_id"] == s_id, "inc_dec"].to_numpy(),
+                flipped_df.loc[flipped_df["study_id"] == s_id, "inc_dec"].to_numpy(),
+            )
+        }
+        assert df_nonzero_flipped == expected_nonzero_flipped

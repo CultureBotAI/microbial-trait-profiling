@@ -3,8 +3,8 @@
 The trait screen of #255 tests all 317 retained traits and corrects across the
 whole family, twice: Benjamini-Yekutieli and Benjamini-Hochberg at the nominal
 family size, and Benjamini-Yekutieli again at the effective family size estimated
-from the study contrasts (#265). On the pinned corpus it calls 18 traits at BY
-q <= 0.05 with m = 317 and 56 with m = 112. This module asks what those numbers
+from the study contrasts (#265). On the pinned corpus it calls 17 traits at BY
+q <= 0.05 with m = 317 and 59 with m = 112. This module asks what those numbers
 would be if no trait differed between the directions.
 
 The null is the directional arm's complete null of #182, reused rather than
@@ -19,7 +19,7 @@ the effective family size, so the effective-size column is calibrated as the
 procedure is actually run. Every call under this null is a false one, so the
 per-replicate count is the false-discovery count, and the share of replicates
 with any call is the family error of the whole screen. Neither is a verdict on
-the observed 18 or 56; they are what the same procedure produces with no signal.
+the observed 17 or 59; they are what the same procedure produces with no signal.
 """
 
 from __future__ import annotations
