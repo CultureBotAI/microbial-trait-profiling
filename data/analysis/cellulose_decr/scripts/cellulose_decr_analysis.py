@@ -689,7 +689,8 @@ def direction_row(
     if not untied:
         note = "no untied paired experiments"
     elif min_p > ALPHA:
-        note = f"p < {ALPHA} unattainable with {untied} untied pairs"
+        pairs = "pair" if untied == 1 else "pairs"
+        note = f"p < {ALPHA} unattainable with {untied} untied {pairs}"
     elif power < 0.8:
         note = f"power {power:.2f} at the pooled feces share"
     else:
@@ -1276,6 +1277,16 @@ def joined_values(frame: pd.DataFrame, column: str) -> str:
     return ", ".join(values)
 
 
+def dump_vintage(path: Path) -> str:
+    """The release stamp on the first line of full_dump.csv, e.g. 2026-04-24_00:41_UTC."""
+    with path.open(encoding="utf-8") as handle:
+        first = handle.readline().strip()
+    match = re.match(r"^#\s*BugSigDB\s+([^,\s]+)", first)
+    if match is None:
+        raise ValueError(f"{path} does not start with a '# BugSigDB <vintage>' line")
+    return match.group(1)
+
+
 def load_dump(path: Path) -> pd.DataFrame:
     dump = pd.read_csv(path, dtype=str, keep_default_na=False, comment=None, skiprows=1)
     parts = dump["BSDB ID"].str.extract(r"^bsdb:([^/]+)/(\d+)/(\d+)$")
@@ -1808,6 +1819,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "trait_label": trait_label,
         "trait_column_label": corpus.trait_labels.at[TRAIT_ID, "column_label"],
         "label_source": args.label_source,
+        "bugsigdb_vintage": dump_vintage(paths["full_dump"]),
         "conditions": list(CONDITIONS.values()),
         "definitions": {
             "profile": (
@@ -1907,6 +1919,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "code_commit": args.code_commit,
         "script": "data/analysis/cellulose_decr/scripts/cellulose_decr_analysis.py",
+        "bugsigdb_vintage": dump_vintage(paths["full_dump"]),
         "label_source": args.label_source,
         "permutations": n,
         "seed": args.seed,
