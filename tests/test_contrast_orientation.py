@@ -13,7 +13,9 @@ import pytest
 
 from bsdbng.contrast_orientation import (
     ARM_GROUP,
+    CASE_VS_CONTROL_SUBJECT,
     CLASSIFIER_VERSION,
+    COMORBIDITY_WITHIN_DISEASE,
     DISEASE_VS_DISEASE,
     DISEASE_VS_HEALTHY,
     INTERVENTION_EVIDENCE,
@@ -22,8 +24,13 @@ from bsdbng.contrast_orientation import (
     NOT_APPLICABLE,
     NOT_REVIEWED,
     OTHER,
+    PAIRED_TISSUE_AUTOLOGOUS,
+    RESOLVED_DISEASE,
     REVERSED,
     REVIEW_FIELDS,
+    TIER_1_HEALTHY_NORMAL,
+    TIER_2_CONDITION_NEGATIVE_SCREENED,
+    TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
     TREATMENT,
     UNRESOLVED,
     Classification,
@@ -31,6 +38,7 @@ from bsdbng.contrast_orientation import (
     class_counts,
     classify,
     comparison_rows,
+    control_tier_counts,
     main,
     oriented_profiles,
     read_experiment_records,
@@ -1023,10 +1031,12 @@ def test_main_writes_every_artefact_and_accounts_for_every_experiment(tmp_path: 
     )
     assert [row["experiment_id"] for row in manifest] == ["bsdb:1-1", "bsdb:2-1"]
     assert [row["contrast_class"] for row in manifest] == [DISEASE_VS_HEALTHY, TREATMENT]
+    assert [row["contrast_type"] for row in manifest] == [CASE_VS_CONTROL_SUBJECT, TREATMENT]
+    assert [row["control_tier"] for row in manifest] == [TIER_1_HEALTHY_NORMAL, NOT_APPLICABLE]
     assert {row["in_analysed_corpus"] for row in manifest} == {"true"}
     # Spelled out, so that bumping the version is a deliberate edit to this test too:
     # the manifest and provenance are what downstream work keys off.
-    assert CLASSIFIER_VERSION == "contrast-orientation-v2"
+    assert CLASSIFIER_VERSION == "contrast-orientation-v3"
     assert {row["classifier_version"] for row in manifest} == {CLASSIFIER_VERSION}
     assert {row["bugsigdb_vintage"] for row in manifest} == {"2026-04-24_00:41_UTC"}
 
@@ -1045,6 +1055,14 @@ def test_main_writes_every_artefact_and_accounts_for_every_experiment(tmp_path: 
     assert provenance["classifier_version"] == CLASSIFIER_VERSION
     assert provenance["analysed_experiments"] == len(manifest)
     assert sum(row["experiments"] for row in provenance["class_counts"]) == len(manifest)
+    assert provenance["control_tier_counts"] == [
+        {
+            "contrast_type": CASE_VS_CONTROL_SUBJECT,
+            "control_tier": TIER_1_HEALTHY_NORMAL,
+            "experiments": 1,
+            "studies": 1,
+        }
+    ]
     assert provenance["full_dump_sha256"] == hashlib.sha256(dump.read_bytes()).hexdigest()
 
     populations = {
@@ -1057,6 +1075,8 @@ def test_main_writes_every_artefact_and_accounts_for_every_experiment(tmp_path: 
         "historical_human_paired",
         "disease_vs_healthy_oriented",
         "disease_vs_healthy_strong_evidence",
+        "disease_vs_healthy_tier1_healthy_normal",
+        "disease_vs_healthy_tier1_2_subject_controls",
     }
 
 
@@ -1084,3 +1104,225 @@ def test_main_refuses_a_corpus_the_export_does_not_describe(tmp_path: Path) -> N
                 str(tmp_path / "out"),
             ]
         )
+
+
+def test_v3_contrast_type_and_control_tier_stratification() -> None:
+    # Tier 1: explicit healthy/normal subject controls
+    tier1 = classify(
+        replace(
+            BASE,
+            condition="Preterm birth",
+            group_0_name="Full-term infants",
+            group_1_name="Preterm infants",
+        )
+    )
+    assert tier1.contrast_class == DISEASE_VS_HEALTHY
+    assert tier1.orientation == NATIVE
+    assert tier1.contrast_type == CASE_VS_CONTROL_SUBJECT
+    assert tier1.control_tier == TIER_1_HEALTHY_NORMAL
+
+    # Tier 2: condition-negative / screened asymptomatic controls (including self-scoped absence)
+    tier2 = classify(
+        replace(
+            BASE,
+            condition="glucose metabolism disease",
+            group_0_name="non-diabetic",
+            group_1_name="diabetic",
+        )
+    )
+    assert tier2.contrast_class == DISEASE_VS_HEALTHY
+    assert tier2.orientation == NATIVE
+    assert tier2.contrast_type == CASE_VS_CONTROL_SUBJECT
+    assert tier2.control_tier == TIER_2_CONDITION_NEGATIVE_SCREENED
+
+    # Tier 3: paired autologous tissue comparison
+    tissue = classify(
+        replace(
+            BASE,
+            condition="Colorectal cancer",
+            group_0_name="Tumor tissue",
+            group_1_name="Adjacent non-cancerous tissue",
+        )
+    )
+    assert tissue.contrast_class == DISEASE_VS_HEALTHY
+    assert tissue.orientation == REVERSED
+    assert tissue.contrast_type == PAIRED_TISSUE_AUTOLOGOUS
+    assert tissue.control_tier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+    assert "paired_tissue_comparison" in tissue.flags.split(",")
+
+    # Tier 3: comorbidity within shared background disease
+    comorbid = classify(
+        replace(
+            BASE,
+            condition="Constipation",
+            group_0_name="Maintenance Hemodialysis without Constipation (MHDNCG)",
+            group_1_name="Maintenance Hemodialysis with Constipation (MHDCG)",
+        )
+    )
+    assert comorbid.contrast_class == DISEASE_VS_HEALTHY
+    assert comorbid.orientation == NATIVE
+    assert comorbid.contrast_type == COMORBIDITY_WITHIN_DISEASE
+    assert comorbid.control_tier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+    assert "comorbidity_control" in comorbid.flags.split(",")
+
+    # Tier 3: treated disease group vs healthy control
+    treated_conf = classify(
+        replace(
+            BASE,
+            condition="HIV infection",
+            group_0_name="Controls",
+            group_1_name="HIV Patients treated with Maraviroc",
+        )
+    )
+    assert treated_conf.contrast_class == DISEASE_VS_HEALTHY
+    assert treated_conf.orientation == NATIVE
+    assert treated_conf.contrast_type == CASE_VS_CONTROL_SUBJECT
+    assert treated_conf.control_tier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+    assert "treated_disease_group" in treated_conf.flags.split(",")
+
+    # Resolved disease subtype of longitudinal_timepoint
+    resolved = classify(
+        replace(
+            BASE,
+            condition="COVID-19",
+            group_0_name="Healthy controls",
+            group_1_name="Recovered patients",
+        )
+    )
+    assert resolved.contrast_class == LONGITUDINAL
+    assert resolved.contrast_type == RESOLVED_DISEASE
+    assert resolved.control_tier == NOT_APPLICABLE
+
+
+def test_v3_review_sample_disagreement_fixes() -> None:
+    # Shared treatment term in both groups cancels out when one group is a control
+    shared_tx = classify(
+        replace(
+            BASE,
+            condition="Oral squamous cell carcinoma",
+            group_0_name="Nonsmoking, nondrinking, and dentate healthy controls",
+            group_1_name="Nonsmoking, nondrinking, and dentate pre-treatment OSCC patients",
+        )
+    )
+    assert shared_tx.contrast_class == DISEASE_VS_HEALTHY
+    assert shared_tx.orientation == NATIVE
+    assert "shared_treatment_term" in shared_tx.flags.split(",")
+
+    # Pre-DM is a clinical stage, not a longitudinal timepoint
+    pre_dm = classify(
+        replace(
+            BASE,
+            condition="Diabetes mellitus",
+            group_0_name="Prediabetes (Pre-DM)",
+            group_1_name="Type 2 diabetes mellitus (T2DM)",
+        )
+    )
+    assert pre_dm.contrast_class == DISEASE_VS_DISEASE
+
+    # Pre-treatment disease baseline vs healthy control (reversed)
+    pre_tx_rev = classify(
+        replace(
+            BASE,
+            condition="Colorectal cancer",
+            group_0_name="Pre-treatment colorectal cancer patients",
+            group_1_name="Healthy controls",
+        )
+    )
+    assert pre_tx_rev.contrast_class == DISEASE_VS_HEALTHY
+    assert pre_tx_rev.orientation == REVERSED
+    assert "disease_sample_dated_at_baseline" in pre_tx_rev.flags.split(",")
+
+    # Shared "controls" label where only one group has specific condition-negative evidence
+    obese_ctrl = classify(
+        replace(
+            BASE,
+            condition="Obesity",
+            group_0_name="normal-weight controls",
+            group_1_name="obese controls",
+        )
+    )
+    assert obese_ctrl.contrast_class == DISEASE_VS_HEALTHY
+    assert obese_ctrl.orientation == NATIVE
+
+    # Both groups are healthy controls differing by demographic cohort or body site
+    cohort_diff = classify(
+        replace(
+            BASE,
+            condition="Obesity",
+            group_0_name="Lean Ghanaians(GL)",
+            group_1_name="Lean Americans (UL)",
+        )
+    )
+    assert cohort_diff.contrast_class == OTHER
+
+    # Calendar years on both groups read as longitudinal
+    cal_years = classify(
+        replace(
+            BASE,
+            condition="Helminthiasis",
+            group_0_name="2008 - Uninfected",
+            group_1_name="2010 - Uninfected",
+        )
+    )
+    assert cal_years.contrast_class == LONGITUDINAL
+
+
+def test_oriented_profiles_filters_by_control_tiers() -> None:
+    p1 = Profile("bsdb:1", "bsdb:1-1", "inc", "Feces", "CRC", {"a": 5}, 10)
+    p2 = Profile("bsdb:2", "bsdb:2-1", "inc", "Feces", "CRC", {"a": 5}, 10)
+    p3 = Profile("bsdb:3", "bsdb:3-1", "inc", "Feces", "CRC", {"a": 5}, 10)
+    classes = {
+        ("bsdb:1", "bsdb:1-1"): Classification(
+            DISEASE_VS_HEALTHY,
+            NATIVE,
+            "strong",
+            "",
+            CASE_VS_CONTROL_SUBJECT,
+            TIER_1_HEALTHY_NORMAL,
+        ),
+        ("bsdb:2", "bsdb:2-1"): Classification(
+            DISEASE_VS_HEALTHY,
+            NATIVE,
+            "weak",
+            "weak_comparison_evidence",
+            CASE_VS_CONTROL_SUBJECT,
+            TIER_2_CONDITION_NEGATIVE_SCREENED,
+        ),
+        ("bsdb:3", "bsdb:3-1"): Classification(
+            DISEASE_VS_HEALTHY,
+            REVERSED,
+            "tissue",
+            "paired_tissue_comparison",
+            PAIRED_TISSUE_AUTOLOGOUS,
+            TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+        ),
+    }
+    tier1_only = oriented_profiles([p1, p2, p3], classes, control_tiers={TIER_1_HEALTHY_NORMAL})
+    assert [p.experiment_id for p in tier1_only] == ["bsdb:1-1"]
+
+    tier1_2 = oriented_profiles(
+        [p1, p2, p3],
+        classes,
+        control_tiers={TIER_1_HEALTHY_NORMAL, TIER_2_CONDITION_NEGATIVE_SCREENED},
+    )
+    assert [p.experiment_id for p in tier1_2] == ["bsdb:1-1", "bsdb:2-1"]
+    assert control_tier_counts(classes, list(classes)) == [
+        {
+            "contrast_type": CASE_VS_CONTROL_SUBJECT,
+            "control_tier": TIER_1_HEALTHY_NORMAL,
+            "experiments": 1,
+            "studies": 1,
+        },
+        {
+            "contrast_type": CASE_VS_CONTROL_SUBJECT,
+            "control_tier": TIER_2_CONDITION_NEGATIVE_SCREENED,
+            "experiments": 1,
+            "studies": 1,
+        },
+        {
+            "contrast_type": PAIRED_TISSUE_AUTOLOGOUS,
+            "control_tier": TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+            "experiments": 1,
+            "studies": 1,
+        },
+    ]

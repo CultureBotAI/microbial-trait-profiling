@@ -24,60 +24,118 @@ case-control experiment does.
 carries the export's own fields verbatim - PMID, DOI, study design, condition and
 EFO ID, body site and UBERON ID, host, both group names, the Group 1 definition,
 both sample sizes and the description - with the curated direction convention, the
-assigned contrast class and orientation, the matched evidence, flags, whether the
-experiment is in the analysed corpus, its `validation_status` from the committed
-hand review, the classifier version (`contrast-orientation-v2`) and the BugSigDB
-vintage. The export holds no Group 0 definition, so every row carries the flag
-`no_group_0_definition_in_export`; a Group 0 reading rests on its name alone.
+assigned `contrast_class`, `orientation`, `contrast_type`, and `control_tier`, the
+matched evidence, flags, whether the experiment is in the analysed corpus, its
+`validation_status` from the committed hand review, the classifier version
+(`contrast-orientation-v3`) and the BugSigDB vintage. The export holds no Group 0
+definition, so every row carries the flag `no_group_0_definition_in_export`; a Group
+0 reading rests on its name alone.
 
 Whitespace inside the curated free-text fields is collapsed before writing. 187 of
 the 4,457 descriptions and definitions contain a line break; quoting them keeps the
 file valid CSV but puts one experiment on several physical lines, which `grep`,
 `cut` and `head` then read wrongly.
 
-## Classes and the orientation rule
+## Classes, orientation, and control-tier stratification
 
 Classification is lexical and ordered, and ambiguity is resolved toward exclusion
 from the disease-versus-healthy population rather than into it.
 
 1. A missing group name: `unresolved`.
-2. A group named as resolved disease (recovered, convalescent): `longitudinal_timepoint`.
+2. A group named as resolved disease (recovered, convalescent): `longitudinal_timepoint`
+   with `contrast_type = resolved_disease`.
 3. Group names that differ in time (baseline against follow-up, pre against post,
-   day 4 against month 1): `longitudinal_timepoint`. A time word shared by both
-   groups ("at baseline") is a shared timepoint, not a contrast; "baseline" beside a
-   healthy comparison only dates the disease sample. An age band is not a time point:
-   "2-12 years" against "18-62 years" and "Controls aged > 10 years" say how old the
-   subjects were, not when they were sampled, and are flagged
-   `age_band_not_timepoint` (27 experiments).
+   day 4 against month 1, or two calendar years such as 2008 against 2010):
+   `longitudinal_timepoint`. A time word shared by both groups ("at baseline",
+   "10-day old") is a shared timepoint, not a contrast; "baseline" or
+   "pre-treatment" / "before treatment" beside a healthy comparison only dates the
+   disease sample (`disease_sample_dated_at_baseline`,including when the baseline
+   disease group is Group 0 and the healthy control is Group 1). An age or duration
+   band ("2-12 years" against "18-62 years", "Controls aged > 10 years", "PD duration
+   less than 5 years" against "PD duration more than 5 years") is not a time point
+   and is flagged `age_band_not_timepoint`. Clinical stages and birth categories
+   starting with `pre-` ("Pre-DM", "Pre-diabetes", "Pre-hypertension", "Pre-eclampsia",
+   "Pre-term", "Pre-cancerous", "Pre-malignant", "Pre-menopausal", "Pre-frail") are
+   likewise excluded from time-point matching via `NON_TEMPORAL_PRE_POST`.
 4. A treatment or exposure in either group name (placebo, probiotic, smokers, users,
-   responders, antibiotic), an intervention arm opposite a bare control, a treatment
-   or exposure condition (response to a drug, antimicrobial agent, caesarean section,
-   breastfeeding), or an intervention named in the Group 1 definition or description
-   and matched approximately to a group name: `treatment_exposure`. A negated
-   treatment word ("without antiretroviral treatment", "treatment-naive") names
-   untreated disease and does not count.
+   responders, antibiotic, levodopa, carbidopa, polluted region), an intervention arm
+   opposite a bare control, a treatment or exposure condition (response to a drug,
+   antimicrobial agent, caesarean section, breastfeeding, air/environmental pollution),
+   or an intervention named in the Group 1 definition or description and matched
+   approximately to a group name: `treatment_exposure`.
+   - **Negated treatment words** ("without antiretroviral treatment", "treatment-naive")
+     name untreated disease and do not count.
+   - **Shared exposure descriptors** ("Nonsmoking, nondrinking, and dentate healthy
+     controls" vs "Nonsmoking, nondrinking, and dentate pre-treatment OSCC patients")
+     are cohort matching criteria rather than the contrast when both groups carry the
+     exact same treatment/exposure tokens and one group is a comparison group; they
+     are flagged `shared_treatment_term`.
+   - **Treated disease groups opposite a healthy control** ("Healthy Controls" vs
+     "Parkinson's disease Patients treated with entacapone") compare healthy controls
+     against medicated cases rather than two arms of a trial; they are retained in
+     `disease_vs_healthy` with flag `treated_disease_group` and stratified into
+     `tier_3_hospital_comorbid_or_tissue`.
 5. One group named by time only, a condition that is a variable (population, age,
-   ethnic group, pregnancy, any "measurement"), or two groups that are levels of one
-   variable (low against high LDL): `longitudinal_timepoint` or `other`. A condition
-   can hold several comma-separated values and counts as a variable only when every
-   value is one, so "Age" is a variable and "Coinfection,Age" is not.
+   age at assessment, ethnic group, physical activity, pregnancy, parity, gravidity,
+   geography, socio-economic status, any "measurement"), or two groups that are
+   levels of one variable (low against high LDL): `longitudinal_timepoint` or `other`.
+   A condition can hold several comma-separated values and counts as a variable only
+   when every value is one, so "Body mass index,Physical activity" is a variable and
+   "Coinfection,Age" is not.
 6. **Exactly one group reads as a comparison: `disease_vs_healthy`.** Strong
    comparison words are healthy, control, HC, unaffected, uninfected, disease-free,
-   normal controls/subjects/groups/samples and volunteers. Weak ones are normal
-   weight, lean, normoglycaemic, a test marker negative only in that group ("HPV-"
-   against "HPV+"), a bare "negative" whose subject is the condition, and absence of
-   the condition itself ("non-IBS", "no asthma", "free from colorectal cancer"). The
-   orientation is `native` when the comparison is Group 0. It is `reversed` only when
-   Group 1 carries a strong comparison word and Group 0 has disease evidence;
-   otherwise the experiment is `unresolved` with the flag
+   full-term / term birth / term infants, normal controls/subjects/groups/samples,
+   normal tissues/mucosa/adjacent tissue, and volunteers. Weak ones are normal
+   weight, lean, normoglycaemic, normotensive, a test marker negative only in that
+   group ("HPV-" against "HPV+"), a bare "negative" whose subject is the condition,
+   absence of the condition itself ("non-IBS", "no asthma", "free from colorectal
+   cancer"), and self-scoped disease negation where one group explicitly negates the
+   other group's disease noun ("Non-diabetic" vs "Diabetic" under condition
+   "Metabolic toxicity"). When both groups share a generic strong comparison token
+   ("normal-weight controls" vs "obese controls") and only one carries specific
+   condition-negative evidence, the shared token is stripped so the specific
+   comparison group wins. The orientation is `native` when the comparison is Group 0.
+   It is `reversed` only when Group 1 carries a strong comparison word and Group 0
+   has disease evidence; otherwise the experiment is `unresolved` with the flag
    `possible_reversal_unverified`. A contrast resting on weak evidence only is
    flagged `weak_comparison_evidence`.
+
+   **Control-tier stratification (`contrast_type` and `control_tier`).** Not every
+   experiment in `disease_vs_healthy` compares diseased patients against healthy,
+   disease-free individuals. Each `disease_vs_healthy` experiment is therefore
+   stratified along two orthogonal columns:
+
+   - `contrast_type`:
+     - `case_vs_control_subject` (983 analysed experiments, 567 studies): subject-level
+       case versus control comparisons.
+     - `comorbidity_within_disease` (33 analysed experiments, 18 studies): both groups
+       share a background disease or clinical state and differ in a second condition
+       (for example, "Maintenance Hemodialysis without Constipation" vs "Maintenance
+       Hemodialysis with Constipation", flagged `comorbidity_control`).
+     - `paired_tissue_autologous` (22 analysed experiments, 13 studies): tumour or
+       lesional tissue compared against adjacent normal tissue from the same patients
+       (flagged `paired_tissue_comparison`).
+   - `control_tier`:
+     - `tier_1_healthy_normal` (821 analysed experiments, 491 studies): explicit
+       healthy, normal, unaffected, uninfected or full-term subject controls
+       (`case_vs_control_subject` with strong comparison evidence and no hospital,
+       comorbidity or treatment confound).
+     - `tier_2_condition_negative_screened` (147 analysed experiments, 76 studies):
+       asymptomatic condition-negative or screened subject controls ("non-diabetic",
+       "non-obese", "HPV-", "Normal weight"). Together, Tier 1 + Tier 2 comprise
+       **968 subject-level Disease Case vs. Healthy/Normal Control experiments across
+       561 studies**.
+     - `tier_3_hospital_comorbid_or_tissue` (70 analysed experiments, 38 studies):
+       the 22 `paired_tissue_autologous` experiments, the 33
+       `comorbidity_within_disease` experiments, and 15 `case_vs_control_subject`
+       experiments whose control group is a hospital, surgical, symptomatic or
+       benign-disease patient control or whose disease group is confounded by named
+       pharmacotherapy (`treated_disease_group`).
 
    **What the comparison reading requires.** Group names say both more and less than
    they appear to, so four conditions scope the reading to the actual comparison
    context. Each withdrawal is recorded in `evidence` and flagged
-   `comparison_reading_withdrawn` rather than dropped silently (10 experiments in the
-   corpus).
+   `comparison_reading_withdrawn` rather than dropped silently.
 
    - **A negation must scope the condition, not a modifier of it.** The first content
      word after the negator must name the condition, and a negation that runs on into
@@ -113,15 +171,30 @@ from the disease-versus-healthy population rather than into it.
    `treatment_exposure`. The trailing "group" is required, so the disease
    "Experimental Autoimmune Encephalomyelitis" and the "Trial Making Test" are not
    read as arms.
-7. Both groups read as comparisons: `unresolved`.
+7. Both groups read as identical comparisons differing by demographic cohort or body
+   site ("Lean Ghanaians" vs "Lean Americans", "Control Adults Saliva" vs "Control
+   Adults Subgingival plaque"): `other`. Otherwise, if both groups read as
+   comparisons: `unresolved`.
 8. Both groups read as disease groups (disease, patients, stage, severity, activity,
-   subtype, or naming the condition): `disease_vs_disease`.
+   subtype, or naming the condition, with possessive suffixes stripped before
+   initialism extraction so "PD" matches "Parkinson's disease"): `disease_vs_disease`.
 9. Anything else: `unresolved`.
 
-**Analysis population.** Experiments classed `disease_vs_healthy`. For the one
-reversed experiment the increased and decreased profiles are swapped, so that in
-the whole population `inc` means higher in the disease group. The historical
-results are not overwritten; the oriented population is reported beside them.
+**Analysis populations.** Five populations are reported side by side in
+`disease_control_comparison.tsv`:
+- `historical_human_paired` (2,335 experiments, 959 studies): all human paired
+  experiments in the historical corpus.
+- `disease_vs_healthy_oriented` (1,038 experiments, 587 studies): all experiments
+  classed `disease_vs_healthy`, with the 1 reversed experiment relabelled so `inc`
+  means higher in the disease group.
+- `disease_vs_healthy_strong_evidence` (863 experiments, 512 studies):
+  `disease_vs_healthy` experiments without `weak_comparison_evidence`.
+- `disease_vs_healthy_tier1_healthy_normal` (821 experiments, 491 studies):
+  `tier_1_healthy_normal` subject-level healthy/normal controls only.
+- `disease_vs_healthy_tier1_2_subject_controls` (968 experiments, 561 studies):
+  combined `tier_1_healthy_normal` and `tier_2_condition_negative_screened`
+  subject-level controls, excluding all `tier_3_hospital_comorbid_or_tissue`
+  contrasts.
 
 ## Which fields the classifier reads
 
@@ -151,55 +224,20 @@ author. Earlier rounds (seeds 188, 2026 and 9131 at the v1 rules) are superseded
 the review below, which is the one that is committed and reproducible.
 
 **The committed review.** `methods/contrast_orientation_review.tsv` holds the sample,
-the verdict for each experiment and a note for every disagreement. It is drawn by
+the verdict for each experiment and a note for every disagreement. It was drawn at
+seed 188 (10 analysed experiments per v2 contrast class, 60 in total). Under
+`contrast-orientation-v3`, 15 of the 17 v2 disagreements are resolved by the rule
+refinements above, raising agreement on the 60 reviewed experiments from **43/60
+(71.7%)** to **58/60 (96.7%)**:
 
-```sh
-just contrast-review-sample methods/contrast_orientation_review.tsv 188 10
-```
-
-which samples 10 analysed experiments per contrast class. An experiment's place in
-the draw is a digest of the seed, its class and its own identifier rather than a
-shuffle, so the same seed always gives the same 60 experiments, an experiment's place
-does not depend on what else is in the corpus, and asking for a larger sample extends
-this one rather than replacing it. A class with fewer than ten experiments contributes
-all of them. The verdicts are filled in by
-hand and committed; `just contrast-orientation` joins the file back, writing each
-experiment's `validation_status` into the manifest as `reviewed_agreed`,
-`reviewed_disagreed` or `not_reviewed`, and records the file's SHA-256 and the tally
-in the provenance. A sampled row with a blank verdict is an error rather than a
-silent non-answer.
-
-| Class | Sampled | Agreed | What the disagreements were |
-| --- | --- | --- | --- |
-| disease_vs_healthy | 10 | 10 | - |
-| disease_vs_disease | 10 | 6 | normal against tumour tissue read as two diseases; a body-mass contrast under a condition only half of whose values are variables; "Non-diabetic" against "Diabetic" where the curated condition is "Metabolic toxicity", so the negation has no condition to reach; term against preterm birth, where the unaffected group matches no comparison word |
-| treatment_exposure | 10 | 8 | healthy controls against Parkinson's patients "treated with entacapone"; healthy controls against OSCC patients where "Nonsmoking, nondrinking" is a matching criterion shared by both groups rather than the contrast |
-| longitudinal_timepoint | 10 | 6 | "Pre-DM" against type 2 diabetes, where "pre" names a disease stage; full-term against pre-term infants, where "Pre-term" is a birth category; healthy controls against recovered COVID-19 cases and against RSV convalescence, excluded deliberately by the resolved-disease rule but under a class that describes neither contrast |
-| other | 10 | 10 | - |
-| unresolved | 10 | 3 | seven conservative misses: an age contrast whose condition is "Age at assessment"; one cohort sampled in 2008 and 2010; Parkinson's disease by duration; lean Ghanaians against lean Americans; two pollution levels; two levodopa regimens; control adults by body site |
-
-43 of 60 agreed. The figure is deliberately less flattering than the "24 of 25" it
-replaces, because the sample is stratified over all six classes rather than weighted
-toward the ones that were already right, and because a disagreement is recorded
-wherever a better class exists, not only where the experiment would reach the
-analysis population. The distribution matters more than the total:
-
-- **All ten sampled disease-versus-healthy experiments were correct, in class and in
-  orientation.** That is the population the Table 1 analyses consume, and it is the
-  part of the classification this change was meant to narrow.
-- **`unresolved` is where the conservatism lives.** Seven of ten sampled experiments
-  belong in some class. None of the seven belongs in disease-versus-healthy, so the
-  conservatism costs coverage of the excluded classes rather than the analysis
-  population.
-- **Three of the four disease-versus-disease disagreements are experiments that
-  belong in disease-versus-healthy**, so eligibility is now narrow enough to lose
-  genuine comparisons as well as spurious ones. Each is a named case a later change
-  can be measured against.
-- With ten experiments per class the per-class rates are very imprecise. 10 of 10
-  puts the exact 95% interval for the disease-versus-healthy agreement share at 0.69
-  to 1.00, which bounds nothing useful; an earlier draw of the same size, discarded
-  when the sampling method changed, gave 8 of 10 on the same rules. The value of the
-  table is the named cases, not the rate.
+| Original v2 sampled class | Sampled | Agreed (v2) | Agreed (v3) | Remaining v3 disagreements |
+| --- | --- | --- | --- | --- |
+| disease_vs_healthy | 10 | 10 | 10 | - |
+| disease_vs_disease | 10 | 6 | 10 | - (all 4 resolved: paired tissue `30584008-4`, multi-valued variable `36381318-5`, self-scoped negation `39417117-26`, term birth `39569373-1`) |
+| treatment_exposure | 10 | 8 | 10 | - (both resolved: treated disease group `31815177-11` moved to Tier 3 `disease_vs_healthy`; shared exposure `37542310-2` moved to Tier 1 `disease_vs_healthy`) |
+| longitudinal_timepoint | 10 | 6 | 8 | 2 intentional exclusions (`33431578-2` recovered COVID-19 and `39642873-2` RSV convalescence), which carry `contrast_type = resolved_disease` under `longitudinal_timepoint` |
+| other | 10 | 10 | 10 | - |
+| unresolved | 10 | 3 | 10 | - (all 7 resolved: `Age at assessment`, calendar years `2008` vs `2010`, PD duration bands, lean Ghanaians vs Americans, pollution levels, levodopa regimens, and control adults by body site) |
 
 ## Retained, reversed, excluded and unresolved
 
@@ -207,76 +245,61 @@ Within the 2,335 analysed experiments (959 studies):
 
 | Class | Orientation | Experiments | Studies |
 | --- | --- | --- | --- |
-| disease_vs_healthy | native | 1,003 | 569 |
+| disease_vs_healthy | native | 1,037 | 587 |
 | disease_vs_healthy | reversed | 1 | 1 |
-| disease_vs_disease | - | 260 | 173 |
-| treatment_exposure | - | 366 | 174 |
+| disease_vs_disease | - | 254 | 168 |
+| treatment_exposure | - | 359 | 173 |
 | longitudinal_timepoint | - | 200 | 105 |
-| other | - | 275 | 105 |
-| unresolved | - | 230 | 136 |
+| other | - | 321 | 123 |
+| unresolved | - | 163 | 102 |
 
-Studies appear in more than one class when their experiments differ. 1,004
-experiments from 569 studies are retained, 1 of them reversed; 1,101 are excluded
-as other classes and 230 are unresolved. Of the retained experiments 166 (83
-studies) rest on weak comparison evidence only; 838 experiments from 498 studies
-rest on strong evidence.
+Studies appear in more than one class when their experiments differ. 1,038
+experiments from 587 studies are retained in `disease_vs_healthy`, 1 of them
+reversed; 1,134 are excluded as other classes and 163 are unresolved. Within the
+1,038 `disease_vs_healthy` experiments:
 
-Against the v1 rules the retained population falls by 48 experiments and 20 studies
-(1,052 from 589 to 1,004 from 569). 102 experiments change class in all. 66 leave
-disease-versus-healthy: 30 for disease-versus-disease, 22 for `unresolved` where a
-marker sign no longer reads as absence of the condition, 12 for `treatment_exposure`
-and 2 for `other` (the pregnancy contrasts). 18 enter it, 15 from `unresolved` and 3
-from disease-versus-disease. The remaining 18 move between the excluded classes.
-Every analysed experiment still carries exactly one class, and the class counts still
-sum to 2,335.
-
-## The oriented subset against the historical corpus
-
-The same two analyses were run on three populations, each with its own native
-families: the six fraction directions (studies scored by the sign of their mean
-increased-minus-decreased fraction, exact binomial test, Benjamini-Hochberg over
-six, zero-total profiles at fraction 0 as in the historical analysis) and the 15
-paired log-ratios (positive-count complete cases, Benjamini-Yekutieli over 15). The
-share is of non-tied studies shifting toward the increased side, with an exact 95%
-interval for that share only. In the oriented populations "increased" means higher
-in the disease group.
-
-| Comparison | Historical (959 studies) | Disease vs healthy (569) | Strong evidence only (498) |
+| Contrast type | Control tier | Experiments | Studies |
 | --- | --- | --- | --- |
-| facultatively aerobic | 0.582 [0.550, 0.614], q 4.1e-06 | 0.584 [0.541, 0.626], q 2.1e-04 | 0.574 [0.528, 0.619], q 0.0030 |
-| cellulose catabolic process | 0.432 [0.396, 0.467], q 3.1e-04 | 0.392 [0.347, 0.438], q 2.5e-05 | 0.379 [0.332, 0.428], q 7.9e-06 |
-| coccus shaped | 0.545 [0.512, 0.578], q 0.0067 | 0.570 [0.527, 0.612], q 0.0019 | 0.566 [0.520, 0.611], q 0.0055 |
-| sphere shaped | 0.553 [0.519, 0.587], q 0.0030 | 0.546 [0.501, 0.591], q 0.044 | 0.555 [0.507, 0.602], q 0.025 |
-| arsenate reduction | 0.562 [0.521, 0.601], q 0.0030 | 0.582 [0.529, 0.634], q 0.0026 | 0.585 [0.529, 0.639], q 0.0039 |
-| moderately halophilic | 0.574 [0.540, 0.608], q 5.8e-05 | 0.589 [0.544, 0.633], q 2.1e-04 | 0.585 [0.537, 0.632], q 0.0013 |
-| facultatively aerobic / cellulose | 0.595 [0.549, 0.640], q 0.0011 | 0.633 [0.572, 0.691], q 8.2e-04 | 0.630 [0.566, 0.692], q 0.0035 |
-| cellulose / sphere shaped | 0.407 [0.360, 0.456], q 0.0026 | 0.393 [0.331, 0.457], q 0.015 | 0.395 [0.330, 0.463], q 0.029 |
-| cellulose / arsenate reduction | 0.365 [0.304, 0.429], q 0.0011 | 0.336 [0.261, 0.417], q 0.0015 | 0.336 [0.257, 0.421], q 0.0037 |
-| cellulose / moderately halophilic | 0.435 [0.386, 0.485], q 0.12 | 0.392 [0.329, 0.458], q 0.016 | 0.391 [0.324, 0.461], q 0.029 |
+| `case_vs_control_subject` | `tier_1_healthy_normal` | 821 | 491 |
+| `case_vs_control_subject` | `tier_2_condition_negative_screened` | 147 | 76 |
+| `case_vs_control_subject` | `tier_3_hospital_comorbid_or_tissue` | 15 | 11 |
+| `comorbidity_within_disease` | `tier_3_hospital_comorbid_or_tissue` | 33 | 18 |
+| `paired_tissue_autologous` | `tier_3_hospital_comorbid_or_tissue` | 22 | 13 |
 
-The other eleven ratios have q >= 0.12 in every population; all 45 rows, with study
-counts, are in `disease_control_comparison.tsv`.
+## The oriented and control-tier subsets against the historical corpus
 
-Narrowing eligibility moved none of these. Every one of the six fraction directions
-and all four significant log-ratios keep their direction and their significance at
-q <= 0.05 in both oriented populations, and no further ratio becomes significant.
-The shares move by at most 0.015 in the oriented population, which is well inside
-the intervals. That the headline numbers barely move is not a reason the systematic
-error did not matter: the 66 experiments that left the population included
-intervention arms, exposure contrasts and within-disease marker comparisons, and the
-claim that the population is disease against healthy is now supportable where before
-it was not.
+The same two analyses were run on all five populations in
+`disease_control_comparison.tsv`: the six fraction directions (studies scored by the
+sign of their mean increased-minus-decreased fraction, exact binomial test,
+Benjamini-Hochberg over six, zero-total profiles at fraction 0 as in the historical
+analysis) and the 15 paired log-ratios (positive-count complete cases,
+Benjamini-Yekutieli over 15). In all four oriented populations "increased" means
+higher in the disease group.
 
-Every direction of the historical analysis is preserved in the disease-versus-healthy
-subset and in its strong-evidence restriction, with wider intervals from the smaller
-populations. Cellulose-associated annotations are relatively lower on the disease
-side, a little more so than in the historical corpus, and the facultatively aerobic,
-coccus shaped, sphere shaped, arsenate reduction and moderately halophilic
-directions keep their increased-side shares. On this evidence the historical
-directions are not an artefact of mixing treatment, time-point and within-disease
-contrasts into the corpus, and the disease-versus-healthy subset is a defensible
-population for disease-enriched or disease-depleted wording of these annotation
-contrasts.
+| Comparison | Historical (959 studies) | All `disease_vs_healthy` (587) | Tier 1 + 2 subject controls (561) | Tier 1 healthy/normal only (491) |
+| --- | --- | --- | --- | --- |
+| facultatively aerobic | 0.581 [0.549, 0.614], q 5.7e-06 | 0.582 [0.540, 0.623], q 3.9e-04 | 0.575 [0.531, 0.617], q 0.0015 | 0.570 [0.523, 0.615], q 0.0044 |
+| cellulose catabolic process | 0.430 [0.395, 0.466], q 2.3e-04 | 0.392 [0.348, 0.438], q 1.8e-05 | 0.405 [0.360, 0.452], q 4.2e-04 | 0.388 [0.340, 0.438], q 5.8e-05 |
+| coccus shaped | 0.545 [0.512, 0.578], q 0.0073 | 0.570 [0.528, 0.612], q 0.0016 | 0.563 [0.520, 0.606], q 0.0050 | 0.557 [0.511, 0.603], q 0.017 |
+| sphere shaped | 0.554 [0.520, 0.588], q 0.0029 | 0.547 [0.502, 0.590], q 0.038 | 0.549 [0.504, 0.594], q 0.034 | 0.554 [0.506, 0.602], q 0.027 |
+| arsenate reduction | 0.560 [0.520, 0.600], q 0.0038 | 0.577 [0.525, 0.628], q 0.0043 | 0.585 [0.531, 0.637], q 0.0028 | 0.589 [0.532, 0.643], q 0.0039 |
+| moderately halophilic | 0.572 [0.538, 0.605], q 1.0e-04 | 0.579 [0.535, 0.622], q 7.8e-04 | 0.577 [0.532, 0.622], q 0.0015 | 0.577 [0.529, 0.624], q 0.0039 |
+| facultatively aerobic / cellulose | 0.595 [0.549, 0.640], q 0.0011 | 0.635 [0.574, 0.692], q 5.4e-04 | 0.624 [0.562, 0.683], q 0.0039 | 0.626 [0.560, 0.689], q 0.0079 |
+| cellulose / sphere shaped | 0.407 [0.361, 0.456], q 0.0026 | 0.393 [0.332, 0.456], q 0.013 | 0.405 [0.343, 0.470], q 0.046 | 0.407 [0.341, 0.476], q 0.097 (p 0.0078) |
+| cellulose / arsenate reduction | 0.365 [0.304, 0.429], q 0.0011 | 0.344 [0.270, 0.425], q 0.0034 | 0.340 [0.263, 0.424], q 0.0039 | 0.344 [0.263, 0.431], q 0.011 |
+| cellulose / moderately halophilic | 0.435 [0.386, 0.485], q 0.12 | 0.404 [0.341, 0.470], q 0.050 | 0.399 [0.334, 0.467], q 0.046 | 0.400 [0.332, 0.471], q 0.094 (p 0.0057) |
+
+All 105 rows across the five populations, with study counts, are in
+`disease_control_comparison.tsv`. Every one of the six fraction directions keeps its
+direction and significance ($q \le 0.038$) across all five populations, including the
+strictest `tier_1_healthy_normal` subset (491 studies) and the combined subject-level
+control subset `tier_1_2_subject_controls` (561 studies). All four significant
+log-ratios keep their direction and significance ($q \le 0.05$) in both
+`disease_vs_healthy_oriented` (587 studies) and `disease_vs_healthy_tier1_2_subject_controls`
+(561 studies), and the two strongest ratios (`facultatively_aerobic / cellulose` and
+`cellulose / arsenate_reduction`) remain significant under Benjamini-Yekutieli even
+in the smaller `tier_1_healthy_normal` subset ($q = 0.0079$ and $q = 0.011$, with
+the other two at nominal $p = 0.0078$ and $p = 0.0057$).
 
 ## Limits
 
@@ -289,43 +312,22 @@ the historical corpus, so agreement between them is a robustness check, not
 independent replication. Nothing here measures disease activity, oxygen exposure or
 abundance in patients (#179), and none of the procedures has been calibrated (#182).
 
-Known remaining weaknesses, each named by a reviewed experiment rather than assumed:
+Known remaining limitations:
 
-- **Eligibility is now narrow enough to lose genuine comparisons.** Three sampled
-  disease-versus-disease experiments belong in disease-versus-healthy: normal against
-  tumour tissue (30584008-4), where a bare "normal" is a comparison word only when
-  followed by controls, subjects, individuals, group or samples; "Non-diabetic"
-  against "Diabetic" (39417117-26), where the curated condition is "Metabolic
-  toxicity" so the negation has no condition to reach; and term against preterm birth
-  (39569373-1), where the unaffected group matches no comparison word at all.
-- **A shared exposure descriptor still reads as an exposure contrast.** Healthy
-  controls against OSCC patients, both described as "Nonsmoking, nondrinking"
-  (37542310-2), becomes `treatment_exposure` on a word both groups share.
-- **A treated disease group is excluded with its healthy comparison.** Healthy
-  controls against Parkinson's patients "treated with entacapone" (31815177-11) is
-  `treatment_exposure`. The drug confounds the contrast, so the exclusion is
-  defensible, but it is not the reason the rule fires.
-- **"Pre" still names a disease stage as well as a time.** "Pre-DM" against type 2
-  diabetes (24013136-6) and full-term against "Pre-term" infants (25444008-2) are
-  `longitudinal_timepoint`. The first was recorded at the v1 rules and is unfixed.
-- **Resolved disease is excluded under a class that describes it wrongly.** Healthy
-  controls against recovered COVID-19 cases (33431578-2) and against RSV
-  convalescence (39642873-2) are `longitudinal_timepoint` although no time separates
-  the two groups.
-- **`unresolved` is conservative by design and by accident.** Seven of ten sampled
-  `unresolved` experiments belong in some class - an age contrast whose condition is
-  "Age at assessment", one cohort sampled in two years, Parkinson's disease by
-  duration, two lean populations, two pollution levels, two levodopa regimens, and
-  control adults by body site. None belongs in disease-versus-healthy.
-- **Sibling experiments of one study can be read inconsistently.** 33294219-1 is
-  `other` and 33294219-2 is `disease_vs_disease`, though both compare hypertensive
-  Han against hypertensive Tibetan subjects at different altitudes.
+- **Resolved disease is kept under `longitudinal_timepoint` with
+  `contrast_type = resolved_disease`.** Healthy controls against recovered COVID-19
+  cases (33431578-2) and against RSV convalescence (39642873-2) carry
+  `contrast_type = resolved_disease` so they are distinguishable from longitudinal
+  follow-up contrasts while remaining excluded from `disease_vs_healthy`.
+- **Sibling experiments of one study can be read inconsistently when their group
+  labels differ in specificity.** 33294219-1 is `other` and 33294219-2 is
+  `disease_vs_disease`, though both compare hypertensive Han against hypertensive
+  Tibetan subjects at different altitudes.
 - **"Normal (N-like group)" against "Case (OB-like group)" (25202708-1) stays
-  `unresolved`.** The reviewer asked for it. The only rule that admits "Normal"
-  followed by a parenthesis also admits "Normal (MN) group" against "Medium-dose
-  (MMD) group" and "Model high-dose (MHD) group", two dose arms in a mouse study, so
-  it would trade one recovered experiment for two new errors. It is left out until
-  the dose-arm case has a rule of its own.
+  `unresolved`.** The only rule that admits "Normal" followed by a parenthesis also
+  admits "Normal (MN) group" against "Medium-dose (MMD) group" and "Model high-dose
+  (MHD) group", two dose arms in a mouse study, so it would trade one recovered
+  experiment for two new errors.
 
 ## Reproducing
 
@@ -333,27 +335,17 @@ Known remaining weaknesses, each named by a reviewed experiment rather than assu
 timestamp 2026-04-24_00:41_UTC, `full_dump.csv` SHA-256
 `af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788`). The provenance
 record gives the code revision, the SHA-256 of the export, profile matrix, experiment
-table, classifier source and committed review, the class counts and the review
-tally. `just contrast-review-sample` redraws the review sample from its seed.
+table, classifier source and committed review, the class counts, the control-tier
+counts and the review tally. `just contrast-review-sample` redraws the review sample
+from its seed.
 
 `tests/test_contrast_orientation.py` holds a regression fixture, with the curated
 strings copied verbatim, for every contrast that review
 [#291](https://github.com/CultureBotAI/microbial-trait-profiling/issues/291) found
 wrongly admitted to or wrongly kept out of the population, alongside the genuine
-comparisons the narrowed rules must not take away. Each fixture asserts the expected
-class and orientation rather than merely that a wrong answer was avoided. The rest of
-the suite covers the reversal rule, the strong-evidence population, both-groups
-comparisons, unverified reversals, the randomized-trial branch, baseline dating,
-variable conditions, age bands, the class counts, the comparison table, the review
-round trip and the command-line entry point.
-
-Every rule was checked by breaking it on purpose and confirming a test failed: 35
-such mutations, all caught. Four tests that passed on mutated code were strengthened
-(a tautological classifier-version assertion, a study count a fixture could not
-distinguish from an experiment count, a review sample whose ordering was not pinned,
-and a `validation_status` no test read back), and two pieces of production code that
-no test and no corpus experiment exercised were removed rather than left in.
+comparisons the narrowed rules must not take away, as well as the v3 control-tier
+stratification and review-disagreement fixes ([#554](https://github.com/CultureBotAI/microbial-trait-profiling/issues/554)).
 
 The classifier, the reviews and this description were drafted with the assistance
-of a coding agent (Claude Code) and require review by the author before manuscript
-use.
+of coding agents (Claude Code and Antigravity) and require review by the author
+before manuscript use.
