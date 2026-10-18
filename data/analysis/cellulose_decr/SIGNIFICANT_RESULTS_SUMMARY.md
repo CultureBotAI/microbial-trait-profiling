@@ -19,9 +19,10 @@ Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`).
 
 1. **In PD and CRC, the decreased feces signature carries a larger cellulose
    annotation share than the paired increased signature.** The same holds
-   across the three conditions pooled. In other words, taxa annotated with
-   cellulose catabolic process make up more of what studies report decreased
-   than of what they report increased.
+   across the three conditions pooled. In most studies, taxa annotated with
+   cellulose catabolic process form a larger share of the decreased signature's
+   annotations than of the increased signature's. The share counts annotations,
+   not taxa.
    - **CRC:** 19 of 21 untied studies (p = 2.2e-4). Among disease-versus-healthy
      contrasts it is 14 of 17 (p = 0.013, q = 0.022), and 16 of 20 with synonym
      labels counted.
@@ -37,23 +38,29 @@ Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`).
 ## What is fragile
 
 1. **HIV.** Counting the exact label "HIV infection" and disease-versus-healthy
-   contrasts, 9 of 9 untied studies point down (p = 0.0039). That is the most
-   favourable of several defensible readings:
+   contrasts, 9 of 9 untied studies point down (p = 0.0039). That is one of several
+   defensible readings, and across them the study-level p runs from 0.002 to 0.18:
    - Two studies that compare people with and without HIV are filed as "Human
      immunodeficiency virus". Counting them gives 9 down and 2 up (p = 0.065).
-   - Counting also three ART-treated HIV+ vs uninfected experiments, which the
-     classifier calls treatment exposure, gives 10 down and 4 up (p = 0.18).
+   - Counting the HIV– vs HIV+ experiment that the classifier calls disease vs
+     disease gives 10 down and none up (p = 0.0020).
+   - Counting both of these and three ART-treated HIV+ vs uninfected experiments,
+     which the classifier calls treatment exposure, gives 10 down and 4 up
+     (p = 0.18).
 
    Table A2 lists every reading (#561, #569).
-2. **The direction in CRC mucosa and lumen is opposite to feces, but the samples
-   differ.** In feces, 32 of 38 untied experiments point down; in mucosa or lumen,
+2. **The direction in CRC mucosa and lumen differs from feces, but the samples
+   differ too.** In feces, 32 of 38 untied experiments point down; in mucosa or lumen,
    4 of 15 do. The conditional odds ratio is 13.6 (95% CI 2.9–81.0,
    p = 1.2e-4). However:
-   - Only 12 of the 31 paired mucosa and lumen experiments compare patients with
-     controls. The rest compare tumour with adjacent tissue, cancer subgroups or
-     treatments.
-   - Among disease-versus-healthy studies the difference is not significant
-     (odds ratio 5.7, 95% CI 0.6–65.5, p = 0.13).
+   - Only 12 of the 31 paired mucosa and lumen experiments are classified
+     disease vs healthy. The rest compare tumour with adjacent tissue, cancer
+     subgroups or treatments.
+   - One of the 12, `bsdb:25699023-2`, is itself a within-patient
+     tumour-vs-adjacent comparison (#569).
+   - Among disease-versus-healthy studies, the test gives odds ratio 5.7
+     (95% CI 0.6–65.5, p = 0.13) with that experiment, and 10.2 (1.07–158,
+     p = 0.021) without it. The result rests on one experiment either way.
 
 ## What does not hold
 
@@ -79,7 +86,8 @@ Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`).
 3. **Specificity to feces is not shown.**
    - Outside feces, single conditions have at most five untied pairs, too few for
      p < 0.05, except CRC mucosa and lumen.
-   - The CRC contrasts there are mostly not patient-versus-control (fragile #2).
+   - The CRC contrasts there are mostly not patient-versus-control, and the
+     disease-vs-healthy comparison turns on one experiment (fragile #2).
 4. **The trait ranking is descriptive.** Cellulose catabolic process ranks second
    of 142 non-MediaDive traits by cross-condition distance, after Acetogenesis
    (`METPO:1000845`). The ranking is not a test, and traits share taxa.
@@ -157,6 +165,7 @@ The flags are `has_direct_trait_edge`, `is_direct_or_genus_species`,
 | CRC | experiments | 32 : 6 | 4 : 11 | 13.6 (2.9–81.0) | 1.2e-4 |
 | CRC | studies | 19 : 2 | 3 : 8 | 21.6 (2.7–309) | 5.6e-4 |
 | CRC, disease vs healthy | studies | 14 : 3 | 3 : 4 | 5.7 (0.6–65.5) | 0.13 |
+| CRC, disease vs healthy, without bsdb:25699023-2 | studies | 14 : 3 | 2 : 5 | 10.2 (1.07–158) | 0.021 |
 | All three, stratified by condition | experiments | 108 : 37 | 9 : 12 | 4.79 (1.52–15.8) | 0.0049 |
 | All three, stratified by condition | studies | 58 : 20 | 5 : 9 | 8.46 (1.79–49.9) | 0.0021 |
 

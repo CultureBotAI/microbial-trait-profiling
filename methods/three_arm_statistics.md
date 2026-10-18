@@ -166,7 +166,9 @@ aggregation. Enrichment on both sides can coexist with a small paired contrast.
 
 ## Side by side
 
-The table describes the inspected native analyses. The last two rows identify
+The table describes the inspected native analyses: for enrichment, the
+production run, with the Table 1 native reruns' assertion urn noted where it
+differs. The last two rows identify
 their contribution to the shared basis above. Historical selection settings are
 reported for provenance; they are not the thresholds chosen for harmonized
 comparison. The 15-ratio extension is a separate result type within Noel's
@@ -175,13 +177,13 @@ framework, described under [Compositionality](#compositionality).
 | | Composition | Enrichment | Directional consistency |
 | --- | --- | --- | --- |
 | Owner | Jed | Ilyas | Noel |
-| Unit of observation | matched study/experiment pair | distinct reported taxon (trait-annotation assertion before #131) | study |
+| Unit of observation | matched study/experiment pair | distinct reported taxon in the production run; trait-annotation assertion in the Table 1 native reruns | study |
 | Transformation | fractions, x1000, log1p, per-trait z-score | none; each taxon counts once per trait it bears | fractions, study mean per direction, sign of the difference |
 | Test | one-sample t against 0, two-sided | hypergeometric upper tail, one-tailed | exact binomial against 0.5, two-sided |
 | Paired | yes, by construction | no; increased and decreased tested separately | yes, then reduced to one sign per study |
 | Native multiple testing | Benjamini-Hochberg within each output table | Benjamini-Hochberg across every test in the inspected run | Benjamini-Yekutieli across all 317 retained traits, reported at the nominal and the effective family size (#255, #265); the six-trait Benjamini-Hochberg family is retained separately for the published Table 1 numbers |
 | Historical selection/display rule | no significance cutoff; the figure takes the top ten by p | q at most 0.001 and fold at least 1.5 | no display cutoff; q reported per trait |
-| Typical n per test | 2,335 pairs, identical for every trait | a mean of 9.05 taxa per profile against 5,829 background taxa (tens of thousands of assertions before #131) | 2 to 942 of the 959 studies across the 317 candidates, 616 to 917 for the six of Table 1 (ties excluded) |
+| Typical n per test | 2,335 pairs, identical for every trait | a mean of 9.05 taxa per profile against 5,829 background taxa in the production run; tens of thousands of assertions per profile in the Table 1 native reruns | 2 to 942 of the 959 studies across the 317 candidates, 616 to 917 for the six of Table 1 (ties excluded) |
 | Strength | Uses matched contrasts and their magnitudes; screens many traits | Locates profile-specific excess relative to a declared corpus background | Gives each study one directional vote; exact test without a normality assumption for magnitudes |
 | Main limitations | Repeated experiments within studies are not independent; denominator and transformation affect the estimand | Nested taxa inherit the same annotations, so draws are not independent; coverage and background composition affect calls | Discards magnitude, excludes ties, and remains denominator-dependent; support varies by orders of magnitude across the 317 candidates, so a lopsided share on few studies is not a finding |
 | Contribution to the shared comparison | Supply matched source counts and native transformed effects; reconcile the denominator, then report the common study-weighted fraction/ratio quantities | Supply profile counts, fixed-background folds and native profile evidence; provide separate descriptive increased/decreased study summaries | Supply study-level direction and coverage for the shared fraction quantities and all 15 explicitly referenced ratios |

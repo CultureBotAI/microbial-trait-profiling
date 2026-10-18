@@ -40,14 +40,23 @@ Numbers in this note come from BugSigDB vintage `2026-04-24_00:41_UTC` and
 classifier `contrast-orientation-v2`.
 
 **Pinned inputs.** The inputs are gitignored, and other work rebuilds them in
-place. A run therefore stops in two cases:
+place. The provenance therefore keeps the reference hashes in `pinned_inputs`,
+apart from the `inputs` a run actually read. A run stops in four cases:
 
-- an input's hash differs from the committed provenance;
+- an input's hash differs from those pins;
+- the pinned provenance is missing;
 - the manifest's `classifier_version` differs from
-  `mtp.contrast_orientation.CLASSIFIER_VERSION`.
+  `mtp.contrast_orientation.CLASSIFIER_VERSION`;
+- an input changes while the run reads it, which a second hash just before
+  writing detects.
 
-`--allow-input-drift` regenerates every table from changed inputs, and the new
-provenance lists the drifted inputs (#562).
+Two options change this:
+
+- `--allow-input-drift` runs on changed inputs and lists them, but carries the
+  old pins forward, so the next ordinary run still refuses them.
+- `--repin` adopts the current inputs as the pins.
+
+See #562 and #571.
 
 **Condition and body site come from each experiment's own record.** The profile
 metadata table holds one modal condition and body site per *study*
@@ -110,7 +119,13 @@ the larger share. Ties are excluded.
   - the HIV– versus HIV+ experiment the classifier calls disease versus disease;
   - three ART-treated HIV+ versus uninfected experiments the classifier calls
     treatment exposure (#569);
-  - without the one HIV study whose "feces" was rectal mucosa (#566).
+  - without the one HIV study whose "feces" was rectal mucosa (#566);
+  - without the CRC experiment the classifier counts as disease vs healthy
+    although it compares cancerous with adjacent non-cancerous tissue of the
+    same patients (#569).
+
+  `condition_definition_interaction.tsv` repeats the Feces-vs-GI test under each
+  of these definitions.
 - **Compartments:**
   - For each compartment and condition, the table reports the smallest two-sided
     p a sign test can reach with the observed untied pairs, and the power to
@@ -182,9 +197,30 @@ are not a test; traits share taxa.
 
 ## Outputs
 
-`cellulose_decr_analysis.py` writes the TSV and JSON tables listed in the
-directory README. `cellulose_decr_figures.py` draws the figures from those tables
-only. The figures are written beside the tables and are gitignored, as
+`just cellulose-decr` runs `cellulose_decr_analysis.py`, which writes these
+committed tables to `data/analysis/cellulose_decr/`:
+
+| File | Contents |
+| --- | --- |
+| `cellulose_decr_summary.json` | Every result, definition, universe, null summary, label inventory and label-source comparison |
+| `cellulose_decr_provenance.json` | Input hashes and pins, classifier version, code commit, seeds, package versions |
+| `pairwise_jaccard_significance.tsv` | Pairwise, mean and 3-way overlap under U1–U6 |
+| `sensitivity_definitions_jaccard.tsv` | Overlap under eleven set definitions |
+| `compartment_jaccard_and_direction_stats.tsv` | Direction tests by population, compartment and condition, at experiment and study level |
+| `compartment_direction_interaction.tsv` | Fisher tests of direction by compartment, crude and stratified |
+| `condition_definition_sensitivity.tsv` | Feces direction tests under each condition definition |
+| `condition_definition_overlap.tsv` | Overlap and U6 under each condition definition |
+| `condition_definition_interaction.tsv` | Feces-vs-GI tests under each condition definition |
+| `condition_label_inventory.tsv` | Every human condition label naming the three diseases, with its status |
+| `cellulose_decreased_taxa_catalog.tsv` | The taxa in any condition's set, with counts and flags |
+| `profile_and_study_pair_jaccard.tsv` | Overlap between individual profiles and studies |
+| `trait_convergence_benchmark.tsv` | Every benchmarked trait with its label, predicate and rank |
+| `significant_results_summary.tsv` | Headline tests with unit, population, p and BH q |
+| `label_source_corrections.tsv` | Experiments whose study-level label differed from their own |
+| `four_highlighted_pairs_taxon_drivers.tsv`, `four_highlighted_pairs_study_evidence.tsv`, `four_highlighted_pairs_summary.json` | Taxa and studies behind the four exploratory leads |
+
+`just cellulose-decr-figures` runs `cellulose_decr_figures.py`, which draws the
+figures from those tables only. The figures are written beside the tables and are gitignored, as
 CONTRIBUTING.md requires for images outside `trait-visualization/` (#560).
 Reruns on the same inputs give identical tables and figures; only the provenance
 timestamp changes. Figure provenance is in `figures/figures_provenance.json`.
