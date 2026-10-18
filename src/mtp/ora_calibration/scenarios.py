@@ -16,6 +16,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from mtp.trait_guilds import MEDIADIVE_MARKER
+
 
 def flip_profile_dataframe(
     profiles_df: pd.DataFrame,
@@ -91,13 +93,27 @@ def signature_size_column(profiles_df: pd.DataFrame) -> str:
     )
 
 
-def shared_trait_columns(profiles_df: pd.DataFrame, taxa_matrix_df: pd.DataFrame) -> list[str]:
-    """Find trait columns present in both profiles and taxa matrix."""
+def shared_trait_columns(
+    profiles_df: pd.DataFrame,
+    taxa_matrix_df: pd.DataFrame,
+    *,
+    include_mediadive: bool = False,
+) -> list[str]:
+    """Find shared biological traits using the production MediaDive exclusion.
+
+    ``include_mediadive`` is for auditing the input family before filtering.
+    Zero-background traits remain here; the adapter applies production K > 0
+    eligibility when forming its BH family.
+    """
     profile_traits = {
         col for col in profiles_df.columns if col not in set(PROFILE_METADATA_COLUMNS)
     }
     taxa_traits = {col for col in taxa_matrix_df.columns if col not in set(TAXA_METADATA_COLUMNS)}
-    shared = sorted(profile_traits & taxa_traits)
+    shared = sorted(
+        col
+        for col in profile_traits & taxa_traits
+        if include_mediadive or MEDIADIVE_MARKER not in col.lower()
+    )
     return shared
 
 
@@ -265,6 +281,11 @@ def generate_mixed_signal_ora_profiles(
     - Treats near-twin/co-annotated traits with identical presence vectors in the universe
       as ground-truth true discoveries alongside the spiked trait (#390).
     - Supports both enrichment and depletion test scopes (#351, #390).
+
+    The spike trait's count is fixed by N, K and the requested signal fraction
+    before drawing taxa. Declare a directional signal only when that fixed count
+    lies strictly above (enrichment) or below (depletion) N*K/M. Truth eligibility
+    therefore does not depend on which random taxa are sampled or on test results.
     """
     if not 0.0 < signal_strength <= 1.0:
         raise ValueError(f"signal_strength must be in (0, 1], got {signal_strength}")
@@ -351,17 +372,18 @@ def generate_mixed_signal_ora_profiles(
         if test_type == "depletion":
             # Depletion spike (#351, #390): draw taxa exclusively from negative indices
             # so k_observed = 0, creating a significant depletion signal
+            n_pos = max(0, int(n_draw) - len(neg_indices))
             if len(neg_indices) >= int(n_draw):
                 sampled_taxa = rng.choice(neg_indices, size=int(n_draw), replace=False)
             else:
                 n_neg = len(neg_indices)
-                n_pos = int(n_draw) - n_neg
                 pos_taxa = rng.choice(pos_indices, size=n_pos, replace=False)
                 sampled_taxa = np.concatenate([pos_taxa, neg_indices])
 
             simulated_k[i, :] = taxa_traits[sampled_taxa].sum(axis=0)
-            for twin in twin_traits_map[spike_trait]:
-                true_signal_pairs.add((p_id, twin))
+            if n_pos < n_draw * k_total / n_universe:
+                for twin in twin_traits_map[spike_trait]:
+                    true_signal_pairs.add((p_id, twin))
         else:
             # Enrichment spike (#348, #390): oversample positive taxa
             desired_pos = max(1, round(n_draw * signal_strength))
@@ -383,7 +405,7 @@ def generate_mixed_signal_ora_profiles(
             sampled_taxa = np.concatenate([pos_taxa, neg_taxa])
             simulated_k[i, :] = taxa_traits[sampled_taxa].sum(axis=0)
 
-            if n_pos > 0:
+            if n_pos > n_draw * k_total / n_universe:
                 for twin in twin_traits_map[spike_trait]:
                     true_signal_pairs.add((p_id, twin))
 

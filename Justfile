@@ -62,6 +62,11 @@ format:
 trait-profile-investigation:
 	uv run python scripts/regenerate_trait_profile_investigation.py
 
+# Native pooled statistics only, with explicit zero-total eligibility (#551).
+[positional-arguments]
+trait-profile-pooled-stats *ARGS:
+	uv run python scripts/create_trait_profile_infographic.py --stats-only --output-dir data/derived "$@"
+
 # Regenerate six-trait pattern and full-table signed direction heatmaps.
 six-shared-trait-heatmaps:
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py
@@ -280,11 +285,12 @@ calibrate replicates="10" seed="42" scenario="all": study-trait-profiles-ora
 	  --scenario {{scenario}} \
 	  --alpha 0.05 \
 	  --fdr-q 0.05 \
+	  --q-thresholds 0.05 0.001 \
 	  --signal-strength 0.6 \
 	  --n-spike-traits 3 \
 	  --test-type enrichment \
 	  --min-fold 1.5 \
-	  --max-fold 0.67"
+	  --max-fold 0.5"
 
 # Run paired composition arm calibration against the study-flip complete null (#263).
 calibrate-composition replicates="100" seed="182":
@@ -399,9 +405,7 @@ validate-schema:
 	uv run linkml validate {{legacy_schema}}
 
 lint-schema:
-	uv run linkml lint --config {{lintconfig}} --validate --ignore-warnings {{schema}}
 	uv run linkml lint --config {{lintconfig}} --ignore-warnings {{schema}}
-	uv run linkml lint --config {{lintconfig}} --validate --ignore-warnings {{legacy_schema}}
 	uv run linkml lint --config {{lintconfig}} --ignore-warnings {{legacy_schema}}
 
 check-schema: validate-schema lint-schema

@@ -1,0 +1,6 @@
+family_id	family_size	family_scope	family_source	correction_method	methods	rows_exported	tested	with_q_value	significant_at_q_threshold	significant_at_strict_q_threshold
+guild_mcnemar	1	complete		none; a single uncorrected test, so no q is computed	oxygen_guild_mcnemar	1	1	0	0	0
+native_composition_pooled_study	315	source_subset	trait_profile_paired_contrast_trait_stats_pooled.tsv@65906f64f4bc7d1a872e5f8fdabda6cb6dc800372bdfbd8491ea129465899641	Benjamini-Hochberg	composition_arm_native_transformed_contrast	6	6	6	6	4
+native_profile_ORA_enrichment_global	1480390	profile_test_summary	trait_enrichment_all_results.tsv@cf2aa839d0902aa002a5c7d2c4f7d86a713b977ada4211f6bd7524082cbca92d	Benjamini-Hochberg	enrichment_arm_profile_hypergeometric	6	0	0	0	0
+table1_fifteen_ratios	15	complete		Benjamini-Yekutieli	directional_consistency_log_ratio_sign_test	15	15	15	3	0
+table1_six_fractions	6	complete		Benjamini-Hochberg	directional_consistency_fraction_sign_test	6	6	6	6	3

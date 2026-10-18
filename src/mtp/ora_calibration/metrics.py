@@ -33,6 +33,18 @@ class FDRMetric:
     mean_false_discoveries: float
 
 
+@dataclass
+class PowerMetric:
+    """Mean true positive rate across replicates with testable truth pairs."""
+
+    empirical_tpr: float | None
+    tpr_std: float | None
+    replicates: int
+    replicates_without_signal: int
+    mean_true_signals: float
+    mean_true_discoveries: float
+
+
 def compute_type_i_error(
     p_values: np.ndarray | list[float],
     alpha: float = 0.05,
@@ -102,12 +114,13 @@ def compute_type_i_error(
 
 def compute_empirical_fdr(
     replicate_discoveries: list[set[tuple[str, str]]],
-    true_signal_pairs: set[tuple[str, str]],
+    true_signal_pairs: set[tuple[str, str]] | list[set[tuple[str, str]]],
     target_q: float = 0.05,
 ) -> FDRMetric:
     """Compute empirical False Discovery Proportion (FDP) and FDR across replicates.
 
     Each discovery is represented as a tuple (profile_id/study_id, trait_id).
+    A list of truth sets keeps replicate-specific alternatives separate.
     """
     if not replicate_discoveries:
         return FDRMetric(
@@ -123,14 +136,19 @@ def compute_empirical_fdr(
     disc_counts: list[int] = []
     false_counts: list[int] = []
 
-    for discoveries in replicate_discoveries:
+    truths = (
+        [true_signal_pairs] * len(replicate_discoveries)
+        if isinstance(true_signal_pairs, set)
+        else true_signal_pairs
+    )
+    for discoveries, truth in zip(replicate_discoveries, truths, strict=True):
         r = len(discoveries)
         disc_counts.append(r)
         if r == 0:
             fdp_list.append(0.0)
             false_counts.append(0)
         else:
-            false_positives = len(discoveries - true_signal_pairs)
+            false_positives = len(discoveries - truth)
             false_counts.append(false_positives)
             fdp_list.append(false_positives / r)
 
@@ -141,6 +159,33 @@ def compute_empirical_fdr(
         replicates=len(replicate_discoveries),
         mean_discoveries=float(np.mean(disc_counts)),
         mean_false_discoveries=float(np.mean(false_counts)),
+    )
+
+
+def compute_empirical_power(
+    replicate_discoveries: list[set[tuple[str, str]]],
+    replicate_true_signals: list[set[tuple[str, str]]],
+) -> PowerMetric:
+    """Compute TPR against each replicate's eligible, declared signal pairs.
+
+    Replicates without a true signal have undefined TPR, rather than zero power.
+    """
+    rates: list[float] = []
+    true_counts: list[int] = []
+    recovered_counts: list[int] = []
+    for discoveries, truth in zip(replicate_discoveries, replicate_true_signals, strict=True):
+        recovered = len(discoveries & truth)
+        true_counts.append(len(truth))
+        recovered_counts.append(recovered)
+        if truth:
+            rates.append(recovered / len(truth))
+    return PowerMetric(
+        empirical_tpr=float(np.mean(rates)) if rates else None,
+        tpr_std=(float(np.std(rates, ddof=1)) if len(rates) > 1 else 0.0) if rates else None,
+        replicates=len(rates),
+        replicates_without_signal=len(true_counts) - len(rates),
+        mean_true_signals=float(np.mean(true_counts)) if true_counts else 0.0,
+        mean_true_discoveries=float(np.mean(recovered_counts)) if recovered_counts else 0.0,
     )
 
 

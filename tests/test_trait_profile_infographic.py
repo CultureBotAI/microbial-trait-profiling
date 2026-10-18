@@ -4,6 +4,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pytest
+
+from mtp.paths import file_sha256
 
 MODULE_PATH = (
     Path(__file__).resolve().parents[1] / "scripts" / "create_trait_profile_infographic.py"
@@ -269,6 +272,113 @@ def test_compute_trait_stats_study_aggregation_and_confidence_intervals() -> Non
         stats.loc["METPO:1", "study_minus_log10_p"],
         -np.log10(stats.loc["METPO:1", "study_p_value"]),
     )
+
+
+def test_pair_denominators_distinguish_zero_total_from_zero_contrast() -> None:
+    # p1 has equal, positive profiles: a zero contrast is still an eligible pair.
+    # p2 is MediaDive-only on one side; s1 survives through p1. s2 has no
+    # nonzero pairs because p3 has a genuinely empty side.
+    profiles = pd.DataFrame(
+        {
+            "METPO:1": [2, 2, 0, 3, 1, 0],
+            "METPO:2": [0, 0, 0, 1, 4, 0],
+            "mediadive.medium:1": [0, 0, 100, 0, 0, 0],
+        },
+        index=["s1|e1|inc", "s1|e1|dec", "s1|e2|inc", "s1|e2|dec", "s2|e1|inc", "s2|e1|dec"],
+    )
+    metadata = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2"],
+            "increased_profile_ids": ["s1|e1|inc", "s1|e2|inc", "s2|e1|inc"],
+            "decreased_profile_ids": ["s1|e1|dec", "s1|e2|dec", "s2|e1|dec"],
+        },
+        index=["p1", "p2", "p3"],
+    )
+    audit = infographic.pair_denominator_summary(profiles, metadata)
+    assert audit["n_experiments"] == 3
+    assert audit["n_nonzero_experiments"] == 1
+    assert audit["n_zero_total_experiments"] == 2
+    assert audit["n_zero_total_excluded"] == 0
+    assert audit["n_nonzero_studies"] == 1
+    assert audit["n_studies_without_nonzero_experiments"] == 1
+    assert audit["n_zero_total_profiles"] == 2
+    assert audit["retained_trait_count"] == 2
+    assert audit["zero_total_policy"] == "included_in_historical_native_composition"
+
+    matrix = infographic.build_pair_matrix_from_profiles(
+        infographic.build_zscore_matrix(profiles, pd.Index(["METPO:1", "METPO:2"])),
+        metadata,
+    )
+    assert matrix.loc["p1"].eq(0).all()
+    stats = infographic.compute_trait_stats(
+        matrix, study_ids=metadata["study_id"], denominator_summary=audit
+    )
+    assert stats["pair_count"].eq(3).all()
+    assert stats["n_nonzero_experiments"].eq(1).all()
+    assert stats["study_count"].eq(2).all()
+    assert stats["correction_family_size"].eq(2).all()
+    assert stats["test_method"].eq("two_sided_one_sample_t_test").all()
+    with pytest.raises(ValueError, match="same pairs"):
+        infographic.compute_trait_stats(matrix.iloc[:2], denominator_summary=audit)
+    with pytest.raises(ValueError, match="missing raw profiles"):
+        infographic.pair_denominator_summary(profiles.iloc[:-1], metadata)
+
+
+def test_stats_only_writes_pooled_table_with_native_denominators(tmp_path: Path) -> None:
+    profiles_path = tmp_path / "profiles.tsv"
+    metadata_path = tmp_path / "pairs.tsv"
+    labels_path = tmp_path / "labels.tsv"
+    output_dir = tmp_path / "output"
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2", "s3", "s3", "s4", "s4"],
+            "experiment_id": ["e1"] * 8,
+            "inc_dec": ["inc", "dec"] * 4,
+            "METPO:1": [10, 1, 8, 1, 7, 3, 0, 0],
+            "METPO:2": [1, 10, 2, 9, 2, 8, 0, 0],
+        }
+    ).to_csv(profiles_path, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s2", "s3", "s4"],
+            "increased_profile_ids": [f"s{i}|e1|inc" for i in range(1, 5)],
+            "decreased_profile_ids": [f"s{i}|e1|dec" for i in range(1, 5)],
+        }
+    ).to_csv(metadata_path, sep="\t")
+    pd.DataFrame(
+        {
+            "column_id": ["METPO:1", "METPO:2"],
+            "column_label": ["oxygen", "motility"],
+            "object_name": ["oxygen", "motility"],
+            "object_category": ["biolink:OntologyClass"] * 2,
+        }
+    ).to_csv(labels_path, sep="\t", index=False)
+    infographic.main(
+        [
+            "--stats-only",
+            "--profiles",
+            str(profiles_path),
+            "--pair-metadata",
+            str(metadata_path),
+            "--trait-labels",
+            str(labels_path),
+            "--output-dir",
+            str(output_dir),
+        ]
+    )
+    output_path = output_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+    assert list(output_dir.iterdir()) == [output_path]
+    stats = pd.read_csv(output_path, sep="\t")
+    assert len(stats) == 2
+    assert stats["pair_count"].eq(4).all()
+    assert stats["profile_count"].eq(8).all()
+    assert stats["n_nonzero_experiments"].eq(3).all()
+    assert stats["n_zero_total_experiments"].eq(1).all()
+    assert stats["n_zero_total_excluded"].eq(0).all()
+    assert stats["n_nonzero_studies"].eq(3).all()
+    assert stats["correction_family_size"].eq(len(stats)).all()
+    assert stats["profile_sha256"].eq(file_sha256(profiles_path)).all()
+    assert stats["pair_metadata_sha256"].eq(file_sha256(metadata_path)).all()
 
 
 def test_plot_top_traits_renders_with_study_level_stats() -> None:
