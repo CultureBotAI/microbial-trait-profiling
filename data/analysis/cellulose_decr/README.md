@@ -4,39 +4,75 @@ This directory compares the taxa annotated `METPO:2000103|GO:0030245`
 (**cellulose catabolic process**) that curated BugSigDB signatures report decreased
 in human feces in Parkinson's disease (PD), HIV infection (HIV) and colorectal
 cancer (CRC). Every number below comes from one run of
-[`scripts/cellulose_decr_analysis.py`](scripts/cellulose_decr_analysis.py)
-(provenance in [`cellulose_decr_provenance.json`](cellulose_decr_provenance.json));
-the method is described in [`methods/cellulose_decr.md`](../../../methods/cellulose_decr.md).
+[`scripts/cellulose_decr_analysis.py`](scripts/cellulose_decr_analysis.py) through
+`just cellulose-decr` (provenance in
+[`cellulose_decr_provenance.json`](cellulose_decr_provenance.json)). The method is
+described in [`methods/cellulose_decr.md`](../../../methods/cellulose_decr.md).
 
 These are annotation counts of curated signature taxa. They do not measure
-cellulose degradation, fiber intake or short-chain fatty acids, and a taxon
-counted here was reported decreased in at least one study, not consistently lost
+cellulose degradation, fiber intake or short-chain fatty acids. A taxon counted
+here was reported decreased in at least one study, not consistently lost
 ([`methods/biological_interpretation.md`](../../../methods/biological_interpretation.md)).
+The trait and the three conditions were chosen as an exploratory lead from this
+same corpus, so every p-value here is nominal. Section 4 adds adjusted values.
 
 ## What changed on 2026-10-17 (#552)
 
-The October 16 version of this directory had no generator. The rebuilt analysis
-reproduces it exactly when given the same labels, and then corrects it:
+The October 16 version of this directory had no generator. Given the same labels,
+the rebuilt analysis reproduces it exactly. It then makes these corrections:
 
 - **Labels.** Each profile now takes the condition and body site of its own
   experiment. The October 16 run used one modal label per study, which put
   saliva and nasal experiments into "PD feces" and moved other experiments out.
   61 experiments in these three conditions changed
-  ([`label_source_corrections.tsv`](label_source_corrections.tsv)).
+  ([`label_source_corrections.tsv`](label_source_corrections.tsv); the same
+  problem affects other scripts, #555).
 - **Trait names.** The benchmark carries `trait_label` from
-  `data/derived/taxa_trait_matrix_columns.tsv`. `METPO:1000845` is
-  **Acetogenesis**, `METPO:1000679` **pleomorphic shaped**, `METPO:1000684`
-  **spiral shaped**, `METPO:1000616` **thermophilic** and `METPO:1000674`
-  **filament shaped**; earlier figures and slides labelled them as spore-forming,
-  motile, rod-shaped, cell envelope or obligately anaerobic traits.
-  `METPO:1000682` (spore shaped) is not a matrix column.
-- **A whole-signature null (U6).** Drawing whole study signatures keeps taxa that
-  studies report together, and it removes the evidence that the three conditions
-  share more taxa than random sets of feces studies do (section 2).
-- **Study-level and disease-versus-healthy tests** of direction (section 4), a
-  compartment interaction test with power notes (section 5), catalog flags
-  separating genera from higher-rank nodes and net-decreased taxa (section 3),
-  reconciled counts (section 8) and a corrected literature file.
+  `data/derived/taxa_trait_matrix_columns.tsv`. The canonical labels are:
+  - `METPO:1000845`: **Acetogenesis**
+  - `METPO:1000679`: **pleomorphic shaped**
+  - `METPO:1000684`: **spiral shaped**
+  - `METPO:1000616`: **thermophilic**
+  - `METPO:1000674`: **filament shaped**
+
+  Earlier figures and slides gave them other names. `METPO:1000682` (spore shaped)
+  is not a matrix column.
+- **A whole-signature null (U6).** U6 draws whole study signatures, so taxa that a
+  study reports together stay together. Under it, the three conditions do not
+  share detectably more taxa than random sets of feces studies (section 2).
+- **New tests and checks:**
+  - study-level and disease-versus-healthy tests of direction (section 4);
+  - a compartment interaction test with power notes (section 5);
+  - catalog flags (section 3);
+  - reconciled counts (section 8);
+  - a corrected literature file.
+
+The adversarial review of #558 then found further problems. These changes are fixed in that PR:
+
+- **Synonym condition labels (#561).** The analysis keeps only the exact labels.
+  Other labels for the same disease are now listed in
+  [`condition_label_inventory.tsv`](condition_label_inventory.tsv):
+  - HIV: "Human immunodeficiency virus" and "HIV-1 infection";
+  - CRC: colorectal carcinoma, adenocarcinoma, metastatic colorectal cancer and
+    colon carcinoma.
+
+  [`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv)
+  recounts every direction test with those labels included. The HIV result
+  depends on that choice (section 4).
+- **Pinned inputs (#562).** A run stops when an input's hash differs from the
+  committed provenance, or when the contrast manifest came from another
+  classifier version. This matters because `data/derived/` is regenerated by
+  other work.
+- **No core taxon is directly annotated (#565).** All 17 inherit the annotation
+  from annotated species or strains (section 3).
+- **One HIV "feces" study sampled rectal mucosa (#566).** It is reported with
+  and without that study.
+- **Null and test details (#567):**
+  - U5 now draws only from taxa that can appear in an observed set;
+  - multi-site body sites are grouped with Other non-GI;
+  - studies are also collapsed by majority vote;
+  - the pooled compartment test is stratified by condition.
+- **Figures are regenerated, not committed (#560).**
 
 | Quantity | Oct 16 (study labels) | Now (experiment labels) |
 | --- | --- | --- |
@@ -49,8 +85,8 @@ reproduces it exactly when given the same labels, and then corrects it:
 
 ## 1. Overlap of the three taxon sets
 
-A condition's set is every matrix taxon annotated with the trait, at any rank,
-that at least one of its feces decreased signatures reports.
+A condition's set is every matrix taxon that bears the trait, at any rank, and
+that at least one of the condition's feces decreased signatures reports.
 
 | Pair | Set sizes | Shared | Union | J | d_J |
 | --- | --- | --- | --- | --- | --- |
@@ -66,35 +102,48 @@ that at least one of its feces decreased signatures reports.
 
 ## 2. Is the overlap unusual?
 
-Expected values under each null, with the range holding 95% of the draws.
-Monte Carlo p-values use 100,000 draws; "≤ 1e-5" means no draw was as extreme.
+Each null gives its expected value, with the range that holds 95% of its draws.
+Monte Carlo p-values come from 100,000 draws; the size-matched U6 keeps the
+5,284 draws whose set sizes match the observed ones. "≤ 1e-5" means no draw was
+as extreme.
 
 | Null | Expected mean d_J (95% range) | p | Expected taxa in all three (95% range) | p |
 | --- | --- | --- | --- | --- |
-| U1: uniform, 189 annotated matrix taxa | 0.909 (0.865–0.946) | ≤ 1e-5 | 0.87; exact p = 4.8e-23 | |
-| U2: uniform, 135 annotated taxa seen in feces | 0.868 (0.817–0.911) | ≤ 1e-5 | 1.70; exact p = 7.5e-18 | |
-| U3: uniform, 108 annotated taxa ever decreased in feces | 0.829 (0.772–0.878) | ≤ 1e-5 | 2.66; exact p = 2.3e-14 | |
+| U1: uniform, 189 annotated matrix taxa | 0.909 (0.865–0.946) | ≤ 1e-5 | 0.87 | exact 4.8e-23 |
+| U2: uniform, 135 annotated taxa seen in feces | 0.868 (0.817–0.911) | ≤ 1e-5 | 1.70 | exact 7.5e-18 |
+| U3: uniform, 108 annotated taxa ever decreased in feces | 0.829 (0.772–0.878) | ≤ 1e-5 | 2.66 | exact 2.3e-14 |
 | U4: random trait on the 471 decreased feces taxa of the three conditions | 0.775 (0.669–0.875) | ≤ 1e-5 | 5.09 (1–9) | ≤ 1e-5 |
-| U5: weighted by reporting in other feces studies | 0.596 (0.513–0.677) | 0.0048 | 13.4 (9–17) | 0.053 |
+| U5: U3 taxa weighted by reporting in other feces studies | 0.585 (0.501–0.665) | 0.0097 | 13.7 (10–17) | 0.076 |
 | **U6: whole study signatures** | **0.527 (0.420–0.636)** | **0.19** | **18.3 (12–24)** | **0.73** |
 | U6, draws with matching set sizes (5,284) | 0.513 (0.420–0.606) | 0.24 | 16.9 (13–21) | 0.58 |
 
-The nulls that treat taxa as independent draws (U1–U4) make the overlap look
-extreme. Weighting taxa by how often other feces studies report them decreased
-(U5) leaves a modest signal for the mean distance (p = 0.0048) and none for the
-3-way core (p = 0.053). Drawing 49, 19 and 31 whole study signatures at random
-from all 646 feces studies with a decreased signature (U6) produces as much
-overlap as observed: the expected mean d_J is 0.527 against 0.479 observed, and
-the expected core is larger than the observed 17. The pairwise U6 p-values are
-0.21 (PD–HIV), 0.10 (PD–CRC) and 0.55 (HIV–CRC).
+The nulls show three things:
 
-So the shared taxa are mostly taxa that many feces studies report decreased,
-together, whatever the condition. The data give no evidence of a
-condition-specific convergence beyond that.
+- **Independent draws (U1–U4).** These nulls treat taxa as independent, and they make the overlap look
+  extreme.
+- **Weighted by reporting (U5).** Weighting the 108 taxa that can appear in a set
+  by how often other feces studies report them decreased leaves a weaker signal.
+  The mean distance gives p = 0.0097 and the 3-way core p = 0.076. An earlier U5
+  also drew 27 taxa never reported decreased in feces, which inflated its
+  significance (#567).
+- **Whole study signatures (U6).** This null draws 49, 19 and 31 whole
+  signatures at random from all 646 feces studies with a decreased signature.
+  - The observed mean d_J is 0.479 against 0.527 expected: slightly more overlap
+    than expected, but not detectably so (p = 0.19).
+  - U6's larger expected core (18.3) comes from its larger simulated sets. With
+    set sizes matched, the expected core is 16.9 against 17 observed (p = 0.58).
+  - The pairwise U6 p-values are 0.21 (PD–HIV), 0.10 (PD–CRC) and 0.55 (HIV–CRC).
+
+So most of the shared taxa are ones that many feces studies report decreased,
+whatever the condition. The data give no evidence of a condition-specific
+convergence beyond that. With synonym labels counted, the sets are 38 / 27 / 37 and
+the core is 20 of 50, and U6 still gives p = 0.15 for the mean distance and 0.54
+for the core. Without the rectal-mucosa study the U6 p-values are 0.26 and 0.79
+([`condition_definition_overlap.tsv`](condition_definition_overlap.tsv)).
 
 ## 3. The 17 taxa in all three sets
 
-Stool studies reporting each taxon decreased / increased
+The table gives stool studies reporting each taxon decreased / increased
 ([`cellulose_decreased_taxa_catalog.tsv`](cellulose_decreased_taxa_catalog.tsv)).
 "Net decreased" means more decreased than increased studies in all three
 conditions (`is_strictly_net_decreased_all3`).
@@ -119,52 +168,117 @@ conditions (`is_strictly_net_decreased_all3`).
 | Bacteroidia | class | 5 / 2 | 2 / 0 | 1 / 4 | no |
 | Bacteroidota | phylum | 3 / 0 | 3 / 1 | 1 / 4 | no |
 
-Nine of the 17 are genera (`is_direct_or_genus_species`, which is rank-based;
-the matrix does not record whether an annotation is direct). The other eight are
-family, order, class and phylum nodes whose annotation is rolled up from
-descendants; `matrix_trait_bearing_taxa_at_or_below` gives how many annotated
-taxa sit beneath each one (17 under Lachnospiraceae, 86 under Bacillota).
-Seven taxa are net decreased in all three conditions, five of them genera. Several
-others are reported increased more often than decreased in one condition.
+Nine of the 17 are genera and eight are family-to-phylum nodes. No taxon in the
+core has an annotation edge of its own in the KG
+(`has_direct_trait_edge`; 186 NCBITaxon subjects carry the edge). A matrix taxon
+bears the trait when it or any descendant has the edge, so every core taxon
+inherits it. In the KG, none of the 49 annotated genera has its own edge, while
+38 of the 44 annotated species do. Examples of inherited annotations:
 
+- *Roseburia* from *R. faecis*;
+- *Lachnospira* from *L. multipara*;
+- *Anaerostipes* from *A. hadrus*;
+- *Bacteroides* from a *B. cellulosilyticus* strain;
+- *Clostridium* and *Ruminococcus* from several annotated species.
+
+`matrix_trait_bearing_taxa_at_or_below` counts the annotated taxa beneath each
+node: 17 under Lachnospiraceae and 86 under Bacillota. Only seven taxa in the 47-taxon
+union have their own edge, all of them species.
+`is_direct_or_genus_species` is therefore a rank flag for every core taxon.
+
+Seven taxa are net decreased in all three conditions, five of them genera.
+Several others are reported increased more often than decreased in one condition.
 Counting decreased minus increased *profiles* instead of studies (sensitivity
 definition 4, `is_net_decreased_all3_by_profiles`) also gives seven taxa, with
 *Bacteroides* in place of *Anaerostipes*.
 
+*Eubacterium* is in the core only through one HIV study, McHardy et al. 2013
+(`bsdb:24451087`). That study sampled rectal mucosa with a sponge, but BugSigDB
+curates it as feces (#566). Without it the core has 16 taxa
+(sensitivity definition 9).
+
 ## 4. Direction within each condition
 
-Paired experiments in feces: down means the decreased signature had the larger
-cellulose annotation share. Study rows give each study one vote, the sign of its
-mean paired difference
+Each row compares paired experiments in feces. "Down" means the taxa annotated
+with cellulose catabolic process made up a larger annotation share of the
+decreased signature than of the increased one. Study rows give each study one
+vote: the sign of its mean paired difference
 ([`compartment_jaccard_and_direction_stats.tsv`](compartment_jaccard_and_direction_stats.tsv)).
 
-| Condition | Contrasts | Experiments down : up : tied | Sign test p | Studies down : up : tied | Sign test p |
-| --- | --- | --- | --- | --- | --- |
-| PD | all | 58 : 24 : 17 | 2.2e-4 | 27 : 14 : 4 | 0.060 |
-| PD | disease vs healthy | 47 : 15 : 10 | 5.8e-5 | 24 : 10 : 4 | 0.024 |
-| HIV | all | 18 : 7 : 3 | 0.043 | 12 : 4 : 2 | 0.077 |
-| HIV | disease vs healthy | 11 : 1 : 3 | 0.0063 | 9 : 0 : 2 | 0.0039 |
-| CRC | all | 32 : 6 : 11 | 2.4e-5 | 19 : 2 : 7 | 2.2e-4 |
-| CRC | disease vs healthy | 21 : 4 : 8 | 9.1e-4 | 14 : 3 : 7 | 0.013 |
-| All three | all | 108 : 37 : 31 | 3.0e-9 | 58 : 20 : 13 | 2.0e-5 |
-| All three | disease vs healthy | 79 : 20 : 21 | 1.8e-9 | 47 : 13 : 13 | 1.2e-5 |
+| Condition | Contrasts | Experiments down : up : tied | Sign test p | Studies down : up : tied | Sign test p | Study Wilcoxon p |
+| --- | --- | --- | --- | --- | --- | --- |
+| PD | all | 58 : 24 : 17 | 2.2e-4 | 27 : 14 : 4 | 0.060 | 0.0093 |
+| PD | disease vs healthy | 47 : 15 : 10 | 5.8e-5 | 24 : 10 : 4 | 0.024 | 0.015 |
+| HIV | all | 18 : 7 : 3 | 0.043 | 12 : 4 : 2 | 0.077 | 0.30 |
+| HIV | disease vs healthy | 11 : 1 : 3 | 0.0063 | 9 : 0 : 2 | 0.0039 | 0.0039 |
+| CRC | all | 32 : 6 : 11 | 2.4e-5 | 19 : 2 : 7 | 2.2e-4 | 2.0e-4 |
+| CRC | disease vs healthy | 21 : 4 : 8 | 9.1e-4 | 14 : 3 : 7 | 0.013 | 0.0021 |
+| All three | all | 108 : 37 : 31 | 3.0e-9 | 58 : 20 : 13 | 2.0e-5 | 4.1e-5 |
+| All three | disease vs healthy | 79 : 20 : 21 | 1.8e-9 | 47 : 13 : 13 | 1.2e-5 | 2.0e-5 |
 
-Collapsing experiments to studies weakens PD and HIV, as expected when several
-experiments come from one cohort. Keeping only disease-versus-healthy contrasts
-strengthens every condition; no experiment in the three conditions was
-classified as reversed. Dropping experiments with weak comparison evidence
-changes only HIV (11 : 1 : 1 experiments, 9 : 0 : 0 studies). One HIV feces
-experiment mentions MSM in its group names; dropping it leaves 10 : 1 : 3
-(p = 0.012). That lexical filter cannot separate HIV from sexual behaviour, which
-Noguera-Julian et al. (2016, PMID 27077120) found drives much of the reported
-HIV-associated shift.
+[`significant_results_summary.tsv`](significant_results_summary.tsv) gives
+Benjamini-Hochberg q-values over its 29 tests. The four disease-vs-healthy
+study-level rows have q = 0.037 (PD), 0.0087 (HIV), 0.022 (CRC) and 1.2e-4
+(pooled). The all-contrasts study-level PD and HIV rows have q = 0.079 and 0.097.
 
-The corpus-wide disease-versus-healthy comparison in
-`data/derived/contrast_orientation/disease_control_comparison.tsv`, which pools
-all conditions and is a separate analysis, moves the same way: cellulose
-annotation share is lower in the decreased signature in 441 of 774 untied studies
-(p = 1.2e-4) overall and 278 of 457 (p = 4.2e-6) for oriented
-disease-versus-healthy contrasts.
+**How the rows change:**
+
+- **Collapsing to studies.** This weakens PD and HIV, as expected when several
+  experiments come from one cohort. PD across all contrasts stays significant
+  by the study-level Wilcoxon test (p = 0.0093) but not by the sign test
+  (p = 0.060).
+- **Majority vote.** Taking each study's majority of experiment signs instead of
+  its mean difference gives PD 28 : 12 : 5 (p = 0.017). For disease vs healthy
+  it gives PD 24 : 9 : 5 (p = 0.014) and CRC 14 : 2 : 8 (p = 0.0042).
+- **Disease-vs-healthy contrasts only.**
+  - This strengthens PD and HIV.
+  - It weakens CRC, though CRC stays below 0.05: the study sign-test p moves
+    from 2.2e-4 to 0.013.
+  - No experiment in the three conditions is classified as reversed.
+- **Weak comparison evidence.** Dropping these experiments changes only the
+  HIV ties (11 : 1 : 1 experiments, 9 : 0 : 0 studies).
+
+**The HIV result is fragile.** It depends on which experiments count as HIV
+disease-versus-healthy contrasts
+([`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv)):
+
+| HIV feces, disease vs healthy | Experiments | p | Studies | p |
+| --- | --- | --- | --- | --- |
+| Exact label "HIV infection" (primary) | 11 : 1 : 3 | 0.0063 | 9 : 0 : 2 | 0.0039 |
+| + "Human immunodeficiency virus", "HIV-1 infection" labels | 11 : 3 : 3 | 0.057 | 9 : 2 : 2 | 0.065 |
+| + the HIV– vs HIV+ experiment classed disease vs disease (bsdb:33102244-1) | 12 : 1 : 3 | 0.0034 | 10 : 0 : 2 | 0.0020 |
+| + both of the above | 12 : 3 : 3 | 0.035 | 10 : 2 : 2 | 0.039 |
+| + also three HIV+ on ART vs uninfected, classed treatment exposure | 13 : 5 : 3 | 0.096 | 10 : 4 : 2 | 0.18 |
+| Exact label, without the rectal-mucosa study (bsdb:24451087) | 10 : 1 : 3 | 0.012 | 8 : 0 : 2 | 0.0078 |
+
+The two "Human immunodeficiency virus" studies compare people with and without
+HIV, and in both the decreased signature has the smaller cellulose share. Across
+all contrasts, HIV goes from 18 : 7 : 3 (p = 0.043) to 19 : 10 : 3 (p = 0.14) with
+the synonyms counted. PD is unaffected. CRC strengthens with its synonyms:
+- all contrasts: 37 : 10 : 12 experiments and 22 : 3 : 7 studies;
+- disease vs healthy: 16 : 4 : 7 studies (p = 0.012).
+
+The pooled study-level result stays at p ≤ 1.4e-4 in every scenario. The
+classifier cases are #569.
+
+One HIV feces experiment mentions MSM in its group names; dropping it leaves
+10 : 1 : 3 (p = 0.012). That lexical filter cannot separate HIV from sexual
+behaviour. Two studies bear on this:
+
+- Noguera-Julian et al. (2016, PMID 27077120) found that much of the reported
+  HIV-associated shift tracks sexual practice.
+- Vujkovic-Cvijin et al. (2020, PMID 32415070, a corpus study,
+  `bsdb:32415070`) compared antiretroviral-treated people with HIV with
+  seronegative controls matched for sexual practice. They still reported
+  depletion of Lachnospiraceae and Ruminococcaceae.
+
+A separate analysis points the same way:
+`data/derived/contrast_orientation/disease_control_comparison.tsv` pools all
+conditions and is not an input to this analysis. In it, the decreased signature
+has the larger cellulose annotation share in 441 of 774 untied studies (p = 1.2e-4).
+The pooling takes the historical human paired population, which does not depend
+on the contrast classifier. The oriented disease-versus-healthy subset of that
+file does depend on the classifier version, so it is not quoted here.
 
 ## 5. Outside feces
 
@@ -172,30 +286,45 @@ disease-versus-healthy contrasts.
 | --- | --- | --- | --- |
 | Feces | 49 / 19 / 31 | 108 : 37 | |
 | Non-fecal GI (mucosa, lumen) | 2 / 4 / 14 | 9 : 12 | PD has 1 untied pair, HIV 5: p < 0.05 is unattainable |
-| Oral / oropharyngeal | 2 / 3 / 4 | 3 : 5 | p < 0.05 unattainable in every condition |
-| Other non-GI | 3 / 3 / 0 | 4 : 2 | no CRC study |
+| Oral / oropharyngeal | 2 / 2 / 4 | 3 : 5 | p < 0.05 unattainable in every condition |
+| Other non-GI, including multi-site labels | 3 / 4 / 0 | 4 : 2 | no CRC study |
 
-Outside feces there are too few untied pairs to test anything except CRC
-mucosa and lumen, where the decreased signature had the larger share in 4 of 15
-untied experiments. Fisher's exact test of direction by compartment
+Outside feces, single conditions have at most 5 untied pairs, so no test can
+reach p < 0.05. The exception is CRC mucosa and lumen, with 15 untied experiments.
+There, the decreased signature had the larger share in only 4. The pooled strata
+have 21, 8 and 6 untied pairs and could each reach p < 0.05.
+
+The table below gives Fisher's exact test of direction by compartment
 ([`compartment_direction_interaction.tsv`](compartment_direction_interaction.tsv)):
 
 | Comparison | Units | Feces | GI mucosa / lumen | Odds ratio (exact 95% CI) | p |
 | --- | --- | --- | --- | --- | --- |
 | CRC | experiments | 32 : 6 | 4 : 11 | 13.6 (2.9–81.0) | 1.2e-4 |
 | CRC | studies | 19 : 2 | 3 : 8 | 21.6 (2.7–309) | 5.6e-4 |
-| All three | experiments | 108 : 37 | 9 : 12 | 3.85 (1.37–11.3) | 0.0048 |
-| All three | studies | 58 : 20 | 5 : 9 | 5.11 (1.35–21.9) | 0.0096 |
+| All three, stratified by condition | experiments | 108 : 37 | 9 : 12 | 4.79 (1.52–15.8) | 0.0049 |
+| All three, stratified by condition | studies | 58 : 20 | 5 : 9 | 8.46 (1.79–49.9) | 0.0021 |
 | CRC, disease vs healthy | experiments | 21 : 4 | 3 : 5 | 8.0 (1.1–75.9) | 0.020 |
 | CRC, disease vs healthy | studies | 14 : 3 | 3 : 4 | 5.7 (0.6–65.5) | 0.13 |
+| All three, stratified, disease vs healthy | studies | 47 : 13 | 4 : 5 | 7.06 (0.93–72.6) | 0.030 |
 
-The odds ratios are conditional maximum-likelihood estimates; the sample odds
-ratios are in the TSV (14.7 for CRC experiments). Only 16 of the 37 CRC mucosa
-and lumen experiments compare patients with controls; the rest compare tumour
-with adjacent tissue, cancer subgroups or aspirin with placebo. Two CRC studies
-sampled both compartments, and the units are treated as independent. The
-direction differs between feces and CRC mucosa or lumen; with this sampling
-effort and mix of contrasts, that does not show the pattern is specific to feces.
+**How to read these odds ratios:**
+
+- They are conditional maximum-likelihood estimates; the TSV also gives sample
+  and Mantel-Haenszel estimates.
+- The stratified rows test a common odds ratio across PD, HIV and CRC. Crude
+  pooling, also in the TSV, mixes condition with compartment: pooled stool pairs
+  are mostly PD and pooled GI pairs mostly CRC.
+- As in Fisher's test, each p-value counts outcomes no more likely than the
+  observed one, while each interval comes from two one-sided tails. The two can
+  disagree near 0.05, as in the last row.
+
+The units are treated as independent. Only 12 of the 31 paired CRC mucosa and
+lumen experiments compare patients with controls. The rest compare tumour with
+adjacent or normal tissue, adenoma with cancer, cancer subgroups, or aspirin with
+placebo. Two CRC studies sampled both
+compartments. The direction differs between feces and CRC mucosa or lumen. With
+this sampling effort and this mix of contrasts, that does not show the pattern is
+specific to feces.
 
 ## 6. Sensitivity to the set definition
 
@@ -204,25 +333,27 @@ effort and mix of contrasts, that does not show the pattern is specific to feces
 | Primary: all ranks | 38 / 24 / 34 | 0.479 | 17 / 47 | 4.8e-23 |
 | Genus and species only | 19 / 12 / 20 | 0.478 | 9 / 25 | 3.5e-12 |
 | Profiles with cellulose z > 0 | 34 / 24 / 33 | 0.496 | 16 / 46 | 4.0e-22 |
-| Disease-vs-healthy contrasts | 33 / 19 / 29 | 0.517 | 13 / 41 | 5.8e-19 |
+| Disease-vs-healthy contrasts (and strong evidence: same sets) | 33 / 19 / 29 | 0.517 | 13 / 41 | 5.8e-19 |
+| Synonym condition labels counted | 38 / 27 / 37 | 0.456 | 20 / 50 | 1.8e-27 |
+| Without the rectal-mucosa study | 38 / 23 / 34 | 0.496 | 16 / 47 | 2.5e-21 |
 | All body sites | 43 / 28 / 44 | 0.529 | 19 / 60 | 2.0e-21 |
 | Net decreased, profiles | 23 / 19 / 28 | 0.641 | 7 / 40 | 5.6e-9 |
 | Net decreased, studies | 22 / 19 / 26 | 0.643 | 7 / 39 | 2.2e-9 |
-| Every decreased feces taxon, any trait | 284 / 151 / 231 | 0.775 | 51 / 471 | 6.5e-103 |
+| Every decreased feces taxon, any trait (reference, not a null) | 284 / 151 / 231 | 0.775 | 51 / 471 | 6.5e-103 |
 
-The U1 p-values in this table assume independent draws and overstate
+The U1 p-values in this table assume independent draws, so they overstate
 significance in the way section 2 shows
 ([`sensitivity_definitions_jaccard.tsv`](sensitivity_definitions_jaccard.tsv)).
 Restricting to genera and species leaves the mean distance unchanged.
 
 ## 7. Trait benchmark
 
-Of the 182 matrix traits with at least 10 decreased feces taxa in each condition,
-142 are not MediaDive growth media. Ranked by mean pairwise d_J, cellulose
-catabolic process is second of the 142 (23rd of all 182); the rank describes
+182 matrix traits have at least 10 decreased feces taxa in each condition; 142 of
+them are not MediaDive growth media. Ranked by mean pairwise d_J, cellulose
+catabolic process is second of the 142 (23rd of all 182). The rank describes
 this corpus and is not a test
-([`trait_convergence_benchmark.tsv`](trait_convergence_benchmark.tsv), median
-d_J 0.679).
+([`trait_convergence_benchmark.tsv`](trait_convergence_benchmark.tsv); median
+d_J 0.679; `percentile_excluding_growth_media` is the rank divided by 142).
 
 | Rank | Trait | ID | Mean d_J | All three / union |
 | --- | --- | --- | --- | --- |
@@ -237,13 +368,13 @@ d_J 0.679).
 | 9 | hydrogen_oxidation_dark | `METPO:2000103\|pathways:hydrogen_oxidation_dark` | 0.536 | 8 / 26 |
 | 10 | sulfate_reduction | `METPO:2000103\|pathways:sulfate_reduction` | 0.542 | 6 / 19 |
 
-Traits annotated on the same frequently reported taxa will rank alike here, so
-the ranking does not show that cellulose-annotated taxa are singled out.
+Traits annotated on the same frequently reported taxa rank alike here. The
+ranking therefore does not show that cellulose-annotated taxa are singled out.
 
 ## 8. Counting rules
 
 The October 16 catalog and the four-pairs literature file disagreed because they
-used different labels, not different expansion rules. With experiment labels
+used different labels, not different expansion rules. With experiment labels,
 both give the same counts:
 
 | Count | Oct 16 catalog | Oct 16 literature file | Now |
@@ -253,41 +384,69 @@ both give the same counts:
 | *Roseburia* decreased / increased studies, PD; HIV; CRC | 18/4; 2/0; 5/0 | 20/4; 2/0; 6/0 | 20/4; 2/0; 6/0 |
 
 The first row counts studies with any decreased feces signature in the condition
-(`n_studies_dec`), the second only those whose decreased signature contains an
-annotated taxon (`n_studies_a` in
-[`profile_and_study_pair_jaccard.tsv`](profile_and_study_pair_jaccard.tsv) and
-`n_supporting_studies_in_target_dir` in the four-pairs summary).
+(`n_studies_dec`). The second counts only those whose decreased signature contains
+an annotated taxon: `n_studies_a` in
+[`profile_and_study_pair_jaccard.tsv`](profile_and_study_pair_jaccard.tsv), and
+`n_supporting_studies_in_target_dir` in the four-pairs summary.
 
 ## 9. Files
 
 | File | Contents |
 | --- | --- |
-| [`cellulose_decr_summary.json`](cellulose_decr_summary.json) | Every result, definition, universe, null summary and label-source comparison |
-| [`cellulose_decr_provenance.json`](cellulose_decr_provenance.json) | Input hashes, code commit, seeds, package versions |
+| [`cellulose_decr_summary.json`](cellulose_decr_summary.json) | Every result, definition, universe, null summary, label inventory and label-source comparison |
+| [`cellulose_decr_provenance.json`](cellulose_decr_provenance.json) | Input hashes, contrast-classifier version, code commit, seeds, package versions |
 | [`pairwise_jaccard_significance.tsv`](pairwise_jaccard_significance.tsv) | Pairwise, mean and 3-way overlap under U1–U6; `endpoint` separates the mean distance from the 3-way core |
-| [`sensitivity_definitions_jaccard.tsv`](sensitivity_definitions_jaccard.tsv) | Overlap under nine set definitions |
-| [`compartment_jaccard_and_direction_stats.tsv`](compartment_jaccard_and_direction_stats.tsv) | Direction tests by contrast population, compartment and condition, at experiment and study level, with power notes |
-| [`compartment_direction_interaction.tsv`](compartment_direction_interaction.tsv) | Fisher tests of direction by compartment |
-| [`cellulose_decreased_taxa_catalog.tsv`](cellulose_decreased_taxa_catalog.tsv) | The 47 taxa with study and profile counts and flags |
+| [`sensitivity_definitions_jaccard.tsv`](sensitivity_definitions_jaccard.tsv) | Overlap under eleven set definitions |
+| [`compartment_jaccard_and_direction_stats.tsv`](compartment_jaccard_and_direction_stats.tsv) | Direction tests by contrast population, compartment and condition, at experiment and study level (mean and majority vote), with power notes |
+| [`compartment_direction_interaction.tsv`](compartment_direction_interaction.tsv) | Fisher tests of direction by compartment, crude and stratified by condition |
+| [`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv), [`condition_definition_overlap.tsv`](condition_definition_overlap.tsv) | Feces direction and cross-condition overlap (with U6) under synonym labels, the HIV contrasts the classifier leaves out, and without the rectal-mucosa study |
+| [`condition_label_inventory.tsv`](condition_label_inventory.tsv) | Every human condition label naming PD, HIV or CRC, with its status |
+| [`cellulose_decreased_taxa_catalog.tsv`](cellulose_decreased_taxa_catalog.tsv) | The 47 taxa with study and profile counts and flags, including `has_direct_trait_edge` |
 | [`profile_and_study_pair_jaccard.tsv`](profile_and_study_pair_jaccard.tsv) | Overlap between individual profiles and studies across conditions |
 | [`trait_convergence_benchmark.tsv`](trait_convergence_benchmark.tsv) | All 182 benchmarked traits with `trait_label` and `trait_predicate` |
-| [`significant_results_summary.tsv`](significant_results_summary.tsv) | Headline tests with unit, population and p ([`SIGNIFICANT_RESULTS_SUMMARY.md`](SIGNIFICANT_RESULTS_SUMMARY.md)) |
+| [`significant_results_summary.tsv`](significant_results_summary.tsv) | Headline tests with unit, population, p and BH q ([`SIGNIFICANT_RESULTS_SUMMARY.md`](SIGNIFICANT_RESULTS_SUMMARY.md)) |
 | [`label_source_corrections.tsv`](label_source_corrections.tsv) | Experiments whose study-level label differed from their own |
 | [`four_highlighted_pairs_taxon_drivers.tsv`](four_highlighted_pairs_taxon_drivers.tsv), [`four_highlighted_pairs_study_evidence.tsv`](four_highlighted_pairs_study_evidence.tsv), [`four_highlighted_pairs_summary.json`](four_highlighted_pairs_summary.json) | Taxa and studies behind the four highlighted condition–trait pairs ([`FOUR_HIGHLIGHTED_PAIRS_LITERATURE_SUPPORT.md`](FOUR_HIGHLIGHTED_PAIRS_LITERATURE_SUPPORT.md)) |
-| [`figures_graphical/`](figures_graphical/), [`cellulose_decr_graphical_figures.pdf`](cellulose_decr_graphical_figures.pdf) | Four presentation figures (SVG, PDF, PNG) |
-| [`figures/`](figures/), [`cellulose_decr_figures.pdf`](cellulose_decr_figures.pdf) | Three statistical reference figures |
 
-The Tufte plates in `figures_tufte/` and the `cellulose_decr_slide_deck` files
-made earlier in this directory have no generator, predate these corrections and
-are not maintained here (#550).
+Some outputs are written here but not committed: under CONTRIBUTING.md, images
+stay out of git outside `trait-visualization/`.
+
+- **Figures.** `just cellulose-decr-figures` writes four presentation figures to
+  `figures_graphical/` and three statistical reference figures to `figures/`, as
+  SVG, PDF and PNG.
+- **Combined PDFs.** It also writes `cellulose_decr_graphical_figures.pdf` and
+  `cellulose_decr_figures.pdf`.
+
+Reruns on the same tables give identical bytes. The Tufte plates in
+`figures_tufte/` and the `cellulose_decr_slide_deck` files made earlier in this
+directory have no generator. They predate these corrections and are not
+maintained here (#550, #556).
 
 ## 10. Reproduce
 
 ```bash
-COMMIT="$(git rev-parse HEAD)$(git diff --quiet HEAD -- data/analysis/cellulose_decr/scripts || echo +dirty)"
-uv run python data/analysis/cellulose_decr/scripts/cellulose_decr_analysis.py --code-commit "$COMMIT"
-uv run python data/analysis/cellulose_decr/scripts/cellulose_decr_figures.py
+just cellulose-decr                # tables, summary and provenance
+just cellulose-decr-figures        # figures (gitignored)
 ```
 
-`--label-source study_modal` reproduces the October 16 tables. The run takes
-about 20 seconds; the Monte Carlo nulls use fixed seeds, so reruns are identical.
+The run takes about 40 seconds. The Monte Carlo nulls use fixed seeds, so reruns
+on the same inputs give identical tables; only the provenance timestamp changes.
+
+**Inputs.** Eight of the nine inputs are gitignored. They are built by:
+
+- `just download`, `just ingest` and `just study-tsvs` (BugSigDB);
+- `just download-kg`, `just taxa-trait-matrix` and `just study-trait-profiles`
+  (KG-Microbe);
+- `just contrast-orientation` (contrast manifest).
+
+**Drift check.** The run stops when any input's hash differs from
+[`cellulose_decr_provenance.json`](cellulose_decr_provenance.json). It also stops
+when the contrast manifest came from another classifier version.
+- From a worktree, use `--input-root <checkout>` to point at a checkout that
+  holds the pinned inputs.
+- To regenerate every table from changed inputs, use `--allow-input-drift`.
+
+**Older outputs.** To reproduce the October 16 tables, write to another
+directory so the committed ones are not overwritten:
+`just cellulose-decr --label-source study_modal --output-dir /tmp/oct16`.
+To count the synonym labels throughout, use `--condition-labels synonyms`.

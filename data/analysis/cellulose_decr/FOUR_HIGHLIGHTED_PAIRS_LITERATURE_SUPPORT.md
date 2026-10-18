@@ -14,7 +14,8 @@ report them, and presented corpus studies as independent support. Every
 identifier below was checked against PubMed, every description of a paper
 against its abstract or full text, and every taxon against
 [`four_highlighted_pairs_study_evidence.tsv`](four_highlighted_pairs_study_evidence.tsv).
-The corrections are listed at the end.
+The corrections are listed at the end. The abstract check also found one curation
+problem: McHardy et al. 2013 is curated as feces but sampled rectal mucosa (#566).
 
 ## Reading this file
 
@@ -22,8 +23,10 @@ The corrections are listed at the end.
   BugSigDB vintage (`2026-04-24_00:41_UTC`) contributes to the result itself; its
   agreement is not replication. Each citation below says whether it is in the
   corpus.
-- **Trait names are literal.** A taxon counted here carries a KG-Microbe
-  annotation, often rolled up from descendants. "Cellulose catabolic process"
+- **Trait names are literal.** A taxon counted here bears a KG-Microbe
+  annotation because it or a descendant has the annotation edge. None of the 17
+  taxa in all three cellulose sets has its own edge; the genera inherit it from
+  annotated species or strains (#565). "Cellulose catabolic process"
   does not mean cellulose was degraded, and "moderately halophilic" does not mean
   salt or osmotic tolerance in the sampled strain
   ([`docs/table1_trait_semantics_audit.md`](../../../docs/table1_trait_semantics_audit.md),
@@ -49,11 +52,18 @@ are studies reporting each taxon in the stated and the opposite direction
 
 For the three cellulose pairs, the paired direction tests in
 [`README.md`](README.md#4-direction-within-each-condition) give, at the study
-level among disease-versus-healthy contrasts: PD 24 of 34 untied studies down
-(p = 0.024), HIV 9 of 9 (p = 0.0039), CRC 14 of 17 (p = 0.013). Taxon overlap
-between the three conditions is no larger than among random sets of feces
-studies ([`README.md`](README.md#2-is-the-overlap-unusual)). No direction test for
-pair 4 is run in this directory.
+level among disease-versus-healthy contrasts:
+
+- PD: 24 of 34 untied studies down (p = 0.024).
+- HIV: 9 of 9 (p = 0.0039) with the exact label. Counting two studies filed as
+  "Human immunodeficiency virus" gives 9 of 11 (p = 0.065), so the HIV result
+  is fragile (#561).
+- CRC: 14 of 17 (p = 0.013).
+
+Taxon overlap between the three conditions is not detectably larger than among
+random sets of feces studies (U6 p = 0.19;
+[`README.md`](README.md#2-is-the-overlap-unusual)). No direction test for pair 4
+is run in this directory.
 
 ## 2. Corpus studies the previous version cited
 
@@ -84,7 +94,7 @@ published shotgun datasets, one of them from the USA.
 
 | Study | Citation | Annotated taxa reported decreased |
 | --- | --- | --- |
-| `bsdb:24451087` | McHardy et al. 2013, *Microbiome*, PMID 24451087 | eight taxa, among them Lachnospiraceae, *Roseburia*, *Ruminococcus* and *Lachnospira* |
+| `bsdb:24451087` | McHardy et al. 2013, *Microbiome*, PMID 24451087; rectal mucosa sampled with a sponge, curated as feces (#566) | eight taxa, among them Lachnospiraceae, *Roseburia*, *Ruminococcus* and *Lachnospira*; the only HIV source of *Eubacterium* |
 | `bsdb:27477587` | Ling et al. 2016, *Sci Rep*, PMID 27477587 | *Bacteroides* and its family, order, class and phylum |
 | `bsdb:29411528` | Zhou et al. 2018, *J Cell Mol Med*, PMID 29411528 | nine taxa, among them *Bacteroides*, Lachnospiraceae and *Lachnoclostridium* |
 | `bsdb:30518941` | Kaur et al. 2018, *Sci Rep*, PMID 30518941 | eight taxa, among them *Bacteroides*, Lachnospiraceae and *Ruminococcus* |
@@ -93,9 +103,18 @@ published shotgun datasets, one of them from the USA.
 | `bsdb:36604616` | Chandiwana et al. 2023, *BMC Microbiol*, PMID 36604616 | *Bacteroides*, Bacteroidaceae, *Clostridium*, Oscillospiraceae, *Ruminococcus* |
 | `bsdb:39880958` | Maghini et al. 2025, *Nature*, PMID 39880958 | eight taxa, among them Lachnospiraceae, Oscillospiraceae and *Clostridium* |
 
-Zhou et al. 2020 compared groups by HIV status and sexual orientation; one of its
+Zhou et al. 2020 compared groups by HIV status and sexual orientation. One of its
 experiments compares MSM with non-MSM and is classified `unresolved` in the
-contrast manifest.
+contrast manifest. Another compares HIV– with HIV+ individuals
+(`bsdb:33102244-1`), but it is classified `disease_vs_disease`, so the
+disease-versus-healthy tests leave it out. Counted, the HIV study-level result
+becomes 10 of 10 (#569).
+
+Vujkovic-Cvijin et al. 2020 (*Nature Communications*, PMID 32415070,
+`bsdb:32415070`) is also a corpus study for pair 2; it reports Lachnospiraceae.
+It compared antiretroviral-treated people with HIV with seronegative controls
+matched for age, body-mass index, sex and sexual practice. It still reported
+Lachnospiraceae and Ruminococcaceae depletion.
 
 **CRC, cellulose, decreased**
 
@@ -141,7 +160,7 @@ hypotheses; none validates the annotation results above.
 | Becker et al. 2022, *Genomics Proteomics Bioinformatics* 20:274, PMID 34839011 | Open-label trial (RESISTA-PD) of resistant starch for 8 weeks: fecal butyrate rose and calprotectin fell in PD patients; alpha and beta diversity, including SCFA-producing bacteria, stayed stable. | Not evidence about cellulose-annotated taxa. |
 | Lozupone et al. 2013, *Cell Host Microbe* 14:329, PMID 24034618 | HIV infection associated with characteristic fecal community changes, not restored by antiretroviral therapy, with higher diversity and resemblance to Prevotella-rich communities. | Context for HIV. |
 | Vujkovic-Cvijin et al. 2013, *Sci Transl Med* 5:193ra91, PMID 23843452 | A mucosal-adherent community enriched in Proteobacteria and depleted of Bacteroidia, associated with mucosal immune disruption and kynurenine-pathway activity. | Mucosal samples, not feces. |
-| Noguera-Julian et al. 2016, *EBioMedicine* 5:135, PMID 27077120 | In Barcelona (n = 156) and Stockholm (n = 84), the Prevotella-rich pattern tracked MSM status independently of HIV. After stratifying for sexual orientation there was no solid evidence of HIV-specific dysbiosis; HIV remained associated with lower richness. | The main caveat for pair 2: most HIV studies here cannot separate HIV from sexual behaviour. |
+| Noguera-Julian et al. 2016, *EBioMedicine* 5:135, PMID 27077120 | In Barcelona (n = 156) and Stockholm (n = 84), the Prevotella-rich pattern tracked MSM status independently of HIV. After stratifying for sexual orientation there was no solid evidence of HIV-specific dysbiosis; HIV remained associated with lower richness. | A caveat for pair 2: few HIV studies here separate HIV from sexual behaviour. Vujkovic-Cvijin et al. 2020 (section 2) is one that does, and it still reports Lachnospiraceae depletion. |
 | Wirbel et al. 2019, *Nat Med* 25:679, PMID 30936547 | Meta-analysis of CRC fecal metagenomes: protein and mucin catabolism genes enriched, carbohydrate degradation genes depleted. | Context for CRC. Its companion, Thomas et al. 2019 (PMID 30936548), is a corpus study that reports no annotated taxa for pair 3. |
 | Chassard et al. 2012, *Int J Syst Evol Microbiol* 62:138, PMID 21357460 | *Ruminococcus champanellensis*, a strictly anaerobic bacterium isolated from human feces that degrades microcrystalline cellulose. | Describes one species in the CRC set; one study reports it decreased. |
 | Moraïs et al. 2024, *Science* 383:eadj9223, PMID 38484069 | Cellulosome-producing ruminococcal species are common in ancient, hunter-gatherer and rural populations and rare in industrialized ones. | Context only; it does not compare disease and control. |
@@ -150,8 +169,9 @@ hypotheses; none validates the annotation results above.
 
 Flemer et al. 2017 (*Gut*, PMID 26992426), Burns et al. 2015 (*Genome Med*, PMID
 26170900) and Vandeputte et al. 2016 (*Gut*, PMID 26069274) are corpus studies
-but report no annotated taxa for these pairs: the first two sampled mucosa or
-tissue, and Vandeputte et al. studied stool consistency in 53 healthy women.
+but report no annotated taxa for these pairs. The curated experiments of the
+first two are mucosal or tissue samples, although Flemer et al. also sampled
+feces. Vandeputte et al. studied stool consistency in 53 healthy women.
 
 ## 4. Corrections to the previous version
 

@@ -28,7 +28,11 @@ than its frequency across the whole corpus would predict? In the production run
 (`just analyze`) the unit is a distinct reported taxon, drawn against a background
 of the 5,829 BugSigDB-reported taxa in the trait matrix, and the comparison is
 against that background rather than against the profile's own counterpart.
-Earlier runs counted trait-annotation assertions instead (#131).
+Earlier runs counted trait-annotation assertions instead (#131). The Table 1
+native reruns in [`table1_native_influence.md`](table1_native_influence.md)
+still follow that earlier kernel. Their `table1-native-results/native_ora_families.tsv`
+draws assertion counts: 4,517 testable profiles against a background of
+106,993,585 assertions. So the two runs' urns, and their test counts, differ.
 
 **Directional-consistency arm.** Across studies, does a trait more often shift up
 than down? The unit is a study, and the quantity tested is the sign of the paired
@@ -75,6 +79,10 @@ The background remains weighted by profiles and their assertion counts, while
 the descriptive comparison weights studies equally. Fixing that definition does
 not validate the assertion-level urn model in
 [#131](https://github.com/CultureBotAI/microbial-trait-profiling/issues/131).
+This harmonized-baseline background is a proposed definition for the shared
+comparison. It is not the background of the production enrichment run, which
+draws distinct taxa against every taxon in the trait matrix (see
+[Why the p-values are not comparable](#why-the-p-values-are-not-comparable)).
 
 ### Common paired quantities and eligibility
 
@@ -244,10 +252,13 @@ produced many p- and q-values of numerically zero; that sampling-unit problem is
 #131, now closed. The taxon urn removes the repeated counting of one organism, but
 nested taxa are still not independent draws: a genus, its family and its phylum
 can all be reported and all inherit the same annotation. Calibration at the
-production thresholds is tracked in #551. Each profile is also included in its
-own background, and the background is restricted to paired experiments, so
-"corpus frequency" means the frequency across profiles that survived the pairing
-filter.
+production thresholds is tracked in #551. The background is not filtered the way
+the profiles are. Profiles are paired human experiments, but `M` and `K` count
+all 5,829 rows of `taxa_trait_matrix.tsv`: every taxon reported in any BugSigDB
+signature, from any host. 645 of those taxa occur only in non-human samples, and
+862 never appear in a paired human profile. "Corpus frequency" therefore means
+the share of all reported taxa that bear the trait, and each profile's own taxa
+are part of its background.
 
 The composition arm's n is the number of matched pairs, in the hundreds to low
 thousands. For a nonconstant trait, column centering cancels in an
