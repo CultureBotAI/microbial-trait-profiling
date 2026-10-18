@@ -1,17 +1,20 @@
 # Three statistics on one matrix
 
-Three analyses in this project consume the same table,
-`data/derived/study_trait_profiles_wide.tsv`, and report significance for
-traits. They test different hypotheses with different sampling units. A smaller
-p-value in one arm does not establish stronger biological evidence than a larger
-p-value in another. This note compares what each asks and what joint
+Three analyses in this project report significance for traits from the same
+curated signatures. The composition and directional-consistency arms consume
+`data/derived/study_trait_profiles_wide.tsv`; the enrichment arm consumes its
+binary companion, `data/derived/study_trait_profiles_ora_wide.tsv`, which records
+for each profile how many distinct reported taxa bear each trait and how many taxa
+it reports. They test different hypotheses with different sampling units. A
+smaller p-value in one arm does not establish stronger biological evidence than a
+larger p-value in another. This note compares what each asks and what joint
 interpretation requires; agreement on shared data is not independent replication.
 
 The shared input has one row per study, experiment, and direction, and one column
 per trait; a cell is the number of taxonomically rolled-up trait assertions for
 that trait in that profile — one reported taxon can contribute many counts via
-its descendant nodes, so cells are not taxon counts (the same sampling-unit
-inflation issue #131 records for the enrichment urn).
+its descendant nodes, so cells are not taxon counts (the sampling-unit inflation
+that #131 recorded for the earlier, assertion-level enrichment urn).
 
 ## What each arm asks
 
@@ -21,9 +24,11 @@ is a matched study/experiment pair, and the quantity tested is a difference
 between the two sides of the same pair.
 
 **Enrichment arm.** Taking one profile on its own, does a trait appear more often
-than its frequency across the whole corpus would predict? The unit is a
-trait-annotation assertion, and the comparison is against a pooled background
-rather than against the profile's own counterpart.
+than its frequency across the whole corpus would predict? In the production run
+(`just analyze`) the unit is a distinct reported taxon, drawn against a background
+of the 5,829 BugSigDB-reported taxa in the trait matrix, and the comparison is
+against that background rather than against the profile's own counterpart.
+Earlier runs counted trait-annotation assertions instead (#131).
 
 **Directional-consistency arm.** Across studies, does a trait more often shift up
 than down? The unit is a study, and the quantity tested is the sign of the paired
@@ -162,15 +167,15 @@ framework, described under [Compositionality](#compositionality).
 | | Composition | Enrichment | Directional consistency |
 | --- | --- | --- | --- |
 | Owner | Jed | Ilyas | Noel |
-| Unit of observation | matched study/experiment pair | trait-annotation assertion | study |
-| Transformation | fractions, x1000, log1p, per-trait z-score | none; raw counts enter the urn | fractions, study mean per direction, sign of the difference |
+| Unit of observation | matched study/experiment pair | distinct reported taxon (trait-annotation assertion before #131) | study |
+| Transformation | fractions, x1000, log1p, per-trait z-score | none; each taxon counts once per trait it bears | fractions, study mean per direction, sign of the difference |
 | Test | one-sample t against 0, two-sided | hypergeometric upper tail, one-tailed | exact binomial against 0.5, two-sided |
 | Paired | yes, by construction | no; increased and decreased tested separately | yes, then reduced to one sign per study |
 | Native multiple testing | Benjamini-Hochberg within each output table | Benjamini-Hochberg across every test in the inspected run | Benjamini-Yekutieli across all 317 retained traits, reported at the nominal and the effective family size (#255, #265); the six-trait Benjamini-Hochberg family is retained separately for the published Table 1 numbers |
 | Historical selection/display rule | no significance cutoff; the figure takes the top ten by p | q at most 0.001 and fold at least 1.5 | no display cutoff; q reported per trait |
-| Typical n per test | 2,335 pairs, identical for every trait | tens of thousands of assertions | 2 to 942 of the 959 studies across the 317 candidates, 616 to 917 for the six of Table 1 (ties excluded) |
+| Typical n per test | 2,335 pairs, identical for every trait | a mean of 9.05 taxa per profile against 5,829 background taxa (tens of thousands of assertions before #131) | 2 to 942 of the 959 studies across the 317 candidates, 616 to 917 for the six of Table 1 (ties excluded) |
 | Strength | Uses matched contrasts and their magnitudes; screens many traits | Locates profile-specific excess relative to a declared corpus background | Gives each study one directional vote; exact test without a normality assumption for magnitudes |
-| Main limitations | Repeated experiments within studies are not independent; denominator and transformation affect the estimand | Correlated annotations undermine the urn sampling model; coverage and background composition affect calls | Discards magnitude, excludes ties, and remains denominator-dependent; support varies by orders of magnitude across the 317 candidates, so a lopsided share on few studies is not a finding |
+| Main limitations | Repeated experiments within studies are not independent; denominator and transformation affect the estimand | Nested taxa inherit the same annotations, so draws are not independent; coverage and background composition affect calls | Discards magnitude, excludes ties, and remains denominator-dependent; support varies by orders of magnitude across the 317 candidates, so a lopsided share on few studies is not a finding |
 | Contribution to the shared comparison | Supply matched source counts and native transformed effects; reconcile the denominator, then report the common study-weighted fraction/ratio quantities | Supply profile counts, fixed-background folds and native profile evidence; provide separate descriptive increased/decreased study summaries | Supply study-level direction and coverage for the shared fraction quantities and all 15 explicitly referenced ratios |
 | Meaning of disagreement | A mean contrast can be large despite inconsistent study signs | Background enrichment can occur on both sides without a paired shift | Consistent small shifts can coexist with a small mean; ratio directions also depend on the named reference |
 
@@ -225,15 +230,22 @@ decision require the method-appropriate nulls and selection-aware calibration in
 The three tests count different things, so their sample sizes differ by orders of
 magnitude and their p-values cannot be ranked against one another.
 
-The enrichment arm's urn is built from trait-annotation assertions rather than
-from taxa. Its committed run reports a mean of 23,686.87 assertions per testable
-profile and 556,516 tests in total, and many rows come out at a p-value and a
-q-value of numerically zero. Large assertion counts can produce extremely small
-model-based p-values even for modest enrichment, making the fold floor material
-to selection. Numerical zeros do not establish certainty. Calibration still
-requires a suitable urn model: this is the sampling-unit problem in #131, where one
-organism can enter the urn many times. Each profile is also included in its own
-background, and the pooled background is restricted to paired experiments, so
+The enrichment arm's production urn is built from taxa. Each of the 4,670
+testable paired human profiles is a draw of its distinct reported taxa (mean 9.05
+per profile) from the 5,829 BugSigDB-reported taxa of `taxa_trait_matrix.tsv`; a
+taxon counts as trait-bearing if the matrix marks it so, including positivity
+inherited from descendants at any rank. Over the 317 non-MediaDive traits that is
+1,480,390 tests, which at Benjamini-Hochberg q at most 0.001 and fold at least 1.5
+call 66,240 enrichments; the lower-tail run at fold at most 0.5 calls 23
+depletions (`data/derived/trait_enrichment_all_results.tsv` and
+`trait_depletion_all_results.tsv` headers). An earlier assertion-level run,
+with a mean of 23,686.87 assertions per testable profile and 556,516 tests,
+produced many p- and q-values of numerically zero; that sampling-unit problem is
+#131, now closed. The taxon urn removes the repeated counting of one organism, but
+nested taxa are still not independent draws: a genus, its family and its phylum
+can all be reported and all inherit the same annotation. Calibration at the
+production thresholds is tracked in #551. Each profile is also included in its
+own background, and the background is restricted to paired experiments, so
 "corpus frequency" means the frequency across profiles that survived the pairing
 filter.
 

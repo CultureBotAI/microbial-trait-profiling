@@ -73,6 +73,13 @@ uncertainty and interpretation limits.
 estimand, reference, stratum and single-study effects on the 15 ratios, with the
 protocol in [`table1_log_ratio_sensitivity_protocol.json`](table1_log_ratio_sensitivity_protocol.json).
 
+[`cellulose_decr.md`](cellulose_decr.md) documents the analysis in
+`data/analysis/cellulose_decr/`: the overlap of feces-decreased taxa annotated with
+cellulose catabolic process across Parkinson's disease, HIV infection and
+colorectal cancer, tested against six null models, and the direction of the
+cellulose annotation shift at experiment and study level. Its scripts sit beside
+their outputs and have no `just` recipe yet; the note gives the commands.
+
 The [GPT Rosalind discussion and review](../docs/rosalind-six-trait-interpretation.md)
 archives proposed biological explanations for the six traits, with a separate
 evidence review and assigned follow-up issues. It records hypotheses to evaluate;
