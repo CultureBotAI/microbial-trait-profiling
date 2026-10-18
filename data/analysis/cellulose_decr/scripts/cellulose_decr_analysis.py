@@ -502,10 +502,14 @@ class NullDraws:
                 / mean_distance.std(ddof=1)
             ),
             "p": p_low(mean_distance, observed["mean_pairwise_jaccard_distance"]),
+            "p2_5": float(np.percentile(mean_distance, 2.5)),
+            "p97_5": float(np.percentile(mean_distance, 97.5)),
         }
         result["three_way_core"] = {
             "expected": float(core.mean()),
             "p": p_high(core, observed["three_way_core"]),
+            "p2_5": float(np.percentile(core, 2.5)),
+            "p97_5": float(np.percentile(core, 97.5)),
         }
         result["synthetic_set_sizes"] = {
             short: {
@@ -798,6 +802,12 @@ def interaction_table(corpus: Corpus) -> pd.DataFrame:
                     ]
                     usable = sum(table[1]) > 0 and sum(table[0]) > 0
                     odds, p = stats.fisher_exact(table) if usable else (float("nan"), float("nan"))
+                    conditional, low, high = float("nan"), float("nan"), float("nan")
+                    if usable:
+                        estimate = stats.contingency.odds_ratio(table)
+                        interval = estimate.confidence_interval()
+                        conditional = float(estimate.statistic)
+                        low, high = float(interval.low), float(interval.high)
                     shared = set(feces["study_id"]) & set(rest["study_id"])
                     rows.append(
                         {
@@ -820,6 +830,9 @@ def interaction_table(corpus: Corpus) -> pd.DataFrame:
                             if sum(table[1])
                             else float("nan"),
                             "odds_ratio": float(odds),
+                            "conditional_or": conditional,
+                            "conditional_or_ci95_low": low,
+                            "conditional_or_ci95_high": high,
                             "fisher_p_two_sided": float(p),
                             "studies_in_both_compartments": len(shared),
                             "note": (
