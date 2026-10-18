@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Draw the ``cellulose_decr`` figures from the analysis tables (#552).
 
-Every number on a figure is read from the TSV and JSON files that
-``cellulose_decr_analysis.py`` writes to ``data/analysis/cellulose_decr/``;
-none is typed in. Writes the statistical reference plates to ``figures/`` and
-the presentation plates to ``figures_graphical/`` as SVG, PDF and PNG, and a
-combined PDF of each set.
+Every number, count and example on a figure is read from the TSV and JSON files
+that ``cellulose_decr_analysis.py`` writes to ``data/analysis/cellulose_decr/``,
+and axis limits follow the data. Writes the statistical reference plates to
+``figures/`` and the presentation plates to ``figures_graphical/`` as SVG, PDF
+and PNG, and a combined PDF of each set. These are regenerated, not committed
+(CONTRIBUTING.md; #560); reruns on the same tables give identical bytes.
 
 Trait names are the ``object_name`` labels joined from
 ``data/derived/taxa_trait_matrix_columns.tsv`` by the analysis. Captions keep
@@ -16,6 +17,7 @@ curated signature taxa, not measurements of cellulose degradation.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import sys
@@ -61,7 +63,12 @@ COMPARTMENT_LABEL = {
     OTHER: "Other non-GI",
 }
 PNG_DPI = 150
+POOLED_STRATIFIED = "Pooled, stratified by condition"
+# Neutral highlight for p < 0.05 cells, distinct from the direction colours.
+SIGNIFICANT_FILL = "#ebe4cf"
 
+# SVG text is drawn as paths, so it renders without the font installed, and a
+# fixed hash salt and no date stamps make SVG and PDF bytes repeatable.
 matplotlib.rcParams.update(
     {
         "font.family": "DejaVu Sans",
@@ -73,7 +80,8 @@ matplotlib.rcParams.update(
         "axes.spines.right": False,
         "xtick.color": INK2,
         "ytick.color": INK2,
-        "svg.fonttype": "none",
+        "svg.fonttype": "path",
+        "svg.hashsalt": "cellulose_decr",
         "pdf.fonttype": 42,
         "figure.facecolor": "white",
         "savefig.facecolor": "white",
@@ -90,6 +98,7 @@ class Results:
     interaction: pd.DataFrame
     catalog: pd.DataFrame
     benchmark: pd.DataFrame
+    scenarios: pd.DataFrame
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -112,7 +121,45 @@ def load(directory: Path) -> Results:
         interaction=tsv("compartment_direction_interaction.tsv"),
         catalog=tsv("cellulose_decreased_taxa_catalog.tsv"),
         benchmark=tsv("trait_convergence_benchmark.tsv"),
+        scenarios=tsv("condition_definition_sensitivity.tsv"),
     )
+
+
+def scenario_row(
+    results: Results, scenario: str, population: str, short: str, unit: str
+) -> dict[str, Any]:
+    table = results.scenarios
+    return only(
+        table[
+            table["scenario"].eq(scenario)
+            & table["contrast_population"].eq(population)
+            & table["short_condition"].eq(short)
+            & table["unit"].eq(unit)
+        ]
+    )
+
+
+def interaction_row(
+    results: Results, population: str, short: str, unit: str, compartment: str = NON_FECAL_GI
+) -> dict[str, Any]:
+    table = results.interaction
+    return only(
+        table[
+            table["contrast_population"].eq(population)
+            & table["short_condition"].eq(short)
+            & table["unit"].eq(unit)
+            & table["compartment_b"].eq(compartment)
+        ]
+    )
+
+
+def zero_cell(row: Mapping[str, Any]) -> str:
+    """Why an odds ratio of the down share (stool vs other site) is infinite or zero."""
+    if int(row["a_up"]) == 0 or int(row["b_down"]) == 0:
+        reason = "no ↑ in stool" if int(row["a_up"]) == 0 else "no ↓ outside stool"
+        return f"OR unbounded ({reason})"
+    reason = "no ↓ in stool" if int(row["a_down"]) == 0 else "no ↑ outside stool"
+    return f"OR 0 ({reason})"
 
 
 def records(frame: pd.DataFrame) -> list[dict[str, Any]]:
@@ -160,8 +207,19 @@ def wrap(text: str, width: int) -> str:
 
 
 def header(fig: Figure, title: str, subtitle: str) -> None:
-    fig.text(0.015, 0.975, title, ha="left", va="top", fontsize=15, fontweight="bold", color=INK)
-    fig.text(0.015, 0.928, wrap(subtitle, 175), ha="left", va="top", fontsize=10.5, color=INK2)
+    """Title wrapped to the figure width, with the subtitle placed below its last line."""
+    lines = wrap(title, round(fig.get_figwidth() * 8.4))
+    fig.text(0.015, 0.975, lines, ha="left", va="top", fontsize=15, fontweight="bold", color=INK)
+    drop = (lines.count("\n") + 1) * 15 * 1.35 / (fig.get_figheight() * 72)
+    fig.text(
+        0.015,
+        0.975 - drop - 0.012,
+        wrap(subtitle, 175),
+        ha="left",
+        va="top",
+        fontsize=10.5,
+        color=INK2,
+    )
 
 
 def footnote(fig: Figure, text: str, width: int = 210) -> None:
@@ -180,12 +238,17 @@ def recessive_grid(ax: Axes, axis: Literal["both", "x", "y"] = "x") -> None:
 def save(fig: Figure, directory: Path, stem: str, book: PdfPages) -> list[Path]:
     directory.mkdir(parents=True, exist_ok=True)
     written = [directory / f"{stem}{suffix}" for suffix in (".svg", ".pdf", ".png")]
-    fig.savefig(written[0])
-    fig.savefig(written[1])
+    fig.savefig(written[0], metadata={"Date": None})
+    fig.savefig(written[1], metadata={"CreationDate": None})
     fig.savefig(written[2], dpi=PNG_DPI)
     add_page = cast(Callable[[Figure], None], book.savefig)
     add_page(fig)
     return written
+
+
+def nice_limit(value: float, step: float) -> float:
+    """The smallest multiple of ``step`` at or above ``value``."""
+    return step * math.ceil(value / step)
 
 
 def vintage_note(results: Results) -> str:
@@ -223,9 +286,10 @@ def regions(catalog: pd.DataFrame) -> list[tuple[str, tuple[bool, bool, bool], l
 
 NULL_ROWS = (
     ("U1", "U1  uniform draw from all 189 cellulose-annotated matrix taxa"),
+    ("U2", "U2  uniform draw from the taxa reported in stool, either direction"),
     ("U3", "U3  uniform draw from the taxa ever reported decreased in stool"),
     ("U4", "U4  random trait placed on all stool-decreased taxa of the three conditions"),
-    ("U5", "U5  taxa weighted by how often other stool studies report them decreased"),
+    ("U5", "U5  U3 taxa weighted by how often other stool studies report them decreased"),
     ("U6", "U6  whole study signatures permuted (co-reported taxa stay together)"),
     ("U6_size_matched", "U6  as above, keeping draws whose set sizes match the observed"),
 )
@@ -277,7 +341,13 @@ def graphical_convergence(results: Results) -> Figure:
             f"(U6, {mc_p(u6['mean_pairwise_jaccard_distance']['p'], u6['iterations'])})."
         ),
     )
-    studies = stool_rows(results, "all_contrasts")
+    pairs = results.summary["four_highlighted_pairs"]
+    contributing = {
+        short: int(
+            pairs[f"{index}_{short}_Feces_Cellulose_dec"]["n_supporting_studies_in_target_dir"]
+        )
+        for index, short in enumerate(SHORT, start=1)
+    }
 
     # A. Network
     ax = fig.add_axes((0.015, 0.12, 0.30, 0.70))
@@ -328,17 +398,29 @@ def graphical_convergence(results: Results) -> Figure:
                 zorder=2,
             )
         )
-        n_studies = int(studies[short]["n_studies_dec"])
         ax.text(x, y + 0.045, short, ha="center", va="center", fontsize=13, fontweight="bold")
         ax.text(
             x,
             y - 0.035,
-            f"{observed['sizes'][short]} taxa\n{n_studies} studies",
+            f"{observed['sizes'][short]} taxa\nfrom {contributing[short]} studies",
             ha="center",
             va="center",
             fontsize=8.5,
             color=INK2,
         )
+    ax.text(
+        0.5,
+        -0.02,
+        wrap(
+            "Line width: Jaccard similarity of the pair. Studies: stool studies reporting at "
+            "least one of the condition's taxa decreased.",
+            62,
+        ),
+        ha="center",
+        va="top",
+        fontsize=7.5,
+        color=MUTED,
+    )
 
     # B. Venn regions
     ax = fig.add_axes((0.33, 0.12, 0.30, 0.70))
@@ -411,41 +493,36 @@ def graphical_convergence(results: Results) -> Figure:
     panel_title(ax, "C. Is the overlap unusual?")
     nulls = results.summary["null_models"]
     ys = np.arange(len(NULL_ROWS))[::-1]
+    lowest = min(
+        mean_d, *(nulls[key]["mean_pairwise_jaccard_distance"]["p2_5"] for key, _ in NULL_ROWS)
+    )
     for y, (key, text) in zip(ys, NULL_ROWS, strict=True):
         record = nulls[key]["mean_pairwise_jaccard_distance"]
         ax.plot([record["p2_5"], record["p97_5"]], [y, y], color=MUTED, linewidth=3, zorder=1)
         ax.plot(record["expected"], y, "o", color=INK2, markersize=7, zorder=2)
-        ax.text(
-            1.0,
-            y - 0.33,
-            mc_p(record["p"], nulls[key]["iterations"]),
-            ha="right",
-            va="top",
-            fontsize=8,
-            color=INK,
-        )
+        label = wrap(null_label(results, key, text), 34)
         ax.text(
             -0.03,
             y,
-            wrap(null_label(results, key, text), 34),
+            f"{label}\n{mc_p(record['p'], nulls[key]['iterations'])}",
             ha="right",
             va="center",
-            fontsize=7.6,
+            fontsize=7.4,
             color=INK2,
             transform=ax.get_yaxis_transform(),
         )
     ax.axvline(mean_d, color=INK, linewidth=1.6, zorder=3)
     ax.text(
         mean_d + 0.01,
-        len(NULL_ROWS) - 0.15,
+        len(NULL_ROWS) - 0.35,
         f"observed {mean_d:.3f}",
         ha="left",
         va="center",
         fontsize=8.5,
         fontweight="bold",
     )
-    ax.set_xlim(0.38, 1.0)
-    ax.set_ylim(-0.8, len(NULL_ROWS) + 0.2)
+    ax.set_xlim(math.floor((lowest - 0.03) * 20) / 20, 1.0)
+    ax.set_ylim(-0.6, len(NULL_ROWS) - 0.1)
     ax.set_yticks([])
     ax.spines["left"].set_visible(False)
     ax.set_xlabel("mean pairwise d_J under the null\n(dot: mean; bar: 95% of draws)", fontsize=8)
@@ -463,10 +540,18 @@ def graphical_convergence(results: Results) -> Figure:
     return fig
 
 
+def direct_core_text(results: Results) -> str:
+    direct = int(results.summary["core_taxa_with_direct_trait_edge"])
+    core = int(results.summary["observed"]["three_way_core"])
+    if direct == 0:
+        return f"none of the {core} core taxa has its own edge"
+    return f"{direct} of the {core} core taxa have their own edge"
+
+
 def core_taxa(catalog: pd.DataFrame) -> pd.DataFrame:
     core = catalog[catalog["is_3way_core"].astype(bool)].copy()
     core["total_dec"] = core[[f"{s}_dec_studies" for s in SHORT]].sum(axis=1)
-    core["group"] = np.where(core["is_direct_or_genus_species"].astype(bool), 0, 1)
+    core["group"] = np.where(core["taxonomic_rank"].isin(["genus", "species"]), 0, 1)
     return core.sort_values(["group", "total_dec", "taxon_name"], ascending=[True, False, True])
 
 
@@ -476,11 +561,27 @@ SENSITIVITY_LABELS = {
     "2_feces_dec_z_gt_0": "Profiles with cellulose z > 0 only",
     "7_feces_dec_disease_vs_healthy_oriented": "Disease-vs-healthy contrasts only",
     "8_feces_dec_disease_vs_healthy_strong": "Disease-vs-healthy, strong evidence",
+    "10_feces_dec_synonyms_merged": "Synonym condition labels counted",
+    "9_feces_dec_without_site_miscurations": "Without the rectal-mucosa study",
     "5_all_body_sites_dec": "All body sites, not only stool",
     "4_feces_net_decreased": "Net decreased (more dec than inc profiles)",
     "4b_feces_net_decreased_by_studies": "Net decreased (more dec than inc studies)",
-    "6_baseline_all_feces_dec_taxa": "Baseline: all stool-decreased taxa, any trait",
+    "6_baseline_all_feces_dec_taxa": "Reference, not a null: all stool-decreased taxa",
 }
+
+
+def reversed_examples(core: pd.DataFrame, limit: int = 2) -> str:
+    """Core taxa reported increased in more studies than decreased, largest margins first."""
+    examples = []
+    for row in records(core):
+        for short in SHORT:
+            margin = int(row[f"{short}_inc_studies"]) - int(row[f"{short}_dec_studies"])
+            if margin > 0:
+                examples.append((-margin, str(row["taxon_name"]), short))
+    if not examples:
+        return ""
+    shown = ", ".join(f"{name} in {short}" for _, name, short in sorted(examples)[:limit])
+    return f" (for example {shown})" if len(examples) > limit else f" ({shown})"
 
 
 def graphical_core(results: Results) -> Figure:
@@ -488,6 +589,7 @@ def graphical_core(results: Results) -> Figure:
     core = core_taxa(catalog)
     n_genus = int(core["group"].eq(0).sum())
     n_higher = int(core["group"].eq(1).sum())
+    n_direct = int(core["has_direct_trait_edge"].astype(bool).sum())
     net = core[core["is_strictly_net_decreased_all3"].astype(bool)]
     sens = results.sensitivity
     mean_rows = {
@@ -496,15 +598,20 @@ def graphical_core(results: Results) -> Figure:
     }
     gs_mean = float(mean_rows["3_feces_dec_genus_species"]["jaccard_distance"])
     fig = Figure(figsize=(15, 7.6))
+    direct_text = (
+        "none has its own annotation edge; each inherits it from annotated species or strains"
+        if n_direct == 0
+        else f"{n_direct} have their own annotation edge"
+    )
     header(
         fig,
         (
             f"The {len(core)} taxa reported decreased in stool in all three conditions: "
-            f"{n_genus} genera and {n_higher} higher-rank nodes"
+            f"{n_genus} genera and {n_higher} family-to-phylum nodes"
         ),
         (
-            f"{len(net)} of them had more decreased than increased stool studies in every "
-            "condition. "
+            f"Of the {len(core)}, {direct_text}. {len(net)} had more decreased than increased "
+            "stool studies in every condition. "
             f"Keeping only genus and species ranks gives mean d_J = {gs_mean:.3f}, close to the "
             f"primary {results.summary['observed']['mean_pairwise_jaccard_distance']:.3f}."
         ),
@@ -519,8 +626,10 @@ def graphical_core(results: Results) -> Figure:
     for y, slug, value in zip(ys, order, values, strict=True):
         primary = slug.startswith("1_")
         baseline = slug.startswith("6_")
-        color = INK if primary else (MUTED if baseline else "#9a9993")
-        ax.barh(y, value, height=0.62, color=color)
+        if baseline:
+            ax.barh(y, value, height=0.62, color="white", edgecolor=MUTED, hatch="///")
+        else:
+            ax.barh(y, value, height=0.62, color=INK if primary else "#9a9993")
         core_n = int(mean_rows[slug]["intersection"])
         union_n = int(mean_rows[slug]["union"])
         ax.text(
@@ -580,9 +689,9 @@ def graphical_core(results: Results) -> Figure:
         0.155,
         wrap(
             "Dot: blue when ↓ studies outnumber ↑, red when ↑ outnumber ↓, grey when equal. "
-            "Upper block: genera; lower block: family, order, class and phylum nodes, whose "
-            "annotations are rolled up from descendant taxa. Net ↓ = more decreased than "
-            "increased studies in every condition.",
+            "Upper block: genus rank; lower block: family, order, class and phylum. A taxon "
+            "bears the annotation when it or a descendant has the KG edge. Net ↓ = more "
+            "decreased than increased studies in every condition.",
             92,
         ),
         ha="left",
@@ -594,33 +703,60 @@ def graphical_core(results: Results) -> Figure:
         fig,
         "A taxon is in a condition's set when at least one decreased stool signature reports it; "
         "the counts in B show that some core taxa are also reported increased, sometimes more "
-        "often (for example Oscillospiraceae in PD and Bacteroidota in CRC). "
-        f"{vintage_note(results)}",
+        f"often{reversed_examples(core)}. Hatched bar in A: every stool-decreased taxon whatever "
+        "its traits, for scale only; it is not a null model (U4 in the null-model figure tests "
+        f"the cellulose set against it). {vintage_note(results)}",
     )
     return fig
 
 
+def untied(row: Mapping[str, Any], unit: str) -> tuple[int, int]:
+    if unit == "experiment":
+        return int(row["paired_exp_down_dec_gt_inc"]), int(row["paired_exp_up_inc_gt_dec"])
+    return int(row["study_down"]), int(row["study_up"])
+
+
 def graphical_compartments(results: Results) -> Figure:
-    fig = Figure(figsize=(15, 7.4))
+    fig = Figure(figsize=(15, 8.2))
     pooled = compartment_row(results, "all_contrasts", "Feces", "Pooled")
     if pooled is None:
         raise ValueError("no pooled stool row in the compartment table")
+    crc_gi = compartment_row(results, "all_contrasts", NON_FECAL_GI, "CRC")
+    other_sites = [
+        (row["short_condition"], row["compartment"], sum(untied(row, "experiment")))
+        for row in records(
+            results.compartments[
+                results.compartments["contrast_population"].eq("all_contrasts")
+                & ~results.compartments["compartment"].eq("Feces")
+                & results.compartments["short_condition"].isin(SHORT)
+            ]
+        )
+    ]
+    largest = max(other_sites, key=lambda item: item[2])
+    lean = ""
+    if crc_gi is not None and float(crc_gi["share_down_untied"]) < 0.5:
+        gi_down, gi_up = untied(crc_gi, "experiment")
+        lean = f" CRC GI mucosa / lumen leans the other way ({gi_down}↓ {gi_up}↑)."
+    exp_down, exp_up = untied(pooled, "experiment")
+    study_down, study_up = untied(pooled, "study")
     header(
         fig,
-        "The decreased-over-increased shift is clearest in stool; other sites have too few "
-        "comparisons to judge",
+        "The cellulose annotation share is larger in the decreased signature, most clearly in "
+        "stool",
         (
-            f"Across PD, HIV and CRC stool, {int(pooled['paired_exp_down_dec_gt_inc'])} of "
-            f"{int(pooled['paired_exp_down_dec_gt_inc'] + pooled['paired_exp_up_inc_gt_dec'])} "
-            "untied paired experiments had the larger cellulose annotation share in the decreased "
-            f"signature (p = {sci(pooled['binom_p_two_sided'])}); outside stool most strata have "
-            "fewer than six untied pairs."
+            f"Across PD, HIV and CRC stool, {exp_down} of {exp_down + exp_up} untied paired "
+            f"experiments (p = {sci(pooled['binom_p_two_sided'])}) and {study_down} of "
+            f"{study_down + study_up} untied studies "
+            f"(p = {sci(pooled['study_binom_p_two_sided'])}) "
+            f"had the larger cellulose annotation share in the decreased signature.{lean} Outside "
+            f"stool the largest single-condition stratum is {largest[0]} "
+            f"{COMPARTMENT_LABEL[str(largest[1])]} with {largest[2]} untied pairs."
         ),
     )
 
     # A. Butterfly of experiment counts
-    ax = fig.add_axes((0.15, 0.17, 0.38, 0.60))
-    panel_title(ax, "A. Paired experiments: decreased signature larger (↓) or smaller (↑)")
+    ax = fig.add_axes((0.165, 0.17, 0.30, 0.60))
+    panel_title(ax, "A. Paired experiments with the larger share in ↓ or ↑ signature")
     strata: list[tuple[str, str, dict[str, Any]]] = []
     for compartment in ("Feces", NON_FECAL_GI, ORAL, OTHER):
         names = (
@@ -641,17 +777,17 @@ def graphical_compartments(results: Results) -> Figure:
             gap += 0.7
         positions.append(y - gap)
         previous = compartment
-    limit = 120
+    widest = max(max(untied(row, "experiment")) for _, _, row in strata)
+    limit = nice_limit(widest * 1.12, 10)
     for y, (compartment, short, row) in zip(positions, strata, strict=True):
-        down = int(row["paired_exp_down_dec_gt_inc"])
-        up = int(row["paired_exp_up_inc_gt_dec"])
+        down, up = untied(row, "experiment")
         ax.barh(y, -down, height=0.6, color=DOWN)
         ax.barh(y, up, height=0.6, color=UP)
-        ax.text(-down - 2, y, str(down), ha="right", va="center", fontsize=8, color=INK)
-        ax.text(up + 2, y, str(up), ha="left", va="center", fontsize=8, color=INK)
+        ax.text(-down - limit / 60, y, str(down), ha="right", va="center", fontsize=8, color=INK)
+        ax.text(up + limit / 60, y, str(up), ha="left", va="center", fontsize=8, color=INK)
         label = "All three" if short == "Pooled" else short
         ax.text(
-            -limit - 4,
+            -limit * 1.03,
             y,
             f"{COMPARTMENT_LABEL[compartment]} · {label}",
             ha="right",
@@ -659,45 +795,75 @@ def graphical_compartments(results: Results) -> Figure:
             fontsize=8.5,
             fontweight="bold" if short == "Pooled" else "normal",
         )
-        study = f"studies {int(row['study_down'])}↓ {int(row['study_up'])}↑"
-        detail = f"p = {sci(row['binom_p_two_sided'])} · {study}"
-        if row["min_attainable_binom_p_two_sided"] > 0.05:
-            detail = f"{study} · too few pairs for p < 0.05"
-        ax.text(limit + 4, y, detail, ha="left", va="center", fontsize=7.8, color=INK2)
+        s_down, s_up = untied(row, "study")
+        lines = []
+        if float(row["min_attainable_binom_p_two_sided"]) > 0.05:
+            lines.append(f"studies {s_down}↓ {s_up}↑ · too few pairs for p < 0.05")
+        else:
+            lines.append(f"experiments p = {sci(row['binom_p_two_sided'])}")
+            study_p = (
+                "too few studies for p < 0.05"
+                if s_down + s_up == 0 or 2 * 0.5 ** (s_down + s_up) > 0.05
+                else f"p = {sci(row['study_binom_p_two_sided'])}"
+            )
+            lines.append(f"studies {s_down}↓ {s_up}↑ · {study_p}")
+        if compartment == "Feces":
+            healthy = compartment_row(results, "disease_vs_healthy_oriented", "Feces", short)
+            if healthy is not None:
+                h_down, h_up = untied(healthy, "study")
+                lines.append(
+                    f"disease vs healthy studies {h_down}↓ {h_up}↑, "
+                    f"p = {sci(healthy['study_binom_p_two_sided'])}"
+                )
+        ax.text(
+            limit * 1.03,
+            y,
+            "\n".join(lines),
+            ha="left",
+            va="center",
+            fontsize=7.2,
+            color=INK2,
+            linespacing=1.15,
+        )
     ax.axvline(0, color=INK, linewidth=0.8)
     ax.set_xlim(-limit, limit)
     ax.set_ylim(min(positions) - 0.7, max(positions) + 0.7)
     ax.set_yticks([])
     ax.spines["left"].set_visible(False)
-    ax.set_xticks([-100, -50, 0, 50, 100])
-    ax.set_xticklabels(["100", "50", "0", "50", "100"])
-    ax.set_xlabel("untied paired experiments (← decreased larger · increased larger →)")
+    step = 50 if limit >= 100 else (20 if limit >= 40 else 10)
+    reach = step * math.floor(limit / step)
+    ticks = [float(tick) for tick in np.arange(-reach, reach + step, step)]
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([f"{abs(tick):.0f}" for tick in ticks])
+    ax.set_xlabel("untied paired experiments (← larger in decreased · larger in increased →)")
     recessive_grid(ax)
 
     # B. Stool versus GI mucosa/lumen
-    inter = results.interaction
-    ax = fig.add_axes((0.845, 0.51, 0.14, 0.24))
+    ax = fig.add_axes((0.845, 0.50, 0.14, 0.30))
     panel_title(ax, "B. Stool vs GI\nmucosa / lumen")
     chosen = [
-        ("CRC", "experiment", "all_contrasts", "CRC · experiments"),
-        ("CRC", "study", "all_contrasts", "CRC · studies"),
-        ("Pooled", "experiment", "all_contrasts", "All three · experiments"),
-        ("Pooled", "study", "all_contrasts", "All three · studies"),
-        ("CRC", "experiment", "disease_vs_healthy_oriented", "CRC · disease vs healthy"),
+        ("CRC", "experiment", "all_contrasts", "CRC · all · experiments"),
+        ("CRC", "study", "all_contrasts", "CRC · all · studies"),
+        ("CRC", "experiment", "disease_vs_healthy_oriented", "CRC · disease vs healthy · exp."),
+        ("CRC", "study", "disease_vs_healthy_oriented", "CRC · disease vs healthy · studies"),
+        (POOLED_STRATIFIED, "experiment", "all_contrasts", "All three, stratified · exp."),
+        (POOLED_STRATIFIED, "study", "all_contrasts", "All three, stratified · studies"),
     ]
+    picked = [
+        interaction_row(results, population, short, unit) for short, unit, population, _ in chosen
+    ]
+    finite_high = [float(row["conditional_or_ci95_high"]) for row in picked]
+    finite_high = [value for value in finite_high if math.isfinite(value)]
+    finite_low = [float(row["conditional_or_ci95_low"]) for row in picked]
+    x_max = 10 ** math.ceil(math.log10(max([*finite_high, 10.0]) * 1.2))
+    x_min = min(0.5, 10 ** math.floor(math.log10(max(min([*finite_low, 1.0]), 1e-3))))
     ys = np.arange(len(chosen))[::-1]
-    for y, (short, unit, population, label) in zip(ys, chosen, strict=True):
-        row = only(
-            inter[
-                inter["short_condition"].eq(short)
-                & inter["unit"].eq(unit)
-                & inter["contrast_population"].eq(population)
-                & inter["compartment_b"].eq(NON_FECAL_GI)
-            ]
-        )
+    for y, (_, _, _, label), row in zip(ys, chosen, picked, strict=True):
         low = float(row["conditional_or_ci95_low"])
         high = float(row["conditional_or_ci95_high"])
-        ax.plot([low, min(high, 400)], [y, y], color=MUTED, linewidth=2.5)
+        ax.plot([max(low, x_min), min(high, x_max)], [y, y], color=MUTED, linewidth=2.5)
+        if not math.isfinite(high):
+            ax.plot(x_max, y, ">", color=MUTED, markersize=5, clip_on=False)
         ax.plot(row["conditional_or"], y, "o", color=INK, markersize=6)
         ax.text(
             -0.05,
@@ -705,15 +871,17 @@ def graphical_compartments(results: Results) -> Figure:
             f"{label}\np = {sci(row['fisher_p_two_sided'])}",
             ha="right",
             va="center",
-            fontsize=7.8,
+            fontsize=7.4,
             transform=ax.get_yaxis_transform(),
         )
     ax.axvline(1, color=INK2, linewidth=0.8, linestyle="--")
     ax.set_xscale("log")
-    ax.set_xlim(0.5, 400)
+    ax.set_xlim(x_min, x_max)
     ax.set_yticks([])
     ax.spines["left"].set_visible(False)
-    ax.set_xlabel("odds ratio, ↓ share stool vs GI\n(exact 95% interval)", fontsize=8)
+    ax.set_xlabel(
+        "odds ratio of the ↓ share, stool vs GI\n(log scale; exact 95% interval)", fontsize=8
+    )
     recessive_grid(ax)
 
     # C. Sampling effort
@@ -741,15 +909,37 @@ def graphical_compartments(results: Results) -> Figure:
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
 
+    exact_hiv = scenario_row(results, "exact_labels", "disease_vs_healthy_oriented", "HIV", "study")
+    merged_hiv = scenario_row(
+        results, "synonyms_merged", "disease_vs_healthy_oriented", "HIV", "study"
+    )
+    art_hiv = scenario_row(
+        results, "synonyms_hiv_minus_vs_plus_and_art", "disease_vs_healthy_oriented", "HIV", "study"
+    )
+    gi_all = compartment_row(results, "all_contrasts", NON_FECAL_GI, "CRC")
+    gi_healthy = compartment_row(results, "disease_vs_healthy_oriented", NON_FECAL_GI, "CRC")
+    gi_note = ""
+    if gi_all is not None and gi_healthy is not None:
+        gi_note = (
+            f"only {int(gi_healthy['paired_experiments'])} of {int(gi_all['paired_experiments'])} "
+            "paired CRC mucosa/lumen experiments compare patients with controls, "
+        )
     footnote(
         fig,
         "Paired experiment: one BugSigDB experiment with both an increased and a decreased "
         "signature; the share compared is cellulose annotations over all retained non-MediaDive "
-        "annotations. Ties excluded. Study rows take the sign of each study's mean paired "
-        "difference. The Fisher tests treat units as independent; a few studies sampled both "
-        "compartments, and the sites differ in sampling effort (C), so a difference between "
-        "compartments is not evidence of anatomical specificity. "
-        f"{vintage_note(results)}",
+        "annotations. Ties excluded; p-values are two-sided sign tests, nominal. Study rows take "
+        "the sign of each study's mean paired difference. HIV depends on which experiments count: "
+        f"disease vs healthy studies {int(exact_hiv['down'])}↓ {int(exact_hiv['up'])}↑ "
+        f"(p = {sci(exact_hiv['binom_p_two_sided'])}) with exact labels, "
+        f"{int(merged_hiv['down'])}↓ {int(merged_hiv['up'])}↑ "
+        f"(p = {sci(merged_hiv['binom_p_two_sided'])}) with synonym labels, "
+        f"{int(art_hiv['down'])}↓ {int(art_hiv['up'])}↑ (p = {sci(art_hiv['binom_p_two_sided'])}) "
+        "when HIV-negative-vs-positive and treated contrasts are added "
+        "(condition_definition_sensitivity.tsv). The B tests treat units as independent, "
+        f"{gi_note}and the sites differ in sampling effort (C), so a difference between "
+        f"compartments is not evidence of anatomical specificity. {vintage_note(results)}",
+        width=178,
     )
     return fig
 
@@ -794,12 +984,14 @@ def graphical_benchmark(results: Results) -> Figure:
     ax = fig.add_axes((0.05, 0.16, 0.33, 0.62))
     panel_title(ax, f"A. Mean pairwise d_J of all {n_traits} traits")
     values = [float(row["mean_pairwise_jaccard_distance"]) for row in rows]
-    bins = [round(0.30 + 0.02 * step, 2) for step in range(31)]
+    start = math.floor(min(values) * 50) / 50
+    stop = math.ceil(max(values) * 50) / 50
+    bins = [round(start + 0.02 * step, 2) for step in range(round((stop - start) / 0.02) + 1)]
     ax.hist(values, bins=bins, color="#c9c8c2", edgecolor="white")
     median = float(np.median(values))
     ax.axvline(median, color=INK2, linestyle="--", linewidth=1)
     top_y = ax.get_ylim()[1]
-    ax.text(0.735, top_y * 0.95, f"dashed: median {median:.3f}", fontsize=8.5, color=INK2)
+    ax.text(median + 0.006, top_y * 0.95, f"dashed: median {median:.3f}", fontsize=8.5, color=INK2)
     for row, height in ((first, 0.55), (cell, 0.97)):
         value = float(row["mean_pairwise_jaccard_distance"])
         ax.axvline(value, color=INK, linewidth=1.6)
@@ -839,14 +1031,16 @@ def graphical_benchmark(results: Results) -> Figure:
     for label, row in zip(ax.get_yticklabels(), top, strict=True):
         if row["trait_id"] == results.summary["trait_id"]:
             label.set_fontweight("bold")
-    ax.set_xlim(0, 0.85)
+    ax.set_xlim(
+        0, nice_limit(max(float(row["mean_pairwise_jaccard_distance"]) for row in top) + 0.2, 0.1)
+    )
     ax.set_xlabel("mean pairwise Jaccard distance (lower = more overlap)")
     recessive_grid(ax)
     footnote(
         fig,
-        "Trait names are the object_name labels in data/derived/taxa_trait_matrix_columns.tsv. "
-        "Excluded: MediaDive growth-medium columns (METPO:2000517|mediadive.medium:*). Several "
-        "listed traits are morphology or temperature classes, not metabolic processes. "
+        "Trait names are the object_name labels in data/derived/taxa_trait_matrix_columns.tsv; "
+        "a predicate other than 'capable of' is shown before the name. Excluded: MediaDive "
+        "growth-medium columns (METPO:2000517|mediadive.medium:*). "
         f"{vintage_note(results)}",
     )
     return fig
@@ -871,13 +1065,25 @@ def detailed_nulls(results: Results) -> Figure:
     nulls = results.summary["null_models"]
     observed = results.summary["observed"]
     fig = Figure(figsize=(15, 9.8))
+
+    def mean_p(key: str) -> str:
+        return mc_p(nulls[key]["mean_pairwise_jaccard_distance"]["p"], nulls[key]["iterations"])
+
+    def core_p(key: str) -> str:
+        return mc_p(nulls[key]["three_way_core"]["p"], nulls[key]["iterations"])
+
+    independent = max(
+        float(nulls[key]["mean_pairwise_jaccard_distance"]["p"]) for key in ("U1", "U2", "U3", "U4")
+    )
     header(
         fig,
         "Overlap of stool-decreased cellulose-annotated taxa against six null models",
         (
-            f"Nulls that draw taxa independently (U1{DASH}U4) make the overlap look extreme; nulls "
-            "that respect how often taxa are reported (U5) and which taxa are reported together "
-            "(U6) do not."
+            f"Against nulls that draw taxa independently (U1{DASH}U4) the mean overlap is "
+            f"extreme (every p ≤ {sci(independent)}). Weighting taxa by how often other stool "
+            f"studies report them (U5) weakens it (mean {mean_p('U5')}; core {core_p('U5')}); "
+            "permuting whole study signatures (U6) removes it "
+            f"(mean {mean_p('U6')}; core {core_p('U6')})."
         ),
     )
     # A. Table graphic: expected d_J and p for each comparison and null
@@ -926,7 +1132,7 @@ def detailed_nulls(results: Results) -> Figure:
                     0.9 / n_cols,
                     0.15,
                     boxstyle="round,pad=0.002",
-                    facecolor="#dde9f8" if strong else FAINT,
+                    facecolor=SIGNIFICANT_FILL if strong else FAINT,
                     edgecolor="none",
                     transform=ax.transAxes,
                 )
@@ -945,10 +1151,10 @@ def detailed_nulls(results: Results) -> Figure:
         0.125,
         0.475,
         wrap(
-            "Observed values are in the first column. Shaded blue: p < 0.05. "
+            "Observed values are in the first column. Shaded sand: p < 0.05 (nominal). "
             f"U1{DASH}U3 pair p-values are exact hypergeometric tails; all other p are Monte "
             "Carlo. U4 places a random trait on the taxa reported decreased in stool in the "
-            "three conditions; U5 weights taxa by "
+            "three conditions; U5 draws from the U3 taxa weighted by "
             "their reporting frequency in other stool studies; U6 permutes whole study signatures.",
             150,
         ),
@@ -994,7 +1200,8 @@ def detailed_nulls(results: Results) -> Figure:
         fontsize=8.5,
         fontweight="bold",
     )
-    ax.set_xlim(0, 30)
+    widest = max(core, *(nulls[key]["three_way_core"]["p97_5"] for key, _ in keys))
+    ax.set_xlim(0, nice_limit(widest * 1.25, 5))
     ax.set_ylim(-0.7, len(keys) + 0.2)
     ax.set_yticks([])
     ax.spines["left"].set_visible(False)
@@ -1034,8 +1241,8 @@ def detailed_nulls(results: Results) -> Figure:
         )
     footnote(
         fig,
-        "Names are KG-Microbe matrix taxon names; family-and-above nodes carry annotations rolled "
-        f"up from descendants. {vintage_note(results)}",
+        "Names are KG-Microbe matrix taxon names. A taxon bears the annotation when it or a "
+        f"descendant has the KG edge; {direct_core_text(results)}. {vintage_note(results)}",
     )
     return fig
 
@@ -1060,21 +1267,31 @@ def detailed_compartments(results: Results) -> Figure:
         ),
     )
     ax = fig.add_axes((0.22, 0.42, 0.40, 0.45))
-    panel_title(ax, "A. Share of untied units with the decreased signature larger")
+    panel_title(ax, "A. Share of untied units whose decreased signature has the larger share")
     rows = []
     for compartment in ("Feces", NON_FECAL_GI, ORAL, OTHER):
         for short in ("PD", "HIV", "CRC", "Pooled"):
             rows.append((compartment, short))
     ys = np.arange(len(rows))[::-1].astype(float)
+    # Series differ by marker shape and fill, not by the direction colours.
     markers = (
-        ("all_contrasts", "experiment", "o", INK, "all contrasts · experiments"),
-        ("all_contrasts", "study", "s", "#9a9993", "all contrasts · studies"),
+        ("all_contrasts", "experiment", "o", INK, INK, "all contrasts · experiments"),
+        ("all_contrasts", "study", "s", "#9a9993", "#9a9993", "all contrasts · studies"),
         (
             "disease_vs_healthy_oriented",
             "experiment",
             "D",
-            DOWN,
+            INK,
+            "white",
             "disease vs healthy · experiments",
+        ),
+        (
+            "disease_vs_healthy_oriented",
+            "study",
+            "^",
+            "#9a9993",
+            "white",
+            "disease vs healthy · studies",
         ),
     )
     for y, (compartment, short) in zip(ys, rows, strict=True):
@@ -1088,24 +1305,33 @@ def detailed_compartments(results: Results) -> Figure:
             fontsize=8.3,
             transform=ax.get_yaxis_transform(),
         )
-        for offset, (population, unit, marker, color, _) in zip(
-            (0.22, 0.0, -0.22), markers, strict=True
+        for offset, (population, unit, marker, color, fill, _) in zip(
+            (0.27, 0.09, -0.09, -0.27), markers, strict=True
         ):
             row = compartment_row(results, population, compartment, short)
             if row is None:
                 continue
-            if unit == "experiment":
-                down, up = (
-                    int(row["paired_exp_down_dec_gt_inc"]),
-                    int(row["paired_exp_up_inc_gt_dec"]),
-                )
-            else:
-                down, up = int(row["study_down"]), int(row["study_up"])
+            down, up = untied(row, unit)
             share, low, high = share_interval(down, up)
             if math.isnan(share):
                 continue
-            ax.plot([low, high], [y + offset, y + offset], color=color, linewidth=1.2, alpha=0.8)
-            ax.plot(share, y + offset, marker, color=color, markersize=4.5)
+            ax.plot(
+                [low, high],
+                [y + offset, y + offset],
+                color=color,
+                linewidth=1.2,
+                alpha=0.8,
+                clip_on=False,
+            )
+            ax.plot(
+                share,
+                y + offset,
+                marker,
+                color=color,
+                markerfacecolor=fill,
+                markersize=4.5,
+                clip_on=False,
+            )
             if population == "all_contrasts" and unit == "experiment":
                 ax.text(
                     1.03,
@@ -1122,19 +1348,24 @@ def detailed_compartments(results: Results) -> Figure:
     ax.set_ylim(-0.7, len(rows) - 0.3)
     ax.set_yticks([])
     ax.spines["left"].set_visible(False)
-    ax.set_xlabel("share of untied units with decreased signature larger")
+    ax.set_xlabel(
+        "share of untied units in which the decreased signature has the larger "
+        "cellulose annotation share"
+    )
     recessive_grid(ax)
     handles = [
-        Line2D([], [], marker=marker, color=color, linestyle="none", label=text)
-        for _, _, marker, color, text in markers
+        Line2D(
+            [], [], marker=marker, color=color, markerfacecolor=fill, linestyle="none", label=text
+        )
+        for _, _, marker, color, fill, text in markers
     ]
     ax.legend(
         handles=handles,
         loc="lower left",
         fontsize=7.6,
         frameon=False,
-        bbox_to_anchor=(0.0, -0.2),
-        ncol=3,
+        bbox_to_anchor=(0.0, -0.22),
+        ncol=2,
     )
 
     # B. Sensitivity table
@@ -1147,8 +1378,9 @@ def detailed_compartments(results: Results) -> Figure:
     xs = (0.50, 0.61, 0.72, 0.83, 0.95)
     for x, text in zip(xs, headers, strict=True):
         ax.text(x, 0.99, text, ha="center", va="top", fontsize=8, fontweight="bold")
+    step = 0.86 / len(order)
     for i, slug in enumerate(order):
-        y = 0.88 - i * 0.095
+        y = 0.88 - i * step
         part = sens[sens["definition_slug"].eq(slug)]
         ax.text(0.40, y, wrap(SENSITIVITY_LABELS[slug], 34), ha="right", va="center", fontsize=7.6)
         for x, comparison in zip(xs[:3], ("PD vs. HIV", "PD vs. CRC", "HIV vs. CRC"), strict=True):
@@ -1172,24 +1404,41 @@ def detailed_compartments(results: Results) -> Figure:
             va="center",
             fontsize=8,
         )
+    compared = ["n_a", "n_b", "intersection", "union"]
+    same_sets = (
+        sens.loc[sens["definition_slug"].eq("7_feces_dec_disease_vs_healthy_oriented"), compared]
+        .to_numpy()
+        .tolist()
+        == sens.loc[sens["definition_slug"].eq("8_feces_dec_disease_vs_healthy_strong"), compared]
+        .to_numpy()
+        .tolist()
+    )
+    if same_sets:
+        ax.text(
+            0.0,
+            0.0,
+            "The two disease-vs-healthy definitions give the same sets.",
+            ha="left",
+            va="top",
+            fontsize=7.4,
+            color=MUTED,
+        )
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
 
     # C. Interaction tests
     inter = results.interaction
     ax = fig.add_axes((0.22, 0.115, 0.40, 0.18))
-    panel_title(
-        ax,
-        "C. Stool against each other compartment (odds ratio of the ↓ share, exact 95% interval)",
-    )
+    panel_title(ax, "C. Stool against each other compartment, all contrasts")
     picked = inter[
         inter["contrast_population"].eq("all_contrasts")
-        & inter["short_condition"].isin(["CRC", "Pooled"])
+        & inter["short_condition"].isin(["CRC", POOLED_STRATIFIED])
     ]
     entries = records(picked)
     ys = np.arange(len(entries))[::-1]
+    x_min, x_max = 0.01, 1000.0
     for y, row in zip(ys, entries, strict=True):
-        name = "All three" if row["short_condition"] == "Pooled" else "CRC"
+        name = "All three, stratified" if row["short_condition"] == POOLED_STRATIFIED else "CRC"
         ax.text(
             -0.04,
             y,
@@ -1206,21 +1455,28 @@ def detailed_compartments(results: Results) -> Figure:
         )
         estimate = float(row["conditional_or"])
         if math.isnan(estimate):
-            ax.text(
-                0.6, y, "not estimable (no untied pairs)", va="center", fontsize=7.4, color=MUTED
-            )
-            continue
-        low = max(float(row["conditional_or_ci95_low"]), 0.011)
-        high = min(float(row["conditional_or_ci95_high"]), 990.0)
-        ax.plot([low, high], [y, y], color=MUTED, linewidth=2)
-        if math.isinf(estimate):
-            ax.plot(990, y, ">", color=INK, markersize=5)
-            counts += " · OR unbounded (no ↑ outside stool)"
-        elif estimate == 0:
-            ax.plot(0.011, y, "<", color=INK, markersize=5)
-            counts += " · OR 0"
+            counts = f"{counts} · not estimable (no untied pairs outside stool)"
         else:
-            ax.plot(estimate, y, "o", color=INK, markersize=4.5)
+            low = float(row["conditional_or_ci95_low"])
+            high = float(row["conditional_or_ci95_high"])
+            ax.plot([max(low, x_min), min(high, x_max)], [y, y], color=MUTED, linewidth=2)
+            if high > x_max:
+                ax.plot(x_max, y, ">", color=MUTED, markersize=5, clip_on=False)
+            if low < x_min:
+                ax.plot(x_min, y, "<", color=MUTED, markersize=5, clip_on=False)
+            if math.isinf(estimate) or estimate == 0:
+                edge = x_max if math.isinf(estimate) else x_min
+                ax.plot(
+                    edge,
+                    y,
+                    ">" if math.isinf(estimate) else "<",
+                    color=INK,
+                    markersize=5,
+                    clip_on=False,
+                )
+                counts += f" · {zero_cell(row)}"
+            else:
+                ax.plot(estimate, y, "o", color=INK, markersize=4.5)
         ax.text(
             1.02,
             y,
@@ -1233,9 +1489,14 @@ def detailed_compartments(results: Results) -> Figure:
         )
     ax.axvline(1, color=INK2, linestyle="--", linewidth=0.8)
     ax.set_xscale("log")
-    ax.set_xlim(0.01, 1000)
+    ax.set_xlim(x_min, x_max)
     ax.set_yticks([])
     ax.spines["left"].set_visible(False)
+    ax.set_xlabel(
+        "odds ratio of the ↓ share, stool vs the other site (log scale; exact 95% interval; "
+        "arrows: beyond the axis)",
+        fontsize=8,
+    )
     recessive_grid(ax)
     footnote(
         fig,
@@ -1243,6 +1504,8 @@ def detailed_compartments(results: Results) -> Figure:
         "vote per study. Disease-vs-healthy rows keep experiments the contrast manifest classifies "
         "disease_vs_healthy, relabelled so decreased means lower in disease. Intervals are exact "
         f"(Clopper{DASH}Pearson for shares; conditional maximum likelihood for odds ratios). "
+        "Stratified rows test a common odds ratio across PD, HIV and CRC, so the conditions' "
+        "different sampling of the sites does not enter the estimate. "
         f"{vintage_note(results)}",
     )
     return fig
@@ -1304,7 +1567,9 @@ def detailed_core_and_benchmark(results: Results) -> Figure:
         flags = []
         if row["is_3way_core"]:
             flags.append("core")
-        if row["is_direct_or_genus_species"]:
+        if row["has_direct_trait_edge"]:
+            flags.append("direct")
+        if row["taxonomic_rank"] in ("genus", "species"):
             flags.append("g/s")
         if row["is_strictly_net_decreased_all3"]:
             flags.append("net↓")
@@ -1317,8 +1582,10 @@ def detailed_core_and_benchmark(results: Results) -> Figure:
         0.20,
         wrap(
             "Panel A fill: blue where decreased studies outnumber increased, red where the "
-            "reverse, darker with a larger difference. core = in all three sets; g/s = genus or "
-            "species rank; net↓ = more decreased than increased studies in all three conditions.",
+            "reverse, darker with a larger difference. core = in all three sets; direct = the "
+            "taxon has its own annotation edge (otherwise it inherits it from descendants); "
+            "g/s = genus or species rank; net↓ = more decreased than increased studies in all "
+            "three conditions.",
             80,
         ),
         ha="left",
@@ -1329,7 +1596,11 @@ def detailed_core_and_benchmark(results: Results) -> Figure:
     bench = results.benchmark
     biological = bench[~bench["is_growth_medium"].astype(bool)].reset_index(drop=True)
     ax = fig.add_axes((0.70, 0.30, 0.28, 0.56))
-    panel_title(ax, f"B. Fifteen lowest of {len(biological)} non-MediaDive traits")
+    panel_title(
+        ax,
+        f"B. Fifteen lowest of {len(biological)} non-MediaDive traits\n"
+        "(descriptive, not a test; traits share taxa)",
+    )
     top = records(biological.head(15))
     ys = np.arange(len(top))[::-1]
     for y, row in zip(ys, top, strict=True):
@@ -1341,13 +1612,16 @@ def detailed_core_and_benchmark(results: Results) -> Figure:
         ax.text(value + 0.012, y, f"{value:.3f}", va="center", fontsize=7.6)
     ax.set_yticks(ys)
     ax.set_yticklabels([trait_display(row) for row in top], fontsize=7.8)
-    ax.set_xlim(0, 0.8)
+    ax.set_xlim(
+        0, nice_limit(max(float(row["mean_pairwise_jaccard_distance"]) for row in top) + 0.1, 0.1)
+    )
     ax.set_xlabel("mean pairwise Jaccard distance")
     recessive_grid(ax)
     footnote(
         fig,
-        "Trait names come from taxa_trait_matrix_columns.tsv (object_name). Family-and-above "
-        f"nodes carry rolled-up annotations. {vintage_note(results)}",
+        "Trait names come from taxa_trait_matrix_columns.tsv (object_name). A taxon bears an "
+        "annotation when it or a descendant has the KG edge. "
+        f"{vintage_note(results)}",
     )
     return fig
 
@@ -1375,13 +1649,35 @@ def main(argv: Sequence[str] | None = None) -> int:
         "figures_graphical": "cellulose_decr_graphical_figures.pdf",
         "figures": "cellulose_decr_figures.pdf",
     }
+    outputs: list[str] = []
     for folder, entries in plates.items():
-        with PdfPages(args.analysis_dir / combined[folder]) as book:
+        with PdfPages(
+            args.analysis_dir / combined[folder], metadata={"CreationDate": None}
+        ) as book:
             for stem, draw in entries:
                 fig = draw(results)
                 written = save(fig, args.analysis_dir / folder, stem, book)
+                outputs.extend(f"{folder}/{path.name}" for path in written)
                 print(f"wrote {', '.join(path.name for path in written)}")
+        outputs.append(combined[folder])
+    tables = sorted(
+        path.name for path in args.analysis_dir.iterdir() if path.suffix in (".tsv", ".json")
+    )
+    provenance = {
+        "script": "data/analysis/cellulose_decr/scripts/cellulose_decr_figures.py",
+        "script_sha256": sha256(Path(__file__).resolve()),
+        "matplotlib": matplotlib.__version__,
+        "inputs": {name: sha256(args.analysis_dir / name) for name in tables},
+        "outputs": sorted(outputs),
+    }
+    (args.analysis_dir / "figures" / "figures_provenance.json").write_text(
+        json.dumps(provenance, indent=1) + "\n", encoding="utf-8"
+    )
     return 0
+
+
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 if __name__ == "__main__":

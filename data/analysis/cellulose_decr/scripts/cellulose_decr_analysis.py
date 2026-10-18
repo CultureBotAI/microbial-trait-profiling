@@ -14,6 +14,10 @@ label. ``--label-source study_modal`` reproduces those outputs; the default,
 ``experiment``, takes labels from ``data/derived/experiments.tsv``, which matches
 ``data/raw/full_dump.csv`` for every experiment.
 
+Inputs live in gitignored ``data/`` directories that other work regenerates, so a
+run stops when an input's hash differs from the committed provenance or the
+contrast manifest came from another classifier version (#562).
+
 The counts are annotation counts of curated signature taxa, not measurements of
 patients, cells or pathway activity (methods/biological_interpretation.md).
 """
@@ -21,12 +25,13 @@ patients, cells or pathway activity (methods/biological_interpretation.md).
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import itertools
 import json
 import math
 import re
 import sys
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -36,17 +41,54 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import scipy
-from scipy import stats
+from scipy import optimize, special, stats
 
 from mtp.composition_denominators import load_retained_profiles, trait_fractions
+from mtp.contrast_orientation import CLASSIFIER_VERSION
 from mtp.paths import file_sha256
 
 ANALYSIS_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = Path(__file__).resolve().parents[4]
+PINNED_PROVENANCE = ANALYSIS_DIR / "cellulose_decr_provenance.json"
 
 TRAIT_ID = "METPO:2000103|GO:0030245"
 HALOPHILIC_ID = "METPO:1000623"
 CONDITIONS = {"PD": "Parkinson's disease", "HIV": "HIV infection", "CRC": "Colorectal cancer"}
+# Other BugSigDB labels for the same three diseases (#561). The primary analysis
+# keeps the exact labels; the "synonyms merged" sensitivity and
+# ``--condition-labels synonyms`` count these experiments under their disease.
+CONDITION_SYNONYMS = {
+    "PD": (),
+    "HIV": ("HIV-1 infection", "Human immunodeficiency virus"),
+    "CRC": (
+        "Colorectal carcinoma",
+        "Colorectal adenocarcinoma",
+        "Metastatic colorectal cancer",
+        "Colon carcinoma",
+    ),
+}
+# Labels that name one of the diseases, listed in the summary with their status so
+# no exclusion is silent. Adenoma, stromal tumour, mother-to-child transmission,
+# simian virus and cell-line labels are different conditions and stay out.
+NEAR_LABEL_PATTERN = re.compile(
+    r"parkinson|\bhiv\b|immunodeficiency virus|colorectal|colon carc", re.I
+)
+# Curated "Feces" whose paper sampled something else (#566); excluded in a sensitivity.
+SITE_MISCURATIONS = {
+    "bsdb:24451087": (
+        "McHardy et al. 2013: rectal mucosa collected with a sponge, curated as Feces"
+    ),
+}
+# HIV experiments the contrast classifier does not call disease-vs-healthy although
+# they compare people with and without HIV (#569); counted in sensitivities only.
+HIV_RECLASSIFIED = {
+    ("bsdb:33102244", "bsdb:33102244-1"): "HIV- vs HIV+ (classified disease_vs_disease)",
+}
+HIV_ON_ART = {
+    ("bsdb:29411528", "bsdb:29411528-5"): "HAART-treated HIV+ vs controls (treatment_exposure)",
+    ("bsdb:38383483", "bsdb:38383483-3"): "PLWH on ART vs PLWOH (treatment_exposure)",
+    ("bsdb:39880958", "bsdb:39880958-1"): "PLWH on ART vs HIV- (treatment_exposure)",
+}
 SHORT = list(CONDITIONS)
 PAIRS = list(itertools.combinations(SHORT, 2))
 FECES = "Feces"
@@ -73,12 +115,14 @@ INPUTS = {
     "trait_columns": "data/derived/taxa_trait_matrix_columns.tsv",
     "contrast_manifest": "data/derived/contrast_orientation/contrast_manifest.tsv",
     "full_dump": "data/raw/full_dump.csv",
+    "kg_edges": "data/kg-microbe/merged-kg_edges.tsv",
 }
 
-# Body sites outside exact "Feces" are grouped by keyword. Oral terms are checked
-# first, then sites that are clearly not gastrointestinal, then GI terms; anything
-# else, including multi-site labels such as "Feces,Blood", is "Other non-GI".
-# The mapping actually applied to the three conditions is written to the summary.
+# Body sites outside exact "Feces" are grouped by keyword. Multi-site labels such
+# as "Feces,Blood" or "Oral cavity,Feces" are "Other non-GI"; for single sites,
+# oral terms are checked first, then sites that are clearly not gastrointestinal,
+# then GI terms, and anything else is "Other non-GI". The mapping actually applied
+# to the three conditions is written to the summary.
 ORAL_TERMS = (
     "saliva",
     "oral",
@@ -156,6 +200,18 @@ class Corpus:
     trait_labels: pd.DataFrame
     manifest: pd.DataFrame
     label_source: str
+    condition_labels: str = "exact"
+
+
+SYNONYM_TO_CONDITION = {
+    label: CONDITIONS[short] for short, labels in CONDITION_SYNONYMS.items() for label in labels
+}
+
+
+def merge_synonyms(conditions: pd.Series) -> pd.Series:
+    """Condition labels with CONDITION_SYNONYMS replaced by their canonical label."""
+    merged: pd.Series = conditions.replace(SYNONYM_TO_CONDITION)
+    return merged
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -173,12 +229,29 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="experiment",
         help="Where each profile's condition and body site come from (see module docstring).",
     )
+    parser.add_argument(
+        "--condition-labels",
+        choices=("exact", "synonyms"),
+        default="exact",
+        help="Keep the exact condition labels, or also count CONDITION_SYNONYMS (#561).",
+    )
     parser.add_argument("--permutations", type=int, default=100_000)
     parser.add_argument("--seed", type=int, default=20261017)
     parser.add_argument(
         "--code-commit",
         default="unrecorded",
         help="Revision of this script, e.g. $(git rev-parse HEAD) with +dirty when modified.",
+    )
+    parser.add_argument(
+        "--pinned-provenance",
+        type=Path,
+        default=PINNED_PROVENANCE,
+        help="Provenance whose input hashes this run must match (default: the committed one).",
+    )
+    parser.add_argument(
+        "--allow-input-drift",
+        action="store_true",
+        help="Run even when an input's hash differs from --pinned-provenance (#562).",
     )
     return parser.parse_args(argv)
 
@@ -196,6 +269,8 @@ def compartment_of(body_site: str) -> str:
     site = body_site.strip().lower()
     if site == FECES.lower():
         return FECES
+    if "," in site:
+        return OTHER
     if any(term in site for term in ORAL_TERMS):
         return ORAL
     if any(term in site for term in NON_GI_TERMS):
@@ -205,7 +280,9 @@ def compartment_of(body_site: str) -> str:
     return OTHER
 
 
-def load_corpus(paths: Mapping[str, Path], label_source: str) -> Corpus:
+def load_corpus(
+    paths: Mapping[str, Path], label_source: str, condition_labels: str = "exact"
+) -> Corpus:
     metadata = read_tsv(paths["profile_metadata"], index_col=0)
     metadata.index.name = "profile_id"
     metadata["total_trait_signal"] = pd.to_numeric(metadata["total_trait_signal"])
@@ -233,6 +310,8 @@ def load_corpus(paths: Mapping[str, Path], label_source: str) -> Corpus:
         profiles = labelled[[*keys, "inc_dec", "condition", "body_site"]].copy()
     else:
         profiles = metadata[[*keys, "inc_dec", "condition", "body_site"]].copy()
+    if condition_labels == "synonyms":
+        profiles["condition"] = merge_synonyms(profiles["condition"])
     profiles["compartment"] = profiles["body_site"].map(compartment_of)
 
     # Annotation share over all retained non-MediaDive columns, aligned by key, and
@@ -261,7 +340,13 @@ def load_corpus(paths: Mapping[str, Path], label_source: str) -> Corpus:
 
     trait_labels = read_tsv(paths["trait_columns"]).set_index("column_id")
     manifest = read_tsv(paths["contrast_manifest"]).set_index(keys)
-    return Corpus(profiles, taxa, matrix, trait_labels, manifest, label_source)
+    versions = set(manifest["classifier_version"])
+    if versions != {CLASSIFIER_VERSION}:
+        raise ValueError(
+            f"contrast manifest written by {sorted(versions)}, but this checkout's "
+            f"classifier is {CLASSIFIER_VERSION}; rerun `just contrast-orientation`"
+        )
+    return Corpus(profiles, taxa, matrix, trait_labels, manifest, label_source, condition_labels)
 
 
 def msm_mentioned(manifest: pd.DataFrame) -> pd.Series:
@@ -300,6 +385,33 @@ def population(corpus: Corpus, name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     taxa = corpus.taxa[corpus.taxa["profile_id"].isin(kept.index)]
     taxa = taxa.assign(dir=taxa["profile_id"].map(kept["dir"]).to_numpy())
     return kept, taxa
+
+
+def reclassified(corpus: Corpus, keys: Iterable[tuple[str, str]]) -> Corpus:
+    """The corpus with the given experiments counted as disease-vs-healthy contrasts."""
+    manifest = corpus.manifest.copy()
+    chosen = list(keys)
+    missing = [key for key in chosen if key not in manifest.index]
+    if missing:
+        raise ValueError(f"reclassified experiments missing from the manifest: {missing}")
+    index = pd.MultiIndex.from_tuples(chosen, names=["study_id", "experiment_id"])
+    manifest.loc[index, "contrast_class"] = "disease_vs_healthy"
+    return dataclasses.replace(corpus, manifest=manifest)
+
+
+def without_studies(corpus: Corpus, studies: Iterable[str]) -> Corpus:
+    """The corpus without every profile of the given studies."""
+    dropped = set(studies)
+    profiles = corpus.profiles[~corpus.profiles["study_id"].isin(dropped)]
+    taxa = corpus.taxa[corpus.taxa["profile_id"].isin(profiles.index)]
+    return dataclasses.replace(corpus, profiles=profiles, taxa=taxa)
+
+
+def with_synonyms(corpus: Corpus) -> Corpus:
+    """The corpus with CONDITION_SYNONYMS counted under their disease."""
+    profiles = corpus.profiles.assign(condition=merge_synonyms(corpus.profiles["condition"]))
+    taxa = corpus.taxa.assign(condition=merge_synonyms(corpus.taxa["condition"]))
+    return dataclasses.replace(corpus, profiles=profiles, taxa=taxa, condition_labels="synonyms")
 
 
 # --------------------------------------------------------------------------- sets
@@ -664,6 +776,22 @@ def paired_deltas(profiles: pd.DataFrame) -> pd.Series:
     return wide["inc"] - wide["dec"]
 
 
+def study_votes(deltas: pd.Series, rule: str = "mean") -> pd.Series:
+    """One signed value per study: its mean delta, or its majority of experiment signs.
+
+    Under ``majority`` a study votes -1 (down) when more of its untied experiments
+    are down than up, +1 in the reverse case, and 0 on a tie.
+    """
+    by_study = deltas.groupby(level="study_id")
+    if rule == "mean":
+        means: pd.Series = by_study.mean()
+        return means
+    votes: pd.Series = by_study.agg(
+        lambda values: int(np.sign((values > 0).sum() - (values < 0).sum()))
+    )
+    return votes.astype(float)
+
+
 def direction_row(
     profiles: pd.DataFrame, taxa: pd.DataFrame, cellulose: set[str], share: float
 ) -> dict[str, Any]:
@@ -671,7 +799,8 @@ def direction_row(
     inc = profiles[profiles["dir"].eq("inc")]
     deltas = paired_deltas(profiles)
     experiment = sign_tests(deltas)
-    study = sign_tests(deltas.groupby(level="study_id").mean())
+    study = sign_tests(study_votes(deltas))
+    vote = sign_tests(study_votes(deltas, "majority"))
     untied = int(experiment["down"]) + int(experiment["up"])
     nan = float("nan")
     mwu_one = (
@@ -726,13 +855,17 @@ def direction_row(
         "study_mean_delta_inc_minus_dec": study["mean_delta"],
         "study_binom_p_two_sided": study["binom_p_two_sided"],
         "study_wilcoxon_p_two_sided": study["wilcoxon_p_two_sided"],
+        "study_majority_down": vote["down"],
+        "study_majority_up": vote["up"],
+        "study_majority_tied": vote["tied"],
+        "study_majority_binom_p_two_sided": vote["binom_p_two_sided"],
         "min_attainable_binom_p_two_sided": min_p,
         "binom_power_at_pooled_feces_share": power,
         "power_note": note,
     }
 
 
-def compartment_table(corpus: Corpus, cellulose: set[str], universe_n: int) -> pd.DataFrame:
+def compartment_table(corpus: Corpus, cellulose: set[str]) -> pd.DataFrame:
     rows = []
     for name in (*POPULATIONS, NO_MSM):
         profiles, taxa = population(corpus, name)
@@ -748,6 +881,7 @@ def compartment_table(corpus: Corpus, cellulose: set[str], universe_n: int) -> p
             defined = [value for value in distances if not math.isnan(value)]
             core = set.intersection(*sets.values())
             union = set.union(*sets.values())
+            in_compartment = set(taxa.loc[taxa["compartment"].eq(compartment), "taxon_id"])
             shared = {
                 "compartment_pairs_with_both_sets": len(defined),
                 "compartment_mean_pairwise_jaccard_distance": (
@@ -755,7 +889,8 @@ def compartment_table(corpus: Corpus, cellulose: set[str], universe_n: int) -> p
                 ),
                 "compartment_3way_shared_taxa": len(core),
                 "compartment_union_taxa": len(union),
-                "compartment_cellulose_universe_N": universe_n,
+                # Cellulose taxa reported in this compartment, any condition or direction.
+                "compartment_cellulose_universe_N": len(in_compartment & cellulose),
             }
             strata = [(short, [full]) for short, full in CONDITIONS.items()]
             strata.append((POOLED, list(CONDITIONS.values())))
@@ -778,12 +913,127 @@ def compartment_table(corpus: Corpus, cellulose: set[str], universe_n: int) -> p
     return pd.DataFrame(rows)
 
 
+def log_choose(n: int, k: IntArray) -> FloatArray:
+    result: FloatArray = (
+        special.gammaln(n + 1) - special.gammaln(k + 1) - special.gammaln(n - k + 1)
+    )
+    return result
+
+
+def stratified_exact(tables: Sequence[Sequence[Sequence[int]]]) -> dict[str, float]:
+    """Exact conditional inference on a common odds ratio over 2 x 2 strata.
+
+    Given every stratum's margins, the top-left counts are independent Fisher
+    noncentral hypergeometric variables, and their sum is sufficient for a common
+    odds ratio. Returns the Mantel-Haenszel estimate, the conditional maximum-
+    likelihood estimate with its exact central 95% interval, and the two-sided
+    p-value at an odds ratio of 1 (outcomes no more probable than the observed
+    one, as in ``scipy.stats.fisher_exact``). With one stratum the estimate and
+    interval equal ``scipy.stats.contingency.odds_ratio``.
+    """
+    strata: list[tuple[int, int, int, int, int]] = []
+    observed = 0
+    mh_numerator = mh_denominator = 0.0
+    for table in tables:
+        (a, b), (c, d) = table
+        total = a + b + c + d
+        if total == 0:
+            continue
+        mh_numerator += a * d / total
+        mh_denominator += b * c / total
+        first_row, first_column = a + b, a + c
+        low = max(0, first_row - (total - first_column))
+        high = min(first_row, first_column)
+        if low < high:
+            strata.append((total, first_column, first_row, low, high))
+            observed += a
+    nan = float("nan")
+    if mh_denominator:
+        mantel_haenszel = mh_numerator / mh_denominator
+    else:
+        mantel_haenszel = math.inf if mh_numerator else nan
+    if not strata:
+        return {
+            "mantel_haenszel_or": mantel_haenszel,
+            "conditional_or": nan,
+            "low": nan,
+            "high": nan,
+            "p": nan,
+        }
+
+    def distribution(log_odds: float) -> tuple[FloatArray, int]:
+        dist: FloatArray = np.array([1.0])
+        offset = 0
+        for total, first_column, first_row, low, high in strata:
+            support = np.arange(low, high + 1)
+            log_weight = (
+                log_choose(first_column, support)
+                + log_choose(total - first_column, first_row - support)
+                + support * log_odds
+            )
+            weight = np.exp(log_weight - log_weight.max())
+            dist = np.convolve(dist, weight / weight.sum())
+            offset += low
+        return dist, offset
+
+    null, offset = distribution(0.0)
+    smallest, largest = offset, offset + null.size - 1
+    p_observed = null[observed - offset]
+    p_value = float(min(1.0, null[null <= p_observed * (1 + 1e-7)].sum()))
+
+    def mean(log_odds: float) -> float:
+        dist, start = distribution(log_odds)
+        return float((np.arange(start, start + dist.size) * dist).sum())
+
+    def upper_tail(log_odds: float) -> float:
+        dist, start = distribution(log_odds)
+        return float(dist[observed - start :].sum())
+
+    def lower_tail(log_odds: float) -> float:
+        dist, start = distribution(log_odds)
+        return float(dist[: observed - start + 1].sum())
+
+    def solve(function: Callable[[float], float], target: float) -> float:
+        return float(np.exp(optimize.brentq(lambda x: function(x) - target, -50, 50)))
+
+    if observed == smallest:
+        estimate, low_ci, high_ci = 0.0, 0.0, solve(lower_tail, 0.025)
+    elif observed == largest:
+        estimate, low_ci, high_ci = math.inf, solve(upper_tail, 0.025), math.inf
+    else:
+        estimate = solve(mean, observed)
+        low_ci, high_ci = solve(upper_tail, 0.025), solve(lower_tail, 0.025)
+    return {
+        "mantel_haenszel_or": mantel_haenszel,
+        "conditional_or": estimate,
+        "low": low_ci,
+        "high": high_ci,
+        "p": p_value,
+    }
+
+
+def direction_counts(deltas: pd.Series, unit: str) -> list[int]:
+    """[down, up] untied units of a paired-delta series, per experiment or per study."""
+    values = deltas if unit == "experiment" else study_votes(deltas)
+    return [int((values < 0).sum()), int((values > 0).sum())]
+
+
+POOLED_STRATIFIED = "Pooled, stratified by condition"
+
+
 def interaction_table(corpus: Corpus) -> pd.DataFrame:
-    """Fisher's exact test of direction x compartment, Feces against each other compartment."""
+    """Fisher's exact test of direction x compartment, Feces against each other compartment.
+
+    The crude pooled rows add the three conditions' tables, so they mix condition with
+    compartment when the conditions sample the compartments unevenly. The stratified
+    rows test a common odds ratio across the conditions instead.
+    """
     rows = []
+    nan = float("nan")
     for name in (ALL_CONTRASTS, ORIENTED):
         profiles, _ = population(corpus, name)
         target = profiles[profiles["condition"].isin(CONDITIONS.values())]
+        by_condition: dict[tuple[str, str], list[list[list[int]]]] = {}
         strata = [(short, [full]) for short, full in CONDITIONS.items()]
         strata.append(("Pooled", list(CONDITIONS.values())))
         for short, members in strata:
@@ -792,57 +1042,84 @@ def interaction_table(corpus: Corpus) -> pd.DataFrame:
             for other in COMPARTMENTS[1:]:
                 rest = in_condition[in_condition["compartment"].eq(other)]
                 for unit in ("experiment", "study"):
-                    a_d = paired_deltas(feces)
-                    b_d = paired_deltas(rest)
-                    if unit == "study":
-                        a_d = a_d.groupby(level="study_id").mean()
-                        b_d = b_d.groupby(level="study_id").mean()
                     table = [
-                        [int((a_d < 0).sum()), int((a_d > 0).sum())],
-                        [int((b_d < 0).sum()), int((b_d > 0).sum())],
+                        direction_counts(paired_deltas(feces), unit),
+                        direction_counts(paired_deltas(rest), unit),
                     ]
+                    if short != "Pooled":
+                        by_condition.setdefault((other, unit), []).append(table)
                     usable = sum(table[1]) > 0 and sum(table[0]) > 0
-                    odds, p = stats.fisher_exact(table) if usable else (float("nan"), float("nan"))
-                    conditional, low, high = float("nan"), float("nan"), float("nan")
+                    odds, p = stats.fisher_exact(table) if usable else (nan, nan)
+                    conditional, low, high = nan, nan, nan
                     if usable:
                         estimate = stats.contingency.odds_ratio(table)
                         interval = estimate.confidence_interval()
                         conditional = float(estimate.statistic)
                         low, high = float(interval.low), float(interval.high)
                     shared = set(feces["study_id"]) & set(rest["study_id"])
+                    note = "tied pairs excluded; counts treat each unit as independent"
+                    if short == "Pooled":
+                        note += "; crude pooling mixes condition with compartment"
+                    if shared:
+                        note += "; some studies sampled both compartments"
                     rows.append(
-                        {
-                            "contrast_population": name,
-                            "condition": "Pooled (PD + HIV + CRC)"
-                            if short == "Pooled"
-                            else CONDITIONS[short],
-                            "short_condition": short,
-                            "unit": unit,
-                            "compartment_a": FECES,
-                            "compartment_b": other,
-                            "a_down": table[0][0],
-                            "a_up": table[0][1],
-                            "b_down": table[1][0],
-                            "b_up": table[1][1],
-                            "a_share_down": table[0][0] / sum(table[0])
-                            if sum(table[0])
-                            else float("nan"),
-                            "b_share_down": table[1][0] / sum(table[1])
-                            if sum(table[1])
-                            else float("nan"),
+                        interaction_row(name, short, unit, other, table)
+                        | {
                             "odds_ratio": float(odds),
                             "conditional_or": conditional,
                             "conditional_or_ci95_low": low,
                             "conditional_or_ci95_high": high,
                             "fisher_p_two_sided": float(p),
                             "studies_in_both_compartments": len(shared),
-                            "note": (
-                                "tied pairs excluded; counts treat each unit as independent"
-                                + ("; some studies sampled both compartments" if shared else "")
-                            ),
+                            "note": note,
                         }
                     )
+        for (other, unit), tables in by_condition.items():
+            exact = stratified_exact(tables)
+            summed = [
+                [sum(table[0][0] for table in tables), sum(table[0][1] for table in tables)],
+                [sum(table[1][0] for table in tables), sum(table[1][1] for table in tables)],
+            ]
+            rows.append(
+                interaction_row(name, POOLED_STRATIFIED, unit, other, summed)
+                | {
+                    "odds_ratio": exact["mantel_haenszel_or"],
+                    "conditional_or": exact["conditional_or"],
+                    "conditional_or_ci95_low": exact["low"],
+                    "conditional_or_ci95_high": exact["high"],
+                    "fisher_p_two_sided": exact["p"],
+                    "studies_in_both_compartments": nan,
+                    "note": (
+                        "exact conditional test of a common odds ratio across PD, HIV and CRC; "
+                        "odds_ratio is the Mantel-Haenszel estimate; tied pairs excluded"
+                    ),
+                }
+            )
     return pd.DataFrame(rows)
+
+
+def interaction_row(
+    population_name: str, short: str, unit: str, other: str, table: Sequence[Sequence[int]]
+) -> dict[str, Any]:
+    nan = float("nan")
+    condition = {
+        "Pooled": "Pooled (PD + HIV + CRC)",
+        POOLED_STRATIFIED: "Pooled (PD + HIV + CRC), stratified by condition",
+    }.get(short, CONDITIONS.get(short, short))
+    return {
+        "contrast_population": population_name,
+        "condition": condition,
+        "short_condition": short,
+        "unit": unit,
+        "compartment_a": FECES,
+        "compartment_b": other,
+        "a_down": table[0][0],
+        "a_up": table[0][1],
+        "b_down": table[1][0],
+        "b_up": table[1][1],
+        "a_share_down": table[0][0] / sum(table[0]) if sum(table[0]) else nan,
+        "b_share_down": table[1][0] / sum(table[1]) if sum(table[1]) else nan,
+    }
 
 
 # --------------------------------------------------------------------------- tables
@@ -1020,8 +1297,33 @@ def net_decreased(taxa: pd.DataFrame, universe: set[str], unit: str) -> dict[str
     return result
 
 
+def direct_trait_subjects(edges: Path, trait: str) -> set[str]:
+    """NCBITaxon subjects with a KG edge ``predicate -> object`` for a matrix trait column.
+
+    Matrix counts include every annotated taxon at or below a node, so a genus can
+    bear a trait only through its species or strains; this edge list separates
+    direct annotation from inheritance (#565).
+    """
+    predicate, object_id = trait.split("|", 1)
+    subjects = set()
+    with edges.open(encoding="utf-8") as handle:
+        for line in handle:
+            if object_id not in line:
+                continue
+            fields = line.rstrip("\n").split("\t")
+            if (
+                fields[2] == predicate
+                and fields[3] == object_id
+                and fields[1].startswith("NCBITaxon:")
+            ):
+                subjects.add(fields[1])
+    if not subjects:
+        raise ValueError(f"no {predicate} -> {object_id} edges in {edges}")
+    return subjects
+
+
 def catalog_table(
-    taxa: pd.DataFrame, matrix: pd.DataFrame, sets: Mapping[str, set[str]]
+    taxa: pd.DataFrame, matrix: pd.DataFrame, sets: Mapping[str, set[str]], direct: set[str]
 ) -> pd.DataFrame:
     union = set.union(*sets.values())
     feces = taxa[taxa["compartment"].eq(FECES) & taxa["taxon_id"].isin(union)]
@@ -1046,7 +1348,10 @@ def catalog_table(
                 chosen = mine[mine["dir"].eq(direction)]
                 row[f"{short}_{direction}_studies"] = chosen["study_id"].nunique()
                 row[f"{short}_{direction}_profiles"] = chosen["profile_id"].nunique()
-        row["is_direct_or_genus_species"] = row["taxonomic_rank"] in GENUS_SPECIES
+        row["has_direct_trait_edge"] = taxon in direct
+        row["is_direct_or_genus_species"] = (
+            row["has_direct_trait_edge"] or row["taxonomic_rank"] in GENUS_SPECIES
+        )
         row["is_strictly_net_decreased_all3"] = all(
             row[f"{short}_dec_studies"] > row[f"{short}_inc_studies"] for short in SHORT
         )
@@ -1055,10 +1360,10 @@ def catalog_table(
         )
         if not row["is_3way_core"]:
             row["core_class"] = "not in 3-way core"
-        elif row["is_direct_or_genus_species"]:
-            row["core_class"] = "3-way core, genus or species"
+        elif row["taxonomic_rank"] in GENUS_SPECIES:
+            row["core_class"] = "3-way core, genus or species rank"
         else:
-            row["core_class"] = "3-way core, higher-rank node (rolled-up annotation)"
+            row["core_class"] = "3-way core, family-to-phylum rank"
         rows.append(row)
     frame = pd.DataFrame(rows)
     frame["total_dec_studies"] = frame[[f"{short}_dec_studies" for short in SHORT]].sum(axis=1)
@@ -1449,15 +1754,21 @@ def interaction_summary_rows(interaction: pd.DataFrame) -> list[dict[str, Any]]:
     rows = []
     chosen = interaction[
         interaction["compartment_b"].eq(NON_FECAL_GI)
-        & interaction["short_condition"].isin(["CRC", "Pooled"])
-        & interaction["contrast_population"].eq(ALL_CONTRASTS)
+        & interaction["short_condition"].isin(["CRC", POOLED_STRATIFIED])
     ]
     for _, row in chosen.iterrows():
+        stratified = row["short_condition"] == POOLED_STRATIFIED
+        slug = "pooled_stratified" if stratified else row["short_condition"]
+        population_name = row["contrast_population"]
+        estimate = (
+            f"common odds ratio (conditional MLE) = {row['conditional_or']:.2f} "
+            f"(95% CI {row['conditional_or_ci95_low']:.2f}-{row['conditional_or_ci95_high']:.2f})"
+        )
         rows.append(
             {
                 "result_category": "3_compartment_interaction",
-                "test_id": f"fisher_feces_vs_gi_{row['short_condition']}_{row['unit']}",
-                "contrast_population": row["contrast_population"],
+                "test_id": f"fisher_feces_vs_gi_{slug}_{row['unit']}_{population_name}",
+                "contrast_population": population_name,
                 "unit_of_observation": "paired experiment"
                 if row["unit"] == "experiment"
                 else "study (mean delta)",
@@ -1466,18 +1777,35 @@ def interaction_summary_rows(interaction: pd.DataFrame) -> list[dict[str, Any]]:
                     f"Feces {row['a_down']} down : {row['a_up']} up vs "
                     f"GI {row['b_down']} down : {row['b_up']} up"
                 ),
-                "null_or_reference_expectation": "same down share in both compartments",
-                "effect_size_metric": f"odds ratio = {row['odds_ratio']:.2f}",
+                "null_or_reference_expectation": (
+                    "common odds ratio 1 across conditions (exact conditional test)"
+                    if stratified
+                    else "same down share in both compartments (Fisher's exact test)"
+                ),
+                "effect_size_metric": estimate,
                 "p_value": row["fisher_p_two_sided"],
                 "significance_tier": tier(row["fisher_p_two_sided"]),
                 "summary_interpretation": (
                     "Direction differs between stool and GI mucosa/lumen samples; units are "
-                    "treated as independent and sampling effort differs, so this is not a "
+                    "treated as independent, most CRC mucosa/lumen experiments do not compare "
+                    "patients with controls, and sampling effort differs, so this is not a "
                     "test of anatomical specificity."
                 ),
             }
         )
     return rows
+
+
+def benjamini_hochberg(p_values: pd.Series) -> pd.Series:
+    """BH-adjusted p-values over the non-missing entries; NaN stays NaN."""
+    values = p_values.astype(float)
+    present = values.dropna()
+    order = present.sort_values()
+    ranked = order * len(order) / np.arange(1, len(order) + 1)
+    adjusted = np.minimum.accumulate(ranked.to_numpy()[::-1])[::-1].clip(max=1.0)
+    result = pd.Series(np.nan, index=values.index)
+    result.loc[order.index] = adjusted
+    return result
 
 
 # --------------------------------------------------------------------------- output
@@ -1558,12 +1886,212 @@ def label_corrections(paths: Mapping[str, Path]) -> pd.DataFrame:
     return merged[differs & touches].sort_values(keys).reset_index(drop=True)
 
 
+def label_inventory(paths: Mapping[str, Path], corpus: Corpus, dump: pd.DataFrame) -> pd.DataFrame:
+    """Every human condition label naming one of the three diseases, with its status (#561).
+
+    Counts are of retained human experiments (every one has a retained profile).
+    """
+    experiments = read_tsv(paths["experiments"])
+    retained = corpus.profiles[["study_id", "experiment_id"]].drop_duplicates()
+    human = experiments.merge(retained, on=["study_id", "experiment_id"], validate="one_to_one")
+    named = human[human["condition"].str.contains(NEAR_LABEL_PATTERN)]
+    ontology_ids = dump.groupby("Condition")["EFO ID"].agg(lambda ids: ", ".join(sorted(set(ids))))
+    rows = []
+    for label, group in named.groupby("condition"):
+        label = str(label)
+        if label in CONDITIONS.values():
+            status = "exact label (primary analysis)"
+        elif label in SYNONYM_TO_CONDITION:
+            status = f"synonym of {SYNONYM_TO_CONDITION[label]} (sensitivity only)"
+        elif "," in label:
+            status = "multi-condition label (excluded)"
+        else:
+            status = "different condition (excluded)"
+        rows.append(
+            {
+                "condition_label": label,
+                "ontology_ids": ontology_ids.get(label, ""),
+                "status": status,
+                "studies": group["study_id"].nunique(),
+                "experiments": len(group),
+                "feces_experiments": int(group["body_site"].eq(FECES).sum()),
+            }
+        )
+    frame = pd.DataFrame(rows)
+    return frame.sort_values(["status", "experiments"], ascending=[True, False]).reset_index(
+        drop=True
+    )
+
+
+def u6_units(
+    profiles: pd.DataFrame, taxa: pd.DataFrame, cellulose: set[str]
+) -> tuple[BoolArray, IntArray, dict[str, int], pd.DataFrame]:
+    """U6 units: one per study and condition with a feces decreased profile."""
+    feces_taxa = taxa[taxa["compartment"].eq(FECES)]
+    dec_feces_profiles = profiles[profiles["compartment"].eq(FECES) & profiles["dir"].eq("dec")]
+    units = (
+        dec_feces_profiles[["study_id", "condition"]]
+        .drop_duplicates()
+        .sort_values(["study_id", "condition"])
+    )
+    u3_taxa = sorted(set(feces_taxa.loc[feces_taxa["dir"].eq("dec"), "taxon_id"]) & cellulose)
+    unit_taxa = (
+        feces_taxa[feces_taxa["dir"].eq("dec") & feces_taxa["taxon_id"].isin(cellulose)]
+        .groupby(["study_id", "condition"])["taxon_id"]
+        .agg(set)
+    )
+    unit_matrix = np.zeros((len(units), len(u3_taxa)), dtype=bool)
+    position = {taxon: index for index, taxon in enumerate(u3_taxa)}
+    for row, unit in enumerate(units.itertuples(index=False, name=None)):
+        for taxon in unit_taxa.get(unit, set()):
+            unit_matrix[row, position[taxon]] = True
+    unit_study = pd.factorize(units["study_id"], sort=True)[0].astype(np.int64)
+    unit_counts = {
+        short: int(units["condition"].eq(full).sum()) for short, full in CONDITIONS.items()
+    }
+    return unit_matrix, unit_study, unit_counts, units
+
+
+def scenario_corpora(corpus: Corpus) -> list[tuple[str, str, Corpus]]:
+    """Condition and contrast definitions that change which experiments count (#561, #566)."""
+    merged = with_synonyms(corpus)
+    return [
+        ("exact_labels", "Exact condition labels (primary analysis)", corpus),
+        ("synonyms_merged", "Synonym labels counted under their disease", merged),
+        (
+            "hiv_minus_vs_plus_counted",
+            "Exact labels; the HIV- vs HIV+ experiment counted as disease vs healthy",
+            reclassified(corpus, HIV_RECLASSIFIED),
+        ),
+        (
+            "synonyms_and_hiv_minus_vs_plus",
+            "Synonyms counted and the HIV- vs HIV+ experiment counted",
+            reclassified(merged, HIV_RECLASSIFIED),
+        ),
+        (
+            "synonyms_hiv_minus_vs_plus_and_art",
+            "Synonyms, the HIV- vs HIV+ experiment and three HIV+ on ART vs uninfected counted",
+            reclassified(merged, [*HIV_RECLASSIFIED, *HIV_ON_ART]),
+        ),
+        (
+            "without_site_miscurations",
+            "Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)",
+            without_studies(corpus, SITE_MISCURATIONS),
+        ),
+    ]
+
+
+def scenario_tables(
+    corpus: Corpus, cellulose: set[str], permutations: int, seed: int
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Feces direction and cross-condition overlap under each scenario of scenario_corpora."""
+    direction_rows: list[dict[str, Any]] = []
+    overlap_rows: list[dict[str, Any]] = []
+    for slug, label, scenario in scenario_corpora(corpus):
+        for name in (ALL_CONTRASTS, ORIENTED):
+            profiles, _ = population(scenario, name)
+            feces = profiles[profiles["compartment"].eq(FECES)]
+            strata = [(short, [full]) for short, full in CONDITIONS.items()]
+            strata.append(("Pooled", list(CONDITIONS.values())))
+            for short, members in strata:
+                deltas = paired_deltas(feces[feces["condition"].isin(members)])
+                for unit, values in (("experiment", deltas), ("study", study_votes(deltas))):
+                    tests = sign_tests(values)
+                    direction_rows.append(
+                        {
+                            "scenario": slug,
+                            "scenario_label": label,
+                            "contrast_population": name,
+                            "short_condition": short,
+                            "unit": unit,
+                            "down": tests["down"],
+                            "up": tests["up"],
+                            "tied": tests["tied"],
+                            "share_down_untied": tests["share_down_untied"],
+                            "binom_p_two_sided": tests["binom_p_two_sided"],
+                            "wilcoxon_p_two_sided": tests["wilcoxon_p_two_sided"],
+                        }
+                    )
+        profiles, taxa = population(scenario, ALL_CONTRASTS)
+        sets = condition_sets(taxa, cellulose)
+        summary = set_summary(sets)
+        feces_taxa = taxa[taxa["compartment"].eq(FECES)]
+        u3 = len(set(feces_taxa.loc[feces_taxa["dir"].eq("dec"), "taxon_id"]) & cellulose)
+        exact = three_way_exact(
+            u3, [len(sets[short]) for short in SHORT], summary["three_way_core"]
+        )
+        unit_matrix, unit_study, unit_counts, _ = u6_units(profiles, taxa, cellulose)
+        u6 = signature_null(
+            np.random.default_rng(seed), unit_matrix, unit_study, unit_counts, permutations
+        ).summary(summary)
+        overlap_rows.append(
+            {
+                "scenario": slug,
+                "scenario_label": label,
+                **{f"n_{short}": len(sets[short]) for short in SHORT},
+                **{
+                    f"intersection_{a}_{b}": summary["intersections"][f"{a} vs. {b}"]
+                    for a, b in PAIRS
+                },
+                "three_way_core": summary["three_way_core"],
+                "three_way_union": summary["three_way_union"],
+                "mean_pairwise_jaccard_distance": summary["mean_pairwise_jaccard_distance"],
+                "u3_N": u3,
+                "u3_three_way_exact_p": exact["p_3way_exact"],
+                **{f"u6_units_{short}": unit_counts[short] for short in SHORT},
+                "u6_expected_mean_jaccard_distance": u6["mean_pairwise_jaccard_distance"][
+                    "expected"
+                ],
+                "u6_mean_jaccard_distance_p": u6["mean_pairwise_jaccard_distance"]["p"],
+                "u6_expected_core": u6["three_way_core"]["expected"],
+                "u6_core_p": u6["three_way_core"]["p"],
+            }
+        )
+    return pd.DataFrame(direction_rows), pd.DataFrame(overlap_rows)
+
+
+def input_hashes(paths: Mapping[str, Path]) -> dict[str, dict[str, Any]]:
+    return {
+        key: {"path": INPUTS[key], "sha256": file_sha256(path), "bytes": path.stat().st_size}
+        for key, path in paths.items()
+    }
+
+
+def check_input_drift(
+    hashes: Mapping[str, Mapping[str, Any]], pinned_path: Path, allow: bool
+) -> list[str]:
+    """Inputs whose hash differs from the pinned provenance; raises unless ``allow``.
+
+    Inputs the pinned provenance does not list are new, not drifted.
+    """
+    if not pinned_path.exists():
+        return []
+    pinned = json.loads(pinned_path.read_text(encoding="utf-8")).get("inputs", {})
+    drifted = [
+        key
+        for key, value in hashes.items()
+        if key in pinned and pinned[key]["sha256"] != value["sha256"]
+    ]
+    if drifted and not allow:
+        details = "; ".join(
+            f"{key}: {pinned[key]['sha256'][:12]} pinned, {hashes[key]['sha256'][:12]} now"
+            for key in drifted
+        )
+        raise ValueError(
+            f"inputs differ from {pinned_path}: {details}. Rebuild them at the pinned "
+            "versions, or pass --allow-input-drift to regenerate every output from these."
+        )
+    return drifted
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     paths = {key: args.input_root / relative for key, relative in INPUTS.items()}
     missing = [str(path) for path in paths.values() if not path.exists()]
     if missing:
         raise FileNotFoundError(f"missing inputs: {missing}")
+    hashes = input_hashes(paths)
+    drifted = check_input_drift(hashes, args.pinned_provenance, args.allow_input_drift)
     out = args.output_dir
     out.mkdir(parents=True, exist_ok=True)
     rng_seeds = {
@@ -1571,7 +2099,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         for offset, name in enumerate(("U1", "U2", "U3", "U4", "U5", "within", "U6"))
     }
 
-    corpus = load_corpus(paths, args.label_source)
+    corpus = load_corpus(paths, args.label_source, args.condition_labels)
     matrix = corpus.matrix
     cellulose = trait_taxa(matrix, TRAIT_ID)
     genus_species = trait_taxa(matrix, TRAIT_ID, GENUS_SPECIES)
@@ -1596,39 +2124,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     base_union = sorted(set.union(*base_sets.values()))
     base_masks = {short: np.isin(base_union, sorted(values)) for short, values in base_sets.items()}
 
-    # U5 weights: studies outside the three conditions reporting the taxon decreased in feces.
-    u2_taxa = sorted(set(feces_taxa["taxon_id"]) & cellulose)
+    # U5 draws from U3, the taxa an observed set can contain (#567), weighted by the
+    # studies outside the three conditions that report the taxon decreased in feces.
+    u3_taxa = sorted(set(feces_taxa.loc[feces_taxa["dir"].eq("dec"), "taxon_id"]) & cellulose)
     background = feces_taxa[
         feces_taxa["dir"].eq("dec") & ~feces_taxa["condition"].isin(CONDITIONS.values())
     ]
     background_studies = background.groupby("taxon_id")["study_id"].nunique()
     weights: FloatArray = np.asarray(
-        background_studies.reindex(u2_taxa, fill_value=0), dtype=np.float64
+        background_studies.reindex(u3_taxa, fill_value=0), dtype=np.float64
     )
     weights += 0.5
 
-    # U6 units: one per study and condition with a feces decreased profile.
-    dec_feces_profiles = profiles[profiles["compartment"].eq(FECES) & profiles["dir"].eq("dec")]
-    units = (
-        dec_feces_profiles[["study_id", "condition"]]
-        .drop_duplicates()
-        .sort_values(["study_id", "condition"])
-    )
-    u3_taxa = sorted(set(feces_taxa.loc[feces_taxa["dir"].eq("dec"), "taxon_id"]) & cellulose)
-    unit_taxa = (
-        feces_taxa[feces_taxa["dir"].eq("dec") & feces_taxa["taxon_id"].isin(cellulose)]
-        .groupby(["study_id", "condition"])["taxon_id"]
-        .agg(set)
-    )
-    unit_matrix = np.zeros((len(units), len(u3_taxa)), dtype=bool)
-    position = {taxon: index for index, taxon in enumerate(u3_taxa)}
-    for row, unit in enumerate(units.itertuples(index=False, name=None)):
-        for taxon in unit_taxa.get(unit, set()):
-            unit_matrix[row, position[taxon]] = True
-    unit_study = pd.factorize(units["study_id"], sort=True)[0].astype(np.int64)
-    unit_counts = {
-        short: int(units["condition"].eq(full).sum()) for short, full in CONDITIONS.items()
-    }
+    unit_matrix, unit_study, unit_counts, units = u6_units(profiles, taxa, cellulose)
 
     n = args.permutations
     nulls: dict[str, Any] = {}
@@ -1655,8 +2163,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     nulls["U6"] = u6_draws.summary(summary)
     matched, accepted = u6_draws.size_matched(summary, U6_SIZE_TOLERANCE)
-    if accepted < 100:
-        raise ValueError(f"only {accepted} U6 draws match the observed set sizes")
+    # At least 100 matched draws at the default 10^5 permutations, scaled down for
+    # shorter runs (#567).
+    needed = min(100, max(10, n // 1000))
+    if accepted < needed:
+        raise ValueError(f"only {accepted} U6 draws match the observed set sizes (need {needed})")
     nulls["U6_size_matched"] = {
         **matched.summary(summary),
         "tolerance": f"each set size within max(2, {U6_SIZE_TOLERANCE:.0%} of observed)",
@@ -1768,18 +2279,42 @@ def main(argv: Sequence[str] | None = None) -> int:
             universes["U1"],
             universes["U2"],
         ),
+        (
+            "9_feces_dec_without_site_miscurations",
+            "Feces dec, without bsdb:24451087 (rectal mucosa curated as Feces)",
+            condition_sets(taxa[~taxa["study_id"].isin(SITE_MISCURATIONS)], cellulose),
+            universes["U1"],
+            universes["U2"],
+        ),
+        (
+            "10_feces_dec_synonyms_merged",
+            "Feces dec, synonym condition labels counted under their disease",
+            condition_sets(population(with_synonyms(corpus), ALL_CONTRASTS)[1], cellulose),
+            universes["U1"],
+            universes["U2"],
+        ),
     ]
     sensitivity = sensitivity_table(definitions)
 
-    compartments = compartment_table(corpus, cellulose, universes["U2"])
+    compartments = compartment_table(corpus, cellulose)
     interaction = interaction_table(corpus)
-    catalog = catalog_table(taxa, matrix, sets)
+    direct = direct_trait_subjects(paths["kg_edges"], TRAIT_ID)
+    catalog = catalog_table(taxa, matrix, sets, direct)
+    bearing_ranks = matrix.loc[sorted(cellulose), "taxonomic_rank"]
+    direct_by_rank = {
+        str(rank): {
+            "trait_bearing_matrix_taxa": len(group),
+            "with_direct_edge": int(group.index.isin(direct).sum()),
+        }
+        for rank, group in bearing_ranks.groupby(bearing_ranks)
+    }
+    scenario_direction, scenario_overlap = scenario_tables(corpus, cellulose, n, rng_seeds["U6"])
+    dump = load_dump(paths["full_dump"])
+    inventory = label_inventory(paths, corpus, dump)
     profile_pairs = profile_pair_table(taxa, cellulose)
     benchmark = benchmark_table(taxa, matrix, corpus.trait_labels)
     studies = read_tsv(paths["studies"])
-    drivers, evidence, four_pairs = four_pair_tables(
-        taxa, matrix, studies, load_dump(paths["full_dump"])
-    )
+    drivers, evidence, four_pairs = four_pair_tables(taxa, matrix, studies, dump)
 
     summary_rows = (
         direction_summary_rows(compartments)
@@ -1787,12 +2322,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         + interaction_summary_rows(interaction)
     )
     significant = pd.DataFrame(summary_rows)
+    significant.insert(
+        list(significant.columns).index("significance_tier") + 1,
+        "bh_q_within_table",
+        benjamini_hochberg(significant["p_value"]),
+    )
 
     # Label-source comparison, without the Monte Carlo nulls.
     other_source = "study_modal" if args.label_source == "experiment" else "experiment"
     comparison = {
         args.label_source: headline(corpus, cellulose),
-        other_source: headline(load_corpus(paths, other_source), cellulose),
+        other_source: headline(load_corpus(paths, other_source, args.condition_labels), cellulose),
     }
     corrections = label_corrections(paths)
 
@@ -1819,15 +2359,36 @@ def main(argv: Sequence[str] | None = None) -> int:
         "trait_label": trait_label,
         "trait_column_label": corpus.trait_labels.at[TRAIT_ID, "column_label"],
         "label_source": args.label_source,
+        "condition_labels": args.condition_labels,
+        "contrast_classifier_version": CLASSIFIER_VERSION,
         "bugsigdb_vintage": dump_vintage(paths["full_dump"]),
         "conditions": list(CONDITIONS.values()),
+        "condition_synonyms": {
+            CONDITIONS[short]: list(labels) for short, labels in CONDITION_SYNONYMS.items()
+        },
+        "site_miscurations": SITE_MISCURATIONS,
+        "hiv_contrasts_counted_in_sensitivities": {
+            f"{experiment}": reason
+            for (_, experiment), reason in {**HIV_RECLASSIFIED, **HIV_ON_ART}.items()
+        },
         "definitions": {
             "profile": (
                 "one study/experiment/direction aggregate of curated signature taxa (human hosts)"
             ),
-            "feces": "experiment body site exactly 'Feces'; multi-site labels are excluded",
-            "condition": "exact BugSigDB condition label of the experiment",
+            "feces": (
+                "experiment body site exactly 'Feces'; multi-site labels such as "
+                "'Feces,Blood' or 'Oral cavity,Feces' are grouped with Other non-GI"
+            ),
+            "condition": (
+                "exact BugSigDB condition label of the experiment; condition_synonyms are "
+                "counted only in the synonyms_merged sensitivity or with "
+                "--condition-labels synonyms"
+            ),
             "set": "matrix taxa annotated with the trait in at least one feces decreased profile",
+            "annotation": (
+                "a matrix taxon bears the trait when it or a descendant has the KG edge; "
+                "has_direct_trait_edge marks the taxon's own edge"
+            ),
             "annotation_share": (
                 "trait count / sum of all retained non-MediaDive trait counts in the profile"
             ),
@@ -1836,16 +2397,22 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "profiles"
             ),
             "paired_delta": "annotation share in the increased profile minus the decreased profile",
+            "down": "the decreased signature has the larger annotation share (paired delta < 0)",
             "study_collapsed": (
-                "one vote per study: the sign of the mean paired delta over its experiments"
+                "one vote per study: the sign of the mean paired delta over its experiments; "
+                "study_majority_* columns use the majority of experiment signs instead"
             ),
             "jaccard_distance": "1 - |intersection| / |union|",
             "monte_carlo_p": "(1 + #null at least as extreme) / (1 + permutations)",
+            "bh_q_within_table": (
+                "Benjamini-Hochberg over every p-value in significant_results_summary.tsv"
+            ),
         },
         "universes": {
             "U1_all_cellulose_taxa_in_matrix": universes["U1"],
             "U2_all_cellulose_taxa_in_retained_feces_profiles": universes["U2"],
             "U3_all_cellulose_taxa_in_feces_decreased_profiles": universes["U3"],
+            "U5_draws_from": "U3",
             "all_feces_decreased_taxa_PD_HIV_CRC_union": len(base_union),
             "U6_study_condition_units": len(units),
             "U6_studies": int(units["study_id"].nunique()),
@@ -1881,6 +2448,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             ]
         ].to_dict("records"),
         "catalog_core_classes": catalog["core_class"].value_counts().to_dict(),
+        "core_taxa_with_direct_trait_edge": int(
+            catalog.loc[catalog["is_3way_core"], "has_direct_trait_edge"].sum()
+        ),
+        "direct_trait_edges_by_rank": direct_by_rank,
+        "kg_direct_trait_subjects": len(direct),
+        "condition_definition_overlap": scenario_overlap.to_dict("records"),
         "four_highlighted_pairs": {
             key: {k: v for k, v in value.items() if k != "top_12_taxa"}
             for key, value in four_pairs.items()
@@ -1893,6 +2466,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             .drop_duplicates()
             .to_dict("records")
         ),
+        "condition_label_inventory": inventory.to_dict("records"),
         "monte_carlo": {"permutations": n, "seeds": rng_seeds},
     }
 
@@ -1908,6 +2482,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         "four_highlighted_pairs_taxon_drivers.tsv": drivers,
         "four_highlighted_pairs_study_evidence.tsv": evidence,
         "label_source_corrections.tsv": corrections,
+        "condition_definition_sensitivity.tsv": scenario_direction,
+        "condition_definition_overlap.tsv": scenario_overlap,
+        "condition_label_inventory.tsv": inventory,
     }
     for name, frame in outputs.items():
         write_tsv(frame, out / name)
@@ -1920,15 +2497,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         "code_commit": args.code_commit,
         "script": "data/analysis/cellulose_decr/scripts/cellulose_decr_analysis.py",
         "bugsigdb_vintage": dump_vintage(paths["full_dump"]),
+        "contrast_classifier_version": CLASSIFIER_VERSION,
         "label_source": args.label_source,
+        "condition_labels": args.condition_labels,
         "permutations": n,
         "seed": args.seed,
         "seeds": rng_seeds,
         "scripts": {path.name: file_sha256(path) for path in scripts},
-        "inputs": {
-            key: {"path": INPUTS[key], "sha256": file_sha256(path), "bytes": path.stat().st_size}
-            for key, path in paths.items()
-        },
+        "inputs": hashes,
+        "inputs_drifted_from_pinned_provenance": drifted,
         "environment": {
             "python": sys.version.split()[0],
             "numpy": np.__version__,
