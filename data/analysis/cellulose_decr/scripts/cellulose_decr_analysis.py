@@ -67,11 +67,12 @@ CONDITION_SYNONYMS = {
         "Colon carcinoma",
     ),
 }
-# Labels that name one of the diseases, listed in the summary with their status so
-# no exclusion is silent. Adenoma, stromal tumour, mother-to-child transmission,
-# simian virus and cell-line labels are different conditions and stay out.
+# Labels that name one of the diseases or the colorectum, listed in the summary with
+# their status so no exclusion is silent. Adenoma, polyp, neoplasm, stromal tumour,
+# mother-to-child transmission, simian virus and cell-line labels are different
+# conditions and stay out.
 NEAR_LABEL_PATTERN = re.compile(
-    r"parkinson|\bhiv\b|immunodeficiency virus|colorectal|colon carc", re.I
+    r"parkinson|\bhiv\b|immunodeficiency virus|colorectal|\bcolon\b|\brectal\b|sigmoid", re.I
 )
 # Curated "Feces" whose paper sampled something else (#566); excluded in a sensitivity.
 SITE_MISCURATIONS = {
@@ -88,6 +89,13 @@ HIV_ON_ART = {
     ("bsdb:29411528", "bsdb:29411528-5"): "HAART-treated HIV+ vs controls (treatment_exposure)",
     ("bsdb:38383483", "bsdb:38383483-3"): "PLWH on ART vs PLWOH (treatment_exposure)",
     ("bsdb:39880958", "bsdb:39880958-1"): "PLWH on ART vs HIV- (treatment_exposure)",
+}
+# A within-patient tumour-vs-adjacent-tissue contrast the classifier calls
+# disease-vs-healthy (#569); left out in a sensitivity.
+CRC_WITHIN_PATIENT = {
+    ("bsdb:25699023", "bsdb:25699023-2"): (
+        "adjacent non-cancerous vs cancerous tissue (classified disease_vs_healthy)"
+    ),
 }
 SHORT = list(CONDITIONS)
 PAIRS = list(itertools.combinations(SHORT, 2))
@@ -246,12 +254,20 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--pinned-provenance",
         type=Path,
         default=PINNED_PROVENANCE,
-        help="Provenance whose input hashes this run must match (default: the committed one).",
+        help="Provenance whose pinned input hashes this run must match (default: the committed "
+        "one). It must exist unless --repin is given.",
     )
-    parser.add_argument(
+    pinning = parser.add_mutually_exclusive_group()
+    pinning.add_argument(
         "--allow-input-drift",
         action="store_true",
-        help="Run even when an input's hash differs from --pinned-provenance (#562).",
+        help="Run even when inputs differ from the pins; the pins are carried forward unchanged "
+        "and the drifted inputs are recorded (#562).",
+    )
+    pinning.add_argument(
+        "--repin",
+        action="store_true",
+        help="Pin this run's input hashes as the new reference, e.g. after a BugSigDB release.",
     )
     return parser.parse_args(argv)
 
@@ -387,15 +403,17 @@ def population(corpus: Corpus, name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     return kept, taxa
 
 
-def reclassified(corpus: Corpus, keys: Iterable[tuple[str, str]]) -> Corpus:
-    """The corpus with the given experiments counted as disease-vs-healthy contrasts."""
+def reclassified(
+    corpus: Corpus, keys: Iterable[tuple[str, str]], contrast_class: str = "disease_vs_healthy"
+) -> Corpus:
+    """The corpus with the given experiments given another contrast class."""
     manifest = corpus.manifest.copy()
     chosen = list(keys)
     missing = [key for key in chosen if key not in manifest.index]
     if missing:
         raise ValueError(f"reclassified experiments missing from the manifest: {missing}")
     index = pd.MultiIndex.from_tuples(chosen, names=["study_id", "experiment_id"])
-    manifest.loc[index, "contrast_class"] = "disease_vs_healthy"
+    manifest.loc[index, "contrast_class"] = contrast_class
     return dataclasses.replace(corpus, manifest=manifest)
 
 
@@ -1617,7 +1635,19 @@ def tier(value: float) -> str:
     return "not significant (p >= 0.05)"
 
 
-def direction_summary_rows(compartments: pd.DataFrame) -> list[dict[str, Any]]:
+def definition_range(scenarios: pd.DataFrame, population_name: str, short: str, unit: str) -> str:
+    """How far a feces direction p moves across the condition-definition scenarios."""
+    chosen = scenarios[
+        scenarios["contrast_population"].eq(population_name)
+        & scenarios["short_condition"].eq(short)
+        & scenarios["unit"].eq(unit)
+    ]["binom_p_two_sided"]
+    return f"{fmt_p(float(chosen.min()))} to {fmt_p(float(chosen.max()))}"
+
+
+def direction_summary_rows(
+    compartments: pd.DataFrame, scenarios: pd.DataFrame
+) -> list[dict[str, Any]]:
     rows = []
     feces = compartments[
         compartments["compartment"].eq(FECES)
@@ -1639,6 +1669,7 @@ def direction_summary_rows(compartments: pd.DataFrame) -> list[dict[str, Any]]:
                 study_p = fmt_p(row["study_wilcoxon_p_two_sided"])
                 extra = f"Wilcoxon 2-sided p on study means = {study_p}"
             population_name = row["contrast_population"]
+            spread = definition_range(scenarios, population_name, row["short_condition"], unit)
             units = "experiments" if unit == "experiment" else "studies"
             mean_delta = row["mean_paired_delta_inc_minus_dec"]
             effect = (
@@ -1669,8 +1700,10 @@ def direction_summary_rows(compartments: pd.DataFrame) -> list[dict[str, Any]]:
                     "summary_interpretation": (
                         "Taxa annotated with cellulose catabolic process formed a larger "
                         "annotation share in the decreased than in the increased signature in "
-                        f"{share:.1%} of untied {units}; {extra}. Describes curated signature "
-                        "annotations, not measured cellulose degradation."
+                        f"{share:.1%} of untied {units}; {extra}. Across the condition "
+                        "definitions of condition_definition_sensitivity.tsv this p runs from "
+                        f"{spread}. Describes curated signature annotations, not measured "
+                        "cellulose degradation."
                     ),
                 }
             )
@@ -1886,7 +1919,9 @@ def label_corrections(paths: Mapping[str, Path]) -> pd.DataFrame:
     return merged[differs & touches].sort_values(keys).reset_index(drop=True)
 
 
-def label_inventory(paths: Mapping[str, Path], corpus: Corpus, dump: pd.DataFrame) -> pd.DataFrame:
+def label_inventory(
+    paths: Mapping[str, Path], corpus: Corpus, dump: pd.DataFrame, condition_labels: str
+) -> pd.DataFrame:
     """Every human condition label naming one of the three diseases, with its status (#561).
 
     Counts are of retained human experiments (every one has a retained profile).
@@ -1896,13 +1931,14 @@ def label_inventory(paths: Mapping[str, Path], corpus: Corpus, dump: pd.DataFram
     human = experiments.merge(retained, on=["study_id", "experiment_id"], validate="one_to_one")
     named = human[human["condition"].str.contains(NEAR_LABEL_PATTERN)]
     ontology_ids = dump.groupby("Condition")["EFO ID"].agg(lambda ids: ", ".join(sorted(set(ids))))
+    counted = "counted in this run" if condition_labels == "synonyms" else "sensitivity only"
     rows = []
     for label, group in named.groupby("condition"):
         label = str(label)
         if label in CONDITIONS.values():
             status = "exact label (primary analysis)"
         elif label in SYNONYM_TO_CONDITION:
-            status = f"synonym of {SYNONYM_TO_CONDITION[label]} (sensitivity only)"
+            status = f"synonym of {SYNONYM_TO_CONDITION[label]} ({counted})"
         elif "," in label:
             status = "multi-condition label (excluded)"
         else:
@@ -1953,7 +1989,12 @@ def u6_units(
 
 
 def scenario_corpora(corpus: Corpus) -> list[tuple[str, str, Corpus]]:
-    """Condition and contrast definitions that change which experiments count (#561, #566)."""
+    """Condition and contrast definitions that change which experiments count (#561, #566).
+
+    ``corpus`` must use the exact condition labels; each scenario is built from it.
+    """
+    if corpus.condition_labels != "exact":
+        raise ValueError("scenarios are defined relative to the exact condition labels")
     merged = with_synonyms(corpus)
     return [
         ("exact_labels", "Exact condition labels (primary analysis)", corpus),
@@ -1978,16 +2019,29 @@ def scenario_corpora(corpus: Corpus) -> list[tuple[str, str, Corpus]]:
             "Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)",
             without_studies(corpus, SITE_MISCURATIONS),
         ),
+        (
+            "crc_within_patient_excluded",
+            "Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease "
+            "vs healthy",
+            reclassified(corpus, CRC_WITHIN_PATIENT, "within_patient_tissue"),
+        ),
     ]
 
 
 def scenario_tables(
     corpus: Corpus, cellulose: set[str], permutations: int, seed: int
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Feces direction and cross-condition overlap under each scenario of scenario_corpora."""
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Feces direction, overlap and the Feces-vs-GI interaction under each scenario."""
     direction_rows: list[dict[str, Any]] = []
     overlap_rows: list[dict[str, Any]] = []
+    interaction_frames: list[pd.DataFrame] = []
     for slug, label, scenario in scenario_corpora(corpus):
+        interaction = interaction_table(scenario)
+        interaction = interaction[
+            interaction["compartment_b"].eq(NON_FECAL_GI)
+            & interaction["short_condition"].isin([*SHORT, POOLED_STRATIFIED])
+        ]
+        interaction_frames.append(interaction.assign(scenario=slug, scenario_label=label))
         for name in (ALL_CONTRASTS, ORIENTED):
             profiles, _ = population(scenario, name)
             feces = profiles[profiles["compartment"].eq(FECES)]
@@ -2047,7 +2101,10 @@ def scenario_tables(
                 "u6_core_p": u6["three_way_core"]["p"],
             }
         )
-    return pd.DataFrame(direction_rows), pd.DataFrame(overlap_rows)
+    interactions = pd.concat(interaction_frames, ignore_index=True)
+    leading = ["scenario", "scenario_label"]
+    interactions = interactions[[*leading, *(c for c in interactions if c not in leading)]]
+    return pd.DataFrame(direction_rows), pd.DataFrame(overlap_rows), interactions
 
 
 def input_hashes(paths: Mapping[str, Path]) -> dict[str, dict[str, Any]]:
@@ -2058,15 +2115,23 @@ def input_hashes(paths: Mapping[str, Path]) -> dict[str, dict[str, Any]]:
 
 
 def check_input_drift(
-    hashes: Mapping[str, Mapping[str, Any]], pinned_path: Path, allow: bool
-) -> list[str]:
-    """Inputs whose hash differs from the pinned provenance; raises unless ``allow``.
+    hashes: Mapping[str, Mapping[str, Any]], pinned_path: Path, allow: bool, repin: bool
+) -> tuple[list[str], dict[str, Any]]:
+    """The inputs that differ from the pins, and the pins this run records.
 
-    Inputs the pinned provenance does not list are new, not drifted.
+    The pins are the provenance's ``pinned_inputs`` (or ``inputs`` in a provenance
+    written before pins were kept apart). Only ``repin`` replaces them. ``allow`` runs
+    on drifted inputs but carries the pins forward unchanged, so a later run without
+    it still compares against them. An input the pins do not list yet is added.
     """
+    if repin:
+        return [], dict(hashes)
     if not pinned_path.exists():
-        return []
-    pinned = json.loads(pinned_path.read_text(encoding="utf-8")).get("inputs", {})
+        raise FileNotFoundError(
+            f"no pinned provenance at {pinned_path}; pass --repin to pin this run's inputs"
+        )
+    recorded = json.loads(pinned_path.read_text(encoding="utf-8"))
+    pinned = recorded.get("pinned_inputs", recorded.get("inputs", {}))
     drifted = [
         key
         for key, value in hashes.items()
@@ -2079,9 +2144,10 @@ def check_input_drift(
         )
         raise ValueError(
             f"inputs differ from {pinned_path}: {details}. Rebuild them at the pinned "
-            "versions, or pass --allow-input-drift to regenerate every output from these."
+            "versions, pass --allow-input-drift for a run that keeps the pins, or --repin "
+            "to adopt these inputs."
         )
-    return drifted
+    return drifted, {key: pinned.get(key, value) for key, value in hashes.items()}
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -2091,15 +2157,23 @@ def main(argv: Sequence[str] | None = None) -> int:
     if missing:
         raise FileNotFoundError(f"missing inputs: {missing}")
     hashes = input_hashes(paths)
-    drifted = check_input_drift(hashes, args.pinned_provenance, args.allow_input_drift)
-    out = args.output_dir
-    out.mkdir(parents=True, exist_ok=True)
+    drifted, pinned_inputs = check_input_drift(
+        hashes, args.pinned_provenance, args.allow_input_drift, args.repin
+    )
     rng_seeds = {
         name: args.seed + offset
         for offset, name in enumerate(("U1", "U2", "U3", "U4", "U5", "within", "U6"))
     }
 
     corpus = load_corpus(paths, args.label_source, args.condition_labels)
+    # Scenarios and their labels are defined against the exact condition labels.
+    exact_corpus = (
+        corpus
+        if args.condition_labels == "exact"
+        else load_corpus(paths, args.label_source, "exact")
+    )
+    out = args.output_dir
+    out.mkdir(parents=True, exist_ok=True)
     matrix = corpus.matrix
     cellulose = trait_taxa(matrix, TRAIT_ID)
     genus_species = trait_taxa(matrix, TRAIT_ID, GENUS_SPECIES)
@@ -2287,9 +2361,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             universes["U2"],
         ),
         (
-            "10_feces_dec_synonyms_merged",
-            "Feces dec, synonym condition labels counted under their disease",
-            condition_sets(population(with_synonyms(corpus), ALL_CONTRASTS)[1], cellulose),
+            "10_feces_dec_synonyms_merged"
+            if args.condition_labels == "exact"
+            else "10_feces_dec_exact_labels",
+            "Feces dec, synonym condition labels counted under their disease"
+            if args.condition_labels == "exact"
+            else "Feces dec, exact condition labels only",
+            condition_sets(
+                population(
+                    with_synonyms(exact_corpus)
+                    if args.condition_labels == "exact"
+                    else exact_corpus,
+                    ALL_CONTRASTS,
+                )[1],
+                cellulose,
+            ),
             universes["U1"],
             universes["U2"],
         ),
@@ -2308,16 +2394,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         }
         for rank, group in bearing_ranks.groupby(bearing_ranks)
     }
-    scenario_direction, scenario_overlap = scenario_tables(corpus, cellulose, n, rng_seeds["U6"])
+    scenario_direction, scenario_overlap, scenario_interaction = scenario_tables(
+        exact_corpus, cellulose, n, rng_seeds["U6"]
+    )
     dump = load_dump(paths["full_dump"])
-    inventory = label_inventory(paths, corpus, dump)
+    inventory = label_inventory(paths, corpus, dump, args.condition_labels)
     profile_pairs = profile_pair_table(taxa, cellulose)
     benchmark = benchmark_table(taxa, matrix, corpus.trait_labels)
     studies = read_tsv(paths["studies"])
     drivers, evidence, four_pairs = four_pair_tables(taxa, matrix, studies, dump)
 
     summary_rows = (
-        direction_summary_rows(compartments)
+        direction_summary_rows(compartments, scenario_direction)
         + convergence_summary_rows(pairwise)
         + interaction_summary_rows(interaction)
     )
@@ -2484,8 +2572,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         "label_source_corrections.tsv": corrections,
         "condition_definition_sensitivity.tsv": scenario_direction,
         "condition_definition_overlap.tsv": scenario_overlap,
+        "condition_definition_interaction.tsv": scenario_interaction,
         "condition_label_inventory.tsv": inventory,
     }
+    # Inputs are read many times above; refuse to write if any changed meanwhile.
+    final_hashes = input_hashes(paths)
+    changed = [key for key in hashes if final_hashes[key]["sha256"] != hashes[key]["sha256"]]
+    if changed:
+        raise RuntimeError(f"inputs changed during the run: {changed}; rerun once they are stable")
     for name, frame in outputs.items():
         write_tsv(frame, out / name)
     write_json(result, out / "cellulose_decr_summary.json")
@@ -2505,7 +2599,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         "seeds": rng_seeds,
         "scripts": {path.name: file_sha256(path) for path in scripts},
         "inputs": hashes,
+        "pinned_inputs": pinned_inputs,
         "inputs_drifted_from_pinned_provenance": drifted,
+        "repinned": args.repin,
         "environment": {
             "python": sys.version.split()[0],
             "numpy": np.__version__,

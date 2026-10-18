@@ -60,7 +60,7 @@ COMPARTMENT_LABEL = {
     "Feces": "Stool",
     NON_FECAL_GI: "GI mucosa / lumen",
     ORAL: "Oral",
-    OTHER: "Other non-GI",
+    OTHER: "Other / multi-site",
 }
 PNG_DPI = 150
 POOLED_STRATIFIED = "Pooled, stratified by condition"
@@ -99,6 +99,7 @@ class Results:
     catalog: pd.DataFrame
     benchmark: pd.DataFrame
     scenarios: pd.DataFrame
+    scenario_interaction: pd.DataFrame
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -107,12 +108,28 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+# Every table the figures read, recorded in the figure provenance.
+FIGURE_INPUTS = (
+    "cellulose_decr_summary.json",
+    "pairwise_jaccard_significance.tsv",
+    "sensitivity_definitions_jaccard.tsv",
+    "compartment_jaccard_and_direction_stats.tsv",
+    "compartment_direction_interaction.tsv",
+    "cellulose_decreased_taxa_catalog.tsv",
+    "trait_convergence_benchmark.tsv",
+    "condition_definition_sensitivity.tsv",
+    "condition_definition_interaction.tsv",
+)
+
+
 def load(directory: Path) -> Results:
     def tsv(name: str) -> pd.DataFrame:
+        if name not in FIGURE_INPUTS:
+            raise ValueError(f"{name} is not declared in FIGURE_INPUTS")
         frame: pd.DataFrame = pd.read_csv(directory / name, sep="\t")
         return frame
 
-    summary = json.loads((directory / "cellulose_decr_summary.json").read_text(encoding="utf-8"))
+    summary = json.loads((directory / FIGURE_INPUTS[0]).read_text(encoding="utf-8"))
     return Results(
         summary=summary,
         pairwise=tsv("pairwise_jaccard_significance.tsv"),
@@ -122,6 +139,7 @@ def load(directory: Path) -> Results:
         catalog=tsv("cellulose_decreased_taxa_catalog.tsv"),
         benchmark=tsv("trait_convergence_benchmark.tsv"),
         scenarios=tsv("condition_definition_sensitivity.tsv"),
+        scenario_interaction=tsv("condition_definition_interaction.tsv"),
     )
 
 
@@ -151,6 +169,17 @@ def interaction_row(
             & table["compartment_b"].eq(compartment)
         ]
     )
+
+
+def not_estimable(row: Mapping[str, Any]) -> str:
+    """Why an odds ratio of the down share (stool vs other site) cannot be estimated."""
+    if int(row["b_down"]) + int(row["b_up"]) == 0:
+        return "not estimable (no untied pairs outside stool)"
+    if int(row["a_down"]) + int(row["a_up"]) == 0:
+        return "not estimable (no untied pairs in stool)"
+    if int(row["a_up"]) + int(row["b_up"]) == 0:
+        return "not estimable (no ↑ in either site)"
+    return "not estimable (no ↓ in either site)"
 
 
 def zero_cell(row: Mapping[str, Any]) -> str:
@@ -717,7 +746,7 @@ def untied(row: Mapping[str, Any], unit: str) -> tuple[int, int]:
 
 
 def graphical_compartments(results: Results) -> Figure:
-    fig = Figure(figsize=(15, 8.2))
+    fig = Figure(figsize=(15, 8.8))
     pooled = compartment_row(results, "all_contrasts", "Feces", "Pooled")
     if pooled is None:
         raise ValueError("no pooled stool row in the compartment table")
@@ -755,7 +784,7 @@ def graphical_compartments(results: Results) -> Figure:
     )
 
     # A. Butterfly of experiment counts
-    ax = fig.add_axes((0.165, 0.17, 0.30, 0.60))
+    ax = fig.add_axes((0.165, 0.21, 0.30, 0.56))
     panel_title(ax, "A. Paired experiments with the larger share in ↓ or ↑ signature")
     strata: list[tuple[str, str, dict[str, Any]]] = []
     for compartment in ("Feces", NON_FECAL_GI, ORAL, OTHER):
@@ -861,14 +890,25 @@ def graphical_compartments(results: Results) -> Figure:
     for y, (_, _, _, label), row in zip(ys, chosen, picked, strict=True):
         low = float(row["conditional_or_ci95_low"])
         high = float(row["conditional_or_ci95_high"])
-        ax.plot([max(low, x_min), min(high, x_max)], [y, y], color=MUTED, linewidth=2.5)
-        if not math.isfinite(high):
-            ax.plot(x_max, y, ">", color=MUTED, markersize=5, clip_on=False)
-        ax.plot(row["conditional_or"], y, "o", color=INK, markersize=6)
+        estimate = float(row["conditional_or"])
+        note = f"p = {sci(row['fisher_p_two_sided'])}"
+        if math.isnan(estimate):
+            note = f"{note} · {not_estimable(row)}"
+        else:
+            ax.plot([max(low, x_min), min(high, x_max)], [y, y], color=MUTED, linewidth=2.5)
+            if high > x_max:
+                ax.plot(x_max, y, ">", color=MUTED, markersize=5, clip_on=False)
+            if math.isinf(estimate) or estimate == 0:
+                edge = x_max if math.isinf(estimate) else x_min
+                marker = ">" if math.isinf(estimate) else "<"
+                ax.plot(edge, y, marker, color=INK, markersize=6, clip_on=False)
+                note = f"{note} · {zero_cell(row)}"
+            else:
+                ax.plot(estimate, y, "o", color=INK, markersize=6)
         ax.text(
             -0.05,
             y,
-            f"{label}\np = {sci(row['fisher_p_two_sided'])}",
+            f"{label}\n{note}",
             ha="right",
             va="center",
             fontsize=7.4,
@@ -920,9 +960,20 @@ def graphical_compartments(results: Results) -> Figure:
     gi_healthy = compartment_row(results, "disease_vs_healthy_oriented", NON_FECAL_GI, "CRC")
     gi_note = ""
     if gi_all is not None and gi_healthy is not None:
+        table = results.scenario_interaction
+        without = only(
+            table[
+                table["scenario"].eq("crc_within_patient_excluded")
+                & table["contrast_population"].eq("disease_vs_healthy_oriented")
+                & table["short_condition"].eq("CRC")
+                & table["unit"].eq("study")
+            ]
+        )
         gi_note = (
             f"only {int(gi_healthy['paired_experiments'])} of {int(gi_all['paired_experiments'])} "
-            "paired CRC mucosa/lumen experiments compare patients with controls, "
+            "paired CRC mucosa/lumen experiments are classified disease vs healthy, and one of "
+            "those compares tumour with adjacent tissue (without it the disease-vs-healthy "
+            f"study row of B gives p = {sci(float(without['fisher_p_two_sided']))}), "
         )
     footnote(
         fig,
@@ -991,7 +1042,16 @@ def graphical_benchmark(results: Results) -> Figure:
     median = float(np.median(values))
     ax.axvline(median, color=INK2, linestyle="--", linewidth=1)
     top_y = ax.get_ylim()[1]
-    ax.text(median + 0.006, top_y * 0.95, f"dashed: median {median:.3f}", fontsize=8.5, color=INK2)
+    ax.text(
+        0.98,
+        0.97,
+        f"dashed: median {median:.3f}",
+        transform=ax.transAxes,
+        ha="right",
+        va="top",
+        fontsize=8.5,
+        color=INK2,
+    )
     for row, height in ((first, 0.55), (cell, 0.97)):
         value = float(row["mean_pairwise_jaccard_distance"])
         ax.axvline(value, color=INK, linewidth=1.6)
@@ -1169,6 +1229,7 @@ def detailed_nulls(results: Results) -> Figure:
     panel_title(ax, "B. Taxa in all three sets")
     keys = [
         ("U1", "U1"),
+        ("U2", "U2"),
         ("U3", "U3"),
         ("U4", "U4"),
         ("U5", "U5"),
@@ -1455,7 +1516,7 @@ def detailed_compartments(results: Results) -> Figure:
         )
         estimate = float(row["conditional_or"])
         if math.isnan(estimate):
-            counts = f"{counts} · not estimable (no untied pairs outside stool)"
+            counts = f"{counts} · {not_estimable(row)}"
         else:
             low = float(row["conditional_or_ci95_low"])
             high = float(row["conditional_or_ci95_high"])
@@ -1660,14 +1721,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 outputs.extend(f"{folder}/{path.name}" for path in written)
                 print(f"wrote {', '.join(path.name for path in written)}")
         outputs.append(combined[folder])
-    tables = sorted(
-        path.name for path in args.analysis_dir.iterdir() if path.suffix in (".tsv", ".json")
-    )
     provenance = {
         "script": "data/analysis/cellulose_decr/scripts/cellulose_decr_figures.py",
         "script_sha256": sha256(Path(__file__).resolve()),
         "matplotlib": matplotlib.__version__,
-        "inputs": {name: sha256(args.analysis_dir / name) for name in tables},
+        "inputs": {name: sha256(args.analysis_dir / name) for name in FIGURE_INPUTS},
         "outputs": sorted(outputs),
     }
     (args.analysis_dir / "figures" / "figures_provenance.json").write_text(
