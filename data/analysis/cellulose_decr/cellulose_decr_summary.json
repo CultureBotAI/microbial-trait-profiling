@@ -3,28 +3,56 @@
  "trait_label": "cellulose catabolic process",
  "trait_column_label": "capable of: cellulose catabolic process GO:0030245 [METPO:2000103]",
  "label_source": "experiment",
+ "condition_labels": "exact",
+ "contrast_classifier_version": "contrast-orientation-v2",
  "bugsigdb_vintage": "2026-04-24_00:41_UTC",
  "conditions": [
   "Parkinson's disease",
   "HIV infection",
   "Colorectal cancer"
  ],
+ "condition_synonyms": {
+  "Parkinson's disease": [],
+  "HIV infection": [
+   "HIV-1 infection",
+   "Human immunodeficiency virus"
+  ],
+  "Colorectal cancer": [
+   "Colorectal carcinoma",
+   "Colorectal adenocarcinoma",
+   "Metastatic colorectal cancer",
+   "Colon carcinoma"
+  ]
+ },
+ "site_miscurations": {
+  "bsdb:24451087": "McHardy et al. 2013: rectal mucosa collected with a sponge, curated as Feces"
+ },
+ "hiv_contrasts_counted_in_sensitivities": {
+  "bsdb:33102244-1": "HIV- vs HIV+ (classified disease_vs_disease)",
+  "bsdb:29411528-5": "HAART-treated HIV+ vs controls (treatment_exposure)",
+  "bsdb:38383483-3": "PLWH on ART vs PLWOH (treatment_exposure)",
+  "bsdb:39880958-1": "PLWH on ART vs HIV- (treatment_exposure)"
+ },
  "definitions": {
   "profile": "one study/experiment/direction aggregate of curated signature taxa (human hosts)",
-  "feces": "experiment body site exactly 'Feces'; multi-site labels are excluded",
-  "condition": "exact BugSigDB condition label of the experiment",
+  "feces": "experiment body site exactly 'Feces'; multi-site labels such as 'Feces,Blood' or 'Oral cavity,Feces' are grouped with Other non-GI",
+  "condition": "exact BugSigDB condition label of the experiment; condition_synonyms are counted only in the synonyms_merged sensitivity or with --condition-labels synonyms",
   "set": "matrix taxa annotated with the trait in at least one feces decreased profile",
+  "annotation": "a matrix taxon bears the trait when it or a descendant has the KG edge; has_direct_trait_edge marks the taxon's own edge",
   "annotation_share": "trait count / sum of all retained non-MediaDive trait counts in the profile",
   "z": "per-trait z-score of log1p(1000 * annotation share) over all 5,829 retained profiles",
   "paired_delta": "annotation share in the increased profile minus the decreased profile",
-  "study_collapsed": "one vote per study: the sign of the mean paired delta over its experiments",
+  "down": "the decreased signature has the larger annotation share (paired delta < 0)",
+  "study_collapsed": "one vote per study: the sign of the mean paired delta over its experiments; study_majority_* columns use the majority of experiment signs instead",
   "jaccard_distance": "1 - |intersection| / |union|",
-  "monte_carlo_p": "(1 + #null at least as extreme) / (1 + permutations)"
+  "monte_carlo_p": "(1 + #null at least as extreme) / (1 + permutations)",
+  "bh_q_within_table": "Benjamini-Hochberg over every p-value in significant_results_summary.tsv"
  },
  "universes": {
   "U1_all_cellulose_taxa_in_matrix": 189,
   "U2_all_cellulose_taxa_in_retained_feces_profiles": 135,
   "U3_all_cellulose_taxa_in_feces_decreased_profiles": 108,
+  "U5_draws_from": "U3",
   "all_feces_decreased_taxa_PD_HIV_CRC_union": 471,
   "U6_study_condition_units": 858,
   "U6_studies": 646,
@@ -119,9 +147,9 @@
    "u4_shared_trait_expected_intersection": 7.37786,
    "u4_shared_trait_expected_jaccard_distance": 0.795202,
    "u4_shared_trait_p": 2.99997e-05,
-   "u5_emp_weighted_expected_intersection": 16.9534,
-   "u5_emp_weighted_expected_jaccard_distance": 0.621286,
-   "u5_emp_weighted_p": 0.0235898,
+   "u5_emp_weighted_expected_intersection": 17.2853,
+   "u5_emp_weighted_expected_jaccard_distance": 0.611083,
+   "u5_emp_weighted_p": 0.0343697,
    "within_cond_random_subset_expected_intersection": 1.57075,
    "within_cond_random_subset_expected_jaccard_distance": 0.97361,
    "within_cond_random_subset_p": 9.9999e-06,
@@ -171,9 +199,9 @@
    "u4_shared_trait_expected_intersection": 10.371,
    "u4_shared_trait_expected_jaccard_distance": 0.747124,
    "u4_shared_trait_p": 9.9999e-06,
-   "u5_emp_weighted_expected_intersection": 22.4043,
-   "u5_emp_weighted_expected_jaccard_distance": 0.545775,
-   "u5_emp_weighted_p": 0.0191498,
+   "u5_emp_weighted_expected_intersection": 22.8966,
+   "u5_emp_weighted_expected_jaccard_distance": 0.531228,
+   "u5_emp_weighted_p": 0.0338997,
    "within_cond_random_subset_expected_intersection": 2.05006,
    "within_cond_random_subset_expected_jaccard_distance": 0.970307,
    "within_cond_random_subset_p": 9.9999e-06,
@@ -223,9 +251,9 @@
    "u4_shared_trait_expected_intersection": 6.78185,
    "u4_shared_trait_expected_jaccard_distance": 0.783496,
    "u4_shared_trait_p": 0.00127999,
-   "u5_emp_weighted_expected_intersection": 15.8237,
-   "u5_emp_weighted_expected_jaccard_distance": 0.622005,
-   "u5_emp_weighted_p": 0.190628,
+   "u5_emp_weighted_expected_intersection": 16.1462,
+   "u5_emp_weighted_expected_jaccard_distance": 0.611427,
+   "u5_emp_weighted_p": 0.236198,
    "within_cond_random_subset_expected_intersection": 1.58511,
    "within_cond_random_subset_expected_jaccard_distance": 0.971444,
    "within_cond_random_subset_p": 9.9999e-06,
@@ -276,8 +304,8 @@
    "u4_shared_trait_expected_jaccard_distance": 0.775274,
    "u4_shared_trait_p": 9.9999e-06,
    "u5_emp_weighted_expected_intersection": null,
-   "u5_emp_weighted_expected_jaccard_distance": 0.596355,
-   "u5_emp_weighted_p": 0.00474995,
+   "u5_emp_weighted_expected_jaccard_distance": 0.58458,
+   "u5_emp_weighted_p": 0.0097199,
    "within_cond_random_subset_expected_intersection": null,
    "within_cond_random_subset_expected_jaccard_distance": 0.971787,
    "within_cond_random_subset_p": 9.9999e-06,
@@ -327,9 +355,9 @@
    "u4_shared_trait_expected_intersection": 5.08513,
    "u4_shared_trait_expected_jaccard_distance": null,
    "u4_shared_trait_p": 9.9999e-06,
-   "u5_emp_weighted_expected_intersection": 13.376,
+   "u5_emp_weighted_expected_intersection": 13.7213,
    "u5_emp_weighted_expected_jaccard_distance": null,
-   "u5_emp_weighted_p": 0.0531495,
+   "u5_emp_weighted_p": 0.0755792,
    "within_cond_random_subset_expected_intersection": 0.15906,
    "within_cond_random_subset_expected_jaccard_distance": null,
    "within_cond_random_subset_p": 9.9999e-06,
@@ -616,34 +644,34 @@
   "U5": {
    "pairs": {
     "PD vs. HIV": {
-     "expected_intersection": 16.9534,
-     "expected_jaccard_distance": 0.621286,
-     "p": 0.0235898
+     "expected_intersection": 17.2853,
+     "expected_jaccard_distance": 0.611083,
+     "p": 0.0343697
     },
     "PD vs. CRC": {
-     "expected_intersection": 22.4043,
-     "expected_jaccard_distance": 0.545775,
-     "p": 0.0191498
+     "expected_intersection": 22.8966,
+     "expected_jaccard_distance": 0.531228,
+     "p": 0.0338997
     },
     "HIV vs. CRC": {
-     "expected_intersection": 15.8237,
-     "expected_jaccard_distance": 0.622005,
-     "p": 0.190628
+     "expected_intersection": 16.1462,
+     "expected_jaccard_distance": 0.611427,
+     "p": 0.236198
     }
    },
    "iterations": 100000,
    "mean_pairwise_jaccard_distance": {
-    "expected": 0.596355,
-    "sd": 0.0419181,
-    "z": -2.79323,
-    "p": 0.00474995,
-    "p2_5": 0.512837,
-    "p97_5": 0.677088
+    "expected": 0.58458,
+    "sd": 0.0417729,
+    "z": -2.52104,
+    "p": 0.0097199,
+    "p2_5": 0.501243,
+    "p97_5": 0.664749
    },
    "three_way_core": {
-    "expected": 13.376,
-    "p": 0.0531495,
-    "p2_5": 9.0,
+    "expected": 13.7213,
+    "p": 0.0755792,
+    "p2_5": 10.0,
     "p97_5": 17.0
    },
    "synthetic_set_sizes": {
@@ -1611,6 +1639,182 @@
    "empirical_fold_enrichment": 13.03,
    "empirical_hypergeom_p": 4.88192e-15,
    "n_c": 29.0
+  },
+  {
+   "definition_slug": "9_feces_dec_without_site_miscurations",
+   "definition_label": "Feces dec, without bsdb:24451087 (rectal mucosa curated as Feces)",
+   "comparison": "PD vs. HIV",
+   "n_a": 38,
+   "n_b": 23,
+   "intersection": 20,
+   "union": 41,
+   "jaccard_similarity": 0.487805,
+   "jaccard_distance": 0.512195,
+   "matrix_universe_N": 189,
+   "matrix_expected_intersection": 4.62434,
+   "matrix_expected_jaccard_distance": 0.91685,
+   "matrix_fold_enrichment": 4.32494,
+   "matrix_hypergeom_p": 8.77898e-14,
+   "empirical_universe_N": 135,
+   "empirical_expected_intersection": 6.47407,
+   "empirical_expected_jaccard_distance": 0.879789,
+   "empirical_fold_enrichment": 3.08924,
+   "empirical_hypergeom_p": 9.65115e-11,
+   "n_c": null
+  },
+  {
+   "definition_slug": "9_feces_dec_without_site_miscurations",
+   "definition_label": "Feces dec, without bsdb:24451087 (rectal mucosa curated as Feces)",
+   "comparison": "PD vs. CRC",
+   "n_a": 38,
+   "n_b": 34,
+   "intersection": 27,
+   "union": 45,
+   "jaccard_similarity": 0.6,
+   "jaccard_distance": 0.4,
+   "matrix_universe_N": 189,
+   "matrix_expected_intersection": 6.83598,
+   "matrix_expected_jaccard_distance": 0.893913,
+   "matrix_fold_enrichment": 3.94969,
+   "matrix_hypergeom_p": 1.0497e-17,
+   "empirical_universe_N": 135,
+   "empirical_expected_intersection": 9.57037,
+   "empirical_expected_jaccard_distance": 0.845156,
+   "empirical_fold_enrichment": 2.82121,
+   "empirical_hypergeom_p": 1.64831e-13,
+   "n_c": null
+  },
+  {
+   "definition_slug": "9_feces_dec_without_site_miscurations",
+   "definition_label": "Feces dec, without bsdb:24451087 (rectal mucosa curated as Feces)",
+   "comparison": "HIV vs. CRC",
+   "n_a": 23,
+   "n_b": 34,
+   "intersection": 17,
+   "union": 40,
+   "jaccard_similarity": 0.425,
+   "jaccard_distance": 0.575,
+   "matrix_universe_N": 189,
+   "matrix_expected_intersection": 4.13757,
+   "matrix_expected_jaccard_distance": 0.920559,
+   "matrix_fold_enrichment": 4.1087,
+   "matrix_hypergeom_p": 1.93412e-10,
+   "empirical_universe_N": 135,
+   "empirical_expected_intersection": 5.79259,
+   "empirical_expected_jaccard_distance": 0.885326,
+   "empirical_fold_enrichment": 2.93478,
+   "empirical_hypergeom_p": 5.9571e-08,
+   "n_c": null
+  },
+  {
+   "definition_slug": "9_feces_dec_without_site_miscurations",
+   "definition_label": "Feces dec, without bsdb:24451087 (rectal mucosa curated as Feces)",
+   "comparison": "Mean across all 3 pairs (3-way core)",
+   "n_a": 38,
+   "n_b": 23,
+   "intersection": 16,
+   "union": 47,
+   "jaccard_similarity": 0.504268,
+   "jaccard_distance": 0.495732,
+   "matrix_universe_N": 189,
+   "matrix_expected_intersection": 0.831892,
+   "matrix_expected_jaccard_distance": null,
+   "matrix_fold_enrichment": 19.2333,
+   "matrix_hypergeom_p": 2.53067e-21,
+   "empirical_universe_N": 135,
+   "empirical_expected_intersection": 1.63051,
+   "empirical_expected_jaccard_distance": null,
+   "empirical_fold_enrichment": 9.8129,
+   "empirical_hypergeom_p": 1.87141e-16,
+   "n_c": 34.0
+  },
+  {
+   "definition_slug": "10_feces_dec_synonyms_merged",
+   "definition_label": "Feces dec, synonym condition labels counted under their disease",
+   "comparison": "PD vs. HIV",
+   "n_a": 38,
+   "n_b": 27,
+   "intersection": 23,
+   "union": 42,
+   "jaccard_similarity": 0.547619,
+   "jaccard_distance": 0.452381,
+   "matrix_universe_N": 189,
+   "matrix_expected_intersection": 5.42857,
+   "matrix_expected_jaccard_distance": 0.907712,
+   "matrix_fold_enrichment": 4.23684,
+   "matrix_hypergeom_p": 8.6066e-16,
+   "empirical_universe_N": 135,
+   "empirical_expected_intersection": 7.6,
+   "empirical_expected_jaccard_distance": 0.86607,
+   "empirical_fold_enrichment": 3.02632,
+   "empirical_hypergeom_p": 2.95164e-12,
+   "n_c": null
+  },
+  {
+   "definition_slug": "10_feces_dec_synonyms_merged",
+   "definition_label": "Feces dec, synonym condition labels counted under their disease",
+   "comparison": "PD vs. CRC",
+   "n_a": 38,
+   "n_b": 37,
+   "intersection": 28,
+   "union": 47,
+   "jaccard_similarity": 0.595745,
+   "jaccard_distance": 0.404255,
+   "matrix_universe_N": 189,
+   "matrix_expected_intersection": 7.43915,
+   "matrix_expected_jaccard_distance": 0.888711,
+   "matrix_fold_enrichment": 3.76387,
+   "matrix_hypergeom_p": 1.50974e-17,
+   "empirical_universe_N": 135,
+   "empirical_expected_intersection": 10.4148,
+   "empirical_expected_jaccard_distance": 0.837209,
+   "empirical_fold_enrichment": 2.68848,
+   "empirical_hypergeom_p": 3.37484e-13,
+   "n_c": null
+  },
+  {
+   "definition_slug": "10_feces_dec_synonyms_merged",
+   "definition_label": "Feces dec, synonym condition labels counted under their disease",
+   "comparison": "HIV vs. CRC",
+   "n_a": 27,
+   "n_b": 37,
+   "intersection": 21,
+   "union": 43,
+   "jaccard_similarity": 0.488372,
+   "jaccard_distance": 0.511628,
+   "matrix_universe_N": 189,
+   "matrix_expected_intersection": 5.28571,
+   "matrix_expected_jaccard_distance": 0.908805,
+   "matrix_fold_enrichment": 3.97297,
+   "matrix_hypergeom_p": 5.40438e-13,
+   "empirical_universe_N": 135,
+   "empirical_expected_intersection": 7.4,
+   "empirical_expected_jaccard_distance": 0.867716,
+   "empirical_fold_enrichment": 2.83784,
+   "empirical_hypergeom_p": 7.61908e-10,
+   "n_c": null
+  },
+  {
+   "definition_slug": "10_feces_dec_synonyms_merged",
+   "definition_label": "Feces dec, synonym condition labels counted under their disease",
+   "comparison": "Mean across all 3 pairs (3-way core)",
+   "n_a": 38,
+   "n_b": 27,
+   "intersection": 20,
+   "union": 50,
+   "jaccard_similarity": 0.543912,
+   "jaccard_distance": 0.456088,
+   "matrix_universe_N": 189,
+   "matrix_expected_intersection": 1.06274,
+   "matrix_expected_jaccard_distance": null,
+   "matrix_fold_enrichment": 18.8193,
+   "matrix_hypergeom_p": 1.83398e-27,
+   "empirical_universe_N": 135,
+   "empirical_expected_intersection": 2.08296,
+   "empirical_expected_jaccard_distance": null,
+   "empirical_fold_enrichment": 9.60171,
+   "empirical_hypergeom_p": 2.8361e-21,
+   "n_c": 37.0
   }
  ],
  "compartment_stats": [
@@ -1648,6 +1852,10 @@
    "study_mean_delta_inc_minus_dec": -0.00381988,
    "study_binom_p_two_sided": 0.0595839,
    "study_wilcoxon_p_two_sided": 0.0092576,
+   "study_majority_down": 28,
+   "study_majority_up": 12,
+   "study_majority_tied": 5,
+   "study_majority_binom_p_two_sided": 0.016589,
    "min_attainable_binom_p_two_sided": 4.1359e-25,
    "binom_power_at_pooled_feces_share": 0.995062,
    "power_note": "",
@@ -1691,6 +1899,10 @@
    "study_mean_delta_inc_minus_dec": 0.000105349,
    "study_binom_p_two_sided": 0.0768127,
    "study_wilcoxon_p_two_sided": 0.297852,
+   "study_majority_down": 11,
+   "study_majority_up": 4,
+   "study_majority_tied": 3,
+   "study_majority_binom_p_two_sided": 0.118469,
    "min_attainable_binom_p_two_sided": 5.96046e-08,
    "binom_power_at_pooled_feces_share": 0.705702,
    "power_note": "power 0.71 at the pooled feces share",
@@ -1734,6 +1946,10 @@
    "study_mean_delta_inc_minus_dec": -0.00363199,
    "study_binom_p_two_sided": 0.000221252,
    "study_wilcoxon_p_two_sided": 0.000197411,
+   "study_majority_down": 18,
+   "study_majority_up": 2,
+   "study_majority_tied": 8,
+   "study_majority_binom_p_two_sided": 0.000402451,
    "min_attainable_binom_p_two_sided": 7.27596e-12,
    "binom_power_at_pooled_feces_share": 0.851355,
    "power_note": "",
@@ -1777,6 +1993,10 @@
    "study_mean_delta_inc_minus_dec": -0.00298565,
    "study_binom_p_two_sided": 1.95191e-05,
    "study_wilcoxon_p_two_sided": 4.10215e-05,
+   "study_majority_down": 57,
+   "study_majority_up": 18,
+   "study_majority_tied": 16,
+   "study_majority_binom_p_two_sided": 7.24416e-06,
    "min_attainable_binom_p_two_sided": 4.48416e-44,
    "binom_power_at_pooled_feces_share": 0.99999,
    "power_note": "",
@@ -1820,6 +2040,10 @@
    "study_mean_delta_inc_minus_dec": 5.98516e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 0,
+   "study_majority_up": 1,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 1.0,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 1 untied pair",
@@ -1827,7 +2051,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.809524,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 21,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 70
   },
   {
    "contrast_population": "all_contrasts",
@@ -1863,6 +2087,10 @@
    "study_mean_delta_inc_minus_dec": -0.000678843,
    "study_binom_p_two_sided": 0.5,
    "study_wilcoxon_p_two_sided": 0.5,
+   "study_majority_down": 2,
+   "study_majority_up": 0,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 0.5,
    "min_attainable_binom_p_two_sided": 0.0625,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 5 untied pairs",
@@ -1870,7 +2098,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.809524,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 21,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 70
   },
   {
    "contrast_population": "all_contrasts",
@@ -1906,6 +2134,10 @@
    "study_mean_delta_inc_minus_dec": 0.000296414,
    "study_binom_p_two_sided": 0.226562,
    "study_wilcoxon_p_two_sided": 0.27832,
+   "study_majority_down": 1,
+   "study_majority_up": 7,
+   "study_majority_tied": 6,
+   "study_majority_binom_p_two_sided": 0.0703125,
    "min_attainable_binom_p_two_sided": 6.10352e-05,
    "binom_power_at_pooled_feces_share": 0.442799,
    "power_note": "power 0.44 at the pooled feces share",
@@ -1913,7 +2145,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.809524,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 21,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 70
   },
   {
    "contrast_population": "all_contrasts",
@@ -1949,6 +2181,10 @@
    "study_mean_delta_inc_minus_dec": 0.000117525,
    "study_binom_p_two_sided": 0.42395,
    "study_wilcoxon_p_two_sided": 0.541626,
+   "study_majority_down": 3,
+   "study_majority_up": 8,
+   "study_majority_tied": 8,
+   "study_majority_binom_p_two_sided": 0.226562,
    "min_attainable_binom_p_two_sided": 9.53674e-07,
    "binom_power_at_pooled_feces_share": 0.544625,
    "power_note": "power 0.54 at the pooled feces share",
@@ -1956,7 +2192,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.809524,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 21,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 70
   },
   {
    "contrast_population": "all_contrasts",
@@ -1992,6 +2228,10 @@
    "study_mean_delta_inc_minus_dec": 7.80275e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 0,
+   "study_majority_up": 1,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 1.0,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 1 untied pair",
@@ -1999,42 +2239,46 @@
    "compartment_mean_pairwise_jaccard_distance": 1.0,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 11,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 75
   },
   {
    "contrast_population": "all_contrasts",
    "compartment": "Oral / Oropharyngeal",
    "condition": "HIV infection",
    "short_condition": "HIV",
-   "n_studies_dec": 3,
-   "n_profiles_dec": 4,
-   "n_studies_inc": 4,
-   "n_profiles_inc": 5,
-   "mean_cellulose_frac_dec": 0.000357573,
+   "n_studies_dec": 2,
+   "n_profiles_dec": 3,
+   "n_studies_inc": 3,
+   "n_profiles_inc": 4,
+   "mean_cellulose_frac_dec": 0.000476765,
    "mean_cellulose_frac_inc": 0.0,
-   "mean_cellulose_z_dec": -0.339304,
+   "mean_cellulose_z_dec": -0.240043,
    "mean_cellulose_z_inc": -0.637084,
    "uniq_dec_cellulose_taxa": 1,
-   "paired_experiments": 4,
+   "paired_experiments": 3,
    "paired_exp_down_dec_gt_inc": 2,
    "paired_exp_up_inc_gt_dec": 0,
-   "paired_exp_tied": 2,
+   "paired_exp_tied": 1,
    "share_down_untied": 1.0,
-   "mean_paired_delta_inc_minus_dec": -0.000357573,
+   "mean_paired_delta_inc_minus_dec": -0.000476765,
    "binom_p_down_one_sided": 0.25,
    "binom_p_two_sided": 0.5,
    "wilcoxon_p_down_one_sided": 0.25,
    "wilcoxon_p_two_sided": 0.5,
-   "mwu_p_dec_gt_inc_one_sided": 0.0656052,
-   "mwu_p_two_sided": 0.13121,
-   "paired_studies": 3,
+   "mwu_p_dec_gt_inc_one_sided": 0.0613723,
+   "mwu_p_two_sided": 0.122745,
+   "paired_studies": 2,
    "study_down": 1,
    "study_up": 0,
-   "study_tied": 2,
+   "study_tied": 1,
    "study_share_down_untied": 1.0,
-   "study_mean_delta_inc_minus_dec": -0.000238382,
+   "study_mean_delta_inc_minus_dec": -0.000357573,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 1,
+   "study_majority_up": 0,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.5,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 2 untied pairs",
@@ -2042,7 +2286,7 @@
    "compartment_mean_pairwise_jaccard_distance": 1.0,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 11,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 75
   },
   {
    "contrast_population": "all_contrasts",
@@ -2078,6 +2322,10 @@
    "study_mean_delta_inc_minus_dec": 0.000308091,
    "study_binom_p_two_sided": 0.5,
    "study_wilcoxon_p_two_sided": 0.5,
+   "study_majority_down": 0,
+   "study_majority_up": 1,
+   "study_majority_tied": 3,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.0625,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 5 untied pairs",
@@ -2085,42 +2333,46 @@
    "compartment_mean_pairwise_jaccard_distance": 1.0,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 11,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 75
   },
   {
    "contrast_population": "all_contrasts",
    "compartment": "Oral / Oropharyngeal",
    "condition": "Pooled (PD + HIV + CRC)",
    "short_condition": "Pooled",
-   "n_studies_dec": 9,
-   "n_profiles_dec": 16,
-   "n_studies_inc": 11,
-   "n_profiles_inc": 20,
-   "mean_cellulose_frac_dec": 0.000216153,
-   "mean_cellulose_frac_inc": 0.000299027,
-   "mean_cellulose_z_dec": -0.449866,
-   "mean_cellulose_z_inc": -0.417065,
+   "n_studies_dec": 8,
+   "n_profiles_dec": 15,
+   "n_studies_inc": 10,
+   "n_profiles_inc": 19,
+   "mean_cellulose_frac_dec": 0.000230563,
+   "mean_cellulose_frac_inc": 0.000314765,
+   "mean_cellulose_z_dec": -0.437385,
+   "mean_cellulose_z_inc": -0.405485,
    "uniq_dec_cellulose_taxa": 11,
-   "paired_experiments": 16,
+   "paired_experiments": 15,
    "paired_exp_down_dec_gt_inc": 3,
    "paired_exp_up_inc_gt_dec": 5,
-   "paired_exp_tied": 8,
+   "paired_exp_tied": 7,
    "share_down_untied": 0.375,
-   "mean_paired_delta_inc_minus_dec": 0.000123392,
+   "mean_paired_delta_inc_minus_dec": 0.000131618,
    "binom_p_down_one_sided": 0.855469,
    "binom_p_two_sided": 0.726562,
    "wilcoxon_p_down_one_sided": 0.726562,
    "wilcoxon_p_two_sided": 0.640625,
-   "mwu_p_dec_gt_inc_one_sided": 0.428122,
-   "mwu_p_two_sided": 0.856244,
-   "paired_studies": 9,
+   "mwu_p_dec_gt_inc_one_sided": 0.422978,
+   "mwu_p_two_sided": 0.845955,
+   "paired_studies": 8,
    "study_down": 1,
    "study_up": 3,
-   "study_tied": 5,
+   "study_tied": 4,
    "study_share_down_untied": 0.25,
-   "study_mean_delta_inc_minus_dec": 7.4808e-05,
+   "study_mean_delta_inc_minus_dec": 8.4159e-05,
    "study_binom_p_two_sided": 0.625,
    "study_wilcoxon_p_two_sided": 0.625,
+   "study_majority_down": 1,
+   "study_majority_up": 2,
+   "study_majority_tied": 5,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.0078125,
    "binom_power_at_pooled_feces_share": 0.0947389,
    "power_note": "power 0.09 at the pooled feces share",
@@ -2128,7 +2380,7 @@
    "compartment_mean_pairwise_jaccard_distance": 1.0,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 11,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 75
   },
   {
    "contrast_population": "all_contrasts",
@@ -2164,6 +2416,10 @@
    "study_mean_delta_inc_minus_dec": 8.37364e-06,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 1,
+   "study_majority_up": 1,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.125,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 4 untied pairs",
@@ -2171,42 +2427,46 @@
    "compartment_mean_pairwise_jaccard_distance": 0.928571,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 14,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 113
   },
   {
    "contrast_population": "all_contrasts",
    "compartment": "Other non-GI",
    "condition": "HIV infection",
    "short_condition": "HIV",
-   "n_studies_dec": 3,
-   "n_profiles_dec": 4,
-   "n_studies_inc": 4,
-   "n_profiles_inc": 4,
-   "mean_cellulose_frac_dec": 0.000357484,
-   "mean_cellulose_frac_inc": 0.000307747,
-   "mean_cellulose_z_dec": -0.349419,
-   "mean_cellulose_z_inc": -0.415166,
+   "n_studies_dec": 4,
+   "n_profiles_dec": 5,
+   "n_studies_inc": 5,
+   "n_profiles_inc": 5,
+   "mean_cellulose_frac_dec": 0.000285987,
+   "mean_cellulose_frac_inc": 0.000246198,
+   "mean_cellulose_z_dec": -0.406952,
+   "mean_cellulose_z_inc": -0.45955,
    "uniq_dec_cellulose_taxa": 6,
-   "paired_experiments": 3,
+   "paired_experiments": 4,
    "paired_exp_down_dec_gt_inc": 1,
    "paired_exp_up_inc_gt_dec": 1,
-   "paired_exp_tied": 1,
+   "paired_exp_tied": 2,
    "share_down_untied": 0.5,
-   "mean_paired_delta_inc_minus_dec": -6.63153e-05,
+   "mean_paired_delta_inc_minus_dec": -4.97365e-05,
    "binom_p_down_one_sided": 0.75,
    "binom_p_two_sided": 1.0,
    "wilcoxon_p_down_one_sided": 0.5,
    "wilcoxon_p_two_sided": 1.0,
-   "mwu_p_dec_gt_inc_one_sided": 0.434331,
-   "mwu_p_two_sided": 0.868661,
-   "paired_studies": 3,
+   "mwu_p_dec_gt_inc_one_sided": 0.398585,
+   "mwu_p_two_sided": 0.79717,
+   "paired_studies": 4,
    "study_down": 1,
    "study_up": 1,
-   "study_tied": 1,
+   "study_tied": 2,
    "study_share_down_untied": 0.5,
-   "study_mean_delta_inc_minus_dec": -6.63153e-05,
+   "study_mean_delta_inc_minus_dec": -4.97365e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 1,
+   "study_majority_up": 1,
+   "study_majority_tied": 2,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.5,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 2 untied pairs",
@@ -2214,7 +2474,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.928571,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 14,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 113
   },
   {
    "contrast_population": "all_contrasts",
@@ -2250,6 +2510,10 @@
    "study_mean_delta_inc_minus_dec": null,
    "study_binom_p_two_sided": null,
    "study_wilcoxon_p_two_sided": null,
+   "study_majority_down": 0,
+   "study_majority_up": 0,
+   "study_majority_tied": 0,
+   "study_majority_binom_p_two_sided": null,
    "min_attainable_binom_p_two_sided": null,
    "binom_power_at_pooled_feces_share": null,
    "power_note": "no untied paired experiments",
@@ -2257,42 +2521,46 @@
    "compartment_mean_pairwise_jaccard_distance": 0.928571,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 14,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 113
   },
   {
    "contrast_population": "all_contrasts",
    "compartment": "Other non-GI",
    "condition": "Pooled (PD + HIV + CRC)",
    "short_condition": "Pooled",
-   "n_studies_dec": 6,
-   "n_profiles_dec": 10,
-   "n_studies_inc": 7,
-   "n_profiles_inc": 11,
-   "mean_cellulose_frac_dec": 0.000339847,
-   "mean_cellulose_frac_inc": 0.000230588,
-   "mean_cellulose_z_dec": -0.358307,
-   "mean_cellulose_z_inc": -0.472386,
+   "n_studies_dec": 7,
+   "n_profiles_dec": 11,
+   "n_studies_inc": 8,
+   "n_profiles_inc": 12,
+   "mean_cellulose_frac_dec": 0.000308952,
+   "mean_cellulose_frac_inc": 0.000211373,
+   "mean_cellulose_z_dec": -0.383651,
+   "mean_cellulose_z_inc": -0.486111,
    "uniq_dec_cellulose_taxa": 14,
-   "paired_experiments": 9,
+   "paired_experiments": 10,
    "paired_exp_down_dec_gt_inc": 4,
    "paired_exp_up_inc_gt_dec": 2,
-   "paired_exp_tied": 3,
+   "paired_exp_tied": 4,
    "share_down_untied": 0.666667,
-   "mean_paired_delta_inc_minus_dec": -9.57772e-05,
+   "mean_paired_delta_inc_minus_dec": -8.61995e-05,
    "binom_p_down_one_sided": 0.34375,
    "binom_p_two_sided": 0.6875,
    "wilcoxon_p_down_one_sided": 0.15625,
    "wilcoxon_p_two_sided": 0.3125,
-   "mwu_p_dec_gt_inc_one_sided": 0.0918237,
-   "mwu_p_two_sided": 0.183647,
-   "paired_studies": 6,
+   "mwu_p_dec_gt_inc_one_sided": 0.0903235,
+   "mwu_p_two_sided": 0.180647,
+   "paired_studies": 7,
    "study_down": 2,
    "study_up": 2,
-   "study_tied": 2,
+   "study_tied": 3,
    "study_share_down_untied": 0.5,
-   "study_mean_delta_inc_minus_dec": -2.89708e-05,
+   "study_mean_delta_inc_minus_dec": -2.48321e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 0.875,
+   "study_majority_down": 2,
+   "study_majority_up": 2,
+   "study_majority_tied": 3,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.03125,
    "binom_power_at_pooled_feces_share": 0.171016,
    "power_note": "power 0.17 at the pooled feces share",
@@ -2300,7 +2568,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.928571,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 14,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 113
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2336,6 +2604,10 @@
    "study_mean_delta_inc_minus_dec": -0.00326198,
    "study_binom_p_two_sided": 0.0243065,
    "study_wilcoxon_p_two_sided": 0.0145535,
+   "study_majority_down": 24,
+   "study_majority_up": 9,
+   "study_majority_tied": 5,
+   "study_majority_binom_p_two_sided": 0.013531,
    "min_attainable_binom_p_two_sided": 4.33681e-19,
    "binom_power_at_pooled_feces_share": 0.998429,
    "power_note": "",
@@ -2343,7 +2615,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.517003,
    "compartment_3way_shared_taxa": 13,
    "compartment_union_taxa": 41,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 111
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2379,6 +2651,10 @@
    "study_mean_delta_inc_minus_dec": -0.00225803,
    "study_binom_p_two_sided": 0.00390625,
    "study_wilcoxon_p_two_sided": 0.00390625,
+   "study_majority_down": 9,
+   "study_majority_up": 0,
+   "study_majority_tied": 2,
+   "study_majority_binom_p_two_sided": 0.00390625,
    "min_attainable_binom_p_two_sided": 0.000488281,
    "binom_power_at_pooled_feces_share": 0.551202,
    "power_note": "power 0.55 at the pooled feces share",
@@ -2386,7 +2662,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.517003,
    "compartment_3way_shared_taxa": 13,
    "compartment_union_taxa": 41,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 111
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2422,6 +2698,10 @@
    "study_mean_delta_inc_minus_dec": -0.00321396,
    "study_binom_p_two_sided": 0.0127258,
    "study_wilcoxon_p_two_sided": 0.00209045,
+   "study_majority_down": 14,
+   "study_majority_up": 2,
+   "study_majority_tied": 8,
+   "study_majority_binom_p_two_sided": 0.00418091,
    "min_attainable_binom_p_two_sided": 5.96046e-08,
    "binom_power_at_pooled_feces_share": 0.885769,
    "power_note": "",
@@ -2429,7 +2709,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.517003,
    "compartment_3way_shared_taxa": 13,
    "compartment_union_taxa": 41,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 111
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2465,6 +2745,10 @@
    "study_mean_delta_inc_minus_dec": -0.00309491,
    "study_binom_p_two_sided": 1.21467e-05,
    "study_wilcoxon_p_two_sided": 1.9571e-05,
+   "study_majority_down": 47,
+   "study_majority_up": 11,
+   "study_majority_tied": 15,
+   "study_majority_binom_p_two_sided": 2.03159e-06,
    "min_attainable_binom_p_two_sided": 3.15544e-30,
    "binom_power_at_pooled_feces_share": 0.999997,
    "power_note": "",
@@ -2472,7 +2756,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.517003,
    "compartment_3way_shared_taxa": 13,
    "compartment_union_taxa": 41,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 111
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2508,6 +2792,10 @@
    "study_mean_delta_inc_minus_dec": 5.98516e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 0,
+   "study_majority_up": 1,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 1.0,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 1 untied pair",
@@ -2515,7 +2803,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.833333,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 18,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 57
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2551,6 +2839,10 @@
    "study_mean_delta_inc_minus_dec": -0.00121797,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 1,
+   "study_majority_up": 0,
+   "study_majority_tied": 0,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 1.0,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 1 untied pair",
@@ -2558,7 +2850,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.833333,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 18,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 57
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2594,6 +2886,10 @@
    "study_mean_delta_inc_minus_dec": 9.24129e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 0.46875,
+   "study_majority_down": 2,
+   "study_majority_up": 4,
+   "study_majority_tied": 3,
+   "study_majority_binom_p_two_sided": 0.6875,
    "min_attainable_binom_p_two_sided": 0.0078125,
    "binom_power_at_pooled_feces_share": 0.164415,
    "power_note": "power 0.16 at the pooled feces share",
@@ -2601,7 +2897,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.833333,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 18,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 57
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2637,6 +2933,10 @@
    "study_mean_delta_inc_minus_dec": -2.22125e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 0.652344,
+   "study_majority_down": 3,
+   "study_majority_up": 5,
+   "study_majority_tied": 4,
+   "study_majority_binom_p_two_sided": 0.726562,
    "min_attainable_binom_p_two_sided": 0.00195312,
    "binom_power_at_pooled_feces_share": 0.369744,
    "power_note": "power 0.37 at the pooled feces share",
@@ -2644,7 +2944,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.833333,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 18,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 57
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2680,6 +2980,10 @@
    "study_mean_delta_inc_minus_dec": 7.80275e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 0,
+   "study_majority_up": 1,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 1.0,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 1 untied pair",
@@ -2687,7 +2991,7 @@
    "compartment_mean_pairwise_jaccard_distance": 1.0,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 6,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 71
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2723,6 +3027,10 @@
    "study_mean_delta_inc_minus_dec": -0.000357573,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 1,
+   "study_majority_up": 0,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.5,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 2 untied pairs",
@@ -2730,7 +3038,7 @@
    "compartment_mean_pairwise_jaccard_distance": 1.0,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 6,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 71
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2766,6 +3074,10 @@
    "study_mean_delta_inc_minus_dec": 7.10487e-06,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 1,
+   "study_majority_up": 1,
+   "study_majority_tied": 2,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.5,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 2 untied pairs",
@@ -2773,7 +3085,7 @@
    "compartment_mean_pairwise_jaccard_distance": 1.0,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 6,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 71
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2809,6 +3121,10 @@
    "study_mean_delta_inc_minus_dec": -6.63341e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 0.875,
+   "study_majority_down": 2,
+   "study_majority_up": 2,
+   "study_majority_tied": 4,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.0625,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 5 untied pairs",
@@ -2816,7 +3132,7 @@
    "compartment_mean_pairwise_jaccard_distance": 1.0,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 6,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 71
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2852,6 +3168,10 @@
    "study_mean_delta_inc_minus_dec": -1.18214e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 1,
+   "study_majority_up": 1,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.25,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 3 untied pairs",
@@ -2859,7 +3179,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.923077,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 13,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 93
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2895,6 +3215,10 @@
    "study_mean_delta_inc_minus_dec": -9.9473e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 1,
+   "study_majority_up": 1,
+   "study_majority_tied": 0,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.5,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 2 untied pairs",
@@ -2902,7 +3226,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.923077,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 13,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 93
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2938,6 +3262,10 @@
    "study_mean_delta_inc_minus_dec": null,
    "study_binom_p_two_sided": null,
    "study_wilcoxon_p_two_sided": null,
+   "study_majority_down": 0,
+   "study_majority_up": 0,
+   "study_majority_tied": 0,
+   "study_majority_binom_p_two_sided": null,
    "min_attainable_binom_p_two_sided": null,
    "binom_power_at_pooled_feces_share": null,
    "power_note": "no untied paired experiments",
@@ -2945,7 +3273,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.923077,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 13,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 93
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -2981,6 +3309,10 @@
    "study_mean_delta_inc_minus_dec": -4.6882e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 0.625,
+   "study_majority_down": 2,
+   "study_majority_up": 2,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.0625,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 5 untied pairs",
@@ -2988,7 +3320,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.923077,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 13,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 93
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3024,6 +3356,10 @@
    "study_mean_delta_inc_minus_dec": -0.00326198,
    "study_binom_p_two_sided": 0.0243065,
    "study_wilcoxon_p_two_sided": 0.0145535,
+   "study_majority_down": 24,
+   "study_majority_up": 9,
+   "study_majority_tied": 5,
+   "study_majority_binom_p_two_sided": 0.013531,
    "min_attainable_binom_p_two_sided": 4.33681e-19,
    "binom_power_at_pooled_feces_share": 0.998429,
    "power_note": "",
@@ -3031,7 +3367,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.517003,
    "compartment_3way_shared_taxa": 13,
    "compartment_union_taxa": 41,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 109
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3067,6 +3403,10 @@
    "study_mean_delta_inc_minus_dec": -0.00275981,
    "study_binom_p_two_sided": 0.00390625,
    "study_wilcoxon_p_two_sided": 0.00390625,
+   "study_majority_down": 9,
+   "study_majority_up": 0,
+   "study_majority_tied": 0,
+   "study_majority_binom_p_two_sided": 0.00390625,
    "min_attainable_binom_p_two_sided": 0.000488281,
    "binom_power_at_pooled_feces_share": 0.551202,
    "power_note": "power 0.55 at the pooled feces share",
@@ -3074,7 +3414,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.517003,
    "compartment_3way_shared_taxa": 13,
    "compartment_union_taxa": 41,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 109
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3110,6 +3450,10 @@
    "study_mean_delta_inc_minus_dec": -0.00321396,
    "study_binom_p_two_sided": 0.0127258,
    "study_wilcoxon_p_two_sided": 0.00209045,
+   "study_majority_down": 14,
+   "study_majority_up": 2,
+   "study_majority_tied": 8,
+   "study_majority_binom_p_two_sided": 0.00418091,
    "min_attainable_binom_p_two_sided": 5.96046e-08,
    "binom_power_at_pooled_feces_share": 0.885769,
    "power_note": "",
@@ -3117,7 +3461,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.517003,
    "compartment_3way_shared_taxa": 13,
    "compartment_union_taxa": 41,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 109
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3153,6 +3497,10 @@
    "study_mean_delta_inc_minus_dec": -0.00318209,
    "study_binom_p_two_sided": 1.21467e-05,
    "study_wilcoxon_p_two_sided": 1.9571e-05,
+   "study_majority_down": 47,
+   "study_majority_up": 11,
+   "study_majority_tied": 13,
+   "study_majority_binom_p_two_sided": 2.03159e-06,
    "min_attainable_binom_p_two_sided": 3.15544e-30,
    "binom_power_at_pooled_feces_share": 0.999997,
    "power_note": "",
@@ -3160,7 +3508,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.517003,
    "compartment_3way_shared_taxa": 13,
    "compartment_union_taxa": 41,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 109
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3196,6 +3544,10 @@
    "study_mean_delta_inc_minus_dec": 5.98516e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 0,
+   "study_majority_up": 1,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 1.0,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 1 untied pair",
@@ -3203,7 +3555,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.833333,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 18,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 56
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3239,6 +3591,10 @@
    "study_mean_delta_inc_minus_dec": -0.00121797,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 1,
+   "study_majority_up": 0,
+   "study_majority_tied": 0,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 1.0,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 1 untied pair",
@@ -3246,7 +3602,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.833333,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 18,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 56
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3282,6 +3638,10 @@
    "study_mean_delta_inc_minus_dec": 0.000106316,
    "study_binom_p_two_sided": 0.453125,
    "study_wilcoxon_p_two_sided": 0.375,
+   "study_majority_down": 2,
+   "study_majority_up": 5,
+   "study_majority_tied": 2,
+   "study_majority_binom_p_two_sided": 0.453125,
    "min_attainable_binom_p_two_sided": 0.015625,
    "binom_power_at_pooled_feces_share": 0.20605,
    "power_note": "power 0.21 at the pooled feces share",
@@ -3289,7 +3649,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.833333,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 18,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 56
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3325,6 +3685,10 @@
    "study_mean_delta_inc_minus_dec": -1.17851e-05,
    "study_binom_p_two_sided": 0.507812,
    "study_wilcoxon_p_two_sided": 0.570312,
+   "study_majority_down": 3,
+   "study_majority_up": 6,
+   "study_majority_tied": 3,
+   "study_majority_binom_p_two_sided": 0.507812,
    "min_attainable_binom_p_two_sided": 0.00390625,
    "binom_power_at_pooled_feces_share": 0.43015,
    "power_note": "power 0.43 at the pooled feces share",
@@ -3332,7 +3696,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.833333,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 18,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 56
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3368,6 +3732,10 @@
    "study_mean_delta_inc_minus_dec": 7.80275e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 0,
+   "study_majority_up": 1,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 1.0,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 1 untied pair",
@@ -3375,7 +3743,7 @@
    "compartment_mean_pairwise_jaccard_distance": null,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 5,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 65
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3411,6 +3779,10 @@
    "study_mean_delta_inc_minus_dec": 0.0,
    "study_binom_p_two_sided": null,
    "study_wilcoxon_p_two_sided": null,
+   "study_majority_down": 0,
+   "study_majority_up": 0,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": null,
    "min_attainable_binom_p_two_sided": null,
    "binom_power_at_pooled_feces_share": null,
    "power_note": "no untied paired experiments",
@@ -3418,7 +3790,7 @@
    "compartment_mean_pairwise_jaccard_distance": null,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 5,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 65
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3454,6 +3826,10 @@
    "study_mean_delta_inc_minus_dec": 7.10487e-06,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 1,
+   "study_majority_up": 1,
+   "study_majority_tied": 2,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.5,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 2 untied pairs",
@@ -3461,7 +3837,7 @@
    "compartment_mean_pairwise_jaccard_distance": null,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 5,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 65
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3497,6 +3873,10 @@
    "study_mean_delta_inc_minus_dec": 2.63535e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 0.75,
+   "study_majority_down": 1,
+   "study_majority_up": 2,
+   "study_majority_tied": 4,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.25,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 3 untied pairs",
@@ -3504,7 +3884,7 @@
    "compartment_mean_pairwise_jaccard_distance": null,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 5,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 65
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3540,6 +3920,10 @@
    "study_mean_delta_inc_minus_dec": -1.18214e-05,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 1,
+   "study_majority_up": 1,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.25,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 3 untied pairs",
@@ -3547,7 +3931,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.916667,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 12,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 92
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3583,6 +3967,10 @@
    "study_mean_delta_inc_minus_dec": -0.000381243,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 1.0,
+   "study_majority_down": 1,
+   "study_majority_up": 0,
+   "study_majority_tied": 0,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 1.0,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 1 untied pair",
@@ -3590,7 +3978,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.916667,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 12,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 92
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3626,6 +4014,10 @@
    "study_mean_delta_inc_minus_dec": null,
    "study_binom_p_two_sided": null,
    "study_wilcoxon_p_two_sided": null,
+   "study_majority_down": 0,
+   "study_majority_up": 0,
+   "study_majority_tied": 0,
+   "study_majority_binom_p_two_sided": null,
    "min_attainable_binom_p_two_sided": null,
    "binom_power_at_pooled_feces_share": null,
    "power_note": "no untied paired experiments",
@@ -3633,7 +4025,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.916667,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 12,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 92
   },
   {
    "contrast_population": "disease_vs_healthy_strong_evidence",
@@ -3669,6 +4061,10 @@
    "study_mean_delta_inc_minus_dec": -0.000104177,
    "study_binom_p_two_sided": 1.0,
    "study_wilcoxon_p_two_sided": 0.5,
+   "study_majority_down": 2,
+   "study_majority_up": 1,
+   "study_majority_tied": 1,
+   "study_majority_binom_p_two_sided": 1.0,
    "min_attainable_binom_p_two_sided": 0.125,
    "binom_power_at_pooled_feces_share": 0.0,
    "power_note": "p < 0.05 unattainable with 4 untied pairs",
@@ -3676,7 +4072,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.916667,
    "compartment_3way_shared_taxa": 0,
    "compartment_union_taxa": 12,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 92
   },
   {
    "contrast_population": "disease_vs_healthy_oriented_excl_msm_mention",
@@ -3712,6 +4108,10 @@
    "study_mean_delta_inc_minus_dec": -0.00326198,
    "study_binom_p_two_sided": 0.0243065,
    "study_wilcoxon_p_two_sided": 0.0145535,
+   "study_majority_down": 24,
+   "study_majority_up": 9,
+   "study_majority_tied": 5,
+   "study_majority_binom_p_two_sided": 0.013531,
    "min_attainable_binom_p_two_sided": 4.33681e-19,
    "binom_power_at_pooled_feces_share": 0.998192,
    "power_note": "",
@@ -3719,7 +4119,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.517003,
    "compartment_3way_shared_taxa": 13,
    "compartment_union_taxa": 41,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 111
   },
   {
    "contrast_population": "disease_vs_healthy_oriented_excl_msm_mention",
@@ -3755,6 +4155,10 @@
    "study_mean_delta_inc_minus_dec": -0.00226609,
    "study_binom_p_two_sided": 0.00390625,
    "study_wilcoxon_p_two_sided": 0.00390625,
+   "study_majority_down": 9,
+   "study_majority_up": 0,
+   "study_majority_tied": 2,
+   "study_majority_binom_p_two_sided": 0.00390625,
    "min_attainable_binom_p_two_sided": 0.000976562,
    "binom_power_at_pooled_feces_share": 0.310225,
    "power_note": "power 0.31 at the pooled feces share",
@@ -3762,7 +4166,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.517003,
    "compartment_3way_shared_taxa": 13,
    "compartment_union_taxa": 41,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 111
   },
   {
    "contrast_population": "disease_vs_healthy_oriented_excl_msm_mention",
@@ -3798,6 +4202,10 @@
    "study_mean_delta_inc_minus_dec": -0.00321396,
    "study_binom_p_two_sided": 0.0127258,
    "study_wilcoxon_p_two_sided": 0.00209045,
+   "study_majority_down": 14,
+   "study_majority_up": 2,
+   "study_majority_tied": 8,
+   "study_majority_binom_p_two_sided": 0.00418091,
    "min_attainable_binom_p_two_sided": 5.96046e-08,
    "binom_power_at_pooled_feces_share": 0.880413,
    "power_note": "",
@@ -3805,7 +4213,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.517003,
    "compartment_3way_shared_taxa": 13,
    "compartment_union_taxa": 41,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 111
   },
   {
    "contrast_population": "disease_vs_healthy_oriented_excl_msm_mention",
@@ -3841,6 +4249,10 @@
    "study_mean_delta_inc_minus_dec": -0.00309613,
    "study_binom_p_two_sided": 1.21467e-05,
    "study_wilcoxon_p_two_sided": 1.9571e-05,
+   "study_majority_down": 47,
+   "study_majority_up": 11,
+   "study_majority_tied": 15,
+   "study_majority_binom_p_two_sided": 2.03159e-06,
    "min_attainable_binom_p_two_sided": 6.31089e-30,
    "binom_power_at_pooled_feces_share": 0.999991,
    "power_note": "",
@@ -3848,7 +4260,7 @@
    "compartment_mean_pairwise_jaccard_distance": 0.517003,
    "compartment_3way_shared_taxa": 13,
    "compartment_union_taxa": 41,
-   "compartment_cellulose_universe_N": 135
+   "compartment_cellulose_universe_N": 111
   }
  ],
  "compartment_direction_interaction": [
@@ -3870,7 +4282,7 @@
    "conditional_or_ci95_low": 0.0594872,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": 0.301205,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -3891,7 +4303,7 @@
    "conditional_or_ci95_low": 0.0461538,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": 0.357143,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -3912,7 +4324,7 @@
    "conditional_or_ci95_low": 0.0594872,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": 0.301205,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -3933,7 +4345,7 @@
    "conditional_or_ci95_low": 0.0461538,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": 0.357143,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -3954,7 +4366,7 @@
    "conditional_or_ci95_low": 0.0147387,
    "conditional_or_ci95_high": 10.6451,
    "fisher_p_two_sided": 1.0,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -3975,7 +4387,7 @@
    "conditional_or_ci95_low": 0.0229453,
    "conditional_or_ci95_high": 156.895,
    "fisher_p_two_sided": 1.0,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -3996,7 +4408,7 @@
    "conditional_or_ci95_low": 0.0,
    "conditional_or_ci95_high": 3.65407,
    "fisher_p_two_sided": 0.304057,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4017,7 +4429,7 @@
    "conditional_or_ci95_low": 0.0,
    "conditional_or_ci95_high": 20.0978,
    "fisher_p_two_sided": 1.0,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4038,7 +4450,7 @@
    "conditional_or_ci95_low": 0.0,
    "conditional_or_ci95_high": 15.7446,
    "fisher_p_two_sided": 1.0,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4059,7 +4471,7 @@
    "conditional_or_ci95_low": 0.0,
    "conditional_or_ci95_high": 126.75,
    "fisher_p_two_sided": 1.0,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4080,7 +4492,7 @@
    "conditional_or_ci95_low": 0.0286945,
    "conditional_or_ci95_high": 212.833,
    "fisher_p_two_sided": 0.512821,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4101,7 +4513,7 @@
    "conditional_or_ci95_low": 0.0306249,
    "conditional_or_ci95_high": 254.694,
    "fisher_p_two_sided": 0.490196,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4122,7 +4534,7 @@
    "conditional_or_ci95_low": 2.90456,
    "conditional_or_ci95_high": 80.9801,
    "fisher_p_two_sided": 0.000123947,
-   "studies_in_both_compartments": 2,
+   "studies_in_both_compartments": 2.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4143,7 +4555,7 @@
    "conditional_or_ci95_low": 2.72713,
    "conditional_or_ci95_high": 309.086,
    "fisher_p_two_sided": 0.000555181,
-   "studies_in_both_compartments": 2,
+   "studies_in_both_compartments": 2.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4164,7 +4576,7 @@
    "conditional_or_ci95_low": 1.56799,
    "conditional_or_ci95_high": 1081.6,
    "fisher_p_two_sided": 0.00746106,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4185,7 +4597,7 @@
    "conditional_or_ci95_low": 1.03253,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": 0.0237154,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4206,7 +4618,7 @@
    "conditional_or_ci95_low": null,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": null,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4227,7 +4639,7 @@
    "conditional_or_ci95_low": null,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": null,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4248,8 +4660,8 @@
    "conditional_or_ci95_low": 1.36672,
    "conditional_or_ci95_high": 11.2807,
    "fisher_p_two_sided": 0.00483369,
-   "studies_in_both_compartments": 4,
-   "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
+   "studies_in_both_compartments": 4.0,
+   "note": "tied pairs excluded; counts treat each unit as independent; crude pooling mixes condition with compartment; some studies sampled both compartments"
   },
   {
    "contrast_population": "all_contrasts",
@@ -4269,8 +4681,8 @@
    "conditional_or_ci95_low": 1.35127,
    "conditional_or_ci95_high": 21.8677,
    "fisher_p_two_sided": 0.00961895,
-   "studies_in_both_compartments": 4,
-   "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
+   "studies_in_both_compartments": 4.0,
+   "note": "tied pairs excluded; counts treat each unit as independent; crude pooling mixes condition with compartment; some studies sampled both compartments"
   },
   {
    "contrast_population": "all_contrasts",
@@ -4290,8 +4702,8 @@
    "conditional_or_ci95_low": 0.885906,
    "conditional_or_ci95_high": 32.4432,
    "fisher_p_two_sided": 0.0362006,
-   "studies_in_both_compartments": 2,
-   "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
+   "studies_in_both_compartments": 2.0,
+   "note": "tied pairs excluded; counts treat each unit as independent; crude pooling mixes condition with compartment; some studies sampled both compartments"
   },
   {
    "contrast_population": "all_contrasts",
@@ -4311,8 +4723,8 @@
    "conditional_or_ci95_low": 0.636228,
    "conditional_or_ci95_high": 464.321,
    "fisher_p_two_sided": 0.0648028,
-   "studies_in_both_compartments": 2,
-   "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
+   "studies_in_both_compartments": 2.0,
+   "note": "tied pairs excluded; counts treat each unit as independent; crude pooling mixes condition with compartment; some studies sampled both compartments"
   },
   {
    "contrast_population": "all_contrasts",
@@ -4332,8 +4744,8 @@
    "conditional_or_ci95_low": 0.126781,
    "conditional_or_ci95_high": 10.6391,
    "fisher_p_two_sided": 0.648591,
-   "studies_in_both_compartments": 1,
-   "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
+   "studies_in_both_compartments": 1.0,
+   "note": "tied pairs excluded; counts treat each unit as independent; crude pooling mixes condition with compartment; some studies sampled both compartments"
   },
   {
    "contrast_population": "all_contrasts",
@@ -4353,8 +4765,134 @@
    "conditional_or_ci95_low": 0.195163,
    "conditional_or_ci95_high": 41.822,
    "fisher_p_two_sided": 0.290776,
-   "studies_in_both_compartments": 1,
-   "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
+   "studies_in_both_compartments": 1.0,
+   "note": "tied pairs excluded; counts treat each unit as independent; crude pooling mixes condition with compartment; some studies sampled both compartments"
+  },
+  {
+   "contrast_population": "all_contrasts",
+   "condition": "Pooled (PD + HIV + CRC), stratified by condition",
+   "short_condition": "Pooled, stratified by condition",
+   "unit": "experiment",
+   "compartment_a": "Feces",
+   "compartment_b": "Non-fecal GI (mucosa/lumen)",
+   "a_down": 108,
+   "a_up": 37,
+   "b_down": 9,
+   "b_up": 12,
+   "a_share_down": 0.744828,
+   "b_share_down": 0.428571,
+   "odds_ratio": 4.53246,
+   "conditional_or": 4.79273,
+   "conditional_or_ci95_low": 1.52484,
+   "conditional_or_ci95_high": 15.8327,
+   "fisher_p_two_sided": 0.00491737,
+   "studies_in_both_compartments": null,
+   "note": "exact conditional test of a common odds ratio across PD, HIV and CRC; odds_ratio is the Mantel-Haenszel estimate; tied pairs excluded"
+  },
+  {
+   "contrast_population": "all_contrasts",
+   "condition": "Pooled (PD + HIV + CRC), stratified by condition",
+   "short_condition": "Pooled, stratified by condition",
+   "unit": "study",
+   "compartment_a": "Feces",
+   "compartment_b": "Non-fecal GI (mucosa/lumen)",
+   "a_down": 58,
+   "a_up": 20,
+   "b_down": 5,
+   "b_up": 9,
+   "a_share_down": 0.74359,
+   "b_share_down": 0.357143,
+   "odds_ratio": 8.53375,
+   "conditional_or": 8.45841,
+   "conditional_or_ci95_low": 1.79034,
+   "conditional_or_ci95_high": 49.9241,
+   "fisher_p_two_sided": 0.00210624,
+   "studies_in_both_compartments": null,
+   "note": "exact conditional test of a common odds ratio across PD, HIV and CRC; odds_ratio is the Mantel-Haenszel estimate; tied pairs excluded"
+  },
+  {
+   "contrast_population": "all_contrasts",
+   "condition": "Pooled (PD + HIV + CRC), stratified by condition",
+   "short_condition": "Pooled, stratified by condition",
+   "unit": "experiment",
+   "compartment_a": "Feces",
+   "compartment_b": "Oral / Oropharyngeal",
+   "a_down": 108,
+   "a_up": 37,
+   "b_down": 3,
+   "b_up": 5,
+   "a_share_down": 0.744828,
+   "b_share_down": 0.375,
+   "odds_ratio": 5.58547,
+   "conditional_or": 6.01838,
+   "conditional_or_ci95_low": 1.05463,
+   "conditional_or_ci95_high": 43.028,
+   "fisher_p_two_sided": 0.02118,
+   "studies_in_both_compartments": null,
+   "note": "exact conditional test of a common odds ratio across PD, HIV and CRC; odds_ratio is the Mantel-Haenszel estimate; tied pairs excluded"
+  },
+  {
+   "contrast_population": "all_contrasts",
+   "condition": "Pooled (PD + HIV + CRC), stratified by condition",
+   "short_condition": "Pooled, stratified by condition",
+   "unit": "study",
+   "compartment_a": "Feces",
+   "compartment_b": "Oral / Oropharyngeal",
+   "a_down": 58,
+   "a_up": 20,
+   "b_down": 1,
+   "b_up": 3,
+   "a_share_down": 0.74359,
+   "b_share_down": 0.25,
+   "odds_ratio": 9.75388,
+   "conditional_or": 11.7862,
+   "conditional_or_ci95_low": 0.831608,
+   "conditional_or_ci95_high": 696.473,
+   "fisher_p_two_sided": 0.0373003,
+   "studies_in_both_compartments": null,
+   "note": "exact conditional test of a common odds ratio across PD, HIV and CRC; odds_ratio is the Mantel-Haenszel estimate; tied pairs excluded"
+  },
+  {
+   "contrast_population": "all_contrasts",
+   "condition": "Pooled (PD + HIV + CRC), stratified by condition",
+   "short_condition": "Pooled, stratified by condition",
+   "unit": "experiment",
+   "compartment_a": "Feces",
+   "compartment_b": "Other non-GI",
+   "a_down": 108,
+   "a_up": 37,
+   "b_down": 4,
+   "b_up": 2,
+   "a_share_down": 0.744828,
+   "b_share_down": 0.666667,
+   "odds_ratio": 1.2231,
+   "conditional_or": 1.21808,
+   "conditional_or_ci95_low": 0.106065,
+   "conditional_or_ci95_high": 8.90741,
+   "fisher_p_two_sided": 1.0,
+   "studies_in_both_compartments": null,
+   "note": "exact conditional test of a common odds ratio across PD, HIV and CRC; odds_ratio is the Mantel-Haenszel estimate; tied pairs excluded"
+  },
+  {
+   "contrast_population": "all_contrasts",
+   "condition": "Pooled (PD + HIV + CRC), stratified by condition",
+   "short_condition": "Pooled, stratified by condition",
+   "unit": "study",
+   "compartment_a": "Feces",
+   "compartment_b": "Other non-GI",
+   "a_down": 58,
+   "a_up": 20,
+   "b_down": 2,
+   "b_up": 2,
+   "a_share_down": 0.74359,
+   "b_share_down": 0.5,
+   "odds_ratio": 2.36321,
+   "conditional_or": 2.29048,
+   "conditional_or_ci95_low": 0.154889,
+   "conditional_or_ci95_high": 34.114,
+   "fisher_p_two_sided": 0.585043,
+   "studies_in_both_compartments": null,
+   "note": "exact conditional test of a common odds ratio across PD, HIV and CRC; odds_ratio is the Mantel-Haenszel estimate; tied pairs excluded"
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -4374,7 +4912,7 @@
    "conditional_or_ci95_low": 0.0753205,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": 0.253968,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4395,7 +4933,7 @@
    "conditional_or_ci95_low": 0.0559441,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": 0.314286,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4416,7 +4954,7 @@
    "conditional_or_ci95_low": 0.0753205,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": 0.253968,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4437,7 +4975,7 @@
    "conditional_or_ci95_low": 0.0559441,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": 0.314286,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4458,7 +4996,7 @@
    "conditional_or_ci95_low": 0.0249124,
    "conditional_or_ci95_high": 31.8744,
    "fisher_p_two_sided": 1.0,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4479,7 +5017,7 @@
    "conditional_or_ci95_low": 0.0278173,
    "conditional_or_ci95_high": 196.085,
    "fisher_p_two_sided": 0.52381,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4500,7 +5038,7 @@
    "conditional_or_ci95_low": 0.0,
    "conditional_or_ci95_high": 468.0,
    "fisher_p_two_sided": 1.0,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4521,7 +5059,7 @@
    "conditional_or_ci95_low": 0.0,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": 1.0,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4542,7 +5080,7 @@
    "conditional_or_ci95_low": 0.0,
    "conditional_or_ci95_high": 234.0,
    "fisher_p_two_sided": 1.0,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4563,7 +5101,7 @@
    "conditional_or_ci95_low": 0.0,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": 1.0,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4584,7 +5122,7 @@
    "conditional_or_ci95_low": 0.0703069,
    "conditional_or_ci95_high": 938.742,
    "fisher_p_two_sided": 0.274725,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4605,7 +5143,7 @@
    "conditional_or_ci95_low": 0.115385,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": 0.181818,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4626,7 +5164,7 @@
    "conditional_or_ci95_low": 1.07915,
    "conditional_or_ci95_high": 75.8571,
    "fisher_p_two_sided": 0.0201007,
-   "studies_in_both_compartments": 2,
+   "studies_in_both_compartments": 2.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4647,7 +5185,7 @@
    "conditional_or_ci95_low": 0.61236,
    "conditional_or_ci95_high": 65.5116,
    "fisher_p_two_sided": 0.133555,
-   "studies_in_both_compartments": 2,
+   "studies_in_both_compartments": 2.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4668,7 +5206,7 @@
    "conditional_or_ci95_low": 0.0535851,
    "conditional_or_ci95_high": 431.09,
    "fisher_p_two_sided": 0.34188,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4689,7 +5227,7 @@
    "conditional_or_ci95_low": 0.0446722,
    "conditional_or_ci95_high": 391.742,
    "fisher_p_two_sided": 0.385965,
-   "studies_in_both_compartments": 1,
+   "studies_in_both_compartments": 1.0,
    "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
   },
   {
@@ -4710,7 +5248,7 @@
    "conditional_or_ci95_low": null,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": null,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4731,7 +5269,7 @@
    "conditional_or_ci95_low": null,
    "conditional_or_ci95_high": null,
    "fisher_p_two_sided": null,
-   "studies_in_both_compartments": 0,
+   "studies_in_both_compartments": 0.0,
    "note": "tied pairs excluded; counts treat each unit as independent"
   },
   {
@@ -4752,8 +5290,8 @@
    "conditional_or_ci95_low": 1.24209,
    "conditional_or_ci95_high": 30.7472,
    "fisher_p_two_sided": 0.0114719,
-   "studies_in_both_compartments": 3,
-   "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
+   "studies_in_both_compartments": 3.0,
+   "note": "tied pairs excluded; counts treat each unit as independent; crude pooling mixes condition with compartment; some studies sampled both compartments"
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -4773,8 +5311,8 @@
    "conditional_or_ci95_low": 0.818198,
    "conditional_or_ci95_high": 25.6527,
    "fisher_p_two_sided": 0.0453591,
-   "studies_in_both_compartments": 3,
-   "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
+   "studies_in_both_compartments": 3.0,
+   "note": "tied pairs excluded; counts treat each unit as independent; crude pooling mixes condition with compartment; some studies sampled both compartments"
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -4794,8 +5332,8 @@
    "conditional_or_ci95_low": 0.204632,
    "conditional_or_ci95_high": 24.3604,
    "fisher_p_two_sided": 0.284875,
-   "studies_in_both_compartments": 2,
-   "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
+   "studies_in_both_compartments": 2.0,
+   "note": "tied pairs excluded; counts treat each unit as independent; crude pooling mixes condition with compartment; some studies sampled both compartments"
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -4815,8 +5353,8 @@
    "conditional_or_ci95_low": 0.234731,
    "conditional_or_ci95_high": 53.0357,
    "fisher_p_two_sided": 0.231579,
-   "studies_in_both_compartments": 2,
-   "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
+   "studies_in_both_compartments": 2.0,
+   "note": "tied pairs excluded; counts treat each unit as independent; crude pooling mixes condition with compartment; some studies sampled both compartments"
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -4836,8 +5374,8 @@
    "conditional_or_ci95_low": 0.204632,
    "conditional_or_ci95_high": 24.3604,
    "fisher_p_two_sided": 0.284875,
-   "studies_in_both_compartments": 1,
-   "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
+   "studies_in_both_compartments": 1.0,
+   "note": "tied pairs excluded; counts treat each unit as independent; crude pooling mixes condition with compartment; some studies sampled both compartments"
   },
   {
    "contrast_population": "disease_vs_healthy_oriented",
@@ -4857,8 +5395,134 @@
    "conditional_or_ci95_low": 0.234731,
    "conditional_or_ci95_high": 53.0357,
    "fisher_p_two_sided": 0.231579,
-   "studies_in_both_compartments": 1,
-   "note": "tied pairs excluded; counts treat each unit as independent; some studies sampled both compartments"
+   "studies_in_both_compartments": 1.0,
+   "note": "tied pairs excluded; counts treat each unit as independent; crude pooling mixes condition with compartment; some studies sampled both compartments"
+  },
+  {
+   "contrast_population": "disease_vs_healthy_oriented",
+   "condition": "Pooled (PD + HIV + CRC), stratified by condition",
+   "short_condition": "Pooled, stratified by condition",
+   "unit": "experiment",
+   "compartment_a": "Feces",
+   "compartment_b": "Non-fecal GI (mucosa/lumen)",
+   "a_down": 79,
+   "a_up": 20,
+   "b_down": 4,
+   "b_up": 6,
+   "a_share_down": 0.79798,
+   "b_share_down": 0.4,
+   "odds_ratio": 8.9156,
+   "conditional_or": 7.41581,
+   "conditional_or_ci95_low": 1.33757,
+   "conditional_or_ci95_high": 47.2586,
+   "fisher_p_two_sided": 0.00933556,
+   "studies_in_both_compartments": null,
+   "note": "exact conditional test of a common odds ratio across PD, HIV and CRC; odds_ratio is the Mantel-Haenszel estimate; tied pairs excluded"
+  },
+  {
+   "contrast_population": "disease_vs_healthy_oriented",
+   "condition": "Pooled (PD + HIV + CRC), stratified by condition",
+   "short_condition": "Pooled, stratified by condition",
+   "unit": "study",
+   "compartment_a": "Feces",
+   "compartment_b": "Non-fecal GI (mucosa/lumen)",
+   "a_down": 47,
+   "a_up": 13,
+   "b_down": 4,
+   "b_up": 5,
+   "a_share_down": 0.783333,
+   "b_share_down": 0.444444,
+   "odds_ratio": 8.05079,
+   "conditional_or": 7.06216,
+   "conditional_or_ci95_low": 0.934287,
+   "conditional_or_ci95_high": 72.5637,
+   "fisher_p_two_sided": 0.0302106,
+   "studies_in_both_compartments": null,
+   "note": "exact conditional test of a common odds ratio across PD, HIV and CRC; odds_ratio is the Mantel-Haenszel estimate; tied pairs excluded"
+  },
+  {
+   "contrast_population": "disease_vs_healthy_oriented",
+   "condition": "Pooled (PD + HIV + CRC), stratified by condition",
+   "short_condition": "Pooled, stratified by condition",
+   "unit": "experiment",
+   "compartment_a": "Feces",
+   "compartment_b": "Oral / Oropharyngeal",
+   "a_down": 79,
+   "a_up": 20,
+   "b_down": 3,
+   "b_up": 2,
+   "a_share_down": 0.79798,
+   "b_share_down": 0.6,
+   "odds_ratio": 5.23636,
+   "conditional_or": 4.48619,
+   "conditional_or_ci95_low": 0.305771,
+   "conditional_or_ci95_high": 65.9408,
+   "fisher_p_two_sided": 0.165358,
+   "studies_in_both_compartments": null,
+   "note": "exact conditional test of a common odds ratio across PD, HIV and CRC; odds_ratio is the Mantel-Haenszel estimate; tied pairs excluded"
+  },
+  {
+   "contrast_population": "disease_vs_healthy_oriented",
+   "condition": "Pooled (PD + HIV + CRC), stratified by condition",
+   "short_condition": "Pooled, stratified by condition",
+   "unit": "study",
+   "compartment_a": "Feces",
+   "compartment_b": "Oral / Oropharyngeal",
+   "a_down": 47,
+   "a_up": 13,
+   "b_down": 2,
+   "b_up": 2,
+   "a_share_down": 0.783333,
+   "b_share_down": 0.5,
+   "odds_ratio": 9.00952,
+   "conditional_or": 7.07857,
+   "conditional_or_ci95_low": 0.323006,
+   "conditional_or_ci95_high": 478.303,
+   "fisher_p_two_sided": 0.145363,
+   "studies_in_both_compartments": null,
+   "note": "exact conditional test of a common odds ratio across PD, HIV and CRC; odds_ratio is the Mantel-Haenszel estimate; tied pairs excluded"
+  },
+  {
+   "contrast_population": "disease_vs_healthy_oriented",
+   "condition": "Pooled (PD + HIV + CRC), stratified by condition",
+   "short_condition": "Pooled, stratified by condition",
+   "unit": "experiment",
+   "compartment_a": "Feces",
+   "compartment_b": "Other non-GI",
+   "a_down": 79,
+   "a_up": 20,
+   "b_down": 3,
+   "b_up": 2,
+   "a_share_down": 0.79798,
+   "b_share_down": 0.6,
+   "odds_ratio": 2.83093,
+   "conditional_or": 2.82316,
+   "conditional_or_ci95_low": 0.211574,
+   "conditional_or_ci95_high": 29.0606,
+   "fisher_p_two_sided": 0.270414,
+   "studies_in_both_compartments": null,
+   "note": "exact conditional test of a common odds ratio across PD, HIV and CRC; odds_ratio is the Mantel-Haenszel estimate; tied pairs excluded"
+  },
+  {
+   "contrast_population": "disease_vs_healthy_oriented",
+   "condition": "Pooled (PD + HIV + CRC), stratified by condition",
+   "short_condition": "Pooled, stratified by condition",
+   "unit": "study",
+   "compartment_a": "Feces",
+   "compartment_b": "Other non-GI",
+   "a_down": 47,
+   "a_up": 13,
+   "b_down": 2,
+   "b_up": 2,
+   "a_share_down": 0.783333,
+   "b_share_down": 0.5,
+   "odds_ratio": 5.34545,
+   "conditional_or": 6.0102,
+   "conditional_or_ci95_low": 0.292739,
+   "conditional_or_ci95_high": 373.426,
+   "fisher_p_two_sided": 0.166667,
+   "studies_in_both_compartments": null,
+   "note": "exact conditional test of a common odds ratio across PD, HIV and CRC; odds_ratio is the Mantel-Haenszel estimate; tied pairs excluded"
   }
  ],
  "profile_and_study_pair_jaccard": [
@@ -4998,9 +5662,175 @@
  ],
  "catalog_core_classes": {
   "not in 3-way core": 30,
-  "3-way core, genus or species": 9,
-  "3-way core, higher-rank node (rolled-up annotation)": 8
+  "3-way core, genus or species rank": 9,
+  "3-way core, family-to-phylum rank": 8
  },
+ "core_taxa_with_direct_trait_edge": 0,
+ "direct_trait_edges_by_rank": {
+  "class": {
+   "trait_bearing_matrix_taxa": 16,
+   "with_direct_edge": 0
+  },
+  "family": {
+   "trait_bearing_matrix_taxa": 38,
+   "with_direct_edge": 0
+  },
+  "genus": {
+   "trait_bearing_matrix_taxa": 49,
+   "with_direct_edge": 0
+  },
+  "order": {
+   "trait_bearing_matrix_taxa": 28,
+   "with_direct_edge": 0
+  },
+  "phylum": {
+   "trait_bearing_matrix_taxa": 13,
+   "with_direct_edge": 0
+  },
+  "species": {
+   "trait_bearing_matrix_taxa": 44,
+   "with_direct_edge": 38
+  },
+  "superkingdom": {
+   "trait_bearing_matrix_taxa": 1,
+   "with_direct_edge": 0
+  }
+ },
+ "kg_direct_trait_subjects": 186,
+ "condition_definition_overlap": [
+  {
+   "scenario": "exact_labels",
+   "scenario_label": "Exact condition labels (primary analysis)",
+   "n_PD": 38,
+   "n_HIV": 24,
+   "n_CRC": 34,
+   "intersection_PD_HIV": 21,
+   "intersection_PD_CRC": 27,
+   "intersection_HIV_CRC": 18,
+   "three_way_core": 17,
+   "three_way_union": 47,
+   "mean_pairwise_jaccard_distance": 0.479268,
+   "u3_N": 108,
+   "u3_three_way_exact_p": 2.28309e-14,
+   "u6_units_PD": 49,
+   "u6_units_HIV": 19,
+   "u6_units_CRC": 31,
+   "u6_expected_mean_jaccard_distance": 0.52707,
+   "u6_mean_jaccard_distance_p": 0.193458,
+   "u6_expected_core": 18.3076,
+   "u6_core_p": 0.730213
+  },
+  {
+   "scenario": "synonyms_merged",
+   "scenario_label": "Synonym labels counted under their disease",
+   "n_PD": 38,
+   "n_HIV": 27,
+   "n_CRC": 37,
+   "intersection_PD_HIV": 23,
+   "intersection_PD_CRC": 28,
+   "intersection_HIV_CRC": 21,
+   "three_way_core": 20,
+   "three_way_union": 50,
+   "mean_pairwise_jaccard_distance": 0.456088,
+   "u3_N": 108,
+   "u3_three_way_exact_p": 4.19585e-17,
+   "u6_units_PD": 49,
+   "u6_units_HIV": 22,
+   "u6_units_CRC": 35,
+   "u6_expected_mean_jaccard_distance": 0.511358,
+   "u6_mean_jaccard_distance_p": 0.149049,
+   "u6_expected_core": 19.7734,
+   "u6_core_p": 0.538115
+  },
+  {
+   "scenario": "hiv_minus_vs_plus_counted",
+   "scenario_label": "Exact labels; the HIV- vs HIV+ experiment counted as disease vs healthy",
+   "n_PD": 38,
+   "n_HIV": 24,
+   "n_CRC": 34,
+   "intersection_PD_HIV": 21,
+   "intersection_PD_CRC": 27,
+   "intersection_HIV_CRC": 18,
+   "three_way_core": 17,
+   "three_way_union": 47,
+   "mean_pairwise_jaccard_distance": 0.479268,
+   "u3_N": 108,
+   "u3_three_way_exact_p": 2.28309e-14,
+   "u6_units_PD": 49,
+   "u6_units_HIV": 19,
+   "u6_units_CRC": 31,
+   "u6_expected_mean_jaccard_distance": 0.52707,
+   "u6_mean_jaccard_distance_p": 0.193458,
+   "u6_expected_core": 18.3076,
+   "u6_core_p": 0.730213
+  },
+  {
+   "scenario": "synonyms_and_hiv_minus_vs_plus",
+   "scenario_label": "Synonyms counted and the HIV- vs HIV+ experiment counted",
+   "n_PD": 38,
+   "n_HIV": 27,
+   "n_CRC": 37,
+   "intersection_PD_HIV": 23,
+   "intersection_PD_CRC": 28,
+   "intersection_HIV_CRC": 21,
+   "three_way_core": 20,
+   "three_way_union": 50,
+   "mean_pairwise_jaccard_distance": 0.456088,
+   "u3_N": 108,
+   "u3_three_way_exact_p": 4.19585e-17,
+   "u6_units_PD": 49,
+   "u6_units_HIV": 22,
+   "u6_units_CRC": 35,
+   "u6_expected_mean_jaccard_distance": 0.511358,
+   "u6_mean_jaccard_distance_p": 0.149049,
+   "u6_expected_core": 19.7734,
+   "u6_core_p": 0.538115
+  },
+  {
+   "scenario": "synonyms_hiv_minus_vs_plus_and_art",
+   "scenario_label": "Synonyms, the HIV- vs HIV+ experiment and three HIV+ on ART vs uninfected counted",
+   "n_PD": 38,
+   "n_HIV": 27,
+   "n_CRC": 37,
+   "intersection_PD_HIV": 23,
+   "intersection_PD_CRC": 28,
+   "intersection_HIV_CRC": 21,
+   "three_way_core": 20,
+   "three_way_union": 50,
+   "mean_pairwise_jaccard_distance": 0.456088,
+   "u3_N": 108,
+   "u3_three_way_exact_p": 4.19585e-17,
+   "u6_units_PD": 49,
+   "u6_units_HIV": 22,
+   "u6_units_CRC": 35,
+   "u6_expected_mean_jaccard_distance": 0.511358,
+   "u6_mean_jaccard_distance_p": 0.149049,
+   "u6_expected_core": 19.7734,
+   "u6_core_p": 0.538115
+  },
+  {
+   "scenario": "without_site_miscurations",
+   "scenario_label": "Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)",
+   "n_PD": 38,
+   "n_HIV": 23,
+   "n_CRC": 34,
+   "intersection_PD_HIV": 20,
+   "intersection_PD_CRC": 27,
+   "intersection_HIV_CRC": 17,
+   "three_way_core": 16,
+   "three_way_union": 47,
+   "mean_pairwise_jaccard_distance": 0.495732,
+   "u3_N": 108,
+   "u3_three_way_exact_p": 3.37267e-13,
+   "u6_units_PD": 49,
+   "u6_units_HIV": 18,
+   "u6_units_CRC": 31,
+   "u6_expected_mean_jaccard_distance": 0.53196,
+   "u6_mean_jaccard_distance_p": 0.258657,
+   "u6_expected_core": 17.908,
+   "u6_core_p": 0.786612
+  }
+ ],
  "four_highlighted_pairs": {
   "1_PD_Feces_Cellulose_dec": {
    "condition": "Parkinson's disease",
@@ -5225,13 +6055,13 @@
   },
   {
    "condition": "HIV infection",
-   "body_site": "Oral cavity,Feces",
+   "body_site": "Saliva",
    "compartment": "Oral / Oropharyngeal"
   },
   {
    "condition": "HIV infection",
-   "body_site": "Saliva",
-   "compartment": "Oral / Oropharyngeal"
+   "body_site": "Oral cavity,Feces",
+   "compartment": "Other non-GI"
   },
   {
    "condition": "HIV infection",
@@ -5344,6 +6174,184 @@
    "study_id": "bsdb:30366816",
    "experiment_id": "bsdb:30366816-1",
    "condition": "HIV infection,Diabetes mellitus"
+  }
+ ],
+ "condition_label_inventory": [
+  {
+   "condition_label": "Colorectal adenoma",
+   "ontology_ids": "EFO:0005406",
+   "status": "different condition (excluded)",
+   "studies": 11,
+   "experiments": 19,
+   "feces_experiments": 10
+  },
+  {
+   "condition_label": "HIV mother to child transmission",
+   "ontology_ids": "EFO:0004595",
+   "status": "different condition (excluded)",
+   "studies": 1,
+   "experiments": 8,
+   "feces_experiments": 7
+  },
+  {
+   "condition_label": "Colorectal Gastrointestinal Stromal Tumor",
+   "ontology_ids": "EFO:1000192",
+   "status": "different condition (excluded)",
+   "studies": 1,
+   "experiments": 2,
+   "feces_experiments": 2
+  },
+  {
+   "condition_label": "Parkinson's disease",
+   "ontology_ids": "MONDO:0005180",
+   "status": "exact label (primary analysis)",
+   "studies": 59,
+   "experiments": 163,
+   "feces_experiments": 148
+  },
+  {
+   "condition_label": "Colorectal cancer",
+   "ontology_ids": "EFO:0005842",
+   "status": "exact label (primary analysis)",
+   "studies": 55,
+   "experiments": 111,
+   "feces_experiments": 64
+  },
+  {
+   "condition_label": "HIV infection",
+   "ontology_ids": "EFO:0000764",
+   "status": "exact label (primary analysis)",
+   "studies": 30,
+   "experiments": 53,
+   "feces_experiments": 35
+  },
+  {
+   "condition_label": "Colorectal cancer,Diabetes mellitus",
+   "ontology_ids": "EFO:0005842,EFO:0000400",
+   "status": "multi-condition label (excluded)",
+   "studies": 1,
+   "experiments": 3,
+   "feces_experiments": 3
+  },
+  {
+   "condition_label": "Colorectal adenoma,Colorectal cancer",
+   "ontology_ids": "EFO:0005406,EFO:0005842, EFO:0005842,EFO:0005406",
+   "status": "multi-condition label (excluded)",
+   "studies": 1,
+   "experiments": 2,
+   "feces_experiments": 2
+  },
+  {
+   "condition_label": "HIV infection,Oral candidiasis",
+   "ontology_ids": "EFO:0007406,EFO:0000764",
+   "status": "multi-condition label (excluded)",
+   "studies": 2,
+   "experiments": 2,
+   "feces_experiments": 0
+  },
+  {
+   "condition_label": "Nutraceutical,Colorectal cancer",
+   "ontology_ids": "CHEBI:50733,EFO:0005842",
+   "status": "multi-condition label (excluded)",
+   "studies": 1,
+   "experiments": 2,
+   "feces_experiments": 2
+  },
+  {
+   "condition_label": "Colorectal cancer,Nutraceutical",
+   "ontology_ids": "EFO:0005842,CHEBI:50733",
+   "status": "multi-condition label (excluded)",
+   "studies": 1,
+   "experiments": 1,
+   "feces_experiments": 1
+  },
+  {
+   "condition_label": "Constipation,Parkinson's disease",
+   "ontology_ids": "HP:0002019,MONDO:0005180",
+   "status": "multi-condition label (excluded)",
+   "studies": 1,
+   "experiments": 1,
+   "feces_experiments": 1
+  },
+  {
+   "condition_label": "HIV infection,Antimicrobial agent",
+   "ontology_ids": "CHEBI:33281,EFO:0000764",
+   "status": "multi-condition label (excluded)",
+   "studies": 1,
+   "experiments": 1,
+   "feces_experiments": 1
+  },
+  {
+   "condition_label": "HIV infection,Diabetes mellitus",
+   "ontology_ids": "EFO:0000764,EFO:0000400",
+   "status": "multi-condition label (excluded)",
+   "studies": 1,
+   "experiments": 1,
+   "feces_experiments": 1
+  },
+  {
+   "condition_label": "HIV infection,Human papilloma virus infection",
+   "ontology_ids": "EFO:0001668,EFO:0000764",
+   "status": "multi-condition label (excluded)",
+   "studies": 1,
+   "experiments": 1,
+   "feces_experiments": 0
+  },
+  {
+   "condition_label": "HIV infection,Methamphetamine dependence",
+   "ontology_ids": "EFO:0000764,EFO:0004701",
+   "status": "multi-condition label (excluded)",
+   "studies": 1,
+   "experiments": 1,
+   "feces_experiments": 0
+  },
+  {
+   "condition_label": "Colorectal carcinoma",
+   "ontology_ids": "EFO:1001951",
+   "status": "synonym of Colorectal cancer (sensitivity only)",
+   "studies": 3,
+   "experiments": 7,
+   "feces_experiments": 5
+  },
+  {
+   "condition_label": "Colorectal adenocarcinoma",
+   "ontology_ids": "EFO:0000365",
+   "status": "synonym of Colorectal cancer (sensitivity only)",
+   "studies": 1,
+   "experiments": 5,
+   "feces_experiments": 5
+  },
+  {
+   "condition_label": "Metastatic colorectal cancer",
+   "ontology_ids": "EFO:1001480",
+   "status": "synonym of Colorectal cancer (sensitivity only)",
+   "studies": 2,
+   "experiments": 4,
+   "feces_experiments": 3
+  },
+  {
+   "condition_label": "Colon carcinoma",
+   "ontology_ids": "EFO:1001950",
+   "status": "synonym of Colorectal cancer (sensitivity only)",
+   "studies": 1,
+   "experiments": 1,
+   "feces_experiments": 0
+  },
+  {
+   "condition_label": "Human immunodeficiency virus",
+   "ontology_ids": "NCBITAXON:12721",
+   "status": "synonym of HIV infection (sensitivity only)",
+   "studies": 4,
+   "experiments": 15,
+   "feces_experiments": 3
+  },
+  {
+   "condition_label": "HIV-1 infection",
+   "ontology_ids": "EFO:0000180",
+   "status": "synonym of HIV infection (sensitivity only)",
+   "studies": 1,
+   "experiments": 2,
+   "feces_experiments": 2
   }
  ],
  "monte_carlo": {

@@ -1,0 +1,7 @@
+scenario	scenario_label	n_PD	n_HIV	n_CRC	intersection_PD_HIV	intersection_PD_CRC	intersection_HIV_CRC	three_way_core	three_way_union	mean_pairwise_jaccard_distance	u3_N	u3_three_way_exact_p	u6_units_PD	u6_units_HIV	u6_units_CRC	u6_expected_mean_jaccard_distance	u6_mean_jaccard_distance_p	u6_expected_core	u6_core_p
+exact_labels	Exact condition labels (primary analysis)	38	24	34	21	27	18	17	47	0.479268	108	2.28309e-14	49	19	31	0.52707	0.193458	18.3076	0.730213
+synonyms_merged	Synonym labels counted under their disease	38	27	37	23	28	21	20	50	0.456088	108	4.19585e-17	49	22	35	0.511358	0.149049	19.7734	0.538115
+hiv_minus_vs_plus_counted	Exact labels; the HIV- vs HIV+ experiment counted as disease vs healthy	38	24	34	21	27	18	17	47	0.479268	108	2.28309e-14	49	19	31	0.52707	0.193458	18.3076	0.730213
+synonyms_and_hiv_minus_vs_plus	Synonyms counted and the HIV- vs HIV+ experiment counted	38	27	37	23	28	21	20	50	0.456088	108	4.19585e-17	49	22	35	0.511358	0.149049	19.7734	0.538115
+synonyms_hiv_minus_vs_plus_and_art	Synonyms, the HIV- vs HIV+ experiment and three HIV+ on ART vs uninfected counted	38	27	37	23	28	21	20	50	0.456088	108	4.19585e-17	49	22	35	0.511358	0.149049	19.7734	0.538115
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	38	23	34	20	27	17	16	47	0.495732	108	3.37267e-13	49	18	31	0.53196	0.258657	17.908	0.786612

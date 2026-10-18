@@ -1,9 +1,11 @@
 {
- "generated_at_utc": "2026-10-18T06:36:57Z",
- "code_commit": "ea1b3d3b1b131aae22d3176792f87c7b4d1fc463",
+ "generated_at_utc": "2026-10-18T08:11:04Z",
+ "code_commit": "1c8fdb413265320a1ae5dde64835e5fa8beb0736",
  "script": "data/analysis/cellulose_decr/scripts/cellulose_decr_analysis.py",
  "bugsigdb_vintage": "2026-04-24_00:41_UTC",
+ "contrast_classifier_version": "contrast-orientation-v2",
  "label_source": "experiment",
+ "condition_labels": "exact",
  "permutations": 100000,
  "seed": 20261017,
  "seeds": {
@@ -16,8 +18,8 @@
   "U6": 20261023
  },
  "scripts": {
-  "cellulose_decr_analysis.py": "92d3b62810248f5b577ab098e262c84307bd5fe63e387b2ca6305f63ffc8fea6",
-  "cellulose_decr_figures.py": "5765bed89fd49b1fe15d5b48d3dffb2840acf962d5bef0532d6bd71d5c5eb705"
+  "cellulose_decr_analysis.py": "fce18b7c9578f945493dd6af57464e8bca17558aaf25c3b0b8b72928cb55727f",
+  "cellulose_decr_figures.py": "3a9f7dfaad8ac0efe43f9454c4f3e2328303c3421a120d973ecdafe1e49e72a6"
  },
  "inputs": {
   "profile_metadata": {
@@ -64,8 +66,14 @@
    "path": "data/raw/full_dump.csv",
    "sha256": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788",
    "bytes": 16241290
+  },
+  "kg_edges": {
+   "path": "data/kg-microbe/merged-kg_edges.tsv",
+   "sha256": "d13812a436bd0b1c51cfe20c97076912a131f72b2b8e8ca3bb2db15095ab9ebb",
+   "bytes": 1034256091
   }
  },
+ "inputs_drifted_from_pinned_provenance": [],
  "environment": {
   "python": "3.11.5",
   "numpy": "2.4.4",
@@ -77,6 +85,9 @@
   "cellulose_decreased_taxa_catalog.tsv",
   "compartment_direction_interaction.tsv",
   "compartment_jaccard_and_direction_stats.tsv",
+  "condition_definition_overlap.tsv",
+  "condition_definition_sensitivity.tsv",
+  "condition_label_inventory.tsv",
   "four_highlighted_pairs_study_evidence.tsv",
   "four_highlighted_pairs_summary.json",
   "four_highlighted_pairs_taxon_drivers.tsv",
