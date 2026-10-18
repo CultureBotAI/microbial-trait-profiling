@@ -95,3 +95,19 @@ without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa cura
 without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	disease_vs_healthy_oriented	CRC	study	14	3	7	0.823529	0.0127258	0.00209045
 without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	disease_vs_healthy_oriented	Pooled	experiment	78	20	21	0.795918	2.87209e-09	2.27401e-07
 without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	disease_vs_healthy_oriented	Pooled	study	46	13	13	0.779661	1.91678e-05	2.70863e-05
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	all_contrasts	PD	experiment	58	24	17	0.707317	0.000221964	0.000757636
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	all_contrasts	PD	study	27	14	4	0.658537	0.0595839	0.0092576
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	all_contrasts	HIV	experiment	18	7	3	0.72	0.0432853	0.135332
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	all_contrasts	HIV	study	12	4	2	0.75	0.0768127	0.297852
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	all_contrasts	CRC	experiment	32	6	11	0.842105	2.43426e-05	1.40128e-05
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	all_contrasts	CRC	study	19	2	7	0.904762	0.000221252	0.000197411
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	all_contrasts	Pooled	experiment	108	37	31	0.744828	2.97006e-09	1.01352e-07
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	all_contrasts	Pooled	study	58	20	13	0.74359	1.95191e-05	4.10215e-05
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	disease_vs_healthy_oriented	PD	experiment	47	15	10	0.758065	5.77837e-05	0.000878574
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	disease_vs_healthy_oriented	PD	study	24	10	4	0.705882	0.0243065	0.0145535
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	disease_vs_healthy_oriented	HIV	experiment	11	1	3	0.916667	0.00634766	0.0268555
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	disease_vs_healthy_oriented	HIV	study	9	0	2	1	0.00390625	0.00390625
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	disease_vs_healthy_oriented	CRC	experiment	21	4	8	0.84	0.000910521	0.000193556
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	disease_vs_healthy_oriented	CRC	study	14	3	7	0.823529	0.0127258	0.00209045
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	disease_vs_healthy_oriented	Pooled	experiment	79	20	21	0.79798	1.79242e-09	1.67715e-07
+crc_within_patient_excluded	Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy	disease_vs_healthy_oriented	Pooled	study	47	13	13	0.783333	1.21467e-05	1.9571e-05

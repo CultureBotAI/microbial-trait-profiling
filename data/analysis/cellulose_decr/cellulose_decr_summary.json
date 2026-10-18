@@ -5829,6 +5829,28 @@
    "u6_mean_jaccard_distance_p": 0.258657,
    "u6_expected_core": 17.908,
    "u6_core_p": 0.786612
+  },
+  {
+   "scenario": "crc_within_patient_excluded",
+   "scenario_label": "Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease vs healthy",
+   "n_PD": 38,
+   "n_HIV": 24,
+   "n_CRC": 34,
+   "intersection_PD_HIV": 21,
+   "intersection_PD_CRC": 27,
+   "intersection_HIV_CRC": 18,
+   "three_way_core": 17,
+   "three_way_union": 47,
+   "mean_pairwise_jaccard_distance": 0.479268,
+   "u3_N": 108,
+   "u3_three_way_exact_p": 2.28309e-14,
+   "u6_units_PD": 49,
+   "u6_units_HIV": 19,
+   "u6_units_CRC": 31,
+   "u6_expected_mean_jaccard_distance": 0.52707,
+   "u6_mean_jaccard_distance_p": 0.193458,
+   "u6_expected_core": 18.3076,
+   "u6_core_p": 0.730213
   }
  ],
  "four_highlighted_pairs": {
@@ -6200,6 +6222,22 @@
    "studies": 1,
    "experiments": 2,
    "feces_experiments": 2
+  },
+  {
+   "condition_label": "Colon Sessile Serrated Adenoma/Polyp",
+   "ontology_ids": "EFO:1000189",
+   "status": "different condition (excluded)",
+   "studies": 1,
+   "experiments": 1,
+   "feces_experiments": 1
+  },
+  {
+   "condition_label": "Sigmoid neoplasm",
+   "ontology_ids": "EFO:1001181",
+   "status": "different condition (excluded)",
+   "studies": 1,
+   "experiments": 1,
+   "feces_experiments": 0
   },
   {
    "condition_label": "Parkinson's disease",

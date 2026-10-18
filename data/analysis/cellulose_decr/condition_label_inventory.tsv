@@ -2,6 +2,8 @@ condition_label	ontology_ids	status	studies	experiments	feces_experiments
 Colorectal adenoma	EFO:0005406	different condition (excluded)	11	19	10
 HIV mother to child transmission	EFO:0004595	different condition (excluded)	1	8	7
 Colorectal Gastrointestinal Stromal Tumor	EFO:1000192	different condition (excluded)	1	2	2
+Colon Sessile Serrated Adenoma/Polyp	EFO:1000189	different condition (excluded)	1	1	1
+Sigmoid neoplasm	EFO:1001181	different condition (excluded)	1	1	0
 Parkinson's disease	MONDO:0005180	exact label (primary analysis)	59	163	148
 Colorectal cancer	EFO:0005842	exact label (primary analysis)	55	111	64
 HIV infection	EFO:0000764	exact label (primary analysis)	30	53	35
