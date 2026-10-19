@@ -93,14 +93,23 @@ methods and Tufte plates drawn by `scripts/generate_tufte_plates.py`
 provenance YAML against its LinkML schema and prints the PDF with headless Chrome
 (`just html-to-pdf`). The deck, its assets, the plates and the provenance YAML are
 gitignored local outputs, and the builder reads gitignored inputs as well (the
-earlier deck manifests, `svg_sources/`, figures under `data/derived/`), so a fresh
-clone cannot rebuild the deck (#573). Both builders write to the checkout that holds
+earlier deck manifests and figures under `data/derived/`), so a fresh clone cannot
+rebuild the deck (#573). Each slide shows the SVG its generator drew beside the
+figure's PNG, or else the PNG; the September decks' `svg_sources/` copies are not used,
+because no rerun redraws them (#661). Both builders write to the checkout that holds
 them, whatever `--input-root` points at, and the deck reads the plates and the
 cellulose_decr figures from that checkout too; everything else comes from the input root.
 They refuse to replace an existing deck or plates without `--overwrite`; there is no other
-copy, so back up `slides/`, `provenance/` and `data/derived/tufte_plates/` first. They also
-refuse contrast-orientation inputs from a classifier other than the v2 their typed numbers
-describe, until #579 reads those numbers from the tables (#592).
+copy, so back up `slides/`, `provenance/` and `data/derived/tufte_plates/` first. The
+Table 1 numbers the cover, the plates and their slides quote are read from
+`data/derived/contrast_orientation/disease_control_comparison.tsv` and the tables behind
+each figure, so they follow the contrast classifier of the rerun (#579, #606). So are
+Arm 2's tests and calls (the ORA tables' headers), the oxygen-guild McNemar test
+(`guild_aerobe_anaerobe_correlation.tsv`), the screened sign test's rejection rate
+(`calibration_criteria.tsv`, refused below its replicate budget), Plate V's PD split, Plate
+II's stratum sizes and Plate VII's counts (#680, #683, #704). The fraction sign tests are
+quoted with the studies left after the zero-total exclusion, the log-ratios with each
+population's studies, since their eligibility is decided pair by pair.
 
 The slides are stamped with the rerun revision (`COMMIT` in the builder, `RERUN_COMMIT` in
 the plate script, which a test keeps equal) and link their committed files at it. Before
@@ -109,7 +118,15 @@ each committed table the slide text quotes, each plate's recorded inputs and the
 cellulose_decr tables against the revision their slides cite, using `git ls-tree` listings
 the recipe writes. It refuses when a file differs. `--allow-unverified` builds a review
 deck instead: the files that differ are not linked, their slides say so, and the cover and
-every stamp read "review build", as they do for `--allow-contrast-version-mismatch` (#637).
+every stamp read "review build" (#637). Slides whose code was never merged into main
+(PRs #148, #173 and #315) stay in the deck: they link that code at the pull request's head
+commit, and their stamp reads "not rerun on main" (#614). PR #173 also committed its Table 1
+maps, whose significance outlines and composition triangles main's `just table1-trait-maps`
+does not draw; the builder reads those five maps from that pull request's head and checks
+them there, so no checkout needs them on disk (#677, #704). The build also stops, or with
+`--allow-unverified` names the reason as a review build, when the plates' record lacks a
+count the slides quote (#682) or the cellulose_decr tables were built on another contrast
+classifier than the Table 1 tables (#679).
 Gitignored figures cannot be checked against a revision; the provenance records their
 SHA-256. The check reads the local repository, so push the commits that drew the plates and
 cellulose figures before sharing a deck: the slides link them on GitHub. The provenance folder's `figure_provenance_and_results.json`,
