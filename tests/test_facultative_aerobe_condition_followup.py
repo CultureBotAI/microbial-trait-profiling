@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 MODULE_PATH = (
     Path(__file__).resolve().parents[1]
@@ -57,3 +58,37 @@ def test_missing_label_keeps_only_the_reason_for_separate_reporting() -> None:
     sentence = followup.autism_label_contrast_sentence(summary)
 
     assert sentence.endswith("reported separately rather than pooled (#128).")
+
+
+def test_readme_states_the_computed_shifts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    summary = profile_summary(0.744, -1.682).assign(
+        condition_group=["Autism", "Autism", "Autoimmune disease"],
+        profile_count=[14, 7, 8],
+        body_site_groups="Feces",
+    )
+    grouped = pd.DataFrame(
+        columns=[
+            "condition_group",
+            "direction",
+            "taxon_name",
+            "taxonomic_rank",
+            "profile_count",
+            "study_count",
+            "guild_trait_names",
+        ]
+    )
+    monkeypatch.setattr(followup, "OUTPUT_DIR", tmp_path)
+
+    followup.write_readme(
+        summary,
+        grouped,
+        pd.DataFrame({"taxon_id": []}),
+        pd.DataFrame(),
+        pd.DataFrame({"pattern_name": []}),
+        pd.DataFrame(),
+        pd.DataFrame(),
+    )
+
+    readme = (tmp_path / "autism_autoimmune_followup.md").read_text(encoding="utf-8")
+    assert followup.autism_label_contrast_sentence(summary) in readme
+    assert "slightly" not in readme
