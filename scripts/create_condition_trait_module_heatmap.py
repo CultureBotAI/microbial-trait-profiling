@@ -130,6 +130,11 @@ def load_aggregated_study_profiles(
     if direction not in {"all", "inc", "dec"}:
         msg = f"Unsupported direction filter: {direction!r}; expected 'all', 'inc', or 'dec'."
         raise ValueError(msg)
+    if experiment_metadata is not None and not group_by:
+        # Without grouping fields every study collapses to one row, which hands each
+        # experiment its study's majority label again (#555, #646).
+        msg = "experiment_metadata needs group_by, the experiment labels to sum profiles by."
+        raise ValueError(msg)
     profiles = pd.read_csv(profile_path, sep="\t")
     unfiltered_profile_count = len(profiles)
     unfiltered_study_count = profiles["study_id"].nunique()

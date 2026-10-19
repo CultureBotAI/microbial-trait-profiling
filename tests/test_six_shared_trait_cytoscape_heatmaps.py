@@ -1025,6 +1025,15 @@ def test_oral_and_full_contrast_nominal_p_versus_bh_border_regression() -> None:
     assert oral_export["displayed_in_heatmap"].sum() == 83
     assert (oral_export["nominal_p_value_selected"] == oral_export["significant_in_heatmap"]).all()
 
+    # Squamous cell carcinoma and oral squamous cell carcinoma stay separate oral rows.
+    scc_pair = "Squamous cell carcinoma | Oral cavity / dental"
+    oscc_pair = "Oral squamous cell carcinoma | Oral cavity / dental"
+    for frame in (individual, oral_export):
+        assert {scc_pair, oscc_pair} <= set(frame["condition_body_site_pair"])
+    pair_conditions = individual.groupby("condition_body_site_pair")["condition"].unique()
+    assert pair_conditions[scc_pair].tolist() == ["Squamous cell carcinoma"]
+    assert pair_conditions[oscc_pair].tolist() == ["Oral squamous cell carcinoma"]
+
     # Verified regression cell: Colorectal cancer | Oral cavity / dental x coccus shaped
     # (METPO:1000668)
     crc_full = individual[
