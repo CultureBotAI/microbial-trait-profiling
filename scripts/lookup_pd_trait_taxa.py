@@ -122,6 +122,22 @@ def check_saved_summary(recomputed: pd.DataFrame, saved: pd.DataFrame) -> None:
         raise ValueError(msg) from error
 
 
+def evidence_provenance(
+    profile_ids: list[str], directions: pd.DataFrame, output_dir: Path
+) -> dict[str, object]:
+    """What the readers check: profile set, lollipop traits and the hashes of the inputs."""
+    return {
+        "evidence": EVIDENCE_NAME,
+        "carriers": CARRIERS_NAME,
+        "trait_summary": SUMMARY_NAME,
+        **profile_set_fingerprint(profile_ids),
+        "pd_feces_profile_ids_encoding": "sha256 of the sorted profile_id values, one per line",
+        "traits": directions.to_dict(orient="records"),
+        "input_sha256_chunks": input_fingerprints(tracked_inputs(output_dir)),
+        "sha256_chunk_encoding": "concatenate each input's eight chunks in order",
+    }
+
+
 def profile_set_fingerprint(profile_ids: list[str]) -> dict[str, object]:
     """Count and sha256 of a profile set, so that a later run can tell if it changed."""
     ids = sorted(profile_ids)
@@ -373,16 +389,7 @@ def main() -> None:
         observed["taxonomic_rank_reported"]
     )
     carriers, evidence = build_carriers_and_evidence(observed, zscores, directions)
-    provenance = {
-        "evidence": EVIDENCE_NAME,
-        "carriers": CARRIERS_NAME,
-        "trait_summary": SUMMARY_NAME,
-        **profile_set_fingerprint(profile_ids),
-        "pd_feces_profile_ids_encoding": "sha256 of the sorted profile_id values, one per line",
-        "traits": directions.to_dict(orient="records"),
-        "input_sha256_chunks": input_fingerprints(tracked_inputs(OUTPUT_DIR)),
-        "sha256_chunk_encoding": "concatenate each input's eight chunks in order",
-    }
+    provenance = evidence_provenance(profile_ids, directions, OUTPUT_DIR)
     write_tsv(carriers, OUTPUT_DIR / CARRIERS_NAME)
     write_tsv(evidence, OUTPUT_DIR / EVIDENCE_NAME)
     (OUTPUT_DIR / PROVENANCE_NAME).write_text(

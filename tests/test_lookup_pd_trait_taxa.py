@@ -202,3 +202,17 @@ def test_input_fingerprints_are_sha256_chunks_and_empty_when_missing(tmp_path: P
     assert "".join(fingerprints["present.tsv"]) == digest
     assert [len(chunk) for chunk in fingerprints["present.tsv"]] == [8] * 8
     assert fingerprints["missing.tsv"] == []
+
+
+def test_provenance_records_the_profiles_traits_and_input_hashes(tmp_path: Path) -> None:
+    (tmp_path / lookup.SUMMARY_NAME).write_bytes(b"trait_id\n")
+    directions = lookup.trait_directions(summary())
+
+    provenance = lookup.evidence_provenance(["p2", "p1"], directions, tmp_path)
+
+    assert provenance["pd_feces_profiles"] == 2
+    assert [trait["trait_id"] for trait in provenance["traits"]] == list(LOLLIPOP)
+    hashes = provenance["input_sha256_chunks"]
+    assert sorted(hashes) == sorted(lookup.tracked_inputs(tmp_path))
+    summary_digest = hashlib.sha256(b"trait_id\n").hexdigest()
+    assert "".join(hashes[lookup.SUMMARY_NAME]) == summary_digest

@@ -174,6 +174,14 @@ def test_missing_input_file_is_refused() -> None:
         check(current_inputs=missing)
 
 
+def test_input_the_evidence_never_recorded_is_refused() -> None:
+    """A newly tracked input counts as a change, so the check runs in both directions."""
+    grown = {**INPUTS, "new_input.tsv": ["0000000a"] * 8}
+
+    with pytest.raises(ValueError, match=r"new_input\.tsv changed since it was built"):
+        check(current_inputs=grown)
+
+
 def test_provenance_without_input_hashes_is_refused() -> None:
     old_format = {key: value for key, value in provenance().items() if key != "input_sha256_chunks"}
 
@@ -327,3 +335,23 @@ def test_recipe_stops_before_writing_when_evidence_is_stale(
 
     assert snapshot(tmp_path) == before
     assert file_stamps(committed_dir) == committed_before
+
+
+def test_contributors_stop_when_the_heatmap_trait_table_is_stale(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The evidence is current, but the trait table the note quotes is not (#694)."""
+    write_saved_evidence(tmp_path, ("s1|e1|inc", "s1|e1|dec"))
+    stale = lookup.trait_directions(summary({**TRAITS, "coccus": 0.08}))
+    stale.to_csv(
+        tmp_path / "pd_species_six_traits_influence_heatmap_traits.tsv", sep="\t", index=False
+    )
+    before = snapshot(tmp_path)
+    monkeypatch.setattr(contributors, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(contributors, "load_profile_metadata", metadata)
+    fingerprint_inputs_as(monkeypatch, contributors)
+
+    with pytest.raises(ValueError, match=r"heatmap_traits\.tsv does not match .*coccus"):
+        contributors.main()
+
+    assert snapshot(tmp_path) == before
