@@ -654,12 +654,16 @@ LEVEL_SPLIT = _pattern(
 )
 MULTI_DESIGN_TREATMENT = re.compile(r"randomized controlled trial", re.IGNORECASE)
 MULTI_DESIGN_TIME = re.compile(r"time series|longitudinal", re.IGNORECASE)
-#: A sign counts as a test result where the name or a sub-name ends after it. A minus sign
-#: or an en dash that touches its marker also counts before a word ("HIV\u2013 individuals"),
-#: because neither can be the hyphen that is as often a separator there ("Periodontitis-
-#: Shallow pocket", "BV- Positive") as a minus.
+#: A sign counts as a test result where the name or a sub-name ends after it, with or
+#: without a space before it ("HPV-", "HPV +"). A minus sign or an en dash that touches its
+#: marker also counts before a word ("HIV\u2013 individuals"), because neither can be the
+#: hyphen that is as often a separator there ("Periodontitis- Shallow pocket", "BV-
+#: Positive") as a minus. The space before a sign is matched outside the sign's group, so
+#: the group holds only the sign (#596).
 MARKER = re.compile(
-    "([a-z][a-z0-9.]*)(\\s*[+\\-\u2212\u2013](?=\\s*(?:$|[/),;(]))|[\u2212\u2013](?=\\s+\\w))",
+    "([a-z][a-z0-9.]*)"
+    "(?:\\s+(?=[+\\-\u2212\u2013]\\s*(?:$|[/),;(])))?"
+    "([+\\-\u2212\u2013](?=\\s*(?:$|[/),;(]))|[\u2212\u2013](?=\\s+\\w))",
     re.IGNORECASE,
 )
 #: Words naming the same disease category, so that a negation can deny a condition
@@ -738,9 +742,7 @@ def _matches(pattern: re.Pattern[str], text: str) -> list[str]:
 
 def _markers(name: str) -> dict[str, str]:
     """Test markers and their sign, as in "HPV-", "HIV +" or "HIV\u2013 individuals"."""
-    return {
-        marker.lower(): "+" if sign.strip() == "+" else "-" for marker, sign in MARKER.findall(name)
-    }
+    return {marker.lower(): "+" if sign == "+" else "-" for marker, sign in MARKER.findall(name)}
 
 
 def _condition_words(condition: str) -> tuple[set[str], set[str]]:

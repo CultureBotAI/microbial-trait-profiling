@@ -1562,6 +1562,20 @@ def test_a_minus_sign_or_en_dash_before_a_word_is_a_sign_but_a_hyphen_is_not() -
     assert not MARKER.findall("HIV - negative")
 
 
+def test_a_spaced_sign_is_read_without_its_space() -> None:
+    """The sign's group holds the sign alone, so "HPV +" reads as positive (#596)."""
+    assert MARKER.findall("HIV +") == [("HIV", "+")]
+    assert MARKER.findall("HPV +") == [("HPV", "+")]
+    assert MARKER.findall("HIV \u2013") == [("HIV", "\u2013")]
+    assert MARKER.findall("HIV -, HPV +") == [("HIV", "-"), ("HPV", "+")]
+    assert not MARKER.findall("HIV \u2013 individuals")
+    assert _classify(
+        condition="Human papilloma virus infection",
+        group_0_name="healthy control",
+        group_1_name="HPV +",
+    ) == (DISEASE_VS_HEALTHY, NATIVE)
+
+
 def test_hiv_status_is_a_comparison_only_where_hiv_is_the_condition() -> None:
     """28328799-1 compares HIV status within a periodontitis study; PLWOH is not a disease."""
     assert _classify(condition="Periodontitis", group_0_name="HIV\u2013", group_1_name="HIV+") == (
