@@ -19,6 +19,11 @@ from mtp.composition_denominators import (
     load_retained_profiles,
     trait_fractions,
 )
+from mtp.human_host_corpus import (
+    excluded_host_note,
+    excluded_host_summary,
+    join_human_host_profiles,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -980,7 +985,10 @@ def load_target_taxa_trait_counts() -> pd.DataFrame:
     )
 
 
-def load_target_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
+def load_target_taxa_occurrences(
+    scored_profiles: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return target-taxon occurrences in human-host profiles and those set aside (#587)."""
     taxa = read_tsv(
         REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
         usecols=[
@@ -997,6 +1005,10 @@ def load_target_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
     taxa["profile_id"] = taxa.apply(profile_id_from_taxa_row, axis=1)
     taxa = taxa.drop_duplicates(subset=["taxon_id", "profile_id"])
     taxa["target_taxon_name"] = taxa["taxon_id"].map(TARGET_TAXA)
+    experiment_hosts = read_tsv(
+        REPO_ROOT / "data/derived/experiments.tsv",
+        usecols=["study_id", "experiment_id", "host_species"],
+    )
     profile_columns = [
         "study_id",
         "experiment_id",
@@ -1013,14 +1025,7 @@ def load_target_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
         "guild_z_mean",
         "oxygen_tolerance_z_mean",
     ]
-    profiles = scored_profiles[profile_columns].copy()
-    return taxa.merge(
-        profiles,
-        left_on="profile_id",
-        right_index=True,
-        how="left",
-        suffixes=("_taxa", ""),
-    )
+    return join_human_host_profiles(taxa, scored_profiles[profile_columns], experiment_hosts)
 
 
 def summarize_taxa_conditions(occurrences: pd.DataFrame) -> pd.DataFrame:
@@ -1095,8 +1100,9 @@ def save_condition_breakdown_bar_chart(
     output_path: Path,
     title_prefix: str,
     color: str,
+    note: str,
 ) -> None:
-    """Save a horizontal bar chart for condition counts."""
+    """Save a horizontal bar chart for condition counts, with `note` as its footer."""
     if counts.empty:
         return
 
@@ -1109,7 +1115,8 @@ def save_condition_breakdown_bar_chart(
     add_specificity_note(ax, NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE)
     for index, value in enumerate(bar_counts.to_numpy()):
         ax.text(value, index, f" {int(value)}", va="center", fontsize=8)
-    fig.tight_layout()
+    fig.text(0.01, 0.01, note, fontsize=8, color="#475569")
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
     fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)
 
@@ -1147,9 +1154,13 @@ def save_condition_target_taxa_stacked_bar_chart(
     condition_summary: pd.DataFrame,
     *,
     output_path: Path,
+    note: str,
     limit: int = 12,
 ) -> None:
-    """Save a stacked bar chart of increased-profile focal-taxon recurrence by condition."""
+    """Save a stacked bar chart of increased-profile focal-taxon recurrence by condition.
+
+    `note` follows the occurrence-count caveat in the footer.
+    """
     selected = occurrences[occurrences["direction"] == "increased"].copy()
     selected["condition"] = selected["condition"].map(clean_text)
     selected = selected[~selected["condition"].map(is_excluded_condition_label)].copy()
@@ -1201,7 +1212,7 @@ def save_condition_target_taxa_stacked_bar_chart(
         body_site = body_site_labels.get(condition, "site unknown")
         label = (
             f"{total} occ.; {study_count} "
-            f"{pluralize(study_count, 'study')}; {body_site}"
+            f"{pluralize(study_count, 'study', 'studies')}; {body_site}"
             f"{guild_delta_label(condition, condition_summary)}"
         )
         ax.text(total + x_pad, y_pos, label, va="center", fontsize=8, color="#334155")
@@ -1228,7 +1239,7 @@ def save_condition_target_taxa_stacked_bar_chart(
         0.01,
         0.01,
         "Counts are target-taxon/profile occurrences; a profile can contribute "
-        "once per focal taxon.",
+        f"once per focal taxon. {note}",
         fontsize=8,
         color="#475569",
     )
@@ -1473,6 +1484,7 @@ def make_plots(
     direction_summary: pd.DataFrame,
     body_site_summary: pd.DataFrame,
     occurrences: pd.DataFrame,
+    excluded_occurrences: pd.DataFrame,
 ) -> None:
     plt.rcParams.update({"figure.dpi": 160, "savefig.dpi": 200})
 
@@ -1542,16 +1554,19 @@ def make_plots(
     plt.close(fig)
 
     condition_counts = count_target_taxa_conditions(occurrences, "increased")
+    excluded_note = excluded_host_note(excluded_occurrences, "increased")
     save_condition_breakdown_bar_chart(
         condition_counts,
         output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_bar.png",
         title_prefix="Inc-profile aerobe v2 target taxa",
         color="#dc2626",
+        note=excluded_note,
     )
     save_condition_target_taxa_stacked_bar_chart(
         occurrences,
         condition_summary,
         output_path=OUTPUT_DIR / "condition_target_taxa_stacked_bar.png",
+        note=excluded_note,
     )
     save_anatomical_sites_diagram(
         body_site_summary,
@@ -1575,6 +1590,7 @@ def write_summary_report(
     inferred_group_summary: pd.DataFrame,
     kg_microbe_taxon_universe: pd.DataFrame,
     top_increased_profiles: pd.DataFrame,
+    excluded_occurrences: pd.DataFrame,
 ) -> None:
     direction_rows = direction_summary[
         direction_summary["trait"].isin(GUILD_TRAITS.values())
@@ -1662,6 +1678,18 @@ def write_summary_report(
             f"{int(row.increased_profile_count)} / {int(row.decreased_profile_count)} | "
             f"{int(row.increased_study_count)} |"
         )
+    lines.extend(
+        [
+            "",
+            "Target-taxon occurrence views (`target_taxa_condition_breakdown_bar.png`, "
+            "`condition_target_taxa_stacked_bar.png`, `candidate_taxa_profile_occurrences.tsv` "
+            "and `candidate_taxa_condition_direction.tsv`) count human-host profiles only, "
+            "the corpus of the profile metadata. "
+            f"{excluded_host_summary(excluded_occurrences)} "
+            "They have no profile metadata, so they are not counted under any condition; "
+            "`candidate_taxa_excluded_host_occurrences.tsv` lists them.",
+        ]
+    )
 
     lines.extend(
         [
@@ -1796,6 +1824,7 @@ def write_summary_report(
             "- `candidate_taxa_trait_presence.tsv`",
             "- `candidate_taxa_condition_direction.tsv`",
             "- `candidate_taxa_profile_occurrences.tsv`",
+            "- `candidate_taxa_excluded_host_occurrences.tsv`",
             "- `kg_microbe_candidate_taxon_universe.tsv`",
             "- `condition_inferred_guild_summary.tsv`",
             "- `condition_inferred_guild_trait_evidence.tsv`",
@@ -1838,7 +1867,7 @@ def main() -> None:
     condition_summary_output = remove_excluded_condition_labels(condition_summary)
     taxa_summary = load_taxa_direction_summary()
     trait_presence = load_target_taxa_trait_counts()
-    occurrences = load_target_taxa_occurrences(scored_profiles)
+    occurrences, excluded_occurrences = load_target_taxa_occurrences(scored_profiles)
     condition_taxa_summary = summarize_taxa_conditions(occurrences)
     profile_taxa_occurrences = load_profile_taxa_occurrences(scored_profiles)
     kg_microbe_taxon_universe = build_kg_microbe_taxon_universe()
@@ -1887,6 +1916,11 @@ def main() -> None:
         sep="\t",
         index=False,
     )
+    excluded_occurrences.sort_values(["target_taxon_name", "profile_id"]).to_csv(
+        OUTPUT_DIR / "candidate_taxa_excluded_host_occurrences.tsv",
+        sep="\t",
+        index=False,
+    )
     kg_microbe_taxon_universe.to_csv(
         OUTPUT_DIR / "kg_microbe_candidate_taxon_universe.tsv",
         sep="\t",
@@ -1919,7 +1953,14 @@ def main() -> None:
         index=False,
     )
 
-    make_plots(taxa_summary, condition_summary, direction_summary, body_site_summary, occurrences)
+    make_plots(
+        taxa_summary,
+        condition_summary,
+        direction_summary,
+        body_site_summary,
+        occurrences,
+        excluded_occurrences,
+    )
     write_summary_report(
         direction_summary,
         body_site_summary,
@@ -1929,11 +1970,13 @@ def main() -> None:
         inferred_group_summary,
         kg_microbe_taxon_universe,
         top_increased_profiles,
+        excluded_occurrences,
     )
 
     print(f"Wrote investigation outputs to: {OUTPUT_DIR}")
     print(f"Study profiles analyzed: {len(scored_profiles)}")
     print(f"Target taxa occurrence rows: {len(occurrences)}")
+    print(f"Target taxa occurrences outside the human-host corpus: {len(excluded_occurrences)}")
     print(f"KG-Microbe candidate taxon universe rows: {len(kg_microbe_taxon_universe)}")
     print(f"Inferred guild condition rows: {len(inferred_group_summary)}")
     print(f"Condition/taxon rows: {len(condition_taxa_summary)}")

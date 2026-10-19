@@ -838,7 +838,9 @@ total target-taxon/profile occurrence count, the number of unique studies in the
 focus direction, the dominant body-site group among plotted occurrences, and the
 condition-level focus-minus-comparator v2 trait-enrichment contrast when available.
 The unit remains an occurrence count: a single BugSigDB profile can contribute
-multiple counts if multiple focal taxa are observed in that profile.
+multiple counts if multiple focal taxa are observed in that profile. As in the
+breakdown bars, only human-host profiles are counted; the footer states how many
+focus-direction occurrences from other hosts were left out (#587).
 
 ### Shared Data Collection and Label Definitions
 
@@ -1062,10 +1064,12 @@ as a gut signal.
 #### Slide 5: Top Conditions for Increased Target-Taxon Occurrences
 
 `target_taxa_condition_breakdown_bar.png` is not a guild-score figure. It loads
-target-taxon occurrences from `data/derived/taxa.tsv`, limits them to the fixed
+target-taxon occurrences from `data/derived/bugsigdb_taxa.tsv`, limits them to the fixed
 focal NCBI Taxonomy IDs, deduplicates by taxon and study profile, joins the
 scored profile metadata, removes broad metadata-like condition labels, and
-counts increased target taxon-profile occurrences by condition.
+counts increased target taxon-profile occurrences by condition. Only
+occurrences in human-host profiles, the corpus of the profile metadata, are
+counted (#587).
 
 The x-axis unit is target taxon-profile occurrences. It is not unique studies,
 not unique experiments, and not a trait-enrichment z-score. A single profile can contribute
@@ -1075,9 +1079,12 @@ The largest condition labels after the broad-label filter are colorectal cancer
 (42 increased focal taxon-profile occurrences), aging (14), type II diabetes
 mellitus (10), COVID-19 (10), periodontitis (10), obesity (8), gastric cancer
 (8), mucositis (8), HIV infection (7), Parkinson's disease (7), and rheumatoid
-arthritis (7). Another 54 increased occurrences come from profiles that are not
-in the plotted profile metadata, so they have no condition label; the chart
-shows them as an `unknown` bar, the longest in the panel.
+arthritis (7). Another 54 increased occurrences (49 profiles) come from
+experiments whose host is not Homo sapiens, mostly mouse and rat. The
+human-host profile metadata has no condition for them, so the chart leaves them
+out and states their count in its footer; earlier versions showed them as an
+`unknown` bar. `aerobe-enrichment-v2/candidate_taxa_excluded_host_occurrences.tsv`
+lists them with their host species.
 
 Interpretation: colorectal cancer dominates the labelled conditions in the fixed
 target-taxon recurrence view, with both gut-associated and oral-associated focal
@@ -1220,10 +1227,11 @@ condition-label screen by itself.
 #### Slide 10: Top Conditions for Decreased Target-Taxon Occurrences
 
 `target_taxa_condition_breakdown_bar.png` is not a trait-enrichment figure. It uses
-the fixed focal anaerobe taxon list, loads occurrences from `data/derived/taxa.tsv`,
+the fixed focal anaerobe taxon list, loads occurrences from `data/derived/bugsigdb_taxa.tsv`,
 deduplicates by taxon and study profile, joins profile metadata, removes broad
 metadata-like condition labels, and counts decreased focal taxon-profile
-occurrences by condition.
+occurrences by condition. Only occurrences in human-host profiles, the corpus of
+the profile metadata, are counted (#587).
 
 The x-axis unit is target taxon-profile occurrences. A condition can have a
 large count because many focal taxa recur in the same condition, because the
@@ -1232,9 +1240,12 @@ condition has many profiles, or both.
 The largest labels are aging (59 decreased occurrences), Parkinson's disease
 (40), COVID-19 (36), colorectal cancer (27), inflammatory bowel disease (13),
 colorectal carcinoma (12), psoriasis vulgaris (12), tumor stage (8), obesity
-(8), and chronic constipation (7). Another 28 decreased occurrences come from
-profiles that are not in the plotted profile metadata and are shown as an
-`unknown` bar.
+(8), and chronic constipation (7). Another 28 decreased occurrences (25
+profiles) come from experiments whose host is not Homo sapiens, mostly mouse.
+The human-host profile metadata has no condition for them, so the chart leaves
+them out and states their count in its footer; earlier versions showed them as
+an `unknown` bar. `anaerobe-depletion-v2/candidate_taxa_excluded_host_occurrences.tsv`
+lists them with their host species.
 
 Interpretation: the fixed focal anaerobe taxa recur as decreased across several
 gut, metabolic, neuro, immune, and infection contexts. This panel is consistent
@@ -1862,7 +1873,7 @@ The edge TSV `condition_body_site_guild_map_edges.tsv` records the ranked condit
 
 Guild-specificity: no. This is a fixed target-taxon occurrence-count view; it is not recomputed from the v2 trait-enrichment score.
 
-Target-taxon occurrences were loaded from `data/derived/taxa.tsv`, limited to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study profile, and joined to the scored study profiles. This produces one row per focal taxon/profile occurrence with condition, body site, direction, and trait-enrichment metadata. The bar chart counts increased focal-taxon/profile occurrences by condition after removing the broad non-condition and metadata labels described above. A condition with multiple focal taxa can therefore contribute multiple occurrences; the chart is an occurrence breakdown, not a unique-study breakdown. It displays the top 20 explicit condition labels as horizontal bars, with bar labels showing occurrence counts.
+Target-taxon occurrences were loaded from `data/derived/bugsigdb_taxa.tsv`, limited to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study profile, and joined to the scored study profiles. Only occurrences whose profile is in the human-host profile metadata are kept: an occurrence outside it must come from an experiment whose host in `data/derived/experiments.tsv` is not Homo sapiens, or the script stops with an error. The set-aside occurrences are listed with their host in `candidate_taxa_excluded_host_occurrences.tsv`, counted in the README, and their focus-direction count is stated in the footers of this chart and of `condition_target_taxa_stacked_bar.png` (#587). This produces one row per focal taxon/profile occurrence with condition, body site, direction, and trait-enrichment metadata. The bar chart counts increased focal-taxon/profile occurrences by condition after removing the broad non-condition and metadata labels described above. A condition with multiple focal taxa can therefore contribute multiple occurrences; the chart is an occurrence breakdown, not a unique-study breakdown. It displays the top 20 explicit condition labels as horizontal bars, with bar labels showing occurrence counts.
 
 #### `condition_target_taxa_stacked_bar.png`
 
@@ -1949,7 +1960,7 @@ The edge TSV `condition_body_site_guild_map_edges.tsv` records the ranked condit
 
 Guild-specificity: no. This is a fixed target-taxon occurrence-count view; it is not recomputed from the v2 trait-enrichment score.
 
-Target-taxon occurrences were loaded from `data/derived/taxa.tsv`, limited to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study profile, and joined to the scored study profiles. This produces one row per focal taxon/profile occurrence with condition, body site, direction, and trait-enrichment metadata. The bar chart counts decreased target-taxon/profile occurrences by condition after removing the broad non-condition and metadata labels described above. A condition with multiple focal taxa can therefore contribute multiple occurrences; the chart is an occurrence breakdown, not a unique-study breakdown. It displays the top 20 explicit condition labels as horizontal bars, with bar labels showing occurrence counts.
+Target-taxon occurrences were loaded from `data/derived/bugsigdb_taxa.tsv`, limited to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study profile, and joined to the scored study profiles. Only occurrences whose profile is in the human-host profile metadata are kept: an occurrence outside it must come from an experiment whose host in `data/derived/experiments.tsv` is not Homo sapiens, or the script stops with an error. The set-aside occurrences are listed with their host in `candidate_taxa_excluded_host_occurrences.tsv`, counted in the README, and their focus-direction count is stated in the footers of this chart and of `condition_target_taxa_stacked_bar.png` (#587). This produces one row per focal taxon/profile occurrence with condition, body site, direction, and trait-enrichment metadata. The bar chart counts decreased target-taxon/profile occurrences by condition after removing the broad non-condition and metadata labels described above. A condition with multiple focal taxa can therefore contribute multiple occurrences; the chart is an occurrence breakdown, not a unique-study breakdown. It displays the top 20 explicit condition labels as horizontal bars, with bar labels showing occurrence counts.
 
 #### `condition_target_taxa_stacked_bar.png`
 
