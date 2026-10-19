@@ -135,6 +135,11 @@ def test_compute_annotation_density_deciles() -> None:
             "trait": [f"Trait_{i}" for i in range(20)],
             "trait_total": list(range(1, 21)),
             "best_qvalue": [0.01 if i % 2 == 0 else 0.10 for i in range(20)],
+            "n_profiles_tested": [10] * 20,
+            "hit_rows": [1 if i % 2 == 0 else 0 for i in range(20)],
+            "test_status": [
+                "tested_significant" if i % 2 == 0 else "tested_nonsignificant" for i in range(20)
+            ],
         }
     )
 
@@ -157,8 +162,12 @@ def test_compute_annotation_density_deciles() -> None:
 
 
 def _write_ranked_table(path: Path, n_testable: int, rows: list[dict[str, object]]) -> None:
-    """Helper to write a ranked table TSV with comment headers."""
+    """Write a synthetic complete trait summary with its explicit discovery state."""
     df = pd.DataFrame(rows)
+    df["hit_rows"] = df["best_qvalue"].le(0.05).astype(int)
+    df["test_status"] = "tested_nonsignificant"
+    df.loc[df["hit_rows"] > 0, "test_status"] = "tested_significant"
+    df.loc[df["n_profiles_tested"] == 0, "test_status"] = "zero_eligible_tests"
     with path.open("w", encoding="utf-8", newline="") as f:
         f.write(f"# Total-Testable-Profiles: {n_testable}\n")
         f.write(f"# Ranked-Traits: {len(df)}\n")
@@ -254,6 +263,15 @@ def test_support_status_and_sensitivity_reports(tmp_path: Path) -> None:
 
     feces_ex_rows = [
         {
+            "rank": 4,
+            "trait": "TraitLowSupport",
+            "best_qvalue": float("nan"),
+            "mean_fold": float("nan"),
+            "n_profiles_tested": 0,
+            "trait_total": float("nan"),
+            "prevalence": float("nan"),
+        },
+        {
             "rank": 1,
             "trait": "TraitBoth",
             "best_qvalue": 0.02,
@@ -293,6 +311,7 @@ def test_support_status_and_sensitivity_reports(tmp_path: Path) -> None:
             results_tsv=out_dir / "r.tsv",
             report_txt=out_dir / "rep.txt",
             overall_ranked_tsv=pooled_tsv,
+            tested_traits_tsv=pooled_tsv,
             pairs_ranked_tsv=out_dir / "pairs_pooled.tsv",
         ),
         "feces": StratumOutputs(
@@ -301,6 +320,7 @@ def test_support_status_and_sensitivity_reports(tmp_path: Path) -> None:
             results_tsv=out_dir / "r.tsv",
             report_txt=out_dir / "rep.txt",
             overall_ranked_tsv=feces_tsv,
+            tested_traits_tsv=feces_tsv,
             pairs_ranked_tsv=out_dir / "pairs_feces.tsv",
         ),
         "feces_excluded": StratumOutputs(
@@ -309,6 +329,7 @@ def test_support_status_and_sensitivity_reports(tmp_path: Path) -> None:
             results_tsv=out_dir / "r.tsv",
             report_txt=out_dir / "rep.txt",
             overall_ranked_tsv=feces_ex_tsv,
+            tested_traits_tsv=feces_ex_tsv,
             pairs_ranked_tsv=out_dir / "pairs_feces_excluded.tsv",
         ),
     }
@@ -484,3 +505,180 @@ def test_cli_wrapper() -> None:
     )
     assert res.returncode == 0
     assert "Evaluate ORA background stratification" in res.stdout
+
+
+def test_complete_test_universe_reaches_density_diagnostic(tmp_path: Path) -> None:
+    """Actual ORA -> exporter -> diagnostic retains null and single-hit traits (#664)."""
+    matrix = tmp_path / "matrix.tsv"
+    traits = ["Signal", "Null", "Singleton", "ObservedZero", "Unsupported"]
+    pd.DataFrame(
+        {
+            "taxon_id": [f"NCBITaxon:{i}" for i in range(100)],
+            "Signal": [int(i < 10) for i in range(100)],
+            "Null": [int(i < 50) for i in range(100)],
+            "Singleton": [int(i < 10) for i in range(100)],
+            "ObservedZero": [int(i == 0) for i in range(100)],
+            "Unsupported": [0] * 100,
+        }
+    ).to_csv(matrix, sep="\t", index=False)
+    profiles = tmp_path / "profiles.tsv"
+    rows = []
+    for study in range(4):
+        for direction in ("inc", "dec"):
+            rows.append(
+                [
+                    f"s{study}",
+                    "e1",
+                    direction,
+                    10,
+                    10 if direction == "inc" else 0,
+                    5,
+                    10 if study == 0 and direction == "inc" else 0,
+                    0,
+                    0,
+                ]
+            )
+    # Neither zero-draw paired profiles nor unpaired profiles belong in the denominator.
+    rows.extend(
+        [
+            ["s4", "e1", "inc", 0, 0, 0, 0, 0, 0],
+            ["s4", "e1", "dec", 0, 0, 0, 0, 0, 0],
+            ["s5", "e1", "inc", 10, 10, 5, 10, 0, 0],
+        ]
+    )
+    pd.DataFrame(
+        rows, columns=["study_id", "experiment_id", "inc_dec", "taxa_count", *traits]
+    ).to_csv(profiles, sep="\t", index=False)
+    experiments = tmp_path / "experiments.tsv"
+    pd.DataFrame(
+        {
+            "study_id": [f"s{i}" for i in range(6)],
+            "experiment_id": ["e1"] * 6,
+            "body_site": ["feces", "feces", "saliva", "saliva", "feces", "saliva"],
+        }
+    ).to_csv(experiments, sep="\t", index=False)
+    outputs, summary_path, _ = run_stratification_pipeline(
+        profiles_path=profiles,
+        experiments_path=experiments,
+        taxa_matrix=matrix,
+        output_dir=tmp_path / "out",
+    )
+    pooled = outputs["pooled"]
+    assert pooled.tested_traits_tsv is not None
+    tested = pd.read_csv(pooled.tested_traits_tsv, sep="\t", comment="#").set_index("trait")
+    ranked = pd.read_csv(pooled.overall_ranked_tsv, sep="\t", comment="#").set_index("trait")
+    assert set(ranked.index) == {"Signal"}
+    assert ranked.loc["Signal", "prevalence_summary"] == "4 / 8"
+    assert ranked.loc["Signal", "prevalence"] == 0.5
+    assert ranked.loc["Signal", "trait_total"] == 10  # Reference K, not profile sum 40.
+    assert tested.loc["Singleton", "hit_rows"] == 1
+    for trait in ("Null", "ObservedZero"):
+        assert tested.loc[trait, "test_status"] == "tested_nonsignificant"
+        assert tested.loc[trait, "n_profiles_tested"] == 8
+        assert tested.loc[trait, "prevalence"] == 0
+        assert tested.loc[trait, "hit_rows"] == 0
+    assert tested.loc["Unsupported", "test_status"] == "zero_eligible_tests"
+    assert tested.loc["Unsupported", "n_profiles_tested"] == 0
+    assert pd.isna(tested.loc["Unsupported", "prevalence"])
+    assert pooled.all_results_tsv is not None
+    all_results = pd.read_csv(pooled.all_results_tsv, sep="\t", comment="#")
+    assert len(all_results) == tested["n_profiles_tested"].sum() == 32
+    pairs = pd.read_csv(pooled.pairs_ranked_tsv, sep="\t", comment="#")
+    assert len(pairs) == 5  # The public pair ranking remains discovery-only.
+    deciles = pd.read_csv(tmp_path / "out" / "annotation_density_deciles.tsv", sep="\t")
+    assert deciles["total_traits"].sum() == 4
+    assert deciles["significant_traits"].sum() == 2
+    assert (deciles["pct_significant"] == 0).any()
+    sensitivity = pd.read_csv(summary_path, sep="\t", comment="#").set_index("trait")
+    assert sensitivity.loc["Null", "support_status"] == "neither_significant"
+    assert sensitivity.loc["Unsupported", "support_status"] == "insufficient_support"
+    assert pd.isna(sensitivity.loc["Unsupported", "feces_significant"])
+
+    # Missing analysis must not become evidence of a tested negative result.
+    missing_path = outputs["feces_excluded"].tested_traits_tsv
+    assert missing_path is not None
+    missing_path.unlink()
+    missing, _ = build_sensitivity_summary_table(outputs)
+    null = missing.set_index("trait").loc["Null"]
+    assert null["support_status"] == "unavailable_comparison"
+    assert null["feces_excluded_test_status"] == "unavailable_analysis"
+    assert pd.isna(null["feces_excluded_prevalence"])
+
+
+def test_density_rejects_selected_rankings() -> None:
+    """A missing statistical universe cannot silently become a 100% discovery rate."""
+    with pytest.raises(ValueError, match="complete trait summary"):
+        compute_annotation_density_deciles(
+            pd.DataFrame({"trait_total": [10], "best_qvalue": [0.01]})
+        )
+
+
+def test_report_only_export_preserves_unavailable_denominator(tmp_path: Path) -> None:
+    """Legacy text discoveries cannot establish how many eligible profiles were tested."""
+    report = tmp_path / "legacy_report.txt"
+    report.write_text(
+        "FDR q <= 0.001\nMin Fold >= 1.5\n"
+        "s1\te1\tinc\n- TraitA, 0.0001, obs=5 exp=1 fold=5\n"
+        "s2\te1\tinc\n- TraitA, 0.0002, obs=4 exp=1 fold=4\n"
+    )
+    output = tmp_path / "ranked.tsv"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "scripts" / "export_trait_enrichment_rankings.py"),
+            "--input",
+            str(report),
+            "--results",
+            str(tmp_path / "missing.tsv"),
+            "--overall-output",
+            str(output),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    row = pd.read_csv(output, sep="\t", comment="#").iloc[0]
+    assert row["hit_rows"] == 2
+    assert row["prevalence_summary"] == "2 / NA"
+    assert pd.isna(row["n_profiles_tested"])
+    assert pd.isna(row["prevalence"])
+
+
+@pytest.mark.parametrize("draw_count", [0, 2])
+def test_zero_discoveries_are_distinct_from_zero_tests(tmp_path: Path, draw_count: int) -> None:
+    """An empty selected ranking never erases the analyzer's eligible universe."""
+    matrix = tmp_path / "matrix.tsv"
+    matrix.write_text("taxon_id\tNull\nNCBITaxon:1\t1\nNCBITaxon:2\t0\n")
+    profiles = tmp_path / "profiles.tsv"
+    profiles.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tNull\n"
+        f"s1\te1\tinc\t{draw_count}\t0\n"
+        f"s1\te1\tdec\t{draw_count}\t0\n"
+    )
+    experiments = tmp_path / "experiments.tsv"
+    experiments.write_text("study_id\texperiment_id\tbody_site\ns1\te1\tfeces\n")
+    outputs, _, _ = run_stratification_pipeline(
+        profiles_path=profiles,
+        experiments_path=experiments,
+        taxa_matrix=matrix,
+        output_dir=tmp_path / "out",
+        strata=["pooled"],
+    )
+    tested_path = outputs["pooled"].tested_traits_tsv
+    assert tested_path is not None
+    row = pd.read_csv(tested_path, sep="\t", comment="#").iloc[0]
+    assert f"# Total-Testable-Profiles: {2 if draw_count else 0}\n" in tested_path.read_text()
+    deciles = pd.read_csv(tmp_path / "out" / "annotation_density_deciles.tsv", sep="\t")
+    assert pd.read_csv(outputs["pooled"].overall_ranked_tsv, sep="\t", comment="#").empty
+    assert row["hit_rows"] == 0
+    if draw_count:
+        assert row["test_status"] == "tested_nonsignificant"
+        assert row["n_profiles_tested"] == 2
+        assert row["prevalence"] == 0
+        assert deciles["total_traits"].sum() == 1
+        assert deciles["pct_significant"].sum() == 0
+    else:
+        assert row["test_status"] == "zero_eligible_tests"
+        assert row["n_profiles_tested"] == 0
+        assert pd.isna(row["prevalence"])
+        assert deciles.empty
