@@ -1906,7 +1906,10 @@ def interaction_interpretation(row: pd.Series | Mapping[str, Any]) -> str:
     if math.isnan(p):
         finding = "Not testable with these counts"
     elif p >= ALPHA:
-        finding = "No difference in direction between stool and GI mucosa/lumen samples at p < 0.05"
+        finding = (
+            "No difference in direction between stool and GI mucosa/lumen samples "
+            "detected at p < 0.05"
+        )
     elif low <= 1 <= high:
         finding = (
             "Direction differs between stool and GI mucosa/lumen samples at p < 0.05, "
