@@ -63,6 +63,7 @@ from mtp.cellulose_decr.analysis import (
 from mtp.contrast_orientation import (
     CASE_VS_CONTROL_SUBJECT,
     CLASSIFIER_VERSION,
+    COMORBIDITY_WITHIN_DISEASE,
     PAIRED_TISSUE_AUTOLOGOUS,
     TIER_1_HEALTHY_NORMAL,
     TIER_2_CONDITION_NEGATIVE_SCREENED,
@@ -683,39 +684,56 @@ def test_u6_units_number_the_studies_in_order() -> None:
 
 
 def _case_control_corpus(root: Path) -> Corpus:
-    """The fixture corpus with three CRC contrasts that the case-control rules tell apart.
+    """The fixture corpus with one disease-vs-healthy contrast of each kind the rules tell
+    apart (#675):
 
-    bsdb:2-1 compares tumour with adjacent tissue, bsdb:2-2 treated cases with Tier 3
-    controls and bsdb:2-3 cases with screened controls.
+    - bsdb:1-1, cases against screened controls (Tier 2);
+    - bsdb:1-2, untreated cases against hospital controls (Tier 3);
+    - bsdb:2-1, tumour against adjacent tissue of the same patients;
+    - bsdb:2-2, cases named as treated against Tier 3 controls;
+    - bsdb:2-3, a comorbidity contrast.
+
+    bsdb:1-3 is a treatment contrast, as real manifests mark them.
     """
     corpus = load_corpus(_input_root(root), "experiment")
     manifest = corpus.manifest.copy()
+    tier3 = TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+    manifest.loc[("bsdb:1", "bsdb:1-1"), "control_tier"] = TIER_2_CONDITION_NEGATIVE_SCREENED
+    manifest.loc[("bsdb:1", "bsdb:1-2"), "control_tier"] = tier3
+    manifest.loc[("bsdb:1", "bsdb:1-3"), ["contrast_type", "control_tier"]] = [
+        "treatment_exposure",
+        "not_applicable",
+    ]
     manifest.loc[("bsdb:2", "bsdb:2-1"), ["contrast_type", "control_tier"]] = [
         PAIRED_TISSUE_AUTOLOGOUS,
-        TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+        tier3,
     ]
     manifest.loc[("bsdb:2", "bsdb:2-2"), ["control_tier", "flags"]] = [
-        TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+        tier3,
         "no_group_0_definition_in_export,treated_disease_group",
     ]
-    manifest.loc[("bsdb:2", "bsdb:2-3"), "control_tier"] = TIER_2_CONDITION_NEGATIVE_SCREENED
+    manifest.loc[("bsdb:2", "bsdb:2-3"), ["contrast_type", "control_tier"]] = [
+        COMORBIDITY_WITHIN_DISEASE,
+        tier3,
+    ]
     return replace(corpus, manifest=manifest)
 
 
 def test_case_control_rules_keep_patients_against_controls(tmp_path: Path) -> None:
-    """The primary rule leaves out tumour-vs-adjacent tissue; the others vary it (#580)."""
+    """The primary rule leaves out tissue and comorbidity contrasts; each other rule
+    changes one thing, and no two keep the same experiments (#580, #675)."""
     corpus = _case_control_corpus(tmp_path)
 
     def kept(rule: str) -> set[str]:
         profiles, _ = population(replace(corpus, case_control=rule), ORIENTED)
         return set(profiles["experiment_id"])
 
-    # bsdb:1-3 is a treatment contrast, never disease vs healthy.
-    healthy = {"bsdb:1-1", "bsdb:1-2"}
-    assert kept("subject_controls") == healthy | {"bsdb:2-2", "bsdb:2-3"}
-    assert kept("untreated_cases") == healthy | {"bsdb:2-3"}
-    assert kept("control_tiers_1_2") == healthy | {"bsdb:2-3"}
-    assert kept("every_contrast_type") == healthy | {"bsdb:2-1", "bsdb:2-2", "bsdb:2-3"}
+    subject = {"bsdb:1-1", "bsdb:1-2", "bsdb:2-2"}
+    assert kept("subject_controls") == subject
+    assert kept("cases_not_named_treated") == {"bsdb:1-1", "bsdb:1-2"}
+    assert kept("control_tiers_1_2") == {"bsdb:1-1"}
+    assert kept("with_paired_tissue") == subject | {"bsdb:2-1"}
+    assert kept("with_comorbidity") == subject | {"bsdb:2-3"}
     with pytest.raises(ValueError, match="unknown case-control rule 'tissue'"):
         population(replace(corpus, case_control="tissue"), ORIENTED)
 
@@ -723,14 +741,25 @@ def test_case_control_rules_keep_patients_against_controls(tmp_path: Path) -> No
 def test_case_control_inventory_names_the_rules_that_count_each_experiment(
     tmp_path: Path,
 ) -> None:
-    """Only experiments that some rule sets aside are listed, so none is dropped silently."""
+    """Only disease-vs-healthy experiments that some rule sets aside are listed, so none is
+    dropped silently; the treatment contrast bsdb:1-3 is not one (#675)."""
     inventory = case_control_inventory(_case_control_corpus(tmp_path))
+    every = ["subject_controls", "cases_not_named_treated", "with_paired_tissue"]
     assert [(row["experiment_id"], row["counted_under"]) for row in inventory] == [
-        ("bsdb:2-1", ["every_contrast_type"]),
-        ("bsdb:2-2", ["subject_controls", "every_contrast_type"]),
+        ("bsdb:2-1", ["with_paired_tissue"]),
+        ("bsdb:2-2", ["subject_controls", "with_paired_tissue", "with_comorbidity"]),
+        ("bsdb:2-3", ["with_comorbidity"]),
+        ("bsdb:1-2", [*every, "with_comorbidity"]),
     ]
     assert inventory[0]["contrast_type"] == PAIRED_TISSUE_AUTOLOGOUS
     assert inventory[0]["compartment"] == NON_FECAL_GI
+
+
+def test_case_control_inventory_needs_every_experiment_in_the_manifest(tmp_path: Path) -> None:
+    corpus = _case_control_corpus(tmp_path)
+    manifest = corpus.manifest.drop(index=("bsdb:2", "bsdb:2-2"))
+    with pytest.raises(ValueError, match="1 experiments have no contrast-manifest row"):
+        case_control_inventory(replace(corpus, manifest=manifest))
 
 
 def test_each_scenario_changes_the_labels_or_the_case_control_rule(tmp_path: Path) -> None:
@@ -742,13 +771,14 @@ def test_each_scenario_changes_the_labels_or_the_case_control_rule(tmp_path: Pat
     assert {slug: scenario.case_control for slug, scenario in scenarios.items()} == {
         "exact_labels": "subject_controls",
         "synonyms_merged": "subject_controls",
-        "treated_cases_excluded": "untreated_cases",
+        "named_treated_cases_excluded": "cases_not_named_treated",
         "control_tiers_1_2": "control_tiers_1_2",
-        "every_contrast_type": "every_contrast_type",
+        "paired_tissue_counted": "with_paired_tissue",
+        "comorbidity_counted": "with_comorbidity",
         "without_site_miscurations": "subject_controls",
     }
     with pytest.raises(ValueError, match="primary case-control rule"):
-        scenario_corpora(replace(corpus, case_control="untreated_cases"))
+        scenario_corpora(replace(corpus, case_control="cases_not_named_treated"))
 
 
 def test_direction_tests_ask_whether_decreased_signatures_carry_more() -> None:

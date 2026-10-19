@@ -204,12 +204,12 @@ def test_shared_taxa_caption_counts_direct_edges(results: figures.Results) -> No
 def test_crc_statement_names_the_tissue_contrasts_only_when_they_matter(
     results: figures.Results,
 ) -> None:
-    assert "counting the tumour-vs-adjacent-tissue and comorbidity contrasts too" in (
+    assert "counting the tumour-vs-adjacent-tissue contrasts too" in (
         figures.crc_compartment_statement(results)
     )
     table = results.scenario_interaction.copy()
     primary = figures.interaction_row(results, ORIENTED, "CRC", "study")
-    counted = table["scenario"].eq("every_contrast_type")
+    counted = table["scenario"].eq("paired_tissue_counted")
     table.loc[counted, "fisher_p_two_sided"] = primary["fisher_p_two_sided"]
     statement = figures.crc_compartment_statement(replace(results, scenario_interaction=table))
     assert "counting" not in statement

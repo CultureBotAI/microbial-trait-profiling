@@ -999,7 +999,7 @@ def graphical_compartments(results: Results) -> Figure:
         results, "synonyms_merged", "disease_vs_healthy_oriented", "HIV", "study"
     )
     untreated_hiv = scenario_row(
-        results, "treated_cases_excluded", "disease_vs_healthy_oriented", "HIV", "study"
+        results, "named_treated_cases_excluded", "disease_vs_healthy_oriented", "HIV", "study"
     )
     gi_all = compartment_row(results, "all_contrasts", NON_FECAL_GI, "CRC")
     gi_healthy = compartment_row(results, "disease_vs_healthy_oriented", NON_FECAL_GI, "CRC")
@@ -1008,7 +1008,7 @@ def graphical_compartments(results: Results) -> Figure:
         table = results.scenario_interaction
         counted = only(
             table[
-                table["scenario"].eq("every_contrast_type")
+                table["scenario"].eq("paired_tissue_counted")
                 & table["contrast_population"].eq("disease_vs_healthy_oriented")
                 & table["short_condition"].eq("CRC")
                 & table["unit"].eq("study")
@@ -1017,8 +1017,8 @@ def graphical_compartments(results: Results) -> Figure:
         gi_note = (
             f"only {int(gi_healthy['paired_experiments'])} of {int(gi_all['paired_experiments'])} "
             "paired CRC mucosa/lumen experiments compare patients with controls (counting the "
-            "tumour-vs-adjacent-tissue and comorbidity contrasts too, the disease-vs-healthy "
-            f"study row of B gives p = {sci(float(counted['fisher_p_two_sided']))}), "
+            "tumour-vs-adjacent-tissue contrasts too, the disease-vs-healthy study row of B "
+            f"gives p = {sci(float(counted['fisher_p_two_sided']))}), "
         )
     footnote(
         fig,
@@ -1904,16 +1904,15 @@ def overlap_statement(results: Results) -> str:
 def crc_compartment_statement(results: Results) -> str:
     """CRC stool against GI mucosa / lumen, by unit and population.
 
-    The tumour-vs-adjacent-tissue and comorbidity contrasts are named only while counting
-    them changes the disease-vs-healthy study result, as they did on the v2 contrast
-    manifest (#569, #580).
+    The tumour-vs-adjacent-tissue contrasts are named only while counting them changes the
+    disease-vs-healthy study result, which then turns on one experiment (#569, #580, #673).
     """
     crc = interaction_row(results, ALL_CONTRASTS, "CRC", "experiment")
     experiments = interaction_row(results, ORIENTED, "CRC", "experiment")
     studies = interaction_row(results, ORIENTED, "CRC", "study")
     table = results.scenario_interaction
     chosen = table[
-        table["scenario"].eq("every_contrast_type")
+        table["scenario"].eq("paired_tissue_counted")
         & table["contrast_population"].eq(ORIENTED)
         & table["short_condition"].eq("CRC")
         & table["unit"].eq("study")
@@ -1924,10 +1923,7 @@ def crc_compartment_statement(results: Results) -> str:
     if len(chosen):
         counted_p = float(only(chosen)["fisher_p_two_sided"])
         if not math.isclose(counted_p, study_p):
-            counted = (
-                f" ({sci(counted_p)} counting the tumour-vs-adjacent-tissue and comorbidity "
-                "contrasts too)"
-            )
+            counted = f" ({sci(counted_p)} counting the tumour-vs-adjacent-tissue contrasts too)"
     return (
         f"CRC stool vs GI mucosa / lumen, all contrasts: {int(crc['a_down'])}↓ "
         f"{int(crc['a_up'])}↑ vs {int(crc['b_down'])}↓ {int(crc['b_up'])}↑ experiments "

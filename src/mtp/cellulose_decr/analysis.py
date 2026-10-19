@@ -57,6 +57,8 @@ from mtp.composition_denominators import load_retained_profiles, trait_fractions
 from mtp.contrast_orientation import (
     CASE_VS_CONTROL_SUBJECT,
     CLASSIFIER_VERSION,
+    COMORBIDITY_WITHIN_DISEASE,
+    PAIRED_TISSUE_AUTOLOGOUS,
     TIER_1_HEALTHY_NORMAL,
     TIER_2_CONDITION_NEGATIVE_SCREENED,
 )
@@ -97,23 +99,30 @@ SITE_MISCURATIONS = {
 # Which disease_vs_healthy contrasts count as patients against controls (#580; see
 # "Selecting patients against controls" in methods/contrast_orientation.md). The
 # primary analysis keeps subject-level case-control contrasts; the condition-definition
-# scenarios apply the others. Since contrast-orientation-v4 the classifier itself calls
-# HIV-negative vs HIV-positive and treated-HIV contrasts disease vs healthy and marks
-# tumour-vs-adjacent tissue as paired_tissue_autologous (#569), which this analysis
-# used to hand-code.
+# scenarios apply the others. The classifier marks tumour-vs-adjacent tissue as
+# paired_tissue_autologous since v3 (#554) and, since v4, calls HIV-negative vs
+# HIV-positive and treated-HIV contrasts disease vs healthy (#569); this analysis used
+# to hand-code both.
 SUBJECT_CONTROLS = "subject_controls"
+NOT_NAMED_TREATED = "cases_not_named_treated"
 CASE_CONTROL_RULES = {
     SUBJECT_CONTROLS: f"contrast_type {CASE_VS_CONTROL_SUBJECT} (primary analysis)",
-    "untreated_cases": (
+    NOT_NAMED_TREATED: (
         f"contrast_type {CASE_VS_CONTROL_SUBJECT}, without contrasts whose cases are named as "
-        "treated (flag treated_disease_group)"
+        "treated (flag treated_disease_group, read from group names only; an unflagged "
+        "group is not known to be untreated)"
     ),
     "control_tiers_1_2": (
         f"control_tier {TIER_1_HEALTHY_NORMAL} or {TIER_2_CONDITION_NEGATIVE_SCREENED}; "
         "hospital, comorbid, tissue and treated-case contrasts (Tier 3) set aside"
     ),
-    "every_contrast_type": (
-        "every disease_vs_healthy contrast, paired-tissue and comorbidity contrasts included"
+    "with_paired_tissue": (
+        f"contrast_type {CASE_VS_CONTROL_SUBJECT} or {PAIRED_TISSUE_AUTOLOGOUS}: "
+        "tumour or lesional tissue against adjacent tissue of the same patients also counted"
+    ),
+    "with_comorbidity": (
+        f"contrast_type {CASE_VS_CONTROL_SUBJECT} or {COMORBIDITY_WITHIN_DISEASE}: "
+        "comorbidity contrasts also counted"
     ),
 }
 SHORT = list(CONDITIONS)
@@ -447,8 +456,6 @@ def case_controls(rows: pd.DataFrame, rule: str) -> BoolArray:
     """Manifest rows that compare patients with controls under a CASE_CONTROL_RULES rule."""
     if rule not in CASE_CONTROL_RULES:
         raise ValueError(f"unknown case-control rule {rule!r}")
-    if rule == "every_contrast_type":
-        return np.ones(len(rows), dtype=bool)
     if rule == "control_tiers_1_2":
         tiers: BoolArray = (
             rows["control_tier"]
@@ -456,10 +463,15 @@ def case_controls(rows: pd.DataFrame, rule: str) -> BoolArray:
             .to_numpy()
         )
         return tiers
-    keep: BoolArray = rows["contrast_type"].to_numpy() == CASE_VS_CONTROL_SUBJECT
-    if rule == "untreated_cases":
+    types = {CASE_VS_CONTROL_SUBJECT}
+    if rule == "with_paired_tissue":
+        types.add(PAIRED_TISSUE_AUTOLOGOUS)
+    if rule == "with_comorbidity":
+        types.add(COMORBIDITY_WITHIN_DISEASE)
+    keep: BoolArray = rows["contrast_type"].isin(types).to_numpy()
+    if rule == NOT_NAMED_TREATED:
         flags = rows["flags"].str.split(",")
-        keep &= ~flags.map(lambda values: "treated_disease_group" in values).to_numpy()
+        keep = keep & ~flags.map(lambda values: "treated_disease_group" in values).to_numpy()
     return keep
 
 
@@ -1886,7 +1898,20 @@ def convergence_summary_rows(pairwise: pd.DataFrame) -> list[dict[str, Any]]:
     return rows
 
 
-def interaction_summary_rows(interaction: pd.DataFrame) -> list[dict[str, Any]]:
+def interaction_range(scenarios: pd.DataFrame, population_name: str, short: str, unit: str) -> str:
+    """How far a Feces-vs-GI p moves across the condition-definition scenarios (#673)."""
+    chosen = scenarios[
+        scenarios["contrast_population"].eq(population_name)
+        & scenarios["short_condition"].eq(short)
+        & scenarios["unit"].eq(unit)
+        & scenarios["compartment_b"].eq(NON_FECAL_GI)
+    ]["fisher_p_two_sided"]
+    return f"{fmt_p(float(chosen.min()))} to {fmt_p(float(chosen.max()))}"
+
+
+def interaction_summary_rows(
+    interaction: pd.DataFrame, scenarios: pd.DataFrame
+) -> list[dict[str, Any]]:
     rows = []
     chosen = interaction[
         interaction["compartment_b"].eq(NON_FECAL_GI)
@@ -1908,6 +1933,7 @@ def interaction_summary_rows(interaction: pd.DataFrame) -> list[dict[str, Any]]:
             if stratified
             else row["studies_in_both_compartments"]
         )
+        spread = interaction_range(scenarios, population_name, row["short_condition"], row["unit"])
         estimate = (
             f"common odds ratio (conditional MLE) = {row['conditional_or']:.2f} "
             f"(95% CI {row['conditional_or_ci95_low']:.2f}-{row['conditional_or_ci95_high']:.2f})"
@@ -1933,7 +1959,10 @@ def interaction_summary_rows(interaction: pd.DataFrame) -> list[dict[str, Any]]:
                 "effect_size_metric": estimate,
                 "p_value": row["fisher_p_two_sided"],
                 "significance_tier": tier(row["fisher_p_two_sided"]),
-                "summary_interpretation": interaction_interpretation(row, shared),
+                "summary_interpretation": (
+                    f"{interaction_interpretation(row, shared)} Across the condition definitions "
+                    f"of condition_definition_interaction.tsv this p runs from {spread}."
+                ),
             }
         )
     return rows
@@ -2126,7 +2155,11 @@ def case_control_inventory(corpus: Corpus) -> list[dict[str, Any]]:
     classified = ["contrast_type", "control_tier", "flags"]
     target = corpus.profiles[corpus.profiles["condition"].isin(CONDITIONS.values())]
     experiments = target[described].drop_duplicates(keys).sort_values(["condition", *keys])
-    rows = corpus.manifest.reindex(pd.MultiIndex.from_frame(experiments[keys]))
+    index = pd.MultiIndex.from_frame(experiments[keys])
+    found = index.isin(corpus.manifest.index)
+    if not found.all():
+        raise ValueError(f"{int((~found).sum())} experiments have no contrast-manifest row")
+    rows = corpus.manifest.reindex(index)
     counted = {rule: case_controls(rows, rule) for rule in CASE_CONTROL_RULES}
     chosen = (rows["contrast_class"].to_numpy() == "disease_vs_healthy") & ~np.logical_and.reduce(
         list(counted.values())
@@ -2184,9 +2217,9 @@ def scenario_corpora(corpus: Corpus) -> list[tuple[str, str, Corpus]]:
         ("exact_labels", "Exact condition labels (primary analysis)", corpus),
         ("synonyms_merged", "Synonym labels counted under their disease", with_synonyms(corpus)),
         (
-            "treated_cases_excluded",
-            "Exact labels; disease-vs-healthy contrasts whose cases are named as treated set aside",
-            dataclasses.replace(corpus, case_control="untreated_cases"),
+            "named_treated_cases_excluded",
+            "Exact labels; contrasts whose cases are named as treated set aside",
+            dataclasses.replace(corpus, case_control=NOT_NAMED_TREATED),
         ),
         (
             "control_tiers_1_2",
@@ -2195,10 +2228,14 @@ def scenario_corpora(corpus: Corpus) -> list[tuple[str, str, Corpus]]:
             dataclasses.replace(corpus, case_control="control_tiers_1_2"),
         ),
         (
-            "every_contrast_type",
-            "Exact labels; paired-tissue and comorbidity contrasts also counted as disease vs "
-            "healthy",
-            dataclasses.replace(corpus, case_control="every_contrast_type"),
+            "paired_tissue_counted",
+            "Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted",
+            dataclasses.replace(corpus, case_control="with_paired_tissue"),
+        ),
+        (
+            "comorbidity_counted",
+            "Exact labels; comorbidity contrasts also counted",
+            dataclasses.replace(corpus, case_control="with_comorbidity"),
         ),
         (
             "without_site_miscurations",
@@ -2577,7 +2614,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     summary_rows = (
         direction_summary_rows(compartments, scenario_direction)
         + convergence_summary_rows(pairwise)
-        + interaction_summary_rows(interaction)
+        + interaction_summary_rows(interaction, scenario_interaction)
     )
     significant = pd.DataFrame(summary_rows)
     significant.insert(
