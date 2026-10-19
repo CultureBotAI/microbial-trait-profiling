@@ -11,6 +11,15 @@ Prompts shared by Jed Dongjin Kim-Ozaeta on 2026-10-14 for the PD-cellulose figu
 
 ## Status
 
-Not run yet. The figures and their tables exist only on branch `clustered-heatmap-generation` (commit `205257c`), not on `main`, and will change when regenerated from the current profile build. Issue #494 tracks readiness and the run plan.
+Not run yet. The prompts quote the figures and tables as they stood on branch `clustered-heatmap-generation` at commit `205257c`. Those files are now on `main` and have since been regenerated from the canonical profile build (#482) and with each profile's own experiment condition and body site (#555), so the "Local result(s)" in prompts 1-3 are out of date. On `main`, no condition-trait result passes `q <= 0.05`; prompt 1's statement that moderately halophilic is the only FDR-significant result no longer holds. Before running prompts 1-3, replace their local results with the current rows of `pd_condition_taxon_trait_network_condition_trait_tests.tsv`:
+
+| Prompt | Condition × trait | Paired studies | Mean contrast | Median contrast | Positive/negative/zero studies | Raw p | Global q |
+|---|---|---:|---:|---:|---|---:|---:|
+| 1 | Parkinson's disease × moderately halophilic | 47 | +0.4971 | +0.5205 | 33/8/6 | 0.000195 | 0.0795 |
+| 1 | Parkinson's disease × arsenate reduction | 47 | +0.5199 | +0.1788 | 25/6/16 | 0.000698 | 0.0893 |
+| 2 | COVID-19 × cellulose catabolic process | 13 | −1.2975 | −1.3061 | 0/12/1 | 0.000488 | 0.0893 |
+| 3 | Colorectal cancer × cellulose catabolic process | 28 | −0.8509 | −0.8242 | 3/19/6 | 0.000876 | 0.0893 |
+
+All four are exploratory (`0.05 < q <= 0.20`), not FDR-significant. Issue #494 tracks readiness and the run plan.
 
 `METPO:2000103` in the prompts' identifiers is the KG-Microbe predicate; the traits are `GO:0030245` (cellulose catabolic process) and `pathways:arsenate_reduction`.

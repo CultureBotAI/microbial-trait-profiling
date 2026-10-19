@@ -118,13 +118,14 @@ condition-taxon result passes `q <= 0.05`.
 
 Panel B shows all condition-trait tests. Its x-axis is the mean study-level
 increased-minus-decreased trait contrast, its y-axis is `-log10(global q)`, and point area is the
-number of paired studies. Only Parkinson's disease to moderately halophilic passes
-(`mean contrast = +0.530`, `q = 0.048`, `n = 45`).
+number of paired studies. No condition-trait result passes `q <= 0.05`; the smallest global q is
+Parkinson's disease to moderately halophilic (`mean contrast = +0.497`, `q = 0.0795`, `n = 47`).
 
-The exploratory tier contains one taxon result—Parkinson's disease to *Roseburia* (`q = 0.192`)—
-and three trait results: Parkinson's disease to arsenate reduction, COVID-19 to cellulose
-catabolic process, and colorectal cancer to cellulose catabolic process (each `q = 0.164`). These
-are shown to support follow-up planning, not as significant findings.
+The exploratory tier contains one taxon result—Parkinson's disease to *Roseburia* (`q = 0.116`)—
+and five trait results: Parkinson's disease to moderately halophilic (`q = 0.0795`), Parkinson's
+disease to arsenate reduction, COVID-19 to cellulose catabolic process, and colorectal cancer to
+cellulose catabolic process (each `q = 0.0893`), and colorectal cancer to moderately halophilic
+(`q = 0.0942`). These are shown to support follow-up planning, not as significant findings.
 
 Panel C shows all six Parkinson's disease trait effects with their raw `p`, globally adjusted `q`,
 and study count. This provides PD-specific context while retaining the correction across the full
