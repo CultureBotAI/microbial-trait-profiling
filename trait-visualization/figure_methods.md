@@ -1963,26 +1963,36 @@ This figure uses the same target-taxon/profile occurrence table and broad-label 
 
 ### PD species-by-six-trait influence heatmap
 
-*Study-majority labels, pending #584.* The committed heatmap and its companion
-tables were built from the PD trait-taxa evidence
-(`pd_six_trait_taxon_profile_evidence.tsv` and `pd_six_trait_taxon_carriers.tsv`),
-which still gives every experiment its study's majority condition and body site
-(253 PD fecal profiles rather than the current 247). Its column headers mark
-coccus shaped (+0.14) and sphere shaped (+0.13) as increased, whereas the current
-six-trait lollipop puts both on the negative side. `just pd-trait-taxa-heatmap`
-refuses to rebuild the heatmap from that evidence until #584 settles how the
-analysis picks its traits, so every count and value in this section comes from
-the study-majority labels.
-
 `trait-profile-investigation/PD-cellulose/pd_species_six_traits_influence_heatmap.png`
 replaces the earlier four-positive-trait carrier-ratio heatmap. It includes all
-six Parkinson's disease lollipop traits and retains reported species, the lowest
-reliable rank in the local PD carrier evidence. Species whose six trait cells
-are all `low support` are omitted from the displayed heatmap, as are species
-whose six mean influences all lie between -0.01 and +0.01, and *Mediterraneibacter
-torques* is excluded by name. Within a retained row, only cells whose absolute
-influence exceeds 0.01 are drawn: 9 of the 30 cells for the five displayed
-species. Every estimate stays in the cell TSV with its `displayed_in_heatmap`
+six Parkinson's disease lollipop traits, whatever their sign, and retains
+reported species, the lowest reliable rank in the local PD carrier evidence. Its
+input is the PD trait-taxa evidence from `just pd-trait-taxa`
+(`pd_six_trait_taxon_profile_evidence.tsv`), built from each profile's own
+experiment condition and body site: 247 PD fecal profiles, 128 increased and 119
+decreased. `just pd-trait-taxa-heatmap` refuses evidence whose traits, trait
+directions, recorded PD fecal profile set or lollipop values differ from the
+current ones (#584, #649).
+
+Each column carries the trait's observed direction in the six-trait lollipop,
+the sign of `increased_minus_decreased_mean_z` in
+`pd_six_trait_direction_summary.tsv`: an up arrow where the trait's mean z is
+higher in increased profiles and a down arrow where it is higher in decreased
+profiles, with the difference labeled `lollipop`. Moderately halophilic (+0.49),
+arsenate reduction (+0.42) and facultatively aerobic (+0.35) are higher in
+increased profiles; coccus shaped (-0.08), sphere shaped (-0.13) and cellulose
+catabolic process (-0.70) are higher in decreased profiles. The trait and cell
+tables carry this as `trait_direction`. The column's `baseline Δz` is the
+figure's own paired, study-weighted contrast and can differ from the lollipop
+value: coccus shaped (+0.01) and sphere shaped (+0.10) are positive at baseline
+although both are negative on the lollipop.
+
+Species whose six trait cells are all `low support` are omitted from the
+displayed heatmap, as are species whose six mean influences all lie between
+-0.01 and +0.01, and *Mediterraneibacter torques* is excluded by name. Within a
+retained row, only cells whose absolute influence exceeds 0.01 are drawn: 8 of
+the 30 cells for the five displayed species. All 30 intervals cross zero
+(`mixed`). Every estimate stays in the cell TSV with its `displayed_in_heatmap`
 flag. Outlined cells have
 an annotation for that trait at or below the reported species label in the local
 taxa-trait matrix and therefore include direct numerator removal. Unoutlined
@@ -2016,7 +2026,7 @@ blue for decreased) and labels its one-position Hamming distance from the
 BugSigDB recurrence direction: `H=0 similar` with a green border or
 `H=1 different` with a red border. Rows that are balanced in BugSigDB
 (`balanced`) or non-directional in the literature (`non-dir`) have no defined
-distance. In the current display, *Streptococcus salivarius* (`4/0`) and
+distance. In the current display, *Bifidobacterium longum* (`6/0`) and
 *Methanobrevibacter smithii* (`3/0`) are BugSigDB increased and *Roseburia
 faecis* (`0/6`) and *Faecalibacterium prausnitzii* (`0/13`) are BugSigDB
 decreased, each matching the literature direction; *Escherichia coli* is
@@ -2057,13 +2067,27 @@ level, DOI citations, evidence statement, and cohort/medication/taxonomy caveats
 ### PD trait-contributor direction-change views
 
 `trait-profile-investigation/PD-cellulose/pd_trait_contributors_species_family_dot_heatmap.png`
-uses the committed long-form species and family contribution cells. Taxa were
-selected as the union of the top five resolved contributors in each of the six
-trait-by-direction cells; this is a descriptive, count-selected set rather than
-an inferential sample. A taxon-trait pair is displayed only when its share of
-the full increased cell differs from its share of the full decreased cell.
+draws species and family contribution cells that `just pd-trait-contributors`
+builds from the Table 1 contribution ledger (`mtp.contribution_inputs` and
+`mtp.taxon_contributions`, #190) on the pinned KG-Microbe release. The ledger
+retains human profiles in experiments with both directions: 198 of the 247 PD
+fecal profiles (99 increased and 99 decreased, from 45 studies). Every
+trait-bearing KG taxon at or below a reported taxon adds one count, once per
+reported taxon, exactly as the taxa-trait matrix and the profile trait sums count
+it. Each such taxon is attributed to its species and its family when the pinned
+taxonomy gives exactly one; otherwise it is unresolved (no ancestor at that rank)
+or ambiguous (several). The candidate species are the union of the top five
+resolved species in each of the twelve trait-by-direction cells, capped at 50,
+and the candidate families are the 25 resolved families with the largest total
+count: a descriptive, count-selected set rather than an inferential sample. The
+same generator reproduces the counts, shares, studies and selected taxa that were
+committed before it existed. A taxon-trait pair is displayed only when its share
+of the full increased cell differs from its share of the full decreased cell.
 Pairs absent from both directions and other equal-share pairs remain available
-in the source cells but are omitted from the change-focused figure.
+in the source cells but are omitted from the change-focused figure. Trait labels
+carry each trait's observed direction in the PD six-trait lollipop as an up or
+down arrow, and the cell, coverage and co-carriage tables carry it as
+`trait_direction`.
 
 The first row in each rank panel replaces the earlier unresolved-share bar
 chart. For each trait, red and blue outer-circle areas compare total propagated
@@ -2076,12 +2100,12 @@ contributor share. Background-circle areas are normalized within trait and
 must not be compared as absolute counts across different traits.
 
 The right strip deduplicates each exact reported taxon label within profile.
-Its text shows raw PD-feces/other-feces occurrence counts. Color instead uses a
-profile-pool-normalized log2 prevalence ratio with a 0.5 pseudocount and one
-pseudo-profile in each denominator. This removes the mechanical bias from the
-unequal PD and other-feces pool sizes but is still descriptive: profiles and
-experiments can repeat within study, and no contributor-level p-value is
-computed.
+Its text shows raw PD-feces/other-feces occurrence counts over 247 PD and 3,357
+other fecal profiles. Color uses the profile-pool-normalized prevalence
+difference (PD prevalence minus other-feces prevalence, clipped at ±5 percentage
+points). This removes the mechanical bias from the unequal PD and other-feces
+pool sizes but is still descriptive: profiles and experiments can repeat within
+study, and no contributor-level p-value is computed.
 
 `pd_trait_contributors_trait_cocarriage_network.png` calculates shared selected
 taxa separately in increased and decreased cells. The displayed edge table and

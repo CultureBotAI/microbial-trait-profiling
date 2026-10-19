@@ -22,6 +22,6 @@ Not run yet. The prompts quote the figures and tables as they stood on branch `c
 
 All four are exploratory (`0.05 < q <= 0.20`), not FDR-significant. Issue #494 tracks readiness and the run plan.
 
-Prompt 4 audits `pd_exploratory_taxa_six_traits_influence_heatmap.png`, which is stale: it still gives every experiment its study's majority label, and its column headers mark coccus shaped and sphere shaped as increased, whereas the current six-trait lollipop puts both on the negative side. `just pd-trait-taxa-heatmap` stops rather than rebuild it until #584 settles how the analysis picks its traits. Do not run prompt 4 until the heatmap has been regenerated after #584.
+Prompt 4 links the `pd_exploratory_taxa_six_traits_influence_heatmap.png` of commit `205257c`, which gave every experiment its study's majority label. The figure on `main` was regenerated under #584 with each profile's own labels and all six traits, each marked with its observed direction in the six-trait lollipop. It shows 30 taxa (10 species, 12 genera and 8 families), 25 of them matched to the PD literature reference, so the displayed taxa differ from the linked version. Audit the current figure and its `pd_exploratory_taxa_six_traits_reference_table.tsv`, not the linked one.
 
 `METPO:2000103` in the prompts' identifiers is the KG-Microbe predicate; the traits are `GO:0030245` (cellulose catabolic process) and `pathways:arsenate_reduction`.
