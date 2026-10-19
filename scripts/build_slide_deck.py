@@ -2667,8 +2667,8 @@ def build_deck(
     n_checked = sum(1 for r in manifest_rows if r["figure_url"] != "NA")
     # One line, so the cover header keeps its height; deck_validation_v6.json lists them all.
     review_html = (
-        '<div class="tag" style="color:#b8332a;white-space:nowrap;overflow:hidden;'
-        'text-overflow:ellipsis">Review build, not for distribution: '
+        '<div class="tag" style="color:#b8332a;max-width:1520px;white-space:nowrap;'
+        'overflow:hidden;text-overflow:ellipsis">Review build, not for distribution: '
         f"{html.escape('; '.join(review))}</div>"
         if review
         else ""
@@ -2784,7 +2784,8 @@ def build_deck(
         ".stamp{margin-top:auto;display:flex;justify-content:space-between;gap:20px;font:12px "
         "Arial,sans-serif;color:#617589;padding-top:4px}",
         ".cover{grid-template-rows:minmax(125px,auto) minmax(0,1fr) minmax(86px,auto) 86px}",
-        ".cover h1{font-size:47px;line-height:1.08}.cover .tag{font-size:15px}",
+        # One line for the title, so a review build's extra tag line still fits (#637)
+        ".cover h1{font-size:40px;line-height:1.08}.cover .tag{font-size:15px}",
         ".cover-body{display:flex;flex-direction:column;justify-content:center}",
         ".deck-subtitle{font-size:22px;line-height:1.45;color:#405568;max-width:1420px;margin:0 0 "
         "22px}",
