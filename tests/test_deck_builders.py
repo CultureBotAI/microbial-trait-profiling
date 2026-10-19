@@ -315,6 +315,25 @@ def test_p_values_do_not_round_across_the_threshold() -> None:
     assert deck.signed(-0.004, 2) == "0.00"
 
 
+def test_plate_records_name_the_plate_script() -> None:
+    """The source YAML named a plate script outside the repository (#621)."""
+    old_script = "data/derived/figure_review_2026-09-21/slides/generate_tufte_plates.py"
+    record = {
+        "generator_script_path": old_script,
+        "just_recipe": f"python {old_script}",
+        "command_series": [*deck.UPSTREAM_COMMANDS, "just analyze", f"uv run python {old_script}"],
+    }
+    deck.plate_provenance(record)
+    assert record["generator_script_path"] == "scripts/generate_tufte_plates.py"
+    assert record["just_recipe"] == "just figure-review-plates"
+    assert record["command_series"][-3:] == [
+        "just analyze",
+        "just cellulose-decr-figures",
+        "just figure-review-plates",
+    ]
+    assert "data/derived/figure_review" not in json.dumps(record)
+
+
 def test_carried_over_records_get_the_current_commands() -> None:
     """The source YAML described the upstream recipes with a nonexistent mtp.cli (#621)."""
     series = [

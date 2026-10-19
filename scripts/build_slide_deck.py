@@ -989,9 +989,10 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "takeaway": oxygen_switch_text(metrics),
             "caveat": "Colorectal cancer splits by sampling compartment in O₂ switch score "
             "(Feces +0.68 vs Lower GI tract -0.79). The cellulose deep-dive slides compare CRC "
-            "stool with non-fecal GI samples, pooling the colon and intestinal mucosa sites this "
-            "plate splits into Lower GI tract and Intestinal / GI mucosa; most of those mucosal "
-            "contrasts are not patients against controls.",
+            "stool with non-fecal GI samples, pooling the colon and intestinal mucosa sites that "
+            "the oxygen-switch table splits into Lower GI tract and Intestinal / GI mucosa (the "
+            "second is not among the strata shown); most of those mucosal contrasts are not "
+            "patients against controls.",
             "methods_path": "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
             "README.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
@@ -1806,6 +1807,19 @@ def current_commands(series: Sequence[str]) -> list[str]:
     return commands
 
 
+def plate_provenance(rec: dict[str, Any]) -> None:
+    """Point a plate's provenance record at the plate script in the repository (#613, #621).
+
+    The source YAML named data/derived/figure_review_2026-09-21/slides/generate_tufte_plates.py,
+    which is not in the repository. Plates IV and V read the captions file that
+    `just cellulose-decr-figures` writes, so that recipe runs first.
+    """
+    rec["generator_script_path"] = "scripts/generate_tufte_plates.py"
+    rec["just_recipe"] = "just figure-review-plates"
+    series = [c for c in rec.get("command_series", []) if "generate_tufte_plates.py" not in c]
+    rec["command_series"] = [*series, "just cellulose-decr-figures", "just figure-review-plates"]
+
+
 def cellulose_figure_provenance(rec: dict[str, Any], tables: dict[str, str]) -> None:
     """Point a cellulose_decr figure's provenance record at what draws it (#556).
 
@@ -2545,6 +2559,8 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
             for path in rec.get("upstream_raw_inputs", [])
         ]
         rec["command_series"] = current_commands(rec.get("command_series", []))
+        if fp.startswith(PLATES_DIR):
+            plate_provenance(rec)
         if fp.startswith(CELLULOSE_FIGURES):
             cellulose_figure_provenance(rec, cellulose_figures["inputs"])
         new_figures_list.append(rec)
