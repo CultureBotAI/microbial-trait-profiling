@@ -1155,13 +1155,20 @@ The bar length is the anaerobe v2 trait-enrichment contrast:
 
 `decreased mean trait z - increased mean trait z`
 
-The largest displayed contrasts are acute graft-versus-host disease (2.306; two
-matched pairs), age-related macular degeneration (1.301; paired d 1.96;
-p=3.04e-05), graft-versus-host disease (1.283), diarrhea (1.227), response to
-antibiotic (1.133), inflammatory bowel disease (1.115), respiratory tract
-infectious disease (0.969), response to antiviral drug (0.949), chronic kidney
-disease (0.870), colorectal carcinoma (0.863), ischemic stroke (0.833), and head
-and neck carcinoma (0.826).
+The right-side labels show `paired d`, p-value, and the number of
+study/experiment-matched decreased/increased profile pairs (`n`), with the same
+five-pair minimum as slide 2.
+
+The largest displayed contrasts are acute graft-versus-host disease (2.306),
+age-related macular degeneration (1.301; paired d 1.96; p=3.04e-05; 12 pairs),
+graft-versus-host disease (1.283), diarrhea (1.227; paired d 1.04; p=0.00414;
+12 pairs), response to antibiotic (1.133), inflammatory bowel disease (1.115),
+respiratory tract infectious disease (0.969), response to antiviral drug
+(0.949; paired d 1.25; p=0.000429; 14 pairs), chronic kidney disease (0.870;
+paired d 0.77; p=0.00995; 15 pairs), colorectal carcinoma (0.863; paired d
+1.26; p=0.027; 6 pairs), ischemic stroke (0.833), and head and neck carcinoma
+(0.826). The seven rows without paired statistics have two to four matched
+pairs.
 
 Interpretation: the strongest anaerobe-v2 condition signals include immune and
 transplant contexts, gastrointestinal/inflammatory labels, cancer labels, and
@@ -1839,7 +1846,7 @@ For each selected trait, the script calculated the mean z-score in all increased
 
 Guild-specificity: yes. Color encodes the aerobe v2 trait-enrichment score among increased profiles at each body-site group.
 
-Study profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean aerobe v2 trait z-score among increased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using fixed anatomical coordinates for feces/stool, colon, caecum, oral, airway, urogenital, and unknown labels. Unknown body site means the BugSigDB profile did not have a specific body-site label; these profiles are placed off-body and should not be interpreted as a physical anatomical location.
+Study profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean aerobe v2 trait z-score among increased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway, oral (including saliva and subgingival/dental), throat/pharynx (neck), colon, caecum, feces/stool, cervix/uterus (pelvis), and vagina/urogenital labels; a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. Unknown body site means the BugSigDB profile did not have a specific body-site label; these profiles are placed off-body, as is `Other` wherever a figure keeps it, and should not be interpreted as a physical anatomical location.
 
 Oral-site increased-profile trait signals are biologically plausible because the oral cavity is oxygen-exposed and includes aerotolerant, facultatively aerobic, or microaerophilic taxa such as Streptococcus, Fusobacterium, Prevotella, Porphyromonas, and Veillonella. Those oral-site signals should be interpreted as body-site-specific microbial ecology, not as a gut aerobe v2 increased-profile trait-enrichment signal.
 
@@ -1922,13 +1929,13 @@ Profiles were grouped by `body_site_group`, requiring at least 10 total profiles
 
 Guild-specificity: yes. This figure is the increased-profile companion to `anatomical_sites_diagram.png`; color encodes the anaerobe v2 trait-enrichment score among increased profiles at each body-site group.
 
-Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 trait z-score among increased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using fixed anatomical coordinates for feces/stool, colon, caecum, oral, airway, urogenital, and unknown labels. The diagram legend also reports how many increased and decreased profiles have zero enriched anaerobe v2 traits.
+Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 trait z-score among increased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway, oral (including saliva and subgingival/dental), throat/pharynx (neck), colon, caecum, feces/stool, cervix/uterus (pelvis), and vagina/urogenital labels. `unknown` is placed off the body, as is `Other` wherever a figure keeps it; a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. The diagram legend also reports how many increased and decreased profiles have zero enriched anaerobe v2 traits.
 
 #### `anatomical_sites_diagram.png`
 
 Guild-specificity: yes. Color encodes the anaerobe v2 trait-enrichment score among decreased profiles at each body-site group.
 
-Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 trait z-score among decreased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using fixed anatomical coordinates for feces/stool, colon, caecum, oral, airway, urogenital, and unknown labels. The diagram legend also reports how many increased and decreased profiles have zero enriched anaerobe v2 traits.
+Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 trait z-score among decreased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway, oral (including saliva and subgingival/dental), throat/pharynx (neck), colon, caecum, feces/stool, cervix/uterus (pelvis), and vagina/urogenital labels. `unknown` is placed off the body, as is `Other` wherever a figure keeps it; a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. The diagram legend also reports how many increased and decreased profiles have zero enriched anaerobe v2 traits.
 
 #### `condition_body_site_guild_map.png`
 
@@ -1956,12 +1963,27 @@ This figure uses the same target-taxon/profile occurrence table and broad-label 
 
 ### PD species-by-six-trait influence heatmap
 
+*Study-majority labels, pending #584.* The committed heatmap and its companion
+tables were built from the PD trait-taxa evidence
+(`pd_six_trait_taxon_profile_evidence.tsv` and `pd_six_trait_taxon_carriers.tsv`),
+which still gives every experiment its study's majority condition and body site
+(253 PD fecal profiles rather than the current 247). Its column headers mark
+coccus shaped (+0.14) and sphere shaped (+0.13) as increased, whereas the current
+six-trait lollipop puts both on the negative side. `just pd-trait-taxa-heatmap`
+refuses to rebuild the heatmap from that evidence until #584 settles how the
+analysis picks its traits, so every count and value in this section comes from
+the study-majority labels.
+
 `trait-profile-investigation/PD-cellulose/pd_species_six_traits_influence_heatmap.png`
 replaces the earlier four-positive-trait carrier-ratio heatmap. It includes all
 six Parkinson's disease lollipop traits and retains reported species, the lowest
 reliable rank in the local PD carrier evidence. Species whose six trait cells
-are all `low support` are omitted from the displayed heatmap. It retains all six
-computable influence estimates for every displayed species. Outlined cells have
+are all `low support` are omitted from the displayed heatmap, as are species
+whose six mean influences all lie between -0.01 and +0.01, and *Mediterraneibacter
+torques* is excluded by name. Within a retained row, only cells whose absolute
+influence exceeds 0.01 are drawn: 9 of the 30 cells for the five displayed
+species. Every estimate stays in the cell TSV with its `displayed_in_heatmap`
+flag. Outlined cells have
 an annotation for that trait at or below the reported species label in the local
 taxa-trait matrix and therefore include direct numerator removal. Unoutlined
 cells have no such annotation and show the denominator-mediated effect of
@@ -1989,13 +2011,17 @@ display only.
 
 The first right-hand row annotation displays raw increased/decreased PD fecal
 profile occurrence counts and a capped color encoding of their log2 ratio. The
-second gives the matched DOI-backed PD literature direction and directly labels
-the comparison with BugSigDB recurrence as `agrees`, `DIFFERS`, or `balanced`.
-Red, bold `DIFFERS` cells identify opposite directions. In the current display,
-*Mediterraneibacter torques* is BugSigDB increased (`3/1`) versus literature
-decreased, and *Escherichia coli* is BugSigDB decreased (`1/2`) versus
-literature increased. *Ruminococcus bromii* is marked balanced (`2/2`) rather
-than assigned agreement. The former PD-specificity annotation is not plotted;
+second fills the matched DOI-backed PD literature direction (red for increased,
+blue for decreased) and labels its one-position Hamming distance from the
+BugSigDB recurrence direction: `H=0 similar` with a green border or
+`H=1 different` with a red border. Rows that are balanced in BugSigDB
+(`balanced`) or non-directional in the literature (`non-dir`) have no defined
+distance. In the current display, *Streptococcus salivarius* (`4/0`) and
+*Methanobrevibacter smithii* (`3/0`) are BugSigDB increased and *Roseburia
+faecis* (`0/6`) and *Faecalibacterium prausnitzii* (`0/13`) are BugSigDB
+decreased, each matching the literature direction; *Escherichia coli* is
+BugSigDB decreased (`1/2`) versus literature increased. No displayed row is
+balanced. The former PD-specificity annotation is not plotted;
 its PD-versus-other-feces counts and ratios remain in the companion specificity
 TSV for audit. Both displayed annotations are visually and analytically separate
 from the six trait cells.

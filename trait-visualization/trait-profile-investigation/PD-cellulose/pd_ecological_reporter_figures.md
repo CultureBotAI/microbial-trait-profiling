@@ -36,11 +36,12 @@ trait annotations, not a validated diagnostic score or a patient-level measureme
 
 ![Combined figure](pd_ecological_reporter_combined.png)
 
-The combined figure and every number in this section come from
-`pd_ecological_reporter_combined_*.tsv`. Those tables still give every experiment its study's
-majority condition label, come from an earlier run of the trait z-scores, and are not yet
-regenerated (#585). The evidence landscape below uses each profile's own experiment labels, so
-its PD values (47 paired studies) differ from the ones here (45).
+The combined figure and every number in this section, except where the condition screen is
+named, come from `pd_ecological_reporter_combined_*.tsv`. Those tables still give every
+experiment its study's majority condition label, come from an earlier run of the trait
+z-scores, and are not yet regenerated (#585). The condition screen in the evidence landscape
+below uses each profile's own experiment labels, so its PD values (47 paired studies) differ
+from the ones here (45).
 
 ### Panel A: disease fingerprints
 
