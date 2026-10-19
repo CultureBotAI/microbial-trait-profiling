@@ -144,8 +144,8 @@ oral-six-trait-heatmap:
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py --oral-only --source-commit "$source_commit"
 
 # PD fecal cellulose tables, figures and interpretations.md from the six-trait profile
-# z-scores and the individual-condition Sankey edge tables, which only the default mode of
-# scripts/create_six_shared_trait_sankeys.py writes.
+# z-scores and the individual-condition Sankey edge tables that `just six-shared-trait-sankeys`
+# writes. It stops when those tables no longer match the profile inputs (#687).
 pd-cellulose-analysis:
 	uv run python scripts/create_pd_cellulose_analysis.py
 
@@ -173,6 +173,13 @@ pd-significant-ecological-network:
 # for at least one of the six traits.
 pd-ecological-reporter-combined:
 	uv run python scripts/create_pd_ecological_reporter_combined.py
+
+# Every six-shared-trait table and Sankey figure from the profile inputs, including
+# six_shared_trait_summary.tsv and the individual-condition edge tables that
+# `just pd-cellulose-analysis` reads. It removes the shared high-support node tables, which
+# the two recipes below write again, so run them after it.
+six-shared-trait-sankeys:
+	uv run python scripts/create_six_shared_trait_sankeys.py
 
 # Overlay increased (solid) and decreased (dashed) high-support Sankey links.
 six-shared-trait-combined-sankey:

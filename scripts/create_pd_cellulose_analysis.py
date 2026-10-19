@@ -32,6 +32,8 @@ CELLULOSE_ID = "METPO:2000103|GO:0030245"
 CELLULOSE_LABEL = "cellulose catabolic process"
 DIRECTION_LABELS = {"inc": "increased", "dec": "decreased"}
 TAXA_DIRECTION_TO_PROFILE = {"increased": "inc", "decreased": "dec"}
+# Writes the individual-condition Sankey edge tables this script reads.
+SANKEY_RECIPE = "just six-shared-trait-sankeys"
 
 INCREASED_COLOR = "#c2410c"
 DECREASED_COLOR = "#2563eb"
@@ -197,6 +199,59 @@ def build_pd_all_edge_summary() -> pd.DataFrame:
         ["direction", "focus_enriched_profiles"],
         ascending=[True, False],
     )
+
+
+def recount_pd_feces_cellulose_edges() -> pd.DataFrame:
+    """Recount the PD fecal cellulose edges as create_six_shared_trait_sankeys.py counts them.
+
+    The Sankey groups body sites with its own rollups (it counts "Feces,Blood" as feces), so
+    its counts can differ from ones taken over body_site_group.
+    """
+    import create_six_shared_trait_sankeys as sankeys
+
+    metadata = sankeys.load_profile_metadata()
+    zscores = sankeys.build_zscore_matrix(
+        sankeys.load_raw_trait_counts(sankeys.SHARED_TRAITS, metadata), metadata
+    )
+    trait = next(trait for trait in sankeys.SHARED_TRAITS if trait.trait_id == CELLULOSE_ID)
+    scored = sankeys.score_profiles(metadata, zscores, trait)
+    records: list[dict[str, object]] = []
+    for inc_dec, direction in DIRECTION_LABELS.items():
+        config = sankeys.single_trait_map_config(trait, inc_dec)
+        source, _, _ = sankeys.individual_condition_grouped_body_source(scored, config)
+        edges = sankeys.summarize_edges_from_source(source, config)
+        edge = edges[edges["condition"].eq(PD_CONDITION) & edges["body_site_group"].eq(FECES)]
+        records.append(
+            {
+                "direction": direction,
+                "focus_enriched_profiles": int(edge["focus_enriched_profile_count"].sum()),
+                "focus_studies": int(edge["focus_enriched_study_count"].sum()),
+            }
+        )
+    return pd.DataFrame.from_records(records)
+
+
+def check_display_edges_current(pd_display: pd.DataFrame, recounted: pd.DataFrame) -> None:
+    """Refuse saved Sankey edge tables that the current profile inputs no longer give (#687)."""
+    saved = pd_display[
+        pd_display["trait"].eq(CELLULOSE_LABEL) & pd_display["body_site"].eq(FECES)
+    ].set_index("direction")
+    for row in recounted.itertuples(index=False):
+        expected = (row.focus_enriched_profiles, row.focus_studies)
+        found = (
+            (
+                int(saved.at[row.direction, "focus_enriched_profiles"]),
+                int(saved.at[row.direction, "focus_studies"]),
+            )
+            if row.direction in saved.index
+            else None
+        )
+        if found != expected:
+            raise ValueError(
+                "The six-shared-trait Sankey edge tables are stale: the saved PD fecal cellulose "
+                f"{row.direction} edge has (profiles, studies) {found}, the current inputs give "
+                f"{expected}. Run `{SANKEY_RECIPE}` first."
+            )
 
 
 def build_pd_trait_direction_summary(
@@ -1225,6 +1280,7 @@ def main() -> None:
     zscores = build_zscore_matrix(metadata, trait_ids)
 
     pd_display = build_pd_display_summary()
+    check_display_edges_current(pd_display, recount_pd_feces_cellulose_edges())
     pd_all_edges = build_pd_all_edge_summary()
     pd_trait_summary = build_pd_trait_direction_summary(metadata, zscores, traits)
     pd_vs_other = build_pd_vs_other_cellulose_summary(metadata, zscores)
