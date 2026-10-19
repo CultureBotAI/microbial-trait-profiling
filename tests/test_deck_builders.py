@@ -1377,3 +1377,33 @@ def test_figure_records_name_their_code_and_existing_steps() -> None:
     deck.drawn_provenance(rec, unmerged, recipes, by_code)
     assert rec["just_recipe"].startswith("# not rerun on main")
     assert rec["pipeline_step_ids"] == []
+
+
+def test_only_recipes_that_run_without_arguments_are_steps() -> None:
+    """A command series names steps that run as written (#622): `core-screen run output`
+    needs arguments, so it is not one, while defaults and *ARGS are fine."""
+    text = (
+        'deck_slides := "data/derived/x"\n'
+        'set shell := ["bash", "-cu"]\n'
+        "\n"
+        "# Screen\n"
+        "trait-direction-screen *ARGS:\n"
+        "\tuv run python -m mtp.trait_screen --code-commit x $*\n"
+        "\n"
+        "core-screen run output:\n"
+        '\tuv run python -m mtp.trait_screen --core-run "{{run}}"\n'
+        "\n"
+        "[positional-arguments]\n"
+        'workflow-check spec="workflows/core.yaml":\n'
+        '\tuv run python -m mtp.workflow check "{{spec}}"\n'
+        "\n"
+        "@quiet:\n"
+        "\tuv run python scripts/quiet.py\n"
+    )
+    recipes = deck.justfile_recipes(text)
+    assert set(recipes) == {"trait-direction-screen", "workflow-check", "quiet"}
+    assert deck.recipes_by_code(recipes) == {
+        "src/mtp/trait_screen.py": ["trait-direction-screen"],
+        "src/mtp/workflow.py": ["workflow-check"],
+        "scripts/quiet.py": ["quiet"],
+    }

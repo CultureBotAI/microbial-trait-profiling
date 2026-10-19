@@ -28,6 +28,7 @@ import itertools
 import json
 import math
 import re
+import shlex
 import shutil
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
@@ -2173,7 +2174,8 @@ UPSTREAM_COMMANDS = (
     "just study-tsvs  # uv run python -m mtp.study_tsv",
     "just download-kg  # uv run --extra kg python scripts/download_kg_microbe.py",
     "just taxa-trait-matrix  # uv run python scripts/create_taxa_trait_matrix.py",
-    "just study-trait-profiles  # uv run python scripts/create_study_trait_profiles.py",
+    "just study-trait-profiles  # uv run python scripts/create_study_trait_profiles.py "
+    '--host-species "Homo sapiens" --drop-empty-traits',
 )
 # KG-Microbe files `just taxa-trait-matrix` reads (src/mtp/taxa_trait_matrix.py).
 KG_INPUTS = ("data/kg-microbe/merged-kg_nodes.tsv", "data/kg-microbe/merged-kg_edges.tsv")
@@ -2450,18 +2452,26 @@ def current_commands(series: Sequence[str]) -> list[str]:
     return commands
 
 
-RECIPE_HEADER = re.compile(r"^([A-Za-z0-9][\w-]*)(?:\s[^:=]*)?:(?!=)")
+# A recipe header: an optional @, the name, its parameters, and a colon that is not an
+# assignment's :=. Parameters may carry defaults, such as spec="workflows/x.yaml".
+RECIPE_HEADER = re.compile(r"^@?([A-Za-z0-9][\w-]*)((?:\s+[^:]*)?):(?!=)")
 RUNS = re.compile(r"(scripts/[\w./-]+\.py)|-m\s+(mtp(?:\.\w+)+)")
 
 
 def justfile_recipes(text: str) -> dict[str, str]:
-    """Each Justfile recipe's body, by recipe name (#622)."""
+    """The body of each Justfile recipe that runs without arguments, by recipe name.
+
+    A recipe with a required parameter, such as `core-screen run output`, cannot be a step
+    of a figure's command series as written, so it is left out (#622).
+    """
     recipes: dict[str, list[str]] = {}
     body: list[str] | None = None
     for line in text.splitlines():
         header = RECIPE_HEADER.match(line)
         if header:
-            body = recipes.setdefault(header.group(1), [])
+            parameters = shlex.split(header.group(2))
+            runnable = all("=" in name or name.startswith("*") for name in parameters)
+            body = recipes.setdefault(header.group(1), []) if runnable else None
         elif body is not None and line[:1] in ("\t", " "):
             body.append(line.strip())
         elif line.strip() and not line.startswith("#"):
