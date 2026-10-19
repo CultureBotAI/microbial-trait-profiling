@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Rebuild the cross-disease ``cellulose_decr`` analysis from pinned inputs (#552).
 
 Compares the taxa annotated ``METPO:2000103|GO:0030245`` (cellulose catabolic
@@ -25,12 +24,14 @@ patients, cells or pathway activity (methods/biological_interpretation.md).
 from __future__ import annotations
 
 import argparse
+import csv
 import dataclasses
 import itertools
 import json
 import math
 import re
 import sys
+from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -45,10 +46,9 @@ from scipy import optimize, special, stats
 
 from mtp.composition_denominators import load_retained_profiles, trait_fractions
 from mtp.contrast_orientation import CLASSIFIER_VERSION
-from mtp.paths import file_sha256
+from mtp.paths import REPO_ROOT, file_sha256
 
-ANALYSIS_DIR = Path(__file__).resolve().parents[1]
-REPO_ROOT = Path(__file__).resolve().parents[4]
+ANALYSIS_DIR = REPO_ROOT / "data" / "analysis" / "cellulose_decr"
 PINNED_PROVENANCE = ANALYSIS_DIR / "cellulose_decr_provenance.json"
 
 TRAIT_ID = "METPO:2000103|GO:0030245"
@@ -296,6 +296,53 @@ def compartment_of(body_site: str) -> str:
     return OTHER
 
 
+def clean_label(value: str | None) -> str:
+    """A BugSigDB label, with blanks and NA read as 'unknown'."""
+    text = (value or "").strip()
+    if not text or text.upper() == "NA" or text.lower() == "nan":
+        return "unknown"
+    return text
+
+
+def most_common_label(values: Iterable[str]) -> str:
+    """The most common known label, ties broken alphabetically."""
+    counts = Counter(label for label in map(clean_label, values) if label != "unknown")
+    if not counts:
+        return "unknown"
+    return min(counts.items(), key=lambda item: (-item[1], item[0]))[0]
+
+
+def study_modal_labels(dump_path: Path) -> pd.DataFrame:
+    """Each study's most common condition and body site over its signatures.
+
+    These are the labels every profile carried in study_trait_profile_study_metadata.tsv
+    before #555, computed the same way (``most_common_label`` in
+    scripts/create_study_trait_profile_heatmap.py). Computing them here keeps
+    ``--label-source study_modal`` reproducing the October 16 outputs whatever that table
+    now holds (#594).
+    """
+    values: dict[str, dict[str, list[str]]] = defaultdict(
+        lambda: {"condition": [], "body_site": []}
+    )
+    with dump_path.open(encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(line for line in handle if not line.startswith("#")):
+            bsdb_id = clean_label(row.get("BSDB ID"))
+            if bsdb_id == "unknown":
+                continue
+            study = "bsdb:" + bsdb_id.removeprefix("bsdb:").split("/", 1)[0]
+            values[study]["condition"].append(row.get("Condition") or "")
+            values[study]["body_site"].append(row.get("Body site") or "")
+    rows = [
+        {
+            "study_id": study,
+            "condition": most_common_label(labels["condition"]),
+            "body_site": most_common_label(labels["body_site"]),
+        }
+        for study, labels in values.items()
+    ]
+    return pd.DataFrame(rows).set_index("study_id")
+
+
 def load_corpus(
     paths: Mapping[str, Path], label_source: str, condition_labels: str = "exact"
 ) -> Corpus:
@@ -325,7 +372,11 @@ def load_corpus(
             raise ValueError(f"expected human profiles only, found hosts {sorted(hosts)}")
         profiles = labelled[[*keys, "inc_dec", "condition", "body_site"]].copy()
     else:
-        profiles = metadata[[*keys, "inc_dec", "condition", "body_site"]].copy()
+        modal = study_modal_labels(paths["full_dump"])
+        profiles = metadata[[*keys, "inc_dec"]].join(modal, on="study_id")
+        missing = profiles["condition"].isna()
+        if missing.any():
+            raise ValueError(f"{int(missing.sum())} profiles have no study in full_dump.csv")
     if condition_labels == "synonyms":
         profiles["condition"] = merge_synonyms(profiles["condition"])
     profiles["compartment"] = profiles["body_site"].map(compartment_of)
@@ -1904,7 +1955,11 @@ def label_corrections(paths: Mapping[str, Path]) -> pd.DataFrame:
     metadata = read_tsv(paths["profile_metadata"], index_col=0)
     experiments = read_tsv(paths["experiments"])
     keys = ["study_id", "experiment_id"]
-    pairs = metadata[[*keys, "condition", "body_site"]].drop_duplicates(keys)
+    pairs = (
+        metadata[keys]
+        .drop_duplicates(keys)
+        .join(study_modal_labels(paths["full_dump"]), on="study_id")
+    )
     merged = pairs.merge(
         experiments[[*keys, "condition", "body_site"]],
         on=keys,
@@ -2585,11 +2640,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     write_json(result, out / "cellulose_decr_summary.json")
     write_json(four_pairs, out / "four_highlighted_pairs_summary.json")
 
-    scripts = sorted(Path(__file__).resolve().parent.glob("*.py"))
+    modules = sorted(Path(__file__).resolve().parent.glob("*.py"))
     provenance = {
         "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "code_commit": args.code_commit,
-        "script": "data/analysis/cellulose_decr/scripts/cellulose_decr_analysis.py",
+        "script": "src/mtp/cellulose_decr/analysis.py",
         "bugsigdb_vintage": dump_vintage(paths["full_dump"]),
         "contrast_classifier_version": CLASSIFIER_VERSION,
         "label_source": args.label_source,
@@ -2597,7 +2652,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "permutations": n,
         "seed": args.seed,
         "seeds": rng_seeds,
-        "scripts": {path.name: file_sha256(path) for path in scripts},
+        "scripts": {f"src/mtp/cellulose_decr/{path.name}": file_sha256(path) for path in modules},
         "inputs": hashes,
         "pinned_inputs": pinned_inputs,
         "inputs_drifted_from_pinned_provenance": drifted,

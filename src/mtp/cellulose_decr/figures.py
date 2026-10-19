@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 """Draw the ``cellulose_decr`` figures from the analysis tables (#552).
 
 Every number, count and example on a figure is read from the TSV and JSON files
-that ``cellulose_decr_analysis.py`` writes to ``data/analysis/cellulose_decr/``,
+that :mod:`mtp.cellulose_decr.analysis` writes to ``data/analysis/cellulose_decr/``,
 and axis limits follow the data. Writes the statistical reference plates to
 ``figures/`` and the presentation plates to ``figures_graphical/`` as SVG, PDF
 and PNG, and a combined PDF of each set. These are regenerated, not committed
@@ -38,7 +37,13 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, FancyBboxPatch
 from scipy import stats
 
-ANALYSIS_DIR = Path(__file__).resolve().parents[1]
+from mtp.cellulose_decr.analysis import (
+    ANALYSIS_DIR,
+    NON_FECAL_GI,
+    ORAL,
+    OTHER,
+    POOLED_STRATIFIED,
+)
 
 # Condition hues: categorical slots validated all-pairs for colour-vision
 # deficiency (orange, aqua, violet). Direction: a diverging blue/red pair.
@@ -53,9 +58,6 @@ FAINT = "#f4f3f0"
 SHORT = ("PD", "HIV", "CRC")
 FULL = {"PD": "Parkinson's disease", "HIV": "HIV infection", "CRC": "Colorectal cancer"}
 PAIRS = (("PD", "HIV"), ("PD", "CRC"), ("HIV", "CRC"))
-NON_FECAL_GI = "Non-fecal GI (mucosa/lumen)"
-ORAL = "Oral / Oropharyngeal"
-OTHER = "Other non-GI"
 COMPARTMENT_LABEL = {
     "Feces": "Stool",
     NON_FECAL_GI: "GI mucosa / lumen",
@@ -63,7 +65,6 @@ COMPARTMENT_LABEL = {
     OTHER: "Other / multi-site",
 }
 PNG_DPI = 150
-POOLED_STRATIFIED = "Pooled, stratified by condition"
 # Neutral highlight for p < 0.05 cells, distinct from the direction colours.
 SIGNIFICANT_FILL = "#ebe4cf"
 
@@ -1722,7 +1723,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(f"wrote {', '.join(path.name for path in written)}")
         outputs.append(combined[folder])
     provenance = {
-        "script": "data/analysis/cellulose_decr/scripts/cellulose_decr_figures.py",
+        "script": "src/mtp/cellulose_decr/figures.py",
         "script_sha256": sha256(Path(__file__).resolve()),
         "matplotlib": matplotlib.__version__,
         "inputs": {name: sha256(args.analysis_dir / name) for name in FIGURE_INPUTS},

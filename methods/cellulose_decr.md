@@ -197,8 +197,9 @@ are not a test; traits share taxa.
 
 ## Outputs
 
-`just cellulose-decr` runs `cellulose_decr_analysis.py`, which writes these
-committed tables to `data/analysis/cellulose_decr/`:
+`just cellulose-decr` runs `mtp.cellulose_decr.analysis`
+(`src/mtp/cellulose_decr/analysis.py`), which writes these committed tables to
+`data/analysis/cellulose_decr/`:
 
 | File | Contents |
 | --- | --- |
@@ -219,8 +220,9 @@ committed tables to `data/analysis/cellulose_decr/`:
 | `label_source_corrections.tsv` | Experiments whose study-level label differed from their own |
 | `four_highlighted_pairs_taxon_drivers.tsv`, `four_highlighted_pairs_study_evidence.tsv`, `four_highlighted_pairs_summary.json` | Taxa and studies behind the four exploratory leads |
 
-`just cellulose-decr-figures` runs `cellulose_decr_figures.py`, which draws the
-figures from those tables only. The figures are written beside the tables and are gitignored, as
+`just cellulose-decr-figures` runs `mtp.cellulose_decr.figures`
+(`src/mtp/cellulose_decr/figures.py`), which draws the figures from those tables
+only. The figures are written beside the tables and are gitignored, as
 CONTRIBUTING.md requires for images outside `trait-visualization/` (#560).
 Reruns on the same inputs give identical tables and figures; only the provenance
 timestamp changes. Figure provenance is in `figures/figures_provenance.json`.

@@ -4,7 +4,7 @@ This directory compares the taxa annotated `METPO:2000103|GO:0030245`
 (**cellulose catabolic process**) that curated BugSigDB signatures report decreased
 in human feces in Parkinson's disease (PD), HIV infection (HIV) and colorectal
 cancer (CRC). Every number below comes from one run of
-[`scripts/cellulose_decr_analysis.py`](scripts/cellulose_decr_analysis.py) through
+[`src/mtp/cellulose_decr/analysis.py`](../../../src/mtp/cellulose_decr/analysis.py) through
 `just cellulose-decr` (provenance in
 [`cellulose_decr_provenance.json`](cellulose_decr_provenance.json)). The one
 exception is a corpus-wide count in section 4, quoted from another analysis's
