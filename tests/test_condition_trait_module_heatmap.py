@@ -140,3 +140,88 @@ def test_experiment_metadata_without_group_by_raises(tmp_path: Path) -> None:
                 experiment_metadata=two_condition_experiments(),
                 group_by=group_by,
             )
+
+
+def test_main_builds_modules_from_each_experiments_own_labels(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """main() passes the grouping fields, so modules follow experiment labels (#646)."""
+    heatmap.plt.switch_backend("Agg")
+    profiles = tmp_path / "profiles.tsv"
+    profiles.write_text(
+        "\n".join(
+            [
+                "study_id\texperiment_id\tinc_dec\tMETPO:1\tMETPO:2\tMETPO:3",
+                "bsdb:1\tbsdb:1-1\tinc\t30\t1\t5",
+                "bsdb:1\tbsdb:1-1\tdec\t20\t2\t5",
+                "bsdb:1\tbsdb:1-2\tinc\t25\t3\t5",
+                "bsdb:1\tbsdb:1-3\tinc\t1\t30\t5",
+                "bsdb:2\tbsdb:2-1\tinc\t2\t40\t5",
+                "bsdb:3\tbsdb:3-1\tinc\t9\t9\t30",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    full_dump = tmp_path / "full_dump.csv"
+    full_dump.write_text(
+        "\n".join(
+            [
+                "# BugSigDB 2026-04-24_00:41_UTC",
+                "BSDB ID,Condition,Body site,Location of subjects,Host species",
+                "bsdb:1/1/1,Crohn's disease,Feces,Sweden,Homo sapiens",
+                "bsdb:1/1/2,Crohn's disease,Feces,Sweden,Homo sapiens",
+                "bsdb:1/2/1,Crohn's disease,Feces,Sweden,Homo sapiens",
+                "bsdb:1/3/1,Ulcerative colitis,Colonic mucosa,Sweden,Homo sapiens",
+                "bsdb:2/1/1,Ulcerative colitis,Colonic mucosa,Norway,Homo sapiens",
+                "bsdb:3/1/1,Obesity,Feces,Norway,Homo sapiens",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    studies = tmp_path / "studies.tsv"
+    studies.write_text(
+        "study_id\ttitle\tpublication_year\ttaxon_count\tsignature_count\n"
+        "bsdb:1\tIBD cohort\t2020\t10\t4\n"
+        "bsdb:2\tColitis cohort\t2021\t8\t1\n"
+        "bsdb:3\tObesity cohort\t2022\t6\t1\n",
+        encoding="utf-8",
+    )
+    columns = tmp_path / "columns.tsv"
+    columns.write_text(
+        "column_id\tobject_name\tcolumn_label\tobject_category\n"
+        "METPO:1\ttrait one\ttrait one\tbiolink:PhenotypicQuality\n"
+        "METPO:2\ttrait two\ttrait two\tbiolink:PhenotypicQuality\n"
+        "METPO:3\ttrait three\ttrait three\tbiolink:PhenotypicQuality\n",
+        encoding="utf-8",
+    )
+    group_metadata = tmp_path / "group_metadata.tsv"
+    arguments = {
+        "--study-trait-profiles-input": profiles,
+        "--trait-columns-input": columns,
+        "--studies-input": studies,
+        "--full-dump-input": full_dump,
+        "--output": tmp_path / "heatmap.png",
+        "--matrix-output": tmp_path / "matrix.tsv",
+        "--group-metadata-output": group_metadata,
+        "--trait-metadata-output": tmp_path / "traits.tsv",
+        "--guild-definition-table-output": tmp_path / "guild.png",
+        "--guild-definition-table-svg-output": tmp_path / "guild.svg",
+        "--min-studies": 1,
+        "--min-profiles": 1,
+        "--min-traits": 1,
+        "--min-total-signal": 1,
+        "--min-group-support": 1,
+        "--max-group-support-fraction": 1.0,
+    }
+    argv = [str(MODULE_PATH)]
+    for flag, value in arguments.items():
+        argv.extend([flag, str(value)])
+    monkeypatch.setattr(sys, "argv", argv)
+
+    heatmap.main()
+
+    modules = pd.read_csv(group_metadata, sep="\t", index_col="module_id")
+    assert modules.loc["Crohn's disease | Feces", "profile_count"] == 3
+    assert modules.loc["Crohn's disease | Feces", "study_count"] == 1
+    assert modules.loc["Ulcerative colitis | Colonic mucosa", "profile_count"] == 2
+    assert modules.loc["Ulcerative colitis | Colonic mucosa", "study_count"] == 2
