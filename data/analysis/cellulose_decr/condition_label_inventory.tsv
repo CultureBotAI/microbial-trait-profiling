@@ -1,0 +1,25 @@
+condition_label	ontology_ids	status	studies	experiments	feces_experiments
+Colorectal adenoma	EFO:0005406	different condition (excluded)	11	19	10
+HIV mother to child transmission	EFO:0004595	different condition (excluded)	1	8	7
+Colorectal Gastrointestinal Stromal Tumor	EFO:1000192	different condition (excluded)	1	2	2
+Colon Sessile Serrated Adenoma/Polyp	EFO:1000189	different condition (excluded)	1	1	1
+Sigmoid neoplasm	EFO:1001181	different condition (excluded)	1	1	0
+Parkinson's disease	MONDO:0005180	exact label (primary analysis)	59	163	148
+Colorectal cancer	EFO:0005842	exact label (primary analysis)	55	111	64
+HIV infection	EFO:0000764	exact label (primary analysis)	30	53	35
+Colorectal cancer,Diabetes mellitus	EFO:0005842,EFO:0000400	multi-condition label (excluded)	1	3	3
+Colorectal adenoma,Colorectal cancer	EFO:0005406,EFO:0005842, EFO:0005842,EFO:0005406	multi-condition label (excluded)	1	2	2
+HIV infection,Oral candidiasis	EFO:0007406,EFO:0000764	multi-condition label (excluded)	2	2	0
+Nutraceutical,Colorectal cancer	CHEBI:50733,EFO:0005842	multi-condition label (excluded)	1	2	2
+Colorectal cancer,Nutraceutical	EFO:0005842,CHEBI:50733	multi-condition label (excluded)	1	1	1
+Constipation,Parkinson's disease	HP:0002019,MONDO:0005180	multi-condition label (excluded)	1	1	1
+HIV infection,Antimicrobial agent	CHEBI:33281,EFO:0000764	multi-condition label (excluded)	1	1	1
+HIV infection,Diabetes mellitus	EFO:0000764,EFO:0000400	multi-condition label (excluded)	1	1	1
+HIV infection,Human papilloma virus infection	EFO:0001668,EFO:0000764	multi-condition label (excluded)	1	1	0
+HIV infection,Methamphetamine dependence	EFO:0000764,EFO:0004701	multi-condition label (excluded)	1	1	0
+Colorectal carcinoma	EFO:1001951	synonym of Colorectal cancer (sensitivity only)	3	7	5
+Colorectal adenocarcinoma	EFO:0000365	synonym of Colorectal cancer (sensitivity only)	1	5	5
+Metastatic colorectal cancer	EFO:1001480	synonym of Colorectal cancer (sensitivity only)	2	4	3
+Colon carcinoma	EFO:1001950	synonym of Colorectal cancer (sensitivity only)	1	1	0
+Human immunodeficiency virus	NCBITAXON:12721	synonym of HIV infection (sensitivity only)	4	15	3
+HIV-1 infection	EFO:0000180	synonym of HIV infection (sensitivity only)	1	2	2
