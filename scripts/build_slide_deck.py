@@ -23,15 +23,20 @@ import json
 import shutil
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DECK_DIR = Path("data/derived/figure_review_2026-09-21")
+CELLULOSE_DIR = Path("data/analysis/cellulose_decr")
+# Regenerated, gitignored figure folders: their slides carry no GitHub figure link.
+UNLINKED_FIGURES = ("data/derived/", f"{CELLULOSE_DIR}/figures")
+REPO_URL = "https://github.com/CultureBotAI/microbial-trait-profiling"
 COMMIT = "402ef5c25b7105c9aa73398085956dcf1f372bb4"
 SHORT_COMMIT = COMMIT[:12]
 BRANCH = "main"
-GITHUB_BLOB = f"https://github.com/CultureBotAI/microbial-trait-profiling/blob/{COMMIT}"
+GITHUB_BLOB = f"{REPO_URL}/blob/{COMMIT}"
 
 
 def sha256_file(path: Path) -> str:
@@ -565,7 +570,7 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "takeaway": "Across all 317 KG-Microbe traits, 22 pass study-level BH q ≤ 0.05 pooled "
             "(33 in Feces), splitting into an increased aerotolerant / halophilic / "
             "oxyanion-redox / coccus guild versus a decreased plant-polysaccharide / "
-            "obligate-anaerobe / METPO:1000845 (Pyrrolidonyl / Acetogenesis) / low-GC "
+            "obligate-anaerobe / Acetogenesis (METPO:1000845) / low-GC "
             "guild.",
             "caveat": "Excluding Feces (365 non-fecal studies) leaves 0 traits passing study BH q "
             "≤ 0.05; in Saliva (55 studies), nitrate reduction reverses sign (study t = "
@@ -616,17 +621,15 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "\N{MULTIPLICATION SIGN} Trait contrasts in PD, CRC, HIV, and COVID-19 "
             "(right).",
             "caveat": "Highlights the 4 profile Fisher FDR survivors (★ q ≤ 0.05: PD/HIV/CRC "
-            "cellulose ↓, PD halophily ↑), the CRC Feces (30↓:7↑, p=1.88e-4) vs "
-            "Non-Fecal GI (6↓:11↑) cellulose interaction (Fisher OR=7.86, p=0.00142), "
-            "and the 9-taxon Cellulose core (Jaccard d_J=0.478, p=3.5e-12).",
+            "cellulose ↓, PD halophily ↑). The cellulose deep-dive slides test the CRC "
+            "stool-versus-mucosa difference and the overlap of decreased taxa across PD, HIV "
+            "and CRC.",
             "methods_path": "methods/table1_trait_condition_body_site_maps.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
             "pd_condition_taxon_trait_network_condition_trait_tests.tsv",
             "deck_section": "Main",
             "analysis": "tufte_plate_4",
-            "selection_reason": "Simplified visual triangulation across 14 major fecal cohorts "
-            "with verified CRC compartment interaction and taxonomic core "
-            "Jaccard metrics.",
+            "selection_reason": "Simplified visual triangulation across 14 major fecal cohorts.",
         },
         {
             "owner": "Marcin / Noel",
@@ -640,18 +643,18 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "+1.13, myeloma +1.07, CRC feces +0.68), whereas oral, mucosal, lung, and "
             "ocular cohorts invert toward obligate anaerobes (Oral RA -1.01, Lower GI "
             "mucosa CRC -0.79, Periodontitis -0.47).",
-            "caveat": "Colorectal cancer splits by sampling compartment both in O₂ switch score "
-            "(Feces +0.68 vs Lower GI mucosa -0.79) and Cellulose profiles (Feces 30↓:7↑ "
-            "[81.1% down] vs Non-Fecal GI 6↓:11↑ [35.3% down]; Fisher OR = 7.86, p = "
-            "0.00142).",
+            "caveat": "Colorectal cancer splits by sampling compartment in O₂ switch score "
+            "(Feces +0.68 vs Lower GI mucosa -0.79). The cellulose comparison between the "
+            "same compartments is on the cellulose deep-dive slides; most of its mucosal "
+            "contrasts are not patients against controls.",
             "methods_path": "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
             "README.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
             "condition_oxygen_switch_scores.tsv",
             "deck_section": "Main",
             "analysis": "tufte_plate_5",
-            "selection_reason": "Tufte synthesis plate revealing the lumenal-vs-mucosal/oral "
-            "oxygen and cellulose polarity inversion and genus switchers.",
+            "selection_reason": "Tufte synthesis plate of the lumenal-vs-mucosal/oral oxygen "
+            "polarity inversion and genus switchers.",
         },
         {
             "owner": "Marcin / Ilyas / Noel",
@@ -1394,357 +1397,65 @@ def get_remaining_appendix_slides(already_included: set[str], repo: Path) -> lis
     return appendix_slides
 
 
-def get_cellulose_decr_main_slides() -> list[dict[str, str]]:
-    """The 6 non-redundant cellulose_decr deep-dive plates and diagrams for the Main deck."""
-    return [
-        {
-            "owner": "Marcin / Noel / Ilyas / Jed",
-            "title": "Cellulose Deep-Dive Plate I: Three Distinct Diseases Lose the Same Gut "
-            "Fiber-Digesting Bacteria",
-            "tag": "Cellulose Deep-Dive · Plate I",
-            "figure_file_path": "data/analysis/cellulose_decr/figures_tufte/"
-            "fig1_tufte_convergence_slope_and_overlap.svg",
-            "code_path": "data/analysis/cellulose_decr/plot_cellulose_decr_tufte_figures.py",
-            "takeaway": (
-                "In stool studies of Parkinson's disease (57 Down vs. 26 Up), HIV infection (19 "
-                "Down vs. 6 Up), and colorectal cancer "
-                "(30 Down vs. 7 Up), cellulose-degrading bacteria are reported decreased in 73.1% "
-                "of paired experiments (106 of 145; binomial p = 2.41e-08)."
-            ),
-            "caveat": (
-                "Of 49 decreased cellulose-degrading taxa across the three diseases, 32 (65%) are "
-                "shared by at least two diseases and 17 (35%) "
-                "are shared by all three (100,000-draw degree-preserving null p = 3.5e-12, Z = "
-                "+6.85; Genus+Species net-decreased sensitivity d_J = 0.634, p = 4.21e-09)."
-            ),
-            "methods_path": "data/analysis/cellulose_decr/EXECUTIVE_SUMMARY.md",
-            "evidence_path": "data/analysis/cellulose_decr/"
-            "cellulose_decr_null_simulation_summary.tsv",
-            "deck_section": "Main",
-            "analysis": "fig1_tufte_convergence_slope_and_overlap",
-            "selection_reason": "Cellulose catabolism deep-dive Tufte Plate I (from v5 Set 3).",
-        },
-        {
-            "owner": "Marcin / Noel / Ilyas / Jed",
-            "title": "Cellulose Deep-Dive Plate II: Nine Butyrate- and Fiber-Degrading Genera "
-            "Decrease Across All Three Diseases",
-            "tag": "Cellulose Deep-Dive · Plate II",
-            "figure_file_path": "data/analysis/cellulose_decr/figures_tufte/"
-            "fig2_tufte_core_guild_dot_table.svg",
-            "code_path": "data/analysis/cellulose_decr/plot_cellulose_decr_tufte_figures.py",
-            "takeaway": (
-                "Removing ancestor rollup links leaves 9 specific genera and species that decrease "
-                "in stool across all three diseases: "
-                "Roseburia (25 studies), Blautia (19), Clostridium (16), Bacteroides (15), "
-                "Lachnospira (14), Ruminococcus (14), Anaerostipes (8), Marvinbryantia (3), and R. "
-                "champanellensis (2)."
-            ),
-            "caveat": (
-                "Together with 8 shared ancestor clades, these 17 core taxa represent 69.8% of all "
-                "decreased cellulose-taxon observations "
-                "(271 of 388 study-taxon pairs); strict net-decreased leaf filtering retains 7 "
-                "core genera/species with even tighter overlap (d_J = 0.634, p = 4.21e-09)."
-            ),
-            "methods_path": "data/analysis/cellulose_decr/EXECUTIVE_SUMMARY.md",
-            "evidence_path": "data/analysis/cellulose_decr/cellulose_decr_core17_taxa.tsv",
-            "deck_section": "Main",
-            "analysis": "fig2_tufte_core_guild_dot_table",
-            "selection_reason": "Cellulose catabolism deep-dive Tufte Plate II (from v5 Set 3).",
-        },
-        {
-            "owner": "Marcin / Noel / Ilyas / Jed",
-            "title": "Cellulose Deep-Dive Plate III: Shared Loss Appears in Stool, Not in Tissue "
-            "Biopsies or the Mouth",
-            "tag": "Cellulose Deep-Dive · Plate III",
-            "figure_file_path": "data/analysis/cellulose_decr/figures_tufte/"
-            "fig3_tufte_why_only_stool.svg",
-            "code_path": "data/analysis/cellulose_decr/plot_cellulose_decr_tufte_figures.py",
-            "takeaway": (
-                "In stool (145 paired experiments across 100 studies), all three diseases show "
-                "significant decreases in cellulose-degrading bacteria "
-                "and share 50.4% of decreased taxa per pair (p = 3.5e-12)."
-            ),
-            "caveat": (
-                "In non-fecal GI mucosa/biopsy (45 experiments across 28 studies), CRC reverses to "
-                "6 Down : 11 Up (Fisher 2x2 Feces vs Non-Fecal GI "
-                "OR = 7.86, p = 0.00142) and 3-disease overlap drops to 3 taxa (16.9%, null p = "
-                "0.258); oral/saliva has 0 shared taxa."
-            ),
-            "methods_path": "data/analysis/cellulose_decr/EXECUTIVE_SUMMARY.md",
-            "evidence_path": "data/analysis/cellulose_decr/cellulose_decr_compartment_summary.tsv",
-            "deck_section": "Main",
-            "analysis": "fig3_tufte_why_only_stool",
-            "selection_reason": "Cellulose catabolism deep-dive Tufte Plate III (from v5 Set 3).",
-        },
-        {
-            "owner": "Marcin / Noel / Ilyas / Jed",
-            "title": "Cellulose Deep-Dive Plate IV: Plant-Fiber Breakdown Ranks First Among "
-            "Metabolic Pathways as Salt-Tolerant Taxa Increase",
-            "tag": "Cellulose Deep-Dive · Plate IV",
-            "figure_file_path": "data/analysis/cellulose_decr/figures_tufte/"
-            "fig4_tufte_trait_landscape_and_four_pairs.svg",
-            "code_path": "data/analysis/cellulose_decr/plot_cellulose_decr_tufte_figures.py",
-            "takeaway": (
-                "Across all 90 non-media traits with >=10 decreased taxa in PD, HIV, and CRC "
-                "stool, cellulose catabolism ranks #3 overall "
-                "(97.8th percentile, 50.4% pairwise overlap) and #1 among specific metabolic "
-                "pathways, behind only broad Gram-positive and obligate-anaerobe categories."
-            ),
-            "caveat": (
-                "In the 714-test individual condition x site x trait profile contrast screen, only "
-                "4 tests survive BH q < 0.05: cellulose catabolism decreased "
-                "in PD (-27.4 pp, q = 0.0077), HIV (-53.7 pp, q = 0.0080), and CRC (-36.9 pp, q = "
-                "0.0336), plus halotolerance increased in PD (+24.4 pp, q = 0.0265)."
-            ),
-            "methods_path": "data/analysis/cellulose_decr/EXECUTIVE_SUMMARY.md",
-            "evidence_path": "data/analysis/cellulose_decr/"
-            "cellulose_decr_trait_specificity_benchmark.tsv",
-            "deck_section": "Main",
-            "analysis": "fig4_tufte_trait_landscape_and_four_pairs",
-            "selection_reason": "Cellulose catabolism deep-dive Tufte Plate IV (from v5 Set 3).",
-        },
-        {
-            "owner": "Marcin / Noel / Ilyas / Jed",
-            "title": "Published Literature Support for the Four Highlighted Condition-Trait "
-            "Signatures",
-            "tag": "Cellulose Deep-Dive · Literature Audit",
-            "figure_file_path": "data/analysis/cellulose_decr/figures_tufte/"
-            "fig8_literature_support_four_pairs.svg",
-            "code_path": "data/analysis/cellulose_decr/cellulose_decr_slide_deck.html",
-            "takeaway": (
-                "Synthesizes independent metagenomic and clinical cohort studies corroborating "
-                "decreased cellulose-fermenting Clostridia/Bacteroidota in PD "
-                "(Wallen 2022, Romano 2021), HIV (Vujkovic-Cvijin 2013, Noguera-Julian 2016), and "
-                "CRC (Wirbel 2019, Thomas 2019), alongside increased osmotolerant taxa in PD "
-                "constipation."
-            ),
-            "caveat": (
-                "Follows methods/biological_interpretation.md: distinguishes database trait "
-                "annotations of reported taxa from direct in vivo metabolic flux measurements."
-            ),
-            "methods_path": "data/analysis/cellulose_decr/"
-            "FOUR_HIGHLIGHTED_PAIRS_LITERATURE_SUPPORT.md",
-            "evidence_path": "data/analysis/cellulose_decr/"
-            "four_highlighted_pairs_literature_support.tsv",
-            "deck_section": "Main",
-            "analysis": "fig8_literature_support_four_pairs",
-            "selection_reason": "Literature audit vector table for the 4 FDR-significant condition "
-            "x site x trait pairs (from v5 slide 173).",
-        },
-        {
-            "owner": "Marcin / Noel / Ilyas / Jed",
-            "title": "Set-Theory Partition: Why Mutually Exclusive 2-Way Slices Have Fewer Taxa "
-            "Than the 17-Taxon 3-Way Core",
-            "tag": "Cellulose Deep-Dive · Set Partition",
-            "figure_file_path": "data/analysis/cellulose_decr/figures_tufte/"
-            "fig9_set_theory_17_core_vs_pairwise.svg",
-            "code_path": "data/analysis/cellulose_decr/cellulose_decr_slide_deck.html",
-            "takeaway": (
-                "Set-theory identity |A n B| = |A n B n C| + |(A n B) \ C| explains why every full "
-                "2-disease intersection (PDnCRC = 27, PDnHIV = 21, HIVnCRC = 18) "
-                "exceeds the 17-taxon 3-way core, whereas the mutually exclusive 2-disease-only "
-                "Venn slices sum to 15 (10 + 4 + 1)."
-            ),
-            "caveat": (
-                "Because fiber-degrading taxa depleted in two diseases belong to the shared "
-                "anaerobic guild (Roseburia, Blautia, Ruminococcus, Bacteroides, Clostridium), "
-                "17 of the 32 shared taxa (53%) are depleted in all three diseases."
-            ),
-            "methods_path": "data/analysis/cellulose_decr/EXECUTIVE_SUMMARY.md",
-            "evidence_path": "data/analysis/cellulose_decr/cellulose_decr_taxa_presence.tsv",
-            "deck_section": "Main",
-            "analysis": "fig9_set_theory_17_core_vs_pairwise",
-            "selection_reason": "Set-theory partition diagram of the 49 union cellulose-degrading "
-            "taxa (from v5 slide 174).",
-        },
-    ]
+def load_cellulose_captions(repo: Path) -> dict[str, dict[str, Any]]:
+    """Slide text for the cellulose_decr figures, worded from its committed tables (#556).
 
-
-def get_cellulose_decr_appendix_slides() -> list[dict[str, str]]:
-    """The 7 cellulose_decr companion slides for the Appendix.
-
-    Four graphical summaries and three statistical reference figures.
+    ``just cellulose-decr-figures`` writes it beside the figures, so the slides change with
+    the tables instead of carrying hand-copied numbers.
     """
-    return [
-        {
-            "owner": "Marcin",
-            "title": "Graphical Summary 1: Three Distinct Diseases Converge on the Same Gut "
-            "Fiber-Degrading Guild",
-            "tag": "Cellulose Deep-Dive · Graphical Summary 1",
-            "figure_file_path": "data/analysis/cellulose_decr/figures_graphical/"
-            "fig1_surprising_convergence_network_venn.svg",
-            "code_path": "data/analysis/cellulose_decr/plot_cellulose_decr_graphical_figures.py",
-            "takeaway": (
-                "Pairwise Jaccard overlap across PD, HIV, and CRC stool signatures is 57.4% "
-                "(PDnCRC: 27/47), 48.8% (PDnHIV: 21/43), and 45.0% (HIVnCRC: 18/40); "
-                "3-way Jaccard is 34.7% (17/49)."
-            ),
-            "caveat": (
-                "Degree-preserving null model (100,000 draws from the 118-taxon KG-Microbe "
-                "cellulose background): expected 4.82 +- 1.78 core taxa vs. 17 observed "
-                "(3.5x enrichment, p = 3.5e-12)."
-            ),
-            "methods_path": "data/analysis/cellulose_decr/EXECUTIVE_SUMMARY.md",
-            "evidence_path": "data/analysis/cellulose_decr/"
-            "cellulose_decr_null_simulation_summary.tsv",
-            "deck_section": "Appendix",
-            "analysis": "fig1_surprising_convergence_network_venn",
-            "selection_reason": "Cellulose deep-dive Graphical Summary 1 (from v5 Set 2).",
-        },
-        {
-            "owner": "Marcin",
-            "title": "Graphical Summary 2: Nine Leaf Genera and Species Anchor the Shared "
-            "Cellulose-Degrading Loss",
-            "tag": "Cellulose Deep-Dive · Graphical Summary 2",
-            "figure_file_path": "data/analysis/cellulose_decr/figures_graphical/"
-            "fig2_genus_species_core_guild.svg",
-            "code_path": "data/analysis/cellulose_decr/plot_cellulose_decr_graphical_figures.py",
-            "takeaway": (
-                "Leaf-level convergence (9 leaf taxa out of 38 leaf union; mean pairwise Jaccard "
-                "46.8% vs. 18.8% null, p = 1.6e-06; net-decreased sensitivity "
-                "d_J = 0.634, p = 4.21e-09) confirms that overlap is not an artifact of "
-                "ancestor-clade propagation."
-            ),
-            "caveat": (
-                "8 of 9 core leaf genera belong to anaerobic Lachnospiraceae, Ruminococcaceae, or "
-                "Clostridiaceae (phylum Bacillota), plus Bacteroides (Bacteroidota)."
-            ),
-            "methods_path": "data/analysis/cellulose_decr/EXECUTIVE_SUMMARY.md",
-            "evidence_path": "data/analysis/cellulose_decr/cellulose_decr_core17_taxa.tsv",
-            "deck_section": "Appendix",
-            "analysis": "fig2_genus_species_core_guild",
-            "selection_reason": "Cellulose deep-dive Graphical Summary 2 (from v5 Set 2).",
-        },
-        {
-            "owner": "Marcin",
-            "title": "Graphical Summary 3: Convergence Is Specific to Luminal Stool Signatures, "
-            "Absent in Mucosa and Oral Sites",
-            "tag": "Cellulose Deep-Dive · Graphical Summary 3",
-            "figure_file_path": "data/analysis/cellulose_decr/figures_graphical/"
-            "fig3_feces_compartment_specificity.svg",
-            "code_path": "data/analysis/cellulose_decr/plot_cellulose_decr_graphical_figures.py",
-            "takeaway": (
-                "Contrasts Feces (100 studies, 145 paired experiments; 17 core taxa, 50.4% mean "
-                "Jaccard, p = 3.5e-12) against Non-Fecal GI mucosa/biopsy "
-                "(28 studies, 45 experiments; 3 core taxa, 16.9% mean Jaccard, p = 0.258) and "
-                "Oral/Saliva (9 studies, 0 core taxa)."
-            ),
-            "caveat": (
-                "In CRC non-fecal GI mucosa, cellulose catabolism direction reverses to 6 Down : "
-                "11 Up (Fisher OR = 7.86 vs Feces 30 Down : 7 Up, p = 0.00142)."
-            ),
-            "methods_path": "data/analysis/cellulose_decr/EXECUTIVE_SUMMARY.md",
-            "evidence_path": "data/analysis/cellulose_decr/cellulose_decr_compartment_summary.tsv",
-            "deck_section": "Appendix",
-            "analysis": "fig3_feces_compartment_specificity",
-            "selection_reason": "Cellulose deep-dive Graphical Summary 3 (from v5 Set 2).",
-        },
-        {
-            "owner": "Marcin",
-            "title": "Graphical Summary 4: Cellulose Catabolism Ranks #1 Among Specific Metabolic "
-            "Pathways for Cross-Disease Overlap",
-            "tag": "Cellulose Deep-Dive · Graphical Summary 4",
-            "figure_file_path": "data/analysis/cellulose_decr/figures_graphical/"
-            "fig4_top_functional_pathway_podium.svg",
-            "code_path": "data/analysis/cellulose_decr/plot_cellulose_decr_graphical_figures.py",
-            "takeaway": (
-                "Ranks 90 KG-Microbe traits with >=10 decreased taxa in PD, HIV, and CRC stool: "
-                "only gram positive (67.0%) and obligate anaerobe (51.9%) "
-                "exceed cellulose catabolism (50.4%, 97.8th percentile)."
-            ),
-            "caveat": (
-                "Demonstrates that cross-disease convergence is driven by anaerobic "
-                "plant-polysaccharide fermentation rather than generic taxonomic overlap."
-            ),
-            "methods_path": "data/analysis/cellulose_decr/EXECUTIVE_SUMMARY.md",
-            "evidence_path": "data/analysis/cellulose_decr/"
-            "cellulose_decr_trait_specificity_benchmark.tsv",
-            "deck_section": "Appendix",
-            "analysis": "fig4_top_functional_pathway_podium",
-            "selection_reason": "Cellulose deep-dive Graphical Summary 4 (from v5 Set 2).",
-        },
-        {
-            "owner": "Marcin",
-            "title": "Statistical Figure 1: Pairwise and 3-Way Jaccard Overlap vs. 100,000-Draw "
-            "Degree-Preserving Null",
-            "tag": "Cellulose Deep-Dive · Statistical Reference 1",
-            "figure_file_path": "data/analysis/cellulose_decr/figures/"
-            "fig1_pairwise_and_3way_jaccard_nulls.svg",
-            "code_path": "data/analysis/cellulose_decr/plot_cellulose_decr_figures.py",
-            "takeaway": (
-                "Full 100,000-draw degree-preserving null distributions for pairwise Jaccard "
-                "(50.4% observed vs. 27.6% +- 3.3% expected, Z = +6.85) "
-                "and 3-way Jaccard (34.7% observed vs. 8.3% +- 2.8% expected, Z = +9.45)."
-            ),
-            "caveat": (
-                "Sampling weights are proportional to empirical taxon study-frequency across all "
-                "482 fecal studies in BugSigDB."
-            ),
-            "methods_path": "data/analysis/cellulose_decr/EXECUTIVE_SUMMARY.md",
-            "evidence_path": "data/analysis/cellulose_decr/"
-            "cellulose_decr_null_simulation_summary.tsv",
-            "deck_section": "Appendix",
-            "analysis": "fig1_pairwise_and_3way_jaccard_nulls",
-            "selection_reason": "Cellulose deep-dive Statistical Reference Figure 1 (from v5 Set "
-            "1).",
-        },
-        {
-            "owner": "Marcin",
-            "title": "Statistical Figure 2: Body-Site Compartment Specificity and Taxonomic Rank / "
-            "Direction Filtering Sensitivity",
-            "tag": "Cellulose Deep-Dive · Statistical Reference 2",
-            "figure_file_path": "data/analysis/cellulose_decr/figures/"
-            "fig2_compartment_specificity_and_sensitivity.svg",
-            "code_path": "data/analysis/cellulose_decr/plot_cellulose_decr_figures.py",
-            "takeaway": (
-                "Tests 5 taxonomic and directional filtering rules: All ranks (50.4%, p = "
-                "3.5e-12), Genus+Species only (46.8%, p = 1.6e-06), "
-                "Genus only (49.3%, p = 2.0e-05), Net-decreased > increased (40.3%, p = 1.4e-07), "
-                "and Recurrent >=2 studies (28.7%, p = 4.9e-03)."
-            ),
-            "caveat": (
-                "Combining Genus+Species leaf restriction with strict net-decreased filtering "
-                "yields 7 core leaf taxa and a LOWER Jaccard distance (d_J = 0.634, Z = +5.99, p = "
-                "4.21e-09)."
-            ),
-            "methods_path": "data/analysis/cellulose_decr/EXECUTIVE_SUMMARY.md",
-            "evidence_path": "data/analysis/cellulose_decr/cellulose_decr_compartment_summary.tsv",
-            "deck_section": "Appendix",
-            "analysis": "fig2_compartment_specificity_and_sensitivity",
-            "selection_reason": "Cellulose deep-dive Statistical Reference Figure 2 (from v5 Set "
-            "1).",
-        },
-        {
-            "owner": "Marcin",
-            "title": "Statistical Figure 3: 17-Taxon Core Presence Matrix and 90-Trait Functional "
-            "Guild Benchmark",
-            "tag": "Cellulose Deep-Dive · Statistical Reference 3",
-            "figure_file_path": "data/analysis/cellulose_decr/figures/"
-            "fig3_core_taxa_and_trait_benchmark.svg",
-            "code_path": "data/analysis/cellulose_decr/plot_cellulose_decr_figures.py",
-            "takeaway": (
-                "Displays study-level recurrence across all 17 core cellulose-degrading taxa "
-                "alongside the 90-trait empirical Jaccard benchmark "
-                "(median 30.2%, IQR 27.1%-33.9%)."
-            ),
-            "caveat": (
-                "Roseburia (25 stool studies: 18 PD · 2 HIV · 5 CRC), Blautia (19: 12·2·5), "
-                "Clostridium (16: 7·4·5), Bacteroides (15: 6·7·2), "
-                "Lachnospira (14: 5·3·6), and Ruminococcus (14: 6·4·4) lead the 17-taxon core."
-            ),
-            "methods_path": "data/analysis/cellulose_decr/EXECUTIVE_SUMMARY.md",
-            "evidence_path": "data/analysis/cellulose_decr/cellulose_decr_core17_taxa.tsv",
-            "deck_section": "Appendix",
-            "analysis": "fig3_core_taxa_and_trait_benchmark",
-            "selection_reason": "Cellulose deep-dive Statistical Reference Figure 3 (from v5 Set "
-            "1).",
-        },
-    ]
+    path = repo / CELLULOSE_DIR / "figures" / "figure_captions.json"
+    if not path.exists():
+        raise FileNotFoundError(f"missing {path}; run `just cellulose-decr-figures` first")
+    captions: dict[str, dict[str, Any]] = json.loads(path.read_text(encoding="utf-8"))
+    return captions
+
+
+def cellulose_decr_slides(
+    captions: dict[str, dict[str, Any]], folder: str, section: str, owner: str
+) -> list[dict[str, str]]:
+    """One slide per cellulose_decr figure in ``folder``, in the order the figures are drawn.
+
+    The presentation figures (figures_graphical/) replace the v5 Tufte plates, which had no
+    generator and quoted superseded numbers; the statistical reference figures (figures/) go
+    to the Appendix (#556, #570).
+    """
+    kind = "Figure" if section == "Main" else "Reference figure"
+    slides = []
+    for figure, caption in captions["figures"].items():
+        if not figure.startswith(f"{folder}/"):
+            continue
+        stem = Path(figure).stem
+        number = stem.split("_", 1)[0].removeprefix("fig")
+        slides.append(
+            {
+                "owner": owner,
+                "title": caption["title"],
+                "tag": f"Cellulose deep-dive · {kind} {number}",
+                "figure_file_path": f"{CELLULOSE_DIR}/{figure}",
+                "code_path": "src/mtp/cellulose_decr/figures.py",
+                "takeaway": caption["takeaway"],
+                "caveat": caption["caveat"],
+                "methods_path": "methods/cellulose_decr.md",
+                "evidence_path": f"{CELLULOSE_DIR}/{caption['evidence']}",
+                "deck_section": section,
+                "analysis": stem,
+                "selection_reason": "cellulose_decr figure drawn by `just "
+                "cellulose-decr-figures` from the committed tables (#556).",
+                # These files exist on main, not at the rerun revision the other slides cite.
+                "link_ref": "main",
+                "source_note": "Drawn by `just cellulose-decr-figures` from the committed "
+                "data/analysis/cellulose_decr tables; SHA-256 verified.",
+            }
+        )
+    if not slides:
+        raise ValueError(f"figure_captions.json lists no figures under {folder}/")
+    return slides
 
 
 def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
     (slides_dir / "assets").mkdir(parents=True, exist_ok=True)
     metrics = load_rerun_metrics(repo)
+    cellulose = load_cellulose_captions(repo)
 
     # The September decks' manifests are inputs; slide_manifest.tsv itself is now this
     # script's output, so it must not stand in for a missing v1 manifest.
@@ -1864,15 +1575,17 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
             ordered_entries.append(item)
             already_included.add(fp)
 
-    # 1b. Non-redundant Cellulose Deep-Dive Tufte Plates & Vector Diagrams (6 slides from v5)
-    for item in get_cellulose_decr_main_slides():
-        fp = item["figure_file_path"]
-        if fp not in already_included and (repo / fp).exists():
-            item["v1_slide"] = "NA"
-            item["v2_slide"] = "NA"
-            item["prior_result_url"] = ""
-            ordered_entries.append(item)
-            already_included.add(fp)
+    # 1b. Cellulose deep-dive presentation figures (4 slides from `just cellulose-decr-figures`;
+    # a missing figure stops the build below rather than dropping the slide)
+    cellulose_main = cellulose_decr_slides(
+        cellulose, "figures_graphical", "Main", "Marcin / Noel / Ilyas / Jed"
+    )
+    for item in cellulose_main:
+        item["v1_slide"] = "NA"
+        item["v2_slide"] = "NA"
+        item["prior_result_url"] = ""
+        ordered_entries.append(item)
+        already_included.add(item["figure_file_path"])
 
     # 2. Deduplicated Previous Main slides (15 canonical Main slides from v1/v2)
     for fp in prev_main_figs:
@@ -1905,16 +1618,13 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
             ordered_entries.append(item)
             already_included.add(fp)
 
-    # 6. Non-redundant Cellulose Deep-Dive Companion Figures (7 slides from v5: 4 Graphical + 3
-    # Statistical)
-    for item in get_cellulose_decr_appendix_slides():
-        fp = item["figure_file_path"]
-        if fp not in already_included and (repo / fp).exists():
-            item["v1_slide"] = "NA"
-            item["v2_slide"] = "NA"
-            item["prior_result_url"] = ""
-            ordered_entries.append(item)
-            already_included.add(fp)
+    # 6. Cellulose deep-dive statistical reference figures (3 slides)
+    for item in cellulose_decr_slides(cellulose, "figures", "Appendix", "Marcin"):
+        item["v1_slide"] = "NA"
+        item["v2_slide"] = "NA"
+        item["prior_result_url"] = ""
+        ordered_entries.append(item)
+        already_included.add(item["figure_file_path"])
 
     # Finalize manifest rows, copy fresh PNGs to assets/ and vector SVGs to assets_svg/, and compute
     # SHA-256
@@ -1955,11 +1665,13 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         methods_rel = entry.get("methods_path", "")
         evidence_rel = entry.get("evidence_path", "")
 
-        fig_url = f"{GITHUB_BLOB}/{fig_rel}" if not fig_rel.startswith("data/derived/") else "NA"
-        code_url = f"{GITHUB_BLOB}/{code_rel}" if code_rel else ""
-        methods_url = f"{GITHUB_BLOB}/{methods_rel}" if methods_rel else ""
+        ref = entry.get("link_ref", COMMIT)
+        blob = f"{REPO_URL}/blob/{ref}"
+        fig_url = f"{blob}/{fig_rel}" if not fig_rel.startswith(UNLINKED_FIGURES) else "NA"
+        code_url = f"{blob}/{code_rel}" if code_rel else ""
+        methods_url = f"{blob}/{methods_rel}" if methods_rel else ""
         evidence_url = (
-            f"{GITHUB_BLOB}/{evidence_rel}"
+            f"{blob}/{evidence_rel}"
             if evidence_rel and not evidence_rel.startswith("data/derived/")
             else "NA"
         )
@@ -1972,7 +1684,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
                 "tag": entry["tag"],
                 "figure_file_path": fig_rel,
                 "code_path": code_rel,
-                "commit": COMMIT,
+                "commit": ref,
                 "branch": BRANCH,
                 "figure_url": fig_url,
                 "code_url": code_url,
@@ -1981,8 +1693,11 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
                 "caveat": entry["caveat"],
                 "methods_path": methods_rel,
                 "methods_url": methods_url,
-                "source_note": f"Regenerated from fresh rerun data on main ({SHORT_COMMIT}); "
-                "SHA-256 verified.",
+                "source_note": entry.get(
+                    "source_note",
+                    f"Regenerated from fresh rerun data on main ({SHORT_COMMIT}); "
+                    "SHA-256 verified.",
+                ),
                 "figure_sha256": src_sha,
                 "deck_section": entry.get("deck_section", "Main"),
                 "analysis": entry.get("analysis", ""),
@@ -2154,8 +1869,9 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         f"<h1>Three-arm microbial trait profiling deck ({len(manifest_rows)} figures across "
         f"{total_slides} slides)</h1></header>"
         '<main class="cover-body"><p class="deck-subtitle">Opens with 2 high-level visual Methods '
-        "architectures, 7 simplified Tufte analytical plates, and 6 Cellulose Deep-Dive plates, "
-        f"followed by {n_prev} deduplicated v1/v2 slides and {n_new - 15} distinct new rerun and "
+        "architectures, 7 simplified Tufte analytical plates, and "
+        f"{len(cellulose_main)} cellulose deep-dive figures, followed by {n_prev} deduplicated "
+        f"v1/v2 slides and {n_new - 9 - len(cellulose_main)} distinct new rerun and "
         "deep-dive figures across all three arms on <code>main</code> "
         f"(<code>{SHORT_COMMIT}</code>, BugSigDB vintage <code>2026-04-24_00:41_UTC</code> "
         "\N{MULTIPLICATION SIGN} KG-Microbe <code>20260120</code>, 4,670 human profiles across "
@@ -2174,10 +1890,8 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         "1.448 (420 vs 290 discordant studies, p = 1.21 \N{MULTIPLICATION SIGN} 10⁻⁶).</p></main>"
         '<aside class="note"><p><strong>Evidence across scales:</strong> In the 336-test fecal '
         "study Wilcoxon screen, PD moderately halophilic leads (+0.529 mean contrast across 45 "
-        f"studies, 33↑:8↓, p = {pd_w_p:.2e}, BH q = {pd_w_q:.4f}); CRC cellulose splits by "
-        "compartment (Feces 30↓:7↑ vs Non-Fecal GI 6↓:11↑, Fisher OR = 7.86, p = 0.00142) and is "
-        "anchored by a 9-taxon Cellulose core (Jaccard d_J = 0.478, p = 3.5 "
-        "\N{MULTIPLICATION SIGN} 10⁻¹²).</p>"
+        f"studies, 33↑:8↓, p = {pd_w_p:.2e}, BH q = {pd_w_q:.4f}). In the cellulose deep-dive, "
+        f"{html.escape(cellulose['statements']['overlap'])}.</p>"
         "<p>Every figure in this deck is verified by SHA-256 against the freshly regenerated "
         "rerun output on disk. Trait annotations describe organism potential, not measured in "
         "vivo metabolic flux.</p></aside>"
@@ -2231,7 +1945,8 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
             f'href="{html.escape(code_href)}">{html.escape(row["code_path"])}</a></div>'
             f"{prior_div}"
             '<div class="stamp"><span>CultureBotAI/microbial-trait-profiling · '
-            f"{html.escape(owner)} · Rerun revision {SHORT_COMMIT} · v6 vector{lineage_str}</span>"
+            f"{html.escape(owner)} · Rerun revision {row['commit'][:12]} · v6 vector"
+            f"{lineage_str}</span>"
             f"<span>{s_num:02d} / {total_slides:02d}</span></div></footer></section>"
         )
 

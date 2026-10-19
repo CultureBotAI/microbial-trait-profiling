@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import math
 from collections.abc import Sequence
 from pathlib import Path
@@ -22,6 +23,7 @@ import numpy as np
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PLATES_DIR = Path("data/derived/tufte_plates")
+CELLULOSE_DIR = Path("data/analysis/cellulose_decr")
 
 # Tufte palette: muted, high-contrast, colorblind-safe ink on warm paper/clean white
 BG_COLOR = "#fcfbf8"
@@ -44,6 +46,49 @@ def read_tsv(path: Path) -> list[dict[str, str]]:
     with path.open(newline="", encoding="utf-8") as f:
         lines = [line for line in f if not line.startswith("#")]
         return list(csv.DictReader(lines, delimiter="\t"))
+
+
+def cellulose_decr_notes(repo: Path) -> dict[str, str]:
+    """Plate annotations for the cellulose_decr results, read from its committed tables.
+
+    The plates used to carry numbers copied from a prompt, which #556 found to be wrong;
+    reading them keeps the plates in step with the tables.
+    """
+    rows = read_tsv(repo / CELLULOSE_DIR / "compartment_direction_interaction.tsv")
+
+    def crc(population: str, unit: str) -> dict[str, str]:
+        return next(
+            row
+            for row in rows
+            if row["contrast_population"] == population
+            and row["short_condition"] == "CRC"
+            and row["unit"] == unit
+            and row["compartment_b"] == "Non-fecal GI (mucosa/lumen)"
+        )
+
+    stool = crc("all_contrasts", "experiment")
+    healthy = crc("disease_vs_healthy_oriented", "study")
+    summary = json.loads(
+        (repo / CELLULOSE_DIR / "cellulose_decr_summary.json").read_text(encoding="utf-8")
+    )
+    observed = summary["observed"]
+    u6 = summary["null_models"]["U6"]
+    counts = f"stool {stool['a_down']}↓:{stool['a_up']}↑ vs GI {stool['b_down']}↓:{stool['b_up']}↑"
+    odds = f"OR {float(stool['conditional_or']):.1f}, p={float(stool['fisher_p_two_sided']):.1e}"
+    return {
+        "crc_callout": (
+            f"★ CRC cellulose: {counts} · {odds} · disease-vs-healthy studies "
+            f"p={float(healthy['fisher_p_two_sided']):.2f}"
+        ),
+        "overlap_callout": (
+            f"• Stool overlap: {observed['three_way_core']} of {observed['three_way_union']} "
+            "taxa in all three · whole-signature null "
+            f"p={float(u6['mean_pairwise_jaccard_distance']['p']):.2f} (mean d_J), "
+            f"{float(u6['three_way_core']['p']):.2f} (core)"
+        ),
+        "crc_short": f"Cell. {counts}",
+        "crc_source": f"CRC cellulose stool vs GI: {odds} (cellulose_decr).",
+    }
 
 
 def setup_tufte_rc() -> None:
@@ -1488,7 +1533,7 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         ("METPO:1000607", "Obligately anaerobic", "Anaerobe / Reductive H₂ ↓"),
         (
             "METPO:1000845",
-            "METPO:1000845 (Pyrrolidonyl / Acetogenesis)",
+            "Acetogenesis",
             "Anaerobe / Reductive H₂ ↓",
         ),
     ]
@@ -1638,7 +1683,7 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         0.025,
         "Source: Rerun on main (402ef5c) · "
         "trait_profile_paired_contrast_trait_stats_{pooled,feces,feces_excluded,saliva}.tsv. ★ = "
-        "Table 1 trait; METPO:1000845 = KG-Microbe pyrrolidonyl-peptidase / acetogenesis node.",
+        "Table 1 trait. Trait names are the object_name labels of taxa_trait_matrix_columns.tsv.",
         fontsize=7.9,
         color=MUTED,
     )
@@ -2046,6 +2091,7 @@ def build_plate3(repo: Path, out_dir: Path) -> Path:
 # PLATE 4: Clean Visual Condition x Trait Matrix + Lead Fecal Cohort Forest Plot
 # ==============================================================================
 def build_plate4(repo: Path, out_dir: Path) -> Path:
+    cellulose = cellulose_decr_notes(repo)
     eco_summary = read_tsv(
         repo / "trait-visualization/trait-profile-investigation/PD-cellulose/"
         "pd_ecological_reporter_combined_condition_trait_summary.tsv"
@@ -2281,10 +2327,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     ax_lead.text(
         0.48,
         0.025,
-        "★ CRC Split: Feces 30↓:7↑ (81.1%↓, p=1.88e-4) vs Non-Fecal GI 6↓:11↑ (35.3%↓) · OR=7.86, "
-        "p=0.00142\n"
-        "• Cellulose Core Jaccard: 9 Genus+Species (d_J=0.478, p=3.5e-12) · 7 net-dec. (d_J=0.634, "
-        "p=4.2e-9)",
+        f"{cellulose['crc_callout']}\n{cellulose['overlap_callout']}",
         transform=ax_lead.transAxes,
         fontsize=6.05,
         fontweight="bold",
@@ -2339,6 +2382,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
 # PLATE 5: Anatomical Oxygen-Switch Polarity Inversion & Cross-Disease Switchers
 # ==============================================================================
 def build_plate5(repo: Path, out_dir: Path) -> Path:
+    cellulose = cellulose_decr_notes(repo)
     oxy_rows = read_tsv(
         repo / "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
         "condition_oxygen_switch_scores.tsv"
@@ -2463,7 +2507,7 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
     )
     ax_oxy.set_title(
         "A. Compartment Polarity Inversion Across 20 High-Support Strata\n★ CRC Splits: Feces "
-        "(+0.68 O₂↑; Cell. 81.1%↓) vs Lower GI (-0.79 anaerobe↑; Cell. OR=7.86, p=0.0014)",
+        f"(+0.68 O₂↑) vs Lower GI (-0.79 anaerobe↑); {cellulose['crc_short']}",
         fontsize=9.1,
         fontweight="bold",
         loc="left",
@@ -2574,7 +2618,7 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
         0.025,
         "Source: Rerun on main (402ef5c) · condition_oxygen_switch_scores.tsv, "
         "taxa_cross_disease_switch_summary.tsv. Pooled McNemar OR = 1.448 (420 vs 290 st., p = "
-        "1.21e-6); CRC Feces vs Non-Fecal GI Cellulose Fisher OR = 7.86 (p = 0.00142).",
+        f"1.21e-6); {cellulose['crc_source']}",
         fontsize=7.8,
         color=MUTED,
     )
@@ -2929,8 +2973,6 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
                 .replace("enzyme activity: ", "Enzyme: ")
                 .replace("process: ", "")
             )
-            if tid == "METPO:1000845":
-                lbl = "Pyrrolidonyl / Acetogenesis"
             a2 = arm2_rows.get(tid) or arm2_rows.get(s_row.get("term_id", ""), {})
             inc_h = int(a2.get("inc_hits", 0)) if a2 else 0
             dec_h = int(a2.get("dec_hits", 0)) if a2 else 0
