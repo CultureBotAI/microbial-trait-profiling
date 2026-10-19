@@ -1,5 +1,9 @@
 import importlib.util
+import sys
 from pathlib import Path
+from unittest.mock import patch
+
+import pandas as pd
 
 MODULE_PATH = (
     Path(__file__).resolve().parents[1] / "scripts" / "create_condition_trait_module_heatmap.py"
@@ -8,7 +12,8 @@ SPEC = importlib.util.spec_from_file_location("create_condition_trait_module_hea
 assert SPEC is not None
 assert SPEC.loader is not None
 heatmap = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(heatmap)
+with patch.object(sys, "path", [str(MODULE_PATH.parent), *sys.path]):
+    SPEC.loader.exec_module(heatmap)
 
 
 def test_load_aggregated_study_profiles_filters_to_human_experiments(tmp_path: Path) -> None:
@@ -36,3 +41,53 @@ def test_load_aggregated_study_profiles_filters_to_human_experiments(tmp_path: P
     assert study_matrix.loc["study1", "METPO:2"] == 2
     assert profile_metadata.loc["study1", "profile_count"] == 2
     assert profile_metadata.loc["study3", "profile_count"] == 1
+
+
+def test_modules_take_each_experiments_own_condition_and_body_site(tmp_path: Path) -> None:
+    """A two-condition study adds each experiment to its own module, not its majority's (#555)."""
+    profile_path = tmp_path / "profiles.tsv"
+    profile_path.write_text(
+        "\n".join(
+            [
+                "study_id\texperiment_id\tinc_dec\tMETPO:1\tMETPO:2",
+                "study1\tstudy1-1\tinc\t3\t0",
+                "study1\tstudy1-1\tdec\t2\t1",
+                "study1\tstudy1-2\tinc\t1\t2",
+                "study1\tstudy1-3\tinc\t0\t5",
+                "study2\tstudy2-1\tinc\t4\t4",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    experiment_metadata = pd.DataFrame(
+        {
+            "study_id": ["study1", "study1", "study1", "study2"],
+            "experiment_id": ["study1-1", "study1-2", "study1-3", "study2-1"],
+            "condition": [
+                "Crohn's disease",
+                "Crohn's disease",
+                "Ulcerative colitis",
+                "Ulcerative colitis",
+            ],
+            "body_site": ["Feces", "Feces", "Colonic mucosa", "Colonic mucosa"],
+            "location": ["Sweden", "Sweden", "Sweden", "Norway"],
+            "host_species": ["Homo sapiens"] * 4,
+        }
+    ).set_index(["study_id", "experiment_id"])
+
+    study_matrix, study_metadata = heatmap.load_aggregated_study_profiles(
+        profile_path,
+        experiment_metadata=experiment_metadata,
+        group_by=["condition", "body_site"],
+    )
+    groups, group_metadata = heatmap.build_condition_modules(
+        study_matrix, study_metadata, ["condition", "body_site"], 1, 1, 1, 1, False, 10
+    )
+
+    crohns = "Crohn's disease | Feces"
+    colitis = "Ulcerative colitis | Colonic mucosa"
+    counts = group_metadata[["study_count", "profile_count", "experiment_count"]]
+    assert groups.loc[crohns].tolist() == [6, 3]
+    assert groups.loc[colitis].tolist() == [4, 9]
+    assert counts.loc[crohns].tolist() == [1, 3, 2]
+    assert counts.loc[colitis].tolist() == [2, 2, 2]

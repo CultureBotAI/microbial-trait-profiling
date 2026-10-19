@@ -27,6 +27,12 @@ PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
 DIRECTION_LABELS = {"inc": "increased", "dec": "decreased"}
 PAIR_DIRECTION_LABEL = "increased - decreased"
 HUMAN_HOST_SPECIES = "Homo sapiens"
+EXPERIMENT_LABEL_COLUMNS = {
+    "condition": "Condition",
+    "body_site": "Body site",
+    "location": "Location of subjects",
+    "host_species": "Host species",
+}
 REQUIRED_PAIRED_TRAITS = {
     "METPO:1000615": "mesophilic",
     "METPO:1000698": "gram positive",
@@ -75,13 +81,18 @@ def most_common_label(values: list[str]) -> str:
 
 
 def load_raw_study_metadata(full_dump_path: Path) -> pd.DataFrame:
-    """Extract condition and body-site labels from BugSigDB full_dump.csv."""
+    """Extract each study's majority condition, body-site and location labels.
+
+    These summarize the whole study and are kept only as `study_majority_*` columns.
+    A profile's own labels come from its experiment (`load_raw_experiment_metadata`);
+    joining the majority label to every experiment mislabeled 1,112 of 5,829 profiles
+    (#555).
+    """
     values_by_study: dict[str, dict[str, list[str]]] = defaultdict(
         lambda: {
             "condition": [],
             "body_site": [],
             "location": [],
-            "host_species": [],
         }
     )
     with full_dump_path.open(encoding="utf-8", newline="") as handle:
@@ -97,21 +108,19 @@ def load_raw_study_metadata(full_dump_path: Path) -> pd.DataFrame:
             values_by_study[study_id]["location"].append(
                 clean_value(row.get("Location of subjects"))
             )
-            values_by_study[study_id]["host_species"].append(clean_value(row.get("Host species")))
 
     records = []
     for study_id, metadata in values_by_study.items():
         records.append(
             {
                 "study_id": study_id,
-                "condition": most_common_label(metadata["condition"]),
-                "body_site": most_common_label(metadata["body_site"]),
-                "location": most_common_label(metadata["location"]),
-                "host_species": most_common_label(metadata["host_species"]),
-                "condition_count": len(
+                "study_majority_condition": most_common_label(metadata["condition"]),
+                "study_majority_body_site": most_common_label(metadata["body_site"]),
+                "study_majority_location": most_common_label(metadata["location"]),
+                "study_condition_count": len(
                     {value for value in metadata["condition"] if clean_value(value) != "unknown"}
                 ),
-                "body_site_count": len(
+                "study_body_site_count": len(
                     {value for value in metadata["body_site"] if clean_value(value) != "unknown"}
                 ),
             }
@@ -119,9 +128,16 @@ def load_raw_study_metadata(full_dump_path: Path) -> pd.DataFrame:
     return pd.DataFrame.from_records(records).set_index("study_id")
 
 
-def load_raw_experiment_hosts(full_dump_path: Path) -> pd.DataFrame:
-    """Extract host species labels for each BugSigDB study/experiment profile."""
-    values_by_experiment: dict[tuple[str, str], list[str]] = defaultdict(list)
+def load_raw_experiment_metadata(full_dump_path: Path) -> pd.DataFrame:
+    """Extract condition, body-site, location and host labels for each experiment.
+
+    BugSigDB curates these labels per experiment, so every signature of an experiment
+    carries the same values. An experiment with two different values for one label is
+    rejected instead of being resolved by majority.
+    """
+    values_by_experiment: dict[tuple[str, str], dict[str, set[str]]] = defaultdict(
+        lambda: {column: set() for column in EXPERIMENT_LABEL_COLUMNS}
+    )
     with full_dump_path.open(encoding="utf-8", newline="") as handle:
         rows = (line for line in handle if not line.startswith("#"))
         reader = csv.DictReader(rows)
@@ -133,18 +149,24 @@ def load_raw_experiment_hosts(full_dump_path: Path) -> pd.DataFrame:
             if experiment_id == "unknown":
                 continue
             study_id = study_id_from_bsdb_id(bsdb_id)
-            values_by_experiment[(study_id, experiment_id)].append(
-                clean_value(row.get("Host species"))
-            )
+            labels = values_by_experiment[(study_id, experiment_id)]
+            for column, source_column in EXPERIMENT_LABEL_COLUMNS.items():
+                value = clean_value(row.get(source_column))
+                if value != "unknown":
+                    labels[column].add(value)
 
-    records = [
-        {
-            "study_id": study_id,
-            "experiment_id": experiment_id,
-            "host_species": most_common_label(host_species_values),
-        }
-        for (study_id, experiment_id), host_species_values in values_by_experiment.items()
-    ]
+    records = []
+    for (study_id, experiment_id), labels in values_by_experiment.items():
+        record = {"study_id": study_id, "experiment_id": experiment_id}
+        for column, values in labels.items():
+            if len(values) > 1:
+                msg = (
+                    f"Experiment {experiment_id} has more than one {column} label in "
+                    f"{full_dump_path}: {sorted(values)}"
+                )
+                raise ValueError(msg)
+            record[column] = next(iter(values), "unknown")
+        records.append(record)
     return pd.DataFrame.from_records(records).set_index(["study_id", "experiment_id"])
 
 
@@ -227,6 +249,39 @@ def load_profile_matrix(profile_path: Path) -> tuple[pd.DataFrame, pd.DataFrame,
     metadata["trait_count"] = profile_matrix.gt(0).sum(axis=1)
     metadata["denominator_definition"] = DENOMINATOR_DEFINITION
     return profile_matrix, metadata, trait_columns
+
+
+def join_profile_labels(
+    profile_metadata: pd.DataFrame,
+    studies_path: Path,
+    full_dump_path: Path,
+) -> pd.DataFrame:
+    """Attach study titles, each profile's experiment labels and study-majority labels."""
+    profile_metadata = profile_metadata.join(
+        load_study_titles(studies_path),
+        on="study_id",
+        how="left",
+    )
+    profile_metadata = profile_metadata.join(
+        load_raw_experiment_metadata(full_dump_path),
+        on=["study_id", "experiment_id"],
+        how="left",
+    )
+    profile_metadata = profile_metadata.join(
+        load_raw_study_metadata(full_dump_path),
+        on="study_id",
+        how="left",
+    )
+    for column in [
+        "title",
+        "publication_year",
+        *EXPERIMENT_LABEL_COLUMNS,
+        "study_majority_condition",
+        "study_majority_body_site",
+        "study_majority_location",
+    ]:
+        profile_metadata[column] = profile_metadata[column].map(clean_value)
+    return profile_metadata
 
 
 def filter_human_host_profiles(
@@ -1230,35 +1285,11 @@ def main() -> None:
     profile_matrix, profile_metadata, _trait_columns = load_profile_matrix(
         args.study_trait_profiles_input
     )
-    profile_metadata = profile_metadata.join(
-        load_study_titles(args.studies_input),
-        on="study_id",
-        how="left",
+    profile_metadata = join_profile_labels(
+        profile_metadata,
+        args.studies_input,
+        args.full_dump_input,
     )
-    profile_metadata = profile_metadata.join(
-        load_raw_study_metadata(args.full_dump_input),
-        on="study_id",
-        how="left",
-    )
-    experiment_hosts = load_raw_experiment_hosts(args.full_dump_input).rename(
-        columns={"host_species": "experiment_host_species"}
-    )
-    profile_metadata = profile_metadata.join(
-        experiment_hosts,
-        on=["study_id", "experiment_id"],
-        how="left",
-    )
-    profile_metadata["host_species"] = profile_metadata["experiment_host_species"]
-    profile_metadata = profile_metadata.drop(columns=["experiment_host_species"])
-    for column in [
-        "title",
-        "publication_year",
-        "condition",
-        "body_site",
-        "location",
-        "host_species",
-    ]:
-        profile_metadata[column] = profile_metadata[column].map(clean_value)
 
     unfiltered_profile_count = len(profile_metadata)
     unfiltered_study_count = profile_metadata["study_id"].nunique()
