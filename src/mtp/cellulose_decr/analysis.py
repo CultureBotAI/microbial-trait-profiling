@@ -7,15 +7,20 @@ the summary JSON and a provenance record to ``data/analysis/cellulose_decr/``.
 
 The October 16 outputs had no generator (adversarial review R11). They took each
 profile's condition and body site from
-``trait-visualization/study_trait_profile_study_metadata.tsv``, which holds one
-modal label per *study*, so 1,112 of 5,829 profiles carried another experiment's
-label. ``--label-source study_modal`` reproduces those outputs; the default,
-``experiment``, takes labels from ``data/derived/experiments.tsv``, which matches
-``data/raw/full_dump.csv`` for every experiment.
+``trait-visualization/study_trait_profile_study_metadata.tsv``, which then held one
+modal label per *study* (#555), so 1,112 of 5,829 profiles carried another
+experiment's label. ``--label-source study_modal`` recomputes those labels from
+``data/raw/full_dump.csv`` (#594) and reproduces the October 16 sets, exact tests and
+feces direction statistics; the default, ``experiment``, takes labels from
+``data/derived/experiments.tsv``, which matches ``data/raw/full_dump.csv`` for every
+experiment.
 
-Inputs live in gitignored ``data/`` directories that other work regenerates, so a
-run stops when an input's hash differs from the committed provenance or the
-contrast manifest came from another classifier version (#562).
+Other work regenerates the inputs in place, so a run stops when an input's hash
+differs from the committed provenance or the contrast manifest came from another
+classifier version (#562). The pins describe a v2 contrast manifest and the metadata
+table before #555 relabelled it, so until #580 re-pins them a checkout with a newer
+classifier or metadata refuses to run; the committed tables reproduce at the
+provenance's ``code_commit`` from the pinned inputs (#642).
 
 The counts are annotation counts of curated signature taxa, not measurements of
 patients, cells or pathway activity (methods/biological_interpretation.md).
@@ -731,6 +736,23 @@ def weighted_null(
     return draws
 
 
+def u5_weights(feces_taxa: pd.DataFrame, cellulose: set[str]) -> FloatArray:
+    """U5's weights over U3, the taxa an observed set can contain (#567).
+
+    Each taxon weighs the number of studies outside the three conditions that report
+    it decreased in feces, plus 0.5, so a taxon no other study reports can be drawn.
+    """
+    u3_taxa = sorted(set(feces_taxa.loc[feces_taxa["dir"].eq("dec"), "taxon_id"]) & cellulose)
+    background = feces_taxa[
+        feces_taxa["dir"].eq("dec") & ~feces_taxa["condition"].isin(CONDITIONS.values())
+    ]
+    background_studies = background.groupby("taxon_id")["study_id"].nunique()
+    weights: FloatArray = np.asarray(
+        background_studies.reindex(u3_taxa, fill_value=0), dtype=np.float64
+    )
+    return weights + 0.5
+
+
 def shared_trait_null(
     rng: np.random.Generator, base: Mapping[str, BoolArray], trait_size: int, total: int
 ) -> NullDraws:
@@ -774,6 +796,12 @@ def signature_null(
     condition-level units at random, and splits them among the three synthetic
     conditions. As in the observed data, no study contributes to two conditions.
     """
+    # Units of one study must be contiguous and the studies numbered 0..n-1, which the
+    # searchsorted below relies on (#632).
+    if np.any(np.diff(unit_study) < 0) or not np.array_equal(
+        np.unique(unit_study), np.arange(int(unit_study.max()) + 1)
+    ):
+        raise ValueError("unit_study must be sorted and number the studies 0..n-1")
     draws = NullDraws.empty()
     n_studies = int(unit_study.max()) + 1
     first = np.searchsorted(unit_study, np.arange(n_studies))
@@ -1391,6 +1419,12 @@ def direct_trait_subjects(edges: Path, trait: str) -> set[str]:
     return subjects
 
 
+def strictly_net_decreased(row: Mapping[str, Any], unit: str) -> bool:
+    """Reported decreased in more studies or profiles (``unit``) than increased, in each of
+    PD, HIV and CRC; a tie is not net decreased (#632)."""
+    return all(row[f"{short}_dec_{unit}"] > row[f"{short}_inc_{unit}"] for short in SHORT)
+
+
 def catalog_table(
     taxa: pd.DataFrame, matrix: pd.DataFrame, sets: Mapping[str, set[str]], direct: set[str]
 ) -> pd.DataFrame:
@@ -1421,12 +1455,8 @@ def catalog_table(
         row["is_direct_or_genus_species"] = (
             row["has_direct_trait_edge"] or row["taxonomic_rank"] in GENUS_SPECIES
         )
-        row["is_strictly_net_decreased_all3"] = all(
-            row[f"{short}_dec_studies"] > row[f"{short}_inc_studies"] for short in SHORT
-        )
-        row["is_net_decreased_all3_by_profiles"] = all(
-            row[f"{short}_dec_profiles"] > row[f"{short}_inc_profiles"] for short in SHORT
-        )
+        row["is_strictly_net_decreased_all3"] = strictly_net_decreased(row, "studies")
+        row["is_net_decreased_all3_by_profiles"] = strictly_net_decreased(row, "profiles")
         if not row["is_3way_core"]:
             row["core_class"] = "not in 3-way core"
         elif row["taxonomic_rank"] in GENUS_SPECIES:
@@ -1825,9 +1855,8 @@ def convergence_summary_rows(pairwise: pd.DataFrame) -> list[dict[str, Any]]:
                     "p_value": row["u6_signature_perm_p"],
                     "significance_tier": tier(row["u6_signature_perm_p"]),
                     "summary_interpretation": (
-                        "U6 keeps each study's co-reported taxa together and is the most "
-                        "conservative null; U1-U3 treat taxa as independent draws and "
-                        "overstate significance."
+                        "U6 keeps each study's co-reported taxa together; U1-U3 treat taxa "
+                        "as independent draws, which overstates significance."
                     ),
                 }
             )
@@ -1844,6 +1873,18 @@ def interaction_summary_rows(interaction: pd.DataFrame) -> list[dict[str, Any]]:
         stratified = row["short_condition"] == POOLED_STRATIFIED
         slug = "pooled_stratified" if stratified else row["short_condition"]
         population_name = row["contrast_population"]
+        # Studies that sampled both compartments; a stratified row sums its conditions'.
+        same = interaction[
+            interaction["contrast_population"].eq(population_name)
+            & interaction["unit"].eq(row["unit"])
+            & interaction["compartment_b"].eq(row["compartment_b"])
+            & interaction["short_condition"].isin(SHORT)
+        ]
+        shared = int(
+            same["studies_in_both_compartments"].sum()
+            if stratified
+            else row["studies_in_both_compartments"]
+        )
         estimate = (
             f"common odds ratio (conditional MLE) = {row['conditional_or']:.2f} "
             f"(95% CI {row['conditional_or_ci95_low']:.2f}-{row['conditional_or_ci95_high']:.2f})"
@@ -1869,15 +1910,47 @@ def interaction_summary_rows(interaction: pd.DataFrame) -> list[dict[str, Any]]:
                 "effect_size_metric": estimate,
                 "p_value": row["fisher_p_two_sided"],
                 "significance_tier": tier(row["fisher_p_two_sided"]),
-                "summary_interpretation": (
-                    "Direction differs between stool and GI mucosa/lumen samples; units are "
-                    "treated as independent, most CRC mucosa/lumen experiments do not compare "
-                    "patients with controls, and sampling effort differs, so this is not a "
-                    "test of anatomical specificity."
-                ),
+                "summary_interpretation": interaction_interpretation(row, shared),
             }
         )
     return rows
+
+
+def interaction_interpretation(row: pd.Series | Mapping[str, Any], shared: int = 0) -> str:
+    """What one Feces-vs-GI row shows, given its p, interval, unit and population (#631).
+
+    ``shared`` counts the studies that sampled both compartments, so a study-level row's
+    two compartments are not fully independent samples.
+    """
+    p = row["fisher_p_two_sided"]
+    low, high = row["conditional_or_ci95_low"], row["conditional_or_ci95_high"]
+    if math.isnan(p):
+        finding = "Not testable with these counts"
+    elif p >= ALPHA:
+        finding = (
+            "No difference in direction between stool and GI mucosa/lumen samples "
+            "detected at p < 0.05"
+        )
+    elif low <= 1 <= high:
+        finding = (
+            "Direction differs between stool and GI mucosa/lumen samples at p < 0.05, "
+            "but the 95% interval of the odds ratio includes 1"
+        )
+    else:
+        finding = "Direction differs between stool and GI mucosa/lumen samples"
+    caveats = []
+    if row["unit"] == "experiment":
+        caveats.append("experiments of one study are treated as independent")
+    elif shared:
+        caveats.append(
+            f"{shared} {'study' if shared == 1 else 'studies'} sampled both compartments"
+        )
+    if row["contrast_population"] == ALL_CONTRASTS:
+        caveats.append("most CRC mucosa/lumen experiments do not compare patients with controls")
+    caveats.append(
+        "sampling differs between compartments, so this is not a test of anatomical specificity"
+    )
+    return f"{finding}; {'; '.join(caveats)}."
 
 
 def benjamini_hochberg(p_values: pd.Series) -> pd.Series:
@@ -1896,7 +1969,11 @@ def benjamini_hochberg(p_values: pd.Series) -> pd.Series:
 
 
 def clean(value: Any) -> Any:
-    """JSON-safe values with floats rounded to six significant digits."""
+    """JSON-safe values with floats rounded to six significant digits.
+
+    An infinite value is written as the string "inf" or "-inf", so that it is not mistaken
+    for a missing one, which is null (#631).
+    """
     if isinstance(value, dict):
         return {str(key): clean(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
@@ -1907,8 +1984,10 @@ def clean(value: Any) -> Any:
         return bool(value)
     if isinstance(value, (float, np.floating)):
         number = float(value)
-        if math.isnan(number) or math.isinf(number):
+        if math.isnan(number):
             return None
+        if math.isinf(number):
+            return "inf" if number > 0 else "-inf"
         return float(f"{number:.6g}")
     if value is pd.NA:
         return None
@@ -2253,17 +2332,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     base_union = sorted(set.union(*base_sets.values()))
     base_masks = {short: np.isin(base_union, sorted(values)) for short, values in base_sets.items()}
 
-    # U5 draws from U3, the taxa an observed set can contain (#567), weighted by the
-    # studies outside the three conditions that report the taxon decreased in feces.
-    u3_taxa = sorted(set(feces_taxa.loc[feces_taxa["dir"].eq("dec"), "taxon_id"]) & cellulose)
-    background = feces_taxa[
-        feces_taxa["dir"].eq("dec") & ~feces_taxa["condition"].isin(CONDITIONS.values())
-    ]
-    background_studies = background.groupby("taxon_id")["study_id"].nunique()
-    weights: FloatArray = np.asarray(
-        background_studies.reindex(u3_taxa, fill_value=0), dtype=np.float64
-    )
-    weights += 0.5
+    weights = u5_weights(feces_taxa, cellulose)
 
     unit_matrix, unit_study, unit_counts, units = u6_units(profiles, taxa, cellulose)
 

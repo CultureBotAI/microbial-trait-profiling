@@ -56,7 +56,8 @@ kg = [
 # deprecated it), so with the plotly floor, kaleido must sit on the v1 line; the
 # two floors are a pair.
 # matplotlib, seaborn, pillow and defusedxml are imported only by the figure
-# scripts under scripts/, never by src/ (#521).
+# scripts under scripts/ and by mtp.cellulose_decr.figures, which no other module
+# under src/ imports (#521, #631).
 viz = [
   "defusedxml>=0.7.1",
   "kaleido>=1.0",

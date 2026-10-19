@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Draw the deck's two methods plates and seven Tufte plates from the three-arm rerun data.
 
-The figures are computed from the TSV outputs of the rerun on main (402ef5c) under
-``trait-visualization/`` and ``data/derived/``, many of them gitignored, and are
-written as PNG and SVG to ``data/derived/tufte_plates/``. ``just
-figure-review-plates`` runs this script; ``scripts/build_slide_deck.py`` places the
-plates in the deck (#573).
+The figures are computed from the TSV outputs of the rerun on main (``RERUN_COMMIT``)
+under ``trait-visualization/`` and ``data/derived/``, many of them gitignored, and are
+written as PNG and SVG to ``data/derived/tufte_plates/``. Plates IV and V also quote this
+checkout's cellulose_decr tables and the ``figure_captions.json`` that ``just
+cellulose-decr-figures`` writes beside them. ``plates_provenance.json`` records the
+drawing commit and each plate's inputs with their hashes. ``just figure-review-plates``
+runs this script; ``scripts/build_slide_deck.py`` places the plates in the deck (#573).
 """
 
 from __future__ import annotations
@@ -14,19 +16,32 @@ import argparse
 import csv
 import json
 import math
-from collections.abc import Sequence
+import re
+import textwrap
+from collections.abc import Mapping, Sequence
 from pathlib import Path
+from statistics import median
+from typing import Any
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
+from mtp.paths import file_sha256
+from mtp.trait_guilds import OXYGEN_GUILDS
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PLATES_DIR = Path("data/derived/tufte_plates")
+CELLULOSE_DIR = Path("data/analysis/cellulose_decr")
+TRAIT_COLUMNS = Path("data/derived/taxa_trait_matrix_columns.tsv")
 # Plates III and VII type numbers from this contrast classifier (569 oriented studies) beside
 # rows read from its tables; another version would contradict them (#579).
 TYPED_CONTRAST_VERSION = "contrast-orientation-v2"
 CONTRAST_PROVENANCE = Path("data/derived/contrast_orientation/contrast_orientation_provenance.json")
+# The rerun the plates' tables come from. The deck stamps and links the plate slides at the
+# same revision and refuses inputs that differ from it (#637); the two move together (#579).
+RERUN_COMMIT = "402ef5c25b7105c9aa73398085956dcf1f372bb4"
+RERUN_SOURCE = f"Source: Rerun on main ({RERUN_COMMIT[:7]})"
 
 # Tufte palette: muted, high-contrast, colorblind-safe ink on warm paper/clean white
 BG_COLOR = "#fcfbf8"
@@ -45,10 +60,165 @@ TEAL_ACCENT = "#157a6e"
 PURPLE_ACCENT = "#6a4c93"
 
 
+# The files the plate being drawn reads; main() records them with their hashes (#637).
+INPUTS_READ: set[Path] = set()
+# Counts the plates draw that the deck's slide text quotes (#640).
+PLATE_COUNTS: dict[str, int] = {}
+
+
 def read_tsv(path: Path) -> list[dict[str, str]]:
+    INPUTS_READ.add(path)
     with path.open(newline="", encoding="utf-8") as f:
         lines = [line for line in f if not line.startswith("#")]
         return list(csv.DictReader(lines, delimiter="\t"))
+
+
+def read_json(path: Path) -> Any:
+    INPUTS_READ.add(path)
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def fmt_p(value: float) -> str:
+    """A p-value to two significant digits, or more where fewer would round across 0.05."""
+    for digits in range(2, 8):
+        text = f"{value:.{digits}g}" if value >= 0.001 else f"{value:.{digits - 1}e}"
+        if (float(text) < 0.05) == (value < 0.05):
+            return text
+    return repr(value)
+
+
+def study_bh_count(rows: dict[str, dict[str, str]]) -> int:
+    """Traits passing study-level BH q ≤ 0.05 in one stratum's paired-contrast table."""
+    return sum(
+        1 for r in rows.values() if r.get("study_q_value") and float(r["study_q_value"]) <= 0.05
+    )
+
+
+def check_plate_two_rows(trait_ids: Sequence[str], pooled: dict[str, dict[str, str]]) -> None:
+    """Every Plate II row must be in the pooled table, whose counts the plate and slide quote.
+
+    A row the stratified screen did not test elsewhere is drawn as "n.t." there (#616).
+    """
+    missing = [trait for trait in trait_ids if trait not in pooled]
+    if missing:
+        raise ValueError(f"Plate II rows missing from the pooled table: {missing}")
+
+
+def input_record(repo: Path) -> dict[str, str]:
+    """The files the last plate read, relative to the root they came from, with hashes.
+
+    The cellulose_decr files come from this checkout and the rest from the input root,
+    so the deck can check each against the revision it cites (#637).
+    """
+    record = {}
+    for path in sorted(INPUTS_READ):
+        root = REPO_ROOT if path.is_relative_to(REPO_ROOT / CELLULOSE_DIR) else repo
+        record[path.relative_to(root).as_posix()] = file_sha256(path)
+    return record
+
+
+def write_plates_provenance(
+    out_dir: Path,
+    inputs: Mapping[str, Mapping[str, str]],
+    code_commit: str,
+    outputs: Mapping[str, str] | None = None,
+    counts: Mapping[str, int] | None = None,
+) -> Path:
+    """Record the commit that drew the plates, each plate's inputs and outputs with their
+    hashes, and the counts the slide text quotes.
+
+    The deck links the plate code at that commit (#613), checks the inputs against the
+    revisions its slides cite, and checks that the plates it places are the ones drawn
+    (#637).
+    """
+    path = out_dir / "plates_provenance.json"
+    record = {
+        "script": "scripts/generate_tufte_plates.py",
+        "code_commit": code_commit,
+        "rerun_commit": RERUN_COMMIT,
+        "plates": sorted(inputs),
+        "inputs": {plate: dict(sorted(files.items())) for plate, files in sorted(inputs.items())},
+        "outputs": dict(sorted((outputs or {}).items())),
+        "counts": dict(sorted((counts or {}).items())),
+    }
+    path.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
+    return path
+
+
+def trait_labels(repo: Path) -> dict[str, str]:
+    """Each trait column's label as the plates show it (#556, #591, #607).
+
+    The label is the column's object_name. A compound the taxon uses as a carbon source
+    adds "(carbon source)", since its object_name alone ("raffinose") names no trait.
+    """
+    labels = {}
+    for row in read_tsv(repo / TRAIT_COLUMNS):
+        name = row["object_name"].replace("_", " ")
+        if row.get("predicate_name") == "uses as carbon source":
+            name = f"{name} (carbon source)"
+        labels[row["column_id"]] = name
+    return labels
+
+
+def canonical_display(display: str, label: str | None) -> str:
+    """A row label with its trait name replaced by the canonical one; tags and marks kept."""
+    if label is None:
+        return display
+    match = re.match(r"^(\[[^\]]*\]\s+)?(.*?)((?:\s+\[[^\]]*\])?(?:\s+★)?)$", display)
+    if match is None:
+        return display
+    prefix, _, suffix = match.groups()
+    return f"{prefix or ''}{label[:1].upper()}{label[1:]}{suffix}"
+
+
+def cellulose_decr_notes(repo: Path) -> dict[str, str]:
+    """Plate annotations for the cellulose_decr results, read from its committed tables.
+
+    The plates used to carry numbers copied from a prompt, which #556 found to be wrong;
+    reading them keeps the plates in step with the tables. The statement of which results
+    depend on the condition definition comes from ``just cellulose-decr-figures``.
+    """
+    captions = repo / CELLULOSE_DIR / "figures" / "figure_captions.json"
+    if not captions.exists():
+        raise FileNotFoundError(f"missing {captions}; run `just cellulose-decr-figures` first")
+    fragile = read_json(captions)["statements"]["fragile"]
+    rows = read_tsv(repo / CELLULOSE_DIR / "compartment_direction_interaction.tsv")
+
+    def crc(population: str, unit: str) -> dict[str, str]:
+        return next(
+            row
+            for row in rows
+            if row["contrast_population"] == population
+            and row["short_condition"] == "CRC"
+            and row["unit"] == unit
+            and row["compartment_b"] == "Non-fecal GI (mucosa/lumen)"
+        )
+
+    stool = crc("all_contrasts", "experiment")
+    healthy = crc("disease_vs_healthy_oriented", "study")
+    summary = read_json(repo / CELLULOSE_DIR / "cellulose_decr_summary.json")
+    observed = summary["observed"]
+    u6 = summary["null_models"]["U6"]
+    counts = f"stool {stool['a_down']}↓:{stool['a_up']}↑ vs GI {stool['b_down']}↓:{stool['b_up']}↑"
+    odds = f"OR {float(stool['conditional_or']):.1f}, p={fmt_p(float(stool['fisher_p_two_sided']))}"
+    healthy_p = f"disease-vs-healthy studies p={fmt_p(float(healthy['fisher_p_two_sided']))}"
+    bullets = [
+        f"CRC cellulose, paired experiments: {counts} · {odds} · {healthy_p}",
+        f"Stool overlap: {observed['three_way_core']} of {observed['three_way_union']} taxa in "
+        "all three · whole-signature null "
+        f"p={fmt_p(float(u6['mean_pairwise_jaccard_distance']['p']))} (mean d_J), "
+        f"{fmt_p(float(u6['three_way_core']['p']))} (core)",
+    ]
+    if fragile:
+        # Plate IV stars HIV cellulose from the profile-level Fisher test (#590).
+        bullets.append(f"Cellulose deep-dive: {fragile}")
+    return {
+        # Wrapped to stay inside Plate IV's panel B.
+        "plate4_callout": "\n".join(
+            textwrap.fill(f"• {bullet}", width=88, subsequent_indent="  ") for bullet in bullets
+        ),
+        "crc_source": f"CRC cellulose stool vs GI: {odds}; {healthy_p} (cellulose_decr).",
+    }
 
 
 def setup_tufte_rc() -> None:
@@ -85,7 +255,20 @@ def despine(
 # ==============================================================================
 # METHODS PLATE 1: High-Level Data & Taxonomic Integration Architecture
 # ==============================================================================
-def build_methods_plate1(out_dir: Path) -> Path:
+def guild_text(labels: dict[str, str]) -> str:
+    """The aerobe and anaerobe guild terms of mtp.trait_guilds, by canonical label."""
+    lines = []
+    for guild, terms in OXYGEN_GUILDS.items():
+        first, *rest = terms
+        others = ", ".join(f"{labels[term]} ({term.removeprefix('METPO:')})" for term in rest)
+        lines.append(
+            f"• {guild.capitalize()} Guild ({len(terms)} terms): {labels[first]} ({first}),\n"
+            f"  {others}"
+        )
+    return "\n".join(lines)
+
+
+def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
     ax = fig.add_axes([0.03, 0.08, 0.94, 0.80])
     ax.axis("off")
@@ -442,13 +625,25 @@ def build_methods_plate1(out_dir: Path) -> Path:
         color=INK,
         ha="center",
     )
+    # Read from the table the plate cites, which Plate VI also draws (#640).
+    coverage = {
+        r["taxonomic_rank"]: r
+        for r in read_tsv(
+            repo / "trait-visualization/trait-profile-investigation/taxa-coverage/"
+            "taxa_coverage_by_rank.tsv"
+        )
+    }
     rank_bars = [
-        ("Phylum", 99.6, "2,188 / 2,197 occ.", TEAL_ACCENT),
-        ("Order", 97.6, "1,659 / 1,700 occ.", TEAL_ACCENT),
-        ("Genus", 96.5, "18,225 / 18,894 occ.", TEAL_ACCENT),
-        ("Family", 96.5, "5,632 / 5,834 occ.", TEAL_ACCENT),
-        ("Species", 78.0, "15,436 / 19,792 occ.", INC_COLOR),
+        (
+            rank.capitalize(),
+            float(coverage[rank]["trait_bearing_occurrences_pct"]),
+            f"{int(coverage[rank]['trait_bearing_occurrences']):,} / "
+            f"{int(coverage[rank]['total_occurrences']):,} occ.",
+            INC_COLOR if rank == "species" else TEAL_ACCENT,
+        )
+        for rank in ("phylum", "order", "genus", "family", "species")
     ]
+    species_gap = float(coverage["species"]["zero_trait_occurrences_pct"])
     for idx_b, (rname, rpct, rlbl, rcol) in enumerate(rank_bars):
         by = 76.5 - idx_b * 5.2
         ax.text(71.8, by, rname, fontsize=8.2, fontweight="bold", color=INK, ha="left", va="center")
@@ -490,8 +685,8 @@ def build_methods_plate1(out_dir: Path) -> Path:
     ax.text(
         84.25,
         50.8,
-        "Species gap (22%): uncultivated MAGs, slash-bins &\n2 NCBI TaxID desyncs "
-        "(Oscillospiraceae, Rothia)",
+        f"Species gap ({species_gap:.0f}% of occurrences): uncultivated MAGs, slash-bins &\n"
+        "2 NCBI TaxID desyncs (Oscillospiraceae, Rothia)",
         fontsize=7.6,
         color=INC_COLOR,
         ha="center",
@@ -522,10 +717,8 @@ def build_methods_plate1(out_dir: Path) -> Path:
     ax.text(
         72.6,
         36.5,
-        "• Aerobe Guild (3 terms): aerobic (METPO:1000602),\n  facultatively aerobic (1000608), "
-        "obligately aerobic (1000609)\n• Anaerobe Guild (2 terms): anaerobic (METPO:1000603),\n  "
-        "obligately anaerobic (METPO:1000607)\n• Gram Envelope: Gram+ (1000698) vs "
-        "Gram\N{MINUS SIGN} (1000699)",
+        guild_text(trait_labels(repo))
+        + "\n• Gram Envelope: Gram+ (1000698) vs Gram\N{MINUS SIGN} (1000699)",
         fontsize=7.4,
         color=INK,
         ha="left",
@@ -568,7 +761,7 @@ def build_methods_plate1(out_dir: Path) -> Path:
     fig.text(
         0.03,
         0.025,
-        "Source: Rerun on main (402ef5c) · BugSigDB v1.3.1 (Zenodo 10627578) "
+        f"{RERUN_SOURCE} · BugSigDB v1.3.1 (Zenodo 10627578) "
         "\N{MULTIPLICATION SIGN} KG-Microbe 20260120 · taxa_coverage_by_rank.tsv, "
         "condition_trait_module_guild_definition_table.tsv.",
         fontsize=8.0,
@@ -585,7 +778,65 @@ def build_methods_plate1(out_dir: Path) -> Path:
 # ==============================================================================
 # METHODS PLATE 2: High-Level Three-Arm Analytical Architecture & Convergence
 # ==============================================================================
-def build_methods_plate2(out_dir: Path) -> Path:
+def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
+    # Arm 1's survivors, read from the tables Plates I and II draw (#598, #623)
+    stats = repo / "trait-visualization/trait-profile-investigation"
+    paired = {
+        stratum: {
+            r["trait"]: r
+            for r in read_tsv(stats / f"trait_profile_paired_contrast_trait_stats_{stratum}.tsv")
+        }
+        for stratum in ("pooled", "feces")
+    }
+    contrasts = read_tsv(
+        stats / "six-shared-traits/six_shared_trait_condition_body_site_direction_contrasts.tsv"
+    )
+    fisher = sum(
+        r.get("selected_after_bh") == "True"
+        for r in contrasts
+        if r.get("view_key") == "individual_conditions_direction_contrast"
+    )
+    survivors = (
+        f"{study_bh_count(paired['pooled'])} Pooled & {study_bh_count(paired['feces'])} Feces "
+        f"traits\npass Study BH q ≤ 0.05 · {fisher} Cond"
+        "\N{MULTIPLICATION SIGN}Site Fisher BH survivors"
+    )
+    # The test families of Arm 1's stratified screens and Arm 3's 317-trait screen (#624, #640)
+    views = [r.get("view_key") for r in contrasts]
+    individual = views.count("individual_conditions_direction_contrast")
+    grouped = views.count("grouped_direction_contrast")
+    wilcoxon = len(
+        read_tsv(stats / "PD-cellulose/pd_condition_taxon_trait_network_condition_trait_tests.tsv")
+    )
+    screen = read_tsv(repo / "data/derived/trait_screen/trait_direction_screen.tsv")
+    concordant, strict = three_arm_counts(
+        three_arm_traits(
+            paired["pooled"],
+            {
+                r["trait"]: r
+                for r in read_tsv(repo / "data/derived/trait_enrichment_traits_overall_ranked.tsv")
+            },
+            {r["trait"]: r for r in screen},
+            {tid for tid, *_ in TABLE1_TRAITS},
+        )
+    )
+    # The slide's caveat quotes these, from the plates' provenance (#640)
+    PLATE_COUNTS.update(
+        {
+            "traits_observed": len(paired["pooled"]),
+            "three_arm_concordant": concordant,
+            "three_arm_strict_by": strict,
+        }
+    )
+
+    def passing(column: str) -> int:
+        return sum(has_value(r.get(column)) and float(r[column]) <= 0.05 for r in screen)
+
+    family = str(len(screen)).translate(str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉"))
+    arm3 = (
+        f"Arm 3 Survivors: {passing('bh_q_nominal')} traits pass BH{family} ≤ 0.05 "
+        f"({passing('by_q_nominal')} BY)"
+    )
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
     ax = fig.add_axes([0.03, 0.08, 0.94, 0.80])
     ax.axis("off")
@@ -685,8 +936,8 @@ def build_methods_plate2(out_dir: Path) -> Path:
         (
             38.5,
             "3. Condition \N{MULTIPLICATION SIGN} Site Stratification",
-            "• Positive-z share Fisher (398 ind. / 115 grouped)\n• Fecal Study Wilcoxon "
-            "signed-rank (336 tests)",
+            f"• Positive-z share Fisher ({individual:,} ind. / {grouped:,} grouped cells)\n"
+            f"• Fecal Study Wilcoxon signed-rank ({wilcoxon:,} tests)",
             "#d4e6f4",
         ),
     ]
@@ -720,8 +971,7 @@ def build_methods_plate2(out_dir: Path) -> Path:
     ax.text(
         16.75,
         30.5,
-        "Arm 1 Survivors: 22 Pooled & 33 Feces traits\npass Study BH q ≤ 0.05 · 10 "
-        "Cond\N{MULTIPLICATION SIGN}Site Fisher hits",
+        f"Arm 1 Survivors: {survivors}",
         fontsize=8.2,
         fontweight="bold",
         color=DEC_COLOR,
@@ -925,8 +1175,7 @@ def build_methods_plate2(out_dir: Path) -> Path:
     ax.text(
         83.25,
         30.5,
-        "Arm 3 Survivors: 19 traits pass BH₃₁₇ ≤ 0.05 (10 BY)\nOriented (569 st.): Cellulose ↓ "
-        "p=4.2e-6 · 4 LR BY hits",
+        f"{arm3}\nOriented (569 st.): Cellulose ↓ p=4.2e-6 · 4 LR BY hits",
         fontsize=8.0,
         fontweight="bold",
         color=PURPLE_ACCENT,
@@ -974,20 +1223,20 @@ def build_methods_plate2(out_dir: Path) -> Path:
         (
             3.5,
             "317 Biological Traits",
-            "Full KG-Microbe phenome\n(315 observed in corpus)",
+            f"Full KG-Microbe phenome\n({len(paired['pooled'])} observed in corpus)",
             "#ffffff",
             MID_RULE,
         ),
         (
             27.5,
-            "17 Three-Arm Traits",
+            f"{concordant} Three-Arm Traits",
             "Arm 1 Study BH q ≤ 0.05\n+ Arm 3 BH₃₁₇ ≤ 0.05 + Arm 2 ORA",
             "#e8f5f3",
             TEAL_ACCENT,
         ),
         (
             51.5,
-            "8 Strict BY Survivors",
+            f"{strict} Strict BY Survivors",
             "Pass conservative 317-trait\nBenjamini\N{EN DASH}Yekutieli q ≤ 0.05",
             "#eef5fb",
             DEC_COLOR,
@@ -1040,9 +1289,9 @@ def build_methods_plate2(out_dir: Path) -> Path:
     fig.text(
         0.03,
         0.025,
-        "Source: Rerun on main (402ef5c) · Synthesizes Arm 1 (just trait-stats), Arm 2 (just ora), "
-        "Arm 3 (just table1-shift, just trait-screen, just table1-compositional-stats), "
-        "contrast-orientation, and calibration.",
+        f"{RERUN_SOURCE} · Synthesizes Arm 1 (just trait-profile-investigation), Arm 2 "
+        "(just analyze), Arm 3 (just table1-trait-maps, just trait-direction-screen, just "
+        "table1-compositional-stats), just contrast-orientation and calibration.",
         fontsize=7.8,
         color=MUTED,
     )
@@ -1057,71 +1306,185 @@ def build_methods_plate2(out_dir: Path) -> Path:
 # ==============================================================================
 # PLATE 1: Multi-Scale Inference & Attenuation Architecture (Visual Funnel + Slopegraph)
 # ==============================================================================
+# The six Table 1 traits Plate I follows: column id, label, display name and the direction
+# the Table 1 study test found.
+TABLE1_TRAITS = (
+    ("METPO:1000608", "facultatively aerobic", "Facultatively aerobic", "inc"),
+    ("METPO:2000103|GO:0030245", "cellulose catabolic process", "Cellulose catabolism", "dec"),
+    ("METPO:1000668", "coccus shaped", "Coccus shaped", "inc"),
+    (
+        "METPO:2000103|pathways:arsenate_reduction",
+        "arsenate reduction",
+        "Arsenate reduction",
+        "inc",
+    ),
+    ("METPO:1000683", "sphere shaped", "Sphere shaped", "inc"),
+    ("METPO:1000623", "moderately halophilic", "Moderately halophilic", "inc"),
+)
+TRAIT_SHORT = {
+    "facultatively aerobic": "facultative aerobe",
+    "cellulose catabolic process": "cellulose",
+    "coccus shaped": "coccus",
+    "arsenate reduction": "arsenate",
+    "sphere shaped": "sphere",
+    "moderately halophilic": "halophily",
+}
+CONDITION_SHORT = {
+    "Parkinson's disease": "PD",
+    "HIV infection": "HIV",
+    "Colorectal cancer": "CRC",
+}
+
+
+def has_value(value: str | None) -> bool:
+    return value not in (None, "", "NA", "nan")
+
+
+def plate1_summary(
+    pooled: Mapping[str, dict[str, str]],
+    feces: Mapping[str, dict[str, str]],
+    sign: Mapping[str, dict[str, str]],
+    contrasts: Sequence[dict[str, str]],
+    wilcoxon: Sequence[dict[str, str]],
+) -> dict[str, Any]:
+    """Plate I's sample sizes, test families, survivors and points, read from its tables.
+
+    The plate typed them and claimed survivors its own tables do not have (#636). A trait
+    survives Scales 1-4 at BH q <= 0.05, and Scales 5 and 6 when the screen selects one of
+    its cells after BH. Scale 5 plots each trait's lowest q among the cells that pass the
+    screen's support rule, the cells BH can select.
+    """
+    cells = [
+        r for r in contrasts if r.get("view_key") == "individual_conditions_direction_contrast"
+    ]
+    supported = [
+        r for r in cells if r.get("passes_support") == "True" and has_value(r.get("fisher_q_value"))
+    ]
+    survivors = [0] * 6
+    points: dict[str, list[float]] = {}
+    selected: dict[int, list[str]] = {4: [], 5: []}
+    for tid, label, _display, _direction in TABLE1_TRAITS:
+        tests = [r for r in wilcoxon if r["trait"] == label and has_value(r.get("q_value"))]
+        fisher = [float(r["fisher_q_value"]) for r in supported if r["trait_label"] == label]
+        points[label] = [
+            float(pooled[tid]["q_value"]),
+            float(pooled[tid]["study_q_value"]),
+            float(feces[tid]["study_q_value"]),
+            float(sign[label]["bh_q"]),
+            min(fisher, default=1.0),
+            min((float(r["q_value"]) for r in tests), default=1.0),
+        ]
+        chosen = {
+            4: [
+                r
+                for r in cells
+                if r["trait_label"] == label and r.get("selected_after_bh") == "True"
+            ],
+            5: [r for r in tests if r.get("selected_after_bh") == "True"],
+        }
+        for index in range(4):
+            survivors[index] += points[label][index] <= 0.05
+        for index, rows in chosen.items():
+            if rows:
+                survivors[index] += 1
+                places = sorted(
+                    CONDITION_SHORT.get(r["condition"], r["condition"])
+                    + (
+                        ""
+                        if r.get("body_site_group", "Feces") == "Feces"
+                        else f" {r['body_site_group']}"
+                    )
+                    for r in rows
+                )
+                selected[index].append(f"{TRAIT_SHORT[label]}: {', '.join(places)}")
+    studies = [int(r["paired_study_count"]) for r in wilcoxon]
+    lowest = min(
+        (r for r in wilcoxon if has_value(r.get("q_value"))), key=lambda r: float(r["q_value"])
+    )
+    sign_studies = max(
+        int(r["studies_up"]) + int(r["studies_down"]) + int(r["studies_tied"])
+        for r in sign.values()
+    )
+    return {
+        "pairs": max(int(r["pair_count"]) for r in pooled.values()),
+        "studies": max(int(float(r["study_count"])) for r in pooled.values()),
+        "feces_studies": max(int(float(r["study_count"])) for r in feces.values()),
+        "sign_studies": sign_studies,
+        "m": [
+            sum(has_value(r.get("q_value")) for r in pooled.values()),
+            sum(has_value(r.get("study_q_value")) for r in pooled.values()),
+            sum(has_value(r.get("study_q_value")) for r in feces.values()),
+            int(next(iter(sign.values()))["family_size"]),
+            len(cells),
+            len(wilcoxon),
+        ],
+        "cell_profiles": round(
+            median(
+                int(r["increased_profile_count"]) + int(r["decreased_profile_count"])
+                for r in supported
+            )
+        ),
+        "wilcoxon_studies": (min(studies), max(studies)),
+        "survivors": survivors,
+        "selected": selected,
+        "lowest_wilcoxon": (
+            float(lowest["q_value"]),
+            f"{TRAIT_SHORT.get(lowest['trait'], lowest['trait'])} in "
+            f"{CONDITION_SHORT.get(lowest['condition'], lowest['condition'])}",
+        ),
+        "points": points,
+    }
+
+
+def plate1_subtitle(summary: Mapping[str, Any]) -> str:
+    """Panel B's verdict on each scale, e.g. 'All 6 pass Scales 1-4; 2 pass Scale 5 (...)'."""
+    survivors = summary["survivors"]
+    if all(count == 6 for count in survivors[:4]):
+        parts = ["All 6 pass Scales 1\N{EN DASH}4"]
+    else:
+        parts = [
+            f"{count} {'passes' if count == 1 else 'pass'} Scale {index + 1}"
+            for index, count in enumerate(survivors[:4])
+        ]
+    for index in (4, 5):
+        if survivors[index]:
+            verb = "passes" if survivors[index] == 1 else "pass"
+            parts.append(
+                f"{survivors[index]} {verb} Scale {index + 1} "
+                f"({'; '.join(summary['selected'][index])})"
+            )
+        elif index == 5:
+            q, where = summary["lowest_wilcoxon"]
+            parts.append(f"none passes Scale 6 (lowest q = {fmt_p(q)}, {where})")
+        else:
+            parts.append("none passes Scale 5")
+    return "; ".join(parts)
+
+
 def build_plate1(repo: Path, out_dir: Path) -> Path:
+    stats = repo / "trait-visualization/trait-profile-investigation"
     pooled_rows = {
         r["trait"]: r
-        for r in read_tsv(
-            repo / "trait-visualization/trait-profile-investigation/"
-            "trait_profile_paired_contrast_trait_stats_pooled.tsv"
-        )
+        for r in read_tsv(stats / "trait_profile_paired_contrast_trait_stats_pooled.tsv")
     }
     feces_rows = {
         r["trait"]: r
-        for r in read_tsv(
-            repo / "trait-visualization/trait-profile-investigation/"
-            "trait_profile_paired_contrast_trait_stats_feces.tsv"
-        )
+        for r in read_tsv(stats / "trait_profile_paired_contrast_trait_stats_feces.tsv")
     }
     table1_sign = {
         r["trait"].replace("_", " "): r
         for r in read_tsv(repo / "data/derived/table1_traits/table1_traits_direction_shift.tsv")
     }
     contrasts = read_tsv(
-        repo / "trait-visualization/trait-profile-investigation/six-shared-traits/"
-        "six_shared_trait_condition_body_site_direction_contrasts.tsv"
+        stats / "six-shared-traits/six_shared_trait_condition_body_site_direction_contrasts.tsv"
     )
     wilcoxon_rows = read_tsv(
-        repo / "trait-visualization/trait-profile-investigation/PD-cellulose/"
-        "pd_condition_taxon_trait_network_condition_trait_tests.tsv"
+        stats / "PD-cellulose/pd_condition_taxon_trait_network_condition_trait_tests.tsv"
     )
-
-    best_ind_q_by_trait: dict[str, tuple[float, str, float]] = {}
-    for r in contrasts:
-        if r.get("view_key") != "individual_conditions_direction_contrast":
-            continue
-        if r.get("fisher_q_value") in (None, "", "NA") or r.get(
-            "increased_minus_decreased_positive_fraction"
-        ) in (None, "", "NA"):
-            continue
-        t_lbl = r["trait_label"]
-        qv = float(r["fisher_q_value"])
-        delta = float(r["increased_minus_decreased_positive_fraction"])
-        if t_lbl not in best_ind_q_by_trait or qv < best_ind_q_by_trait[t_lbl][0]:
-            best_ind_q_by_trait[t_lbl] = (qv, f"{r['condition']} ({r['body_site_group']})", delta)
-
-    best_wilc_q_by_trait: dict[str, tuple[float, str, float]] = {}
-    for r in wilcoxon_rows:
-        if r.get("q_value") in (None, "", "NA") or r.get("mean_contrast") in (None, "", "NA"):
-            continue
-        t_lbl = r["trait"]
-        qv = float(r["q_value"])
-        mc = float(r["mean_contrast"])
-        if t_lbl not in best_wilc_q_by_trait or qv < best_wilc_q_by_trait[t_lbl][0]:
-            best_wilc_q_by_trait[t_lbl] = (qv, r["condition"], mc)
-
-    traits_spec = [
-        ("METPO:1000608", "facultatively aerobic", "Facultatively aerobic", "inc"),
-        ("METPO:2000103|GO:0030245", "cellulose catabolic process", "Cellulose catabolism", "dec"),
-        ("METPO:1000668", "coccus shaped", "Coccus shaped", "inc"),
-        (
-            "METPO:2000103|pathways:arsenate_reduction",
-            "arsenate reduction",
-            "Arsenate reduction",
-            "inc",
-        ),
-        ("METPO:1000683", "sphere shaped", "Sphere shaped", "inc"),
-        ("METPO:1000623", "moderately halophilic", "Moderately halophilic", "inc"),
-    ]
+    summary = plate1_summary(pooled_rows, feces_rows, table1_sign, contrasts, wilcoxon_rows)
+    m1, m2, m3, m4, m5, m6 = summary["m"]
+    low, high = summary["wilcoxon_studies"]
+    survivors = summary["survivors"]
 
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
     gs = fig.add_gridspec(
@@ -1144,77 +1507,66 @@ def build_plate1(repo: Path, out_dir: Path) -> Path:
     fig.text(
         0.03,
         0.920,
-        "Why pooled signals (N = 2,335 pairs; N = 959 studies) are overwhelmingly significant "
-        "while Condition \N{MULTIPLICATION SIGN} Site study screens attenuate under sample "
-        "partitioning",
+        f"Why pooled signals (N = {summary['pairs']:,} pairs; N = {summary['studies']:,} studies) "
+        "are overwhelmingly significant while Condition \N{MULTIPLICATION SIGN} Site study "
+        "screens attenuate under sample partitioning",
         fontsize=9.2,
         color=MUTED,
     )
 
     # --- Panel A: Visual Sample-Size vs Multiplicity Burden Bars Across the 6 Scales ---
+    def passed(index: int, noun: str = "Table 1 pass") -> str:
+        return f"{survivors[index]} / 6 {noun}"
+
     scale_rows = [
         (
             "Scale 1 · Experiment Paired t",
-            2335,
-            317,
-            "6 / 6 Table 1 pass",
+            summary["pairs"],
+            passed(0),
             TEAL_ACCENT,
-            "2,335 pairs (m = 317)",
+            f"{summary['pairs']:,} pairs (m = {m1:,})",
         ),
         (
             "Scale 2 · Pooled Study Paired t",
-            959,
-            317,
-            "6 / 6 Table 1 pass",
+            summary["studies"],
+            passed(1),
             TEAL_ACCENT,
-            "959 studies (m = 317)",
+            f"{summary['studies']:,} studies (m = {m2:,})",
         ),
         (
             "Scale 3 · Feces Study Paired t",
-            594,
-            317,
-            "6 / 6 Table 1 pass",
+            summary["feces_studies"],
+            passed(2),
             TEAL_ACCENT,
-            "594 studies (m = 317)",
+            f"{summary['feces_studies']:,} studies (m = {m3:,})",
         ),
         (
             "Scale 4 · Pooled Study Sign Test",
-            959,
-            317,
-            "6 / 6 Table 1 pass",
+            summary["sign_studies"],
+            passed(3),
             TEAL_ACCENT,
-            "959 studies (m = 317)",
+            f"≤ {summary['sign_studies']:,} studies (m = {m4:,})",
         ),
         (
             "Scale 5 · Cond\N{MULTIPLICATION SIGN}Site Profile Fisher",
-            90,
-            2388,
-            "4 / 6 Table 1 pass",
+            summary["cell_profiles"],
+            passed(4, "with a BH-selected cell"),
             GOLD_ACCENT,
-            "≤90 profiles/cell (m = 2,388)",
+            f"median {summary['cell_profiles']} profiles/supported cell (m = {m5:,})",
         ),
         (
             "Scale 6 · Cond\N{MULTIPLICATION SIGN}Site Study Wilcoxon",
-            45,
-            336,
-            "1 / 6 at BH q ≤ 0.05",
+            high,
+            passed(5, "with a BH-selected cell"),
             INC_COLOR,
-            "3\N{EN DASH}45 studies/cell (m = 336)",
-        ),
-        (
-            "Scale 7 · Cond\N{MULTIPLICATION SIGN}Site Study Sign",
-            45,
-            18152,
-            "0 / 6 (min q = 0.25)",
-            INC_COLOR,
-            "3\N{EN DASH}45 studies/cell (m = 18,152)",
+            f"{low}\N{EN DASH}{high} studies/cell (m = {m6:,})",
         ),
     ]
     y_f = np.arange(len(scale_rows))[::-1]
     ax_funnel.set_ylim(-0.6, len(scale_rows) - 0.2)
     ax_funnel.set_xlim(0, 4100)
 
-    for idx_s, (_sname, n_unit, _m_tests, surv_txt, scol, n_lbl) in enumerate(scale_rows):
+    for idx_s, (_sname, n_unit, surv_txt, scol, n_lbl) in enumerate(scale_rows):
         yp = y_f[idx_s]
         ax_funnel.barh(yp, n_unit, height=0.56, color=scol, alpha=0.86)
         ax_funnel.text(
@@ -1244,8 +1596,9 @@ def build_plate1(repo: Path, out_dir: Path) -> Path:
         fontweight="bold",
     )
     ax_funnel.set_title(
-        "A. Sample Partitioning & Multiplicity Funnel\nPartitioning 959 studies into Condition "
-        "\N{MULTIPLICATION SIGN} Site cells drops N to 3\N{EN DASH}45",
+        "A. Sample Partitioning & Multiplicity Funnel\nPartitioning "
+        f"{summary['studies']:,} studies into Condition \N{MULTIPLICATION SIGN} Site cells "
+        f"drops N to {low}\N{EN DASH}{high}",
         fontsize=9.5,
         fontweight="bold",
         loc="left",
@@ -1255,12 +1608,12 @@ def build_plate1(repo: Path, out_dir: Path) -> Path:
 
     # --- Panel B: Spacious Multi-Scale -log10(q) Slopegraph ---
     scales = [
-        "Scale 1\nExp. Paired t\n(2,335 pairs\nm = 317)",
-        "Scale 2\nPooled Study t\n(959 studies\nm = 317)",
-        "Scale 3\nFeces Study t\n(594 studies\nm = 317)",
-        "Scale 4\nStudy Sign\n(959 studies\nm = 317)",
-        "Scale 5\nBest Cond\N{MULTIPLICATION SIGN}Site\nFisher (m=2,388)",
-        "Scale 6\nBest Cond\N{MULTIPLICATION SIGN}Site\nWilcoxon (m=336)",
+        f"Scale 1\nExp. Paired t\n({summary['pairs']:,} pairs\nm = {m1:,})",
+        f"Scale 2\nPooled Study t\n({summary['studies']:,} studies\nm = {m2:,})",
+        f"Scale 3\nFeces Study t\n({summary['feces_studies']:,} studies\nm = {m3:,})",
+        f"Scale 4\nStudy Sign\n(≤ {summary['sign_studies']:,} studies\nm = {m4:,})",
+        f"Scale 5\nBest supported\nCond\N{MULTIPLICATION SIGN}Site\nFisher (m={m5:,})",
+        f"Scale 6\nBest Cond\N{MULTIPLICATION SIGN}Site\nWilcoxon (m={m6:,})",
     ]
     x_pos = np.arange(len(scales))
 
@@ -1313,21 +1666,9 @@ def build_plate1(repo: Path, out_dir: Path) -> Path:
         "sphere shaped": -0.38,
     }
 
-    for tid, tname, tdisp, tdir in traits_spec:
-        pr = pooled_rows[tid]
-        fr = feces_rows[tid]
-        sr = table1_sign[tname]
-        ind_q, _, _ = best_ind_q_by_trait[tname]
-        wilc_q, _, _ = best_wilc_q_by_trait[tname]
-
-        q_vals = [
-            float(pr["q_value"]),
-            float(pr["study_q_value"]),
-            float(fr["study_q_value"]),
-            float(sr["bh_q"]),
-            ind_q,
-            wilc_q,
-        ]
+    for _tid, tname, tdisp, tdir in TABLE1_TRAITS:
+        q_vals = summary["points"][tname]
+        wilc_q = q_vals[-1]
         y_vals = [min(9.2, -math.log10(max(q, 1e-12))) for q in q_vals]
         c = trait_colors[tname]
         marker = "o" if tdir == "inc" else "s"
@@ -1347,7 +1688,7 @@ def build_plate1(repo: Path, out_dir: Path) -> Path:
         # Clean right-hand legend callouts with leader lines from Scale 6
         ry = right_y_Explicit[tname]
         ax_slope.annotate(
-            f"{tdisp} (q={wilc_q:.2f})",
+            f"{tdisp} (q={fmt_p(wilc_q)})",
             xy=(len(scales) - 1, y_vals[-1]),
             xytext=(len(scales) - 0.85, ry),
             fontsize=7.7,
@@ -1367,9 +1708,8 @@ def build_plate1(repo: Path, out_dir: Path) -> Path:
         fontweight="bold",
     )
     ax_slope.set_title(
-        "B. Significance Trajectory of the 6 Table 1 Traits Across Scales 1\N{EN DASH}6\nAll 6 "
-        "pass Scales 1\N{EN DASH}4; 4 pass Scale 5 (PD, CRC, HIV, COVID-19); Halophily passes "
-        "Scale 6 (q=0.025)",
+        "B. Significance Trajectory of the 6 Table 1 Traits Across Scales 1\N{EN DASH}6\n"
+        + textwrap.fill(plate1_subtitle(summary), width=96),
         fontsize=9.6,
         fontweight="bold",
         loc="left",
@@ -1380,7 +1720,7 @@ def build_plate1(repo: Path, out_dir: Path) -> Path:
     fig.text(
         0.05,
         0.025,
-        "Source: Rerun on main (402ef5c) · "
+        f"{RERUN_SOURCE} · "
         "trait_profile_paired_contrast_trait_stats_{pooled,feces}.tsv, "
         "table1_traits_direction_shift.tsv, "
         "six_shared_trait_condition_body_site_direction_contrasts.tsv, "
@@ -1429,10 +1769,10 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         )
     }
 
+    labels = trait_labels(repo)
     trait_rows_spec = [
         # Increased Guilds
         ("METPO:1000608", "[O₂ Guild]  Facultatively aerobic ★", "O₂ / Aerotolerance"),
-        ("METPO:1000605", "Facultative O₂ preference", "O₂ / Aerotolerance"),
         ("METPO:1000606", "Microaerophilic", "O₂ / Aerotolerance"),
         ("METPO:1000602", "Aerobic", "O₂ / Aerotolerance"),
         ("METPO:1000623", "[Halophily]  Moderately halophilic ★", "Halotolerance / Osmotic"),
@@ -1440,62 +1780,57 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         ("METPO:1000627", "Euryhaline", "Halotolerance / Osmotic"),
         (
             "METPO:2000103|pathways:arsenate_reduction",
-            "[Redox / S·N]  Arsenate reduction ★",
-            "Redox / S & N / Oxyanion",
+            "[Redox]  Arsenate reduction ★",
+            "Redox",
         ),
         (
             "METPO:2000103|pathways:trithionate_oxidation",
             "Trithionate oxidation",
-            "Redox / S & N / Oxyanion",
+            "Redox",
         ),
         (
             "METPO:2000103|pathways:thiosulfate_oxidation",
             "Thiosulfate oxidation",
-            "Redox / S & N / Oxyanion",
+            "Redox",
         ),
         (
             "METPO:2000103|pathways:thiosulfate_oxidation_dark",
             "Thiosulfate oxidation (dark)",
-            "Redox / S & N / Oxyanion",
+            "Redox",
         ),
-        ("METPO:2000103|GO:0019646", "Urea catabolic process", "Redox / S & N / Oxyanion"),
-        (
-            "METPO:2000103|pathways:nitrate_reduction",
-            "Nitrate reduction [Saliva flip!]",
-            "Redox / S & N / Oxyanion",
-        ),
+        ("METPO:2000103|pathways:nitrate_reduction", "Nitrate reduction", "Redox"),
         (
             "METPO:2000103|pathways:methane_oxidation",
             "Methane oxidation",
-            "Redox / S & N / Oxyanion",
+            "Redox",
         ),
         ("METPO:1000668", "[Morphology]  Coccus shaped ★", "Morphology"),
         ("METPO:1000683", "Sphere shaped ★", "Morphology"),
-        (
-            "METPO:2000006|CHEBI:320055",
-            "[Simple C / Nuc]  Methyl β-D-glucopyranoside",
-            "Simple Carbon / Nucleoside",
-        ),
-        ("METPO:2000103|GO:0046274", "Lignin catabolic process", "Simple Carbon / Nucleoside"),
-        ("METPO:2000006|CHEBI:16808", "2-Dehydro-D-gluconate", "Simple Carbon / Nucleoside"),
-        ("METPO:2000006|CHEBI:17596", "Inosine utilization", "Simple Carbon / Nucleoside"),
-        ("METPO:2000006|CHEBI:25115", "Malate utilization", "Simple Carbon / Nucleoside"),
+        # Carbon sources and lignin catabolism; the tag sits on the shortest label so the
+        # row fits the left margin.
+        ("METPO:2000006|CHEBI:25115", "[Carbon use]  Malate", "Carbon use"),
+        ("METPO:2000006|CHEBI:17596", "Inosine", "Carbon use"),
+        ("METPO:2000006|CHEBI:16808", "2-Dehydro-D-gluconate", "Carbon use"),
+        ("METPO:2000006|CHEBI:320055", "Methyl β-D-glucopyranoside", "Carbon use"),
+        ("METPO:2000103|GO:0046274", "Lignin catabolic process", "Carbon use"),
         # Decreased Guilds
         (
             "METPO:2000103|GO:0030245",
-            "[Plant Fiber ↓]  Cellulose catabolic process ★",
-            "Plant Polysaccharide ↓",
+            "[Plant glycan ↓]  Cellulose catabolic process ★",
+            "Plant glycan ↓",
         ),
-        ("METPO:2000103|GO:0045493", "Xylan catabolic process", "Plant Polysaccharide ↓"),
-        ("METPO:2000006|CHEBI:16634", "Raffinose utilization", "Plant Polysaccharide ↓"),
-        ("METPO:1000429", "[Anaerobe / H₂ ↓]  GC low (<45%)", "Anaerobe / Reductive H₂ ↓"),
-        ("METPO:1000603", "Anaerobic", "Anaerobe / Reductive H₂ ↓"),
-        ("METPO:1000607", "Obligately anaerobic", "Anaerobe / Reductive H₂ ↓"),
-        (
-            "METPO:1000845",
-            "METPO:1000845 (Pyrrolidonyl / Acetogenesis)",
-            "Anaerobe / Reductive H₂ ↓",
-        ),
+        ("METPO:2000103|GO:0045493", "Xylan catabolic process", "Plant glycan ↓"),
+        ("METPO:2000006|CHEBI:16634", "Raffinose", "Plant glycan ↓"),
+        ("METPO:1000429", "[Anaerobic / low GC ↓]  GC low", "Anaerobic / low GC ↓"),
+        ("METPO:1000603", "Anaerobic", "Anaerobic / low GC ↓"),
+        ("METPO:1000607", "Obligately anaerobic", "Anaerobic / low GC ↓"),
+        ("METPO:1000845", "Acetogenesis", "Anaerobic / low GC ↓"),
+    ]
+    check_plate_two_rows([trait for trait, _, _ in trait_rows_spec], pooled)
+    # Every row takes the label its column has in taxa_trait_matrix_columns.tsv (#607).
+    trait_rows_spec = [
+        (trait_id, canonical_display(display, labels.get(trait_id)), group)
+        for trait_id, display, group in trait_rows_spec
     ]
 
     fig = plt.figure(figsize=(16.0, 9.2), facecolor=BG_COLOR)
@@ -1511,8 +1846,8 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
     )
 
     fig.suptitle(
-        "TUFTE PLATE 2 · Beyond Table 1: The 28-Trait Functional Guild Dichotomy & Anatomical "
-        "Stratification",
+        f"TUFTE PLATE 2 · Beyond Table 1: {len(trait_rows_spec)} Traits by Direction of "
+        "Annotation Shift & Body Site",
         fontsize=15.0,
         fontweight="bold",
         x=0.03,
@@ -1523,31 +1858,36 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
     fig.text(
         0.03,
         0.922,
-        "Study-level paired contrasts (mean Δz ± 95% CI): Feces (594 studies) drives the pooled "
-        "signal, Feces-Excluded (365 studies) has 0 FDR hits, and Saliva (55 studies) flips "
-        "Nitrate Reduction",
+        "Study-level paired contrasts (mean Δz ± 95% CI) · ** study BH q ≤ 0.005 · * q ≤ 0.05 · "
+        "† nominal p ≤ 0.05 · Feces (594 studies) carries most of the pooled signal; "
+        f"{study_bh_count(nonfeces)} traits pass BH without Feces and {study_bh_count(saliva)} "
+        "in Saliva",
         fontsize=9.0,
         color=MUTED,
     )
 
     strata = [
         (
-            "Pooled All Sites\n(959 studies · 2,335 pairs\n22 traits study BH q ≤ 0.05)",
+            "Pooled All Sites\n(959 studies · 2,335 pairs\n"
+            f"{study_bh_count(pooled)} traits study BH q ≤ 0.05)",
             pooled,
             (-0.38, 0.72),
         ),
         (
-            "Feces Only\n(594 studies · 1,485 pairs\n33 traits study BH q ≤ 0.05)",
+            "Feces Only\n(594 studies · 1,485 pairs\n"
+            f"{study_bh_count(feces)} traits study BH q ≤ 0.05)",
             feces,
             (-0.44, 0.78),
         ),
         (
-            "Feces Excluded\n(365 studies · 850 pairs\n0 traits study BH q ≤ 0.05)",
+            "Feces Excluded\n(365 studies · 850 pairs\n"
+            f"{study_bh_count(nonfeces)} traits study BH q ≤ 0.05)",
             nonfeces,
             (-0.40, 0.56),
         ),
         (
-            "Saliva Only\n(55 studies · 129 pairs\nNitrate red. flips negative!)",
+            "Saliva Only\n(55 studies · 129 pairs\n"
+            f"{study_bh_count(saliva)} traits study BH q ≤ 0.05)",
             saliva,
             (-0.78, 0.92),
         ),
@@ -1555,7 +1895,9 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
 
     n_rows = len(trait_rows_spec)
     y_positions = np.arange(n_rows)[::-1]
-    div_y = y_positions[20] - 0.5
+    # The rule between the increased groups and the first decreased (↓) group
+    first_decreased = next(i for i, row in enumerate(trait_rows_spec) if row[2].endswith("↓"))
+    div_y = y_positions[first_decreased] + 0.5
 
     for col_idx, (col_title, data_dict, xlim) in enumerate(strata):
         ax = fig.add_subplot(gs[0, col_idx])
@@ -1572,6 +1914,16 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
             yp = y_positions[idx_r]
             row = data_dict.get(tid)
             if not row or not row.get("study_mean_increased_minus_decreased"):
+                # Not tested in this stratum (see the footer)
+                ax.text(
+                    0.02 * (xlim[1] - xlim[0]),
+                    yp,
+                    "n.t.",
+                    fontsize=7.0,
+                    color=MUTED,
+                    ha="left",
+                    va="center",
+                )
                 continue
             mean_v = float(row["study_mean_increased_minus_decreased"])
             ci_lo = float(row["study_ci95_lower"])
@@ -1640,12 +1992,17 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
 
     fig.text(
         0.03,
-        0.025,
-        "Source: Rerun on main (402ef5c) · "
-        "trait_profile_paired_contrast_trait_stats_{pooled,feces,feces_excluded,saliva}.tsv. ★ = "
-        "Table 1 trait; METPO:1000845 = KG-Microbe pyrrolidonyl-peptidase / acetogenesis node.",
+        0.012,
+        f"{RERUN_SOURCE} · "
+        "trait_profile_paired_contrast_trait_stats_{pooled,feces,feces_excluded,saliva}.tsv · "
+        "★ Table 1 trait · rows show the object_name of taxa_trait_matrix_columns.tsv, with "
+        '"(carbon source)" for compounds used as carbon sources.\nn.t. = not tested in that '
+        "stratum: the stratified screen tests a trait carried by at least 6 and at most 95% of "
+        "the stratum's profiles, with nonzero variance.",
         fontsize=7.9,
         color=MUTED,
+        va="bottom",
+        linespacing=1.5,
     )
 
     out_path = out_dir / "tufte_plate2_317_trait_guild_dichotomy.png"
@@ -2033,7 +2390,7 @@ def build_plate3(repo: Path, out_dir: Path) -> Path:
     fig.text(
         0.04,
         0.025,
-        "Source: Rerun on main (402ef5c) · trait_log_ratio_stats.tsv & "
+        f"{RERUN_SOURCE} · trait_log_ratio_stats.tsv & "
         "disease_control_comparison.tsv (just contrast-orientation). *All-studies BY q ≤ 0.05; "
         "★Oriented disease-vs-healthy (569 st.) BY q ≤ 0.05.",
         fontsize=7.9,
@@ -2051,6 +2408,7 @@ def build_plate3(repo: Path, out_dir: Path) -> Path:
 # PLATE 4: Clean Visual Condition x Trait Matrix + Lead Fecal Cohort Forest Plot
 # ==============================================================================
 def build_plate4(repo: Path, out_dir: Path) -> Path:
+    cellulose = cellulose_decr_notes(REPO_ROOT)
     eco_summary = read_tsv(
         repo / "trait-visualization/trait-profile-investigation/PD-cellulose/"
         "pd_ecological_reporter_combined_condition_trait_summary.tsv"
@@ -2225,7 +2583,8 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
         ("HIV infection", "cellulose catabolic process", "HIV · Cellulose catabolism ↓"),
     ]
     y_l = np.arange(len(lead_specs))[::-1]
-    ax_lead.set_ylim(-2.15, len(lead_specs) - 0.15)
+    # Room below the rows for the cellulose callout
+    ax_lead.set_ylim(-3.4, len(lead_specs) - 0.15)
     ax_lead.set_xlim(-1.55, 4.45)
     ax_lead.set_xticks([-1.5, -0.5, 0.0, 0.5, 1.5])
     ax_lead.axvline(0.0, color=INK, linestyle="--", linewidth=1.0, zorder=1)
@@ -2284,18 +2643,16 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
 
     # Bottom verification callout badge inside Panel B
     ax_lead.text(
-        0.48,
-        0.025,
-        "★ CRC Split: Feces 30↓:7↑ (81.1%↓, p=1.88e-4) vs Non-Fecal GI 6↓:11↑ (35.3%↓) · OR=7.86, "
-        "p=0.00142\n"
-        "• Cellulose Core Jaccard: 9 Genus+Species (d_J=0.478, p=3.5e-12) · 7 net-dec. (d_J=0.634, "
-        "p=4.2e-9)",
+        0.5,
+        0.012,
+        cellulose["plate4_callout"],
         transform=ax_lead.transAxes,
         fontsize=6.05,
         fontweight="bold",
         color=INK,
         ha="center",
         va="bottom",
+        multialignment="left",
         bbox={
             "boxstyle": "round,pad=0.26",
             "facecolor": "#fef9ec",
@@ -2314,7 +2671,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     )
     ax_lead.set_title(
         "B. Lead Fecal Disease \N{MULTIPLICATION SIGN} Trait Contrasts (PD, CRC, HIV, "
-        "COVID-19)\nStudy win/loss counts, Profile Fisher FDR (★), Study Wilcoxon p/q & CRC Split",
+        "COVID-19)\nStudy win/loss counts, Profile Fisher FDR (★), Study Wilcoxon p/q",
         fontsize=8.35,
         fontweight="bold",
         loc="left",
@@ -2325,7 +2682,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     fig.text(
         0.03,
         0.025,
-        "Source: Rerun on main (402ef5c) · "
+        f"{RERUN_SOURCE} · "
         "pd_ecological_reporter_combined_condition_trait_summary.tsv, "
         "pd_condition_taxon_trait_network_condition_trait_tests.tsv, "
         "six_shared_trait_condition_body_site_direction_contrasts.tsv.",
@@ -2343,7 +2700,41 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
 # ==============================================================================
 # PLATE 5: Anatomical Oxygen-Switch Polarity Inversion & Cross-Disease Switchers
 # ==============================================================================
+def plate5_strata(
+    rows: Sequence[dict[str, str]],
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Plate V's strata: the 10 highest-ranked scoring above 0.20 (rank_score weighs in
+    study support) and the 10 lowest-scoring below -0.15. The deck's oxygen_switch_strata
+    must select the same; a test ties the two (#639)."""
+
+    def score(row: dict[str, str]) -> float:
+        return float(row["aerobe_up_anaerobe_down_score"])
+
+    ranked = sorted(rows, key=lambda r: -float(r["rank_score"]))
+    up = [r for r in ranked if score(r) > 0.20][:10]
+    down = sorted((r for r in rows if score(r) < -0.15), key=score)[:10]
+    return up, down
+
+
+def crc_oxygen_split(rows: Sequence[dict[str, str]]) -> str:
+    """'Feces +0.68 (aerobe↑) vs Lower GI tract -0.79 (anaerobe↑)', or '' without both rows."""
+    scores = {
+        r["body_site_display"]: float(r["aerobe_up_anaerobe_down_score"])
+        for r in rows
+        if r["condition"] == "Colorectal cancer"
+    }
+    if "Feces" not in scores or "Lower GI tract" not in scores:
+        return ""
+
+    def part(site: str) -> str:
+        value = scores[site]
+        return f"{site} {value:+.2f} ({'aerobe' if value > 0 else 'anaerobe'}↑)"
+
+    return f"{part('Feces')} vs {part('Lower GI tract')}"
+
+
 def build_plate5(repo: Path, out_dir: Path) -> Path:
+    cellulose = cellulose_decr_notes(REPO_ROOT)
     oxy_rows = read_tsv(
         repo / "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
         "condition_oxygen_switch_scores.tsv"
@@ -2359,8 +2750,7 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
     )
 
     fig.suptitle(
-        "TUFTE PLATE 5 · Anatomical Oxygen-Guild Polarity Inversion & Cross-Disease Genus "
-        "Switchers",
+        "TUFTE PLATE 5 · Oxygen-Switch Scores by Body Site & Cross-Disease Genus Switchers",
         fontsize=15.0,
         fontweight="bold",
         x=0.05,
@@ -2368,26 +2758,27 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
         y=0.96,
         color=INK,
     )
-    fig.text(
-        0.05,
-        0.922,
-        "Lumenal Feces signatures shift toward aerotolerant taxa (aerobe-up / anaerobe-down), "
-        "whereas Oral, Lower-GI Mucosal, and Ocular sites shift toward anaerobes — and major "
-        "genera flip direction across diseases.",
-        fontsize=8.8,
-        color=MUTED,
-    )
-
     # --- Panel A: Anatomical Oxygen-Switch Polarity Inversion ---
     ax_oxy = fig.add_subplot(gs[0, 0])
 
-    pos_strata = [r for r in oxy_rows if float(r["aerobe_up_anaerobe_down_score"]) > 0.20][:10]
-    neg_strata = sorted(
-        [r for r in oxy_rows if float(r["aerobe_up_anaerobe_down_score"]) < -0.15],
-        key=lambda r: float(r["aerobe_up_anaerobe_down_score"]),
-    )[:10]
+    pos_strata, neg_strata = plate5_strata(oxy_rows)
     combined_oxy = pos_strata + neg_strata[::-1]
     combined_oxy.sort(key=lambda r: float(r["aerobe_up_anaerobe_down_score"]))
+
+    fecal = [r for r in combined_oxy if r["body_site_display"] == "Feces"]
+    other = [r for r in combined_oxy if r["body_site_display"] != "Feces"]
+    fecal_up = sum(float(r["aerobe_up_anaerobe_down_score"]) > 0 for r in fecal)
+    other_down = sum(float(r["aerobe_up_anaerobe_down_score"]) < 0 for r in other)
+    fig.text(
+        0.05,
+        0.922,
+        f"Of the {len(combined_oxy)} strata shown, {fecal_up} of {len(fecal)} fecal strata score "
+        f"aerobe-up and {other_down} of {len(other)} others anaerobe-up; major genera switch "
+        "direction across diseases. st. = the larger of the aerobe-only and anaerobe-only study "
+        "counts.",
+        fontsize=8.8,
+        color=MUTED,
+    )
 
     ax_oxy.set_ylim(-0.7, len(combined_oxy) - 0.2)
     ax_oxy.set_xlim(-1.45, 1.50)
@@ -2466,9 +2857,10 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
         fontsize=8.4,
         fontweight="bold",
     )
+    crc = crc_oxygen_split(oxy_rows)
     ax_oxy.set_title(
-        "A. Compartment Polarity Inversion Across 20 High-Support Strata\n★ CRC Splits: Feces "
-        "(+0.68 O₂↑; Cell. 81.1%↓) vs Lower GI (-0.79 anaerobe↑; Cell. OR=7.86, p=0.0014)",
+        f"A. Oxygen-Switch Score: {len(pos_strata)} Top-Ranked Aerobe-Up & {len(neg_strata)} "
+        "Lowest-Scoring Strata" + (f"\n★ CRC: {crc}" if crc else ""),
         fontsize=9.1,
         fontweight="bold",
         loc="left",
@@ -2577,9 +2969,9 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
     fig.text(
         0.05,
         0.025,
-        "Source: Rerun on main (402ef5c) · condition_oxygen_switch_scores.tsv, "
+        f"{RERUN_SOURCE} · condition_oxygen_switch_scores.tsv, "
         "taxa_cross_disease_switch_summary.tsv. Pooled McNemar OR = 1.448 (420 vs 290 st., p = "
-        "1.21e-6); CRC Feces vs Non-Fecal GI Cellulose Fisher OR = 7.86 (p = 0.00142).",
+        f"1.21e-6); {cellulose['crc_source']}",
         fontsize=7.8,
         color=MUTED,
     )
@@ -2842,8 +3234,8 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
     fig.text(
         0.04,
         0.025,
-        "Source: Rerun on main (402ef5c) · taxa_coverage_by_rank.tsv, "
-        "top_zero_trait_bugsigdb_taxa.tsv (just taxa-coverage-histogram). Remapping "
+        f"{RERUN_SOURCE} · taxa_coverage_by_rank.tsv, "
+        "top_zero_trait_bugsigdb_taxa.tsv (create_taxa_coverage_histogram.py). Remapping "
         "NCBITaxon:541000 → 216572 recovers 162 traits across 60 studies; NCBITaxon:508215 → 32207 "
         "recovers 87 traits across 23 studies.",
         fontsize=7.7,
@@ -2860,47 +3252,16 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
 # ==============================================================================
 # PLATE 7: Three-Arm 317-Trait Concordance & Expanded Table 1 Forest Plot
 # ==============================================================================
-def build_plate7(repo: Path, out_dir: Path) -> Path:
-    import re
-
-    arm1_rows = {
-        r["trait"]: r
-        for r in read_tsv(
-            repo / "trait-visualization/trait-profile-investigation/"
-            "trait_profile_paired_contrast_trait_stats_pooled.tsv"
-        )
-    }
-    arm2_rows = {
-        r["trait"]: r
-        for r in read_tsv(repo / "data/derived/trait_enrichment_traits_overall_ranked.tsv")
-    }
-    arm3_screen_rows = {
-        r["trait"]: r
-        for r in read_tsv(repo / "data/derived/trait_screen/trait_direction_screen.tsv")
-    }
-    orient_rows = read_tsv(
-        repo / "data/derived/contrast_orientation/disease_control_comparison.tsv"
-    )
-    orient_t1 = {
-        r["numerator"]: r
-        for r in orient_rows
-        if r.get("comparison") == "fraction"
-        and r.get("population") == "disease_vs_healthy_oriented"
-    }
-    t1_metric_map = {
-        "METPO:1000608": "facultatively_aerobic",
-        "METPO:2000103|GO:0030245": "cellulose_catabolic_process",
-        "METPO:1000668": "coccus_shaped",
-        "METPO:1000683": "sphere_shaped",
-        "METPO:2000103|pathways:arsenate_reduction": "arsenate_reduction",
-        "METPO:1000623": "moderately_halophilic",
-    }
-
-    t1_ids = set(t1_metric_map.keys())
-
-    # Collect the 19 traits passing both Arm 1 Study FDR <= 0.05 AND Arm 3 Study BH FDR <= 0.05
-    # (17 three-arm concordant traits + 2 paired-down / unpaired-ORA-inverted traits: GC low &
-    # Anaerobic)
+def three_arm_traits(
+    arm1_rows: Mapping[str, dict[str, str]],
+    arm2_rows: Mapping[str, dict[str, str]],
+    arm3_screen_rows: Mapping[str, dict[str, str]],
+    t1_ids: set[str],
+) -> list[dict[str, Any]]:
+    """The traits Plate VII draws, and Methods Plate II counts (#640): the Table 1 traits
+    plus every trait passing Arm 1 study BH and Arm 3 BH, with each arm's direction."""
+    # The traits passing both Arm 1 Study FDR <= 0.05 and Arm 3 Study BH FDR <= 0.05, which
+    # include traits whose arms disagree (paired-down / ORA-inverted), plus the Table 1 traits
     selected_traits = []
     for tid, s_row in arm3_screen_rows.items():
         a1 = arm1_rows.get(tid)
@@ -2934,8 +3295,6 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
                 .replace("enzyme activity: ", "Enzyme: ")
                 .replace("process: ", "")
             )
-            if tid == "METPO:1000845":
-                lbl = "Pyrrolidonyl / Acetogenesis"
             a2 = arm2_rows.get(tid) or arm2_rows.get(s_row.get("term_id", ""), {})
             inc_h = int(a2.get("inc_hits", 0)) if a2 else 0
             dec_h = int(a2.get("dec_hits", 0)) if a2 else 0
@@ -2972,6 +3331,57 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
                     "all3_concordant": all3_concordant,
                 }
             )
+
+    return selected_traits
+
+
+def three_arm_counts(selected: Sequence[dict[str, Any]]) -> tuple[int, int]:
+    """Traits passing Arm 1 study BH and Arm 3 BH with all three arms concordant, and how
+    many of those also pass Arm 3 BY."""
+    concordant = [
+        t
+        for t in selected
+        if t["all3_concordant"] and t["a1_st_q"] <= 0.05 and t["a3_bh_q"] <= 0.05
+    ]
+    return len(concordant), sum(t["a3_by_q"] <= 0.05 for t in concordant)
+
+
+def build_plate7(repo: Path, out_dir: Path) -> Path:
+    arm1_rows = {
+        r["trait"]: r
+        for r in read_tsv(
+            repo / "trait-visualization/trait-profile-investigation/"
+            "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+        )
+    }
+    arm2_rows = {
+        r["trait"]: r
+        for r in read_tsv(repo / "data/derived/trait_enrichment_traits_overall_ranked.tsv")
+    }
+    arm3_screen_rows = {
+        r["trait"]: r
+        for r in read_tsv(repo / "data/derived/trait_screen/trait_direction_screen.tsv")
+    }
+    orient_rows = read_tsv(
+        repo / "data/derived/contrast_orientation/disease_control_comparison.tsv"
+    )
+    orient_t1 = {
+        r["numerator"]: r
+        for r in orient_rows
+        if r.get("comparison") == "fraction"
+        and r.get("population") == "disease_vs_healthy_oriented"
+    }
+    t1_metric_map = {
+        "METPO:1000608": "facultatively_aerobic",
+        "METPO:2000103|GO:0030245": "cellulose_catabolic_process",
+        "METPO:1000668": "coccus_shaped",
+        "METPO:1000683": "sphere_shaped",
+        "METPO:2000103|pathways:arsenate_reduction": "arsenate_reduction",
+        "METPO:1000623": "moderately_halophilic",
+    }
+
+    t1_ids = set(t1_metric_map.keys())
+    selected_traits = three_arm_traits(arm1_rows, arm2_rows, arm3_screen_rows, t1_ids)
 
     # Sort: 1) Original 6 Table 1 traits (by share_up desc), 2) Additional 11 3-Arm Concordant
     # traits (by share_up desc), 3) 2 ORA-inverted traits
@@ -3252,7 +3662,7 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
     fig.text(
         0.05,
         0.025,
-        "Source: Rerun on main (402ef5c) · trait_profile_paired_contrast_trait_stats_pooled.tsv, "
+        f"{RERUN_SOURCE} · trait_profile_paired_contrast_trait_stats_pooled.tsv, "
         "trait_enrichment_traits_overall_ranked.tsv, trait_direction_screen.tsv, "
         "disease_control_comparison.tsv.",
         fontsize=7.7,
@@ -3267,7 +3677,10 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
+    # Whole option names only, so the recipe's guards see every option (#617).
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0] if __doc__ else None, allow_abbrev=False
+    )
     parser.add_argument(
         "--input-root",
         type=Path,
@@ -3292,6 +3705,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help=f"Draw from contrast-orientation inputs other than {TYPED_CONTRAST_VERSION} "
         "(review builds only; #579).",
     )
+    parser.add_argument(
+        "--code-commit",
+        default="unrecorded",
+        help="Revision that draws the plates, e.g. $(git rev-parse HEAD) with +dirty when the "
+        "code is modified; the deck links the plate code at it (#613).",
+    )
     args = parser.parse_args(argv)
     repo = args.input_root.resolve()
     provenance = repo / CONTRAST_PROVENANCE
@@ -3309,21 +3728,33 @@ def main(argv: Sequence[str] | None = None) -> int:
     if any(out_dir.glob("*.png")) and not args.overwrite:
         raise SystemExit(f"{out_dir} has plates; back them up and pass --overwrite to replace them")
     out_dir.mkdir(parents=True, exist_ok=True)
+    # A run that fails partway must not leave new plates beside the previous record (#621).
+    (out_dir / "plates_provenance.json").unlink(missing_ok=True)
 
     setup_tufte_rc()
-    paths = [
-        build_methods_plate1(out_dir),
-        build_methods_plate2(out_dir),
-        build_plate1(repo, out_dir),
-        build_plate2(repo, out_dir),
-        build_plate3(repo, out_dir),
-        build_plate4(repo, out_dir),
-        build_plate5(repo, out_dir),
-        build_plate6(repo, out_dir),
-        build_plate7(repo, out_dir),
-    ]
-    for path in paths:
+    builders = (
+        build_methods_plate1,
+        build_methods_plate2,
+        build_plate1,
+        build_plate2,
+        build_plate3,
+        build_plate4,
+        build_plate5,
+        build_plate6,
+        build_plate7,
+    )
+    inputs: dict[str, dict[str, str]] = {}
+    outputs: dict[str, str] = {}
+    PLATE_COUNTS.clear()
+    for build in builders:
+        INPUTS_READ.clear()
+        path = build(repo, out_dir)
+        inputs[path.name] = input_record(repo)
+        for drawn in (path, path.with_suffix(".svg")):
+            outputs[drawn.name] = file_sha256(drawn)
         print(f"Generated: {path} ({path.stat().st_size:,} bytes)")
+    recorded = write_plates_provenance(out_dir, inputs, args.code_commit, outputs, PLATE_COUNTS)
+    print(f"Recorded: {recorded}")
     return 0
 
 

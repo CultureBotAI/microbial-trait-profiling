@@ -22,7 +22,7 @@ import math
 import sys
 import textwrap
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Literal, cast
 
@@ -35,12 +35,16 @@ from matplotlib.colors import to_rgba
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, FancyBboxPatch
+from matplotlib.typing import RcKeyType
 from scipy import stats
 
 from mtp.cellulose_decr.analysis import (
+    ALL_CONTRASTS,
+    ALPHA,
     ANALYSIS_DIR,
     NON_FECAL_GI,
     ORAL,
+    ORIENTED,
     OTHER,
     POOLED_STRATIFIED,
 )
@@ -69,25 +73,24 @@ PNG_DPI = 150
 SIGNIFICANT_FILL = "#ebe4cf"
 
 # SVG text is drawn as paths, so it renders without the font installed, and a
-# fixed hash salt and no date stamps make SVG and PDF bytes repeatable.
-matplotlib.rcParams.update(
-    {
-        "font.family": "DejaVu Sans",
-        "font.size": 9,
-        "axes.edgecolor": MUTED,
-        "axes.labelcolor": INK2,
-        "axes.titlecolor": INK,
-        "axes.spines.top": False,
-        "axes.spines.right": False,
-        "xtick.color": INK2,
-        "ytick.color": INK2,
-        "svg.fonttype": "path",
-        "svg.hashsalt": "cellulose_decr",
-        "pdf.fonttype": 42,
-        "figure.facecolor": "white",
-        "savefig.facecolor": "white",
-    }
-)
+# fixed hash salt and no date stamps make SVG and PDF bytes repeatable. main() applies
+# the style in a context, so importing this module changes no global settings (#631).
+STYLE: dict[RcKeyType, Any] = {
+    "font.family": "DejaVu Sans",
+    "font.size": 9,
+    "axes.edgecolor": MUTED,
+    "axes.labelcolor": INK2,
+    "axes.titlecolor": INK,
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+    "xtick.color": INK2,
+    "ytick.color": INK2,
+    "svg.fonttype": "path",
+    "svg.hashsalt": "cellulose_decr",
+    "pdf.fonttype": 42,
+    "figure.facecolor": "white",
+    "savefig.facecolor": "white",
+}
 
 
 @dataclass(frozen=True)
@@ -104,8 +107,17 @@ class Results:
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
+    # Whole option names only, so the recipe's guards see every option (#617).
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0] if __doc__ else None, allow_abbrev=False
+    )
     parser.add_argument("--analysis-dir", type=Path, default=ANALYSIS_DIR)
+    parser.add_argument(
+        "--code-commit",
+        default="unrecorded",
+        help="Revision that draws the figures, e.g. $(git rev-parse HEAD) with +dirty when the "
+        "code or tables are modified. Decks link the figures' code and tables at it (#556).",
+    )
     return parser.parse_args(argv)
 
 
@@ -212,11 +224,18 @@ DASH = "\N{EN DASH}"
 
 
 def sci(value: float) -> str:
-    """Readable p-value: three decimals above 0.001, a x 10^k form below."""
+    """Readable p-value: two significant digits from 0.001, a x 10^k form below."""
     if value is None or math.isnan(value):
         return "n/a"
+    if value >= 0.1:
+        return f"{value:.2f}"
     if value >= 0.001:
-        return f"{value:.3f}" if value < 0.1 else f"{value:.2f}"
+        # More digits where two would round across 0.05 (#641)
+        for digits in range(2, 8):
+            text = f"{value:#.{digits}g}"
+            if (float(text) < 0.05) == (value < 0.05):
+                return text
+        return repr(value)
     exponent = math.floor(math.log10(value))
     mantissa = round(value / 10**exponent, 1)
     if mantissa >= 10:
@@ -574,15 +593,38 @@ def direct_core_text(results: Results) -> str:
     direct = int(results.summary["core_taxa_with_direct_trait_edge"])
     core = int(results.summary["observed"]["three_way_core"])
     if direct == 0:
-        return f"none of the {core} core taxa has its own edge"
-    return f"{direct} of the {core} core taxa have their own edge"
+        return f"none of the {core} core taxa has its own annotation edge"
+    if direct == core:
+        return f"all {core} core taxa have their own annotation edge"
+    verb = "has its" if direct == 1 else "have their"
+    return f"{direct} of the {core} core taxa {verb} own annotation edge"
+
+
+# Ranks at or below genus form the first group of the core figures; the rest the second.
+LOW_RANKS = ("genus", "species", "subspecies", "strain")
+FAMILY_TO_PHYLUM = {"family", "order", "class", "phylum"}
 
 
 def core_taxa(catalog: pd.DataFrame) -> pd.DataFrame:
     core = catalog[catalog["is_3way_core"].astype(bool)].copy()
     core["total_dec"] = core[[f"{s}_dec_studies" for s in SHORT]].sum(axis=1)
-    core["group"] = np.where(core["taxonomic_rank"].isin(["genus", "species"]), 0, 1)
+    core["group"] = np.where(core["taxonomic_rank"].isin(LOW_RANKS), 0, 1)
     return core.sort_values(["group", "total_dec", "taxon_name"], ascending=[True, False, True])
+
+
+def rank_groups(core: pd.DataFrame) -> tuple[str, str]:
+    """The two rank groups of the core, counted and named by the ranks they hold."""
+    low = set(core.loc[core["group"].eq(0), "taxonomic_rank"])
+    high = set(core.loc[core["group"].eq(1), "taxonomic_rank"])
+    n_low, n_high = int(core["group"].eq(0).sum()), int(core["group"].eq(1).sum())
+    if low <= {"genus"}:
+        low_text = f"{n_low} genera"
+    elif low <= {"genus", "species"}:
+        low_text = f"{n_low} genus- or species-rank taxa"
+    else:
+        low_text = f"{n_low} genus-or-lower-rank taxa"
+    nodes = "family-to-phylum" if high <= FAMILY_TO_PHYLUM else "higher-rank"
+    return low_text, f"{n_high} {nodes} nodes"
 
 
 SENSITIVITY_LABELS = {
@@ -617,8 +659,6 @@ def reversed_examples(core: pd.DataFrame, limit: int = 2) -> str:
 def graphical_core(results: Results) -> Figure:
     catalog = results.catalog
     core = core_taxa(catalog)
-    n_genus = int(core["group"].eq(0).sum())
-    n_higher = int(core["group"].eq(1).sum())
     n_direct = int(core["has_direct_trait_edge"].astype(bool).sum())
     net = core[core["is_strictly_net_decreased_all3"].astype(bool)]
     sens = results.sensitivity
@@ -628,16 +668,20 @@ def graphical_core(results: Results) -> Figure:
     }
     gs_mean = float(mean_rows["3_feces_dec_genus_species"]["jaccard_distance"])
     fig = Figure(figsize=(15, 7.6))
-    direct_text = (
-        "none has its own annotation edge; each inherits it from annotated species or strains"
-        if n_direct == 0
-        else f"{n_direct} have their own annotation edge"
-    )
+    if n_direct == 0:
+        direct_text = (
+            "none has its own annotation edge; each inherits it from annotated descendants"
+        )
+    else:
+        direct_text = (
+            f"{n_direct} {'has its' if n_direct == 1 else 'have their'} own annotation edge"
+        )
+    low_text, high_text = rank_groups(core)
     header(
         fig,
         (
             f"The {len(core)} taxa reported decreased in stool in all three conditions: "
-            f"{n_genus} genera and {n_higher} family-to-phylum nodes"
+            f"{low_text} and {high_text}"
         ),
         (
             f"Of the {len(core)}, {direct_text}. {len(net)} had more decreased than increased "
@@ -1012,12 +1056,20 @@ def trait_display(row: Mapping[str, Any]) -> str:
     return f"{label} ({short_id})"
 
 
+def trait_row(rows: Sequence[dict[str, Any]], trait_id: str) -> dict[str, Any]:
+    """The analysed trait's benchmark row; a missing one is a named error (#639)."""
+    for row in rows:
+        if row["trait_id"] == trait_id:
+            return row
+    raise ValueError(f"trait_convergence_benchmark.tsv has no non-growth-medium row for {trait_id}")
+
+
 def graphical_benchmark(results: Results) -> Figure:
     bench = results.benchmark
     biological = bench[~bench["is_growth_medium"].astype(bool)].reset_index(drop=True)
     rows = records(biological)
     n_traits = len(rows)
-    cell = next(row for row in rows if row["trait_id"] == results.summary["trait_id"])
+    cell = trait_row(rows, results.summary["trait_id"])
     first = rows[0]
     rank = int(cell["rank_excluding_growth_media"])
     fig = Figure(figsize=(15, 6.8))
@@ -1040,6 +1092,8 @@ def graphical_benchmark(results: Results) -> Figure:
     stop = math.ceil(max(values) * 50) / 50
     bins = [round(start + 0.02 * step, 2) for step in range(round((stop - start) / 0.02) + 1)]
     ax.hist(values, bins=bins, color="#c9c8c2", edgecolor="white")
+    # Headroom so the labels at the top clear the tallest bar.
+    ax.set_ylim(0, ax.get_ylim()[1] * 1.15)
     median = float(np.median(values))
     ax.axvline(median, color=INK2, linestyle="--", linewidth=1)
     top_y = ax.get_ylim()[1]
@@ -1688,46 +1742,520 @@ def detailed_core_and_benchmark(results: Results) -> Figure:
     return fig
 
 
+# --------------------------------------------------------------------------- slide captions
+
+
+@dataclass(frozen=True)
+class Caption:
+    """Slide text for one figure, worded from the same tables as the figure (#556).
+
+    Decks quote these instead of copying numbers by hand, so a rerun of the analysis
+    updates the slides with the figures. Each verdict follows the values, including
+    direction, unit and population, so the text stays true after a re-pin (#589).
+    """
+
+    title: str
+    takeaway: str
+    caveat: str
+    evidence: str
+
+
+# How captions name each condition row of the tables.
+CAPTION_NAMES = {**{short: short for short in SHORT}, "Pooled": "all three pooled"}
+
+
+def listing(names: Sequence[str]) -> str:
+    """'A', 'A and B' or 'A, B and C'."""
+    if len(names) < 2:
+        return "".join(names)
+    return f"{', '.join(names[:-1])} and {names[-1]}"
+
+
+def sentence(text: str) -> str:
+    """``text`` with a capital first letter, to start a sentence."""
+    return text[:1].upper() + text[1:]
+
+
+@dataclass(frozen=True)
+class Verdict:
+    """One condition's disease-vs-healthy stool study result across the condition definitions.
+
+    ``kind`` is "every" or "some" when the decreased signature more often has the larger
+    share at p < 0.05 under every definition or only some, "opposite" or "opposite some"
+    for the increased signature, "mixed" when the direction changes with the definition,
+    "none" when no definition reaches p < 0.05, and "no data" without rows.
+    """
+
+    kind: str
+    low: float = math.nan
+    high: float = math.nan
+    readings: int = 0
+    definitions: int = 0
+
+
+# Verdicts that change with the condition definition.
+DEFINITION_DEPENDENT = ("some", "opposite some", "mixed")
+
+
+#: How a p range names its direction where it is not the decreased signature's (#589, #608).
+SPAN_DIRECTION = {
+    "mixed": " in opposite directions",
+    "opposite some": " toward the increased signature",
+}
+
+
+def p_span(verdict: Verdict, before: str, between: str) -> str:
+    """A verdict's p range, naming its direction unless that is the decreased signature's."""
+    direction = SPAN_DIRECTION.get(verdict.kind, "")
+    return f"{before}{sci(verdict.low)}{between}{sci(verdict.high)}{direction}"
+
+
+def direction_verdicts(results: Results) -> dict[str, Verdict]:
+    """The verdict for PD, HIV, CRC and the pooled three (condition_definition_sensitivity)."""
+    table = results.scenarios
+    verdicts = {}
+    for short in CAPTION_NAMES:
+        rows = records(
+            table[
+                table["contrast_population"].eq(ORIENTED)
+                & table["short_condition"].eq(short)
+                & table["unit"].eq("study")
+            ]
+        )
+        if not rows:
+            verdicts[short] = Verdict("no data")
+            continue
+        p_values = [float(row["binom_p_two_sided"]) for row in rows]
+        down = [
+            p < ALPHA and int(r["down"]) > int(r["up"]) for p, r in zip(p_values, rows, strict=True)
+        ]
+        up = [
+            p < ALPHA and int(r["up"]) > int(r["down"]) for p, r in zip(p_values, rows, strict=True)
+        ]
+        if all(down):
+            kind = "every"
+        elif all(up):
+            kind = "opposite"
+        elif any(down) and any(up):
+            kind = "mixed"
+        elif any(down):
+            kind = "some"
+        elif any(up):
+            kind = "opposite some"
+        else:
+            kind = "none"
+        readings = {(int(row["down"]), int(row["up"]), int(row["tied"])) for row in rows}
+        verdicts[short] = Verdict(kind, min(p_values), max(p_values), len(readings), len(rows))
+    return verdicts
+
+
+def fragile_statement(results: Results) -> str:
+    """The conditions whose result depends on the condition definition, or ''."""
+    shown = {
+        short: verdict
+        for short, verdict in direction_verdicts(results).items()
+        if verdict.kind in DEFINITION_DEPENDENT
+    }
+    if not shown:
+        return ""
+    names = {short: "pooled" if short == "Pooled" else short for short in shown}
+    spans = {short: p_span(verdict, "", DASH) for short, verdict in shown.items()}
+    if len(shown) == 1:
+        ranges = "".join(spans.values())
+        noun = "result depends"
+    else:
+        ranges = "; ".join(f"{names[short]} {span}" for short, span in spans.items())
+        noun = "results depend"
+    return (
+        f"the {listing(list(names.values()))} {noun} on the condition definition "
+        f"(study-level p {ranges})"
+    )
+
+
+def overlap_statement(results: Results) -> str:
+    """The three-way overlap against the whole-signature null (U6), from both endpoints.
+
+    U6's mean-distance p is a lower tail (more overlap) and its core p an upper tail (more
+    shared taxa), so p > 1 - alpha on both means less overlap than random.
+    """
+    observed = results.summary["observed"]
+    u6 = results.summary["null_models"]["U6"]
+    mean_p = float(u6["mean_pairwise_jaccard_distance"]["p"])
+    core_p = float(u6["three_way_core"]["p"])
+    shared = (
+        f"{observed['three_way_core']} of {observed['three_way_union']} decreased "
+        "cellulose-annotated stool taxa are shared by PD, HIV and CRC"
+    )
+    if mean_p < ALPHA and core_p < ALPHA:
+        return f"{shared}; they overlap more than random sets of whole stool signatures"
+    if mean_p > 1 - ALPHA and core_p > 1 - ALPHA:
+        return f"{shared}; they overlap less than random sets of whole stool signatures"
+    if ALPHA <= mean_p <= 1 - ALPHA and ALPHA <= core_p <= 1 - ALPHA:
+        return f"{shared}; random sets of whole stool signatures overlap about as much"
+    return (
+        f"{shared}; against random sets of whole stool signatures, mean-distance "
+        f"p = {sci(mean_p)} and core p = {sci(core_p)}"
+    )
+
+
+def crc_compartment_statement(results: Results) -> str:
+    """CRC stool against GI mucosa / lumen, by unit and population.
+
+    The tumour-vs-adjacent-tissue experiment is named only while excluding it changes the
+    disease-vs-healthy study result, as it did on the v2 contrast manifest (#569, #580).
+    """
+    crc = interaction_row(results, ALL_CONTRASTS, "CRC", "experiment")
+    experiments = interaction_row(results, ORIENTED, "CRC", "experiment")
+    studies = interaction_row(results, ORIENTED, "CRC", "study")
+    table = results.scenario_interaction
+    chosen = table[
+        table["scenario"].eq("crc_within_patient_excluded")
+        & table["contrast_population"].eq(ORIENTED)
+        & table["short_condition"].eq("CRC")
+        & table["unit"].eq("study")
+        & table["compartment_b"].eq(NON_FECAL_GI)
+    ]
+    study_p = float(studies["fisher_p_two_sided"])
+    without = ""
+    if len(chosen):
+        without_p = float(only(chosen)["fisher_p_two_sided"])
+        if not math.isclose(without_p, study_p):
+            without = f" ({sci(without_p)} without the tumour-vs-adjacent-tissue experiment)"
+    return (
+        f"CRC stool vs GI mucosa / lumen, all contrasts: {int(crc['a_down'])}↓ "
+        f"{int(crc['a_up'])}↑ vs {int(crc['b_down'])}↓ {int(crc['b_up'])}↑ experiments "
+        f"(odds ratio {float(crc['conditional_or']):.1f}, "
+        f"p = {sci(float(crc['fisher_p_two_sided']))}); disease vs healthy: "
+        f"p = {sci(float(experiments['fisher_p_two_sided']))} by experiment, {sci(study_p)} "
+        f"by study{without}. The sites differ in contrast mix and sampling, so this does not "
+        "show anatomical specificity"
+    )
+
+
+def null_endpoints(results: Results, key: str) -> tuple[str, str]:
+    """A null's p for the mean distance and for the three-way core."""
+    null = results.summary["null_models"][key]
+    return (
+        sci(float(null["mean_pairwise_jaccard_distance"]["p"])),
+        sci(float(null["three_way_core"]["p"])),
+    )
+
+
+def independent_nulls(results: Results) -> str:
+    """'p ≤ x' for the weakest mean-distance p of the independent-draw nulls (U1-U4)."""
+    nulls = results.summary["null_models"]
+    worst = max(
+        float(nulls[key]["mean_pairwise_jaccard_distance"]["p"]) for key in ("U1", "U2", "U3", "U4")
+    )
+    return f"p ≤ {sci(worst)}"
+
+
+def caption_overlap(results: Results) -> Caption:
+    observed = results.summary["observed"]
+    sizes = observed["sizes"]
+    mean, core = null_endpoints(results, "U6")
+    return Caption(
+        title=overlap_statement(results),
+        takeaway=(
+            f"PD {sizes['PD']}, HIV {sizes['HIV']} and CRC {sizes['CRC']} taxa; mean pairwise "
+            f"Jaccard distance {float(observed['mean_pairwise_jaccard_distance']):.3f}. "
+            f"Independent-draw nulls (U1{DASH}U4): {independent_nulls(results)}; whole-signature "
+            f"permutation (U6): p = {mean} (mean), {core} (core)."
+        ),
+        caveat=(
+            "A taxon enters a set once any stool study reports it decreased. Many taxa are "
+            "reported together in the same signatures whatever the condition, which "
+            "independent-draw nulls ignore."
+        ),
+        evidence="pairwise_jaccard_significance.tsv",
+    )
+
+
+def caption_shared_taxa(results: Results) -> Caption:
+    core = core_taxa(results.catalog)
+    n_core = len(core)
+    n_direct = int(core["has_direct_trait_edge"].astype(bool).sum())
+    net = int(core["is_strictly_net_decreased_all3"].astype(bool).sum())
+    low_text, high_text = rank_groups(core)
+    sens = results.sensitivity
+    means = {
+        str(row["definition_slug"]): float(row["jaccard_distance"])
+        for row in records(sens[sens["comparison"].str.startswith("Mean")])
+    }
+    if n_direct == 0:
+        direct = "none annotated directly"
+        inherit = "Each inherits the cellulose annotation from annotated descendants"
+    elif n_direct == n_core:
+        direct = "all annotated directly"
+        inherit = "All carry their own cellulose annotation edge"
+    else:
+        direct = f"{n_direct} annotated directly"
+        inherit = (
+            f"{n_direct} {'carries its' if n_direct == 1 else 'carry their'} own cellulose "
+            "annotation edge and the others inherit it from annotated descendants"
+        )
+    examples = reversed_examples(core)
+    reported_up = (
+        f"Some are reported increased more often in one condition{examples}. " if examples else ""
+    )
+    return Caption(
+        title=f"The {n_core} taxa in all three sets are {low_text} and {high_text}, {direct}",
+        takeaway=(
+            f"{inherit}; {net} of the {n_core} are reported decreased more often than increased "
+            "in all three conditions."
+        ),
+        caveat=(
+            f"{reported_up}Genus and species ranks alone give mean d_J "
+            f"{means['3_feces_dec_genus_species']:.3f}, against "
+            f"{means['1_feces_dec_all_ranks']:.3f} for all ranks."
+        ),
+        evidence="cellulose_decreased_taxa_catalog.tsv",
+    )
+
+
+def caption_direction(results: Results) -> Caption:
+    verdicts = direction_verdicts(results)
+    groups: dict[str, list[str]] = {}
+    for short, verdict in verdicts.items():
+        groups.setdefault(verdict.kind, []).append(CAPTION_NAMES[short])
+    lead = (
+        "Disease-vs-healthy stool studies: the decreased signature more often carries the "
+        "larger cellulose annotation share"
+    )
+    clauses = []
+    if groups.get("every"):
+        clauses.append(f"in {listing(groups['every'])} under every condition definition")
+    if groups.get("some"):
+        clauses.append(f"in {listing(groups['some'])} only under some")
+    title = f"{lead} {'; '.join(clauses)}" if clauses else f"{lead} in no condition at p < 0.05"
+    others = []
+    reversed_clauses = []
+    if groups.get("opposite"):
+        reversed_clauses.append(f"in {listing(groups['opposite'])} under every definition")
+    if groups.get("opposite some"):
+        reversed_clauses.append(f"in {listing(groups['opposite some'])} only under some")
+    if reversed_clauses:
+        others.append(f"the increased signature does {' and '.join(reversed_clauses)}")
+    if groups.get("mixed"):
+        changes = "changes" if len(groups["mixed"]) == 1 else "change"
+        others.append(f"{listing(groups['mixed'])} {changes} direction with the definition")
+    if groups.get("none") and clauses:
+        reaches = "reaches" if len(groups["none"]) == 1 else "reach"
+        others.append(f"{listing(groups['none'])} {reaches} p < 0.05 under no definition")
+    if groups.get("no data"):
+        others.append(f"no data for {listing(groups['no data'])}")
+    if others:
+        title = f"{title}; {'; '.join(others)}"
+
+    healthy = stool_rows(results, ORIENTED)
+    counts = ", ".join(
+        f"{'all three' if short == 'Pooled' else short} {int(healthy[short]['study_down'])} : "
+        f"{int(healthy[short]['study_up'])} : {int(healthy[short]['study_tied'])} "
+        f"(p = {sci(float(healthy[short]['study_binom_p_two_sided']))})"
+        for short in CAPTION_NAMES
+        if short in healthy
+    )
+    ranges = "".join(
+        f"{sentence(CAPTION_NAMES[short])}: {p_span(v, 'p from ', ' to ')} across "
+        f"{v.readings} distinct readings of the {v.definitions} sensitivity scenarios. "
+        for short, v in verdicts.items()
+        if v.kind in DEFINITION_DEPENDENT
+    )
+    return Caption(
+        title=title,
+        takeaway=f"Exact condition labels, down : up : tied studies: {counts}.",
+        caveat=f"{ranges}{crc_compartment_statement(results)}.",
+        evidence="condition_definition_sensitivity.tsv",
+    )
+
+
+def caption_ranking(results: Results) -> Caption:
+    bench = results.benchmark
+    rows = records(bench[~bench["is_growth_medium"].astype(bool)].reset_index(drop=True))
+    cell = trait_row(rows, results.summary["trait_id"])
+    first = rows[0]
+    median = float(np.median([float(row["mean_pairwise_jaccard_distance"]) for row in rows]))
+    leader = (
+        ""
+        if first["trait_id"] == cell["trait_id"]
+        else f"{first['trait_label']} ({first['trait_id']}) "
+        f"{float(first['mean_pairwise_jaccard_distance']):.3f}, "
+    )
+    label = str(cell["trait_label"])
+    return Caption(
+        title=(
+            f"{label[:1].upper()}{label[1:]} ranks {int(cell['rank_excluding_growth_media'])} of "
+            f"{len(rows)} non-growth-medium traits by overlap of stool-decreased taxa across "
+            "PD, HIV and CRC; the ranking describes this corpus and is not a test"
+        ),
+        takeaway=(
+            f"Mean pairwise Jaccard distance: {leader}{label} "
+            f"{float(cell['mean_pairwise_jaccard_distance']):.3f}; median of the {len(rows)} "
+            f"traits {median:.3f}."
+        ),
+        caveat=(
+            "Traits share taxa, so their distances are not independent, and the trait was picked "
+            "from this corpus as an exploratory lead."
+        ),
+        evidence="trait_convergence_benchmark.tsv",
+    )
+
+
+def caption_nulls(results: Results) -> Caption:
+    iterations = int(results.summary["null_models"]["U1"]["iterations"])
+    matched = int(results.summary["null_models"]["U6_size_matched"]["iterations"])
+    u5 = null_endpoints(results, "U5")
+    u6 = null_endpoints(results, "U6")
+    size_matched = null_endpoints(results, "U6_size_matched")
+    return Caption(
+        title="Overlap of stool-decreased cellulose-annotated taxa against six null models",
+        takeaway=(
+            f"Independent-draw nulls (U1{DASH}U4): every mean {independent_nulls(results)}. "
+            f"U5 (prevalence-weighted): {u5[0]} (mean), {u5[1]} (core). U6 (whole signatures): "
+            f"{u6[0]}, {u6[1]}; size-matched: {size_matched[0]}, {size_matched[1]}."
+        ),
+        caveat=(
+            f"U1{DASH}U3 pair p-values are exact hypergeometric tails, the others Monte Carlo "
+            f"with {iterations:,} draws ({matched:,} kept for the size-matched U6); only U6 "
+            "keeps co-reported taxa together."
+        ),
+        evidence="pairwise_jaccard_significance.tsv",
+    )
+
+
+def caption_body_sites(results: Results) -> Caption:
+    def odds(population: str, unit: str) -> str:
+        row = interaction_row(results, population, POOLED_STRATIFIED, unit)
+        return f"{float(row['conditional_or']):.2f} (p = {sci(float(row['fisher_p_two_sided']))})"
+
+    table = results.compartments
+    elsewhere = [
+        (str(row["short_condition"]), str(row["compartment"]), sum(untied(row, "experiment")))
+        for row in records(
+            table[
+                table["contrast_population"].eq(ALL_CONTRASTS)
+                & ~table["compartment"].eq("Feces")
+                & table["short_condition"].isin(SHORT)
+            ]
+        )
+    ]
+    crc_gi = sum(n for short, site, n in elsewhere if (short, site) == ("CRC", NON_FECAL_GI))
+    others = [n for short, site, n in elsewhere if (short, site) != ("CRC", NON_FECAL_GI)]
+    return Caption(
+        title=(
+            "Direction of the cellulose annotation shift by body site, inference unit and "
+            "contrast type"
+        ),
+        takeaway=(
+            "Stool vs GI mucosa / lumen, common odds ratio stratified by condition: all contrasts "
+            f"{odds(ALL_CONTRASTS, 'experiment')} by experiment and "
+            f"{odds(ALL_CONTRASTS, 'study')} by study; disease vs healthy "
+            f"{odds(ORIENTED, 'study')} by study."
+        ),
+        caveat=(
+            "Experiments within a study are not independent. Outside stool, single conditions "
+            f"have at most {max(others, default=0)} untied pairs, except CRC GI mucosa / lumen "
+            f"({crc_gi})."
+        ),
+        evidence="compartment_direction_interaction.tsv",
+    )
+
+
+def caption_shared_by_two(results: Results) -> Caption:
+    observed = results.summary["observed"]
+    bench = results.benchmark
+    n_traits = int((~bench["is_growth_medium"].astype(bool)).sum())
+    direct = direct_core_text(results)
+    return Caption(
+        title=(
+            f"{observed['two_or_more_way']} cellulose-annotated taxa are reported decreased in "
+            f"stool in two or more conditions, {observed['three_way_core']} in all three"
+        ),
+        takeaway=(
+            "Cells give decreased / increased stool studies per condition; flags mark the core, "
+            "direct annotation edges, genus or species rank and net-decreased taxa."
+        ),
+        caveat=(
+            f"{direct[:1].upper()}{direct[1:]}. The right panel ranks {n_traits} "
+            "non-growth-medium traits descriptively; it is not a test."
+        ),
+        evidence="cellulose_decreased_taxa_catalog.tsv",
+    )
+
+
 # --------------------------------------------------------------------------- main
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     results = load(args.analysis_dir)
-    plates: Mapping[str, list[tuple[str, Any]]] = {
+    # The stems describe what each figure shows, not a conclusion (#570).
+    plates: Mapping[
+        str, list[tuple[str, Callable[[Results], Figure], Callable[[Results], Caption]]]
+    ] = {
         "figures_graphical": [
-            ("fig1_surprising_convergence_network_venn", graphical_convergence),
-            ("fig2_genus_species_core_guild", graphical_core),
-            ("fig3_feces_compartment_specificity", graphical_compartments),
-            ("fig4_top_functional_pathway_podium", graphical_benchmark),
+            ("fig1_overlap_and_null_models", graphical_convergence, caption_overlap),
+            ("fig2_shared_taxa_and_set_definitions", graphical_core, caption_shared_taxa),
+            ("fig3_direction_by_body_site", graphical_compartments, caption_direction),
+            ("fig4_trait_overlap_ranking", graphical_benchmark, caption_ranking),
         ],
         "figures": [
-            ("fig1_pairwise_and_3way_jaccard_nulls", detailed_nulls),
-            ("fig2_compartment_specificity_and_sensitivity", detailed_compartments),
-            ("fig3_core_taxa_and_trait_benchmark", detailed_core_and_benchmark),
+            ("fig1_pairwise_and_3way_jaccard_nulls", detailed_nulls, caption_nulls),
+            (
+                "fig2_direction_by_body_site_and_definition",
+                detailed_compartments,
+                caption_body_sites,
+            ),
+            (
+                "fig3_core_taxa_and_trait_benchmark",
+                detailed_core_and_benchmark,
+                caption_shared_by_two,
+            ),
         ],
     }
     combined = {
         "figures_graphical": "cellulose_decr_graphical_figures.pdf",
         "figures": "cellulose_decr_figures.pdf",
     }
+    # A run that fails partway must not leave new figures beside the previous run's captions
+    # and commit, which the deck would then show with them (#639).
+    for name in ("figure_captions.json", "figures_provenance.json"):
+        (args.analysis_dir / "figures" / name).unlink(missing_ok=True)
     outputs: list[str] = []
+    captions: dict[str, dict[str, str]] = {}
     for folder, entries in plates.items():
-        with PdfPages(
-            args.analysis_dir / combined[folder], metadata={"CreationDate": None}
-        ) as book:
-            for stem, draw in entries:
+        with (
+            matplotlib.rc_context(STYLE),
+            PdfPages(args.analysis_dir / combined[folder], metadata={"CreationDate": None}) as book,
+        ):
+            for stem, draw, caption in entries:
                 fig = draw(results)
                 written = save(fig, args.analysis_dir / folder, stem, book)
                 outputs.extend(f"{folder}/{path.name}" for path in written)
+                captions[f"{folder}/{stem}.svg"] = asdict(caption(results))
                 print(f"wrote {', '.join(path.name for path in written)}")
         outputs.append(combined[folder])
+    # Slide text for decks, from the same tables (scripts/build_slide_deck.py; #556).
+    captions_path = args.analysis_dir / "figures" / "figure_captions.json"
+    statements = {
+        "overlap": overlap_statement(results),
+        "crc_compartments": crc_compartment_statement(results),
+        "fragile": fragile_statement(results),
+    }
+    captions_path.write_text(
+        json.dumps({"figures": captions, "statements": statements}, indent=1, ensure_ascii=False)
+        + "\n",
+        encoding="utf-8",
+    )
+    outputs.append("figures/figure_captions.json")
     provenance = {
         "script": "src/mtp/cellulose_decr/figures.py",
         "script_sha256": sha256(Path(__file__).resolve()),
+        "code_commit": args.code_commit,
         "matplotlib": matplotlib.__version__,
         "inputs": {name: sha256(args.analysis_dir / name) for name in FIGURE_INPUTS},
-        "outputs": sorted(outputs),
+        # With hashes, so a deck can check that it shows the figures this run drew (#637)
+        "outputs": {name: sha256(args.analysis_dir / name) for name in sorted(outputs)},
     }
     (args.analysis_dir / "figures" / "figures_provenance.json").write_text(
         json.dumps(provenance, indent=1) + "\n", encoding="utf-8"
