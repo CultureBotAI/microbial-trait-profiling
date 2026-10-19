@@ -478,10 +478,13 @@ least 10 matched pairs. The companion table is
 
 Panel C groups matched pairs by explicit body-site group, excluding `Other` and
 `unknown`, and displays the strongest anatomical contrast-load groups on the
-same simplified body-outline convention used by the v2 guild body-site panels.
+same simplified body-outline convention used by the v2 guild body-site panels,
+with the same anatomical anchors from `src/mtp/body_site_diagram.py`.
 Bubble size is the number of matched pairs, color is the net
 increased-minus-decreased contrast, and labels report the average absolute
-contrast load. The companion table is
+contrast load. Bubbles are sized in the outline's own units, as in the v2
+panels, so they keep the same proportion to the body in this smaller panel and
+do not overlap their neighbors (#620). The companion table is
 `trait_profile_paired_contrast_body_site_summary.tsv`.
 
 Panel D states the interpretation guardrail: Ilyas's enrichment figure ranks
@@ -1044,8 +1047,10 @@ body-site group is excluded from the display. Bubble size and adjacent bar
 length encode profile count. Color encodes `increased_mean_guild_z`, the
 backward-compatible column for the mean aerobe v2 trait-enrichment
 score among increased profiles at that body-site
-group. Labels are positioned on a simplified front-view body outline; `unknown`
-is placed off-body because it is missing metadata, not an anatomical location.
+group. Labels are positioned on a simplified front-view body outline, each
+group at its own anchor from `src/mtp/body_site_diagram.py`, so mouth and oral
+cavity are separate bubbles (#612); `unknown` is placed off-body because it is
+missing metadata, not an anatomical location.
 
 The highest increased-profile mean trait z-scores are oral cavity (0.493; 75
 profiles), saliva (0.390; 374 profiles), mouth (0.294; 80 profiles), uterine
@@ -1857,7 +1862,7 @@ For each selected trait, the script calculated the mean z-score in all increased
 
 Guild-specificity: yes. Color encodes the aerobe v2 trait-enrichment score among increased profiles at each body-site group.
 
-Study profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean aerobe v2 trait z-score among increased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway, oral (including saliva and subgingival/dental), throat/pharynx (neck), colon, caecum, feces/stool, cervix/uterus (pelvis), and vagina/urogenital labels; a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. Unknown body site means the BugSigDB profile did not have a specific body-site label; these profiles are placed off-body, as is `Other` wherever a figure keeps it, and should not be interpreted as a physical anatomical location.
+Study profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean aerobe v2 trait z-score among increased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway/nasopharynx, mouth and oral cavity (side by side, #612), subgingival/dental plaque (jaw), saliva (parotid gland, beside the ear), throat/pharynx (neck), lung/bronchus (chest), stomach (subject's left upper abdomen), small intestine (mid abdomen), colon (subject's left), caecum (subject's right lower abdomen), rectum (low midline), feces/stool, cervix/uterus (pelvis), vagina/urogenital, and skin (forearm) labels (#620); a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. Unknown body site means the BugSigDB profile did not have a specific body-site label; these profiles are placed off-body, as is `Other` wherever a figure keeps it, and should not be interpreted as a physical anatomical location. Bubbles are sized in the outline's own units, so they keep the same proportion to the body in every figure that draws it; leader lines start at each bubble's edge and run above the other bubbles; and the colorbar sits right of the longest value label, so it cannot cover the values (#612).
 
 Oral-site increased-profile trait signals are biologically plausible because the oral cavity is oxygen-exposed and includes aerotolerant, facultatively aerobic, or microaerophilic taxa such as Streptococcus, Fusobacterium, Prevotella, Porphyromonas, and Veillonella. Those oral-site signals should be interpreted as body-site-specific microbial ecology, not as a gut aerobe v2 increased-profile trait-enrichment signal.
 
@@ -1940,13 +1945,13 @@ Profiles were grouped by `body_site_group`, requiring at least 10 total profiles
 
 Guild-specificity: yes. This figure is the increased-profile companion to `anatomical_sites_diagram.png`; color encodes the anaerobe v2 trait-enrichment score among increased profiles at each body-site group.
 
-Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 trait z-score among increased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway, oral (including saliva and subgingival/dental), throat/pharynx (neck), colon, caecum, feces/stool, cervix/uterus (pelvis), and vagina/urogenital labels. `unknown` is placed off the body, as is `Other` wherever a figure keeps it; a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. The diagram legend also reports how many increased and decreased profiles have zero enriched anaerobe v2 traits.
+Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 trait z-score among increased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway/nasopharynx, mouth and oral cavity (side by side, #612), subgingival/dental plaque (jaw), saliva (parotid gland, beside the ear), throat/pharynx (neck), lung/bronchus (chest), stomach (subject's left upper abdomen), small intestine (mid abdomen), colon (subject's left), caecum (subject's right lower abdomen), rectum (low midline), feces/stool, cervix/uterus (pelvis), vagina/urogenital, and skin (forearm) labels (#620). `unknown` is placed off the body, as is `Other` wherever a figure keeps it; a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. Bubbles are sized in the outline's own units, leader lines start at each bubble's edge and run above the other bubbles, and the colorbar sits right of the longest value label (#612). The footer also reports how many increased and decreased profiles have zero enriched anaerobe v2 traits.
 
 #### `anatomical_sites_diagram.png`
 
 Guild-specificity: yes. Color encodes the anaerobe v2 trait-enrichment score among decreased profiles at each body-site group.
 
-Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 trait z-score among decreased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway, oral (including saliva and subgingival/dental), throat/pharynx (neck), colon, caecum, feces/stool, cervix/uterus (pelvis), and vagina/urogenital labels. `unknown` is placed off the body, as is `Other` wherever a figure keeps it; a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. The diagram legend also reports how many increased and decreased profiles have zero enriched anaerobe v2 traits.
+Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 trait z-score among decreased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway/nasopharynx, mouth and oral cavity (side by side, #612), subgingival/dental plaque (jaw), saliva (parotid gland, beside the ear), throat/pharynx (neck), lung/bronchus (chest), stomach (subject's left upper abdomen), small intestine (mid abdomen), colon (subject's left), caecum (subject's right lower abdomen), rectum (low midline), feces/stool, cervix/uterus (pelvis), vagina/urogenital, and skin (forearm) labels (#620). `unknown` is placed off the body, as is `Other` wherever a figure keeps it; a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. Bubbles are sized in the outline's own units, leader lines start at each bubble's edge and run above the other bubbles, and the colorbar sits right of the longest value label (#612). The footer also reports how many increased and decreased profiles have zero enriched anaerobe v2 traits.
 
 #### `condition_body_site_guild_map.png`
 

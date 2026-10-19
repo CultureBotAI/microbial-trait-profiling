@@ -13,7 +13,12 @@ from matplotlib.colors import TwoSlopeNorm
 from matplotlib.patches import Circle, PathPatch
 from matplotlib.path import Path as MplPath
 
-from mtp.body_site_diagram import anatomical_site_base
+from mtp.body_site_diagram import (
+    add_colorbar_beside,
+    anatomical_site_base,
+    bubble_radius,
+    leader_line,
+)
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
     load_retained_profiles,
@@ -1395,26 +1400,27 @@ def save_anatomical_sites_diagram(
         step = 0.70 / (len(plot_sites) - 1)
         label_ys = [0.84 - index * step for index in range(len(plot_sites))]
 
+    label_texts = []
     for label_y, row in zip(label_ys, plot_sites.itertuples(index=False), strict=False):
         count = int(row.profile_count)
         signal = float(getattr(row, signal_column))
         color = cmap(norm(signal))
-        size = 95 + 900 * math.sqrt(count / max_count)
-        ax.scatter(
-            [row.anchor_x],
-            [row.anchor_y],
-            s=size,
-            c=[color],
-            edgecolors="#111827",
-            linewidths=0.8,
-            zorder=4,
+        radius = bubble_radius(count, max_count)
+        ax.add_patch(
+            Circle(
+                (row.anchor_x, row.anchor_y),
+                radius,
+                facecolor=color,
+                edgecolor="#111827",
+                linewidth=0.8,
+                zorder=4,
+            )
         )
         ax.plot(
-            [row.anchor_x, 0.52, 0.57],
-            [row.anchor_y, label_y, label_y],
+            *leader_line((row.anchor_x, row.anchor_y), radius, label_y, 0.52, 0.57),
             color="#6b7280",
             lw=0.9,
-            zorder=2,
+            zorder=5,
         )
         bar_width = 0.30 * count / max_count
         ax.plot(
@@ -1425,29 +1431,34 @@ def save_anatomical_sites_diagram(
             solid_capstyle="round",
             zorder=3,
         )
-        ax.text(
-            0.58,
-            label_y + 0.018,
-            display_body_site(row.body_site_group),
-            ha="left",
-            va="bottom",
-            fontsize=10,
-            fontweight="bold",
+        label_texts.append(
+            ax.text(
+                0.58,
+                label_y + 0.018,
+                display_body_site(row.body_site_group),
+                ha="left",
+                va="bottom",
+                fontsize=10,
+                fontweight="bold",
+            )
         )
-        ax.text(
-            0.58,
-            label_y - 0.018,
-            f"{count:,} profiles; {signal_label} {signal:+.2f}",
-            ha="left",
-            va="top",
-            fontsize=8.5,
-            color="#374151",
+        label_texts.append(
+            ax.text(
+                0.58,
+                label_y - 0.018,
+                f"{count:,} profiles; {signal_label} {signal:+.2f}",
+                ha="left",
+                va="top",
+                fontsize=8.5,
+                color="#374151",
+            )
         )
 
-    ax.text(0.02, 0.965, title, ha="left", va="top", fontsize=17, fontweight="bold")
+    # Title, note and footer sit outside the outline, clear of the head and feet.
+    ax.text(0.02, 1.005, title, ha="left", va="bottom", fontsize=17, fontweight="bold")
     ax.text(
         0.02,
-        0.925,
+        0.995,
         GUILD_SPECIFIC_NOTE,
         ha="left",
         va="top",
@@ -1458,22 +1469,21 @@ def save_anatomical_sites_diagram(
         "Bubble and bar length show profile count; color shows direction-specific trait enrichment."
     )
     if legend_note:
-        footer = f"{footer} {legend_note}"
+        footer = f"{footer}\n{legend_note}"
     ax.text(
         0.02,
-        0.035,
+        0.02,
         footer,
         ha="left",
-        va="bottom",
+        va="top",
         fontsize=8.5,
         color="#374151",
     )
     scalar_mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
     scalar_mappable.set_array([])
-    colorbar = fig.colorbar(scalar_mappable, ax=ax, fraction=0.03, pad=0.02)
-    colorbar.set_label(signal_label)
 
     fig.tight_layout()
+    add_colorbar_beside(fig, ax, scalar_mappable, label_texts, signal_label)
     fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)
 

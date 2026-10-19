@@ -1,9 +1,12 @@
 import importlib.util
+import math
+from itertools import combinations
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.patches import Circle
 
 MODULE_PATH = (
     Path(__file__).resolve().parents[1] / "scripts" / "create_trait_profile_infographic.py"
@@ -293,5 +296,66 @@ def test_plot_top_traits_renders_with_study_level_stats() -> None:
         texts = [t.get_text() for t in ax.texts]
         assert any("[+0.14, +0.28]" in t for t in texts)
         assert any("[-0.22, -0.08]" in t for t in texts)
+    finally:
+        plt.close(fig)
+
+
+def test_body_site_panel_keeps_labels_and_bubbles_apart() -> None:
+    """Panel C at its size in the infographic: nothing overlaps (#612, #620)."""
+    summary = pd.DataFrame(
+        {
+            "body_site_group": [
+                "Throat",
+                "Uterine cervix",
+                "Feces",
+                "Subgingival dental plaque",
+                "Mouth",
+                "Saliva",
+                "Vagina",
+                "Oral cavity",
+                "Nasopharynx",
+            ],
+            "pair_count": [28, 35, 1460, 35, 34, 158, 48, 27, 25],
+            "absolute_contrast_load": [0.65, 0.62, 0.60, 0.58, 0.56, 0.55, 0.48, 0.44, 0.40],
+            "net_increased_minus_decreased": [
+                0.08,
+                0.04,
+                0.02,
+                0.10,
+                -0.13,
+                -0.07,
+                -0.04,
+                -0.18,
+                0.01,
+            ],
+        }
+    )
+    # The bottom-left panel of create_infographic's grid.
+    fig = plt.figure(figsize=(18.5, 12.5), dpi=180)
+    grid = fig.add_gridspec(
+        2, 2, left=0.07, right=0.97, top=0.84, bottom=0.08, hspace=0.42, wspace=0.38
+    )
+    ax = fig.add_subplot(grid[1, 0])
+    try:
+        infographic.plot_body_site_summary(ax, summary)
+        fig.canvas.draw()
+        boxes = [text.get_window_extent() for text in ax.texts]
+        assert len(boxes) == 2 * len(summary) + 1
+        touching_text = [
+            (ax.texts[a].get_text(), ax.texts[b].get_text())
+            for a, b in combinations(range(len(boxes)), 2)
+            if boxes[a].overlaps(boxes[b])
+        ]
+        assert touching_text == []
+        bubbles = [
+            patch for patch in ax.patches if isinstance(patch, Circle) and patch.get_zorder() == 4
+        ]
+        assert len(bubbles) == len(summary)
+        touching_bubbles = [
+            (a.center, b.center)
+            for a, b in combinations(bubbles, 2)
+            if math.dist(a.center, b.center) < a.radius + b.radius
+        ]
+        assert touching_bubbles == []
     finally:
         plt.close(fig)

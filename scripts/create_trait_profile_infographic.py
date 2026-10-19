@@ -16,7 +16,7 @@ from matplotlib.patches import Circle, FancyBboxPatch, PathPatch
 from matplotlib.path import Path as MplPath
 from scipy import stats
 
-from mtp.body_site_diagram import anatomical_site_base
+from mtp.body_site_diagram import anatomical_site_base, bubble_radius, leader_line
 from mtp.composition_denominators import retained_trait_counts, trait_fractions
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -967,31 +967,33 @@ def plot_body_site_summary(ax: plt.Axes, body_site_summary: pd.DataFrame) -> Non
     max_abs_net = max(float(plot_sites["net_increased_minus_decreased"].abs().max()), 0.05)
     norm = TwoSlopeNorm(vmin=-max_abs_net, vcenter=0, vmax=max_abs_net)
     cmap = plt.get_cmap("RdBu")
-    label_ys = np.linspace(0.84, 0.18, len(plot_sites)) if len(plot_sites) > 1 else [0.52]
+    # The panel is a quarter of the page, so the labels use its full height and sit
+    # close to their leader lines to stay apart (#620).
+    label_ys = np.linspace(0.90, 0.10, len(plot_sites)) if len(plot_sites) > 1 else [0.52]
 
     for label_y, row in zip(label_ys, plot_sites.itertuples(index=False), strict=False):
         signal = float(row.net_increased_minus_decreased)
         color = cmap(norm(signal))
-        size = 130 + 950 * math.sqrt(float(row.pair_count) / max_count)
-        ax.scatter(
-            [row.anchor_x],
-            [row.anchor_y],
-            s=size,
-            c=[color],
-            edgecolors=SLATE_900,
-            linewidths=0.8,
-            zorder=4,
+        radius = bubble_radius(float(row.pair_count), max_count)
+        ax.add_patch(
+            Circle(
+                (row.anchor_x, row.anchor_y),
+                radius,
+                facecolor=color,
+                edgecolor=SLATE_900,
+                linewidth=0.8,
+                zorder=4,
+            )
         )
         ax.plot(
-            [row.anchor_x, 0.55, 0.60],
-            [row.anchor_y, label_y, label_y],
+            *leader_line((row.anchor_x, row.anchor_y), radius, label_y, 0.55, 0.60),
             color=SLATE_400,
             lw=0.9,
-            zorder=2,
+            zorder=5,
         )
         ax.text(
             0.61,
-            label_y + 0.018,
+            label_y + 0.008,
             compact_label(row.body_site_group, 28),
             ha="left",
             va="bottom",
@@ -1001,7 +1003,7 @@ def plot_body_site_summary(ax: plt.Axes, body_site_summary: pd.DataFrame) -> Non
         )
         ax.text(
             0.61,
-            label_y - 0.018,
+            label_y - 0.008,
             (
                 f"{int(row.pair_count):,} pairs; load "
                 f"{float(row.absolute_contrast_load):.2f}; net {signal:+.2f}"
@@ -1014,10 +1016,10 @@ def plot_body_site_summary(ax: plt.Axes, body_site_summary: pd.DataFrame) -> Non
 
     ax.text(
         0.02,
-        0.04,
+        0.0,
         "Bubble size = matched pairs; color = net increased-minus-decreased trait contrast.",
         ha="left",
-        va="bottom",
+        va="top",
         fontsize=8.2,
         color=SLATE_500,
     )
