@@ -430,14 +430,23 @@ stay out of git outside `trait-visualization/`.
 
 - **Figures.** `just cellulose-decr-figures` writes four presentation figures to
   `figures_graphical/` and three statistical reference figures to `figures/`, as
-  SVG, PDF and PNG.
+  SVG, PDF and PNG. Their names say what each shows, not a conclusion (#570):
+  `fig1_overlap_and_null_models`, `fig2_shared_taxa_and_set_definitions`,
+  `fig3_direction_by_body_site` and `fig4_trait_overlap_ranking`; and
+  `fig1_pairwise_and_3way_jaccard_nulls`, `fig2_direction_by_body_site_and_definition`
+  and `fig3_core_taxa_and_trait_benchmark`.
 - **Combined PDFs.** It also writes `cellulose_decr_graphical_figures.pdf` and
   `cellulose_decr_figures.pdf`.
+- **Slide captions.** `figures/figure_captions.json` gives each figure a slide
+  title, takeaway, caveat and evidence table, worded from the same tables as the
+  figure, plus two statements other slides quote. The selected-figure deck
+  (`scripts/build_slide_deck.py`) takes its cellulose slides from it, so a rerun
+  updates the slides with the figures (#556).
 
 Reruns on the same tables give identical bytes. The Tufte plates in
 `figures_tufte/` and the `cellulose_decr_slide_deck` files made earlier in this
-directory have no generator. They predate these corrections and are not
-maintained here (#550, #556).
+directory have no generator and predate these corrections. The deck no longer
+uses them (#550, #556).
 
 ## 10. Reproduce
 

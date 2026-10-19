@@ -225,7 +225,9 @@ are not a test; traits share taxa.
 only. The figures are written beside the tables and are gitignored, as
 CONTRIBUTING.md requires for images outside `trait-visualization/` (#560).
 Reruns on the same inputs give identical tables and figures; only the provenance
-timestamp changes. Figure provenance is in `figures/figures_provenance.json`.
+timestamp changes. Figure provenance is in `figures/figures_provenance.json`, and
+`figures/figure_captions.json` holds the slide text for each figure, worded from
+the same tables (#556).
 
 ```bash
 just cellulose-decr

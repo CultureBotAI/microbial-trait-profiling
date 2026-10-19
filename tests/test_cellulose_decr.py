@@ -447,12 +447,41 @@ def test_oriented_population_flips_reversed_experiments(tmp_path: Path) -> None:
 
 
 def test_figures_draw_from_the_committed_tables(tmp_path: Path) -> None:
-    """Every figure renders from the committed tables and is listed in its provenance."""
+    """Every figure renders from the committed tables, with a slide caption (#556).
+
+    The file names describe the figures rather than claims the analysis rejects (#570),
+    and the captions quote the tables.
+    """
     for name in figures.FIGURE_INPUTS:
         shutil.copy(ANALYSIS_DIR / name, tmp_path / name)
     assert figures.main(["--analysis-dir", str(tmp_path)]) == 0
     provenance = json.loads((tmp_path / "figures" / "figures_provenance.json").read_text())
     assert provenance["script"] == "src/mtp/cellulose_decr/figures.py"
-    assert len(provenance["outputs"]) == 7 * 3 + 2
+    assert len(provenance["outputs"]) == 7 * 3 + 2 + 1
     for output in provenance["outputs"]:
         assert (tmp_path / output).stat().st_size > 0
+    for claim in ("surprising", "convergence", "guild", "specificity", "podium"):
+        assert not [output for output in provenance["outputs"] if claim in output], claim
+
+    captions = json.loads((tmp_path / "figures" / "figure_captions.json").read_text())
+    svgs = {output for output in provenance["outputs"] if output.endswith(".svg")}
+    assert set(captions["figures"]) == svgs
+    for caption in captions["figures"].values():
+        assert all(caption[field] for field in ("title", "takeaway", "caveat"))
+        assert (ANALYSIS_DIR / caption["evidence"]).exists()
+
+    summary = json.loads((ANALYSIS_DIR / "cellulose_decr_summary.json").read_text())
+    observed = summary["observed"]
+    overlap = captions["figures"]["figures_graphical/fig1_overlap_and_null_models.svg"]
+    assert overlap["title"].startswith(
+        f"{observed['three_way_core']} of {observed['three_way_union']} "
+    )
+    assert overlap["title"] == captions["statements"]["overlap"]
+    # PD, CRC and the pooled result keep p < 0.05 under every condition definition; HIV
+    # does not (SIGNIFICANT_RESULTS_SUMMARY.md, Table A2).
+    direction = captions["figures"]["figures_graphical/fig3_direction_by_body_site.svg"]
+    assert direction["title"].endswith(
+        "PD, CRC and all three pooled under every condition definition; HIV only under some"
+    )
+    assert "HIV 9↓ 0↑" in direction["takeaway"]
+    assert captions["statements"]["crc_compartments"] in direction["caveat"]
