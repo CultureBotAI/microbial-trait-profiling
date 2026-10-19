@@ -108,8 +108,8 @@ Arm 2's tests and calls (the ORA tables' headers), the oxygen-guild McNemar test
 (`guild_aerobe_anaerobe_correlation.tsv`), the screened sign test's rejection rate
 (`calibration_criteria.tsv`, refused below its replicate budget), Plate V's PD split, Plate
 II's stratum sizes and Plate VII's counts (#680, #683, #704). The fraction sign tests are
-quoted with the studies left after the zero-total exclusion (939, 576 oriented), the
-log-ratios with the population (959, 592).
+quoted with the studies left after the zero-total exclusion, the log-ratios with each
+population's studies, since their eligibility is decided pair by pair.
 
 The slides are stamped with the rerun revision (`COMMIT` in the builder, `RERUN_COMMIT` in
 the plate script, which a test keeps equal) and link their committed files at it. Before

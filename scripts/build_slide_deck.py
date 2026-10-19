@@ -39,7 +39,6 @@ from typing import Any
 import yaml
 from git import Repo
 from git.exc import GitError
-from gitdb.exc import ODBError
 
 from mtp.quoted_results import (
     CALIBRATION_CRITERIA,
@@ -2820,15 +2819,30 @@ def figure_commands(
     kept: list[str] = []
     for command in series:
         valid = valid_command(command, recipes)
+        if not valid or valid in (*upstream, *kept):
+            continue
         # A step the drawing command runs anyway is not repeated before it
-        if (
-            valid
-            and valid not in (*upstream, *kept)
-            and not set(valid.split(" && ")) <= drawing
-            and step_order(valid) <= last
-        ):
-            kept.append(valid)
+        if all(runs_in(part, drawing, by_code) for part in valid.split(" && ")):
+            continue
+        # A recipe later in the pipeline than the drawing one cannot feed the figure; a
+        # script that no drawing recipe runs is kept, at the end (#716)
+        if valid.startswith("just ") and step_order(valid) > last:
+            continue
+        kept.append(valid)
     return [*UPSTREAM_COMMANDS, *sorted(kept, key=step_order), drawn]
+
+
+def runs_in(command: str, drawing: set[str], by_code: Mapping[str, Sequence[str]]) -> bool:
+    """Whether the drawing recipes run ``command``: it is one of them, or the script or
+    module one of them runs."""
+    if command in drawing:
+        return True
+    words = command.split()
+    if words[:3] != ["uv", "run", "python"] or len(words) < 4:
+        return False
+    module = words[3] == "-m" and len(words) > 4
+    path = f"src/{words[4].replace('.', '/')}.py" if module else words[3]
+    return any(f"just {recipe}" in drawing for recipe in by_code.get(path, []))
 
 
 def step_order(command: str) -> int:
@@ -2995,8 +3009,11 @@ COMMITTED_FIGURES: dict[str, Path] = {}
 
 
 def committed_blob(ref: str, rel: str) -> bytes:
-    """A file as commit ``ref`` of this repository holds it."""
+    """A file as commit ``ref`` of this repository holds it. Raises GitError when this
+    clone, or a directory that is not one, lacks the commit, and KeyError when the commit
+    lacks the file."""
     with Repo(str(REPO_ROOT), search_parent_directories=False, expand_vars=False) as repository:
+        repository.git.cat_file("-e", f"{ref}^{{commit}}")
         data: bytes = repository.commit(ref).tree[rel].data_stream.read()
         return data
 
@@ -3008,7 +3025,7 @@ def extract_committed_figures(folder: Path) -> None:
     for rel in sorted(PR173_MAPS):
         try:
             data = committed_blob(ref, rel)
-        except (GitError, ODBError, KeyError, ValueError) as error:
+        except (GitError, KeyError) as error:
             raise SystemExit(
                 f"cannot read {rel} at {name}'s head {ref[:12]} ({error!r}): fetch it with "
                 f"`git fetch origin {ref}`, as `just figure-review-deck` does"
@@ -3486,8 +3503,9 @@ def build_deck(
         raise SystemExit(
             "the deck would quote inconsistent records:\n  "
             + "\n  ".join(gates)
-            + "\nRedraw the plates or re-pin cellulose_decr, or pass --allow-unverified for a "
-            "review build."
+            + "\nRedraw the plates (just figure-review-plates), rerun just contrast-orientation or "
+            "re-pin cellulose_decr (just cellulose-decr), or pass --allow-unverified for a review "
+            "build."
         )
     # PR #173's maps, from its head commit (#704)
     committed = tempfile.TemporaryDirectory(prefix="deck-pr-figures-")

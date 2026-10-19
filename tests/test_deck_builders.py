@@ -11,6 +11,7 @@ from types import ModuleType
 from typing import Any
 
 import pytest
+from git.exc import GitError
 
 from mtp.table1_directions import ALL_STUDIES, CODES, ORIENTED, populations
 from mtp.table1_directions import CELLULOSE as CELLULOSE_TRAIT
@@ -1815,6 +1816,24 @@ def test_committed_blobs_are_read_from_git() -> None:
     ref = deck.UNMERGED_GRAM_SANKEY[1]
     try:
         data = deck.committed_blob(ref, "README.md")
-    except (ValueError, KeyError) as error:
-        pytest.skip(f"this clone lacks {ref[:12]} ({error!r})")
+    except GitError as error:
+        # A git archive export, or a clone that lacks the commit (#716)
+        pytest.skip(f"no {ref[:12]} to read here ({error!r})")
     assert data.startswith(b"#")
+
+
+def test_scripts_no_drawing_recipe_runs_are_kept() -> None:
+    """Only the drawing recipe's own scripts go; another script may be a prerequisite (#716)."""
+    recipes = _recipes()
+    by_code = deck.recipes_by_code(recipes)
+    series = [
+        "uv run python scripts/create_guild_maps.py",
+        "uv run python scripts/missing_but_named.py",
+        "uv run python scripts/create_taxa_guild_heatmap.py",
+    ]
+    commands = deck.figure_commands(series, "scripts/create_guild_maps.py", recipes, by_code)
+    # create_guild_maps.py is what `just guild-maps` runs; the missing script is not valid
+    assert commands[-2:] == [
+        "uv run python scripts/create_taxa_guild_heatmap.py",
+        "just guild-maps",
+    ]
