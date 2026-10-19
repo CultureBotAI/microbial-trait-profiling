@@ -193,6 +193,7 @@ def test_traits_carry_the_lollipop_direction_as_data(monkeypatch: pytest.MonkeyP
     assert by_trait.loc["t1", "trait_direction"] == "decreased"
     assert by_trait.loc["t1", "increased_minus_decreased_mean_z"] == -0.2
     assert by_trait.loc["t1", "overall_direction"] == "inc"
+    assert bool(by_trait.loc["t1", "baseline_opposes_lollipop"])
     assert by_trait.loc["t2", "trait_direction"] == "increased"
     assert cells.groupby("trait_id")["trait_direction"].first().to_dict() == {
         "t1": "decreased",
@@ -205,8 +206,11 @@ def test_column_label_shows_lollipop_direction_and_both_contrasts() -> None:
 
     assert label.startswith("↓ coccus shaped")
     assert "lollipop -0.08" in label
-    assert label.endswith("baseline Δz\n+0.01")
-    assert heatmap.trait_column_label("halo", "increased", 0.49, 0.43).startswith("↑ halo")
+    # The baseline's sign is opposite to the lollipop's, so it carries an asterisk (#696).
+    assert label.endswith("baseline Δz\n+0.01 *")
+    same_sign = heatmap.trait_column_label("halo", "increased", 0.49, 0.43)
+    assert same_sign.startswith("↑ halo")
+    assert same_sign.endswith("baseline Δz\n+0.43")
 
 
 def test_filter_all_low_support_taxa_removes_only_fully_low_support_rows() -> None:
@@ -459,3 +463,13 @@ def test_pd_taxa_reference_table_adds_literature_and_interpretation(tmp_path: Pa
     assert "targeted narrative review" in output
     assert "increased-profile count is greater than decreased-profile count" in output
     assert "[10.1002/mds.28119](https://doi.org/10.1002/mds.28119)" in output
+
+
+@pytest.mark.parametrize(
+    ("lollipop", "baseline", "opposes"),
+    [(-0.08, 0.01, True), (0.49, 0.43, False), (-0.70, -0.69, False), (0.1, 0.0, False)],
+)
+def test_baseline_opposes_lollipop_only_for_opposite_signs(
+    lollipop: float, baseline: float, opposes: bool
+) -> None:
+    assert heatmap.baseline_opposes_lollipop(lollipop, baseline) is opposes

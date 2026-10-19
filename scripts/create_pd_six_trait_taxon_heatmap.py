@@ -1240,6 +1240,9 @@ def build_influence_cells(
                 "overall_ci95_low": low,
                 "overall_ci95_high": high,
                 "overall_direction": "inc" if mean > 0 else "dec" if mean < 0 else "mixed",
+                "baseline_opposes_lollipop": baseline_opposes_lollipop(
+                    float(trait.increased_minus_decreased_mean_z), mean
+                ),
             }
         )
     trait_metadata = pd.DataFrame(overall_records)
@@ -1355,13 +1358,22 @@ def build_influence_cells(
     return cells_table, row_metadata, trait_metadata, removed_low_support_taxa
 
 
+def baseline_opposes_lollipop(lollipop: float, baseline: float) -> bool:
+    """Whether the figure's paired baseline and the lollipop difference have opposite signs."""
+    return lollipop * baseline < 0
+
+
 def trait_column_label(trait: str, direction: str, lollipop: float, baseline: float) -> str:
-    """Column header: lollipop direction arrow, trait, lollipop difference and baseline Δz."""
+    """Column header: lollipop direction arrow, trait, lollipop difference and baseline Δz.
+
+    An asterisk marks a baseline whose sign is opposite to the lollipop's (#696).
+    """
+    marker = " *" if baseline_opposes_lollipop(lollipop, baseline) else ""
     return (
         f"{DIRECTION_ARROWS.get(direction, '·')} "
         + "\n".join(wrap(trait, width=17))
         + f"\nlollipop {lollipop:+.2f}"
-        + f"\nbaseline Δz\n{baseline:+.2f}"
+        + f"\nbaseline Δz\n{baseline:+.2f}{marker}"
     )
 
 
@@ -1608,10 +1620,11 @@ def plot_heatmap(
         "where its mean z is higher in increased profiles, ↓ where it is higher in decreased "
         "profiles; `lollipop` is that mean-z difference. `baseline Δz` is this figure's "
         "full-data, study-weighted paired PD increased-minus-decreased contrast before taxon "
-        "removal. A cell is baseline Δz minus the recomputed Δz after removing "
-        f"the reported {taxon_unit}; positive values support the positive trait contrast and "
-        "negative values support the negative contrast, but they are influence diagnostics, not "
-        f"causal effects. Only values > +{MIN_ABSOLUTE_INFLUENCE_Z:g} or "
+        "removal; an asterisk marks a baseline whose sign is opposite to the lollipop's. A cell "
+        f"is baseline Δz minus the recomputed Δz after removing the reported {taxon_unit}: "
+        "positive values push the paired contrast toward increased profiles and negative values "
+        "toward decreased profiles. They are influence diagnostics, not causal effects. Only "
+        "values > +{MIN_ABSOLUTE_INFLUENCE_Z:g} or "
         f"< -{MIN_ABSOLUTE_INFLUENCE_Z:g} are shown. Black outlines mark direct "
         "organism-to-trait annotations; unoutlined cells are denominator-only effects. Low-support "
         f"cells remain hatched; TSV inc/dec calls require at least {min_support_studies} studies "
@@ -1828,7 +1841,10 @@ def main() -> None:
         "trait and cell tables carry it as `trait_direction`. The lollipop value is an unpaired "
         "difference of profile means, while baseline Δz pairs profiles within experiments and "
         "weights studies equally, so the two can differ in size and, for traits near zero, in "
-        "sign.\n\n"
+        "sign; an asterisk after the baseline Δz marks such a column, and the trait table's "
+        "`baseline_opposes_lollipop` flags it. A positive cell pushes the paired contrast toward "
+        "increased profiles and a negative cell toward decreased profiles, whatever the column's "
+        "arrow.\n\n"
         "Rows are sorted from the most increased-skewed to the most decreased-skewed "
         "BugSigDB PD recurrence using the log2 increased/decreased profile-count ratio; "
         "ties use the signed count difference, total support, and taxon name.\n\n"
