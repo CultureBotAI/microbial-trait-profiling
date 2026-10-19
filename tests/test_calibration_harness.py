@@ -32,9 +32,12 @@ from bsdbng.ora_calibration.harness import (
     NULL_PVALUES_FILENAME,
     SUMMARY_FILENAME,
     run_ora_calibration_benchmark,
+    select_spike_traits,
 )
 from bsdbng.ora_calibration.harness import main as harness_main
-from bsdbng.ora_calibration.scenarios import flip_profile_dataframe
+from bsdbng.ora_calibration.metrics import compute_empirical_fdr, compute_empirical_power
+from bsdbng.ora_calibration.protocol import MethodInferenceResult
+from bsdbng.ora_calibration.scenarios import flip_profile_dataframe, shared_trait_columns
 from bsdbng.paths import DERIVED_DATA_DIR
 from bsdbng.trait_guilds import Profile
 
@@ -193,20 +196,42 @@ def test_study_flip_null_generator_flips_units_and_preserves_counts(
     )
 
 
+@pytest.mark.parametrize("q_threshold", [0.05, 0.001])
 def test_ilyas_ora_adapter_parity_with_production(
-    synthetic_calibration_data: CalibrationData, tmp_path: Path
+    synthetic_calibration_data: CalibrationData, tmp_path: Path, q_threshold: float
 ) -> None:
     """Verify IlyasORAAdapter produces identical enrichment results
     to scripts/trait_enrichment.py across both significant hits and complete test table (#393).
     """
     profiles_df, taxa_df = synthetic_calibration_data
+    # Include the eligibility boundaries in the production comparison: media
+    # annotations, K=0 traits, universal traits, unpaired profiles and N=0 pairs.
+    medium = "METPO:2000510|mediadive.medium:1"
+    taxa_df[medium] = 1
+    taxa_df["EMPTY"] = 0
+    taxa_df["UNIVERSAL"] = 1
+    profiles_df[medium] = 1
+    profiles_df["EMPTY"] = 0
+    profiles_df["UNIVERSAL"] = profiles_df["taxa_count"]
+    extra_rows = pd.DataFrame(
+        {
+            "study_id": ["unpaired", "zero", "zero"],
+            "experiment_id": ["e3", "e4", "e4"],
+            "inc_dec": ["inc", "inc", "dec"],
+            "taxa_count": [0, 0, 0],
+            **{trait: [0, 0, 0] for trait in [*TRAITS, medium, "EMPTY", "UNIVERSAL"]},
+        }
+    )
+    profiles_df = pd.concat([profiles_df, extra_rows], ignore_index=True)
     adapter = IlyasORAAdapter()
     adapter_res = adapter.run_inference(
-        profiles_df, taxa_df, config={"alpha": 0.05, "min_fold": 1.5, "test_type": "enrichment"}
+        profiles_df,
+        taxa_df,
+        config={"alpha": q_threshold, "min_fold": 1.5, "test_type": "enrichment"},
     )
     adapter_sig = adapter_res.results_df[adapter_res.results_df["is_significant"]]
 
-    profiles_path, taxa_path = _write_inputs(tmp_path, synthetic_calibration_data)
+    profiles_path, taxa_path = _write_inputs(tmp_path, (profiles_df, taxa_df))
     rep_txt = tmp_path / "report.txt"
     out_tsv = tmp_path / "out.tsv"
     all_tsv = tmp_path / "all_out.tsv"
@@ -225,7 +250,7 @@ def test_ilyas_ora_adapter_parity_with_production(
             "--all-results-output",
             str(all_tsv),
             "--p-threshold",
-            "0.05",
+            str(q_threshold),
             "--min-fold",
             "1.5",
         ],
@@ -244,6 +269,7 @@ def test_ilyas_ora_adapter_parity_with_production(
 
     prod_all_df = pd.read_csv(all_tsv, sep="\t", comment="#")
     assert len(adapter_res.results_df) == len(prod_all_df)
+    assert len(prod_all_df) == 4 * (len(TRAITS) + 1)
     for _, row in prod_all_df.iterrows():
         pid = f"{row['study_id']}:{row['experiment_id']}:{row['inc_dec']}"
         trait = row["trait"]
@@ -378,13 +404,14 @@ def test_cli_failed_run_removes_stale_results(
     assert _read_summary(out)["status"] == "FAILED"
 
 
+@pytest.mark.parametrize("package", ["mtp", "bsdbng"])
 def test_standard_module_command_executes_benchmark(
-    synthetic_calibration_data: CalibrationData, tmp_path: Path
+    synthetic_calibration_data: CalibrationData, tmp_path: Path, package: str
 ) -> None:
-    """``python -m bsdbng.ora_calibration.harness`` (what ``just calibrate`` runs) must do work."""
+    """The production module entry point and its historical alias must do work."""
     profiles, taxa = _write_inputs(tmp_path, synthetic_calibration_data)
     out = tmp_path / "out"
-    module_cmd = [sys.executable, "-m", "bsdbng.ora_calibration.harness"]
+    module_cmd = [sys.executable, "-m", f"{package}.ora_calibration.harness"]
 
     proc = subprocess.run(
         [*module_cmd, *_cli_args(profiles, taxa, out)],
@@ -393,6 +420,8 @@ def test_standard_module_command_executes_benchmark(
         check=False,
     )
     assert proc.returncode == EXIT_SUCCESS, proc.stderr
+    if package == "mtp":
+        assert "RuntimeWarning" not in proc.stderr
     summary = _read_summary(out)
     assert summary["status"] == "SUCCESS"
     assert summary["completed_replicates"] == 4
@@ -717,3 +746,240 @@ def test_canary_real_matrix_and_ora_profiles(tmp_path: Path) -> None:
     assert summary["status"] == "SUCCESS"
     assert "harness_check_passed" in summary
     assert "is_calibrated" in summary
+
+
+def test_production_family_excludes_media_before_simulation_and_spike_selection(
+    synthetic_calibration_data: CalibrationData,
+) -> None:
+    """Media annotations must not enlarge BH or become default spike targets (#551)."""
+    profiles, taxa = synthetic_calibration_data
+    medium = "METPO:2000510|mediadive.medium:1"
+    profiles[medium] = 3
+    taxa[medium] = 1
+    profiles["EMPTY_TRAIT"] = 0
+    taxa["EMPTY_TRAIT"] = 0
+    profiles["UNIVERSAL_TRAIT"] = profiles["taxa_count"]
+    taxa["UNIVERSAL_TRAIT"] = 1
+
+    assert medium not in shared_trait_columns(profiles, taxa)
+    assert medium in shared_trait_columns(profiles, taxa, include_mediadive=True)
+    assert medium not in select_spike_traits(profiles, taxa, n_spikes=100)
+    assert "UNIVERSAL_TRAIT" not in select_spike_traits(profiles, taxa, n_spikes=100)
+    result = IlyasORAAdapter().run_inference(profiles, taxa)
+    assert result.metadata["n_excluded_mediadive_columns"] == 1
+    assert result.metadata["n_trait_columns"] == len(TRAITS) + 2
+    # Production retains universally annotated traits; only K=0 is ineligible.
+    assert result.metadata["n_testable_traits"] == len(TRAITS) + 1
+    assert result.metadata["n_tests"] == len(profiles) * (len(TRAITS) + 1)
+    assert medium not in set(result.results_df["trait"])
+
+
+def test_power_and_fdr_use_each_replicates_own_truth() -> None:
+    """A signal in a different replicate cannot excuse a false discovery (#551)."""
+    a, b = ("profile", "A"), ("profile", "B")
+    discoveries = [{a, b}, {a}, set()]
+    truths = [{a}, {b}, set()]
+    fdr = compute_empirical_fdr(discoveries, truths)
+    assert fdr.empirical_fdr == 0.5
+    assert fdr.mean_false_discoveries == pytest.approx(2 / 3)
+    power = compute_empirical_power(discoveries, truths)
+    assert power.empirical_tpr == 0.5
+    assert power.replicates == 2
+    assert power.replicates_without_signal == 1
+    assert compute_empirical_power([set()], [set()]).empirical_tpr is None
+
+
+def test_dual_thresholds_reuse_bh_results_and_fold_rule(
+    synthetic_calibration_data: CalibrationData,
+) -> None:
+    """The stringent production operating point has separately traceable FDR/TPR."""
+    profiles, taxa = synthetic_calibration_data
+    report = run_ora_calibration_benchmark(
+        IlyasORAAdapter(),
+        profiles,
+        taxa,
+        spike_traits=["TRAIT_A"],
+        replicates=2,
+        fdr_q=0.01,
+        config={"min_fold": 1.5},
+    )
+    assert report.status == "SUCCESS"
+    assert report.mixed_signal_fdr is not None
+    assert report.mixed_signal_fdr.target_q == 0.01
+    metrics = {m.q_threshold: m for m in report.discovery_thresholds}
+    assert set(metrics) == {0.05, 0.01, 0.001}
+    for q, metric in metrics.items():
+        assert metric.min_fold == 1.5
+        assert metric.mixed_signal_fdr is not None
+        assert metric.mixed_signal_tpr is not None
+        assert metric.complete_null_fdr is not None
+        assert metric.mixed_signal_fdr.target_q == q
+    records = [r for r in report.replicate_records if r.scenario == "mixed"]
+    assert len(records) == 6
+    for replicate_id in (0, 1):
+        replicate = {r.q_threshold: r for r in records if r.replicate_id == replicate_id}
+        assert replicate[0.001].n_discoveries <= replicate[0.05].n_discoveries
+        assert replicate[0.001].n_true_signals == replicate[0.05].n_true_signals
+    summary = report.to_dict()
+    assert "declared-spike" in summary["mixed_signal_limitation"]
+    assert report.inference_family["n_tests"] == len(profiles) * len(TRAITS)
+
+
+def test_mixed_truth_excludes_non_directional_spikes() -> None:
+    """A fixed count at/below expectation is not an enrichment signal (#551)."""
+    taxa = pd.DataFrame({"COMMON": [1] * 9 + [0], "UNIVERSAL": [1] * 10})
+    profiles = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1"],
+            "experiment_id": ["e1", "e1"],
+            "inc_dec": ["inc", "dec"],
+            "taxa_count": [5, 5],
+            "COMMON": [4, 4],
+            "UNIVERSAL": [5, 5],
+        }
+    )
+    _, enrichment_truth = generate_mixed_signal_ora_profiles(
+        profiles, taxa, ["COMMON"], signal_strength=0.6
+    )
+    assert enrichment_truth == set()
+    _, depletion_truth = generate_mixed_signal_ora_profiles(
+        profiles, taxa, ["UNIVERSAL"], test_type="depletion"
+    )
+    assert depletion_truth == set()
+    with pytest.raises(ValueError, match="support the requested"):
+        select_spike_traits(profiles, taxa, signal_strength=0.6)
+
+
+@pytest.mark.parametrize("test_type", ["enrichment", "depletion"])
+def test_mixed_truth_is_fixed_before_taxon_sampling(
+    synthetic_calibration_data: CalibrationData, test_type: str
+) -> None:
+    """Directional truth is fixed by N/K/spike count, independent of realised taxa."""
+    profiles, taxa = synthetic_calibration_data
+    truths = []
+    for seed in (11, 29, 871):
+        _, truth = generate_mixed_signal_ora_profiles(
+            profiles,
+            taxa,
+            ["TRAIT_A"],
+            signal_strength=0.8,
+            test_type=test_type,
+            rng=np.random.default_rng(seed),
+        )
+        truths.append(truth)
+    assert truths[0]
+    assert all(truth == truths[0] for truth in truths)
+
+
+def test_threshold_metrics_apply_q_and_effect_to_controlled_results(
+    synthetic_calibration_data: CalibrationData,
+) -> None:
+    """Exercise a q-only rejection and an effect-only rejection independently (#551)."""
+
+    class ControlledAdapter(IlyasORAAdapter):
+        def run_inference(
+            self,
+            profiles_df: pd.DataFrame,
+            taxa_matrix_df: pd.DataFrame,
+            config: dict[str, Any] | None = None,
+        ) -> MethodInferenceResult:
+            assert not profiles_df.empty
+            assert not taxa_matrix_df.empty
+            assert config is not None
+            assert config["alpha"] == 0.001
+            return MethodInferenceResult(
+                method_id=self.method_id,
+                owner=self.owner,
+                target_null=self.target_null,
+                metadata={"n_tests": 3},
+                results_df=pd.DataFrame(
+                    {
+                        "profile_id": ["s1:e1:inc"] * 3,
+                        "trait": ["TRAIT_A", "TRAIT_B", "TRAIT_C"],
+                        "q_value": [0.0005, 0.01, 0.0001],
+                        "effect_size": [2.0, 2.0, 1.4],
+                    }
+                ),
+            )
+
+    profiles, taxa = synthetic_calibration_data
+    report = run_ora_calibration_benchmark(
+        ControlledAdapter(),
+        profiles,
+        taxa,
+        spike_traits=["TRAIT_A"],
+        scenario="mixed",
+        replicates=1,
+        fdr_q=0.001,
+        signal_strength=1.0,
+    )
+    assert report.status == "SUCCESS"
+    metrics = {m.q_threshold: m for m in report.discovery_thresholds}
+    loose, strict = metrics[0.05], metrics[0.001]
+    assert loose.mixed_signal_fdr is not None
+    assert strict.mixed_signal_fdr is not None
+    assert strict.mixed_signal_tpr is not None
+    assert loose.mixed_signal_fdr.mean_discoveries == 2
+    assert loose.mixed_signal_fdr.empirical_fdr == 0.5
+    assert strict.mixed_signal_fdr.mean_discoveries == 1
+    assert strict.mixed_signal_fdr.empirical_fdr == 0
+    assert strict.mixed_signal_tpr.mean_true_signals == 1
+    assert strict.mixed_signal_tpr.empirical_tpr == 1
+
+
+@pytest.mark.parametrize("bad_count", ["unparsed", -1, 0.5, float("inf")])
+def test_invalid_background_counts_fail_before_binarization(
+    synthetic_calibration_data: CalibrationData, tmp_path: Path, bad_count: str | float
+) -> None:
+    """Null simulation must not turn malformed production counts into annotations."""
+    profiles, taxa = synthetic_calibration_data
+    taxa["TRAIT_A"] = taxa["TRAIT_A"].astype(object)
+    taxa.loc[taxa.index[0], "TRAIT_A"] = bad_count
+    with pytest.raises(ValueError, match="count in column TRAIT_A"):
+        generate_complete_null_ora_profiles(profiles, taxa, np.random.default_rng(42))
+    with pytest.raises(ValueError, match="count in column TRAIT_A"):
+        generate_mixed_signal_ora_profiles(profiles, taxa, ["TRAIT_A"])
+    with pytest.raises(ValueError, match="count in column TRAIT_A"):
+        IlyasORAAdapter().run_inference(profiles, taxa)
+
+    profiles_path, taxa_path = _write_inputs(tmp_path, (profiles, taxa))
+    out = tmp_path / "invalid-count"
+    assert harness_main(_cli_args(profiles_path, taxa_path, out)) == EXIT_FAILURE
+    summary = _read_summary(out)
+    assert summary["status"] == "FAILED"
+    assert "TRAIT_A" in summary["provenance"]["error_message"]
+
+
+def test_failed_replicate_prevents_positive_harness_verdict(
+    synthetic_calibration_data: CalibrationData,
+) -> None:
+    """Successful replicates alone cannot certify a partially failed benchmark."""
+
+    class FailingAdapter(IlyasORAAdapter):
+        calls = 0
+
+        def run_inference(
+            self,
+            profiles_df: pd.DataFrame,
+            taxa_matrix_df: pd.DataFrame,
+            config: dict[str, Any] | None = None,
+        ) -> MethodInferenceResult:
+            self.calls += 1
+            if self.calls == 3:
+                raise ValueError("replicate failed")
+            result = super().run_inference(profiles_df, taxa_matrix_df, config)
+            result.results_df["p_value"] = 1.0
+            result.results_df["q_value"] = 1.0
+            return result
+
+    profiles, taxa = synthetic_calibration_data
+    report = run_ora_calibration_benchmark(
+        FailingAdapter(), profiles, taxa, spike_traits=[], scenario="null", replicates=3
+    )
+    assert report.status == "PARTIAL"
+    assert report.completed_replicates == 2
+    assert report.failed_replicates == 1
+    assert report.complete_null_type_i is not None
+    assert report.complete_null_type_i.is_conservative
+    assert not report.harness_check_passed
+    assert not report.is_calibrated

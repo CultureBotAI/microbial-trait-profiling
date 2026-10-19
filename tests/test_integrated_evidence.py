@@ -1155,6 +1155,7 @@ def test_main_writes_every_artifact_and_its_provenance(tmp_path: Path) -> None:
     assert exit_code == 0
     written = {
         "integrated_evidence.tsv",
+        "integrated_evidence_method_results.tsv",
         "integrated_evidence_features.tsv",
         "integrated_evidence_families.tsv",
         "integrated_evidence_assessments.tsv",

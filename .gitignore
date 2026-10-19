@@ -22,6 +22,21 @@ data/raw/*.csv
 data/studies/*.yaml
 data/derived/*
 !data/derived/.gitkeep
+# Reviewed native evidence and compact calibration artifacts (#551).
+!data/derived/trait_profile_paired_contrast_trait_stats_pooled.tsv
+!data/derived/integrated_evidence/
+data/derived/integrated_evidence/*
+!data/derived/integrated_evidence/integrated_evidence_method_results.tsv
+!data/derived/integrated_evidence/integrated_evidence.md
+!data/derived/integrated_evidence/integrated_evidence_features.tsv
+!data/derived/integrated_evidence/integrated_evidence_families.tsv
+!data/derived/integrated_evidence/integrated_evidence_assessments.tsv
+!data/derived/integrated_evidence/integrated_evidence_provenance.json
+!data/derived/ora_calibration/
+data/derived/ora_calibration/*
+!data/derived/ora_calibration/calibration_summary.json
+!data/derived/ora_calibration/calibration_replicates.tsv
+!data/derived/ora_calibration/calibration_ecdf.tsv
 # Cited summary tables opted in per path (CONTRIBUTING.md, "Generated outputs on main").
 !data/derived/calibration/
 data/derived/calibration/*
