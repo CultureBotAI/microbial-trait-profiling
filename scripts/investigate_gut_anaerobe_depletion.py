@@ -66,7 +66,8 @@ EXCLUDED_CONDITION_SUMMARY_LABELS = {
     "Physical activity",
     "Timepoint",
 }
-MIN_PAIRED_SMD_PROFILE_PAIRS = 3
+# A paired d (and its paired t-test p) from fewer matched profile pairs is reported as NA.
+MIN_PAIRED_SMD_PROFILE_PAIRS = 5
 INFERRED_GUILD_TOP_TRAITS_PER_GROUP = 12
 INFERRED_GUILD_TOP_TAXA_PER_TRAIT = 12
 INFERRED_GUILD_TOP_TAXA_PER_GROUP = 12

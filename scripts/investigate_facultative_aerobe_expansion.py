@@ -70,8 +70,11 @@ EXCLUDED_CONDITION_SUMMARY_LABELS = {
     "Microbiome",
     "Population",
     "Physical activity",
+    "Time",
+    "Timepoint",
 }
-MIN_PAIRED_SMD_PROFILE_PAIRS = 3
+# A paired d (and its paired t-test p) from fewer matched profile pairs is reported as NA.
+MIN_PAIRED_SMD_PROFILE_PAIRS = 5
 INFERRED_GUILD_TOP_TRAITS_PER_GROUP = 12
 INFERRED_GUILD_TOP_TAXA_PER_TRAIT = 12
 INFERRED_GUILD_TOP_TAXA_PER_GROUP = 12
@@ -1686,11 +1689,11 @@ def write_summary_report(
     lines.extend(
         [
             "",
-            "Broad labels such as `Exposure`, `Population`, and labels containing "
-            "`measurement` come from BugSigDB condition metadata but usually describe "
-            "study design, cohort, exposure, or measurement context rather than a "
-            "disease/condition context. They are excluded from displayed condition "
-            "bar charts and condition summaries.",
+            "Broad labels such as `Exposure`, `Population`, `Time`, `Timepoint`, and labels "
+            "containing `measurement` come from BugSigDB condition metadata but usually "
+            "describe study design, cohort, sampling time, exposure, or measurement context "
+            "rather than a disease/condition context. They are excluded from displayed "
+            "condition bar charts and condition summaries.",
             "",
             "Oral-site increased-profile trait signals are expected in this analysis because "
             "the oral cavity is oxygen-exposed and several focal taxa are common oral "
