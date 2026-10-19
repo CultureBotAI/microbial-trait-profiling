@@ -20,8 +20,12 @@ same corpus, so every p-value here is nominal. Section 4 adds adjusted values.
 
 ## What changed on 2026-10-17 (#552)
 
-The October 16 version of this directory had no generator. Given the same labels,
-the rebuilt analysis reproduces it exactly. It then makes these corrections:
+The October 16 version of this directory had no generator. Given the same labels
+(`--label-source study_modal`), the rebuilt analysis reproduces its sets, exact
+tests, catalog counts and feces direction statistics. Other outputs differ: U5
+was redefined (#567), U4's Monte Carlo p-values moved slightly (HIV–CRC 0.00149
+to 0.00185), the oral and other-site compartment rows changed, and two pairs of
+benchmark ranks swap. The rebuilt analysis then makes these corrections:
 
 - **Labels.** Each profile now takes the condition and body site of its own
   experiment. The October 16 run used one modal label per study, which put
@@ -125,11 +129,14 @@ as extreme.
 | U5: U3 taxa weighted by reporting in other feces studies | 0.585 (0.501–0.665) | 0.0097 | 13.7 (10–17) | 0.076 |
 | **U6: whole study signatures** | **0.527 (0.420–0.636)** | **0.19** | **18.3 (12–24)** | **0.73** |
 | U6, draws with matching set sizes (5,284) | 0.513 (0.420–0.606) | 0.24 | 16.9 (13–21) | 0.58 |
+| Within-condition reference: random subsets of each condition's own decreased feces taxa, any trait | 0.972 (0.945–0.994) | ≤ 1e-5 | 0.16 (0–1) | ≤ 1e-5 |
 
 The nulls show three things:
 
 - **Independent draws (U1–U4).** These nulls treat taxa as independent, and they make the overlap look
-  extreme.
+  extreme. So does the within-condition reference, which is not one of the six
+  nulls: it draws each set from its own condition's decreased feces taxa,
+  whatever their traits.
 - **Weighted by reporting (U5).** Weighting the 108 taxa that can appear in a set
   by how often other feces studies report them decreased leaves a weaker signal.
   The mean distance gives p = 0.0097 and the 3-way core p = 0.076. An earlier U5
@@ -412,7 +419,7 @@ an annotated taxon: `n_studies_a` in
 | --- | --- |
 | [`cellulose_decr_summary.json`](cellulose_decr_summary.json) | Every result, definition, universe, null summary, label inventory and label-source comparison |
 | [`cellulose_decr_provenance.json`](cellulose_decr_provenance.json) | Input hashes, contrast-classifier version, code commit, seeds, package versions |
-| [`pairwise_jaccard_significance.tsv`](pairwise_jaccard_significance.tsv) | Pairwise, mean and 3-way overlap under U1–U6; `endpoint` separates the mean distance from the 3-way core |
+| [`pairwise_jaccard_significance.tsv`](pairwise_jaccard_significance.tsv) | Pairwise, mean and 3-way overlap under U1–U6 and the within-condition reference (`within_cond_random_subset_*`); `endpoint` separates the mean distance from the 3-way core |
 | [`sensitivity_definitions_jaccard.tsv`](sensitivity_definitions_jaccard.tsv) | Overlap under eleven set definitions |
 | [`compartment_jaccard_and_direction_stats.tsv`](compartment_jaccard_and_direction_stats.tsv) | Direction tests by contrast population, compartment and condition, at experiment and study level (mean and majority vote), with power notes |
 | [`compartment_direction_interaction.tsv`](compartment_direction_interaction.tsv) | Fisher tests of direction by compartment, crude and stratified by condition |
@@ -455,7 +462,7 @@ just cellulose-decr                # tables, summary and provenance
 just cellulose-decr-figures        # figures (gitignored)
 ```
 
-The run takes about 40 seconds. The Monte Carlo nulls use fixed seeds, so reruns
+The run takes about a minute. The Monte Carlo nulls use fixed seeds, so reruns
 on the same inputs give identical tables; only the provenance timestamp changes.
 
 **Inputs.** Nine of the ten inputs are gitignored. They are built by:
@@ -465,9 +472,10 @@ on the same inputs give identical tables; only the provenance timestamp changes.
   (KG-Microbe);
 - `just contrast-orientation` (contrast manifest).
 
-**Drift check.** The run stops in three cases:
+**Drift check.** The run stops in four cases:
 - an input's hash differs from the `pinned_inputs` of
   [`cellulose_decr_provenance.json`](cellulose_decr_provenance.json);
+- there is no pinned provenance to compare with;
 - the contrast manifest came from another classifier version;
 - an input changed while the run was reading it.
 
@@ -479,7 +487,9 @@ The options:
 - `--repin` adopts the current inputs as the new pins, for example after a
   BugSigDB release.
 
-**Older outputs.** To reproduce the October 16 tables, write to another
-directory so the committed ones are not overwritten:
-`just cellulose-decr --label-source study_modal --output-dir /tmp/oct16`.
-To count the synonym labels throughout, use `--condition-labels synonyms`.
+**Other labels.** Write these runs to another directory, so the committed
+tables are not overwritten:
+- the October 16 labels (what they reproduce is listed under "What changed"):
+  `just cellulose-decr --label-source study_modal --output-dir <elsewhere>`;
+- synonym labels throughout:
+  `just cellulose-decr --condition-labels synonyms --output-dir <elsewhere>`.

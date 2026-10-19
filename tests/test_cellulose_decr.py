@@ -5,10 +5,10 @@ from __future__ import annotations
 import itertools
 import json
 import math
-import shutil
-from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -17,9 +17,9 @@ from scipy import stats
 from scipy.stats import false_discovery_control
 from scipy.stats.contingency import odds_ratio
 
-from mtp.cellulose_decr import figures
+import mtp.cellulose_decr.analysis as analysis_module
 from mtp.cellulose_decr.analysis import (
-    ANALYSIS_DIR,
+    ALL_CONTRASTS,
     FECES,
     INPUTS,
     NON_FECAL_GI,
@@ -29,13 +29,19 @@ from mtp.cellulose_decr.analysis import (
     SHORT,
     STRONG,
     TRAIT_ID,
+    Corpus,
     NullDraws,
     benjamini_hochberg,
+    binomial_power,
     check_input_drift,
     choose,
+    clean,
     compartment_of,
     direct_trait_subjects,
+    direction_row,
     hypergeom_pair,
+    interaction_interpretation,
+    interaction_table,
     label_corrections,
     load_corpus,
     merge_synonyms,
@@ -43,11 +49,18 @@ from mtp.cellulose_decr.analysis import (
     net_decreased,
     paired_deltas,
     population,
+    scenario_corpora,
+    set_summary,
+    shared_trait_null,
     sign_tests,
     signature_null,
     stratified_exact,
+    strictly_net_decreased,
     study_votes,
+    subset_null,
     three_way_exact,
+    u5_weights,
+    u6_units,
 )
 from mtp.contrast_orientation import CLASSIFIER_VERSION
 
@@ -82,7 +95,10 @@ def test_three_way_exact_matches_enumeration(k: int) -> None:
         for c in itertools.combinations(range(7), 2)
     ]
     expected = sum(core >= k for core in cores) / len(cores)
-    assert three_way_exact(7, (3, 4, 2), k)["p_3way_exact"] == pytest.approx(expected)
+    result = three_way_exact(7, (3, 4, 2), k)
+    assert result["p_3way_exact"] == pytest.approx(expected)
+    # The expected core is the enumeration's mean (#632)
+    assert result["expected_3way_intersection"] == pytest.approx(sum(cores) / len(cores))
 
 
 # --------------------------------------------------------------------------- Monte Carlo
@@ -148,6 +164,43 @@ def test_signature_null_draws_studies_and_units_at_random() -> None:
     sizes = np.concatenate(draws.sizes["PD"])
     shares = np.bincount(sizes - 2, minlength=n_units) / sizes.size
     assert shares == pytest.approx(np.full(n_units, 1 / n_units), abs=0.02)
+
+
+def test_u4_and_within_draws_stay_inside_each_condition() -> None:
+    """U4 puts one random trait on each condition's own decreased taxa, and the within
+    reference draws each set from its own condition's taxa (#632)."""
+    width = 9
+    base = {
+        short: np.isin(np.arange(width), np.arange(3 * index, 3 * index + 3))
+        for index, short in enumerate(SHORT)
+    }
+    shared = shared_trait_null(np.random.default_rng(5), base, 4, 300)
+    within = subset_null(np.random.default_rng(6), base, dict.fromkeys(SHORT, 2), 300)
+    # The three conditions share no taxa, so neither null can give them one.
+    for draws in (shared, within):
+        for name, values in draws.pair_intersection.items():
+            assert (np.concatenate(values) == 0).all(), name
+    # The trait's 4 taxa are split among the three sets.
+    totals = np.vstack([np.concatenate(shared.sizes[short]) for short in SHORT]).sum(axis=0)
+    assert (totals == 4).all()
+    for short in SHORT:
+        assert (np.concatenate(within.sizes[short]) == 2).all()
+
+
+def test_u5_weights_count_other_studies_plus_a_half() -> None:
+    """A U3 taxon weighs the studies outside the three conditions that report it decreased
+    in feces, plus 0.5, so a taxon only the three conditions report can be drawn (#632)."""
+    rows = [
+        ("bsdb:1", "Asthma", "dec", "a"),
+        ("bsdb:2", "Asthma", "dec", "a"),
+        ("bsdb:2", "Asthma", "dec", "a"),
+        ("bsdb:3", "Parkinson's disease", "dec", "b"),
+        ("bsdb:4", "Asthma", "inc", "b"),
+        ("bsdb:5", "Asthma", "dec", "c"),
+    ]
+    feces_taxa = pd.DataFrame(rows, columns=["study_id", "condition", "dir", "taxon_id"])
+    # c is not annotated, and d is never reported decreased, so U3 is a and b.
+    assert list(u5_weights(feces_taxa, {"a", "b", "d"})) == [2.5, 0.5]
 
 
 def test_size_matched_draws_keep_sizes_within_tolerance() -> None:
@@ -575,200 +628,156 @@ def test_net_decreased_needs_more_decreased_than_increased() -> None:
     assert net_decreased(taxa, {"t1", "t2"}, "study_id")["PD"] == {"t2"}
 
 
-# --------------------------------------------------------------------------- figures
+# --------------------------------------------------------------------------- review gaps
 
 
-def test_figures_draw_from_the_committed_tables(tmp_path: Path) -> None:
-    """Every figure renders from the committed tables, with a slide caption (#556).
+def test_stratified_exact_ignores_uninformative_strata_beside_informative_ones() -> None:
+    """An uninformative stratum's cell must not join the observed total (#632)."""
+    informative = [[2, 1], [1, 2]]
+    alone = stratified_exact([informative])
+    mixed = stratified_exact([informative, [[1, 0], [0, 0]]])
+    for key in ("p", "conditional_or", "mantel_haenszel_or"):
+        assert mixed[key] == pytest.approx(alone[key])
 
-    The file names describe the figures rather than claims the analysis rejects (#570),
-    and the captions quote the tables.
-    """
-    for name in figures.FIGURE_INPUTS:
-        shutil.copy(ANALYSIS_DIR / name, tmp_path / name)
-    commit = "0123456789" * 4
-    assert figures.main(["--analysis-dir", str(tmp_path), "--code-commit", commit]) == 0
-    provenance = json.loads((tmp_path / "figures" / "figures_provenance.json").read_text())
-    assert provenance["script"] == "src/mtp/cellulose_decr/figures.py"
-    # Decks link the figures' code and tables at this commit (#556).
-    assert provenance["code_commit"] == commit
-    assert len(provenance["outputs"]) == 7 * 3 + 2 + 1
-    for output in provenance["outputs"]:
-        assert (tmp_path / output).stat().st_size > 0
-    for claim in ("surprising", "convergence", "guild", "specificity", "podium"):
-        assert not [output for output in provenance["outputs"] if claim in output], claim
 
-    captions = json.loads((tmp_path / "figures" / "figure_captions.json").read_text())
-    svgs = {output for output in provenance["outputs"] if output.endswith(".svg")}
-    assert set(captions["figures"]) == svgs
-    for caption in captions["figures"].values():
-        assert all(caption[field] for field in ("title", "takeaway", "caveat"))
-        assert (ANALYSIS_DIR / caption["evidence"]).exists()
+def test_net_decreased_flags_need_more_decreased_than_increased_everywhere() -> None:
+    row = {f"{short}_{direction}_studies": 3 for short in SHORT for direction in ("dec", "inc")}
+    assert not strictly_net_decreased(row, "studies")
+    row.update({f"{short}_dec_studies": 4 for short in SHORT})
+    assert strictly_net_decreased(row, "studies")
 
-    summary = json.loads((ANALYSIS_DIR / "cellulose_decr_summary.json").read_text())
-    observed = summary["observed"]
-    overlap = captions["figures"]["figures_graphical/fig1_overlap_and_null_models.svg"]
-    assert overlap["title"].startswith(
-        f"{observed['three_way_core']} of {observed['three_way_union']} "
+
+def test_u6_units_number_the_studies_in_order() -> None:
+    """signature_null relies on each study's units being contiguous (#632)."""
+    studies = ["bsdb:9", "bsdb:1", "bsdb:5", "bsdb:1"]
+    conditions = [
+        "Parkinson's disease",
+        "HIV infection",
+        "Colorectal cancer",
+        "Parkinson's disease",
+    ]
+    profiles = pd.DataFrame(
+        {"study_id": studies, "condition": conditions, "compartment": FECES, "dir": "dec"}
     )
-    assert overlap["title"] == captions["statements"]["overlap"]
-    # PD, CRC and the pooled result keep p < 0.05 under every condition definition; HIV
-    # does not (SIGNIFICANT_RESULTS_SUMMARY.md, Table A2).
-    direction = captions["figures"]["figures_graphical/fig3_direction_by_body_site.svg"]
-    assert direction["title"].endswith(
-        "in PD, CRC and all three pooled under every condition definition; in HIV only under some"
+    taxa = profiles.assign(taxon_id="t1")
+    _units, unit_study, _counts, frame = u6_units(profiles, taxa, {"t1"})
+    assert list(frame["study_id"]) == sorted(frame["study_id"])
+    assert list(unit_study) == sorted(unit_study)
+    with pytest.raises(ValueError, match="sorted"):
+        signature_null(
+            np.random.default_rng(0),
+            np.ones((3, 1), dtype=bool),
+            np.array([1, 0, 1], dtype=np.int64),
+            dict.fromkeys(SHORT, 0),
+            1,
+        )
+
+
+def test_the_art_scenario_counts_synonyms(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Both synonym scenarios start from the merged corpus (#632)."""
+    monkeypatch.setattr(analysis_module, "with_synonyms", lambda _corpus: "merged")
+    monkeypatch.setattr(
+        analysis_module, "reclassified", lambda corpus, ids, *_args: (corpus, tuple(ids))
     )
-    assert "HIV 9 : 0 : 2" in direction["takeaway"]
-    assert captions["statements"]["fragile"].startswith("the HIV result depends")
-    assert captions["statements"]["crc_compartments"] in direction["caveat"]
+    monkeypatch.setattr(analysis_module, "without_studies", lambda corpus, _ids: corpus)
+    corpus = cast(Corpus, SimpleNamespace(condition_labels="exact"))
+    scenarios = {slug: scenario for slug, _label, scenario in scenario_corpora(corpus)}
+    assert cast(tuple[Any, ...], scenarios["synonyms_hiv_minus_vs_plus_and_art"])[0] == "merged"
+    assert cast(tuple[Any, ...], scenarios["synonyms_and_hiv_minus_vs_plus"])[0] == "merged"
+    assert cast(tuple[Any, ...], scenarios["hiv_minus_vs_plus_counted"])[0] is corpus
 
 
-# --------------------------------------------------------------------------- captions
+def test_direction_tests_ask_whether_decreased_signatures_carry_more() -> None:
+    """One-sided tests point at the decreased side, and the minimum p is two-sided (#632)."""
+    rows = []
+    for index in range(8):
+        study, experiment = f"bsdb:{index}", f"bsdb:{index}-1"
+        rows.append((study, experiment, "dec", 0.5 + index / 100, 1.0))
+        rows.append((study, experiment, "inc", 0.1, -1.0))
+    profiles = pd.DataFrame(rows, columns=["study_id", "experiment_id", "dir", "frac", "z"])
+    taxa = pd.DataFrame({"dir": ["dec"], "taxon_id": ["t1"]})
+    row = direction_row(profiles, taxa, {"t1"}, share=0.6)
+    assert row["paired_exp_down_dec_gt_inc"] == 8
+    assert row["mwu_p_dec_gt_inc_one_sided"] < 0.01
+    assert row["wilcoxon_p_down_one_sided"] < 0.01
+    assert row["min_attainable_binom_p_two_sided"] == pytest.approx(2 * 0.5**8)
 
 
-@pytest.fixture(scope="module")
-def results() -> figures.Results:
-    return figures.load(ANALYSIS_DIR)
+def test_binomial_power_uses_the_two_sided_rejection_region() -> None:
+    expected = stats.binom.cdf(1, 10, 0.1) + stats.binom.sf(8, 10, 0.1)
+    assert binomial_power(10, 0.1) == pytest.approx(expected)
 
 
-def _with_scenarios(
-    results: figures.Results, edit: Callable[[pd.DataFrame], None]
-) -> figures.Results:
-    table = results.scenarios.copy()
-    edit(table)
-    return replace(results, scenarios=table)
+def test_mean_pairwise_distance_is_a_mean() -> None:
+    sets = {"PD": {"a"}, "HIV": {"a", "b"}, "CRC": {"a", "b", "c", "d"}}
+    distances = [1 - 1 / 2, 1 - 1 / 4, 1 - 2 / 4]
+    assert set_summary(sets)["mean_pairwise_jaccard_distance"] == pytest.approx(sum(distances) / 3)
 
 
-def _healthy_studies(table: pd.DataFrame, short: str) -> pd.Series:
-    return (
-        table["contrast_population"].eq(ORIENTED)
-        & table["short_condition"].eq(short)
-        & table["unit"].eq("study")
-    )
+def test_interaction_wording_follows_p_unit_and_population() -> None:
+    """A row that is not significant, or not all contrasts, is not described as one (#631)."""
+    significant = {
+        "fisher_p_two_sided": 0.001,
+        "conditional_or_ci95_low": 2.9,
+        "conditional_or_ci95_high": 81.0,
+        "unit": "experiment",
+        "contrast_population": ALL_CONTRASTS,
+    }
+    text = interaction_interpretation(significant)
+    assert text.startswith("Direction differs between stool and GI mucosa/lumen samples")
+    assert "experiments of one study are treated as independent" in text
+    assert "do not compare patients with controls" in text
+    healthy = {
+        "fisher_p_two_sided": 0.13,
+        "conditional_or_ci95_low": 0.61,
+        "conditional_or_ci95_high": 65.5,
+        "unit": "study",
+        "contrast_population": ORIENTED,
+    }
+    text = interaction_interpretation(healthy)
+    assert text.startswith("No difference in direction")
+    assert "independent" not in text
+    assert "do not compare patients with controls" not in text
+    assert text.endswith("not a test of anatomical specificity.")
+    # The exact test and its interval can disagree near p = 0.05.
+    borderline = {**healthy, "fisher_p_two_sided": 0.03, "conditional_or_ci95_low": 0.93}
+    assert "the 95% interval of the odds ratio includes 1" in interaction_interpretation(borderline)
+    untestable = {**healthy, "fisher_p_two_sided": math.nan}
+    assert interaction_interpretation(untestable).startswith("Not testable")
 
 
-def test_direction_caption_follows_the_direction_not_only_p(results: figures.Results) -> None:
-    """A condition significant the other way is named as such, not as a decrease (#589)."""
-
-    def swap_crc(table: pd.DataFrame) -> None:
-        rows = _healthy_studies(table, "CRC")
-        table.loc[rows, ["down", "up"]] = table.loc[rows, ["up", "down"]].to_numpy()
-
-    title = figures.caption_direction(_with_scenarios(results, swap_crc)).title
-    assert "the increased signature does in CRC under every definition" in title
-    assert "in PD and all three pooled under every condition definition" in title
-
-    def crc_up_under_one(table: pd.DataFrame) -> None:
-        swap_crc(table)
-        rows = table.index[_healthy_studies(table, "CRC")]
-        table.loc[rows[1:], "binom_p_two_sided"] = 0.5
-
-    edited = _with_scenarios(results, crc_up_under_one)
-    assert "the increased signature does in CRC only under some" in (
-        figures.caption_direction(edited).title
-    )
-    assert "CRC: p from " in figures.caption_direction(edited).caveat
-    fragile = figures.fragile_statement(edited)
-    assert fragile.startswith("the HIV and CRC results depend")
-    # Quoted beside decreased-direction claims, it must say which way CRC goes (#608).
-    assert fragile.endswith(" toward the increased signature)")
+def test_interaction_tables_put_feces_first(tmp_path: Path) -> None:
+    """Row a of each Feces-versus-other table counts the Feces experiments (#632)."""
+    corpus = load_corpus(_input_root(tmp_path), "experiment")
+    profiles = corpus.profiles.copy()
+    # CRC: the feces experiment goes down, both colon experiments go up.
+    fractions = {"bsdb:2-1": (0.6, 0.2), "bsdb:2-2": (0.6, 0.2), "bsdb:2-3": (0.2, 0.6)}
+    for experiment, (inc, dec) in fractions.items():
+        profiles.loc[f"bsdb:2|{experiment}|inc", "frac"] = inc
+        profiles.loc[f"bsdb:2|{experiment}|dec", "frac"] = dec
+    table = interaction_table(replace(corpus, profiles=profiles))
+    row = table[
+        table["contrast_population"].eq(ALL_CONTRASTS)
+        & table["short_condition"].eq("CRC")
+        & table["unit"].eq("experiment")
+        & table["compartment_b"].eq(NON_FECAL_GI)
+    ].iloc[0]
+    assert (row["a_down"], row["a_up"], row["b_down"], row["b_up"]) == (1, 0, 0, 2)
 
 
-def test_mixed_direction_is_named_not_only_its_p_range(results: figures.Results) -> None:
-    """Small p-values in opposite directions are not a robust result (#589)."""
-
-    def flip_one_hiv(table: pd.DataFrame) -> None:
-        rows = table.index[_healthy_studies(table, "HIV") & table["binom_p_two_sided"].lt(0.05)]
-        down, up = table.loc[rows[0], ["down", "up"]]
-        table.loc[rows[0], ["down", "up"]] = [up, down]
-
-    edited = _with_scenarios(results, flip_one_hiv)
-    assert figures.direction_verdicts(edited)["HIV"].kind == "mixed"
-    caption = figures.caption_direction(edited)
-    assert "HIV changes direction with the definition" in caption.title
-    assert "HIV: p from " in caption.caveat
-    assert " in opposite directions across " in caption.caveat
-    assert figures.fragile_statement(edited).endswith(" in opposite directions)")
+def test_infinite_values_are_not_written_as_missing() -> None:
+    """+inf and NaN were both written as null (#631)."""
+    values = {"a": math.inf, "b": -math.inf, "c": math.nan, "d": 1.23456789}
+    assert clean(values) == {"a": "inf", "b": "-inf", "c": None, "d": 1.23457}
 
 
-def test_fragile_pooled_result_starts_its_sentence_and_is_named(
-    results: figures.Results,
-) -> None:
-    def pooled_under_one(table: pd.DataFrame) -> None:
-        rows = table.index[_healthy_studies(table, "Pooled")]
-        table.loc[rows[1:], "binom_p_two_sided"] = 0.5
-
-    edited = _with_scenarios(results, pooled_under_one)
-    assert "All three pooled: p from " in figures.caption_direction(edited).caveat
-    statement = figures.fragile_statement(edited)
-    assert statement.startswith("the HIV and pooled results depend on the condition definition")
-    assert "(study-level p HIV " in statement
-    assert "; pooled " in statement
-
-
-def test_direction_caption_without_significance_or_data(results: figures.Results) -> None:
-    def no_significance(table: pd.DataFrame) -> None:
-        table["binom_p_two_sided"] = 0.5
-
-    title = figures.caption_direction(_with_scenarios(results, no_significance)).title
-    assert title.endswith("in no condition at p < 0.05")
-    assert " not " not in title
-
-    def no_hiv(table: pd.DataFrame) -> None:
-        table.drop(table.index[_healthy_studies(table, "HIV")], inplace=True)
-
-    title = figures.caption_direction(_with_scenarios(results, no_hiv)).title
-    assert title.endswith("; no data for HIV")
-    assert figures.fragile_statement(_with_scenarios(results, no_hiv)) == ""
-
-
-@pytest.mark.parametrize(
-    ("mean_p", "core_p", "ending"),
-    [
-        (0.19, 0.73, "random sets of whole stool signatures overlap about as much"),
-        (0.01, 0.02, "they overlap more than random sets of whole stool signatures"),
-        (0.99, 0.98, "they overlap less than random sets of whole stool signatures"),
-        (0.04, 0.73, "mean-distance p = 0.040 and core p = 0.73"),
-    ],
-)
-def test_overlap_statement_reads_both_u6_endpoints(
-    results: figures.Results, mean_p: float, core_p: float, ending: str
-) -> None:
-    summary = json.loads(json.dumps(results.summary))
-    summary["null_models"]["U6"]["mean_pairwise_jaccard_distance"]["p"] = mean_p
-    summary["null_models"]["U6"]["three_way_core"]["p"] = core_p
-    assert figures.overlap_statement(replace(results, summary=summary)).endswith(ending)
-
-
-def test_shared_taxa_caption_counts_direct_edges(results: figures.Results) -> None:
-    catalog = results.catalog.copy()
-    core = catalog.index[catalog["is_3way_core"].astype(bool)]
-    catalog.loc[core[0], "has_direct_trait_edge"] = True
-    summary = {**results.summary, "core_taxa_with_direct_trait_edge": 1}
-    edited = replace(results, catalog=catalog, summary=summary)
-    caption = figures.caption_shared_taxa(edited)
-    assert caption.title.endswith(", 1 annotated directly")
-    assert caption.takeaway.startswith("1 carries its own cellulose annotation edge")
-    assert figures.direct_core_text(edited).startswith("1 of the 17 core taxa has its own")
-
-
-def test_crc_statement_names_the_excluded_experiment_only_when_it_matters(
-    results: figures.Results,
-) -> None:
-    assert "without the tumour-vs-adjacent-tissue experiment" in (
-        figures.crc_compartment_statement(results)
-    )
-    table = results.scenario_interaction.copy()
-    primary = figures.interaction_row(results, ORIENTED, "CRC", "study")
-    excluded = table["scenario"].eq("crc_within_patient_excluded")
-    table.loc[excluded, "fisher_p_two_sided"] = primary["fisher_p_two_sided"]
-    statement = figures.crc_compartment_statement(replace(results, scenario_interaction=table))
-    assert "without" not in statement
-    assert "does not show anatomical specificity" in statement
-
-
-def test_p_values_keep_two_significant_digits() -> None:
-    assert figures.sci(0.0097) == "0.0097"
-    assert figures.sci(0.0596) == "0.060"
-    assert figures.sci(0.19) == "0.19"
-    assert figures.sci(1.2e-5) == "1.2" + figures.TIMES + "10⁻⁵"
+def test_synonym_mode_merges_labels_when_loading(tmp_path: Path) -> None:
+    """--condition-labels synonyms counts a synonym under its disease (#632)."""
+    paths = _input_root(tmp_path)
+    experiments = pd.read_csv(paths["experiments"], sep="\t")
+    experiments["condition"] = experiments["condition"].replace("HIV infection", "HIV-1 infection")
+    experiments.to_csv(paths["experiments"], sep="\t", index=False)
+    exact = load_corpus(paths, "experiment").profiles
+    assert exact.loc["bsdb:1|bsdb:1-3|dec", "condition"] == "HIV-1 infection"
+    merged = load_corpus(paths, "experiment", "synonyms").profiles
+    assert merged.loc["bsdb:1|bsdb:1-3|dec", "condition"] == "HIV infection"

@@ -35,6 +35,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, FancyBboxPatch
+from matplotlib.typing import RcKeyType
 from scipy import stats
 
 from mtp.cellulose_decr.analysis import (
@@ -72,25 +73,24 @@ PNG_DPI = 150
 SIGNIFICANT_FILL = "#ebe4cf"
 
 # SVG text is drawn as paths, so it renders without the font installed, and a
-# fixed hash salt and no date stamps make SVG and PDF bytes repeatable.
-matplotlib.rcParams.update(
-    {
-        "font.family": "DejaVu Sans",
-        "font.size": 9,
-        "axes.edgecolor": MUTED,
-        "axes.labelcolor": INK2,
-        "axes.titlecolor": INK,
-        "axes.spines.top": False,
-        "axes.spines.right": False,
-        "xtick.color": INK2,
-        "ytick.color": INK2,
-        "svg.fonttype": "path",
-        "svg.hashsalt": "cellulose_decr",
-        "pdf.fonttype": 42,
-        "figure.facecolor": "white",
-        "savefig.facecolor": "white",
-    }
-)
+# fixed hash salt and no date stamps make SVG and PDF bytes repeatable. main() applies
+# the style in a context, so importing this module changes no global settings (#631).
+STYLE: dict[RcKeyType, Any] = {
+    "font.family": "DejaVu Sans",
+    "font.size": 9,
+    "axes.edgecolor": MUTED,
+    "axes.labelcolor": INK2,
+    "axes.titlecolor": INK,
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+    "xtick.color": INK2,
+    "ytick.color": INK2,
+    "svg.fonttype": "path",
+    "svg.hashsalt": "cellulose_decr",
+    "pdf.fonttype": 42,
+    "figure.facecolor": "white",
+    "savefig.facecolor": "white",
+}
 
 
 @dataclass(frozen=True)
@@ -2207,9 +2207,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     outputs: list[str] = []
     captions: dict[str, dict[str, str]] = {}
     for folder, entries in plates.items():
-        with PdfPages(
-            args.analysis_dir / combined[folder], metadata={"CreationDate": None}
-        ) as book:
+        with (
+            matplotlib.rc_context(STYLE),
+            PdfPages(args.analysis_dir / combined[folder], metadata={"CreationDate": None}) as book,
+        ):
             for stem, draw, caption in entries:
                 fig = draw(results)
                 written = save(fig, args.analysis_dir / folder, stem, book)

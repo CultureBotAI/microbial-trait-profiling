@@ -78,7 +78,8 @@ protocol in [`table1_log_ratio_sensitivity_protocol.json`](table1_log_ratio_sens
 analysis covers feces-decreased taxa annotated with cellulose catabolic process
 in Parkinson's disease, HIV infection and colorectal cancer:
 
-- their overlap across the three conditions, tested against six null models;
+- their overlap across the three conditions, tested against six null models
+  (U1–U6) and compared with a within-condition reference;
 - the direction of the cellulose annotation shift at experiment and study level,
   under exact and synonym condition labels.
 

@@ -21,7 +21,7 @@ physiology (see [`biological_interpretation.md`](biological_interpretation.md)).
 
 | Input | Use |
 | --- | --- |
-| `trait-visualization/study_trait_profile_study_metadata.tsv` | Defines the 5,829 retained human profiles (one per study, experiment and direction) and their non-MediaDive annotation totals. Its condition and body-site columns are **not** used by default (see below). |
+| `trait-visualization/study_trait_profile_study_metadata.tsv` | Defines the 5,829 retained human profiles (one per study, experiment and direction) and their non-MediaDive annotation totals. Its condition and body-site columns are **not** used (see below). |
 | `data/derived/experiments.tsv` | Condition, body site and host of each experiment. It matches `data/raw/full_dump.csv` for all 4,435 experiments. |
 | `data/derived/study_trait_profiles_wide.tsv` | Annotation counts per profile, used for the cellulose annotation share. |
 | `data/derived/bugsigdb_taxa.tsv` | Taxa reported in each signature. |
@@ -58,15 +58,19 @@ Two options change this:
 
 See #562 and #571.
 
-**Condition and body site come from each experiment's own record.** The profile
-metadata table holds one modal condition and body site per *study*
-(`scripts/create_study_trait_profile_heatmap.py`, `load_raw_study_metadata`;
-#555). So 1,112 of its 5,829 profiles carry a label that belongs to another
-experiment of the same study. The October 16 outputs used those labels.
-Switching the analysis to `experiments.tsv` changed 61 experiments in the three
-conditions, among them saliva and nasal experiments that had been counted as PD
-feces. `label_source_corrections.tsv` lists them, and `--label-source study_modal`
-reproduces the October 16 numbers.
+**Condition and body site come from each experiment's own record**
+(`experiments.tsv`). The October 16 outputs took them from the profile metadata
+table, which then held one modal condition and body site per *study* (#555), so
+1,112 of its 5,829 profiles carried a label that belongs to another experiment of
+the same study. Switching to `experiments.tsv` changed 61 experiments in the
+three conditions, among them saliva and nasal experiments that had been counted
+as PD feces; `label_source_corrections.tsv` lists them.
+
+`--label-source study_modal` recomputes the study-modal labels from
+`full_dump.csv` (#594), whatever the metadata table now holds. It reproduces the
+October 16 sets, exact tests, catalog counts and feces direction statistics. U5
+(#567), U4's Monte Carlo p-values, the oral and other-site compartment rows and
+two pairs of benchmark ranks differ.
 
 **Condition labels.** A condition matches only its exact BugSigDB label
 (primary). Other single labels for the same disease are listed in
@@ -163,6 +167,13 @@ ways:
 | U5 | Draws from U3, the taxa an observed set can contain, weighted by the number of other feces decreased studies reporting the taxon plus 0.5 | set sizes, reporting prevalence |
 | U6 | Whole study signatures: 49, 19 and 31 distinct feces-decreased studies drawn from all 646, each giving one of its condition-level signatures | number of studies, taxa reported together |
 | U6 size-matched | U6 draws whose three set sizes are each within max(2, 10%) of the observed | as U6, plus set sizes |
+| Within-condition reference | Random subsets of each condition's own decreased feces taxa (any trait), of the observed set sizes | each condition's decreased feces taxa, set sizes |
+
+The within-condition reference is not one of the six nulls. It shows how little
+three sets of the observed sizes would overlap if each were drawn from its own
+condition's decreased feces taxa, whatever their traits. It is written to the
+`within_cond_random_subset_*` columns of `pairwise_jaccard_significance.tsv` and
+to `null_models.within` in the summary JSON.
 
 **Exact tests.** U1 to U3 have exact hypergeometric tails for each pair and an
 exact convolution for the 3-way core.
@@ -205,7 +216,7 @@ are not a test; traits share taxa.
 | --- | --- |
 | `cellulose_decr_summary.json` | Every result, definition, universe, null summary, label inventory and label-source comparison |
 | `cellulose_decr_provenance.json` | Input hashes and pins, classifier version, code commit, seeds, package versions |
-| `pairwise_jaccard_significance.tsv` | Pairwise, mean and 3-way overlap under U1–U6 |
+| `pairwise_jaccard_significance.tsv` | Pairwise, mean and 3-way overlap under U1–U6 and the within-condition reference |
 | `sensitivity_definitions_jaccard.tsv` | Overlap under eleven set definitions |
 | `compartment_jaccard_and_direction_stats.tsv` | Direction tests by population, compartment and condition, at experiment and study level |
 | `compartment_direction_interaction.tsv` | Fisher tests of direction by compartment, crude and stratified |
@@ -247,10 +258,12 @@ the analysis scripts or the repository's code paths (`src`, `scripts`,
 - Contrast manifest: `just contrast-orientation`.
 
 From a worktree, `--input-root <checkout>` points the analysis at a checkout
-holding those inputs. To reproduce the October 16 tables, pass
-`--label-source study_modal --output-dir <elsewhere>`; without `--output-dir` it
-would overwrite the committed tables. The scripts live beside their outputs for
-now; moving them into `src/mtp` with tests is #557.
+holding those inputs. For the October 16 labels, pass
+`--label-source study_modal --output-dir <elsewhere>`, and for synonym labels
+throughout, `--condition-labels synonyms --output-dir <elsewhere>`. Without
+`--output-dir` either run would overwrite the committed tables. The code is the
+`mtp.cellulose_decr` package (`src/mtp/cellulose_decr/`, #557), tested in
+`tests/test_cellulose_decr.py` and `tests/test_cellulose_decr_figures.py`.
 
 ## Limits
 
