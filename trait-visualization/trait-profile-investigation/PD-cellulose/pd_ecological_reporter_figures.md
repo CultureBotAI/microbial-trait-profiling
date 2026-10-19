@@ -36,9 +36,16 @@ trait annotations, not a validated diagnostic score or a patient-level measureme
 
 ![Combined figure](pd_ecological_reporter_combined.png)
 
+The combined figure and every number in this section come from
+`pd_ecological_reporter_combined_*.tsv`. Those tables still give every experiment its study's
+majority condition label, come from an earlier run of the trait z-scores, and are not yet
+regenerated (#585). The evidence landscape below uses each profile's own experiment labels, so
+its PD values (47 paired studies) differ from the ones here (45).
+
 ### Panel A: disease fingerprints
 
-Rows are the 13 fecal condition labels that have at least three paired studies and a descriptive
+Rows are the 13 fecal condition labels (study-majority labels, pending #585) that have at least
+three paired studies and a descriptive
 95% study-level t interval excluding zero for at least one of the six individual traits. Neither
 the three-trait score nor the ecological-reporter composite can qualify a condition. Columns are
 the six shared traits plus the ecological-reporter composite. Each cell is the mean of paired
@@ -90,7 +97,7 @@ decreased BugSigDB study support, with red favoring increased and blue favoring 
 means no local annotation for that taxon-trait cell. Taxonomic ranks are kept separate and are not
 summed.
 
-For PD, the study-weighted cellulose increased-minus-decreased contrast is `-0.651` across `45` paired studies. The exploratory reporter composite is `+1.150`. The composite equals the mean contrasts for moderately halophilic, facultatively aerobic, and arsenate reduction minus the cellulose contrast; it is not a validated diagnostic score.
+For PD, the study-weighted cellulose increased-minus-decreased contrast in these tables is `-0.651` across `45` paired studies, and the exploratory reporter composite is `+1.150` (study-majority labels, pending #585). With per-experiment labels, the condition screen below gives `-0.677` across `47` paired studies. The composite equals the mean contrasts for moderately halophilic, facultatively aerobic, and arsenate reduction minus the cellulose contrast; it is not a validated diagnostic score.
 
 [Condition selection](pd_ecological_reporter_combined_condition_selection.tsv) | [Condition/trait audit table](pd_ecological_reporter_combined_condition_trait_summary.tsv) | [Study contrasts](pd_ecological_reporter_combined_study_contrasts.tsv) | [Taxon-panel cells](pd_ecological_reporter_combined_taxon_panel.tsv) | [Vector figure](pd_ecological_reporter_combined.svg)
 
