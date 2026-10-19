@@ -360,16 +360,31 @@ def write_log_ratio_outputs(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    from mtp.workflow.consumers import (
+        bind_count_arguments,
+        core_corpus_identity,
+        write_consumer_record,
+    )
+
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--profile-input", type=Path, default=DEFAULT_PROFILE_PATH)
-    parser.add_argument("--experiments-input", type=Path, default=DEFAULT_EXPERIMENTS_PATH)
-    parser.add_argument("--full-dump-input", type=Path, default=DEFAULT_FULL_DUMP_PATH)
+    parser.add_argument("--core-run", type=Path, help="Verified core workflow run manifest")
+    parser.add_argument("--profile-input", type=Path)
+    parser.add_argument("--experiments-input", type=Path)
+    parser.add_argument("--full-dump-input", type=Path)
     parser.add_argument("--output-dir", type=Path, default=DERIVED_DATA_DIR / "table1_composition")
     parser.add_argument("--body-site", help="Exact source label; no display cuts or Other pooling")
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
+    bundle = bind_count_arguments(args)
+    args.profile_input = args.profile_input or DEFAULT_PROFILE_PATH
+    args.experiments_input = args.experiments_input or DEFAULT_EXPERIMENTS_PATH
+    args.full_dump_input = args.full_dump_input or DEFAULT_FULL_DUMP_PATH
     vintage = read_bugsigdb_vintage(args.full_dump_input)
-    identity = corpus_identity(args.profile_input, bugsigdb_vintage=vintage)
+    identity = (
+        core_corpus_identity(bundle, bugsigdb_vintage=vintage)
+        if bundle is not None
+        else corpus_identity(args.profile_input, bugsigdb_vintage=vintage)
+    )
     print("\n".join(summary_lines(identity)))
     profiles, stats = load_profiles(
         args.profile_input, args.experiments_input, TABLE1_TRAITS, reject_missing_counts=True
@@ -389,6 +404,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         code_commit=args.code_commit,
         identity=identity,
     )
+    if bundle is not None:
+        paths.append(
+            write_consumer_record(
+                bundle,
+                args.output_dir / "core_consumption.json",
+                consumer="mtp.trait_composition",
+                outputs=paths,
+            )
+        )
     for path in paths:
         print(path)
     return 0

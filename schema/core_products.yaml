@@ -1,0 +1,549 @@
+id: https://w3id.org/mtp/core-products
+name: mtp_core_products
+title: Core microbial trait product contracts
+description: Scientific payload identities and coverage accounting for core pipeline products. Canonical
+  study and KG assertion types are reused from mtp.
+license: MIT
+version: 1.0.0
+default_prefix: mtpc
+default_range: string
+prefixes:
+  linkml: https://w3id.org/linkml/
+  mtpc: https://w3id.org/mtp/core-products/
+imports:
+  - linkml:types
+  - mtp
+classes:
+  FeatureCount:
+    description: One nonnegative count attached to a catalog feature identity.
+    attributes:
+      feature_id:
+        range: FeatureDefinition
+        required: true
+        description: Reference to the feature catalog column identifier.
+        title: Feature id
+      count:
+        range: integer
+        minimum_value: 0
+        required: true
+        description: Nonnegative count in the profile's explicitly declared unit.
+        title: Count
+    title: Feature Count
+  CountProfileRow:
+    description: Logical row of the raw count profile before presentation filtering or pairing.
+    attributes:
+      study_id:
+        required: true
+        title: Study id
+        description: Study component of the unique profile key.
+      experiment_id:
+        required: true
+        title: Experiment id
+        description: Experiment component of the unique profile key.
+      inc_dec:
+        required: true
+        pattern: ^(inc|dec)$
+        title: Inc dec
+        description: Reported increased or decreased direction component of the profile key.
+      feature_counts:
+        range: FeatureCount
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        description: Nonzero counts normalized after validating every wide TSV cell; omitted features are verified zeros.
+        title: Feature counts
+      trait_filter_id:
+        required: true
+        pattern: '^sha256:[0-9a-f]{64}$'
+        title: Trait filter id
+        description: Hash of the complete ordered feature vocabulary including verified zero coordinates.
+      unit:
+        required: true
+        ifabsent: string(rolled_up_source_taxon_count)
+        pattern: ^rolled_up_source_taxon_count$
+        description: Counts retain descendant rollup and occurrence multiplicity.
+        title: Unit
+    title: Count Profile Row
+  ORAProfileRow:
+    description: Logical ORA row with explicit distinct matched taxon denominator.
+    attributes:
+      study_id:
+        required: true
+        title: Study id
+        description: Study component of the unique profile key.
+      experiment_id:
+        required: true
+        title: Experiment id
+        description: Experiment component of the unique profile key.
+      inc_dec:
+        required: true
+        pattern: ^(inc|dec)$
+        title: Inc dec
+        description: Reported increased or decreased direction component of the profile key.
+      sample_size:
+        range: integer
+        minimum_value: 0
+        required: true
+        description: Number of distinct reported taxa matched to the lookup.
+        title: Sample size
+      feature_counts:
+        range: FeatureCount
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        description: Nonzero presence counts across distinct matched reported taxa; omitted features are verified zeros.
+        title: Feature counts
+      trait_filter_id:
+        required: true
+        pattern: '^sha256:[0-9a-f]{64}$'
+        title: Trait filter id
+        description: Hash of the complete ordered feature vocabulary including verified zero coordinates.
+      unit:
+        required: true
+        ifabsent: string(distinct_matched_reported_taxon_count)
+        pattern: ^distinct_matched_reported_taxon_count$
+        description: Counts distinct matched reported taxa without descendant multiplicity.
+        title: Unit
+    title: ORAProfile Row
+  SourceFileIdentity:
+    description: Actual consumed source bytes with an explicit product binding.
+    attributes:
+      product_id:
+        identifier: true
+        required: true
+        title: Product id
+        description: Reference to the embedded product contract.
+      path:
+        required: true
+        description: Resolved source path actually consumed.
+        title: Path
+      sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Sha256
+        description: Lowercase SHA-256 of file bytes or the canonical collection inventory.
+      size_bytes:
+        range: integer
+        minimum_value: 0
+        required: true
+        title: Size bytes
+        description: Total number of regular-file bytes represented by this record.
+    title: Source File Identity
+  VerifiedRelease:
+    description: Release identity assigned only after checking the pinned source bytes.
+    attributes:
+      version:
+        required: true
+        title: Version
+        description: Version of the declared workflow contract.
+      doi:
+        required: true
+        description: Verified release DOI.
+        title: Doi
+      commit:
+        required: true
+        description: Verified upstream release commit.
+        title: Commit
+      url:
+        required: true
+        description: Verified source release URL.
+        title: Url
+    title: Verified Release
+  SourceIdentity:
+    description: Source classification with verified byte identities and explicit uncertainty.
+    attributes:
+      recorded_at_utc:
+        range: datetime
+        required: true
+        description: Time source identity was recorded.
+        title: Recorded at utc
+      declared_source_mode:
+        required: true
+        pattern: ^(unknown|fixture|live|pinned)$
+        description: User-declared source mode; declaration alone does not verify origin.
+        title: Declared source mode
+      pinned_verified:
+        range: boolean
+        required: true
+        description: Whether exact pinned BugSigDB bytes were verified.
+        title: Pinned verified
+      verification_status:
+        required: true
+        pattern: ^(pinned_bytes_verified|origin_unverified)$
+        title: Verification status
+        description: Whether exact pinned source bytes were verified or source origin remains unknown.
+      snapshot_header:
+        description: Source snapshot comment if present; otherwise unknown.
+        title: Snapshot header
+      consumed_files:
+        range: SourceFileIdentity
+        multivalued: true
+        inlined: true
+        required: true
+        description: File identities keyed by their explicit product identifiers.
+        title: Consumed files
+      interpretation:
+        required: true
+        description: Scientific scope and annotation-versus-measurement interpretation.
+        title: Interpretation
+      verified_release:
+        range: VerifiedRelease
+        inlined: true
+        description: Verified release identity absent when source origin is unverified.
+        title: Verified release
+    title: Source Identity
+  StudyTableRow:
+    description: Exact logical row contract for the flattened studies TSV.
+    attributes:
+      study_id:
+        required: true
+        title: Study id
+        description: Study component of the unique profile key.
+      source_record_id:
+        required: true
+        description: Original BugSigDB source record identifier.
+        title: Source record id
+      pmid:
+        required: true
+        description: PubMed identifier or an empty TSV value when absent.
+        title: Pmid
+      title:
+        required: true
+        description: Reported publication title or an empty TSV value.
+        title: Title
+      publication_year:
+        required: true
+        description: Publication year serialized as text with empty missing values.
+        title: Publication year
+      doi:
+        required: true
+        description: Publication DOI or an empty TSV value.
+        title: Doi
+      url:
+        required: true
+        description: Publication URL or an empty TSV value.
+        title: Url
+      experiment_count:
+        range: integer
+        minimum_value: 0
+        required: true
+        description: Number of exported experiments in this study.
+        title: Experiment count
+      signature_count:
+        range: integer
+        minimum_value: 0
+        required: true
+        description: Number of exported signatures in this study.
+        title: Signature count
+      taxon_count:
+        range: integer
+        minimum_value: 0
+        required: true
+        description: Number of reported taxon occurrences preserving repeated occurrences.
+        title: Taxon count
+      input_file:
+        required: true
+        description: Source study YAML member name.
+        title: Input file
+    title: Study Table Row
+  ExperimentTableRow:
+    description: Exact logical row contract for the flattened experiments TSV.
+    attributes:
+      study_id:
+        required: true
+        title: Study id
+        description: Study component of the unique profile key.
+      experiment_id:
+        required: true
+        title: Experiment id
+        description: Experiment component of the unique profile key.
+      experiment_name:
+        required: true
+        description: Source experiment label or an empty TSV value.
+        title: Experiment name
+      condition:
+        required: true
+        description: Reported experimental condition.
+        title: Condition
+      body_site:
+        required: true
+        description: Reported body site.
+        title: Body site
+      host_species:
+        required: true
+        description: Reported host species used by explicit cohort selection.
+        title: Host species
+      location_of_subjects:
+        required: true
+        description: Reported subject location.
+        title: Location of subjects
+      group_0_name:
+        required: true
+        description: Reported reference group label.
+        title: Group 0 name
+      group_1_name:
+        required: true
+        description: Reported comparison group label.
+        title: Group 1 name
+      signature_count:
+        range: integer
+        minimum_value: 0
+        required: true
+        description: Number of exported signatures in this experiment.
+        title: Signature count
+      taxon_count:
+        range: integer
+        minimum_value: 0
+        required: true
+        description: Number of reported taxon occurrences in this experiment.
+        title: Taxon count
+    title: Experiment Table Row
+  SignatureTableRow:
+    description: Exact logical row contract for the flattened signatures TSV.
+    attributes:
+      study_id:
+        required: true
+        title: Study id
+        description: Study component of the unique profile key.
+      experiment_id:
+        required: true
+        title: Experiment id
+        description: Experiment component of the unique profile key.
+      signature_id:
+        required: true
+        description: Source signature identifier.
+        title: Signature id
+      direction:
+        required: true
+        pattern: ^(increased|decreased)$
+        description: Reported taxon abundance direction in cases relative to controls.
+        title: Direction
+      taxon_count:
+        range: integer
+        minimum_value: 0
+        required: true
+        description: Number of taxon occurrences reported by this signature.
+        title: Taxon count
+    title: Signature Table Row
+  TaxonOccurrenceRow:
+    description: Exact logical row contract preserving every reported taxon occurrence.
+    attributes:
+      study_id:
+        required: true
+        title: Study id
+        description: Study component of the unique profile key.
+      experiment_id:
+        required: true
+        title: Experiment id
+        description: Experiment component of the unique profile key.
+      signature_id:
+        required: true
+        description: Source signature identifier.
+        title: Signature id
+      direction:
+        required: true
+        pattern: ^(increased|decreased)$
+        description: Reported abundance direction.
+        title: Direction
+      taxon_id:
+        required: true
+        description: Reported taxon identifier.
+        title: Taxon id
+      taxon_name:
+        required: true
+        description: Reported real taxon name.
+        title: Taxon name
+      taxonomic_rank:
+        required: true
+        description: Reported taxonomic rank when available.
+        title: Taxonomic rank
+    title: Taxon Occurrence Row
+  ExperimentOntologyTermRow:
+    description: Exact logical row contract for multivalued experimental ontology annotations.
+    attributes:
+      study_id:
+        required: true
+        title: Study id
+        description: Study component of the unique profile key.
+      experiment_id:
+        required: true
+        title: Experiment id
+        description: Experiment component of the unique profile key.
+      slot:
+        required: true
+        description: Name of the source scientific ontology field.
+        title: Slot
+      term_id:
+        required: true
+        description: One ontology term identifier retained from the source field.
+        title: Term id
+    title: Experiment Ontology Term Row
+  CoreProductCatalog:
+    tree_root: true
+    description: Scientific identity and coverage metadata accompanying file products.
+    attributes:
+      id:
+        identifier: true
+        required: true
+        title: Id
+        description: Identifier unique within its containing document.
+      features:
+        range: FeatureDefinition
+        multivalued: true
+        inlined_as_list: true
+        title: Features
+        description: Predicate-object feature definitions for the matrix vocabulary.
+      coverage:
+        range: ProfileCoverageRecord
+        multivalued: true
+        inlined_as_list: true
+        title: Coverage
+        description: Per-profile accounting of reported, matched, and annotated taxa.
+      studies:
+        range: Study
+        multivalued: true
+        inlined_as_list: true
+        title: Studies
+        description: Canonical normalized BugSigDB study records.
+      assertions:
+        range: KgTraitAssertion
+        multivalued: true
+        inlined_as_list: true
+        title: Assertions
+        description: Canonical KG-Microbe trait assertion records.
+      taxon_trait_rows:
+        range: TaxonTraitMatrixRow
+        multivalued: true
+        inlined_as_list: true
+        title: Taxon trait rows
+        description: Canonical taxon-to-feature matrix rows.
+    title: Core Product Catalog
+  FeatureDefinition:
+    description: Predicate-object feature identity preserving trait and culture-medium semantics.
+    attributes:
+      column_id:
+        identifier: true
+        required: true
+        title: Column id
+        description: Stable predicate-object column identifier matching the matrix header.
+      column_label:
+        required: true
+        title: Column label
+        description: Human-readable matrix feature label.
+      predicate_id:
+        required: true
+        title: Predicate id
+        description: Relation identifier in the KG-Microbe assertion.
+      predicate_name:
+        required: true
+        title: Predicate name
+        description: Human-readable relation name.
+      object_id:
+        required: true
+        title: Object id
+        description: Trait or culture-medium object identifier.
+      object_name:
+        required: true
+        title: Object name
+        description: Human-readable trait or medium name.
+      object_category:
+        required: true
+        title: Object category
+        description: KG category of the assertion object.
+      feature_class:
+        range: FeatureClass
+        required: true
+        title: Feature class
+        description: Whether the feature is a trait annotation or a culture-medium relation.
+      annotation_evidence:
+        required: true
+        pattern: ^direct_or_descendant_unresolved$
+        title: Annotation evidence
+        description: Direct versus descendant-derived evidence remains unresolved by this matrix.
+    title: Feature Definition
+  ProfileCoverageRecord:
+    description: Reconciled membership and exclusion accounting for a signature profile.
+    attributes:
+      study_id:
+        required: true
+        title: Study id
+        description: Study component of the unique profile key.
+      experiment_id:
+        required: true
+        title: Experiment id
+        description: Experiment component of the unique profile key.
+      inc_dec:
+        required: true
+        title: Inc dec
+        description: Reported increased or decreased direction component of the profile key.
+      reported_distinct_taxa:
+        range: integer
+        minimum_value: 0
+        required: true
+        title: Reported distinct taxa
+        description: Number of distinct taxon identifiers reported in the source profile.
+      lookup_matched_taxa:
+        range: integer
+        minimum_value: 0
+        required: true
+        title: Lookup matched taxa
+        description: Reported taxon identifiers present in the explicit taxon-trait lookup.
+      lookup_unmatched_taxa:
+        range: integer
+        minimum_value: 0
+        required: true
+        title: Lookup unmatched taxa
+        description: Reported taxon identifiers absent from the explicit taxon-trait lookup.
+      matched_taxa_with_annotations:
+        range: integer
+        minimum_value: 0
+        required: true
+        title: Matched taxa with annotations
+        description: Matched taxa with at least one retained feature annotation.
+      matched_taxa_without_annotations:
+        range: integer
+        minimum_value: 0
+        required: true
+        title: Matched taxa without annotations
+        description: Matched taxa with no retained feature annotations.
+      coverage_status:
+        range: CoverageStatus
+        required: true
+        title: Coverage status
+        description: Explicit coverage category determined by the reconciled counts.
+      unmatched_taxon_ids:
+        required: true
+        description: Sorted unique taxon identifiers encoded as JSON.
+        title: Unmatched taxon ids
+      matched_without_annotation_taxon_ids:
+        required: true
+        description: Sorted unique taxon identifiers encoded as JSON.
+        title: Matched without annotation taxon ids
+      trait_filter_id:
+        required: true
+        pattern: ^sha256:[0-9a-f]{64}$
+        title: Trait filter id
+        description: SHA-256 identifying the exact ordered retained feature vocabulary.
+      lineage_resolution:
+        required: true
+        pattern: ^unresolved$
+        title: Lineage resolution
+        description: Unresolved direct-versus-descendant lineage; presence does not establish direct evidence.
+    title: Profile Coverage Record
+enums:
+  FeatureClass:
+    permissible_values:
+      trait_annotation: null
+      culture_medium: null
+    title: Feature Class
+    description: Permitted feature class values.
+  CoverageStatus:
+    permissible_values:
+      no_reported_taxa: null
+      no_lookup_matches: null
+      partial_lookup_coverage: null
+      matched_without_annotations: null
+      partial_annotation_coverage: null
+      complete_annotation_coverage: null
+    title: Coverage Status
+    description: Permitted coverage status values.
