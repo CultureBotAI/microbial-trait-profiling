@@ -174,8 +174,17 @@ in the analysis's own statistics and provenance.
 just core-screen /absolute/path/run.json /absolute/path/screen
 just core-composition /absolute/path/run.json /absolute/path/composition
 just core-ora /absolute/path/run.json /absolute/path/ora
+just core-ora /absolute/path/run.json /absolute/path/ora-depletion lower
 just core-verify-consumer /absolute/path/screen/core_consumption.json
 ```
+
+`core-ora` writes `report.txt`, the selected `results.tsv`, the complete
+`all_results.tsv`, and the report's consumer/coverage sidecars. Both tails use
+global BH with q ≤ 0.001; enrichment requires fold ≥ 1.5 and depletion requires
+fold ≤ 0.5. The complete export records the actual profile and taxa-matrix
+SHA-256 values required by core-bound integrated evidence. Use a fresh output
+directory when regenerating historical exports; adding fingerprints to an old
+file does not establish that it was executed with those inputs.
 
 The shared `verify_consumer_record` API is the integration boundary for deck
 builders such as PR #575: verify the input analysis binding before accepting
