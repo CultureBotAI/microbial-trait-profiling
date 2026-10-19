@@ -47,7 +47,6 @@ from mtp.guild_maps import (
     cell_status_rows,
     compute_correlation,
 )
-from mtp.influence_assessment import read_influence_assessment
 from mtp.paths import DERIVED_DATA_DIR, file_sha256
 from mtp.table1_trait_maps import SHIFT_FAMILY_ID, compute_direction_shifts
 from mtp.trait_composition import ANALYSIS_VERSION as LOG_RATIO_VERSION
@@ -978,6 +977,8 @@ def read_status(
     (#294).
     """
     if key == "taxon_influence_status":
+        from mtp.influence_assessment import read_influence_assessment
+
         influence = read_influence_assessment(
             path, issue, expected_input_sha256=expected_input_sha256
         )
@@ -1416,14 +1417,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--sensitivity-status", type=Path, default=DEFAULT_SENSITIVITY_STATUS)
     parser.add_argument("--orientation-provenance", type=Path, default=DEFAULT_ORIENTATION_STATUS)
     parser.add_argument("--coverage-status", type=Path)
-    parser.add_argument(
-        "--influence-status",
-        type=Path,
-        help=(
-            "Native influence manifest, review publication manifest, "
-            "or versioned procedure assessment."
-        ),
-    )
+    parser.add_argument("--influence-status", type=Path)
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
 
