@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Rebuild the cross-disease ``cellulose_decr`` analysis from pinned inputs (#552).
 
 Compares the taxa annotated ``METPO:2000103|GO:0030245`` (cellulose catabolic
@@ -45,10 +44,9 @@ from scipy import optimize, special, stats
 
 from mtp.composition_denominators import load_retained_profiles, trait_fractions
 from mtp.contrast_orientation import CLASSIFIER_VERSION
-from mtp.paths import file_sha256
+from mtp.paths import REPO_ROOT, file_sha256
 
-ANALYSIS_DIR = Path(__file__).resolve().parents[1]
-REPO_ROOT = Path(__file__).resolve().parents[4]
+ANALYSIS_DIR = REPO_ROOT / "data" / "analysis" / "cellulose_decr"
 PINNED_PROVENANCE = ANALYSIS_DIR / "cellulose_decr_provenance.json"
 
 TRAIT_ID = "METPO:2000103|GO:0030245"
@@ -2585,11 +2583,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     write_json(result, out / "cellulose_decr_summary.json")
     write_json(four_pairs, out / "four_highlighted_pairs_summary.json")
 
-    scripts = sorted(Path(__file__).resolve().parent.glob("*.py"))
+    modules = sorted(Path(__file__).resolve().parent.glob("*.py"))
     provenance = {
         "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "code_commit": args.code_commit,
-        "script": "data/analysis/cellulose_decr/scripts/cellulose_decr_analysis.py",
+        "script": "src/mtp/cellulose_decr/analysis.py",
         "bugsigdb_vintage": dump_vintage(paths["full_dump"]),
         "contrast_classifier_version": CLASSIFIER_VERSION,
         "label_source": args.label_source,
@@ -2597,7 +2595,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "permutations": n,
         "seed": args.seed,
         "seeds": rng_seeds,
-        "scripts": {path.name: file_sha256(path) for path in scripts},
+        "scripts": {f"src/mtp/cellulose_decr/{path.name}": file_sha256(path) for path in modules},
         "inputs": hashes,
         "pinned_inputs": pinned_inputs,
         "inputs_drifted_from_pinned_provenance": drifted,
