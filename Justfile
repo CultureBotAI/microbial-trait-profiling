@@ -437,15 +437,38 @@ html-to-pdf HTML PDF:
 taxa-trait-matrix: download-kg study-tsvs
 	uv run python scripts/create_taxa_trait_matrix.py
 
-# The canonical profile table the analyses read: human hosts only, without the trait
-# columns that are zero in every human profile. It reproduces the committed
-# data/derived/study_trait_profiles_wide.tsv.gz, which `just study-trait-profiles-check`
-# compares it with (#656).
+# The analyses read human hosts only, without the trait columns that are zero in every
+# human profile, as committed in data/derived/study_trait_profiles_wide.tsv.gz (#656).
+# Build the canonical study trait profile table (human hosts, non-empty trait columns).
 study-trait-profiles: taxa-trait-matrix
 	uv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" --drop-empty-traits
 
+# After an intended input change, such as a BugSigDB release or a new KG pin, refresh the
+# committed copy with `just study-trait-profiles-refresh-gz` and commit it (#667).
+# Check that the profile table is the committed canonical one (#656).
 study-trait-profiles-check:
-	gzip -dc data/derived/study_trait_profiles_wide.tsv.gz | cmp -s - data/derived/study_trait_profiles_wide.tsv || { echo "data/derived/study_trait_profiles_wide.tsv differs from the committed .gz; run just study-trait-profiles (#656)" >&2; exit 1; }
+	#!/usr/bin/env bash
+	set -euo pipefail
+	table=data/derived/study_trait_profiles_wide.tsv
+	committed="$table.gz"
+	if [ ! -s "$committed" ] || ! gzip -t "$committed" 2>/dev/null; then
+		echo "$committed is missing, empty or not gzip; restore it: git checkout -- $committed (#667)" >&2
+		exit 1
+	fi
+	if [ ! -s "$table" ]; then
+		echo "$table is missing or empty; run just study-trait-profiles, or gzip -dc $committed > $table" >&2
+		exit 1
+	fi
+	if ! gzip -dc "$committed" | cmp -s - "$table"; then
+		echo "$table differs from the committed $committed (#656)." >&2
+		echo "  Unintended: run just study-trait-profiles, or gzip -dc $committed > $table" >&2
+		echo "  After an intended input change: just study-trait-profiles-refresh-gz, then commit $committed" >&2
+		exit 1
+	fi
+
+# Replace the committed canonical profile table with the current one, then commit it (#667).
+study-trait-profiles-refresh-gz:
+	gzip -9 -n -c data/derived/study_trait_profiles_wide.tsv > data/derived/study_trait_profiles_wide.tsv.gz
 
 # Source-count reconciliation and rule-declared genus/family influence (#190).
 # The default entry point declares the complete clean-clone input chain.
