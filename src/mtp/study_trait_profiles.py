@@ -12,6 +12,7 @@ from typing import Any, Literal
 
 import yaml
 
+from mtp.count_input import COMPLETE_COUNT_MODE, CountInputMode, taxa_trait_count_reader
 from mtp.paths import DERIVED_DATA_DIR, STUDY_DATA_DIR
 
 DEFAULT_TAXA_TRAIT_MATRIX_PATH = DERIVED_DATA_DIR / "taxa_trait_matrix.tsv"
@@ -77,60 +78,23 @@ def profile_id(profile_key: ProfileKey) -> str:
     return PROFILE_ID_SEPARATOR.join(profile_key)
 
 
-def _parse_count(value: str, *, path: Path, line_number: int, column_name: str) -> int:
-    text = value.strip()
-    if not text:
-        return 0
-    try:
-        return int(text)
-    except ValueError as exc:
-        raise ValueError(
-            f"Expected integer count in {path}:{line_number}, column {column_name!r}: {value!r}"
-        ) from exc
-
-
-def read_taxa_trait_matrix(path: Path) -> TaxaTraitMatrix:
-    """Read a taxa-by-traits matrix keyed by NCBITaxon CURIE."""
-    with path.open("r", encoding="utf-8", newline="") as handle:
-        reader = csv.reader(handle, delimiter="\t")
-        header = next(reader, None)
-        if header is None:
-            raise ValueError(f"{path} is empty")
-        if len(header) < 4:
-            raise ValueError(f"{path} must have taxon_id, taxon_name, taxonomic_rank, and traits")
-        if header[:3] != ["taxon_id", "taxon_name", "taxonomic_rank"]:
-            raise ValueError(f"{path} first columns must be taxon_id, taxon_name, taxonomic_rank")
-
-        trait_columns = header[3:]
-        counts_by_taxon: dict[str, Counter[str]] = {}
-        for line_number, row in enumerate(reader, start=2):
-            if not row:
-                continue
-
-            taxon_id = row[0].strip()
-            if not taxon_id:
-                continue
-
-            values = row[3:]
-            if len(values) > len(trait_columns):
-                raise ValueError(
-                    f"{path}:{line_number} has {len(values)} trait values, "
-                    f"but the header has {len(trait_columns)} trait columns"
-                )
-
-            counts: Counter[str] = Counter()
-            for column_name, raw_value in zip(trait_columns, values, strict=False):
-                count = _parse_count(
-                    raw_value,
-                    path=path,
-                    line_number=line_number,
-                    column_name=column_name,
-                )
-                if count:
-                    counts[column_name] = count
-            counts_by_taxon[taxon_id] = counts
-
-    return TaxaTraitMatrix(trait_columns=trait_columns, counts_by_taxon=counts_by_taxon)
+def read_taxa_trait_matrix(
+    path: Path, *, mode: CountInputMode = COMPLETE_COUNT_MODE
+) -> TaxaTraitMatrix:
+    """Read validated nonnegative counts; legacy blank-as-zero input is explicit."""
+    reader = taxa_trait_count_reader(path, mode=mode)
+    counts_by_taxon: dict[str, Counter[str]] = {}
+    for row in reader:
+        counts_by_taxon[row.key[0]] = Counter(
+            {
+                column: count
+                for column, count in zip(reader.count_columns, row.counts, strict=True)
+                if count
+            }
+        )
+    return TaxaTraitMatrix(
+        trait_columns=list(reader.count_columns), counts_by_taxon=counts_by_taxon
+    )
 
 
 def collect_profile_taxa(

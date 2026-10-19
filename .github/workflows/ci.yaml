@@ -23,3 +23,12 @@ jobs:
           just check
       - name: Run full pre-commit stack
         run: uv run pre-commit run --all-files
+      - name: Execute offline raw-to-core workflow
+        run: just core-fixture
+      - name: Preserve workflow execution evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-workflow-fixture
+          path: .tmp/core-fixture/
+          if-no-files-found: error
