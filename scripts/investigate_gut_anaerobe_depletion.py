@@ -2327,6 +2327,15 @@ def write_summary_report(
             f"{row.decreased_mean_guild_z:.3f} |"
         )
 
+    lines.extend(
+        [
+            "",
+            "Paired d and paired p are blank for conditions with fewer than "
+            f"{MIN_PAIRED_SMD_PROFILE_PAIRS} matched decreased/increased profile pairs, or with "
+            "zero variance among the paired differences.",
+        ]
+    )
+
     if enriched_direction_rows:
         lines.extend(
             [

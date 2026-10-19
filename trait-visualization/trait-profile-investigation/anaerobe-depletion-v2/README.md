@@ -76,6 +76,8 @@ Guardrail: the increased-profile anaerobe score is retained in every condition a
 | Respiratory tract infectious disease | 10 | 2 | 0.969 |  |  | 4 | 0.463 |
 | Response to antiviral drug | 32 | 6 | 0.949 | 1.251 | 0.000429 | 14 | 0.777 |
 
+Paired d and paired p are blank for conditions with fewer than 5 matched decreased/increased profile pairs, or with zero variance among the paired differences.
+
 ## Condition Enriched-Profile Histogram
 
 The enrichment-filtered histogram counts conditions by how many profiles remain after dropping profiles with zero positive anaerobe v2 selected-trait z-scores. The dropped profiles are still retained in the main trait-enrichment summaries and are reported here by profile direction.

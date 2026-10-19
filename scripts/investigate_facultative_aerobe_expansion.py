@@ -1689,6 +1689,10 @@ def write_summary_report(
     lines.extend(
         [
             "",
+            "Paired d and paired p are blank for conditions with fewer than "
+            f"{MIN_PAIRED_SMD_PROFILE_PAIRS} matched increased/decreased profile pairs, or with "
+            "zero variance among the paired differences.",
+            "",
             "Broad labels such as `Exposure`, `Population`, `Time`, `Timepoint`, and labels "
             "containing `measurement` come from BugSigDB condition metadata but usually "
             "describe study design, cohort, sampling time, exposure, or measurement context "

@@ -885,24 +885,25 @@ Important units and labels:
   the decreased-minus-increased contrast in the anaerobe parent story.
 - `paired d` is a paired standardized mean difference calculated from matched
   increased/decreased profile pairs within the same study and experiment.
-  `paired d=NA` means fewer than three matched pairs or zero variance among the
+  `paired d=NA` means fewer than five matched pairs or zero variance among the
   paired differences.
-- `p` is a two-sided paired t-test p-value for the same matched differences.
-  These p-values are descriptive labels on the screening plots, not a multiple
-  testing-adjusted discovery procedure.
+- `p` is a two-sided paired t-test p-value for the same matched differences, and
+  is `NA` whenever `paired d` is. These p-values are descriptive labels on the
+  screening plots, not a multiple testing-adjusted discovery procedure.
 - `target taxon-profile occurrence` means one fixed focal taxon observed in one
   BugSigDB study profile after taxon/profile deduplication. If several focal
   taxa occur in the same profile, that profile can contribute several
   occurrences to a target-taxon condition chart.
 
 The condition trait-enrichment bar charts remove a defined set of broad condition labels
-before display. The exclusion rules remove exact labels such as `Exposure`,
-`Population`, `Physical activity`, `Body fat distribution`, `Health trait`, and
-`Microbiome`; the anaerobe script also removes `Clinical treatment`. Labels
-containing `exposure`, `measurement`, or `population` are also excluded. Labels
-such as `Timepoint`, `Diet`, or `Health study participation` can still appear if
-they are not in the explicit exclusion list, so they should be interpreted as
-metadata-like contexts unless manually reviewed.
+before display. Both scripts remove the exact labels `Exposure`, `Population`,
+`Physical activity`, `Body fat distribution`, `Health trait`, `Microbiome`, and
+`Timepoint`; the aerobe script also removes `Time`, and the anaerobe script also
+removes `Clinical treatment` and `Health study participation`. Labels containing
+`exposure`, `measurement`, or `population` are also excluded. Labels such as
+`Diet` or `Treatment`, and `Time` in the anaerobe condition summary, can still
+appear because they are not in the explicit exclusion lists, so they should be
+interpreted as metadata-like contexts unless manually reviewed.
 
 ### Trait Selection and Parent Hypotheses
 
@@ -993,22 +994,25 @@ The bar length is the aerobe v2 trait-enrichment contrast:
 
 `increased mean trait z - decreased mean trait z`
 
-The right-side labels show `paired d`, p-value, and matched-pair count when
-study/experiment-paired increased and decreased profiles are available.
+The right-side labels show `paired d`, p-value, and the number of
+study/experiment-matched increased/decreased profile pairs (`n`). Paired d and p
+need at least five matched pairs; rows with fewer show `paired d=NA, p=NA`.
 
-The largest displayed condition-label contrasts are time (contrast 1.527; one
-matched pair), multiple myeloma (1.159), response to antibiotic (1.005),
-age-related macular degeneration (0.992; paired d 1.10; p=0.00281),
-graft-versus-host disease (0.923), epilepsy (0.891; paired d 1.59; p=0.0116),
-cognitive impairment (0.889), diarrhea (0.806; paired d 0.89; p=0.0107),
+The largest displayed condition-label contrasts are multiple myeloma (1.159),
+response to antibiotic (1.005), age-related macular degeneration (0.992; paired
+d 1.10; p=0.00281; 12 pairs), graft-versus-host disease (0.923), epilepsy
+(0.891; paired d 1.59; p=0.0116; 6 pairs), cognitive impairment (0.889; paired
+d 0.82; p=0.142; 5 pairs), diarrhea (0.806; paired d 0.89; p=0.0107; 12 pairs),
 bipolar disorder (0.796), diabetic retinopathy (0.779), stroke (0.757; paired
-d 0.95; p=0.00249), and urinary tract infection (0.749).
+d 0.95; p=0.00249; 15 pairs), urinary tract infection (0.749), and autism
+(0.744). The seven rows without paired statistics have three or four matched
+pairs.
 
 Interpretation: the condition screen highlights heterogeneous contexts rather
 than one disease. Several labels point to transplantation, infection, oncology,
 neurologic and psychiatric labels, ocular disease, and gastrointestinal
-symptoms, and the top row, `Time`, is a study-design label rather than a disease
-context. Because body sites are mixed at this stage, these bars should
+symptoms; `Response to antibiotic` is a treatment-response label rather than a
+disease context. Because body sites are mixed at this stage, these bars should
 be read as a condition-level screening view for high aerobe-v2 trait enrichment, not as
 proof that every listed condition is gut-specific.
 
@@ -1823,7 +1827,7 @@ This figure uses the fixed focal taxa listed above, then intersects their NCBI T
 
 Guild-specificity: yes. This figure uses the aerobe v2 trait-enrichment score from the three selected traits.
 
-Study profiles from all body sites were grouped by BugSigDB condition label. Groups with fewer than five profiles were excluded. Broad non-condition or metadata labels (`Body fat distribution`, `Exposure`, `Health trait`, `Microbiome`, `Population`, `Physical activity`, and labels containing `exposure`, `measurement`, or `population`) were removed from the displayed condition summary. Those labels usually describe exposure, cohort, or measurement metadata rather than a disease or condition context. The figure keeps the top 12 eligible conditions with at least three increased profiles, at least two studies, positive increased-minus-decreased trait-enrichment signal, and positive increased-profile mean trait z-score, using fallback filtering if needed. Conditions are selected and sorted by increased-minus-decreased trait-enrichment signal. Bar length is this enrichment-oriented contrast, and the right-side labels show the paired standardized mean difference (`paired d`) calculated from matched increased/decreased profiles within the same study and experiment, plus a two-sided paired t-test p-value for the same matched differences. `paired d=NA` means fewer than three matched profile pairs, or zero variance among the paired differences; in those cases the paired p-value is also `NA`.
+Study profiles from all body sites were grouped by BugSigDB condition label. Groups with fewer than five profiles were excluded. Broad non-condition or metadata labels (`Body fat distribution`, `Exposure`, `Health trait`, `Microbiome`, `Population`, `Physical activity`, `Time`, `Timepoint`, and labels containing `exposure`, `measurement`, or `population`) were removed from the displayed condition summary. Those labels usually describe exposure, cohort, sampling time, or measurement metadata rather than a disease or condition context. The figure keeps the top 12 eligible conditions with at least three increased profiles, at least two studies, positive increased-minus-decreased trait-enrichment signal, and positive increased-profile mean trait z-score, using fallback filtering if needed. Conditions are selected and sorted by increased-minus-decreased trait-enrichment signal. Bar length is this enrichment-oriented contrast, and the right-side labels show the paired standardized mean difference (`paired d`) calculated from matched increased/decreased profiles within the same study and experiment, plus a two-sided paired t-test p-value for the same matched differences. `paired d=NA` means fewer than five matched profile pairs, or zero variance among the paired differences; in those cases the paired p-value is also `NA`.
 
 #### `guild_trait_direction_shift.png`
 
@@ -1888,7 +1892,7 @@ This figure uses the fixed focal taxa listed above, then intersects their NCBI T
 
 Guild-specificity: yes. This figure uses the anaerobe v2 trait-enrichment score from the two selected traits.
 
-Study profiles from all body sites were grouped by BugSigDB condition label. Groups with fewer than five profiles were excluded. Broad non-condition or metadata labels (`Body fat distribution`, `Clinical treatment`, `Exposure`, `Health study participation`, `Health trait`, `Microbiome`, `Population`, `Physical activity`, `Timepoint`, and labels containing `exposure`, `measurement`, or `population`) were removed from the displayed condition summary. The figure keeps the top 12 eligible conditions with at least three decreased profiles, at least two studies, positive decreased-minus-increased trait-enrichment signal, and positive decreased-profile mean trait z-score, using fallback filtering if needed. Conditions are selected and sorted by decreased-minus-increased trait-enrichment signal, and bar length is this enrichment-oriented contrast. The right-side labels show the paired standardized mean difference (`paired d`) calculated from matched decreased/increased profiles within the same study and experiment, plus a two-sided paired t-test p-value for the same matched differences. `paired d=NA` means fewer than three matched profile pairs, or zero variance among the paired differences; in those cases the paired p-value is also `NA`.
+Study profiles from all body sites were grouped by BugSigDB condition label. Groups with fewer than five profiles were excluded. Broad non-condition or metadata labels (`Body fat distribution`, `Clinical treatment`, `Exposure`, `Health study participation`, `Health trait`, `Microbiome`, `Population`, `Physical activity`, `Timepoint`, and labels containing `exposure`, `measurement`, or `population`) were removed from the displayed condition summary. The figure keeps the top 12 eligible conditions with at least three decreased profiles, at least two studies, positive decreased-minus-increased trait-enrichment signal, and positive decreased-profile mean trait z-score, using fallback filtering if needed. Conditions are selected and sorted by decreased-minus-increased trait-enrichment signal, and bar length is this enrichment-oriented contrast. The right-side labels show the paired standardized mean difference (`paired d`) calculated from matched decreased/increased profiles within the same study and experiment, plus a two-sided paired t-test p-value for the same matched differences. `paired d=NA` means fewer than five matched profile pairs, or zero variance among the paired differences; in those cases the paired p-value is also `NA`.
 
 #### `guild_trait_direction_shift.png`
 

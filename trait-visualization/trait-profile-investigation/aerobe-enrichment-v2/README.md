@@ -73,6 +73,8 @@ The selected traits are enriched in increased profiles relative to decreased pro
 | Diarrhea | 24 | 3 | 0.806 | 0.885 | 0.0107 | 12 | 0.661 |
 | Bipolar disorder | 18 | 4 | 0.796 |  |  | 4 | 0.010 |
 
+Paired d and paired p are blank for conditions with fewer than 5 matched increased/decreased profile pairs, or with zero variance among the paired differences.
+
 Broad labels such as `Exposure`, `Population`, `Time`, `Timepoint`, and labels containing `measurement` come from BugSigDB condition metadata but usually describe study design, cohort, sampling time, exposure, or measurement context rather than a disease/condition context. They are excluded from displayed condition bar charts and condition summaries.
 
 Oral-site increased-profile trait signals are expected in this analysis because the oral cavity is oxygen-exposed and several focal taxa are common oral or airway-associated aerotolerant, facultatively aerobic, or microaerophilic lineages. These signals should be interpreted as body-site-specific oral microbial ecology, not as a gut increased-profile trait-enrichment signal.
