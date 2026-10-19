@@ -1755,45 +1755,51 @@ def crc_compartment_statement(results: Results) -> str:
         ]
     )
     return (
-        f"CRC stool {int(crc['a_down'])}↓ {int(crc['a_up'])}↑ against GI mucosa / lumen "
-        f"{int(crc['b_down'])}↓ {int(crc['b_up'])}↑ paired experiments (conditional odds ratio "
-        f"{float(crc['conditional_or']):.1f}, 95% CI {float(crc['conditional_or_ci95_low']):.1f}"
-        f"{DASH}{float(crc['conditional_or_ci95_high']):.1f}, "
-        f"p = {sci(float(crc['fisher_p_two_sided']))}). Among disease-vs-healthy studies the "
-        f"test gives p = {sci(float(healthy['fisher_p_two_sided']))} with a within-patient "
-        f"tumour-vs-adjacent-tissue experiment and p = {sci(float(without['fisher_p_two_sided']))} "
-        "without it, so the difference is not evidence of anatomical specificity"
+        f"CRC stool vs GI mucosa / lumen: odds ratio {float(crc['conditional_or']):.1f} "
+        f"(p = {sci(float(crc['fisher_p_two_sided']))}) over paired experiments, but "
+        f"p = {sci(float(healthy['fisher_p_two_sided']))} among disease-vs-healthy studies "
+        f"({sci(float(without['fisher_p_two_sided']))} without one within-patient "
+        "tumour-vs-adjacent experiment), so not evidence of anatomical specificity"
     )
+
+
+def null_endpoints(results: Results, key: str) -> tuple[str, str]:
+    """A null's p for the mean distance and for the three-way core."""
+    null = results.summary["null_models"][key]
+    return (
+        sci(float(null["mean_pairwise_jaccard_distance"]["p"])),
+        sci(float(null["three_way_core"]["p"])),
+    )
+
+
+def independent_nulls(results: Results) -> str:
+    """The weakest mean-distance p of the nulls that draw taxa independently (U1-U4)."""
+    nulls = results.summary["null_models"]
+    worst = max(
+        float(nulls[key]["mean_pairwise_jaccard_distance"]["p"]) for key in ("U1", "U2", "U3", "U4")
+    )
+    return mc_p(worst, int(nulls["U1"]["iterations"]))
+
+
+# Slide notes hold about three lines, so a takeaway is one sentence and a caveat at most two.
 
 
 def caption_overlap(results: Results) -> Caption:
     observed = results.summary["observed"]
-    nulls = results.summary["null_models"]
     sizes = observed["sizes"]
-    iterations = int(nulls["U1"]["iterations"])
-    independent = max(
-        float(nulls[key]["mean_pairwise_jaccard_distance"]["p"]) for key in ("U1", "U2", "U3", "U4")
-    )
-    u5, u6 = nulls["U5"], nulls["U6"]
+    mean, core = null_endpoints(results, "U6")
     return Caption(
         title=overlap_statement(results),
         takeaway=(
-            f"Taxa annotated with {results.summary['trait_label']} and reported decreased in "
-            f"stool: PD {sizes['PD']}, HIV {sizes['HIV']}, CRC {sizes['CRC']}; mean pairwise "
-            f"Jaccard distance {float(observed['mean_pairwise_jaccard_distance']):.3f}. Nulls "
-            f"that draw taxa independently (U1{DASH}U4) give {mc_p(independent, iterations)}; "
-            "weighting taxa by how often other stool studies report them (U5) gives "
-            f"p = {sci(float(u5['mean_pairwise_jaccard_distance']['p']))}; permuting whole study "
-            f"signatures (U6) gives p = {sci(float(u6['mean_pairwise_jaccard_distance']['p']))} "
-            f"for the mean distance and p = {sci(float(u6['three_way_core']['p']))} for the "
-            f"{observed['three_way_core']}-taxon core "
-            f"({float(u6['three_way_core']['expected']):.1f} expected)."
+            f"PD {sizes['PD']}, HIV {sizes['HIV']} and CRC {sizes['CRC']} taxa; mean pairwise "
+            f"Jaccard distance {float(observed['mean_pairwise_jaccard_distance']):.3f}. "
+            f"Independent-draw nulls (U1{DASH}U4): {independent_nulls(results)}; whole-signature "
+            f"permutation (U6): p = {mean} (mean), {core} (core)."
         ),
         caveat=(
-            "A taxon enters a condition's set once any stool study reports it decreased, so the "
-            "overlap counts reported taxon labels, not consistent loss. Nulls that draw taxa one "
-            "at a time ignore that co-reported taxa travel together in many decreased "
-            "signatures, whatever the condition."
+            "A taxon enters a set once any stool study reports it decreased, and co-reported "
+            "taxa travel together in many signatures whatever the condition, which "
+            "independent-draw nulls ignore."
         ),
         evidence="pairwise_jaccard_significance.tsv",
     )
@@ -1815,21 +1821,13 @@ def caption_shared_taxa(results: Results) -> Caption:
     low_ranks = f"{n_low} genera" if n_species == 0 else f"{n_low} genus- or species-rank taxa"
     if n_direct == 0:
         direct = "none annotated directly"
-        inherit = (
-            f"None of the {n_core} has its own cellulose annotation edge; each inherits it from "
-            "annotated species or strains."
-        )
+        inherit = "Each inherits the cellulose annotation from annotated species or strains"
     else:
         direct = f"{n_direct} annotated directly"
-        inherit = (
-            f"{n_direct} of the {n_core} have their own cellulose annotation edge; the others "
-            "inherit it from annotated descendants."
-        )
+        inherit = f"{n_direct} carry their own cellulose annotation edge and the others inherit it"
     examples = reversed_examples(core)
     reported_up = (
-        f" Some are reported increased more often than decreased in one condition{examples}."
-        if examples
-        else ""
+        f"Some are reported increased more often in one condition{examples}. " if examples else ""
     )
     return Caption(
         title=(
@@ -1837,17 +1835,13 @@ def caption_shared_taxa(results: Results) -> Caption:
             f"family-to-phylum nodes, {direct}"
         ),
         takeaway=(
-            f"{inherit} {net} of the {n_core} are reported decreased in more stool studies than "
-            f"increased in all three conditions.{reported_up}"
+            f"{inherit}; {net} of the {n_core} are reported decreased more often than increased "
+            "in all three conditions."
         ),
         caveat=(
-            "Mean pairwise distance under other set definitions: "
-            f"{means['3_feces_dec_genus_species']:.3f} with genus and species ranks only, "
-            f"{means['7_feces_dec_disease_vs_healthy_oriented']:.3f} with disease-vs-healthy "
-            f"contrasts only and {means['4b_feces_net_decreased_by_studies']:.3f} keeping only "
-            "taxa with more decreased than increased studies, against "
-            f"{means['1_feces_dec_all_ranks']:.3f} for the primary sets. The hatched bar (every "
-            "stool-decreased taxon) is a scale reference, not a null model."
+            f"{reported_up}Genus and species ranks alone give mean d_J "
+            f"{means['3_feces_dec_genus_species']:.3f}, against "
+            f"{means['1_feces_dec_all_ranks']:.3f} for all ranks."
         ),
         evidence="cellulose_decreased_taxa_catalog.tsv",
     )
@@ -1855,7 +1849,6 @@ def caption_shared_taxa(results: Results) -> Caption:
 
 def caption_direction(results: Results) -> Caption:
     healthy = stool_rows(results, ORIENTED)
-    everything = stool_rows(results, ALL_CONTRASTS)
     names = {**{short: short for short in SHORT}, "Pooled": "all three pooled"}
     robust: list[str] = []
     fragile: list[tuple[str, float, float]] = []
@@ -1875,18 +1868,15 @@ def caption_direction(results: Results) -> Caption:
         parts.append(f"{listing([name for name, _, _ in fragile])} only under some")
     if absent:
         parts.append(f"not {listing(absent)}")
-    counts = "; ".join(
+    counts = ", ".join(
         f"{name if short != 'Pooled' else 'all three'} {int(healthy[short]['study_down'])}↓ "
         f"{int(healthy[short]['study_up'])}↑ "
         f"(p = {sci(float(healthy[short]['study_binom_p_two_sided']))})"
         for short, name in names.items()
     )
-    pooled = everything["Pooled"]
-    pooled_down, pooled_up = int(pooled["study_down"]), int(pooled["study_up"])
     n_definitions = results.scenarios["scenario"].nunique()
-    ranges = " ".join(
-        f"{name}: the study-level p runs from {sci(low)} to {sci(high)} across the "
-        f"{n_definitions} condition definitions of condition_definition_sensitivity.tsv."
+    ranges = "".join(
+        f"{name}: p from {sci(low)} to {sci(high)} across {n_definitions} condition definitions. "
         for name, low, high in fragile
     )
     return Caption(
@@ -1894,13 +1884,8 @@ def caption_direction(results: Results) -> Caption:
             "Disease-vs-healthy stool studies: the decreased signature carries the larger "
             f"cellulose annotation share in {'; '.join(parts)}"
         ),
-        takeaway=(
-            f"Down : up studies with exact condition labels: {counts}. Across all contrasts, "
-            f"{pooled_down} of {pooled_down + pooled_up} untied studies point down "
-            f"(p = {sci(float(pooled['study_binom_p_two_sided']))}). The share counts "
-            "cellulose annotations among all retained non-MediaDive annotations of a signature."
-        ),
-        caveat=f"{ranges} {crc_compartment_statement(results)}.".strip(),
+        takeaway=f"Disease-vs-healthy stool studies, down : up: {counts}.",
+        caveat=f"{ranges}{crc_compartment_statement(results)}.",
         evidence="condition_definition_sensitivity.tsv",
     )
 
@@ -1927,47 +1912,31 @@ def caption_ranking(results: Results) -> Caption:
         takeaway=(
             f"Mean pairwise Jaccard distance: {leader}{label} "
             f"{float(cell['mean_pairwise_jaccard_distance']):.3f}; median of the {len(rows)} "
-            f"traits {median:.3f}. Traits need at least 10 stool-decreased taxa in each "
-            "condition; MediaDive growth-medium columns are left out."
+            f"traits {median:.3f}."
         ),
         caveat=(
             "Traits share taxa, so their distances are not independent, and the trait was picked "
-            "from this corpus as an exploratory lead. Trait names are the object_name labels of "
-            "taxa_trait_matrix_columns.tsv."
+            "from this corpus as an exploratory lead."
         ),
         evidence="trait_convergence_benchmark.tsv",
     )
 
 
 def caption_nulls(results: Results) -> Caption:
-    observed = results.summary["observed"]
-    nulls = results.summary["null_models"]
-    iterations = int(nulls["U1"]["iterations"])
-    independent = max(
-        float(nulls[key]["mean_pairwise_jaccard_distance"]["p"]) for key in ("U1", "U2", "U3", "U4")
-    )
-
-    def endpoints(key: str) -> str:
-        mean = float(nulls[key]["mean_pairwise_jaccard_distance"]["p"])
-        core = float(nulls[key]["three_way_core"]["p"])
-        return f"mean p = {sci(mean)}, core p = {sci(core)}"
-
-    matched = int(nulls["U6_size_matched"]["iterations"])
+    iterations = int(results.summary["null_models"]["U1"]["iterations"])
+    u5 = null_endpoints(results, "U5")
+    u6 = null_endpoints(results, "U6")
+    matched = null_endpoints(results, "U6_size_matched")
     return Caption(
         title="Overlap of stool-decreased cellulose-annotated taxa against six null models",
         takeaway=(
-            "Observed mean pairwise distance "
-            f"{float(observed['mean_pairwise_jaccard_distance']):.3f} and "
-            f"{observed['three_way_core']} taxa in all three. Drawing taxa independently "
-            f"(U1{DASH}U4): every mean {mc_p(independent, iterations)}. Weighting taxa by "
-            f"reporting prevalence (U5): {endpoints('U5')}. Permuting whole study signatures "
-            f"(U6): {endpoints('U6')}; keeping the {matched:,} draws with matching set sizes: "
-            f"{endpoints('U6_size_matched')}."
+            f"Independent-draw nulls (U1{DASH}U4): every mean {independent_nulls(results)}. "
+            f"U5 (prevalence-weighted): {u5[0]} (mean), {u5[1]} (core). U6 (whole signatures): "
+            f"{u6[0]}, {u6[1]}; size-matched: {matched[0]}, {matched[1]}."
         ),
         caveat=(
-            "U1" + DASH + "U3 pair p-values are exact hypergeometric tails; the others are Monte "
-            f"Carlo with {iterations:,} draws. Only U6 keeps co-reported taxa together, as they "
-            "occur in signatures."
+            f"U1{DASH}U3 pair p-values are exact hypergeometric tails, the others Monte Carlo "
+            f"with {iterations:,} draws; only U6 keeps co-reported taxa together."
         ),
         evidence="pairwise_jaccard_significance.tsv",
     )
@@ -1977,15 +1946,13 @@ def caption_body_sites(results: Results) -> Caption:
     def odds(unit: str) -> str:
         row = interaction_row(results, ALL_CONTRASTS, POOLED_STRATIFIED, unit)
         return (
-            f"common odds ratio {float(row['conditional_or']):.2f} (95% CI "
-            f"{float(row['conditional_or_ci95_low']):.2f}{DASH}"
-            f"{float(row['conditional_or_ci95_high']):.2f}, "
-            f"p = {sci(float(row['fisher_p_two_sided']))}) by {unit}"
+            f"{float(row['conditional_or']):.2f} (p = {sci(float(row['fisher_p_two_sided']))}) "
+            f"by {unit}"
         )
 
     table = results.compartments
     elsewhere = [
-        (row, sum(untied(row, "experiment")))
+        (str(row["short_condition"]), str(row["compartment"]), sum(untied(row, "experiment")))
         for row in records(
             table[
                 table["contrast_population"].eq(ALL_CONTRASTS)
@@ -1994,32 +1961,21 @@ def caption_body_sites(results: Results) -> Caption:
             ]
         )
     ]
-    crc_gi = [
-        n
-        for row, n in elsewhere
-        if (row["short_condition"], row["compartment"]) == ("CRC", NON_FECAL_GI)
-    ]
-    others = [
-        n
-        for row, n in elsewhere
-        if (row["short_condition"], row["compartment"]) != ("CRC", NON_FECAL_GI)
-    ]
+    crc_gi = sum(n for short, site, n in elsewhere if (short, site) == ("CRC", NON_FECAL_GI))
+    others = [n for short, site, n in elsewhere if (short, site) != ("CRC", NON_FECAL_GI)]
     return Caption(
         title=(
             "Direction of the cellulose annotation shift by body site, inference unit and "
             "contrast type"
         ),
         takeaway=(
-            "Stool against GI mucosa / lumen, stratified by condition: "
-            f"{odds('experiment')} and {odds('study')}. Disease-vs-healthy rows keep the "
-            "experiments the contrast manifest classifies disease_vs_healthy, oriented so that "
-            "decreased means lower in disease."
+            "Stool vs GI mucosa / lumen, stratified by condition: common odds ratio "
+            f"{odds('experiment')}, {odds('study')}."
         ),
         caveat=(
-            "Experiments within a study are not independent; the study rows give one vote per "
-            f"study. Outside stool, single conditions have at most {max(others, default=0)} "
-            "untied paired experiments, except CRC GI mucosa / lumen "
-            f"({crc_gi[0] if crc_gi else 0})."
+            "Experiments within a study are not independent. Outside stool, single conditions "
+            f"have at most {max(others, default=0)} untied pairs, except CRC GI mucosa / lumen "
+            f"({crc_gi})."
         ),
         evidence="compartment_direction_interaction.tsv",
     )
@@ -2036,15 +1992,12 @@ def caption_shared_by_two(results: Results) -> Caption:
             f"stool in two or more conditions, {observed['three_way_core']} in all three"
         ),
         takeaway=(
-            "Cells give the stool studies reporting each taxon decreased and increased in each "
-            "condition. Flags mark the three-way core, taxa with their own annotation edge, "
-            "genus or species rank, and taxa with more decreased than increased studies in all "
-            "three conditions."
+            "Cells give decreased / increased stool studies per condition; flags mark the core, "
+            "direct annotation edges, genus or species rank and net-decreased taxa."
         ),
         caveat=(
-            f"{direct[:1].upper()}{direct[1:]}. The right panel lists the fifteen lowest "
-            f"cross-condition distances among {n_traits} traits, a description of this corpus, "
-            "not a test."
+            f"{direct[:1].upper()}{direct[1:]}. The right panel ranks {n_traits} traits "
+            "descriptively; it is not a test."
         ),
         evidence="cellulose_decreased_taxa_catalog.tsv",
     )
