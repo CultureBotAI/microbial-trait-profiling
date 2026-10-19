@@ -143,6 +143,12 @@ oral-six-trait-heatmap:
 	fi && \
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py --oral-only --source-commit "$source_commit"
 
+# PD fecal cellulose tables, figures and interpretations.md from the six-trait profile
+# z-scores and the individual-condition Sankey edge tables, which only the default mode of
+# scripts/create_six_shared_trait_sankeys.py writes.
+pd-cellulose-analysis:
+	uv run python scripts/create_pd_cellulose_analysis.py
+
 # Trace PD lollipop traits to observed taxa and profile evidence.
 pd-trait-taxa:
 	uv run python scripts/lookup_pd_trait_taxa.py

@@ -66,8 +66,17 @@ def clean_text(value: object) -> str:
 
 
 def wrap_label(value: object, width: int = 18) -> str:
-    """Wrap labels used inside figures."""
-    return "\n".join(wrap(clean_text(value), width=width)) or "unknown"
+    """Wrap labels used inside figures without splitting words."""
+    return "\n".join(wrap(clean_text(value), width=width, break_long_words=False)) or "unknown"
+
+
+def _listing(items: list[str]) -> str:
+    """Join names as prose ("a, b and c"), or return "none"."""
+    if not items:
+        return "none"
+    if len(items) == 1:
+        return items[0]
+    return f"{', '.join(items[:-1])} and {items[-1]}"
 
 
 def save_figure(fig: plt.Figure, output_path: Path) -> None:
@@ -514,7 +523,7 @@ def plot_direction_specificity(
     ax.bar_label(bars_focus, padding=3, fontsize=9)
     ax.bar_label(bars_comparator, padding=3, fontsize=9)
     ax.set_xticks(x, ["Increased\nPD feces", "Decreased\nPD feces"])
-    ax.set_ylabel("Cellulose-positive profile count")
+    ax.set_ylabel("Profiles with cellulose z > 0")
     ax.set_title("PD fecal profiles with cellulose z > 0", fontweight="bold")
     ax.legend(
         handles=[
@@ -592,7 +601,7 @@ def plot_direction_specificity(
     )
 
     fig.suptitle(
-        "Parkinson's disease fecal cellulose signal is direction-specific",
+        "Cellulose catabolic process annotation in PD fecal profiles, by signature direction",
         fontsize=15,
         fontweight="bold",
     )
@@ -858,27 +867,33 @@ def plot_enrichment_test(
     for y_pos, row, color in zip(y, plot_frame.itertuples(index=False), colors, strict=True):
         ax.plot([row.ci_low, row.ci_high], [y_pos, y_pos], color=color, linewidth=2.2)
         ax.scatter(row.coefficient, y_pos, s=90, color=color, edgecolor="white", zorder=3)
+        p_label = "p<0.001" if row.p_value < 0.001 else f"p={row.p_value:.3f}"
         ax.text(
             row.coefficient,
             y_pos + 0.20,
-            f"{row.coefficient:+.2f}, p={row.p_value:.3f}",
+            f"{row.coefficient:+.2f}, {p_label}",
             ha="center",
             va="bottom",
             fontsize=8.4,
             color=SLATE_700,
         )
+    # Headroom keeps the top estimate's label below the panel title.
+    ax.set_ylim(-0.5, len(plot_frame) - 0.2)
     ax.set_yticks(y, plot_frame["term_label"])
     ax.set_xlabel("OLS coefficient on cellulose z-score")
     ax.set_title("Study-clustered interaction model", fontweight="bold")
     ax.grid(axis="x", color=SLATE_200, linewidth=0.8)
     ax.spines[["top", "right", "left"]].set_visible(False)
 
-    fig.suptitle("Testing PD-specific cellulose enrichment by direction", fontweight="bold")
+    fig.suptitle(
+        "Cellulose annotation z-score in fecal profiles by PD status and signature direction",
+        fontweight="bold",
+    )
     save_figure(fig, output_path)
 
 
 def plot_taxon_driver_bar(drivers: pd.DataFrame, output_path: Path) -> None:
-    """Plot direction support for observed PD feces cellulose-carrier taxa."""
+    """Plot how often PD fecal signatures report each cellulose-annotated taxon, by direction."""
     frame = drivers.head(18).sort_values("total_profile_count", ascending=True)
     labels = [f"{row.taxon_name} ({row.taxonomic_rank})" for row in frame.itertuples()]
     y = np.arange(len(frame))
@@ -924,8 +939,14 @@ def plot_taxon_driver_bar(drivers: pd.DataFrame, output_path: Path) -> None:
     )
     ax.set_xlim(-max_count - 8, max_count + 8)
     ax.set_yticks(y, labels)
-    ax.set_xlabel("Unique PD feces profiles with observed cellulose-carrier taxon")
-    ax.set_title("Taxon-level drivers of the PD-cellulose signal", fontweight="bold")
+    ax.set_xlabel(
+        "PD fecal profiles reporting the taxon "
+        "(annotated with cellulose catabolic process, itself or via descendants)"
+    )
+    ax.set_title(
+        "PD fecal profiles reporting cellulose-annotated taxa, by signature direction",
+        fontweight="bold",
+    )
     ax.legend(frameon=False, loc="lower right")
     ax.grid(axis="x", color=SLATE_200, linewidth=0.8)
     ax.spines[["top", "right"]].set_visible(False)
@@ -938,7 +959,7 @@ def plot_taxon_trait_heatmap(
     traits: pd.DataFrame,
     output_path: Path,
 ) -> None:
-    """Plot whether top cellulose-carrier taxa also carry the other shared traits."""
+    """Plot which other shared traits the top cellulose-annotated taxa are annotated with."""
     top_taxa = drivers.head(18).copy()
     top_ids = top_taxa["taxon_id"].tolist()
     trait_labels = traits["trait_label"].tolist()
@@ -977,7 +998,7 @@ def plot_taxon_trait_heatmap(
                     fontweight="bold",
                 )
     ax.set_title(
-        "Top PD feces cellulose-carrier taxa and their six-trait annotations",
+        "Six-trait annotations of the cellulose-annotated taxa most often reported in PD feces",
         fontweight="bold",
     )
     ax.set_xlabel("Six shared traits")
@@ -1015,11 +1036,20 @@ def write_interpretations(
     inc_other = pd_vs_other[
         pd_vs_other["direction"].eq("increased") & pd_vs_other["group"].eq("Other feces")
     ].iloc[0]
-    cellulose_trait = trait_summary[trait_summary["trait"].eq(CELLULOSE_LABEL)].iloc[0]
+    contrasts = trait_summary.set_index("trait")["increased_minus_decreased_mean_z"].sort_values()
+    cellulose_contrast = float(contrasts[CELLULOSE_LABEL])
+    decreased_skewed = [trait for trait, value in contrasts.items() if value < 0]
+    increased_skewed = [trait for trait, value in contrasts[::-1].items() if value > 0]
     interaction = model_table[
         model_table["outcome"].eq("cellulose_z") & model_table["term"].eq("pd_x_decreased")
     ].iloc[0]
+    interval = "excludes" if interaction.ci_low > 0 or interaction.ci_high < 0 else "includes"
     top_taxa = drivers.head(8)
+    plotted_taxa = drivers.head(18)
+    decreased_labels = plotted_taxa.loc[
+        plotted_taxa["decreased_profile_count"] > plotted_taxa["increased_profile_count"],
+        "taxon_name",
+    ].tolist()
 
     lines = [
         "# Parkinson's Disease and Cellulose Catabolic Process",
@@ -1027,31 +1057,44 @@ def write_interpretations(
         "## Summary",
         "",
         (
-            "This folder focuses on the direction-specific connection between "
-            "Parkinson's disease (PD), fecal profiles, and the cellulose catabolic "
-            "process trait from the six-shared-traits analysis."
+            "This folder follows the cellulose catabolic process trait "
+            f"(`{CELLULOSE_ID}`) of the six-shared-traits analysis in Parkinson's disease "
+            "(PD) fecal profiles. Each profile is one curated BugSigDB signature. Its trait "
+            "values summarize KG-Microbe annotations of the reported taxa, including "
+            "annotations rolled up from their descendants; they are not measurements of "
+            "cellulose degradation, gene expression or metabolites."
         ),
         "",
         (
-            "The main result is that cellulose catabolic process is not a broad "
-            "PD marker across directions. It is specifically stronger in PD "
-            "decreased fecal profiles."
+            "In PD fecal profiles the mean cellulose annotation z-score is "
+            f"{'lower' if cellulose_contrast < 0 else 'higher'} in increased than in "
+            f"decreased profiles (increased minus decreased `{cellulose_contrast:.3f}`). "
+            "A study-clustered model asks whether the decreased-minus-increased difference "
+            "is larger in PD than in other fecal profiles: the extra PD effect in decreased "
+            "profiles is "
+            f"`{interaction.coefficient:+.3f}` cellulose z (95% CI "
+            f"`{interaction.ci_low:+.3f}` to `{interaction.ci_high:+.3f}`, "
+            f"`p={interaction.p_value:.3g}`, {int(interaction.cluster_count)} study "
+            f"clusters), and the interval {interval} zero. This is one nominal test, not "
+            "corrected for the other conditions and traits examined; the corrected screen "
+            "of every eligible fecal condition-trait contrast is described in "
+            "`pd_condition_taxon_trait_network_methods.md`."
         ),
         "",
-        "## Direction-Specific Cytoscape Signal",
+        "## Cellulose Edges by Signature Direction",
         "",
         (
             f"In the individual-condition Cytoscape display edges, PD feces has "
-            f"`{int(inc_cell.focus_enriched_profiles)}` cellulose-positive increased "
-            f"profiles from `{int(inc_cell.focus_studies)}` studies, compared with "
-            f"`{int(dec_cell.focus_enriched_profiles)}` cellulose-positive decreased "
-            f"profiles from `{int(dec_cell.focus_studies)}` studies."
+            f"`{int(inc_cell.focus_enriched_profiles)}` increased profiles with cellulose "
+            f"z > 0 from `{int(inc_cell.focus_studies)}` studies, and "
+            f"`{int(dec_cell.focus_enriched_profiles)}` decreased profiles with cellulose "
+            f"z > 0 from `{int(dec_cell.focus_studies)}` studies."
         ),
         "",
         (
-            f"The decreased edge is stronger: decreased PD feces has a focus-minus-"
-            f"comparator z contrast of `{dec_cell.focus_minus_comparator_z:.3f}`, "
-            f"versus `{inc_cell.focus_minus_comparator_z:.3f}` for increased PD feces."
+            "The focus-minus-comparator z contrast is "
+            f"`{dec_cell.focus_minus_comparator_z:.3f}` for the decreased edge and "
+            f"`{inc_cell.focus_minus_comparator_z:.3f}` for the increased edge."
         ),
         "",
         "See `pd_cellulose_direction_specificity.png` and `pd_cellulose_cytoscape_highlight.png`.",
@@ -1060,15 +1103,14 @@ def write_interpretations(
         "",
         (
             f"Among the six traits in PD feces, cellulose has an increased-minus-"
-            f"decreased mean z difference of "
-            f"`{cellulose_trait.increased_minus_decreased_mean_z:.3f}`. Negative "
+            f"decreased mean z difference of `{cellulose_contrast:.3f}`. Negative "
             "values indicate decreased-profile skew."
         ),
         "",
         (
-            "The companion lollipop plot shows cellulose as the clearest "
-            "decreased-skewed PD trait, while moderately halophilic, "
-            "facultatively aerobic, and arsenate reduction are increased-skewed."
+            "In the companion lollipop plot the decreased-skewed traits, most negative "
+            f"first, are {_listing(decreased_skewed)}; the increased-skewed traits, most "
+            f"positive first, are {_listing(increased_skewed)}."
         ),
         "",
         "See `pd_six_trait_direction_lollipop.png`.",
@@ -1076,41 +1118,42 @@ def write_interpretations(
         "## PD vs Other Fecal Profiles",
         "",
         (
-            f"Compared with other fecal profiles, PD decreased feces has a higher "
-            f"cellulose-positive z-rate "
-            f"(`{dec_vs_other.positive_z_rate:.1%}` for PD vs "
-            f"`{dec_other.positive_z_rate:.1%}` for other feces in the same direction)."
+            "Among decreased fecal profiles, cellulose z > 0 in "
+            f"`{dec_vs_other.positive_z_rate:.1%}` of PD profiles and "
+            f"`{dec_other.positive_z_rate:.1%}` of other profiles; among increased fecal "
+            f"profiles, in `{inc_vs_other.positive_z_rate:.1%}` and "
+            f"`{inc_other.positive_z_rate:.1%}`."
         ),
         "",
         (
             f"The decreased-direction PD-vs-other Fisher test gives an odds ratio "
             f"of `{dec_vs_other.pd_vs_other_positive_z_odds_ratio:.2f}` and "
-            f"`p={dec_vs_other.pd_vs_other_fisher_p:.3g}`. In increased profiles, "
-            f"the PD cellulose-positive z-rate is `{inc_vs_other.positive_z_rate:.1%}` "
-            f"versus `{inc_other.positive_z_rate:.1%}` for other feces."
+            f"`p={dec_vs_other.pd_vs_other_fisher_p:.3g}`. It treats the profiles of one "
+            "study as independent, so the study-clustered model below is the better guide."
         ),
         "",
         (
             f"The feces-only linear model includes PD, decreased direction, and the "
-            f"PD-by-decreased interaction. The cellulose z-score interaction term is "
-            f"`{interaction.coefficient:.3f}` with study-clustered "
-            f"`p={interaction.p_value:.3g}`. This tests whether the decreased "
-            "direction has an extra PD-associated cellulose shift beyond the main "
-            "PD and direction effects."
+            f"PD-by-decreased interaction, with standard errors clustered by study. The "
+            f"cellulose z-score interaction term is `{interaction.coefficient:.3f}` "
+            f"(95% CI `{interaction.ci_low:.3f}` to `{interaction.ci_high:.3f}`, "
+            f"`p={interaction.p_value:.3g}`). It tests whether the decreased direction has "
+            "an extra PD-associated shift in cellulose annotation beyond the main PD and "
+            "direction effects."
         ),
         "",
         "See `pd_cellulose_enrichment_test.png` and `pd_cellulose_interaction_model.tsv`.",
         "",
-        "## Taxon-Level Drivers",
+        "## Reported Taxa With the Cellulose Annotation",
         "",
         (
             "Observed PD feces taxa were intersected with the KG-Microbe "
-            "taxa-trait matrix, then limited to taxa carrying the cellulose "
-            "catabolic process annotation. Counts are profile-level occurrences "
-            "after deduplicating each taxon within each profile."
+            "taxa-trait matrix, then limited to taxa annotated with cellulose "
+            "catabolic process, themselves or through annotated descendants. Counts are "
+            "profile-level occurrences after deduplicating each taxon within each profile."
         ),
         "",
-        "Top cellulose-carrier taxon labels in PD feces:",
+        "Cellulose-annotated taxon labels most often reported in PD feces:",
         "",
         "| taxon | rank | decreased profiles | increased profiles |",
         "| --- | --- | ---: | ---: |",
@@ -1124,19 +1167,20 @@ def write_interpretations(
         [
             "",
             (
-                "The top decreased-skewed cellulose-carrier labels include "
-                "Lachnospiraceae, Roseburia, Blautia, Clostridiaceae, "
-                "Clostridium, Ruminococcus, and Lachnospira. These include a mix "
-                "of genus/family/higher-rank reported labels, so they should be "
-                "treated as taxonomic-unit drivers from BugSigDB curation rather "
-                "than always as species-resolved drivers."
+                f"Of the {len(plotted_taxa)} labels plotted, those reported in more decreased "
+                f"than increased PD fecal profiles are {_listing(decreased_labels)}. The "
+                "labels mix genus, family and higher ranks, so they are BugSigDB reporting "
+                "units rather than species-resolved organisms, and an annotation reached "
+                "through descendants does not mean every member of the taxon carries it. "
+                "The counts describe how often PD signatures report these labels; they do "
+                "not show that the taxa produce the cellulose contrast."
             ),
             "",
             (
-                "The taxon-trait heatmap checks whether these cellulose-carrier "
-                "taxa also carry the other five shared traits. This helps identify "
-                "whether the PD-cellulose signal is isolated or part of a broader "
-                "multi-trait microbial phenotype pattern."
+                "The taxon-trait heatmap shows which of the other five shared traits the "
+                "same taxa are annotated with. A higher-rank label can collect different "
+                "annotations from different descendants, so co-annotation does not show "
+                "that the traits occur together in one organism."
             ),
             "",
             "See `pd_cellulose_taxon_driver_bar.png`, "
@@ -1145,13 +1189,18 @@ def write_interpretations(
             "",
             "## Generated Files",
             "",
-            "- `pd_cellulose_direction_specificity.png`: two-panel direction-specific summary.",
+            "The file names predate the current figure titles; the titles describe what "
+            "each figure shows.",
+            "",
+            "- `pd_cellulose_direction_specificity.png`: PD fecal profiles with cellulose "
+            "z > 0 by signature direction, and PD vs other feces.",
             "- `pd_six_trait_direction_lollipop.png`: all-six-trait PD feces direction contrast.",
             "- `pd_cellulose_cytoscape_highlight.png`: focused Cytoscape-style "
             "PD-cellulose highlight.",
-            "- `pd_cellulose_taxon_driver_bar.png`: observed cellulose-carrier taxa by direction.",
-            "- `pd_cellulose_taxon_six_trait_heatmap.png`: six-trait annotation "
-            "context for top taxa.",
+            "- `pd_cellulose_taxon_driver_bar.png`: PD fecal profiles reporting each "
+            "cellulose-annotated taxon, by direction.",
+            "- `pd_cellulose_taxon_six_trait_heatmap.png`: six-trait annotations of the "
+            "most often reported cellulose-annotated taxa.",
             "- `pd_cellulose_enrichment_test.png`: feces-only model and group mean summary.",
             "- `pd_cellulose_display_edge_summary.tsv`: PD display-edge audit data.",
             "- `pd_cellulose_all_edge_summary.tsv`: PD all-edge audit data.",
@@ -1159,7 +1208,8 @@ def write_interpretations(
             "- `pd_cellulose_vs_other_feces_summary.tsv`: PD vs other feces comparison.",
             "- `pd_cellulose_interaction_model.tsv`: study-clustered OLS model table.",
             "- `pd_cellulose_model_group_summary.tsv`: model input group summaries.",
-            "- `pd_cellulose_taxon_drivers.tsv`: taxon-driver audit table.",
+            "- `pd_cellulose_taxon_drivers.tsv`: audit table of the cellulose-annotated "
+            "taxa reported in PD feces.",
             "- `pd_cellulose_taxon_trait_presence.tsv`: long-form top-taxon trait matrix.",
         ]
     )
