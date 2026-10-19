@@ -17,6 +17,8 @@
 # ==============================================================================
 
 set -euo pipefail
+# Headless Agg, as every recipe uses, for the scripts this arm runs directly too (#719)
+export MPLBACKEND=Agg
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_ROOT}"
