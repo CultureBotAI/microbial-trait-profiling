@@ -67,7 +67,7 @@ def test_figures_draw_from_the_committed_tables(tmp_path: Path) -> None:
     assert direction["title"].endswith(
         "in PD, CRC and all three pooled under every condition definition; in HIV only under some"
     )
-    assert "HIV 9 : 0 : 2" in direction["takeaway"]
+    assert "HIV 10 : 2 : 2" in direction["takeaway"]
     assert captions["statements"]["fragile"].startswith("the HIV result depends")
     assert captions["statements"]["crc_compartments"] in direction["caveat"]
 
@@ -201,18 +201,18 @@ def test_shared_taxa_caption_counts_direct_edges(results: figures.Results) -> No
     assert figures.direct_core_text(edited).startswith("1 of the 17 core taxa has its own")
 
 
-def test_crc_statement_names_the_excluded_experiment_only_when_it_matters(
+def test_crc_statement_names_the_tissue_contrasts_only_when_they_matter(
     results: figures.Results,
 ) -> None:
-    assert "without the tumour-vs-adjacent-tissue experiment" in (
+    assert "counting the tumour-vs-adjacent-tissue contrasts too" in (
         figures.crc_compartment_statement(results)
     )
     table = results.scenario_interaction.copy()
     primary = figures.interaction_row(results, ORIENTED, "CRC", "study")
-    excluded = table["scenario"].eq("crc_within_patient_excluded")
-    table.loc[excluded, "fisher_p_two_sided"] = primary["fisher_p_two_sided"]
+    counted = table["scenario"].eq("paired_tissue_counted")
+    table.loc[counted, "fisher_p_two_sided"] = primary["fisher_p_two_sided"]
     statement = figures.crc_compartment_statement(replace(results, scenario_interaction=table))
-    assert "without" not in statement
+    assert "counting" not in statement
     assert "does not show anatomical specificity" in statement
 
 
