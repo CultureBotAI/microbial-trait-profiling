@@ -218,20 +218,41 @@ cellulose-decr-figures *ARGS:
 figure-review-plates *ARGS:
 	uv run python scripts/generate_tufte_plates.py "$@"
 
-# The selected-figure deck under data/derived/figure_review_2026-09-21/: the HTML,
-# slide manifest and assets in slides/, the figure provenance YAML in provenance/
-# (validated against its LinkML schema), and the PDF. Many inputs are gitignored
-# local outputs (earlier deck manifests, svg_sources/, data/derived figures), so a
-# fresh clone cannot build it. The build refuses to replace an existing deck without
-# --overwrite (back up slides/ and provenance/ first) and refuses contrast-orientation
-# inputs other than the version its typed numbers describe (#573, #579, #592).
+deck_slides := "data/derived/figure_review_2026-09-21/slides"
+deck_provenance := "data/derived/figure_review_2026-09-21/provenance"
+deck_schema := "data/derived/figure_review_2026-09-21/provenance/figure_provenance_schema.yaml"
+
+# The selected-figure deck: the HTML, slide manifest and assets in {{deck_slides}}, the
+# figure provenance YAML in {{deck_provenance}} (validated against its LinkML schema),
+# the PDF, and deck_build_status.json recording that validation and printing succeeded.
+# Many inputs are gitignored local outputs (earlier deck manifests, svg_sources/,
+# data/derived figures), so a fresh clone cannot build it. The build refuses to replace
+# an existing deck without --overwrite (back up slides/ and provenance/ first) and
+# refuses contrast-orientation inputs other than the version its typed numbers describe
+# (#573, #579, #592). Choose other folders with the variables, e.g.
+# `just deck_slides=/tmp/s deck_provenance=/tmp/p figure-review-deck`, so that every
+# step uses them; --output-dir and --provenance-dir are refused here.
 [positional-arguments]
 figure-review-deck *ARGS:
-	uv run python scripts/build_slide_deck.py "$@"
-	uv run linkml-validate -s data/derived/figure_review_2026-09-21/provenance/figure_provenance_schema.yaml data/derived/figure_review_2026-09-21/provenance/figure_provenance_and_results.yaml
-	just html-to-pdf data/derived/figure_review_2026-09-21/slides/selected_figures_v6.html data/derived/figure_review_2026-09-21/slides/microbial-trait-profiling_v6.pdf
-	cp data/derived/figure_review_2026-09-21/slides/microbial-trait-profiling_v6.pdf data/derived/figure_review_2026-09-21/slides/microbial-trait-profiling.pdf
-	cp data/derived/figure_review_2026-09-21/slides/microbial-trait-profiling_v6.pdf data/derived/figure_review_2026-09-21/slides/selected_figures.pdf
+	#!/usr/bin/env bash
+	set -euo pipefail
+	for arg in "$@"; do
+		case "$arg" in
+			--output-dir* | --provenance-dir*)
+				echo "set deck_slides= and deck_provenance= instead of $arg" >&2
+				exit 1
+				;;
+		esac
+	done
+	slides="{{deck_slides}}"
+	provenance="{{deck_provenance}}"
+	uv run python scripts/build_slide_deck.py --output-dir "$slides" --provenance-dir "$provenance" "$@"
+	uv run linkml-validate -s "{{deck_schema}}" "$provenance/figure_provenance_and_results.yaml"
+	just html-to-pdf "$slides/selected_figures_v6.html" "$slides/microbial-trait-profiling_v6.pdf"
+	cp "$slides/microbial-trait-profiling_v6.pdf" "$slides/microbial-trait-profiling.pdf"
+	cp "$slides/microbial-trait-profiling_v6.pdf" "$slides/selected_figures.pdf"
+	pdf_bytes="$(wc -c < "$slides/microbial-trait-profiling_v6.pdf" | tr -d ' ')"
+	printf '{"provenance_linkml_validated": true, "pdf": "microbial-trait-profiling_v6.pdf", "pdf_bytes": %s, "finished_utc": "%s"}\n' "$pdf_bytes" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$slides/deck_build_status.json"
 
 # Print an HTML page to PDF with headless Chrome: $CHROME if set (it must be executable),
 # else Playwright's Chromium, Google Chrome, or a chromium / google-chrome on PATH.
