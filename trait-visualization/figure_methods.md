@@ -515,7 +515,8 @@ filter. The bar-style figures display the top 15 focus-condition rows after
 ranking, while the scatterplot and condition x trait heatmap include every
 focus-eligible row after the same filters. Optional arguments allow the same
 workflow to be rerun for a specific `body_site_group`/`body_site`. The four
-standalone bar charts described next are drawn only with `--standalone-bars`;
+standalone bar charts described next are drawn only with `--standalone-bars`
+and another `--output-dir`;
 the folder keeps the combined diagram, the scatterplot and the heatmap for each
 direction, and `README.md` lists the coverage and depth rankings as tables.
 

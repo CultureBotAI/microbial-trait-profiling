@@ -1372,11 +1372,18 @@ def parse_args() -> argparse.Namespace:
         "--standalone-bars",
         action="store_true",
         help=(
-            "Also draw the four standalone bar charts. The committed folder keeps only the "
-            "combined diagram, scatterplot and heatmap for each direction."
+            "Also draw the four standalone bar charts; needs an --output-dir other than the "
+            "default. The committed folder keeps only the combined diagram, scatterplot and "
+            "heatmap for each direction."
         ),
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    # Every PNG in the committed folder needs a label in
+    # annotate_trait_profile_investigation_figures.py, so extra charts there would stop
+    # `just trait-profile-investigation` (#690).
+    if args.standalone_bars and args.output_dir.resolve() == DEFAULT_OUTPUT_DIR.resolve():
+        parser.error("--standalone-bars needs an --output-dir outside profile-condition-bars/")
+    return args
 
 
 def main() -> None:
