@@ -53,6 +53,7 @@ from mtp.ora_calibration.scenarios import (
     resolve_signature_sizes,
     shared_trait_columns,
     trait_population_counts,
+    trait_presence_matrix,
 )
 from mtp.paths import DERIVED_DATA_DIR, file_sha256
 
@@ -147,6 +148,8 @@ class CalibrationBenchmarkReport:
     @property
     def harness_check_passed(self) -> bool:
         """Verdict: True if null benchmark was conducted and is conservative (#389)."""
+        if self.status != STATUS_SUCCESS:
+            return False
         if self.complete_null_type_i is not None and not self.complete_null_type_i.is_conservative:
             return False
         if (
@@ -717,10 +720,7 @@ def _load_inputs(
         raise ValueError("All profiles have signature size 0; nothing to test")
 
     # Binarize taxa matrix trait columns so cells never exceed presence (> 0) (#348)
-    for col in shared:
-        taxa_matrix_df[col] = (
-            pd.to_numeric(taxa_matrix_df[col], errors="coerce").fillna(0) > 0
-        ).astype(np.int64)
+    taxa_matrix_df[shared] = trait_presence_matrix(taxa_matrix_df, shared)
 
     return profiles_df, taxa_matrix_df
 

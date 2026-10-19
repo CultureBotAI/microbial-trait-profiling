@@ -13,6 +13,7 @@ from matplotlib.colors import TwoSlopeNorm
 from matplotlib.patches import Circle, Patch, PathPatch
 from matplotlib.path import Path as MplPath
 
+from mtp.body_site_diagram import anatomical_site_base
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
     load_retained_profiles,
@@ -65,7 +66,8 @@ EXCLUDED_CONDITION_SUMMARY_LABELS = {
     "Physical activity",
     "Timepoint",
 }
-MIN_PAIRED_SMD_PROFILE_PAIRS = 3
+# A paired d (and its paired t-test p) from fewer matched profile pairs is reported as NA.
+MIN_PAIRED_SMD_PROFILE_PAIRS = 5
 INFERRED_GUILD_TOP_TRAITS_PER_GROUP = 12
 INFERRED_GUILD_TOP_TAXA_PER_TRAIT = 12
 INFERRED_GUILD_TOP_TAXA_PER_GROUP = 12
@@ -1800,30 +1802,6 @@ def is_other_body_site(value: object) -> bool:
     return clean_text(value).lower() == "other"
 
 
-def anatomical_site_base(value: object) -> tuple[float, float]:
-    """Map body-site group labels to approximate body-diagram coordinates."""
-    label = clean_text(value).lower()
-    if "nasopharynx" in label or "airway" in label:
-        return 0.30, 0.86
-    if "subgingival" in label or "dental" in label:
-        return 0.275, 0.825
-    if "saliva" in label:
-        return 0.325, 0.825
-    if "mouth" in label or "oral" in label:
-        return 0.30, 0.825
-    if "colon" in label:
-        return 0.285, 0.47
-    if "caecum" in label or "cecum" in label:
-        return 0.33, 0.46
-    if "feces" in label or "faeces" in label or "stool" in label:
-        return 0.31, 0.37
-    if "vagina" in label or "urogenital" in label:
-        return 0.31, 0.25
-    if "unknown" in label:
-        return 0.16, 0.16
-    return 0.16, 0.47
-
-
 def add_anatomical_outline(ax: plt.Axes) -> None:
     """Draw an original front-facing body-template outline for site callouts."""
     face = "#f8fafc"
@@ -2348,6 +2326,15 @@ def write_summary_report(
             f"{diff_text} | {smd_text} | {p_text} | {int(row.paired_profile_pair_count)} | "
             f"{row.decreased_mean_guild_z:.3f} |"
         )
+
+    lines.extend(
+        [
+            "",
+            "Paired d and paired p are blank for conditions with fewer than "
+            f"{MIN_PAIRED_SMD_PROFILE_PAIRS} matched decreased/increased profile pairs, or with "
+            "zero variance among the paired differences.",
+        ]
+    )
 
     if enriched_direction_rows:
         lines.extend(

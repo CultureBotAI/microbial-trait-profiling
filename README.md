@@ -148,7 +148,7 @@ All commands go through the Justfile. Run `just --list` to see them all.
 | `just download` | Download BugSigDB CSVs (with caching and retry) |
 | `just ingest` | Parse CSVs into per-study YAML |
 | `just taxa-trait-matrix` | Build the taxon x trait matrix from BugSigDB taxa and KG-Microbe |
-| `just study-trait-profiles` | Sum taxon trait vectors by study, experiment, and increased/decreased direction |
+| `just study-trait-profiles` | Sum taxon trait vectors by study, experiment, and increased/decreased direction, for human hosts, without traits no human profile carries: the canonical table committed as `data/derived/study_trait_profiles_wide.tsv.gz` (`just study-trait-profiles-check` compares them) |
 | `just table1-compositional-stats` | Paired log-ratio tests for all 15 Table 1 trait pairs; `--body-site LABEL` for one exact stratum |
 | `just pipeline` | Run download + ingest |
 | `just clean-all` | Remove all generated artifacts |
@@ -279,6 +279,12 @@ microbial-trait-profiling/
 ```
 
 ## Schema
+
+The [execution-checked core workflow](docs/workflow.md) adds a tracked LinkML
+specification for raw snapshot inputs, study collections, flattened tables,
+trait matrices, distinct count/ORA profiles, coverage, and actual execution
+records. Start with `just workflow-check` and `just core-fixture`; use
+`just core-validate RUN` to recheck a completed bundle before downstream analysis.
 
 The schema defines four entity types, all inheriting from `NamedThing`:
 

@@ -2,6 +2,12 @@
 
 Date: 2026-10-17 (America/Los_Angeles). Tracking issue: [#551](https://github.com/CultureBotAI/microbial-trait-profiling/issues/551).
 
+This report describes the original implementation and generation. The
+[2026-10-19 follow-up](2026-10-19-analysis-limitations-followup.md) records
+current-core compatibility, additional review fixes and refreshed execution
+evidence. The retained calibration artifacts now record that later execution;
+its replicate results are byte-identical to those reported here.
+
 ## Implemented scope
 
 The integrated evidence pipeline now imports the native pooled composition tests and complete enrichment/depletion exports, retains the existing BY-corrected 15 log-ratios, and attaches the compatible full-trait directional screen. Native source readers reject incompatible test families, populations, duplicate profile tests, inconsistent backgrounds, and mismatched input hashes where supplied.

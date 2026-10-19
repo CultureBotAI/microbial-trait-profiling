@@ -1,141 +1,178 @@
 analysis	trait_id	trait_label	trait_slug	trait_color	focus_direction	raw_body_site	raw_body_site_group	body_site_group	body_site_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Feces	Feces	Feces	feces/stool rollup	3672	666	1896	1670
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	299	57	157	204
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	124	22	66	75
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	82	16	43	49
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Oral cavity	Oral cavity	Oral cavity / dental	oral/dental rollup	82	11	46	60
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nasopharynx	Nasopharynx	Upper airway / nasal	upper-airway/nasal rollup	74	15	49	54
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mouth	Mouth	Oral cavity / dental	oral/dental rollup	74	14	36	53
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	70	18	35	36
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	64	6	30	30
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	61	10	32	42
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Rectum	Other	Lower GI tract	lower-gi rollup	43	7	21	27
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin of body	Other	Skin	skin rollup	43	7	23	34
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	40	8	20	26
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Intestine	Other	Lower GI tract	lower-gi rollup	39	8	21	19
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Vagina,Uterine cervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	39	1	24	17
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colon	Other	Lower GI tract	lower-gi rollup	38	8	19	16
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Feces	Feces	Feces	feces/stool rollup	3604	681	1858	1635
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Saliva	Saliva	Oral cavity / dental	oral/dental rollup	374	73	199	244
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Vagina	Vagina	Vaginal / reproductive	vaginal/reproductive rollup	133	25	72	80
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Uterine cervix	Uterine cervix	Vaginal / reproductive	vaginal/reproductive rollup	81	17	43	51
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mouth	Mouth	Oral cavity / dental	oral/dental rollup	80	16	40	55
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Subgingival dental plaque	Subgingival dental plaque	Oral cavity / dental	oral/dental rollup	77	21	39	41
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Oral cavity	Oral cavity	Oral cavity / dental	oral/dental rollup	75	12	47	58
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Throat	Throat	Upper airway / nasal	upper-airway/nasal rollup	66	7	31	31
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nasopharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	60	15	37	41
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Rectum	Other	Lower GI tract	lower-gi rollup	46	9	23	25
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	44	9	22	30
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin of body	Other	Skin	skin rollup	44	8	24	34
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Intestine	Other	Lower GI tract	lower-gi rollup	41	8	22	18
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Lung	Other	Lower airway / lung	lower-airway/lung rollup	37	8	21	20
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	35	10	18	23
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Thyroid gland	Other	Thyroid tissue	thyroid-tissue body-site group	33	1	13	18
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nasal cavity	Other	Upper airway / nasal	upper-airway/nasal rollup	32	6	18	24
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Posterior fornix of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	31	8	17	22
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ileum,Right colon,Rectum	Other	Lower GI tract	lower-gi rollup	31	1	15	8
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Tongue	Other	Oral cavity / dental	oral/dental rollup	29	8	13	18
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nasal cavity	Other	Upper airway / nasal	upper-airway/nasal rollup	29	5	17	21
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	29	7	15	19
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Meconium	Other	Birth-associated samples	birth-associated body-site group	28	10	14	21
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Tongue	Other	Oral cavity / dental	oral/dental rollup	27	8	12	16
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colon	Other	Lower GI tract	lower-gi rollup	26	8	14	11
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Vaginal fluid	Other	Vaginal / reproductive	vaginal/reproductive rollup	26	6	14	13
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Meconium	Other	Birth-associated samples	birth-associated body-site group	25	8	13	20
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	25	5	13	14
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Conjunctiva	Other	Ocular / eye	ocular/eye body-site group	20	3	13	19
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Gastric juice	Other	Stomach / esophagus	stomach/esophagus body-site group	20	2	13	12
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Urine	Other	Urinary tract	urinary rollup	19	5	10	10
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Urine	Other	Urinary tract	urinary rollup	25	6	14	12
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Conjunctiva	Other	Ocular / eye	ocular/eye body-site group	24	4	16	21
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	23	5	8	10
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Uterus	Other	Vaginal / reproductive	vaginal/reproductive rollup	19	7	12	13
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bulbar conjunctiva	Other	Ocular / eye	ocular/eye body-site group	18	4	10	16
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colorectal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	4	12	9
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Duodenal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	18	3	10	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bronchus	Other	Bronchial / tracheal	bronchial/tracheal body-site group	18	1	9	15
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Uterus	Other	Vaginal / reproductive	vaginal/reproductive rollup	17	6	12	12
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Sputum	Other	Lower airway / lung	lower-airway/lung rollup	17	5	11	9
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Surface of tongue	Other	Oral cavity / dental	oral/dental rollup	16	1	10	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Breast	Other	Breast / milk	breast/milk body-site group	15	3	8	9
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colorectum	Other	Lower GI tract	lower-gi rollup	15	2	9	5
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colorectum	Other	Lower GI tract	lower-gi rollup	15	3	8	6
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Blood serum	Other	Blood	blood rollup	15	1	9	6
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Wall of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	14	2	8	2
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Endothelium of trachea	Other	Bronchial / tracheal	bronchial/tracheal body-site group	13	1	6	11
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mouth mucosa	Other	Oral cavity / dental	oral/dental rollup	13	1	6	5
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Milk	Other	Breast / milk	breast/milk body-site group	12	4	6	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Breast,Milk	Other	Breast / milk	breast/milk body-site group	12	1	6	8
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bronchus,Mouth	Other	Oral cavity / dental	oral/dental rollup	12	1	7	12
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nasopharynx,Throat	Other	Upper airway / nasal	upper-airway/nasal rollup	12	1	6	8
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colonic mucosa	Other	Lower GI tract	lower-gi rollup	10	3	5	5
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Vagina,Uterine cervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	12	1	8	8
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ileum	Other	Lower GI tract	lower-gi rollup	10	3	5	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ovary	Other	Reproductive / genital	reproductive/genital body-site group	10	3	3	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Conjunctival sac	Other	Ocular / eye	ocular/eye body-site group	10	2	5	9
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	5	6
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Endocervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	10	2	8	9
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Intestinal mucosa	Other	Lower GI tract	lower-gi rollup	10	2	5	9
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	2	2	9
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Margin of eyelid	Other	Ocular / eye	ocular/eye body-site group	10	1	6	4
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Saliva,Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	10	1	5	4
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Feces,Blood	Other	Feces	feces/stool rollup	9	2	5	2
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of body of stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	9	1	6	8
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Milk	Other	Breast / milk	breast/milk body-site group	8	2	3	0
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Amniotic fluid,Feces	Other	Feces	feces/stool rollup	8	1	4	4
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ileum,Right colon,Rectum	Other	Lower GI tract	lower-gi rollup	10	1	5	4
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Duodenum	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	9	3	5	4
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colonic mucosa	Other	Lower GI tract	lower-gi rollup	8	3	4	3
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Margin of eyelid	Other	Ocular / eye	ocular/eye body-site group	8	2	4	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bile	Other	Hepatobiliary / pancreas	hepatobiliary/pancreas body-site group	8	1	5	7
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	External ear	Other	Ear	ear body-site group	8	1	5	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Internal cheek pouch	Other	Oral cavity / dental	oral/dental body-site group	8	1	4	5
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Lower lip,Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	8	1	5	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Margin of eyelid,Conjunctiva	Other	Ocular / eye	ocular/eye body-site group	8	1	4	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nasopharynx,Oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	8	1	4	5
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Pancreas	Other	Hepatobiliary / pancreas	hepatobiliary/pancreas body-site group	8	1	4	6
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Pharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	8	1	4	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Small intestine	Other	Lower GI tract	lower-gi rollup	7	3	4	4
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Feces,Blood	Other	Feces	feces/stool rollup	7	2	4	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	7	2	5	5
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin of penis	Other	Skin	skin rollup	7	2	3	5
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Tear film	Other	Ocular / eye	ocular/eye body-site group	7	2	4	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cheek,Forehead	Other	Oral cavity / dental	oral/dental body-site group	7	1	3	3
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Oral opening	Other	Oral cavity / dental	oral/dental rollup	7	1	5	4
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Endothelium of trachea	Other	Bronchial / tracheal	bronchial/tracheal body-site group	7	1	3	6
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	External ear	Other	Ear	ear body-site group	7	1	4	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of body of stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	7	1	5	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin epithelium	Other	Skin	skin rollup	7	1	3	3
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Small intestine	Other	Lower GI tract	lower-gi rollup	6	2	3	3
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Duodenum	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	6	1	3	3
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Meibum	Other	Ocular / eye	ocular/eye body-site group	6	1	3	5
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Duodenal mucosa	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	6	3	3	4
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Gastric juice	Other	Stomach / esophagus	stomach/esophagus body-site group	6	2	3	3
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Peritoneal fluid	Other	Miscellaneous sampled tissues	miscellaneous sampled tissue body-site group	6	1	6	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Posterior fornix of vagina,External cervical os	Other	Vaginal / reproductive	vaginal/reproductive rollup	6	1	3	4
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Saliva,Buccal mucosa	Other	Oral cavity / dental	oral/dental rollup	6	1	3	6
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	5	3	3	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cecum mucosa,Colonic mucosa,Mucosa of rectum,Ileal mucosa	Other	Lower GI tract	lower-gi rollup	5	1	2	2
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colostrum	Other	Breast / milk	breast/milk body-site group	5	1	3	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Conjunctival fornix	Other	Ocular / eye	ocular/eye body-site group	5	1	2	5
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Endometrium	Other	Vaginal / reproductive	vaginal/reproductive rollup	5	1	3	5
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Female urethra	Other	Urinary tract	urinary body-site group	5	1	2	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Gingiva	Other	Oral cavity / dental	oral/dental body-site group	5	1	3	3
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Meconium,Feces	Other	Feces	feces/stool rollup	5	1	2	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Upper respiratory tract	Other	Upper airway / nasal	upper-airway/nasal rollup	5	1	2	5
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin of cheek	Other	Skin	skin rollup	4	2	3	4
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Urinary bladder	Other	Urinary tract	urinary rollup	4	2	2	4
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Amniotic fluid,Feces	Other	Feces	feces/stool rollup	4	1	2	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Dental pulp	Other	Oral cavity / dental	oral/dental body-site group	4	1	2	0
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of ascending colon	Other	Lower GI tract	lower-gi rollup	4	1	3	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Meconium,Feces	Other	Feces	feces/stool rollup	4	1	2	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Meibum	Other	Ocular / eye	ocular/eye body-site group	4	1	2	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	4	1	2	4
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Renal pelvis/ureter	Other	Urinary tract	urinary body-site group	4	1	2	4
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Oral opening	Other	Oral cavity / dental	oral/dental rollup	4	1	3	4
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Pharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	4	1	2	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Posterior wall of oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	4	1	2	3
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Right colon	Other	Lower GI tract	lower-gi rollup	4	1	2	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Saliva,Dental plaque	Other	Oral cavity / dental	oral/dental rollup	4	1	2	3
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Saliva,Supragingival dental plaque	Other	Oral cavity / dental	oral/dental rollup	4	1	2	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin of scalp	Other	Skin	skin rollup	4	1	2	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin sebaceous gland	Other	Skin	skin rollup	4	1	2	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Supragingival dental plaque,Saliva	Other	Oral cavity / dental	oral/dental rollup	4	1	2	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Eyelid	Other	Ocular / eye	ocular/eye body-site group	3	2	2	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Placenta	Other	Birth-associated samples	birth-associated body-site group	3	2	2	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Axilla skin	Other	Skin	skin rollup	3	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cervical cavity	Other	Vaginal / reproductive	vaginal/reproductive rollup	3	1	3	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colostrum	Other	Breast / milk	breast/milk body-site group	3	1	1	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Endometrium	Other	Vaginal / reproductive	vaginal/reproductive rollup	3	1	2	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Feces,Saliva,Anterior naris,Posterior fornix of vagina,Epithelium of elbow	Other	Feces	feces/stool rollup	3	1	1	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Lower part of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	3	1	2	3
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of small intestine	Other	Lower GI tract	lower-gi rollup	3	1	2	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucus	Other	Unlocalized mucosal samples	unlocalized-mucosal body-site group	3	1	2	2
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin of cheek	Other	Skin	skin rollup	3	1	2	3
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Saliva,Gastric juice,Stomach,Feces,Esophagus	Other	Feces	feces/stool rollup	3	1	3	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Saliva,Stomach,Gastric juice,Feces,Esophagus	Other	Feces	feces/stool rollup	3	1	3	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin of cheek,Nose	Other	Skin	skin rollup	3	1	1	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Uterine cervix,Vaginal fluid	Other	Vaginal / reproductive	vaginal/reproductive rollup	3	1	2	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Alveolus of lung	Other	Lower airway / lung	lower-airway/lung rollup	2	1	1	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Amniotic fluid	Other	Ear	ear body-site group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Anterior fornix of vagina,Lateral fornix of vagina,Uterine cervix	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Blood	Other	Blood	blood rollup	2	1	1	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Blood,Feces	Other	Feces	feces/stool rollup	2	1	1	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bronchus,Mouth	Other	Oral cavity / dental	oral/dental rollup	2	1	1	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bronchus,Nose	Other	Bronchial / tracheal	bronchial/tracheal body-site group	2	1	1	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cardia of stomach	Other	Stomach / esophagus	stomach/esophagus body-site group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cavity of pharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cervical mucus	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cervix epithelium	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colon,Feces	Other	Feces	feces/stool rollup	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Dental plaque,Internal cheek pouch,Saliva	Other	Oral cavity / dental	oral/dental rollup	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Dentine	Other	Oral cavity / dental	oral/dental body-site group	2	1	1	1
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Eyelid	Other	Ocular / eye	ocular/eye body-site group	2	1	2	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Epithelium of oropharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	2	1	1	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Esophagus	Other	Stomach / esophagus	stomach/esophagus body-site group	2	1	1	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Fallopian tube	Other	Miscellaneous sampled tissues	miscellaneous sampled tissue body-site group	2	1	2	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Feces,Saliva	Other	Feces	feces/stool rollup	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Feces,Urine,Blood plasma	Other	Feces	feces/stool rollup	2	1	1	2
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ileum	Other	Lower GI tract	lower-gi rollup	2	1	1	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ileum,Feces	Other	Feces	feces/stool rollup	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Inferior nasal concha	Other	Upper airway / nasal	upper-airway/nasal rollup	2	1	1	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Lumen of duodenum	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	2	1	1	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Manual digit skin	Other	Skin	skin rollup	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Margin of eyelid,Conjunctival sac	Other	Ocular / eye	ocular/eye body-site group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mesenteric lymph node	Other	Intestinal / GI mucosa	intestinal/gi-mucosa body-site group	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Middle ear	Other	Ear	ear body-site group	2	1	1	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mouth,Nose	Other	Oral cavity / dental	oral/dental rollup	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa	Other	Unlocalized mucosal samples	unlocalized-mucosal body-site group	2	1	1	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of ascending colon	Other	Lower GI tract	lower-gi rollup	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of oral region	Other	Oral cavity / dental	oral/dental rollup	2	1	1	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of pyloric antrum	Other	Unlocalized mucosal samples	unlocalized-mucosal body-site group	2	1	1	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of pyloric antrum,Duodenum,Esophagus	Other	Stomach / esophagus	stomach/esophagus body-site group	2	1	1	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of sigmoid colon	Other	Lower GI tract	lower-gi rollup	2	1	1	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of small intestine	Other	Lower GI tract	lower-gi rollup	2	1	1	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nasal cavity mucosa	Other	Upper airway / nasal	upper-airway/nasal rollup	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ocular surface region	Other	Ocular / eye	ocular/eye body-site group	2	1	1	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Oral cavity,Esophagus	Other	Oral cavity / dental	oral/dental rollup	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Oral cavity,Feces	Other	Feces	feces/stool rollup	2	1	1	1
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ovary	Other	Reproductive / genital	reproductive/genital body-site group	2	1	1	1
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Placenta	Other	Birth-associated samples	birth-associated body-site group	2	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Prostate gland secretion	Other	Reproductive / genital	reproductive/genital body-site group	2	1	1	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Rectal lumen	Other	Miscellaneous sampled tissues	miscellaneous sampled tissue body-site group	2	1	1	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Renal pelvis/ureter	Other	Urinary tract	urinary body-site group	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Right lung middle lobe bronchiole	Other	Lower airway / lung	lower-airway/lung rollup	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Saliva,Supragingival dental plaque,Buccal mucosa,Tongue	Other	Oral cavity / dental	oral/dental rollup	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Semen	Other	Reproductive / genital	reproductive/genital body-site group	2	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Sigmoid colon	Other	Lower GI tract	lower-gi rollup	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin epidermis	Other	Skin	skin rollup	2	1	1	2
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin of forearm	Other	Skin	skin rollup	2	1	2	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin of eyelid	Other	Skin	skin rollup	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin of sole of pes	Other	Skin	skin rollup	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin of sole of pes,Interdigital space	Other	Skin	skin rollup	2	1	1	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Sputum,Mouth	Other	Lower airway / lung	lower-airway/lung rollup	2	1	1	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Sputum,Nose	Other	Lower airway / lung	lower-airway/lung rollup	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Superior surface of tongue	Other	Oral cavity / dental	oral/dental rollup	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Tonsillar fossa	Other	Upper airway / nasal	upper-airway/nasal body-site group	2	1	0	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Upper part of vagina	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	0
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Urinary bladder	Other	Urinary tract	urinary rollup	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Uterovesical pouch	Other	Vaginal / reproductive	vaginal/reproductive rollup	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Vaginal fluid,Feces,Endocervix	Other	Feces	feces/stool rollup	2	1	1	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bronchus,Sputum	Other	Lower airway / lung	lower-airway/lung rollup	1	1	1	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Duodenum,Mucosa of pyloric antrum,Esophagus	Other	Stomach / esophagus	stomach/esophagus body-site group	1	1	0	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	External ear,Face,Skin of back,Scalp	Other	Skin	skin rollup	1	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Feces,Mucosa of small intestine	Other	Feces	feces/stool rollup	1	1	0	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Hypopharynx	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	1	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ingested food	Other	Miscellaneous sampled tissues	miscellaneous sampled tissue body-site group	1	1	0	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Lower part of vagina,Upper part of vagina,Cervical mucus	Other	Vaginal / reproductive	vaginal/reproductive rollup	1	1	1	1
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mucosa of rectum	Other	Lower GI tract	lower-gi rollup	1	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nasopharyngeal gland	Other	Upper airway / nasal	upper-airway/nasal rollup	1	1	1	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nose	Other	Miscellaneous sampled tissues	miscellaneous sampled tissue body-site group	1	1	1	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Omentum	Other	Miscellaneous sampled tissues	miscellaneous sampled tissue body-site group	1	1	1	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Palpebral conjunctiva	Other	Ocular / eye	ocular/eye body-site group	1	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Prostate gland	Other	Reproductive / genital	reproductive/genital body-site group	1	1	1	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Skin of forearm	Other	Skin	skin rollup	1	1	1	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Venous blood	Other	Blood	blood rollup	1	1	0	1

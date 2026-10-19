@@ -73,6 +73,53 @@ uncertainty and interpretation limits.
 estimand, reference, stratum and single-study effects on the 15 ratios, with the
 protocol in [`table1_log_ratio_sensitivity_protocol.json`](table1_log_ratio_sensitivity_protocol.json).
 
+[`cellulose_decr.md`](cellulose_decr.md) documents `just cellulose-decr` and
+`just cellulose-decr-figures`, which build `data/analysis/cellulose_decr/`. That
+analysis covers feces-decreased taxa annotated with cellulose catabolic process
+in Parkinson's disease, HIV infection and colorectal cancer:
+
+- their overlap across the three conditions, tested against six null models
+  (U1–U6) and compared with a within-condition reference;
+- the direction of the cellulose annotation shift at experiment and study level,
+  under exact and synonym condition labels.
+
+Its tables are committed and its figures are regenerated. The code is the
+`mtp.cellulose_decr` package (`src/mtp/cellulose_decr/`).
+
+The selected-figure slide deck in `data/derived/figure_review_2026-09-21/` is built
+by `scripts/build_slide_deck.py` (`just figure-review-deck`), which places the
+methods and Tufte plates drawn by `scripts/generate_tufte_plates.py`
+(`just figure-review-plates`). `just figure-review-deck` also validates the figure
+provenance YAML against its LinkML schema and prints the PDF with headless Chrome
+(`just html-to-pdf`). The deck, its assets, the plates and the provenance YAML are
+gitignored local outputs, and the builder reads gitignored inputs as well (the
+earlier deck manifests, `svg_sources/`, figures under `data/derived/`), so a fresh
+clone cannot rebuild the deck (#573). Both builders write to the checkout that holds
+them, whatever `--input-root` points at, and the deck reads the plates and the
+cellulose_decr figures from that checkout too; everything else comes from the input root.
+They refuse to replace an existing deck or plates without `--overwrite`; there is no other
+copy, so back up `slides/`, `provenance/` and `data/derived/tufte_plates/` first. They also
+refuse contrast-orientation inputs from a classifier other than the v2 their typed numbers
+describe, until #579 reads those numbers from the tables (#592).
+
+The slides are stamped with the rerun revision (`COMMIT` in the builder, `RERUN_COMMIT` in
+the plate script, which a test keeps equal) and link their committed files at it. Before
+writing anything, `just figure-review-deck` checks each linked figure and evidence table,
+each committed table the slide text quotes, each plate's recorded inputs and the
+cellulose_decr tables against the revision their slides cite, using `git ls-tree` listings
+the recipe writes. It refuses when a file differs. `--allow-unverified` builds a review
+deck instead: the files that differ are not linked, their slides say so, and the cover and
+every stamp read "review build", as they do for `--allow-contrast-version-mismatch` (#637).
+Gitignored figures cannot be checked against a revision; the provenance records their
+SHA-256. The check reads the local repository, so push the commits that drew the plates and
+cellulose figures before sharing a deck: the slides link them on GitHub. The provenance folder's `figure_provenance_and_results.json`,
+`figures_manifest.tsv` and `figure_statistical_results.tsv` have no generator and are not
+updated by a rebuild (#639).
+
+To build into other folders, set them as
+`just deck_slides=DIR deck_provenance=DIR figure-review-deck`, so the validation, PDF and
+copy steps use them too; the recipe ends by writing `deck_build_status.json`.
+
 The [GPT Rosalind discussion and review](../docs/rosalind-six-trait-interpretation.md)
 archives proposed biological explanations for the six traits, with a separate
 evidence review and assigned follow-up issues. It records hypotheses to evaluate;

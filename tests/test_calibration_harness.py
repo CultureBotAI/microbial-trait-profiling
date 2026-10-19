@@ -196,20 +196,42 @@ def test_study_flip_null_generator_flips_units_and_preserves_counts(
     )
 
 
+@pytest.mark.parametrize("q_threshold", [0.05, 0.001])
 def test_ilyas_ora_adapter_parity_with_production(
-    synthetic_calibration_data: CalibrationData, tmp_path: Path
+    synthetic_calibration_data: CalibrationData, tmp_path: Path, q_threshold: float
 ) -> None:
     """Verify IlyasORAAdapter produces identical enrichment results
     to scripts/trait_enrichment.py across both significant hits and complete test table (#393).
     """
     profiles_df, taxa_df = synthetic_calibration_data
+    # Include the eligibility boundaries in the production comparison: media
+    # annotations, K=0 traits, universal traits, unpaired profiles and N=0 pairs.
+    medium = "METPO:2000510|mediadive.medium:1"
+    taxa_df[medium] = 1
+    taxa_df["EMPTY"] = 0
+    taxa_df["UNIVERSAL"] = 1
+    profiles_df[medium] = 1
+    profiles_df["EMPTY"] = 0
+    profiles_df["UNIVERSAL"] = profiles_df["taxa_count"]
+    extra_rows = pd.DataFrame(
+        {
+            "study_id": ["unpaired", "zero", "zero"],
+            "experiment_id": ["e3", "e4", "e4"],
+            "inc_dec": ["inc", "inc", "dec"],
+            "taxa_count": [0, 0, 0],
+            **{trait: [0, 0, 0] for trait in [*TRAITS, medium, "EMPTY", "UNIVERSAL"]},
+        }
+    )
+    profiles_df = pd.concat([profiles_df, extra_rows], ignore_index=True)
     adapter = IlyasORAAdapter()
     adapter_res = adapter.run_inference(
-        profiles_df, taxa_df, config={"alpha": 0.05, "min_fold": 1.5, "test_type": "enrichment"}
+        profiles_df,
+        taxa_df,
+        config={"alpha": q_threshold, "min_fold": 1.5, "test_type": "enrichment"},
     )
     adapter_sig = adapter_res.results_df[adapter_res.results_df["is_significant"]]
 
-    profiles_path, taxa_path = _write_inputs(tmp_path, synthetic_calibration_data)
+    profiles_path, taxa_path = _write_inputs(tmp_path, (profiles_df, taxa_df))
     rep_txt = tmp_path / "report.txt"
     out_tsv = tmp_path / "out.tsv"
     all_tsv = tmp_path / "all_out.tsv"
@@ -228,7 +250,7 @@ def test_ilyas_ora_adapter_parity_with_production(
             "--all-results-output",
             str(all_tsv),
             "--p-threshold",
-            "0.05",
+            str(q_threshold),
             "--min-fold",
             "1.5",
         ],
@@ -247,6 +269,7 @@ def test_ilyas_ora_adapter_parity_with_production(
 
     prod_all_df = pd.read_csv(all_tsv, sep="\t", comment="#")
     assert len(adapter_res.results_df) == len(prod_all_df)
+    assert len(prod_all_df) == 4 * (len(TRAITS) + 1)
     for _, row in prod_all_df.iterrows():
         pid = f"{row['study_id']}:{row['experiment_id']}:{row['inc_dec']}"
         trait = row["trait"]
@@ -902,3 +925,61 @@ def test_threshold_metrics_apply_q_and_effect_to_controlled_results(
     assert strict.mixed_signal_fdr.empirical_fdr == 0
     assert strict.mixed_signal_tpr.mean_true_signals == 1
     assert strict.mixed_signal_tpr.empirical_tpr == 1
+
+
+@pytest.mark.parametrize("bad_count", ["unparsed", -1, 0.5, float("inf")])
+def test_invalid_background_counts_fail_before_binarization(
+    synthetic_calibration_data: CalibrationData, tmp_path: Path, bad_count: str | float
+) -> None:
+    """Null simulation must not turn malformed production counts into annotations."""
+    profiles, taxa = synthetic_calibration_data
+    taxa["TRAIT_A"] = taxa["TRAIT_A"].astype(object)
+    taxa.loc[taxa.index[0], "TRAIT_A"] = bad_count
+    with pytest.raises(ValueError, match="count in column TRAIT_A"):
+        generate_complete_null_ora_profiles(profiles, taxa, np.random.default_rng(42))
+    with pytest.raises(ValueError, match="count in column TRAIT_A"):
+        generate_mixed_signal_ora_profiles(profiles, taxa, ["TRAIT_A"])
+    with pytest.raises(ValueError, match="count in column TRAIT_A"):
+        IlyasORAAdapter().run_inference(profiles, taxa)
+
+    profiles_path, taxa_path = _write_inputs(tmp_path, (profiles, taxa))
+    out = tmp_path / "invalid-count"
+    assert harness_main(_cli_args(profiles_path, taxa_path, out)) == EXIT_FAILURE
+    summary = _read_summary(out)
+    assert summary["status"] == "FAILED"
+    assert "TRAIT_A" in summary["provenance"]["error_message"]
+
+
+def test_failed_replicate_prevents_positive_harness_verdict(
+    synthetic_calibration_data: CalibrationData,
+) -> None:
+    """Successful replicates alone cannot certify a partially failed benchmark."""
+
+    class FailingAdapter(IlyasORAAdapter):
+        calls = 0
+
+        def run_inference(
+            self,
+            profiles_df: pd.DataFrame,
+            taxa_matrix_df: pd.DataFrame,
+            config: dict[str, Any] | None = None,
+        ) -> MethodInferenceResult:
+            self.calls += 1
+            if self.calls == 3:
+                raise ValueError("replicate failed")
+            result = super().run_inference(profiles_df, taxa_matrix_df, config)
+            result.results_df["p_value"] = 1.0
+            result.results_df["q_value"] = 1.0
+            return result
+
+    profiles, taxa = synthetic_calibration_data
+    report = run_ora_calibration_benchmark(
+        FailingAdapter(), profiles, taxa, spike_traits=[], scenario="null", replicates=3
+    )
+    assert report.status == "PARTIAL"
+    assert report.completed_replicates == 2
+    assert report.failed_replicates == 1
+    assert report.complete_null_type_i is not None
+    assert report.complete_null_type_i.is_conservative
+    assert not report.harness_check_passed
+    assert not report.is_calibrated

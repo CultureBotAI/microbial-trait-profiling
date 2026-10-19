@@ -581,3 +581,138 @@ def test_main_cli_error_handling() -> None:
     with pytest.raises(SystemExit) as exc_info:
         main(["--format", "long", "--include-taxa-count"])
     assert exc_info.value.code == 2
+
+
+def test_drop_empty_traits_keeps_matrix_order_and_skips_zero_columns(tmp_path: Path) -> None:
+    """The canonical table leaves out traits no written profile carries (#656)."""
+    study_dir = tmp_path / "studies"
+    study_dir.mkdir()
+    _write_study_yaml(study_dir)
+    taxa_trait_matrix_path = tmp_path / "taxa_trait_matrix.tsv"
+    taxa_trait_matrix_path.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1\tMETPO:EMPTY\tMETPO:2\n"
+        "NCBITaxon:1\tTaxon one\tspecies\t1\t0\t2\n",
+        encoding="utf-8",
+    )
+    output_path = tmp_path / "profiles.tsv"
+    stats = create_study_trait_profiles(
+        study_dir=study_dir,
+        taxa_trait_matrix_path=taxa_trait_matrix_path,
+        output_path=output_path,
+        drop_empty_traits=True,
+    )
+    header = output_path.read_text(encoding="utf-8").splitlines()[0].split("\t")
+    assert header == ["study_id", "experiment_id", "inc_dec", "METPO:1", "METPO:2"]
+    assert stats.trait_columns == 2
+
+
+def test_a_host_filter_alone_does_not_write_the_ora_table(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The canonical human table must not overwrite the ORA arm's input (#656)."""
+    mock_default = tmp_path / "default_wide.tsv"
+    monkeypatch.setattr("mtp.study_trait_profiles.DEFAULT_OUTPUT_PATH", mock_default)
+    monkeypatch.setattr(
+        "mtp.study_trait_profiles.DEFAULT_ORA_OUTPUT_PATH", tmp_path / "default_ora_wide.tsv"
+    )
+    monkeypatch.setattr("mtp.study_trait_profiles.DERIVED_DATA_DIR", tmp_path)
+    study_dir = tmp_path / "studies"
+    study_dir.mkdir()
+    _write_study_yaml(study_dir)
+    taxa_trait_matrix_path = tmp_path / "taxa_trait_matrix.tsv"
+    taxa_trait_matrix_path.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1\nNCBITaxon:1\tTaxon one\tspecies\t1\n",
+        encoding="utf-8",
+    )
+    stats = create_study_trait_profiles(
+        study_dir=study_dir,
+        taxa_trait_matrix_path=taxa_trait_matrix_path,
+        host_species="Homo sapiens",
+    )
+    assert stats.output_path == tmp_path / "study_trait_profiles_wide.tsv"
+    # Where a host filter alone used to send the table (#670)
+    assert not (tmp_path / "study_trait_profiles_ora_wide.tsv").exists()
+
+
+def _write_mixed_host_inputs(tmp_path: Path) -> tuple[Path, Path]:
+    """A human and a mouse experiment, where METPO:MOUSE is carried only by the mouse
+    taxon and the MediaDive medium by no taxon."""
+    study_dir = tmp_path / "studies"
+    study_dir.mkdir()
+    study = {
+        "id": "bsdb:99",
+        "experiments": [
+            {
+                "id": "bsdb:99-1",
+                "host_species": "Homo sapiens",
+                "signatures": [
+                    {
+                        "id": "bsdb:99-1-1",
+                        "direction": "increased",
+                        "taxa": [
+                            {"id": "NCBITaxon:1", "taxon_name": "Taxon one"},
+                            {"id": "NCBITaxon:2", "taxon_name": "Taxon two"},
+                        ],
+                    },
+                    {
+                        "id": "bsdb:99-1-2",
+                        "direction": "decreased",
+                        "taxa": [{"id": "NCBITaxon:3", "taxon_name": "Taxon three"}],
+                    },
+                ],
+            },
+            {
+                "id": "bsdb:99-2",
+                "host_species": "Mus musculus",
+                "signatures": [
+                    {
+                        "id": "bsdb:99-2-1",
+                        "direction": "increased",
+                        "taxa": [{"id": "NCBITaxon:4", "taxon_name": "Mouse taxon"}],
+                    },
+                ],
+            },
+        ],
+    }
+    (study_dir / "bsdb_99.yaml").write_text(
+        yaml.dump(study, default_flow_style=False, sort_keys=False), encoding="utf-8"
+    )
+    matrix = tmp_path / "taxa_trait_matrix.tsv"
+    matrix.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1\tMETPO:MOUSE\tmediadive.medium:1\tMETPO:2\n"
+        "NCBITaxon:1\tTaxon one\tspecies\t2\t0\t0\t0\n"
+        "NCBITaxon:2\tTaxon two\tspecies\t0\t0\t0\t3\n"
+        "NCBITaxon:3\tTaxon three\tspecies\t1\t0\t0\t1\n"
+        "NCBITaxon:4\tMouse taxon\tspecies\t0\t5\t0\t0\n",
+        encoding="utf-8",
+    )
+    return study_dir, matrix
+
+
+def test_the_recipe_flags_write_the_canonical_table(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`just study-trait-profiles` keeps human profiles and drops the traits none of them
+    carries, judged on the written profiles rather than the matrix (#656, #666)."""
+    study_dir, matrix = _write_mixed_host_inputs(tmp_path)
+    output = tmp_path / "profiles.tsv"
+    argv = ["--study-dir", str(study_dir), "--taxa-trait-matrix", str(matrix)]
+    argv += ["--output", str(output), "--host-species", "Homo sapiens", "--drop-empty-traits"]
+    assert main(argv) == 0
+    assert output.read_text(encoding="utf-8").splitlines() == [
+        "study_id\texperiment_id\tinc_dec\tMETPO:1\tMETPO:2",
+        "bsdb:99\tbsdb:99-1\tdec\t1\t1",
+        "bsdb:99\tbsdb:99-1\tinc\t2\t3",
+    ]
+    printed = capsys.readouterr().out
+    assert "Trait columns dropped as empty in every profile: 2 (1 MediaDive)" in printed
+    assert "Non-MediaDive trait columns dropped: METPO:MOUSE" in printed
+
+
+def test_without_the_drop_every_matrix_column_is_written(tmp_path: Path) -> None:
+    study_dir, matrix = _write_mixed_host_inputs(tmp_path)
+    output = tmp_path / "profiles.tsv"
+    argv = ["--study-dir", str(study_dir), "--taxa-trait-matrix", str(matrix)]
+    assert main([*argv, "--output", str(output), "--host-species", "Homo sapiens"]) == 0
+    header = output.read_text(encoding="utf-8").splitlines()[0].split("\t")
+    assert header[3:] == ["METPO:1", "METPO:MOUSE", "mediadive.medium:1", "METPO:2"]

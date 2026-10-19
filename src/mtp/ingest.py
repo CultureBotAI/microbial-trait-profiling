@@ -98,6 +98,9 @@ def ingest(
     raw_dir: Path | None = None,
     study_dir: Path | None = None,
     derived_dir: Path | None = None,
+    *,
+    full_dump_path: Path | None = None,
+    log_path: Path | None = None,
 ) -> list[Path]:
     """Parse raw CSVs and emit per-study YAML files.
 
@@ -114,7 +117,9 @@ def ingest(
 
     log: list[dict[str, str]] = []
 
-    full_dump = raw_dir / "full_dump.csv"
+    full_dump = full_dump_path if full_dump_path is not None else raw_dir / "full_dump.csv"
+    if full_dump_path is not None and not full_dump.is_file():
+        raise FileNotFoundError(f"BugSigDB full dump not found: {full_dump}")
     if full_dump.exists():
         rows = _read_csv(full_dump)
     else:
@@ -155,7 +160,8 @@ def ingest(
         written.append(dest)
 
     # Write ingest log
-    log_path = derived_dir / "ingest_log.json"
+    log_path = log_path if log_path is not None else derived_dir / "ingest_log.json"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
     log_path.write_text(json.dumps(log, indent=2) + "\n")
 
     # Print summary and check for systemic problems

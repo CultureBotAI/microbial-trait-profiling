@@ -6,7 +6,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from mtp.paths import file_sha256
+from mtp.paths import REPO_ROOT, file_sha256
+from mtp.workflow.consumers import CoreBundle, open_core_bundle, verify_consumer_record
+from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.runtime import execute_workflow
 
 MODULE_PATH = (
     Path(__file__).resolve().parents[1] / "scripts" / "create_trait_profile_infographic.py"
@@ -405,3 +408,170 @@ def test_plot_top_traits_renders_with_study_level_stats() -> None:
         assert any("[-0.22, -0.08]" in t for t in texts)
     finally:
         plt.close(fig)
+
+
+@pytest.fixture
+def pooled_core(tmp_path: Path) -> CoreBundle:
+    """A real core bundle with enough supported traits plus excluded/zero cohorts."""
+    source = REPO_ROOT / "tests" / "fixtures" / "workflow"
+    raw = pd.read_csv(source / "full_dump.csv", comment="#", dtype=str).head(7)
+    raw.loc[raw["BSDB ID"] == "bsdb:1/1/2", "NCBI Taxonomy IDs"] = "101"
+    raw.loc[raw["BSDB ID"] == "bsdb:1/1/2", "MetaPhlAn taxon names"] = "s__Examplegenus_alpha"
+    frames = []
+    for offset in range(0, 8, 2):
+        frame = raw.copy()
+        frame["BSDB ID"] = frame["BSDB ID"].map(
+            lambda value, offset=offset: (
+                (f"bsdb:{int(value.split('/')[0].removeprefix('bsdb:')) + offset}/")
+                + "/".join(value.split("/")[1:])
+            )
+        )
+        frame["Study"] = frame["Study"].map(
+            lambda value, offset=offset: f"Study {int(value.removeprefix('Study ')) + offset}"
+        )
+        frames.append(frame)
+    dump = tmp_path / "dump.csv"
+    dump.write_text("# BugSigDB fixture-551, License: CC0 synthetic test data\n")
+    pd.concat(frames, ignore_index=True).to_csv(dump, mode="a", index=False)
+    edges = tmp_path / "edges.tsv"
+    edges.write_text(
+        (source / "merged-kg_edges.tsv").read_text()
+        + "motile\tNCBITaxon:101\tbiolink:has_phenotype\tMETPO:1000700\tfixture:annotation\n"
+    )
+    nodes = tmp_path / "nodes.tsv"
+    nodes.write_text(
+        (source / "merged-kg_nodes.tsv").read_text()
+        + "METPO:1000700\tbiolink:PhenotypicQuality\tmotile\n"
+    )
+    run = execute_workflow(
+        REPO_ROOT / "workflows" / "bugsigdb_core.yaml",
+        {"raw_dump": dump, "kg_edges": edges, "kg_nodes": nodes},
+        tmp_path / "runs",
+        OPERATIONS,
+        validator=validate_core_product,
+        repository_root=REPO_ROOT,
+    )
+    return open_core_bundle(Path(run.manifest_path))
+
+
+def test_stats_only_core_derives_cohort_and_records_exact_outputs(
+    pooled_core: CoreBundle, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Core mode must derive human pairs, retain zero totals and ignore heatmap defaults."""
+    for name in ("PROFILE_MATRIX_PATH", "PAIRED_METADATA_PATH", "TRAIT_COLUMNS_PATH"):
+        monkeypatch.setattr(infographic, name, tmp_path / "no-legacy-input.tsv")
+    output = tmp_path / "analysis"
+    infographic.main(
+        [
+            "--stats-only",
+            "--core-run",
+            str(pooled_core.manifest),
+            "--profiles",
+            str(pooled_core.path("count_profiles")),
+            "--trait-labels",
+            str(pooled_core.path("feature_metadata")),
+            "--output-dir",
+            str(output),
+        ]
+    )
+    pair_path = output / "trait_profile_paired_contrast_pair_metadata.tsv"
+    pairs = pd.read_csv(pair_path, sep="\t", index_col=0)
+    assert len(pairs) == 8
+    assert pairs["study_id"].nunique() == 4
+    assert pairs["host_species"].eq("Homo sapiens").all()
+    assert pairs["condition"].eq("fixture condition").all()
+    assert pairs["input_profile_rows"].eq(28).all()
+    assert pairs["nonhuman_profile_rows_excluded"].eq(8).all()
+    assert pairs["unpaired_profile_rows_excluded"].eq(4).all()
+    assert pairs["missing_metadata_profile_rows_excluded"].eq(0).all()
+    assert pairs["profile_sha256"].eq(file_sha256(pooled_core.path("count_profiles"))).all()
+    assert pairs["experiments_sha256"].eq(file_sha256(pooled_core.path("experiments"))).all()
+    stats_path = output / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+    result = pd.read_csv(stats_path, sep="\t")
+    assert len(result) == 2
+    assert result["trait_label"].str.contains("motile").any()
+    assert result["pair_count"].eq(8).all()
+    assert result["study_count"].eq(4).all()
+    assert result["n_nonzero_experiments"].eq(4).all()
+    assert result["n_zero_total_experiments"].eq(4).all()
+    assert result["n_zero_total_excluded"].eq(0).all()
+    assert result["profile_count"].eq(16).all()
+    assert result["pair_metadata_sha256"].eq(file_sha256(pair_path)).all()
+    assert result["experiments_sha256"].eq(file_sha256(pooled_core.path("experiments"))).all()
+    record = verify_consumer_record(output / "core_consumption.json")
+    assert record.consumer == "native-pooled-composition-stats"
+    assert record.feature_policy == "exclude_mediadive"
+    # Coverage describes all source profiles; pair metadata documents the
+    # narrower human analysis cohort without mislabelling source coverage.
+    assert record.cohort == "all"
+    assert record.coverage_scope == "input_cohort_before_analysis_specific_exclusions"
+    assert {Path(item.path).name for item in record.outputs} == {
+        pair_path.name,
+        stats_path.name,
+        "core_consumption.coverage.tsv",
+    }
+    pair_path.write_text(pair_path.read_text().replace("fixture condition", "modified label"))
+    with pytest.raises(ValueError, match="Consumer output changed"):
+        verify_consumer_record(output / "core_consumption.json")
+
+
+@pytest.mark.parametrize("argument", ["--profiles", "--trait-labels"])
+def test_stats_only_core_rejects_conflicting_inputs(
+    pooled_core: CoreBundle, tmp_path: Path, argument: str
+) -> None:
+    output = tmp_path / "analysis"
+    with pytest.raises(ValueError, match="conflicts with explicit"):
+        infographic.main(
+            [
+                "--stats-only",
+                "--core-run",
+                str(pooled_core.manifest),
+                argument,
+                str(tmp_path / "legacy.tsv"),
+                "--output-dir",
+                str(output),
+            ]
+        )
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("arguments", [[], ["--stats-only", "--pair-metadata", "old.tsv"]])
+def test_core_mode_rejects_figures_and_external_pair_metadata(arguments: list[str]) -> None:
+    with pytest.raises(SystemExit):
+        infographic.main(["--core-run", "unused-run.json", *arguments])
+
+
+@pytest.mark.parametrize("collision", ["core_directory", "symlink", "hardlink", "sidecar"])
+def test_stats_only_core_preflight_protects_inputs_and_sidecars(
+    pooled_core: CoreBundle, tmp_path: Path, collision: str
+) -> None:
+    protected = pooled_core.path("count_profiles")
+    original = protected.read_bytes()
+    output = tmp_path / "analysis"
+    output.mkdir()
+    if collision == "core_directory":
+        output = protected.parent
+    else:
+        target = output / "trait_profile_paired_contrast_pair_metadata.tsv"
+        if collision == "symlink":
+            target.symlink_to(protected)
+        elif collision == "hardlink":
+            target.hardlink_to(protected)
+        else:
+            sidecar = output / "core_consumption.json"
+            sidecar.write_text("previous consumer record\n")
+            target.hardlink_to(sidecar)
+    with pytest.raises(ValueError, match=r"overlap|collid"):
+        infographic.main(
+            [
+                "--stats-only",
+                "--core-run",
+                str(pooled_core.manifest),
+                "--output-dir",
+                str(output),
+            ]
+        )
+    assert protected.read_bytes() == original
+    assert not (output / "trait_profile_paired_contrast_trait_stats_pooled.tsv").exists()
+    if collision == "sidecar":
+        assert (output / "core_consumption.json").read_text() == "previous consumer record\n"

@@ -13,6 +13,7 @@ from matplotlib.colors import TwoSlopeNorm
 from matplotlib.patches import Circle, PathPatch
 from matplotlib.path import Path as MplPath
 
+from mtp.body_site_diagram import anatomical_site_base
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
     load_retained_profiles,
@@ -69,8 +70,11 @@ EXCLUDED_CONDITION_SUMMARY_LABELS = {
     "Microbiome",
     "Population",
     "Physical activity",
+    "Time",
+    "Timepoint",
 }
-MIN_PAIRED_SMD_PROFILE_PAIRS = 3
+# A paired d (and its paired t-test p) from fewer matched profile pairs is reported as NA.
+MIN_PAIRED_SMD_PROFILE_PAIRS = 5
 INFERRED_GUILD_TOP_TRAITS_PER_GROUP = 12
 INFERRED_GUILD_TOP_TAXA_PER_TRAIT = 12
 INFERRED_GUILD_TOP_TAXA_PER_GROUP = 12
@@ -1245,30 +1249,6 @@ def is_other_body_site(value: object) -> bool:
     return clean_text(value).lower() == "other"
 
 
-def anatomical_site_base(value: object) -> tuple[float, float]:
-    """Map body-site group labels to approximate body-diagram coordinates."""
-    label = clean_text(value).lower()
-    if "nasopharynx" in label or "airway" in label:
-        return 0.30, 0.86
-    if "subgingival" in label or "dental" in label:
-        return 0.275, 0.825
-    if "saliva" in label:
-        return 0.325, 0.825
-    if "mouth" in label or "oral" in label:
-        return 0.30, 0.825
-    if "colon" in label:
-        return 0.285, 0.47
-    if "caecum" in label or "cecum" in label:
-        return 0.33, 0.46
-    if "feces" in label or "faeces" in label or "stool" in label:
-        return 0.31, 0.37
-    if "vagina" in label or "urogenital" in label:
-        return 0.31, 0.25
-    if "unknown" in label:
-        return 0.16, 0.16
-    return 0.16, 0.47
-
-
 def add_anatomical_outline(ax: plt.Axes) -> None:
     """Draw an original front-facing body-template outline for site callouts."""
     face = "#f8fafc"
@@ -1709,11 +1689,15 @@ def write_summary_report(
     lines.extend(
         [
             "",
-            "Broad labels such as `Exposure`, `Population`, and labels containing "
-            "`measurement` come from BugSigDB condition metadata but usually describe "
-            "study design, cohort, exposure, or measurement context rather than a "
-            "disease/condition context. They are excluded from displayed condition "
-            "bar charts and condition summaries.",
+            "Paired d and paired p are blank for conditions with fewer than "
+            f"{MIN_PAIRED_SMD_PROFILE_PAIRS} matched increased/decreased profile pairs, or with "
+            "zero variance among the paired differences.",
+            "",
+            "Broad labels such as `Exposure`, `Population`, `Time`, `Timepoint`, and labels "
+            "containing `measurement` come from BugSigDB condition metadata but usually "
+            "describe study design, cohort, sampling time, exposure, or measurement context "
+            "rather than a disease/condition context. They are excluded from displayed "
+            "condition bar charts and condition summaries.",
             "",
             "Oral-site increased-profile trait signals are expected in this analysis because "
             "the oral cavity is oxygen-exposed and several focal taxa are common oral "

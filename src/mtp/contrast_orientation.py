@@ -64,7 +64,7 @@ from mtp.trait_guilds import (
     write_stats_report,
 )
 
-CLASSIFIER_VERSION = "contrast-orientation-v2"
+CLASSIFIER_VERSION = "contrast-orientation-v4"
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "contrast_orientation"
 DIRECTION_CONVENTION = "inc = higher abundance in Group 1 than in Group 0 (BugSigDB)"
 
@@ -80,6 +80,32 @@ NATIVE = "native"
 REVERSED = "reversed"
 NOT_APPLICABLE = "not_applicable"
 
+CASE_VS_CONTROL_SUBJECT = "case_vs_control_subject"
+COMORBIDITY_WITHIN_DISEASE = "comorbidity_within_disease"
+PAIRED_TISSUE_AUTOLOGOUS = "paired_tissue_autologous"
+RESOLVED_DISEASE = "resolved_disease"
+CONTRAST_TYPES = (
+    CASE_VS_CONTROL_SUBJECT,
+    COMORBIDITY_WITHIN_DISEASE,
+    PAIRED_TISSUE_AUTOLOGOUS,
+    DISEASE_VS_DISEASE,
+    TREATMENT,
+    LONGITUDINAL,
+    RESOLVED_DISEASE,
+    OTHER,
+    NOT_APPLICABLE,
+)
+
+TIER_1_HEALTHY_NORMAL = "tier_1_healthy_normal"
+TIER_2_CONDITION_NEGATIVE_SCREENED = "tier_2_condition_negative_screened"
+TIER_3_HOSPITAL_COMORBID_OR_TISSUE = "tier_3_hospital_comorbid_or_tissue"
+CONTROL_TIERS = (
+    TIER_1_HEALTHY_NORMAL,
+    TIER_2_CONDITION_NEGATIVE_SCREENED,
+    TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+    NOT_APPLICABLE,
+)
+
 
 def _pattern(*terms: str) -> re.Pattern[str]:
     return re.compile(r"(?<![\w])(?:" + "|".join(terms) + r")(?![\w])", re.IGNORECASE)
@@ -90,27 +116,52 @@ def _pattern(*terms: str) -> re.Pattern[str]:
 GENERAL_COMPARISON = _pattern(
     r"healthy",
     r"controls?",
+    r"[yo]controls?",
     r"hcs?",
     r"unaffected",
     r"non[- ]?diseased",
     r"disease[- ]free",
-    r"normal (?:controls?|subjects?|individuals?|groups?|samples?)",
+    (
+        r"normal (?:controls?|subjects?|individuals?|groups?|samples?"
+        r"|tissues?|mucosa|skin|adjacent\w*)"
+    ),
+    r"adjacent normal(?:\s+\w+)*",
+    r"paracancerous(?:\s+tissues?)?",
     r"volunteers?",
+    r"full[- ]?term(?:\s+infants?)?",
+    r"term[- ]birth",
+    r"typical(?:ly)? developing",
+    r"neurotypical",
+    r"well[- ]nourished",
 )
 #: A group that is plainly a healthy or unaffected comparison. Only these can
-#: support a reversed orientation. The last two deny one named thing rather than
-#: asserting general health.
+#: support a reversed orientation.
 STRONG_COMPARISON = _pattern(
     r"healthy",
     r"controls?",
+    r"[yo]controls?",
     r"hcs?",
     r"unaffected",
     r"non[- ]?diseased",
     r"disease[- ]free",
+    r"neoplasia[- ]free",
     r"uninfected",
     r"non[- ]?infected",
-    r"normal (?:controls?|subjects?|individuals?|groups?|samples?)",
+    (
+        r"normal (?:controls?|subjects?|individuals?|groups?|samples?"
+        r"|tissues?|mucosa|skin|adjacent\w*)"
+    ),
+    r"adjacent normal(?:\s+\w+)*",
+    r"adjacent non[- ]?cancerous(?:\s+tissues?)?",
+    r"paracancerous(?:\s+tissues?)?",
+    r"early stage normal",
+    r"non[- ]?lesional(?:\s+skin)?",
     r"volunteers?",
+    r"full[- ]?term(?:\s+infants?)?",
+    r"term[- ]birth",
+    r"typical(?:ly)? developing",
+    r"neurotypical",
+    r"well[- ]nourished",
 )
 #: A comparison group named by the absence of the condition's defining feature.
 #: A bare "negative" is not here: it is a comparison only where its subject is the
@@ -120,22 +171,35 @@ WEAK_COMPARISON = _pattern(
     r"normal glucose tolerance",
     r"lean",
     r"normo\w+",
+    r"nonobese",
 )
 #: "<subject> negative", with everything before the subject kept so that a negation
 #: qualifying one disease inside another can be told apart from a negation of the
 #: condition: "HIV negative" and "HIV-1-negative" deny HIV infection, while "Her2
-#: negative", "ASCA negative", "cART negative" and "Parkinson's disease dementia
-#: negative" name a marker, a drug or a second disease in someone who is ill.
+#: negative", "ASCA negative" and "cART negative" name a marker or drug.
 CONDITION_NEGATIVE = re.compile(
     "(?P<before>.*?)(?P<subject>[\\w'\\u2019.]+)[^\\w]+negative(?![\\w])", re.IGNORECASE
 )
+#: People living without HIV, as an initialism. It names no condition, so it counts as a
+#: comparison only where HIV is the condition; elsewhere HIV status describes the cohort.
+WITHOUT_HIV = _pattern(r"plwoh", r"pwoh")
+#: A condition that is HIV itself: the acronym or the virus spelled out. Testing the text,
+#: not the initialism, keeps "Helminth infection" or "HOMA-IR" out (#627).
+HIV_CONDITION = re.compile(r"(?<![a-z])hiv(?![a-z])|human immunodeficiency virus", re.IGNORECASE)
+#: Names for people with HIV that carry no "HIV" token: "PLWH", "PWH", or the virus
+#: spelled out without its acronym (#627).
+WITH_HIV = re.compile(
+    r"(?<![a-z])(?:plwh|pwh)(?![a-z])|human immunodeficiency virus", re.IGNORECASE
+)
+#: Small Roman numerals, as in "Type II diabetes mellitus": numbers, not acronyms (#627).
+ROMAN_NUMERAL = re.compile(r"X{0,3}(?:IX|IV|V?I{0,3})")
 #: "Negative for COVID-19 viral RNA": the sign comes before its subject.
 NEGATIVE_FOR = re.compile(
     "(?<![\\w])negative\\s+for\\s+((?:[\\w'\\u2019.]+[\\s-]*){1,4})", re.IGNORECASE
 )
 #: "HC-like IBS", "Healthy Control like Irritable Bowel Syndrome". A group that
 #: resembles the comparison group is not the comparison group: this is an
-#: irritable-bowel subgroup whose profile happens to look like a healthy one.
+#: irritable-bowel subgroup whose profile happens to look a healthy one.
 RESEMBLANCE = re.compile(
     r"(?<![\w])(?:healthy|controls?|hcs?|normal)(?:[\s-]+(?:healthy|controls?|hcs?|normal))*"
     r"[\s-]*like(?![\w])",
@@ -209,14 +273,15 @@ ARM_GROUP = re.compile(
 )
 #: Resolved disease, which is neither active disease nor a healthy comparison.
 RESOLVED = _pattern(r"recovered", r"recovery", r"convalescen\w*", r"post[- ]?covid")
-#: The same subjects sampled at different times.
+#: The same subjects sampled at different times. Compound "pre-\w+" / "post-\w+" precede
+#: bare "pre" / "post" so that "pre-treatment" and "pre-DM" match as full tokens.
 TIMEPOINT = _pattern(
     r"before",
     r"after",
-    r"pre",
-    r"post",
     r"pre-\w+",
     r"post-\w+",
+    r"pre",
+    r"post",
     r"post\w*partum",
     r"baseline",
     r"endpoint",
@@ -230,6 +295,38 @@ TIMEPOINT = _pattern(
     r"admission",
     r"discharge",
 )
+#: Pre-/post-/before/after words that name clinical stages, reproductive states or birth
+#: cohorts rather than longitudinal sampling of the same subjects.
+NON_TEMPORAL_PRE_POST = _pattern(
+    r"born\s+(?:before|after)",
+    r"pre[- ]?dm",
+    r"pre[- ]?diabet\w*",
+    r"pre[- ]?term",
+    r"pre[- ]?eclamp\w*",
+    r"pre[- ]?hypertens\w*",
+    r"pre[- ]?malignan\w*",
+    r"pre[- ]?neoplas\w*",
+    r"pre[- ]?cancer\w*",
+    r"pre[- ]?tumou?r\w*",
+    r"pre[- ]?lesion\w*",
+    r"(?:pre|post)[- ]?menopaus\w*",
+    r"pre[- ]?pregnan\w*",
+    r"pre[- ]?school\w*",
+    r"pre[- ]?clinical\w*",
+    r"pre[- ]?symptomatic",
+    r"pre[- ]?manifest\w*",
+    r"pre[- ]?frail\w*",
+    r"pre[- ]?cachec\w*",
+    r"pre[- ]?obese",
+    r"pre[- ]?adolescen\w*",
+    r"pre[- ]?pubert\w*",
+    r"(?:pre|post)[- ]?natal\w*",
+)
+#: Four-digit calendar years, treated as time points only when both groups carry one.
+CALENDAR_YEAR = re.compile(
+    r"(?<![\w])(?:19[89]\d|20[0-2]\d)(?!\s*(?:mg|g|ml|ug|iu|kcal))(?![\w])",
+    re.IGNORECASE,
+)
 #: An age band, which reads like a duration but dates nobody: "2-12 years" and
 #: "aged > 10 years" are how old the subjects were, not when they were sampled.
 AGE_BAND = re.compile(
@@ -238,7 +335,16 @@ AGE_BAND = re.compile(
     re.IGNORECASE,
 )
 #: Time words that, beside a healthy comparison, only date the disease sample.
-BASELINE_ONLY = {"baseline", "admission"}
+BASELINE_ONLY = {
+    "baseline",
+    "admission",
+    "pre-treatment",
+    "pretreatment",
+    "pre-therapy",
+    "pre-operation",
+    "pre-operative",
+    "pre-surgery",
+}
 #: An intervention, exposure or response.
 TREATMENT_TERMS = _pattern(
     r"placebo",
@@ -255,6 +361,8 @@ TREATMENT_TERMS = _pattern(
     r"interventions?",
     r"exposed",
     r"exposure",
+    r"pollut\w*",
+    r"poluuted",
     r"users?",
     r"non[- ]?users?",
     r"smok\w*",
@@ -275,6 +383,10 @@ TREATMENT_TERMS = _pattern(
     r"metformin",
     r"statins?",
     r"ppis?",
+    r"levodopa",
+    r"carbidopa",
+    r"entacapone",
+    r"prednisolon\w*",
 )
 #: A disease group named by its disease, stage, subtype, severity or activity.
 DISEASE_TERMS = _pattern(
@@ -284,11 +396,16 @@ DISEASE_TERMS = _pattern(
     r"disorders?",
     r"syndromes?",
     r"cancers?",
+    r"cancerous",
     r"\w+omas?",
     r"\w+itis",
     r"tumou?rs?",
+    r"tumou?ral",
+    r"peritumou?ral",
+    r"precancer\w*",
     r"polyps?",
     r"lesions?",
+    r"lesional",
     r"infect\w*",
     r"stages?",
     r"grades?",
@@ -311,15 +428,39 @@ DISEASE_TERMS = _pattern(
     r"obes\w*",
     r"overweight",
     r"diabet\w*",
+    r"pre[- ]?dm",
+    r"pre[- ]?diabet\w*",
+    r"pre[- ]?term",
+    r"preterm",
     r"hypertensi\w*",
     r"positive",
+)
+#: Unambiguous disease nouns that can be denied directly in Group 0 when the opposite
+#: group has the same disease and the study condition is a broader umbrella label.
+SELF_SCOPED_DISEASE = _pattern(
+    r"diabet\w*",
+    r"obes\w*",
+    r"hypertensi\w*",
+    r"asthma\w*",
+    r"cirrho\w*",
+    r"colitis",
+    r"constipat\w*",
+    r"diarrh\w*",
+    r"depress\w*",
+    r"anemi\w*",
+    r"pneumoni\w*",
+    r"osteoporo\w*",
+    r"periodontit\w*",
+    r"psoria\w*",
+    r"dermatit\w*",
 )
 #: Condition labels that are variables rather than diseases. Tested against each
 #: comma-separated value of a multi-valued condition, so "Age" is recognised in
 #: "Coinfection,Age"; the condition as a whole is a variable only when every value is.
 NON_DISEASE_CONDITION = re.compile(
-    r"measurement|status|lifestyle|population|ethnic|^age$|^aging$|^sex$|participation"
-    r"|protocol|location|geograph|body mass index|socioeconomic|^pregnancy$",
+    r"measurement|status|lifestyle|population|ethnic|(?<![\w])age(?![\w])|^aging$"
+    r"|(?<![\w])sex(?![\w])|participation|protocol|location|geograph|body mass index"
+    r"|physical activity|socioeconomic|^pregnancy$|altitude|sampling",
     re.IGNORECASE,
 )
 #: Condition labels that are a treatment or exposure. "Non-alcoholic" is a disease
@@ -327,8 +468,162 @@ NON_DISEASE_CONDITION = re.compile(
 TREATMENT_CONDITION = re.compile(
     r"(?<![\w-])(?:response to|antimicrobial agent|antibiotic\w*|smoking|alcohol\w*|diet"
     r"|drug\w*|vaccin\w*|surgery|transplant\w*|c(?:a)?esarean\w*|breast ?feeding|delivery"
-    r")(?![\w])",
+    r"|air pollution|pollution)(?![\w])",
     re.IGNORECASE,
+)
+#: Demographic, geographic, or anatomical site labels that distinguish two healthy
+#: comparison cohorts (such as "Healthy men" vs "Healthy women").
+DEMOGRAPHIC_OR_SITE_TERMS = _pattern(
+    r"men",
+    r"women",
+    r"males?",
+    r"females?",
+    r"boys?",
+    r"girls?",
+    r"infants?",
+    r"children",
+    r"adults?",
+    r"elderly",
+    r"young",
+    r"old",
+    r"urban",
+    r"rural",
+    r"high[- ]altitude",
+    r"low[- ]altitude",
+    r"altitude",
+    r"americans?",
+    r"ghanaians?",
+    r"belgians?",
+    r"norwegians?",
+    r"norweigans?",
+    r"chinese",
+    r"japanese",
+    r"indians?",
+    r"europeans?",
+    r"africans?",
+    r"han",
+    r"tibetans?",
+    r"saliva",
+    r"plaque",
+    r"subgingival",
+    r"supragingival",
+    r"stool",
+    r"feces",
+    r"faeces",
+    r"fecal",
+    r"faecal",
+    r"duoden\w*",
+    r"ileum",
+    r"ileal",
+    r"colon\w*",
+    r"rectal",
+    r"rectum",
+    r"mucosa\w*",
+    r"lumen\w*",
+    r"luminal",
+    r"oral",
+    r"nasal",
+    r"skin",
+    r"vaginal",
+    r"blood",
+    r"serum",
+    r"plasma",
+    r"urine",
+)
+#: Paired / autologous tissue comparison groups (normal adjacent tissue vs tumor).
+PAIRED_TISSUE_CONTROL = _pattern(
+    (
+        r"normal (?:tissues?|mucosa|skin|adjacent\w*|colonic\w*"
+        r"|gastric\w*|esophageal\w*|oral\w*|breast\w*|lung\w*)"
+    ),
+    r"adjacent normal(?:\s+\w+)*",
+    r"normal adjacent(?:\s+\w+)*",
+    r"adjacent non[- ]?cancerous(?:\s+tissues?)?",
+    r"non[- ]?cancerous(?:\s+tissues?)",
+    r"non[- ]?malignant(?:\s+tissues?)",
+    r"non[- ]?tumou?r(?:al)?(?:\s+tissues?)?",
+    r"paracancerous(?:\s+tissues?)?",
+    r"peritumou?ral(?:\s+tissues?)?",
+    r"early stage normal",
+    r"non[- ]?lesional(?:\s+skin)?",
+    r"unaffected mucosa",
+    r"non[- ]?inflamed mucosa",
+    r"healthy tissue",
+)
+PAIRED_TISSUE_DISEASE = _pattern(
+    r"tumou?rs?",
+    r"tumou?ral",
+    r"peritumou?ral",
+    r"cancers?",
+    r"cancerous",
+    r"precancer\w*",
+    r"carcinomas?",
+    r"adenocarcinomas?",
+    r"adenomas?",
+    r"polyps?",
+    r"lesions?",
+    r"lesional",
+    r"malignant",
+)
+#: Disease terms that, when present un-negated in a comparison group's name and distinct
+#: from the study condition, indicate a comorbidity contrast within a shared background
+#: disease rather than a healthy-normal control.
+COMORBIDITY_DISEASE_TERMS = _pattern(
+    r"obes\w*",
+    r"overweight",
+    r"diabet\w*",
+    r"mody\d*",
+    r"hypertensi\w*",
+    r"pneumoni\w*",
+    r"copd",
+    r"urti",
+    r"cirrho\w*",
+    r"periodontit\w*",
+    r"ibs",
+    r"irritable bowel",
+    r"ibd",
+    r"colitis",
+    r"crohn\w*",
+    r"glaucoma\w*",
+    r"polyps?",
+    r"adenomas?",
+    r"atopic",
+    r"stroke",
+    r"covid(?:[- ]?19)?",
+    r"sars[- ]?cov[- ]?2",
+    r"hemodialysis",
+    r"haemodialysis",
+    r"transplant\w*",
+    r"gvhd",
+    r"graft[- ]versus[- ]host",
+    r"urinary findings",
+)
+#: Hospital, surgical, symptomatic or patient-derived non-case control labels.
+HOSPITAL_OR_SYMPTOMATIC_CONTROL = _pattern(
+    r"hospital controls?",
+    r"surgical controls?",
+    r"symptomatic controls?",
+    r"patient controls?",
+    r"control patients?",
+    r"(?<!non )(?<!non-)disease controls?",
+    r"oncological controls?",
+    r"non[- ]?ibd controls?",
+    r"unrelated [\w\s-]+ conditions?",
+    r"benign",
+)
+DIRECTLY_NEGATED_DISEASE = re.compile(
+    r"\b(?:free (?:from|of)|without|no|non|(?<!positive and )negative(?:\s+for)?)[- ]+"
+    r"(?:history of\s+|any\s+|acute\s+|chronic\s+)?[\w'\u2019.-]+"
+    r"|\b[\w'\u2019.]+[- ]free\b",
+    re.IGNORECASE,
+)
+TREATED_WITH_CONF = re.compile(r"\btreated\s+with\s+[\w-]+", re.IGNORECASE)
+#: A disease group on antiretroviral therapy: "HAART-treated HIV+ patients", "People living
+#: with HIV on Antiretroviral Therapy (PLWH on ART)". Opposite an HIV-negative comparison
+#: group the therapy is what the cases are on, not what the contrast compares.
+ON_ANTIRETROVIRAL = _pattern(
+    r"(?:c|ha)?art[- ]treated",
+    r"(?:on|taking|receiving|under)\s+(?:(?:c|ha)?art|(?:combination\s+)?antiretroviral\w*)",
 )
 #: Intervention words unambiguous enough to be trusted in free text, so that the Group
 #: 1 definition and the description can settle what a bare arm label leaves open: a
@@ -351,10 +646,16 @@ INTERVENTION_EVIDENCE = _pattern(
     r"fa?ecal microbiota transplant\w*",
     r"intra\w*gastric administration",
 )
-#: A treatment word that is negated names untreated disease, not a treatment.
+#: A treatment word that is negated or pre-baseline names untreated disease, not a treatment.
 NEGATED_TREATMENT = re.compile(
-    r"(?:without|no|not|never)\s+(?:[\w-]+\s+){0,2}(?:treat\w*|therap\w*|antibiotic\w*"
-    r"|antiretroviral\w*|medication\w*)|(?:treatment|therapy|drug|antibiotic)[- ]naive|untreated",
+    r"(?:without|no|not|never|free\s+of|prior\s+to)\s+"
+    r"(?:taking\s+|using\s+|receiving\s+|on\s+|received\s+|treated\s+with\s+|exposed\s+to\s+)?"
+    r"(?:[\w-]+\s+){0,3}"
+    r"(?:treat\w*|therap\w*|antibiotic\w*|antiretroviral\w*|medication\w*|drugs?|probiotic\w*"
+    r"|prebiotic\w*|supplement\w*|ppis?|statins?|metformin|chemotherapy|radiotherapy|art\b)"
+    r"|(?:treatment|therapy|drug|antibiotic|medication|art|c?art)[- ](?:naive|free)"
+    r"|untreated|unmedicated|non[- ]?medicated|unexposed|non[- ]?exposed"
+    r"|pre[- ]?(?:treat\w*|therap\w*|operat\w*|surg\w*)",
     re.IGNORECASE,
 )
 #: Both groups named as low/high levels of one variable.
@@ -363,10 +664,21 @@ LEVEL_SPLIT = _pattern(
 )
 MULTI_DESIGN_TREATMENT = re.compile(r"randomized controlled trial", re.IGNORECASE)
 MULTI_DESIGN_TIME = re.compile(r"time series|longitudinal", re.IGNORECASE)
-#: A sign counts as a test result only where the name or a sub-name ends after it.
-MARKER = re.compile("([a-z][a-z0-9.]*)\\s*([+\\-\u2212])(?=\\s*(?:$|[/),;(]))", re.IGNORECASE)
+#: A sign counts as a test result where the name or a sub-name ends after it, with or
+#: without a space before it ("HPV-", "HPV +"). A minus sign or an en dash that touches its
+#: marker also counts before a word ("HIV\u2013 individuals"), because neither can be the
+#: hyphen that is as often a separator there ("Periodontitis- Shallow pocket", "BV-
+#: Positive") as a minus. The space before a sign is matched outside the sign's group, so
+#: the group holds only the sign (#596).
+MARKER = re.compile(
+    "([a-z][a-z0-9.]*)"
+    "(?:\\s+(?=[+\\-\u2212\u2013]\\s*(?:$|[/),;(])))?"
+    "([+\\-\u2212\u2013](?=\\s*(?:$|[/),;(]))|[\u2212\u2013](?=\\s+\\w))",
+    re.IGNORECASE,
+)
 #: Words naming the same disease category, so that a negation can deny a condition
-#: stated in other words: "noncancer individuals" against oral squamous cell carcinoma.
+#: stated in other words: "noncancer individuals" against oral squamous cell carcinoma,
+#: or "Non-obese" against "Obesity".
 CONDITION_SYNONYMS = (
     frozenset(
         {
@@ -382,6 +694,9 @@ CONDITION_SYNONYMS = (
             "malignancy",
         }
     ),
+    frozenset({"obese", "obesity"}),
+    frozenset({"diabetes", "diabetic", "diabetics"}),
+    frozenset({"hypertension", "hypertensive"}),
 )
 CONDITION_STOPWORDS = {"disease", "disorder", "syndrome", "infection", "and", "with", "of", "the"}
 
@@ -414,6 +729,8 @@ class Classification:
     orientation: str
     evidence: str
     flags: str
+    contrast_type: str = NOT_APPLICABLE
+    control_tier: str = NOT_APPLICABLE
 
 
 def _clean(value: str) -> str:
@@ -434,8 +751,8 @@ def _matches(pattern: re.Pattern[str], text: str) -> list[str]:
 
 
 def _markers(name: str) -> dict[str, str]:
-    """Test markers and their sign, as in "HPV-" or "HIV +"."""
-    return {marker.lower(): "-" if sign != "+" else "+" for marker, sign in MARKER.findall(name)}
+    """Test markers and their sign, as in "HPV-", "HIV +" or "HIV\u2013 individuals"."""
+    return {marker.lower(): "+" if sign == "+" else "-" for marker, sign in MARKER.findall(name)}
 
 
 def _condition_words(condition: str) -> tuple[set[str], set[str]]:
@@ -443,37 +760,20 @@ def _condition_words(condition: str) -> tuple[set[str], set[str]]:
 
     A condition already written as an acronym ("HIV infection") contributes that acronym
     as a stem, since it is too short for the six-letter rule and its initialism ("hi")
-    describes nothing.
+    describes nothing. Possessive suffixes ("Crohn's", "Parkinson's") are stripped
+    before tokenising so they do not produce a spurious 's' initial.
     """
     stems: set[str] = set()
     initials: set[str] = set()
     for part in condition.split(","):
-        words = [w for w in re.findall(r"[a-z]+", part.lower()) if w not in CONDITION_STOPWORDS]
+        cleaned = re.sub(r"['\u2019]s\b", "", part.lower())
+        words = [w for w in re.findall(r"[a-z]+", cleaned) if w not in CONDITION_STOPWORDS]
         stems.update(w[:6] for w in words if len(w) >= 4)
         stems.update(w for w in words if 2 <= len(w) <= 3)
-        full = [
-            w for w in re.findall(r"[a-z]+", part.lower()) if w not in {"and", "of", "the", "with"}
-        ]
+        full = [w for w in re.findall(r"[a-z]+", cleaned) if w not in {"and", "of", "the", "with"}]
         if len(full) >= 2:
             initials.add("".join(w[0] for w in full))
     return stems, initials
-
-
-def _mentions_condition(text: str, condition: str) -> bool:
-    stems, initials = _condition_words(condition)
-    tokens = re.findall(r"[a-z0-9]+", text.lower())
-    return (
-        any(t[:6] in stems for t in tokens if len(t) >= 4)
-        or any(t in stems for t in tokens if len(t) <= 3)
-        # Either direction: the condition's initialism can be the longer string, as
-        # "hpv" against the initialism of "Human papilloma virus infection".
-        or any(
-            t.startswith(i) or (len(t) >= 3 and i.startswith(t))
-            for t in tokens
-            for i in initials
-            if len(i) >= 2
-        )
-    )
 
 
 def _same_disease_category(word: str, condition: str) -> bool:
@@ -485,6 +785,51 @@ def _same_disease_category(word: str, condition: str) -> bool:
     """
     words = set(re.findall(r"[a-z]+", condition.lower()))
     return any(word.lower() in group and words & group for group in CONDITION_SYNONYMS)
+
+
+def _mentions_condition(text: str, condition: str) -> bool:
+    stems, initials = _condition_words(condition)
+    tokens = re.findall(r"[a-z0-9]+", text.lower())
+    return (
+        any(t[:6] in stems for t in tokens if len(t) >= 4)
+        or any(t in stems for t in tokens if len(t) <= 3)
+        or any(_same_disease_category(t, condition) for t in tokens)
+        # Either direction: the condition's initialism can be the longer string, as
+        # "hpv" against the initialism of "Human papilloma virus infection".
+        or any(
+            t.startswith(i) or (len(t) >= 3 and i.startswith(t))
+            for t in tokens
+            for i in initials
+            if len(i) >= 2
+        )
+    )
+
+
+def _names_condition(name: str, condition: str) -> bool:
+    """Does a group name name the condition? For HIV, "PLWH", "PWH" and the spelled-out
+    virus count too, which :func:`_mentions_condition` cannot see (#627)."""
+    return _mentions_condition(name, condition) or bool(
+        HIV_CONDITION.search(condition) and WITH_HIV.search(name)
+    )
+
+
+def _acronym_spelled_out(words: list[str], condition: str) -> list[str]:
+    """Leading words that spell out an acronym of the condition, replaced by the acronym.
+
+    A condition named by an acronym ("HIV infection") is denied as often in full as by
+    the acronym: "without Human immunodeficiency virus (HIV)" lacks HIV. Only a word the
+    condition writes in capitals is an acronym, so the "to" of "Response to antiviral
+    drug" or the "Non" of "Non-alcoholic fatty liver disease" is never spelled out.
+    """
+    acronyms = {
+        word.lower()
+        for word in re.findall(r"(?<![\w])[A-Z]{2,5}(?![a-z])", condition)
+        if not ROMAN_NUMERAL.fullmatch(word)
+    }
+    for acronym in sorted(acronyms, key=len, reverse=True):
+        if "".join(word[0] for word in words[: len(acronym)]) == acronym:
+            return [acronym, *words[len(acronym) :]]
+    return words
 
 
 def _negation_scopes_condition(phrase: str, condition: str) -> bool:
@@ -504,6 +849,7 @@ def _negation_scopes_condition(phrase: str, condition: str) -> bool:
     words = re.findall(r"[\w'\u2019.]+", phrase.lower())
     while words and words[0] in NEGATION_FILLER:
         words.pop(0)
+    words = _acronym_spelled_out(words, condition)
     if not words or not denies(words[0]):
         return False
     rest = list(words[1:])
@@ -571,6 +917,30 @@ def _condition_negative(name: str, condition: str) -> list[tuple[str, tuple[int,
     return found
 
 
+def _self_scoped_absence(name: str, other: str) -> list[tuple[str, tuple[int, int]]]:
+    """ "non-diabetic" vs "diabetic" when the condition field names a broader category.
+
+    When one group explicitly negates the exact disease noun present in the other group
+    (and carries no other disease term outside that negation), it acts as the condition-
+    negative comparison group even if the study's Condition field uses a broader EFO
+    term (for example, "glucose metabolism disease" for a diabetic vs non-diabetic contrast).
+    """
+    other_clean = NEGATORS.sub(" ", other)
+    other_diseases = set(_matches(SELF_SCOPED_DISEASE, other_clean))
+    if not other_diseases:
+        return []
+    found = []
+    for match in NEGATORS.finditer(name):
+        phrase_words = re.findall(r"[a-z]+", match.group(1).lower())
+        while phrase_words and phrase_words[0] in NEGATION_FILLER:
+            phrase_words.pop(0)
+        if phrase_words and phrase_words[0] in other_diseases:
+            outside = name[: match.start()] + " " + name[match.end() :]
+            if not _matches(DISEASE_TERMS, outside):
+                found.append((match.group(0).strip().lower(), match.span()))
+    return found
+
+
 def _condition_values(condition: str) -> list[str]:
     """The condition's comma-separated values, which BugSigDB allows more than one of."""
     return [value for value in (part.strip() for part in condition.split(",")) if value]
@@ -592,13 +962,15 @@ def _age_bands(name: str) -> list[str]:
 
 
 def _timepoints(name: str) -> set[str]:
-    """Time words in a group name, excluding those inside an age band.
+    """Time words in a group name, excluding those inside an age band or clinical stage.
 
     "2-12 years" against "18-62 years" and "Controls aged > 10 years" look like
-    durations to :data:`TIMEPOINT` but say how old the subjects were, so the same
-    subjects are not being followed through time.
+    durations to :data:`TIMEPOINT` but say how old the subjects were, and "pre-DM" or
+    "pre-hypertension" name a clinical stage rather than a follow-up visit.
     """
-    spans = [match.span() for match in AGE_BAND.finditer(name)]
+    spans = [match.span() for match in AGE_BAND.finditer(name)] + [
+        match.span() for match in NON_TEMPORAL_PRE_POST.finditer(name)
+    ]
     return {
         match.group(0).lower()
         for match in TIMEPOINT.finditer(name)
@@ -642,8 +1014,14 @@ def _comparison(name: str, other: str, condition: str) -> tuple[list[str], list[
     """
     resemblance = RESEMBLANCE.sub(" ", name)
     strong = _matches(STRONG_COMPARISON, resemblance)
-    absence = _absence_of_condition(name, condition) + _condition_negative(name, condition)
+    absence = (
+        _absence_of_condition(name, condition)
+        + _condition_negative(name, condition)
+        + _self_scoped_absence(name, other)
+    )
     weak = _matches(WEAK_COMPARISON, resemblance) + [text for text, _span in absence]
+    if HIV_CONDITION.search(condition):
+        weak += _matches(WITHOUT_HIV, name)
     mine, theirs = _markers(name), _markers(other)
     negative = [
         m
@@ -672,8 +1050,60 @@ def _disease_evidence(name: str, condition: str) -> list[str]:
     return found
 
 
+def _classify_control_tier(
+    control_group_name: str,
+    disease_group_name: str,
+    condition: str,
+    strong_control: list[str],
+    flags: list[str],
+) -> tuple[str, str]:
+    """Stratify a ``disease_vs_healthy`` contrast into ``(contrast_type, control_tier)``."""
+    # 1. Paired / autologous tissue comparison (e.g. tumour vs adjacent normal mucosa).
+    if _matches(PAIRED_TISSUE_CONTROL, control_group_name) or (
+        ("tissue" in control_group_name.lower() or "tissues" in control_group_name.lower())
+        and _matches(PAIRED_TISSUE_DISEASE, disease_group_name)
+    ):
+        return PAIRED_TISSUE_AUTOLOGOUS, TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+
+    # 2. Background comorbidity in the control group (disease A + B vs disease A without B).
+    if re.search(r"non[- ]+stroke\s+associated\s+pneumonia", control_group_name, re.IGNORECASE):
+        return COMORBIDITY_WITHIN_DISEASE, TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+
+    ctrl_markers = _markers(control_group_name)
+    if any(sign == "+" for sign in ctrl_markers.values()):
+        return COMORBIDITY_WITHIN_DISEASE, TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+
+    residual = DIRECTLY_NEGATED_DISEASE.sub(" ", control_group_name)
+    comorbid_hits = [
+        d
+        for d in _matches(COMORBIDITY_DISEASE_TERMS, residual)
+        if not _mentions_condition(d, condition)
+    ]
+    if comorbid_hits:
+        return COMORBIDITY_WITHIN_DISEASE, TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+
+    if re.search(
+        r"\b(?:no|without|non)[- ]+cirrhosis\b", control_group_name, re.IGNORECASE
+    ) and not _mentions_condition("cirrhosis", condition):
+        return COMORBIDITY_WITHIN_DISEASE, TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+
+    # 3. Hospital, surgical, symptomatic or patient controls, or treated-disease confound.
+    if (
+        _matches(HOSPITAL_OR_SYMPTOMATIC_CONTROL, control_group_name)
+        or "treated_disease_group" in flags
+        or (not strong_control and re.search(r"\bpatients?\b", control_group_name, re.IGNORECASE))
+        or re.search(r"\bhiv\s+negative\s+patients?\b", control_group_name, re.IGNORECASE)
+    ):
+        return CASE_VS_CONTROL_SUBJECT, TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+
+    # 4. Subject-level controls: Tier 1 (explicit healthy/normal) vs Tier 2 (screened negative).
+    if strong_control:
+        return CASE_VS_CONTROL_SUBJECT, TIER_1_HEALTHY_NORMAL
+    return CASE_VS_CONTROL_SUBJECT, TIER_2_CONDITION_NEGATIVE_SCREENED
+
+
 def classify(record: ExperimentRecord) -> Classification:
-    """Assign one contrast class and an orientation, with the evidence for both."""
+    """Assign one contrast class, orientation, contrast type and control tier."""
     g0 = _normalised(_clean(record.group_0_name))
     g1 = _normalised(_clean(record.group_1_name))
     design, condition = _clean(record.study_design), _clean(record.condition)
@@ -687,14 +1117,36 @@ def classify(record: ExperimentRecord) -> Classification:
     if "meta-analysis" in design.lower():
         flags.append("design_meta_analysis")
 
-    def result(contrast_class: str, orientation: str, evidence: str) -> Classification:
-        return Classification(contrast_class, orientation, evidence, ",".join(flags))
+    def result(
+        contrast_class: str,
+        orientation: str,
+        evidence: str,
+        contrast_type: str | None = None,
+        control_tier: str = NOT_APPLICABLE,
+    ) -> Classification:
+        ctype = (
+            contrast_type
+            if contrast_type is not None
+            else (contrast_class if contrast_class != UNRESOLVED else NOT_APPLICABLE)
+        )
+        return Classification(
+            contrast_class, orientation, evidence, ",".join(flags), ctype, control_tier
+        )
 
     if not g0 or not g1:
         return result(UNRESOLVED, NOT_APPLICABLE, "a group name is missing")
 
     strong_0, weak_0, withdrawn_0 = _comparison(g0, g1, condition)
     strong_1, weak_1, withdrawn_1 = _comparison(g1, g0, condition)
+
+    # When both groups carry the same generic label ("normal-weight controls" vs
+    # "obese controls") and only one carries specific condition-negative evidence,
+    # strip the shared strong token so the specific comparison group wins.
+    shared_strong = set(strong_0) & set(strong_1)
+    if shared_strong and ((weak_0 and not weak_1) or (weak_1 and not weak_0)):
+        strong_0 = [s for s in strong_0 if s not in shared_strong]
+        strong_1 = [s for s in strong_1 if s not in shared_strong]
+
     control_0, control_1 = strong_0 + weak_0, strong_1 + weak_1
     if withdrawn_0 or withdrawn_1:
         flags.append("comparison_reading_withdrawn")
@@ -702,9 +1154,19 @@ def classify(record: ExperimentRecord) -> Classification:
 
     resolved = _matches(RESOLVED, f"{g0} | {g1}")
     if resolved:
-        return result(LONGITUDINAL, NOT_APPLICABLE, f"a group is resolved disease: {resolved}")
+        return result(
+            LONGITUDINAL,
+            NOT_APPLICABLE,
+            f"a group is resolved disease: {resolved}",
+            contrast_type=RESOLVED_DISEASE,
+        )
 
     time_0, time_1 = _timepoints(g0), _timepoints(g1)
+    years_0 = {m.group(0).lower() for m in CALENDAR_YEAR.finditer(g0)}
+    years_1 = {m.group(0).lower() for m in CALENDAR_YEAR.finditer(g1)}
+    if years_0 and years_1:
+        time_0 = time_0 | years_0
+        time_1 = time_1 | years_1
     if _age_bands(g0) or _age_bands(g1):
         flags.append("age_band_not_timepoint")
     one_sided_time = False
@@ -725,10 +1187,39 @@ def classify(record: ExperimentRecord) -> Classification:
         else:
             one_sided_time = True
 
-    untreated = NEGATED_TREATMENT.sub(" ", f"{g0} | {g1}")
-    if untreated != f"{g0} | {g1}":
+    untreated_0 = NEGATED_TREATMENT.sub(" ", g0)
+    untreated_1 = NEGATED_TREATMENT.sub(" ", g1)
+    if f"{untreated_0} | {untreated_1}" != f"{g0} | {g1}":
         flags.append("negated_treatment_term")
-    treatment_terms = _matches(TREATMENT_TERMS, untreated)
+    treat_0 = _matches(TREATMENT_TERMS, untreated_0)
+    treat_1 = _matches(TREATMENT_TERMS, untreated_1)
+    if treat_0 and treat_0 == treat_1 and (control_0 or control_1):
+        flags.append("shared_treatment_term")
+        treatment_terms: list[str] = []
+    else:
+        treatment_terms = sorted(set(treat_0) | set(treat_1))
+
+    # A healthy control compared against a disease group that happens to be on therapy
+    # ("Controls" vs "HIV Patients treated with Maraviroc", "HIV-" vs "People Living With
+    # HIV on Antiretroviral therapy") is a confounded disease-vs-healthy contrast (Tier 3),
+    # not a treatment-arm trial. Treated against untreated people who all have the disease
+    # has no comparison group and stays a treatment contrast. A treated group also named by
+    # time keeps the treatment reading: without it only the time word would be left, and
+    # in "taking ART for more than 1 year" that word is a duration, not a later visit. The
+    # guard reads a time word in either group. "on HAART" or "on cART" counts as therapy
+    # even though TREATMENT_TERMS reads only a whole "ART" (#627).
+    if (
+        (treatment_terms or ON_ANTIRETROVIRAL.search(g1))
+        and control_0
+        and not control_1
+        and not treat_0
+        and not one_sided_time
+        and _names_condition(g1, condition)
+        and (TREATED_WITH_CONF.search(g1) or ON_ANTIRETROVIRAL.search(g1))
+    ):
+        flags.append("treated_disease_group")
+        treatment_terms = []
+
     if treatment_terms:
         if control_0 or control_1:
             flags.append("comparison_group_present")
@@ -773,6 +1264,23 @@ def classify(record: ExperimentRecord) -> Classification:
         return result(OTHER, NOT_APPLICABLE, "both groups are levels of one variable")
 
     if control_0 and control_1:
+        if variable_condition:
+            return result(
+                OTHER,
+                NOT_APPLICABLE,
+                f"comparison group named, but the condition is a variable: {condition!r}",
+            )
+        demo_0 = set(_matches(DEMOGRAPHIC_OR_SITE_TERMS, g0))
+        demo_1 = set(_matches(DEMOGRAPHIC_OR_SITE_TERMS, g1))
+        if set(control_0) == set(control_1) and (demo_0 ^ demo_1):
+            return result(
+                OTHER,
+                NOT_APPLICABLE,
+                (
+                    "both groups are comparisons differing by cohort or site: "
+                    f"{sorted(demo_0 ^ demo_1)}"
+                ),
+            )
         return result(
             UNRESOLVED,
             NOT_APPLICABLE,
@@ -788,13 +1296,31 @@ def classify(record: ExperimentRecord) -> Classification:
         if control_0:
             if not strong_0:
                 flags.append("weak_comparison_evidence")
-            return result(DISEASE_VS_HEALTHY, NATIVE, f"Group 0 reads as a comparison: {control_0}")
+            ctype, ctier = _classify_control_tier(g0, g1, condition, strong_0, flags)
+            if ctype == PAIRED_TISSUE_AUTOLOGOUS:
+                flags.append("paired_tissue_comparison")
+            elif ctype == COMORBIDITY_WITHIN_DISEASE:
+                flags.append("comorbidity_control")
+            return result(
+                DISEASE_VS_HEALTHY,
+                NATIVE,
+                f"Group 0 reads as a comparison: {control_0}",
+                contrast_type=ctype,
+                control_tier=ctier,
+            )
         disease_0 = _disease_evidence(g0, condition)
         if strong_1 and disease_0:
+            ctype, ctier = _classify_control_tier(g1, g0, condition, strong_1, flags)
+            if ctype == PAIRED_TISSUE_AUTOLOGOUS:
+                flags.append("paired_tissue_comparison")
+            elif ctype == COMORBIDITY_WITHIN_DISEASE:
+                flags.append("comorbidity_control")
             return result(
                 DISEASE_VS_HEALTHY,
                 REVERSED,
                 f"Group 1 reads as a comparison: {strong_1}; Group 0 as disease: {disease_0}",
+                contrast_type=ctype,
+                control_tier=ctier,
             )
         flags.append("possible_reversal_unverified")
         return result(
@@ -870,13 +1396,16 @@ def oriented_profiles(
     classes: Mapping[tuple[str, str], Classification],
     *,
     strong_evidence_only: bool = False,
+    control_tiers: Iterable[str] | None = None,
 ) -> list[Profile]:
     """Disease-versus-healthy profiles, with reversed experiments relabelled.
 
     After this, ``inc`` means higher in the disease group for every kept profile.
     The relabelling is explicit and only applied where the classification says
-    Group 1 is the comparison group.
+    Group 1 is the comparison group. When ``control_tiers`` is supplied, only
+    experiments whose ``control_tier`` is in that set are kept.
     """
+    allowed_tiers = set(control_tiers) if control_tiers is not None else None
     flip = {"inc": "dec", "dec": "inc"}
     kept: list[Profile] = []
     for profile in profiles:
@@ -884,6 +1413,8 @@ def oriented_profiles(
         if found is None or found.contrast_class != DISEASE_VS_HEALTHY:
             continue
         if strong_evidence_only and "weak_comparison_evidence" in found.flags.split(","):
+            continue
+        if allowed_tiers is not None and found.control_tier not in allowed_tiers:
             continue
         if found.orientation == REVERSED:
             kept.append(replace(profile, inc_dec=flip[profile.inc_dec]))
@@ -1005,6 +1536,8 @@ MANIFEST_FIELDS = (
     "direction_convention",
     "contrast_class",
     "orientation",
+    "contrast_type",
+    "control_tier",
     "evidence",
     "flags",
     "in_analysed_corpus",
@@ -1068,10 +1601,37 @@ def class_counts(
     ]
 
 
+def control_tier_counts(
+    classes: Mapping[tuple[str, str], Classification], corpus: Iterable[tuple[str, str]]
+) -> list[dict[str, object]]:
+    """Experiments and studies per contrast_type and control_tier within disease_vs_healthy."""
+    experiments: Counter[tuple[str, str]] = Counter()
+    studies: dict[tuple[str, str], set[str]] = {}
+    for key in corpus:
+        found = classes[key]
+        if found.contrast_class != DISEASE_VS_HEALTHY:
+            continue
+        label = (found.contrast_type, found.control_tier)
+        experiments[label] += 1
+        studies.setdefault(label, set()).add(key[0])
+    return [
+        {
+            "contrast_type": label[0],
+            "control_tier": label[1],
+            "experiments": experiments[label],
+            "studies": len(studies[label]),
+        }
+        for label in sorted(
+            experiments,
+            key=lambda item: (CONTROL_TIERS.index(item[1]), item[0]),
+        )
+    ]
+
+
 def comparison_rows(
     populations: Sequence[tuple[str, Sequence[Profile]]],
 ) -> list[dict[str, object]]:
-    """Six fraction directions and 15 log-ratios on both populations, side by side.
+    """Six fraction directions and 15 log-ratios on each population, side by side.
 
     Each population keeps the native families of the two analyses: Benjamini-Hochberg
     over six fractions and Benjamini-Yekutieli over 15 ratios. Nothing historical is
@@ -1206,6 +1766,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     output = args.output_dir
     output.mkdir(parents=True, exist_ok=True)
     counts = class_counts(classes, corpus)
+    tier_counts = control_tier_counts(classes, corpus)
     oriented = oriented_profiles(profiles, classes)
     written = [
         write_manifest(
@@ -1221,6 +1782,21 @@ def main(argv: Sequence[str] | None = None) -> int:
                     (
                         "disease_vs_healthy_strong_evidence",
                         oriented_profiles(profiles, classes, strong_evidence_only=True),
+                    ),
+                    (
+                        "disease_vs_healthy_tier1_healthy_normal",
+                        oriented_profiles(profiles, classes, control_tiers={TIER_1_HEALTHY_NORMAL}),
+                    ),
+                    (
+                        "disease_vs_healthy_tier1_2_subject_controls",
+                        oriented_profiles(
+                            profiles,
+                            classes,
+                            control_tiers={
+                                TIER_1_HEALTHY_NORMAL,
+                                TIER_2_CONDITION_NEGATIVE_SCREENED,
+                            },
+                        ),
                     ),
                 ]
             ),
@@ -1240,6 +1816,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "disease_vs_healthy experiments; reversed ones relabelled so inc = higher in disease"
         ),
         "class_counts": counts,
+        "control_tier_counts": tier_counts,
         "review": {
             "path": str(args.review_input.relative_to(REPO_ROOT))
             if args.review_input.is_relative_to(REPO_ROOT)

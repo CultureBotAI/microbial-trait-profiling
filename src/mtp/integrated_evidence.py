@@ -782,6 +782,21 @@ def _source_id(path: Path) -> str:
     return f"{path.name}@{_sha256(path)}"
 
 
+def _protect_source_files(output: Path, inputs: Sequence[Path | None]) -> None:
+    """Reject output layouts that could overwrite any evidence read by this run."""
+    sources = [path for path in inputs if path is not None and path.is_file()]
+    destination = output.resolve()
+    if any(path.resolve().is_relative_to(destination) for path in sources):
+        raise ValueError("Integrated output directory contains an input evidence file")
+    identities = {(path.stat().st_dev, path.stat().st_ino) for path in sources}
+    if output.exists() and any(
+        (path.stat().st_dev, path.stat().st_ino) in identities
+        for path in output.rglob("*")
+        if path.is_file()
+    ):
+        raise ValueError("Integrated output aliases an input evidence file")
+
+
 def _number(row: Mapping[str, str], key: str) -> float:
     value = float(row[key])
     if not math.isfinite(value):
@@ -810,6 +825,8 @@ def native_composition_records(
     q_threshold: float,
     strict_q_threshold: float,
     profile_sha256: str,
+    experiments_sha256: str | None = None,
+    require_source_hashes: bool = False,
     expected_profiles: Sequence[Profile] | None = None,
 ) -> list[Record]:
     """Import study-level native t-tests, keeping pair tests explicitly secondary.
@@ -832,6 +849,12 @@ def native_composition_records(
     if len(by_trait) != len(rows) or not rows:
         raise ValueError("native composition source must contain unique trait rows")
     for native_row in rows:
+        if require_source_hashes and any(
+            not native_row.get(key) for key in ("profile_sha256", "experiments_sha256")
+        ):
+            raise ValueError(
+                "core-bound native composition requires profile and experiments hashes"
+            )
         if (
             native_row.get("test_method", "two_sided_one_sample_t_test")
             != "two_sided_one_sample_t_test"
@@ -841,6 +864,11 @@ def native_composition_records(
             raise ValueError("native composition correction method mismatch")
         if "profile_sha256" in native_row and native_row["profile_sha256"] != profile_sha256:
             raise ValueError("native composition profile checksum mismatch")
+        if (
+            "experiments_sha256" in native_row
+            and native_row["experiments_sha256"] != experiments_sha256
+        ):
+            raise ValueError("native composition experiments checksum mismatch")
         if "correction_family_size" in native_row and _count(
             native_row, "correction_family_size"
         ) != len(rows):
@@ -960,6 +988,33 @@ class ProfileHits:
     profile_keys: set[tuple[str, str, str]] = field(default_factory=set)
 
 
+def ora_testable_profile_keys(path: Path) -> set[tuple[str, str, str]]:
+    """Read production ORA eligibility from the verified ORA counting unit.
+
+    Pairing is decided before excluding N=0 rows. A zero-draw profile belongs to
+    its paired experiment but contributes no hypergeometric tests; zero
+    annotation totals in the count product do not identify that condition
+    because matched taxa can also lack retained annotations.
+    """
+    draws: dict[tuple[str, str, str], int] = {}
+    directions: dict[tuple[str, str], set[str]] = {}
+    with path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        required = {"study_id", "experiment_id", "inc_dec", "taxa_count"}
+        if not required.issubset(reader.fieldnames or []):
+            raise ValueError("ORA profiles lack identifiers or taxa_count")
+        for row in reader:
+            key = (row["study_id"], row["experiment_id"], row["inc_dec"])
+            if not all(key) or key[2] not in {"inc", "dec"}:
+                raise ValueError("ORA profiles contain an invalid profile identifier")
+            if key in draws:
+                raise ValueError("ORA profiles contain duplicate profile identifiers")
+            draws[key] = _count(row, "taxa_count")
+            directions.setdefault(key[:2], set()).add(key[2])
+    paired = {key for key, observed in directions.items() if observed == {"inc", "dec"}}
+    return {key for key, n_draws in draws.items() if key[:2] in paired and n_draws > 0}
+
+
 def _read_ora_hits(
     path: Path,
     traits: set[str],
@@ -970,6 +1025,7 @@ def _read_ora_hits(
     hits = {trait: ProfileHits() for trait in traits}
     profile_indices: dict[tuple[str, str, str], int] = {}
     seen_by_trait: dict[str, int] = {}
+    background_by_trait: dict[str, int] = {}
     all_tests = 0
     with path.open(encoding="utf-8", newline="") as handle:
         while True:
@@ -992,6 +1048,8 @@ def _read_ora_hits(
         reader = csv.DictReader(handle, fieldnames=line.rstrip("\r\n").split("\t"), delimiter="\t")
         for row in reader:
             testable = row["eligibility_status"] == "testable"
+            if not testable:
+                raise ValueError("ORA complete export contains an unsupported test state")
             all_tests += testable
             trait = row["trait"]
             profile_key = (row["study_id"], row["experiment_id"], row["inc_dec"])
@@ -1003,21 +1061,17 @@ def _read_ora_hits(
             if mask & bit:
                 raise ValueError(f"duplicate ORA profile/trait test: {profile_key}")
             seen_by_trait[trait] = mask | bit
-            if trait not in hits:
-                continue
-            if not testable:
-                continue
             if row["correction_family"] != "global" or row["inc_dec"] not in {"inc", "dec"}:
                 raise ValueError("ORA source has incompatible family or direction")
-            result = hits[trait]
-            result.profile_keys.add(profile_key)
-            result.tests += 1
             if _count(row, "background_m") != _count(
                 metadata, "Background-Taxa-Universe-M"
             ) or _count(row, "testable_profiles") != _count(metadata, "Testable-Profiles"):
                 raise ValueError("ORA row background or profile count differs from metadata")
             if not 0 < _count(row, "background_k") <= _count(row, "background_m"):
                 raise ValueError("ORA row has invalid background trait prevalence")
+            background_k = _count(row, "background_k")
+            if background_by_trait.setdefault(trait, background_k) != background_k:
+                raise ValueError("ORA background trait prevalence changes between profiles")
             q = _probability(row, "fdr_q")
             fold = _number(row, "fold")
             if fold < 0:
@@ -1025,8 +1079,16 @@ def _read_ora_hits(
             called = q <= threshold and (
                 fold >= fold_cutoff if tail == "upper" else fold <= fold_cutoff
             )
-            if (row["is_significant"].lower() == "true") != called:
+            if (
+                row["is_significant"].lower() not in {"true", "false"}
+                or (row["is_significant"].lower() == "true") != called
+            ):
                 raise ValueError("ORA hit flag disagrees with declared thresholds")
+            if trait not in hits:
+                continue
+            result = hits[trait]
+            result.profile_keys.add(profile_key)
+            result.tests += 1
             if called:
                 result.inc += row["inc_dec"] == "inc"
                 result.dec += row["inc_dec"] == "dec"
@@ -1034,6 +1096,11 @@ def _read_ora_hits(
                 result.folds.append(fold)
     if all_tests != _count(metadata, "Total-Tests-Performed"):
         raise ValueError("ORA all-results rows do not reconcile with the correction family")
+    complete_profiles = (1 << len(profile_indices)) - 1
+    if len(profile_indices) != _count(metadata, "Testable-Profiles") or any(
+        mask != complete_profiles for mask in seen_by_trait.values()
+    ):
+        raise ValueError("ORA complete family has inconsistent per-trait profile populations")
     for trait, result in hits.items():
         if result.tests == 0:
             raise ValueError(f"ORA source lacks testable rows for {trait}")
@@ -1052,6 +1119,7 @@ def ora_profile_records(
     *,
     columns: FeatureColumns,
     expected_profiles: Sequence[Profile] | None = None,
+    expected_profile_keys: set[tuple[str, str, str]] | None = None,
 ) -> list[Record]:
     """Summarize profile tests without inventing trait/cell-level p or q values.
 
@@ -1074,11 +1142,9 @@ def ora_profile_records(
             columns=columns,
         )
     traits = {base.trait_columns for base in bases}
-    expected_keys = (
-        None
-        if expected_profiles is None
-        else {(p.study_id, p.experiment_id, p.inc_dec) for p in expected_profiles}
-    )
+    expected_keys = expected_profile_keys
+    if expected_keys is None and expected_profiles is not None:
+        expected_keys = {(p.study_id, p.experiment_id, p.inc_dec) for p in expected_profiles}
     hits, metadata = _read_ora_hits(enrichment_path, traits, "upper", expected_keys)
     depletion: dict[str, ProfileHits] = {}
     depletion_metadata: dict[str, str] = {}
@@ -1999,10 +2065,17 @@ _sha256 = file_sha256
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    from mtp.workflow.consumers import (
+        bind_count_arguments,
+        preflight_consumer_outputs,
+        write_consumer_record,
+    )
+
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--profile-input", type=Path, default=DEFAULT_PROFILE_PATH)
-    parser.add_argument("--experiments-input", type=Path, default=DEFAULT_EXPERIMENTS_PATH)
-    parser.add_argument("--full-dump-input", type=Path, default=DEFAULT_FULL_DUMP_PATH)
+    parser.add_argument("--core-run", type=Path, help="Verified count-profile core execution")
+    parser.add_argument("--profile-input", type=Path)
+    parser.add_argument("--experiments-input", type=Path)
+    parser.add_argument("--full-dump-input", type=Path)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument(
         "--q-threshold",
@@ -2016,9 +2089,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=DEFAULT_MANUSCRIPT_Q,
         help="Second threshold decided per row, for the manuscript comparison (#294).",
     )
-    parser.add_argument("--calibration-status", type=Path, default=DEFAULT_CALIBRATION_STATUS)
-    parser.add_argument("--sensitivity-status", type=Path, default=DEFAULT_SENSITIVITY_STATUS)
-    parser.add_argument("--orientation-provenance", type=Path, default=DEFAULT_ORIENTATION_STATUS)
+    parser.add_argument("--calibration-status", type=Path)
+    parser.add_argument("--sensitivity-status", type=Path)
+    parser.add_argument("--orientation-provenance", type=Path)
     parser.add_argument("--coverage-status", type=Path)
     parser.add_argument("--influence-status", type=Path)
     parser.add_argument(
@@ -2037,6 +2110,31 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--full-screen-provenance", type=Path)
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
+
+    bundle = bind_count_arguments(args)
+    if bundle is not None:
+        preflight_consumer_outputs(
+            bundle,
+            args.output_dir / "core_consumption.json",
+            output_directory=args.output_dir,
+        )
+    else:
+        args.calibration_status = args.calibration_status or DEFAULT_CALIBRATION_STATUS
+        args.sensitivity_status = args.sensitivity_status or DEFAULT_SENSITIVITY_STATUS
+        args.orientation_provenance = args.orientation_provenance or DEFAULT_ORIENTATION_STATUS
+    args.profile_input = args.profile_input or DEFAULT_PROFILE_PATH
+    args.experiments_input = args.experiments_input or DEFAULT_EXPERIMENTS_PATH
+    args.full_dump_input = args.full_dump_input or DEFAULT_FULL_DUMP_PATH
+    for name in (
+        "arm1_pooled_stats",
+        "arm2_enrichment_results",
+        "arm2_depletion_results",
+        "full_screen",
+        "full_screen_provenance",
+    ):
+        supplied = getattr(args, name)
+        if supplied is not None and not supplied.is_file():
+            parser.error(f"--{name.replace('_', '-')} is not an existing file: {supplied}")
 
     guilds = {**TABLE1_TRAITS, **OXYGEN_GUILDS}
     profiles, stats = load_profiles(
@@ -2064,6 +2162,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     screen_path = args.full_screen or input_dir / "trait_screen/trait_direction_screen.tsv"
     screen_provenance_path = (
         args.full_screen_provenance or screen_path.parent / "trait_screen_provenance.json"
+    )
+    _protect_source_files(
+        args.output_dir,
+        (
+            args.profile_input,
+            args.experiments_input,
+            args.full_dump_input,
+            arm1_path,
+            enrichment_path,
+            depletion_path,
+            screen_path,
+            screen_provenance_path,
+            args.calibration_status,
+            args.sensitivity_status,
+            args.orientation_provenance,
+            args.coverage_status,
+            args.influence_status,
+        ),
     )
 
     # The declared term is not a join key: GO:0030245 is carried in the matrix as
@@ -2094,6 +2210,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         arm1_path,
         columns=columns,
         profile_sha256=_sha256(args.profile_input),
+        experiments_sha256=_sha256(args.experiments_input),
+        require_source_hashes=bundle is not None,
         expected_profiles=historical_profiles,
         **thresholds,
     )
@@ -2102,6 +2220,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         depletion_path,
         columns=columns,
         expected_profiles=historical_profiles,
+        expected_profile_keys=(
+            ora_testable_profile_keys(bundle.path("ora_profiles")) if bundle is not None else None
+        ),
     )
     records = attach_full_screen(
         records,
@@ -2171,6 +2292,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         "profile_sha256": _sha256(args.profile_input),
         "experiments_sha256": _sha256(args.experiments_input),
         "analysis_source_sha256": _sha256(Path(__file__)),
+        "core_run_id": bundle.run.run_id if bundle is not None else None,
+        "core_manifest_sha256": _sha256(bundle.manifest) if bundle is not None else None,
+        "ora_eligibility_source": (
+            {
+                "product_id": "ora_profiles",
+                "path": str(bundle.path("ora_profiles")),
+                "sha256": _sha256(bundle.path("ora_profiles")),
+                "rule": "paired human experiments; distinct matched reported taxa N > 0",
+            }
+            if bundle is not None
+            else None
+        ),
         "native_sources": {
             key: {"path": str(path), "sha256": _sha256(path) if path.exists() else None}
             for key, path in {
@@ -2225,6 +2358,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     provenance_path = output / "integrated_evidence_provenance.json"
     provenance_path.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
     written.append(provenance_path)
+    if bundle is not None:
+        written.append(
+            write_consumer_record(
+                bundle,
+                output / "core_consumption.json",
+                consumer="mtp.integrated_evidence",
+                outputs=written,
+            )
+        )
     for row in summary:
         print(row)
     for path in written:

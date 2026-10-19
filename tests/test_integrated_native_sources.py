@@ -58,6 +58,7 @@ def composition_rows() -> list[dict[str, str]]:
             "stratum_kind": "pooled",
             "stratum": "pooled",
             "profile_sha256": PROFILE_HASH,
+            "experiments_sha256": EXPERIMENTS_HASH,
             "correction_family_size": "7",
             "correction_method": "BH",
             "test_method": "two_sided_one_sample_t_test",
@@ -89,6 +90,7 @@ def import_composition(path: Path) -> list[Record]:
         q_threshold=0.05,
         strict_q_threshold=0.001,
         profile_sha256=PROFILE_HASH,
+        experiments_sha256=EXPERIMENTS_HASH,
     )
 
 
@@ -121,6 +123,7 @@ def test_native_study_test_keeps_pair_test_secondary_and_actual_family(tmp_path:
     ("field", "value", "message"),
     [
         ("profile_sha256", "another-profile", "checksum"),
+        ("experiments_sha256", "another-experiment-cohort", "experiments checksum"),
         ("correction_family_size", "317", "family size"),
         ("n_nonzero_experiments", "2", "reconcile"),
         ("stratum", "feces", "pooled"),
@@ -137,6 +140,24 @@ def test_native_rejects_incompatible_sources(
     rows[2][field] = value
     with pytest.raises(ValueError, match=message):
         import_composition(write_source(tmp_path / "native.tsv", rows))
+
+
+def test_core_native_composition_requires_both_source_hashes(tmp_path: Path) -> None:
+    rows = composition_rows()
+    for row in rows:
+        del row["experiments_sha256"]
+    source = write_source(tmp_path / "legacy-native.tsv", rows)
+    assert len(import_composition(source)) == 6
+    with pytest.raises(ValueError, match="requires profile and experiments hashes"):
+        native_composition_records(
+            source,
+            columns=COLUMNS,
+            q_threshold=0.05,
+            strict_q_threshold=0.001,
+            profile_sha256=PROFILE_HASH,
+            experiments_sha256=EXPERIMENTS_HASH,
+            require_source_hashes=True,
+        )
 
 
 def test_native_rejects_more_excluded_pairs_than_zero_pairs(tmp_path: Path) -> None:
@@ -325,6 +346,47 @@ def test_ora_family_duplicate_is_rejected_even_outside_table1(tmp_path: Path) ->
     enrichment = write_source(tmp_path / "enrichment.tsv", rows, metadata)
     with pytest.raises(ValueError, match="duplicate"):
         ora_profile_records(enrichment, tmp_path / "missing.tsv", columns=COLUMNS)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("correction_family", "profile"),
+        ("background_m", "101"),
+        ("fdr_q", "nan"),
+        ("fold", "-1"),
+        ("is_significant", "unknown"),
+        ("eligibility_status", "unknown"),
+    ],
+)
+def test_ora_validates_family_rows_outside_selected_traits(
+    tmp_path: Path, field: str, value: str
+) -> None:
+    rows = ora_rows()
+    extras = [dict(row, trait="METPO:1000603") for row in rows[:2]]
+    extras[1][field] = value
+    metadata = ora_metadata()
+    metadata["Total-Tests-Performed"] = "14"
+    source = write_source(tmp_path / "all.tsv", rows + extras, metadata)
+    with pytest.raises(ValueError, match=r"ORA|non-finite"):
+        ora_profile_records(source, tmp_path / "missing.tsv", columns=COLUMNS)
+
+
+def test_ora_rejects_partial_unselected_trait_even_if_total_is_changed(tmp_path: Path) -> None:
+    rows = [*ora_rows(), dict(ora_rows()[0], trait="METPO:1000603")]
+    metadata = ora_metadata()
+    metadata["Total-Tests-Performed"] = "13"
+    source = write_source(tmp_path / "all.tsv", rows, metadata)
+    with pytest.raises(ValueError, match="per-trait profile populations"):
+        ora_profile_records(source, tmp_path / "missing.tsv", columns=COLUMNS)
+
+
+def test_ora_rejects_background_prevalence_that_changes_by_profile(tmp_path: Path) -> None:
+    rows = ora_rows()
+    rows[1]["background_k"] = "11"
+    source = write_source(tmp_path / "all.tsv", rows, ora_metadata())
+    with pytest.raises(ValueError, match="prevalence changes"):
+        ora_profile_records(source, tmp_path / "missing.tsv", columns=COLUMNS)
 
 
 def fraction_records() -> list[Record]:

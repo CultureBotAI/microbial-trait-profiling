@@ -17,12 +17,14 @@ from matplotlib.patches import Circle, FancyBboxPatch, PathPatch
 from matplotlib.path import Path as MplPath
 from scipy import stats
 
+from mtp.body_site_diagram import anatomical_site_base
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
     retained_trait_counts,
     trait_fractions,
 )
 from mtp.paths import file_sha256
+from mtp.trait_guilds import load_profiles
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -187,6 +189,47 @@ def profile_ids_for_pairs(pair_metadata: pd.DataFrame) -> list[str]:
         profile_ids.extend(split_profile_ids(row.increased_profile_ids))
         profile_ids.extend(split_profile_ids(row.decreased_profile_ids))
     return list(dict.fromkeys(profile_ids))
+
+
+def core_pair_metadata(profiles_path: Path, experiments_path: Path) -> pd.DataFrame:
+    """Derive the historical human paired cohort from actual core input rows.
+
+    Zero-total profiles remain included, matching the native pooled estimand.
+    Neither a heatmap selection nor an old paired-metadata file defines this
+    cohort. Repeated direction rows refer to the same summed raw profile.
+    """
+    profiles, corpus = load_profiles(
+        profiles_path, experiments_path, {}, reject_missing_counts=True
+    )
+    if not profiles:
+        raise ValueError("No human paired profiles in the verified core inputs")
+    groups: dict[tuple[str, str], dict[str, object]] = {}
+    for profile in profiles:
+        key = (profile.study_id, profile.experiment_id)
+        if key not in groups:
+            groups[key] = {
+                "pair_id": f"{profile.study_id}|{profile.experiment_id}|paired_inc_minus_dec",
+                "study_id": profile.study_id,
+                "experiment_id": profile.experiment_id,
+                "condition": profile.condition,
+                "body_site": profile.body_site,
+                "host_species": "Homo sapiens",
+                "zero_total_policy": "included_in_historical_native_composition",
+            }
+        direction = "increased" if profile.inc_dec == "inc" else "decreased"
+        groups[key][f"{direction}_profile_ids"] = (
+            f"{profile.study_id}|{profile.experiment_id}|{profile.inc_dec}"
+        )
+        groups[key][f"{direction}_profile_count"] = 1
+    metadata = pd.DataFrame.from_records(list(groups.values())).set_index("pair_id")
+    for name, value in (
+        ("input_profile_rows", corpus.profile_rows),
+        ("nonhuman_profile_rows_excluded", corpus.dropped_non_human),
+        ("unpaired_profile_rows_excluded", corpus.dropped_unpaired),
+        ("missing_metadata_profile_rows_excluded", corpus.unmatched_experiments),
+    ):
+        metadata[name] = value
+    return metadata
 
 
 def pair_denominator_summary(
@@ -838,28 +881,6 @@ def write_stratified_trait_stats(
     return manifest
 
 
-def anatomical_site_base(value: object) -> tuple[float, float]:
-    """Map body-site group labels to approximate body-diagram coordinates."""
-    label = clean_text(value).lower()
-    if "nasopharynx" in label or "airway" in label:
-        return 0.30, 0.86
-    if "subgingival" in label or "dental" in label:
-        return 0.275, 0.825
-    if "saliva" in label:
-        return 0.325, 0.825
-    if "mouth" in label or "oral" in label:
-        return 0.30, 0.825
-    if "colon" in label:
-        return 0.285, 0.47
-    if "caecum" in label or "cecum" in label:
-        return 0.33, 0.46
-    if "feces" in label or "faeces" in label or "stool" in label:
-        return 0.31, 0.37
-    if "vagina" in label or "urogenital" in label:
-        return 0.31, 0.25
-    return 0.16, 0.47
-
-
 def add_anatomical_outline(ax: plt.Axes) -> None:
     """Draw an original front-facing body-template outline for site callouts."""
     face = "#ffffff"
@@ -1327,18 +1348,53 @@ def create_infographic(
 
 
 def main(argv: Sequence[str] | None = None) -> None:
+    from mtp.workflow.consumers import (
+        bind_count_arguments,
+        preflight_consumer_outputs,
+        write_consumer_record,
+    )
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stats-only", action="store_true", help="Write only the pooled stats TSV")
     parser.add_argument("--output-dir", type=Path, default=INVESTIGATION_DIR)
-    parser.add_argument("--profiles", type=Path, default=PROFILE_MATRIX_PATH)
-    parser.add_argument("--pair-metadata", type=Path, default=PAIRED_METADATA_PATH)
-    parser.add_argument("--trait-labels", type=Path, default=TRAIT_COLUMNS_PATH)
+    parser.add_argument("--core-run", type=Path, help="Verified core run for --stats-only")
+    parser.add_argument("--profiles", dest="profile_input", type=Path)
+    parser.add_argument("--pair-metadata", type=Path)
+    parser.add_argument("--trait-labels", dest="column_labels", type=Path)
+    parser.set_defaults(experiments_input=None, full_dump_input=None)
     args = parser.parse_args(argv)
     if not args.stats_only and args.output_dir != INVESTIGATION_DIR:
         parser.error("--output-dir is supported only with --stats-only")
-    metadata = pd.read_csv(args.pair_metadata, sep="\t", index_col=0)
-    profile_matrix = load_profile_matrix(args.profiles)
-    trait_labels = load_trait_labels(args.trait_labels)
+    if args.core_run is not None and not args.stats_only:
+        parser.error("--core-run requires --stats-only")
+    if args.core_run is not None and args.pair_metadata is not None:
+        parser.error("--core-run derives pair metadata; omit --pair-metadata")
+    bundle = bind_count_arguments(args)
+    output_path = trait_stats_path(args.output_dir, "pooled")
+    record_path = args.output_dir / "core_consumption.json"
+    if bundle is not None:
+        args.pair_metadata = args.output_dir / "trait_profile_paired_contrast_pair_metadata.tsv"
+        preflight_consumer_outputs(
+            bundle,
+            record_path,
+            [output_path, args.pair_metadata],
+            output_directory=args.output_dir,
+        )
+        metadata = core_pair_metadata(args.profile_input, args.experiments_input)
+        for source_name, source_path in (
+            ("profile", args.profile_input),
+            ("experiments", args.experiments_input),
+            ("trait_labels", args.column_labels),
+        ):
+            metadata[f"{source_name}_source"] = display_path(source_path)
+            metadata[f"{source_name}_sha256"] = file_sha256(source_path)
+    else:
+        args.profile_input = args.profile_input or PROFILE_MATRIX_PATH
+        args.pair_metadata = args.pair_metadata or PAIRED_METADATA_PATH
+        args.column_labels = args.column_labels or TRAIT_COLUMNS_PATH
+        metadata = pd.read_csv(args.pair_metadata, sep="\t", index_col=0)
+    profile_matrix = load_profile_matrix(args.profile_input)
+    trait_labels = load_trait_labels(args.column_labels)
     denominator_summary = pair_denominator_summary(profile_matrix, metadata)
     pooled_profile_ids = [
         profile_id
@@ -1364,17 +1420,28 @@ def main(argv: Sequence[str] | None = None) -> None:
         study_ids=study_ids,
         denominator_summary=denominator_summary,
     )
+    if bundle is not None:
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        metadata.to_csv(args.pair_metadata, sep="\t")
+        trait_stats["experiments_source"] = display_path(args.experiments_input)
+        trait_stats["experiments_sha256"] = file_sha256(args.experiments_input)
     for source_name, source_path in [
-        ("profile", args.profiles),
+        ("profile", args.profile_input),
         ("pair_metadata", args.pair_metadata),
-        ("trait_labels", args.trait_labels),
+        ("trait_labels", args.column_labels),
     ]:
         trait_stats[f"{source_name}_source"] = display_path(source_path)
         trait_stats[f"{source_name}_sha256"] = file_sha256(source_path)
     if args.stats_only:
         args.output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = trait_stats_path(args.output_dir, "pooled")
         trait_stats.to_csv(output_path, sep="\t", index=False)
+        if bundle is not None:
+            write_consumer_record(
+                bundle,
+                record_path,
+                consumer="native-pooled-composition-stats",
+                outputs=[output_path, args.pair_metadata],
+            )
         print(f"Wrote: {output_path}")
         print(f"Pair denominator audit: {denominator_summary}")
         return

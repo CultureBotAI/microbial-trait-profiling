@@ -24,6 +24,8 @@ gen-pydantic:
 	mkdir -p src/mtp/datamodel src/bsdbng/datamodel
 	uv run gen-pydantic {{schema}} > src/mtp/datamodel/mtp_pydantic.py
 	uv run gen-pydantic {{legacy_schema}} > src/bsdbng/datamodel/bsdbng_pydantic.py
+	uv run gen-pydantic schema/workflow.yaml > src/mtp/datamodel/workflow_pydantic.py
+	uv run gen-pydantic schema/core_products.yaml > src/mtp/datamodel/core_products_pydantic.py
 
 gen-derived: gen-pydantic
 
@@ -33,7 +35,57 @@ check-generated:
 	uv run gen-pydantic {{schema}} > "$tmpfile" && \
 	diff -u src/mtp/datamodel/mtp_pydantic.py "$tmpfile" && \
 	uv run gen-pydantic {{legacy_schema}} > "$tmpfile" && \
-	diff -u src/bsdbng/datamodel/bsdbng_pydantic.py "$tmpfile"
+	diff -u src/bsdbng/datamodel/bsdbng_pydantic.py "$tmpfile" && \
+	uv run gen-pydantic schema/workflow.yaml > "$tmpfile" && \
+	diff -u src/mtp/datamodel/workflow_pydantic.py "$tmpfile" && \
+	uv run gen-pydantic schema/core_products.yaml > "$tmpfile" && \
+	diff -u src/mtp/datamodel/core_products_pydantic.py "$tmpfile"
+
+# Validate the executable specification and its graph without reading large inputs.
+workflow-check spec="workflows/bugsigdb_core.yaml":
+	uv run python -m mtp.workflow check "{{spec}}"
+	uv run linkml validate -s schema/workflow.yaml -C WorkflowDefinition "{{spec}}"
+	uv run linkml lint --config {{lintconfig}} --ignore-warnings schema/workflow.yaml
+	uv run linkml lint --config {{lintconfig}} --ignore-warnings schema/core_products.yaml
+
+workflow-describe:
+	uv run python -m mtp.workflow describe workflows/bugsigdb_core.yaml > docs/workflow-products.md
+
+# Explicit bindings, e.g. --input raw_dump=/path/full_dump.csv --output-root /path/runs.
+[positional-arguments]
+core-run *ARGS:
+	uv run python -m mtp.workflow run "$@"
+
+core-validate run:
+	uv run python -m mtp.workflow validate "{{run}}"
+
+[positional-arguments]
+core-lineage run product *ARGS:
+	uv run python -m mtp.workflow lineage "$@"
+
+# A network-free execution from raw fixture inputs through both profile units.
+core-fixture output=".tmp/core-fixture":
+	uv run python -m mtp.workflow fixture --output-root "{{output}}"
+
+# Historical claims remain explicitly unverified; no execution history is invented.
+core-import-legacy source output:
+	uv run python -m mtp.workflow import-legacy "{{source}}" "{{output}}"
+
+core-compare run baseline_dir output:
+	uv run python -m mtp.workflow compare-legacy "{{run}}" "{{baseline_dir}}" "{{output}}"
+
+core-screen run output:
+	uv run python -m mtp.trait_screen --core-run "{{run}}" --output-dir "{{output}}"
+
+core-composition run output:
+	uv run python -m mtp.trait_composition --core-run "{{run}}" --output-dir "{{output}}"
+
+core-ora run output:
+	uv run python scripts/trait_enrichment.py --core-run "{{run}}" \
+	  --output "{{output}}/report.txt" --tsv-output "{{output}}/results.tsv"
+
+core-verify-consumer record:
+	uv run python -m mtp.workflow verify-consumer "{{record}}"
 
 sync:
 	uv sync --all-extras --group dev --group qa
@@ -200,6 +252,189 @@ contrast-orientation *ARGS:
 # the file committed; `just contrast-orientation` joins it back as validation_status.
 contrast-review-sample SAMPLE="methods/contrast_orientation_review_sample.tsv" SEED="188" PER_CLASS="10":
 	uv run python -m mtp.contrast_orientation --write-review-sample {{SAMPLE}} --review-seed {{SEED}} --review-per-class {{PER_CLASS}}
+
+# Rebuild the data/analysis/cellulose_decr/ tables (methods/cellulose_decr.md). Stops when
+# an input's hash differs from the committed provenance or the contrast manifest came from
+# another classifier version; --input-root points at a checkout holding the pinned inputs,
+# and --allow-input-drift regenerates every table from changed ones (#562). The pins are a
+# v2 manifest and the metadata table before #555, so until #580 re-pins them a checkout
+# with a newer classifier refuses; the tables reproduce at the provenance's code_commit.
+[positional-arguments]
+cellulose-decr *ARGS:
+	uv run python -m mtp.cellulose_decr.analysis --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
+
+# Draw the cellulose_decr figures from its tables. The figures are regenerated, not
+# committed (CONTRIBUTING.md, "Generated outputs on main"; #560). Their provenance records
+# this checkout's commit, with +dirty when its code or tables are modified; the deck links
+# the figures' code and tables at that commit (#556). That commit describes this
+# checkout's tables only, so --analysis-dir is refused here (#609).
+[positional-arguments]
+cellulose-decr-figures *ARGS:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	for arg in "$@"; do
+		case "$arg" in
+			--analysis-dir* | --code-commit*)
+				echo "the recipe records this checkout and its commit; drop $arg" >&2
+				exit 1
+				;;
+		esac
+	done
+	commit="$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} data/analysis/cellulose_decr && git diff --cached --quiet -- {{code_paths}} data/analysis/cellulose_decr || echo +dirty)"
+	uv run python -m mtp.cellulose_decr.figures --code-commit "$commit" "$@"
+
+# The two methods plates and seven Tufte plates of the selected-figure deck, drawn
+# from the rerun tables into this checkout's data/derived/tufte_plates/ (#573). Plates IV
+# and V also quote the cellulose_decr results, so run `just cellulose-decr-figures` first.
+# Pass --input-root to read another checkout's gitignored tables, and --overwrite to
+# replace existing plates; they have no other copy, so back them up first. The plates
+# record this checkout's commit (+dirty when its code is modified), at which the deck
+# links their code (#613), and each plate's inputs with their hashes, which the deck
+# checks (#637).
+[positional-arguments]
+figure-review-plates *ARGS:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	for arg in "$@"; do
+		case "$arg" in
+			--code-commit*)
+				echo "the recipe records this checkout's commit; drop $arg" >&2
+				exit 1
+				;;
+		esac
+	done
+	commit="$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)"
+	uv run python scripts/generate_tufte_plates.py --code-commit "$commit" "$@"
+
+deck_slides := "data/derived/figure_review_2026-09-21/slides"
+deck_provenance := "data/derived/figure_review_2026-09-21/provenance"
+deck_schema := "data/derived/figure_review_2026-09-21/provenance/figure_provenance_schema.yaml"
+
+# The selected-figure deck: the HTML, slide manifest and assets in {{deck_slides}}, the
+# figure provenance YAML in {{deck_provenance}} (validated against its LinkML schema),
+# the PDF, and deck_build_status.json recording that validation and printing succeeded.
+# Many inputs are gitignored local outputs (earlier deck manifests, svg_sources/,
+# data/derived figures), so a fresh clone cannot build it. The build refuses to replace
+# an existing deck without --overwrite (back up slides/ and provenance/ first) and
+# refuses contrast-orientation inputs other than the version its typed numbers describe
+# (#573, #579, #592). The plates and cellulose_decr figures come from this checkout, where
+# their recipes draw them; the rest from --input-root. The build checks every committed
+# file a slide links or quotes against the revision the slide cites, from `git ls-tree`
+# listings written here, and refuses when one differs; --allow-unverified builds a marked
+# review deck instead (#637). Choose other folders with the variables, e.g.
+# `just deck_slides=/tmp/s deck_provenance=/tmp/p figure-review-deck`, so that every
+# step uses them; --output-dir and --provenance-dir are refused here. A worktree has no
+# data/derived, so there also set deck_schema= to the schema beside the input root's YAML.
+[positional-arguments]
+figure-review-deck *ARGS:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	overwrite=0
+	for arg in "$@"; do
+		case "$arg" in
+			-h | --help)
+				uv run python scripts/build_slide_deck.py --help
+				exit 0
+				;;
+			--output-dir* | --provenance-dir*)
+				echo "set deck_slides= and deck_provenance= instead of $arg" >&2
+				exit 1
+				;;
+			--git-trees* | --print-refs)
+				echo "the recipe writes the git listings itself; drop $arg" >&2
+				exit 1
+				;;
+			--overwrite)
+				overwrite=1
+				;;
+		esac
+	done
+	if [ ! -f "{{deck_schema}}" ]; then
+		echo "no LinkML schema at {{deck_schema}}; set deck_schema=" >&2
+		exit 1
+	fi
+	slides="{{deck_slides}}"
+	provenance="{{deck_provenance}}"
+	# The status describes the deck it was written for and is rewritten only if every step
+	# passes. With --overwrite it is removed first, so a build that fails partway cannot
+	# leave it beside a half-rebuilt deck; a refusal after that leaves no status at all,
+	# and only a build refused without --overwrite keeps it.
+	if [ "$overwrite" = 1 ]; then
+		rm -f "$slides/deck_build_status.json"
+	fi
+	# The committed files at each revision the slides cite, for the build to check (#637)
+	trees="$(mktemp -d)"
+	trap 'rm -rf "$trees"' EXIT
+	for ref in $(uv run python scripts/build_slide_deck.py --print-refs); do
+		git ls-tree -r -z --full-tree "$ref" > "$trees/$ref.tree" || rm -f "$trees/$ref.tree"
+	done
+	uv run python scripts/build_slide_deck.py --output-dir "$slides" --provenance-dir "$provenance" --git-trees "$trees" "$@"
+	rm -f "$slides/deck_build_status.json"
+	uv run linkml-validate -s "{{deck_schema}}" "$provenance/figure_provenance_and_results.yaml"
+	# A review build prints under its own name and never replaces the deck's PDFs (#637).
+	if grep -q '"review_build": true' "$slides/deck_validation_v6.json"; then
+		review=true
+		pdf="microbial-trait-profiling_v6_review.pdf"
+		just html-to-pdf "$slides/selected_figures_v6.html" "$slides/$pdf"
+	else
+		review=false
+		pdf="microbial-trait-profiling_v6.pdf"
+		just html-to-pdf "$slides/selected_figures_v6.html" "$slides/$pdf"
+		cp "$slides/$pdf" "$slides/microbial-trait-profiling.pdf"
+		cp "$slides/$pdf" "$slides/selected_figures.pdf"
+	fi
+	pdf_bytes="$(wc -c < "$slides/$pdf" | tr -d ' ')"
+	printf '{"provenance_linkml_validated": true, "review_build": %s, "pdf": "%s", "pdf_bytes": %s, "finished_utc": "%s"}\n' "$review" "$pdf" "$pdf_bytes" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$slides/deck_build_status.json"
+
+# Print an HTML page to PDF with headless Chrome: $CHROME if set (it must be executable),
+# else Playwright's Chromium, Google Chrome, or a chromium / google-chrome on PATH.
+[positional-arguments]
+html-to-pdf HTML PDF:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	html="$1"
+	pdf="$2"
+	if [ ! -f "$html" ]; then
+		echo "no such page: $html" >&2
+		exit 1
+	fi
+	if [ -n "${CHROME:-}" ]; then
+		if [ ! -x "$CHROME" ]; then
+			echo "CHROME is not an executable: $CHROME" >&2
+			exit 1
+		fi
+		chrome="$CHROME"
+	else
+		shopt -s nullglob
+		candidates=(
+			"$HOME"/Library/Caches/ms-playwright/chromium*/chrome-mac*/Chromium.app/Contents/MacOS/Chromium
+			"$HOME"/Library/Caches/ms-playwright/chromium_headless_shell*/chrome-headless-shell-mac*/chrome-headless-shell
+			"$HOME"/.cache/ms-playwright/chromium*/chrome-linux*/chrome
+			"$HOME"/.cache/ms-playwright/chromium_headless_shell*/chrome-headless-shell-linux*/chrome-headless-shell
+			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+		)
+		for name in chromium chromium-browser google-chrome google-chrome-stable; do
+			if command -v "$name" > /dev/null; then
+				candidates+=("$(command -v "$name")")
+			fi
+		done
+		chrome=""
+		for candidate in "${candidates[@]}"; do
+			if [ -x "$candidate" ]; then
+				chrome="$candidate"
+				break
+			fi
+		done
+		if [ -z "$chrome" ]; then
+			echo "no headless Chrome found; set CHROME to its binary" >&2
+			exit 1
+		fi
+	fi
+	page="$(python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve().as_uri())' "$html")"
+	rm -f "$pdf"
+	"$chrome" --headless --disable-gpu --no-pdf-header-footer --print-to-pdf-no-header --print-to-pdf="$pdf" "$page"
+	test -s "$pdf"
+
 #   - data/derived/bugsigdb_taxa.tsv (columns: direction, taxon_id, taxon_name,
 #     taxonomic_rank), generated by `just study-tsvs` from per-study YAML.
 #   - data/kg-microbe/merged-kg_{edges,nodes}.tsv (run `just download-kg`).
@@ -207,8 +442,38 @@ contrast-review-sample SAMPLE="methods/contrast_orientation_review_sample.tsv" S
 taxa-trait-matrix: download-kg study-tsvs
 	uv run python scripts/create_taxa_trait_matrix.py
 
+# The analyses read human hosts only, without the trait columns that are zero in every
+# human profile, as committed in data/derived/study_trait_profiles_wide.tsv.gz (#656).
+# Build the canonical study trait profile table (human hosts, non-empty trait columns).
 study-trait-profiles: taxa-trait-matrix
-	uv run python scripts/create_study_trait_profiles.py
+	uv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" --drop-empty-traits
+
+# After an intended input change, such as a BugSigDB release or a new KG pin, refresh the
+# committed copy with `just study-trait-profiles-refresh-gz` and commit it (#667).
+# Check that the profile table is the committed canonical one (#656).
+study-trait-profiles-check:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	table=data/derived/study_trait_profiles_wide.tsv
+	committed="$table.gz"
+	if [ ! -s "$committed" ] || ! gzip -t "$committed" 2>/dev/null; then
+		echo "$committed is missing, empty or not gzip; restore it: git checkout -- $committed (#667)" >&2
+		exit 1
+	fi
+	if [ ! -s "$table" ]; then
+		echo "$table is missing or empty; run just study-trait-profiles, or gzip -dc $committed > $table" >&2
+		exit 1
+	fi
+	if ! gzip -dc "$committed" | cmp -s - "$table"; then
+		echo "$table differs from the committed $committed (#656)." >&2
+		echo "  Unintended: run just study-trait-profiles, or gzip -dc $committed > $table" >&2
+		echo "  After an intended input change: just study-trait-profiles-refresh-gz, then commit $committed" >&2
+		exit 1
+	fi
+
+# Replace the committed canonical profile table with the current one, then commit it (#667).
+study-trait-profiles-refresh-gz:
+	gzip -9 -n -c data/derived/study_trait_profiles_wide.tsv > data/derived/study_trait_profiles_wide.tsv.gz
 
 # Source-count reconciliation and rule-declared genus/family influence (#190).
 # The default entry point declares the complete clean-clone input chain.
@@ -276,13 +541,18 @@ export-rankings: analyze analyze-depletion
 
 # Run the ORA harness benchmark check suite over synthetic null and mixed scenarios (Refs #263, #343, #348, #351).
 calibrate replicates="10" seed="42" scenario="all": study-trait-profiles-ora
-	just timed calibrate "uv run python -m mtp.ora_calibration.harness \
-	  --profiles data/derived/study_trait_profiles_ora_wide.tsv \
-	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
-	  --output-dir data/derived/ora_calibration \
-	  --replicates {{replicates}} \
-	  --seed {{seed}} \
-	  --scenario {{scenario}} \
+	just calibrate-from data/derived/study_trait_profiles_ora_wide.tsv data/derived/taxa_trait_matrix.tsv data/derived/ora_calibration "{{replicates}}" "{{seed}}" "{{scenario}}"
+
+# Calibrate existing, explicitly selected products without rebuilding another corpus (#551).
+[positional-arguments]
+calibrate-from profiles taxa output replicates="10" seed="42" scenario="all":
+	uv run python -m mtp.ora_calibration.harness \
+	  --profiles "$1" \
+	  --taxa-matrix "$2" \
+	  --output-dir "$3" \
+	  --replicates "$4" \
+	  --seed "$5" \
+	  --scenario "$6" \
 	  --alpha 0.05 \
 	  --fdr-q 0.05 \
 	  --q-thresholds 0.05 0.001 \
@@ -290,7 +560,7 @@ calibrate replicates="10" seed="42" scenario="all": study-trait-profiles-ora
 	  --n-spike-traits 3 \
 	  --test-type enrichment \
 	  --min-fold 1.5 \
-	  --max-fold 0.5"
+	  --max-fold 0.5
 
 # Run paired composition arm calibration against the study-flip complete null (#263).
 calibrate-composition replicates="100" seed="182":
@@ -417,7 +687,7 @@ check-agent-docs:
 	uv run python scripts/sync_agent_docs.py
 	git diff --exit-code .github/copilot-instructions.md
 
-check: check-generated check-agent-docs lint typecheck test check-schema security
+check: check-generated check-agent-docs lint typecheck test check-schema workflow-check security
 
 # --- pipeline steps (timed, logged) ---
 

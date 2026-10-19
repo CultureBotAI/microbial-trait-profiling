@@ -12,3 +12,19 @@ significant-only; any KG-Microbe annotation links are explicitly noninferential 
 See [the interpretation guide](pd_ecological_reporter_figures.md) for definitions of
 **ecological reporter** and **ecological-reporter composite**, a panel-by-panel explanation, and
 details of the second panel's axes.
+
+## Outputs not yet relabelled (#555)
+
+Profiles now take their own experiment's condition and body site. The `pd_cellulose_*`,
+`pd_six_trait_direction_*` and `pd_condition_taxon_trait_network*` outputs were regenerated with
+those labels. The following still reflect the earlier study-majority labels:
+
+- `pd_trait_taxa_lookup.md`, `pd_six_trait_taxon_carriers.tsv`,
+  `pd_six_trait_taxon_profile_evidence.tsv` and `pd_four_positive_trait_shared_taxa.tsv`, which
+  count 253 PD fecal profiles instead of the current 247. `just pd-trait-taxa` stops by design
+  because coccus shaped has moved to the negative side of the six-trait lollipop, leaving three
+  positive-side traits instead of four.
+- The `pd_species_six_traits_*`, `pd_exploratory_taxa_six_traits_*` and `pd_trait_contributors*`
+  outputs, which read that evidence table.
+- The `pd_ecological_reporter_combined_*` source tables, which no script in this repository
+  regenerates.
