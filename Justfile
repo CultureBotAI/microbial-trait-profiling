@@ -215,8 +215,8 @@ cellulose-decr-figures *ARGS:
 	set -euo pipefail
 	for arg in "$@"; do
 		case "$arg" in
-			--analysis-dir*)
-				echo "run this recipe in the checkout that holds the tables instead of $arg" >&2
+			--analysis-dir* | --code-commit*)
+				echo "the recipe records this checkout and its commit; drop $arg" >&2
 				exit 1
 				;;
 		esac
@@ -228,10 +228,23 @@ cellulose-decr-figures *ARGS:
 # from the rerun tables into this checkout's data/derived/tufte_plates/ (#573). Plates IV
 # and V also quote the cellulose_decr results, so run `just cellulose-decr-figures` first.
 # Pass --input-root to read another checkout's gitignored tables, and --overwrite to
-# replace existing plates; they have no other copy, so back them up first.
+# replace existing plates; they have no other copy, so back them up first. The plates
+# record this checkout's commit (+dirty when its code is modified), at which the deck
+# links their code (#613).
 [positional-arguments]
 figure-review-plates *ARGS:
-	uv run python scripts/generate_tufte_plates.py "$@"
+	#!/usr/bin/env bash
+	set -euo pipefail
+	for arg in "$@"; do
+		case "$arg" in
+			--code-commit*)
+				echo "the recipe records this checkout's commit; drop $arg" >&2
+				exit 1
+				;;
+		esac
+	done
+	commit="$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)"
+	uv run python scripts/generate_tufte_plates.py --code-commit "$commit" "$@"
 
 deck_slides := "data/derived/figure_review_2026-09-21/slides"
 deck_provenance := "data/derived/figure_review_2026-09-21/provenance"

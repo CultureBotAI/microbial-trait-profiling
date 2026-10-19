@@ -107,7 +107,10 @@ class Results:
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
+    # Whole option names only, so the recipe's guards see every option (#617).
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0] if __doc__ else None, allow_abbrev=False
+    )
     parser.add_argument("--analysis-dir", type=Path, default=ANALYSIS_DIR)
     parser.add_argument(
         "--code-commit",

@@ -20,6 +20,7 @@ import csv
 import hashlib
 import html
 import json
+import math
 import re
 import shutil
 from collections.abc import Sequence
@@ -36,6 +37,8 @@ CELLULOSE_FIGURES = (f"{CELLULOSE_DIR}/figures/", f"{CELLULOSE_DIR}/figures_grap
 # Regenerated or untracked figure folders: their slides carry no GitHub figure link.
 UNLINKED_FIGURES = ("data/derived/", *CELLULOSE_FIGURES, f"{CELLULOSE_DIR}/figures_tufte/")
 REPO_URL = "https://github.com/CultureBotAI/microbial-trait-profiling"
+# Where `just figure-review-plates` draws the methods and Tufte plates.
+PLATES_DIR = "data/derived/tufte_plates/"
 PROVENANCE_NAME = "figure_provenance_and_results.yaml"
 # The deck's typed Table 1 numbers (cover note, slide captions, Tufte Plates III and VII)
 # were written for this contrast classifier (569 oriented studies). Inputs from another
@@ -255,11 +258,18 @@ def load_rerun_metrics(repo: Path) -> dict:
 
 
 def p_text(value: float) -> str:
-    """A p-value to two significant digits, or three where two would round across 0.05."""
-    text = f"{value:#.2g}"
-    if (float(text) < 0.05) != (value < 0.05):
-        text = f"{value:#.3g}"
-    return text
+    """A p-value to two significant digits, or more where fewer would round across 0.05."""
+    for digits in range(2, 8):
+        text = f"{value:#.{digits}g}"
+        if (float(text) < 0.05) == (value < 0.05):
+            return text
+    return repr(value)
+
+
+def signed(value: float, digits: int = 1) -> str:
+    """A signed number that never prints as "-0.0"."""
+    text = f"{value:+.{digits}f}"
+    return f"{0:.{digits}f}" if float(text) == 0 else text
 
 
 def plural(count: int, noun: str) -> str:
@@ -268,7 +278,14 @@ def plural(count: int, noun: str) -> str:
 
 def tested_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
     """Traits with a study-level q-value, the family the stratum's BH ran over."""
-    return [r for r in rows if r.get("study_q_value") not in (None, "", "NA", "nan")]
+
+    def has_q(row: dict[str, str]) -> bool:
+        try:
+            return not math.isnan(float(row.get("study_q_value") or "nan"))
+        except ValueError:
+            return False
+
+    return [r for r in rows if has_q(r)]
 
 
 def study_bh_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -282,15 +299,23 @@ def mean_dz(row: dict[str, str]) -> float:
 
 
 def trait_names(rows: list[dict[str, str]]) -> str:
-    # trait_label ends with the trait's ID, e.g. "xylan catabolic process GO:0045493"
-    return listing([r["trait_label"].rsplit(" ", 1)[0] for r in rows])
+    """Trait names as Plate II shows them, e.g. "raffinose (carbon source)" (#607, #617)."""
+
+    def name(row: dict[str, str]) -> str:
+        # trait_label ends with the trait's ID, e.g. "xylan catabolic process GO:0045493"
+        label = row["trait_label"].rsplit(" ", 1)[0]
+        carbon_source = row.get("trait", "").startswith("METPO:2000006|")
+        return f"{label} (carbon source)" if carbon_source else label
+
+    return listing([name(r) for r in rows])
 
 
 def paired_contrast_title(metrics: dict) -> str:
     """Tufte Plate II's slide title, read from the pooled table (#607)."""
     passing = study_bh_rows(metrics["paired_contrasts"]["pooled"])
+    verb = "passes" if len(passing) == 1 else "pass"
     return (
-        f"Tufte Plate II: {plural(len(passing), 'trait')} pass study-level BH pooled, by "
+        f"Tufte Plate II: {plural(len(passing), 'trait')} {verb} study-level BH pooled, by "
         "direction and body site"
     )
 
@@ -333,23 +358,28 @@ def paired_contrast_caveat(metrics: dict) -> str:
         return max(int(float(r["study_count"])) for r in contrasts[stratum])
 
     def nitrate(stratum: str) -> dict[str, str]:
-        return next(
-            r
-            for r in contrasts[stratum]
-            if r["trait"] == "METPO:2000103|pathways:nitrate_reduction"
-        )
+        trait = "METPO:2000103|pathways:nitrate_reduction"
+        rows = [r for r in contrasts[stratum] if r["trait"] == trait]
+        if len(rows) != 1:
+            raise ValueError(f"the {stratum} paired-contrast table needs one {trait} row")
+        return rows[0]
 
     saliva, feces = nitrate("saliva"), nitrate("feces")
     t_saliva, t_feces = float(saliva["study_t_statistic"]), float(feces["study_t_statistic"])
     sign = "the opposite sign to" if (t_saliva > 0) != (t_feces > 0) else "the same sign as"
-    support = "BH q ≤ 0.05" if float(saliva["study_q_value"]) <= 0.05 else "a nominal p only"
+    if float(saliva["study_q_value"]) <= 0.05:
+        support = "at BH q ≤ 0.05"
+    elif float(saliva["study_p_value"]) <= 0.05:
+        support = "at a nominal p only"
+    else:
+        support = "without reaching p ≤ 0.05"
     excluded = contrasts["feces_excluded"]
     return (
         f"Without Feces ({studies('feces_excluded')} studies), {len(study_bh_rows(excluded))} "
         f"of {plural(len(tested_rows(excluded)), 'trait')} pass study BH q ≤ 0.05; in "
         f"Saliva ({studies('saliva')} studies), {len(study_bh_rows(contrasts['saliva']))} of "
         f"{len(tested_rows(contrasts['saliva']))}. Saliva's nitrate reduction has {sign} "
-        f"Feces' at {support} (t = {t_saliva:+.2f}, p = "
+        f"Feces' {support} (t = {t_saliva:+.2f}, p = "
         f"{p_text(float(saliva['study_p_value']))}, q = {p_text(float(saliva['study_q_value']))}; "
         f"Feces t = {t_feces:+.2f}, q = {p_text(float(feces['study_q_value']))}), and no test "
         "compares the two sites."
@@ -357,12 +387,14 @@ def paired_contrast_caveat(metrics: dict) -> str:
 
 
 def oxygen_switch_strata(rows: list[dict[str, str]]) -> list[dict[str, str]]:
-    """Plate V's strata: the first 10 scoring above 0.20 and the 10 lowest below -0.15."""
+    """Plate V's strata, as build_plate5 selects them: the 10 highest-ranked scoring above
+    0.20 (rank_score weighs in study support) and the 10 lowest-scoring below -0.15."""
 
     def score(row: dict[str, str]) -> float:
         return float(row["aerobe_up_anaerobe_down_score"])
 
-    up = [r for r in rows if score(r) > 0.20][:10]
+    ranked = sorted(rows, key=lambda r: -float(r["rank_score"]))
+    up = [r for r in ranked if score(r) > 0.20][:10]
     down = sorted((r for r in rows if score(r) < -0.15), key=score)[:10]
     return up + down
 
@@ -377,11 +409,19 @@ def oxygen_switch_text(metrics: dict) -> str:
     fecal = [r for r in strata if r["body_site_display"] == "Feces"]
     other = [r for r in strata if r["body_site_display"] != "Feces"]
     exceptions = [r for r in fecal if score(r) < 0] + [r for r in other if score(r) > 0]
-    text = (
-        f"Of the {len(strata)} strata shown, {sum(score(r) > 0 for r in fecal)} of {len(fecal)} "
-        "fecal strata score aerobe-up / anaerobe-down and "
-        f"{sum(score(r) < 0 for r in other)} of {len(other)} other strata the reverse."
-    )
+    counts = []
+    if fecal:
+        counts.append(
+            f"{sum(score(r) > 0 for r in fecal)} of {len(fecal)} fecal strata score aerobe-up / "
+            "anaerobe-down"
+        )
+    if other:
+        counts.append(
+            f"{sum(score(r) < 0 for r in other)} of {len(other)} other strata score anaerobe-up "
+            "/ aerobe-down"
+        )
+    shown = f"{len(strata)} {'stratum' if len(strata) == 1 else 'strata'}"
+    text = f"Of the {shown} shown, {' and '.join(counts)}."
     if exceptions:
         listed = listing(
             [f"{r['condition']} · {r['body_site_display']} {score(r):+.2f}" for r in exceptions]
@@ -768,9 +808,10 @@ def pd_direction_caveat(model: dict[str, str], positive: dict[str, str]) -> str:
         "(pd_cellulose_interaction_model.tsv), the extra PD effect in decreased feces is "
         f"{float(model['coefficient']):+.2f} cellulose z (95% CI {float(model['ci_low']):+.2f} "
         f"to {float(model['ci_high']):+.2f}, p = {p_text(float(model['p_value']))}), and "
-        f"{100 * float(positive['coefficient']):+.0f} percentage points (p = "
-        f"{p_text(float(positive['p_value']))}) in the share of profiles with cellulose z > 0 "
-        f"that the right panel plots, so {verdict}."
+        f"{signed(100 * float(positive['coefficient']))} percentage points (95% CI "
+        f"{signed(100 * float(positive['ci_low']))} to {signed(100 * float(positive['ci_high']))}"
+        f", p = {p_text(float(positive['p_value']))}) in the share of profiles with cellulose "
+        f"z > 0 that the right panel plots, so {verdict}."
     )
 
 
@@ -876,7 +917,8 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": paired_contrast_text(metrics),
             "caveat": paired_contrast_caveat(metrics),
-            "methods_path": "methods/trait_profile_paired_contrasts.md",
+            "methods_path": "trait-visualization/trait-profile-investigation/"
+            "paired_contrast_interpretation_notes.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/"
             "trait_profile_paired_contrast_trait_stats_feces.tsv",
             "deck_section": "Main",
@@ -900,7 +942,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "caveat": "None of the 10 pairs among the 5 increased-side traits passes BY "
             "q ≤ 0.05 in either cohort. That is a failure to detect a difference among them, "
             "not evidence that they co-move.",
-            "methods_path": "methods/table1_trait_direction_shift.md",
+            "methods_path": "methods/table1_paired_log_ratios.md",
             "evidence_path": "data/derived/table1_composition/trait_log_ratio_stats.tsv",
             "deck_section": "Main",
             "analysis": "tufte_plate_3",
@@ -932,15 +974,15 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
         },
         {
             "owner": "Marcin / Noel",
-            "title": "Tufte Plate V: Anatomical oxygen-switch polarity inversion & cross-disease "
-            "genus switchers",
+            "title": "Tufte Plate V: Oxygen-switch scores by body site & cross-disease genus "
+            "switchers",
             "tag": "Tufte synthesis · Plate V",
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate5_anatomical_oxygen_polarity_and_switchers.png",
             "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": oxygen_switch_text(metrics),
             "caveat": "Colorectal cancer splits by sampling compartment in O₂ switch score "
-            "(Feces +0.68 vs Lower GI mucosa -0.79). The cellulose comparison between the "
+            "(Feces +0.68 vs Lower GI tract -0.79). The cellulose comparison between the "
             "same compartments is on the cellulose deep-dive slides; most of its mucosal "
             "contrasts are not patients against controls.",
             "methods_path": "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
@@ -967,7 +1009,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "canonical 216572 with 162 traits), Rothia (508215 vs 32207), and "
             "Escherichia/Shigella slash bins (139 occs).",
             "methods_path": "trait-visualization/trait-profile-investigation/taxa-coverage/"
-            "taxa_coverage_summary.md",
+            "README.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/taxa-coverage/"
             "top_zero_trait_bugsigdb_taxa.tsv",
             "deck_section": "Main",
@@ -1669,8 +1711,7 @@ def get_remaining_appendix_slides(
             )
             caveat = "Diagnostic of database annotation completeness across BugSigDB taxa."
             evidence_path = (
-                "trait-visualization/trait-profile-investigation/taxa-coverage/"
-                "taxa_coverage_summary.md"
+                "trait-visualization/trait-profile-investigation/taxa-coverage/README.md"
             )
         elif "/bsdb-taxa-only/" in rel:
             owner = "Jed"
@@ -1718,11 +1759,12 @@ def get_remaining_appendix_slides(
 
 # The shared pipeline steps every regenerated figure depends on.
 UPSTREAM_COMMANDS = (
-    "just download  # uv run python -m mtp.cli download",
-    "just ingest  # uv run python -m mtp.cli ingest",
-    "just study-tsvs  # uv run python -m mtp.cli study-tsvs",
-    "just taxa-trait-matrix  # uv run python -m mtp.cli taxa-trait-matrix",
-    "just study-trait-profiles  # uv run python -m mtp.cli study-trait-profiles",
+    "just download  # mtp.download.download_exports()",
+    "just ingest  # mtp.ingest.ingest()",
+    "just study-tsvs  # uv run python -m mtp.study_tsv",
+    "just download-kg  # uv run --extra kg python scripts/download_kg_microbe.py",
+    "just taxa-trait-matrix  # uv run python scripts/create_taxa_trait_matrix.py",
+    "just study-trait-profiles  # uv run python scripts/create_study_trait_profiles.py",
 )
 # KG-Microbe files `just taxa-trait-matrix` reads (src/mtp/taxa_trait_matrix.py).
 KG_INPUTS = ("data/kg-microbe/merged-kg_nodes.tsv", "data/kg-microbe/merged-kg_edges.tsv")
@@ -1771,15 +1813,55 @@ def load_cellulose_captions(repo: Path) -> dict[str, dict[str, Any]]:
     return captions
 
 
+def recorded_commit(path: Path) -> str | None:
+    """A provenance file's code_commit when it is a clean commit, else None."""
+    if not path.exists():
+        return None
+    commit = json.loads(path.read_text(encoding="utf-8")).get("code_commit") or ""
+    return commit if re.fullmatch(r"[0-9a-f]{40}", commit) else None
+
+
 def cellulose_revision(repo: Path) -> str | None:
     """The commit that drew the cellulose_decr figures, or None if it was modified or unknown.
 
     The cellulose slides link their code, methods and tables at that commit: those files
     are newer than the rerun revision the other slides cite, and a branch name moves (#556).
     """
-    path = repo / CELLULOSE_DIR / "figures" / "figures_provenance.json"
-    commit = json.loads(path.read_text(encoding="utf-8")).get("code_commit") or ""
-    return commit if re.fullmatch(r"[0-9a-f]{40}", commit) else None
+    return recorded_commit(repo / CELLULOSE_DIR / "figures" / "figures_provenance.json")
+
+
+def plate_revision(repo: Path) -> str | None:
+    """The commit that drew the methods and Tufte plates, where their code is linked (#613).
+
+    scripts/generate_tufte_plates.py is not in the rerun revision the plate slides' tables
+    come from, so their CODE link needs the commit `just figure-review-plates` records.
+    """
+    return recorded_commit(repo / PLATES_DIR / "plates_provenance.json")
+
+
+def slide_links(entry: dict[str, Any], fig_rel: str) -> dict[str, str]:
+    """A slide's commit and its figure, code, methods and evidence links (#593, #613).
+
+    ``link_ref`` is the revision of the slide's figure and tables: the rerun's, or the commit
+    that drew a cellulose_decr figure. ``code_ref``, where set, is its code's. A ref of None
+    links nothing.
+    """
+    ref = entry.get("link_ref", COMMIT)
+    code_ref = entry.get("code_ref", ref)
+    blob = f"{REPO_URL}/blob/{ref}" if ref else ""
+    code_blob = f"{REPO_URL}/blob/{code_ref}" if code_ref else ""
+    code_rel = entry.get("code_path", "")
+    methods_rel = entry.get("methods_path", "")
+    evidence_rel = entry.get("evidence_path", "")
+    linked_figure = blob and not fig_rel.startswith(UNLINKED_FIGURES)
+    linked_evidence = blob and evidence_rel and not evidence_rel.startswith("data/derived/")
+    return {
+        "commit": ref or "",
+        "figure_url": f"{blob}/{fig_rel}" if linked_figure else "NA",
+        "code_url": f"{code_blob}/{code_rel}" if code_blob and code_rel else "",
+        "methods_url": f"{blob}/{methods_rel}" if blob and methods_rel else "",
+        "evidence_url": f"{blob}/{evidence_rel}" if linked_evidence else "NA",
+    }
 
 
 def revision_stamp(row: dict[str, str]) -> str:
@@ -1958,7 +2040,9 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
     ]
 
     # 1. Opening Methods & Tufte Synthesis Plates (9 slides: 2 Methods + 7 Tufte plates)
+    plates_commit = plate_revision(repo)
     for item in tufte_and_methods_slides:
+        item["code_ref"] = plates_commit
         fp = item["figure_file_path"]
         if fp not in already_included and (repo / fp).exists():
             item["v1_slide"] = "NA"
@@ -2057,16 +2141,12 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         methods_rel = entry.get("methods_path", "")
         evidence_rel = entry.get("evidence_path", "")
 
-        ref = entry.get("link_ref", COMMIT)
-        blob = f"{REPO_URL}/blob/{ref}" if ref else ""
-        fig_url = f"{blob}/{fig_rel}" if blob and not fig_rel.startswith(UNLINKED_FIGURES) else "NA"
-        code_url = f"{blob}/{code_rel}" if blob and code_rel else ""
-        methods_url = f"{blob}/{methods_rel}" if blob and methods_rel else ""
-        evidence_url = (
-            f"{blob}/{evidence_rel}"
-            if blob and evidence_rel and not evidence_rel.startswith("data/derived/")
-            else "NA"
-        )
+        links = slide_links(entry, fig_rel)
+        ref = links["commit"]
+        fig_url = links["figure_url"]
+        code_url = links["code_url"]
+        methods_url = links["methods_url"]
+        evidence_url = links["evidence_url"]
 
         manifest_rows.append(
             {
@@ -2076,7 +2156,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
                 "tag": entry["tag"],
                 "figure_file_path": fig_rel,
                 "code_path": code_rel,
-                "commit": ref or "",
+                "commit": ref,
                 "branch": BRANCH,
                 "figure_url": fig_url,
                 "code_url": code_url,
@@ -2477,7 +2557,10 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
+    # Whole option names only, so the recipe's guards see every option (#617).
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0] if __doc__ else None, allow_abbrev=False
+    )
     parser.add_argument(
         "--input-root",
         type=Path,

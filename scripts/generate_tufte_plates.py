@@ -69,6 +69,28 @@ def study_bh_count(rows: dict[str, dict[str, str]]) -> int:
     )
 
 
+def check_plate_two_rows(trait_ids: Sequence[str], pooled: dict[str, dict[str, str]]) -> None:
+    """Every Plate II row must be in the pooled table, whose counts the plate and slide quote.
+
+    A row the stratified screen did not test elsewhere is drawn as "n.t." there (#616).
+    """
+    missing = [trait for trait in trait_ids if trait not in pooled]
+    if missing:
+        raise ValueError(f"Plate II rows missing from the pooled table: {missing}")
+
+
+def write_plates_provenance(out_dir: Path, paths: Sequence[Path], code_commit: str) -> Path:
+    """Record the commit that drew the plates; the deck links the plate code at it (#613)."""
+    path = out_dir / "plates_provenance.json"
+    record = {
+        "script": "scripts/generate_tufte_plates.py",
+        "code_commit": code_commit,
+        "plates": sorted(plate.name for plate in paths),
+    }
+    path.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
+    return path
+
+
 def trait_labels(repo: Path) -> dict[str, str]:
     """Each trait column's label as the plates show it (#556, #591, #607).
 
@@ -1593,10 +1615,7 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         ("METPO:1000607", "Obligately anaerobic", "Anaerobic / low GC ↓"),
         ("METPO:1000845", "Acetogenesis", "Anaerobic / low GC ↓"),
     ]
-    tables = (pooled, feces, nonfeces, saliva)
-    absent = [trait for trait, _, _ in trait_rows_spec if not any(trait in t for t in tables)]
-    if absent:
-        raise ValueError(f"Plate II rows missing from every stratum table: {absent}")
+    check_plate_two_rows([trait for trait, _, _ in trait_rows_spec], pooled)
     # Every row takes the label its column has in taxa_trait_matrix_columns.tsv (#607).
     trait_rows_spec = [
         (trait_id, canonical_display(display, labels.get(trait_id)), group)
@@ -1684,6 +1703,16 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
             yp = y_positions[idx_r]
             row = data_dict.get(tid)
             if not row or not row.get("study_mean_increased_minus_decreased"):
+                # Not tested in this stratum (see the footer)
+                ax.text(
+                    0.02 * (xlim[1] - xlim[0]),
+                    yp,
+                    "n.t.",
+                    fontsize=7.0,
+                    color=MUTED,
+                    ha="left",
+                    va="center",
+                )
                 continue
             mean_v = float(row["study_mean_increased_minus_decreased"])
             ci_lo = float(row["study_ci95_lower"])
@@ -1752,13 +1781,17 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
 
     fig.text(
         0.03,
-        0.025,
+        0.012,
         "Source: Rerun on main (402ef5c) · "
         "trait_profile_paired_contrast_trait_stats_{pooled,feces,feces_excluded,saliva}.tsv · "
         "★ Table 1 trait · rows show the object_name of taxa_trait_matrix_columns.tsv, with "
-        '"(carbon source)" for compounds used as carbon sources.',
+        '"(carbon source)" for compounds used as carbon sources.\nn.t. = not tested in that '
+        "stratum: the stratified screen tests a trait carried by at least 6 and at most 95% of "
+        "the stratum's profiles, with nonzero variance.",
         fontsize=7.9,
         color=MUTED,
+        va="bottom",
+        linespacing=1.5,
     )
 
     out_path = out_dir / "tufte_plate2_317_trait_guild_dichotomy.png"
@@ -2473,8 +2506,7 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
     )
 
     fig.suptitle(
-        "TUFTE PLATE 5 · Anatomical Oxygen-Guild Polarity Inversion & Cross-Disease Genus "
-        "Switchers",
+        "TUFTE PLATE 5 · Oxygen-Switch Scores by Body Site & Cross-Disease Genus Switchers",
         fontsize=15.0,
         fontweight="bold",
         x=0.05,
@@ -2485,7 +2517,10 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
     # --- Panel A: Anatomical Oxygen-Switch Polarity Inversion ---
     ax_oxy = fig.add_subplot(gs[0, 0])
 
-    pos_strata = [r for r in oxy_rows if float(r["aerobe_up_anaerobe_down_score"]) > 0.20][:10]
+    # The 10 highest-ranked aerobe-up strata (rank_score weighs in study support) and the 10
+    # lowest-scoring anaerobe-up strata; the deck's oxygen_switch_strata selects the same.
+    ranked = sorted(oxy_rows, key=lambda r: -float(r["rank_score"]))
+    pos_strata = [r for r in ranked if float(r["aerobe_up_anaerobe_down_score"]) > 0.20][:10]
     neg_strata = sorted(
         [r for r in oxy_rows if float(r["aerobe_up_anaerobe_down_score"]) < -0.15],
         key=lambda r: float(r["aerobe_up_anaerobe_down_score"]),
@@ -2502,7 +2537,8 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
         0.922,
         f"Of the {len(combined_oxy)} strata shown, {fecal_up} of {len(fecal)} fecal strata score "
         f"aerobe-up / anaerobe-down and {other_down} of {len(other)} other strata the reverse; "
-        "major genera switch direction across diseases.",
+        "major genera switch direction across diseases. Bar labels give the larger of the "
+        "aerobe-only and anaerobe-only study counts (st.).",
         fontsize=8.8,
         color=MUTED,
     )
@@ -2585,8 +2621,8 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
         fontweight="bold",
     )
     ax_oxy.set_title(
-        "A. Compartment Polarity Inversion Across 20 High-Support Strata\n★ CRC Splits: Feces "
-        "(+0.68 O₂↑) vs Lower GI (-0.79 anaerobe↑)",
+        "A. Oxygen-Switch Score in 20 High-Support Strata\n★ CRC: Feces +0.68 (aerobe↑) vs "
+        "Lower GI tract -0.79 (anaerobe↑)",
         fontsize=9.1,
         fontweight="bold",
         loc="left",
@@ -3381,7 +3417,10 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
+    # Whole option names only, so the recipe's guards see every option (#617).
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0] if __doc__ else None, allow_abbrev=False
+    )
     parser.add_argument(
         "--input-root",
         type=Path,
@@ -3405,6 +3444,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help=f"Draw from contrast-orientation inputs other than {TYPED_CONTRAST_VERSION} "
         "(review builds only; #579).",
+    )
+    parser.add_argument(
+        "--code-commit",
+        default="unrecorded",
+        help="Revision that draws the plates, e.g. $(git rev-parse HEAD) with +dirty when the "
+        "code is modified; the deck links the plate code at it (#613).",
     )
     args = parser.parse_args(argv)
     repo = args.input_root.resolve()
@@ -3438,6 +3483,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     ]
     for path in paths:
         print(f"Generated: {path} ({path.stat().st_size:,} bytes)")
+    print(f"Recorded: {write_plates_provenance(out_dir, paths, args.code_commit)}")
     return 0
 
 

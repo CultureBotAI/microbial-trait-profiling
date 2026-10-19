@@ -158,6 +158,14 @@ def test_plate_two_text_edge_cases() -> None:
     assert deck.paired_contrast_text(none) == (
         "Of 1 trait tested pooled, 0 pass study-level BH q ≤ 0.05 (0 in Feces)."
     )
+    # A literal NaN q is not a test, and one passing trait "passes" (#617).
+    nan = {"paired_contrasts": {"pooled": [*pooled, _paired("n N:1", "NaN", 0.2)], "feces": []}}
+    assert deck.paired_contrast_text(nan).startswith("Of 1 trait tested pooled, 1 passes")
+    assert deck.paired_contrast_title(metrics).startswith("Tufte Plate II: 1 trait passes")
+    # Slide 5 names a compound as Plate II does.
+    raffinose = _paired("raffinose CHEBI:16634", 0.01, -0.2, trait="METPO:2000006|CHEBI:16634")
+    compound = {"paired_contrasts": {"pooled": [raffinose], "feces": []}}
+    assert "(mean Δz < 0: raffinose (carbon source))" in deck.paired_contrast_text(compound)
 
 
 NITRATE = "METPO:2000103|pathways:nitrate_reduction"
@@ -186,6 +194,7 @@ def _nitrate(t: float, p: float, q: float, studies: int) -> list[dict[str, str]]
             "(t = -2.30, p = 0.025, q = 0.98; Feces t = +3.97, q = 0.0013)",
         ),
         ((2.5, 0.001, 0.01), "the same sign as Feces' at BH q ≤ 0.05"),
+        ((-1.0, 0.32, 0.99), "the opposite sign to Feces' without reaching p ≤ 0.05"),
     ],
 )
 def test_plate_two_caveat_reads_saliva_and_feces(
@@ -205,30 +214,51 @@ def test_plate_two_caveat_reads_saliva_and_feces(
     assert caveat.endswith("and no test compares the two sites.")
 
 
+def test_plate_two_caveat_needs_the_nitrate_rows() -> None:
+    metrics = {
+        "paired_contrasts": {
+            "feces": _nitrate(3.97, 8.04e-5, 0.00126, 594),
+            "feces_excluded": _nitrate(-1.14, 0.256, 0.994, 365),
+            "saliva": [],
+        }
+    }
+    with pytest.raises(ValueError, match="saliva paired-contrast table needs one"):
+        deck.paired_contrast_caveat(metrics)
+
+
 def test_plate_five_text_names_the_exceptions() -> None:
     """Fecal strata are not all aerobe-up; the slide says which are not (#610)."""
 
-    def stratum(condition: str, site: str, score: float) -> dict[str, str]:
+    def stratum(condition: str, site: str, score: float, rank: float) -> dict[str, str]:
         return {
             "condition": condition,
             "body_site_display": site,
             "aerobe_up_anaerobe_down_score": str(score),
+            "rank_score": str(rank),
         }
 
     rows = [
-        stratum("A", "Feces", 1.18),
-        stratum("C", "Lower airway / lung", 0.97),
-        stratum("B", "Feces", -0.51),
-        stratum("D", "Oral cavity / dental", -1.01),
-        stratum("E", "Feces", 0.1),
+        stratum("C", "Lower airway / lung", 0.97, 2.0),
+        stratum("D", "Oral cavity / dental", -1.01, 1.5),
+        stratum("A", "Feces", 1.18, 3.0),
+        stratum("B", "Feces", -0.51, 1.0),
+        stratum("E", "Feces", 0.1, 0.5),
     ]
     assert deck.oxygen_switch_text({"oxygen_switch": rows}) == (
         "Of the 4 strata shown, 1 of 2 fecal strata score aerobe-up / anaerobe-down and 1 of 2 "
-        "other strata the reverse. The exceptions: B · Feces -0.51 and "
+        "other strata score anaerobe-up / aerobe-down. The exceptions: B · Feces -0.51 and "
         "C · Lower airway / lung +0.97."
     )
-    clean = {"oxygen_switch": [rows[0], rows[3]]}
+    clean = {"oxygen_switch": [rows[2], rows[1]]}
     assert "exceptions" not in deck.oxygen_switch_text(clean)
+    # The selection follows rank_score, not the table's row order (#617).
+    up = [stratum(f"U{i}", "Feces", 0.5, float(i)) for i in range(12)]
+    chosen = deck.oxygen_switch_strata(up)
+    assert [r["condition"] for r in chosen] == [f"U{i}" for i in range(11, 1, -1)]
+    only_other = {"oxygen_switch": [rows[1]]}
+    assert deck.oxygen_switch_text(only_other) == (
+        "Of the 1 stratum shown, 1 of 1 other strata score anaerobe-up / aerobe-down."
+    )
 
 
 def _model(coefficient: float, p: float) -> dict[str, str]:
@@ -259,11 +289,64 @@ def test_pd_direction_caveat_quotes_the_clustered_model(
     assert verdict in caveat
 
 
+def test_pd_direction_caveat_gives_the_share_in_percentage_points() -> None:
+    """The positive-z outcome is 0/1, so its term is a share, with its interval (#617)."""
+    model = {"coefficient": "0.4098", "ci_low": "-0.0492", "ci_high": "0.8687", "p_value": "0.08"}
+    positive = {
+        "coefficient": "0.1859",
+        "ci_low": "-0.0042",
+        "ci_high": "0.3761",
+        "p_value": "0.0553",
+    }
+    assert "+18.6 percentage points (95% CI -0.4 to +37.6, p = 0.055)" in (
+        deck.pd_direction_caveat(model, positive)
+    )
+
+
 def test_p_values_do_not_round_across_the_threshold() -> None:
     assert deck.p_text(0.08004) == "0.080"
     assert deck.p_text(0.0495) == "0.0495"
+    assert deck.p_text(0.04996) == "0.04996"
+    assert deck.p_text(0.049999) == "0.049999"
     assert deck.p_text(0.00126) == "0.0013"
     assert deck.p_text(0.979) == "0.98"
+    assert deck.signed(-0.004) == "0.0"
+    assert deck.signed(18.59) == "+18.6"
+
+
+def test_plate_slides_link_their_code_at_the_drawing_commit(tmp_path: Path) -> None:
+    """The plate script is not in the rerun revision the plates' tables come from (#613)."""
+    plates_dir = tmp_path / deck.PLATES_DIR
+    plates_dir.mkdir(parents=True)
+    assert deck.plate_revision(tmp_path) is None
+    (plates_dir / "plates_provenance.json").write_text(json.dumps({"code_commit": COMMIT}))
+    assert deck.plate_revision(tmp_path) == COMMIT
+
+    plate = {
+        "code_path": "scripts/generate_tufte_plates.py",
+        "methods_path": "methods/table1_paired_log_ratios.md",
+        "evidence_path": "trait-visualization/x.tsv",
+        "code_ref": COMMIT,
+    }
+    links = deck.slide_links(plate, f"{deck.PLATES_DIR}tufte_plate3.png")
+    assert links["code_url"].endswith(f"/blob/{COMMIT}/scripts/generate_tufte_plates.py")
+    assert links["methods_url"].endswith(f"/blob/{deck.COMMIT}/methods/table1_paired_log_ratios.md")
+    assert links["figure_url"] == "NA"
+    assert links["commit"] == deck.COMMIT
+    unpinned = deck.slide_links({**plate, "code_ref": None}, "x.png")
+    assert unpinned["code_url"] == ""
+    assert deck.slide_links({"code_path": "a.py"}, "x.png")["code_url"].endswith(
+        f"/blob/{deck.COMMIT}/a.py"
+    )
+
+
+@pytest.mark.parametrize("argv", [["--over"], ["--out", "/tmp/x"], ["--prov", "/tmp/x"]])
+def test_deck_options_are_never_abbreviated(argv: list[str]) -> None:
+    """The recipe's guards match whole option names (#617)."""
+    with pytest.raises(SystemExit) as stopped:
+        deck.main(argv)
+    # argparse's usage error, not a later guard
+    assert stopped.value.code == 2
 
 
 # --------------------------------------------------------------------------- plates
@@ -313,6 +396,35 @@ def test_plate_labels_name_carbon_sources(tmp_path: Path) -> None:
         "METPO:2000103|pathways:nitrate_reduction": "nitrate reduction",
         "METPO:1000606": "obligately aerobic",
     }
+
+
+def test_plate_two_rows_must_be_in_the_pooled_table() -> None:
+    plates.check_plate_two_rows(["a", "b"], {"a": {}, "b": {}})
+    with pytest.raises(ValueError, match=r"missing from the pooled table: \['b'\]"):
+        plates.check_plate_two_rows(["a", "b"], {"a": {}})
+
+
+def test_plates_record_their_drawing_commit(tmp_path: Path) -> None:
+    path = plates.write_plates_provenance(
+        tmp_path, [tmp_path / "b.png", tmp_path / "a.png"], COMMIT
+    )
+    assert json.loads(path.read_text()) == {
+        "script": "scripts/generate_tufte_plates.py",
+        "code_commit": COMMIT,
+        "plates": ["a.png", "b.png"],
+    }
+
+
+def test_plate_and_figure_options_are_never_abbreviated() -> None:
+    """The recipes' guards match whole option names (#617)."""
+    from mtp.cellulose_decr import figures
+
+    with pytest.raises(SystemExit) as stopped:
+        figures.parse_args(["--analysis", "/tmp/x"])
+    assert stopped.value.code == 2
+    with pytest.raises(SystemExit) as stopped:
+        plates.main(["--code", "abc"])
+    assert stopped.value.code == 2
 
 
 def test_plates_need_the_cellulose_captions(tmp_path: Path) -> None:
