@@ -36,9 +36,17 @@ trait annotations, not a validated diagnostic score or a patient-level measureme
 
 ![Combined figure](pd_ecological_reporter_combined.png)
 
+The combined figure and every number in this section, except where the condition screen is
+named, come from `pd_ecological_reporter_combined_*.tsv`. Those tables still give every
+experiment its study's majority condition label, come from an earlier run of the trait
+z-scores, and are not yet regenerated (#585). The condition screen in the evidence landscape
+below uses each profile's own experiment labels, so its PD values (47 paired studies) differ
+from the ones here (45).
+
 ### Panel A: disease fingerprints
 
-Rows are the 13 fecal condition labels that have at least three paired studies and a descriptive
+Rows are the 13 fecal condition labels (study-majority labels, pending #585) that have at least
+three paired studies and a descriptive
 95% study-level t interval excluding zero for at least one of the six individual traits. Neither
 the three-trait score nor the ecological-reporter composite can qualify a condition. Columns are
 the six shared traits plus the ecological-reporter composite. Each cell is the mean of paired
@@ -90,7 +98,7 @@ decreased BugSigDB study support, with red favoring increased and blue favoring 
 means no local annotation for that taxon-trait cell. Taxonomic ranks are kept separate and are not
 summed.
 
-For PD, the study-weighted cellulose increased-minus-decreased contrast is `-0.651` across `45` paired studies. The exploratory reporter composite is `+1.150`. The composite equals the mean contrasts for moderately halophilic, facultatively aerobic, and arsenate reduction minus the cellulose contrast; it is not a validated diagnostic score.
+For PD, the study-weighted cellulose increased-minus-decreased contrast in these tables is `-0.651` across `45` paired studies, and the exploratory reporter composite is `+1.150` (study-majority labels, pending #585). With per-experiment labels, the condition screen below gives `-0.677` across `47` paired studies. The composite equals the mean contrasts for moderately halophilic, facultatively aerobic, and arsenate reduction minus the cellulose contrast; it is not a validated diagnostic score.
 
 [Condition selection](pd_ecological_reporter_combined_condition_selection.tsv) | [Condition/trait audit table](pd_ecological_reporter_combined_condition_trait_summary.tsv) | [Study contrasts](pd_ecological_reporter_combined_study_contrasts.tsv) | [Taxon-panel cells](pd_ecological_reporter_combined_taxon_panel.tsv) | [Vector figure](pd_ecological_reporter_combined.svg)
 
@@ -118,13 +126,14 @@ condition-taxon result passes `q <= 0.05`.
 
 Panel B shows all condition-trait tests. Its x-axis is the mean study-level
 increased-minus-decreased trait contrast, its y-axis is `-log10(global q)`, and point area is the
-number of paired studies. Only Parkinson's disease to moderately halophilic passes
-(`mean contrast = +0.530`, `q = 0.048`, `n = 45`).
+number of paired studies. No condition-trait result passes `q <= 0.05`; the smallest global q is
+Parkinson's disease to moderately halophilic (`mean contrast = +0.497`, `q = 0.0795`, `n = 47`).
 
-The exploratory tier contains one taxon result—Parkinson's disease to *Roseburia* (`q = 0.192`)—
-and three trait results: Parkinson's disease to arsenate reduction, COVID-19 to cellulose
-catabolic process, and colorectal cancer to cellulose catabolic process (each `q = 0.164`). These
-are shown to support follow-up planning, not as significant findings.
+The exploratory tier contains one taxon result—Parkinson's disease to *Roseburia* (`q = 0.116`)—
+and five trait results: Parkinson's disease to moderately halophilic (`q = 0.0795`), Parkinson's
+disease to arsenate reduction, COVID-19 to cellulose catabolic process, and colorectal cancer to
+cellulose catabolic process (each `q = 0.0893`), and colorectal cancer to moderately halophilic
+(`q = 0.0942`). These are shown to support follow-up planning, not as significant findings.
 
 Panel C shows all six Parkinson's disease trait effects with their raw `p`, globally adjusted `q`,
 and study count. This provides PD-specific context while retaining the correction across the full

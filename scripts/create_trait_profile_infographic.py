@@ -16,6 +16,7 @@ from matplotlib.patches import Circle, FancyBboxPatch, PathPatch
 from matplotlib.path import Path as MplPath
 from scipy import stats
 
+from mtp.body_site_diagram import anatomical_site_base
 from mtp.composition_denominators import retained_trait_counts, trait_fractions
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -755,28 +756,6 @@ def write_stratified_trait_stats(
     manifest = pd.DataFrame.from_records(manifest_rows)
     manifest.to_csv(manifest_path(output_dir), sep="\t", index=False)
     return manifest
-
-
-def anatomical_site_base(value: object) -> tuple[float, float]:
-    """Map body-site group labels to approximate body-diagram coordinates."""
-    label = clean_text(value).lower()
-    if "nasopharynx" in label or "airway" in label:
-        return 0.30, 0.86
-    if "subgingival" in label or "dental" in label:
-        return 0.275, 0.825
-    if "saliva" in label:
-        return 0.325, 0.825
-    if "mouth" in label or "oral" in label:
-        return 0.30, 0.825
-    if "colon" in label:
-        return 0.285, 0.47
-    if "caecum" in label or "cecum" in label:
-        return 0.33, 0.46
-    if "feces" in label or "faeces" in label or "stool" in label:
-        return 0.31, 0.37
-    if "vagina" in label or "urogenital" in label:
-        return 0.31, 0.25
-    return 0.16, 0.47
 
 
 def add_anatomical_outline(ax: plt.Axes) -> None:

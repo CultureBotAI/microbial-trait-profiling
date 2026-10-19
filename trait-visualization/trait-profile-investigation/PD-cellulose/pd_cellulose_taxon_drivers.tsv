@@ -1,25 +1,25 @@
 taxon_id	taxon_name	taxonomic_rank	increased_profile_count	decreased_profile_count	increased_study_count	decreased_study_count	total_profile_count	total_study_count	net_decreased_minus_increased_profiles	cellulose_annotation_count	facultatively_aerobic_annotation_count	facultatively_aerobic_present	cellulose_catabolic_process_annotation_count	cellulose_catabolic_process_present	coccus_shaped_annotation_count	coccus_shaped_present	sphere_shaped_annotation_count	sphere_shaped_present	arsenate_reduction_annotation_count	arsenate_reduction_present	moderately_halophilic_annotation_count	moderately_halophilic_present
-NCBITaxon:186803	Lachnospiraceae	family	10	39	7	19	49	23	29	17	5	True	17	True	17	True	1	True	0	False	0	False
-NCBITaxon:841	Roseburia	genus	4	31	4	18	35	21	27	1	0	False	1	True	0	False	0	False	0	False	0	False
-NCBITaxon:216572	Oscillospiraceae	family	15	13	13	8	28	18	-2	33	2	True	33	True	18	True	3	True	0	False	0	False
-NCBITaxon:1239	Bacillota	phylum	5	14	5	7	19	11	9	86	2377	True	86	True	4478	True	126	True	14	True	78	True
-NCBITaxon:572511	Blautia	genus	2	15	2	12	17	13	13	1	0	False	1	True	7	True	0	False	0	False	0	False
-NCBITaxon:1224	Pseudomonadota	phylum	15	1	8	1	16	9	-14	18	2507	True	18	True	322	True	76	True	20	True	211	True
-NCBITaxon:31979	Clostridiaceae	family	1	13	1	8	14	8	12	7	0	False	7	True	0	False	0	False	0	False	0	False
+NCBITaxon:186803	Lachnospiraceae	family	9	40	7	20	49	24	31	17	5	True	17	True	17	True	1	True	0	False	0	False
+NCBITaxon:841	Roseburia	genus	4	33	4	20	37	23	29	1	0	False	1	True	0	False	0	False	0	False	0	False
+NCBITaxon:216572	Oscillospiraceae	family	15	12	13	8	27	18	-3	33	2	True	33	True	18	True	3	True	0	False	0	False
+NCBITaxon:1239	Bacillota	phylum	5	15	5	8	20	12	10	86	2377	True	86	True	4478	True	126	True	14	True	78	True
+NCBITaxon:572511	Blautia	genus	2	16	2	13	18	14	14	1	0	False	1	True	7	True	0	False	0	False	0	False
+NCBITaxon:1224	Pseudomonadota	phylum	16	1	9	1	17	10	-15	18	2507	True	18	True	322	True	76	True	20	True	211	True
+NCBITaxon:31979	Clostridiaceae	family	2	13	2	8	15	9	11	7	0	False	7	True	0	False	0	False	0	False	0	False
 NCBITaxon:186802	Eubacteriales	order	7	7	6	5	14	9	0	44	6	True	44	True	23	True	6	True	4	True	4	True
 NCBITaxon:186801	Clostridia	class	8	6	7	5	14	12	-2	65	15	True	65	True	45	True	8	True	5	True	12	True
 NCBITaxon:1485	Clostridium	genus	3	10	3	7	13	10	7	7	0	False	7	True	0	False	0	False	0	False	0	False
 NCBITaxon:1263	Ruminococcus	genus	2	9	2	6	11	8	7	10	0	False	10	True	15	True	2	True	0	False	0	False
 NCBITaxon:28050	Lachnospira	genus	2	9	2	5	11	7	7	1	0	False	1	True	0	False	0	False	0	False	0	False
-NCBITaxon:816	Bacteroides	genus	3	6	2	6	9	6	3	1	2	True	1	True	0	False	0	False	0	False	0	False
+NCBITaxon:816	Bacteroides	genus	4	6	3	6	10	7	2	1	2	True	1	True	0	False	0	False	0	False	0	False
+NCBITaxon:200643	Bacteroidia	class	2	6	2	5	8	7	4	2	12	True	2	True	4	True	2	True	0	False	1	True
 NCBITaxon:201174	Actinomycetota	phylum	8	0	7	0	8	7	-8	51	197	True	51	True	238	True	140	True	3	True	47	True
-NCBITaxon:200643	Bacteroidia	class	1	6	1	5	7	6	5	2	12	True	2	True	4	True	2	True	0	False	1	True
 NCBITaxon:91061	Bacilli	class	4	3	2	2	7	4	-1	16	2357	True	16	True	4362	True	102	True	8	True	62	True
 NCBITaxon:301302	Roseburia faecis	species	0	6	0	5	6	5	6	1	0	False	1	True	0	False	0	False	0	False	0	False
-NCBITaxon:186826	Lactobacillales	order	3	3	2	2	6	4	0	1	1138	True	1	True	1184	True	61	True	0	False	22	True
 NCBITaxon:613	Serratia	genus	6	0	3	0	6	3	-6	5	23	True	5	True	0	False	0	False	0	False	1	True
 NCBITaxon:171549	Bacteroidales	order	1	4	1	4	5	5	3	1	8	True	1	True	4	True	2	True	0	False	1	True
 NCBITaxon:830	Butyrivibrio	genus	2	3	2	2	5	4	1	3	0	False	3	True	0	False	0	False	0	False	0	False
+NCBITaxon:186826	Lactobacillales	order	2	3	1	2	5	3	1	1	1138	True	1	True	1184	True	61	True	0	False	22	True
 NCBITaxon:186806	Eubacteriaceae	family	4	1	3	1	5	4	-3	2	0	False	2	True	0	False	0	False	0	False	0	False
 NCBITaxon:40520	Blautia obeum	species	5	0	2	0	5	2	-5	1	0	False	1	True	2	True	0	False	0	False	0	False
 NCBITaxon:40518	Ruminococcus bromii	species	2	2	2	1	4	3	0	2	0	False	2	True	2	True	0	False	0	False	0	False
@@ -28,26 +28,23 @@ NCBITaxon:33039	Mediterraneibacter torques	species	3	1	3	1	4	4	-2	1	0	False	1	Tr
 NCBITaxon:1236	Gammaproteobacteria	class	3	1	3	1	4	4	-2	14	2190	True	14	True	137	True	35	True	17	True	149	True
 NCBITaxon:976	Bacteroidota	phylum	0	3	0	3	3	3	3	9	83	True	9	True	10	True	4	True	0	False	14	True
 NCBITaxon:246787	Bacteroides cellulosilyticus	species	1	2	1	1	3	2	1	1	0	False	1	True	0	False	0	False	0	False	0	False
+NCBITaxon:815	Bacteroidaceae	family	2	1	2	1	3	3	-1	1	5	True	1	True	1	True	1	True	0	False	0	False
 NCBITaxon:91347	Enterobacterales	order	3	0	2	0	3	2	-3	7	1482	True	7	True	8	True	2	True	15	True	19	True
-NCBITaxon:1385	Bacillales	order	0	2	0	1	2	1	2	15	1219	True	15	True	3178	True	41	True	8	True	40	True
-NCBITaxon:1268	Micrococcaceae	family	0	2	0	2	2	2	2	1	5	True	1	True	65	True	38	True	2	True	2	True
 NCBITaxon:80864	Comamonadaceae	family	0	2	0	2	2	2	2	1	20	True	1	True	7	True	4	True	1	True	4	True
 NCBITaxon:2062	Streptomycetaceae	family	0	2	0	1	2	1	2	6	0	False	6	True	3	True	2	True	0	False	6	True
-NCBITaxon:186817	Bacillaceae	family	1	1	1	1	2	2	0	7	204	True	7	True	8	True	6	True	6	True	23	True
 NCBITaxon:84566	Sphingobacteriaceae	family	1	1	1	1	2	2	0	1	11	True	1	True	2	True	0	False	0	False	1	True
-NCBITaxon:815	Bacteroidaceae	family	1	1	1	1	2	2	0	1	5	True	1	True	1	True	1	True	0	False	0	False
 NCBITaxon:1730	Eubacterium	genus	1	1	1	1	2	1	0	2	0	False	2	True	0	False	0	False	0	False	0	False
 NCBITaxon:1506553	Lachnoclostridium	genus	1	1	1	1	2	2	0	3	0	False	3	True	0	False	0	False	0	False	0	False
 NCBITaxon:39492	[Eubacterium] siraeum	species	1	1	1	1	2	2	0	1	0	False	1	True	1	True	0	False	0	False	0	False
 NCBITaxon:80840	Burkholderiales	order	2	0	2	0	2	2	-2	1	75	True	1	True	18	True	10	True	2	True	16	True
 NCBITaxon:44000	Caldicellulosiruptor	genus	2	0	1	0	2	1	-2	5	0	False	5	True	0	False	0	False	0	False	0	False
 NCBITaxon:1386	Bacillus	genus	2	0	1	0	2	1	-2	3	132	True	3	True	0	False	0	False	0	False	10	True
+NCBITaxon:1268	Micrococcaceae	family	0	1	0	1	1	1	1	1	5	True	1	True	65	True	38	True	2	True	2	True
 NCBITaxon:1265	Ruminococcus flavefaciens	species	0	1	0	1	1	1	1	2	0	False	2	True	1	True	0	False	0	False	0	False
 NCBITaxon:649756	Anaerostipes hadrus	species	0	1	0	1	1	1	1	1	0	False	1	True	1	True	0	False	0	False	0	False
 NCBITaxon:2719231	Lacrimispora	genus	0	1	0	1	1	1	1	2	0	False	2	True	0	False	0	False	0	False	0	False
 NCBITaxon:2316020	Mediterraneibacter	genus	0	1	0	1	1	1	1	1	0	False	1	True	6	True	0	False	0	False	0	False
 NCBITaxon:84030	Lacrimispora saccharolytica	species	1	0	1	0	1	1	-1	1	0	False	1	True	0	False	0	False	0	False	0	False
-NCBITaxon:186828	Carnobacteriaceae	family	1	0	1	0	1	1	-1	1	12	True	1	True	3	True	1	True	0	False	1	True
 NCBITaxon:563835	Chitinophagaceae	family	1	0	1	0	1	1	-1	1	3	True	1	True	0	False	0	False	0	False	0	False
 NCBITaxon:200666	Sphingobacteriales	order	1	0	1	0	1	1	-1	1	11	True	1	True	2	True	0	False	0	False	1	True
 NCBITaxon:117747	Sphingobacteriia	class	1	0	1	0	1	1	-1	1	11	True	1	True	2	True	0	False	0	False	1	True
@@ -57,5 +54,6 @@ NCBITaxon:356	Hyphomicrobiales	order	1	0	1	0	1	1	-1	1	98	True	1	True	17	True	7	T
 NCBITaxon:85023	Microbacteriaceae	family	1	0	1	0	1	1	-1	1	1	True	1	True	4	True	2	True	1	True	2	True
 NCBITaxon:28216	Betaproteobacteria	class	1	0	1	0	1	1	-1	1	134	True	1	True	117	True	13	True	2	True	17	True
 NCBITaxon:1760	Actinomycetes	class	1	0	1	0	1	1	-1	51	196	True	51	True	236	True	139	True	3	True	46	True
+NCBITaxon:186817	Bacillaceae	family	1	0	1	0	1	1	-1	7	204	True	7	True	8	True	6	True	6	True	23	True
 NCBITaxon:135621	Pseudomonadaceae	family	1	0	1	0	1	1	-1	1	25	True	1	True	5	True	0	False	0	False	27	True
 NCBITaxon:46466	Halocella	genus	1	0	1	0	1	1	-1	1	0	False	1	True	0	False	0	False	0	False	0	False
