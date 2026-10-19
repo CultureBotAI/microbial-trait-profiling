@@ -19,6 +19,7 @@ from mtp.body_site_diagram import (
     anatomical_site_base,
     bubble_radius,
     leader_line,
+    leader_order_key,
 )
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
@@ -86,6 +87,10 @@ EXCLUDED_CONDITION_SUMMARY_LABELS = {
 }
 # A paired d (and its paired t-test p) from fewer matched profile pairs is reported as NA.
 MIN_PAIRED_SMD_PROFILE_PAIRS = 5
+# Leader lines in the anatomical diagrams bend at LEADER_ELBOW_X and end at
+# LEADER_END_X, just before the labels.
+LEADER_ELBOW_X = 0.52
+LEADER_END_X = 0.57
 INFERRED_GUILD_TOP_TRAITS_PER_GROUP = 12
 INFERRED_GUILD_TOP_TAXA_PER_TRAIT = 12
 INFERRED_GUILD_TOP_TAXA_PER_GROUP = 12
@@ -1379,8 +1384,9 @@ def save_anatomical_sites_diagram(
     points = [anatomical_site_base(site) for site in plot_sites["body_site_group"]]
     plot_sites["anchor_x"] = [point[0] for point in points]
     plot_sites["anchor_y"] = [point[1] for point in points]
+    plot_sites["label_order"] = [leader_order_key(point, LEADER_ELBOW_X) for point in points]
     plot_sites = plot_sites.sort_values(
-        ["anchor_y", "profile_count"],
+        ["label_order", "profile_count"],
         ascending=[False, False],
     )
 
@@ -1403,6 +1409,7 @@ def save_anatomical_sites_diagram(
         label_ys = [0.84 - index * step for index in range(len(plot_sites))]
 
     label_texts = []
+    count_bars = []
     for label_y, row in zip(label_ys, plot_sites.itertuples(index=False), strict=False):
         count = int(row.profile_count)
         signal = float(getattr(row, signal_column))
@@ -1419,13 +1426,15 @@ def save_anatomical_sites_diagram(
             )
         )
         ax.plot(
-            *leader_line((row.anchor_x, row.anchor_y), radius, label_y, 0.52, 0.57),
+            *leader_line(
+                (row.anchor_x, row.anchor_y), radius, label_y, LEADER_ELBOW_X, LEADER_END_X
+            ),
             color="#6b7280",
             lw=0.9,
             zorder=5,
         )
         bar_width = 0.30 * count / max_count
-        ax.plot(
+        (count_bar,) = ax.plot(
             [0.58, 0.58 + bar_width],
             [label_y, label_y],
             color=color,
@@ -1433,6 +1442,7 @@ def save_anatomical_sites_diagram(
             solid_capstyle="round",
             zorder=3,
         )
+        count_bars.append(count_bar)
         label_texts.append(
             ax.text(
                 0.58,
@@ -1485,7 +1495,7 @@ def save_anatomical_sites_diagram(
     scalar_mappable.set_array([])
 
     fig.tight_layout()
-    add_colorbar_beside(fig, ax, scalar_mappable, label_texts, signal_label)
+    add_colorbar_beside(fig, ax, scalar_mappable, label_texts, signal_label, count_bars)
     fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)
 
@@ -1597,7 +1607,7 @@ def make_plots(
         signal_label="increased-profile trait z",
         legend_note=(
             "Unknown body site means no specific BugSigDB body-site label was available; "
-            "it is plotted off-body."
+            "it is plotted at the lower left, beside the legs."
         ),
     )
 

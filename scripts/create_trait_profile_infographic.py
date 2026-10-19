@@ -16,7 +16,12 @@ from matplotlib.patches import Circle, FancyBboxPatch, PathPatch
 from matplotlib.path import Path as MplPath
 from scipy import stats
 
-from mtp.body_site_diagram import anatomical_site_base, bubble_radius, leader_line
+from mtp.body_site_diagram import (
+    anatomical_site_base,
+    bubble_radius,
+    leader_line,
+    leader_order_key,
+)
 from mtp.composition_denominators import retained_trait_counts, trait_fractions
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -59,6 +64,9 @@ PANEL_GRID = {
     "hspace": 0.42,
     "wspace": 0.38,
 }
+# Panel C's leader lines bend at LEADER_ELBOW_X and end at LEADER_END_X.
+LEADER_ELBOW_X = 0.55
+LEADER_END_X = 0.60
 
 EXCLUDED_CONDITION_LABELS = {
     "Body fat distribution",
@@ -965,7 +973,10 @@ def plot_body_site_summary(ax: plt.Axes, body_site_summary: pd.DataFrame) -> Non
     plot_sites["anchor"] = [anatomical_site_base(site) for site in plot_sites["body_site_group"]]
     plot_sites["anchor_x"] = [point[0] for point in plot_sites["anchor"]]
     plot_sites["anchor_y"] = [point[1] for point in plot_sites["anchor"]]
-    plot_sites = plot_sites.sort_values(["anchor_y", "absolute_contrast_load"], ascending=False)
+    plot_sites["label_order"] = [
+        leader_order_key(point, LEADER_ELBOW_X) for point in plot_sites["anchor"]
+    ]
+    plot_sites = plot_sites.sort_values(["label_order", "absolute_contrast_load"], ascending=False)
 
     ax.set_title("C. Anatomical Profile-Contrast Hotspots", fontsize=14, fontweight="bold", pad=8)
     ax.set_xlim(0, 1)
@@ -997,7 +1008,9 @@ def plot_body_site_summary(ax: plt.Axes, body_site_summary: pd.DataFrame) -> Non
             )
         )
         ax.plot(
-            *leader_line((row.anchor_x, row.anchor_y), radius, label_y, 0.55, 0.60),
+            *leader_line(
+                (row.anchor_x, row.anchor_y), radius, label_y, LEADER_ELBOW_X, LEADER_END_X
+            ),
             color=SLATE_400,
             lw=0.9,
             zorder=5,
