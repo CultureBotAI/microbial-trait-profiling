@@ -30,12 +30,16 @@ import math
 import re
 import shlex
 import shutil
+import tempfile
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from statistics import median
 from typing import Any
 
 import yaml
+from git import Repo
+from git.exc import GitError
+from gitdb.exc import ODBError
 
 from mtp.quoted_results import (
     CALIBRATION_CRITERIA,
@@ -137,6 +141,7 @@ MOVED_FIGURES = {
     )
 }
 PR173_FECES_OTHER = "methods/figures/table1_traits_focus_feces_other.png"
+PR173_METHODS = "methods/table1_trait_condition_body_site_maps.md"
 # Main keeps src/bsdbng/table1_trait_maps.py only as a shim to its own maps, so PR #173's
 # committed figures, not that path, mark the slides its code drew.
 PR173_MAPS = frozenset(
@@ -235,6 +240,14 @@ def merge_copies(prov_doc: dict[str, Any]) -> None:
             ids[shown] = figure["figure_id"]
     if not folded:
         return
+    by_id = {figure["figure_id"]: figure for figure in prov_doc["figures"]}
+    for copy, shown_id in folded.items():
+        shown_record = by_id[shown_id]
+        merged = [
+            *(shown_record.get("statistical_result_ids") or []),
+            *(by_id[copy].get("statistical_result_ids") or []),
+        ]
+        shown_record["statistical_result_ids"] = list(dict.fromkeys(merged))
     prov_doc["figures"] = [f for f in prov_doc["figures"] if f["figure_id"] not in folded]
     for result in prov_doc.get("statistical_results", []):
         cited = result.get("figure_ids") or []
@@ -713,11 +726,33 @@ PLATE_COUNT_KEYS = (
     "ora_inverted",
     "not_concordant",
     "forest_traits",
+    "plate4_conditions",
+    "plate4_traits",
+    "plate4_leads",
 )
 
 
 def plate_count(metrics: dict, key: str) -> str:
     return str(metrics["plate_counts"].get(key, "?"))
+
+
+def record_problems(
+    counts: Mapping[str, Any], cellulose_classifier: str | None, contrast_classifier: str
+) -> list[str]:
+    """Why the records the slides quote disagree: a plate count the plates did not record
+    (#682), or cellulose_decr tables built on another contrast classifier than the Table 1
+    text (#679). Each is a review reason of its own (#704)."""
+    found = [
+        f'the plates record no {key} count, so its slides would print "?" (#682)'
+        for key in PLATE_COUNT_KEYS
+        if key not in counts
+    ]
+    if cellulose_classifier != contrast_classifier:
+        found.append(
+            f"the cellulose_decr tables use {cellulose_classifier} and the Table 1 text "
+            f"{contrast_classifier} (#679)"
+        )
+    return found
 
 
 def three_arm_text(metrics: dict) -> str:
@@ -737,7 +772,7 @@ def three_arm_text(metrics: dict) -> str:
         f"with concordant direction; screening all {count('screened_traits')} traits finds "
         f"{count('three_arm_additional')} more 3-arm-concordant traits "
         f"({count('three_arm_concordant')} in all at study BH q ≤ 0.05; "
-        f"{count('three_arm_strict_by')} at strict BY q ≤ 0.05), "
+        f"{count('three_arm_strict_by')} at strict BY q ≤ 0.05) plus "
         + traits(
             "ora_inverted",
             "whose paired and sign-test directions agree while ORA points the other way",
@@ -1546,8 +1581,11 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate4_diverging_condition_trait_triangulation.png",
             "code_path": "scripts/generate_tufte_plates.py",
-            "takeaway": "Pairs a clean 14-condition \N{MULTIPLICATION SIGN} 7-trait study-weighted "
-            "Δz heatmap (left) with a focused forest plot of the 12 lead Fecal Disease "
+            "takeaway": "Pairs a clean "
+            f"{plate_count(metrics, 'plate4_conditions')}-condition \N{MULTIPLICATION SIGN} "
+            f"{plate_count(metrics, 'plate4_traits')}-trait study-weighted Δz heatmap (left) "
+            f"with a focused forest plot of the {plate_count(metrics, 'plate4_leads')} lead Fecal "
+            "Disease "
             "\N{MULTIPLICATION SIGN} Trait contrasts in PD, CRC, HIV, and COVID-19 "
             "(right).",
             "caveat": f"Highlights {survivor_text(metrics)}.{fragile_sentence(metrics)} The "
@@ -2591,6 +2629,7 @@ PIPELINE_STEPS: tuple[dict[str, Any], ...] = (
         "analytical_arm": "arm3_sign_and_logratio",
         "recipes": (
             "guild-maps",
+            "calibration-report",
             "table1-trait-maps",
             "table1-compositional-stats",
             "trait-direction-screen",
@@ -2611,9 +2650,11 @@ PIPELINE_STEPS: tuple[dict[str, Any], ...] = (
             "data/derived/trait_screen/trait_direction_screen.tsv",
             COMPARISON.as_posix(),
             "data/derived/integrated_evidence/integrated_evidence.tsv",
+            "data/derived/guild_maps/guild_aerobe_anaerobe_correlation.tsv",
+            "data/derived/calibration/calibration_criteria.tsv",
         ],
-        "description": "Study sign tests, log-ratios, the trait screen, the contrast "
-        "orientation and the integrated evidence table.",
+        "description": "Study sign tests, log-ratios, the trait screen and its calibration, "
+        "the guild maps, the contrast orientation and the integrated evidence table.",
     },
     {
         "step_id": "step_13_tufte_plates_and_slide_deck_v3",
@@ -2741,14 +2782,10 @@ def drawing_command(code: str, by_code: Mapping[str, Sequence[str]], figure: str
 
 def valid_command(command: str, recipes: Mapping[str, str]) -> str | None:
     """A carried-over command without its note, or None when it runs a recipe, script or
-    module that does not exist (#622). A note naming a script that does not exist marks a
-    command that stood in for that script, as `just trait-profile-investigation  # uv run
-    python scripts/create_trait_Heatmaps.py` did, so it goes too (#681)."""
-    run, _, note = command.partition("  #")
-    for script, module in RUNS.findall(note):
-        if not (REPO_ROOT / (script or f"src/{module.replace('.', '/')}.py")).exists():
-            return None
-    parts = [part.strip() for part in run.split("&&")]
+    module that does not exist (#622). The note is not read: the September records wrote
+    real recipes with notes naming scripts that were never committed, such as `just
+    trait-heatmaps  # uv run python scripts/create_trait_Heatmaps.py` (#704)."""
+    parts = [part.strip() for part in command.split("  #")[0].split("&&")]
     for part in parts:
         words = part.split()
         if words[:1] == ["just"] and len(words) > 1 and words[1] in recipes:
@@ -2770,18 +2807,26 @@ def figure_commands(
     figure: str = "",
 ) -> list[str]:
     """A figure's command series: the upstream recipes, the carried-over steps that still
-    exist, and what draws the figure (#615, #622). A figure that nothing here draws gets
-    only the reason."""
+    exist in pipeline order, and what draws the figure (#615, #622, #681). A step later in
+    the pipeline than the drawing one cannot feed the figure, so a carried-over stand-in
+    such as `just trait-profile-investigation` before a heatmap `just trait-heatmaps`
+    draws is dropped (#704). A figure that nothing here draws gets only the reason."""
     drawn = drawing_command(code, by_code, figure)
     if drawn.startswith("#"):
         return [drawn]
     upstream = [command.split("  #")[0] for command in UPSTREAM_COMMANDS]
     drawing = set(drawn.split(" && "))
+    last = max(step_order(part) for part in drawing)
     kept: list[str] = []
     for command in series:
         valid = valid_command(command, recipes)
         # A step the drawing command runs anyway is not repeated before it
-        if valid and valid not in (*upstream, *kept) and not set(valid.split(" && ")) <= drawing:
+        if (
+            valid
+            and valid not in (*upstream, *kept)
+            and not set(valid.split(" && ")) <= drawing
+            and step_order(valid) <= last
+        ):
             kept.append(valid)
     return [*UPSTREAM_COMMANDS, *sorted(kept, key=step_order), drawn]
 
@@ -2796,9 +2841,13 @@ def step_order(command: str) -> int:
     )
 
 
-# The plates read disease_control_comparison.tsv and the cellulose_decr tables and captions,
-# so the recipes that write those run first (#681).
+# The plates read the depletion table, the guild table, the calibration criteria,
+# disease_control_comparison.tsv and the cellulose_decr tables and captions, so the recipes
+# that write those run first (#681, #704).
 PLATE_COMMANDS = (
+    "just analyze-depletion",
+    "just guild-maps",
+    "just calibration-report",
     "just contrast-orientation",
     "just cellulose-decr",
     "just cellulose-decr-figures",
@@ -2932,8 +2981,41 @@ def plate_revision(repo: Path) -> str | None:
 
 def figure_root(repo: Path, rel: str) -> Path:
     """Where a slide file is read: this checkout for the plates and the cellulose_decr files,
-    which its own recipes draw, and the input root for everything else (#639)."""
+    which its own recipes draw; the folder holding a figure read from an unmerged pull
+    request's head (#704); and the input root for everything else (#639)."""
+    if rel in COMMITTED_FIGURES:
+        return COMMITTED_FIGURES[rel]
     return REPO_ROOT if rel.startswith((PLATES_DIR, f"{CELLULOSE_DIR}/")) else repo
+
+
+# The figures read from an unmerged pull request's head commit, by the folder that holds
+# them. No checkout has PR #173's maps on main, and the main checkout's untracked
+# methods/figures/ holds main's own maps at the same paths (#704).
+COMMITTED_FIGURES: dict[str, Path] = {}
+
+
+def committed_blob(ref: str, rel: str) -> bytes:
+    """A file as commit ``ref`` of this repository holds it."""
+    with Repo(str(REPO_ROOT), search_parent_directories=False, expand_vars=False) as repository:
+        data: bytes = repository.commit(ref).tree[rel].data_stream.read()
+        return data
+
+
+def extract_committed_figures(folder: Path) -> None:
+    """Write PR #173's maps from its head commit into ``folder``, where the build reads them
+    (#677, #704). `just figure-review-deck` fetches the commit when the clone lacks it."""
+    name, ref = UNMERGED_TABLE1_MAPS
+    for rel in sorted(PR173_MAPS):
+        try:
+            data = committed_blob(ref, rel)
+        except (GitError, ODBError, KeyError, ValueError) as error:
+            raise SystemExit(
+                f"cannot read {rel} at {name}'s head {ref[:12]} ({error!r}): fetch it with "
+                f"`git fetch origin {ref}`, as `just figure-review-deck` does"
+            ) from error
+        (folder / rel).parent.mkdir(parents=True, exist_ok=True)
+        (folder / rel).write_bytes(data)
+        COMMITTED_FIGURES[rel] = folder
 
 
 def git_blob_id(path: Path) -> str:
@@ -3264,6 +3346,9 @@ def mark_unmerged(entry: dict[str, Any]) -> None:
         entry["not_rerun"] = f"{name} at {ref[:12]}"
         if not figure.startswith(UNLINKED_FIGURES):
             entry["link_ref"] = ref
+        if figure in PR173_MAPS:
+            # Its methods give the outline rule, the screen and the numbers the text quotes
+            entry["methods_path"] = entry["evidence_path"] = PR173_METHODS
 
 
 def revision_stamp(row: dict[str, str]) -> str:
@@ -3346,8 +3431,9 @@ def placed_slides(
     placed = []
     for item in items:
         fp = item["figure_file_path"]
-        if not (root / fp).exists():
-            raise FileNotFoundError(f"missing {what}: {root / fp} (#638)")
+        source = figure_root(root, fp) / fp
+        if not source.exists():
+            raise FileNotFoundError(f"missing {what}: {source} (#638)")
         if fp not in included:
             item["v1_slide"] = "NA"
             item["v2_slide"] = "NA"
@@ -3375,6 +3461,7 @@ def build_deck(
         raise SystemExit("no git listings to check the slides against; pass --allow-unverified")
     TABLES_READ.clear()
     DUPLICATE_OF.clear()
+    COMMITTED_FIGURES.clear()
     metrics = load_rerun_metrics(repo)
     cellulose = load_cellulose_captions(REPO_ROOT)
     metrics["cellulose_statements"] = cellulose["statements"]
@@ -3389,21 +3476,22 @@ def build_deck(
     )
     # Counts Methods Plate II draws, which its slide quotes (#640)
     metrics["plate_counts"] = plate_record.get("counts", {})
-    record_problems = [
-        f'plates_provenance.json: no {key} count, so its slides print "?" (#682)'
-        for key in PLATE_COUNT_KEYS
-        if key not in metrics["plate_counts"]
-    ]
-    # The cellulose_decr slides and plates must define disease vs healthy as the Table 1
-    # text does (#679)
     cellulose_classifier = json.loads(
         (REPO_ROOT / CELLULOSE_DIR / "cellulose_decr_provenance.json").read_text(encoding="utf-8")
     ).get("contrast_classifier_version")
-    if cellulose_classifier != metrics["contrast_classifier"]:
-        record_problems.append(
-            f"the cellulose_decr tables use {cellulose_classifier}, the Table 1 text "
-            f"{metrics['contrast_classifier']} (#679)"
+    gates = record_problems(
+        metrics["plate_counts"], cellulose_classifier, metrics["contrast_classifier"]
+    )
+    if gates and not allow_unverified:
+        raise SystemExit(
+            "the deck would quote inconsistent records:\n  "
+            + "\n  ".join(gates)
+            + "\nRedraw the plates or re-pin cellulose_decr, or pass --allow-unverified for a "
+            "review build."
         )
+    # PR #173's maps, from its head commit (#704)
+    committed = tempfile.TemporaryDirectory(prefix="deck-pr-figures-")
+    extract_committed_figures(Path(committed.name))
 
     # The September decks' manifests are inputs; slide_manifest.tsv itself is now this
     # script's output, so it must not stand in for a missing v1 manifest.
@@ -3628,8 +3716,7 @@ def build_deck(
     ]
     problems += [f"cover link {rel}: {reason}" for rel, reason in cover_found]
     problems += [f"quoted table {item}" for item in quoted]
-    problems += record_problems
-    review = list(review)
+    review = [*gates, *review]
     if trees is None:
         review.append("nothing was checked against its revision")
     review += refuse_or_review(problems, allow_unverified)
@@ -3689,13 +3776,16 @@ def build_deck(
         elif fig_rel.startswith(CELLULOSE_FIGURES):
             source_note = legacy
         elif entry.get("not_rerun"):
+            pull = entry["not_rerun"].split(" at ")[0]
+            # Main may hold other code at the same path, as its shim of PR #173's module
+            what = f"{pull}'s {code_rel}" if (REPO_ROOT / code_rel).exists() else code_rel
             shown = (
                 "the figure committed there"
                 if entry.get("link_ref") == entry["code_ref"]
                 else "the September figure, identified by its SHA-256 in the provenance"
             )
             source_note = (
-                f"Not rerun on main: {code_rel} was never merged, so the slide links it in "
+                f"Not rerun on main: {what} was never merged, so the slide links it in "
                 f"{entry['not_rerun']} and shows {shown} (#614)."
             )
         elif figure_state == "verified":
@@ -4111,8 +4201,10 @@ def build_deck(
         if not fp.startswith((PLATES_DIR, *CELLULOSE_FIGURES)):
             drawn_provenance(rec, r, recipes, by_code)
             if r["not_rerun"]:
-                # Its code read September's files, which today's do not identify (#682)
+                # Its code read September's files, which today's do not identify (#682);
+                # its methods are the ones the slide links (#704)
                 rec["input_data_sha256s"] = []
+                rec["methods_doc_path"] = r["methods_path"]
             else:
                 # Today's hashes, in one format, and the inputs that changed since they were
                 # recorded (#637)

@@ -8,6 +8,7 @@ from mtp.quoted_results import McNemar, OraCalls, screened_rejection_rate
 
 ENRICHMENT_HEADER = [
     "# Tail: upper\n",
+    "# FDR: True\n",
     "# P-Threshold: 0.001\n",
     "# Min-Fold: 1.5\n",
     "# Total-Tests-Performed: 1480390\n",
@@ -26,7 +27,14 @@ def test_ora_counts_come_from_the_table_header() -> None:
 
 def test_an_ora_header_without_counts_is_refused() -> None:
     with pytest.raises(ValueError, match="without its counts"):
-        OraCalls.from_header(["# Tail: upper\n", "study_id\n"])
+        OraCalls.from_header(["# FDR: True\n", "study_id\n"])
+
+
+def test_calls_without_fdr_control_are_refused() -> None:
+    """The deck quotes them as BH q (#704)."""
+    raw = [line.replace("FDR: True", "FDR: False") for line in ENRICHMENT_HEADER]
+    with pytest.raises(ValueError, match="not FDR-controlled"):
+        OraCalls.from_header(raw)
 
 
 def _guild_rows(odds_ratio: str = "1.448276") -> list[dict[str, str]]:
@@ -78,8 +86,14 @@ def test_the_screened_rejection_rate_is_read_by_criterion_and_procedure() -> Non
             "criterion": "per_test_level",
             "procedure": "screened_fraction_sign_test",
             "estimate": "0.0910",
+            "replicates_recorded": "2800",
+            "replicates_required": "2800",
         },
     ]
     assert screened_rejection_rate(rows) == 0.0910
+    # The documented quick pass certifies nothing (#704)
+    quick = [*rows[:2], {**rows[2], "replicates_recorded": "5"}]
+    with pytest.raises(ValueError, match="ran 5 of the 2800 replicates"):
+        screened_rejection_rate(quick)
     with pytest.raises(ValueError, match="no per-test level"):
         screened_rejection_rate(rows[:2])

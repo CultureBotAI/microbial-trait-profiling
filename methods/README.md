@@ -103,7 +103,13 @@ They refuse to replace an existing deck or plates without `--overwrite`; there i
 copy, so back up `slides/`, `provenance/` and `data/derived/tufte_plates/` first. The
 Table 1 numbers the cover, the plates and their slides quote are read from
 `data/derived/contrast_orientation/disease_control_comparison.tsv` and the tables behind
-each figure, so they follow the contrast classifier of the rerun (#579, #606).
+each figure, so they follow the contrast classifier of the rerun (#579, #606). So are
+Arm 2's tests and calls (the ORA tables' headers), the oxygen-guild McNemar test
+(`guild_aerobe_anaerobe_correlation.tsv`), the screened sign test's rejection rate
+(`calibration_criteria.tsv`, refused below its replicate budget), Plate V's PD split, Plate
+II's stratum sizes and Plate VII's counts (#680, #683, #704). The fraction sign tests are
+quoted with the studies left after the zero-total exclusion (939, 576 oriented), the
+log-ratios with the population (959, 592).
 
 The slides are stamped with the rerun revision (`COMMIT` in the builder, `RERUN_COMMIT` in
 the plate script, which a test keeps equal) and link their committed files at it. Before
@@ -113,8 +119,14 @@ cellulose_decr tables against the revision their slides cite, using `git ls-tree
 the recipe writes. It refuses when a file differs. `--allow-unverified` builds a review
 deck instead: the files that differ are not linked, their slides say so, and the cover and
 every stamp read "review build" (#637). Slides whose code was never merged into main
-(PRs #148 and #315) stay in the deck: they link that code at the pull request's head
-commit, and their stamp reads "not rerun on main" (#614).
+(PRs #148, #173 and #315) stay in the deck: they link that code at the pull request's head
+commit, and their stamp reads "not rerun on main" (#614). PR #173 also committed its Table 1
+maps, whose significance outlines and composition triangles main's `just table1-trait-maps`
+does not draw; the builder reads those five maps from that pull request's head and checks
+them there, so no checkout needs them on disk (#677, #704). The build also stops, or with
+`--allow-unverified` names the reason as a review build, when the plates' record lacks a
+count the slides quote (#682) or the cellulose_decr tables were built on another contrast
+classifier than the Table 1 tables (#679).
 Gitignored figures cannot be checked against a revision; the provenance records their
 SHA-256. The check reads the local repository, so push the commits that drew the plates and
 cellulose figures before sharing a deck: the slides link them on GitHub. The provenance folder's `figure_provenance_and_results.json`,

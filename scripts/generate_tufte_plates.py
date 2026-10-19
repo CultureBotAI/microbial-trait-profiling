@@ -219,11 +219,12 @@ def oriented_cellulose_pairs_text(
     if added or lost:
         changes = [f"adds {', '.join(added)}"] if added else []
         changes += [f"loses {', '.join(lost)}"] if lost else []
-        return f"Oriented disease-vs-healthy filter {' and '.join(changes)} ({counted})"
+        return f"Oriented subset {' and '.join(changes)} ({counted})"
     failing = [test for test in after if not test.passes()]
     closest = min(failing, key=lambda test: test.q_value) if failing else None
-    nearest = f"; nearest other {closest.label} BY q = {fmt_p(closest.q_value)}" if closest else ""
-    return f"Oriented disease-vs-healthy filter: the same {counted}{nearest}"
+    nearest = f"; next {closest.label} at BY q = {fmt_p(closest.q_value)}" if closest else ""
+    # Short enough for the panel's title line under any classifier (#704)
+    return f"Oriented subset: the same {counted}{nearest}"
 
 
 def study_bh_count(rows: dict[str, dict[str, str]]) -> int:
@@ -2445,12 +2446,20 @@ def build_plate3(repo: Path, out_dir: Path) -> Path:
         color=MUTED,
         style="italic",
     )
+    # The labels name the sides only while the table puts every other trait on the
+    # increased side and cellulose on the decreased one (#704)
+    others_up = all(every.fractions[trait].share_up > 0.5 for trait in others)
+    cellulose_down = every.fractions[CELLULOSE].share_up < 0.5
+    cellulose_group = "Increased Traits" if others_up and cellulose_down else "the Other Traits"
+    passing_all = passing_pairs(every, cellulose_pairs)
+    passing_oriented = passing_pairs(oriented, cellulose_pairs)
     ax_for.text(
         23.5,
         y_pos[0] + 0.42,
-        f"Cellulose vs Increased Traits ({len(cellulose_pairs)} pairs: "
-        f"{passing_pairs(every, cellulose_pairs)} pass BY in all {every.studies:,} [●] → "
-        f"{passing_pairs(oriented, cellulose_pairs)} pass in {oriented.studies:,} oriented [◆])",
+        f"Cellulose vs {cellulose_group} ({len(cellulose_pairs)} pairs: "
+        f"{passing_all} {'passes' if passing_all == 1 else 'pass'} BY in all "
+        f"{every.studies:,} [●] → {passing_oriented} "
+        f"{'passes' if passing_oriented == 1 else 'pass'} in {oriented.studies:,} oriented [◆])",
         fontsize=8.0,
         fontweight="bold",
         color=DEC_COLOR,
@@ -2458,7 +2467,8 @@ def build_plate3(repo: Path, out_dir: Path) -> Path:
     ax_for.text(
         23.5,
         y_pos[5] + 0.48,
-        f"Increased-Side vs Increased-Side Traits ({len(increased_pairs)} pairs: "
+        f"{'Increased-Side vs Increased-Side Traits' if others_up else 'Pairs Without Cellulose'} "
+        f"({len(increased_pairs)} pairs: "
         f"{increased_pairs_text(every, oriented, increased_pairs)})",
         fontsize=8.0,
         fontweight="bold",
@@ -2793,6 +2803,14 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
             ("HIV infection", "HIV", "cellulose catabolic process", "Cellulose catabolism"),
         )
     ]
+    # The sizes its slide quotes (#704)
+    PLATE_COUNTS.update(
+        {
+            "plate4_conditions": len(conditions),
+            "plate4_traits": len(traits_cols),
+            "plate4_leads": len(lead_specs),
+        }
+    )
     y_l = np.arange(len(lead_specs))[::-1]
     # Room below the rows for the cellulose callout
     ax_lead.set_ylim(-3.4, len(lead_specs) - 0.15)
@@ -3766,8 +3784,11 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
     traits_by_id = {t["tid"]: t for t in selected_traits}
     for tid, name, (tx_pos, ty_pos) in annot_specs:
         if tid in arm1_rows and tid in arm3_screen_rows:
-            share = float(arm3_screen_rows[tid]["share_up"])
-            text_lbl = f"{name} {'↑' if share > 0.5 else '↓'}"
+            paired = float(arm1_rows[tid]["study_t_statistic"]) > 0
+            shared = float(arm3_screen_rows[tid]["share_up"]) > 0.5
+            text_lbl = f"{name} {'↑' if paired else '↓'}"
+            if shared != paired:
+                text_lbl += f" (Arm 3 {'↑' if shared else '↓'})"
             trait = traits_by_id.get(tid)
             if trait is not None:
                 text_lbl = f"{PREFIXES[trait['group']]}{text_lbl}{NOTES[trait['group']]}"

@@ -349,8 +349,11 @@ def test_plate_records_name_the_plate_script() -> None:
     assert record["generator_script_path"] == "scripts/generate_tufte_plates.py"
     assert record["methods_doc_path"] == "methods/table1_paired_log_ratios.md"
     assert record["just_recipe"] == "just figure-review-plates"
-    assert record["command_series"][-5:] == [
+    assert record["command_series"][-8:] == [
         "just analyze",
+        "just analyze-depletion",
+        "just guild-maps",
+        "just calibration-report",
         "just contrast-orientation",
         "just cellulose-decr",
         "just cellulose-decr-figures",
@@ -974,14 +977,14 @@ def test_a_slide_not_rerun_is_checked_by_its_figure(tmp_path: Path) -> None:
     figure = tmp_path / "methods" / "figures" / "table1_traits_focus_oral.png"
     figure.parent.mkdir(parents=True)
     figure.write_text("pr173")
-    notes = tmp_path / "methods" / "notes.md"
+    notes = tmp_path / deck.PR173_METHODS
     notes.write_text("main's version")
     ref = deck.UNMERGED_TABLE1_MAPS[1]
     trees = _trees(
         tmp_path,
         {
             "methods/figures/table1_traits_focus_oral.png": deck.git_blob_id(figure),
-            "methods/notes.md": "0" * 40,
+            deck.PR173_METHODS: "0" * 40,
             "src/bsdbng/table1_trait_maps.py": "1" * 40,
         },
         ref,
@@ -989,10 +992,12 @@ def test_a_slide_not_rerun_is_checked_by_its_figure(tmp_path: Path) -> None:
     entry: dict[str, Any] = {
         "figure_file_path": "methods/figures/table1_traits_focus_oral.png",
         "code_path": "src/bsdbng/table1_trait_maps.py",
-        "methods_path": "methods/notes.md",
-        "evidence_path": "methods/notes.md",
+        "methods_path": "",
+        "evidence_path": "methods/figures/table1_traits_focus_oral.png",
     }
     deck.mark_unmerged(entry)
+    # The numbers its text quotes are in PR #173's methods, which it links (#704)
+    assert entry["methods_path"] == entry["evidence_path"] == deck.PR173_METHODS
     unverified, _ = deck.check_slides(tmp_path, [entry], trees, [])
     assert unverified == {}
     figure.write_text("main's map")
@@ -1260,8 +1265,8 @@ def test_plate_seven_slide_reads_the_plate_counts() -> None:
     assert deck.three_arm_text({"plate_counts": counts}) == (
         "6 of the 6 original Table 1 traits (★) pass all 3 arms with concordant direction; "
         "screening all 317 traits finds 11 more 3-arm-concordant traits (17 in all at study BH "
-        "q ≤ 0.05; 8 at strict BY q ≤ 0.05), 2 traits whose paired and sign-test directions "
-        "agree while ORA points the other way."
+        "q ≤ 0.05; 8 at strict BY q ≤ 0.05) plus 2 traits whose paired and sign-test "
+        "directions agree while ORA points the other way."
     )
     counts["not_concordant"] = 1
     assert deck.three_arm_text({"plate_counts": counts}).endswith(
@@ -1301,15 +1306,14 @@ def test_plate_three_labels_follow_the_table() -> None:
     cellulose = [(CELLULOSE_TRAIT, trait) for trait in plates.increased_side(every)]
     increased = list(itertools.combinations(plates.increased_side(every), 2))
     assert plates.oriented_cellulose_pairs_text(every, oriented, cellulose) == (
-        "Oriented disease-vs-healthy filter: the same 3 of 5 Cellulose pairs pass BY; nearest "
-        "other CEL/COC BY q = 0.30"
+        "Oriented subset: the same 3 of 5 Cellulose pairs pass BY; next CEL/COC at BY q = 0.30"
     )
     assert plates.increased_pairs_text(every, oriented, increased) == (
         "all BY q ≥ 0.30 in both all & oriented"
     )
     signs = _signs(ALL_PASSING | {CEL_HAL})
     assert plates.oriented_cellulose_pairs_text(signs[ALL_STUDIES], signs[ORIENTED], cellulose) == (
-        "Oriented disease-vs-healthy filter adds CEL/HAL (4 of 5 Cellulose pairs pass BY)"
+        "Oriented subset adds CEL/HAL (4 of 5 Cellulose pairs pass BY)"
     )
     assert plates.survivor_codes(signs[ORIENTED]) == "FA/CEL, CEL/SPH, CEL/ARS, CEL/HAL"
 
@@ -1634,7 +1638,7 @@ def test_plate_three_pairs_follow_what_panel_b_draws() -> None:
     others = [trait for trait in every.fractions if trait != CELLULOSE_TRAIT]
     pairs = [(CELLULOSE_TRAIT, trait) for trait in others]
     assert plates.oriented_cellulose_pairs_text(every, oriented, pairs).startswith(
-        "Oriented disease-vs-healthy filter: the same 3 of 5 Cellulose pairs pass BY"
+        "Oriented subset: the same 3 of 5 Cellulose pairs pass BY"
     )
     assert plates.increased_pairs_text(every, oriented, []) == "no pairs"
     coccus = ("facultatively_aerobic", "coccus_shaped")
@@ -1724,8 +1728,12 @@ def test_results_citing_a_copy_follow_the_figure_shown(monkeypatch: pytest.Monke
     monkeypatch.setattr(deck, "DUPLICATE_OF", {"copy.png": "shown.png", "lone.png": "kept.png"})
     prov: dict[str, Any] = {
         "figures": [
-            {"figure_id": "fig_1", "figure_file_path": "shown.png"},
-            {"figure_id": "fig_2", "figure_file_path": "copy.png"},
+            {
+                "figure_id": "fig_1",
+                "figure_file_path": "shown.png",
+                "statistical_result_ids": ["q"],
+            },
+            {"figure_id": "fig_2", "figure_file_path": "copy.png", "statistical_result_ids": ["r"]},
             {"figure_id": "fig_3", "figure_file_path": "lone.png"},
         ],
         "statistical_results": [{"result_id": "r", "figure_ids": ["fig_2", "fig_1", "fig_3"]}],
@@ -1735,3 +1743,78 @@ def test_results_citing_a_copy_follow_the_figure_shown(monkeypatch: pytest.Monke
     assert prov["figures"][1]["figure_file_path"] == "kept.png"
     assert prov["statistical_results"][0]["figure_ids"] == ["fig_1", "fig_3"]
     assert deck.stale_figure_ids(prov, {"shown.png", "kept.png"}) == []
+    # The shown record lists the copy's results as well as its own (#704)
+    assert prov["figures"][0]["statistical_result_ids"] == ["q", "r"]
+
+
+def test_carried_over_recipes_survive_their_september_notes() -> None:
+    """The source YAML wrote the real recipe as `just trait-heatmaps  # uv run python
+    scripts/create_trait_Heatmaps.py`; dropping it by its note left 78 records running
+    trait-profile-investigation before trait-heatmaps (#704)."""
+    recipes = _recipes()
+    by_code = deck.recipes_by_code(recipes)
+    series = [
+        *deck.UPSTREAM_COMMANDS,
+        "just trait-profile-investigation  # uv run python scripts/create_trait_Heatmaps.py",
+        "just trait-heatmaps  # uv run python scripts/create_trait_Heatmaps.py",
+    ]
+    drawn_by_investigation = deck.figure_commands(
+        series, "scripts/regenerate_trait_profile_investigation.py", recipes, by_code
+    )
+    assert drawn_by_investigation[-2:] == [
+        "just trait-heatmaps",
+        "just trait-profile-investigation",
+    ]
+    # Before a heatmap trait-heatmaps draws, the investigation is a later step, not an input
+    drawn_by_heatmaps = deck.figure_commands(
+        series, "scripts/create_taxa_guild_heatmap.py", recipes, by_code
+    )
+    assert drawn_by_heatmaps == [*deck.UPSTREAM_COMMANDS, "just trait-heatmaps"]
+
+
+def test_record_gates_are_review_reasons_of_their_own() -> None:
+    """The classifier and plate-count gates were worded as differing files (#704)."""
+    counts = dict.fromkeys(deck.PLATE_COUNT_KEYS, 1)
+    assert deck.record_problems(counts, "v4", "v4") == []
+    del counts["forest_traits"]
+    found = deck.record_problems(counts, "v3", "v4")
+    assert found == [
+        'the plates record no forest_traits count, so its slides would print "?" (#682)',
+        "the cellulose_decr tables use v3 and the Table 1 text v4 (#679)",
+    ]
+
+
+def test_pr173_maps_are_read_from_its_head(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No checkout has them on main, and the main checkout's untracked methods/figures/
+    holds main's own maps at the same paths (#704)."""
+    read: list[tuple[str, str]] = []
+
+    def blob(ref: str, rel: str) -> bytes:
+        read.append((ref, rel))
+        return f"{ref}:{rel}".encode()
+
+    monkeypatch.setattr(deck, "committed_blob", blob)
+    monkeypatch.setattr(deck, "COMMITTED_FIGURES", {})
+    deck.extract_committed_figures(tmp_path)
+    ref = deck.UNMERGED_TABLE1_MAPS[1]
+    assert sorted(read) == sorted((ref, rel) for rel in deck.PR173_MAPS)
+    assert deck.figure_root(tmp_path / "input", deck.PR173_FECES_OTHER) == tmp_path
+    figure = tmp_path / deck.PR173_FECES_OTHER
+    assert figure.read_bytes() == f"{ref}:{deck.PR173_FECES_OTHER}".encode()
+
+    def missing(_ref: str, rel: str) -> bytes:
+        raise KeyError(rel)
+
+    monkeypatch.setattr(deck, "committed_blob", missing)
+    with pytest.raises(SystemExit, match=f"git fetch origin {ref}"):
+        deck.extract_committed_figures(tmp_path)
+
+
+def test_committed_blobs_are_read_from_git() -> None:
+    """PR #148's head is fetched by the deck recipe; its README is a small committed file."""
+    ref = deck.UNMERGED_GRAM_SANKEY[1]
+    try:
+        data = deck.committed_blob(ref, "README.md")
+    except (ValueError, KeyError) as error:
+        pytest.skip(f"this clone lacks {ref[:12]} ({error!r})")
+    assert data.startswith(b"#")

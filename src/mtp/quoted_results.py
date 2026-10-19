@@ -9,7 +9,7 @@ text in step with the tables:
   ``just analyze-depletion``) head their rows with ``# Key: value`` lines that give the tests
   and calls;
 - ``guild_aerobe_anaerobe_correlation.tsv`` (``just guild-maps``) gives the McNemar test;
-- ``calibration_criteria.tsv`` (``just calibrate``) gives the rejection rate.
+- ``calibration_criteria.tsv`` (``just calibration-report``) gives the rejection rate.
 """
 
 from __future__ import annotations
@@ -35,13 +35,18 @@ class OraCalls:
 
     @classmethod
     def from_header(cls, lines: Iterable[str]) -> OraCalls:
-        """Read the ``# Key: value`` lines heading the table; the rows are not read."""
+        """Read the ``# Key: value`` lines heading the table; the rows are not read. The
+        calls are quoted as BH q, so a table whose calls are not FDR-controlled is refused."""
         header: dict[str, str] = {}
         for line in lines:
             if not line.startswith("#"):
                 break
             key, _, value = line[1:].partition(":")
             header[key.strip()] = value.strip()
+        if header.get("FDR") != "True":
+            raise ValueError(
+                f"the ORA table's calls are not FDR-controlled (FDR: {header.get('FDR')})"
+            )
         try:
             return cls(
                 tests=int(header["Total-Tests-Performed"]),
@@ -91,11 +96,19 @@ class McNemar:
 
 def screened_rejection_rate(rows: Iterable[Mapping[str, str]]) -> float:
     """The pooled per-test rejection rate of the screened fraction sign test under the
-    complete null: what screening the traits on the same data does to its size."""
+    complete null: what screening the traits on the same data does to its size. A run with
+    fewer replicates than the protocol requires, such as the documented five-replicate quick
+    pass, certifies nothing, so it is refused (#704)."""
     for row in rows:
         if (row["criterion"], row["procedure"]) == (
             "per_test_level",
             "screened_fraction_sign_test",
         ):
+            recorded, required = int(row["replicates_recorded"]), int(row["replicates_required"])
+            if recorded < required:
+                raise ValueError(
+                    f"the calibration ran {recorded} of the {required} replicates its protocol "
+                    "requires; rerun just calibration-report at the declared budget"
+                )
             return float(row["estimate"])
     raise ValueError("the calibration criteria have no per-test level for the screened sign test")
