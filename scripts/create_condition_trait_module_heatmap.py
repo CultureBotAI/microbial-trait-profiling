@@ -169,6 +169,9 @@ def load_aggregated_study_profiles(
             profiles[column] = profiles[column].map(clean_value)
             aggregations[column] = (column, most_common_label)
         row_ids = profiles[["study_id", *(group_by or [])]].agg(" | ".join, axis=1)
+    # study_id stays a column; an index of the same name breaks reset_index() and
+    # join(on="study_id").
+    row_ids = row_ids.rename("row_id")
     study_matrix = values.groupby(row_ids, sort=False).sum()
 
     profile_metadata = profiles.groupby(row_ids, sort=False).agg(**aggregations)

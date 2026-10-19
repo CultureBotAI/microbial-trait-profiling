@@ -150,20 +150,45 @@ def test_join_profile_labels_takes_each_profiles_own_experiment_labels(tmp_path:
     assert set(labelled["title"]) == {"Inflammatory bowel disease cohort"}
 
 
-def test_load_raw_experiment_metadata_rejects_conflicting_experiment_labels(
-    tmp_path: Path,
-) -> None:
-    full_dump_path = tmp_path / "full_dump.csv"
-    full_dump_path.write_text(
-        "\n".join(
-            [
-                "BSDB ID,Condition,Body site,Location of subjects,Host species",
-                "bsdb:study1/1/1,Crohn's disease,Feces,Sweden,Homo sapiens",
-                "bsdb:study1/1/2,Ulcerative colitis,Feces,Sweden,Homo sapiens",
-            ]
-        ),
-        encoding="utf-8",
-    )
+LABEL_VALUES = {
+    "condition": ("Crohn's disease", "Ulcerative colitis"),
+    "body_site": ("Feces", "Colonic mucosa"),
+    "location": ("Sweden", "Norway"),
+    "host_species": ("Homo sapiens", "Mus musculus"),
+}
 
-    with pytest.raises(ValueError, match="more than one condition label"):
+
+def write_one_experiment(tmp_path: Path, column: str, second_value: str) -> Path:
+    """Two signatures of one experiment that differ only in `column`."""
+    first = {field: values[0] for field, values in LABEL_VALUES.items()}
+    second = {**first, column: second_value}
+    header = ",".join(["BSDB ID", *heatmap.EXPERIMENT_LABEL_COLUMNS.values()])
+    rows = [
+        ",".join([f"bsdb:study1/1/{number}", *(labels[field] for field in LABEL_VALUES)])
+        for number, labels in [(1, first), (2, second)]
+    ]
+    full_dump_path = tmp_path / "full_dump.csv"
+    full_dump_path.write_text("\n".join([header, *rows]), encoding="utf-8")
+    return full_dump_path
+
+
+@pytest.mark.parametrize("column", list(LABEL_VALUES))
+def test_load_raw_experiment_metadata_rejects_conflicting_experiment_labels(
+    tmp_path: Path, column: str
+) -> None:
+    full_dump_path = write_one_experiment(tmp_path, column, LABEL_VALUES[column][1])
+
+    with pytest.raises(ValueError, match=f"more than one {column} label"):
         heatmap.load_raw_experiment_metadata(full_dump_path)
+
+
+@pytest.mark.parametrize("blank", ["", "NA"])
+@pytest.mark.parametrize("column", list(LABEL_VALUES))
+def test_load_raw_experiment_metadata_takes_the_value_beside_a_blank(
+    tmp_path: Path, column: str, blank: str
+) -> None:
+    full_dump_path = write_one_experiment(tmp_path, column, blank)
+
+    labels = heatmap.load_raw_experiment_metadata(full_dump_path)
+
+    assert labels.loc[("bsdb:study1", "bsdb:study1-1"), column] == LABEL_VALUES[column][0]

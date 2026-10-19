@@ -42,6 +42,14 @@ def test_load_aggregated_study_profiles_filters_to_human_experiments(tmp_path: P
     assert profile_metadata.loc["study1", "profile_count"] == 2
     assert profile_metadata.loc["study3", "profile_count"] == 1
 
+    # study_id is a column only, so the main() join and reset_index() work (#602).
+    assert profile_metadata.index.name != "study_id"
+    assert profile_metadata.reset_index()["study_id"].tolist() == ["study1", "study3"]
+    titles = pd.DataFrame(
+        {"title": ["first", "third"]}, index=pd.Index(["study1", "study3"], name="study_id")
+    )
+    assert profile_metadata.join(titles, on="study_id")["title"].tolist() == ["first", "third"]
+
 
 def test_modules_take_each_experiments_own_condition_and_body_site(tmp_path: Path) -> None:
     """A two-condition study adds each experiment to its own module, not its majority's (#555)."""
