@@ -1182,7 +1182,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
         {
             "owner": "Jed",
             "title": "Cellulose-annotated taxa in PD fecal profiles (decreased vs increased)",
-            "tag": "Jed · PD cellulose taxon drivers",
+            "tag": "Jed · PD cellulose-annotated taxa",
             "figure_file_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
             "pd_cellulose_taxon_driver_bar.png",
             "code_path": "scripts/create_pd_cellulose_analysis.py",
