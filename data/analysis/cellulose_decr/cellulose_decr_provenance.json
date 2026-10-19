@@ -1,6 +1,6 @@
 {
- "generated_at_utc": "2026-10-19T09:12:10Z",
- "code_commit": "12fdbfb68ab8019f277faa2ef21d714654694237",
+ "generated_at_utc": "2026-10-19T09:24:33Z",
+ "code_commit": "abe94d8a80eaa9bf2a3751ae34b5aca402e42d62",
  "script": "src/mtp/cellulose_decr/analysis.py",
  "bugsigdb_vintage": "2026-04-24_00:41_UTC",
  "contrast_classifier_version": "contrast-orientation-v2",
@@ -19,7 +19,7 @@
  },
  "scripts": {
   "src/mtp/cellulose_decr/__init__.py": "907a8db757a96e48d0a04ff342c7f4391e5a7e7ae2c691a67390f1e26a13fe20",
-  "src/mtp/cellulose_decr/analysis.py": "248530b6d89b93800e2f276838e9d700ae4ef971aaabd4c7f89312d768da1589",
+  "src/mtp/cellulose_decr/analysis.py": "2da7516224005ba6da7716f0385e3ec22d238d757d8e737d5a8cc5bc94b7cfaf",
   "src/mtp/cellulose_decr/figures.py": "9b5c12c321ff78a24590c66a6e607d6fd9bef140fd6050fdef7639a733be77bd"
  },
  "inputs": {
