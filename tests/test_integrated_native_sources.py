@@ -232,6 +232,7 @@ def test_ora_summary_preserves_profile_calls_without_fabricated_aggregate_q(tmp_
         assert record.n_depleted_inc is None
         assert record.n_depleted_dec is None
         assert record.depletion_source == ""
+        assert "input identity is unverified" in record.notes
     assert {r.test_status for r in records} == {PROFILE_SUMMARY, UNTESTED}
     family = family_inventory(records)[0]
     assert family["family_size"] == 12
@@ -249,6 +250,37 @@ def test_ora_full_depletion_source_proves_zero_hits(tmp_path: Path) -> None:
     assert all(r.n_depleted_inc == 0 and r.n_depleted_dec == 0 for r in records)
     assert all(r.depletion_q_threshold == 0.001 and r.depletion_max_fold == 0.5 for r in records)
     assert all(r.depletion_source.startswith("depletion.tsv@") for r in records)
+
+
+@pytest.mark.parametrize("mismatch", ["Profiles-SHA256", "Taxa-Matrix-SHA256"])
+def test_core_checks_depletion_input_identity_independently(tmp_path: Path, mismatch: str) -> None:
+    expected = {"Profiles-SHA256": "ora-fixture", "Taxa-Matrix-SHA256": "taxa-fixture"}
+    enrichment = write_source(
+        tmp_path / "enrichment.tsv", ora_rows(), {**ora_metadata(), **expected}
+    )
+    depletion = write_source(
+        tmp_path / "depletion.tsv",
+        ora_rows(enriched=False),
+        {**ora_metadata("lower"), **expected, mismatch: "another-source"},
+    )
+    with pytest.raises(ValueError, match="ORA input checksum"):
+        ora_profile_records(enrichment, depletion, columns=COLUMNS, expected_input_hashes=expected)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("study_test_status", "all_tied"), ("study_p_value", ""), ("p_value", "")],
+)
+def test_missing_native_values_do_not_make_otherwise_testable_rows_untested(
+    tmp_path: Path, field: str, value: str
+) -> None:
+    rows = composition_rows()
+    rows[0][field] = value
+    if field == "study_test_status":
+        for row in rows[1:]:
+            row[field] = "tested"
+    with pytest.raises(ValueError, match=r"test state|could not convert string"):
+        import_composition(write_source(tmp_path / "malformed-native.tsv", rows))
 
 
 @pytest.mark.parametrize(

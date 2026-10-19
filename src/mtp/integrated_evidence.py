@@ -85,6 +85,7 @@ DEFAULT_ORIENTATION_STATUS = (
 TESTED = "tested"
 UNTESTED = "untested"
 INSUFFICIENT = "insufficient_support"
+INSUFFICIENT_VARIANCE = "insufficient_variance"
 ALL_TIED = "all_tied"
 #: The method's eligibility rule left nothing to test. Not the same claim as
 #: ``ZERO_ANNOTATION``: two traits can both be well annotated across the corpus
@@ -818,6 +819,40 @@ def _probability(row: Mapping[str, str], key: str) -> float:
     return value
 
 
+def _native_test_values(
+    row: Mapping[str, str], *, study: bool
+) -> tuple[str, float | None, float | None]:
+    """Keep native unsupported tests distinct from tested negatives (#706).
+
+    Older native exports lack explicit states, so infer only from their actual
+    support and variance fields, using the producer's zero-variance tolerance.
+    Arbitrary missing p-values in otherwise testable rows still fail validation.
+    """
+    prefix = "study_" if study else ""
+    count = _count(row, "study_count" if study else "pair_count")
+    std_key = f"{prefix}std_increased_minus_decreased"
+    state = TESTED
+    if count < 2:
+        state = INSUFFICIENT
+    elif std_key in row and math.isclose(_number(row, std_key), 0, abs_tol=1e-8):
+        state = (
+            ALL_TIED
+            if _number(row, std_key) == 0
+            and _number(row, f"{prefix}mean_increased_minus_decreased") == 0
+            else INSUFFICIENT_VARIANCE
+        )
+    state_key = "study_test_status" if study else "pair_test_status"
+    if state_key in row and row[state_key] != state:
+        raise ValueError("native composition test state contradicts support or variance")
+    p_key, q_key = f"{prefix}p_value", f"{prefix}q_value"
+    q_value = _probability(row, q_key)
+    if state == TESTED:
+        return state, _probability(row, p_key), q_value
+    if row[p_key].strip().lower() not in {"", "nan"} or q_value != 1:
+        raise ValueError("native untestable result must have absent p and placeholder q=1")
+    return state, None, None
+
+
 def native_composition_records(
     path: Path,
     *,
@@ -898,7 +933,20 @@ def native_composition_records(
             raise ValueError("native composition profile checksum mismatch")
         if "correction_family_size" in row and _count(row, "correction_family_size") != len(rows):
             raise ValueError("native composition correction family size mismatch")
-        q = _probability(row, "study_q_value")
+        state, p, q = _native_test_values(row, study=True)
+        _, pair_p, pair_q = _native_test_values(row, study=False)
+        interval_low: float | None
+        interval_high: float | None
+        if state == TESTED:
+            interval_low = _number(row, "study_ci95_lower")
+            interval_high = _number(row, "study_ci95_upper")
+        else:
+            if any(
+                row[key].strip().lower() not in {"", "nan"}
+                for key in ("study_ci95_lower", "study_ci95_upper")
+            ):
+                raise ValueError("native untestable result must have absent confidence interval")
+            interval_low = interval_high = None
         pair_count = _count(row, "pair_count")
         study_count = _count(row, "study_count")
         explicit_zeros = "n_nonzero_experiments" in row
@@ -937,20 +985,28 @@ def native_composition_records(
                 n_nonzero_experiments=nonzero,
                 n_zero_total_experiments=zero,
                 n_zero_total_excluded=excluded,
-                effect_value=_number(row, "study_mean_increased_minus_decreased"),
+                effect_value=(
+                    _number(row, "study_mean_increased_minus_decreased")
+                    if state == TESTED
+                    else None
+                ),
                 effect_units=(
                     "study mean of increased-minus-decreased transformed annotation contrast"
                 ),
                 study_effect_mean=_number(row, "study_mean_increased_minus_decreased"),
                 study_effect_median=_number(row, "study_median_increased_minus_decreased"),
                 study_effect_units="per-study mean difference in trait z-scores",
-                interval_low=_number(row, "study_ci95_lower"),
-                interval_high=_number(row, "study_ci95_upper"),
-                interval_type="native 95% t interval for the mean study contrast",
-                p_value=_probability(row, "study_p_value"),
+                interval_low=interval_low,
+                interval_high=interval_high,
+                interval_type=(
+                    "native 95% t interval for the mean study contrast"
+                    if state == TESTED
+                    else "unavailable"
+                ),
+                p_value=p,
                 q_value=q,
-                native_pair_p_value=_probability(row, "p_value"),
-                native_pair_q_value=_probability(row, "q_value"),
+                native_pair_p_value=pair_p,
+                native_pair_q_value=pair_q,
                 statistical_test="two-sided one-sample t-test of study-mean transformed contrasts",
                 correction_method="Benjamini-Hochberg",
                 family_id="native_composition_pooled_study",
@@ -961,9 +1017,9 @@ def native_composition_records(
                 strict_q_threshold=strict_q_threshold,
                 q_threshold_source=OVERLAY_Q_SOURCE,
                 strict_q_threshold_source=MANUSCRIPT_Q_SOURCE,
-                test_status=TESTED,
-                decision=_decision(q, q_threshold, TESTED),
-                strict_decision=_decision(q, strict_q_threshold, TESTED),
+                test_status=state,
+                decision=_decision(q, q_threshold, state),
+                strict_decision=_decision(q, strict_q_threshold, state),
                 display_status=NOT_APPLICABLE,
                 zero_annotation_state=row.get(
                     "zero_total_policy", "native source does not report zero-total counts"
@@ -1020,6 +1076,7 @@ def _read_ora_hits(
     traits: set[str],
     tail: str,
     expected_keys: set[tuple[str, str, str]] | None = None,
+    expected_input_hashes: Mapping[str, str] | None = None,
 ) -> tuple[dict[str, ProfileHits], dict[str, str]]:
     metadata: dict[str, str] = {}
     hits = {trait: ProfileHits() for trait in traits}
@@ -1035,6 +1092,10 @@ def _read_ora_hits(
             key, separator, value = line[1:].partition(":")
             if separator:
                 metadata[key.strip()] = value.strip()
+        if expected_input_hashes is not None:
+            for key, expected in expected_input_hashes.items():
+                if metadata.get(key) != expected:
+                    raise ValueError(f"ORA input checksum missing or mismatched: {key}")
         if metadata.get("Tail") != tail or metadata.get("FDR-Scope") != "global":
             raise ValueError(f"ORA source {path} must declare {tail} tail and global FDR")
         if metadata.get("FDR") != "True" or metadata.get("Testable-Set") != "K>0 & N>0":
@@ -1120,11 +1181,13 @@ def ora_profile_records(
     columns: FeatureColumns,
     expected_profiles: Sequence[Profile] | None = None,
     expected_profile_keys: set[tuple[str, str, str]] | None = None,
+    expected_input_hashes: Mapping[str, str] | None = None,
 ) -> list[Record]:
     """Summarize profile tests without inventing trait/cell-level p or q values.
 
     Ranked discovery files omit traits with fewer than two hits. Only full result
     exports establish the tested denominator and distinguish zero from missing.
+    Depletion is auxiliary to the enrichment summary and requires its source.
     """
     bases = placeholder_records(
         "enrichment_arm_profile_hypergeometric",
@@ -1134,6 +1197,8 @@ def ora_profile_records(
         columns=columns,
     )
     if not enrichment_path.exists():
+        if depletion_path.exists():
+            raise ValueError("ORA depletion source requires a complete enrichment source")
         return bases + placeholder_records(
             "aggregated_profile_support",
             "corpus",
@@ -1145,12 +1210,14 @@ def ora_profile_records(
     expected_keys = expected_profile_keys
     if expected_keys is None and expected_profiles is not None:
         expected_keys = {(p.study_id, p.experiment_id, p.inc_dec) for p in expected_profiles}
-    hits, metadata = _read_ora_hits(enrichment_path, traits, "upper", expected_keys)
+    hits, metadata = _read_ora_hits(
+        enrichment_path, traits, "upper", expected_keys, expected_input_hashes
+    )
     depletion: dict[str, ProfileHits] = {}
     depletion_metadata: dict[str, str] = {}
     if depletion_path.exists():
         depletion, depletion_metadata = _read_ora_hits(
-            depletion_path, traits, "lower", expected_keys
+            depletion_path, traits, "lower", expected_keys, expected_input_hashes
         )
         if any(hits[trait].profile_keys != depletion[trait].profile_keys for trait in traits):
             raise ValueError("enrichment/depletion profile populations differ")
@@ -1212,7 +1279,12 @@ def ora_profile_records(
             display_status=NOT_APPLICABLE,
             zero_annotation_state="zero count can be tested when K and N are positive",
             source=source,
-            notes="Counts summarize profile-level discoveries. Best/median q and fold describe "
+            notes=(
+                "ORA profile and taxa-matrix input checksums match the verified core. "
+                if expected_input_hashes is not None
+                else "Legacy/non-core ORA input identity is unverified. "
+            )
+            + "Counts summarize profile-level discoveries. Best/median q and fold describe "
             "enrichment hits only; no trait-level or cell-level q/decision is defined. "
             "An inc/dec ratio is undefined when there are no decreased-profile hits. "
             + (
@@ -1844,10 +1916,13 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
     ),
     (
         "test_status",
-        f"{TESTED}, {UNTESTED}, {INSUFFICIENT}, {ALL_TIED}, {NO_ELIGIBLE_PAIRS}, "
+        f"{TESTED}, {UNTESTED}, {INSUFFICIENT}, {INSUFFICIENT_VARIANCE}, "
+        f"{ALL_TIED}, {NO_ELIGIBLE_PAIRS}, "
         f"{ZERO_ANNOTATION}, {NOT_SAMPLED}, {SOURCE_MISSING} or {PROFILE_SUMMARY}. "
         "These distinguish absent signal, absent sampling, absent source and a "
-        "descriptive summary of profile tests",
+        "descriptive summary of profile tests. Insufficient variance means the native "
+        "t-test was unavailable for a constant nonzero or nearly constant contrast; "
+        "it is not a tested negative. Native all_tied requires exactly zero study contrasts",
     ),
     ("decision", f"{SIGNIFICANT}, {NOT_SIGNIFICANT} or {UNDECIDED}; only ever within one family"),
     (
@@ -2105,7 +2180,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         help="Complete enrichment export, not discoveries-only rankings",
     )
-    parser.add_argument("--arm2-depletion-results", type=Path, help="Complete lower-tail export")
+    parser.add_argument(
+        "--arm2-depletion-results",
+        type=Path,
+        help="Complete lower-tail export; requires the complete enrichment export",
+    )
     parser.add_argument("--full-screen", type=Path, help="Compatible full-trait directional screen")
     parser.add_argument("--full-screen-provenance", type=Path)
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
@@ -2222,6 +2301,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         expected_profiles=historical_profiles,
         expected_profile_keys=(
             ora_testable_profile_keys(bundle.path("ora_profiles")) if bundle is not None else None
+        ),
+        expected_input_hashes=(
+            {
+                "Profiles-SHA256": _sha256(bundle.path("ora_profiles")),
+                "Taxa-Matrix-SHA256": _sha256(bundle.path("taxa_matrix")),
+            }
+            if bundle is not None
+            else None
         ),
     )
     records = attach_full_screen(

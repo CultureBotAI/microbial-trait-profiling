@@ -6,7 +6,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from mtp.integrated_evidence import native_composition_records
 from mtp.paths import REPO_ROOT, file_sha256
+from mtp.trait_guilds import TABLE1_TRAITS
 from mtp.workflow.consumers import CoreBundle, open_core_bundle, verify_consumer_record
 from mtp.workflow.operations import OPERATIONS, validate_core_product
 from mtp.workflow.runtime import execute_workflow
@@ -19,6 +21,66 @@ assert SPEC is not None
 assert SPEC.loader is not None
 infographic = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(infographic)
+
+
+@pytest.mark.parametrize(
+    ("values", "studies", "expected_state"),
+    [
+        ([1.0, -1.0, 1.0, -1.0], ["s1", "s1", "s2", "s2"], "all_tied"),
+        ([2.0, 0.0, 2.0, 0.0], ["s1", "s1", "s2", "s2"], "insufficient_variance"),
+        ([1.0, -1.0], ["s1", "s1"], "insufficient_support"),
+        ([0.0, 0.0], ["s1", "s2"], "all_tied"),
+    ],
+)
+@pytest.mark.parametrize("legacy", [False, True])
+def test_native_producer_untestable_study_results_integrate_without_invented_tests(
+    tmp_path: Path, values: list[float], studies: list[str], expected_state: str, legacy: bool
+) -> None:
+    """Actual producer output preserves study versus pair test eligibility (#706)."""
+    columns = {
+        feature: [
+            (terms[0], terms[0] if terms[0].startswith("METPO:") else f"METPO:2000103|{terms[0]}")
+        ]
+        for feature, terms in TABLE1_TRAITS.items()
+    }
+    matrix = pd.DataFrame({column[0][1]: values for column in columns.values()})
+    stats = infographic.compute_trait_stats(
+        matrix,
+        study_ids=studies,
+        selected_profile_count=2 * len(values),
+        denominator_summary={
+            "n_experiments": len(values),
+            "n_nonzero_experiments": len(values),
+            "n_zero_total_experiments": 0,
+            "n_zero_total_excluded": 0,
+        },
+    )
+    source = tmp_path / "native.tsv"
+    if legacy:
+        stats = stats.drop(columns=["pair_test_status", "study_test_status"])
+    stats.to_csv(source, sep="\t", index=False)
+    records = native_composition_records(
+        source,
+        columns=columns,
+        q_threshold=0.05,
+        strict_q_threshold=0.001,
+        profile_sha256="fixture",
+    )
+    assert len(records) == 6
+    for record in records:
+        assert record.test_status == expected_state
+        assert record.decision == record.strict_decision == "undecided"
+        assert record.p_value is record.q_value is None
+        assert record.interval_low is record.interval_high is None
+        assert record.study_effect_mean == float(
+            stats.iloc[0]["study_mean_increased_minus_decreased"]
+        )
+        assert record.family_size == 6
+        if len(set(values)) > 1:
+            assert record.native_pair_p_value is not None
+            assert record.native_pair_q_value is not None
+        else:
+            assert record.native_pair_p_value is record.native_pair_q_value is None
 
 
 def test_load_paired_inputs_maps_display_columns_to_stable_trait_ids(tmp_path: Path) -> None:

@@ -24,6 +24,22 @@ ORA exports are checked across their entire correction family, including traits
 outside Table 1; malformed or truncated non-selected rows cannot silently pass.
 Profile hit counts remain summaries without invented aggregate p/q values.
 
+The adversarial follow-up (#705) additionally requires the complete ORA exports'
+profile and taxa-matrix input SHA-256 values to match the verified core products.
+Profile identifiers alone cannot establish a shared KG background or annotation
+counts. Rerun the updated ORA producer before core integration; archived exports
+without fingerprints remain usable only outside core mode, where their input
+identity is explicitly unverified. Historical outputs are not assigned new
+fingerprints after the fact.
+The lower-tail export is auxiliary to a complete upper-tail export; supplying
+depletion alone is rejected instead of silently discarding that evidence (#709).
+
+Native composition results with too few studies, all-zero study contrasts, or
+insufficient study variance remain untested (#706). The native producer records
+these states explicitly; the importer retains descriptive study effects and any
+separately testable pair-level result without inventing primary p-values, q-values
+or confidence intervals. Their original nominal BH family remains recorded.
+
 Calibration rejects malformed, negative, fractional and infinite counts before
 binarizing the taxon matrix. A failed or partial execution cannot report a
 successful harness check. Regression fixtures compare the calibrated family

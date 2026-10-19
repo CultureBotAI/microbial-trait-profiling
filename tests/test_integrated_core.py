@@ -153,19 +153,42 @@ def test_ora_eligibility_pairs_before_excluding_zero_draws(tmp_path: Path) -> No
     }
 
 
-def test_integrated_core_reads_actual_ora_test_cohort(core_manifest: Path, tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "changed_source", [None, "ora_profiles", "taxa_matrix", "missing_hash", "depletion_only"]
+)
+def test_integrated_core_reads_actual_ora_test_cohort(
+    core_manifest: Path, tmp_path: Path, changed_source: str | None
+) -> None:
     """Import complete production ORA output using the actual core ORA unit."""
     bundle = open_core_bundle(core_manifest)
     ora_path = bundle.path("ora_profiles")
+    inputs = {name: bundle.path(name) for name in ("ora_profiles", "taxa_matrix")}
+    if changed_source in inputs:
+        # Keep every profile identifier, but use different actual input data.
+        changed = tmp_path / f"changed-{changed_source}.tsv"
+        with inputs[changed_source].open() as handle:
+            reader = csv.DictReader(handle, delimiter="\t")
+            rows = list(reader)
+            fieldnames = reader.fieldnames
+        assert fieldnames is not None
+        if changed_source == "ora_profiles":
+            rows[0]["METPO:1000608"] = "0"
+        else:
+            rows.append(dict(rows[0], taxon_id="NCBITaxon:fixture-extra"))
+        with changed.open("w") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fieldnames, delimiter="\t")
+            writer.writeheader()
+            writer.writerows(rows)
+        inputs[changed_source] = changed
     complete = tmp_path / "all_ora.tsv"
     subprocess.run(
         [
             sys.executable,
             str(REPO_ROOT / "scripts/trait_enrichment.py"),
             "--input",
-            str(ora_path),
+            str(inputs["ora_profiles"]),
             "--taxa-matrix",
-            str(bundle.path("taxa_matrix")),
+            str(inputs["taxa_matrix"]),
             "--output",
             str(tmp_path / "ora-report.txt"),
             "--tsv-output",
@@ -176,25 +199,44 @@ def test_integrated_core_reads_actual_ora_test_cohort(core_manifest: Path, tmp_p
             "0.001",
             "--min-fold",
             "1.5",
+            *(
+                ["--tail", "lower", "--max-fold", "0.5"]
+                if changed_source == "depletion_only"
+                else []
+            ),
         ],
         check=True,
         capture_output=True,
         text=True,
     )
-    output = tmp_path / "integrated"
-    assert (
-        main(
-            [
-                "--core-run",
-                str(core_manifest),
-                "--arm2-enrichment-results",
-                str(complete),
-                "--output-dir",
-                str(output),
-            ]
+    if changed_source == "missing_hash":
+        complete.write_text(
+            "".join(
+                line
+                for line in complete.read_text().splitlines(keepends=True)
+                if "SHA256:" not in line
+            )
         )
-        == 0
-    )
+    output = tmp_path / "integrated"
+    arguments = [
+        "--core-run",
+        str(core_manifest),
+        "--arm2-depletion-results"
+        if changed_source == "depletion_only"
+        else "--arm2-enrichment-results",
+        str(complete),
+        "--output-dir",
+        str(output),
+    ]
+    if changed_source is not None:
+        message = (
+            "depletion source requires" if changed_source == "depletion_only" else r"ORA.*checksum"
+        )
+        with pytest.raises(ValueError, match=message):
+            main(arguments)
+        assert not output.exists()
+        return
+    assert main(arguments) == 0
     with (output / "integrated_evidence.tsv").open() as handle:
         records = [
             row

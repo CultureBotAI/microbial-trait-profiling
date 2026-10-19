@@ -514,11 +514,21 @@ def compute_trait_stats(
         std_contrast = float(values.std(ddof=1)) if pair_n >= 2 else 0.0
 
         if pair_n < 2 or np.isclose(std_contrast, 0.0):
+            pair_test_status = (
+                "insufficient_support"
+                if pair_n < 2
+                else (
+                    "all_tied"
+                    if std_contrast == 0 and mean_contrast == 0
+                    else "insufficient_variance"
+                )
+            )
             t_stat = float("nan")
             p_value = float("nan")
             ci95_lower = float("nan")
             ci95_upper = float("nan")
         else:
+            pair_test_status = "tested"
             result = stats.ttest_1samp(values, 0.0)
             t_stat = float(result.statistic)
             p_value = float(result.pvalue)
@@ -534,11 +544,17 @@ def compute_trait_stats(
         study_std = float(study_values.std(ddof=1)) if study_n >= 2 else 0.0
 
         if study_n < 2 or np.isclose(study_std, 0.0):
+            study_test_status = (
+                "insufficient_support"
+                if study_n < 2
+                else ("all_tied" if study_std == 0 and study_mean == 0 else "insufficient_variance")
+            )
             study_t_stat = float("nan")
             study_p_value = float("nan")
             study_ci95_lower = float("nan")
             study_ci95_upper = float("nan")
         else:
+            study_test_status = "tested"
             study_result = stats.ttest_1samp(study_values, 0.0)
             study_t_stat = float(study_result.statistic)
             study_p_value = float(study_result.pvalue)
@@ -564,6 +580,8 @@ def compute_trait_stats(
                 "pair_count": pair_n,
                 **denominator_fields,
                 "test_method": "two_sided_one_sample_t_test",
+                "pair_test_status": pair_test_status,
+                "study_test_status": study_test_status,
                 "correction_method": "BH",
                 "correction_family_size": len(matrix.columns),
                 "profile_count": selected_profile_count
@@ -621,6 +639,8 @@ def compute_trait_stats(
         "pair_count",
         *denominator_columns,
         "test_method",
+        "pair_test_status",
+        "study_test_status",
         "correction_method",
         "correction_family_size",
         "profile_count",
