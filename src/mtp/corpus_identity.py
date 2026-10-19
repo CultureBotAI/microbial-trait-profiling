@@ -12,10 +12,10 @@ So that a reported count can be traced back to the file it came from, this modul
 records the identity of both sides - the matrix itself and the KG-Microbe inputs
 behind it - in one record that every recipe writes into its provenance JSON.
 
-What it deliberately does not do is decide which corpus is correct. Whether the
-shared corpus is the committed ``.gz`` or a regeneration is a project-wide choice
-(#115), and until it is settled the honest thing is to say precisely which file a
-given number came from.
+It does not decide which corpus is correct. The shared corpus is the committed
+``data/derived/study_trait_profiles_wide.tsv.gz``, which `just study-trait-profiles`
+reproduces and `just study-trait-profiles-check` verifies (#115, #656); the record
+still says precisely which file a given number came from.
 """
 
 from __future__ import annotations
