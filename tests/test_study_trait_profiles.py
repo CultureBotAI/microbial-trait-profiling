@@ -581,3 +581,52 @@ def test_main_cli_error_handling() -> None:
     with pytest.raises(SystemExit) as exc_info:
         main(["--format", "long", "--include-taxa-count"])
     assert exc_info.value.code == 2
+
+
+def test_drop_empty_traits_keeps_matrix_order_and_skips_zero_columns(tmp_path: Path) -> None:
+    """The canonical table leaves out traits no written profile carries (#656)."""
+    study_dir = tmp_path / "studies"
+    study_dir.mkdir()
+    _write_study_yaml(study_dir)
+    taxa_trait_matrix_path = tmp_path / "taxa_trait_matrix.tsv"
+    taxa_trait_matrix_path.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1\tMETPO:EMPTY\tMETPO:2\n"
+        "NCBITaxon:1\tTaxon one\tspecies\t1\t0\t2\n",
+        encoding="utf-8",
+    )
+    output_path = tmp_path / "profiles.tsv"
+    stats = create_study_trait_profiles(
+        study_dir=study_dir,
+        taxa_trait_matrix_path=taxa_trait_matrix_path,
+        output_path=output_path,
+        drop_empty_traits=True,
+    )
+    header = output_path.read_text(encoding="utf-8").splitlines()[0].split("\t")
+    assert header == ["study_id", "experiment_id", "inc_dec", "METPO:1", "METPO:2"]
+    assert stats.trait_columns == 2
+
+
+def test_a_host_filter_alone_does_not_write_the_ora_table(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The canonical human table must not overwrite the ORA arm's input (#656)."""
+    mock_default = tmp_path / "default_wide.tsv"
+    mock_ora = tmp_path / "default_ora_wide.tsv"
+    monkeypatch.setattr("mtp.study_trait_profiles.DEFAULT_OUTPUT_PATH", mock_default)
+    monkeypatch.setattr("mtp.study_trait_profiles.DEFAULT_ORA_OUTPUT_PATH", mock_ora)
+    monkeypatch.setattr("mtp.study_trait_profiles.DERIVED_DATA_DIR", tmp_path)
+    study_dir = tmp_path / "studies"
+    study_dir.mkdir()
+    _write_study_yaml(study_dir)
+    taxa_trait_matrix_path = tmp_path / "taxa_trait_matrix.tsv"
+    taxa_trait_matrix_path.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1\nNCBITaxon:1\tTaxon one\tspecies\t1\n",
+        encoding="utf-8",
+    )
+    stats = create_study_trait_profiles(
+        study_dir=study_dir,
+        taxa_trait_matrix_path=taxa_trait_matrix_path,
+        host_species="Homo sapiens",
+    )
+    assert stats.output_path == tmp_path / "study_trait_profiles_wide.tsv"
+    assert not mock_ora.exists()

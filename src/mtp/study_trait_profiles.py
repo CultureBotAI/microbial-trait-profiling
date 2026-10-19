@@ -279,8 +279,14 @@ def create_study_trait_profiles(
     binary: bool = False,
     include_taxa_count: bool = False,
     host_species: str | None = None,
+    drop_empty_traits: bool = False,
 ) -> StudyTraitProfileStats:
-    """Create a study profile TSV by aggregating taxa-trait presence from YAML taxa."""
+    """Create a study profile TSV by aggregating taxa-trait presence from YAML taxa.
+
+    ``drop_empty_traits`` leaves out the trait columns that are zero in every written
+    profile. With ``host_species="Homo sapiens"`` it writes the canonical table the
+    analyses use, the one committed as ``study_trait_profiles_wide.tsv.gz`` (#656).
+    """
     if output_format not in PROFILE_FORMATS:
         raise ValueError(f"Unsupported output format: {output_format}")
     if include_taxa_count and output_format == "long":
@@ -295,7 +301,9 @@ def create_study_trait_profiles(
     if not taxa_trait_matrix_path.exists():
         raise FileNotFoundError(f"Taxa trait matrix TSV not found: {taxa_trait_matrix_path}")
 
-    is_ora = binary or include_taxa_count or (host_species is not None)
+    # Only the ORA counts go to the ORA path; a host filter alone does not, so the canonical
+    # human table cannot overwrite the ORA arm's input (#656).
+    is_ora = binary or include_taxa_count
     if output_path is None:
         output_path = _default_output_path(output_format, is_ora=is_ora)
     elif output_path == DEFAULT_OUTPUT_PATH and is_ora:
@@ -313,6 +321,14 @@ def create_study_trait_profiles(
         binary=binary,
     )
 
+    trait_columns = matrix.trait_columns
+    if drop_empty_traits:
+        trait_columns = [
+            column
+            for column in trait_columns
+            if any(counts.get(column, 0) for counts in profile_counts.values())
+        ]
+
     if output_format == "wide":
         profile_taxa_counts = None
         if include_taxa_count:
@@ -325,15 +341,15 @@ def create_study_trait_profiles(
         write_wide_profiles(
             output_path,
             profile_counts,
-            matrix.trait_columns,
+            trait_columns,
             profile_taxa_counts=profile_taxa_counts,
         )
     else:
-        write_long_profiles(output_path, profile_counts, matrix.trait_columns)
+        write_long_profiles(output_path, profile_counts, trait_columns)
 
     return StudyTraitProfileStats(
         profiles=len(profile_counts),
-        trait_columns=len(matrix.trait_columns),
+        trait_columns=len(trait_columns),
         taxon_observations=taxon_observations,
         profile_taxa=sum(len(taxon_ids) for taxon_ids in profile_taxa.values()),
         matched_profile_taxa=matched_profile_taxa,
@@ -407,6 +423,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional filter by host species (e.g. 'Homo sapiens').",
     )
+    parser.add_argument(
+        "--drop-empty-traits",
+        action="store_true",
+        help="Leave out trait columns that are zero in every written profile.",
+    )
     return parser
 
 
@@ -423,6 +444,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             binary=args.binary,
             include_taxa_count=args.include_taxa_count,
             host_species=args.host_species,
+            drop_empty_traits=args.drop_empty_traits,
         )
     except ValueError as exc:
         parser.error(str(exc))

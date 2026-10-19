@@ -385,8 +385,15 @@ html-to-pdf HTML PDF:
 taxa-trait-matrix: download-kg study-tsvs
 	uv run python scripts/create_taxa_trait_matrix.py
 
+# The canonical profile table the analyses read: human hosts only, without the trait
+# columns that are zero in every human profile. It reproduces the committed
+# data/derived/study_trait_profiles_wide.tsv.gz, which `just study-trait-profiles-check`
+# compares it with (#656).
 study-trait-profiles: taxa-trait-matrix
-	uv run python scripts/create_study_trait_profiles.py
+	uv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" --drop-empty-traits
+
+study-trait-profiles-check:
+	gzip -dc data/derived/study_trait_profiles_wide.tsv.gz | cmp -s - data/derived/study_trait_profiles_wide.tsv || { echo "data/derived/study_trait_profiles_wide.tsv differs from the committed .gz; run just study-trait-profiles (#656)" >&2; exit 1; }
 
 # Source-count reconciliation and rule-declared genus/family influence (#190).
 # The default entry point declares the complete clean-clone input chain.
