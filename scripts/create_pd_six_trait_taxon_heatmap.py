@@ -27,6 +27,15 @@ from create_pd_cellulose_analysis import (
     read_tsv,
     write_tsv,
 )
+from lookup_pd_trait_taxa import (
+    CARRIERS_NAME,
+    EVIDENCE_NAME,
+    PROVENANCE_NAME,
+    SUMMARY_NAME,
+    pd_feces_profile_ids,
+    profile_set_fingerprint,
+    trait_directions,
+)
 from mtp.composition_denominators import retained_trait_counts, trait_fractions
 
 PROFILE_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
@@ -380,56 +389,128 @@ def taxon_specificity_from_occurrences(
     return pd.DataFrame.from_records(records)
 
 
+def trait_problems(name: str, table: pd.DataFrame, expected: dict[str, str]) -> list[str]:
+    """Differences between a table's traits and directions and the current lollipop's."""
+    if "trait_direction" not in table:
+        return [f"{name} has no trait_direction column, so it predates the six-trait design"]
+    recorded: dict[str, set[str]] = {}
+    for trait_id, direction in zip(
+        table["trait_id"].astype(str), table["trait_direction"].astype(str), strict=True
+    ):
+        recorded.setdefault(trait_id, set()).add(direction)
+    problems = []
+    missing = sorted(set(expected) - set(recorded))
+    extra = sorted(set(recorded) - set(expected))
+    if missing or extra:
+        problems.append(
+            f"{name} traits differ from {SUMMARY_NAME} (missing: {', '.join(missing) or 'none'}; "
+            f"extra: {', '.join(extra) or 'none'})"
+        )
+    changed = [
+        f"{trait_id} {'/'.join(sorted(recorded[trait_id]))}, now {expected[trait_id]}"
+        for trait_id in sorted(set(expected) & set(recorded))
+        if recorded[trait_id] != {expected[trait_id]}
+    ]
+    if changed:
+        problems.append(f"{name} trait directions differ from {SUMMARY_NAME}: {'; '.join(changed)}")
+    return problems
+
+
+def provenance_problems(
+    provenance: dict[str, object],
+    directions: pd.DataFrame,
+    metadata: pd.DataFrame,
+) -> list[str]:
+    """Differences between the recorded PD fecal profiles and lollipop and the current ones."""
+    problems = []
+    current = profile_set_fingerprint(pd_feces_profile_ids(metadata))
+    recorded_count = provenance.get("pd_feces_profiles")
+    recorded_digest = str(provenance.get("pd_feces_profile_ids_sha256"))
+    if (recorded_count, recorded_digest) != (
+        current["pd_feces_profiles"],
+        current["pd_feces_profile_ids_sha256"],
+    ):
+        problems.append(
+            f"it was built from {recorded_count} PD fecal profiles (id sha256 "
+            f"{recorded_digest[:12]}), and the current metadata has "
+            f"{current['pd_feces_profiles']} (id sha256 "
+            f"{str(current['pd_feces_profile_ids_sha256'])[:12]})"
+        )
+    traits = provenance.get("traits")
+    recorded_values = {
+        str(trait["trait_id"]): float(trait["increased_minus_decreased_mean_z"])
+        for trait in (traits if isinstance(traits, list) else [])
+    }
+    changed = [
+        str(trait.trait_id)
+        for trait in directions.itertuples(index=False)
+        if str(trait.trait_id) not in recorded_values
+        or not math.isclose(
+            recorded_values[str(trait.trait_id)],
+            float(trait.increased_minus_decreased_mean_z),
+            rel_tol=1e-9,
+            abs_tol=1e-12,
+        )
+    ]
+    if changed:
+        problems.append(
+            f"its recorded mean-z differences differ from {SUMMARY_NAME} for {', '.join(changed)}"
+        )
+    return problems
+
+
 def check_trait_taxa_evidence(
     evidence: pd.DataFrame,
     carriers: pd.DataFrame,
+    provenance: dict[str, object],
     trait_summary: pd.DataFrame,
     metadata: pd.DataFrame,
 ) -> None:
-    """Refuse trait-taxa evidence that no longer matches the current PD profiles (#584).
+    """Refuse trait-taxa evidence that does not match the current PD profiles or lollipop.
 
-    `just pd-trait-taxa` writes the evidence and carrier tables from the PD fecal profiles
-    and the positive side of the six-trait lollipop. If either has changed since, tables
-    built from them would mix two label sources, so stop instead of writing them.
+    `just pd-trait-taxa` builds the evidence and carrier tables from the PD fecal profiles
+    and all six lollipop traits, gives each trait its observed direction, and records the
+    profile set and the lollipop it used (#584, #649). If either has changed since, tables
+    built from the evidence would mix two sources, so stop instead of writing them.
     """
-    pd_feces = metadata["condition"].eq(PD_CONDITION) & metadata["body_site_group"].eq(FECES)
-    current_profiles = set(metadata.loc[pd_feces, "profile_id"].astype(str))
+    directions = trait_directions(trait_summary)
+    expected = dict(
+        zip(directions["trait_id"], directions["trait_direction"].astype(str), strict=True)
+    )
+    problems = [
+        *trait_problems("the evidence", evidence, expected),
+        *trait_problems("the carrier table", carriers, expected),
+        *provenance_problems(provenance, directions, metadata),
+    ]
+    current_profiles = set(pd_feces_profile_ids(metadata))
     stale_profiles = sorted(set(evidence["profile_id"].astype(str)) - current_profiles)
-    summary_traits = set(trait_summary["trait_id"].astype(str))
-    evidence_traits = set(evidence["trait_id"].astype(str))
-    positive_side = trait_summary["increased_minus_decreased_mean_z"] > 0
-    positive_traits = set(trait_summary.loc[positive_side, "trait_id"].astype(str))
-    carrier_positive = carriers.loc[carriers["positive_side_in_lollipop"].astype(bool)]
-    evidence_positive_traits = set(carrier_positive["trait_id"].astype(str))
-
-    problems = []
     if stale_profiles:
         problems.append(
             f"{len(stale_profiles)} evidence profiles are not current PD fecal profiles "
             f"(first: {stale_profiles[0]})"
         )
-    if evidence_traits != summary_traits:
-        problems.append("its traits differ from pd_six_trait_direction_summary.tsv")
-    if evidence_positive_traits != positive_traits:
-        problems.append(
-            f"it has {len(evidence_positive_traits)} positive-side traits, "
-            f"pd_six_trait_direction_summary.tsv has {len(positive_traits)}"
-        )
     if problems:
         msg = (
-            "pd_six_trait_taxon_profile_evidence.tsv was built from other PD profiles or "
-            f"another six-trait lollipop: {'; '.join(problems)}. Regenerate it with "
-            "`just pd-trait-taxa` once #584 decides how the analysis picks its traits."
+            f"{EVIDENCE_NAME} does not match the current PD fecal profiles and six-trait "
+            f"lollipop: {'; '.join(problems)}. Regenerate it with `just pd-trait-taxa`."
         )
         raise ValueError(msg)
 
 
 def require_current_trait_taxa_evidence(metadata: pd.DataFrame, output_dir: Path) -> None:
-    """Read the saved evidence, carrier and lollipop tables and check that they agree (#584)."""
+    """Read the saved evidence, carriers, provenance and lollipop and check that they agree."""
+    provenance_path = output_dir / PROVENANCE_NAME
+    if not provenance_path.exists():
+        msg = (
+            f"{EVIDENCE_NAME} has no {PROVENANCE_NAME}, so it predates the six-trait design. "
+            "Regenerate it with `just pd-trait-taxa`."
+        )
+        raise ValueError(msg)
     check_trait_taxa_evidence(
-        read_tsv(output_dir / "pd_six_trait_taxon_profile_evidence.tsv"),
-        read_tsv(output_dir / "pd_six_trait_taxon_carriers.tsv"),
-        read_tsv(output_dir / "pd_six_trait_direction_summary.tsv"),
+        read_tsv(output_dir / EVIDENCE_NAME),
+        read_tsv(output_dir / CARRIERS_NAME),
+        json.loads(provenance_path.read_text(encoding="utf-8")),
+        read_tsv(output_dir / SUMMARY_NAME),
         metadata,
     )
 
