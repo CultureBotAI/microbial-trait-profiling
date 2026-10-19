@@ -3,11 +3,11 @@
   "traits": 6,
   "species": 5,
   "cells": 30,
-  "displayed_cells": 9,
+  "displayed_cells": 8,
   "audited_cells_for_displayed_species": 30,
-  "direct_annotation_cells": 9,
-  "denominator_only_cells": 21,
-  "species_removed_all_low_support": 52,
+  "direct_annotation_cells": 8,
+  "denominator_only_cells": 22,
+  "species_removed_all_low_support": 40,
   "species_removed_by_explicit_exclusion": 1,
   "excluded_taxon_ids": [
     "NCBITaxon:33039"
@@ -15,7 +15,7 @@
   "excluded_taxon_names": [
     "Mediterraneibacter torques"
   ],
-  "species_removed_below_absolute_influence_threshold": 2,
+  "species_removed_below_absolute_influence_threshold": 1,
   "absolute_influence_display_threshold_z": 0.01,
   "display_rule": "mean influence > +0.01 or < -0.01",
   "non_mediadive_columns": 317,
@@ -71,14 +71,14 @@
       "db271c59"
     ],
     "trait-visualization/trait-profile-investigation/PD-cellulose/pd_six_trait_taxon_profile_evidence.tsv": [
-      "94c57893",
-      "418f590d",
-      "1eb4103a",
-      "32ed203e",
-      "da30ec6d",
-      "dd89ebff",
-      "49be04bc",
-      "2b785bcb"
+      "3bae40c3",
+      "2d21db49",
+      "90b5b088",
+      "0b83fe2b",
+      "7e08978f",
+      "32212f78",
+      "7cf6bf49",
+      "c0e2fc54"
     ]
   },
   "sha256_chunk_encoding": "concatenate each path's eight chunks in order"

@@ -1,0 +1,46 @@
+{
+  "evidence": "pd_six_trait_taxon_profile_evidence.tsv",
+  "carriers": "pd_six_trait_taxon_carriers.tsv",
+  "trait_summary": "pd_six_trait_direction_summary.tsv",
+  "pd_feces_profiles": 247,
+  "pd_feces_profile_ids_sha256": "bd5ce49ed6bfe6f4363d78aff871cd923fc13c1918dbc82b5f6114836365ff24",
+  "pd_feces_profile_ids_encoding": "sha256 of the sorted profile_id values, one per line",
+  "traits": [
+    {
+      "trait_id": "METPO:1000623",
+      "trait": "moderately halophilic",
+      "increased_minus_decreased_mean_z": 0.4941071279164387,
+      "trait_direction": "increased"
+    },
+    {
+      "trait_id": "METPO:2000103|pathways:arsenate_reduction",
+      "trait": "arsenate reduction",
+      "increased_minus_decreased_mean_z": 0.4200857155718372,
+      "trait_direction": "increased"
+    },
+    {
+      "trait_id": "METPO:1000608",
+      "trait": "facultatively aerobic",
+      "increased_minus_decreased_mean_z": 0.3490150462469152,
+      "trait_direction": "increased"
+    },
+    {
+      "trait_id": "METPO:1000668",
+      "trait": "coccus shaped",
+      "increased_minus_decreased_mean_z": -0.0812907155522854,
+      "trait_direction": "decreased"
+    },
+    {
+      "trait_id": "METPO:1000683",
+      "trait": "sphere shaped",
+      "increased_minus_decreased_mean_z": -0.1333351871051159,
+      "trait_direction": "decreased"
+    },
+    {
+      "trait_id": "METPO:2000103|GO:0030245",
+      "trait": "cellulose catabolic process",
+      "increased_minus_decreased_mean_z": -0.7007499414209016,
+      "trait_direction": "decreased"
+    }
+  ]
+}

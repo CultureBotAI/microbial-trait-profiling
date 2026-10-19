@@ -11,30 +11,30 @@
   "excluded_taxon_names": [
     "Mediterraneibacter torques"
   ],
-  "rows_before_display_filter": 198,
+  "rows_before_display_filter": 183,
   "rows_removed_by_explicit_exclusion": 1,
-  "rows_removed_below_absolute_influence_threshold": 146,
+  "rows_removed_below_absolute_influence_threshold": 131,
   "max_displayed_rows": 30,
   "eligible_rows_before_display_cap": 51,
   "displayed_rows": 30,
   "traits": 6,
   "cells": 180,
-  "displayed_cells": 71,
+  "displayed_cells": 68,
   "audited_cells_for_displayed_taxa": 180,
   "direct_annotation_cells": 71,
   "denominator_only_cells": 109,
   "rows_removed_all_low_support": 0,
   "literature_reference_taxa": 20,
-  "displayed_rows_with_literature_reference": 23,
+  "displayed_rows_with_literature_reference": 25,
   "literature_bug_sig_direction_agreement_counts": {
-    "agrees": 21,
-    "not in literature reference": 7,
-    "differs": 2
+    "agrees": 22,
+    "not in literature reference": 5,
+    "differs": 3
   },
   "status_counts": {
-    "mixed": 167,
+    "mixed": 161,
+    "low support": 12,
     "dec": 6,
-    "low support": 6,
     "inc": 1
   },
   "selection": "DOI-backed PD literature matches first, then top-supported non-literature species/genus/family roll-ups",
@@ -75,14 +75,14 @@
       "db271c59"
     ],
     "trait-visualization/trait-profile-investigation/PD-cellulose/pd_six_trait_taxon_profile_evidence.tsv": [
-      "94c57893",
-      "418f590d",
-      "1eb4103a",
-      "32ed203e",
-      "da30ec6d",
-      "dd89ebff",
-      "49be04bc",
-      "2b785bcb"
+      "3bae40c3",
+      "2d21db49",
+      "90b5b088",
+      "0b83fe2b",
+      "7e08978f",
+      "32212f78",
+      "7cf6bf49",
+      "c0e2fc54"
     ]
   },
   "sha256_chunk_encoding": "concatenate each path's eight chunks in order"
