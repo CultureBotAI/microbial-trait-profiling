@@ -2536,9 +2536,9 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
         0.05,
         0.922,
         f"Of the {len(combined_oxy)} strata shown, {fecal_up} of {len(fecal)} fecal strata score "
-        f"aerobe-up / anaerobe-down and {other_down} of {len(other)} other strata the reverse; "
-        "major genera switch direction across diseases. Bar labels give the larger of the "
-        "aerobe-only and anaerobe-only study counts (st.).",
+        f"aerobe-up and {other_down} of {len(other)} others anaerobe-up; major genera switch "
+        "direction across diseases. st. = the larger of the aerobe-only and anaerobe-only study "
+        "counts.",
         fontsize=8.8,
         color=MUTED,
     )
