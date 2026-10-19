@@ -24,7 +24,8 @@ Rows are produced for the analyses this repository runs. The other arms have no
 input on this command line yet, so they appear only as placeholders; adding them
 needs the inputs, not just the files. The assessments tracked in #182, #183,
 #184, #188 and #190 are read from their own outputs where those exist, and each
-is a status, not a result: ``pending`` until its own deliverable lands on main.
+is a status, not a result: ``pending`` means no applicable assessment was supplied,
+not that the analysis has never run.
 """
 
 from __future__ import annotations
@@ -46,6 +47,7 @@ from mtp.guild_maps import (
     cell_status_rows,
     compute_correlation,
 )
+from mtp.influence_assessment import read_influence_assessment
 from mtp.paths import DERIVED_DATA_DIR, file_sha256
 from mtp.table1_trait_maps import SHIFT_FAMILY_ID, compute_direction_shifts
 from mtp.trait_composition import ANALYSIS_VERSION as LOG_RATIO_VERSION
@@ -960,7 +962,13 @@ def _orientation_status(content: Mapping[str, object], issue: str) -> Assessment
     )
 
 
-def read_status(path: Path | None, key: str, issue: str) -> AssessmentStatus:
+def read_status(
+    path: Path | None,
+    key: str,
+    issue: str,
+    *,
+    expected_input_sha256: Mapping[str, str] | None = None,
+) -> AssessmentStatus:
     """Read one assessment's state from its own output, or say it is pending.
 
     A missing file is pending, never clear. A file that is not a JSON object, or
@@ -969,6 +977,11 @@ def read_status(path: Path | None, key: str, issue: str) -> AssessmentStatus:
     JSON array and passed a nested object straight through into a status column
     (#294).
     """
+    if key == "taxon_influence_status":
+        influence = read_influence_assessment(
+            path, issue, expected_input_sha256=expected_input_sha256
+        )
+        return AssessmentStatus(issue, influence.verdicts, influence.default, influence.detail)
     if path is None or not path.exists():
         return AssessmentStatus(issue=issue, verdicts={}, default=f"pending {issue}")
     try:
@@ -1285,8 +1298,10 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
         "calibration_status / sensitivity_status / coverage_status / orientation_status / "
         "taxon_influence_status",
         "the state of #182, #183, #184, #188 and #190 for this row's own procedure. "
-        "'pending' means the assessment has not run; 'not_calibrated_here' means it ran "
-        "and excluded this procedure; a report with no verdict says so. Per-scenario and "
+        "'pending' means no applicable assessment was supplied or mapped; it does not "
+        "establish that execution has not occurred. 'not_calibrated_here' means it ran "
+        "and excluded this procedure; native influence completion reports execution, "
+        "never a scientific pass. A report with no procedure verdict says so. Per-scenario and "
         "per-contrast-class detail is in integrated_evidence_assessments.tsv",
     ),
     ("source", "the input the row was computed from"),
@@ -1401,7 +1416,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--sensitivity-status", type=Path, default=DEFAULT_SENSITIVITY_STATUS)
     parser.add_argument("--orientation-provenance", type=Path, default=DEFAULT_ORIENTATION_STATUS)
     parser.add_argument("--coverage-status", type=Path)
-    parser.add_argument("--influence-status", type=Path)
+    parser.add_argument(
+        "--influence-status",
+        type=Path,
+        help=(
+            "Native influence manifest, review publication manifest, "
+            "or versioned procedure assessment."
+        ),
+    )
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
 
@@ -1466,7 +1488,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.orientation_provenance, "orientation_status", "#188"
         ),
         "taxon_influence_status": read_status(
-            args.influence_status, "taxon_influence_status", "#190"
+            args.influence_status,
+            "taxon_influence_status",
+            "#190",
+            expected_input_sha256={
+                "study_trait_profiles_wide.tsv": _sha256(args.profile_input),
+                "experiments.tsv": _sha256(args.experiments_input),
+            },
         ),
     }
     records = apply_statuses(records, statuses)
