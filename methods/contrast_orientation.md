@@ -1,6 +1,6 @@
 # What each experiment compares, and which way its direction points
 
-Produced by `src/bsdbng/contrast_orientation.py`, driven by `just contrast-orientation`,
+Produced by `src/mtp/contrast_orientation.py`, driven by `just contrast-orientation`,
 which writes `data/derived/contrast_orientation/`: a versioned manifest of every
 experiment in the export (`contrast_manifest.tsv`), class counts within the analysed
 corpus (`contrast_class_counts.tsv`), the historical-versus-oriented comparison
@@ -27,7 +27,7 @@ both sample sizes and the description - with the curated direction convention, t
 assigned `contrast_class`, `orientation`, `contrast_type`, and `control_tier`, the
 matched evidence, flags, whether the experiment is in the analysed corpus, its
 `validation_status` from the committed hand review, the classifier version
-(`contrast-orientation-v3`) and the BugSigDB vintage. The export holds no Group 0
+(`contrast-orientation-v4`) and the BugSigDB vintage. The export holds no Group 0
 definition, so every row carries the flag `no_group_0_definition_in_export`; a Group
 0 reading rests on its name alone.
 
@@ -75,6 +75,30 @@ from the disease-versus-healthy population rather than into it.
      against medicated cases rather than two arms of a trial; they are retained in
      `disease_vs_healthy` with flag `treated_disease_group` and stratified into
      `tier_3_hospital_comorbid_or_tissue`.
+   - **People with HIV on antiretroviral therapy opposite an HIV-negative comparison
+     group** (`contrast-orientation-v4`, #569) are the same design: "healthy control"
+     vs "HAART-treated HIV+ patients", "Controls/ People living without HIV (PLWOH)"
+     vs "People living with HIV on Antiretroviral Therapy (PLWH on ART)", and "HIV-" vs
+     "People Living With HIV on Antiretroviral therapy (ART+ PLWH)". The therapy is
+     what the cases are on, not what the two groups differ by, so these are
+     `disease_vs_healthy` with flag `treated_disease_group`. The cue is "ART-",
+     "cART-" or "HAART-treated", or "on", "taking", "receiving" or "under" ART or
+     antiretroviral therapy, and a weak comparison group ("HIV-") is enough. Treated
+     against untreated people who all have HIV ("HAART-naive HIV-1 patients" vs
+     "HAART-treated HIV-1 patients") has no comparison group and stays
+     `treatment_exposure`, as do the same people before and on therapy. A treated
+     group that is also named by time keeps the treatment reading, because clearing it
+     would leave only the time reading (see Limits).
+
+     The treatment is recorded as the existing flag and tier rather than a new manifest
+     column. Tier 3 already holds treated cases opposite healthy controls, and keeping
+     these with them means the manifest columns are unchanged and the HIV contrasts
+     are stratified like any other treated-case contrast. A consumer that wants people
+     with HIV against people without it regardless of therapy filters on
+     `contrast_class` or `contrast_type` (see "Selecting patients against controls"); one
+     that wants to set aside cases whose group name states a therapy drops rows flagged
+     `treated_disease_group`. An unflagged group is not known to be untreated: its name
+     just states no therapy.
 5. One group named by time only, a condition that is a variable (population, age,
    age at assessment, ethnic group, physical activity, pregnancy, parity, gravidity,
    geography, socio-economic status, any "measurement"), or two groups that are
@@ -91,10 +115,18 @@ from the disease-versus-healthy population rather than into it.
    absence of the condition itself ("non-IBS", "no asthma", "free from colorectal
    cancer"), and self-scoped disease negation where one group explicitly negates the
    other group's disease noun ("Non-diabetic" vs "Diabetic" under condition
-   "Metabolic toxicity"). When both groups share a generic strong comparison token
-   ("normal-weight controls" vs "obese controls") and only one carries specific
-   condition-negative evidence, the shared token is stripped so the specific
-   comparison group wins. The orientation is `native` when the comparison is Group 0.
+   "Metabolic toxicity"). The marker's sign may be a hyphen, a minus sign (U+2212) or
+   an en dash (U+2013, "HIV–"). A minus sign or en dash touching its marker also
+   counts before a word ("HIV– individuals"); a hyphen there does not, because it is
+   as often a separator ("Periodontitis- Shallow pocket", "BV- Positive") as a minus.
+   A condition that writes an acronym in capitals is also denied when the acronym is
+   spelled out ("without Human immunodeficiency virus (HIV)" under "HIV infection"), and
+   where HIV is the condition the initialism PLWOH or PWOH (people living without
+   HIV) is a comparison too (`contrast-orientation-v4`, #569). When both groups share
+   a generic strong comparison token ("normal-weight controls" vs "obese controls")
+   and only one carries specific condition-negative evidence, the shared token is
+   stripped so the specific comparison group wins. The orientation is `native` when
+   the comparison is Group 0.
    It is `reversed` only when Group 1 carries a strong comparison word and Group 0
    has disease evidence; otherwise the experiment is `unresolved` with the flag
    `possible_reversal_unverified`. A contrast resting on weak evidence only is
@@ -106,7 +138,7 @@ from the disease-versus-healthy population rather than into it.
    stratified along two orthogonal columns:
 
    - `contrast_type`:
-     - `case_vs_control_subject` (983 analysed experiments, 567 studies): subject-level
+     - `case_vs_control_subject` (993 analysed experiments, 573 studies): subject-level
        case versus control comparisons.
      - `comorbidity_within_disease` (33 analysed experiments, 18 studies): both groups
        share a background disease or clinical state and differ in a second condition
@@ -120,17 +152,18 @@ from the disease-versus-healthy population rather than into it.
        healthy, normal, unaffected, uninfected or full-term subject controls
        (`case_vs_control_subject` with strong comparison evidence and no hospital,
        comorbidity or treatment confound).
-     - `tier_2_condition_negative_screened` (147 analysed experiments, 76 studies):
+     - `tier_2_condition_negative_screened` (149 analysed experiments, 78 studies):
        asymptomatic condition-negative or screened subject controls ("non-diabetic",
        "non-obese", "HPV-", "Normal weight"). Together, Tier 1 + Tier 2 comprise
-       **968 subject-level Disease Case vs. Healthy/Normal Control experiments across
-       561 studies**.
-     - `tier_3_hospital_comorbid_or_tissue` (70 analysed experiments, 38 studies):
+       **970 subject-level Disease Case vs. Healthy/Normal Control experiments across
+       563 studies**.
+     - `tier_3_hospital_comorbid_or_tissue` (78 analysed experiments, 45 studies):
        the 22 `paired_tissue_autologous` experiments, the 33
-       `comorbidity_within_disease` experiments, and 15 `case_vs_control_subject`
+       `comorbidity_within_disease` experiments, and 23 `case_vs_control_subject`
        experiments whose control group is a hospital, surgical, symptomatic or
        benign-disease patient control or whose disease group is confounded by named
-       pharmacotherapy (`treated_disease_group`).
+       pharmacotherapy (`treated_disease_group`: 11 experiments in 6 studies, 8 of
+       them people with HIV on antiretroviral therapy).
 
    **What the comparison reading requires.** Group names say both more and less than
    they appear to, so four conditions scope the reading to the actual comparison
@@ -184,17 +217,40 @@ from the disease-versus-healthy population rather than into it.
 `disease_control_comparison.tsv`:
 - `historical_human_paired` (2,335 experiments, 959 studies): all human paired
   experiments in the historical corpus.
-- `disease_vs_healthy_oriented` (1,038 experiments, 587 studies): all experiments
+- `disease_vs_healthy_oriented` (1,048 experiments, 592 studies): all experiments
   classed `disease_vs_healthy`, with the 1 reversed experiment relabelled so `inc`
   means higher in the disease group.
-- `disease_vs_healthy_strong_evidence` (863 experiments, 512 studies):
+- `disease_vs_healthy_strong_evidence` (870 experiments, 514 studies):
   `disease_vs_healthy` experiments without `weak_comparison_evidence`.
 - `disease_vs_healthy_tier1_healthy_normal` (821 experiments, 491 studies):
   `tier_1_healthy_normal` subject-level healthy/normal controls only.
-- `disease_vs_healthy_tier1_2_subject_controls` (968 experiments, 561 studies):
+- `disease_vs_healthy_tier1_2_subject_controls` (970 experiments, 563 studies):
   combined `tier_1_healthy_normal` and `tier_2_condition_negative_screened`
   subject-level controls, excluding all `tier_3_hospital_comorbid_or_tissue`
   contrasts.
+
+## Selecting patients against controls
+
+`contrast_class = disease_vs_healthy` says only that exactly one group reads as a
+comparison. Of its 1,048 analysed experiments, 22 are `paired_tissue_autologous`:
+tumour or lesional tissue against adjacent normal tissue from the same patients, such
+as 25699023-2 ("adjacent non-cancerous tissues" against "cancerous tissues", colorectal
+mucosa). Another 33 are `comorbidity_within_disease`. A consumer that filters on the
+class alone counts these as patients against controls. To keep only comparisons of
+people with the condition against people without it:
+
+- filter the manifest on `contrast_type = case_vs_control_subject` (993 analysed
+  experiments, 573 studies). This drops the paired-tissue and comorbidity contrasts and
+  keeps the Tier 3 hospital, symptomatic and treated-case contrasts; or
+- filter on `control_tier` in {`tier_1_healthy_normal`,
+  `tier_2_condition_negative_screened`} (970 experiments, 563 studies), which drops all
+  of Tier 3. `oriented_profiles(profiles, classes, control_tiers=...)` applies this
+  filter in code, and it defines `disease_vs_healthy_tier1_2_subject_controls`.
+
+Either way the 1 reversed experiment still has to be relabelled, which
+`oriented_profiles` does. Filtering on `contrast_type` and on `flags` can be combined:
+dropping rows flagged `treated_disease_group` from the `case_vs_control_subject` rows
+keeps hospital and symptomatic controls but sets aside cases named as treated.
 
 ## Which fields the classifier reads
 
@@ -239,32 +295,68 @@ refinements above, raising agreement on the 60 reviewed experiments from **43/60
 | other | 10 | 10 | 10 | - |
 | unresolved | 10 | 3 | 10 | - (all 7 resolved: `Age at assessment`, calendar years `2008` vs `2010`, PD duration bands, lean Ghanaians vs Americans, pollution levels, levodopa regimens, and control adults by body site) |
 
+`contrast-orientation-v4` changes none of the 60 reviewed experiments, so agreement
+stays at 58/60. The one reviewed row that names HIV, 38162648-3 ("HIV+ MASLD-"
+against "HIV- MASLD+"), is still `unresolved`.
+
 ## Retained, reversed, excluded and unresolved
 
 Within the 2,335 analysed experiments (959 studies):
 
 | Class | Orientation | Experiments | Studies |
 | --- | --- | --- | --- |
-| disease_vs_healthy | native | 1,037 | 587 |
+| disease_vs_healthy | native | 1,047 | 592 |
 | disease_vs_healthy | reversed | 1 | 1 |
-| disease_vs_disease | - | 254 | 168 |
-| treatment_exposure | - | 359 | 173 |
+| disease_vs_disease | - | 252 | 166 |
+| treatment_exposure | - | 351 | 169 |
 | longitudinal_timepoint | - | 200 | 105 |
 | other | - | 321 | 123 |
 | unresolved | - | 163 | 102 |
 
-Studies appear in more than one class when their experiments differ. 1,038
-experiments from 587 studies are retained in `disease_vs_healthy`, 1 of them
-reversed; 1,134 are excluded as other classes and 163 are unresolved. Within the
-1,038 `disease_vs_healthy` experiments:
+Studies appear in more than one class when their experiments differ. 1,048
+experiments from 592 studies are retained in `disease_vs_healthy`, 1 of them
+reversed; 1,124 are excluded as other classes and 163 are unresolved. Within the
+1,048 `disease_vs_healthy` experiments:
 
 | Contrast type | Control tier | Experiments | Studies |
 | --- | --- | --- | --- |
 | `case_vs_control_subject` | `tier_1_healthy_normal` | 821 | 491 |
-| `case_vs_control_subject` | `tier_2_condition_negative_screened` | 147 | 76 |
-| `case_vs_control_subject` | `tier_3_hospital_comorbid_or_tissue` | 15 | 11 |
+| `case_vs_control_subject` | `tier_2_condition_negative_screened` | 149 | 78 |
+| `case_vs_control_subject` | `tier_3_hospital_comorbid_or_tissue` | 23 | 15 |
 | `comorbidity_within_disease` | `tier_3_hospital_comorbid_or_tissue` | 33 | 18 |
 | `paired_tissue_autologous` | `tier_3_hospital_comorbid_or_tissue` | 22 | 13 |
+
+## Changes from `contrast-orientation-v3` to `-v4` (#569)
+
+Both versions were run on the same pinned inputs (`full_dump.csv` as under
+Reproducing; profile matrix SHA-256
+`c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f`; experiment table
+SHA-256 `403afea98d9b0a5b56939f68bcc9aace56a8eda350232a586806fe7bf30ad230`) and their
+manifests compared experiment by experiment on `contrast_class`, `orientation`,
+`contrast_type` and `control_tier`. Twelve experiments changed, ten of them in the analysed corpus, and
+every one compares people without HIV against people with HIV. No other experiment
+changed, and no evidence or flag changed elsewhere.
+
+| From (v3) | To (v4) | Analysed | Whole export |
+| --- | --- | --- | --- |
+| `treatment_exposure` | `disease_vs_healthy` native, `case_vs_control_subject`, Tier 3, `treated_disease_group` | 8 | 9 |
+| `disease_vs_disease` | `disease_vs_healthy` native, `case_vs_control_subject`, Tier 2 | 2 | 3 |
+
+| Experiment | Group 0 | Group 1 | v3 class | v4 tier |
+| --- | --- | --- | --- | --- |
+| 28118207-1 | HIV-uninfected MSM | ART-treated HIV infected MSM | `treatment_exposure` | Tier 3, treated |
+| 29411528-5 | healthy control | HAART-treated HIV+ patients | `treatment_exposure` | Tier 3, treated |
+| 38383483-1, -2, -3, -7, -8 (and -6, not analysed) | Controls/ People living without HIV (PLWOH) | People living with HIV on Antiretroviral Therapy (PLWH on ART) | `treatment_exposure` | Tier 3, treated |
+| 39880958-1 | HIV- | People Living With HIV on Antiretroviral therapy (ART+ PLWH) | `treatment_exposure` | Tier 3, treated |
+| 33102244-1 | HIV– individuals (en dash) | HIV+ individuals | `disease_vs_disease` | Tier 2 |
+| 37721699-2 (and -1 at Visit B, not analysed) | Pregnant women ≥ 18 years of age without Human immunodeficiency virus (HIV) at Postpartum (PPt) visit | Pregnant women ≥ 18 years of age with Human immunodeficiency virus (HIV) at Postpartum (PPt) visit. | `disease_vs_disease` | Tier 2 |
+
+`disease_vs_healthy` gains 10 analysed experiments and 5 studies, 2 of the experiments in
+Tiers 1 + 2. Analysed `disease_vs_healthy` experiments whose condition names HIV go from
+30 (20 studies) to 40 (25 studies). 25699023-2, the colorectal tumour-against-adjacent-tissue
+contrast raised in the same issue, was already `paired_tissue_autologous` in Tier 3
+under v3 and is unchanged; what #569 adds for it is the guidance in "Selecting
+patients against controls" above.
 
 ## The oriented and control-tier subsets against the historical corpus
 
@@ -276,30 +368,41 @@ analysis) and the 15 paired log-ratios (positive-count complete cases,
 Benjamini-Yekutieli over 15). In all four oriented populations "increased" means
 higher in the disease group.
 
-| Comparison | Historical (959 studies) | All `disease_vs_healthy` (587) | Tier 1 + 2 subject controls (561) | Tier 1 healthy/normal only (491) |
+| Comparison | Historical (959 studies) | All `disease_vs_healthy` (592) | Tier 1 + 2 subject controls (563) | Tier 1 healthy/normal only (491) |
 | --- | --- | --- | --- | --- |
-| facultatively aerobic | 0.581 [0.549, 0.614], q 5.7e-06 | 0.582 [0.540, 0.623], q 3.9e-04 | 0.575 [0.531, 0.617], q 0.0015 | 0.570 [0.523, 0.615], q 0.0044 |
-| cellulose catabolic process | 0.430 [0.395, 0.466], q 2.3e-04 | 0.392 [0.348, 0.438], q 1.8e-05 | 0.405 [0.360, 0.452], q 4.2e-04 | 0.388 [0.340, 0.438], q 5.8e-05 |
-| coccus shaped | 0.545 [0.512, 0.578], q 0.0073 | 0.570 [0.528, 0.612], q 0.0016 | 0.563 [0.520, 0.606], q 0.0050 | 0.557 [0.511, 0.603], q 0.017 |
-| sphere shaped | 0.554 [0.520, 0.588], q 0.0029 | 0.547 [0.502, 0.590], q 0.038 | 0.549 [0.504, 0.594], q 0.034 | 0.554 [0.506, 0.602], q 0.027 |
-| arsenate reduction | 0.560 [0.520, 0.600], q 0.0038 | 0.577 [0.525, 0.628], q 0.0043 | 0.585 [0.531, 0.637], q 0.0028 | 0.589 [0.532, 0.643], q 0.0039 |
-| moderately halophilic | 0.572 [0.538, 0.605], q 1.0e-04 | 0.579 [0.535, 0.622], q 7.8e-04 | 0.577 [0.532, 0.622], q 0.0015 | 0.577 [0.529, 0.624], q 0.0039 |
-| facultatively aerobic / cellulose | 0.595 [0.549, 0.640], q 0.0011 | 0.635 [0.574, 0.692], q 5.4e-04 | 0.624 [0.562, 0.683], q 0.0039 | 0.626 [0.560, 0.689], q 0.0079 |
-| cellulose / sphere shaped | 0.407 [0.361, 0.456], q 0.0026 | 0.393 [0.332, 0.456], q 0.013 | 0.405 [0.343, 0.470], q 0.046 | 0.407 [0.341, 0.476], q 0.097 (p 0.0078) |
-| cellulose / arsenate reduction | 0.365 [0.304, 0.429], q 0.0011 | 0.344 [0.270, 0.425], q 0.0034 | 0.340 [0.263, 0.424], q 0.0039 | 0.344 [0.263, 0.431], q 0.011 |
-| cellulose / moderately halophilic | 0.435 [0.386, 0.485], q 0.12 | 0.404 [0.341, 0.470], q 0.050 | 0.399 [0.334, 0.467], q 0.046 | 0.400 [0.332, 0.471], q 0.094 (p 0.0057) |
+| facultatively aerobic | 0.581 [0.549, 0.614], q 5.7e-06 | 0.582 [0.540, 0.623], q 3.5e-04 | 0.574 [0.531, 0.617], q 0.0014 | 0.570 [0.523, 0.615], q 0.0044 |
+| cellulose catabolic process | 0.430 [0.395, 0.466], q 2.3e-04 | 0.394 [0.349, 0.439], q 2.5e-05 | 0.404 [0.359, 0.451], q 3.5e-04 | 0.388 [0.340, 0.438], q 5.8e-05 |
+| coccus shaped | 0.545 [0.512, 0.578], q 0.0073 | 0.572 [0.530, 0.614], q 0.0011 | 0.565 [0.521, 0.607], q 0.0038 | 0.557 [0.511, 0.603], q 0.017 |
+| sphere shaped | 0.554 [0.520, 0.588], q 0.0029 | 0.545 [0.501, 0.588], q 0.044 | 0.549 [0.504, 0.593], q 0.034 | 0.554 [0.506, 0.602], q 0.027 |
+| arsenate reduction | 0.560 [0.520, 0.600], q 0.0038 | 0.580 [0.528, 0.631], q 0.0027 | 0.586 [0.532, 0.638], q 0.0024 | 0.589 [0.532, 0.643], q 0.0039 |
+| moderately halophilic | 0.572 [0.538, 0.605], q 1.0e-04 | 0.580 [0.536, 0.623], q 6.9e-04 | 0.578 [0.533, 0.623], q 0.0014 | 0.577 [0.529, 0.624], q 0.0039 |
+| facultatively aerobic / cellulose | 0.595 [0.549, 0.640], q 0.0011 | 0.631 [0.571, 0.689], q 8.0e-04 | 0.625 [0.563, 0.685], q 0.0032 | 0.626 [0.560, 0.689], q 0.0079 |
+| cellulose / sphere shaped | 0.407 [0.361, 0.456], q 0.0026 | 0.396 [0.336, 0.459], q 0.018 | 0.403 [0.341, 0.468], q 0.038 | 0.407 [0.341, 0.476], q 0.097 (p 0.0078) |
+| cellulose / arsenate reduction | 0.365 [0.304, 0.429], q 0.0011 | 0.348 [0.274, 0.429], q 0.0049 | 0.340 [0.263, 0.424], q 0.0039 | 0.344 [0.263, 0.431], q 0.011 |
+| cellulose / moderately halophilic | 0.435 [0.386, 0.485], q 0.12 | 0.405 [0.342, 0.471], q 0.052 (p 0.0042) | 0.397 [0.333, 0.465], q 0.038 | 0.400 [0.332, 0.471], q 0.094 (p 0.0057) |
 
 All 105 rows across the five populations, with study counts, are in
 `disease_control_comparison.tsv`. Every one of the six fraction directions keeps its
-direction and significance ($q \le 0.038$) across all five populations, including the
+direction and significance ($q \le 0.044$) across all five populations, including the
 strictest `tier_1_healthy_normal` subset (491 studies) and the combined subject-level
-control subset `tier_1_2_subject_controls` (561 studies). All four significant
-log-ratios keep their direction and significance ($q \le 0.05$) in both
-`disease_vs_healthy_oriented` (587 studies) and `disease_vs_healthy_tier1_2_subject_controls`
-(561 studies), and the two strongest ratios (`facultatively_aerobic / cellulose` and
-`cellulose / arsenate_reduction`) remain significant under Benjamini-Yekutieli even
-in the smaller `tier_1_healthy_normal` subset ($q = 0.0079$ and $q = 0.011$, with
-the other two at nominal $p = 0.0078$ and $p = 0.0057$).
+control subset `tier_1_2_subject_controls` (563 studies). The four log-ratios above
+keep their direction in every population. All four have $q \le 0.05$ in
+`disease_vs_healthy_tier1_2_subject_controls` (563 studies). Three do in
+`disease_vs_healthy_oriented` (592 studies), where `cellulose / moderately_halophilic`
+is at $q = 0.052$ (nominal $p = 0.0042$). The two strongest ratios
+(`facultatively_aerobic / cellulose` and `cellulose / arsenate_reduction`) remain
+significant under Benjamini-Yekutieli even in the smaller `tier_1_healthy_normal`
+subset ($q = 0.0079$ and $q = 0.011$, with the other two at nominal $p = 0.0078$ and
+$p = 0.0057$).
+
+Two log-ratios crossed $q = 0.05$ between `contrast-orientation-v3` and `-v4`, both by
+small margins and both in populations that the 10 HIV experiments joined:
+`cellulose / moderately_halophilic` in `disease_vs_healthy_oriented` went from
+$q = 0.0498$ to $0.052$, and `cellulose / sphere_shaped` in
+`disease_vs_healthy_strong_evidence` (514 studies) went from $q = 0.043$ to $0.054$. In
+`disease_vs_healthy_tier1_2_subject_controls`, which the two Tier 2 HIV experiments
+joined, both of these ratios went from $q = 0.046$ to $0.038$. The
+`tier_1_healthy_normal` population is unchanged.
 
 ## Limits
 
@@ -328,6 +431,30 @@ Known remaining limitations:
   admits "Normal (MN) group" against "Medium-dose (MMD) group" and "Model high-dose
   (MHD) group", two dose arms in a mouse study, so it would trade one recovered
   experiment for two new errors.
+- **Some HIV-negative against HIV-positive contrasts are still outside
+  `disease_vs_healthy`.** None of them is in the analysed corpus. 29808701-1
+  ("Age-matched HIV-uninfected women" against "HIV-positive women who have been
+  taking ART for more than 1 year") stays `treatment_exposure`: "for more than 1
+  year" is read as a time point, and the treatment reading is kept rather than leave
+  only that one. 33324725-1 ("Human immunodeficiency virus negative (HIV-)Uninfected
+  Controls" against "Human immunodeficiency virus positive(HIV+) pre - antiretroviral
+  therapy(ART)") and 38310301-1 ("Healthy controls (HC)" against "Antiretroviral
+  therapy (ART) Naïve at baseline") stay `treatment_exposure`, because neither the
+  spaced "pre - " nor "(ART) Naïve" is read as untreated. 28743816-1 ("HIV
+  seronegative" against "HIV seroconverted") stays `disease_vs_disease`:
+  "seronegative" is not read as a negative test, and men who seroconverted during
+  follow-up may have been sampled before they acquired HIV, which would make it a
+  prospective contrast rather than people with HIV against people without. A hyphen
+  followed by a word ("HIV- women") is not read as a sign; no HIV comparison group in
+  the export is written that way.
+- **Tumour against normal tissue is recognised only when a group name says so.**
+  "Normal group" against "Tumor group" in colon mucosa after radical resection
+  (40013792-1, 19 against 19) and "Normal samples free from Colorectal Cancer" against
+  "Egyptian / African American / European American Samples with Colorectal Cancer" in
+  colorectal mucosa (37483698-1 to -3, equal group sizes in each) are read as
+  `case_vs_control_subject`, Tier 1. The names do not say whether the normal tissue
+  came from the same patients; the equal group sizes suggest it may have, which only
+  the papers can settle.
 
 ## Reproducing
 
@@ -344,7 +471,10 @@ strings copied verbatim, for every contrast that review
 [#291](https://github.com/CultureBotAI/microbial-trait-profiling/issues/291) found
 wrongly admitted to or wrongly kept out of the population, alongside the genuine
 comparisons the narrowed rules must not take away, as well as the v3 control-tier
-stratification and review-disagreement fixes ([#554](https://github.com/CultureBotAI/microbial-trait-profiling/issues/554)).
+stratification and review-disagreement fixes ([#554](https://github.com/CultureBotAI/microbial-trait-profiling/issues/554))
+and the v4 HIV-status and treated-case readings, with the HIV contrasts that must stay
+`treatment_exposure` and the tumour-against-adjacent-tissue contrast that the tiers keep
+out of subject-level populations ([#569](https://github.com/CultureBotAI/microbial-trait-profiling/issues/569)).
 
 The classifier, the reviews and this description were drafted with the assistance
 of coding agents (Claude Code and Antigravity) and require review by the author

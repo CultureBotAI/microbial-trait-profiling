@@ -64,7 +64,7 @@ from mtp.trait_guilds import (
     write_stats_report,
 )
 
-CLASSIFIER_VERSION = "contrast-orientation-v3"
+CLASSIFIER_VERSION = "contrast-orientation-v4"
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "contrast_orientation"
 DIRECTION_CONVENTION = "inc = higher abundance in Group 1 than in Group 0 (BugSigDB)"
 
@@ -180,6 +180,9 @@ WEAK_COMPARISON = _pattern(
 CONDITION_NEGATIVE = re.compile(
     "(?P<before>.*?)(?P<subject>[\\w'\\u2019.]+)[^\\w]+negative(?![\\w])", re.IGNORECASE
 )
+#: People living without HIV, as an initialism. It names no condition, so it counts as a
+#: comparison only where HIV is the condition; elsewhere HIV status describes the cohort.
+WITHOUT_HIV = _pattern(r"plwoh", r"pwoh")
 #: "Negative for COVID-19 viral RNA": the sign comes before its subject.
 NEGATIVE_FOR = re.compile(
     "(?<![\\w])negative\\s+for\\s+((?:[\\w'\\u2019.]+[\\s-]*){1,4})", re.IGNORECASE
@@ -605,6 +608,13 @@ DIRECTLY_NEGATED_DISEASE = re.compile(
     re.IGNORECASE,
 )
 TREATED_WITH_CONF = re.compile(r"\btreated\s+with\s+[\w-]+", re.IGNORECASE)
+#: A disease group on antiretroviral therapy: "HAART-treated HIV+ patients", "People living
+#: with HIV on Antiretroviral Therapy (PLWH on ART)". Opposite an HIV-negative comparison
+#: group the therapy is what the cases are on, not what the contrast compares.
+ON_ANTIRETROVIRAL = _pattern(
+    r"(?:c|ha)?art[- ]treated",
+    r"(?:on|taking|receiving|under)\s+(?:(?:c|ha)?art|(?:combination\s+)?antiretroviral\w*)",
+)
 #: Intervention words unambiguous enough to be trusted in free text, so that the Group
 #: 1 definition and the description can settle what a bare arm label leaves open: a
 #: misspelt "Metaformin" group whose description says metformin, an "Experimental
@@ -644,8 +654,14 @@ LEVEL_SPLIT = _pattern(
 )
 MULTI_DESIGN_TREATMENT = re.compile(r"randomized controlled trial", re.IGNORECASE)
 MULTI_DESIGN_TIME = re.compile(r"time series|longitudinal", re.IGNORECASE)
-#: A sign counts as a test result only where the name or a sub-name ends after it.
-MARKER = re.compile("([a-z][a-z0-9.]*)\\s*([+\\-\u2212])(?=\\s*(?:$|[/),;(]))", re.IGNORECASE)
+#: A sign counts as a test result where the name or a sub-name ends after it. A minus sign
+#: or an en dash that touches its marker also counts before a word ("HIV\u2013 individuals"),
+#: because neither can be the hyphen that is as often a separator there ("Periodontitis-
+#: Shallow pocket", "BV- Positive") as a minus.
+MARKER = re.compile(
+    "([a-z][a-z0-9.]*)(\\s*[+\\-\u2212\u2013](?=\\s*(?:$|[/),;(]))|[\u2212\u2013](?=\\s+\\w))",
+    re.IGNORECASE,
+)
 #: Words naming the same disease category, so that a negation can deny a condition
 #: stated in other words: "noncancer individuals" against oral squamous cell carcinoma,
 #: or "Non-obese" against "Obesity".
@@ -721,8 +737,10 @@ def _matches(pattern: re.Pattern[str], text: str) -> list[str]:
 
 
 def _markers(name: str) -> dict[str, str]:
-    """Test markers and their sign, as in "HPV-" or "HIV +"."""
-    return {marker.lower(): "-" if sign != "+" else "+" for marker, sign in MARKER.findall(name)}
+    """Test markers and their sign, as in "HPV-", "HIV +" or "HIV\u2013 individuals"."""
+    return {
+        marker.lower(): "+" if sign.strip() == "+" else "-" for marker, sign in MARKER.findall(name)
+    }
 
 
 def _condition_words(condition: str) -> tuple[set[str], set[str]]:
@@ -775,6 +793,21 @@ def _mentions_condition(text: str, condition: str) -> bool:
     )
 
 
+def _acronym_spelled_out(words: list[str], condition: str) -> list[str]:
+    """Leading words that spell out an acronym of the condition, replaced by the acronym.
+
+    A condition named by an acronym ("HIV infection") is denied as often in full as by
+    the acronym: "without Human immunodeficiency virus (HIV)" lacks HIV. Only a word the
+    condition writes in capitals is an acronym, so the "to" of "Response to antiviral
+    drug" or the "Non" of "Non-alcoholic fatty liver disease" is never spelled out.
+    """
+    acronyms = {word.lower() for word in re.findall(r"(?<![\w])[A-Z]{2,5}(?![a-z])", condition)}
+    for acronym in sorted(acronyms, key=len, reverse=True):
+        if "".join(word[0] for word in words[: len(acronym)]) == acronym:
+            return [acronym, *words[len(acronym) :]]
+    return words
+
+
 def _negation_scopes_condition(phrase: str, condition: str) -> bool:
     """Does a negated phrase deny the condition itself rather than a modifier of it?
 
@@ -792,6 +825,7 @@ def _negation_scopes_condition(phrase: str, condition: str) -> bool:
     words = re.findall(r"[\w'\u2019.]+", phrase.lower())
     while words and words[0] in NEGATION_FILLER:
         words.pop(0)
+    words = _acronym_spelled_out(words, condition)
     if not words or not denies(words[0]):
         return False
     rest = list(words[1:])
@@ -962,6 +996,8 @@ def _comparison(name: str, other: str, condition: str) -> tuple[list[str], list[
         + _self_scoped_absence(name, other)
     )
     weak = _matches(WEAK_COMPARISON, resemblance) + [text for text, _span in absence]
+    if _mentions_condition("hiv", condition):
+        weak += _matches(WITHOUT_HIV, name)
     mine, theirs = _markers(name), _markers(other)
     negative = [
         m
@@ -1140,15 +1176,20 @@ def classify(record: ExperimentRecord) -> Classification:
         treatment_terms = sorted(set(treat_0) | set(treat_1))
 
     # A healthy control compared against a disease group that happens to be on therapy
-    # ("Controls" vs "HIV Patients treated with Maraviroc") is a confounded disease-vs-healthy
-    # contrast (Tier 3), not a treatment-arm trial.
+    # ("Controls" vs "HIV Patients treated with Maraviroc", "HIV-" vs "People Living With
+    # HIV on Antiretroviral therapy") is a confounded disease-vs-healthy contrast (Tier 3),
+    # not a treatment-arm trial. Treated against untreated people who all have the disease
+    # has no comparison group and stays a treatment contrast. A treated group also named by
+    # time keeps the treatment reading: without it only the time word would be left, and
+    # in "taking ART for more than 1 year" that word is a duration, not a later visit.
     if (
         treatment_terms
-        and strong_0
+        and control_0
         and not control_1
         and not treat_0
+        and not one_sided_time
         and _mentions_condition(g1, condition)
-        and TREATED_WITH_CONF.search(g1)
+        and (TREATED_WITH_CONF.search(g1) or ON_ANTIRETROVIRAL.search(g1))
     ):
         flags.append("treated_disease_group")
         treatment_terms = []
