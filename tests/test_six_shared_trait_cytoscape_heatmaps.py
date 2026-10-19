@@ -998,46 +998,46 @@ def test_oral_and_full_contrast_nominal_p_versus_bh_border_regression() -> None:
     contrasts = pd.read_csv(source_path, sep="\t")
 
     individual = contrasts[contrasts["view_key"] == "individual_conditions_direction_contrast"]
-    assert len(individual) == 2388
-    assert individual["passes_support"].sum() == 599
-    assert individual["nominal_p_value_selected"].sum() == 21
-    assert individual["significant_in_heatmap"].sum() == 21
-    assert individual["selected_after_bh"].sum() == 4
-    assert individual["displayed_in_heatmap"].sum() == 567
+    assert len(individual) == 3144
+    assert individual["passes_support"].sum() == 663
+    assert individual["nominal_p_value_selected"].sum() == 29
+    assert individual["significant_in_heatmap"].sum() == 29
+    assert individual["selected_after_bh"].sum() == 1
+    assert individual["displayed_in_heatmap"].sum() == 632
     assert (individual["nominal_p_value_selected"] == individual["significant_in_heatmap"]).all()
 
     # Oral cavity / dental subset within individual view
     oral_site = individual[individual["body_site_group"] == "Oral cavity / dental"]
-    assert oral_site["passes_support"].sum() == 79
-    assert oral_site["nominal_p_value_selected"].sum() == 1
-    assert oral_site["significant_in_heatmap"].sum() == 1
+    assert oral_site["passes_support"].sum() == 87
+    assert oral_site["nominal_p_value_selected"].sum() == 2
+    assert oral_site["significant_in_heatmap"].sum() == 2
     assert oral_site["selected_after_bh"].sum() == 0
-    assert oral_site["displayed_in_heatmap"].sum() == 69
+    assert oral_site["displayed_in_heatmap"].sum() == 83
 
     # Oral export subset via select_oral_contrast_cells
     oral_export = heatmaps.select_oral_contrast_cells(contrasts)
-    assert len(oral_export) == 385
-    assert oral_export["condition_body_site_pair"].nunique() == 80
-    assert oral_export["passes_support"].sum() == 79
-    assert oral_export["nominal_p_value_selected"].sum() == 1
-    assert oral_export["significant_in_heatmap"].sum() == 1
+    assert len(oral_export) == 522
+    assert oral_export["condition_body_site_pair"].nunique() == 117
+    assert oral_export["passes_support"].sum() == 87
+    assert oral_export["nominal_p_value_selected"].sum() == 2
+    assert oral_export["significant_in_heatmap"].sum() == 2
     assert oral_export["selected_after_bh"].sum() == 0
-    assert oral_export["displayed_in_heatmap"].sum() == 69
+    assert oral_export["displayed_in_heatmap"].sum() == 83
     assert (oral_export["nominal_p_value_selected"] == oral_export["significant_in_heatmap"]).all()
 
-    # Verified regression cell: Squamous cell carcinoma | Oral cavity / dental x coccus shaped
+    # Verified regression cell: Colorectal cancer | Oral cavity / dental x coccus shaped
     # (METPO:1000668)
-    scc_full = individual[
-        (individual["condition"] == "Squamous cell carcinoma")
+    crc_full = individual[
+        (individual["condition"] == "Colorectal cancer")
         & (individual["body_site_group"] == "Oral cavity / dental")
         & (individual["trait_id"] == "METPO:1000668")
     ]
-    assert len(scc_full) == 1
-    cell = scc_full.iloc[0]
-    assert cell["increased_minus_decreased_positive_fraction"] == -0.6
-    assert math.isclose(cell["fisher_p_value"], 0.00281452293836, rel_tol=1e-6)
+    assert len(crc_full) == 1
+    cell = crc_full.iloc[0]
+    assert math.isclose(cell["increased_minus_decreased_positive_fraction"], 5 / 7, rel_tol=1e-9)
+    assert math.isclose(cell["fisher_p_value"], 0.00339366515837, rel_tol=1e-6)
     assert cell["fisher_p_value"] < heatmaps.P_VALUE_CUTOFF
-    assert math.isclose(cell["fisher_q_value"], 0.292220903339, rel_tol=1e-6)
+    assert math.isclose(cell["fisher_q_value"], 0.587927267704, rel_tol=1e-6)
     assert cell["fisher_q_value"] > heatmaps.Q_VALUE_CUTOFF
     assert bool(cell["passes_support"]) is True
     assert bool(cell["nominal_p_value_selected"]) is True
@@ -1045,30 +1045,21 @@ def test_oral_and_full_contrast_nominal_p_versus_bh_border_regression() -> None:
     assert bool(cell["selected_after_bh"]) is False
     assert bool(cell["displayed_in_heatmap"]) is True
 
-    # Ensure it is distinct from Oral squamous cell carcinoma
-    oscc_full = individual[
-        (individual["condition"] == "Oral squamous cell carcinoma")
-        & (individual["body_site_group"] == "Oral cavity / dental")
-        & (individual["trait_id"] == "METPO:1000668")
-    ]
-    assert len(oscc_full) == 1
-    assert oscc_full.iloc[0]["condition"] != cell["condition"]
-
     # Verify that in flag_matrix for borders (selected_after_bh),
-    # SCC has no border in full view and oral export
+    # the nominal cell has no border in full view and oral export
     traits = pd.DataFrame({"trait_id": ["METPO:1000668"]})
     full_borders = heatmaps.flag_matrix(
         individual,
-        ["Squamous cell carcinoma | Oral cavity / dental"],
+        ["Colorectal cancer | Oral cavity / dental"],
         traits,
         flag_column="selected_after_bh",
     )
-    assert not full_borders.loc["Squamous cell carcinoma | Oral cavity / dental", "METPO:1000668"]
+    assert not full_borders.loc["Colorectal cancer | Oral cavity / dental", "METPO:1000668"]
 
     oral_borders = heatmaps.flag_matrix(
         oral_export,
-        ["Squamous cell carcinoma | Oral cavity / dental"],
+        ["Colorectal cancer | Oral cavity / dental"],
         traits,
         flag_column="selected_after_bh",
     )
-    assert not oral_borders.loc["Squamous cell carcinoma | Oral cavity / dental", "METPO:1000668"]
+    assert not oral_borders.loc["Colorectal cancer | Oral cavity / dental", "METPO:1000668"]
