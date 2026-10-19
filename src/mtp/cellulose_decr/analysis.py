@@ -7,15 +7,20 @@ the summary JSON and a provenance record to ``data/analysis/cellulose_decr/``.
 
 The October 16 outputs had no generator (adversarial review R11). They took each
 profile's condition and body site from
-``trait-visualization/study_trait_profile_study_metadata.tsv``, which holds one
-modal label per *study*, so 1,112 of 5,829 profiles carried another experiment's
-label. ``--label-source study_modal`` reproduces those outputs; the default,
-``experiment``, takes labels from ``data/derived/experiments.tsv``, which matches
-``data/raw/full_dump.csv`` for every experiment.
+``trait-visualization/study_trait_profile_study_metadata.tsv``, which then held one
+modal label per *study* (#555), so 1,112 of 5,829 profiles carried another
+experiment's label. ``--label-source study_modal`` recomputes those labels from
+``data/raw/full_dump.csv`` (#594) and reproduces the October 16 sets, exact tests and
+feces direction statistics; the default, ``experiment``, takes labels from
+``data/derived/experiments.tsv``, which matches ``data/raw/full_dump.csv`` for every
+experiment.
 
-Inputs live in gitignored ``data/`` directories that other work regenerates, so a
-run stops when an input's hash differs from the committed provenance or the
-contrast manifest came from another classifier version (#562).
+Other work regenerates the inputs in place, so a run stops when an input's hash
+differs from the committed provenance or the contrast manifest came from another
+classifier version (#562). The pins describe a v2 contrast manifest and the metadata
+table before #555 relabelled it, so until #580 re-pins them a checkout with a newer
+classifier or metadata refuses to run; the committed tables reproduce at the
+provenance's ``code_commit`` from the pinned inputs (#642).
 
 The counts are annotation counts of curated signature taxa, not measurements of
 patients, cells or pathway activity (methods/biological_interpretation.md).

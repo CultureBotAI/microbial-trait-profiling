@@ -1,10 +1,12 @@
 """The selected-figure deck builders in scripts/ (#556, #573)."""
 
+import hashlib
 import importlib.util
 import json
 import shutil
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
 
@@ -337,7 +339,8 @@ def test_plate_records_name_the_plate_script() -> None:
         "just_recipe": f"python {old_script}",
         "command_series": [*deck.UPSTREAM_COMMANDS, "just analyze", f"uv run python {old_script}"],
     }
-    deck.plate_provenance(record, "methods/table1_paired_log_ratios.md")
+    inputs = {"trait-visualization/a.tsv": "aa", "data/derived/b.tsv": "bb"}
+    deck.plate_provenance(record, "methods/table1_paired_log_ratios.md", inputs)
     assert record["generator_script_path"] == "scripts/generate_tufte_plates.py"
     assert record["methods_doc_path"] == "methods/table1_paired_log_ratios.md"
     assert record["just_recipe"] == "just figure-review-plates"
@@ -347,6 +350,12 @@ def test_plate_records_name_the_plate_script() -> None:
         "just figure-review-plates",
     ]
     assert "data/derived/figure_review" not in json.dumps(record)
+    assert record["input_data_files"] == list(inputs)
+    assert record["input_data_sha256s"] == ["aa", "bb"]
+    # A rebuild reads the previous build's record and must not append the recipes again (#639)
+    before = json.dumps(record)
+    deck.plate_provenance(record, "methods/table1_paired_log_ratios.md", inputs)
+    assert json.dumps(record) == before
 
 
 def test_carried_over_records_get_the_current_commands() -> None:
@@ -461,14 +470,31 @@ def test_plate_two_rows_must_be_in_the_pooled_table() -> None:
         plates.check_plate_two_rows(["a", "b"], {"a": {}})
 
 
-def test_plates_record_their_drawing_commit(tmp_path: Path) -> None:
-    path = plates.write_plates_provenance(
-        tmp_path, [tmp_path / "b.png", tmp_path / "a.png"], COMMIT
-    )
+def test_plates_record_their_drawing_commit_and_inputs(tmp_path: Path) -> None:
+    inputs = {"b.png": {"t/y.tsv": "2", "t/x.tsv": "1"}, "a.png": {}}
+    path = plates.write_plates_provenance(tmp_path, inputs, COMMIT)
     assert json.loads(path.read_text()) == {
         "script": "scripts/generate_tufte_plates.py",
         "code_commit": COMMIT,
+        "rerun_commit": plates.RERUN_COMMIT,
         "plates": ["a.png", "b.png"],
+        "inputs": {"a.png": {}, "b.png": {"t/x.tsv": "1", "t/y.tsv": "2"}},
+    }
+
+
+def test_plates_and_deck_cite_one_rerun() -> None:
+    """The plate footers and the deck stamps name the same revision (#637)."""
+    assert plates.RERUN_COMMIT == deck.COMMIT
+
+
+def test_plate_inputs_are_recorded_by_root(tmp_path: Path) -> None:
+    table = tmp_path / "trait-visualization" / "t.tsv"
+    table.parent.mkdir()
+    table.write_text("a\tb\n1\t2\n")
+    plates.INPUTS_READ.clear()
+    plates.read_tsv(table)
+    assert plates.input_record(tmp_path) == {
+        "trait-visualization/t.tsv": hashlib.sha256(table.read_bytes()).hexdigest()
     }
 
 
@@ -487,3 +513,371 @@ def test_plate_and_figure_options_are_never_abbreviated(tmp_path: Path) -> None:
 def test_plates_need_the_cellulose_captions(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError, match="just cellulose-decr-figures"):
         plates.cellulose_decr_notes(_cellulose_repo(tmp_path, None))
+
+
+# --------------------------------------------------------------------------- final review
+
+
+def test_a_missing_table_stops_the_text_that_quotes_it(tmp_path: Path) -> None:
+    """An empty table gave slide text such as "the 0-test family" (#639)."""
+    with pytest.raises(FileNotFoundError, match="missing"):
+        deck.read_tsv(tmp_path / "absent.tsv")
+
+
+def test_git_blob_id_of_known_content(tmp_path: Path) -> None:
+    hello = tmp_path / "hello.txt"
+    hello.write_text("hello\n")
+    assert deck.git_blob_id(hello) == "ce013625030ba8dba906f756967f9e9ca394464a"
+
+
+def _trees(tmp_path: Path, entries: dict[str, str], ref: str = COMMIT) -> dict[str, dict[str, str]]:
+    folder = tmp_path / "trees"
+    folder.mkdir(exist_ok=True)
+    listing = "".join(f"100644 blob {blob}\t{name}\0" for name, blob in entries.items())
+    (folder / f"{ref}.tree").write_text(listing)
+    trees: dict[str, dict[str, str]] = deck.load_git_trees(folder)
+    return trees
+
+
+def test_revision_problems_name_what_differs(tmp_path: Path) -> None:
+    """Slides were stamped and linked at a revision whatever the file was (#637)."""
+    figure = tmp_path / "figure.png"
+    figure.write_text("drawn\n")
+    trees = _trees(tmp_path, {"t/figure.png": deck.git_blob_id(figure), "t/old.png": "0" * 40})
+    assert deck.revision_problem(trees, COMMIT, "t/figure.png", figure) is None
+    assert deck.revision_problem(trees, COMMIT, "t/old.png", figure) == (
+        f"differs from {COMMIT[:12]}"
+    )
+    assert deck.revision_problem(trees, COMMIT, "t/new.png", figure) == (
+        f"not committed at {COMMIT[:12]}"
+    )
+    assert deck.revision_problem(trees, "f" * 40, "t/figure.png", figure) == (
+        f"no listing of {'f' * 12}"
+    )
+    assert deck.revision_problem(trees, None, "t/figure.png", figure) == (
+        "drawn without a clean commit"
+    )
+    assert deck.revision_problem(trees, COMMIT, "t/figure.png", tmp_path / "gone") == "missing"
+
+
+def test_plate_problems_need_the_rerun_and_unchanged_inputs(tmp_path: Path) -> None:
+    table = tmp_path / "trait-visualization" / "t.tsv"
+    table.parent.mkdir()
+    table.write_text("a\n1\n")
+    sha = hashlib.sha256(table.read_bytes()).hexdigest()
+    ignored = tmp_path / "data" / "derived" / "d.tsv"
+    ignored.parent.mkdir(parents=True)
+    ignored.write_text("b\n2\n")
+    inputs = {
+        "trait-visualization/t.tsv": sha,
+        "data/derived/d.tsv": hashlib.sha256(ignored.read_bytes()).hexdigest(),
+    }
+    record = {"rerun_commit": deck.COMMIT, "plates": ["p.png"], "inputs": {"p.png": inputs}}
+    trees = _trees(tmp_path, {"trait-visualization/t.tsv": deck.git_blob_id(table)}, deck.COMMIT)
+    assert deck.plate_problems(tmp_path, record, trees, None) == {}
+    # A gitignored input is checked against the recorded hash only.
+    ignored.write_text("changed\n")
+    assert deck.plate_problems(tmp_path, record, trees, None) == {
+        "p.png": ["data/derived/d.tsv: changed since the plate was drawn"]
+    }
+    other = {**record, "rerun_commit": COMMIT}
+    assert deck.plate_problems(tmp_path, other, trees, None) == {
+        "p.png": [f"plates drawn for rerun {COMMIT[:12]}, not {deck.SHORT_COMMIT}"]
+    }
+
+
+def test_results_must_cite_figures_in_the_deck() -> None:
+    """A dropped figure's results were re-attached to the next figure's slide (#638)."""
+    doc = {
+        "figures": [
+            {"figure_id": "fig_slide_004", "figure_file_path": "a.png"},
+            {"figure_id": "fig_slide_005", "figure_file_path": "b.png"},
+        ],
+        "statistical_results": [{"figure_ids": ["fig_slide_004"]}, {"figure_ids": []}],
+    }
+    assert deck.stale_figure_ids(doc, {"a.png", "b.png"}) == []
+    assert deck.stale_figure_ids(doc, {"b.png"}) == ["fig_slide_004"]
+
+
+def test_unverified_slides_say_so() -> None:
+    row = {"figure_file_path": "trait-visualization/x.png", "commit": deck.COMMIT}
+    assert deck.revision_stamp({**row, "unverified": "x.png: differs"}).endswith("NOT VERIFIED")
+    assert "NOT VERIFIED" not in deck.revision_stamp({**row, "unverified": ""})
+
+
+def _deck_root(tmp_path: Path, version: str) -> Path:
+    root = tmp_path / "root"
+    provenance = root / deck.CONTRAST_PROVENANCE
+    provenance.parent.mkdir(parents=True)
+    provenance.write_text(json.dumps({"classifier_version": version}))
+    return root
+
+
+def _deck_args(tmp_path: Path, root: Path) -> list[str]:
+    return [
+        "--input-root",
+        str(root),
+        "--output-dir",
+        str(tmp_path / "slides"),
+        "--provenance-dir",
+        str(tmp_path / "provenance"),
+    ]
+
+
+def test_deck_refuses_another_contrast_version(tmp_path: Path) -> None:
+    root = _deck_root(tmp_path, "contrast-orientation-v3")
+    with pytest.raises(SystemExit, match="#579"):
+        deck.main(_deck_args(tmp_path, root))
+    assert not (tmp_path / "slides").exists()
+
+
+def test_deck_refuses_to_replace_a_deck(tmp_path: Path) -> None:
+    root = _deck_root(tmp_path, deck.TYPED_CONTRAST_VERSION)
+    existing = tmp_path / "slides" / "selected_figures_v6.html"
+    existing.parent.mkdir()
+    existing.write_text("old deck")
+    with pytest.raises(SystemExit, match="--overwrite"):
+        deck.main(_deck_args(tmp_path, root))
+    assert existing.read_text() == "old deck"
+
+
+def test_deck_needs_git_listings_or_a_review_build(tmp_path: Path) -> None:
+    root = _deck_root(tmp_path, deck.TYPED_CONTRAST_VERSION)
+    with pytest.raises(SystemExit, match="--allow-unverified"):
+        deck.main(_deck_args(tmp_path, root))
+    assert not (tmp_path / "slides").exists()
+
+
+def _plates_root(tmp_path: Path, version: str) -> Path:
+    root = tmp_path / "root"
+    provenance = root / plates.CONTRAST_PROVENANCE
+    provenance.parent.mkdir(parents=True)
+    provenance.write_text(json.dumps({"classifier_version": version}))
+    return root
+
+
+def test_plates_refuse_another_contrast_version(tmp_path: Path) -> None:
+    root = _plates_root(tmp_path, "contrast-orientation-v3")
+    out = tmp_path / "plates"
+    with pytest.raises(SystemExit, match="#579"):
+        plates.main(["--input-root", str(root), "--output-dir", str(out)])
+    assert not out.exists()
+
+
+def test_plates_refuse_to_replace_plates(tmp_path: Path) -> None:
+    root = _plates_root(tmp_path, plates.TYPED_CONTRAST_VERSION)
+    out = tmp_path / "plates"
+    out.mkdir()
+    (out / "old.png").write_bytes(b"old")
+    with pytest.raises(SystemExit, match="--overwrite"):
+        plates.main(["--input-root", str(root), "--output-dir", str(out)])
+    assert (out / "old.png").read_bytes() == b"old"
+
+
+def test_a_failed_plate_run_drops_the_old_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """New plates must not sit beside the previous run's commit and inputs (#621)."""
+    root = _plates_root(tmp_path, plates.TYPED_CONTRAST_VERSION)
+    out = tmp_path / "plates"
+    out.mkdir()
+    (out / "plates_provenance.json").write_text("{}")
+
+    def fail(_repo: Path, _out: Path) -> Path:
+        raise RuntimeError("plate failed")
+
+    monkeypatch.setattr(plates, "build_methods_plate1", fail)
+    with pytest.raises(RuntimeError, match="plate failed"):
+        plates.main(["--input-root", str(root), "--output-dir", str(out), "--overwrite"])
+    assert not (out / "plates_provenance.json").exists()
+
+
+def _oxygen_rows() -> list[dict[str, str]]:
+    rows = []
+    for index, (score, rank) in enumerate(
+        [(0.9, 1.0), (0.5, 9.0), (0.25, 5.0), (0.21, 5.0), (0.19, 50.0), (-0.16, 2.0)]
+        + [(-0.9 + i / 100, 1.0) for i in range(12)]
+        + [(0.3 + i / 100, float(i)) for i in range(12)]
+    ):
+        rows.append(
+            {
+                "condition": f"c{index}",
+                "body_site_display": "Feces" if index % 2 else "Saliva",
+                "aerobe_up_anaerobe_down_score": str(score),
+                "rank_score": str(rank),
+            }
+        )
+    return rows
+
+
+def test_slide_eight_and_plate_five_select_the_same_strata() -> None:
+    """Slide 8's text is worded from the strata Plate V draws (#639)."""
+    rows = _oxygen_rows()
+    up, down = plates.plate5_strata(rows)
+    assert deck.oxygen_switch_strata(rows) == up + down
+    assert len(up) == 10
+    assert len(down) == 10
+
+
+def test_plate_p_values_do_not_round_across_the_threshold() -> None:
+    assert plates.fmt_p(0.0496) == "0.0496"
+    assert plates.fmt_p(0.04996) == "0.04996"
+    assert plates.fmt_p(0.0561) == "0.056"
+    assert plates.fmt_p(0.000167) == "1.7e-04"
+
+
+def _plate_one_tables(halophily_selected: bool) -> tuple[Any, ...]:
+    pooled = {
+        tid: {
+            "q_value": "0.001",
+            "study_q_value": "0.002",
+            "pair_count": "2335",
+            "study_count": "959",
+        }
+        for tid, *_ in plates.TABLE1_TRAITS
+    }
+    feces = {
+        tid: {"study_q_value": "0.01", "study_count": "594"} for tid, *_ in plates.TABLE1_TRAITS
+    }
+    sign = {
+        label: {
+            "bh_q": "0.001",
+            "family_size": "6",
+            "studies_up": "500",
+            "studies_down": "400",
+            "studies_tied": "39",
+        }
+        for _, label, *_ in plates.TABLE1_TRAITS
+    }
+    cell = {
+        "view_key": "individual_conditions_direction_contrast",
+        "passes_support": "True",
+        "increased_profile_count": "40",
+        "decreased_profile_count": "50",
+        "body_site_group": "Feces",
+    }
+    contrasts = [
+        {
+            **cell,
+            "trait_label": "cellulose catabolic process",
+            "condition": condition,
+            "fisher_q_value": "0.008",
+            "selected_after_bh": "True",
+        }
+        for condition in ("Parkinson's disease", "HIV infection")
+    ] + [
+        {
+            **cell,
+            "trait_label": "moderately halophilic",
+            "condition": "Parkinson's disease",
+            "fisher_q_value": "0.026",
+            "selected_after_bh": str(halophily_selected),
+        },
+        {
+            **cell,
+            "trait_label": "coccus shaped",
+            "condition": "Aging",
+            "passes_support": "False",
+            "fisher_q_value": "0.007",
+            "selected_after_bh": "False",
+        },
+    ]
+    wilcoxon = [
+        {
+            "trait": label,
+            "condition": "Parkinson's disease",
+            "q_value": q,
+            "paired_study_count": n,
+            "selected_after_bh": "False",
+        }
+        for (_, label, *_), q, n in zip(
+            plates.TABLE1_TRAITS,
+            ["0.6", "0.5", "0.4", "0.3", "0.2", "0.0561"],
+            ["3", "45", "9", "9", "9", "45"],
+            strict=True,
+        )
+    ]
+    return pooled, feces, sign, contrasts, wilcoxon
+
+
+def test_plate_one_counts_survivors_from_its_tables() -> None:
+    """Plate I claimed survivors its own tables do not have (#636)."""
+    summary = plates.plate1_summary(*_plate_one_tables(halophily_selected=True))
+    assert summary["survivors"] == [6, 6, 6, 6, 2, 0]
+    assert summary["m"] == [6, 6, 6, 6, 4, 6]
+    assert summary["wilcoxon_studies"] == (3, 45)
+    # An unsupported cell's q is not plotted as the trait's best Scale 5 result.
+    assert summary["points"]["coccus shaped"][4] == 1.0
+    assert plates.plate1_subtitle(summary) == (
+        "All 6 pass Scales 1\N{EN DASH}4; 2 pass Scale 5 (cellulose: HIV, PD; halophily: PD); "
+        "none passes Scale 6 (lowest q = 0.056, halophily in PD)"
+    )
+    unselected = plates.plate1_summary(*_plate_one_tables(halophily_selected=False))
+    assert unselected["survivors"][4] == 1
+
+
+def test_plate_one_slide_text_reads_the_tables() -> None:
+    pooled = [
+        {"trait": tid, "study_q_value": "0.01" if tid != "METPO:1000683" else "0.2"}
+        for tid in deck.TABLE1_TRAIT_IDS
+    ]
+    metrics = {
+        "paired_contrasts": {"pooled": pooled},
+        "pd_halo_wilcoxon": {"p_value": "0.000167", "q_value": "0.0561"},
+        "ind_sig_count": 1,
+        "pooled_pairs": 2335,
+        "pooled_studies": 959,
+        "feces_studies": 602,
+        "ind_total_tests": 3144,
+        "pd_net_total": 408,
+        "ind_conditions": 356,
+        "ind_sites": 20,
+        "ind_median_studies": 1,
+    }
+    takeaway, caveat = deck.plate_one_text(metrics)
+    assert "602 fecal studies" in takeaway
+    assert "408 fecal study Wilcoxon tests" in takeaway
+    assert caveat.startswith("5 of 6 traits pass study-level BH")
+    assert "(median 1 study per cell), 1 individual profile cell passes BH" in caveat
+    assert "p = 0.00017 (BH q = 0.056)" in caveat
+
+
+def test_prior_link_says_when_the_study_is_in_the_corpus() -> None:
+    studies = {"28536926": {"publication_year": "2017", "doi": "10.1007/s11427-016-9001-4"}}
+    url = "https://pubmed.ncbi.nlm.nih.gov/28536926/"
+    assert deck.prior_label(url, studies) == (
+        "PubMed 28536926 (2017) · DOI 10.1007/s11427-016-9001-4 · a study in the analysed "
+        "corpus (bsdb:28536926)"
+    )
+    assert deck.prior_label("https://pubmed.ncbi.nlm.nih.gov/1/", studies) == "PubMed 1"
+
+
+def test_crc_oxygen_split_reads_the_table() -> None:
+    rows = [
+        {
+            "condition": "Colorectal cancer",
+            "body_site_display": "Feces",
+            "aerobe_up_anaerobe_down_score": "0.683",
+        },
+        {
+            "condition": "Colorectal cancer",
+            "body_site_display": "Lower GI tract",
+            "aerobe_up_anaerobe_down_score": "-0.793",
+        },
+    ]
+    assert "(Feces +0.68 vs Lower GI tract -0.79)" in deck.crc_oxygen_text(rows)
+    assert plates.crc_oxygen_split(rows) == (
+        "Feces +0.68 (aerobe↑) vs Lower GI tract -0.79 (anaerobe↑)"
+    )
+    assert deck.crc_oxygen_text(rows[:1]) == ""
+    assert plates.crc_oxygen_split(rows[:1]) == ""
+
+
+def test_lollipop_title_names_its_profiles() -> None:
+    summary = [
+        {"increased_profiles": "130", "decreased_profiles": "123"},
+        {"increased_profiles": "130", "decreased_profiles": "123"},
+    ]
+    assert deck.pd_profiles_text({"pd_six_trait_summary": summary}) == (
+        "130 increased vs 123 decreased fecal profiles"
+    )

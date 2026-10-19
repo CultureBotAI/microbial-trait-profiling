@@ -215,5 +215,34 @@ def test_crc_statement_names_the_excluded_experiment_only_when_it_matters(
 def test_p_values_keep_two_significant_digits() -> None:
     assert figures.sci(0.0097) == "0.0097"
     assert figures.sci(0.0596) == "0.060"
+    # More digits where two would round across 0.05 (#641)
+    assert figures.sci(0.0496) == "0.0496"
+    assert figures.sci(0.04996) == "0.04996"
     assert figures.sci(0.19) == "0.19"
     assert figures.sci(1.2e-5) == "1.2" + figures.TIMES + "10⁻⁵"
+
+
+def test_a_missing_benchmark_row_is_named() -> None:
+    """A bare StopIteration said nothing about the missing row (#639)."""
+    with pytest.raises(ValueError, match="no non-growth-medium row for METPO:x"):
+        figures.trait_row([{"trait_id": "METPO:y"}], "METPO:x")
+
+
+def test_a_failed_figure_run_drops_the_old_captions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """New figures must not sit beside the previous run's captions and commit (#639)."""
+    for name in figures.FIGURE_INPUTS:
+        shutil.copy(ANALYSIS_DIR / name, tmp_path / name)
+    (tmp_path / "figures").mkdir()
+    for name in ("figure_captions.json", "figures_provenance.json"):
+        (tmp_path / "figures" / name).write_text("{}")
+
+    def fail(_results: figures.Results) -> None:
+        raise RuntimeError("figure failed")
+
+    monkeypatch.setattr(figures, "graphical_core", fail)
+    with pytest.raises(RuntimeError, match="figure failed"):
+        figures.main(["--analysis-dir", str(tmp_path), "--code-commit", "0" * 40])
+    assert not (tmp_path / "figures" / "figure_captions.json").exists()
+    assert not (tmp_path / "figures" / "figures_provenance.json").exists()

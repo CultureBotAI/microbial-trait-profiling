@@ -56,7 +56,11 @@ Two options change this:
   old pins forward, so the next ordinary run still refuses them.
 - `--repin` adopts the current inputs as the pins.
 
-See #562 and #571.
+See #562 and #571. The pins describe the v2 contrast manifest and the profile metadata
+table before #555 relabelled it per experiment. Until #580 re-pins the analysis on the
+current manifest, a checkout with a newer classifier (v3 since #554) or the relabelled
+metadata refuses to run, and the committed tables reproduce by checking out the
+provenance's `code_commit` with the pinned inputs (#642).
 
 **Condition and body site come from each experiment's own record**
 (`experiments.tsv`). The October 16 outputs took them from the profile metadata

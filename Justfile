@@ -199,7 +199,9 @@ contrast-review-sample SAMPLE="methods/contrast_orientation_review_sample.tsv" S
 # Rebuild the data/analysis/cellulose_decr/ tables (methods/cellulose_decr.md). Stops when
 # an input's hash differs from the committed provenance or the contrast manifest came from
 # another classifier version; --input-root points at a checkout holding the pinned inputs,
-# and --allow-input-drift regenerates every table from changed ones (#562).
+# and --allow-input-drift regenerates every table from changed ones (#562). The pins are a
+# v2 manifest and the metadata table before #555, so until #580 re-pins them a checkout
+# with a newer classifier refuses; the tables reproduce at the provenance's code_commit.
 [positional-arguments]
 cellulose-decr *ARGS:
 	uv run python -m mtp.cellulose_decr.analysis --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
@@ -230,7 +232,8 @@ cellulose-decr-figures *ARGS:
 # Pass --input-root to read another checkout's gitignored tables, and --overwrite to
 # replace existing plates; they have no other copy, so back them up first. The plates
 # record this checkout's commit (+dirty when its code is modified), at which the deck
-# links their code (#613).
+# links their code (#613), and each plate's inputs with their hashes, which the deck
+# checks (#637).
 [positional-arguments]
 figure-review-plates *ARGS:
 	#!/usr/bin/env bash
@@ -257,7 +260,11 @@ deck_schema := "data/derived/figure_review_2026-09-21/provenance/figure_provenan
 # data/derived figures), so a fresh clone cannot build it. The build refuses to replace
 # an existing deck without --overwrite (back up slides/ and provenance/ first) and
 # refuses contrast-orientation inputs other than the version its typed numbers describe
-# (#573, #579, #592). Choose other folders with the variables, e.g.
+# (#573, #579, #592). The plates and cellulose_decr figures come from this checkout, where
+# their recipes draw them; the rest from --input-root. The build checks every committed
+# file a slide links or quotes against the revision the slide cites, from `git ls-tree`
+# listings written here, and refuses when one differs; --allow-unverified builds a marked
+# review deck instead (#637). Choose other folders with the variables, e.g.
 # `just deck_slides=/tmp/s deck_provenance=/tmp/p figure-review-deck`, so that every
 # step uses them; --output-dir and --provenance-dir are refused here. A worktree has no
 # data/derived, so there also set deck_schema= to the schema beside the input root's YAML.
@@ -268,8 +275,16 @@ figure-review-deck *ARGS:
 	overwrite=0
 	for arg in "$@"; do
 		case "$arg" in
+			-h | --help)
+				uv run python scripts/build_slide_deck.py --help
+				exit 0
+				;;
 			--output-dir* | --provenance-dir*)
 				echo "set deck_slides= and deck_provenance= instead of $arg" >&2
+				exit 1
+				;;
+			--git-trees* | --print-refs)
+				echo "the recipe writes the git listings itself; drop $arg" >&2
 				exit 1
 				;;
 			--overwrite)
@@ -290,7 +305,13 @@ figure-review-deck *ARGS:
 	if [ "$overwrite" = 1 ]; then
 		rm -f "$slides/deck_build_status.json"
 	fi
-	uv run python scripts/build_slide_deck.py --output-dir "$slides" --provenance-dir "$provenance" "$@"
+	# The committed files at each revision the slides cite, for the build to check (#637)
+	trees="$(mktemp -d)"
+	trap 'rm -rf "$trees"' EXIT
+	for ref in $(uv run python scripts/build_slide_deck.py --print-refs); do
+		git ls-tree -r -z --full-tree "$ref" > "$trees/$ref.tree" || rm -f "$trees/$ref.tree"
+	done
+	uv run python scripts/build_slide_deck.py --output-dir "$slides" --provenance-dir "$provenance" --git-trees "$trees" "$@"
 	rm -f "$slides/deck_build_status.json"
 	uv run linkml-validate -s "{{deck_schema}}" "$provenance/figure_provenance_and_results.yaml"
 	just html-to-pdf "$slides/selected_figures_v6.html" "$slides/microbial-trait-profiling_v6.pdf"

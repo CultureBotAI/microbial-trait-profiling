@@ -230,7 +230,12 @@ def sci(value: float) -> str:
     if value >= 0.1:
         return f"{value:.2f}"
     if value >= 0.001:
-        return f"{value:#.2g}"
+        # More digits where two would round across 0.05 (#641)
+        for digits in range(2, 8):
+            text = f"{value:#.{digits}g}"
+            if (float(text) < 0.05) == (value < 0.05):
+                return text
+        return repr(value)
     exponent = math.floor(math.log10(value))
     mantissa = round(value / 10**exponent, 1)
     if mantissa >= 10:
@@ -1051,12 +1056,20 @@ def trait_display(row: Mapping[str, Any]) -> str:
     return f"{label} ({short_id})"
 
 
+def trait_row(rows: Sequence[dict[str, Any]], trait_id: str) -> dict[str, Any]:
+    """The analysed trait's benchmark row; a missing one is a named error (#639)."""
+    for row in rows:
+        if row["trait_id"] == trait_id:
+            return row
+    raise ValueError(f"trait_convergence_benchmark.tsv has no non-growth-medium row for {trait_id}")
+
+
 def graphical_benchmark(results: Results) -> Figure:
     bench = results.benchmark
     biological = bench[~bench["is_growth_medium"].astype(bool)].reset_index(drop=True)
     rows = records(biological)
     n_traits = len(rows)
-    cell = next(row for row in rows if row["trait_id"] == results.summary["trait_id"])
+    cell = trait_row(rows, results.summary["trait_id"])
     first = rows[0]
     rank = int(cell["rank_excluding_growth_media"])
     fig = Figure(figsize=(15, 6.8))
@@ -2059,7 +2072,7 @@ def caption_direction(results: Results) -> Caption:
 def caption_ranking(results: Results) -> Caption:
     bench = results.benchmark
     rows = records(bench[~bench["is_growth_medium"].astype(bool)].reset_index(drop=True))
-    cell = next(row for row in rows if row["trait_id"] == results.summary["trait_id"])
+    cell = trait_row(rows, results.summary["trait_id"])
     first = rows[0]
     median = float(np.median([float(row["mean_pairwise_jaccard_distance"]) for row in rows]))
     leader = (
@@ -2204,6 +2217,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         "figures_graphical": "cellulose_decr_graphical_figures.pdf",
         "figures": "cellulose_decr_figures.pdf",
     }
+    # A run that fails partway must not leave new figures beside the previous run's captions
+    # and commit, which the deck would then show with them (#639).
+    for name in ("figure_captions.json", "figures_provenance.json"):
+        (args.analysis_dir / "figures" / name).unlink(missing_ok=True)
     outputs: list[str] = []
     captions: dict[str, dict[str, str]] = {}
     for folder, entries in plates.items():

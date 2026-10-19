@@ -487,6 +487,11 @@ The options:
 - `--repin` adopts the current inputs as the new pins, for example after a
   BugSigDB release.
 
+The pins are the v2 contrast manifest and the profile metadata table before #555
+relabelled it. Until #580 re-pins the analysis, a checkout with a newer classifier or
+the relabelled metadata refuses to run; the committed tables reproduce by checking out
+the provenance's `code_commit` with the pinned inputs (#642).
+
 **Other labels.** Write these runs to another directory, so the committed
 tables are not overwritten:
 - the October 16 labels (what they reproduce is listed under "What changed"):
