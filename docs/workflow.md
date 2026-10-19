@@ -93,6 +93,11 @@ including A, and the reported sequence is G, G, A. Deduplicating reported IDs
 gives a count-profile value of 4 and an ORA value of 2 with N=2. These are
 annotation representation units, not four organisms or independent observations.
 
+The core's increased/decreased direction is the curated report for Group 1
+relative to Group 0. It does not by itself establish disease-case versus
+healthy-control orientation; downstream contrast classification must make that
+determination explicitly.
+
 Strict `count-input-v1` validation is adapted from issue #184 / PR #224 while
 preserving the current binary ORA builder. Duplicate headers/keys, ragged rows,
 blank counts, negative counts, and non-ASCII or noninteger count strings fail.
@@ -129,9 +134,12 @@ inspection; they are not mislabeled as a complete downstream run.
 
 `core-validate` has three distinct responsibilities: schema/graph validation,
 actual artifact and inventory verification, and scientific cross-product
-validation. The last recomputes profile aggregates and denominators from the
-recorded reported-taxon and matrix products and checks their catalogs, cohort
-membership, coverage, keys and parent references.
+validation. The last reconciles study membership and metadata with raw source
+records and documented exclusions, flattened exports with the Study collection,
+and matrix annotation counts and metadata with the consumed KG. It also
+recomputes profile aggregates and denominators from the recorded reported-taxon
+and matrix products and checks their catalogs, cohort membership, coverage,
+keys and parent references. Source identity claims must agree with actual bytes.
 
 These records establish consistency of explicit-I/O Python execution. They are
 not an operating-system audit of every file open, a cryptographic signature by
@@ -149,6 +157,11 @@ it beside the report with the `.core_consumption.json` suffix). Conflicting
 explicit input paths fail. Count and ORA profiles are not interchangeable.
 The binding contains the run-manifest hash, product/artifact references, cohort,
 feature policy and hashes of the downstream outputs.
+
+Core consumers reject output paths that collide with their binding or coverage
+sidecars, or overlap the immutable core run and source files. Directory-based
+consumers require a dedicated analysis output directory; existing symlink or
+hardlink aliases cannot redirect writes into protected artifacts.
 
 Each binding also includes a checked annotation-coverage TSV for the consumer's
 actual retained feature vocabulary. Thus a MediaDive-only taxon is recorded as

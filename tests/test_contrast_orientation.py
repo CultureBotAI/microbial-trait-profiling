@@ -20,6 +20,7 @@ from bsdbng.contrast_orientation import (
     DISEASE_VS_HEALTHY,
     INTERVENTION_EVIDENCE,
     LONGITUDINAL,
+    MARKER,
     NATIVE,
     NOT_APPLICABLE,
     NOT_REVIEWED,
@@ -47,6 +48,7 @@ from bsdbng.contrast_orientation import (
     write_manifest,
 )
 from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
+from mtp.contrast_orientation import _acronym_spelled_out
 
 BASE = ExperimentRecord(
     study_id="bsdb:1",
@@ -1036,7 +1038,7 @@ def test_main_writes_every_artefact_and_accounts_for_every_experiment(tmp_path: 
     assert {row["in_analysed_corpus"] for row in manifest} == {"true"}
     # Spelled out, so that bumping the version is a deliberate edit to this test too:
     # the manifest and provenance are what downstream work keys off.
-    assert CLASSIFIER_VERSION == "contrast-orientation-v3"
+    assert CLASSIFIER_VERSION == "contrast-orientation-v4"
     assert {row["classifier_version"] for row in manifest} == {CLASSIFIER_VERSION}
     assert {row["bugsigdb_vintage"] for row in manifest} == {"2026-04-24_00:41_UTC"}
 
@@ -1325,4 +1327,412 @@ def test_oriented_profiles_filters_by_control_tiers() -> None:
             "experiments": 1,
             "studies": 1,
         },
+    ]
+
+
+def _stratified(**changes: str) -> tuple[str, str, str, str]:
+    found = classify(replace(BASE, **changes))
+    return found.contrast_class, found.orientation, found.contrast_type, found.control_tier
+
+
+#: HIV-negative comparison groups as the export spells them, and people with HIV on
+#: antiretroviral therapy compared against them (#569), with the curated strings copied
+#: verbatim from the pinned v1.3.1 export. The identifier is PMID and experiment number.
+HIV_STATUS_FIXTURES: tuple[tuple[str, dict[str, str], tuple[str, str, str, str]], ...] = (
+    # Spellings of an HIV-negative comparison group.
+    (
+        "33102244-1 an en dash is a minus sign, before a word as at the end",
+        {
+            "condition": "HIV infection",
+            "group_0_name": "HIV\u2013 individuals",
+            "group_1_name": "HIV+ individuals",
+        },
+        (
+            DISEASE_VS_HEALTHY,
+            NATIVE,
+            CASE_VS_CONTROL_SUBJECT,
+            TIER_2_CONDITION_NEGATIVE_SCREENED,
+        ),
+    ),
+    (
+        "30782659-3 a hyphen at the end of the name",
+        {"condition": "HIV infection", "group_0_name": "HIV-", "group_1_name": "HIV+"},
+        (
+            DISEASE_VS_HEALTHY,
+            NATIVE,
+            CASE_VS_CONTROL_SUBJECT,
+            TIER_2_CONDITION_NEGATIVE_SCREENED,
+        ),
+    ),
+    (
+        "31078141-1 a negative test for HIV-1",
+        {
+            "condition": "HIV infection",
+            "group_0_name": "HIV-1-negative individuals",
+            "group_1_name": "Recently HIV-1 infected individuals",
+        },
+        (
+            DISEASE_VS_HEALTHY,
+            NATIVE,
+            CASE_VS_CONTROL_SUBJECT,
+            TIER_2_CONDITION_NEGATIVE_SCREENED,
+        ),
+    ),
+    (
+        "39854172-1 people without HIV",
+        {
+            "condition": "Human immunodeficiency virus",
+            "group_0_name": "People Without HIV",
+            "group_1_name": "People With HIV",
+        },
+        (
+            DISEASE_VS_HEALTHY,
+            NATIVE,
+            CASE_VS_CONTROL_SUBJECT,
+            TIER_2_CONDITION_NEGATIVE_SCREENED,
+        ),
+    ),
+    (
+        "37721699-2 the condition's acronym spelled out",
+        {
+            "condition": "HIV infection",
+            "group_0_name": (
+                "Pregnant women \u2265 18 years of age without Human immunodeficiency virus "
+                "(HIV) at Postpartum (PPt) visit"
+            ),
+            "group_1_name": (
+                "Pregnant women \u2265 18 years of age with Human immunodeficiency virus "
+                "(HIV) at Postpartum (PPt) visit."
+            ),
+        },
+        (
+            DISEASE_VS_HEALTHY,
+            NATIVE,
+            CASE_VS_CONTROL_SUBJECT,
+            TIER_2_CONDITION_NEGATIVE_SCREENED,
+        ),
+    ),
+    (
+        "24399150-1 uninfected controls",
+        {
+            "condition": "HIV infection",
+            "group_0_name": "uninfected controls",
+            "group_1_name": "HIV-infected subjects",
+        },
+        (DISEASE_VS_HEALTHY, NATIVE, CASE_VS_CONTROL_SUBJECT, TIER_1_HEALTHY_NORMAL),
+    ),
+    # People with HIV on antiretroviral therapy against an HIV-negative comparison group:
+    # disease against health with treated cases, not a treatment contrast.
+    (
+        "29411528-5 HAART-treated cases against healthy controls",
+        {
+            "condition": "HIV infection",
+            "group_0_name": "healthy control",
+            "group_1_name": "HAART-treated HIV+ patients",
+        },
+        (
+            DISEASE_VS_HEALTHY,
+            NATIVE,
+            CASE_VS_CONTROL_SUBJECT,
+            TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+        ),
+    ),
+    (
+        "38383483-3 people living with HIV on ART against people living without it",
+        {
+            "condition": "HIV infection",
+            "group_0_name": "Controls/ People living without HIV (PLWOH)",
+            "group_1_name": "People living with HIV on Antiretroviral Therapy (PLWH on ART)",
+        },
+        (
+            DISEASE_VS_HEALTHY,
+            NATIVE,
+            CASE_VS_CONTROL_SUBJECT,
+            TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+        ),
+    ),
+    (
+        "39880958-1 on ART against a bare HIV-",
+        {
+            "condition": "HIV infection",
+            "group_0_name": "HIV-",
+            "group_1_name": "People Living With HIV on Antiretroviral therapy (ART+ PLWH)",
+        },
+        (
+            DISEASE_VS_HEALTHY,
+            NATIVE,
+            CASE_VS_CONTROL_SUBJECT,
+            TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+        ),
+    ),
+    (
+        "28118207-1 ART-treated cases against HIV-uninfected men",
+        {
+            "condition": "HIV infection",
+            "group_0_name": "HIV-uninfected MSM",
+            "group_1_name": "ART-treated HIV infected MSM",
+        },
+        (
+            DISEASE_VS_HEALTHY,
+            NATIVE,
+            CASE_VS_CONTROL_SUBJECT,
+            TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+        ),
+    ),
+    # Everyone has HIV, or nobody does: no HIV-negative comparison group.
+    (
+        "27477587-2 treated against untreated people with HIV",
+        {
+            "condition": "HIV infection",
+            "group_0_name": "HAART-naive HIV-1 patients",
+            "group_1_name": "HAART-treated HIV-1 patients",
+        },
+        (TREATMENT, NOT_APPLICABLE, TREATMENT, NOT_APPLICABLE),
+    ),
+    (
+        "34336719-5 the same people before and on ART",
+        {
+            "condition": "Human immunodeficiency virus",
+            "group_0_name": "Acute HIV-infected participants at baseline (A0)",
+            "group_1_name": "Acute HIV-infected participants on Antiretroviral Therapy (A12)",
+        },
+        (TREATMENT, NOT_APPLICABLE, TREATMENT, NOT_APPLICABLE),
+    ),
+    (
+        "36073815-1 exposure in utero between uninfected infants",
+        {
+            "condition": "HIV mother to child transmission",
+            "group_0_name": "HIV-unexposed infants (HUU) at 6 weeks",
+            "group_1_name": "HIV-exposed uninfected infants (HEU) at 6 weeks",
+        },
+        (TREATMENT, NOT_APPLICABLE, TREATMENT, NOT_APPLICABLE),
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    ("changes", "expected"),
+    [pytest.param(changes, expected, id=name) for name, changes, expected in HIV_STATUS_FIXTURES],
+)
+def test_hiv_status_and_treated_cases(
+    changes: dict[str, str], expected: tuple[str, str, str, str]
+) -> None:
+    assert _stratified(**changes) == expected
+
+
+def test_treated_cases_are_flagged_rather_than_made_a_treatment_contrast() -> None:
+    """The therapy is recorded on the experiment, and a weak comparison group is enough."""
+    for control in ("healthy control", "HIV-"):
+        found = classify(
+            replace(
+                BASE,
+                condition="HIV infection",
+                group_0_name=control,
+                group_1_name="People Living With HIV on Antiretroviral therapy (ART+ PLWH)",
+            )
+        )
+        assert found.contrast_class == DISEASE_VS_HEALTHY
+        assert "treated_disease_group" in found.flags.split(",")
+
+
+def test_known_miss_a_treated_group_named_by_time_keeps_the_treatment_reading() -> None:
+    """29808701-1: "for more than 1 year" reads as a time point, not as a duration.
+
+    Clearing the treatment reading would leave only that time reading, so the experiment
+    stays ``treatment_exposure`` instead of turning into a ``longitudinal_timepoint`` it is
+    not. This pins a known limitation (#581): the experiment compares HIV-negative and
+    HIV-positive women, so once #581 is fixed it should become ``disease_vs_healthy`` and
+    this expectation should change with it (#628).
+    """
+    assert _classify(
+        condition="HIV infection",
+        group_0_name="Age-matched HIV-uninfected women",
+        group_1_name="HIV-positive women who have been taking ART for more than 1 year",
+    ) == (TREATMENT, NOT_APPLICABLE)
+
+
+def test_a_minus_sign_or_en_dash_before_a_word_is_a_sign_but_a_hyphen_is_not() -> None:
+    """A hyphen before a word separates a label as often as it negates a test."""
+    assert MARKER.findall("HIV\u2013 individuals") == [("HIV", "\u2013")]
+    assert MARKER.findall("HIV\u2212 women") == [("HIV", "\u2212")]
+    assert MARKER.findall("HIV\u2013") == [("HIV", "\u2013")]
+    assert MARKER.findall("HIV-") == [("HIV", "-")]
+    assert not MARKER.findall("Grade C (previously aggressive) Periodontitis- Shallow pocket")
+    assert not MARKER.findall("BV- Positive (BV: Bacterial Vaginosis) at Visit 1")
+    # An en dash inside a word or a range, or a spaced dash, is not a sign either.
+    assert not MARKER.findall("Pre\u2013Collagen-Induced Arthritis (Pre-CIA) mice")
+    assert not MARKER.findall("Group 1 (18\u201335 years old)")
+    assert not MARKER.findall("HIV - negative")
+
+
+def test_a_spaced_sign_is_read_without_its_space() -> None:
+    """The sign's group holds the sign alone, so "HPV +" reads as positive (#596)."""
+    assert MARKER.findall("HIV +") == [("HIV", "+")]
+    assert MARKER.findall("HPV +") == [("HPV", "+")]
+    assert MARKER.findall("HIV \u2013") == [("HIV", "\u2013")]
+    assert MARKER.findall("HIV -, HPV +") == [("HIV", "-"), ("HPV", "+")]
+    assert not MARKER.findall("HIV \u2013 individuals")
+    assert _classify(
+        condition="Human papilloma virus infection",
+        group_0_name="healthy control",
+        group_1_name="HPV +",
+    ) == (DISEASE_VS_HEALTHY, NATIVE)
+
+
+def test_hiv_status_is_a_comparison_only_where_hiv_is_the_condition() -> None:
+    """28328799-1 compares HIV status within a periodontitis study; PLWOH is not a disease."""
+    assert _classify(condition="Periodontitis", group_0_name="HIV\u2013", group_1_name="HIV+") == (
+        UNRESOLVED,
+        NOT_APPLICABLE,
+    )
+    assert _stratified(condition="HIV infection", group_0_name="PLWOH", group_1_name="PLWH") == (
+        DISEASE_VS_HEALTHY,
+        NATIVE,
+        CASE_VS_CONTROL_SUBJECT,
+        TIER_2_CONDITION_NEGATIVE_SCREENED,
+    )
+    assert _classify(condition="Periodontitis", group_0_name="PLWOH", group_1_name="PLWH") == (
+        UNRESOLVED,
+        NOT_APPLICABLE,
+    )
+
+
+def test_only_the_condition_s_own_acronym_spelled_out_denies_it() -> None:
+    with_hiv = "Pregnant women with Human immunodeficiency virus (HIV)"
+    assert _classify(
+        condition="HIV infection",
+        group_0_name="Pregnant women without Human immunodeficiency virus (HIV)",
+        group_1_name=with_hiv,
+    ) == (DISEASE_VS_HEALTHY, NATIVE)
+    assert _classify(
+        condition="HIV infection",
+        group_0_name="Pregnant women without Hepatitis B virus (HBV)",
+        group_1_name=with_hiv,
+    ) == (DISEASE_VS_DISEASE, NOT_APPLICABLE)
+
+
+def test_tumour_against_adjacent_tissue_can_be_kept_out_of_subject_level_controls() -> None:
+    """25699023-2 compares tissue within the same patients, not patients with controls.
+
+    It stays ``disease_vs_healthy``, so a population built from the class alone still holds
+    it; its contrast type and control tier are what keep it out of a patients-versus-controls
+    population (#569).
+    """
+    tissue = classify(
+        replace(
+            BASE,
+            condition="Colorectal cancer",
+            group_0_name="adjacent non-cancerous tissues",
+            group_1_name="cancerous tissues",
+        )
+    )
+    assert (tissue.contrast_class, tissue.orientation) == (DISEASE_VS_HEALTHY, NATIVE)
+    assert tissue.contrast_type == PAIRED_TISSUE_AUTOLOGOUS
+    assert tissue.control_tier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+    assert "paired_tissue_comparison" in tissue.flags.split(",")
+
+    profiles = [_profile(e, d) for e in ("bsdb:1-1", "bsdb:1-2") for d in ("inc", "dec")]
+    classes = {("bsdb:1", "bsdb:1-1"): tissue, ("bsdb:1", "bsdb:1-2"): classify(BASE)}
+    assert {p.experiment_id for p in oriented_profiles(profiles, classes)} == {
+        "bsdb:1-1",
+        "bsdb:1-2",
+    }
+    subject_level = oriented_profiles(
+        profiles,
+        classes,
+        control_tiers={TIER_1_HEALTHY_NORMAL, TIER_2_CONDITION_NEGATIVE_SCREENED},
+    )
+    assert {p.experiment_id for p in subject_level} == {"bsdb:1-2"}
+
+
+@pytest.mark.parametrize(
+    ("group_0", "group_1"),
+    [
+        ("Healthy controls", "HIV patients on HAART"),
+        ("HIV-negative controls", "HIV patients on cART"),
+        ("HIV-negative controls", "People with HIV taking ART"),
+        ("HIV-negative controls", "People with HIV receiving ART"),
+        ("HIV-negative controls", "People with HIV under ART"),
+        ("PLWOH", "PLWH on ART"),
+        ("HIV-negative controls", "PWH on ART"),
+        ("Healthy controls", "Human immunodeficiency virus positive on ART"),
+    ],
+)
+def test_every_antiretroviral_cue_and_name_for_hiv_reaches_the_treated_rule(
+    group_0: str, group_1: str
+) -> None:
+    """ART spellings that TREATMENT_TERMS cannot read, and PLWH, PWH or the spelled-out
+    virus as the name of the disease group, all reach the treated-cases rule (#627, #628)."""
+    found = classify(
+        replace(BASE, condition="HIV infection", group_0_name=group_0, group_1_name=group_1)
+    )
+    assert (found.contrast_class, found.orientation) == (DISEASE_VS_HEALTHY, NATIVE)
+    assert found.control_tier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+    assert "treated_disease_group" in found.flags.split(",")
+
+
+@pytest.mark.parametrize(
+    ("condition", "group_0", "group_1"),
+    [
+        # Group 1 does not name the condition
+        ("Obesity", "Lean controls", "Patients treated with metformin"),
+        # Group 1 is a comparison group itself
+        ("Obesity", "Lean controls", "Non-obese controls treated with metformin"),
+        # Group 0 carries a treatment word too (bsdb:32733788-1)
+        (
+            "Response to immunochemotherapy",
+            "non-responders (patients treated with conventional dose)",
+            "responders (patients treated with metronomic dose of capecitabine)",
+        ),
+    ],
+)
+def test_the_treated_rule_needs_each_of_its_guards(
+    condition: str, group_0: str, group_1: str
+) -> None:
+    found = classify(replace(BASE, condition=condition, group_0_name=group_0, group_1_name=group_1))
+    assert found.contrast_class == TREATMENT
+    assert "treated_disease_group" not in found.flags.split(",")
+
+
+@pytest.mark.parametrize(
+    ("condition", "group_0", "group_1"),
+    [
+        # The "II" of "Type II" is a number, not an acronym of "insulin injection"
+        (
+            "Type II diabetes mellitus",
+            "T2D without insulin injection",
+            "T2D with insulin injection",
+        ),
+        # PLWOH is a comparison only where HIV is the condition, not any "hi" initialism
+        ("Helminth infection", "PLWOH", "PLWH"),
+        ("HOMA-IR", "PLWOH", "PLWH"),
+    ],
+)
+def test_acronym_and_hiv_readings_stay_with_their_conditions(
+    condition: str, group_0: str, group_1: str
+) -> None:
+    """Both were unresolved in v3 and must stay so (#627)."""
+    assert _classify(condition=condition, group_0_name=group_0, group_1_name=group_1) == (
+        UNRESOLVED,
+        NOT_APPLICABLE,
+    )
+
+
+def test_acronyms_are_the_capital_words_of_the_condition() -> None:
+    """Pins case, length and the rest of the phrase (#628)."""
+    # Lower-case words such as the "to" of "Response to …" are never acronyms
+    assert _acronym_spelled_out(["toxic", "outcome"], "Response to antiviral drug") == [
+        "toxic",
+        "outcome",
+    ]
+    # The rest of the phrase follows the acronym
+    assert _acronym_spelled_out(
+        ["human", "immunodeficiency", "virus", "positive"], "HIV infection"
+    ) == ["hiv", "positive"]
+    # Two-letter acronyms count
+    assert _acronym_spelled_out(["crohn's", "disease", "free"], "CD flare") == ["cd", "free"]
+    # Roman numerals do not
+    assert _acronym_spelled_out(["insulin", "injection"], "Type II diabetes mellitus") == [
+        "insulin",
+        "injection",
     ]

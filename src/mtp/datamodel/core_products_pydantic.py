@@ -585,7 +585,7 @@ class CountProfileRow(ConfiguredBaseModel):
     inc_dec: str = Field(default=..., title="Inc dec", description="""Reported increased or decreased direction component of the profile key.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CountProfileRow', 'ORAProfileRow', 'ProfileCoverageRecord']} })
     feature_counts: list[FeatureCount] = Field(default=..., title="Feature counts", description="""Nonzero counts normalized after validating every wide TSV cell; omitted features are verified zeros.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CountProfileRow', 'ORAProfileRow']} })
     trait_filter_id: str = Field(default=..., title="Trait filter id", description="""Hash of the complete ordered feature vocabulary including verified zero coordinates.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CountProfileRow', 'ORAProfileRow', 'ProfileCoverageRecord']} })
-    unit: str = Field(default="rolled_up_source_taxon_count", title="Unit", description="""Counts retain descendant rollup and occurrence multiplicity.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CountProfileRow', 'ORAProfileRow'],
+    unit: str = Field(default="rolled_up_source_taxon_count", title="Unit", description="""Counts sum descendant-rollup source counts over distinct reported taxon IDs. Repeated reported IDs are deduplicated; the same source annotation can contribute through distinct reported ancestor and descendant IDs.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CountProfileRow', 'ORAProfileRow'],
          'ifabsent': 'string(rolled_up_source_taxon_count)'} })
 
     @field_validator('inc_dec')
@@ -861,7 +861,7 @@ class SignatureTableRow(ConfiguredBaseModel):
                        'ExperimentOntologyTermRow',
                        'ProfileCoverageRecord']} })
     signature_id: str = Field(default=..., title="Signature id", description="""Source signature identifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SignatureTableRow', 'TaxonOccurrenceRow']} })
-    direction: str = Field(default=..., title="Direction", description="""Reported taxon abundance direction in cases relative to controls.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Signature', 'SignatureTableRow', 'TaxonOccurrenceRow']} })
+    direction: str = Field(default=..., title="Direction", description="""Curated reported taxon abundance direction in Group 1 relative to Group 0. Clinical case-control orientation is not established by this core field.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Signature', 'SignatureTableRow', 'TaxonOccurrenceRow']} })
     taxon_count: int = Field(default=..., title="Taxon count", description="""Number of taxon occurrences reported by this signature.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['StudyTableRow', 'ExperimentTableRow', 'SignatureTableRow']} })
 
     @field_validator('direction')

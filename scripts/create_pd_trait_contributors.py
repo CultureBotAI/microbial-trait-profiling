@@ -22,16 +22,12 @@ from create_pd_cellulose_analysis import (
     read_tsv,
     write_tsv,
 )
-from create_pd_six_trait_taxon_heatmap import load_taxon_specificity
+from create_pd_six_trait_taxon_heatmap import (
+    load_taxon_specificity,
+    require_current_trait_taxa_evidence,
+)
 
 STEM = "pd_trait_contributors"
-CELLS_PATH = OUTPUT_DIR / f"{STEM}_cells.tsv"
-SELECTED_TAXA_PATH = OUTPUT_DIR / f"{STEM}_selected_taxa.tsv"
-RANK_COVERAGE_PATH = OUTPUT_DIR / f"{STEM}_rank_coverage.tsv"
-DIRECTION_DIFFERENCES_PATH = OUTPUT_DIR / f"{STEM}_direction_differences.tsv"
-HEATMAP_TAXA_PATH = OUTPUT_DIR / f"{STEM}_heatmap_taxa.tsv"
-TRAIT_INTERVALS_PATH = OUTPUT_DIR / "pd_species_six_traits_influence_heatmap_traits.tsv"
-COCARRIAGE_ALL_EDGES_PATH = OUTPUT_DIR / f"{STEM}_trait_cocarriage_all_edges.tsv"
 
 RANK_ORDER = {"species": 0, "family": 1}
 DIRECTION_ORDER = {"inc": 0, "dec": 1}
@@ -948,16 +944,20 @@ def write_note(
 
 def main() -> None:
     """Refresh contributor artifacts from existing contributor tables."""
-    cells = read_tsv(CELLS_PATH)
-    selected = read_tsv(SELECTED_TAXA_PATH)
-    coverage = read_tsv(RANK_COVERAGE_PATH)
-    trait_intervals = read_tsv(TRAIT_INTERVALS_PATH)
-    selected = augment_selected_taxa(selected)
-    write_tsv(selected, SELECTED_TAXA_PATH)
+    metadata = load_profile_metadata()
+    require_current_trait_taxa_evidence(metadata, OUTPUT_DIR)
+    # Every path is built from OUTPUT_DIR here, so redirecting it redirects every write.
+    selected_taxa_path = OUTPUT_DIR / f"{STEM}_selected_taxa.tsv"
+    cells = read_tsv(OUTPUT_DIR / f"{STEM}_cells.tsv")
+    selected = read_tsv(selected_taxa_path)
+    coverage = read_tsv(OUTPUT_DIR / f"{STEM}_rank_coverage.tsv")
+    trait_intervals = read_tsv(OUTPUT_DIR / "pd_species_six_traits_influence_heatmap_traits.tsv")
+    selected = augment_selected_taxa(selected, metadata)
+    write_tsv(selected, selected_taxa_path)
     differences = build_direction_differences(cells, coverage)
-    write_tsv(differences, DIRECTION_DIFFERENCES_PATH)
+    write_tsv(differences, OUTPUT_DIR / f"{STEM}_direction_differences.tsv")
     heatmap_taxa = select_large_difference_taxa(selected, differences)
-    write_tsv(heatmap_taxa, HEATMAP_TAXA_PATH)
+    write_tsv(heatmap_taxa, OUTPUT_DIR / f"{STEM}_heatmap_taxa.tsv")
     specificity_columns = [
         "scope",
         "rank",
@@ -991,7 +991,7 @@ def main() -> None:
         cells, selected, coverage
     )
     write_tsv(cocarriage_taxa, OUTPUT_DIR / f"{STEM}_trait_cocarriage_taxa.tsv")
-    write_tsv(all_cocarriage_edges, COCARRIAGE_ALL_EDGES_PATH)
+    write_tsv(all_cocarriage_edges, OUTPUT_DIR / f"{STEM}_trait_cocarriage_all_edges.tsv")
     write_tsv(
         changed_cocarriage_edges,
         OUTPUT_DIR / f"{STEM}_trait_cocarriage_edges.tsv",

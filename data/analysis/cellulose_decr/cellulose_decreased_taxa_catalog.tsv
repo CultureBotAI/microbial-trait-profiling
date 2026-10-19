@@ -1,0 +1,48 @@
+taxon_id	taxon_name	taxonomic_rank	matrix_trait_bearing_taxa_at_or_below	n_conditions_feces_dec	is_3way_core	in_PD_feces_dec	in_HIV_feces_dec	in_CRC_feces_dec	PD_dec_studies	PD_dec_profiles	PD_inc_studies	PD_inc_profiles	HIV_dec_studies	HIV_dec_profiles	HIV_inc_studies	HIV_inc_profiles	CRC_dec_studies	CRC_dec_profiles	CRC_inc_studies	CRC_inc_profiles	has_direct_trait_edge	is_direct_or_genus_species	is_strictly_net_decreased_all3	is_net_decreased_all3_by_profiles	core_class
+NCBITaxon:186803	Lachnospiraceae	family	17	3	True	True	True	True	20	40	7	9	5	5	3	3	9	12	5	5	False	False	True	True	3-way core, family-to-phylum rank
+NCBITaxon:841	Roseburia	genus	1	3	True	True	True	True	20	33	4	4	2	2	0	0	6	6	0	0	False	True	True	True	3-way core, genus or species rank
+NCBITaxon:572511	Blautia	genus	1	3	True	True	True	True	13	16	2	2	1	1	3	3	6	8	1	2	False	True	False	False	3-way core, genus or species rank
+NCBITaxon:1485	Clostridium	genus	7	3	True	True	True	True	7	10	3	3	5	7	2	2	6	10	3	5	False	True	True	True	3-way core, genus or species rank
+NCBITaxon:1239	Bacillota	phylum	86	3	True	True	True	True	8	15	5	5	4	4	2	3	4	4	1	1	False	False	True	True	3-way core, family-to-phylum rank
+NCBITaxon:816	Bacteroides	genus	1	3	True	True	True	True	6	6	3	4	8	11	0	0	2	4	2	2	False	True	False	True	3-way core, genus or species rank
+NCBITaxon:186801	Clostridia	class	65	3	True	True	True	True	5	6	7	8	4	6	0	0	7	8	1	1	False	False	False	False	3-way core, family-to-phylum rank
+NCBITaxon:28050	Lachnospira	genus	1	3	True	True	True	True	5	9	2	2	3	3	0	0	6	6	1	1	False	True	True	True	3-way core, genus or species rank
+NCBITaxon:216572	Oscillospiraceae	family	33	3	True	True	True	True	8	12	13	15	4	4	0	0	2	2	1	1	False	False	False	False	3-way core, family-to-phylum rank
+NCBITaxon:1263	Ruminococcus	genus	10	3	True	True	True	True	6	9	2	2	4	5	0	0	4	4	3	3	False	True	True	True	3-way core, genus or species rank
+NCBITaxon:31979	Clostridiaceae	family	7	3	True	True	True	True	8	13	2	2	3	4	0	0	2	2	2	3	False	False	False	False	3-way core, family-to-phylum rank
+NCBITaxon:186802	Eubacteriales	order	44	3	True	True	True	True	5	7	6	7	4	6	1	1	4	5	1	1	False	False	False	False	3-way core, family-to-phylum rank
+NCBITaxon:207244	Anaerostipes	genus	1	3	True	True	True	True	2	2	1	2	3	3	0	0	3	5	1	1	False	True	True	False	3-way core, genus or species rank
+NCBITaxon:200643	Bacteroidia	class	2	3	True	True	True	True	5	6	2	2	2	4	0	0	1	1	4	4	False	False	False	False	3-way core, family-to-phylum rank
+NCBITaxon:976	Bacteroidota	phylum	9	3	True	True	True	True	3	3	0	0	3	5	1	1	1	1	4	6	False	False	False	False	3-way core, family-to-phylum rank
+NCBITaxon:1730	Eubacterium	genus	2	3	True	True	True	True	1	1	1	1	1	1	1	2	3	3	2	2	False	True	False	False	3-way core, genus or species rank
+NCBITaxon:830	Butyrivibrio	genus	3	3	True	True	True	True	2	3	2	2	1	1	2	2	1	2	0	0	False	True	False	False	3-way core, genus or species rank
+NCBITaxon:171549	Bacteroidales	order	1	2	False	True	True	False	4	4	1	1	3	5	0	0	0	0	4	4	False	False	False	False	not in 3-way core
+NCBITaxon:301302	Roseburia faecis	species	1	2	False	True	False	True	5	6	0	0	0	0	0	0	2	2	0	0	True	True	False	False	not in 3-way core
+NCBITaxon:815	Bacteroidaceae	family	1	2	False	True	True	False	1	1	2	2	5	6	0	0	0	0	2	2	False	False	False	False	not in 3-way core
+NCBITaxon:201174	Actinomycetota	phylum	51	2	False	False	True	True	0	0	7	8	2	2	1	1	2	2	1	1	False	False	False	False	not in 3-way core
+NCBITaxon:649756	Anaerostipes hadrus	species	1	2	False	True	False	True	1	1	0	0	0	0	0	0	2	2	1	1	True	True	False	False	not in 3-way core
+NCBITaxon:91061	Bacilli	class	16	2	False	True	False	True	2	3	2	4	0	0	2	4	1	1	2	2	False	False	False	False	not in 3-way core
+NCBITaxon:80864	Comamonadaceae	family	1	2	False	True	False	True	2	2	0	0	0	0	0	0	1	2	0	0	False	False	False	False	not in 3-way core
+NCBITaxon:186826	Lactobacillales	order	1	2	False	True	False	True	2	3	1	2	0	0	1	3	1	1	2	2	False	False	False	False	not in 3-way core
+NCBITaxon:246787	Bacteroides cellulosilyticus	species	1	2	False	True	False	True	1	2	1	1	0	0	0	0	1	1	0	0	False	True	False	False	not in 3-way core
+NCBITaxon:1506553	Lachnoclostridium	genus	3	2	False	True	True	False	1	1	1	1	1	1	1	2	0	0	1	1	False	True	False	False	not in 3-way core
+NCBITaxon:33039	Mediterraneibacter torques	species	1	2	False	True	True	False	1	1	3	3	1	2	3	3	0	0	3	3	False	True	False	False	not in 3-way core
+NCBITaxon:1224	Pseudomonadota	phylum	18	2	False	True	False	True	1	1	9	16	0	0	2	4	1	7	3	3	False	False	False	False	not in 3-way core
+NCBITaxon:40518	Ruminococcus bromii	species	2	2	False	True	False	True	1	2	2	2	0	0	0	0	1	1	0	0	True	True	False	False	not in 3-way core
+NCBITaxon:1265	Ruminococcus flavefaciens	species	2	2	False	True	False	True	1	1	0	0	0	0	0	0	1	1	0	0	True	True	False	False	not in 3-way core
+NCBITaxon:39492	[Eubacterium] siraeum	species	1	2	False	True	False	True	1	1	1	1	0	0	0	0	1	1	0	0	False	True	False	False	not in 3-way core
+NCBITaxon:40520	Blautia obeum	species	1	1	False	False	False	True	0	0	2	5	0	0	1	1	2	2	0	0	False	True	False	False	not in 3-way core
+NCBITaxon:1386	Bacillus	genus	3	1	False	False	True	False	0	0	1	2	1	1	0	0	0	0	0	0	False	True	False	False	not in 3-way core
+NCBITaxon:186828	Carnobacteriaceae	family	1	1	False	False	True	False	0	0	0	0	1	1	0	0	0	0	0	0	False	False	False	False	not in 3-way core
+NCBITaxon:186806	Eubacteriaceae	family	2	1	False	True	False	False	1	1	3	4	0	0	0	0	0	0	0	0	False	False	False	False	not in 3-way core
+NCBITaxon:1236	Gammaproteobacteria	class	14	1	False	True	False	False	1	1	3	3	0	0	1	2	0	0	2	2	False	False	False	False	not in 3-way core
+NCBITaxon:1264	Hominimerdicola alba	species	3	1	False	False	False	True	0	0	0	0	0	0	0	0	1	1	0	0	True	True	False	False	not in 3-way core
+NCBITaxon:28051	Lachnospira multipara	species	1	1	False	False	False	True	0	0	0	0	0	0	0	0	1	4	0	0	True	True	False	False	not in 3-way core
+NCBITaxon:2719231	Lacrimispora	genus	2	1	False	True	False	False	1	1	0	0	0	0	0	0	0	0	0	0	False	True	False	False	not in 3-way core
+NCBITaxon:2316020	Mediterraneibacter	genus	1	1	False	True	False	False	1	1	0	0	0	0	0	0	0	0	0	0	False	True	False	False	not in 3-way core
+NCBITaxon:1268	Micrococcaceae	family	1	1	False	True	False	False	1	1	0	0	0	0	2	2	0	0	1	2	False	False	False	False	not in 3-way core
+NCBITaxon:135621	Pseudomonadaceae	family	1	1	False	False	False	True	0	0	1	1	0	0	0	0	1	1	1	1	False	False	False	False	not in 3-way core
+NCBITaxon:1161942	Ruminococcus champanellensis	species	2	1	False	False	False	True	0	0	0	0	0	0	0	0	1	1	0	0	True	True	False	False	not in 3-way core
+NCBITaxon:613	Serratia	genus	5	1	False	False	False	True	0	0	3	6	0	0	0	0	1	1	0	0	False	True	False	False	not in 3-way core
+NCBITaxon:84566	Sphingobacteriaceae	family	1	1	False	True	False	False	1	1	1	1	0	0	0	0	0	0	0	0	False	False	False	False	not in 3-way core
+NCBITaxon:2062	Streptomycetaceae	family	6	1	False	True	False	False	1	2	0	0	0	0	0	0	0	0	0	0	False	False	False	False	not in 3-way core

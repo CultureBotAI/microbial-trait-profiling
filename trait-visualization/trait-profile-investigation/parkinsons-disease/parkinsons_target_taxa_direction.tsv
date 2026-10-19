@@ -3,7 +3,6 @@ aerobe_enrichment_v2	Aerobe enrichment v2	Klebsiella pneumoniae	Parkinson's dise
 aerobe_enrichment_v2	Aerobe enrichment v2	Eggerthella lenta	Parkinson's disease	Feces	1	1	1	1	2	increased	1	1	decreased	1	1	0.0	0	balanced	1	1
 aerobe_enrichment_v2	Aerobe enrichment v2	Escherichia coli	Parkinson's disease	Feces	2	1	2	1	3	increased	1	1	decreased	2	2	-0.3333333333333333	-1	decreased	2	2
 aerobe_enrichment_v2	Aerobe enrichment v2	Streptococcus anginosus	Parkinson's disease	Feces	0	1	0	1	1	increased	1	1	decreased	0	0	1.0	1	increased	1	1
-aerobe_enrichment_v2	Aerobe enrichment v2	Veillonella dispar	Parkinson's disease	Feces	1	0	1	0	1	increased	0	0	decreased	1	1	-1.0	-1	decreased	1	1
 anaerobe_depletion_v2	Anaerobe depletion v2	Faecalibacterium prausnitzii	Parkinson's disease	Feces	13	0	8	0	13	decreased	13	8	increased	0	0	1.0	-13	decreased	13	8
 anaerobe_depletion_v2	Anaerobe depletion v2	Roseburia intestinalis	Parkinson's disease	Feces	12	0	7	0	12	decreased	12	7	increased	0	0	1.0	-12	decreased	12	7
 anaerobe_depletion_v2	Anaerobe depletion v2	Roseburia inulinivorans	Parkinson's disease	Feces	7	1	4	1	8	decreased	7	4	increased	1	1	0.75	-6	decreased	7	4

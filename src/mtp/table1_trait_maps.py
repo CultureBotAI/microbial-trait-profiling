@@ -799,11 +799,18 @@ def main() -> int:
     from mtp.workflow.consumers import (
         bind_count_arguments,
         core_corpus_identity,
+        preflight_consumer_outputs,
         write_consumer_record,
     )
 
     args = build_parser().parse_args()
     bundle = bind_count_arguments(args)
+    if bundle is not None:
+        preflight_consumer_outputs(
+            bundle,
+            args.output_dir / "core_consumption.json",
+            output_directory=args.output_dir,
+        )
     args.profile_input = args.profile_input or DEFAULT_PROFILE_PATH
     args.experiments_input = args.experiments_input or DEFAULT_EXPERIMENTS_PATH
     args.full_dump_input = args.full_dump_input or DEFAULT_FULL_DUMP_PATH

@@ -2,9 +2,9 @@
 
 ## Statistical universe
 
-- Human fecal conditions with at least `3` studies containing both increased and decreased signatures: `56`.
+- Human fecal conditions with at least `3` studies containing both increased and decreased signatures: `68`.
 - Exact genus/species taxa required reporting in at least `3` paired studies and at least one of the six KG-Microbe trait annotations.
-- The resulting condition-taxon test family contained `264` eligible comparisons.
+- The resulting condition-taxon test family contained `287` eligible comparisons.
 - Taxon direction was tested with an exact McNemar/binomial test on discordant paired studies.
 - Trait contrasts were tested across paired study-level increased-minus-decreased z scores with a two-sided Wilcoxon signed-rank test.
 - Benjamini-Hochberg correction was applied globally within the complete condition-taxon family and within the complete condition-trait family.
@@ -13,11 +13,11 @@
 
 ## Results shown
 
-- Eligible conditions represented in the evidence landscape: `56`.
+- Eligible conditions represented in the evidence landscape: `68`.
 - FDR-selected condition-taxon results: `0` involving `0` genera and `0` species.
 - FDR-selected condition-trait results: `0`.
 - Exploratory condition-taxon results: `1`.
-- Exploratory condition-trait results: `4`.
+- Exploratory condition-trait results: `5`.
 - Conditions in the significant-only node/edge tables: `0`.
 - Dashed KG-Microbe annotation links: `0`.
 - Network nodes/edges: `0` / `0`.

@@ -222,7 +222,11 @@ def open_input_text(path: Path) -> TextIO:
 
 
 def main(argv: list[str] | None = None) -> None:
-    from mtp.workflow.consumers import open_core_bundle, write_consumer_record
+    from mtp.workflow.consumers import (
+        open_core_bundle,
+        preflight_consumer_outputs,
+        write_consumer_record,
+    )
 
     args = parse_args(argv)
     bundle = None
@@ -234,6 +238,15 @@ def main(argv: list[str] | None = None) -> None:
             if supplied is not None and supplied.resolve() != path.resolve():
                 raise ValueError(f"--core-run conflicts with --{argument.replace('_', '-')}")
             setattr(args, argument, path)
+        preflight_consumer_outputs(
+            bundle,
+            args.output.with_suffix(".core_consumption.json"),
+            [
+                path
+                for path in (args.output, args.tsv_output, args.all_results_output)
+                if path is not None
+            ],
+        )
 
     with open_input_text(args.input) as fh:
         reader = csv.DictReader(fh, delimiter="\t")

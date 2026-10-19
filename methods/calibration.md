@@ -278,9 +278,11 @@ Ilyas leads the battery; the format is a proposal, not a fait accompli.
 
 ## What this does not cover
 
-- The enrichment arm's hypergeometric procedure. Its urn draws trait-annotation
-  assertions rather than taxa (#131), which is a model question a resampling study
-  of this shape cannot settle, and its adapter belongs to its owner.
+- The enrichment arm's hypergeometric procedure. Its production urn now draws
+  distinct taxa rather than trait-annotation assertions (#131), but nested taxa
+  inherit the same annotations and are not independent draws. That is a model
+  question a resampling study of this shape cannot settle; its calibration at the
+  production thresholds is tracked in #551, and its adapter belongs to its owner.
 - The composition arm's native transformed test, for the same reason. Because those
   two arms are not covered, this work is part of #182 and does not close it.
 - The aggregated profile-support rule of #177, whose code is not on main.

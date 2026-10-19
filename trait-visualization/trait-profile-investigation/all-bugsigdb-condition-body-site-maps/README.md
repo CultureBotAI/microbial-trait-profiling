@@ -16,7 +16,7 @@ Studies summarized: 1,080
 - `all_bugsigdb_increased_profile_condition_body_site_map_v2.png`: uncapped v2 increased-profile map.
 - `all_bugsigdb_increased_profile_condition_body_site_map_v2_edges.tsv`: uncapped v2 edge table for the increased-profile map.
 - `all_bugsigdb_increased_profile_condition_body_site_map_v3_individual.png`: v3 increased-profile map with raw labels and grey comparator-background edges.
-- `all_bugsigdb_increased_profile_condition_body_site_map_v3_individual_edges.tsv`: v3 individual edge table for the increased-profile map; 29 rows are drawn.
+- `all_bugsigdb_increased_profile_condition_body_site_map_v3_individual_edges.tsv`: v3 individual edge table for the increased-profile map; 30 rows are drawn.
 - `all_bugsigdb_increased_profile_condition_body_site_map_v3_grouped.png`: v3 increased-profile map with display rollups and grey comparator-background edges.
 - `all_bugsigdb_increased_profile_condition_body_site_map_v3_grouped_edges.tsv`: v3 grouped edge table for the increased-profile map; 32 rows are drawn.
 - `all_bugsigdb_increased_profile_condition_body_site_map_v3_grouped_condition_rollups.tsv`: raw-to-display condition-label audit table.
@@ -27,7 +27,7 @@ Studies summarized: 1,080
 - `all_bugsigdb_decreased_profile_condition_body_site_map_v2.png`: uncapped v2 decreased-profile map.
 - `all_bugsigdb_decreased_profile_condition_body_site_map_v2_edges.tsv`: uncapped v2 edge table for the decreased-profile map.
 - `all_bugsigdb_decreased_profile_condition_body_site_map_v3_individual.png`: v3 decreased-profile map with raw labels and grey comparator-background edges.
-- `all_bugsigdb_decreased_profile_condition_body_site_map_v3_individual_edges.tsv`: v3 individual edge table for the decreased-profile map; 25 rows are drawn.
+- `all_bugsigdb_decreased_profile_condition_body_site_map_v3_individual_edges.tsv`: v3 individual edge table for the decreased-profile map; 27 rows are drawn.
 - `all_bugsigdb_decreased_profile_condition_body_site_map_v3_grouped.png`: v3 decreased-profile map with display rollups and grey comparator-background edges.
 - `all_bugsigdb_decreased_profile_condition_body_site_map_v3_grouped_edges.tsv`: v3 grouped edge table for the decreased-profile map; 32 rows are drawn.
 - `all_bugsigdb_decreased_profile_condition_body_site_map_v3_grouped_condition_rollups.tsv`: raw-to-display condition-label audit table.
@@ -45,4 +45,4 @@ The `_v3_individual` PNGs keep raw condition labels and raw body-site labels. Th
 
 In each v3 direction map, colored edges count the focus-direction BugSigDB profiles and parallel grey edges count comparator-direction profiles in the same condition/body-site pair for that display mode. V3 condition nodes are ordered by the colored focus-profile count reported as `n=`; `bg=` reports comparator-profile support. The plot subtitle identifies these abbreviations as profile and study units.
 
-The v3 individual summary contains 567 condition/body-site pairs before PNG selection. The v3 grouped summary contains 143 display condition/body-site pairs before PNG selection.
+The v3 individual summary contains 897 condition/body-site pairs before PNG selection. The v3 grouped summary contains 185 display condition/body-site pairs before PNG selection.

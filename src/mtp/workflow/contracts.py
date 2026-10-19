@@ -45,6 +45,7 @@ from mtp.workflow.coverage import (
     feature_class,
     feature_filter_id,
 )
+from mtp.workflow.matrix_contracts import validate_feature_node_metadata, validate_matrix_sources
 
 CONTRACT_VERSION = "core-products-v1"
 _CURIE = re.compile(r"[A-Za-z][A-Za-z0-9_.-]*:[^\s|]+\Z")
@@ -226,6 +227,18 @@ def _feature_contract(path: Path, kind: str, context: Mapping[str, object]) -> d
     matrix = _path(context, "taxa_matrix", "taxon_trait_matrix")
     if matrix is not None and taxa_trait_count_reader(matrix).count_columns != features:
         raise ValueError("Feature catalog vocabulary/order does not match matrix columns")
+    nodes = _path(context, "kg_nodes")
+    if nodes is not None:
+        validate_feature_node_metadata(path, nodes)
+    metadata = _path(context, "feature_metadata")
+    if kind == "feature_catalog" and metadata is not None:
+        _, source_rows = read_table(metadata, required=FEATURE_METADATA_COLUMNS)
+        observed = [tuple(row[column] for column in FEATURE_METADATA_COLUMNS) for row in rows]
+        expected_metadata = [
+            tuple(row[column] for column in FEATURE_METADATA_COLUMNS) for row in source_rows
+        ]
+        if observed != expected_metadata:
+            raise ValueError("Feature catalog metadata differs from its source feature metadata")
     return {
         "rows": len(rows),
         "feature_filter_id": feature_filter_id(features),
@@ -233,6 +246,8 @@ def _feature_contract(path: Path, kind: str, context: Mapping[str, object]) -> d
             feature_class(feature) == "culture_medium" for feature in features
         ),
         "annotation_evidence": UNRESOLVED_EVIDENCE,
+        "kg_node_metadata_checked": nodes is not None,
+        "source_metadata_checked": kind == "feature_catalog" and metadata is not None,
     }
 
 
@@ -262,6 +277,16 @@ def _matrix_contract(path: Path, context: Mapping[str, object]) -> dict[str, obj
         _, records = read_table(catalog, required=("column_id",), keys=("column_id",))
         if tuple(row["column_id"] for row in records) != reader.count_columns:
             raise ValueError("Matrix feature vocabulary/order differs from catalog")
+    source_facts: dict[str, object] = {"kg_source_aggregation_checked": False}
+    edges = _path(context, "kg_edges")
+    if edges is not None:
+        reported = _path(context, "reported_taxa")
+        nodes = _path(context, "kg_nodes")
+        if reported is None or nodes is None:
+            raise ValueError("KG matrix reconciliation requires reported taxa and KG nodes")
+        source_facts = validate_matrix_sources(
+            path, reported, edges, nodes, _path(context, "feature_metadata")
+        )
     return {
         "rows": reader.summary.rows,
         "features": len(reader.count_columns),
@@ -269,6 +294,7 @@ def _matrix_contract(path: Path, context: Mapping[str, object]) -> dict[str, obj
         "feature_filter_id": feature_filter_id(reader.count_columns),
         "unit": "distinct_annotated_source_taxa_at_or_below_reported_taxon",
         "annotation_evidence": UNRESOLVED_EVIDENCE,
+        **source_facts,
     }
 
 

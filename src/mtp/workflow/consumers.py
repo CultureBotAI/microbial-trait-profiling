@@ -124,6 +124,96 @@ def core_corpus_identity(bundle: CoreBundle, *, bugsigdb_vintage: str | None) ->
     )
 
 
+def preflight_consumer_outputs(
+    bundle: CoreBundle,
+    record_path: Path,
+    outputs: Sequence[Path] = (),
+    *,
+    output_directory: Path | None = None,
+) -> None:
+    """Reserve sidecars and protect the core before analysis writes any output (#654).
+
+    Directory-based consumers use a dedicated destination disjoint from their
+    input files and the immutable run bundle. Existing aliases in that directory
+    are also checked, so a symlink or hard link cannot redirect a result write.
+    This preflight does not claim protection against concurrent filesystem edits.
+    """
+    paths = [*outputs, record_path, record_path.with_suffix(".coverage.tsv")]
+    seen_paths: set[Path] = set()
+    seen_files: set[tuple[int, int]] = set()
+    for path in paths:
+        resolved = path.resolve()
+        identity = _existing_file_identity(path)
+        if resolved in seen_paths or (identity is not None and identity in seen_files):
+            raise ValueError(f"Consumer output paths collide, including reserved sidecars: {path}")
+        seen_paths.add(resolved)
+        if identity is not None:
+            seen_files.add(identity)
+        if path.exists() and not path.is_file():
+            raise ValueError(f"Consumer output must be a regular file: {path}")
+
+    protected = {bundle.manifest.parent.resolve()}
+    protected_files = [
+        bundle.manifest,
+        *(
+            bundle.manifest.parent / "steps" / step.step_id / "_step.json"
+            for step in bundle.run.steps or []
+        ),
+    ]
+    for artifact in bundle.run.artifacts or []:
+        path = bundle.path(artifact.product_id)
+        protected.add(path.resolve())
+        if path.is_dir():
+            protected_files.extend(path / member.path for member in artifact.inventory)
+        else:
+            protected_files.append(path)
+    protected_identities = {
+        identity
+        for path in protected_files
+        if (identity := _existing_file_identity(path)) is not None
+    }
+
+    candidates = list(paths)
+    if output_directory is not None:
+        directory = output_directory.resolve()
+        if any(_paths_overlap(directory, path) for path in protected):
+            raise ValueError(
+                f"Consumer output directory overlaps verified core inputs or run bundle: "
+                f"{output_directory}; choose a separate analysis directory"
+            )
+        if any(sidecar.is_symlink() for sidecar in paths[-2:]):
+            raise ValueError("Consumer output sidecars cannot redirect through symlinks")
+        declared_paths = {path.absolute() for path in paths}
+        for child in output_directory.rglob("*"):
+            if child.is_symlink() and not child.exists():
+                raise ValueError(f"Consumer output directory contains a dangling symlink: {child}")
+            if child.is_file() and child.absolute() not in declared_paths:
+                identity = _existing_file_identity(child)
+                if child.resolve() in seen_paths or identity in seen_files:
+                    raise ValueError(f"Consumer output paths collide through an alias: {child}")
+                seen_paths.add(child.resolve())
+                if identity is not None:
+                    seen_files.add(identity)
+            candidates.append(child)
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if any(_paths_overlap(resolved, path) for path in protected) or (
+            _existing_file_identity(candidate) in protected_identities
+        ):
+            raise ValueError(f"Consumer output overlaps a verified core input or run: {candidate}")
+
+
+def _existing_file_identity(path: Path) -> tuple[int, int] | None:
+    if not path.is_file():
+        return None
+    status = path.stat()
+    return status.st_dev, status.st_ino
+
+
+def _paths_overlap(left: Path, right: Path) -> bool:
+    return left.is_relative_to(right) or right.is_relative_to(left)
+
+
 def write_consumer_record(
     bundle: CoreBundle,
     path: Path,
@@ -133,6 +223,9 @@ def write_consumer_record(
     feature_policy: str = "exclude_mediadive",
 ) -> Path:
     """Bind actual analysis outputs to a checked core run; do not assert physiological evidence."""
+    if not outputs:
+        raise ValueError("Consumer outputs must be a nonempty set of distinct files")
+    preflight_consumer_outputs(bundle, path, outputs)
     current = verify_core_run(bundle.manifest)
     if (
         current.run_id != bundle.run.run_id
@@ -140,8 +233,6 @@ def write_consumer_record(
         or current.artifacts != bundle.run.artifacts
     ):
         raise ValueError("Core inputs or execution identity changed during downstream analysis")
-    if not outputs or len({output.resolve() for output in outputs}) != len(outputs):
-        raise ValueError("Consumer outputs must be a nonempty set of distinct files")
     path.parent.mkdir(parents=True, exist_ok=True)
     coverage_path = build_consumer_coverage(
         bundle, path.with_suffix(".coverage.tsv"), feature_policy

@@ -14,9 +14,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-import yaml
-
-from mtp.datamodel import Study
 from mtp.datamodel.core_products_pydantic import SourceIdentity
 from mtp.download import (
     BUGSIGDB_EXPORTS_DOI,
@@ -49,6 +46,8 @@ from mtp.workflow.coverage import (
 )
 from mtp.workflow.kg_inputs import audit_kg_edges, iter_kg_edges
 from mtp.workflow.models import ProductDefinition, ValidationResult, ValidationStatus
+from mtp.workflow.source_contracts import validate_export_sources, validate_study_sources
+from mtp.workflow.source_identity import validate_source_identity
 
 Operation = Callable[[dict[str, Path], dict[str, Path], dict[str, object]], None]
 RAW_COLUMNS = ("BSDB ID", "NCBI Taxonomy IDs", "MetaPhlAn taxon names", "Abundance in Group 1")
@@ -363,46 +362,18 @@ def validate_core_product(
     elif kind == "kg_nodes":
         details = {"rows": _validate_delimited(path, ("id", "category", "name"))}
     elif kind == "study_collection":
-        paths = sorted(path.glob("*.yaml"))
-        if not paths or set(path.iterdir()) != set(paths):
-            raise ValueError("Study collection must contain only its nonempty YAML membership")
-        ids = set()
-        for study_path in paths:
-            study = Study.model_validate(yaml.safe_load(study_path.read_text(encoding="utf-8")))
-            if study.id in ids:
-                raise ValueError(f"Duplicate study ID in collection: {study.id}")
-            ids.add(study.id)
-        details = {"studies": len(paths)}
-    elif kind in {"source_identity", "ingest_log"}:
+        details = validate_study_sources(context["raw_dump"], path, context["ingest_log"])
+    elif kind == "source_identity":
+        details = validate_source_identity(path, context)
+    elif kind == "ingest_log":
         value = json.loads(path.read_text(encoding="utf-8"))
-        if kind == "source_identity":
-            SourceIdentity.model_validate(value)
-            if not isinstance(value, dict) or set(value.get("consumed_files", {})) != {
-                "raw_dump",
-                "kg_edges",
-                "kg_nodes",
-            }:
-                raise ValueError(
-                    "Source identity must identify exactly the consumed raw and KG files"
-                )
-            for name, record in value["consumed_files"].items():
-                actual = context[name]
-                if (
-                    record.get("product_id") != name
-                    or record.get("sha256") != file_sha256(actual)
-                    or record.get("size_bytes") != actual.stat().st_size
-                    or record.get("path") != str(actual.resolve())
-                ):
-                    raise ValueError(f"Source identity does not match consumed file: {name}")
-            if value.get("pinned_verified"):
-                verify_pinned_dump(context["raw_dump"].read_bytes())
-            details = {"pinned_verified": value.get("pinned_verified")}
-        else:
-            if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
-                raise ValueError("Ingest log must be a list of event mappings")
-            details = {"events": len(value)}
+        if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
+            raise ValueError("Ingest log must be a list of event mappings")
+        details = {"events": len(value)}
     else:
         details = validate_product(path, kind, context=context, cohort=product.cohort)
+        if kind == "study_table":
+            details.update(validate_export_sources(context["studies"], context))
     return [
         ValidationResult(
             validator=f"core:{kind}:v1",

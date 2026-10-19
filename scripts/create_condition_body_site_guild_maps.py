@@ -161,6 +161,8 @@ FACULTATIVE_CONFIG = MapConfig(
             "Microbiome",
             "Population",
             "Physical activity",
+            "Time",
+            "Timepoint",
         }
     ),
 )

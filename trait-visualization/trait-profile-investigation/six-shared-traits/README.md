@@ -41,27 +41,27 @@ Node counts are profile-trait memberships across displayed links, not deduplicat
 
 | analysis | type | PNG | displayed trait links | selected pairs | all edge rows |
 | --- | --- | --- | ---: | ---: | ---: |
-| six_shared_traits_increased | combined_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_profile_sankey.png` | 190 |  | 683 |
-| six_shared_traits_decreased | combined_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_profile_sankey.png` | 186 |  | 655 |
-| six_shared_traits_increased_trait_lanes | combined_trait_lanes | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_trait_lanes_profile_sankey.png` | 190 |  | 683 |
-| six_shared_traits_decreased_trait_lanes | combined_trait_lanes | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_trait_lanes_profile_sankey.png` | 186 |  | 655 |
+| six_shared_traits_increased | combined_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_profile_sankey.png` | 192 |  | 788 |
+| six_shared_traits_decreased | combined_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_profile_sankey.png` | 189 |  | 726 |
+| six_shared_traits_increased_trait_lanes | combined_trait_lanes | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_trait_lanes_profile_sankey.png` | 192 |  | 788 |
+| six_shared_traits_decreased_trait_lanes | combined_trait_lanes | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_trait_lanes_profile_sankey.png` | 189 |  | 726 |
 | six_shared_traits_increased_shared_high_support | combined_shared_high_support | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_shared_high_support_profile_sankey.png` | 72 | 12 | 72 |
 | six_shared_traits_decreased_shared_high_support | combined_shared_high_support | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_shared_high_support_profile_sankey.png` | 72 | 12 | 72 |
-| six_shared_traits_combined_shared_high_support | bidirectional_shared_high_support | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_combined_shared_high_support_profile_sankey.png` | 144 | 14 | 144 |
-| six_shared_traits_increased_individual_conditions | combined_individual_conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_individual_conditions_profile_sankey.png` | 117 |  | 2010 |
-| six_shared_traits_decreased_individual_conditions | combined_individual_conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_individual_conditions_profile_sankey.png` | 105 |  | 1904 |
-| facultatively_aerobic_increased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/facultatively_aerobic_increased_profile_sankey.png` | 32 |  | 126 |
-| facultatively_aerobic_decreased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/facultatively_aerobic_decreased_profile_sankey.png` | 32 |  | 123 |
-| cellulose_catabolic_process_increased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/cellulose_catabolic_process_increased_profile_sankey.png` | 30 |  | 89 |
-| cellulose_catabolic_process_decreased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/cellulose_catabolic_process_decreased_profile_sankey.png` | 27 |  | 88 |
-| coccus_shaped_increased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/coccus_shaped_increased_profile_sankey.png` | 32 |  | 123 |
-| coccus_shaped_decreased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/coccus_shaped_decreased_profile_sankey.png` | 32 |  | 118 |
-| sphere_shaped_increased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/sphere_shaped_increased_profile_sankey.png` | 32 |  | 121 |
-| sphere_shaped_decreased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/sphere_shaped_decreased_profile_sankey.png` | 32 |  | 115 |
-| arsenate_reduction_increased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/arsenate_reduction_increased_profile_sankey.png` | 32 |  | 100 |
-| arsenate_reduction_decreased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/arsenate_reduction_decreased_profile_sankey.png` | 31 |  | 90 |
-| moderately_halophilic_increased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/moderately_halophilic_increased_profile_sankey.png` | 32 |  | 124 |
-| moderately_halophilic_decreased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/moderately_halophilic_decreased_profile_sankey.png` | 32 |  | 121 |
+| six_shared_traits_combined_shared_high_support | bidirectional_shared_high_support | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_combined_shared_high_support_profile_sankey.png` | 144 | 13 | 144 |
+| six_shared_traits_increased_individual_conditions | combined_individual_conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_individual_conditions_profile_sankey.png` | 124 |  | 2519 |
+| six_shared_traits_decreased_individual_conditions | combined_individual_conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_individual_conditions_profile_sankey.png` | 111 |  | 2299 |
+| facultatively_aerobic_increased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/facultatively_aerobic_increased_profile_sankey.png` | 32 |  | 152 |
+| facultatively_aerobic_decreased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/facultatively_aerobic_decreased_profile_sankey.png` | 32 |  | 141 |
+| cellulose_catabolic_process_increased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/cellulose_catabolic_process_increased_profile_sankey.png` | 32 |  | 92 |
+| cellulose_catabolic_process_decreased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/cellulose_catabolic_process_decreased_profile_sankey.png` | 29 |  | 93 |
+| coccus_shaped_increased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/coccus_shaped_increased_profile_sankey.png` | 32 |  | 148 |
+| coccus_shaped_decreased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/coccus_shaped_decreased_profile_sankey.png` | 32 |  | 135 |
+| sphere_shaped_increased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/sphere_shaped_increased_profile_sankey.png` | 32 |  | 145 |
+| sphere_shaped_decreased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/sphere_shaped_decreased_profile_sankey.png` | 32 |  | 130 |
+| arsenate_reduction_increased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/arsenate_reduction_increased_profile_sankey.png` | 32 |  | 109 |
+| arsenate_reduction_decreased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/arsenate_reduction_decreased_profile_sankey.png` | 32 |  | 94 |
+| moderately_halophilic_increased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/moderately_halophilic_increased_profile_sankey.png` | 32 |  | 142 |
+| moderately_halophilic_decreased | single_trait_direction | `trait-visualization/trait-profile-investigation/six-shared-traits/moderately_halophilic_decreased_profile_sankey.png` | 32 |  | 133 |
 
 ## Increased and Decreased High-Support Overlay
 
@@ -87,10 +87,10 @@ The graph explorer uses Cytoscape.js from jsDelivr and includes four views: incr
 
 | view | condition nodes | body-site nodes | trait/body-site bundles | source edges | body-site connectors |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Increased, grouped conditions | 19 | 15 | 74 | 190 | 74 |
-| Decreased, grouped conditions | 17 | 14 | 72 | 186 | 72 |
-| Increased, individual conditions | 23 | 12 | 50 | 117 | 50 |
-| Decreased, individual conditions | 23 | 11 | 53 | 105 | 53 |
+| Increased, grouped conditions | 18 | 15 | 78 | 192 | 78 |
+| Decreased, grouped conditions | 16 | 15 | 77 | 189 | 77 |
+| Increased, individual conditions | 24 | 12 | 51 | 124 | 51 |
+| Decreased, individual conditions | 21 | 12 | 53 | 111 | 53 |
 
 ## Static Cytoscape-Inspired PNG Graphs
 
@@ -100,10 +100,10 @@ These PNGs are graph versions of the six shared trait Sankey views. They use six
 
 | view | PNG | condition nodes | trait hubs | body-site nodes | trait/body-site bundles | condition-trait edges | trait-body links | body-site connectors |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Increased, grouped conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_grouped_cytoscape_hub_graph.png` | 19 | 6 | 15 | 74 | 72 | 74 | 74 |
-| Decreased, grouped conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_grouped_cytoscape_hub_graph.png` | 17 | 6 | 14 | 72 | 72 | 72 | 72 |
-| Increased, individual conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_individual_conditions_cytoscape_hub_graph.png` | 23 | 6 | 12 | 50 | 72 | 50 | 50 |
-| Decreased, individual conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_individual_conditions_cytoscape_hub_graph.png` | 23 | 6 | 11 | 53 | 72 | 53 | 53 |
+| Increased, grouped conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_grouped_cytoscape_hub_graph.png` | 18 | 6 | 15 | 78 | 72 | 78 | 78 |
+| Decreased, grouped conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_grouped_cytoscape_hub_graph.png` | 16 | 6 | 15 | 77 | 72 | 77 | 77 |
+| Increased, individual conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_individual_conditions_cytoscape_hub_graph.png` | 24 | 6 | 12 | 51 | 72 | 51 | 51 |
+| Decreased, individual conditions | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_individual_conditions_cytoscape_hub_graph.png` | 21 | 6 | 12 | 53 | 72 | 53 | 53 |
 
 ## Condition-Body-Site Cytoscape Heatmaps
 
@@ -136,16 +136,16 @@ The signed contrast table contains candidate edge records, not a complete Cartes
 
 | heatmap | type | primary PNG | clustered diagnostic PNG | displayed cells | nominal p<0.01 cells | BH-selected cells | tested cells | rows | condition labels | anatomy groups |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Increased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_grouped_condition_body_site_trait_pattern_heatmap.png` |  | 15 | 15 | 5 | 190 | 9 |  |  |
-| Decreased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_grouped_condition_body_site_trait_pattern_heatmap.png` |  | 6 | 6 | 4 | 186 | 6 |  |  |
-| Increased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` |  | 4 | 4 | 2 | 117 | 2 |  |  |
-| Decreased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` |  | 5 | 5 | 4 | 105 | 5 |  |  |
-| Grouped conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap.png` | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_grouped_condition_body_site_signed_direction_contrast_clustered_heatmap.png` | 384 | 28 | 8 | 747 | 78 | 34 | 15 |
-| Individual conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap.png` | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_clustered_heatmap.png` | 567 | 21 | 4 | 2388 | 123 | 105 | 12 |
+| Increased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_grouped_condition_body_site_trait_pattern_heatmap.png` |  | 14 | 14 | 7 | 192 | 8 |  |  |
+| Decreased, grouped conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_grouped_condition_body_site_trait_pattern_heatmap.png` |  | 5 | 5 | 4 | 189 | 5 |  |  |
+| Increased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_increased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` |  | 8 | 8 | 0 | 124 | 6 |  |  |
+| Decreased, individual conditions | trait_pattern | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_decreased_individual_conditions_condition_body_site_trait_pattern_heatmap.png` |  | 4 | 4 | 4 | 111 | 4 |  |  |
+| Grouped conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap.png` | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_grouped_condition_body_site_signed_direction_contrast_clustered_heatmap.png` | 436 | 30 | 7 | 892 | 94 | 36 | 15 |
+| Individual conditions: signed direction contrast | signed_direction_contrast | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap.png` | `trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_clustered_heatmap.png` | 632 | 29 | 1 | 3144 | 144 | 115 | 14 |
 
 ### Clustered Direction Overviews
 
-The grouped view is previewed below. The 123-row individual view is linked directly because a page-width thumbnail is illegible. Use the readable pages below when numeric annotations need to be read.
+The grouped view is previewed below. The 144-row individual view is linked directly because a page-width thumbnail is illegible. Use the readable pages below when numeric annotations need to be read.
 
 #### Grouped conditions: signed direction contrast
 
@@ -161,21 +161,21 @@ The undefined fraction covers every candidate row pair before low-information ro
 
 | view | rows linked | insufficient-overlap rows | undefined candidate pairs | candidate tie excess | undefined linkage pairs | linkage tie excess |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Grouped conditions: signed direction contrast | 75 | 3 | 431/3003 (14.4%) | 2808/3003 (93.5%) | 203/2775 (7.3%) | 2580/2775 (93.0%) |
-| Individual conditions: signed direction contrast | 108 | 15 | 2117/7503 (28.2%) | 6950/7503 (92.6%) | 392/5778 (6.8%) | 5225/5778 (90.4%) |
+| Grouped conditions: signed direction contrast | 83 | 11 | 1216/4371 (27.8%) | 4112/4371 (94.1%) | 248/3403 (7.3%) | 3144/3403 (92.4%) |
+| Individual conditions: signed direction contrast | 119 | 25 | 3731/10296 (36.2%) | 9787/10296 (95.1%) | 456/7021 (6.5%) | 6512/7021 (92.8%) |
 
 ### Signed Direction Pages
 
-- [Grouped conditions, page 1](six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap_page_01.png) (24 rows, 129 filled cells)
-- [Grouped conditions, page 2](six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap_page_02.png) (24 rows, 116 filled cells)
-- [Grouped conditions, page 3](six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap_page_03.png) (24 rows, 120 filled cells)
-- [Grouped conditions, page 4](six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap_page_04.png) (6 rows, 19 filled cells)
+- [Grouped conditions, page 1](six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap_page_01.png) (24 rows, 123 filled cells)
+- [Grouped conditions, page 2](six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap_page_02.png) (24 rows, 118 filled cells)
+- [Grouped conditions, page 3](six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap_page_03.png) (24 rows, 121 filled cells)
+- [Grouped conditions, page 4](six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap_page_04.png) (22 rows, 74 filled cells)
 - [Individual conditions, page 1](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_01.png) (24 rows, 138 filled cells)
-- [Individual conditions, page 2](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_02.png) (24 rows, 137 filled cells)
-- [Individual conditions, page 3](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_03.png) (24 rows, 101 filled cells)
-- [Individual conditions, page 4](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_04.png) (24 rows, 97 filled cells)
-- [Individual conditions, page 5](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_05.png) (24 rows, 88 filled cells)
-- [Individual conditions, page 6](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_06.png) (3 rows, 6 filled cells)
+- [Individual conditions, page 2](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_02.png) (24 rows, 141 filled cells)
+- [Individual conditions, page 3](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_03.png) (24 rows, 113 filled cells)
+- [Individual conditions, page 4](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_04.png) (24 rows, 61 filled cells)
+- [Individual conditions, page 5](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_05.png) (24 rows, 95 filled cells)
+- [Individual conditions, page 6](six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_heatmap_page_06.png) (24 rows, 84 filled cells)
 
 ### Largest Individual-versus-Grouped Pattern Differences
 
@@ -183,13 +183,13 @@ These are the ten largest finite `1 - rho` distances among rows with at least 5 
 
 | individual condition | grouped condition | body site | shared traits | source contributors | displayed contributors | rho | distance | discordant | IQR outlier |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| Polycystic ovary syndrome | Metabolic / endocrine | Feces | 6 | 19 | 7 | -0.714 | 1.714 | True | True |
-| Response to immunochemotherapy | Medication / clinical treatment | Feces | 5 | 11 | 4 | -0.707 | 1.707 | True | True |
-| Food allergy | Autoimmune / inflammatory disease | Feces | 5 | 13 | 5 | -0.700 | 1.700 | True | False |
-| Constipation | GI / digestive disease | Feces | 6 | 10 | 6 | -0.580 | 1.580 | True | False |
-| Cesarean section | Pregnancy / neonatal | Feces | 5 | 6 | 2 | -0.410 | 1.410 | True | False |
-| Endometriosis | Reproductive / hormonal health | Vaginal / reproductive | 5 | 12 | 3 | -0.264 | 1.264 | True | False |
-| COVID-19 | Infectious disease | Upper airway / nasal | 6 | 9 | 1 | -0.200 | 1.200 | True | False |
-| Socioeconomic status | Population / social covariates | Feces | 6 | 7 | 3 | -0.200 | 1.200 | True | False |
-| Breast cancer | Cancer / neoplasia | Feces | 5 | 19 | 7 | -0.100 | 1.100 | True | False |
-| Psoriasis | Autoimmune / inflammatory disease | Feces | 5 | 13 | 5 | -0.100 | 1.100 | True | False |
+| Response to immunochemotherapy | Medication / clinical treatment | Feces | 5 | 15 | 4 | -0.707 | 1.707 | True | False |
+| Cesarean section | Pregnancy / neonatal | Feces | 5 | 8 | 3 | -0.667 | 1.667 | True | False |
+| Ovarian cancer | Cancer / neoplasia | Vaginal / reproductive | 5 | 7 | 3 | -0.667 | 1.667 | True | False |
+| Food allergy | Autoimmune / inflammatory disease | Feces | 6 | 16 | 5 | -0.667 | 1.667 | True | False |
+| Constipation | GI / digestive disease | Feces | 6 | 16 | 6 | -0.395 | 1.395 | True | False |
+| Non-alcoholic fatty liver disease | GI / digestive disease | Feces | 6 | 16 | 6 | -0.371 | 1.371 | True | False |
+| Socioeconomic status | Population / social covariates | Feces | 6 | 8 | 4 | -0.371 | 1.371 | True | False |
+| Polycystic ovary syndrome | Metabolic / endocrine | Feces | 6 | 33 | 7 | -0.314 | 1.314 | True | True |
+| Chronic constipation | GI / digestive disease | Feces | 6 | 16 | 6 | -0.116 | 1.116 | True | False |
+| Attention deficit-hyperactivity disorder | Neurologic / cognitive disease | Feces | 5 | 23 | 8 | -0.103 | 1.103 | True | False |

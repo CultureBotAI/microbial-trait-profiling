@@ -380,6 +380,60 @@ def taxon_specificity_from_occurrences(
     return pd.DataFrame.from_records(records)
 
 
+def check_trait_taxa_evidence(
+    evidence: pd.DataFrame,
+    carriers: pd.DataFrame,
+    trait_summary: pd.DataFrame,
+    metadata: pd.DataFrame,
+) -> None:
+    """Refuse trait-taxa evidence that no longer matches the current PD profiles (#584).
+
+    `just pd-trait-taxa` writes the evidence and carrier tables from the PD fecal profiles
+    and the positive side of the six-trait lollipop. If either has changed since, tables
+    built from them would mix two label sources, so stop instead of writing them.
+    """
+    pd_feces = metadata["condition"].eq(PD_CONDITION) & metadata["body_site_group"].eq(FECES)
+    current_profiles = set(metadata.loc[pd_feces, "profile_id"].astype(str))
+    stale_profiles = sorted(set(evidence["profile_id"].astype(str)) - current_profiles)
+    summary_traits = set(trait_summary["trait_id"].astype(str))
+    evidence_traits = set(evidence["trait_id"].astype(str))
+    positive_side = trait_summary["increased_minus_decreased_mean_z"] > 0
+    positive_traits = set(trait_summary.loc[positive_side, "trait_id"].astype(str))
+    carrier_positive = carriers.loc[carriers["positive_side_in_lollipop"].astype(bool)]
+    evidence_positive_traits = set(carrier_positive["trait_id"].astype(str))
+
+    problems = []
+    if stale_profiles:
+        problems.append(
+            f"{len(stale_profiles)} evidence profiles are not current PD fecal profiles "
+            f"(first: {stale_profiles[0]})"
+        )
+    if evidence_traits != summary_traits:
+        problems.append("its traits differ from pd_six_trait_direction_summary.tsv")
+    if evidence_positive_traits != positive_traits:
+        problems.append(
+            f"it has {len(evidence_positive_traits)} positive-side traits, "
+            f"pd_six_trait_direction_summary.tsv has {len(positive_traits)}"
+        )
+    if problems:
+        msg = (
+            "pd_six_trait_taxon_profile_evidence.tsv was built from other PD profiles or "
+            f"another six-trait lollipop: {'; '.join(problems)}. Regenerate it with "
+            "`just pd-trait-taxa` once #584 decides how the analysis picks its traits."
+        )
+        raise ValueError(msg)
+
+
+def require_current_trait_taxa_evidence(metadata: pd.DataFrame, output_dir: Path) -> None:
+    """Read the saved evidence, carrier and lollipop tables and check that they agree (#584)."""
+    check_trait_taxa_evidence(
+        read_tsv(output_dir / "pd_six_trait_taxon_profile_evidence.tsv"),
+        read_tsv(output_dir / "pd_six_trait_taxon_carriers.tsv"),
+        read_tsv(output_dir / "pd_six_trait_direction_summary.tsv"),
+        metadata,
+    )
+
+
 def load_taxon_specificity(taxon_ids: pd.Index, metadata: pd.DataFrame) -> pd.DataFrame:
     """Load the full taxon occurrence table and build PD-vs-other feces specificity."""
     taxa = read_tsv(
@@ -1489,8 +1543,9 @@ def sha256_chunks(path: Path) -> list[str]:
 
 def main() -> None:
     """Generate the six-trait influence heatmap and its auditable tables."""
-    counts, trait_columns = read_profile_counts(PROFILE_MATRIX_PATH)
     metadata = load_profile_metadata()
+    require_current_trait_taxa_evidence(metadata, OUTPUT_DIR)
+    counts, trait_columns = read_profile_counts(PROFILE_MATRIX_PATH)
     taxon_vectors = read_taxon_vectors(TAXA_TRAIT_MATRIX_PATH, trait_columns)
     evidence_path = OUTPUT_DIR / "pd_six_trait_taxon_profile_evidence.tsv"
     evidence = read_tsv(evidence_path)

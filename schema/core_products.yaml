@@ -61,7 +61,9 @@ classes:
         required: true
         ifabsent: string(rolled_up_source_taxon_count)
         pattern: ^rolled_up_source_taxon_count$
-        description: Counts retain descendant rollup and occurrence multiplicity.
+        description: Counts sum descendant-rollup source counts over distinct reported taxon IDs.
+          Repeated reported IDs are deduplicated; the same source annotation can contribute
+          through distinct reported ancestor and descendant IDs.
         title: Unit
     title: Count Profile Row
   ORAProfileRow:
@@ -316,7 +318,8 @@ classes:
       direction:
         required: true
         pattern: ^(increased|decreased)$
-        description: Reported taxon abundance direction in cases relative to controls.
+        description: Curated reported taxon abundance direction in Group 1 relative to Group 0.
+          Clinical case-control orientation is not established by this core field.
         title: Direction
       taxon_count:
         range: integer

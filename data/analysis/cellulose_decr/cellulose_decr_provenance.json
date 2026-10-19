@@ -1,0 +1,156 @@
+{
+ "generated_at_utc": "2026-10-19T09:24:33Z",
+ "code_commit": "abe94d8a80eaa9bf2a3751ae34b5aca402e42d62",
+ "script": "src/mtp/cellulose_decr/analysis.py",
+ "bugsigdb_vintage": "2026-04-24_00:41_UTC",
+ "contrast_classifier_version": "contrast-orientation-v2",
+ "label_source": "experiment",
+ "condition_labels": "exact",
+ "permutations": 100000,
+ "seed": 20261017,
+ "seeds": {
+  "U1": 20261017,
+  "U2": 20261018,
+  "U3": 20261019,
+  "U4": 20261020,
+  "U5": 20261021,
+  "within": 20261022,
+  "U6": 20261023
+ },
+ "scripts": {
+  "src/mtp/cellulose_decr/__init__.py": "907a8db757a96e48d0a04ff342c7f4391e5a7e7ae2c691a67390f1e26a13fe20",
+  "src/mtp/cellulose_decr/analysis.py": "2da7516224005ba6da7716f0385e3ec22d238d757d8e737d5a8cc5bc94b7cfaf",
+  "src/mtp/cellulose_decr/figures.py": "9b5c12c321ff78a24590c66a6e607d6fd9bef140fd6050fdef7639a733be77bd"
+ },
+ "inputs": {
+  "profile_metadata": {
+   "path": "trait-visualization/study_trait_profile_study_metadata.tsv",
+   "sha256": "c3437804d76c4f595009fae9503249e25c71e32c5614598f0e344fee997a8e5a",
+   "bytes": 2005429
+  },
+  "experiments": {
+   "path": "data/derived/experiments.tsv",
+   "sha256": "403afea98d9b0a5b56939f68bcc9aace56a8eda350232a586806fe7bf30ad230",
+   "bytes": 743453
+  },
+  "studies": {
+   "path": "data/derived/studies.tsv",
+   "sha256": "410b60f438d22c203b312bc37b22649c381fa7a0b09dc439d6321c76e044e69c",
+   "bytes": 259322
+  },
+  "profile_counts": {
+   "path": "data/derived/study_trait_profiles_wide.tsv",
+   "sha256": "c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f",
+   "bytes": 31359448
+  },
+  "signature_taxa": {
+   "path": "data/derived/bugsigdb_taxa.tsv",
+   "sha256": "e7fa982b23ea82456247bcd841fd97d4fe71518e09eaaa27aee65d9adb271c59",
+   "bytes": 5851798
+  },
+  "taxa_trait_matrix": {
+   "path": "data/derived/taxa_trait_matrix.tsv",
+   "sha256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178",
+   "bytes": 31266333
+  },
+  "trait_columns": {
+   "path": "data/derived/taxa_trait_matrix_columns.tsv",
+   "sha256": "70b8bc1c2889d0e451bcaf604e0a986d4c29ffb802efeae5bdc64b67fc446ed3",
+   "bytes": 550385
+  },
+  "contrast_manifest": {
+   "path": "data/derived/contrast_orientation/contrast_manifest.tsv",
+   "sha256": "d7d9f1abac2479fdc6efe69ceb2960cc22ef416fabe7302d6eff689a68775666",
+   "bytes": 3322220
+  },
+  "full_dump": {
+   "path": "data/raw/full_dump.csv",
+   "sha256": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788",
+   "bytes": 16241290
+  },
+  "kg_edges": {
+   "path": "data/kg-microbe/merged-kg_edges.tsv",
+   "sha256": "d13812a436bd0b1c51cfe20c97076912a131f72b2b8e8ca3bb2db15095ab9ebb",
+   "bytes": 1034256091
+  }
+ },
+ "pinned_inputs": {
+  "profile_metadata": {
+   "path": "trait-visualization/study_trait_profile_study_metadata.tsv",
+   "sha256": "c3437804d76c4f595009fae9503249e25c71e32c5614598f0e344fee997a8e5a",
+   "bytes": 2005429
+  },
+  "experiments": {
+   "path": "data/derived/experiments.tsv",
+   "sha256": "403afea98d9b0a5b56939f68bcc9aace56a8eda350232a586806fe7bf30ad230",
+   "bytes": 743453
+  },
+  "studies": {
+   "path": "data/derived/studies.tsv",
+   "sha256": "410b60f438d22c203b312bc37b22649c381fa7a0b09dc439d6321c76e044e69c",
+   "bytes": 259322
+  },
+  "profile_counts": {
+   "path": "data/derived/study_trait_profiles_wide.tsv",
+   "sha256": "c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f",
+   "bytes": 31359448
+  },
+  "signature_taxa": {
+   "path": "data/derived/bugsigdb_taxa.tsv",
+   "sha256": "e7fa982b23ea82456247bcd841fd97d4fe71518e09eaaa27aee65d9adb271c59",
+   "bytes": 5851798
+  },
+  "taxa_trait_matrix": {
+   "path": "data/derived/taxa_trait_matrix.tsv",
+   "sha256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178",
+   "bytes": 31266333
+  },
+  "trait_columns": {
+   "path": "data/derived/taxa_trait_matrix_columns.tsv",
+   "sha256": "70b8bc1c2889d0e451bcaf604e0a986d4c29ffb802efeae5bdc64b67fc446ed3",
+   "bytes": 550385
+  },
+  "contrast_manifest": {
+   "path": "data/derived/contrast_orientation/contrast_manifest.tsv",
+   "sha256": "d7d9f1abac2479fdc6efe69ceb2960cc22ef416fabe7302d6eff689a68775666",
+   "bytes": 3322220
+  },
+  "full_dump": {
+   "path": "data/raw/full_dump.csv",
+   "sha256": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788",
+   "bytes": 16241290
+  },
+  "kg_edges": {
+   "path": "data/kg-microbe/merged-kg_edges.tsv",
+   "sha256": "d13812a436bd0b1c51cfe20c97076912a131f72b2b8e8ca3bb2db15095ab9ebb",
+   "bytes": 1034256091
+  }
+ },
+ "inputs_drifted_from_pinned_provenance": [],
+ "repinned": false,
+ "environment": {
+  "python": "3.11.5",
+  "numpy": "2.4.4",
+  "pandas": "3.0.6",
+  "scipy": "1.17.1"
+ },
+ "outputs": [
+  "cellulose_decr_summary.json",
+  "cellulose_decreased_taxa_catalog.tsv",
+  "compartment_direction_interaction.tsv",
+  "compartment_jaccard_and_direction_stats.tsv",
+  "condition_definition_interaction.tsv",
+  "condition_definition_overlap.tsv",
+  "condition_definition_sensitivity.tsv",
+  "condition_label_inventory.tsv",
+  "four_highlighted_pairs_study_evidence.tsv",
+  "four_highlighted_pairs_summary.json",
+  "four_highlighted_pairs_taxon_drivers.tsv",
+  "label_source_corrections.tsv",
+  "pairwise_jaccard_significance.tsv",
+  "profile_and_study_pair_jaccard.tsv",
+  "sensitivity_definitions_jaccard.tsv",
+  "significant_results_summary.tsv",
+  "trait_convergence_benchmark.tsv"
+ ]
+}

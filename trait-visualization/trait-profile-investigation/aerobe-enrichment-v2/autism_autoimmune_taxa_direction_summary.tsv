@@ -73,22 +73,16 @@ Autism	Autism	decreased	NCBITaxon:113286	Pseudoramibacter	genus	1	1	1	1	0.663006
 Autism	Autism	decreased	NCBITaxon:1263	Ruminococcus	genus	1	1	1	1	0.6630068354450137	0		False	
 Autism	Autism	decreased	NCBITaxon:1535	[Clostridium] leptum	species	1	1	1	1	0.6630068354450137	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:33042	Coprococcus	genus	3	2	3	3	-0.502500314400382	0		False	
-Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:375288	Parabacteroides	genus	3	2	3	3	-0.689540731344362	0		False	
-Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:239759	Alistipes	genus	3	1	3	3	-1.0338876792896399	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:1485	Clostridium	genus	2	2	2	2	-0.7385404307485423	1	microaerophilic	False	
-Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:33024	Phascolarctobacterium	genus	2	2	2	2	-0.37532308536147635	0		False	
-Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:475	Moraxella	genus	2	1	2	2	0.5606773646818466	2	aerobic; microaerophilic	False	
+Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:375288	Parabacteroides	genus	2	2	2	2	-0.6919174668233677	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:1870884	Clostridioides	genus	2	1	2	2	-0.7208210164322718	1	facultatively aerobic	False	
-Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:361177	Altererythrobacter	genus	2	1	2	2	0.5606773646818466	0		False	
+Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:239759	Alistipes	genus	2	1	2	2	-1.2084378887412845	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:1649459	Hungatella	genus	2	1	2	2	-0.7208210164322718	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:3025755	Thomasclavelia	genus	2	1	2	2	-0.7208210164322718	0		False	
-Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:816	Bacteroides	genus	1	1	1	1	-0.6847872603863503	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:283	Comamonas	genus	1	1	1	1	-0.06585891033660242	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1	1	-0.06585891033660242	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:570	Klebsiella	genus	1	1	1	1	-0.34274227869210727	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:872	Desulfovibrio	genus	1	1	1	1	-0.06585891033660242	2	facultatively aerobic; microaerophilic	False	
-Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:239934	Akkermansia	genus	1	1	1	1	-0.6847872603863503	1	aerobic	False	
-Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:447020	Adlercreutzia	genus	1	1	1	1	0.42081063219760795	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:2569097	Anaerobutyricum	genus	1	1	1	1	-0.34274227869210727	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:291645	Bacteroides nordii	species	1	1	1	1	-1.1343385828049772	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:397864	Barnesiella	genus	1	1	1	1	-0.06585891033660242	0		False	
@@ -96,23 +90,19 @@ Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:1470349	Ca
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:1348911	Coprobacter	genus	1	1	1	1	-0.06585891033660242	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:1472762	Enorma	genus	1	1	1	1	-0.06585891033660242	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:2719313	Enterocloster	genus	1	1	1	1	-0.34274227869210727	0		False	
-Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:1730	Eubacterium	genus	1	1	1	1	0.42081063219760795	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:848	Fusobacterium	genus	1	1	1	1	-0.06585891033660242	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:1506553	Lachnoclostridium	genus	1	1	1	1	-0.34274227869210727	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:158846	Megamonas	genus	1	1	1	1	-0.06585891033660242	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:2039302	Monoglobus	genus	1	1	1	1	-1.0988997541724363	0		False	
-Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:2888809	Novisyntrophococcus	genus	1	1	1	1	0.42081063219760795	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:283168	Odoribacter	genus	1	1	1	1	-0.06585891033660242	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:577309	Paraprevotella	genus	1	1	1	1	-0.06585891033660242	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:1481960	Peptoclostridium	genus	1	1	1	1	-0.06585891033660242	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:2740	Peptococcus	genus	1	1	1	1	-0.06585891033660242	0		False	
-Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:1501226	Romboutsia	genus	1	1	1	1	0.7005440971660853	0		False	
+Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:33024	Phascolarctobacterium	genus	1	1	1	1	-0.06585891033660242	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:1508657	Ruminiclostridium	genus	1	1	1	1	-0.06585891033660242	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:1266	Sarcina	genus	1	1	1	1	-1.0988997541724363	0		False	
-Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:1769710	Sellimonas	genus	1	1	1	1	0.42081063219760795	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:172900	Victivallis	genus	1	1	1	1	-0.06585891033660242	0		False	
 Autism spectrum disorder	Autism spectrum disorder	increased	NCBITaxon:707003	uncultured Oscillospiraceae bacterium	species	1	1	1	1	-0.06585891033660242	0		False	
-Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:838	Prevotella	genus	2	2	2	2	-0.342349581181392	0		False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:1375	Aerococcus	genus	1	1	1	1	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:1716	Corynebacterium	genus	1	1	1	1	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1	1	0.6332768609473489	3	facultatively aerobic; aerobic; microaerophilic	False	
@@ -129,18 +119,16 @@ Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:1660	Schaa
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:171552	Prevotellaceae	family	1	1	1	1	0.6332768609473489	1	aerobic	False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:48736	Ralstonia	genus	1	1	1	1	0.6332768609473489	1	aerobic	False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:157	Treponema	genus	1	1	1	1	0.6332768609473489	1	microaerophilic	False	
-Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:2569097	Anaerobutyricum	genus	1	1	1	1	-1.317976023310133	0		False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:207244	Anaerostipes	genus	1	1	1	1	0.6332768609473489	0		False	
-Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:33042	Coprococcus	genus	1	1	1	1	-1.317976023310133	0		False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:84107	Coriobacteriaceae	family	1	1	1	1	0.6332768609473489	0		False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:39497	Eubacterium xylanophilum	species	1	1	1	1	0.6332768609473489	0		False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:1506553	Lachnoclostridium	genus	1	1	1	1	0.6332768609473489	0		False	
-Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:28050	Lachnospira	genus	1	1	1	1	-1.317976023310133	0		False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:39485	Lachnospira eligens	species	1	1	1	1	0.6332768609473489	0		False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:877420	Lachnospiraceae bacterium NK4A136	species	1	1	1	1	0.6332768609473489	0		False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:475961	Longilinea	genus	1	1	1	1	0.6332768609473489	0		False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:248744	Marvinbryantia	genus	1	1	1	1	0.6332768609473489	0		False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:33038	Mediterraneibacter gnavus	species	1	1	1	1	0.6332768609473489	0		False	
+Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:838	Prevotella	genus	1	1	1	1	0.6332768609473489	0		False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:1263	Ruminococcus	genus	1	1	1	1	0.6332768609473489	0		False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:399320	Sphaerochaeta	genus	1	1	1	1	0.6332768609473489	0		False	
 Autism spectrum disorder	Autism spectrum disorder	decreased	NCBITaxon:3025755	Thomasclavelia	genus	1	1	1	1	0.6332768609473489	0		False	

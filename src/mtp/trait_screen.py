@@ -877,7 +877,11 @@ def _report(result: ScreenResult, vintage: str | None) -> str:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    from mtp.workflow.consumers import bind_count_arguments, write_consumer_record
+    from mtp.workflow.consumers import (
+        bind_count_arguments,
+        preflight_consumer_outputs,
+        write_consumer_record,
+    )
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--core-run", type=Path, help="Verified core workflow run manifest")
@@ -893,6 +897,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
     bundle = bind_count_arguments(args)
+    if bundle is not None:
+        preflight_consumer_outputs(
+            bundle,
+            args.output_dir / "core_consumption.json",
+            output_directory=args.output_dir,
+        )
     args.profile_input = args.profile_input or DEFAULT_PROFILE_PATH
     args.experiments_input = args.experiments_input or DEFAULT_EXPERIMENTS_PATH
     args.full_dump_input = args.full_dump_input or DEFAULT_FULL_DUMP_PATH
