@@ -375,7 +375,9 @@ def test_cells_without_contributions_are_absent() -> None:
         ]
     )
 
-    cells, _, _ = contributors.build_contributor_tables(counts, coverage_counts, traits, {})
+    cells, _, _ = contributors.build_contributor_tables(
+        counts, coverage_counts, traits, {"NCBITaxon:7": "Species seven"}
+    )
 
     by_direction = cells.set_index("direction")
     assert (by_direction.loc["inc", "status"], by_direction.loc["inc", "share"]) == (
@@ -420,15 +422,82 @@ def test_selection_keeps_top_species_per_cell_and_top_families(
     )
     monkeypatch.setattr(contributors, "TOP_FAMILIES", 2)
 
-    selected = contributors.select_contributor_taxa(counts, {})
+    names = {str(taxon): f"Name of {taxon}" for taxon in counts["taxon"]}
+
+    selected = contributors.select_contributor_taxa(counts, names)
 
     species = selected[selected["rank"].eq("species")]["taxon"].tolist()
     assert species == ["sp6", "sp0", "sp1", "sp2", "sp3", "sp4"]
     assert selected[selected["rank"].eq("family")]["taxon"].tolist() == ["fam2", "fam1"]
 
     monkeypatch.setattr(contributors, "MAX_SELECTED_SPECIES", 2)
-    capped = contributors.select_contributor_taxa(counts, {})
+    capped = contributors.select_contributor_taxa(counts, names)
     assert capped[capped["rank"].eq("species")]["taxon"].tolist() == ["sp6", "sp0"]
+
+
+def test_unnamed_selected_taxa_are_refused() -> None:
+    """A CURIE is a placeholder, not a name (#696)."""
+    counts = pd.DataFrame(
+        [
+            ("species", "NCBITaxon:9", "inc", "T1", 5, 1),
+            ("species", "NCBITaxon:10", "inc", "T1", 4, 1),
+        ],
+        columns=["rank", "taxon", "direction", "trait_key", "count", "studies"],
+    )
+
+    with pytest.raises(ValueError, match=r"No KG or taxa-trait matrix name .*NCBITaxon:10$"):
+        contributors.select_contributor_taxa(counts, {"NCBITaxon:9": "Named"})
+
+
+def trait_intervals(values: dict[str, float]) -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "trait_id": list(values),
+            "trait": [f"{trait_id} trait" for trait_id in values],
+            "increased_minus_decreased_mean_z": list(values.values()),
+            "trait_direction": [
+                "increased" if value > 0 else "decreased" for value in values.values()
+            ],
+            "overall_ci95_low": 0.1,
+            "overall_ci95_high": 0.2,
+        }
+    )
+
+
+LOLLIPOP = {"T1": 0.49, "T2": -0.08}
+
+
+def lollipop_directions(values: dict[str, float] = LOLLIPOP) -> pd.DataFrame:
+    frame = trait_intervals(values)
+    return frame[["trait_id", "trait", "increased_minus_decreased_mean_z", "trait_direction"]]
+
+
+def test_heatmap_trait_table_from_the_current_lollipop_passes() -> None:
+    contributors.check_trait_intervals(trait_intervals(LOLLIPOP), lollipop_directions())
+
+
+@pytest.mark.parametrize(
+    ("values", "problem"),
+    [
+        ({"T1": 0.49}, "missing traits: T2"),
+        ({**LOLLIPOP, "T3": 0.1}, "extra traits: T3"),
+        ({"T1": 0.49, "T2": 0.08}, "other directions: T2"),
+        ({"T1": 0.50, "T2": -0.08}, "other mean-z differences: T1"),
+    ],
+)
+def test_heatmap_trait_table_from_another_lollipop_is_refused(
+    values: dict[str, float], problem: str
+) -> None:
+    """The contributors note quotes this table, so it must match the lollipop (#694)."""
+    with pytest.raises(ValueError, match=rf"heatmap_traits\.tsv does not match .*{problem}"):
+        contributors.check_trait_intervals(trait_intervals(values), lollipop_directions())
+
+
+def test_heatmap_trait_table_without_directions_is_refused() -> None:
+    old_format = trait_intervals(LOLLIPOP).drop(columns="trait_direction")
+
+    with pytest.raises(ValueError, match="lacks trait_direction"):
+        contributors.check_trait_intervals(old_format, lollipop_directions())
 
 
 def test_selected_taxa_with_equal_totals_are_listed_by_name() -> None:

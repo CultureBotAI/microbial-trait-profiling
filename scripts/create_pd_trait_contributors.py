@@ -59,6 +59,7 @@ MAX_SELECTED_SPECIES = 50
 TOP_FAMILIES = 25
 SPECIES_SELECTION = "union_top_5_resolved_species_per_trait_direction_capped_at_50"
 FAMILY_SELECTION = "top_25_resolved_families_by_total_count"
+TRAIT_INTERVALS_NAME = "pd_species_six_traits_influence_heatmap_traits.tsv"
 
 RANK_ORDER = {"species": 0, "family": 1}
 DIRECTION_ORDER = {"inc": 0, "dec": 1}
@@ -125,6 +126,54 @@ def load_contribution_ledger(
         )
         raise ValueError(msg)
     return base, graph, ledger
+
+
+def check_trait_intervals(trait_intervals: pd.DataFrame, directions: pd.DataFrame) -> None:
+    """Refuse a species heatmap trait table built from another lollipop (#694).
+
+    The note quotes its intervals and directions, so it must carry the current lollipop's
+    traits, directions and mean-z differences.
+    """
+    columns = {"trait_id", "trait_direction", "increased_minus_decreased_mean_z"}
+    if not columns.issubset(trait_intervals.columns):
+        problems = [f"it lacks {', '.join(sorted(columns - set(trait_intervals.columns)))}"]
+    else:
+        recorded = trait_intervals.set_index(trait_intervals["trait_id"].astype(str))
+        current = directions.set_index("trait_id")
+        missing = sorted(set(current.index) - set(recorded.index))
+        extra = sorted(set(recorded.index) - set(current.index))
+        both = sorted(set(current.index) & set(recorded.index))
+        flipped = [
+            trait_id
+            for trait_id in both
+            if recorded.loc[trait_id, "trait_direction"] != current.loc[trait_id, "trait_direction"]
+        ]
+        moved = [
+            trait_id
+            for trait_id in both
+            if not math.isclose(
+                float(recorded.loc[trait_id, "increased_minus_decreased_mean_z"]),
+                float(current.loc[trait_id, "increased_minus_decreased_mean_z"]),
+                rel_tol=1e-9,
+                abs_tol=1e-12,
+            )
+        ]
+        problems = [
+            f"{label}: {', '.join(trait_ids)}"
+            for label, trait_ids in (
+                ("missing traits", missing),
+                ("extra traits", extra),
+                ("other directions", flipped),
+                ("other mean-z differences", moved),
+            )
+            if trait_ids
+        ]
+    if problems:
+        msg = (
+            f"{TRAIT_INTERVALS_NAME} does not match {SUMMARY_NAME} ({'; '.join(problems)}). "
+            "Rerun `just pd-trait-taxa-heatmap` first."
+        )
+        raise ValueError(msg)
 
 
 def pd_contribution_profiles(base: Base, metadata: pd.DataFrame) -> list[Key]:
@@ -274,7 +323,7 @@ def select_contributor_taxa(counts: pd.DataFrame, names: dict[str, str]) -> pd.D
         )
         .reset_index()
     )
-    totals.insert(2, "name", [names.get(str(taxon), str(taxon)) for taxon in totals["taxon"]])
+    totals.insert(2, "name", [names.get(str(taxon), "") for taxon in totals["taxon"]])
     ranked = counts.sort_values(
         ["count", "studies", "taxon"], ascending=[False, False, True], kind="stable"
     )
@@ -296,7 +345,12 @@ def select_contributor_taxa(counts: pd.DataFrame, names: dict[str, str]) -> pd.D
         .head(TOP_FAMILIES)
         .assign(selection_reason=FAMILY_SELECTION)
     )
-    return pd.concat([species_rows, family_rows], ignore_index=True)
+    selected = pd.concat([species_rows, family_rows], ignore_index=True)
+    unnamed = sorted(selected.loc[selected["name"].eq(""), "taxon"].astype(str))
+    if unnamed:
+        msg = f"No KG or taxa-trait matrix name for contributor taxa: {', '.join(unnamed)}"
+        raise ValueError(msg)
+    return selected
 
 
 def contributor_names(base: Base, graph: Graph) -> dict[str, str]:
@@ -1284,7 +1338,8 @@ def main() -> None:
     require_current_trait_taxa_evidence(metadata, OUTPUT_DIR)
     # Every path is built from OUTPUT_DIR here, so redirecting it redirects every write.
     directions = trait_directions(read_tsv(OUTPUT_DIR / SUMMARY_NAME))
-    trait_intervals = read_tsv(OUTPUT_DIR / "pd_species_six_traits_influence_heatmap_traits.tsv")
+    trait_intervals = read_tsv(OUTPUT_DIR / TRAIT_INTERVALS_NAME)
+    check_trait_intervals(trait_intervals, directions)
     base, graph, ledger = load_contribution_ledger(KG_DIR, DERIVED_DIR, KG_PROTOCOL_PATH)
     keys = pd_contribution_profiles(base, metadata)
     counts, coverage_counts = count_contributions(base, graph, ledger, keys)
