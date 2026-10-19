@@ -20,6 +20,7 @@ import csv
 import hashlib
 import html
 import json
+import re
 import shutil
 from collections.abc import Sequence
 from pathlib import Path
@@ -30,8 +31,10 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DECK_DIR = Path("data/derived/figure_review_2026-09-21")
 CELLULOSE_DIR = Path("data/analysis/cellulose_decr")
-# Regenerated, gitignored figure folders: their slides carry no GitHub figure link.
-UNLINKED_FIGURES = ("data/derived/", f"{CELLULOSE_DIR}/figures")
+# The folders `just cellulose-decr-figures` draws from the committed cellulose_decr tables.
+CELLULOSE_FIGURES = (f"{CELLULOSE_DIR}/figures/", f"{CELLULOSE_DIR}/figures_graphical/")
+# Regenerated or untracked figure folders: their slides carry no GitHub figure link.
+UNLINKED_FIGURES = ("data/derived/", *CELLULOSE_FIGURES, f"{CELLULOSE_DIR}/figures_tufte/")
 REPO_URL = "https://github.com/CultureBotAI/microbial-trait-profiling"
 PROVENANCE_NAME = "figure_provenance_and_results.yaml"
 # The deck's typed Table 1 numbers (cover note, slide captions, Tufte Plates III and VII)
@@ -181,6 +184,16 @@ def load_rerun_metrics(repo: Path) -> dict:
     )
     metrics["pd_cellulose_drivers"] = [r["taxon_name"] for r in drivers[:3]]
     metrics["pd_six_trait_summary"] = read_tsv(pd_dir / "pd_six_trait_direction_summary.tsv")
+    interaction = [
+        r
+        for r in read_tsv(pd_dir / "pd_cellulose_interaction_model.tsv")
+        if r["outcome"] == "cellulose_z" and r["term"] == "pd_x_decreased"
+    ]
+    if len(interaction) != 1:
+        raise ValueError(
+            "pd_cellulose_interaction_model.tsv needs one cellulose_z pd_x_decreased row"
+        )
+    metrics["pd_interaction"] = interaction[0]
 
     # 3. PD ecological reporter combined
     pd_eco_path = (
@@ -224,7 +237,39 @@ def load_rerun_metrics(repo: Path) -> dict:
         }
     metrics["sankey_stats"] = sankey_stats
 
+    # 5. Study-level paired contrasts by stratum, quoted by Tufte Plate II's slide
+    paired_dir = repo / "trait-visualization/trait-profile-investigation"
+    metrics["paired_contrasts"] = {
+        stratum: read_tsv(paired_dir / f"trait_profile_paired_contrast_trait_stats_{stratum}.tsv")
+        for stratum in ("pooled", "feces")
+    }
+
     return metrics
+
+
+def study_bh_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Traits passing study-level BH q ≤ 0.05, by mean Δz (increased minus decreased)."""
+    passing = [r for r in rows if r.get("study_q_value") and float(r["study_q_value"]) <= 0.05]
+    return sorted(passing, key=lambda r: float(r["study_mean_increased_minus_decreased"]))
+
+
+def paired_contrast_text(metrics: dict) -> str:
+    """Tufte Plate II's takeaway, read from the stratum tables (#556)."""
+    pooled = metrics["paired_contrasts"]["pooled"]
+    passing = study_bh_rows(pooled)
+
+    def names(rows: list[dict[str, str]]) -> str:
+        # trait_label ends with the trait's ID, e.g. "xylan catabolic process GO:0045493"
+        return listing([r["trait_label"].rsplit(" ", 1)[0] for r in rows])
+
+    lower = [r for r in passing if float(r["study_mean_increased_minus_decreased"]) < 0]
+    higher = [r for r in passing if float(r["study_mean_increased_minus_decreased"]) > 0][::-1]
+    return (
+        f"Of {len(pooled)} traits tested pooled, {len(passing)} pass study-level BH q ≤ 0.05 "
+        f"({len(study_bh_rows(metrics['paired_contrasts']['feces']))} in Feces): "
+        f"{len(lower)} with mean Δz < 0, higher in decreased signatures ({names(lower)}), and "
+        f"{len(higher)} with Δz > 0, led by {names(higher[:3])}."
+    )
 
 
 def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str, str, str]:
@@ -555,12 +600,11 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
             "Six Table 1 traits show consistent pooled and disease-oriented study direction shifts"
         )
         takeaway = (
-            "Across 959 human studies (post-drop_zero_total_pairs), facultatively aerobic "
-            "increases in "
-            "532/915 non-tied studies (58.1%, BH q = 5.66e-6) while the cellulose catabolic "
-            "process share decreases "
-            "in "
-            "441/774 studies (43.0%↑ / 57.0%↓, BH q = 2.35e-4); in 569 disease-vs-healthy oriented "
+            "Across 959 human studies (post-drop_zero_total_pairs), the facultatively aerobic "
+            "share is larger in the increased signature in 532/915 non-tied studies (58.1%, BH "
+            "q = 5.66e-6) and the cellulose catabolic process share is larger in the decreased "
+            "signature in 441/774 (43.0%↑ / 57.0%↓, BH q = 2.35e-4); in 569 disease-vs-healthy "
+            "oriented "
             "studies, "
             "the cellulose shift toward decreased signatures strengthens to 283/465 down (60.8%↓, "
             "p = 4.21e-6, q_317 = "
@@ -581,6 +625,19 @@ CONDITION_SHORT = {
     "Colorectal cancer": "CRC",
 }
 TRAIT_SHORT = {"cellulose catabolic process": "cellulose", "moderately halophilic": "halophily"}
+
+
+def pd_direction_caveat(model: dict[str, str]) -> str:
+    """The study-clustered test of a PD-specific cellulose direction, from its model row."""
+    p_value = float(model["p_value"])
+    return (
+        "Exploratory PD diagnostic. Its profile-level Fisher test treats the profiles of one "
+        "study as independent. In the study-clustered model "
+        "(pd_cellulose_interaction_model.tsv), the extra PD effect in decreased feces is "
+        f"{float(model['coefficient']):+.2f} cellulose z (95% CI {float(model['ci_low']):+.2f} "
+        f"to {float(model['ci_high']):+.2f}, p = {p_value:#.2g}), so a PD-specific direction "
+        f"is {'' if p_value < 0.05 else 'not '}shown at p < 0.05."
+    )
 
 
 def survivor_text(metrics: dict) -> str:
@@ -678,16 +735,13 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
         },
         {
             "owner": "Marcin / Noel",
-            "title": "Tufte Plate II: The 22-trait functional guild dichotomy & saliva inversion",
+            "title": f"Tufte Plate II: {len(study_bh_rows(metrics['paired_contrasts']['pooled']))} "
+            "traits split by direction, and a saliva sign flip",
             "tag": "Tufte synthesis · Plate II",
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate2_317_trait_guild_dichotomy.png",
             "code_path": "scripts/generate_tufte_plates.py",
-            "takeaway": "Across all 317 KG-Microbe traits, 22 pass study-level BH q ≤ 0.05 pooled "
-            "(33 in Feces), splitting into an increased aerotolerant / halophilic / "
-            "oxyanion-redox / coccus guild versus a decreased plant-polysaccharide / "
-            "obligate-anaerobe / Acetogenesis (METPO:1000845) / low-GC "
-            "guild.",
+            "takeaway": paired_contrast_text(metrics),
             "caveat": "Excluding Feces (365 non-fecal studies) leaves 0 traits passing study BH q "
             "≤ 0.05; in Saliva (55 studies), nitrate reduction reverses sign (study t = "
             "-2.30, p = 0.0252) relative to Feces (t = +3.97, q = 0.00126).",
@@ -1127,7 +1181,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
         },
         {
             "owner": "Jed",
-            "title": "PD cellulose catabolism taxon drivers (decreased vs increased)",
+            "title": "Cellulose-annotated taxa in PD fecal profiles (decreased vs increased)",
             "tag": "Jed · PD cellulose taxon drivers",
             "figure_file_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
             "pd_cellulose_taxon_driver_bar.png",
@@ -1345,10 +1399,15 @@ def get_remaining_appendix_slides(
                 f"{metrics['pd_net_total']}-test study-level fecal Wilcoxon screen."
             )
             if png_path.name == "pd_cellulose_direction_specificity.png":
+                # The figure's own title calls the signal direction-specific (#590).
+                caveat = pd_direction_caveat(metrics["pd_interaction"])
+            elif png_path.name == "pd_cellulose_taxon_six_trait_heatmap.png":
                 caveat = (
-                    "Exploratory PD diagnostic. Its profile-level Fisher test treats the "
-                    "profiles of one study as independent; the study-clustered model of "
-                    "pd_cellulose_enrichment_test is the test of a PD-specific direction."
+                    "Exploratory PD diagnostic. A \N{LEFT DOUBLE QUOTATION MARK}cellulose-"
+                    "carrier\N{RIGHT DOUBLE QUOTATION MARK} taxon is one whose KG-Microbe "
+                    "annotations, its own or its descendants\N{RIGHT SINGLE QUOTATION MARK}, "
+                    "include cellulose catabolic process. It is an annotation, not measured "
+                    "cellulose degradation."
                 )
             evidence_path = (
                 "trait-visualization/trait-profile-investigation/PD-cellulose/"
@@ -1525,6 +1584,49 @@ def get_remaining_appendix_slides(
     return appendix_slides
 
 
+# The shared pipeline steps every regenerated figure depends on.
+UPSTREAM_COMMANDS = (
+    "just download  # uv run python -m mtp.cli download",
+    "just ingest  # uv run python -m mtp.cli ingest",
+    "just study-tsvs  # uv run python -m mtp.cli study-tsvs",
+    "just taxa-trait-matrix  # uv run python -m mtp.cli taxa-trait-matrix",
+    "just study-trait-profiles  # uv run python -m mtp.cli study-trait-profiles",
+)
+UPSTREAM_STEPS = (
+    "step_01_download",
+    "step_02_ingest",
+    "step_03_study_tsvs",
+    "step_04_taxa_trait_matrix",
+    "step_05_study_trait_profiles",
+)
+
+
+def cellulose_figure_provenance(rec: dict[str, Any], tables: dict[str, str]) -> None:
+    """Point a cellulose_decr figure's provenance record at what draws it (#556).
+
+    `just cellulose-decr-figures` draws the figures from the committed tables and records
+    the tables it read with their hashes. A record carried over from the source YAML still
+    names the generator of AGY's deck, so every field that says how the figure was made is
+    replaced, whichever branch built the record.
+    """
+    rec["generator_script_path"] = "src/mtp/cellulose_decr/figures.py"
+    rec["just_recipe"] = "just cellulose-decr-figures"
+    rec["command_series"] = [
+        *UPSTREAM_COMMANDS,
+        "just contrast-orientation",
+        "just cellulose-decr",
+        "just cellulose-decr-figures",
+    ]
+    rec["pipeline_step_ids"] = list(UPSTREAM_STEPS)
+    rec["upstream_raw_inputs"] = [
+        "data/raw/full_dump.csv",
+        "data/kg-microbe/merged-kg_edges.tsv",
+    ]
+    rec["input_data_files"] = [f"{CELLULOSE_DIR}/{name}" for name in tables]
+    rec["input_data_sha256s"] = list(tables.values())
+    rec["methods_doc_path"] = "methods/cellulose_decr.md"
+
+
 def load_cellulose_captions(repo: Path) -> dict[str, dict[str, Any]]:
     """Slide text for the cellulose_decr figures, worded from its committed tables (#556).
 
@@ -1538,9 +1640,24 @@ def load_cellulose_captions(repo: Path) -> dict[str, dict[str, Any]]:
     return captions
 
 
+def cellulose_revision(repo: Path) -> str | None:
+    """The commit that drew the cellulose_decr figures, or None if it was modified or unknown.
+
+    The cellulose slides link their code, methods and tables at that commit: those files
+    are newer than the rerun revision the other slides cite, and a branch name moves (#556).
+    """
+    path = repo / CELLULOSE_DIR / "figures" / "figures_provenance.json"
+    commit = json.loads(path.read_text(encoding="utf-8")).get("code_commit") or ""
+    return commit if re.fullmatch(r"[0-9a-f]{40}", commit) else None
+
+
 def cellulose_decr_slides(
-    captions: dict[str, dict[str, Any]], folder: str, section: str, owner: str
-) -> list[dict[str, str]]:
+    captions: dict[str, dict[str, Any]],
+    folder: str,
+    section: str,
+    owner: str,
+    revision: str | None,
+) -> list[dict[str, Any]]:
     """One slide per cellulose_decr figure in ``folder``, in the order the figures are drawn.
 
     The presentation figures (figures_graphical/) replace the v5 Tufte plates, which had no
@@ -1569,10 +1686,15 @@ def cellulose_decr_slides(
                 "analysis": stem,
                 "selection_reason": "cellulose_decr figure drawn by `just "
                 "cellulose-decr-figures` from the committed tables (#556).",
-                # These files exist on main, not at the rerun revision the other slides cite.
-                "link_ref": "main",
-                "source_note": "Drawn by `just cellulose-decr-figures` from the committed "
-                "data/analysis/cellulose_decr tables; SHA-256 verified.",
+                # None when the figures were drawn from modified files: nothing to link.
+                "link_ref": revision,
+                "source_note": (
+                    f"Drawn by `just cellulose-decr-figures` at {revision[:12]} from the "
+                    "committed data/analysis/cellulose_decr tables; SHA-256 verified."
+                    if revision
+                    else "Drawn by `just cellulose-decr-figures` from modified code or tables, "
+                    "so no revision is linked; SHA-256 verified."
+                ),
             }
         )
     if not slides:
@@ -1585,6 +1707,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
     metrics = load_rerun_metrics(repo)
     cellulose = load_cellulose_captions(repo)
     metrics["cellulose_statements"] = cellulose["statements"]
+    revision = cellulose_revision(repo)
 
     # The September decks' manifests are inputs; slide_manifest.tsv itself is now this
     # script's output, so it must not stand in for a missing v1 manifest.
@@ -1707,7 +1830,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
     # 1b. Cellulose deep-dive presentation figures (4 slides from `just cellulose-decr-figures`;
     # a missing figure stops the build below rather than dropping the slide)
     cellulose_main = cellulose_decr_slides(
-        cellulose, "figures_graphical", "Main", "Marcin / Noel / Ilyas / Jed"
+        cellulose, "figures_graphical", "Main", "Marcin / Noel / Ilyas / Jed", revision
     )
     for item in cellulose_main:
         item["v1_slide"] = "NA"
@@ -1748,7 +1871,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
             already_included.add(fp)
 
     # 6. Cellulose deep-dive statistical reference figures (3 slides)
-    for item in cellulose_decr_slides(cellulose, "figures", "Appendix", "Marcin"):
+    for item in cellulose_decr_slides(cellulose, "figures", "Appendix", "Marcin", revision):
         item["v1_slide"] = "NA"
         item["v2_slide"] = "NA"
         item["prior_result_url"] = ""
@@ -1795,13 +1918,13 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         evidence_rel = entry.get("evidence_path", "")
 
         ref = entry.get("link_ref", COMMIT)
-        blob = f"{REPO_URL}/blob/{ref}"
-        fig_url = f"{blob}/{fig_rel}" if not fig_rel.startswith(UNLINKED_FIGURES) else "NA"
-        code_url = f"{blob}/{code_rel}" if code_rel else ""
-        methods_url = f"{blob}/{methods_rel}" if methods_rel else ""
+        blob = f"{REPO_URL}/blob/{ref}" if ref else ""
+        fig_url = f"{blob}/{fig_rel}" if blob and not fig_rel.startswith(UNLINKED_FIGURES) else "NA"
+        code_url = f"{blob}/{code_rel}" if blob and code_rel else ""
+        methods_url = f"{blob}/{methods_rel}" if blob and methods_rel else ""
         evidence_url = (
             f"{blob}/{evidence_rel}"
-            if evidence_rel and not evidence_rel.startswith("data/derived/")
+            if blob and evidence_rel and not evidence_rel.startswith("data/derived/")
             else "NA"
         )
 
@@ -1813,7 +1936,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
                 "tag": entry["tag"],
                 "figure_file_path": fig_rel,
                 "code_path": code_rel,
-                "commit": ref,
+                "commit": ref or "modified",
                 "branch": BRANCH,
                 "figure_url": fig_url,
                 "code_url": code_url,
@@ -1984,7 +2107,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         "a{color:inherit;text-decoration:none;overflow-wrap:anywhere;word-break:break-word}",
         ".stamp{margin-top:auto;display:flex;justify-content:space-between;gap:20px;font:12px "
         "Arial,sans-serif;color:#617589;padding-top:4px}",
-        ".cover{grid-template-rows:125px minmax(0,1fr) 86px 86px}",
+        ".cover{grid-template-rows:125px minmax(0,1fr) minmax(86px,auto) 86px}",
         ".cover h1{font-size:47px;line-height:1.08}.cover .tag{font-size:15px}",
         ".cover-body{display:flex;flex-direction:column;justify-content:center}",
         ".deck-subtitle{font-size:22px;line-height:1.45;color:#405568;max-width:1420px;margin:0 0 "
@@ -2138,7 +2261,6 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
             rec["slide_asset_path"] = f"data/derived/figure_review_2026-09-21/slides/{r['asset']}"
             rec["takeaway"] = r["takeaway"]
             rec["caveat"] = r["caveat"]
-            new_figures_list.append(rec)
         else:
             ev_rel = r.get("evidence_path", "")
             ev_sha = sha256_file(repo / ev_rel) if ev_rel and (repo / ev_rel).exists() else ""
@@ -2155,21 +2277,8 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
                 "slide_asset_path": f"data/derived/figure_review_2026-09-21/slides/{r['asset']}",
                 "generator_script_path": r["code_path"],
                 "just_recipe": f"uv run python {r['code_path']}",
-                "command_series": [
-                    "just download  # uv run python -m mtp.cli download",
-                    "just ingest  # uv run python -m mtp.cli ingest",
-                    "just study-tsvs  # uv run python -m mtp.cli study-tsvs",
-                    "just taxa-trait-matrix  # uv run python -m mtp.cli taxa-trait-matrix",
-                    "just study-trait-profiles  # uv run python -m mtp.cli study-trait-profiles",
-                    f"uv run python {r['code_path']}",
-                ],
-                "pipeline_step_ids": [
-                    "step_01_download",
-                    "step_02_ingest",
-                    "step_03_study_tsvs",
-                    "step_04_taxa_trait_matrix",
-                    "step_05_study_trait_profiles",
-                ],
+                "command_series": [*UPSTREAM_COMMANDS, f"uv run python {r['code_path']}"],
+                "pipeline_step_ids": list(UPSTREAM_STEPS),
                 "upstream_raw_inputs": [
                     "data/raw/full_dump.csv",
                     "data/raw/merged-kg_nodes.tsv",
@@ -2184,24 +2293,9 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
                 "v2_slide_number": r.get("v2_slide", "NA"),
                 "statistical_result_ids": [],
             }
-            if fp.startswith(f"{CELLULOSE_DIR}/figures"):
-                # Drawn from the committed tables by `just cellulose-decr-figures`, which
-                # records the tables it read and their hashes.
-                tables = cellulose_figures["inputs"]
-                rec["just_recipe"] = "just cellulose-decr-figures"
-                rec["command_series"] = [
-                    *rec["command_series"][:-1],
-                    "just contrast-orientation",
-                    "just cellulose-decr",
-                    "just cellulose-decr-figures",
-                ]
-                rec["upstream_raw_inputs"] = [
-                    "data/raw/full_dump.csv",
-                    "data/kg-microbe/merged-kg_edges.tsv",
-                ]
-                rec["input_data_files"] = [f"{CELLULOSE_DIR}/{name}" for name in tables]
-                rec["input_data_sha256s"] = list(tables.values())
-            new_figures_list.append(rec)
+        if fp.startswith(CELLULOSE_FIGURES):
+            cellulose_figure_provenance(rec, cellulose_figures["inputs"])
+        new_figures_list.append(rec)
 
     prov_doc["figures"] = new_figures_list
     for stat_rec in prov_doc.get("statistical_results", []):

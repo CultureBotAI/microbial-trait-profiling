@@ -109,6 +109,12 @@ class Results:
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
     parser.add_argument("--analysis-dir", type=Path, default=ANALYSIS_DIR)
+    parser.add_argument(
+        "--code-commit",
+        default="unrecorded",
+        help="Revision that draws the figures, e.g. $(git rev-parse HEAD) with +dirty when the "
+        "code or tables are modified. Decks link the figures' code and tables at it (#556).",
+    )
     return parser.parse_args(argv)
 
 
@@ -1749,6 +1755,11 @@ def listing(names: Sequence[str]) -> str:
     return f"{', '.join(names[:-1])} and {names[-1]}"
 
 
+def sentence(text: str) -> str:
+    """``text`` with a capital first letter, to start a sentence."""
+    return text[:1].upper() + text[1:]
+
+
 @dataclass(frozen=True)
 class Verdict:
     """One condition's disease-vs-healthy stool study result across the condition definitions.
@@ -1764,6 +1775,16 @@ class Verdict:
     high: float = math.nan
     readings: int = 0
     definitions: int = 0
+
+
+# Verdicts that change with the condition definition.
+DEFINITION_DEPENDENT = ("some", "opposite some", "mixed")
+
+
+def p_span(verdict: Verdict, before: str, between: str) -> str:
+    """A verdict's p range, which says so when its significant results point both ways (#589)."""
+    opposite = " in opposite directions" if verdict.kind == "mixed" else ""
+    return f"{before}{sci(verdict.low)}{between}{sci(verdict.high)}{opposite}"
 
 
 def direction_verdicts(results: Results) -> dict[str, Verdict]:
@@ -1810,14 +1831,22 @@ def fragile_statement(results: Results) -> str:
     shown = {
         short: verdict
         for short, verdict in direction_verdicts(results).items()
-        if verdict.kind in ("some", "mixed")
+        if verdict.kind in DEFINITION_DEPENDENT
     }
     if not shown:
         return ""
-    names = ["pooled" if short == "Pooled" else short for short in shown]
-    ranges = "; ".join(f"{sci(v.low)}{DASH}{sci(v.high)}" for v in shown.values())
-    noun = "result depends" if len(names) == 1 else "results depend"
-    return f"the {listing(names)} {noun} on the condition definition (study-level p {ranges})"
+    names = {short: "pooled" if short == "Pooled" else short for short in shown}
+    spans = {short: p_span(verdict, "", DASH) for short, verdict in shown.items()}
+    if len(shown) == 1:
+        ranges = "".join(spans.values())
+        noun = "result depends"
+    else:
+        ranges = "; ".join(f"{names[short]} {span}" for short, span in spans.items())
+        noun = "results depend"
+    return (
+        f"the {listing(list(names.values()))} {noun} on the condition definition "
+        f"(study-level p {ranges})"
+    )
 
 
 def overlap_statement(results: Results) -> str:
@@ -1977,9 +2006,13 @@ def caption_direction(results: Results) -> Caption:
         clauses.append(f"in {listing(groups['some'])} only under some")
     title = f"{lead} {'; '.join(clauses)}" if clauses else f"{lead} in no condition at p < 0.05"
     others = []
-    opposite = groups.get("opposite", []) + groups.get("opposite some", [])
-    if opposite:
-        others.append(f"the increased signature does in {listing(opposite)}")
+    reversed_clauses = []
+    if groups.get("opposite"):
+        reversed_clauses.append(f"in {listing(groups['opposite'])} under every definition")
+    if groups.get("opposite some"):
+        reversed_clauses.append(f"in {listing(groups['opposite some'])} only under some")
+    if reversed_clauses:
+        others.append(f"the increased signature does {' and '.join(reversed_clauses)}")
     if groups.get("mixed"):
         changes = "changes" if len(groups["mixed"]) == 1 else "change"
         others.append(f"{listing(groups['mixed'])} {changes} direction with the definition")
@@ -2000,10 +2033,10 @@ def caption_direction(results: Results) -> Caption:
         if short in healthy
     )
     ranges = "".join(
-        f"{CAPTION_NAMES[short]}: p from {sci(v.low)} to {sci(v.high)} across {v.readings} "
-        f"distinct readings of the {v.definitions} sensitivity scenarios. "
+        f"{sentence(CAPTION_NAMES[short])}: {p_span(v, 'p from ', ' to ')} across "
+        f"{v.readings} distinct readings of the {v.definitions} sensitivity scenarios. "
         for short, v in verdicts.items()
-        if v.kind in ("some", "mixed")
+        if v.kind in DEFINITION_DEPENDENT
     )
     return Caption(
         title=title,
@@ -2190,6 +2223,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     provenance = {
         "script": "src/mtp/cellulose_decr/figures.py",
         "script_sha256": sha256(Path(__file__).resolve()),
+        "code_commit": args.code_commit,
         "matplotlib": matplotlib.__version__,
         "inputs": {name: sha256(args.analysis_dir / name) for name in FIGURE_INPUTS},
         "outputs": sorted(outputs),

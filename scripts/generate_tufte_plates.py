@@ -3,9 +3,10 @@
 
 The figures are computed from the TSV outputs of the rerun on main (402ef5c) under
 ``trait-visualization/`` and ``data/derived/``, many of them gitignored, and are
-written as PNG and SVG to ``data/derived/tufte_plates/``. ``just
-figure-review-plates`` runs this script; ``scripts/build_slide_deck.py`` places the
-plates in the deck (#573).
+written as PNG and SVG to ``data/derived/tufte_plates/``. Plates IV and V also quote
+the cellulose_decr tables and the ``figure_captions.json`` that ``just
+cellulose-decr-figures`` writes. ``just figure-review-plates`` runs this script;
+``scripts/build_slide_deck.py`` places the plates in the deck (#573).
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ import csv
 import json
 import math
 import re
+import textwrap
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -60,6 +62,13 @@ def fmt_p(value: float) -> str:
     return f"{value:.2g}" if value >= 0.001 else f"{value:.1e}"
 
 
+def study_bh_count(rows: dict[str, dict[str, str]]) -> int:
+    """Traits passing study-level BH q ≤ 0.05 in one stratum's paired-contrast table."""
+    return sum(
+        1 for r in rows.values() if r.get("study_q_value") and float(r["study_q_value"]) <= 0.05
+    )
+
+
 def trait_labels(repo: Path) -> dict[str, str]:
     """Each trait column's object_name, the label the plates must show (#556, #591)."""
     return {
@@ -83,8 +92,13 @@ def cellulose_decr_notes(repo: Path) -> dict[str, str]:
     """Plate annotations for the cellulose_decr results, read from its committed tables.
 
     The plates used to carry numbers copied from a prompt, which #556 found to be wrong;
-    reading them keeps the plates in step with the tables.
+    reading them keeps the plates in step with the tables. The statement of which results
+    depend on the condition definition comes from ``just cellulose-decr-figures``.
     """
+    captions = repo / CELLULOSE_DIR / "figures" / "figure_captions.json"
+    if not captions.exists():
+        raise FileNotFoundError(f"missing {captions}; run `just cellulose-decr-figures` first")
+    fragile = json.loads(captions.read_text(encoding="utf-8"))["statements"]["fragile"]
     rows = read_tsv(repo / CELLULOSE_DIR / "compartment_direction_interaction.tsv")
 
     def crc(population: str, unit: str) -> dict[str, str]:
@@ -107,15 +121,21 @@ def cellulose_decr_notes(repo: Path) -> dict[str, str]:
     counts = f"stool {stool['a_down']}↓:{stool['a_up']}↑ vs GI {stool['b_down']}↓:{stool['b_up']}↑"
     odds = f"OR {float(stool['conditional_or']):.1f}, p={fmt_p(float(stool['fisher_p_two_sided']))}"
     healthy_p = f"disease-vs-healthy studies p={fmt_p(float(healthy['fisher_p_two_sided']))}"
+    bullets = [
+        f"CRC cellulose, paired experiments: {counts} · {odds} · {healthy_p}",
+        f"Stool overlap: {observed['three_way_core']} of {observed['three_way_union']} taxa in "
+        "all three · whole-signature null "
+        f"p={fmt_p(float(u6['mean_pairwise_jaccard_distance']['p']))} (mean d_J), "
+        f"{fmt_p(float(u6['three_way_core']['p']))} (core)",
+    ]
+    if fragile:
+        # Plate IV stars HIV cellulose from the profile-level Fisher test (#590).
+        bullets.append(f"Cellulose deep-dive: {fragile}")
     return {
-        "crc_callout": f"• CRC cellulose, paired experiments: {counts} · {odds} · {healthy_p}",
-        "overlap_callout": (
-            f"• Stool overlap: {observed['three_way_core']} of {observed['three_way_union']} "
-            "taxa in all three · whole-signature null "
-            f"p={fmt_p(float(u6['mean_pairwise_jaccard_distance']['p']))} (mean d_J), "
-            f"{fmt_p(float(u6['three_way_core']['p']))} (core)"
+        # Wrapped to stay inside Plate IV's panel B.
+        "plate4_callout": "\n".join(
+            textwrap.fill(f"• {bullet}", width=88, subsequent_indent="  ") for bullet in bullets
         ),
-        "crc_short": f"Cell. {counts}",
         "crc_source": f"CRC cellulose stool vs GI: {odds}; {healthy_p} (cellulose_decr).",
     }
 
@@ -1564,11 +1584,11 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         # Decreased Guilds
         (
             "METPO:2000103|GO:0030245",
-            "[Plant Fiber ↓]  Cellulose catabolic process ★",
-            "Plant Polysaccharide ↓",
+            "[Carbohydrate ↓]  Cellulose catabolic process ★",
+            "Carbohydrate ↓",
         ),
-        ("METPO:2000103|GO:0045493", "Xylan catabolic process", "Plant Polysaccharide ↓"),
-        ("METPO:2000006|CHEBI:16634", "Raffinose utilization", "Plant Polysaccharide ↓"),
+        ("METPO:2000103|GO:0045493", "Xylan catabolic process", "Carbohydrate ↓"),
+        ("METPO:2000006|CHEBI:16634", "Raffinose utilization", "Carbohydrate ↓"),
         ("METPO:1000429", "[Anaerobe / H₂ ↓]  GC low (<45%)", "Anaerobe / Reductive H₂ ↓"),
         ("METPO:1000603", "Anaerobic", "Anaerobe / Reductive H₂ ↓"),
         ("METPO:1000607", "Obligately anaerobic", "Anaerobe / Reductive H₂ ↓"),
@@ -1602,8 +1622,8 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
     )
 
     fig.suptitle(
-        "TUFTE PLATE 2 · Beyond Table 1: The 28-Trait Functional Guild Dichotomy & Anatomical "
-        "Stratification",
+        f"TUFTE PLATE 2 · Beyond Table 1: {len(trait_rows_spec)} Traits by Direction of "
+        "Annotation Shift & Anatomical Stratification",
         fontsize=15.0,
         fontweight="bold",
         x=0.03,
@@ -1615,7 +1635,8 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         0.03,
         0.922,
         "Study-level paired contrasts (mean Δz ± 95% CI): Feces (594 studies) drives the pooled "
-        "signal, Feces-Excluded (365 studies) has 0 FDR hits, and Saliva (55 studies) flips "
+        f"signal, Feces-Excluded (365 studies) has {study_bh_count(nonfeces)} FDR hits, and "
+        "Saliva (55 studies) flips "
         "Nitrate Reduction",
         fontsize=9.0,
         color=MUTED,
@@ -1623,17 +1644,20 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
 
     strata = [
         (
-            "Pooled All Sites\n(959 studies · 2,335 pairs\n22 traits study BH q ≤ 0.05)",
+            "Pooled All Sites\n(959 studies · 2,335 pairs\n"
+            f"{study_bh_count(pooled)} traits study BH q ≤ 0.05)",
             pooled,
             (-0.38, 0.72),
         ),
         (
-            "Feces Only\n(594 studies · 1,485 pairs\n33 traits study BH q ≤ 0.05)",
+            "Feces Only\n(594 studies · 1,485 pairs\n"
+            f"{study_bh_count(feces)} traits study BH q ≤ 0.05)",
             feces,
             (-0.44, 0.78),
         ),
         (
-            "Feces Excluded\n(365 studies · 850 pairs\n0 traits study BH q ≤ 0.05)",
+            "Feces Excluded\n(365 studies · 850 pairs\n"
+            f"{study_bh_count(nonfeces)} traits study BH q ≤ 0.05)",
             nonfeces,
             (-0.40, 0.56),
         ),
@@ -1733,8 +1757,9 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         0.03,
         0.025,
         "Source: Rerun on main (402ef5c) · "
-        "trait_profile_paired_contrast_trait_stats_{pooled,feces,feces_excluded,saliva}.tsv. ★ = "
-        "Table 1 trait. Trait names are the object_name labels of taxa_trait_matrix_columns.tsv.",
+        "trait_profile_paired_contrast_trait_stats_{pooled,feces,feces_excluded,saliva}.tsv · "
+        "★ Table 1 trait · phenotype rows show their object_name; compound and pathway rows "
+        "add a predicate.",
         fontsize=7.9,
         color=MUTED,
     )
@@ -2317,7 +2342,8 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
         ("HIV infection", "cellulose catabolic process", "HIV · Cellulose catabolism ↓"),
     ]
     y_l = np.arange(len(lead_specs))[::-1]
-    ax_lead.set_ylim(-2.15, len(lead_specs) - 0.15)
+    # Room below the rows for the cellulose callout
+    ax_lead.set_ylim(-3.4, len(lead_specs) - 0.15)
     ax_lead.set_xlim(-1.55, 4.45)
     ax_lead.set_xticks([-1.5, -0.5, 0.0, 0.5, 1.5])
     ax_lead.axvline(0.0, color=INK, linestyle="--", linewidth=1.0, zorder=1)
@@ -2376,15 +2402,16 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
 
     # Bottom verification callout badge inside Panel B
     ax_lead.text(
-        0.48,
-        0.025,
-        f"{cellulose['crc_callout']}\n{cellulose['overlap_callout']}",
+        0.5,
+        0.012,
+        cellulose["plate4_callout"],
         transform=ax_lead.transAxes,
         fontsize=6.05,
         fontweight="bold",
         color=INK,
         ha="center",
         va="bottom",
+        multialignment="left",
         bbox={
             "boxstyle": "round,pad=0.26",
             "facecolor": "#fef9ec",
@@ -2403,7 +2430,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     )
     ax_lead.set_title(
         "B. Lead Fecal Disease \N{MULTIPLICATION SIGN} Trait Contrasts (PD, CRC, HIV, "
-        "COVID-19)\nStudy win/loss counts, Profile Fisher FDR (★), Study Wilcoxon p/q & CRC Split",
+        "COVID-19)\nStudy win/loss counts, Profile Fisher FDR (★), Study Wilcoxon p/q",
         fontsize=8.35,
         fontweight="bold",
         loc="left",
@@ -2558,7 +2585,7 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
     )
     ax_oxy.set_title(
         "A. Compartment Polarity Inversion Across 20 High-Support Strata\n★ CRC Splits: Feces "
-        f"(+0.68 O₂↑) vs Lower GI (-0.79 anaerobe↑); {cellulose['crc_short']}",
+        "(+0.68 O₂↑) vs Lower GI (-0.79 anaerobe↑)",
         fontsize=9.1,
         fontweight="bold",
         loc="left",

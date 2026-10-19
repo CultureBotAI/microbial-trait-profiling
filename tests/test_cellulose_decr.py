@@ -586,9 +586,12 @@ def test_figures_draw_from_the_committed_tables(tmp_path: Path) -> None:
     """
     for name in figures.FIGURE_INPUTS:
         shutil.copy(ANALYSIS_DIR / name, tmp_path / name)
-    assert figures.main(["--analysis-dir", str(tmp_path)]) == 0
+    commit = "0123456789" * 4
+    assert figures.main(["--analysis-dir", str(tmp_path), "--code-commit", commit]) == 0
     provenance = json.loads((tmp_path / "figures" / "figures_provenance.json").read_text())
     assert provenance["script"] == "src/mtp/cellulose_decr/figures.py"
+    # Decks link the figures' code and tables at this commit (#556).
+    assert provenance["code_commit"] == commit
     assert len(provenance["outputs"]) == 7 * 3 + 2 + 1
     for output in provenance["outputs"]:
         assert (tmp_path / output).stat().st_size > 0
@@ -652,8 +655,52 @@ def test_direction_caption_follows_the_direction_not_only_p(results: figures.Res
         table.loc[rows, ["down", "up"]] = table.loc[rows, ["up", "down"]].to_numpy()
 
     title = figures.caption_direction(_with_scenarios(results, swap_crc)).title
-    assert "the increased signature does in CRC" in title
+    assert "the increased signature does in CRC under every definition" in title
     assert "in PD and all three pooled under every condition definition" in title
+
+    def crc_up_under_one(table: pd.DataFrame) -> None:
+        swap_crc(table)
+        rows = table.index[_healthy_studies(table, "CRC")]
+        table.loc[rows[1:], "binom_p_two_sided"] = 0.5
+
+    edited = _with_scenarios(results, crc_up_under_one)
+    assert "the increased signature does in CRC only under some" in (
+        figures.caption_direction(edited).title
+    )
+    assert "CRC: p from " in figures.caption_direction(edited).caveat
+    assert figures.fragile_statement(edited).startswith("the HIV and CRC results depend")
+
+
+def test_mixed_direction_is_named_not_only_its_p_range(results: figures.Results) -> None:
+    """Small p-values in opposite directions are not a robust result (#589)."""
+
+    def flip_one_hiv(table: pd.DataFrame) -> None:
+        rows = table.index[_healthy_studies(table, "HIV") & table["binom_p_two_sided"].lt(0.05)]
+        down, up = table.loc[rows[0], ["down", "up"]]
+        table.loc[rows[0], ["down", "up"]] = [up, down]
+
+    edited = _with_scenarios(results, flip_one_hiv)
+    assert figures.direction_verdicts(edited)["HIV"].kind == "mixed"
+    caption = figures.caption_direction(edited)
+    assert "HIV changes direction with the definition" in caption.title
+    assert "HIV: p from " in caption.caveat
+    assert " in opposite directions across " in caption.caveat
+    assert figures.fragile_statement(edited).endswith(" in opposite directions)")
+
+
+def test_fragile_pooled_result_starts_its_sentence_and_is_named(
+    results: figures.Results,
+) -> None:
+    def pooled_under_one(table: pd.DataFrame) -> None:
+        rows = table.index[_healthy_studies(table, "Pooled")]
+        table.loc[rows[1:], "binom_p_two_sided"] = 0.5
+
+    edited = _with_scenarios(results, pooled_under_one)
+    assert "All three pooled: p from " in figures.caption_direction(edited).caveat
+    statement = figures.fragile_statement(edited)
+    assert statement.startswith("the HIV and pooled results depend on the condition definition")
+    assert "(study-level p HIV " in statement
+    assert "; pooled " in statement
 
 
 def test_direction_caption_without_significance_or_data(results: figures.Results) -> None:

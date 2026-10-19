@@ -205,15 +205,18 @@ cellulose-decr *ARGS:
 	uv run python -m mtp.cellulose_decr.analysis --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 
 # Draw the cellulose_decr figures from its tables. The figures are regenerated, not
-# committed (CONTRIBUTING.md, "Generated outputs on main"; #560).
+# committed (CONTRIBUTING.md, "Generated outputs on main"; #560). Their provenance records
+# this checkout's commit, with +dirty when its code or tables are modified; the deck links
+# the figures' code and tables at that commit (#556).
 [positional-arguments]
 cellulose-decr-figures *ARGS:
-	uv run python -m mtp.cellulose_decr.figures "$@"
+	uv run python -m mtp.cellulose_decr.figures --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} data/analysis/cellulose_decr && git diff --cached --quiet -- {{code_paths}} data/analysis/cellulose_decr || echo +dirty)" "$@"
 
 # The two methods plates and seven Tufte plates of the selected-figure deck, drawn
-# from the rerun tables into this checkout's data/derived/tufte_plates/ (#573). Pass
-# --input-root to read another checkout's gitignored tables, and --overwrite to replace
-# existing plates; they have no other copy, so back them up first.
+# from the rerun tables into this checkout's data/derived/tufte_plates/ (#573). Plates IV
+# and V also quote the cellulose_decr results, so run `just cellulose-decr-figures` first.
+# Pass --input-root to read another checkout's gitignored tables, and --overwrite to
+# replace existing plates; they have no other copy, so back them up first.
 [positional-arguments]
 figure-review-plates *ARGS:
 	uv run python scripts/generate_tufte_plates.py "$@"
