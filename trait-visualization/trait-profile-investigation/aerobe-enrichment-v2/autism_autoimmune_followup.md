@@ -13,7 +13,7 @@ This follow-up starts from aerobe v2 trait enrichment in increased profiles and 
 | condition group | exact condition label | profiles | studies | increased / decreased profiles | increased - decreased trait z | body-site groups |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
 | Autism | Autism | 14 | 4 | 8 / 6 | 0.744 | Feces |
-| Autism spectrum disorder | Autism spectrum disorder | 13 | 3 | 8 / 5 | -0.005 | Feces |
+| Autism spectrum disorder | Autism spectrum disorder | 7 | 3 | 5 / 2 | -1.682 | Feces |
 | Autoimmune disease | Autoimmune disease | 8 | 2 | 4 / 4 | 0.421 | Feces |
 
 ## Top Taxa
@@ -63,23 +63,22 @@ Top increased taxa:
 | taxon | rank | profiles | studies | selected traits |
 | --- | --- | ---: | ---: | --- |
 | Coprococcus | genus | 3 | 2 |  |
-| Parabacteroides | genus | 3 | 2 |  |
-| Alistipes | genus | 3 | 1 |  |
 | Clostridium | genus | 2 | 2 | microaerophilic |
-| Phascolarctobacterium | genus | 2 | 2 |  |
-| Moraxella | genus | 2 | 1 | aerobic; microaerophilic |
+| Parabacteroides | genus | 2 | 2 |  |
 | Clostridioides | genus | 2 | 1 | facultatively aerobic |
-| Altererythrobacter | genus | 2 | 1 |  |
+| Alistipes | genus | 2 | 1 |  |
 | Hungatella | genus | 2 | 1 |  |
 | Thomasclavelia | genus | 2 | 1 |  |
-| Bacteroides | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
 | Comamonas | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Erysipelotrichaceae | family | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Klebsiella | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
+| Desulfovibrio | genus | 1 | 1 | facultatively aerobic; microaerophilic |
+| Anaerobutyricum | genus | 1 | 1 |  |
 
 Top decreased taxa:
 
 | taxon | rank | profiles | studies | selected traits |
 | --- | --- | ---: | ---: | --- |
-| Prevotella | genus | 2 | 2 |  |
 | Aerococcus | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
 | Corynebacterium | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
 | Erysipelotrichaceae | family | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
@@ -91,6 +90,7 @@ Top decreased taxa:
 | Pseudomonas | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
 | Staphylococcus | genus | 1 | 1 | facultatively aerobic; aerobic; microaerophilic |
 | Gemella morbillorum | species | 1 | 1 | facultatively aerobic; microaerophilic |
+| Lachnospiraceae | family | 1 | 1 | facultatively aerobic; microaerophilic |
 
 ### Autoimmune disease
 
@@ -136,7 +136,7 @@ These lists make the profile-similarity interpretation auditable. Shared red lab
 
 | heatmap label | Autism | ASD | Autoimmune disease | selected traits | in heatmap |
 | --- | ---: | ---: | ---: | --- | --- |
-| Bacteroides genus | 1 | 1 | 2 | aerobic; facultatively aerobic; microaerophilic | yes |
+| Bacteroides genus | 1 | 0 | 2 | aerobic; facultatively aerobic; microaerophilic | yes |
 | Pseudomonadota phylum | 3 | 0 | 3 | aerobic; facultatively aerobic; microaerophilic | no |
 | Enterobacteriaceae family | 1 | 0 | 2 | aerobic; facultatively aerobic; microaerophilic | no |
 | Bacteroidota phylum | 1 | 0 | 1 | aerobic; facultatively aerobic; microaerophilic | no |
@@ -153,21 +153,21 @@ These lists make the profile-similarity interpretation auditable. Shared red lab
 
 | heatmap label | Autism | ASD | Autoimmune disease | selected traits | in heatmap |
 | --- | ---: | ---: | ---: | --- | --- |
-| Prevotella genus | 0 | -2 | 0 |  | yes |
 | Lactobacillus genus | 0 | -1 | 1 | aerobic; facultatively aerobic; microaerophilic | yes |
 | Corynebacterium genus | 1 | -1 | 0 | aerobic; facultatively aerobic; microaerophilic | yes |
 | Mediterraneibacter gnavus species | 0 | -1 | -1 |  | yes |
 | Ruminococcus genus | -1 | -1 | 0 |  | yes |
 | Lachnospira eligens species | 0 | -1 | -2 |  | yes |
 | Aerococcus genus | 0 | -1 | 0 | aerobic; facultatively aerobic; microaerophilic | yes |
+| Lactococcus genus | 0 | -1 | 0 | aerobic; facultatively aerobic; microaerophilic | yes |
 | Prevotellaceae family | 0 | -1 | -1 | aerobic | no |
-| Lactococcus genus | 0 | -1 | 0 | aerobic; facultatively aerobic; microaerophilic | no |
 | Listeria genus | 0 | -1 | 0 | aerobic; facultatively aerobic; microaerophilic | no |
 | Methylobacterium genus | 0 | -1 | 0 | aerobic; facultatively aerobic; microaerophilic | no |
 | Microbacterium genus | 0 | -1 | 0 | aerobic; facultatively aerobic; microaerophilic | no |
 | Pseudomonas genus | 0 | -1 | 0 | aerobic; facultatively aerobic; microaerophilic | no |
 | Staphylococcus genus | 0 | -1 | 0 | aerobic; facultatively aerobic; microaerophilic | no |
 | Gemella morbillorum species | 0 | -1 | 0 | facultatively aerobic; microaerophilic | no |
+| Schaalia odontolytica species | 0 | -1 | 0 | facultatively aerobic; microaerophilic | no |
 
 ## Inferred Guild Evidence
 
@@ -192,7 +192,7 @@ The most defensible interpretation is that the exact autism and autoimmune disea
 
 ## Heatmap
 
-`autism_autoimmune_taxa_signed_heatmap.png` shows the top 45 genus/species taxa selected from 210 observed taxa. Cell values are `increased unique taxon-profile count - decreased unique taxon-profile count`; red is increased-skewed and blue is decreased-skewed. Colored x-axis labels and the marker strip above the heatmap identify taxa included in the red/blue pattern-label extraction.
+`autism_autoimmune_taxa_signed_heatmap.png` shows the top 45 genus/species taxa selected from 202 observed taxa. Cell values are `increased unique taxon-profile count - decreased unique taxon-profile count`; red is increased-skewed and blue is decreased-skewed. Colored x-axis labels and the marker strip above the heatmap identify taxa included in the red/blue pattern-label extraction.
 
 ## Files
 

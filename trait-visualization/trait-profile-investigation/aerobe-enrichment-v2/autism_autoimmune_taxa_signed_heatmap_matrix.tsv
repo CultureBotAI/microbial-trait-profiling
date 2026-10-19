@@ -1,30 +1,26 @@
-condition	"Parabacteroides
-genus"	"Alistipes
-genus"	"Enterococcus
+condition	"Enterococcus
 genus"	"Bacteroides ovatus
-species"	"Bacteroides
+species"	"Coprococcus
 genus"	"Clostridium
+genus"	"Parabacteroides
+genus"	"Bacteroides
 genus"	"Streptococcus
 genus"	"Escherichia
+genus"	"Alistipes
 genus"	"Bacteroides fragilis
-species"	"Coprococcus
-genus"	"Veillonella
-genus"	"Eubacterium
+species"	"Veillonella
 genus"	"Lachnospira eligens
 species"	"Enterobacter
 genus"	"Escherichia coli
 species"	"Bacteroides uniformis
 species"	"Haemophilus parainfluenzae
-species"	"Moraxella
-genus"	"Clostridioides
+species"	"Clostridioides
 genus"	"Dialister
-genus"	"Altererythrobacter
 genus"	"Bacteroides sp. CJ78
 species"	"Enterocloster bolteae
-species"	"Faecalibacterium sp. DJF VR20
+species"	"Eubacterium
+genus"	"Faecalibacterium sp. DJF VR20
 species"	"Hungatella
-genus"	"Phascolarctobacterium
-genus"	"Prevotella
 genus"	"bacterium mpn-isolate group 18
 species"	"human intestinal firmicute CO19
 species"	"human intestinal firmicute CO35
@@ -43,7 +39,11 @@ genus"	"Actinomyces
 genus"	"Aerococcus
 genus"	"Comamonas
 genus"	"Helcococcus
+genus"	"Klebsiella
+genus"	"Lacticaseibacillus rhamnosus
+species"	"Lactococcus
+genus"	"Leuconostoc
 genus"
-Autism	0	-1	3	0	1	0	-2	0	0	0	-2	0	0	0	0	0	0	0	0	-2	0	0	2	0	0	0	0	0	0	0	0	0	0	-1	1	1	0	0	1	1	0	-1	0	0	-1
-Autism spectrum disorder	3	3	0	0	1	2	0	0	0	2	0	1	-1	0	0	0	0	2	2	0	2	0	0	0	2	2	-2	0	0	0	0	-1	-1	-1	0	0	1	1	-1	1	1	0	-1	1	0
-Autoimmune disease	0	1	0	3	2	0	1	2	-2	0	0	-2	-2	2	2	2	-2	0	0	0	0	2	0	-2	0	0	0	2	-2	-2	2	1	-1	0	0	0	0	0	0	0	1	0	0	0	0
+Autism	3	0	0	0	0	1	-2	0	-1	0	-2	0	0	0	0	0	0	-2	0	2	0	0	0	0	0	0	0	0	0	-1	1	1	0	0	1	1	0	-1	0	0	-1	0	0	0	-1
+Autism spectrum disorder	0	0	3	2	2	0	0	0	2	0	0	-1	0	0	0	0	2	0	0	0	0	0	2	0	0	0	0	-1	-1	-1	0	0	1	1	-1	1	1	0	-1	1	0	1	0	-1	0
+Autoimmune disease	0	3	0	0	0	2	1	2	1	-2	0	-2	2	2	2	-2	0	0	2	0	-2	-2	0	2	-2	-2	2	1	-1	0	0	0	0	0	0	0	1	0	0	0	0	0	1	0	0
