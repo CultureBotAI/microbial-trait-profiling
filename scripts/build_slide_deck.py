@@ -1807,7 +1807,7 @@ def current_commands(series: Sequence[str]) -> list[str]:
     return commands
 
 
-def plate_provenance(rec: dict[str, Any]) -> None:
+def plate_provenance(rec: dict[str, Any], methods_path: str) -> None:
     """Point a plate's provenance record at the plate script in the repository (#613, #621).
 
     The source YAML named data/derived/figure_review_2026-09-21/slides/generate_tufte_plates.py,
@@ -1816,6 +1816,8 @@ def plate_provenance(rec: dict[str, Any]) -> None:
     """
     rec["generator_script_path"] = "scripts/generate_tufte_plates.py"
     rec["just_recipe"] = "just figure-review-plates"
+    # The slide's methods link, which #613 pointed at committed documents (#623)
+    rec["methods_doc_path"] = methods_path
     series = [c for c in rec.get("command_series", []) if "generate_tufte_plates.py" not in c]
     rec["command_series"] = [*series, "just cellulose-decr-figures", "just figure-review-plates"]
 
@@ -1900,6 +1902,7 @@ def slide_links(entry: dict[str, Any], fig_rel: str) -> dict[str, str]:
     linked_evidence = blob and evidence_rel and not evidence_rel.startswith("data/derived/")
     return {
         "commit": ref or "",
+        "code_commit": code_ref or "",
         "figure_url": f"{blob}/{fig_rel}" if linked_figure else "NA",
         "code_url": f"{code_blob}/{code_rel}" if code_blob and code_rel else "",
         "methods_url": f"{blob}/{methods_rel}" if blob and methods_rel else "",
@@ -1908,7 +1911,12 @@ def slide_links(entry: dict[str, Any], fig_rel: str) -> dict[str, str]:
 
 
 def revision_stamp(row: dict[str, str]) -> str:
-    """A slide's revision: the rerun's, or the commit that drew a cellulose_decr figure."""
+    """A slide's revision: the rerun's, plus the plates' drawing commit, or the commit that
+    drew a cellulose_decr figure (#623)."""
+    if row["figure_file_path"].startswith(PLATES_DIR):
+        drawn = row.get("code_commit", "")
+        plates = f"plates drawn at {drawn[:12]}" if drawn else "plates drawn without a clean commit"
+        return f"Rerun revision {row['commit'][:12]} · {plates}"
     if not row["figure_file_path"].startswith(CELLULOSE_FIGURES):
         return f"Rerun revision {row['commit'][:12]}"
     if row["commit"]:
@@ -2200,6 +2208,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
                 "figure_file_path": fig_rel,
                 "code_path": code_rel,
                 "commit": ref,
+                "code_commit": links["code_commit"],
                 "branch": BRANCH,
                 "figure_url": fig_url,
                 "code_url": code_url,
@@ -2234,6 +2243,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         "figure_file_path",
         "code_path",
         "commit",
+        "code_commit",
         "branch",
         "figure_url",
         "code_url",
@@ -2560,7 +2570,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         ]
         rec["command_series"] = current_commands(rec.get("command_series", []))
         if fp.startswith(PLATES_DIR):
-            plate_provenance(rec)
+            plate_provenance(rec, r.get("methods_path", ""))
         if fp.startswith(CELLULOSE_FIGURES):
             cellulose_figure_provenance(rec, cellulose_figures["inputs"])
         new_figures_list.append(rec)

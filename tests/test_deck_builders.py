@@ -66,6 +66,20 @@ def test_stamp_names_the_drawing_commit_of_cellulose_figures() -> None:
     assert deck.revision_stamp(unpinned) == "Figures drawn without a clean commit"
 
 
+def test_plate_slides_stamp_the_drawing_commit() -> None:
+    plate = {
+        "figure_file_path": f"{deck.PLATES_DIR}tufte_plate2.png",
+        "commit": deck.COMMIT,
+        "code_commit": COMMIT,
+    }
+    assert deck.revision_stamp(plate) == (
+        f"Rerun revision {deck.SHORT_COMMIT} · plates drawn at {COMMIT[:12]}"
+    )
+    assert deck.revision_stamp({**plate, "code_commit": ""}).endswith(
+        "plates drawn without a clean commit"
+    )
+
+
 def test_figure_folders_match_whole_names() -> None:
     base = "data/analysis/cellulose_decr"
     assert f"{base}/figures/a.svg".startswith(deck.CELLULOSE_FIGURES)
@@ -323,8 +337,9 @@ def test_plate_records_name_the_plate_script() -> None:
         "just_recipe": f"python {old_script}",
         "command_series": [*deck.UPSTREAM_COMMANDS, "just analyze", f"uv run python {old_script}"],
     }
-    deck.plate_provenance(record)
+    deck.plate_provenance(record, "methods/table1_paired_log_ratios.md")
     assert record["generator_script_path"] == "scripts/generate_tufte_plates.py"
+    assert record["methods_doc_path"] == "methods/table1_paired_log_ratios.md"
     assert record["just_recipe"] == "just figure-review-plates"
     assert record["command_series"][-3:] == [
         "just analyze",
@@ -379,11 +394,14 @@ def test_plate_slides_link_their_code_at_the_drawing_commit(tmp_path: Path) -> N
     )
 
 
-@pytest.mark.parametrize("argv", [["--over"], ["--out", "/tmp/x"], ["--prov", "/tmp/x"]])
-def test_deck_options_are_never_abbreviated(argv: list[str]) -> None:
+@pytest.mark.parametrize("argv", [["--over"], ["--out", "x"], ["--prov", "x"]])
+def test_deck_options_are_never_abbreviated(tmp_path: Path, argv: list[str]) -> None:
     """The recipe's guards match whole option names (#617)."""
+    # Every folder is in tmp_path, so a regression cannot rebuild the real deck (#623).
+    safe = ["--input-root", str(tmp_path), "--output-dir", str(tmp_path / "slides")]
+    safe += ["--provenance-dir", str(tmp_path / "provenance")]
     with pytest.raises(SystemExit) as stopped:
-        deck.main(argv)
+        deck.main([*safe, *argv])
     # argparse's usage error, not a later guard
     assert stopped.value.code == 2
 
@@ -454,7 +472,7 @@ def test_plates_record_their_drawing_commit(tmp_path: Path) -> None:
     }
 
 
-def test_plate_and_figure_options_are_never_abbreviated() -> None:
+def test_plate_and_figure_options_are_never_abbreviated(tmp_path: Path) -> None:
     """The recipes' guards match whole option names (#617)."""
     from mtp.cellulose_decr import figures
 
@@ -462,7 +480,7 @@ def test_plate_and_figure_options_are_never_abbreviated() -> None:
         figures.parse_args(["--analysis", "/tmp/x"])
     assert stopped.value.code == 2
     with pytest.raises(SystemExit) as stopped:
-        plates.main(["--code", "abc"])
+        plates.main(["--input-root", str(tmp_path), "--output-dir", str(tmp_path), "--code", "x"])
     assert stopped.value.code == 2
 
 

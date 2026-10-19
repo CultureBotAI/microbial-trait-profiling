@@ -284,8 +284,9 @@ figure-review-deck *ARGS:
 	slides="{{deck_slides}}"
 	provenance="{{deck_provenance}}"
 	# The status describes the deck it was written for and is rewritten only if every step
-	# passes. A deck about to be replaced loses it first, so a build that fails partway
-	# cannot leave it beside a half-rebuilt deck; a refused build keeps it.
+	# passes. With --overwrite it is removed first, so a build that fails partway cannot
+	# leave it beside a half-rebuilt deck; a refusal after that leaves no status at all,
+	# and only a build refused without --overwrite keeps it.
 	if [ "$overwrite" = 1 ]; then
 		rm -f "$slides/deck_build_status.json"
 	fi

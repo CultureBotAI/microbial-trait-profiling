@@ -714,7 +714,28 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
 # ==============================================================================
 # METHODS PLATE 2: High-Level Three-Arm Analytical Architecture & Convergence
 # ==============================================================================
-def build_methods_plate2(out_dir: Path) -> Path:
+def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
+    # Arm 1's survivors, read from the tables Plates I and II draw (#598, #623)
+    stats = repo / "trait-visualization/trait-profile-investigation"
+    paired = {
+        stratum: {
+            r["trait"]: r
+            for r in read_tsv(stats / f"trait_profile_paired_contrast_trait_stats_{stratum}.tsv")
+        }
+        for stratum in ("pooled", "feces")
+    }
+    fisher = sum(
+        r.get("selected_after_bh") == "True"
+        for r in read_tsv(
+            stats / "six-shared-traits/six_shared_trait_condition_body_site_direction_contrasts.tsv"
+        )
+        if r.get("view_key") == "individual_conditions_direction_contrast"
+    )
+    survivors = (
+        f"{study_bh_count(paired['pooled'])} Pooled & {study_bh_count(paired['feces'])} Feces "
+        f"traits\npass Study BH q ≤ 0.05 · {fisher} Cond"
+        "\N{MULTIPLICATION SIGN}Site Fisher BH survivors"
+    )
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
     ax = fig.add_axes([0.03, 0.08, 0.94, 0.80])
     ax.axis("off")
@@ -849,8 +870,7 @@ def build_methods_plate2(out_dir: Path) -> Path:
     ax.text(
         16.75,
         30.5,
-        "Arm 1 Survivors: 22 Pooled & 33 Feces traits\npass Study BH q ≤ 0.05 · 10 "
-        "Cond\N{MULTIPLICATION SIGN}Site Fisher hits",
+        f"Arm 1 Survivors: {survivors}",
         fontsize=8.2,
         fontweight="bold",
         color=DEC_COLOR,
@@ -3474,7 +3494,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     setup_tufte_rc()
     paths = [
         build_methods_plate1(repo, out_dir),
-        build_methods_plate2(out_dir),
+        build_methods_plate2(repo, out_dir),
         build_plate1(repo, out_dir),
         build_plate2(repo, out_dir),
         build_plate3(repo, out_dir),
