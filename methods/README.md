@@ -85,6 +85,24 @@ in Parkinson's disease, HIV infection and colorectal cancer:
 Its tables are committed and its figures are regenerated. The code is the
 `mtp.cellulose_decr` package (`src/mtp/cellulose_decr/`).
 
+The selected-figure slide deck in `data/derived/figure_review_2026-09-21/` is built
+by `scripts/build_slide_deck.py` (`just figure-review-deck`), which places the
+methods and Tufte plates drawn by `scripts/generate_tufte_plates.py`
+(`just figure-review-plates`). `just figure-review-deck` also validates the figure
+provenance YAML against its LinkML schema and prints the PDF with headless Chrome
+(`just html-to-pdf`). The deck, its assets, the plates and the provenance YAML are
+gitignored local outputs, and the builder reads gitignored inputs as well (the
+earlier deck manifests, `svg_sources/`, figures under `data/derived/`), so a fresh
+clone cannot rebuild the deck (#573). Both builders write to the checkout that holds
+them, whatever `--input-root` points at. They refuse to replace an existing deck or
+plates without `--overwrite`; there is no other copy, so back up `slides/`,
+`provenance/` and `data/derived/tufte_plates/` first. They also refuse
+contrast-orientation inputs from a classifier other than the v2 their typed numbers
+describe, until #579 reads those numbers from the tables (#592). To build into other
+folders, set them as `just deck_slides=DIR deck_provenance=DIR figure-review-deck`, so the
+validation, PDF and copy steps use them too; the recipe ends by writing
+`deck_build_status.json`.
+
 The [GPT Rosalind discussion and review](../docs/rosalind-six-trait-interpretation.md)
 archives proposed biological explanations for the six traits, with a separate
 evidence review and assigned follow-up issues. It records hypotheses to evaluate;
