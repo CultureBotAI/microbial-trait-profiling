@@ -62,6 +62,8 @@ PURPLE_ACCENT = "#6a4c93"
 
 # The files the plate being drawn reads; main() records them with their hashes (#637).
 INPUTS_READ: set[Path] = set()
+# Counts the plates draw that the deck's slide text quotes (#640).
+PLATE_COUNTS: dict[str, int] = {}
 
 
 def read_tsv(path: Path) -> list[dict[str, str]]:
@@ -116,12 +118,18 @@ def input_record(repo: Path) -> dict[str, str]:
 
 
 def write_plates_provenance(
-    out_dir: Path, inputs: Mapping[str, Mapping[str, str]], code_commit: str
+    out_dir: Path,
+    inputs: Mapping[str, Mapping[str, str]],
+    code_commit: str,
+    outputs: Mapping[str, str] | None = None,
+    counts: Mapping[str, int] | None = None,
 ) -> Path:
-    """Record the commit that drew the plates and each plate's inputs with their hashes.
+    """Record the commit that drew the plates, each plate's inputs and outputs with their
+    hashes, and the counts the slide text quotes.
 
-    The deck links the plate code at that commit (#613) and checks the inputs against the
-    revisions its slides cite (#637).
+    The deck links the plate code at that commit (#613), checks the inputs against the
+    revisions its slides cite, and checks that the plates it places are the ones drawn
+    (#637).
     """
     path = out_dir / "plates_provenance.json"
     record = {
@@ -130,6 +138,8 @@ def write_plates_provenance(
         "rerun_commit": RERUN_COMMIT,
         "plates": sorted(inputs),
         "inputs": {plate: dict(sorted(files.items())) for plate, files in sorted(inputs.items())},
+        "outputs": dict(sorted((outputs or {}).items())),
+        "counts": dict(sorted((counts or {}).items())),
     }
     path.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
     return path
@@ -799,6 +809,25 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
         read_tsv(stats / "PD-cellulose/pd_condition_taxon_trait_network_condition_trait_tests.tsv")
     )
     screen = read_tsv(repo / "data/derived/trait_screen/trait_direction_screen.tsv")
+    concordant, strict = three_arm_counts(
+        three_arm_traits(
+            paired["pooled"],
+            {
+                r["trait"]: r
+                for r in read_tsv(repo / "data/derived/trait_enrichment_traits_overall_ranked.tsv")
+            },
+            {r["trait"]: r for r in screen},
+            {tid for tid, *_ in TABLE1_TRAITS},
+        )
+    )
+    # The slide's caveat quotes these, from the plates' provenance (#640)
+    PLATE_COUNTS.update(
+        {
+            "traits_observed": len(paired["pooled"]),
+            "three_arm_concordant": concordant,
+            "three_arm_strict_by": strict,
+        }
+    )
 
     def passing(column: str) -> int:
         return sum(has_value(r.get(column)) and float(r[column]) <= 0.05 for r in screen)
@@ -1194,20 +1223,20 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
         (
             3.5,
             "317 Biological Traits",
-            "Full KG-Microbe phenome\n(315 observed in corpus)",
+            f"Full KG-Microbe phenome\n({len(paired['pooled'])} observed in corpus)",
             "#ffffff",
             MID_RULE,
         ),
         (
             27.5,
-            "17 Three-Arm Traits",
+            f"{concordant} Three-Arm Traits",
             "Arm 1 Study BH q ≤ 0.05\n+ Arm 3 BH₃₁₇ ≤ 0.05 + Arm 2 ORA",
             "#e8f5f3",
             TEAL_ACCENT,
         ),
         (
             51.5,
-            "8 Strict BY Survivors",
+            f"{strict} Strict BY Survivors",
             "Pass conservative 317-trait\nBenjamini\N{EN DASH}Yekutieli q ≤ 0.05",
             "#eef5fb",
             DEC_COLOR,
@@ -1413,11 +1442,15 @@ def plate1_subtitle(summary: Mapping[str, Any]) -> str:
     if all(count == 6 for count in survivors[:4]):
         parts = ["All 6 pass Scales 1\N{EN DASH}4"]
     else:
-        parts = [f"{count} pass Scale {index + 1}" for index, count in enumerate(survivors[:4])]
+        parts = [
+            f"{count} {'passes' if count == 1 else 'pass'} Scale {index + 1}"
+            for index, count in enumerate(survivors[:4])
+        ]
     for index in (4, 5):
         if survivors[index]:
+            verb = "passes" if survivors[index] == 1 else "pass"
             parts.append(
-                f"{survivors[index]} pass Scale {index + 1} "
+                f"{survivors[index]} {verb} Scale {index + 1} "
                 f"({'; '.join(summary['selected'][index])})"
             )
         elif index == 5:
@@ -3219,45 +3252,16 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
 # ==============================================================================
 # PLATE 7: Three-Arm 317-Trait Concordance & Expanded Table 1 Forest Plot
 # ==============================================================================
-def build_plate7(repo: Path, out_dir: Path) -> Path:
-    arm1_rows = {
-        r["trait"]: r
-        for r in read_tsv(
-            repo / "trait-visualization/trait-profile-investigation/"
-            "trait_profile_paired_contrast_trait_stats_pooled.tsv"
-        )
-    }
-    arm2_rows = {
-        r["trait"]: r
-        for r in read_tsv(repo / "data/derived/trait_enrichment_traits_overall_ranked.tsv")
-    }
-    arm3_screen_rows = {
-        r["trait"]: r
-        for r in read_tsv(repo / "data/derived/trait_screen/trait_direction_screen.tsv")
-    }
-    orient_rows = read_tsv(
-        repo / "data/derived/contrast_orientation/disease_control_comparison.tsv"
-    )
-    orient_t1 = {
-        r["numerator"]: r
-        for r in orient_rows
-        if r.get("comparison") == "fraction"
-        and r.get("population") == "disease_vs_healthy_oriented"
-    }
-    t1_metric_map = {
-        "METPO:1000608": "facultatively_aerobic",
-        "METPO:2000103|GO:0030245": "cellulose_catabolic_process",
-        "METPO:1000668": "coccus_shaped",
-        "METPO:1000683": "sphere_shaped",
-        "METPO:2000103|pathways:arsenate_reduction": "arsenate_reduction",
-        "METPO:1000623": "moderately_halophilic",
-    }
-
-    t1_ids = set(t1_metric_map.keys())
-
-    # Collect the 19 traits passing both Arm 1 Study FDR <= 0.05 AND Arm 3 Study BH FDR <= 0.05
-    # (17 three-arm concordant traits + 2 paired-down / unpaired-ORA-inverted traits: GC low &
-    # Anaerobic)
+def three_arm_traits(
+    arm1_rows: Mapping[str, dict[str, str]],
+    arm2_rows: Mapping[str, dict[str, str]],
+    arm3_screen_rows: Mapping[str, dict[str, str]],
+    t1_ids: set[str],
+) -> list[dict[str, Any]]:
+    """The traits Plate VII draws, and Methods Plate II counts (#640): the Table 1 traits
+    plus every trait passing Arm 1 study BH and Arm 3 BH, with each arm's direction."""
+    # The traits passing both Arm 1 Study FDR <= 0.05 and Arm 3 Study BH FDR <= 0.05, which
+    # include traits whose arms disagree (paired-down / ORA-inverted), plus the Table 1 traits
     selected_traits = []
     for tid, s_row in arm3_screen_rows.items():
         a1 = arm1_rows.get(tid)
@@ -3327,6 +3331,57 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
                     "all3_concordant": all3_concordant,
                 }
             )
+
+    return selected_traits
+
+
+def three_arm_counts(selected: Sequence[dict[str, Any]]) -> tuple[int, int]:
+    """Traits passing Arm 1 study BH and Arm 3 BH with all three arms concordant, and how
+    many of those also pass Arm 3 BY."""
+    concordant = [
+        t
+        for t in selected
+        if t["all3_concordant"] and t["a1_st_q"] <= 0.05 and t["a3_bh_q"] <= 0.05
+    ]
+    return len(concordant), sum(t["a3_by_q"] <= 0.05 for t in concordant)
+
+
+def build_plate7(repo: Path, out_dir: Path) -> Path:
+    arm1_rows = {
+        r["trait"]: r
+        for r in read_tsv(
+            repo / "trait-visualization/trait-profile-investigation/"
+            "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+        )
+    }
+    arm2_rows = {
+        r["trait"]: r
+        for r in read_tsv(repo / "data/derived/trait_enrichment_traits_overall_ranked.tsv")
+    }
+    arm3_screen_rows = {
+        r["trait"]: r
+        for r in read_tsv(repo / "data/derived/trait_screen/trait_direction_screen.tsv")
+    }
+    orient_rows = read_tsv(
+        repo / "data/derived/contrast_orientation/disease_control_comparison.tsv"
+    )
+    orient_t1 = {
+        r["numerator"]: r
+        for r in orient_rows
+        if r.get("comparison") == "fraction"
+        and r.get("population") == "disease_vs_healthy_oriented"
+    }
+    t1_metric_map = {
+        "METPO:1000608": "facultatively_aerobic",
+        "METPO:2000103|GO:0030245": "cellulose_catabolic_process",
+        "METPO:1000668": "coccus_shaped",
+        "METPO:1000683": "sphere_shaped",
+        "METPO:2000103|pathways:arsenate_reduction": "arsenate_reduction",
+        "METPO:1000623": "moderately_halophilic",
+    }
+
+    t1_ids = set(t1_metric_map.keys())
+    selected_traits = three_arm_traits(arm1_rows, arm2_rows, arm3_screen_rows, t1_ids)
 
     # Sort: 1) Original 6 Table 1 traits (by share_up desc), 2) Additional 11 3-Arm Concordant
     # traits (by share_up desc), 3) 2 ORA-inverted traits
@@ -3689,12 +3744,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         build_plate7,
     )
     inputs: dict[str, dict[str, str]] = {}
+    outputs: dict[str, str] = {}
+    PLATE_COUNTS.clear()
     for build in builders:
         INPUTS_READ.clear()
         path = build(repo, out_dir)
         inputs[path.name] = input_record(repo)
+        for drawn in (path, path.with_suffix(".svg")):
+            outputs[drawn.name] = file_sha256(drawn)
         print(f"Generated: {path} ({path.stat().st_size:,} bytes)")
-    print(f"Recorded: {write_plates_provenance(out_dir, inputs, args.code_commit)}")
+    recorded = write_plates_provenance(out_dir, inputs, args.code_commit, outputs, PLATE_COUNTS)
+    print(f"Recorded: {recorded}")
     return 0
 
 

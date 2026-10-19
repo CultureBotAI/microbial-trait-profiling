@@ -22,10 +22,18 @@ same corpus, so every p-value here is nominal. Section 4 adds adjusted values.
 
 The October 16 version of this directory had no generator. Given the same labels
 (`--label-source study_modal`), the rebuilt analysis reproduces its sets, exact
-tests, catalog counts and feces direction statistics. Other outputs differ: U5
-was redefined (#567), U4's Monte Carlo p-values moved slightly (HIV–CRC 0.00149
-to 0.00185), the oral and other-site compartment rows changed, and two pairs of
-benchmark ranks swap. The rebuilt analysis then makes these corrections:
+tests, catalog counts and feces direction statistics. Other outputs differ:
+- U5 was redefined (#567).
+- U4's Monte Carlo p-values moved slightly (HIV–CRC 0.00149 to 0.00185).
+- The compartment rows outside feces changed, including their annotated-taxon
+  universes (non-fecal GI 78 to 71, oral 85 to 80, other 102 to 112).
+- The sensitivity table no longer gives an expected mean distance for its
+  mean rows.
+- Two pairs of benchmark ranks swap.
+- The four-pairs tables differ. Their October 16 counts match the experiment
+  labels instead (section 8).
+
+The rebuilt analysis then makes these corrections:
 
 - **Labels.** Each profile now takes the condition and body site of its own
   experiment. The October 16 run used one modal label per study, which put

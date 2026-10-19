@@ -28,7 +28,7 @@ import json
 import math
 import re
 import shutil
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from statistics import median
 from typing import Any
@@ -55,6 +55,13 @@ COMMIT = "402ef5c25b7105c9aa73398085956dcf1f372bb4"
 SHORT_COMMIT = COMMIT[:12]
 BRANCH = "main"
 GITHUB_BLOB = f"{REPO_URL}/blob/{COMMIT}"
+# The cover's figure and code links, at COMMIT
+COVER_FIGURE = (
+    "trait-visualization/trait-profile-investigation/six-shared-traits/"
+    "six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_"
+    "heatmap_page_01.png"
+)
+COVER_CODE = "scripts/create_six_shared_trait_cytoscape_heatmaps.py"
 
 
 def sha256_file(path: Path) -> str:
@@ -69,12 +76,14 @@ def sha256_file(path: Path) -> str:
 TABLES_READ: set[Path] = set()
 
 
-def read_tsv(path: Path) -> list[dict[str, str]]:
-    """A table the slides quote. A missing one stops the build rather than leaving the text
-    that quotes it empty or zero (#639)."""
+def read_tsv(path: Path, quoted: bool = True) -> list[dict[str, str]]:
+    """A table the slides read. A missing one stops the build rather than leaving the text
+    that quotes it empty or zero (#639). A ``quoted`` table is checked against COMMIT;
+    one read only for slides that link it as evidence is checked with those slides."""
     if not path.exists():
         raise FileNotFoundError(f"missing {path}")
-    TABLES_READ.add(path)
+    if quoted:
+        TABLES_READ.add(path)
     with path.open(newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f, delimiter="\t"))
 
@@ -148,9 +157,13 @@ def stale_figure_ids(prov_doc: Mapping[str, Any], in_deck: set[str]) -> list[str
 
 
 def cited_refs() -> list[str]:
-    """The revisions whose committed files the slides link or quote (#637)."""
-    revision = cellulose_revision(REPO_ROOT)
-    return [COMMIT, *([revision] if revision and revision != COMMIT else [])]
+    """The revisions whose committed files the slides link or quote (#637): the rerun,
+    the commit that drew the cellulose_decr figures and the one that drew the plates."""
+    refs = [COMMIT]
+    for ref in (cellulose_revision(REPO_ROOT), plate_revision(REPO_ROOT)):
+        if ref and ref not in refs:
+            refs.append(ref)
+    return refs
 
 
 def load_rerun_metrics(repo: Path) -> dict:
@@ -264,7 +277,8 @@ def load_rerun_metrics(repo: Path) -> dict:
     sankey_stats = {}
     sankey_dir = repo / "trait-visualization/trait-profile-investigation/six-shared-traits"
     for edges_file in sorted(sankey_dir.glob("*_display_edges.tsv")):
-        rows = read_tsv(edges_file)
+        # Only the slides that link a display-edges table as evidence quote it (#637).
+        rows = read_tsv(edges_file, quoted=False)
         if not rows:
             continue
         total_support = sum(
@@ -516,12 +530,14 @@ def plate_one_text(metrics: dict) -> tuple[str, str]:
         f"tests → {metrics['pd_net_total']} fecal study Wilcoxon tests)."
     )
     caveat = (
-        f"{every} traits pass study-level BH q ≤ 0.05 across {metrics['pooled_studies']:,} "
+        f"{every} traits {'passes' if study_level == 1 else 'pass'} study-level BH q ≤ 0.05 "
+        f"across {metrics['pooled_studies']:,} "
         f"studies; across {metrics['ind_conditions']} conditions \N{MULTIPLICATION SIGN} "
         f"{metrics['ind_sites']} sites (median {metrics['ind_median_studies']:g} "
         f"{'study' if metrics['ind_median_studies'] == 1 else 'studies'} per cell), "
-        f"{plural(cells, 'individual profile cell')} {'passes' if cells == 1 else 'pass'} BH q "
-        f"≤ 0.05, and PD fecal halophily reaches Wilcoxon p = "
+        f"{plural(cells, 'individual profile cell')} {'is' if cells == 1 else 'are'} selected "
+        "after BH (q ≤ 0.05 and the study-support rule), and PD fecal halophily reaches "
+        "Wilcoxon p = "
         f"{p_text(float(halophily['p_value']))} (BH q = {p_text(float(halophily['q_value']))})."
     )
     return takeaway, caveat
@@ -541,6 +557,15 @@ def crc_oxygen_text(rows: list[dict[str, str]]) -> str:
         "Colorectal cancer splits by sampling compartment in O₂ switch score (Feces "
         f"{scores['Feces']:+.2f} vs Lower GI tract {scores['Lower GI tract']:+.2f}). "
     )
+
+
+def crc_mucosa_shown(metrics: dict) -> str:
+    """Whether Plate V shows the CRC Intestinal / GI mucosa stratum (#641)."""
+    shown = any(
+        r["condition"] == "Colorectal cancer" and r["body_site_display"] == "Intestinal / GI mucosa"
+        for r in oxygen_switch_strata(metrics["oxygen_switch"])
+    )
+    return f"the second is {'' if shown else 'not '}among the strata shown"
 
 
 def prior_label(url: str, studies: Mapping[str, dict[str, str]]) -> str:
@@ -1045,8 +1070,10 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "depletions), and Arm 3 (study binomial sign tests, McNemar O₂-guild test, "
             "and 15-pair compositional log-ratios across all 959 studies and 569 "
             "disease-vs-healthy oriented studies).",
-            "caveat": "Bottom convergence bar shows how 317 KG-Microbe traits narrow to 17 "
-            "three-arm concordant study-BH traits (8 at strict BY q ≤ 0.05), explains "
+            "caveat": "Bottom convergence bar shows how 317 KG-Microbe traits narrow to "
+            f"{metrics['plate_counts'].get('three_arm_concordant', '?')} three-arm concordant "
+            f"study-BH traits ({metrics['plate_counts'].get('three_arm_strict_by', '?')} at "
+            "strict BY q ≤ 0.05), explains "
             "why screened_fraction_sign_test = 0.091 is a post-selection artifact, and "
             "highlights 4 BY-significant log-ratios in the 569 oriented "
             "disease-vs-healthy studies.",
@@ -1151,8 +1178,8 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "caveat": crc_oxygen_text(metrics["oxygen_switch"])
             + "The cellulose deep-dive slides compare CRC stool with non-fecal GI samples, "
             "pooling the colon and intestinal mucosa sites that the oxygen-switch table splits "
-            "into Lower GI tract and Intestinal / GI mucosa (the second is not among the strata "
-            "shown); most of those mucosal contrasts are not patients against controls.",
+            f"into Lower GI tract and Intestinal / GI mucosa ({crc_mucosa_shown(metrics)}); "
+            "most of those mucosal contrasts are not patients against controls.",
             "methods_path": "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
             "README.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
@@ -2103,10 +2130,15 @@ def revision_problem(
     return None
 
 
-def committed(rel: str) -> bool:
-    """Whether a slide file is a committed one. data/derived and the cellulose_decr figure
-    folders hold gitignored outputs, which only their recorded hashes identify."""
-    return not rel.startswith(("data/derived/", *CELLULOSE_FIGURES))
+# Folders of gitignored outputs, which only their recorded hashes identify.
+GITIGNORED = ("data/derived/", *CELLULOSE_FIGURES)
+
+
+def committed(rel: str, tree: Mapping[str, str] | None = None) -> bool:
+    """Whether a slide file is checked against a revision: it is in the revision's tree, or
+    it lies outside the gitignored folders, where a file missing from the tree is a dead
+    link rather than an untracked output (#637)."""
+    return (tree is not None and rel in tree) or not rel.startswith(GITIGNORED)
 
 
 def plate_problems(
@@ -2114,6 +2146,7 @@ def plate_problems(
     record: Mapping[str, Any],
     trees: Mapping[str, Mapping[str, str]],
     cellulose: str | None,
+    plates_dir: Path = REPO_ROOT / PLATES_DIR,
 ) -> dict[str, list[str]]:
     """Why each plate does not show the rerun its slide stamps, by plate file (#637).
 
@@ -2127,22 +2160,177 @@ def plate_problems(
             f"plates drawn for rerun {str(record.get('rerun_commit'))[:12]}, not {SHORT_COMMIT}"
         )
         return {plate: [reason] for plate in record.get("plates", [])}
-    for plate, inputs in record.get("inputs", {}).items():
+    outputs = record.get("outputs", {})
+    for plate in record.get("plates", []):
         found = []
-        for rel, sha in inputs.items():
+        inputs = record.get("inputs", {}).get(plate)
+        if inputs is None:
+            found.append("no inputs recorded")
+        for rel, sha in (inputs or {}).items():
             path = figure_root(repo, rel) / rel
+            ref = cellulose if rel.startswith(f"{CELLULOSE_DIR}/") else COMMIT
             if not path.exists():
                 found.append(f"{rel}: missing")
             elif sha256_file(path) != sha:
                 found.append(f"{rel}: changed since the plate was drawn")
-            elif committed(rel):
-                ref = cellulose if rel.startswith(f"{CELLULOSE_DIR}/") else COMMIT
+            elif committed(rel, trees.get(ref or "")):
                 reason = revision_problem(trees, ref, rel, path)
                 if reason:
                     found.append(f"{rel}: {reason}")
+        # The plate the deck places must be the one drawn, not a later overwrite.
+        for drawn in (plate, str(Path(plate).with_suffix(".svg"))):
+            path = plates_dir / drawn
+            if drawn not in outputs:
+                found.append(f"{drawn}: no hash recorded")
+            elif not path.exists() or sha256_file(path) != outputs[drawn]:
+                found.append(f"{drawn}: not the plate that was drawn")
         if found:
             problems[plate] = found
     return problems
+
+
+def cellulose_problems(
+    record: Mapping[str, Any],
+    figures: Sequence[str],
+    trees: Mapping[str, Mapping[str, str]],
+    revision: str | None,
+    root: Path = REPO_ROOT,
+) -> list[str]:
+    """Why the cellulose_decr figures are not the committed tables drawn at ``revision``:
+    a table changed since, differs from the revision, or a figure is not the one drawn
+    (#637)."""
+    found = []
+    for name, sha in record.get("inputs", {}).items():
+        rel = f"{CELLULOSE_DIR}/{name}"
+        path = root / rel
+        reason = (
+            "changed since the figures were drawn"
+            if sha256_file(path) != sha
+            else revision_problem(trees, revision, rel, path)
+        )
+        if reason:
+            found.append(f"{rel}: {reason}")
+    outputs = record.get("outputs")
+    if not isinstance(outputs, dict):
+        return [*found, "the figures' provenance records no output hashes"]
+    for rel in figures:
+        name = rel.removeprefix(f"{CELLULOSE_DIR}/")
+        path = root / rel
+        if name not in outputs or not path.exists() or sha256_file(path) != outputs[name]:
+            found.append(f"{rel}: not the figure that was drawn")
+    return found
+
+
+def check_slides(
+    repo: Path,
+    entries: Sequence[dict[str, Any]],
+    trees: Mapping[str, Mapping[str, str]],
+    tables: Iterable[Path],
+) -> tuple[dict[str, list[tuple[str, str]]], list[str]]:
+    """Each slide's linked figure, evidence, code and methods files that are not the
+    committed file at the revision the slide cites, by slide figure; and the quoted tables
+    that differ from COMMIT (#637)."""
+    unverified: dict[str, list[tuple[str, str]]] = {}
+    for entry in entries:
+        fig_rel = entry["figure_file_path"]
+        links = slide_links(entry, fig_rel)
+        linked = (
+            (fig_rel, links["figure_url"] != "NA", links["commit"]),
+            (entry.get("evidence_path", ""), links["evidence_url"] != "NA", links["commit"]),
+            (entry.get("code_path", ""), bool(links["code_url"]), links["code_commit"]),
+            (entry.get("methods_path", ""), bool(links["methods_url"]), links["commit"]),
+        )
+        found: list[tuple[str, str]] = []
+        for rel, is_linked, ref in linked:
+            if rel and is_linked and rel not in {seen for seen, _ in found}:
+                reason = revision_problem(trees, ref or None, rel, figure_root(repo, rel) / rel)
+                if reason:
+                    found.append((rel, reason))
+        if found:
+            unverified[fig_rel] = found
+    quoted = []
+    for path in sorted(tables):
+        rel = path.relative_to(repo).as_posix() if path.is_relative_to(repo) else str(path)
+        if committed(rel, trees.get(COMMIT)):
+            reason = revision_problem(trees, COMMIT, rel, path)
+            if reason:
+                quoted.append(f"{rel}: {reason}")
+    return unverified, quoted
+
+
+def refuse_or_review(problems: Sequence[str], allow_unverified: bool) -> list[str]:
+    """Stop the build when files differ from the revisions their slides cite, unless a
+    review build is allowed; then return the reason it is one (#637)."""
+    if not problems:
+        return []
+    if not allow_unverified:
+        shown = "\n  ".join(problems[:25])
+        more = f"\n  ... and {len(problems) - 25} more" if len(problems) > 25 else ""
+        raise SystemExit(
+            f"{len(problems)} files differ from the revision their slides cite (#637):\n  "
+            f"{shown}{more}\nCommit or restore them, redraw the plates and figures, or pass "
+            "--allow-unverified for a review build."
+        )
+    return [f"{len(problems)} files differ from the revision their slides cite"]
+
+
+def verified_links(
+    links: Mapping[str, str], found: Sequence[tuple[str, str]], entry: Mapping[str, Any]
+) -> dict[str, str]:
+    """A slide's links without the files that differ from their revision (#637)."""
+    failed = {rel for rel, _ in found}
+    checked = dict(links)
+    for key, rel, empty in (
+        ("figure_url", entry["figure_file_path"], "NA"),
+        ("evidence_url", entry.get("evidence_path", ""), "NA"),
+        ("code_url", entry.get("code_path", ""), ""),
+        ("methods_url", entry.get("methods_path", ""), ""),
+    ):
+        if rel in failed:
+            checked[key] = empty
+    return checked
+
+
+def check_results_cite_the_deck(
+    prov_doc: Mapping[str, Any], in_deck: set[str], source: Path
+) -> None:
+    """Refuse statistical results that cite a figure outside the deck (#638)."""
+    stale = stale_figure_ids(prov_doc, in_deck)
+    if stale:
+        results = sorted(
+            str(result.get("result_id"))
+            for result in prov_doc.get("statistical_results", [])
+            if set(result.get("figure_ids") or []) & set(stale)
+        )
+        raise ValueError(
+            f"statistical results {results} cite figures that are not in the deck ({stale}). "
+            f"Edit them in {source}, which has no generator, or restore the figures."
+        )
+
+
+def refreshed_hashes(
+    repo: Path, files: Sequence[str], recorded: Sequence[str]
+) -> tuple[list[str], list[str]]:
+    """Each input file's current SHA-256, and the files whose recorded hash differs (#637).
+
+    Carried-over records hold "path:sha256" entries or bare hashes in the order of their
+    files; both are replaced by bare hashes. A missing file keeps its recorded hash.
+    """
+    old: dict[str, str] = {}
+    for index, value in enumerate(recorded):
+        path, sep, sha = value.rpartition(":")
+        if sep and re.fullmatch(r"[0-9a-f]{64}", sha):
+            old[path] = sha
+        elif index < len(files):
+            old[files[index]] = value
+    current, changed = [], []
+    for rel in files:
+        path = figure_root(repo, rel) / rel
+        sha = sha256_file(path) if path.exists() else old.get(rel, "")
+        current.append(sha)
+        if (rel in old and old[rel] != sha) or not path.exists():
+            changed.append(rel)
+    return current, changed
 
 
 def slide_links(entry: dict[str, Any], fig_rel: str) -> dict[str, str]:
@@ -2241,6 +2429,25 @@ def cellulose_decr_slides(
     return slides
 
 
+def placed_slides(
+    items: Sequence[dict[str, Any]], root: Path, included: set[str], what: str
+) -> list[dict[str, Any]]:
+    """Curated slides in order. A missing figure stops the build, rather than dropping its
+    slide and re-attaching its statistical results to another figure (#638)."""
+    placed = []
+    for item in items:
+        fp = item["figure_file_path"]
+        if not (root / fp).exists():
+            raise FileNotFoundError(f"missing {what}: {root / fp} (#638)")
+        if fp not in included:
+            item["v1_slide"] = "NA"
+            item["v2_slide"] = "NA"
+            item["prior_result_url"] = ""
+            placed.append(item)
+            included.add(fp)
+    return placed
+
+
 def build_deck(
     repo: Path,
     slides_dir: Path,
@@ -2262,6 +2469,16 @@ def build_deck(
     cellulose = load_cellulose_captions(REPO_ROOT)
     metrics["cellulose_statements"] = cellulose["statements"]
     revision = cellulose_revision(REPO_ROOT)
+    plate_record = json.loads(
+        (REPO_ROOT / PLATES_DIR / "plates_provenance.json").read_text(encoding="utf-8")
+    )
+    cellulose_record = json.loads(
+        (REPO_ROOT / CELLULOSE_DIR / "figures" / "figures_provenance.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    # Counts Methods Plate II draws, which its slide quotes (#640)
+    metrics["plate_counts"] = plate_record.get("counts", {})
 
     # The September decks' manifests are inputs; slide_manifest.tsv itself is now this
     # script's output, so it must not stand in for a missing v1 manifest.
@@ -2375,17 +2592,12 @@ def build_deck(
     plates_commit = plate_revision(REPO_ROOT)
     for item in tufte_and_methods_slides:
         item["code_ref"] = plates_commit
-        fp = item["figure_file_path"]
-        if not (REPO_ROOT / fp).exists():
-            raise FileNotFoundError(
-                f"missing plate {REPO_ROOT / fp}; run `just figure-review-plates` (#638)"
-            )
-        if fp not in already_included:
-            item["v1_slide"] = "NA"
-            item["v2_slide"] = "NA"
-            item["prior_result_url"] = ""
-            ordered_entries.append(item)
-            already_included.add(fp)
+    ordered_entries += placed_slides(
+        tufte_and_methods_slides,
+        REPO_ROOT,
+        already_included,
+        "plate (run `just figure-review-plates`)",
+    )
 
     # 1b. Cellulose deep-dive presentation figures (4 slides from `just cellulose-decr-figures`;
     # a missing figure stops the build below rather than dropping the slide)
@@ -2405,16 +2617,9 @@ def build_deck(
         already_included.add(fp)
 
     # 3. Remaining Curated New Main slides (7 slides across Publication Deck, Noel, Ilyas, Jed)
-    for item in other_new_main_slides:
-        fp = item["figure_file_path"]
-        if not (repo / fp).exists():
-            raise FileNotFoundError(f"missing curated Main figure {repo / fp} (#638)")
-        if fp not in already_included:
-            item["v1_slide"] = "NA"
-            item["v2_slide"] = "NA"
-            item["prior_result_url"] = ""
-            ordered_entries.append(item)
-            already_included.add(fp)
+    ordered_entries += placed_slides(
+        other_new_main_slides, repo, already_included, "curated Main figure"
+    )
 
     # 4. Previous Appendix Sankey slides (18 slides) + 4 exploratory single-metric PD variants moved
     # to Appendix
@@ -2442,81 +2647,46 @@ def build_deck(
 
     # Check every committed file the slides link or quote against the revision it cites,
     # before anything is written (#637).
-    plate_record = json.loads(
-        (REPO_ROOT / PLATES_DIR / "plates_provenance.json").read_text(encoding="utf-8")
-    )
-    cellulose_record = json.loads(
-        (REPO_ROOT / CELLULOSE_DIR / "figures" / "figures_provenance.json").read_text(
-            encoding="utf-8"
-        )
-    )
     # Every statistical result must stay with the figure it describes (#638).
     prov_source = repo / DECK_DIR / "provenance" / PROVENANCE_NAME
     if not prov_source.exists():
         raise FileNotFoundError(f"missing figure provenance {prov_source}")
     with prov_source.open("r", encoding="utf-8") as f:
         prov_doc = yaml.safe_load(f)
-    stale = stale_figure_ids(prov_doc, {entry["figure_file_path"] for entry in ordered_entries})
-    if stale:
-        raise ValueError(f"statistical results cite figures that are not in the deck: {stale}")
+    check_results_cite_the_deck(
+        prov_doc, {entry["figure_file_path"] for entry in ordered_entries}, prov_source
+    )
 
     checks = trees or {}
-    unverified: dict[str, list[str]] = {}
-    for entry in ordered_entries:
-        fig_rel = entry["figure_file_path"]
-        links = slide_links(entry, fig_rel)
-        found = []
-        linked = {
-            fig_rel: links["figure_url"],
-            entry.get("evidence_path", ""): links["evidence_url"],
-        }
-        for rel, url in linked.items():
-            if rel and url != "NA":
-                path = figure_root(repo, rel) / rel
-                reason = revision_problem(checks, links["commit"], rel, path)
-                if reason:
-                    found.append(f"{rel}: {reason}")
-        if found:
-            unverified[fig_rel] = found
+    unverified, quoted = check_slides(repo, ordered_entries, checks, TABLES_READ)
     for plate, found in plate_problems(repo, plate_record, checks, revision).items():
-        unverified.setdefault(f"{PLATES_DIR}{plate}", []).extend(found)
-    for name, sha in cellulose_record["inputs"].items():
-        rel = f"{CELLULOSE_DIR}/{name}"
-        path = REPO_ROOT / rel
-        reason = (
-            "changed since the figures were drawn"
-            if sha256_file(path) != sha
-            else revision_problem(checks, revision, rel, path)
+        unverified.setdefault(f"{PLATES_DIR}{plate}", []).extend(
+            (f"{PLATES_DIR}{plate}", reason) for reason in found
         )
-        if reason:
-            for entry in ordered_entries:
-                if entry["figure_file_path"].startswith(CELLULOSE_FIGURES):
-                    unverified.setdefault(entry["figure_file_path"], []).append(f"{rel}: {reason}")
-    quoted = []
-    for path in sorted(TABLES_READ):
-        rel = path.relative_to(repo).as_posix() if path.is_relative_to(repo) else str(path)
-        if committed(rel):
-            reason = revision_problem(checks, COMMIT, rel, path)
-            if reason:
-                quoted.append(f"{rel}: {reason}")
+    cellulose_figures_shown = [
+        entry["figure_file_path"]
+        for entry in ordered_entries
+        if entry["figure_file_path"].startswith(CELLULOSE_FIGURES)
+    ]
+    for reason in cellulose_problems(cellulose_record, cellulose_figures_shown, checks, revision):
+        for figure in cellulose_figures_shown:
+            unverified.setdefault(figure, []).append(("cellulose_decr figures", reason))
+    cover_found = [
+        (rel, reason)
+        for rel in (COVER_FIGURE, COVER_CODE)
+        if (reason := revision_problem(checks, COMMIT, rel, repo / rel))
+    ]
     problems = [
-        item if item.startswith(f"{fig}:") else f"{item} (slide of {fig})"
+        f"{rel}: {reason}" + ("" if rel == fig else f" (slide of {fig})")
         for fig, found in unverified.items()
-        for item in found
-    ] + [f"quoted table {item}" for item in quoted]
+        for rel, reason in found
+    ]
+    problems += [f"cover link {rel}: {reason}" for rel, reason in cover_found]
+    problems += [f"quoted table {item}" for item in quoted]
     review = list(review)
     if trees is None:
         review.append("nothing was checked against its revision")
-    if problems and not allow_unverified:
-        shown = "\n  ".join(problems[:25])
-        more = f"\n  ... and {len(problems) - 25} more" if len(problems) > 25 else ""
-        raise SystemExit(
-            f"{len(problems)} files differ from the revision their slides cite (#637):\n  "
-            f"{shown}{more}\nCommit or restore them, redraw the plates and figures, or pass "
-            "--allow-unverified for a review build."
-        )
-    if problems:
-        review.append(f"{len(problems)} files differ from the revision their slides cite")
+    review += refuse_or_review(problems, allow_unverified)
 
     # Finalize manifest rows, copy fresh PNGs to assets/ and vector SVGs to assets_svg/, and compute
     # SHA-256
@@ -2524,6 +2694,7 @@ def build_deck(
     (slides_dir / "assets_svg").mkdir(parents=True, exist_ok=True)
     manifest_rows: list[dict[str, str]] = []
     used_asset_names: set[str] = set()
+    figure_states: list[str] = []
 
     for idx, entry in enumerate(ordered_entries, start=2):
         fig_rel = entry["figure_file_path"]
@@ -2565,24 +2736,39 @@ def build_deck(
         methods_url = links["methods_url"]
         evidence_url = links["evidence_url"]
         found = unverified.get(fig_rel, [])
-        if any(item.startswith(f"{fig_rel}:") for item in found):
-            fig_url = "NA"
-        if evidence_rel and any(item.startswith(f"{evidence_rel}:") for item in found):
-            evidence_url = "NA"
+        checked = verified_links(links, found, entry)
+        fig_url = checked["figure_url"]
+        evidence_url = checked["evidence_url"]
+        code_url = checked["code_url"]
+        methods_url = checked["methods_url"]
+        figure_state = (
+            "verified"
+            if fig_url != "NA"
+            else "differs"
+            if any(rel == fig_rel for rel, _ in found)
+            else "untracked"
+        )
+        figure_states.append(figure_state)
+        # The cellulose slides' own note says how they were drawn; the September
+        # manifests' notes are kept only as history (#637).
+        legacy = entry.get("source_note", "")
         if found:
+            listed = "; ".join(f"{rel}: {reason}" for rel, reason in found)
             source_note = (
-                f"Not verified against {ref[:12] if ref else 'a revision'}: {'; '.join(found)}. "
-                "Files that differ are not linked (review build)."
+                f"Not verified against {ref[:12] if ref else 'a revision'}: {listed}. Files "
+                "that differ are not linked (review build)."
             )
-        elif fig_url != "NA":
-            source_note = entry.get(
-                "source_note", f"The figure matches the committed file at {ref[:12]}."
+        elif fig_rel.startswith(CELLULOSE_FIGURES):
+            source_note = legacy
+        elif figure_state == "verified":
+            source_note = f"The figure matches the committed file at {ref[:12]}." + (
+                f" Earlier note: {legacy}" if legacy else ""
             )
         else:
-            source_note = entry.get(
-                "source_note",
+            source_note = (
                 f"From the rerun at {SHORT_COMMIT}; a gitignored output, so it cannot be "
-                "checked against that revision. Its SHA-256 is recorded in the provenance.",
+                "checked against that revision. Its SHA-256 is recorded in the provenance."
+                + (f" Earlier note: {legacy}" if legacy else "")
             )
 
         manifest_rows.append(
@@ -2604,7 +2790,7 @@ def build_deck(
                 "methods_path": methods_rel,
                 "methods_url": methods_url,
                 "source_note": source_note,
-                "unverified": "; ".join(found),
+                "unverified": "; ".join(f"{rel}: {reason}" for rel, reason in found),
                 "figure_sha256": src_sha,
                 "deck_section": entry.get("deck_section", "Main"),
                 "analysis": entry.get("analysis", ""),
@@ -2664,7 +2850,9 @@ def build_deck(
         1 for r in manifest_rows if r["figure_file_path"].startswith(CELLULOSE_FIGURES)
     )
     n_reference = n_cellulose - len(cellulose_main)
-    n_checked = sum(1 for r in manifest_rows if r["figure_url"] != "NA")
+    n_checked = figure_states.count("verified")
+    n_differs = figure_states.count("differs")
+    n_untracked = figure_states.count("untracked")
     # One line, so the cover header keeps its height; deck_validation_v6.json lists them all.
     review_html = (
         '<div class="tag" style="color:#b8332a;max-width:1520px;white-space:nowrap;'
@@ -2673,12 +2861,9 @@ def build_deck(
         if review
         else ""
     )
-    cover_figure = (
-        "trait-visualization/trait-profile-investigation/six-shared-traits/"
-        "six_shared_traits_individual_conditions_condition_body_site_signed_direction_contrast_"
-        "heatmap_page_01.png"
-    )
-    cover_href = "#" if cover_figure in unverified else f"{GITHUB_BLOB}/{cover_figure}"
+    failed_cover = {rel for rel, _ in cover_found}
+    cover_href = "#" if COVER_FIGURE in failed_cover else f"{GITHUB_BLOB}/{COVER_FIGURE}"
+    cover_code_href = "#" if COVER_CODE in failed_cover else f"{GITHUB_BLOB}/{COVER_CODE}"
 
     # Extract cover table rows from rerun contrasts
     by_key = metrics["contrasts_by_key"]
@@ -2837,14 +3022,14 @@ def build_deck(
         f"{pd_w_q:.4f}). In the cellulose deep-dive, "
         f"{html.escape(cellulose_note)}.</p>"
         f"<p>{n_checked} linked figures match the committed files at the revisions their "
-        f"slides cite; the other {len(manifest_rows) - n_checked} are gitignored outputs, "
-        "identified by SHA-256 in the provenance. Trait annotations describe organism "
-        "potential, not measured in vivo metabolic flux.</p></aside>"
+        f"slides cite; {n_untracked} are gitignored outputs, identified by SHA-256 in the "
+        "provenance"
+        + (f"; {n_differs} differ from their revision and are not linked" if n_differs else "")
+        + ". Trait annotations describe organism potential, not measured in vivo metabolic "
+        "flux.</p></aside>"
         '<footer><div class="path"><b>FIGURE</b><a '
-        f'href="{cover_href}">{cover_figure}</a></div>'
-        '<div class="path"><b>CODE</b><a '
-        f'href="{GITHUB_BLOB}/scripts/create_six_shared_trait_cytoscape_heatmaps.py">scripts/'
-        "create_six_shared_trait_cytoscape_heatmaps.py</a></div>"
+        f'href="{cover_href}">{COVER_FIGURE}</a></div>'
+        f'<div class="path"><b>CODE</b><a href="{cover_code_href}">{COVER_CODE}</a></div>'
         '<div class="stamp"><span>CultureBotAI/microbial-trait-profiling · Jed / Noel / Ilyas · '
         f"Rerun revision {SHORT_COMMIT}{' · REVIEW BUILD' if review else ''} · v6 vector"
         "</span><span>01 / "
@@ -2909,6 +3094,7 @@ def build_deck(
     )
 
     existing_by_fp = {rec["figure_file_path"]: rec for rec in prov_doc.get("figures", [])}
+    changed_inputs: list[dict[str, str]] = []
     old_id_to_new_id: dict[str, str] = {}
     new_figures_list = []
 
@@ -2970,10 +3156,17 @@ def build_deck(
             plate_provenance(
                 rec,
                 r.get("methods_path", ""),
-                plate_record["inputs"][fp.removeprefix(PLATES_DIR)],
+                plate_record.get("inputs", {}).get(fp.removeprefix(PLATES_DIR), {}),
             )
         if fp.startswith(CELLULOSE_FIGURES):
             cellulose_figure_provenance(rec, cellulose_figures["inputs"])
+        if not fp.startswith((PLATES_DIR, *CELLULOSE_FIGURES)):
+            # Today's hashes, in one format, and the inputs that changed since they were
+            # recorded (#637)
+            rec["input_data_sha256s"], changed = refreshed_hashes(
+                repo, rec.get("input_data_files", []), rec.get("input_data_sha256s", [])
+            )
+            changed_inputs.extend({"figure": fp, "input": rel} for rel in changed)
         new_figures_list.append(rec)
 
     prov_doc["figures"] = new_figures_list
@@ -3001,6 +3194,7 @@ def build_deck(
         "checked_against_revisions": trees is not None,
         "linked_figures_matching_their_revision": n_checked,
         "files_differing_from_their_revision": problems,
+        "inputs_changed_since_recorded": changed_inputs,
         "all_slides_have_vector_svg": all(
             r["asset"].startswith("assets_svg/") for r in manifest_rows
         ),

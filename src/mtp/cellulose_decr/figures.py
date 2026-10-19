@@ -2254,7 +2254,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         "code_commit": args.code_commit,
         "matplotlib": matplotlib.__version__,
         "inputs": {name: sha256(args.analysis_dir / name) for name in FIGURE_INPUTS},
-        "outputs": sorted(outputs),
+        # With hashes, so a deck can check that it shows the figures this run drew (#637)
+        "outputs": {name: sha256(args.analysis_dir / name) for name in sorted(outputs)},
     }
     (args.analysis_dir / "figures" / "figures_provenance.json").write_text(
         json.dumps(provenance, indent=1) + "\n", encoding="utf-8"

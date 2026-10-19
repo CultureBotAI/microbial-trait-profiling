@@ -72,9 +72,14 @@ as PD feces; `label_source_corrections.tsv` lists them.
 
 `--label-source study_modal` recomputes the study-modal labels from
 `full_dump.csv` (#594), whatever the metadata table now holds. It reproduces the
-October 16 sets, exact tests, catalog counts and feces direction statistics. U5
-(#567), U4's Monte Carlo p-values, the oral and other-site compartment rows and
-two pairs of benchmark ranks differ.
+October 16 sets, exact tests, catalog counts and feces direction statistics. These
+differ:
+- U5 (#567) and U4's Monte Carlo p-values;
+- the compartment rows outside feces, including their universes;
+- the sensitivity table's expected mean distances;
+- two pairs of benchmark ranks;
+- the four-pairs tables, whose October 16 counts match the experiment labels
+  instead (README section 8).
 
 **Condition labels.** A condition matches only its exact BugSigDB label
 (primary). Other single labels for the same disease are listed in

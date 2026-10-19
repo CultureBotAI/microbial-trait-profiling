@@ -314,11 +314,20 @@ figure-review-deck *ARGS:
 	uv run python scripts/build_slide_deck.py --output-dir "$slides" --provenance-dir "$provenance" --git-trees "$trees" "$@"
 	rm -f "$slides/deck_build_status.json"
 	uv run linkml-validate -s "{{deck_schema}}" "$provenance/figure_provenance_and_results.yaml"
-	just html-to-pdf "$slides/selected_figures_v6.html" "$slides/microbial-trait-profiling_v6.pdf"
-	cp "$slides/microbial-trait-profiling_v6.pdf" "$slides/microbial-trait-profiling.pdf"
-	cp "$slides/microbial-trait-profiling_v6.pdf" "$slides/selected_figures.pdf"
-	pdf_bytes="$(wc -c < "$slides/microbial-trait-profiling_v6.pdf" | tr -d ' ')"
-	printf '{"provenance_linkml_validated": true, "pdf": "microbial-trait-profiling_v6.pdf", "pdf_bytes": %s, "finished_utc": "%s"}\n' "$pdf_bytes" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$slides/deck_build_status.json"
+	# A review build prints under its own name and never replaces the deck's PDFs (#637).
+	if grep -q '"review_build": true' "$slides/deck_validation_v6.json"; then
+		review=true
+		pdf="microbial-trait-profiling_v6_review.pdf"
+		just html-to-pdf "$slides/selected_figures_v6.html" "$slides/$pdf"
+	else
+		review=false
+		pdf="microbial-trait-profiling_v6.pdf"
+		just html-to-pdf "$slides/selected_figures_v6.html" "$slides/$pdf"
+		cp "$slides/$pdf" "$slides/microbial-trait-profiling.pdf"
+		cp "$slides/$pdf" "$slides/selected_figures.pdf"
+	fi
+	pdf_bytes="$(wc -c < "$slides/$pdf" | tr -d ' ')"
+	printf '{"provenance_linkml_validated": true, "review_build": %s, "pdf": "%s", "pdf_bytes": %s, "finished_utc": "%s"}\n' "$review" "$pdf" "$pdf_bytes" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$slides/deck_build_status.json"
 
 # Print an HTML page to PDF with headless Chrome: $CHROME if set (it must be executable),
 # else Playwright's Chromium, Google Chrome, or a chromium / google-chrome on PATH.

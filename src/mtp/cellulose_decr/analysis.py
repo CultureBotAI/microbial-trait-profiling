@@ -1873,6 +1873,18 @@ def interaction_summary_rows(interaction: pd.DataFrame) -> list[dict[str, Any]]:
         stratified = row["short_condition"] == POOLED_STRATIFIED
         slug = "pooled_stratified" if stratified else row["short_condition"]
         population_name = row["contrast_population"]
+        # Studies counted in both rows of the table; a stratified row sums its conditions'.
+        same = interaction[
+            interaction["contrast_population"].eq(population_name)
+            & interaction["unit"].eq(row["unit"])
+            & interaction["compartment_b"].eq(row["compartment_b"])
+            & interaction["short_condition"].isin(SHORT)
+        ]
+        shared = int(
+            same["studies_in_both_compartments"].sum()
+            if stratified
+            else row["studies_in_both_compartments"]
+        )
         estimate = (
             f"common odds ratio (conditional MLE) = {row['conditional_or']:.2f} "
             f"(95% CI {row['conditional_or_ci95_low']:.2f}-{row['conditional_or_ci95_high']:.2f})"
@@ -1898,14 +1910,18 @@ def interaction_summary_rows(interaction: pd.DataFrame) -> list[dict[str, Any]]:
                 "effect_size_metric": estimate,
                 "p_value": row["fisher_p_two_sided"],
                 "significance_tier": tier(row["fisher_p_two_sided"]),
-                "summary_interpretation": interaction_interpretation(row),
+                "summary_interpretation": interaction_interpretation(row, shared),
             }
         )
     return rows
 
 
-def interaction_interpretation(row: pd.Series | Mapping[str, Any]) -> str:
-    """What one Feces-vs-GI row shows, given its p, interval, unit and population (#631)."""
+def interaction_interpretation(row: pd.Series | Mapping[str, Any], shared: int = 0) -> str:
+    """What one Feces-vs-GI row shows, given its p, interval, unit and population (#631).
+
+    ``shared`` counts the studies that sampled both compartments, which a study-level
+    table counts in both of its rows.
+    """
     p = row["fisher_p_two_sided"]
     low, high = row["conditional_or_ci95_low"], row["conditional_or_ci95_high"]
     if math.isnan(p):
@@ -1925,6 +1941,11 @@ def interaction_interpretation(row: pd.Series | Mapping[str, Any]) -> str:
     caveats = []
     if row["unit"] == "experiment":
         caveats.append("experiments of one study are treated as independent")
+    elif shared:
+        caveats.append(
+            f"{shared} {'study' if shared == 1 else 'studies'} sampled both compartments and "
+            f"{'counts' if shared == 1 else 'count'} in both rows"
+        )
     if row["contrast_population"] == ALL_CONTRASTS:
         caveats.append("most CRC mucosa/lumen experiments do not compare patients with controls")
     caveats.append(

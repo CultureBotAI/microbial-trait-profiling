@@ -5,6 +5,8 @@ is missing, and the analysis tests in test_cellulose_decr.py still run."""
 
 from __future__ import annotations
 
+import hashlib
+import importlib
 import json
 import shutil
 from collections.abc import Callable
@@ -13,6 +15,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from matplotlib.figure import Figure
 
 from mtp.cellulose_decr import figures
 from mtp.cellulose_decr.analysis import (
@@ -38,8 +41,9 @@ def test_figures_draw_from_the_committed_tables(tmp_path: Path) -> None:
     # Decks link the figures' code and tables at this commit (#556).
     assert provenance["code_commit"] == commit
     assert len(provenance["outputs"]) == 7 * 3 + 2 + 1
-    for output in provenance["outputs"]:
-        assert (tmp_path / output).stat().st_size > 0
+    for output, sha in provenance["outputs"].items():
+        # Each output with its hash, so a deck can check it shows these figures (#637)
+        assert hashlib.sha256((tmp_path / output).read_bytes()).hexdigest() == sha
     for claim in ("surprising", "convergence", "guild", "specificity", "podium"):
         assert not [output for output in provenance["outputs"] if claim in output], claim
 
@@ -218,6 +222,8 @@ def test_p_values_keep_two_significant_digits() -> None:
     # More digits where two would round across 0.05 (#641)
     assert figures.sci(0.0496) == "0.0496"
     assert figures.sci(0.04996) == "0.04996"
+    # Not the repr fallback: the loop stops at the first width that stays below 0.05
+    assert figures.sci(0.049612) == "0.0496"
     assert figures.sci(0.19) == "0.19"
     assert figures.sci(1.2e-5) == "1.2" + figures.TIMES + "10⁻⁵"
 
@@ -246,3 +252,31 @@ def test_a_failed_figure_run_drops_the_old_captions(
         figures.main(["--analysis-dir", str(tmp_path), "--code-commit", "0" * 40])
     assert not (tmp_path / "figures" / "figure_captions.json").exists()
     assert not (tmp_path / "figures" / "figures_provenance.json").exists()
+
+
+def test_importing_the_figures_changes_no_matplotlib_setting() -> None:
+    """The module used to update rcParams at import, for every later test (#631)."""
+    import matplotlib
+
+    before = dict(matplotlib.rcParams)
+    importlib.reload(figures)
+    assert dict(matplotlib.rcParams) == before
+
+
+def test_the_figures_are_drawn_in_their_style(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import matplotlib
+
+    for name in figures.FIGURE_INPUTS:
+        shutil.copy(ANALYSIS_DIR / name, tmp_path / name)
+    seen = []
+    draw = figures.graphical_core
+
+    def recording(results: figures.Results) -> Figure:
+        seen.append(matplotlib.rcParams["svg.hashsalt"])
+        return draw(results)
+
+    monkeypatch.setattr(figures, "graphical_core", recording)
+    figures.main(["--analysis-dir", str(tmp_path), "--code-commit", "0" * 40])
+    assert seen == [figures.STYLE["svg.hashsalt"]]

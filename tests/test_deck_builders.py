@@ -472,13 +472,16 @@ def test_plate_two_rows_must_be_in_the_pooled_table() -> None:
 
 def test_plates_record_their_drawing_commit_and_inputs(tmp_path: Path) -> None:
     inputs = {"b.png": {"t/y.tsv": "2", "t/x.tsv": "1"}, "a.png": {}}
-    path = plates.write_plates_provenance(tmp_path, inputs, COMMIT)
+    outputs = {"b.png": "4", "a.png": "3"}
+    path = plates.write_plates_provenance(tmp_path, inputs, COMMIT, outputs, {"n": 17})
     assert json.loads(path.read_text()) == {
         "script": "scripts/generate_tufte_plates.py",
         "code_commit": COMMIT,
         "rerun_commit": plates.RERUN_COMMIT,
         "plates": ["a.png", "b.png"],
         "inputs": {"a.png": {}, "b.png": {"t/x.tsv": "1", "t/y.tsv": "2"}},
+        "outputs": {"a.png": "3", "b.png": "4"},
+        "counts": {"n": 17},
     }
 
 
@@ -572,17 +575,48 @@ def test_plate_problems_need_the_rerun_and_unchanged_inputs(tmp_path: Path) -> N
         "trait-visualization/t.tsv": sha,
         "data/derived/d.tsv": hashlib.sha256(ignored.read_bytes()).hexdigest(),
     }
-    record = {"rerun_commit": deck.COMMIT, "plates": ["p.png"], "inputs": {"p.png": inputs}}
+    plates_dir = tmp_path / "plates"
+    plates_dir.mkdir()
+    for name in ("p.png", "p.svg"):
+        (plates_dir / name).write_text(name)
+    outputs = {
+        name: hashlib.sha256((plates_dir / name).read_bytes()).hexdigest()
+        for name in ("p.png", "p.svg")
+    }
+    record = {
+        "rerun_commit": deck.COMMIT,
+        "plates": ["p.png"],
+        "inputs": {"p.png": inputs},
+        "outputs": outputs,
+    }
     trees = _trees(tmp_path, {"trait-visualization/t.tsv": deck.git_blob_id(table)}, deck.COMMIT)
-    assert deck.plate_problems(tmp_path, record, trees, None) == {}
+    assert deck.plate_problems(tmp_path, record, trees, None, plates_dir) == {}
     # A gitignored input is checked against the recorded hash only.
     ignored.write_text("changed\n")
-    assert deck.plate_problems(tmp_path, record, trees, None) == {
+    assert deck.plate_problems(tmp_path, record, trees, None, plates_dir) == {
         "p.png": ["data/derived/d.tsv: changed since the plate was drawn"]
     }
     other = {**record, "rerun_commit": COMMIT}
-    assert deck.plate_problems(tmp_path, other, trees, None) == {
+    assert deck.plate_problems(tmp_path, other, trees, None, plates_dir) == {
         "p.png": [f"plates drawn for rerun {COMMIT[:12]}, not {deck.SHORT_COMMIT}"]
+    }
+
+
+def test_plates_must_record_their_inputs_and_be_the_plates_drawn(tmp_path: Path) -> None:
+    """A plate record written before #637, or a plate overwritten after drawing, is a
+    problem before anything is written, not a crash after (#637)."""
+    plates_dir = tmp_path / "plates"
+    plates_dir.mkdir()
+    for name in ("p.png", "p.svg"):
+        (plates_dir / name).write_text(name)
+    old = {"rerun_commit": deck.COMMIT, "plates": ["p.png"]}
+    assert deck.plate_problems(tmp_path, old, {}, None, plates_dir) == {
+        "p.png": ["no inputs recorded", "p.png: no hash recorded", "p.svg: no hash recorded"]
+    }
+    drawn = {"p.png": "0" * 64, "p.svg": hashlib.sha256(b"p.svg").hexdigest()}
+    record = {**old, "inputs": {"p.png": {}}, "outputs": drawn}
+    assert deck.plate_problems(tmp_path, record, {}, None, plates_dir) == {
+        "p.png": ["p.png: not the plate that was drawn"]
     }
 
 
@@ -591,6 +625,8 @@ def test_gitignored_outputs_are_not_checked_against_a_revision() -> None:
     assert deck.committed("data/analysis/cellulose_decr/pairwise_jaccard_significance.tsv")
     assert not deck.committed("data/derived/x.tsv")
     assert not deck.committed("data/analysis/cellulose_decr/figures/figure_captions.json")
+    # A file the revision does commit under data/derived is checked (#637).
+    assert deck.committed("data/derived/x.tsv", {"data/derived/x.tsv": "0" * 40})
 
 
 def test_results_must_cite_figures_in_the_deck() -> None:
@@ -845,7 +881,7 @@ def test_plate_one_slide_text_reads_the_tables() -> None:
     assert "602 fecal studies" in takeaway
     assert "408 fecal study Wilcoxon tests" in takeaway
     assert caveat.startswith("5 of 6 traits pass study-level BH")
-    assert "(median 1 study per cell), 1 individual profile cell passes BH" in caveat
+    assert "(median 1 study per cell), 1 individual profile cell is selected after BH" in caveat
     assert "p = 0.00017 (BH q = 0.056)" in caveat
 
 
@@ -888,3 +924,139 @@ def test_lollipop_title_names_its_profiles() -> None:
     assert deck.pd_profiles_text({"pd_six_trait_summary": summary}) == (
         "130 increased vs 123 decreased fecal profiles"
     )
+
+
+def test_slides_are_checked_link_by_link(tmp_path: Path) -> None:
+    """Figure, evidence, code and methods links are each checked at their own revision;
+    quoted tables at COMMIT (#637)."""
+    good = tmp_path / "trait-visualization" / "good.png"
+    good.parent.mkdir()
+    good.write_text("good")
+    stale = tmp_path / "trait-visualization" / "stale.tsv"
+    stale.write_text("now")
+    tree = {
+        "trait-visualization/good.png": deck.git_blob_id(good),
+        "trait-visualization/stale.tsv": "0" * 40,
+    }
+    trees = _trees(tmp_path, tree, deck.COMMIT)
+    entry = {
+        "figure_file_path": "trait-visualization/good.png",
+        "evidence_path": "trait-visualization/stale.tsv",
+        "code_path": "scripts/missing.py",
+        "methods_path": "methods/missing.md",
+    }
+    unverified, quoted = deck.check_slides(tmp_path, [entry], trees, [stale])
+    assert unverified == {
+        "trait-visualization/good.png": [
+            ("trait-visualization/stale.tsv", f"differs from {deck.SHORT_COMMIT}"),
+            ("scripts/missing.py", f"not committed at {deck.SHORT_COMMIT}"),
+            ("methods/missing.md", f"not committed at {deck.SHORT_COMMIT}"),
+        ]
+    }
+    assert quoted == [f"trait-visualization/stale.tsv: differs from {deck.SHORT_COMMIT}"]
+    links = deck.slide_links(entry, entry["figure_file_path"])
+    checked = deck.verified_links(links, unverified["trait-visualization/good.png"], entry)
+    assert checked["figure_url"] == links["figure_url"]
+    assert checked["figure_url"] != "NA"
+    assert checked["evidence_url"] == "NA"
+    assert checked["code_url"] == ""
+    assert checked["methods_url"] == ""
+
+
+def test_files_that_differ_stop_the_build_unless_it_is_a_review() -> None:
+    assert deck.refuse_or_review([], allow_unverified=False) == []
+    with pytest.raises(SystemExit, match="1 files differ"):
+        deck.refuse_or_review(["x.png: differs from 402ef5c25b71"], allow_unverified=False)
+    assert deck.refuse_or_review(["x.png: differs"], allow_unverified=True) == [
+        "1 files differ from the revision their slides cite"
+    ]
+
+
+def test_stale_results_are_named(tmp_path: Path) -> None:
+    doc = {
+        "figures": [{"figure_id": "fig_slide_004", "figure_file_path": "a.png"}],
+        "statistical_results": [{"result_id": "res_1", "figure_ids": ["fig_slide_004"]}],
+    }
+    deck.check_results_cite_the_deck(doc, {"a.png"}, tmp_path / "p.yaml")
+    with pytest.raises(ValueError, match=r"res_1.*fig_slide_004.*p\.yaml"):
+        deck.check_results_cite_the_deck(doc, set(), tmp_path / "p.yaml")
+
+
+def test_a_missing_curated_figure_stops_the_build(tmp_path: Path) -> None:
+    """A missing plate dropped its slide and moved its results to the next one (#638)."""
+    (tmp_path / "a.png").write_text("a")
+    items = [{"figure_file_path": "a.png"}, {"figure_file_path": "a.png"}]
+    included: set[str] = set()
+    placed = deck.placed_slides(items, tmp_path, included, "plate")
+    assert [item["figure_file_path"] for item in placed] == ["a.png"]
+    assert included == {"a.png"}
+    with pytest.raises(FileNotFoundError, match="missing plate"):
+        deck.placed_slides([{"figure_file_path": "b.png"}], tmp_path, set(), "plate")
+
+
+def test_cellulose_figures_must_be_the_ones_drawn(tmp_path: Path) -> None:
+    figure = f"{deck.CELLULOSE_DIR}/figures/fig1.svg"
+    table = tmp_path / deck.CELLULOSE_DIR / "t.tsv"
+    (tmp_path / deck.CELLULOSE_DIR / "figures").mkdir(parents=True)
+    (tmp_path / figure).write_text("drawn")
+    table.write_text("t")
+    record = {
+        "inputs": {"t.tsv": hashlib.sha256(b"t").hexdigest()},
+        "outputs": {"figures/fig1.svg": hashlib.sha256(b"drawn").hexdigest()},
+    }
+    trees = _trees(tmp_path, {f"{deck.CELLULOSE_DIR}/t.tsv": deck.git_blob_id(table)}, COMMIT)
+    assert deck.cellulose_problems(record, [figure], trees, COMMIT, tmp_path) == []
+    (tmp_path / figure).write_text("redrawn")
+    assert deck.cellulose_problems(record, [figure], trees, COMMIT, tmp_path) == [
+        f"{figure}: not the figure that was drawn"
+    ]
+    old = {**record, "outputs": ["figures/fig1.svg"]}
+    assert deck.cellulose_problems(old, [figure], trees, COMMIT, tmp_path) == [
+        "the figures' provenance records no output hashes"
+    ]
+
+
+def test_carried_over_hashes_are_refreshed_in_one_format(tmp_path: Path) -> None:
+    """Records mixed "path:sha256" with bare hashes, and nothing checked them (#637)."""
+    first = tmp_path / "trait-visualization" / "a.tsv"
+    first.parent.mkdir()
+    first.write_text("a")
+    (tmp_path / "trait-visualization" / "b.tsv").write_text("b")
+    sha_a = hashlib.sha256(b"a").hexdigest()
+    files = ["trait-visualization/a.tsv", "trait-visualization/b.tsv", "trait-visualization/c.tsv"]
+    recorded = [f"trait-visualization/a.tsv:{sha_a}", "0" * 64, "1" * 64]
+    current, changed = deck.refreshed_hashes(tmp_path, files, recorded)
+    assert current == [sha_a, hashlib.sha256(b"b").hexdigest(), "1" * 64]
+    assert changed == ["trait-visualization/b.tsv", "trait-visualization/c.tsv"]
+
+
+def test_slide_three_quotes_the_counts_methods_plate_two_draws() -> None:
+    selected = [
+        {"all3_concordant": True, "a1_st_q": 0.01, "a3_bh_q": 0.01, "a3_by_q": 0.01},
+        {"all3_concordant": True, "a1_st_q": 0.01, "a3_bh_q": 0.01, "a3_by_q": 0.2},
+        {"all3_concordant": False, "a1_st_q": 0.01, "a3_bh_q": 0.01, "a3_by_q": 0.01},
+        # A Table 1 trait drawn on Plate VII without passing both arms
+        {"all3_concordant": True, "a1_st_q": 0.3, "a3_bh_q": 0.01, "a3_by_q": 0.01},
+    ]
+    assert plates.three_arm_counts(selected) == (2, 1)
+
+
+def test_slide_eight_says_whether_the_mucosa_stratum_is_shown() -> None:
+    rows = _oxygen_rows()
+    assert deck.crc_mucosa_shown({"oxygen_switch": rows}) == (
+        "the second is not among the strata shown"
+    )
+    rows.append(
+        {
+            "condition": "Colorectal cancer",
+            "body_site_display": "Intestinal / GI mucosa",
+            "aerobe_up_anaerobe_down_score": "-2.0",
+            "rank_score": "1",
+        }
+    )
+    assert deck.crc_mucosa_shown({"oxygen_switch": rows}) == "the second is among the strata shown"
+
+
+def test_plate_one_subtitle_grammar_for_one_survivor() -> None:
+    summary = plates.plate1_summary(*_plate_one_tables(halophily_selected=False))
+    assert "1 passes Scale 5 (cellulose: HIV, PD)" in plates.plate1_subtitle(summary)

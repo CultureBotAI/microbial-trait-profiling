@@ -663,14 +663,16 @@ def test_u6_units_number_the_studies_in_order() -> None:
     _units, unit_study, _counts, frame = u6_units(profiles, taxa, {"t1"})
     assert list(frame["study_id"]) == sorted(frame["study_id"])
     assert list(unit_study) == sorted(unit_study)
-    with pytest.raises(ValueError, match="sorted"):
-        signature_null(
-            np.random.default_rng(0),
-            np.ones((3, 1), dtype=bool),
-            np.array([1, 0, 1], dtype=np.int64),
-            dict.fromkeys(SHORT, 0),
-            1,
-        )
+    for numbering in ([1, 0, 1], [0, 2, 2]):
+        # Unsorted, or sorted with a gap in the study numbers
+        with pytest.raises(ValueError, match="sorted"):
+            signature_null(
+                np.random.default_rng(0),
+                np.ones((3, 1), dtype=bool),
+                np.array(numbering, dtype=np.int64),
+                dict.fromkeys(SHORT, 0),
+                1,
+            )
 
 
 def test_the_art_scenario_counts_synonyms(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -734,14 +736,24 @@ def test_interaction_wording_follows_p_unit_and_population() -> None:
         "unit": "study",
         "contrast_population": ORIENTED,
     }
-    text = interaction_interpretation(healthy)
+    text = interaction_interpretation(healthy, shared=2)
     assert text.startswith("No difference in direction")
-    assert "independent" not in text
+    # Study rows count the studies that sampled both compartments in both rows (#631).
+    assert "2 studies sampled both compartments and count in both rows" in text
+    assert "1 study sampled both compartments and counts in both rows" in (
+        interaction_interpretation(healthy, shared=1)
+    )
+    assert "sampled both" not in interaction_interpretation(healthy)
     assert "do not compare patients with controls" not in text
     assert text.endswith("not a test of anatomical specificity.")
     # The exact test and its interval can disagree near p = 0.05.
     borderline = {**healthy, "fisher_p_two_sided": 0.03, "conditional_or_ci95_low": 0.93}
     assert "the 95% interval of the odds ratio includes 1" in interaction_interpretation(borderline)
+    # Boundaries: p = 0.05 is not below 0.05, and an interval ending at 1 includes it.
+    at_alpha = {**healthy, "fisher_p_two_sided": 0.05}
+    assert interaction_interpretation(at_alpha).startswith("No difference in direction")
+    touching = {**borderline, "conditional_or_ci95_low": 1.0}
+    assert "includes 1" in interaction_interpretation(touching)
     untestable = {**healthy, "fisher_p_two_sided": math.nan}
     assert interaction_interpretation(untestable).startswith("Not testable")
 
