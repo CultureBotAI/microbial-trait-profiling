@@ -297,7 +297,11 @@ def prepare_pd_taxon_panel(
     trait_order: list[str],
     max_taxa: int = MAX_PANEL_TAXA,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Select supported genus/species labels and create a complete taxon-trait grid."""
+    """Select supported genus/species labels and create a complete taxon-trait grid.
+
+    ``total_studies`` adds the increased and decreased study counts, so a study that
+    reports a taxon in both directions counts twice; it sizes and ranks the panel.
+    """
     selected = carriers[
         carriers["trait"].isin(trait_order) & carriers["taxonomic_rank"].isin(ALLOWED_TAXON_RANKS)
     ].copy()
@@ -759,7 +763,8 @@ def _plot_taxon_panel(ax: Axes, taxon_panel: pd.DataFrame) -> None:
     ax.text(
         0.0,
         1.02,
-        "Circle: annotated trait; size: distinct-study support; x: no local annotation",
+        "Circle: annotated trait; size: increased + decreased study reports; "
+        "x: no local annotation",
         transform=ax.transAxes,
         fontsize=7.5,
         color=SLATE_500,

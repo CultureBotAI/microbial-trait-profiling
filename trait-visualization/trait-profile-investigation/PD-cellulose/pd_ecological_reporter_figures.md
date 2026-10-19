@@ -93,7 +93,9 @@ or prospectively specified score.
 
 Rows are exact genus or species labels reported in PD fecal BugSigDB signatures; columns are the
 six shared traits. A circle means the local KG-Microbe matrix annotates that taxon with the trait.
-Circle size represents distinct-study support. Circle color shows the log2 ratio of increased to
+Circle size is the number of increased plus decreased study reports, so a study that reports the
+taxon in both directions counts twice; the same count ranks the rows. Circle color shows the log2
+ratio of increased to
 decreased BugSigDB study support, with red favoring increased and blue favoring decreased. An `x`
 means no local annotation for that taxon-trait cell. Taxonomic ranks are kept separate and are not
 summed.

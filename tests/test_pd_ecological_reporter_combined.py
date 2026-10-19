@@ -139,6 +139,74 @@ def test_condition_summary_uses_paired_study_contrasts_and_oriented_composite() 
     assert cellulose["contrast_definition"] == reporter.CONTRAST_DEFINITION
 
 
+def test_confidence_interval_is_a_two_sided_95_percent_t_interval() -> None:
+    low, high = reporter._confidence_interval(pd.Series([1.0, 2.0, 3.0]))
+    assert low == pytest.approx(-0.484, abs=1e-3)
+    assert high == pytest.approx(4.484, abs=1e-3)
+    single = reporter._confidence_interval(pd.Series([1.0]))
+    assert all(pd.isna(value) for value in single)
+
+
+def test_condition_summary_interval_calls_and_study_counts() -> None:
+    # Three studies, each with one increased and one decreased fecal profile, give
+    # these increased-minus-decreased contrasts per trait.
+    contrasts = {
+        "halo": [1.0, 2.0, 3.0],
+        "cell": [-1.0, -1.2, -0.8],
+        "fac": [0.0, 0.0, 0.0],
+        "ars": [1.0, -1.0, 2.0],
+        "coccus": [0.0, 0.0, 0.0],
+        "sphere": [0.0, 0.0, 0.0],
+    }
+    rows, metadata_rows = [], []
+    for index, study in enumerate(["s1", "s2", "s3"]):
+        for direction in ["inc", "dec"]:
+            rows.append(
+                {
+                    trait: values[index] if direction == "inc" else 0.0
+                    for trait, values in contrasts.items()
+                }
+            )
+            metadata_rows.append([study, f"{study}-1", direction, "C", "C", "Feces"])
+    metadata = pd.DataFrame(
+        metadata_rows,
+        columns=[
+            "study_id",
+            "experiment_id",
+            "inc_dec",
+            "condition",
+            "condition_group",
+            "body_site_group",
+        ],
+    )
+    zscores = pd.DataFrame(rows, index=metadata.index)
+
+    summary, _ = reporter.build_condition_trait_summaries(metadata, zscores, _traits())
+    row = summary.set_index("trait")
+
+    halophilic = row.loc["moderately halophilic"]
+    assert halophilic["ci_low"] == pytest.approx(-0.484, abs=1e-3)
+    assert halophilic["ci_high"] == pytest.approx(4.484, abs=1e-3)
+    assert not halophilic["ci_excludes_zero"]
+    assert halophilic["study_weighted_median_contrast"] == pytest.approx(2.0)
+    cellulose = row.loc["cellulose catabolic process"]
+    assert cellulose["ci_high"] < 0
+    assert cellulose["ci_excludes_zero"]
+    assert (cellulose["positive_study_count"], cellulose["negative_study_count"]) == (0, 3)
+    assert cellulose["majority_direction_fraction"] == pytest.approx(1.0)
+    arsenate = row.loc["arsenate reduction"]
+    assert (arsenate["positive_study_count"], arsenate["negative_study_count"]) == (2, 1)
+    assert arsenate["zero_study_count"] == 0
+    assert arsenate["majority_direction_fraction"] == pytest.approx(2 / 3)
+    assert arsenate["study_weighted_median_contrast"] == pytest.approx(1.0)
+    aerobic = row.loc["facultatively aerobic"]
+    assert aerobic["zero_study_count"] == 3
+    assert aerobic["majority_direction_fraction"] == pytest.approx(0.0)
+    assert not aerobic["ci_excludes_zero"]
+    assert (halophilic["paired_study_count"], halophilic["increased_profile_count"]) == (3, 3)
+    assert halophilic["decreased_profile_count"] == 3
+
+
 def _pd_profiles() -> tuple[pd.DataFrame, pd.DataFrame]:
     rows = [
         ["s1|e1|inc", "s1", "e1", "inc", reporter.PD_CONDITION, "Feces"],
