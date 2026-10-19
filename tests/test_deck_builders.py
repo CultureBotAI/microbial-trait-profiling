@@ -1716,3 +1716,22 @@ def test_the_svg_a_slide_shows_is_checked_like_its_png(tmp_path: Path) -> None:
             ("trait-visualization/map.svg", f"differs from {deck.SHORT_COMMIT}")
         ]
     }
+
+
+def test_results_citing_a_copy_follow_the_figure_shown(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The appendix drops byte-identical copies, which left their results citing nothing
+    (#586, #638)."""
+    monkeypatch.setattr(deck, "DUPLICATE_OF", {"copy.png": "shown.png", "lone.png": "kept.png"})
+    prov: dict[str, Any] = {
+        "figures": [
+            {"figure_id": "fig_1", "figure_file_path": "shown.png"},
+            {"figure_id": "fig_2", "figure_file_path": "copy.png"},
+            {"figure_id": "fig_3", "figure_file_path": "lone.png"},
+        ],
+        "statistical_results": [{"result_id": "r", "figure_ids": ["fig_2", "fig_1", "fig_3"]}],
+    }
+    deck.merge_copies(prov)
+    assert [f["figure_id"] for f in prov["figures"]] == ["fig_1", "fig_3"]
+    assert prov["figures"][1]["figure_file_path"] == "kept.png"
+    assert prov["statistical_results"][0]["figure_ids"] == ["fig_1", "fig_3"]
+    assert deck.stale_figure_ids(prov, {"shown.png", "kept.png"}) == []

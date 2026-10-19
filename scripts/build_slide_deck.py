@@ -167,6 +167,8 @@ def sha256_file(path: Path) -> str:
 
 # The tables the slide text quotes; build_deck checks the committed ones against COMMIT (#637).
 TABLES_READ: set[Path] = set()
+# Appendix candidates byte-identical to a figure the deck shows, and that figure (#586)
+DUPLICATE_OF: dict[str, str] = {}
 
 
 def read_tsv(path: Path, quoted: bool = True) -> list[dict[str, str]]:
@@ -212,6 +214,31 @@ def taxon_family_text(metrics: dict) -> str:
     if survivors == 0:
         return f"no taxon survives the separate {family}-test family"
     return f"{survivors} of the separate {family}-test taxon family survive BH"
+
+
+def merge_copies(prov_doc: dict[str, Any]) -> None:
+    """Fold the record of a figure that is a byte-identical copy of one the deck shows into
+    that figure's record, so the results citing the copy stay with the figure (#586, #638).
+    A copy whose shown figure has no record of its own becomes that record."""
+    ids = {
+        figure["figure_file_path"]: figure["figure_id"] for figure in prov_doc.get("figures", [])
+    }
+    folded: dict[str, str] = {}
+    for figure in prov_doc.get("figures", []):
+        shown = DUPLICATE_OF.get(figure["figure_file_path"])
+        if not shown:
+            continue
+        if shown in ids:
+            folded[figure["figure_id"]] = ids[shown]
+        else:
+            figure["figure_file_path"] = shown
+            ids[shown] = figure["figure_id"]
+    if not folded:
+        return
+    prov_doc["figures"] = [f for f in prov_doc["figures"] if f["figure_id"] not in folded]
+    for result in prov_doc.get("statistical_results", []):
+        cited = result.get("figure_ids") or []
+        result["figure_ids"] = list(dict.fromkeys(folded.get(fid, fid) for fid in cited))
 
 
 def stale_figure_ids(prov_doc: Mapping[str, Any], in_deck: set[str]) -> list[str]:
@@ -2087,8 +2114,8 @@ def get_remaining_appendix_slides(
 
     # A figure byte-identical to one already shown is a copy, whatever its name (#586)
     shown = {
-        sha256_file(figure_root(repo, rel) / rel)
-        for rel in already_included
+        sha256_file(figure_root(repo, rel) / rel): rel
+        for rel in sorted(already_included)
         if (figure_root(repo, rel) / rel).exists()
     }
     appendix_slides: list[dict[str, str]] = []
@@ -2100,8 +2127,8 @@ def get_remaining_appendix_slides(
             continue
         digest = sha256_file(png_path)
         if digest in shown:
+            DUPLICATE_OF[rel] = shown[digest]
             continue
-        shown.add(digest)
         # The full oral heatmap is a Main slide, so any number of its pages is redundant (#641)
         if re.search(r"/oral_six_trait_heatmap_page_\d+\.png$", rel):
             continue
@@ -2337,6 +2364,7 @@ def get_remaining_appendix_slides(
             caveat = "Documentation visual for guild membership rules used across Arm 1 analyses."
             evidence_path = "data/derived/study_trait_profiles_wide.tsv"
 
+        shown[digest] = rel
         appendix_slides.append(
             {
                 "owner": owner,
@@ -3346,6 +3374,7 @@ def build_deck(
     if trees is None and not allow_unverified:
         raise SystemExit("no git listings to check the slides against; pass --allow-unverified")
     TABLES_READ.clear()
+    DUPLICATE_OF.clear()
     metrics = load_rerun_metrics(repo)
     cellulose = load_cellulose_captions(REPO_ROOT)
     metrics["cellulose_statements"] = cellulose["statements"]
@@ -3565,6 +3594,7 @@ def build_deck(
         moved = RENAMED_FIGURES.get(figure["figure_file_path"])
         if moved:
             figure["figure_file_path"] = moved
+    merge_copies(prov_doc)
     check_results_cite_the_deck(
         prov_doc, {entry["figure_file_path"] for entry in ordered_entries}, prov_source
     )
