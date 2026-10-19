@@ -27,7 +27,7 @@ physiology (see [`biological_interpretation.md`](biological_interpretation.md)).
 | `data/derived/bugsigdb_taxa.tsv` | Taxa reported in each signature. |
 | `data/derived/taxa_trait_matrix.tsv` and `taxa_trait_matrix_columns.tsv` | Which of the 5,829 matrix taxa bear each trait, and the trait labels. |
 | `data/kg-microbe/merged-kg_edges.tsv` | Which taxa carry the annotation edge themselves rather than through a descendant. |
-| `data/derived/contrast_orientation/contrast_manifest.tsv` | Contrast class and orientation of every experiment ([`contrast_orientation.md`](contrast_orientation.md)). |
+| `data/derived/contrast_orientation/contrast_manifest.tsv` | Contrast class, orientation, `contrast_type`, `control_tier` and `flags` of every experiment ([`contrast_orientation.md`](contrast_orientation.md)). |
 | `data/derived/studies.tsv`, `data/raw/full_dump.csv` | Study identifiers, authors, journals and locations for the evidence tables, and the ontology IDs of condition labels. |
 
 The run's `cellulose_decr_provenance.json` records:
@@ -58,7 +58,10 @@ Two options change this:
 
 See #562 and #571. The pins describe the v4 contrast manifest and the profile metadata
 table with each experiment's own labels (#555, #580). The committed tables reproduce
-by checking out the provenance's `code_commit` with the pinned inputs (#642).
+from the pinned inputs at the provenance's `code_commit` (#642). A commit made before
+a re-pin still carries the old pins, so there, pass `--pinned-provenance` with the
+committed provenance file, or check out the commit that adds it; its analysis code is
+the same (#674).
 
 **Condition and body site come from each experiment's own record**
 (`experiments.tsv`). The October 16 outputs took them from the profile metadata
@@ -134,19 +137,22 @@ the larger share. Ties are excluded.
   feces tests under these definitions:
   - the synonym labels;
   - without contrasts whose cases are named as treated (`treated_disease_group`),
-    such as people with HIV on antiretroviral therapy against people without HIV;
+    such as people with HIV on antiretroviral therapy against people without HIV.
+    The flag reads group names only, so an unflagged group is not known to be
+    untreated (#676);
   - Tier 1–2 controls only, which also sets aside hospital, symptomatic and
     comorbid controls (Tier 3);
-  - every disease-versus-healthy contrast type, counting the
-    tumour-vs-adjacent-tissue and comorbidity contrasts as well;
+  - the tumour-vs-adjacent-tissue (paired tissue) contrasts counted as well;
+  - the comorbidity contrasts counted as well (#673);
   - without the one HIV study whose "feces" was rectal mucosa (#566).
 
   `condition_definition_interaction.tsv` repeats the Feces-vs-GI test under each
-  of these definitions. Since classifier v4 the HIV– versus HIV+ and ART-treated
-  HIV+ versus uninfected experiments are disease vs healthy, and
-  tumour-vs-adjacent tissue is `paired_tissue_autologous` (#569), so the analysis
-  no longer hand-codes them (#580). The summary's `case_control_inventory` lists
-  each experiment in the three conditions that one of these rules sets aside.
+  of these definitions, and the significant-results table gives each Feces-vs-GI
+  row's p range across them (#673). Since classifier v3 tumour-vs-adjacent tissue is
+  `paired_tissue_autologous` (#554). Since v4 the HIV– versus HIV+ and ART-treated
+  HIV+ versus uninfected experiments are disease vs healthy (#569). The analysis
+  therefore no longer hand-codes them (#580). The summary's `case_control_inventory`
+  lists each experiment in the three conditions that one of these rules sets aside.
 - **Compartments:**
   - For each compartment and condition, the table reports the smallest two-sided
     p a sign test can reach with the observed untied pairs, and the power to
@@ -216,7 +222,6 @@ condition definition.
 - all body sites;
 - disease-versus-healthy contrasts, with all or only strong comparison evidence;
 - the synonym labels;
-
 - without the rectal-mucosa study;
 - every decreased feces taxon regardless of trait.
 
@@ -232,7 +237,8 @@ are not a test; traits share taxa.
 
 | File | Contents |
 | --- | --- |
-| `cellulose_decr_summary.json` | Every result, definition, universe, null summary, label inventory and label-source comparison |
+| `cellulose_decr_summary.json` | Every result, definition, universe, null summary, label inventory, case-control inventory and label-source comparison |
+
 | `cellulose_decr_provenance.json` | Input hashes and pins, classifier version, code commit, seeds, package versions |
 | `pairwise_jaccard_significance.tsv` | Pairwise, mean and 3-way overlap under U1–U6 and the within-condition reference |
 | `sensitivity_definitions_jaccard.tsv` | Overlap under eleven set definitions |

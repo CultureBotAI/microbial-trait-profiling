@@ -27,18 +27,38 @@ The analysis now reads contrast classifier v4 and is re-pinned on it.
   `case_vs_control_subject`. Tumour-vs-adjacent-tissue and comorbidity contrasts no
   longer count
   ([`methods/contrast_orientation.md`](../../../methods/contrast_orientation.md)).
-- **The classifier makes the HIV and CRC calls.** v4 counts the HIV– vs HIV+ and
-  ART-treated HIV+ vs uninfected contrasts as disease vs healthy and marks
-  tumour-vs-adjacent tissue as paired tissue (#569). The scenarios that hand-coded
-  these calls are retired. The condition-definition tables now set treated cases or
-  Tier 3 controls aside, or count every contrast type. The summary's
-  `case_control_inventory` lists each experiment in the three conditions that one of
-  these rules sets aside.
+  Tier 3 contrasts, including those whose cases are named as treated, still count;
+  the scenarios set them aside.
+- **The classifier makes the HIV and CRC calls.**
+  - Since v4 it counts the HIV– vs HIV+ and ART-treated HIV+ vs uninfected contrasts as
+    disease vs healthy (#569).
+  - Since v3 it has marked tumour-vs-adjacent tissue as paired tissue (#554).
+  - The scenarios that hand-coded these calls are retired. The condition-definition
+    tables now set aside the contrasts whose cases are named as treated, keep only
+    Tier 1–2 controls, or count the paired-tissue or the comorbidity contrasts as well.
+  - The summary's `case_control_inventory` lists the 21 experiments in the three
+    conditions that one of these rules sets aside.
+- **One CRC study is miscalled (#672).** The classifier calls Yachida et al. 2019
+  (`bsdb:31171880-1` to `-4`) comorbidity contrasts because its controls are "normal
+  and a few polyps".
+  - The primary analysis therefore leaves out these four paired stool experiments, all
+    of which point down.
+  - Counting the comorbidity contrasts (`comorbidity_counted`, which also adds
+    `bsdb:36959686-4`) gives CRC stool 22 : 5 : 8 experiments (p = 0.0015) and
+    15 : 3 : 7 studies (p = 0.0075).
+  - Without them it is 18 : 5 : 8 (p = 0.011) and 14 : 3 : 7 (p = 0.013).
 - **What moved.** The all-contrast tests, sets, nulls, catalog and benchmark are
-  unchanged; only their Benjamini-Hochberg q-values move, because those are taken
-  over every test in the summary table. Among disease-versus-healthy contrasts, HIV
-  stool studies go from 9 : 0 : 2 (p = 0.0039) to 10 : 2 : 2 (p = 0.039). The CRC
-  stool-vs-GI study test goes from p = 0.13 to 0.021 (sections 4 and 5).
+  unchanged. Only their Benjamini-Hochberg q-values move, because those are taken over
+  every test in the summary table. Among disease-versus-healthy contrasts:
+  - HIV stool studies go from 9 : 0 : 2 (p = 0.0039) to 10 : 2 : 2 (p = 0.039).
+  - CRC stool experiments go from 21 : 4 : 8 (p = 9.1e-4) to 18 : 5 : 8 (p = 0.011),
+    mostly because of the Yachida study above.
+  - The CRC study majority vote goes from 14 : 2 : 8 (p = 0.0042) to 13 : 2 : 9
+    (p = 0.0074).
+  - PD ties go from 10 to 12: the two PD experiments whose cases are named as treated
+    (`bsdb:31815177-8`, `-11`) are tied.
+  - The CRC stool-vs-GI study test goes from p = 0.13 to 0.021 (section 5). It rests
+    on one experiment either way: counting `bsdb:25699023-2` gives 0.13 again.
 
 ## What changed on 2026-10-17 (#552)
 
@@ -295,7 +315,8 @@ disease-versus-healthy contrasts
 | + "Human immunodeficiency virus", "HIV-1 infection" labels | 13 : 5 : 3 | 0.096 | 10 : 4 : 2 | 0.18 |
 | Contrasts whose cases are named as treated set aside (`treated_disease_group`) | 12 : 1 : 3 | 0.0034 | 10 : 0 : 2 | 0.0020 |
 | Tier 1–2 controls only (Tier 3 hospital, comorbid and treated-case contrasts set aside) | 12 : 1 : 3 | 0.0034 | 10 : 0 : 2 | 0.0020 |
-| Every disease-vs-healthy contrast type counted | 13 : 3 : 3 | 0.021 | 10 : 2 : 2 | 0.039 |
+| Paired-tissue contrasts also counted | 13 : 3 : 3 | 0.021 | 10 : 2 : 2 | 0.039 |
+| Comorbidity contrasts also counted | 13 : 3 : 3 | 0.021 | 10 : 2 : 2 | 0.039 |
 | Exact label, without the rectal-mucosa study (bsdb:24451087) | 12 : 3 : 3 | 0.035 | 9 : 2 : 2 | 0.065 |
 
 The two "Human immunodeficiency virus" studies compare people with and without
@@ -313,7 +334,11 @@ Since classifier v4 the primary reading counts the HIV– vs HIV+ experiment
 (`bsdb:33102244-1`) and the ART-treated HIV+ vs uninfected experiments as disease vs
 healthy (#569, #580). The only two HIV studies that point up, `bsdb:38383483` and
 `bsdb:39880958`, compare people with HIV on antiretroviral therapy against people
-without HIV. Setting treated cases aside removes both.
+without HIV. Setting aside the contrasts whose cases are named as treated removes both.
+That flag reads group names only, so these readings separate contrasts by their
+wording, not by treatment (#676). `bsdb:32415070-1`, whose group definition names
+people on antiretroviral therapy, is not flagged; it stays in that reading and points
+down.
 
 One HIV feces experiment mentions MSM in its group names; dropping it leaves
 12 : 3 : 3 (p = 0.035). That lexical filter cannot separate HIV from sexual
@@ -359,7 +384,7 @@ The table below gives Fisher's exact test of direction by compartment
 | All three, stratified by condition | studies | 58 : 20 | 5 : 9 | 8.46 (1.79–49.9) | 0.0021 |
 | CRC, disease vs healthy | experiments | 18 : 5 | 2 : 5 | 8.2 (0.99–111) | 0.026 |
 | CRC, disease vs healthy | studies | 14 : 3 | 2 : 5 | 10.2 (1.07–158) | 0.021 |
-| CRC, disease vs healthy, tissue and comorbidity contrasts counted | studies | 15 : 3 | 3 : 4 | 6.05 (0.66–69.7) | 0.066 |
+| CRC, disease vs healthy, paired-tissue contrasts counted | studies | 14 : 3 | 3 : 4 | 5.66 (0.61–65.5) | 0.13 |
 | All three, stratified, disease vs healthy | studies | 48 : 15 | 4 : 6 | 5.79 (1.03–37.3) | 0.039 |
 
 **How to read these odds ratios:**
@@ -379,12 +404,17 @@ lumen experiments compare patients with controls (`contrast_type`
 tissue, adenoma with cancer, cancer subgroups, or aspirin with placebo. Two of
 them compare paracancerous or adjacent non-cancerous with cancerous tissue of the
 same patients (`bsdb:22761885-2`, `bsdb:25699023-2`). The classifier calls them
-disease vs healthy but `paired_tissue_autologous` (#569), so they do not count
-here. Counting them and the comorbidity contrasts changes the disease-vs-healthy
-study-level test from p = 0.021 to p = 0.066
-([`condition_definition_interaction.tsv`](condition_definition_interaction.tsv)).
-That test therefore turns on a few experiments either way. Two CRC studies sampled
-both compartments. The direction differs between feces and CRC mucosa or lumen. With
+disease vs healthy but `paired_tissue_autologous` (since v3), so they do not count
+here.
+- Counting `bsdb:25699023-2` changes the disease-vs-healthy study-level test from
+  p = 0.021 to p = 0.13
+  ([`condition_definition_interaction.tsv`](condition_definition_interaction.tsv)).
+- `bsdb:22761885-2` changes nothing.
+- That test therefore rests on one experiment either way.
+- Counting the comorbidity contrasts instead, among them the Yachida study (#672),
+  gives p = 0.017.
+
+Two CRC studies sampled both compartments. The direction differs between feces and CRC mucosa or lumen. With
 this sampling effort and this mix of contrasts, that does not show the pattern is
 specific to feces.
 
@@ -462,7 +492,7 @@ an annotated taxon: `n_studies_a` in
 | [`sensitivity_definitions_jaccard.tsv`](sensitivity_definitions_jaccard.tsv) | Overlap under eleven set definitions |
 | [`compartment_jaccard_and_direction_stats.tsv`](compartment_jaccard_and_direction_stats.tsv) | Direction tests by contrast population, compartment and condition, at experiment and study level (mean and majority vote), with power notes |
 | [`compartment_direction_interaction.tsv`](compartment_direction_interaction.tsv) | Fisher tests of direction by compartment, crude and stratified by condition |
-| [`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv), [`condition_definition_overlap.tsv`](condition_definition_overlap.tsv), [`condition_definition_interaction.tsv`](condition_definition_interaction.tsv) | Feces direction, cross-condition overlap (with U6) and the Feces-vs-GI test, under each condition definition: synonym labels, treated cases set aside, Tier 1–2 controls only, every disease-vs-healthy contrast type counted, and without the rectal-mucosa study |
+| [`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv), [`condition_definition_overlap.tsv`](condition_definition_overlap.tsv), [`condition_definition_interaction.tsv`](condition_definition_interaction.tsv) | Feces direction, cross-condition overlap (with U6) and the Feces-vs-GI test, under each condition definition: synonym labels, cases named as treated set aside, Tier 1–2 controls only, paired-tissue or comorbidity contrasts counted, and without the rectal-mucosa study |
 | [`condition_label_inventory.tsv`](condition_label_inventory.tsv) | Every human condition label naming PD, HIV or CRC, with its status |
 | [`cellulose_decreased_taxa_catalog.tsv`](cellulose_decreased_taxa_catalog.tsv) | The 47 taxa with study and profile counts and flags, including `has_direct_trait_edge` |
 | [`profile_and_study_pair_jaccard.tsv`](profile_and_study_pair_jaccard.tsv) | Overlap between individual profiles and studies across conditions |
@@ -528,10 +558,13 @@ The options:
 
 The pins are the v4 contrast manifest and the profile metadata table with each
 experiment's own labels (#555), adopted with `--repin` in #580. The committed tables
-reproduce by checking out the provenance's `code_commit` with the pinned inputs (#642).
+reproduce from the pinned inputs at the provenance's `code_commit` (#642). A commit
+made before a re-pin still carries the old pins, so there, pass
+`--pinned-provenance` with this provenance file, or check out the commit that adds
+it; its analysis code is the same (#674).
 
-
-**Other labels.** Write these runs to another directory, so the committed
+**Other labels.**
+ Write these runs to another directory, so the committed
 tables are not overwritten:
 - the October 16 labels (what they reproduce is listed under "What changed"):
   `just cellulose-decr --label-source study_modal --output-dir <elsewhere>`;

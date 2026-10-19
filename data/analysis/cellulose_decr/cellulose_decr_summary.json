@@ -29,9 +29,10 @@
  },
  "case_control_rules": {
   "subject_controls": "contrast_type case_vs_control_subject (primary analysis)",
-  "untreated_cases": "contrast_type case_vs_control_subject, without contrasts whose cases are named as treated (flag treated_disease_group)",
+  "cases_not_named_treated": "contrast_type case_vs_control_subject, without contrasts whose cases are named as treated (flag treated_disease_group, read from group names only; an unflagged group is not known to be untreated)",
   "control_tiers_1_2": "control_tier tier_1_healthy_normal or tier_2_condition_negative_screened; hospital, comorbid, tissue and treated-case contrasts (Tier 3) set aside",
-  "every_contrast_type": "every disease_vs_healthy contrast, paired-tissue and comorbidity contrasts included"
+  "with_paired_tissue": "contrast_type case_vs_control_subject or paired_tissue_autologous: tumour or lesional tissue against adjacent tissue of the same patients also counted",
+  "with_comorbidity": "contrast_type case_vs_control_subject or comorbidity_within_disease: comorbidity contrasts also counted"
  },
  "case_control_inventory": [
   {
@@ -43,7 +44,7 @@
    "control_tier": "tier_3_hospital_comorbid_or_tissue",
    "flags": "no_group_0_definition_in_export,paired_tissue_comparison",
    "counted_under": [
-    "every_contrast_type"
+    "with_paired_tissue"
    ]
   },
   {
@@ -55,7 +56,7 @@
    "control_tier": "tier_3_hospital_comorbid_or_tissue",
    "flags": "no_group_0_definition_in_export,paired_tissue_comparison",
    "counted_under": [
-    "every_contrast_type"
+    "with_paired_tissue"
    ]
   },
   {
@@ -67,7 +68,7 @@
    "control_tier": "tier_3_hospital_comorbid_or_tissue",
    "flags": "no_group_0_definition_in_export,paired_tissue_comparison",
    "counted_under": [
-    "every_contrast_type"
+    "with_paired_tissue"
    ]
   },
   {
@@ -79,7 +80,7 @@
    "control_tier": "tier_3_hospital_comorbid_or_tissue",
    "flags": "no_group_0_definition_in_export,comorbidity_control",
    "counted_under": [
-    "every_contrast_type"
+    "with_comorbidity"
    ]
   },
   {
@@ -91,7 +92,7 @@
    "control_tier": "tier_3_hospital_comorbid_or_tissue",
    "flags": "no_group_0_definition_in_export,comorbidity_control",
    "counted_under": [
-    "every_contrast_type"
+    "with_comorbidity"
    ]
   },
   {
@@ -103,7 +104,7 @@
    "control_tier": "tier_3_hospital_comorbid_or_tissue",
    "flags": "no_group_0_definition_in_export,comorbidity_control",
    "counted_under": [
-    "every_contrast_type"
+    "with_comorbidity"
    ]
   },
   {
@@ -115,7 +116,7 @@
    "control_tier": "tier_3_hospital_comorbid_or_tissue",
    "flags": "no_group_0_definition_in_export,comorbidity_control",
    "counted_under": [
-    "every_contrast_type"
+    "with_comorbidity"
    ]
   },
   {
@@ -127,7 +128,7 @@
    "control_tier": "tier_3_hospital_comorbid_or_tissue",
    "flags": "no_group_0_definition_in_export,comorbidity_control",
    "counted_under": [
-    "every_contrast_type"
+    "with_comorbidity"
    ]
   },
   {
@@ -140,7 +141,8 @@
    "flags": "no_group_0_definition_in_export,treated_disease_group",
    "counted_under": [
     "subject_controls",
-    "every_contrast_type"
+    "with_paired_tissue",
+    "with_comorbidity"
    ]
   },
   {
@@ -153,7 +155,8 @@
    "flags": "no_group_0_definition_in_export,treated_disease_group",
    "counted_under": [
     "subject_controls",
-    "every_contrast_type"
+    "with_paired_tissue",
+    "with_comorbidity"
    ]
   },
   {
@@ -166,7 +169,8 @@
    "flags": "no_group_0_definition_in_export,treated_disease_group",
    "counted_under": [
     "subject_controls",
-    "every_contrast_type"
+    "with_paired_tissue",
+    "with_comorbidity"
    ]
   },
   {
@@ -179,7 +183,8 @@
    "flags": "no_group_0_definition_in_export,treated_disease_group",
    "counted_under": [
     "subject_controls",
-    "every_contrast_type"
+    "with_paired_tissue",
+    "with_comorbidity"
    ]
   },
   {
@@ -192,7 +197,8 @@
    "flags": "no_group_0_definition_in_export,treated_disease_group",
    "counted_under": [
     "subject_controls",
-    "every_contrast_type"
+    "with_paired_tissue",
+    "with_comorbidity"
    ]
   },
   {
@@ -205,7 +211,8 @@
    "flags": "no_group_0_definition_in_export,treated_disease_group",
    "counted_under": [
     "subject_controls",
-    "every_contrast_type"
+    "with_paired_tissue",
+    "with_comorbidity"
    ]
   },
   {
@@ -218,7 +225,8 @@
    "flags": "no_group_0_definition_in_export,treated_disease_group",
    "counted_under": [
     "subject_controls",
-    "every_contrast_type"
+    "with_paired_tissue",
+    "with_comorbidity"
    ]
   },
   {
@@ -231,7 +239,8 @@
    "flags": "no_group_0_definition_in_export,treated_disease_group",
    "counted_under": [
     "subject_controls",
-    "every_contrast_type"
+    "with_paired_tissue",
+    "with_comorbidity"
    ]
   },
   {
@@ -244,7 +253,8 @@
    "flags": "no_group_0_definition_in_export,treated_disease_group,weak_comparison_evidence",
    "counted_under": [
     "subject_controls",
-    "every_contrast_type"
+    "with_paired_tissue",
+    "with_comorbidity"
    ]
   },
   {
@@ -257,8 +267,9 @@
    "flags": "no_group_0_definition_in_export,weak_comparison_evidence",
    "counted_under": [
     "subject_controls",
-    "untreated_cases",
-    "every_contrast_type"
+    "cases_not_named_treated",
+    "with_paired_tissue",
+    "with_comorbidity"
    ]
   },
   {
@@ -271,8 +282,9 @@
    "flags": "no_group_0_definition_in_export,negated_treatment_term,weak_comparison_evidence",
    "counted_under": [
     "subject_controls",
-    "untreated_cases",
-    "every_contrast_type"
+    "cases_not_named_treated",
+    "with_paired_tissue",
+    "with_comorbidity"
    ]
   },
   {
@@ -285,7 +297,8 @@
    "flags": "no_group_0_definition_in_export,treated_disease_group",
    "counted_under": [
     "subject_controls",
-    "every_contrast_type"
+    "with_paired_tissue",
+    "with_comorbidity"
    ]
   },
   {
@@ -298,7 +311,8 @@
    "flags": "no_group_0_definition_in_export,treated_disease_group",
    "counted_under": [
     "subject_controls",
-    "every_contrast_type"
+    "with_paired_tissue",
+    "with_comorbidity"
    ]
   }
  ],
@@ -6013,8 +6027,8 @@
    "u6_core_p": 0.538115
   },
   {
-   "scenario": "treated_cases_excluded",
-   "scenario_label": "Exact labels; disease-vs-healthy contrasts whose cases are named as treated set aside",
+   "scenario": "named_treated_cases_excluded",
+   "scenario_label": "Exact labels; contrasts whose cases are named as treated set aside",
    "n_PD": 38,
    "n_HIV": 24,
    "n_CRC": 34,
@@ -6057,8 +6071,30 @@
    "u6_core_p": 0.730213
   },
   {
-   "scenario": "every_contrast_type",
-   "scenario_label": "Exact labels; paired-tissue and comorbidity contrasts also counted as disease vs healthy",
+   "scenario": "paired_tissue_counted",
+   "scenario_label": "Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted",
+   "n_PD": 38,
+   "n_HIV": 24,
+   "n_CRC": 34,
+   "intersection_PD_HIV": 21,
+   "intersection_PD_CRC": 27,
+   "intersection_HIV_CRC": 18,
+   "three_way_core": 17,
+   "three_way_union": 47,
+   "mean_pairwise_jaccard_distance": 0.479268,
+   "u3_N": 108,
+   "u3_three_way_exact_p": 2.28309e-14,
+   "u6_units_PD": 49,
+   "u6_units_HIV": 19,
+   "u6_units_CRC": 31,
+   "u6_expected_mean_jaccard_distance": 0.52707,
+   "u6_mean_jaccard_distance_p": 0.193458,
+   "u6_expected_core": 18.3076,
+   "u6_core_p": 0.730213
+  },
+  {
+   "scenario": "comorbidity_counted",
+   "scenario_label": "Exact labels; comorbidity contrasts also counted",
    "n_PD": 38,
    "n_HIV": 24,
    "n_CRC": 34,
