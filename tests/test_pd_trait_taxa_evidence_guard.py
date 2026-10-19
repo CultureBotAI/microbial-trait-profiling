@@ -31,12 +31,15 @@ TRAITS = {"halo": 0.5, "aero": 0.3, "coccus": -0.08, "cellulose": -0.7}
 
 
 def metadata() -> pd.DataFrame:
-    """Two PD fecal profiles and one PD oral profile."""
+    """Two PD fecal profiles, one PD oral profile and one other fecal profile."""
     frame = pd.DataFrame(
         {
-            "profile_id": ["s1|e1|inc", "s1|e1|dec", "s2|e2|inc"],
-            "condition": [heatmap.PD_CONDITION] * 3,
-            "body_site_group": [heatmap.FECES, heatmap.FECES, "Oral cavity"],
+            "profile_id": ["s1|e1|inc", "s1|e1|dec", "s2|e2|inc", "s3|e3|dec"],
+            "study_id": ["s1", "s1", "s2", "s3"],
+            "experiment_id": ["e1", "e1", "e2", "e3"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "condition": [heatmap.PD_CONDITION] * 3 + ["Colorectal cancer"],
+            "body_site_group": [heatmap.FECES, heatmap.FECES, "Oral cavity", heatmap.FECES],
         }
     )
     return frame.set_index("profile_id", drop=False)
@@ -89,6 +92,46 @@ def test_changed_trait_set_is_refused() -> None:
         heatmap.check_trait_taxa_evidence(evidence(), carriers(), five_traits, metadata())
 
 
+def write_contributor_inputs(directory: Path) -> None:
+    """Write what the contributors recipe reads before its first write.
+
+    With these in place, a guard moved below that write lets the write happen, and the
+    snapshot comparison sees it.
+    """
+    for name in (
+        "pd_trait_contributors_cells.tsv",
+        "pd_trait_contributors_rank_coverage.tsv",
+        "pd_species_six_traits_influence_heatmap_traits.tsv",
+    ):
+        pd.DataFrame({"unused": [0]}).to_csv(directory / name, sep="\t", index=False)
+    pd.DataFrame({"taxon": ["NCBITaxon:853"]}).to_csv(
+        directory / "pd_trait_contributors_selected_taxa.tsv", sep="\t", index=False
+    )
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s3"],
+            "experiment_id": ["e1", "e3"],
+            "direction": ["decreased", "decreased"],
+            "taxon_id": ["NCBITaxon:853", "NCBITaxon:853"],
+            "taxon_name": ["Faecalibacterium prausnitzii"] * 2,
+            "taxonomic_rank": ["species"] * 2,
+        }
+    ).to_csv(directory / "bugsigdb_taxa.tsv", sep="\t", index=False)
+
+
+def snapshot(directory: Path) -> dict[str, bytes]:
+    return {path.name: path.read_bytes() for path in directory.iterdir()}
+
+
+def file_stamps(directory: Path) -> dict[str, tuple[int, int]]:
+    """Size and modification time of each file, enough to notice a write."""
+    if not directory.exists():
+        return {}
+    return {
+        path.name: (path.stat().st_size, path.stat().st_mtime_ns) for path in directory.iterdir()
+    }
+
+
 @pytest.mark.parametrize("module", [heatmap, exploratory, contributors], ids=lambda m: m.STEM)
 def test_recipe_stops_before_writing_when_evidence_is_stale(
     module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -98,11 +141,19 @@ def test_recipe_stops_before_writing_when_evidence_is_stale(
     )
     carriers().to_csv(tmp_path / "pd_six_trait_taxon_carriers.tsv", sep="\t", index=False)
     summary().to_csv(tmp_path / "pd_six_trait_direction_summary.tsv", sep="\t", index=False)
-    before = sorted(path.name for path in tmp_path.iterdir())
+    write_contributor_inputs(tmp_path)
+    before = snapshot(tmp_path)
+    # A path bound to the committed output folder at import would escape the redirect.
+    committed_dir = module.OUTPUT_DIR
+    committed_before = file_stamps(committed_dir)
     monkeypatch.setattr(module, "OUTPUT_DIR", tmp_path)
     monkeypatch.setattr(module, "load_profile_metadata", metadata)
+    # load_taxon_specificity reads TAXA_PATH from the module that defines it.
+    taxa_module = sys.modules[contributors.load_taxon_specificity.__module__]
+    monkeypatch.setattr(taxa_module, "TAXA_PATH", tmp_path / "bugsigdb_taxa.tsv")
 
     with pytest.raises(ValueError, match="#584"):
         module.main()
 
-    assert sorted(path.name for path in tmp_path.iterdir()) == before
+    assert snapshot(tmp_path) == before
+    assert file_stamps(committed_dir) == committed_before
