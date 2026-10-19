@@ -47,6 +47,7 @@ ROW_COLOR_LIMIT = 3.0
 INCREASED_COLOR = "#b91c1c"
 DECREASED_COLOR = "#1d4ed8"
 UNAVAILABLE_COLOR = "#e5e7eb"
+DIRECTION_ARROWS = {"increased": "↑", "decreased": "↓"}
 EXCLUDED_TAXON_IDS = frozenset({"NCBITaxon:33039"})
 EXCLUDED_TAXON_NAMES = frozenset({"Mediterraneibacter torques"})
 REFERENCE_TABLE_STEM = "pd_species_six_traits_reference"
@@ -1168,7 +1169,7 @@ def build_influence_cells(
     remove_all_low_support_taxa: bool = True,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, int]:
     """Build six-trait taxon cells, row annotations, and trait metadata."""
-    traits = trait_summary.sort_values("increased_minus_decreased_mean_z", ascending=False).copy()
+    traits = trait_directions(trait_summary)
     trait_ids = traits["trait_id"].astype(str).tolist()
     human_ids = metadata.index[metadata["host_species"].eq("Homo sapiens")]
     baseline_z, totals, _, reference_sd = fixed_reference(profile_counts, trait_ids, human_ids)
@@ -1184,6 +1185,8 @@ def build_influence_cells(
             {
                 "trait_id": str(trait.trait_id),
                 "trait": trait.trait,
+                "trait_direction": trait.trait_direction,
+                "increased_minus_decreased_mean_z": trait.increased_minus_decreased_mean_z,
                 "overall_mean_z_contrast": mean,
                 "overall_ci95_low": low,
                 "overall_ci95_high": high,
@@ -1243,6 +1246,7 @@ def build_influence_cells(
                     "taxonomic_rank": vector["taxonomic_rank"],
                     "trait_id": trait_id,
                     "trait": trait.trait,
+                    "trait_direction": trait.trait_direction,
                     "trait_overall_direction": trait.overall_direction,
                     "trait_overall_mean_z_contrast": trait.overall_mean_z_contrast,
                     "annotation_count": annotation_count,
@@ -1300,6 +1304,16 @@ def build_influence_cells(
     specificity = load_taxon_specificity(pd.Index(row_metadata["taxon_id"]), metadata)
     row_metadata = row_metadata.merge(specificity, on="taxon_id", how="left")
     return cells_table, row_metadata, trait_metadata, removed_low_support_taxa
+
+
+def trait_column_label(trait: str, direction: str, lollipop: float, baseline: float) -> str:
+    """Column header: lollipop direction arrow, trait, lollipop difference and baseline Δz."""
+    return (
+        f"{DIRECTION_ARROWS.get(direction, '·')} "
+        + "\n".join(wrap(trait, width=17))
+        + f"\nlollipop {lollipop:+.2f}"
+        + f"\nbaseline Δz\n{baseline:+.2f}"
+    )
 
 
 def plot_heatmap(
@@ -1360,9 +1374,12 @@ def plot_heatmap(
     ax.set_xticks(
         range(len(traits)),
         [
-            f"{'↑' if row.overall_mean_z_contrast > 0 else '↓'} "
-            + "\n".join(wrap(str(row.trait), width=17))
-            + f"\nbaseline Δz\n{row.overall_mean_z_contrast:+.2f}"
+            trait_column_label(
+                str(row.trait),
+                str(row.trait_direction),
+                float(row.increased_minus_decreased_mean_z),
+                float(row.overall_mean_z_contrast),
+            )
             for row in traits.itertuples(index=False)
         ],
         fontsize=9,
@@ -1538,8 +1555,11 @@ def plot_heatmap(
         va="top",
     )
     subtitle = (
-        "Each column header gives the full-data PD increased-minus-decreased contrast (overall "
-        "Δz) before taxon removal. A cell is baseline Δz minus the recomputed Δz after removing "
+        "Column arrows give each trait's observed direction in the PD six-trait lollipop: ↑ "
+        "where its mean z is higher in increased profiles, ↓ where it is higher in decreased "
+        "profiles; `lollipop` is that mean-z difference. `baseline Δz` is this figure's "
+        "full-data, study-weighted paired PD increased-minus-decreased contrast before taxon "
+        "removal. A cell is baseline Δz minus the recomputed Δz after removing "
         f"the reported {taxon_unit}; positive values support the positive trait contrast and "
         "negative values support the negative contrast, but they are influence diagnostics, not "
         f"causal effects. Only values > +{MIN_ABSOLUTE_INFLUENCE_Z:g} or "
@@ -1762,6 +1782,14 @@ def main() -> None:
         "is that baseline Δz minus the contrast recomputed after removing the taxon. The cell "
         "values therefore explain sensitivity of the column-level contrast, but they do not sum "
         "to it because profile fractions are nonlinear and taxon annotations overlap.\n\n"
+        "Each column also carries the trait's observed direction in the PD six-trait lollipop, "
+        "the sign of `increased_minus_decreased_mean_z` in `pd_six_trait_direction_summary.tsv`: "
+        "an up arrow where the trait's mean z is higher in increased profiles and a down arrow "
+        "where it is higher in decreased profiles, with the difference labeled `lollipop`. The "
+        "trait and cell tables carry it as `trait_direction`. The lollipop value is an unpaired "
+        "difference of profile means, while baseline Δz pairs profiles within experiments and "
+        "weights studies equally, so the two can differ in size and, for traits near zero, in "
+        "sign.\n\n"
         "Rows are sorted from the most increased-skewed to the most decreased-skewed "
         "BugSigDB PD recurrence using the log2 increased/decreased profile-count ratio; "
         "ties use the signed count difference, total support, and taxon name.\n\n"
