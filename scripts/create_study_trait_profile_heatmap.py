@@ -84,9 +84,10 @@ def load_raw_study_metadata(full_dump_path: Path) -> pd.DataFrame:
     """Extract each study's majority condition, body-site and location labels.
 
     These summarize the whole study and are kept only as `study_majority_*` columns.
-    A profile's own labels come from its experiment (`load_raw_experiment_metadata`);
-    joining the majority label to every experiment mislabeled 1,112 of 5,829 profiles
-    (#555).
+    A profile's own labels come from its experiment (`load_raw_experiment_metadata`).
+    Joining the majority labels to every experiment gave 1,241 of 5,829 profiles
+    (803 experiments, 265 studies) another experiment's condition, body site or
+    location; 1,112 of them had the wrong condition or body site (#555).
     """
     values_by_study: dict[str, dict[str, list[str]]] = defaultdict(
         lambda: {
