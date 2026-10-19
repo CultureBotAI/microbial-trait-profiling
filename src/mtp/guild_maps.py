@@ -1368,9 +1368,10 @@ def build_parser() -> argparse.ArgumentParser:
             "guild/direction table unrolled into four columns per body site."
         )
     )
-    parser.add_argument("--profile-input", type=Path, default=DEFAULT_PROFILE_PATH)
-    parser.add_argument("--experiments-input", type=Path, default=DEFAULT_EXPERIMENTS_PATH)
-    parser.add_argument("--full-dump-input", type=Path, default=DEFAULT_FULL_DUMP_PATH)
+    parser.add_argument("--core-run", type=Path, help="Verified core workflow run manifest")
+    parser.add_argument("--profile-input", type=Path)
+    parser.add_argument("--experiments-input", type=Path)
+    parser.add_argument("--full-dump-input", type=Path)
     parser.add_argument("--output-dir", type=Path, default=DERIVED_DATA_DIR / "guild_maps")
     parser.add_argument("--max-conditions", type=int, default=60)
     parser.add_argument("--max-body-sites", type=int, default=20)
@@ -1396,7 +1397,24 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    from mtp.workflow.consumers import (
+        bind_count_arguments,
+        core_corpus_identity,
+        preflight_consumer_outputs,
+        write_consumer_record,
+    )
+
     args = build_parser().parse_args()
+    bundle = bind_count_arguments(args)
+    if bundle is not None:
+        preflight_consumer_outputs(
+            bundle,
+            args.output_dir / "core_consumption.json",
+            output_directory=args.output_dir,
+        )
+    args.profile_input = args.profile_input or DEFAULT_PROFILE_PATH
+    args.experiments_input = args.experiments_input or DEFAULT_EXPERIMENTS_PATH
+    args.full_dump_input = args.full_dump_input or DEFAULT_FULL_DUMP_PATH
     profiles, stats = load_profiles(
         args.profile_input,
         args.experiments_input,
@@ -1405,7 +1423,11 @@ def main() -> int:
     )
     vintage = read_bugsigdb_vintage(args.full_dump_input)
     write_stats_report(stats, vintage)
-    identity = corpus_identity(args.profile_input, bugsigdb_vintage=vintage)
+    identity = (
+        core_corpus_identity(bundle, bugsigdb_vintage=vintage)
+        if bundle is not None
+        else corpus_identity(args.profile_input, bugsigdb_vintage=vintage)
+    )
     print("\n".join(summary_lines(identity)))
 
     matrix = build_matrix(
@@ -1450,6 +1472,15 @@ def main() -> int:
             "carrying no guild annotation on either side"
         )
     written.append(write_identity(identity, args.output_dir, code_commit=args.code_commit))
+    if bundle is not None:
+        written.append(
+            write_consumer_record(
+                bundle,
+                args.output_dir / "core_consumption.json",
+                consumer="mtp.guild_maps",
+                outputs=written,
+            )
+        )
     for path in written:
         print(path)
     return 0

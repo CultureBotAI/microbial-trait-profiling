@@ -1,53 +1,19 @@
 #!/usr/bin/env bash
-# ==============================================================================
-# Rerun Pipeline — Arm 2: Over-Representation Analysis (ORA) Enrichment & Depletion
-# Branch Owner: Ilyas (IlyasMoutawwakil / ilyas)
-# ==============================================================================
-# Usage:
-#   bash scripts/rerun_enrichment_ora_arm_ilyas.sh
-#
-# Prerequisites:
-#   - Run from repository root after `just taxa-trait-matrix` and
-#     `just study-trait-profiles-ora` (or with canonical
-#     `data/derived/taxa_trait_matrix.tsv` and `data/derived/experiments.tsv`
-#     already present on disk).
-# ==============================================================================
+# Purpose: rerun ORA enrichment/depletion, rankings, calibration and standard figures from a verified core bundle.
+# Inputs: core run.json and fresh output directory; outputs: results and arm_run.json.
+# Issue #658; 2026-10-19. Historical branch-specific investigations are separate.
+# Usage: bash scripts/rerun_enrichment_ora_arm_ilyas.sh /path/run.json /path/new-output [--no-figures]
 
 set -euo pipefail
 # Headless Agg, as every recipe uses, for the scripts this arm runs directly too (#719)
 export MPLBACKEND=Agg
 
+if [[ $# -lt 2 ]]; then
+    echo "Usage: $0 CORE_RUN_JSON FRESH_OUTPUT_DIR [--replicates N] [--seed N] [--no-figures]" >&2
+    echo "Prepare shared inputs with 'just rerun-core'; see docs/workflow.md." >&2
+    exit 2
+fi
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_ROOT}"
-
-echo "=== [Ilyas / ORA Enrichment Arm] Checking prerequisite derived tables ==="
-for required_file in \
-    "data/derived/taxa_trait_matrix.tsv" \
-    "data/derived/experiments.tsv"; do
-    if [[ ! -f "${required_file}" ]]; then
-        echo "ERROR: Required input '${required_file}' not found." >&2
-        echo "Run 'just taxa-trait-matrix' (after 'just download-kg', 'just pipeline', 'just study-tsvs') first." >&2
-        exit 1
-    fi
-done
-
-echo "=== [1/6] Building binary Homo sapiens ORA study-trait profiles ==="
-just study-trait-profiles-ora
-
-echo "=== [2/6] Running global-FDR ORA trait enrichment & exporting rankings (#119) ==="
-just analyze
-
-echo "=== [3/6] Running global-FDR ORA trait depletion & exporting rankings (#119) ==="
-just analyze-depletion
-
-echo "=== [4/6] Running ORA background stratification & annotation-density sensitivity (#118) ==="
-just analyze-strata
-
-echo "=== [5/6] Running ORA synthetic null & spike-in calibration harness (#263, #343, #348, #351) ==="
-just calibrate
-
-echo "=== [6/6] Rendering publication deck visualizations (Figures 1-5) ==="
-just deck-figures
-
-echo "=== [Ilyas / ORA Enrichment Arm] Rerun complete. Running verification checks ==="
-just check
+exec just rerun-ilyas "$@"

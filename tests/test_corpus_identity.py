@@ -403,8 +403,7 @@ def test_rerun_recipe_hygiene_invariants() -> None:
     noel_script = (repo_root / "scripts" / "rerun_directional_consistency_arm_noel.sh").read_text(
         encoding="utf-8"
     )
-    assert 'just table1-taxon-influence-from "data/kg-microbe" "data/derived"' in noel_script
-    # The arms read the canonical human table, and check it against the committed .gz (#656)
+    # The standalone canonical recipe keeps its human-only contract (#656).
     assert (
         "study-trait-profiles: taxa-trait-matrix\n"
         '\tuv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" '
@@ -413,8 +412,8 @@ def test_rerun_recipe_hygiene_invariants() -> None:
     jed_script = (repo_root / "scripts" / "rerun_composition_arm_jed.sh").read_text(
         encoding="utf-8"
     )
-    for script in (noel_script, jed_script):
-        assert "\njust study-trait-profiles-check\n" in script
+    assert 'exec just rerun-noel "$@"' in noel_script
+    assert 'exec just rerun-jed "$@"' in jed_script
     assert "\njust table1-taxon-influence\n" not in noel_script
     # Figures are drawn headless, whatever the session's display (#719)
     assert '\nexport MPLBACKEND := "Agg"\n' in justfile_text

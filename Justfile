@@ -120,6 +120,32 @@ evidence-verify archive:
 evidence-resolve archive original:
 	uv run python -m mtp.workflow archive-resolve "{{archive}}" "{{original}}"
 
+# Build one shared raw-to-core execution before rerunning any owner analysis.
+[positional-arguments]
+rerun-core output raw edges nodes source_mode="pinned":
+	uv run python -m mtp.workflow run workflows/bugsigdb_core.yaml --output-root "$1" \
+	  --input "raw_dump=$2" --input "kg_edges=$3" --input "kg_nodes=$4" \
+	  --parameter "source_mode=$5"
+
+# Standard ORA, depletion, rankings, strata, calibration and optional figures.
+[positional-arguments]
+rerun-ilyas run output *ARGS:
+	uv run python -m mtp.workflow.arms ilyas "$@"
+
+# Standard directional screen, calibration, orientation and evidence products.
+[positional-arguments]
+rerun-noel run output *ARGS:
+	uv run python -m mtp.workflow.arms noel "$@"
+
+# Standard paired composition, sensitivity, calibration, audits and optional figures.
+[positional-arguments]
+rerun-jed run output *ARGS:
+	uv run python -m mtp.workflow.arms jed "$@"
+
+[positional-arguments]
+rerun-verify record:
+	uv run python -m mtp.workflow.arms verify "$@"
+
 sync:
 	uv sync --all-extras --group dev --group qa
 
