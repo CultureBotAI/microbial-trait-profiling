@@ -413,15 +413,16 @@ def test_pd_taxa_reference_table_adds_literature_and_interpretation(tmp_path: Pa
     )
     cells = pd.DataFrame(
         [
-            ["taxon-e", "Trait one", "t1", True, 0.2, "mixed"],
-            ["taxon-e", "Trait two", "t2", False, 0.8, "inc"],
-            ["taxon-f", "Trait one", "t1", True, -0.6, "dec"],
-            ["taxon-f", "Trait two", "t2", True, -0.1, "mixed"],
+            ["taxon-e", "Trait one", "t1", "increased", True, 0.2, "mixed"],
+            ["taxon-e", "Trait two", "t2", "decreased", False, 0.8, "inc"],
+            ["taxon-f", "Trait one", "t1", "increased", True, -0.6, "dec"],
+            ["taxon-f", "Trait two", "t2", "decreased", True, -0.1, "mixed"],
         ],
         columns=[
             "taxon_id",
             "trait",
             "trait_id",
+            "trait_direction",
             "has_trait_annotation",
             "mean_influence_contrast_z",
             "status",
@@ -445,11 +446,15 @@ def test_pd_taxa_reference_table_adds_literature_and_interpretation(tmp_path: Pa
     assert table.loc["taxon-f", "direction_agreement"] == "agrees"
     assert "10.1002/mds.28119" in table.loc["taxon-f", "doi_citations"]
     assert table.loc["taxon-f", "kg_microbe_direct_trait_count"] == 2
+    assert table.loc["taxon-e", "strongest_influence_trait_direction"] == "decreased"
+    assert "lollipop direction decreased" in table.loc["taxon-e", "interpretation"]
 
     output_path = tmp_path / "reference.md"
     heatmap.write_reference_interpretation(table.reset_index(), output_path)
     output = output_path.read_text(encoding="utf-8")
     assert "## Agreement Summary" in output
+    assert "| Trait two ↓ (+0.80; inc) |" in output
+    assert "| Trait one ↑ (-0.60; dec) |" in output
     assert "## Methods: Literature Review and Direction Comparison" in output
     assert "targeted narrative review" in output
     assert "increased-profile count is greater than decreased-profile count" in output

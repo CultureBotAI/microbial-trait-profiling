@@ -949,7 +949,8 @@ def interpret_reference_row(row: pd.Series) -> str:
     if pd.notna(influence) and math.isfinite(float(influence)):
         strongest = (
             f" Strongest current influence: {row['strongest_influence_trait']} "
-            f"({float(influence):+.2f} fixed-reference z, {row['strongest_influence_status']})."
+            f"(lollipop direction {row['strongest_influence_trait_direction']}; "
+            f"{float(influence):+.2f} fixed-reference z, {row['strongest_influence_status']})."
         )
     else:
         strongest = ""
@@ -1007,10 +1008,11 @@ def build_pd_taxa_reference_table(
     finite_cells["absolute_influence_z"] = finite_cells["mean_influence_contrast_z"].abs()
     strongest = finite_cells.loc[
         finite_cells.groupby("taxon_id")["absolute_influence_z"].idxmax(),
-        ["taxon_id", "trait", "status", "mean_influence_contrast_z"],
+        ["taxon_id", "trait", "trait_direction", "status", "mean_influence_contrast_z"],
     ].rename(
         columns={
             "trait": "strongest_influence_trait",
+            "trait_direction": "strongest_influence_trait_direction",
             "status": "strongest_influence_status",
             "mean_influence_contrast_z": "strongest_influence_z",
         }
@@ -1057,6 +1059,7 @@ def build_pd_taxa_reference_table(
         "annotated_trait_count",
         "supported_influence_cells",
         "strongest_influence_trait",
+        "strongest_influence_trait_direction",
         "strongest_influence_status",
         "strongest_influence_z",
         "interpretation",
@@ -1074,7 +1077,10 @@ def write_reference_interpretation(reference_table: pd.DataFrame, output_path: P
         "current influence value.",
         "",
         "Rows follow the heatmap order: descending BugSigDB PD increased/decreased log2 "
-        "profile-count ratio, with count-based and alphabetical tie-breakers.",
+        "profile-count ratio, with count-based and alphabetical tie-breakers. The arrow after "
+        "the strongest-influence trait gives its observed direction in the PD six-trait "
+        "lollipop: up where its mean z is higher in increased profiles, down where it is "
+        "higher in decreased profiles.",
         "",
         "## Agreement Summary",
         "",
@@ -1084,8 +1090,9 @@ def write_reference_interpretation(reference_table: pd.DataFrame, output_path: P
     ]
     for row in reference_table.itertuples(index=False):
         strongest = (
-            f"{row.strongest_influence_trait} ({float(row.strongest_influence_z):+.2f}; "
-            f"{row.strongest_influence_status})"
+            f"{row.strongest_influence_trait} "
+            f"{DIRECTION_ARROWS.get(str(row.strongest_influence_trait_direction), '·')} "
+            f"({float(row.strongest_influence_z):+.2f}; {row.strongest_influence_status})"
             if pd.notna(row.strongest_influence_z)
             else "not available"
         )
