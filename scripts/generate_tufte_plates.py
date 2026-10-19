@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
-"""Generate 6 high-density Tufte-style analytical plates from the three-arm rerun data.
+"""Draw the deck's two methods plates and seven Tufte plates from the three-arm rerun data.
 
-All figures are computed directly from the freshly regenerated TSV outputs on main
-(402ef5c25b7105c9aa73398085956dcf1f372bb4) and saved to data/derived/tufte_plates/.
+The figures are computed from the TSV outputs of the rerun on main (402ef5c) under
+``trait-visualization/`` and ``data/derived/``, many of them gitignored, and are
+written as PNG and SVG to ``data/derived/tufte_plates/``. ``just
+figure-review-plates`` runs this script; ``scripts/build_slide_deck.py`` places the
+plates in the deck (#573).
 """
 
 from __future__ import annotations
 
+import argparse
 import csv
 import math
+from collections.abc import Sequence
 from pathlib import Path
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
-REPO = Path(__file__).resolve().parents[1]
-OUT_DIR = REPO / "data/derived/tufte_plates"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+PLATES_DIR = Path("data/derived/tufte_plates")
 
 # Tufte palette: muted, high-contrast, colorblind-safe ink on warm paper/clean white
 BG_COLOR = "#fcfbf8"
@@ -75,7 +80,7 @@ def despine(
 # ==============================================================================
 # METHODS PLATE 1: High-Level Data & Taxonomic Integration Architecture
 # ==============================================================================
-def build_methods_plate1() -> Path:
+def build_methods_plate1(out_dir: Path) -> Path:
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
     ax = fig.add_axes([0.03, 0.08, 0.94, 0.80])
     ax.axis("off")
@@ -221,9 +226,11 @@ def build_methods_plate1() -> Path:
                 "",
                 xy=(15.75, funnel_steps[idx_f + 1][0] + 12.4),
                 xytext=(15.75, fy - 0.4),
-                arrowprops=dict(
-                    arrowstyle="-|>,head_width=0.6,head_length=0.6", color=DEC_COLOR, lw=1.8
-                ),
+                arrowprops={
+                    "arrowstyle": "-|>,head_width=0.6,head_length=0.6",
+                    "color": DEC_COLOR,
+                    "lw": 1.8,
+                },
                 zorder=5,
             )
 
@@ -242,7 +249,7 @@ def build_methods_plate1() -> Path:
         "",
         xy=(34.2, 50.0),
         xytext=(30.6, 50.0),
-        arrowprops=dict(arrowstyle="-|>,head_width=0.8,head_length=0.8", color=INK, lw=2.2),
+        arrowprops={"arrowstyle": "-|>,head_width=0.8,head_length=0.8", "color": INK, "lw": 2.2},
         zorder=6,
     )
 
@@ -405,7 +412,7 @@ def build_methods_plate1() -> Path:
         "",
         xy=(69.4, 50.0),
         xytext=(65.8, 50.0),
-        arrowprops=dict(arrowstyle="-|>,head_width=0.8,head_length=0.8", color=INK, lw=2.2),
+        arrowprops={"arrowstyle": "-|>,head_width=0.8,head_length=0.8", "color": INK, "lw": 2.2},
         zorder=6,
     )
 
@@ -563,7 +570,7 @@ def build_methods_plate1() -> Path:
         color=MUTED,
     )
 
-    out_path = OUT_DIR / "methods_plate1_data_architecture_funnel.png"
+    out_path = out_dir / "methods_plate1_data_architecture_funnel.png"
     fig.savefig(out_path, dpi=220)
     fig.savefig(out_path.with_suffix(".svg"))
     plt.close(fig)
@@ -573,7 +580,7 @@ def build_methods_plate1() -> Path:
 # ==============================================================================
 # METHODS PLATE 2: High-Level Three-Arm Analytical Architecture & Convergence
 # ==============================================================================
-def build_methods_plate2() -> Path:
+def build_methods_plate2(out_dir: Path) -> Path:
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
     ax = fig.add_axes([0.03, 0.08, 0.94, 0.80])
     ax.axis("off")
@@ -928,7 +935,11 @@ def build_methods_plate2() -> Path:
             "",
             xy=(ax_x, 18.8),
             xytext=(ax_x, 24.6),
-            arrowprops=dict(arrowstyle="-|>,head_width=0.7,head_length=0.7", color=INK, lw=2.0),
+            arrowprops={
+                "arrowstyle": "-|>,head_width=0.7,head_length=0.7",
+                "color": INK,
+                "lw": 2.0,
+            },
             zorder=5,
         )
 
@@ -1013,9 +1024,11 @@ def build_methods_plate2() -> Path:
                 "",
                 xy=(conv_steps[idx_c + 1][0] - 0.4, 8.6),
                 xytext=(cx + 21.4, 8.6),
-                arrowprops=dict(
-                    arrowstyle="-|>,head_width=0.6,head_length=0.6", color=GOLD_ACCENT, lw=1.8
-                ),
+                arrowprops={
+                    "arrowstyle": "-|>,head_width=0.6,head_length=0.6",
+                    "color": GOLD_ACCENT,
+                    "lw": 1.8,
+                },
                 zorder=5,
             )
 
@@ -1029,7 +1042,7 @@ def build_methods_plate2() -> Path:
         color=MUTED,
     )
 
-    out_path = OUT_DIR / "methods_plate2_three_arm_architecture.png"
+    out_path = out_dir / "methods_plate2_three_arm_architecture.png"
     fig.savefig(out_path, dpi=220)
     fig.savefig(out_path.with_suffix(".svg"))
     plt.close(fig)
@@ -1039,31 +1052,31 @@ def build_methods_plate2() -> Path:
 # ==============================================================================
 # PLATE 1: Multi-Scale Inference & Attenuation Architecture (Visual Funnel + Slopegraph)
 # ==============================================================================
-def build_plate1() -> Path:
+def build_plate1(repo: Path, out_dir: Path) -> Path:
     pooled_rows = {
         r["trait"]: r
         for r in read_tsv(
-            REPO / "trait-visualization/trait-profile-investigation/"
+            repo / "trait-visualization/trait-profile-investigation/"
             "trait_profile_paired_contrast_trait_stats_pooled.tsv"
         )
     }
     feces_rows = {
         r["trait"]: r
         for r in read_tsv(
-            REPO / "trait-visualization/trait-profile-investigation/"
+            repo / "trait-visualization/trait-profile-investigation/"
             "trait_profile_paired_contrast_trait_stats_feces.tsv"
         )
     }
     table1_sign = {
         r["trait"].replace("_", " "): r
-        for r in read_tsv(REPO / "data/derived/table1_traits/table1_traits_direction_shift.tsv")
+        for r in read_tsv(repo / "data/derived/table1_traits/table1_traits_direction_shift.tsv")
     }
     contrasts = read_tsv(
-        REPO / "trait-visualization/trait-profile-investigation/six-shared-traits/"
+        repo / "trait-visualization/trait-profile-investigation/six-shared-traits/"
         "six_shared_trait_condition_body_site_direction_contrasts.tsv"
     )
     wilcoxon_rows = read_tsv(
-        REPO / "trait-visualization/trait-profile-investigation/PD-cellulose/"
+        repo / "trait-visualization/trait-profile-investigation/PD-cellulose/"
         "pd_condition_taxon_trait_network_condition_trait_tests.tsv"
     )
 
@@ -1196,7 +1209,7 @@ def build_plate1() -> Path:
     ax_funnel.set_ylim(-0.6, len(scale_rows) - 0.2)
     ax_funnel.set_xlim(0, 4100)
 
-    for idx_s, (sname, n_unit, m_tests, surv_txt, scol, n_lbl) in enumerate(scale_rows):
+    for idx_s, (_sname, n_unit, _m_tests, surv_txt, scol, n_lbl) in enumerate(scale_rows):
         yp = y_f[idx_s]
         ax_funnel.barh(yp, n_unit, height=0.56, color=scol, alpha=0.86)
         ax_funnel.text(
@@ -1259,7 +1272,12 @@ def build_plate1() -> Path:
         color=INC_COLOR,
         ha="center",
         fontweight="bold",
-        bbox=dict(boxstyle="round,pad=0.15", facecolor=PANEL_BG, edgecolor="none", alpha=0.85),
+        bbox={
+            "boxstyle": "round,pad=0.15",
+            "facecolor": PANEL_BG,
+            "edgecolor": "none",
+            "alpha": 0.85,
+        },
     )
     ax_slope.text(
         2.3,
@@ -1332,7 +1350,7 @@ def build_plate1() -> Path:
             color=c,
             va="center",
             ha="left",
-            arrowprops=dict(arrowstyle="-", color=c, lw=0.8, alpha=0.7),
+            arrowprops={"arrowstyle": "-", "color": c, "lw": 0.8, "alpha": 0.7},
         )
 
     ax_slope.set_xlim(-0.20, len(scales) + 0.92)
@@ -1366,7 +1384,7 @@ def build_plate1() -> Path:
         color=MUTED,
     )
 
-    out_path = OUT_DIR / "tufte_plate1_scale_attenuation_slopegraph.png"
+    out_path = out_dir / "tufte_plate1_scale_attenuation_slopegraph.png"
     fig.savefig(out_path, dpi=220)
     fig.savefig(out_path.with_suffix(".svg"))
     plt.close(fig)
@@ -1376,32 +1394,32 @@ def build_plate1() -> Path:
 # ==============================================================================
 # PLATE 2: Beyond Table 1 — The 28-Trait Functional Guild Dichotomy & Anatomy
 # ==============================================================================
-def build_plate2() -> Path:
+def build_plate2(repo: Path, out_dir: Path) -> Path:
     pooled = {
         r["trait"]: r
         for r in read_tsv(
-            REPO / "trait-visualization/trait-profile-investigation/"
+            repo / "trait-visualization/trait-profile-investigation/"
             "trait_profile_paired_contrast_trait_stats_pooled.tsv"
         )
     }
     feces = {
         r["trait"]: r
         for r in read_tsv(
-            REPO / "trait-visualization/trait-profile-investigation/"
+            repo / "trait-visualization/trait-profile-investigation/"
             "trait_profile_paired_contrast_trait_stats_feces.tsv"
         )
     }
     nonfeces = {
         r["trait"]: r
         for r in read_tsv(
-            REPO / "trait-visualization/trait-profile-investigation/"
+            repo / "trait-visualization/trait-profile-investigation/"
             "trait_profile_paired_contrast_trait_stats_feces_excluded.tsv"
         )
     }
     saliva = {
         r["trait"]: r
         for r in read_tsv(
-            REPO / "trait-visualization/trait-profile-investigation/"
+            repo / "trait-visualization/trait-profile-investigation/"
             "trait_profile_paired_contrast_trait_stats_saliva.tsv"
         )
     }
@@ -1545,7 +1563,7 @@ def build_plate2() -> Path:
             if idx_r % 2 == 1:
                 ax.axhspan(yp - 0.45, yp + 0.45, color="#f4f1ea", alpha=0.65, zorder=0)
 
-        for idx_r, (tid, tlabel, guild_lbl) in enumerate(trait_rows_spec):
+        for idx_r, (tid, tlabel, _guild_lbl) in enumerate(trait_rows_spec):
             yp = y_positions[idx_r]
             row = data_dict.get(tid)
             if not row or not row.get("study_mean_increased_minus_decreased"):
@@ -1625,7 +1643,7 @@ def build_plate2() -> Path:
         color=MUTED,
     )
 
-    out_path = OUT_DIR / "tufte_plate2_317_trait_guild_dichotomy.png"
+    out_path = out_dir / "tufte_plate2_317_trait_guild_dichotomy.png"
     fig.savefig(out_path, dpi=220)
     fig.savefig(out_path.with_suffix(".svg"))
     plt.close(fig)
@@ -1635,10 +1653,10 @@ def build_plate2() -> Path:
 # ==============================================================================
 # PLATE 3: Compositional Closure & Reference-Explicit Paired Log-Ratio Matrix
 # ==============================================================================
-def build_plate3() -> Path:
-    lr_rows = read_tsv(REPO / "data/derived/table1_composition/trait_log_ratio_stats.tsv")
+def build_plate3(repo: Path, out_dir: Path) -> Path:
+    lr_rows = read_tsv(repo / "data/derived/table1_composition/trait_log_ratio_stats.tsv")
     orient_rows = read_tsv(
-        REPO / "data/derived/contrast_orientation/disease_control_comparison.tsv"
+        repo / "data/derived/contrast_orientation/disease_control_comparison.tsv"
     )
     orient_lr = {}
     for r in orient_rows:
@@ -1888,7 +1906,7 @@ def build_plate3() -> Path:
         fontsize=8.0,
         fontweight="bold",
         color=MUTED,
-        bbox=dict(facecolor=BG_COLOR, edgecolor="none", pad=1.5),
+        bbox={"facecolor": BG_COLOR, "edgecolor": "none", "pad": 1.5},
         zorder=5,
     )
 
@@ -2017,7 +2035,7 @@ def build_plate3() -> Path:
         color=MUTED,
     )
 
-    out_path = OUT_DIR / "tufte_plate3_compositional_log_ratio_matrix.png"
+    out_path = out_dir / "tufte_plate3_compositional_log_ratio_matrix.png"
     fig.savefig(out_path, dpi=220)
     fig.savefig(out_path.with_suffix(".svg"))
     plt.close(fig)
@@ -2027,17 +2045,17 @@ def build_plate3() -> Path:
 # ==============================================================================
 # PLATE 4: Clean Visual Condition x Trait Matrix + Lead Fecal Cohort Forest Plot
 # ==============================================================================
-def build_plate4() -> Path:
+def build_plate4(repo: Path, out_dir: Path) -> Path:
     eco_summary = read_tsv(
-        REPO / "trait-visualization/trait-profile-investigation/PD-cellulose/"
+        repo / "trait-visualization/trait-profile-investigation/PD-cellulose/"
         "pd_ecological_reporter_combined_condition_trait_summary.tsv"
     )
     wilc_tests = read_tsv(
-        REPO / "trait-visualization/trait-profile-investigation/PD-cellulose/"
+        repo / "trait-visualization/trait-profile-investigation/PD-cellulose/"
         "pd_condition_taxon_trait_network_condition_trait_tests.tsv"
     )
     fisher_rows = read_tsv(
-        REPO / "trait-visualization/trait-profile-investigation/six-shared-traits/"
+        repo / "trait-visualization/trait-profile-investigation/six-shared-traits/"
         "six_shared_trait_condition_body_site_direction_contrasts.tsv"
     )
 
@@ -2111,8 +2129,8 @@ def build_plate4() -> Path:
     ax.set_ylim(-0.5, n_r - 0.5)
     ax.invert_yaxis()
 
-    for r_idx, (cond_raw, cond_disp) in enumerate(conditions):
-        for c_idx, (tr_raw, tr_disp) in enumerate(traits_cols):
+    for r_idx, (cond_raw, _cond_disp) in enumerate(conditions):
+        for c_idx, (tr_raw, _tr_disp) in enumerate(traits_cols):
             er = by_eco.get((cond_raw, tr_raw), {})
             wr = by_wilc.get((cond_raw, tr_raw), {})
             fr = by_fish.get((cond_raw, tr_raw), {})
@@ -2208,7 +2226,7 @@ def build_plate4() -> Path:
     ax_lead.axvline(0.0, color=INK, linestyle="--", linewidth=1.0, zorder=1)
     ax_lead.axhline(y_l[6] - 0.5, color=MID_RULE, linestyle=":", linewidth=1.0, zorder=1)
 
-    for idx_l, (cond_raw, tr_raw, disp_lbl) in enumerate(lead_specs):
+    for idx_l, (cond_raw, tr_raw, _disp_lbl) in enumerate(lead_specs):
         yp = y_l[idx_l]
         er = by_eco.get((cond_raw, tr_raw), {})
         wr = by_wilc.get((cond_raw, tr_raw), {})
@@ -2273,7 +2291,12 @@ def build_plate4() -> Path:
         color=INK,
         ha="center",
         va="bottom",
-        bbox=dict(boxstyle="round,pad=0.26", facecolor="#fef9ec", edgecolor=GOLD_ACCENT, lw=1.0),
+        bbox={
+            "boxstyle": "round,pad=0.26",
+            "facecolor": "#fef9ec",
+            "edgecolor": GOLD_ACCENT,
+            "lw": 1.0,
+        },
         zorder=5,
     )
 
@@ -2305,7 +2328,7 @@ def build_plate4() -> Path:
         color=MUTED,
     )
 
-    out_path = OUT_DIR / "tufte_plate4_diverging_condition_trait_triangulation.png"
+    out_path = out_dir / "tufte_plate4_diverging_condition_trait_triangulation.png"
     fig.savefig(out_path, dpi=220)
     fig.savefig(out_path.with_suffix(".svg"))
     plt.close(fig)
@@ -2315,13 +2338,13 @@ def build_plate4() -> Path:
 # ==============================================================================
 # PLATE 5: Anatomical Oxygen-Switch Polarity Inversion & Cross-Disease Switchers
 # ==============================================================================
-def build_plate5() -> Path:
+def build_plate5(repo: Path, out_dir: Path) -> Path:
     oxy_rows = read_tsv(
-        REPO / "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
+        repo / "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
         "condition_oxygen_switch_scores.tsv"
     )
     sw_rows = read_tsv(
-        REPO / "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
+        repo / "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
         "taxa_cross_disease_switch_summary.tsv"
     )
 
@@ -2502,7 +2525,12 @@ def build_plate5() -> Path:
             color=INK,
             ha="center",
             va="bottom",
-            bbox=dict(boxstyle="round,pad=0.08", facecolor=BG_COLOR, edgecolor="none", alpha=0.92),
+            bbox={
+                "boxstyle": "round,pad=0.08",
+                "facecolor": BG_COLOR,
+                "edgecolor": "none",
+                "alpha": 0.92,
+            },
             zorder=5,
         )
         ax_sw.text(
@@ -2551,7 +2579,7 @@ def build_plate5() -> Path:
         color=MUTED,
     )
 
-    out_path = OUT_DIR / "tufte_plate5_anatomical_oxygen_polarity_and_switchers.png"
+    out_path = out_dir / "tufte_plate5_anatomical_oxygen_polarity_and_switchers.png"
     fig.savefig(out_path, dpi=220)
     fig.savefig(out_path.with_suffix(".svg"))
     plt.close(fig)
@@ -2561,13 +2589,13 @@ def build_plate5() -> Path:
 # ==============================================================================
 # PLATE 6: Taxonomic Resolution vs Trait Coverage & Root-Cause Diagnostic
 # ==============================================================================
-def build_plate6() -> Path:
+def build_plate6(repo: Path, out_dir: Path) -> Path:
     rank_rows = read_tsv(
-        REPO
+        repo
         / "trait-visualization/trait-profile-investigation/taxa-coverage/taxa_coverage_by_rank.tsv"
     )
     zero_rows = read_tsv(
-        REPO / "trait-visualization/trait-profile-investigation/taxa-coverage/"
+        repo / "trait-visualization/trait-profile-investigation/taxa-coverage/"
         "top_zero_trait_bugsigdb_taxa.tsv"
     )
 
@@ -2817,7 +2845,7 @@ def build_plate6() -> Path:
         color=MUTED,
     )
 
-    out_path = OUT_DIR / "tufte_plate6_taxonomic_coverage_blindspots.png"
+    out_path = out_dir / "tufte_plate6_taxonomic_coverage_blindspots.png"
     fig.savefig(out_path, dpi=220)
     fig.savefig(out_path.with_suffix(".svg"))
     plt.close(fig)
@@ -2827,26 +2855,26 @@ def build_plate6() -> Path:
 # ==============================================================================
 # PLATE 7: Three-Arm 317-Trait Concordance & Expanded Table 1 Forest Plot
 # ==============================================================================
-def build_plate7() -> Path:
+def build_plate7(repo: Path, out_dir: Path) -> Path:
     import re
 
     arm1_rows = {
         r["trait"]: r
         for r in read_tsv(
-            REPO / "trait-visualization/trait-profile-investigation/"
+            repo / "trait-visualization/trait-profile-investigation/"
             "trait_profile_paired_contrast_trait_stats_pooled.tsv"
         )
     }
     arm2_rows = {
         r["trait"]: r
-        for r in read_tsv(REPO / "data/derived/trait_enrichment_traits_overall_ranked.tsv")
+        for r in read_tsv(repo / "data/derived/trait_enrichment_traits_overall_ranked.tsv")
     }
     arm3_screen_rows = {
         r["trait"]: r
-        for r in read_tsv(REPO / "data/derived/trait_screen/trait_direction_screen.tsv")
+        for r in read_tsv(repo / "data/derived/trait_screen/trait_direction_screen.tsv")
     }
     orient_rows = read_tsv(
-        REPO / "data/derived/contrast_orientation/disease_control_comparison.tsv"
+        repo / "data/derived/contrast_orientation/disease_control_comparison.tsv"
     )
     orient_t1 = {
         r["numerator"]: r
@@ -3060,10 +3088,13 @@ def build_plate7() -> Path:
                 fontsize=7.2,
                 fontweight="bold" if "★" in text_lbl or "▲" in text_lbl else "normal",
                 color=INK,
-                bbox=dict(
-                    boxstyle="round,pad=0.14", facecolor=BG_COLOR, edgecolor="none", alpha=0.88
-                ),
-                arrowprops=dict(arrowstyle="-", color=MID_RULE, lw=0.7),
+                bbox={
+                    "boxstyle": "round,pad=0.14",
+                    "facecolor": BG_COLOR,
+                    "edgecolor": "none",
+                    "alpha": 0.88,
+                },
+                arrowprops={"arrowstyle": "-", "color": MID_RULE, "lw": 0.7},
                 zorder=6,
             )
 
@@ -3081,7 +3112,12 @@ def build_plate7() -> Path:
         va="bottom",
         ha="right",
         color=INK,
-        bbox=dict(boxstyle="round,pad=0.35", facecolor="#fef9ec", edgecolor=GOLD_ACCENT, lw=1.0),
+        bbox={
+            "boxstyle": "round,pad=0.35",
+            "facecolor": "#fef9ec",
+            "edgecolor": GOLD_ACCENT,
+            "lw": 1.0,
+        },
         zorder=7,
     )
 
@@ -3218,31 +3254,47 @@ def build_plate7() -> Path:
         color=MUTED,
     )
 
-    out_path = OUT_DIR / "tufte_plate7_three_arm_317_trait_concordance.png"
+    out_path = out_dir / "tufte_plate7_three_arm_317_trait_concordance.png"
     fig.savefig(out_path, dpi=220)
     fig.savefig(out_path.with_suffix(".svg"))
     plt.close(fig)
     return out_path
 
 
-def main() -> None:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
+    parser.add_argument(
+        "--input-root",
+        type=Path,
+        default=REPO_ROOT,
+        help="Checkout holding the rerun tables (default: this one).",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help=f"Where the plates go (default: <input-root>/{PLATES_DIR}).",
+    )
+    args = parser.parse_args(argv)
+    repo = args.input_root.resolve()
+    out_dir = args.output_dir or repo / PLATES_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     setup_tufte_rc()
     paths = [
-        build_methods_plate1(),
-        build_methods_plate2(),
-        build_plate1(),
-        build_plate2(),
-        build_plate3(),
-        build_plate4(),
-        build_plate5(),
-        build_plate6(),
-        build_plate7(),
+        build_methods_plate1(out_dir),
+        build_methods_plate2(out_dir),
+        build_plate1(repo, out_dir),
+        build_plate2(repo, out_dir),
+        build_plate3(repo, out_dir),
+        build_plate4(repo, out_dir),
+        build_plate5(repo, out_dir),
+        build_plate6(repo, out_dir),
+        build_plate7(repo, out_dir),
     ]
-    for p in paths:
-        print(f"Generated: {p} ({p.stat().st_size:,} bytes)")
+    for path in paths:
+        print(f"Generated: {path} ({path.stat().st_size:,} bytes)")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

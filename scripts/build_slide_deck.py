@@ -1,30 +1,33 @@
 #!/usr/bin/env python3
-"""Build Version 3 (v3) of the microbial-trait-profiling slide deck from fresh rerun data.
+"""Build the selected-figure slide deck (v6) from the figures and tables of a checkout.
 
-Includes:
-- All 43 unique previous slides across slide_manifest.tsv (v1, 42 slides) and
-  slide_manifest_v2.tsv (v2, 30 slides), updated to use the fresh rerun PNGs and
-  dynamically verified rerun statistics on main (402ef5c).
-- All missed / newly generated figures across all three analysis arms (Ilyas ORA,
-  Noel Table 1 & Guild/Gram analyses, Jed paired trait-profile & PD investigations,
-  and the 5 publication deck synthesis figures).
-- Full SHA-256 verification that every slide asset matches its freshly regenerated
-  source file on disk.
+Reads the slide figures, the earlier deck manifests (``slide_manifest_v1.tsv``,
+``slide_manifest_v2.tsv``) and ``svg_sources/`` under
+``data/derived/figure_review_2026-09-21/slides/``, and the rerun tables the slide
+text quotes. Writes the HTML deck, the slide manifest, the copied slide assets and
+``deck_validation_v6.json`` to the output directory, and updates the figure
+provenance YAML in place. Many of these inputs are gitignored local outputs, so a
+fresh clone cannot build the deck (#573).
+
+``just figure-review-deck`` runs this script, validates the provenance YAML against its LinkML
+schema and prints the PDF with headless Chrome or Chromium.
 """
 
 from __future__ import annotations
 
+import argparse
 import csv
 import hashlib
 import html
 import json
 import shutil
-import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[1]
-SLIDES_DIR = REPO / "data/derived/figure_review_2026-09-21/slides"
-ASSETS_DIR = SLIDES_DIR / "assets"
+import yaml
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DECK_DIR = Path("data/derived/figure_review_2026-09-21")
 COMMIT = "402ef5c25b7105c9aa73398085956dcf1f372bb4"
 SHORT_COMMIT = COMMIT[:12]
 BRANCH = "main"
@@ -46,13 +49,13 @@ def read_tsv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(f, delimiter="\t"))
 
 
-def load_rerun_metrics() -> dict:
+def load_rerun_metrics(repo: Path) -> dict:
     """Read fresh rerun TSVs to ensure slide titles, takeaways, and cover table match rerun data."""
     metrics: dict = {}
 
     # 1. Six-shared-traits direction contrasts
     contrasts_path = (
-        REPO / "trait-visualization/trait-profile-investigation/six-shared-traits/"
+        repo / "trait-visualization/trait-profile-investigation/six-shared-traits/"
         "six_shared_trait_condition_body_site_direction_contrasts.tsv"
     )
     contrasts = read_tsv(contrasts_path)
@@ -85,7 +88,7 @@ def load_rerun_metrics() -> dict:
 
     # 2. PD condition-taxon-trait network tests
     pd_net_path = (
-        REPO / "trait-visualization/trait-profile-investigation/PD-cellulose/"
+        repo / "trait-visualization/trait-profile-investigation/PD-cellulose/"
         "pd_condition_taxon_trait_network_condition_trait_tests.tsv"
     )
     pd_net_rows = read_tsv(pd_net_path)
@@ -100,7 +103,7 @@ def load_rerun_metrics() -> dict:
 
     # 3. PD ecological reporter combined
     pd_eco_path = (
-        REPO / "trait-visualization/trait-profile-investigation/PD-cellulose/"
+        repo / "trait-visualization/trait-profile-investigation/PD-cellulose/"
         "pd_ecological_reporter_combined_condition_trait_summary.tsv"
     )
     pd_eco_rows = read_tsv(pd_eco_path)
@@ -113,7 +116,7 @@ def load_rerun_metrics() -> dict:
 
     # 4. Sankey display edges stats
     sankey_stats = {}
-    sankey_dir = REPO / "trait-visualization/trait-profile-investigation/six-shared-traits"
+    sankey_dir = repo / "trait-visualization/trait-profile-investigation/six-shared-traits"
     for edges_file in sorted(sankey_dir.glob("*_display_edges.tsv")):
         rows = read_tsv(edges_file)
         if not rows:
@@ -193,18 +196,11 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
                     f"connect to Feces ({st['feces_pct']}%); {st['links']} links span "
                     f"{st['n_conds']} condition groups and {st['n_sites']} sites."
                 )
-            elif "six_shared_traits_increased_individual_conditions_profile_sankey.png" in fig_path:
-                title = (
-                    f"{st['n_conds']} conditions connect to {st['n_sites']} body-site groups "
-                    "across six traits"
-                )
-                takeaway = (
-                    f"{st['links']} selected trait links connect {st['n_conds']} individual "
-                    "conditions to "
-                    f"{st['n_sites']} body-site groups; {st['feces_pct']}% of displayed positive-z "
-                    "memberships are fecal."
-                )
-            elif "six_shared_traits_decreased_individual_conditions_profile_sankey.png" in fig_path:
+            elif (
+                "six_shared_traits_increased_individual_conditions_profile_sankey.png" in fig_path
+                or "six_shared_traits_decreased_individual_conditions_profile_sankey.png"
+                in fig_path
+            ):
                 title = (
                     f"{st['n_conds']} conditions connect to {st['n_sites']} body-site groups "
                     "across six traits"
@@ -481,7 +477,7 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
 
 
 def get_new_slides_metadata() -> list[dict[str, str]]:
-    """Define comprehensive metadata for all high-level Methods plates, Tufte plates, and newly generated figures."""
+    """Metadata for the Methods plates, the Tufte plates and the newly generated figures."""
     new_slides = [
         # --- Section 0A: Two High-Level Visual Methods Architecture Plates ---
         {
@@ -491,7 +487,7 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "tag": "Methods architecture · Plate I",
             "figure_file_path": "data/derived/tufte_plates/"
             "methods_plate1_data_architecture_funnel.png",
-            "code_path": "data/derived/figure_review_2026-09-21/slides/generate_tufte_plates.py",
+            "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": "High-level visual overview of the data ingestion funnel: 1,039 BugSigDB "
             "v1.3.1 human studies (2,335 paired experiments, 4,670 profiles, 48,370 "
             "taxon occurrences) joined to 5,829 KG-Microbe organisms "
@@ -515,7 +511,7 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "tag": "Methods architecture · Plate II",
             "figure_file_path": "data/derived/tufte_plates/"
             "methods_plate2_three_arm_architecture.png",
-            "code_path": "data/derived/figure_review_2026-09-21/slides/generate_tufte_plates.py",
+            "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": "Compares the statistical unit, test formulation, and multiplicity control "
             "across Arm 1 (continuous Δz paired contrasts & positive-z Fisher screen), "
             "Arm 2 (taxon-calibrated hypergeometric ORA: 66,240 enrichments vs 23 "
@@ -541,7 +537,7 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "tag": "Tufte synthesis · Plate I",
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate1_scale_attenuation_slopegraph.png",
-            "code_path": "data/derived/figure_review_2026-09-21/slides/generate_tufte_plates.py",
+            "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": "Traces the 6 Table 1 traits across 7 analytical scales (2,335 paired "
             "experiments → 959 studies → 594 fecal studies → study sign tests → 378 "
             "grouped profile tests → 2,388 individual "
@@ -565,7 +561,7 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "tag": "Tufte synthesis · Plate II",
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate2_317_trait_guild_dichotomy.png",
-            "code_path": "data/derived/figure_review_2026-09-21/slides/generate_tufte_plates.py",
+            "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": "Across all 317 KG-Microbe traits, 22 pass study-level BH q ≤ 0.05 pooled "
             "(33 in Feces), splitting into an increased aerotolerant / halophilic / "
             "oxyanion-redox / coccus guild versus a decreased plant-polysaccharide / "
@@ -589,7 +585,7 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "tag": "Tufte synthesis · Plate III",
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate3_compositional_log_ratio_matrix.png",
-            "code_path": "data/derived/figure_review_2026-09-21/slides/generate_tufte_plates.py",
+            "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": "Visualizes all 15 pairwise within-study trait log-ratios across all 959 "
             "studies (●) and 569 disease-vs-healthy oriented studies (◆): 3 pairs pass "
             "15-test BY q ≤ 0.05 across all 959 studies (FA/CEL, CEL/ARS, CEL/SPH) and "
@@ -614,7 +610,7 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "tag": "Tufte synthesis · Plate IV",
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate4_diverging_condition_trait_triangulation.png",
-            "code_path": "data/derived/figure_review_2026-09-21/slides/generate_tufte_plates.py",
+            "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": "Pairs a clean 14-condition \N{MULTIPLICATION SIGN} 7-trait study-weighted "
             "Δz heatmap (left) with a focused forest plot of the 12 lead Fecal Disease "
             "\N{MULTIPLICATION SIGN} Trait contrasts in PD, CRC, HIV, and COVID-19 "
@@ -639,7 +635,7 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "tag": "Tufte synthesis · Plate V",
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate5_anatomical_oxygen_polarity_and_switchers.png",
-            "code_path": "data/derived/figure_review_2026-09-21/slides/generate_tufte_plates.py",
+            "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": "Lumenal fecal cohorts shift toward aerotolerant taxa (PCOS +1.18, UC "
             "+1.13, myeloma +1.07, CRC feces +0.68), whereas oral, mucosal, lung, and "
             "ocular cohorts invert toward obligate anaerobes (Oral RA -1.01, Lower GI "
@@ -663,7 +659,7 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "tag": "Tufte synthesis · Plate VI",
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate6_taxonomic_coverage_blindspots.png",
-            "code_path": "data/derived/figure_review_2026-09-21/slides/generate_tufte_plates.py",
+            "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": "Genus (96.5%) and Family (96.5%) occurrences in BugSigDB have high "
             "KG-Microbe coverage, whereas 45.9% of distinct species (1,764/3,846) and "
             "22.0% of species occurrences (4,205/19,113) have zero traits.",
@@ -687,7 +683,7 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "tag": "Tufte synthesis · Plate VII",
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate7_three_arm_317_trait_concordance.png",
-            "code_path": "data/derived/figure_review_2026-09-21/slides/generate_tufte_plates.py",
+            "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": "All 6 original Table 1 traits (★) pass all 3 arms with concordant "
             "direction; screening all 317 traits reveals 11 additional "
             "3-arm-concordant traits (17 total at study BH q ≤ 0.05; 8 at strict BY q "
@@ -1071,7 +1067,7 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
     return new_slides
 
 
-def get_remaining_appendix_slides(already_included: set[str]) -> list[dict[str, str]]:
+def get_remaining_appendix_slides(already_included: set[str], repo: Path) -> list[dict[str, str]]:
     """Collect all remaining distinct regenerated PNGs after pruning redundant/superseded views."""
     # Exclude exact duplicate audit/mirror directories and low-res preview
     excluded_prefixes = (
@@ -1158,13 +1154,13 @@ def get_remaining_appendix_slides(already_included: set[str]) -> list[dict[str, 
 
     all_pngs: list[Path] = []
     for root_sub in ("data/derived", "trait-visualization"):
-        root_path = REPO / root_sub
+        root_path = repo / root_sub
         if root_path.exists():
             all_pngs.extend(sorted(root_path.rglob("*.png")))
 
     appendix_slides: list[dict[str, str]] = []
     for png_path in all_pngs:
-        rel = png_path.relative_to(REPO).as_posix()
+        rel = png_path.relative_to(repo).as_posix()
         if rel in already_included or rel in excluded_exact:
             continue
         if any(rel.startswith(p) for p in excluded_prefixes):
@@ -1399,7 +1395,7 @@ def get_remaining_appendix_slides(already_included: set[str]) -> list[dict[str, 
 
 
 def get_cellulose_decr_main_slides() -> list[dict[str, str]]:
-    """Return the 6 non-redundant cellulose_decr deep-dive plates and vector diagrams for the Main deck."""
+    """The 6 non-redundant cellulose_decr deep-dive plates and diagrams for the Main deck."""
     return [
         {
             "owner": "Marcin / Noel / Ilyas / Jed",
@@ -1565,7 +1561,10 @@ def get_cellulose_decr_main_slides() -> list[dict[str, str]]:
 
 
 def get_cellulose_decr_appendix_slides() -> list[dict[str, str]]:
-    """Return the 7 non-redundant cellulose_decr companion slides (4 Graphical Summaries + 3 Statistical Reference figures) for the Appendix."""
+    """The 7 cellulose_decr companion slides for the Appendix.
+
+    Four graphical summaries and three statistical reference figures.
+    """
     return [
         {
             "owner": "Marcin",
@@ -1743,19 +1742,20 @@ def get_cellulose_decr_appendix_slides() -> list[dict[str, str]]:
     ]
 
 
-def build_deck() -> None:
-    ASSETS_DIR.mkdir(parents=True, exist_ok=True)
-    metrics = load_rerun_metrics()
+def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
+    (slides_dir / "assets").mkdir(parents=True, exist_ok=True)
+    metrics = load_rerun_metrics(repo)
 
-    v1_manifest_path = SLIDES_DIR / "slide_manifest_v1.tsv"
-    if not v1_manifest_path.exists() and (SLIDES_DIR / "slide_manifest.tsv").exists():
-        shutil.copy2(SLIDES_DIR / "slide_manifest.tsv", v1_manifest_path)
-    v1_html_path = SLIDES_DIR / "selected_figures_v1.html"
-    if not v1_html_path.exists() and (SLIDES_DIR / "selected_figures.html").exists():
-        shutil.copy2(SLIDES_DIR / "selected_figures.html", v1_html_path)
-
+    # The September decks' manifests are inputs; slide_manifest.tsv itself is now this
+    # script's output, so it must not stand in for a missing v1 manifest.
+    previous = repo / DECK_DIR / "slides"
+    v1_manifest_path = previous / "slide_manifest_v1.tsv"
+    v2_manifest_path = previous / "slide_manifest_v2.tsv"
+    for manifest_path in (v1_manifest_path, v2_manifest_path):
+        if not manifest_path.exists():
+            raise FileNotFoundError(f"missing earlier deck manifest {manifest_path}")
     v1_rows = read_tsv(v1_manifest_path)
-    v2_rows = read_tsv(SLIDES_DIR / "slide_manifest_v2.tsv")
+    v2_rows = read_tsv(v2_manifest_path)
 
     v1_by_fig = {r["figure_file_path"]: r for r in v1_rows}
     v2_by_fig = {r["figure_file_path"]: r for r in v2_rows}
@@ -1857,7 +1857,7 @@ def build_deck() -> None:
     # 1. Opening Methods & Tufte Synthesis Plates (9 slides: 2 Methods + 7 Tufte plates)
     for item in tufte_and_methods_slides:
         fp = item["figure_file_path"]
-        if fp not in already_included and (REPO / fp).exists():
+        if fp not in already_included and (repo / fp).exists():
             item["v1_slide"] = "NA"
             item["v2_slide"] = "NA"
             item["prior_result_url"] = ""
@@ -1867,7 +1867,7 @@ def build_deck() -> None:
     # 1b. Non-redundant Cellulose Deep-Dive Tufte Plates & Vector Diagrams (6 slides from v5)
     for item in get_cellulose_decr_main_slides():
         fp = item["figure_file_path"]
-        if fp not in already_included and (REPO / fp).exists():
+        if fp not in already_included and (repo / fp).exists():
             item["v1_slide"] = "NA"
             item["v2_slide"] = "NA"
             item["prior_result_url"] = ""
@@ -1882,7 +1882,7 @@ def build_deck() -> None:
     # 3. Remaining Curated New Main slides (7 slides across Publication Deck, Noel, Ilyas, Jed)
     for item in other_new_main_slides:
         fp = item["figure_file_path"]
-        if fp not in already_included and (REPO / fp).exists():
+        if fp not in already_included and (repo / fp).exists():
             item["v1_slide"] = "NA"
             item["v2_slide"] = "NA"
             item["prior_result_url"] = ""
@@ -1896,9 +1896,9 @@ def build_deck() -> None:
         already_included.add(fp)
 
     # 5. All remaining distinct non-redundant figures across the rerun (Appendix)
-    for item in get_remaining_appendix_slides(already_included):
+    for item in get_remaining_appendix_slides(already_included, repo):
         fp = item["figure_file_path"]
-        if fp not in already_included and (REPO / fp).exists():
+        if fp not in already_included and (repo / fp).exists():
             item["v1_slide"] = "NA"
             item["v2_slide"] = "NA"
             item["prior_result_url"] = ""
@@ -1909,7 +1909,7 @@ def build_deck() -> None:
     # Statistical)
     for item in get_cellulose_decr_appendix_slides():
         fp = item["figure_file_path"]
-        if fp not in already_included and (REPO / fp).exists():
+        if fp not in already_included and (repo / fp).exists():
             item["v1_slide"] = "NA"
             item["v2_slide"] = "NA"
             item["prior_result_url"] = ""
@@ -1918,20 +1918,19 @@ def build_deck() -> None:
 
     # Finalize manifest rows, copy fresh PNGs to assets/ and vector SVGs to assets_svg/, and compute
     # SHA-256
-    ASSETS_SVG_DIR = SLIDES_DIR / "assets_svg"
-    ASSETS_SVG_DIR.mkdir(parents=True, exist_ok=True)
+    (slides_dir / "assets_svg").mkdir(parents=True, exist_ok=True)
     manifest_rows: list[dict[str, str]] = []
     used_asset_names: set[str] = set()
 
     for idx, entry in enumerate(ordered_entries, start=2):
         fig_rel = entry["figure_file_path"]
-        src_png = REPO / fig_rel
+        src_png = repo / fig_rel
         if not src_png.exists():
             raise FileNotFoundError(f"Missing rerun figure on disk: {src_png}")
 
         # Resolve true vector .svg for every slide
         cand_svg1 = src_png.with_suffix(".svg")
-        cand_svg2 = SLIDES_DIR / "svg_sources" / Path(fig_rel).with_suffix(".svg")
+        cand_svg2 = previous / "svg_sources" / Path(fig_rel).with_suffix(".svg")
         src_svg = cand_svg1 if cand_svg1.exists() else (cand_svg2 if cand_svg2.exists() else None)
         if src_svg is None:
             raise FileNotFoundError(
@@ -1939,14 +1938,14 @@ def build_deck() -> None:
             )
 
         svg_asset_rel = f"assets_svg/v6_slide_{idx:03d}_{src_png.stem}.svg"
-        dst_svg = SLIDES_DIR / svg_asset_rel
+        dst_svg = slides_dir / svg_asset_rel
         shutil.copy2(src_svg, dst_svg)
 
         # Also copy primary file to assets/ (or assets_svg/ if primary is .svg)
         asset_rel = svg_asset_rel
         used_asset_names.add(asset_rel)
         if src_png.suffix.lower() == ".png":
-            dst_png = SLIDES_DIR / f"assets/v6_slide_{idx:03d}_{src_png.name}"
+            dst_png = slides_dir / f"assets/v6_slide_{idx:03d}_{src_png.name}"
             dst_png.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src_png, dst_png)
 
@@ -2025,7 +2024,7 @@ def build_deck() -> None:
         "selection_reason",
     ]
     for manifest_name in ("slide_manifest_v6.tsv", "slide_manifest.tsv"):
-        out_tsv = SLIDES_DIR / manifest_name
+        out_tsv = slides_dir / manifest_name
         with out_tsv.open("w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
             writer.writeheader()
@@ -2240,60 +2239,13 @@ def build_deck() -> None:
     html_content = "\n".join(html_lines) + "\n"
 
     for html_name in ("selected_figures_v6.html", "selected_figures.html"):
-        (SLIDES_DIR / html_name).write_text(html_content, encoding="utf-8")
+        (slides_dir / html_name).write_text(html_content, encoding="utf-8")
 
-    # Render PDF using local Playwright / headless Chromium if available
-    pdf_v6 = SLIDES_DIR / "microbial-trait-profiling_v6.pdf"
-    pdf_default = SLIDES_DIR / "selected_figures.pdf"
-    pdf_main = SLIDES_DIR / "microbial-trait-profiling.pdf"
-    html_uri = (SLIDES_DIR / "selected_figures_v6.html").resolve().as_uri()
-
-    chrome_candidates = (
-        list(
-            (Path.home() / "Library/Caches/ms-playwright").glob(
-                "chromium*/chrome-mac*/Chromium.app/Contents/MacOS/Chromium"
-            )
-        )
-        + list(
-            (Path.home() / "Library/Caches/ms-playwright").glob(
-                "chromium_headless_shell*/chrome-headless-shell-mac*/chrome-headless-shell"
-            )
-        )
-        + [
-            Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
-        ]
-    )
-    chrome_bin = next((c for c in chrome_candidates if c.exists()), None)
-    pdf_rendered = False
-    if chrome_bin:
-        cmd = [
-            str(chrome_bin),
-            "--headless",
-            "--disable-gpu",
-            "--no-pdf-header-footer",
-            "--print-to-pdf-no-header",
-            f"--print-to-pdf={pdf_v6}",
-            html_uri,
-        ]
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        if res.returncode == 0 and pdf_v6.exists():
-            shutil.copy2(pdf_v6, pdf_default)
-            shutil.copy2(pdf_v6, pdf_main)
-            pdf_rendered = True
-
-    # Synchronize figure_provenance_and_results.yaml with all 153 manifest_rows and validate against
-    # LinkML schema
-    prov_yaml_path = (
-        REPO / "data/derived/figure_review_2026-09-21/provenance/figure_provenance_and_results.yaml"
-    )
-    prov_schema_path = (
-        REPO / "data/derived/figure_review_2026-09-21/provenance/figure_provenance_schema.yaml"
-    )
+    # Synchronize figure_provenance_and_results.yaml with all 153 manifest_rows;
+    # `just figure-review-deck` then validates it against its LinkML schema.
+    prov_yaml_path = provenance_dir / "figure_provenance_and_results.yaml"
     prov_synced = False
-    prov_validated = False
     if prov_yaml_path.exists():
-        import yaml
-
         with prov_yaml_path.open("r", encoding="utf-8") as f:
             prov_doc = yaml.safe_load(f)
         prov_doc["dataset_id"] = "mtp_v6_three_arm_figure_provenance_2026_10_17"
@@ -2329,7 +2281,7 @@ def build_deck() -> None:
                 new_figures_list.append(rec)
             else:
                 ev_rel = r.get("evidence_path", "")
-                ev_sha = sha256_file(REPO / ev_rel) if ev_rel and (REPO / ev_rel).exists() else ""
+                ev_sha = sha256_file(repo / ev_rel) if ev_rel and (repo / ev_rel).exists() else ""
                 rec = {
                     "figure_id": new_fid,
                     "slide_number": s_num,
@@ -2386,24 +2338,6 @@ def build_deck() -> None:
         with prov_yaml_path.open("w", encoding="utf-8") as f:
             yaml.safe_dump(prov_doc, f, sort_keys=False, allow_unicode=True, width=120)
         prov_synced = True
-        if prov_schema_path.exists():
-            import sys
-
-            linkml_bin = Path(sys.executable).parent / "linkml-validate"
-            val_cmd = (
-                [str(linkml_bin), "-s", str(prov_schema_path), str(prov_yaml_path)]
-                if linkml_bin.exists()
-                else [
-                    "uv",
-                    "run",
-                    "linkml-validate",
-                    "-s",
-                    str(prov_schema_path),
-                    str(prov_yaml_path),
-                ]
-            )
-            val_res = subprocess.run(val_cmd, capture_output=True, text=True)
-            prov_validated = val_res.returncode == 0
 
     validation = {
         "version": "v6",
@@ -2417,26 +2351,49 @@ def build_deck() -> None:
         "appendix_section_slides": sum(1 for r in manifest_rows if r["deck_section"] == "Appendix"),
         "all_assets_exist_and_sha256_match_rerun": True,
         "all_slides_true_vector_svg": True,
-        "pdf_rendered": pdf_rendered,
         "provenance_yaml_synced": prov_synced,
-        "provenance_linkml_validated": prov_validated,
-        "chrome_binary_used": str(chrome_bin) if chrome_bin else None,
         "outputs": {
-            "manifest_v6": str(SLIDES_DIR / "slide_manifest_v6.tsv"),
-            "manifest_default": str(SLIDES_DIR / "slide_manifest.tsv"),
-            "html_v6": str(SLIDES_DIR / "selected_figures_v6.html"),
-            "html_default": str(SLIDES_DIR / "selected_figures.html"),
-            "pdf_v6": str(pdf_v6) if pdf_rendered else None,
-            "pdf_main": str(pdf_main) if pdf_rendered else None,
-            "pdf_default": str(pdf_default) if pdf_rendered else None,
+            "manifest_v6": str(slides_dir / "slide_manifest_v6.tsv"),
+            "manifest_default": str(slides_dir / "slide_manifest.tsv"),
+            "html_v6": str(slides_dir / "selected_figures_v6.html"),
+            "html_default": str(slides_dir / "selected_figures.html"),
             "provenance_yaml": str(prov_yaml_path) if prov_synced else None,
         },
     }
-    (SLIDES_DIR / "deck_validation_v6.json").write_text(
+    (slides_dir / "deck_validation_v6.json").write_text(
         json.dumps(validation, indent=2) + "\n", encoding="utf-8"
     )
     print(json.dumps(validation, indent=2))
 
 
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
+    parser.add_argument(
+        "--input-root",
+        type=Path,
+        default=REPO_ROOT,
+        help="Checkout holding the figures, tables and earlier deck manifests (default: this one).",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help=f"Where the deck, manifest and assets go (default: <input-root>/{DECK_DIR}/slides).",
+    )
+    parser.add_argument(
+        "--provenance-dir",
+        type=Path,
+        help="Folder of figure_provenance_and_results.yaml, updated in place (default: "
+        f"<input-root>/{DECK_DIR}/provenance).",
+    )
+    args = parser.parse_args(argv)
+    repo = args.input_root.resolve()
+    build_deck(
+        repo,
+        args.output_dir or repo / DECK_DIR / "slides",
+        args.provenance_dir or repo / DECK_DIR / "provenance",
+    )
+    return 0
+
+
 if __name__ == "__main__":
-    build_deck()
+    raise SystemExit(main())
