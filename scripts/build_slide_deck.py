@@ -33,6 +33,12 @@ CELLULOSE_DIR = Path("data/analysis/cellulose_decr")
 # Regenerated, gitignored figure folders: their slides carry no GitHub figure link.
 UNLINKED_FIGURES = ("data/derived/", f"{CELLULOSE_DIR}/figures")
 REPO_URL = "https://github.com/CultureBotAI/microbial-trait-profiling"
+PROVENANCE_NAME = "figure_provenance_and_results.yaml"
+# The deck's typed Table 1 numbers (cover note, slide captions, Tufte Plates III and VII)
+# were written for this contrast classifier (569 oriented studies). Inputs from another
+# version would mix with them, so the build refuses until #579 reads them from the tables.
+TYPED_CONTRAST_VERSION = "contrast-orientation-v2"
+CONTRAST_PROVENANCE = Path("data/derived/contrast_orientation/contrast_orientation_provenance.json")
 COMMIT = "402ef5c25b7105c9aa73398085956dcf1f372bb4"
 SHORT_COMMIT = COMMIT[:12]
 BRANCH = "main"
@@ -52,6 +58,22 @@ def read_tsv(path: Path) -> list[dict[str, str]]:
         return []
     with path.open(newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f, delimiter="\t"))
+
+
+def check_contrast_version(repo: Path, allow_mismatch: bool) -> None:
+    """Refuse contrast-orientation inputs from another classifier than the typed text (#579)."""
+    path = repo / CONTRAST_PROVENANCE
+    version = (
+        json.loads(path.read_text(encoding="utf-8")).get("classifier_version")
+        if path.exists()
+        else None
+    )
+    if version != TYPED_CONTRAST_VERSION and not allow_mismatch:
+        raise SystemExit(
+            f"{path} records {version}, but the deck's typed Table 1 numbers were written for "
+            f"{TYPED_CONTRAST_VERSION}; a rebuild would mix the two (#579). Pass "
+            "--allow-contrast-version-mismatch only for a review build."
+        )
 
 
 def load_rerun_metrics(repo: Path) -> dict:
@@ -1958,101 +1980,98 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
 
     # Synchronize figure_provenance_and_results.yaml with all 153 manifest_rows;
     # `just figure-review-deck` then validates it against its LinkML schema.
-    prov_yaml_path = provenance_dir / "figure_provenance_and_results.yaml"
-    prov_synced = False
-    if prov_yaml_path.exists():
-        with prov_yaml_path.open("r", encoding="utf-8") as f:
-            prov_doc = yaml.safe_load(f)
-        prov_doc["dataset_id"] = "mtp_v6_three_arm_figure_provenance_2026_10_17"
-        prov_doc["title"] = (
-            "Microbial Trait Profiling v6 Complete Three-Arm Figure Provenance & Standardized "
-            "Statistical Results"
-        )
+    prov_source = repo / DECK_DIR / "provenance" / PROVENANCE_NAME
+    prov_yaml_path = provenance_dir / PROVENANCE_NAME
+    if not prov_source.exists():
+        raise FileNotFoundError(f"missing figure provenance {prov_source}")
+    with prov_source.open("r", encoding="utf-8") as f:
+        prov_doc = yaml.safe_load(f)
+    prov_doc["dataset_id"] = "mtp_v6_three_arm_figure_provenance_2026_10_17"
+    prov_doc["title"] = (
+        "Microbial Trait Profiling v6 Complete Three-Arm Figure Provenance & Standardized "
+        "Statistical Results"
+    )
 
-        existing_by_fp = {rec["figure_file_path"]: rec for rec in prov_doc.get("figures", [])}
-        old_id_to_new_id: dict[str, str] = {}
-        new_figures_list = []
+    existing_by_fp = {rec["figure_file_path"]: rec for rec in prov_doc.get("figures", [])}
+    old_id_to_new_id: dict[str, str] = {}
+    new_figures_list = []
 
-        for r in manifest_rows:
-            s_num = int(r["slide"])
-            new_fid = f"fig_slide_{s_num:03d}"
-            fp = r["figure_file_path"]
-            if fp in existing_by_fp:
-                rec = dict(existing_by_fp[fp])
-                old_id_to_new_id[rec["figure_id"]] = new_fid
-                rec["figure_id"] = new_fid
-                rec["slide_number"] = s_num
-                rec["deck_section"] = r["deck_section"]
-                rec["owner"] = r["owner"]
-                rec["tag"] = r["tag"]
-                rec["title"] = r["title"]
-                rec["figure_file_path"] = fp
-                rec["figure_sha256"] = r["figure_sha256"]
-                rec["slide_asset_path"] = (
-                    f"data/derived/figure_review_2026-09-21/slides/{r['asset']}"
-                )
-                rec["takeaway"] = r["takeaway"]
-                rec["caveat"] = r["caveat"]
-                new_figures_list.append(rec)
-            else:
-                ev_rel = r.get("evidence_path", "")
-                ev_sha = sha256_file(repo / ev_rel) if ev_rel and (repo / ev_rel).exists() else ""
-                rec = {
-                    "figure_id": new_fid,
-                    "slide_number": s_num,
-                    "deck_section": r["deck_section"],
-                    "analytical_arm": "cross_arm_synthesis",
-                    "owner": r["owner"],
-                    "tag": r["tag"],
-                    "title": r["title"],
-                    "figure_file_path": fp,
-                    "figure_sha256": r["figure_sha256"],
-                    "slide_asset_path": "data/derived/figure_review_2026-09-21/slides/"
-                    f"{r['asset']}",
-                    "generator_script_path": r["code_path"],
-                    "just_recipe": f"uv run python {r['code_path']}",
-                    "command_series": [
-                        "just download  # uv run python -m mtp.cli download",
-                        "just ingest  # uv run python -m mtp.cli ingest",
-                        "just study-tsvs  # uv run python -m mtp.cli study-tsvs",
-                        "just taxa-trait-matrix  # uv run python -m mtp.cli taxa-trait-matrix",
-                        "just study-trait-profiles  # uv run python -m mtp.cli "
-                        "study-trait-profiles",
-                        f"uv run python {r['code_path']}",
-                    ],
-                    "pipeline_step_ids": [
-                        "step_01_download",
-                        "step_02_ingest",
-                        "step_03_study_tsvs",
-                        "step_04_taxa_trait_matrix",
-                        "step_05_study_trait_profiles",
-                    ],
-                    "upstream_raw_inputs": [
-                        "data/raw/full_dump.csv",
-                        "data/raw/merged-kg_nodes.tsv",
-                        "data/raw/merged-kg_edges.tsv",
-                    ],
-                    "input_data_files": [ev_rel] if ev_rel else [],
-                    "input_data_sha256s": [ev_sha] if ev_sha else [],
-                    "methods_doc_path": r.get("methods_path", ""),
-                    "takeaway": r["takeaway"],
-                    "caveat": r["caveat"],
-                    "v1_slide_number": r.get("v1_slide", "NA"),
-                    "v2_slide_number": r.get("v2_slide", "NA"),
-                    "statistical_result_ids": [],
-                }
-                new_figures_list.append(rec)
+    for r in manifest_rows:
+        s_num = int(r["slide"])
+        new_fid = f"fig_slide_{s_num:03d}"
+        fp = r["figure_file_path"]
+        if fp in existing_by_fp:
+            rec = dict(existing_by_fp[fp])
+            old_id_to_new_id[rec["figure_id"]] = new_fid
+            rec["figure_id"] = new_fid
+            rec["slide_number"] = s_num
+            rec["deck_section"] = r["deck_section"]
+            rec["owner"] = r["owner"]
+            rec["tag"] = r["tag"]
+            rec["title"] = r["title"]
+            rec["figure_file_path"] = fp
+            rec["figure_sha256"] = r["figure_sha256"]
+            rec["slide_asset_path"] = f"data/derived/figure_review_2026-09-21/slides/{r['asset']}"
+            rec["takeaway"] = r["takeaway"]
+            rec["caveat"] = r["caveat"]
+            new_figures_list.append(rec)
+        else:
+            ev_rel = r.get("evidence_path", "")
+            ev_sha = sha256_file(repo / ev_rel) if ev_rel and (repo / ev_rel).exists() else ""
+            rec = {
+                "figure_id": new_fid,
+                "slide_number": s_num,
+                "deck_section": r["deck_section"],
+                "analytical_arm": "cross_arm_synthesis",
+                "owner": r["owner"],
+                "tag": r["tag"],
+                "title": r["title"],
+                "figure_file_path": fp,
+                "figure_sha256": r["figure_sha256"],
+                "slide_asset_path": f"data/derived/figure_review_2026-09-21/slides/{r['asset']}",
+                "generator_script_path": r["code_path"],
+                "just_recipe": f"uv run python {r['code_path']}",
+                "command_series": [
+                    "just download  # uv run python -m mtp.cli download",
+                    "just ingest  # uv run python -m mtp.cli ingest",
+                    "just study-tsvs  # uv run python -m mtp.cli study-tsvs",
+                    "just taxa-trait-matrix  # uv run python -m mtp.cli taxa-trait-matrix",
+                    "just study-trait-profiles  # uv run python -m mtp.cli study-trait-profiles",
+                    f"uv run python {r['code_path']}",
+                ],
+                "pipeline_step_ids": [
+                    "step_01_download",
+                    "step_02_ingest",
+                    "step_03_study_tsvs",
+                    "step_04_taxa_trait_matrix",
+                    "step_05_study_trait_profiles",
+                ],
+                "upstream_raw_inputs": [
+                    "data/raw/full_dump.csv",
+                    "data/raw/merged-kg_nodes.tsv",
+                    "data/raw/merged-kg_edges.tsv",
+                ],
+                "input_data_files": [ev_rel] if ev_rel else [],
+                "input_data_sha256s": [ev_sha] if ev_sha else [],
+                "methods_doc_path": r.get("methods_path", ""),
+                "takeaway": r["takeaway"],
+                "caveat": r["caveat"],
+                "v1_slide_number": r.get("v1_slide", "NA"),
+                "v2_slide_number": r.get("v2_slide", "NA"),
+                "statistical_result_ids": [],
+            }
+            new_figures_list.append(rec)
 
-        prov_doc["figures"] = new_figures_list
-        for stat_rec in prov_doc.get("statistical_results", []):
-            if "figure_ids" in stat_rec and isinstance(stat_rec["figure_ids"], list):
-                stat_rec["figure_ids"] = [
-                    old_id_to_new_id.get(fid, fid) for fid in stat_rec["figure_ids"]
-                ]
+    prov_doc["figures"] = new_figures_list
+    for stat_rec in prov_doc.get("statistical_results", []):
+        if "figure_ids" in stat_rec and isinstance(stat_rec["figure_ids"], list):
+            stat_rec["figure_ids"] = [
+                old_id_to_new_id.get(fid, fid) for fid in stat_rec["figure_ids"]
+            ]
 
-        with prov_yaml_path.open("w", encoding="utf-8") as f:
-            yaml.safe_dump(prov_doc, f, sort_keys=False, allow_unicode=True, width=120)
-        prov_synced = True
+    provenance_dir.mkdir(parents=True, exist_ok=True)
+    with prov_yaml_path.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(prov_doc, f, sort_keys=False, allow_unicode=True, width=120)
 
     validation = {
         "version": "v6",
@@ -2066,13 +2085,13 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         "appendix_section_slides": sum(1 for r in manifest_rows if r["deck_section"] == "Appendix"),
         "all_assets_exist_and_sha256_match_rerun": True,
         "all_slides_true_vector_svg": True,
-        "provenance_yaml_synced": prov_synced,
+        "provenance_yaml_synced": True,
         "outputs": {
             "manifest_v6": str(slides_dir / "slide_manifest_v6.tsv"),
             "manifest_default": str(slides_dir / "slide_manifest.tsv"),
             "html_v6": str(slides_dir / "selected_figures_v6.html"),
             "html_default": str(slides_dir / "selected_figures.html"),
-            "provenance_yaml": str(prov_yaml_path) if prov_synced else None,
+            "provenance_yaml": str(prov_yaml_path),
         },
     }
     (slides_dir / "deck_validation_v6.json").write_text(
@@ -2092,21 +2111,45 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        help=f"Where the deck, manifest and assets go (default: <input-root>/{DECK_DIR}/slides).",
+        default=REPO_ROOT / DECK_DIR / "slides",
+        help="Where the deck, manifest and assets go (default: this checkout's "
+        f"{DECK_DIR}/slides, whatever --input-root is).",
     )
     parser.add_argument(
         "--provenance-dir",
         type=Path,
-        help="Folder of figure_provenance_and_results.yaml, updated in place (default: "
-        f"<input-root>/{DECK_DIR}/provenance).",
+        default=REPO_ROOT / DECK_DIR / "provenance",
+        help=f"Where the updated {PROVENANCE_NAME} goes; it is read from the input root "
+        f"(default: this checkout's {DECK_DIR}/provenance).",
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace an existing deck. The deck is a gitignored output with no other copy, so "
+        "back up the slides folder first.",
+    )
+    parser.add_argument(
+        "--allow-contrast-version-mismatch",
+        action="store_true",
+        help=f"Build from contrast-orientation inputs other than {TYPED_CONTRAST_VERSION}, "
+        "whose numbers then disagree with the typed text (review builds only; #579).",
     )
     args = parser.parse_args(argv)
     repo = args.input_root.resolve()
-    build_deck(
-        repo,
-        args.output_dir or repo / DECK_DIR / "slides",
-        args.provenance_dir or repo / DECK_DIR / "provenance",
-    )
+    check_contrast_version(repo, args.allow_contrast_version_mismatch)
+    existing = [
+        path
+        for path in (
+            args.output_dir / "selected_figures_v6.html",
+            args.provenance_dir / PROVENANCE_NAME,
+        )
+        if path.exists()
+    ]
+    if existing and not args.overwrite:
+        raise SystemExit(
+            f"{existing[0]} exists; back it up and pass --overwrite to replace the deck"
+        )
+    build_deck(repo, args.output_dir, args.provenance_dir)
     return 0
 
 

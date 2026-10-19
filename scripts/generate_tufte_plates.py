@@ -24,6 +24,10 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PLATES_DIR = Path("data/derived/tufte_plates")
 CELLULOSE_DIR = Path("data/analysis/cellulose_decr")
+# Plates III and VII type numbers from this contrast classifier (569 oriented studies) beside
+# rows read from its tables; another version would contradict them (#579).
+TYPED_CONTRAST_VERSION = "contrast-orientation-v2"
+CONTRAST_PROVENANCE = Path("data/derived/contrast_orientation/contrast_orientation_provenance.json")
 
 # Tufte palette: muted, high-contrast, colorblind-safe ink on warm paper/clean white
 BG_COLOR = "#fcfbf8"
@@ -3314,11 +3318,37 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        help=f"Where the plates go (default: <input-root>/{PLATES_DIR}).",
+        default=REPO_ROOT / PLATES_DIR,
+        help=f"Where the plates go (default: this checkout's {PLATES_DIR}, whatever "
+        "--input-root is).",
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace existing plates. They are gitignored outputs with no other copy.",
+    )
+    parser.add_argument(
+        "--allow-contrast-version-mismatch",
+        action="store_true",
+        help=f"Draw from contrast-orientation inputs other than {TYPED_CONTRAST_VERSION} "
+        "(review builds only; #579).",
     )
     args = parser.parse_args(argv)
     repo = args.input_root.resolve()
-    out_dir = args.output_dir or repo / PLATES_DIR
+    provenance = repo / CONTRAST_PROVENANCE
+    version = (
+        json.loads(provenance.read_text(encoding="utf-8")).get("classifier_version")
+        if provenance.exists()
+        else None
+    )
+    if version != TYPED_CONTRAST_VERSION and not args.allow_contrast_version_mismatch:
+        raise SystemExit(
+            f"{provenance} records {version}, but Plates III and VII type numbers from "
+            f"{TYPED_CONTRAST_VERSION}; drawing them would mix the two (#579)."
+        )
+    out_dir = args.output_dir
+    if any(out_dir.glob("*.png")) and not args.overwrite:
+        raise SystemExit(f"{out_dir} has plates; back them up and pass --overwrite to replace them")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     setup_tufte_rc()
