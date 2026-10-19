@@ -1972,7 +1972,9 @@ input is the PD trait-taxa evidence from `just pd-trait-taxa`
 experiment condition and body site: 247 PD fecal profiles, 128 increased and 119
 decreased. `just pd-trait-taxa-heatmap` refuses evidence whose traits, trait
 directions, recorded PD fecal profile set or lollipop values differ from the
-current ones (#584, #649).
+current ones, or whose input files (`bugsigdb_taxa.tsv`, `taxa_trait_matrix.tsv`,
+`study_trait_profiles_wide.tsv`, the profile metadata and the lollipop summary)
+have changed since `just pd-trait-taxa` hashed them (#584, #649, #693).
 
 Each column carries the trait's observed direction in the six-trait lollipop,
 the sign of `increased_minus_decreased_mean_z` in
@@ -1985,7 +1987,10 @@ catabolic process (-0.70) are higher in decreased profiles. The trait and cell
 tables carry this as `trait_direction`. The column's `baseline Δz` is the
 figure's own paired, study-weighted contrast and can differ from the lollipop
 value: coccus shaped (+0.01) and sphere shaped (+0.10) are positive at baseline
-although both are negative on the lollipop.
+although both are negative on the lollipop. An asterisk marks those columns, and
+the trait table flags them in `baseline_opposes_lollipop`. A positive cell pushes
+the paired contrast toward increased profiles and a negative cell toward
+decreased profiles, whatever the column's arrow.
 
 Species whose six trait cells are all `low support` are omitted from the
 displayed heatmap, as are species whose six mean influences all lie between

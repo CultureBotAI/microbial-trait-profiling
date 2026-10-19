@@ -35,15 +35,27 @@ profiles (128 increased and 119 decreased). Each trait's observed direction, the
 `increased_minus_decreased_mean_z` in `pd_six_trait_direction_summary.tsv`, travels with it as
 the `trait_direction` column and as up and down arrows in the figures. Moderately halophilic,
 arsenate reduction and facultatively aerobic are higher in increased profiles; coccus shaped,
-sphere shaped and cellulose catabolic process are higher in decreased profiles.
+sphere shaped and cellulose catabolic process are higher in decreased profiles. In the influence
+heatmaps an asterisk marks a column whose paired baseline Δz has the opposite sign to the
+lollipop (coccus shaped and sphere shaped).
 
 `pd_six_trait_taxon_evidence_provenance.json` records the PD fecal profile set the evidence was
-built from (count and sha256 of the sorted profile ids) and each trait's mean-z difference.
-`just pd-trait-taxa-heatmap` and `just pd-trait-contributors` stop before writing when the
-current profiles, traits, directions or lollipop values differ from the recorded ones.
+built from (count and sha256 of the sorted profile ids), each trait's mean-z difference, and the
+sha256 of every file it read: `bugsigdb_taxa.tsv`, `taxa_trait_matrix.tsv`,
+`study_trait_profiles_wide.tsv`, `study_trait_profile_study_metadata.tsv` and
+`pd_six_trait_direction_summary.tsv`. `just pd-trait-taxa-heatmap` and
+`just pd-trait-contributors` stop before writing when the current profiles, traits, directions,
+lollipop values or input files differ from the recorded ones. `just pd-trait-contributors` also
+stops when the species heatmap's trait table no longer matches the lollipop, so run the
+recipes in order: `just pd-trait-taxa`, `just pd-trait-taxa-heatmap`, `just pd-trait-contributors`.
+
+`just pd-trait-taxa` stops when `pd_six_trait_direction_summary.tsv` no longer matches the
+current profiles, and names the command that rebuilds it
+(`uv run python scripts/create_pd_cellulose_analysis.py`).
 
 The contributor tables come from the Table 1 contribution ledger (#190) on the pinned KG in
-`data/kg-microbe`: 198 PD fecal profiles from human experiments with both directions. The same
+`data/kg-microbe` (check it with `just verify-pinned-kg`): 198 PD fecal profiles from human
+experiments with both directions. The same
 generator reproduces the contributor counts, shares and selected taxa that were committed before
 it existed; only the PD-versus-other-feces specificity columns change, to 247 PD and 3,357
 other fecal profiles.
