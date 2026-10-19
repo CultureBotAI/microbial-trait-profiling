@@ -93,7 +93,12 @@ provenance YAML against its LinkML schema and prints the PDF with headless Chrom
 (`just html-to-pdf`). The deck, its assets, the plates and the provenance YAML are
 gitignored local outputs, and the builder reads gitignored inputs as well (the
 earlier deck manifests, `svg_sources/`, figures under `data/derived/`), so a fresh
-clone cannot rebuild the deck (#573).
+clone cannot rebuild the deck (#573). Both builders write to the checkout that holds
+them, whatever `--input-root` points at. They refuse to replace an existing deck or
+plates without `--overwrite`; there is no other copy, so back up `slides/`,
+`provenance/` and `data/derived/tufte_plates/` first. They also refuse
+contrast-orientation inputs from a classifier other than the v2 their typed numbers
+describe, until #579 reads those numbers from the tables (#592).
 
 The [GPT Rosalind discussion and review](../docs/rosalind-six-trait-interpretation.md)
 archives proposed biological explanations for the six traits, with a separate
