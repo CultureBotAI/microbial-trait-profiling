@@ -24,6 +24,15 @@ reported source reconciliation must have zero mismatches. The adapter does not
 repeat that producer's reconciliation against unavailable full source tables;
 it preserves that report, its source hashes, and the verification scope.
 
+Issue #707 additionally requires the complete native producer artifact inventory,
+including each selected scenario's input counts and ORA profile output. Native
+composition and comparison table row counts must match the native result counts.
+The compact bundle's complete composition and ORA comparison counts must also
+match those native counts; its intentionally selected six-trait statistics table
+is not required to have the full composition table's row count. A bundle missing
+analysis products cannot acquire completed-result standing from a family inventory
+alone.
+
 The assessment sidecar keeps execution completion, code revision and dirty
 state, protocol and runtime metadata, source hashes,  diagnostic scenario and
 scope detail, and any scoped interpretation flags. A lineage-specific flag

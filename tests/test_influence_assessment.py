@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from mtp.influence_assessment import ASSESSMENT_VERSION
+from mtp.influence_assessment import ASSESSMENT_VERSION, NATIVE_RESULT_COUNTS
 from mtp.integrated_evidence import (
     ASSESSMENTS,
     AssessmentStatus,
@@ -19,6 +19,7 @@ from mtp.integrated_evidence import (
     write_view,
 )
 from mtp.paths import file_sha256
+from mtp.taxon_contributions import write_table
 
 
 def _write(path: Path, content: object) -> Path:
@@ -57,6 +58,32 @@ def _native(tmp_path: Path, *, completed: bool = True) -> Path:
         "runtime": {"python": "3.11"},
     }
     if completed:
+        outputs = {family.name: file_sha256(family)}
+        inputs = {scenarios.name: file_sha256(scenarios)}
+        for name, count in NATIVE_RESULT_COUNTS.items():
+            if count == "ora_families":
+                continue
+            path = tmp_path / name
+            write_table(
+                path,
+                ["trait", "status"],
+                [{"trait": f"T{i}", "status": "tested"} for i in range(12)],
+            )
+            outputs[name] = file_sha256(path)
+        summary = tmp_path / "native_summary.md"
+        summary.write_text("Native results\n", encoding="utf-8")
+        outputs[summary.name] = file_sha256(summary)
+        for scenario in ("baseline", "exclude_genus_NCBITaxon:561"):
+            directory = tmp_path / scenario.replace(":", "_")
+            directory.mkdir()
+            for name, group in (
+                ("removed_source_counts.tsv.gz", inputs),
+                ("profile_counts.tsv.gz", inputs),
+                ("native_ora_profiles.tsv.gz", outputs),
+            ):
+                path = directory / name
+                write_table(path, ["trait", "status"], [{"trait": "T", "status": "tested"}])
+                group[path.relative_to(tmp_path).as_posix()] = file_sha256(path)
         content["results"] = {
             "scenarios": 2,
             "scopes": 1,
@@ -64,8 +91,8 @@ def _native(tmp_path: Path, *, completed: bool = True) -> Path:
             "composition_comparisons": 12,
             "ora_comparisons": 12,
             "ora_families": 4,
-            "input_sha256": {scenarios.name: file_sha256(scenarios)},
-            "output_sha256": {family.name: file_sha256(family)},
+            "input_sha256": inputs,
+            "output_sha256": outputs,
         }
     return _write(tmp_path / "native_manifest.json", content)
 
@@ -99,6 +126,9 @@ def _review(native_path: Path) -> Path:
         else:
             with gzip.open(path, "wt", encoding="utf-8") as handle:
                 handle.write("trait\tstatus\nexample\ttested\n")
+                if "comparison" in name:
+                    handle.write("example\ttested\n" * 11)
+                    row_count = 12
         tables[name] = {"rows": row_count, "sha256": file_sha256(path)}
     return _write(
         root / "publication_manifest.json",
@@ -250,6 +280,68 @@ def test_artifact_path_cannot_escape_the_native_directory(tmp_path: Path) -> Non
     content["results"]["output_sha256"]["../escape.tsv"] = "a" * 64
     _write(path, content)
     assert "artifact escapes" in _read(path).default
+
+
+@pytest.mark.parametrize(
+    ("group", "name"),
+    [
+        ("input_sha256", "baseline/profile_counts.tsv.gz"),
+        ("input_sha256", "exclude_genus_NCBITaxon_561/removed_source_counts.tsv.gz"),
+        ("output_sha256", "native_composition.tsv.gz"),
+        ("output_sha256", "native_composition_comparison.tsv"),
+        ("output_sha256", "native_ora_fold_comparison.tsv"),
+        ("output_sha256", "baseline/native_ora_profiles.tsv.gz"),
+    ],
+)
+@pytest.mark.parametrize("publication_input", [False, True])
+def test_missing_declared_native_artifact_is_not_completed_evidence(
+    tmp_path: Path, group: str, name: str, publication_input: bool
+) -> None:
+    native = _native(tmp_path)
+    content = json.loads(native.read_text())
+    del content["results"][group][name]
+    _write(native, content)
+    (tmp_path / name).unlink()
+    path = _review(native) if publication_input else native
+    status = _read(path)
+    assert "lacks required artifacts" in status.default
+    assert name in status.default
+    assert not status.verdicts
+
+
+@pytest.mark.parametrize("name", list(NATIVE_RESULT_COUNTS)[:-1])
+def test_native_result_counts_must_match_actual_tables(tmp_path: Path, name: str) -> None:
+    native = _native(tmp_path)
+    content = json.loads(native.read_text())
+    content["results"][NATIVE_RESULT_COUNTS[name]] += 1
+    _write(native, content)
+    assert f"native table row count disagrees with manifest: {name}" in _read(native).default
+
+
+@pytest.mark.parametrize(
+    "name", ["native_composition_comparison.tsv.gz", "native_ora_fold_comparison.tsv.gz"]
+)
+def test_self_consistent_truncated_compact_table_disagrees_with_native_results(
+    tmp_path: Path, name: str
+) -> None:
+    native = _native(tmp_path)
+    review = _review(native)
+    table = review.parent / name
+    write_table(table, ["trait", "status"], [{"trait": "T", "status": "tested"}])
+    content = json.loads(review.read_text())
+    content["tables"][name] = {"rows": 1, "sha256": file_sha256(table)}
+    _write(review, content)
+    assert "publication table row count disagrees with native results" in _read(review).default
+
+
+def test_family_scenarios_must_match_selected_scenarios(tmp_path: Path) -> None:
+    native = _native(tmp_path)
+    scenarios = tmp_path / "scenarios.tsv"
+    scenarios.write_text("scenario\tstatus\nexclude_other\trun\n", encoding="utf-8")
+    content = json.loads(native.read_text())
+    content["results"]["input_sha256"][scenarios.name] = file_sha256(scenarios)
+    _write(native, content)
+    assert "disagree with the selected scenario inventory" in _read(native).default
 
 
 @pytest.mark.parametrize("mutation", ["native_hash", "reconciliation", "table_hash", "row_count"])

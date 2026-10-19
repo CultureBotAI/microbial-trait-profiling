@@ -21,6 +21,12 @@ Detail = tuple[str, str, str, str]
 ASSESSMENT_VERSION = "taxon-influence-assessment-v1"
 NATIVE_VERSION = "190-native-v2"
 INPUT_NAMES = ("study_trait_profiles_wide.tsv", "experiments.tsv")
+NATIVE_RESULT_COUNTS = {
+    "native_composition.tsv.gz": "composition_rows",
+    "native_composition_comparison.tsv": "composition_comparisons",
+    "native_ora_fold_comparison.tsv": "ora_comparisons",
+    "native_ora_families.tsv": "ora_families",
+}
 
 
 @dataclass(frozen=True)
@@ -171,6 +177,34 @@ def _scope_detail(path: Path, results: Mapping[str, object]) -> list[Detail]:
     return detail
 
 
+def _result_inventory(results: Mapping[str, object], family_path: Path) -> None:
+    """Require the complete producer inventory, including when reading a compact copy."""
+    scenarios = {row["scenario"] for row in _rows(family_path)}
+    selected = [
+        row["scenario"]
+        for row in _rows(family_path.parent / "scenarios.tsv")
+        if row["status"] == "run"
+    ]
+    if len(set(selected)) != len(selected) or scenarios != {"baseline", *selected}:
+        raise ValueError("native family scenarios disagree with the selected scenario inventory")
+    inputs = {"scenarios.tsv"}
+    outputs = {*NATIVE_RESULT_COUNTS, "native_summary.md"}
+    for scenario in scenarios:
+        directory = scenario.replace(":", "_")
+        inputs.update(
+            f"{directory}/{name}"
+            for name in ("removed_source_counts.tsv.gz", "profile_counts.tsv.gz")
+        )
+        outputs.add(f"{directory}/native_ora_profiles.tsv.gz")
+    for group, required in (("input_sha256", inputs), ("output_sha256", outputs)):
+        declared = _hashes(results.get(group), f"results.{group}")
+        missing = required.difference(declared)
+        if missing:
+            raise ValueError(
+                f"native {group} lacks required artifacts: {', '.join(sorted(missing))}"
+            )
+
+
 def _review(
     path: Path, native_path: Path, native: Mapping[str, object]
 ) -> tuple[list[Detail], Path]:
@@ -204,6 +238,16 @@ def _review(
         if len(_rows(table)) != row_count:
             raise ValueError(f"publication table row count disagrees with manifest: {name}")
     results = _object(native.get("results"), "results")
+    for name, count in NATIVE_RESULT_COUNTS.items():
+        if name == "native_composition.tsv.gz":
+            # The published composition table deliberately retains only six traits.
+            continue
+        published_name = name if name.endswith("families.tsv") else f"{name}.gz"
+        entry = _object(tables[published_name], f"tables.{published_name}")
+        if entry["rows"] != results.get(count):
+            raise ValueError(
+                f"publication table row count disagrees with native results: {published_name}"
+            )
     output_hashes = _hashes(results.get("output_sha256"), "results.output_sha256")
     family = _artifact(
         path.parent, "native_ora_families.tsv", output_hashes["native_ora_families.tsv"]
@@ -292,6 +336,11 @@ def _native(
         )
         detail.append(("publication", "review", "status", "not supplied"))
     detail += _scope_detail(family_path, results)
+    _result_inventory(results, family_path)
+    if review_path is None:
+        for name, count in NATIVE_RESULT_COUNTS.items():
+            if len(_rows(path.parent / name)) != results[count]:
+                raise ValueError(f"native table row count disagrees with manifest: {name}")
     return InfluenceAssessment(
         {},
         f"native influence results reported; no procedure-level verdict supplied {issue}",
