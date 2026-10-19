@@ -768,8 +768,9 @@ def pd_direction_caveat(model: dict[str, str], positive: dict[str, str]) -> str:
         "(pd_cellulose_interaction_model.tsv), the extra PD effect in decreased feces is "
         f"{float(model['coefficient']):+.2f} cellulose z (95% CI {float(model['ci_low']):+.2f} "
         f"to {float(model['ci_high']):+.2f}, p = {p_text(float(model['p_value']))}), and "
-        f"{float(positive['coefficient']):+.2f} (p = {p_text(float(positive['p_value']))}) for "
-        f"the share of profiles with cellulose z > 0 that the right panel plots, so {verdict}."
+        f"{100 * float(positive['coefficient']):+.0f} percentage points (p = "
+        f"{p_text(float(positive['p_value']))}) in the share of profiles with cellulose z > 0 "
+        f"that the right panel plots, so {verdict}."
     )
 
 

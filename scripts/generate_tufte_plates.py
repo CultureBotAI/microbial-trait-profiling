@@ -1573,12 +1573,13 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         ),
         ("METPO:1000668", "[Morphology]  Coccus shaped ★", "Morphology"),
         ("METPO:1000683", "Sphere shaped ★", "Morphology"),
-        # The tag sits on the shortest label so the row fits the left margin.
-        ("METPO:2000006|CHEBI:25115", "[Carbon sources]  Malate", "Carbon sources"),
-        ("METPO:2000006|CHEBI:17596", "Inosine", "Carbon sources"),
-        ("METPO:2000006|CHEBI:16808", "2-Dehydro-D-gluconate", "Carbon sources"),
-        ("METPO:2000006|CHEBI:320055", "Methyl β-D-glucopyranoside", "Carbon sources"),
-        ("METPO:2000103|GO:0046274", "Lignin catabolic process", "Carbon sources"),
+        # Carbon sources and lignin catabolism; the tag sits on the shortest label so the
+        # row fits the left margin.
+        ("METPO:2000006|CHEBI:25115", "[Carbon use]  Malate", "Carbon use"),
+        ("METPO:2000006|CHEBI:17596", "Inosine", "Carbon use"),
+        ("METPO:2000006|CHEBI:16808", "2-Dehydro-D-gluconate", "Carbon use"),
+        ("METPO:2000006|CHEBI:320055", "Methyl β-D-glucopyranoside", "Carbon use"),
+        ("METPO:2000103|GO:0046274", "Lignin catabolic process", "Carbon use"),
         # Decreased Guilds
         (
             "METPO:2000103|GO:0030245",

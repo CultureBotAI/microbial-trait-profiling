@@ -252,11 +252,15 @@ deck_schema := "data/derived/figure_review_2026-09-21/provenance/figure_provenan
 figure-review-deck *ARGS:
 	#!/usr/bin/env bash
 	set -euo pipefail
+	overwrite=0
 	for arg in "$@"; do
 		case "$arg" in
 			--output-dir* | --provenance-dir*)
 				echo "set deck_slides= and deck_provenance= instead of $arg" >&2
 				exit 1
+				;;
+			--overwrite)
+				overwrite=1
 				;;
 		esac
 	done
@@ -266,8 +270,13 @@ figure-review-deck *ARGS:
 	fi
 	slides="{{deck_slides}}"
 	provenance="{{deck_provenance}}"
+	# The status describes the deck it was written for and is rewritten only if every step
+	# passes. A deck about to be replaced loses it first, so a build that fails partway
+	# cannot leave it beside a half-rebuilt deck; a refused build keeps it.
+	if [ "$overwrite" = 1 ]; then
+		rm -f "$slides/deck_build_status.json"
+	fi
 	uv run python scripts/build_slide_deck.py --output-dir "$slides" --provenance-dir "$provenance" "$@"
-	# The previous status describes the previous deck; it is rewritten only if every step passes.
 	rm -f "$slides/deck_build_status.json"
 	uv run linkml-validate -s "{{deck_schema}}" "$provenance/figure_provenance_and_results.yaml"
 	just html-to-pdf "$slides/selected_figures_v6.html" "$slides/microbial-trait-profiling_v6.pdf"
