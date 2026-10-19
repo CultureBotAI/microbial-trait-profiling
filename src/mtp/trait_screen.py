@@ -877,19 +877,36 @@ def _report(result: ScreenResult, vintage: str | None) -> str:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    from mtp.workflow.consumers import (
+        bind_count_arguments,
+        preflight_consumer_outputs,
+        write_consumer_record,
+    )
+
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--profile-input", type=Path, default=DEFAULT_PROFILE_PATH)
-    parser.add_argument("--experiments-input", type=Path, default=DEFAULT_EXPERIMENTS_PATH)
-    parser.add_argument("--full-dump-input", type=Path, default=DEFAULT_FULL_DUMP_PATH)
+    parser.add_argument("--core-run", type=Path, help="Verified core workflow run manifest")
+    parser.add_argument("--profile-input", type=Path)
+    parser.add_argument("--experiments-input", type=Path)
+    parser.add_argument("--full-dump-input", type=Path)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument(
         "--column-labels",
         type=Path,
-        default=DEFAULT_COLUMN_LABELS_PATH,
         help="Trait matrix column index; candidates fall back to their CURIE without it",
     )
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
+    bundle = bind_count_arguments(args)
+    if bundle is not None:
+        preflight_consumer_outputs(
+            bundle,
+            args.output_dir / "core_consumption.json",
+            output_directory=args.output_dir,
+        )
+    args.profile_input = args.profile_input or DEFAULT_PROFILE_PATH
+    args.experiments_input = args.experiments_input or DEFAULT_EXPERIMENTS_PATH
+    args.full_dump_input = args.full_dump_input or DEFAULT_FULL_DUMP_PATH
+    args.column_labels = args.column_labels or DEFAULT_COLUMN_LABELS_PATH
 
     columns = screen_candidates(args.profile_input)
     slots = candidate_slots(columns)
@@ -915,6 +932,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         corpus_stats=stats,
         code_commit=args.code_commit,
     )
+    if bundle is not None:
+        paths.append(
+            write_consumer_record(
+                bundle,
+                args.output_dir / "core_consumption.json",
+                consumer="mtp.trait_screen",
+                outputs=paths,
+            )
+        )
     for path in paths:
         print(path)
     return 0

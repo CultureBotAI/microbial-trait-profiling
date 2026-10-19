@@ -1,0 +1,220 @@
+id: bugsigdb-core
+version: '1'
+description: >-
+  Offline BugSigDB full-dump to raw core products. The core preserves all
+  annotation features including culture-media annotations and incomplete pairs.
+  Count and ORA profiles have distinct, explicit units and host policies.
+parameters:
+  - name: source_mode
+    default: unknown
+  - name: count_host_species
+    default: all
+  - name: ora_host_species
+    default: Homo sapiens
+products:
+  - id: raw_dump
+    kind: raw_csv
+    storage_kind: file
+    format: csv
+    external: true
+    filename: full_dump.csv
+    unit: literature_signature_record
+    cohort: as_supplied
+  - id: kg_edges
+    kind: kg_edges
+    storage_kind: file
+    format: tsv
+    external: true
+    filename: merged-kg_edges.tsv
+    unit: knowledge_graph_edge
+    cohort: as_supplied
+  - id: kg_nodes
+    kind: kg_nodes
+    storage_kind: file
+    format: tsv
+    external: true
+    filename: merged-kg_nodes.tsv
+    unit: knowledge_graph_node
+    cohort: as_supplied
+  - id: source_identity
+    kind: source_identity
+    schema_ref: schema/core_products.yaml#SourceIdentity
+    storage_kind: file
+    format: json
+    filename: provenance/source_identity.json
+    unit: consumed_source_file
+    cohort: as_supplied
+  - id: studies
+    kind: study_collection
+    schema_ref: schema/mtp.yaml#Study
+    storage_kind: collection
+    format: yaml
+    filename: studies
+    unit: study
+    cohort: all_hosts
+    coverage_policy: exact_current_ingest_collection
+  - id: ingest_log
+    kind: ingest_log
+    storage_kind: file
+    format: json
+    filename: derived/ingest_log.json
+    unit: ingest_event
+    cohort: all_hosts
+  - id: study_table
+    kind: study_table
+    schema_ref: schema/core_products.yaml#StudyTableRow
+    storage_kind: file
+    format: tsv
+    filename: derived/studies.tsv
+    unit: study
+    cohort: all_hosts
+  - id: experiments
+    kind: experiment_table
+    schema_ref: schema/core_products.yaml#ExperimentTableRow
+    storage_kind: file
+    format: tsv
+    filename: derived/experiments.tsv
+    unit: experiment
+    cohort: all_hosts
+  - id: experiment_ontology_terms
+    kind: ontology_term_table
+    schema_ref: schema/core_products.yaml#ExperimentOntologyTermRow
+    storage_kind: file
+    format: tsv
+    filename: derived/experiment_ontology_terms.tsv
+    unit: experiment_ontology_annotation
+    cohort: all_hosts
+  - id: signatures
+    kind: signature_table
+    schema_ref: schema/core_products.yaml#SignatureTableRow
+    storage_kind: file
+    format: tsv
+    filename: derived/signatures.tsv
+    unit: literature_signature
+    cohort: all_hosts
+  - id: reported_taxa
+    kind: reported_taxa
+    schema_ref: schema/core_products.yaml#TaxonOccurrenceRow
+    storage_kind: file
+    format: tsv
+    filename: derived/bugsigdb_taxa.tsv
+    unit: reported_taxon_occurrence
+    cohort: all_hosts
+    coverage_policy: preserve_repeated_occurrences
+  - id: taxon_profiles_wide
+    kind: taxon_profile_wide
+    storage_kind: file
+    format: tsv
+    filename: derived/taxon_profiles_wide.tsv
+    unit: taxon_name_occurrence
+    cohort: all_hosts
+  - id: taxon_profiles_long
+    kind: taxon_profile_long
+    storage_kind: file
+    format: tsv
+    filename: derived/taxon_profiles_long.tsv
+    unit: taxon_name_occurrence
+    cohort: all_hosts
+  - id: taxa_matrix
+    kind: taxa_matrix
+    storage_kind: file
+    format: tsv
+    filename: derived/taxa_trait_matrix.tsv
+    unit: trait_bearing_source_taxa_at_or_below_reported_taxon
+    cohort: all_reported_taxa
+    feature_policy: include_mediadive
+    coverage_policy: all_reported_taxa_including_zero_annotation_rows
+  - id: feature_metadata
+    kind: feature_metadata
+    storage_kind: file
+    format: tsv
+    filename: derived/taxa_trait_matrix_columns.tsv
+    unit: annotation_feature
+    cohort: all_reported_taxa
+    feature_policy: include_mediadive
+  - id: feature_catalog
+    kind: feature_catalog
+    schema_ref: schema/core_products.yaml#FeatureDefinition
+    storage_kind: file
+    format: tsv
+    filename: derived/feature_catalog.tsv
+    unit: annotation_feature
+    cohort: all_reported_taxa
+    feature_policy: include_mediadive
+  - id: count_profiles
+    kind: count_profiles
+    schema_ref: schema/core_products.yaml#CountProfileRow
+    storage_kind: file
+    format: tsv
+    filename: derived/study_trait_profiles_wide.tsv
+    unit: rolled_up_source_taxon_count
+    cohort: all
+    cohort_parameter: count_host_species
+    feature_policy: include_mediadive
+    coverage_policy: count_input_v1
+  - id: count_coverage
+    kind: profile_coverage
+    schema_ref: schema/core_products.yaml#ProfileCoverageRecord
+    storage_kind: file
+    format: tsv
+    filename: derived/study_trait_profiles_coverage.tsv
+    unit: distinct_reported_taxon_lookup
+    cohort: all
+    cohort_parameter: count_host_species
+    feature_policy: include_mediadive
+    coverage_policy: count_input_v1
+  - id: ora_profiles
+    kind: ora_profiles
+    schema_ref: schema/core_products.yaml#ORAProfileRow
+    storage_kind: file
+    format: tsv
+    filename: derived/study_trait_profiles_ora_wide.tsv
+    unit: distinct_matched_reported_taxon_count
+    cohort: Homo sapiens
+    cohort_parameter: ora_host_species
+    feature_policy: include_mediadive
+    coverage_policy: count_input_v1
+  - id: ora_coverage
+    kind: profile_coverage
+    schema_ref: schema/core_products.yaml#ProfileCoverageRecord
+    storage_kind: file
+    format: tsv
+    filename: derived/study_trait_profiles_ora_coverage.tsv
+    unit: distinct_reported_taxon_lookup
+    cohort: Homo sapiens
+    cohort_parameter: ora_host_species
+    feature_policy: include_mediadive
+    coverage_policy: count_input_v1
+steps:
+  - id: identify_sources
+    operation: identify_sources
+    inputs: [raw_dump, kg_edges, kg_nodes]
+    outputs: [source_identity]
+    parameters: [source_mode]
+  - id: ingest
+    operation: ingest
+    inputs: [raw_dump]
+    outputs: [studies, ingest_log]
+    depends_on: [identify_sources]
+  - id: export_tables
+    operation: export_tables
+    inputs: [studies]
+    outputs: [study_table, experiments, experiment_ontology_terms, signatures, reported_taxa, taxon_profiles_wide, taxon_profiles_long]
+  - id: taxa_matrix
+    operation: taxa_matrix
+    inputs: [reported_taxa, kg_edges, kg_nodes]
+    outputs: [taxa_matrix, feature_metadata]
+  - id: feature_catalog
+    operation: feature_catalog
+    inputs: [feature_metadata, taxa_matrix]
+    outputs: [feature_catalog]
+  - id: count_profiles
+    operation: count_profiles
+    inputs: [studies, taxa_matrix, experiments, signatures, reported_taxa, feature_catalog]
+    outputs: [count_profiles, count_coverage]
+    parameters: [count_host_species]
+  - id: ora_profiles
+    operation: ora_profiles
+    inputs: [studies, taxa_matrix, experiments, signatures, reported_taxa, feature_catalog]
+    outputs: [ora_profiles, ora_coverage]
+    parameters: [ora_host_species]

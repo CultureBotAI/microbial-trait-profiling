@@ -113,6 +113,8 @@ def generate_tables(
     study_dir: Path = STUDY_DATA_DIR,
     output_dir: Path = DERIVED_DATA_DIR,
     profile_key: str = "taxon_name",
+    *,
+    output_paths: GeneratedTables | None = None,
 ) -> GeneratedTables:
     """Flatten YAML study records into multiple TSV tables."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -238,7 +240,7 @@ def generate_tables(
         )
 
     feature_name_list = sorted(feature_names)
-    tables = GeneratedTables(
+    tables = output_paths or GeneratedTables(
         studies=output_dir / "studies.tsv",
         experiments=output_dir / "experiments.tsv",
         experiment_ontology_terms=output_dir / "experiment_ontology_terms.tsv",
@@ -247,6 +249,16 @@ def generate_tables(
         taxon_profiles_wide=output_dir / "taxon_profiles_wide.tsv",
         taxon_profiles_long=output_dir / "taxon_profiles_long.tsv",
     )
+    for path in (
+        tables.studies,
+        tables.experiments,
+        tables.experiment_ontology_terms,
+        tables.signatures,
+        tables.taxa,
+        tables.taxon_profiles_wide,
+        tables.taxon_profiles_long,
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
 
     _write_dict_rows(
         tables.studies,
