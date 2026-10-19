@@ -57,7 +57,7 @@ See `pd_cellulose_taxon_driver_bar.png`, `pd_cellulose_taxon_six_trait_heatmap.p
 
 ## Generated Files
 
-The file names predate the current figure titles; the titles describe what each figure shows.
+`just pd-cellulose-analysis` writes these files, after `just six-shared-trait-sankeys` has written the individual-condition Sankey edge tables it reads. The file names predate the current figure titles; the titles describe what each figure shows.
 
 - `pd_cellulose_direction_specificity.png`: PD fecal profiles with cellulose z > 0 by signature direction, and PD vs other feces.
 - `pd_six_trait_direction_lollipop.png`: all-six-trait PD feces direction contrast.

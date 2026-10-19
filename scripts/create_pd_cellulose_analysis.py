@@ -32,6 +32,7 @@ CELLULOSE_ID = "METPO:2000103|GO:0030245"
 CELLULOSE_LABEL = "cellulose catabolic process"
 DIRECTION_LABELS = {"inc": "increased", "dec": "decreased"}
 TAXA_DIRECTION_TO_PROFILE = {"increased": "inc", "decreased": "dec"}
+RECIPE = "just pd-cellulose-analysis"
 # Writes the individual-condition Sankey edge tables this script reads.
 SANKEY_RECIPE = "just six-shared-trait-sankeys"
 
@@ -82,10 +83,16 @@ def _listing(items: list[str]) -> str:
 
 
 def save_figure(fig: plt.Figure, output_path: Path) -> None:
-    """Save a figure as PNG and SVG."""
+    """Save a figure as PNG and SVG; the SVG has fixed ids and no date, so reruns match."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=300, bbox_inches="tight", facecolor="white")
-    fig.savefig(output_path.with_suffix(".svg"), bbox_inches="tight", facecolor="white")
+    with plt.rc_context({"svg.hashsalt": output_path.stem}):
+        fig.savefig(
+            output_path.with_suffix(".svg"),
+            bbox_inches="tight",
+            facecolor="white",
+            metadata={"Date": None},
+        )
     plt.close(fig)
 
 
@@ -1244,8 +1251,9 @@ def write_interpretations(
             "",
             "## Generated Files",
             "",
-            "The file names predate the current figure titles; the titles describe what "
-            "each figure shows.",
+            f"`{RECIPE}` writes these files, after `{SANKEY_RECIPE}` has written the "
+            "individual-condition Sankey edge tables it reads. The file names predate the "
+            "current figure titles; the titles describe what each figure shows.",
             "",
             "- `pd_cellulose_direction_specificity.png`: PD fecal profiles with cellulose "
             "z > 0 by signature direction, and PD vs other feces.",

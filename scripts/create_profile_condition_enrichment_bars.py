@@ -381,12 +381,14 @@ def focus_delta_sort_label(focus_direction: str) -> str:
     """Return a readable description of the default focus-delta ranking."""
     focus_label = DIRECTION_LABELS[focus_direction]
     comparator_label = DIRECTION_LABELS[comparator_direction(focus_direction)]
-    return f"how much stronger selected traits are in {focus_label} than {comparator_label}"
+    return (
+        f"the mean number of selected traits with z > 0 in {focus_label} minus {comparator_label}"
+    )
 
 
 def focus_signal_panel_title(focus_direction: str) -> str:
     """Return a plain-language title for focus-delta signal panels."""
-    return f"Trait signal stronger in {DIRECTION_LABELS[focus_direction]}"
+    return f"More selected traits with z > 0 in {DIRECTION_LABELS[focus_direction]}"
 
 
 def focus_sort_label(focus_direction: str, sort_by: str) -> str:
@@ -1189,9 +1191,9 @@ def write_readme(
         )
     lines += [
         f"- `condition_{focus_label}_profile_signal_diagram.png`: two-panel "
-        "diagram combining direction-specific trait signal and coverage.",
+        "diagram combining the between-direction trait-signal difference and coverage.",
         f"- `condition_{focus_label}_signal_vs_coverage_scatter.png`: uncapped "
-        "scatterplot of direction-specific signal difference versus positive-signal "
+        "scatterplot of the between-direction signal difference versus positive-signal "
         "profile coverage.",
         f"- `condition_{focus_label}_signal_vs_coverage_scatter.tsv`: full data table "
         "used by the scatterplot.",

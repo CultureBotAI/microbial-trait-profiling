@@ -13,6 +13,12 @@ See [the interpretation guide](pd_ecological_reporter_figures.md) for definition
 **ecological reporter** and **ecological-reporter composite**, a panel-by-panel explanation, and
 details of the second panel's axes.
 
+`just pd-cellulose-analysis` writes the `pd_cellulose_*` and `pd_six_trait_direction_*` outputs
+and [interpretations.md](interpretations.md). It reads the individual-condition Sankey edge
+tables from `just six-shared-trait-sankeys` and stops when they no longer match the profile
+inputs. `just pd-ecological-reporter-combined` writes the `pd_ecological_reporter_combined_*`
+tables and figure, and the numbers block of the interpretation guide.
+
 ## Outputs not yet relabelled (#555)
 
 Profiles now take their own experiment's condition and body site. The `pd_cellulose_*`,

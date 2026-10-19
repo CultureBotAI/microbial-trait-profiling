@@ -615,11 +615,12 @@ the direction-specific trait-signal delta from
 `condition_depleted_trait_signal_bar.png`. Panel B is the profile-coverage
 guardrail from `condition_depleted_profile_coverage_bar.png`. The row order is
 shared between panels, so the reader can compare depletion-bias magnitude and
-profile/study support directly for each condition. Panel A is titled "Trait
-signal stronger in decreased profiles", uses purple bars for the trait-signal
-difference, and includes a legend entry for that encoding. Hatched rows denote
-limited study support. The subtitle describes the ranking as how much stronger
-selected traits are in decreased profiles than increased profiles.
+profile/study support directly for each condition. Panel A is titled "More
+selected traits with z > 0 in decreased profiles", uses purple bars for the
+trait-signal difference, and includes a legend entry for that encoding. Hatched
+rows denote limited study support. The subtitle describes the ranking as the
+mean number of selected traits with z > 0 in decreased profiles minus increased
+profiles.
 
 Interpretation: this is the recommended summary figure when presenting
 depleted conditions from the generic profile-condition bar workflow. Panel A

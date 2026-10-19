@@ -317,3 +317,22 @@ def test_taxon_panel_keeps_genus_and_species_and_marks_unannotated_cells() -> No
     unannotated = cell.loc[("sp1", "cellulose catabolic process")]
     assert not bool(unannotated["trait_annotated"])
     assert unannotated["blank_reason"] == "no annotation in local taxa-trait matrix"
+
+
+def test_figure_note_numbers_match_the_committed_tables() -> None:
+    summary = pd.read_csv(reporter.SUMMARY_PATH, sep="\t")
+    selection = pd.read_csv(reporter.SELECTION_PATH, sep="\t")
+    note = reporter.FIGURES_NOTE_PATH.read_text(encoding="utf-8")
+    block = note.split(reporter.NUMBERS_BEGIN)[1].split(reporter.NUMBERS_END)[0]
+    assert block.strip() == reporter.reporter_numbers(summary, selection)
+
+
+def test_writing_the_numbers_replaces_only_the_generated_block(tmp_path: Path) -> None:
+    begin, end = reporter.NUMBERS_BEGIN, reporter.NUMBERS_END
+    note = tmp_path / "note.md"
+    note.write_text(f"before\n{begin}\nold\n{end}\nafter\n", encoding="utf-8")
+    reporter.write_reporter_numbers(note, "- new")
+    assert note.read_text(encoding="utf-8") == f"before\n{begin}\n- new\n{end}\nafter\n"
+    note.write_text("no block\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="no generated numbers block"):
+        reporter.write_reporter_numbers(note, "- new")

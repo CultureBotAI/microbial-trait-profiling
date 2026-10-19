@@ -39,6 +39,9 @@ STUDY_CONTRASTS_PATH = OUTPUT_DIR / f"{STEM}_study_contrasts.tsv"
 TAXON_PANEL_PATH = OUTPUT_DIR / f"{STEM}_taxon_panel.tsv"
 SELECTION_PATH = OUTPUT_DIR / f"{STEM}_condition_selection.tsv"
 OUTPUT_PATH = OUTPUT_DIR / f"{STEM}.png"
+FIGURES_NOTE_PATH = OUTPUT_DIR / "pd_ecological_reporter_figures.md"
+NUMBERS_BEGIN = "<!-- BEGIN numbers written by `just pd-ecological-reporter-combined` -->"
+NUMBERS_END = "<!-- END numbers written by `just pd-ecological-reporter-combined` -->"
 
 PD_CONDITION = "Parkinson's disease"
 DIRECTION_LABELS = {"inc": "increased", "dec": "decreased"}
@@ -555,6 +558,63 @@ def _specificity_coordinates(
     return coordinates.dropna().reset_index(drop=True)
 
 
+def reporter_numbers(summary: pd.DataFrame, selection: pd.DataFrame) -> str:
+    """Render the figure note's numbers from the summary and condition-selection tables."""
+    selected = selection["condition"].astype(str).tolist()
+    coordinates = _specificity_coordinates(summary, selected).set_index("condition")
+    upper_right = coordinates[
+        coordinates["cellulose_decreased_skew"].gt(0)
+        & coordinates["increased_side_composite"].gt(0)
+    ]
+    rows = summary.set_index(["condition", "trait"])
+
+    def contrast(condition: str, trait: str) -> float:
+        return float(rows.at[(condition, trait), "study_weighted_mean_contrast"])
+
+    def interval(trait: str) -> str:
+        low = float(rows.at[(PD_CONDITION, trait), "ci_low"])
+        high = float(rows.at[(PD_CONDITION, trait), "ci_high"])
+        return f"`{low:+.3f}` to `{high:+.3f}`"
+
+    others = [condition for condition in upper_right.index if condition != PD_CONDITION]
+    larger_reporter = sum(
+        contrast(condition, REPORTER_COMPOSITE) > contrast(PD_CONDITION, REPORTER_COMPOSITE)
+        for condition in others
+    )
+    larger_three_trait = sum(
+        contrast(condition, THREE_TRAIT_COMPOSITE) > contrast(PD_CONDITION, THREE_TRAIT_COMPOSITE)
+        for condition in others
+    )
+    studies = int(rows.at[(PD_CONDITION, CELLULOSE), "paired_study_count"])
+    pd_in_quadrant = "PD among them" if PD_CONDITION in upper_right.index else "PD not among them"
+    return "\n".join(
+        [
+            f"- Qualifying fecal conditions in panels A and B: `{len(selected)}`.",
+            f"- In panel B's upper-right quadrant: `{len(upper_right)}` of the `{len(selected)}`, "
+            f"{pd_in_quadrant}. Of the other `{len(others)}`, `{larger_reporter}` have a larger "
+            f"ecological-reporter composite than PD and `{larger_three_trait}` a larger "
+            "three-trait composite.",
+            f"- PD, across `{studies}` paired studies: cellulose contrast "
+            f"`{contrast(PD_CONDITION, CELLULOSE):+.3f}` (descriptive 95% t interval "
+            f"{interval(CELLULOSE)}); three-trait increased-side composite "
+            f"`{contrast(PD_CONDITION, THREE_TRAIT_COMPOSITE):+.3f}` "
+            f"({interval(THREE_TRAIT_COMPOSITE)}); ecological-reporter composite "
+            f"`{contrast(PD_CONDITION, REPORTER_COMPOSITE):+.3f}` "
+            f"({interval(REPORTER_COMPOSITE)}).",
+        ]
+    )
+
+
+def write_reporter_numbers(note_path: Path, numbers: str) -> None:
+    """Replace the generated numbers block of the figure note."""
+    text = note_path.read_text(encoding="utf-8")
+    start, end = text.find(NUMBERS_BEGIN), text.find(NUMBERS_END)
+    if start < 0 or end < start:
+        raise ValueError(f"{note_path.name} has no generated numbers block")
+    head = text[: start + len(NUMBERS_BEGIN)]
+    note_path.write_text(f"{head}\n{numbers}\n{text[end:]}", encoding="utf-8")
+
+
 def _label_overlap(box: Bbox, obstacles: list[Bbox], frame: Bbox) -> float:
     """Return the area a label shares with the obstacles plus its area outside the frame."""
     shared = [Bbox.intersection(box, other) for other in obstacles]
@@ -832,12 +892,14 @@ def plot_combined_figure(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=300, bbox_inches="tight", facecolor="white")
     svg_path = output_path.with_suffix(".svg")
-    fig.savefig(
-        svg_path,
-        bbox_inches="tight",
-        facecolor="white",
-        metadata={"Date": None},
-    )
+    # A fixed salt gives the SVG's clip-path and image ids the same values on every run.
+    with plt.rc_context({"svg.hashsalt": STEM}):
+        fig.savefig(
+            svg_path,
+            bbox_inches="tight",
+            facecolor="white",
+            metadata={"Date": None},
+        )
     plt.close(fig)
     svg_lines = svg_path.read_text(encoding="utf-8").splitlines()
     svg_path.write_text(
@@ -872,6 +934,7 @@ def main() -> None:
     selection = qualifying_conditions(summary)
     write_tsv(selection, SELECTION_PATH)
     plot_combined_figure(summary, read_tsv(TAXON_PANEL_PATH), selection, OUTPUT_PATH)
+    write_reporter_numbers(FIGURES_NOTE_PATH, reporter_numbers(summary, read_tsv(SELECTION_PATH)))
     print(
         f"Condition summaries: {len(summary)}; study contrasts: {len(study_contrasts)}; "
         f"taxon-panel cells: {len(taxon_panel)}"

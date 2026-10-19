@@ -18,8 +18,8 @@ They do not rerun the hypergeometric ORA. Instead, they use the selected profile
 
 ## Outputs
 
-- `condition_depleted_profile_signal_diagram.png`: two-panel diagram combining direction-specific trait signal and coverage.
-- `condition_depleted_signal_vs_coverage_scatter.png`: uncapped scatterplot of direction-specific signal difference versus positive-signal profile coverage.
+- `condition_depleted_profile_signal_diagram.png`: two-panel diagram combining the between-direction trait-signal difference and coverage.
+- `condition_depleted_signal_vs_coverage_scatter.png`: uncapped scatterplot of the between-direction signal difference versus positive-signal profile coverage.
 - `condition_depleted_signal_vs_coverage_scatter.tsv`: full data table used by the scatterplot.
 - `condition_depleted_trait_signal_heatmap.png`: uncapped condition x selected-trait heatmap of each trait's positive-signal fraction difference between directions.
 - `condition_depleted_trait_signal_heatmap_matrix.tsv`: full condition x trait matrix used by the heatmap.
@@ -67,6 +67,6 @@ The heatmap decomposes the focus-direction signal by trait. Each cell is the foc
 
 Use these as a profile-level analogue to the ORA condition panel. The two condition tables above show where profile coverage is deepest and where profiles have the broadest above-average selected trait signal. Because the metric is z-score based, it should be described as `positive selected trait signal` unless it is later replaced with formal ORA q-value enrichment counts.
 
-The depleted-condition diagram ranks conditions by how much stronger selected traits are in decreased profiles than increased profiles while keeping the comparator visible as a guardrail. A positive direction delta means the focus direction has a higher mean positive selected-trait count than the comparator direction. Hatched rows have limited study support.
+The depleted-condition diagram ranks conditions by the mean number of selected traits with z > 0 in decreased profiles minus increased profiles while keeping the comparator visible as a guardrail. A positive direction delta means the focus direction has a higher mean positive selected-trait count than the comparator direction. Hatched rows have limited study support.
 
 The diagram displays the top 15 conditions after filtering. The scatterplot and heatmap are not top-N capped.
