@@ -953,6 +953,12 @@ def test_slides_are_checked_link_by_link(tmp_path: Path) -> None:
             ("methods/missing.md", f"not committed at {deck.SHORT_COMMIT}"),
         ]
     }
+    # A code or methods link only has to open: no local copy is compared.
+    linked_only = {**entry, "code_path": "trait-visualization/stale.tsv"}
+    found, _ = deck.check_slides(tmp_path, [{**linked_only, "evidence_path": ""}], trees, [])
+    assert ("trait-visualization/stale.tsv", f"differs from {deck.SHORT_COMMIT}") not in found.get(
+        "trait-visualization/good.png", []
+    )
     assert quoted == [f"trait-visualization/stale.tsv: differs from {deck.SHORT_COMMIT}"]
     links = deck.slide_links(entry, entry["figure_file_path"])
     checked = deck.verified_links(links, unverified["trait-visualization/good.png"], entry)

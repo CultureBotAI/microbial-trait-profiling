@@ -2134,6 +2134,15 @@ def revision_problem(
 GITIGNORED = ("data/derived/", *CELLULOSE_FIGURES)
 
 
+def link_problem(trees: Mapping[str, Mapping[str, str]], ref: str | None, rel: str) -> str | None:
+    """Why a link to ``rel`` at ``ref`` would not open, or None when the file is there."""
+    if not ref:
+        return "no clean revision recorded"
+    if ref not in trees:
+        return f"no listing of {ref[:12]}"
+    return None if rel in trees[ref] else f"not committed at {ref[:12]}"
+
+
 def committed(rel: str, tree: Mapping[str, str] | None = None) -> bool:
     """Whether a slide file is checked against a revision: it is in the revision's tree, or
     it lies outside the gitignored folders, where a file missing from the tree is a dead
@@ -2227,23 +2236,30 @@ def check_slides(
     trees: Mapping[str, Mapping[str, str]],
     tables: Iterable[Path],
 ) -> tuple[dict[str, list[tuple[str, str]]], list[str]]:
-    """Each slide's linked figure, evidence, code and methods files that are not the
-    committed file at the revision the slide cites, by slide figure; and the quoted tables
-    that differ from COMMIT (#637)."""
+    """Each slide's linked files that are not what the slide claims, by slide figure; and
+    the quoted tables that differ from COMMIT (#637).
+
+    The figure and evidence table a slide shows and quotes must be the committed files at
+    its revision. Its code and methods documents are only linked, so they must exist there.
+    """
     unverified: dict[str, list[tuple[str, str]]] = {}
     for entry in entries:
         fig_rel = entry["figure_file_path"]
         links = slide_links(entry, fig_rel)
         linked = (
-            (fig_rel, links["figure_url"] != "NA", links["commit"]),
-            (entry.get("evidence_path", ""), links["evidence_url"] != "NA", links["commit"]),
-            (entry.get("code_path", ""), bool(links["code_url"]), links["code_commit"]),
-            (entry.get("methods_path", ""), bool(links["methods_url"]), links["commit"]),
+            (fig_rel, links["figure_url"] != "NA", links["commit"], True),
+            (entry.get("evidence_path", ""), links["evidence_url"] != "NA", links["commit"], True),
+            (entry.get("code_path", ""), bool(links["code_url"]), links["code_commit"], False),
+            (entry.get("methods_path", ""), bool(links["methods_url"]), links["commit"], False),
         )
         found: list[tuple[str, str]] = []
-        for rel, is_linked, ref in linked:
+        for rel, is_linked, ref, shown in linked:
             if rel and is_linked and rel not in {seen for seen, _ in found}:
-                reason = revision_problem(trees, ref or None, rel, figure_root(repo, rel) / rel)
+                reason = (
+                    revision_problem(trees, ref or None, rel, figure_root(repo, rel) / rel)
+                    if shown
+                    else link_problem(trees, ref or None, rel)
+                )
                 if reason:
                     found.append((rel, reason))
         if found:
@@ -2673,8 +2689,11 @@ def build_deck(
             unverified.setdefault(figure, []).append(("cellulose_decr figures", reason))
     cover_found = [
         (rel, reason)
-        for rel in (COVER_FIGURE, COVER_CODE)
-        if (reason := revision_problem(checks, COMMIT, rel, repo / rel))
+        for rel, reason in (
+            (COVER_FIGURE, revision_problem(checks, COMMIT, COVER_FIGURE, repo / COVER_FIGURE)),
+            (COVER_CODE, link_problem(checks, COMMIT, COVER_CODE)),
+        )
+        if reason
     ]
     problems = [
         f"{rel}: {reason}" + ("" if rel == fig else f" (slide of {fig})")
