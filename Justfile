@@ -205,6 +205,10 @@ typecheck:
 test:
 	uv run pytest
 
+# Analyzer, ranking exporter, and complete-universe density regression checks (#664).
+test-stratification:
+	uv run pytest tests/test_stratification.py tests/test_enrichment_pipeline.py tests/test_corpus_identity.py
+
 test-cov:
 	uv run pytest --cov=mtp --cov=bsdbng --cov-report=term-missing
 
@@ -572,6 +576,16 @@ calibrate-composition replicates="100" seed="182":
 	  --seed {{seed}}"
 
 # Run ORA background stratification and annotation-density sensitivity evaluation (#118).
+# Run against explicit existing products without rebuilding source data (#664).
+[positional-arguments]
+analyze-strata-inputs *ARGS:
+	uv run python scripts/run_stratified_enrichment.py "$@"
+
+# Compare legacy selected denominators with complete-universe outputs (#664).
+[positional-arguments]
+audit-stratification-universe before after:
+	uv run python scripts/adhoc/issue664_compare_stratification.py "$@"
+
 analyze-strata: study-trait-profiles-ora
 	just timed analyze-strata "uv run python scripts/run_stratified_enrichment.py \
 	  --profiles data/derived/study_trait_profiles_ora_wide.tsv \
