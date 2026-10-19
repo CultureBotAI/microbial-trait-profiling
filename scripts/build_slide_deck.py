@@ -1791,7 +1791,15 @@ def current_commands(series: Sequence[str]) -> list[str]:
     `just download-kg` (#615, #621).
     """
     current = {command.split("  #")[0]: command for command in UPSTREAM_COMMANDS}
-    commands = [current.get(command.split("  #")[0], command) for command in series]
+
+    def described(command: str) -> str:
+        recipe = command.split("  #")[0]
+        if recipe in current:
+            return current[recipe]
+        # The recipe name is the instruction; a hint naming mtp.cli is wrong.
+        return recipe if "mtp.cli" in command else command
+
+    commands = [described(command) for command in series]
     recipes = [command.split("  #")[0] for command in commands]
     if "just taxa-trait-matrix" in recipes and "just download-kg" not in recipes:
         commands.insert(recipes.index("just taxa-trait-matrix"), current["just download-kg"])

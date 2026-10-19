@@ -323,9 +323,14 @@ def test_carried_over_records_get_the_current_commands() -> None:
         "just study-tsvs  # uv run python -m mtp.cli study-tsvs",
         "just taxa-trait-matrix  # uv run python -m mtp.cli taxa-trait-matrix",
         "just study-trait-profiles  # uv run python -m mtp.cli study-trait-profiles",
+        "just analyze  # uv run python -m mtp.cli analyze --mode enrichment",
         "uv run python scripts/x.py",
     ]
-    assert deck.current_commands(series) == [*deck.UPSTREAM_COMMANDS, "uv run python scripts/x.py"]
+    assert deck.current_commands(series) == [
+        *deck.UPSTREAM_COMMANDS,
+        "just analyze",
+        "uv run python scripts/x.py",
+    ]
     assert not any("mtp.cli" in command for command in deck.current_commands(series))
 
 
