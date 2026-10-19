@@ -424,6 +424,20 @@ def summarize_condition_depth(metadata: pd.DataFrame, min_profiles: int) -> pd.D
     )
 
 
+def dropped_target_conditions(
+    metadata: pd.DataFrame,
+    condition_depth: pd.DataFrame,
+) -> dict[str, int]:
+    """Return the target conditions missing from the depth summary, with profile counts."""
+    profile_counts = metadata["condition"].value_counts()
+    summarized = set(condition_depth["condition"])
+    return {
+        condition: int(profile_counts.get(condition, 0))
+        for condition in TARGET_CONDITIONS
+        if condition not in summarized
+    }
+
+
 def write_target_title_table(
     metadata: pd.DataFrame,
     experiments: pd.DataFrame,
@@ -1163,10 +1177,12 @@ def save_traits_vs_organisms_heatmap(
     for label in cluster.ax_heatmap.get_yticklabels():
         label.set_fontsize(7)
 
+    # A target with no organism rows (e.g. absent from the corpus) gets no legend entry.
+    shown_conditions = set(taxa_metadata.loc[row_taxon_ids, condition_color_column])
     handles = [
         Patch(color=condition_palette[condition], label=condition)
         for condition in TARGET_CONDITIONS
-        if condition in condition_palette
+        if condition in shown_conditions
     ]
     cluster.ax_row_dendrogram.legend(
         handles=handles,
@@ -1236,6 +1252,8 @@ def write_report(
     target_condition_description: str,
     condition_score_label: str,
     artifact_prefix: str,
+    dropped_targets: dict[str, int],
+    min_condition_profiles: int,
 ) -> None:
     """Write a compact Markdown report for the follow-up artifacts."""
     heatmap_filename = prefixed_filename(artifact_prefix, "traits_vs_organisms_heatmap.png")
@@ -1278,6 +1296,17 @@ def write_report(
                 outlier="yes" if bool(row["current_profile_depth_outlier"]) else "no",
             )
         )
+    if dropped_targets:
+        dropped = "; ".join(
+            f"{condition} ({count} profiles)" for condition, count in dropped_targets.items()
+        )
+        lines.extend(
+            [
+                "",
+                f"Target conditions with fewer than {min_condition_profiles} profiles in this "
+                f"corpus are missing from every table here: {dropped}.",
+            ]
+        )
 
     lines.extend(
         [
@@ -1296,6 +1325,17 @@ def write_report(
             f"| {row['condition']} | {row['title']} ({row['study_id']}) | "
             f"{row['publication_year']} | {row['experiment_label']} | "
             f"{int(row['profile_count'])} |"
+        )
+    unprofiled = titles[titles["profile_count"].eq(0)]
+    if not unprofiled.empty:
+        lines.extend(
+            [
+                "",
+                f"{len(unprofiled)} of these experiments have no profile in this corpus, for "
+                "example because the host is not human or the study was added to the live "
+                "`experiments.csv` export after the pinned release. The pinned study table has "
+                "no title for studies it lacks.",
+            ]
         )
 
     lines.extend(
@@ -1627,6 +1667,9 @@ def main() -> None:
             )
 
     condition_depth = summarize_condition_depth(metadata, args.min_condition_profiles)
+    dropped_targets = dropped_target_conditions(metadata, condition_depth)
+    if dropped_targets:
+        print(f"Target conditions too rare to summarize here: {dropped_targets}")
     titles = write_target_title_table(
         metadata,
         experiments,
@@ -1730,6 +1773,8 @@ def main() -> None:
         target_condition_description,
         condition_score_label,
         args.artifact_prefix,
+        dropped_targets,
+        args.min_condition_profiles,
     )
 
     print(f"Wrote report: {output_path(args.output_dir, args.artifact_prefix, 'README.md')}")

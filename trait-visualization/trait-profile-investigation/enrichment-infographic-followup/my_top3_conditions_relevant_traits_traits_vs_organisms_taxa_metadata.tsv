@@ -1,46 +1,46 @@
 taxon_id	taxon_name	taxonomic_rank	target_profile_count	target_study_count	target_experiment_count	target_condition_count	target_conditions	target_directions	increased	decreased	dominant_direction	dominant_condition	selected_trait_count	display_condition
-NCBITaxon:851	Fusobacterium nucleatum	species	14	3	14	1	Gingivitis	decreased; increased	4	10	decreased	Gingivitis	6	Gingivitis
-NCBITaxon:1655	Actinomyces naeslundii	species	12	4	12	1	Gingivitis	decreased; increased	6	6	mixed	Gingivitis	8	Gingivitis
-NCBITaxon:729	Haemophilus parainfluenzae	species	13	4	13	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	4	9	decreased	Gingivitis	6	Gingivitis
-NCBITaxon:157688	Leptotrichia hofstadii	species	11	2	11	1	Gingivitis	decreased; increased	2	9	decreased	Gingivitis	10	Gingivitis
-NCBITaxon:47671	Lautropia mirabilis	species	10	3	10	1	Gingivitis	decreased	0	10	decreased	Gingivitis	4	Gingivitis
-NCBITaxon:176090	Streptococcus sinensis	species	10	2	10	1	Gingivitis	decreased; increased	1	9	decreased	Gingivitis	4	Gingivitis
-NCBITaxon:157691	Leptotrichia shahii	species	9	2	9	1	Gingivitis	decreased; increased	2	7	decreased	Gingivitis	14	Gingivitis
-NCBITaxon:714	Aggregatibacter actinomycetemcomitans	species	9	3	9	1	Gingivitis	decreased; increased	2	7	decreased	Gingivitis	11	Gingivitis
-NCBITaxon:45634	Streptococcus cristatus	species	9	2	9	1	Gingivitis	decreased	0	9	decreased	Gingivitis	8	Gingivitis
-NCBITaxon:484	Neisseria flavescens	species	9	2	9	1	Gingivitis	decreased; increased	2	7	decreased	Gingivitis	7	Gingivitis
-NCBITaxon:28449	Neisseria subflava	species	9	2	9	1	Gingivitis	decreased; increased	2	7	decreased	Gingivitis	7	Gingivitis
-NCBITaxon:739	Aggregatibacter segnis	species	9	3	9	1	Gingivitis	decreased; increased	2	7	decreased	Gingivitis	6	Gingivitis
-NCBITaxon:109328	Leptotrichia trevisanii	species	9	2	9	1	Gingivitis	decreased; increased	2	7	decreased	Gingivitis	5	Gingivitis
-NCBITaxon:726	Haemophilus haemolyticus	species	9	2	9	1	Gingivitis	decreased	0	9	decreased	Gingivitis	4	Gingivitis
-NCBITaxon:487	Neisseria meningitidis	species	11	3	11	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	5	6	decreased	Gingivitis	8	Gingivitis
-NCBITaxon:838	Prevotella	genus	10	3	8	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	4	6	decreased	Gastroesophageal reflux disease	21	Gastroesophageal reflux disease
-NCBITaxon:29465	Veillonella	genus	5	2	4	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	3	2	increased	Gastroesophageal reflux disease	16	Gastroesophageal reflux disease
-NCBITaxon:1301	Streptococcus	genus	7	3	6	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	4	3	increased	Gingivitis	29	Gastroesophageal reflux disease
-NCBITaxon:44259	Filifactor	genus	5	3	5	2	Gastroesophageal reflux disease; Gingivitis	increased	5	0	increased	Gastroesophageal reflux disease	7	Gastroesophageal reflux disease
-NCBITaxon:1578	Lactobacillus	genus	4	2	4	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	1	3	decreased	Gastroesophageal reflux disease	28	Gastroesophageal reflux disease
-NCBITaxon:32067	Leptotrichia	genus	9	4	7	3	Gastroesophageal reflux disease; Gingivitis; Lung carcinoma	decreased; increased	5	4	increased	Gingivitis	18	Gastroesophageal reflux disease
-NCBITaxon:906	Megasphaera	genus	6	3	6	3	Gastroesophageal reflux disease; Gingivitis; Lung carcinoma	decreased; increased	2	4	decreased	Gingivitis	15	Gastroesophageal reflux disease
-NCBITaxon:496	Neisseria macacae	species	10	3	10	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	3	7	decreased	Gingivitis	4	Gastroesophageal reflux disease
-NCBITaxon:194	Campylobacter	genus	7	4	7	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	6	1	increased	Gingivitis	24	Gastroesophageal reflux disease
-NCBITaxon:482	Neisseria	genus	7	3	7	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	3	4	decreased	Gingivitis	23	Gastroesophageal reflux disease
-NCBITaxon:1283313	Alloprevotella	genus	4	3	3	2	Gastroesophageal reflux disease; Gingivitis	decreased; increased	2	2	mixed	Gastroesophageal reflux disease	18	Gastroesophageal reflux disease
-NCBITaxon:265975	Oribacterium	genus	2	1	2	1	Gastroesophageal reflux disease	decreased; increased	1	1	mixed	Gastroesophageal reflux disease	11	Gastroesophageal reflux disease
-NCBITaxon:186831	Acetoanaerobium	genus	2	1	2	1	Gastroesophageal reflux disease	increased	2	0	increased	Gastroesophageal reflux disease	6	Gastroesophageal reflux disease
-NCBITaxon:58231	Treponema medium	species	2	1	2	1	Gastroesophageal reflux disease	increased	2	0	increased	Gastroesophageal reflux disease	5	Gastroesophageal reflux disease
-NCBITaxon:187326	Megasphaera micronuciformis	species	5	4	5	3	Gastroesophageal reflux disease; Gingivitis; Lung carcinoma	decreased	0	5	decreased	Gingivitis	8	Gastroesophageal reflux disease
-NCBITaxon:861	Fusobacterium ulcerans	species	2	1	2	1	Lung carcinoma	increased	2	0	increased	Lung carcinoma	7	Lung carcinoma
-NCBITaxon:1380	Atopobium	genus	3	3	3	3	Gastroesophageal reflux disease; Gingivitis; Lung carcinoma	decreased; increased	1	2	decreased	Gastroesophageal reflux disease	7	Lung carcinoma
-NCBITaxon:157	Treponema	genus	7	5	7	2	Gingivitis; Lung carcinoma	decreased; increased	5	2	increased	Gingivitis	21	Lung carcinoma
-NCBITaxon:840	Hoylesella loescheii	species	7	3	7	2	Gingivitis; Lung carcinoma	decreased; increased	1	6	decreased	Gingivitis	7	Lung carcinoma
-NCBITaxon:1660	Schaalia odontolytica	species	7	3	7	2	Gingivitis; Lung carcinoma	decreased	0	7	decreased	Gingivitis	7	Lung carcinoma
-NCBITaxon:35517	[Eubacterium] brachy	species	3	3	3	2	Gingivitis; Lung carcinoma	increased	3	0	increased	Gingivitis	4	Lung carcinoma
-NCBITaxon:816	Bacteroides	genus	2	2	2	2	Gingivitis; Lung carcinoma	increased	2	0	increased	Gingivitis	30	Lung carcinoma
-NCBITaxon:43994	Johnsonella	genus	2	2	2	2	Gingivitis; Lung carcinoma	decreased; increased	1	1	mixed	Gingivitis	6	Lung carcinoma
-NCBITaxon:286	Pseudomonas	genus	1	1	1	1	Lung carcinoma	decreased	0	1	decreased	Lung carcinoma	30	Lung carcinoma
-NCBITaxon:265	Paracoccus	genus	1	1	1	1	Lung carcinoma	increased	1	0	increased	Lung carcinoma	27	Lung carcinoma
-NCBITaxon:41275	Brevundimonas	genus	1	1	1	1	Lung carcinoma	increased	1	0	increased	Lung carcinoma	23	Lung carcinoma
-NCBITaxon:447020	Adlercreutzia	genus	1	1	1	1	Lung carcinoma	increased	1	0	increased	Lung carcinoma	15	Lung carcinoma
-NCBITaxon:580596	Butyricicoccus	genus	1	1	1	1	Lung carcinoma	increased	1	0	increased	Lung carcinoma	10	Lung carcinoma
-NCBITaxon:248744	Marvinbryantia	genus	1	1	1	1	Lung carcinoma	increased	1	0	increased	Lung carcinoma	9	Lung carcinoma
-NCBITaxon:40520	Blautia obeum	species	1	1	1	1	Lung carcinoma	increased	1	0	increased	Lung carcinoma	8	Lung carcinoma
+NCBITaxon:239935	Akkermansia muciniphila	species	19	2	19	2	Multiple sclerosis; Stroke	decreased; increased	13	6	increased	Multiple sclerosis	6	Multiple sclerosis
+NCBITaxon:69825	Lacrimispora indolis	species	17	1	17	1	Multiple sclerosis	decreased; increased	8	9	decreased	Multiple sclerosis	4	Multiple sclerosis
+NCBITaxon:69824	Thomasclavelia cocleata	species	16	1	16	1	Multiple sclerosis	decreased; increased	12	4	increased	Multiple sclerosis	6	Multiple sclerosis
+NCBITaxon:169435	Anaerotruncus colihominis	species	15	2	15	1	Multiple sclerosis	decreased; increased	7	8	decreased	Multiple sclerosis	17	Multiple sclerosis
+NCBITaxon:29347	[Clostridium] scindens	species	12	1	12	1	Multiple sclerosis	decreased; increased	10	2	increased	Multiple sclerosis	8	Multiple sclerosis
+NCBITaxon:154288	Turicibacter sanguinis	species	12	1	12	1	Multiple sclerosis	decreased; increased	7	5	increased	Multiple sclerosis	5	Multiple sclerosis
+NCBITaxon:259063	Anaerocolumna jejuensis	species	11	1	11	1	Multiple sclerosis	decreased; increased	6	5	increased	Multiple sclerosis	19	Multiple sclerosis
+NCBITaxon:166486	Roseburia intestinalis	species	11	1	10	1	Multiple sclerosis	decreased; increased	3	8	decreased	Multiple sclerosis	6	Multiple sclerosis
+NCBITaxon:39486	Dorea formicigenerans	species	9	1	8	1	Multiple sclerosis	decreased; increased	1	8	decreased	Multiple sclerosis	6	Multiple sclerosis
+NCBITaxon:1544	Faecalicatena orotica	species	7	1	7	1	Multiple sclerosis	decreased; increased	4	3	increased	Multiple sclerosis	13	Multiple sclerosis
+NCBITaxon:1350	Enterococcus	genus	16	4	16	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	14	2	increased	Stroke	33	Multiple sclerosis
+NCBITaxon:239934	Akkermansia	genus	13	6	13	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	9	4	increased	Constipation	18	Multiple sclerosis
+NCBITaxon:47246	[Clostridium] viride	species	6	1	6	1	Multiple sclerosis	decreased; increased	1	5	decreased	Multiple sclerosis	6	Multiple sclerosis
+NCBITaxon:138595	Olsenella profusa	species	6	1	6	1	Multiple sclerosis	decreased; increased	2	4	decreased	Multiple sclerosis	3	Multiple sclerosis
+NCBITaxon:879566	Acetatifactor muris	species	6	1	6	1	Multiple sclerosis	decreased; increased	1	5	decreased	Multiple sclerosis	2	Multiple sclerosis
+NCBITaxon:841	Roseburia	genus	16	4	16	2	Multiple sclerosis; Stroke	decreased; increased	3	13	decreased	Stroke	10	Stroke
+NCBITaxon:216851	Faecalibacterium	genus	10	6	10	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	4	6	decreased	Stroke	8	Stroke
+NCBITaxon:551	Erwinia	genus	5	1	5	1	Stroke	increased	5	0	increased	Stroke	18	Stroke
+NCBITaxon:1578	Lactobacillus	genus	20	7	20	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	15	5	increased	Constipation	29	Stroke
+NCBITaxon:28050	Lachnospira	genus	9	6	9	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	4	5	decreased	Stroke	10	Stroke
+NCBITaxon:702	Plesiomonas	genus	4	1	4	1	Stroke	increased	4	0	increased	Stroke	10	Stroke
+NCBITaxon:375288	Parabacteroides	genus	11	4	11	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	6	5	increased	Constipation	23	Stroke
+NCBITaxon:872	Desulfovibrio	genus	9	6	9	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	7	2	increased	Constipation	18	Stroke
+NCBITaxon:35832	Bilophila	genus	6	4	6	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	5	1	increased	Stroke	5	Stroke
+NCBITaxon:29465	Veillonella	genus	5	3	5	2	Constipation; Stroke	increased	5	0	increased	Stroke	20	Stroke
+NCBITaxon:1263	Ruminococcus	genus	14	7	14	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	4	10	decreased	Constipation	16	Stroke
+NCBITaxon:572511	Blautia	genus	7	5	6	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	3	4	decreased	Multiple sclerosis	13	Stroke
+NCBITaxon:487174	Barnesiella intestinihominis	species	4	3	4	2	Multiple sclerosis; Stroke	decreased; increased	3	1	increased	Multiple sclerosis	15	Stroke
+NCBITaxon:102106	Collinsella	genus	4	4	4	2	Multiple sclerosis; Stroke	decreased; increased	1	3	decreased	Multiple sclerosis	13	Stroke
+NCBITaxon:207244	Anaerostipes	genus	3	2	3	2	Multiple sclerosis; Stroke	decreased; increased	2	1	increased	Stroke	19	Stroke
+NCBITaxon:1485	Clostridium	genus	14	6	14	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	7	7	mixed	Constipation	28	Constipation
+NCBITaxon:2086	Anaeroplasma	genus	13	2	13	2	Constipation; Multiple sclerosis	decreased; increased	6	7	decreased	Constipation	1	Constipation
+NCBITaxon:1678	Bifidobacterium	genus	11	2	11	2	Constipation; Multiple sclerosis	decreased; increased	10	1	increased	Constipation	29	Constipation
+NCBITaxon:283168	Odoribacter	genus	10	2	10	2	Constipation; Stroke	decreased; increased	4	6	decreased	Constipation	10	Constipation
+NCBITaxon:44748	Sporobacter	genus	8	2	7	2	Constipation; Multiple sclerosis	decreased; increased	2	6	decreased	Constipation	8	Constipation
+NCBITaxon:239759	Alistipes	genus	7	2	7	1	Constipation	decreased; increased	2	5	decreased	Constipation	15	Constipation
+NCBITaxon:191303	Turicibacter	genus	10	4	10	2	Constipation; Multiple sclerosis	decreased; increased	5	5	mixed	Constipation	8	Constipation
+NCBITaxon:33042	Coprococcus	genus	7	4	7	2	Constipation; Stroke	decreased; increased	5	2	increased	Constipation	8	Constipation
+NCBITaxon:838	Prevotella	genus	11	5	11	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	4	7	decreased	Constipation	22	Constipation
+NCBITaxon:816	Bacteroides	genus	8	5	8	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	5	3	increased	Constipation	29	Constipation
+NCBITaxon:459786	Oscillibacter	genus	7	4	7	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	2	5	decreased	Constipation	20	Constipation
+NCBITaxon:119852	Oscillospira	genus	7	4	7	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	2	5	decreased	Constipation	1	Constipation
+NCBITaxon:189330	Dorea	genus	8	3	8	2	Constipation; Multiple sclerosis	decreased; increased	3	5	decreased	Constipation	7	Constipation
+NCBITaxon:28138	Rikenella	genus	5	1	5	1	Constipation	decreased; increased	1	4	decreased	Constipation	6	Constipation
+NCBITaxon:447020	Adlercreutzia	genus	5	4	4	2	Constipation; Multiple sclerosis	decreased; increased	3	2	increased	Constipation	16	Constipation

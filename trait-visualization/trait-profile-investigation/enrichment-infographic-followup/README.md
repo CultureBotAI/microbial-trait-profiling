@@ -2,17 +2,18 @@
 
 Source figure: https://github.com/CultureBotAI/bsdbng/blob/enrichment-analysis-heatmap-cluster/data/derived/enrichment_infographic.png
 
-The referenced infographic ranks the following three conditions as the top condition-level enrichment-depth outliers. The local follow-up uses the full `data/derived/study_trait_profiles_wide.tsv` matrix and raw BugSigDB experiment metadata to list titles, find similar profiles, and connect enriched traits to organisms.
+The target conditions for this run are selected from the infographic top three condition-level outliers. The local follow-up uses the full `data/derived/study_trait_profiles_wide.tsv` matrix and raw BugSigDB experiment metadata to list titles, find similar profiles, and connect enriched traits to organisms.
 
 ## Target Conditions
 
 | condition | infographic avg enrichment depth | local profiles | studies | experiments | local mean nonzero traits/profile | local percentile | local outlier? |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Thalassemia | 225.00 | 4 | 1 | 2 | 1822.2 | 100.0% | yes |
-| Sleep Disorder | 216.00 | 7 | 2 | 5 | 249.3 | 54.7% | no |
-| Head and neck squamous cell carcinoma | 210.33 | 25 | 4 | 13 | 116.8 | 27.1% | no |
+| Sleep Disorder | 216.00 | 7 | 2 | 5 | 107.0 | 48.8% | no |
+| Head and neck squamous cell carcinoma | 210.33 | 25 | 4 | 13 | 60.0 | 21.4% | no |
 
-Interpretation: the infographic itself identifies these as high average enrichment-depth conditions. In this local profile-trait-count proxy, condition support matters: Thalassemia is concentrated in one study and two experiments, Sleep Disorder spans two studies and five experiments, and head and neck squamous cell carcinoma spans more experiments but has a mix of saliva/oral-cavity/fecal comparisons.
+Target conditions with fewer than 2 profiles in this corpus are missing from every table here: Thalassemia (0 profiles).
+
+Interpretation: condition support matters because profile counts, study counts, and body-site mix vary across exact BugSigDB condition labels.
 
 ## Study And Experiment Titles
 
@@ -34,69 +35,66 @@ Interpretation: the infographic itself identifies these as high average enrichme
 | Sleep Disorder | Short-Chain Fatty Acid-Producing Gut Microbiota Is Decreased in Parkinson's Disease but Not in Rapid-Eye-Movement Sleep Behavior Disorder (bsdb:33293403) | 2020 | Experiment 1: Healthy Controls vs Rapid-eye-movement sleep behavior disorder (iRBD) patients | 1 |
 | Sleep Disorder | Short-Chain Fatty Acid-Producing Gut Microbiota Is Decreased in Parkinson's Disease but Not in Rapid-Eye-Movement Sleep Behavior Disorder (bsdb:33293403) | 2020 | Experiment 2: Healthy Controls vs Rapid-eye-movement sleep behavior disorder (iRBD) patients | 1 |
 | Sleep Disorder | Short-Chain Fatty Acid-Producing Gut Microbiota Is Decreased in Parkinson's Disease but Not in Rapid-Eye-Movement Sleep Behavior Disorder (bsdb:33293403) | 2020 | Experiment 3: Healthy Controls vs Rapid-eye-movement sleep behavior disorder (iRBD) patients | 1 |
+| Sleep Disorder | nan (bsdb:35362675) | nan | Experiment 1: Normal rearing control maternal group  (C-M) vs Maternal sleep deprivation maternal group (MSD-M) | 0 |
+| Sleep Disorder | nan (bsdb:35362675) | nan | Experiment 2: Normal rearing control offspring group, postnatal day 1 (C-P1) vs MSD offspring group, postnatal day 1 (MSD-P1) | 0 |
+| Sleep Disorder | nan (bsdb:35362675) | nan | Experiment 3: Normal rearing control offspring group, postnatal day 7 (C-P7) vs MSD offspring group, postnatal day 7 (MSD-P7) | 0 |
+| Sleep Disorder | nan (bsdb:35362675) | nan | Experiment 4: Normal rearing control offspring group, postnatal day 14 (C-P14) vs MSD offspring group, postnatal day 14 (MSD-P14) | 0 |
+| Sleep Disorder | nan (bsdb:35362675) | nan | Experiment 5: Normal rearing control offspring group, postnatal day 56 (C-P56) vs MSD offspring group, postnatal day 56 (MSD-P56) | 0 |
 | Sleep Disorder | Preliminary analysis of salivary microbiota in catathrenia (nocturnal groaning) using machine learning algorithms (bsdb:40247863) | 2025 | Experiment 1: Healthy control group vs Catathrenia group | 2 |
 | Sleep Disorder | Preliminary analysis of salivary microbiota in catathrenia (nocturnal groaning) using machine learning algorithms (bsdb:40247863) | 2025 | Experiment 2: Pre treatment of Mandibular Advancement Devices (MAD) group vs Post treatment of Mandibular Advancement Devices (MAD) group | 2 |
-| Thalassemia | Exploring alterations of gut/blood microbes in addressing iron overload-induced gut dysbiosis and cognitive impairment in thalassemia patients (bsdb:39438708) | 2024 | Experiment 1: Control vs Thalasemia | 2 |
-| Thalassemia | Exploring alterations of gut/blood microbes in addressing iron overload-induced gut dysbiosis and cognitive impairment in thalassemia patients (bsdb:39438708) | 2024 | Experiment 2: Non-transfusion dependent thalassemia vs Transfusion dependent thalasemia | 2 |
+| Thalassemia | nan (bsdb:39438708) | nan | Experiment 1: Control vs Thalassemia | 0 |
+| Thalassemia | nan (bsdb:39438708) | nan | Experiment 2: Non-transfusion dependent thalassemia vs Transfusion dependent Thalassemia | 0 |
+
+7 of these experiments have no profile in this corpus, for example because the host is not human or the study was added to the live `experiments.csv` export after the pinned release. The pinned study table has no title for studies it lacks.
 
 ## Autism Label Check
 
 | exact label | EFO IDs | profiles | studies | experiments | interpretation |
 | --- | --- | ---: | ---: | ---: | --- |
-| Autism | EFO:0003758 | 14 | 4 | 10 | Distinct exact BugSigDB label; analyze separately unless an explicit autism/ASD grouping is declared. |
-| Autism spectrum disorder | EFO:0003756 | 62 | 15 | 38 | Distinct exact BugSigDB label; analyze separately unless an explicit autism/ASD grouping is declared. |
+| Autism | MONDO:0005260 | 14 | 4 | 10 | Distinct exact BugSigDB label; analyze separately unless an explicit autism/ASD grouping is declared. |
+| Autism spectrum disorder | MONDO:0005258 | 7 | 3 | 5 | Distinct exact BugSigDB label; analyze separately unless an explicit autism/ASD grouping is declared. |
 
 Autism and autism spectrum disorder should not be silently treated as the same exact condition label. For a clinical/domain rollup, they can be grouped as `Autism / autism spectrum disorder` if the merge is declared, but exact label and EFO-level analyses should keep them separate.
 
 ## Similar Profiles
 
-Profile similarity uses cosine similarity over log1p-transformed full trait vectors. For each target condition, the query vector is the centroid of its active profiles, and the top five individual profiles exclude the same exact condition label.
+Profile similarity uses cosine similarity over log1p-transformed full non-MediaDive trait vectors. For each target condition, the query vector is the centroid of its active profiles, and the top five individual profiles exclude the same exact condition label.
 
 | query condition | rank | neighbor condition | similarity | study title | experiment |
 | --- | ---: | --- | ---: | --- | --- |
-| Thalassemia | 1 | Cognitive impairment | 0.976 | Exploring alterations of gut/blood microbes in addressing iron overload-induced gut dysbiosis and cognitive impairment in thalassemia patients | Experiment 3: Normal vs Mild cognitive impairment |
-| Thalassemia | 2 | Colorectal adenoma | 0.967 | Human oral microbiome dysbiosis as a novel non-invasive biomarker in detection of colorectal cancer | Experiment 2: Healthy Individuals vs CRA |
-| Thalassemia | 3 | Chronic obstructive pulmonary disease | 0.965 | Sputum Microbiome and Chronic Obstructive Pulmonary Disease in a Rural Ugandan Cohort of Well-Controlled HIV Infection | Experiment 1: HIV-negative individuals with COPD vs HIV-positive individuals diagnosed with COPD |
-| Thalassemia | 4 | Parkinson's disease | 0.964 | Altered gut microbiota in Parkinson's disease patients/healthy spouses and its association with clinical features | Experiment 1: Healthy Controls vs Parkinson's Disease Patients |
-| Thalassemia | 5 | Lifestyle measurement | 0.964 | Gut microbiome profiling of a rural and urban South African cohort reveals biomarkers of a population in lifestyle transition | Experiment 2: Lean female subjects in Bushbuckridge vs Lean female subjects in Soweto |
-| Sleep Disorder | 1 | Aging | 0.915 | The microbiome is associated with obesity-related metabolome signature in the process of aging | Experiment 1: Young mice (8 weeks old) vs Aged mice (18 months old) |
-| Sleep Disorder | 2 | Schizophrenia | 0.914 | Alterations in fecal bacteriome virome interplay and microbiota-derived dysfunction in patients with schizophrenia | Experiment 1: Healthy control group (HC) vs Schizophrenia group (SCZ) |
-| Sleep Disorder | 3 | Pancreatic carcinoma | 0.913 | Fecal microbiome signatures of pancreatic cancer patients | Experiment 4: Healthy control vs NBO PC |
-| Sleep Disorder | 4 | Air pollution | 0.910 | Effects of inhaled air pollution on markers of integrity, inflammation, and microbiota profiles of the intestines in Apolipoprotein E knockout mice | Experiment 2: mice exposed to Filtered Air vs mice exposed to WS |
-| Sleep Disorder | 5 | Obesity | 0.910 | Metatranscriptomic analysis to define the Secrebiome, and 16S rRNA profiling of the gut microbiome in obesity and metabolic syndrome of Mexican children | Experiment 2: Normal weight (NW) vs Obesity with metabolic syndrome (OMS) |
-| Head and neck squamous cell carcinoma | 1 | Cognitive impairment | 0.921 | Large-scale metagenomic analysis of oral microbiomes reveals markers for autism spectrum disorders | Experiment 5: Low Intelligence Quotients(Low IQ ≤70) by diet vs High Intelligence Quotients(High IQ > 85) by diet |
-| Head and neck squamous cell carcinoma | 2 | Gingivitis | 0.920 | Quantitative analysis of the effects of essential oil mouthrinses on clinical plaque microbiome: a parallel-group, randomized trial | Experiment 1: Healthy subjects vs Gingivitis subjects |
-| Head and neck squamous cell carcinoma | 3 | Response to transplant | 0.916 | Exclusive enteral nutrition initiates individual protective microbiome changes to induce remission in pediatric Crohn's disease | Experiment 4: Inactive group vs Active group |
-| Head and neck squamous cell carcinoma | 4 | Cognitive impairment | 0.915 | Large-scale metagenomic analysis of oral microbiomes reveals markers for autism spectrum disorders | Experiment 4: Low Intelligence Quotients(Low IQ ≤70) vs High Intelligence Quotients(High IQ > 85) |
-| Head and neck squamous cell carcinoma | 5 | COVID-19 | 0.913 | Gut microbiota composition reflects disease severity and dysfunctional immune responses in patients with COVID-19 | Experiment 3: Healthy controls vs Recovered COVID-19 cases |
+| Sleep Disorder | 1 | Schizophrenia | 0.935 | Alterations in fecal bacteriome virome interplay and microbiota-derived dysfunction in patients with schizophrenia | Experiment 1: Healthy control group (HC) vs Schizophrenia group (SCZ) |
+| Sleep Disorder | 2 | Pancreatic carcinoma | 0.925 | Fecal microbiome signatures of pancreatic cancer patients | Experiment 4: Healthy control vs NBO PC |
+| Sleep Disorder | 3 | Endometriosis | 0.924 | Associations Between Endometriosis and Gut Microbiota | Experiment 1: Healthy controls taken from a larger cohort study vs Endometriosis patients |
+| Sleep Disorder | 4 | Endometriosis | 0.922 | Associations Between Endometriosis and Gut Microbiota | Experiment 2: Healthy controls taken from a larger cohort study vs Endometriosis patients |
+| Sleep Disorder | 5 | Obesity | 0.922 | Metatranscriptomic analysis to define the Secrebiome, and 16S rRNA profiling of the gut microbiome in obesity and metabolic syndrome of Mexican children | Experiment 2: Normal weight (NW) vs Obesity with metabolic syndrome (OMS) |
+| Head and neck squamous cell carcinoma | 1 | COVID-19 | 0.938 | Metagenomic assessment of gut microbial communities and risk of severe COVID-19 | Experiment 1: Moderate COVID-19 vs Severe COVID-19 |
+| Head and neck squamous cell carcinoma | 2 | Multiple myeloma | 0.936 | Alterations of gut microbiome accelerate multiple myeloma progression by increasing the relative abundances of nitrogen-recycling bacteria | Experiment 1: healthy control vs multiple myeloma patients |
+| Head and neck squamous cell carcinoma | 3 | Gingivitis | 0.935 | Quantitative analysis of the effects of essential oil mouthrinses on clinical plaque microbiome: a parallel-group, randomized trial | Experiment 1: Healthy subjects vs Gingivitis subjects |
+| Head and neck squamous cell carcinoma | 4 | Psoriasis | 0.934 | Multiomic Analysis of the Gut Microbiome in Psoriasis Reveals Distinct Host‒Microbe Associations | Experiment 1: Healthy controls vs Psoriasis patients (PSO) |
+| Head and neck squamous cell carcinoma | 5 | Depressive disorder | 0.933 | Gut Microbiota Alterations and Their Functional Differences in Depression According to Enterotypes in Asian Individuals | Experiment 2: Healthy group vs Depressive group |
 
 ### Cross-Target Check
 
 | query condition | any other target in top 5 profiles? | matched target conditions |
 | --- | --- | --- |
-| Thalassemia | no |  |
-| Sleep Disorder | no |  |
-| Head and neck squamous cell carcinoma | no |  |
+| Thalassemia | no | NA |
+| Sleep Disorder | no | NA |
+| Head and neck squamous cell carcinoma | no | NA |
 
 Top five condition-centroid neighbors are also written to `target_condition_centroid_neighbors.tsv`; this checks whether the three conditions find each other at condition rather than individual-profile level.
 
 | query condition | rank | centroid neighbor | similarity | other target? |
 | --- | ---: | --- | ---: | --- |
-| Thalassemia | 1 | Seasonal gut microbiome measurement | 0.962 | no |
-| Thalassemia | 2 | Schistosomiasis | 0.959 | no |
-| Thalassemia | 3 | Gastric carcinoma | 0.957 | no |
-| Thalassemia | 4 | Carrier status | 0.953 | no |
-| Thalassemia | 5 | Renal transplant outcome measurement | 0.953 | no |
-| Sleep Disorder | 1 | Non-alcoholic steatohepatitis | 0.950 | no |
-| Sleep Disorder | 2 | Behcet's syndrome | 0.944 | no |
-| Sleep Disorder | 3 | Type I diabetes mellitus | 0.941 | no |
-| Sleep Disorder | 4 | Peripheral neuron | 0.941 | no |
-| Sleep Disorder | 5 | Urolithiasis,Nephrolithiasis | 0.937 | no |
-| Head and neck squamous cell carcinoma | 1 | Response to antibiotic | 0.970 | no |
-| Head and neck squamous cell carcinoma | 2 | Periodontitis | 0.969 | no |
-| Head and neck squamous cell carcinoma | 3 | Mycobacterium tuberculosis | 0.967 | no |
-| Head and neck squamous cell carcinoma | 4 | Asthma | 0.966 | no |
-| Head and neck squamous cell carcinoma | 5 | Cervical glandular intraepithelial neoplasia | 0.966 | no |
+| Sleep Disorder | 1 | Type I diabetes mellitus | 0.959 | no |
+| Sleep Disorder | 2 | HIV-1 infection | 0.957 | no |
+| Sleep Disorder | 3 | Response to antiviral drug | 0.956 | no |
+| Sleep Disorder | 4 | Health study participation | 0.952 | no |
+| Sleep Disorder | 5 | Milk allergic reaction | 0.947 | no |
+| Head and neck squamous cell carcinoma | 1 | Response to diet | 0.980 | no |
+| Head and neck squamous cell carcinoma | 2 | Lifestyle measurement | 0.974 | no |
+| Head and neck squamous cell carcinoma | 3 | Crohn's disease | 0.972 | no |
+| Head and neck squamous cell carcinoma | 4 | Waist circumference | 0.971 | no |
+| Head and neck squamous cell carcinoma | 5 | Squamous cell carcinoma | 0.969 | no |
 
 ## How Trait Sets Connect To Profiles
 
@@ -104,12 +102,10 @@ A profile is one BugSigDB study/experiment/direction row. Its trait vector count
 
 | trait set | condition | profiles | mean trait-set signal | mean relative trait-set signal |
 | --- | --- | ---: | ---: | ---: |
-| aerobe_v2 | Head and neck squamous cell carcinoma | 25 | 181.360 | 0.01820 |
-| aerobe_v2 | Sleep Disorder | 7 | 564.571 | 0.00985 |
-| aerobe_v2 | Thalassemia | 4 | 9083.834 | 0.02288 |
-| anaerobe_v2_depletion | Head and neck squamous cell carcinoma | 25 | 45.640 | 0.02535 |
-| anaerobe_v2_depletion | Sleep Disorder | 7 | 230.714 | 0.03673 |
-| anaerobe_v2_depletion | Thalassemia | 4 | 6618.375 | 0.01886 |
+| aerobe_v2 | Head and neck squamous cell carcinoma | 25 | 181.360 | 0.02076 |
+| aerobe_v2 | Sleep Disorder | 7 | 564.571 | 0.01147 |
+| anaerobe_v2_depletion | Head and neck squamous cell carcinoma | 25 | 45.640 | 0.03019 |
+| anaerobe_v2_depletion | Sleep Disorder | 7 | 230.714 | 0.04637 |
 
 ## Companion Traits Vs Organisms Heatmap
 
