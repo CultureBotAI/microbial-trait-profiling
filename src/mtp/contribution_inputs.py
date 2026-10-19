@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import hashlib
 import json
@@ -10,6 +11,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from mtp.paths import REPO_ROOT
 from mtp.taxa_trait_matrix import make_trait_key
 from mtp.trait_guilds import MEDIADIVE_MARKER, TABLE1_TRAITS, column_term_id
 
@@ -278,6 +280,25 @@ def encoded(value: object) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+def main(argv: list[str] | None = None) -> None:
+    """Check data/kg-microbe against the md5s pinned in the Table 1 influence protocol."""
+    parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument("--kg-dir", type=Path, default=REPO_ROOT / "data/kg-microbe")
+    parser.add_argument(
+        "--protocol", type=Path, default=REPO_ROOT / "methods/table1_taxon_influence_protocol.json"
+    )
+    args = parser.parse_args(argv)
+    expected = json.loads(args.protocol.read_text(encoding="utf-8"))["kg_md5"]
+    missing = sorted(name for name in expected if not (args.kg_dir / name).is_file())
+    if missing:
+        msg = (
+            f"{args.kg_dir} lacks the pinned KG files {', '.join(missing)}; run `just download-kg`"
+        )
+        raise SystemExit(msg)
+    verify_kg(args.kg_dir, expected)
+    print(f"{', '.join(sorted(expected))} in {args.kg_dir} match the md5s in {args.protocol.name}")
+
+
 __all__ = [
     "RANKS",
     "Assertion",
@@ -290,6 +311,11 @@ __all__ = [
     "encoded",
     "load_base",
     "load_graph",
+    "main",
     "rows",
     "verify_kg",
 ]
+
+
+if __name__ == "__main__":
+    main()

@@ -171,6 +171,11 @@ download-kg:
 download-kg-force:
 	uv run --extra kg python scripts/download_kg_microbe.py --force
 
+# Check data/kg-microbe against the md5s pinned in methods/table1_taxon_influence_protocol.json,
+# which the Table 1 influence audit and `just pd-trait-contributors` read.
+verify-pinned-kg:
+	uv run python -m mtp.contribution_inputs
+
 # Check that every identifier the guild, gram-stain and Table 1 figures group exists
 # in data/kg-microbe/merged-kg_nodes.tsv with its expected label (run `just download-kg` first).
 verify-trait-terms:
