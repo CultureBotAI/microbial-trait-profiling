@@ -12,10 +12,10 @@ So that a reported count can be traced back to the file it came from, this modul
 records the identity of both sides - the matrix itself and the KG-Microbe inputs
 behind it - in one record that every recipe writes into its provenance JSON.
 
-What it deliberately does not do is decide which corpus is correct. Whether the
-shared corpus is the committed ``.gz`` or a regeneration is a project-wide choice
-(#115), and until it is settled the honest thing is to say precisely which file a
-given number came from.
+It does not decide which corpus is correct. The shared corpus is the committed
+``data/derived/study_trait_profiles_wide.tsv.gz``, which `just study-trait-profiles`
+reproduces and `just study-trait-profiles-check` verifies (#115, #656); the record
+still says precisely which file a given number came from.
 """
 
 from __future__ import annotations
@@ -95,7 +95,7 @@ class MatrixIdentity:
 
 @dataclass(frozen=True)
 class KgInput:
-    """One KG-Microbe file as the download sidecar describes it."""
+    """One KG-Microbe file, distinguishing sidecar claims from measured bytes."""
 
     name: str
     declared_md5: str | None
@@ -103,6 +103,9 @@ class KgInput:
     fetched_at: str | None
     drive_file_id: str | None
     present: bool
+    path: str | None = None
+    sha256: str | None = None
+    measured_size: int | None = None
 
 
 @dataclass(frozen=True)
@@ -111,9 +114,10 @@ class CorpusIdentity:
 
     matrix: MatrixIdentity
     bugsigdb_vintage: str | None
-    kg_release_tag: str
+    kg_release_tag: str | None
     kg_provenance_path: str
     kg_inputs: list[KgInput] = field(default_factory=list)
+    kg_provenance_source: str = "declared by download sidecar (not measured at matrix build time)"
 
     def as_record(self) -> dict[str, object]:
         return {
@@ -122,9 +126,7 @@ class CorpusIdentity:
             "kg_microbe": {
                 "release_tag": self.kg_release_tag,
                 "provenance_path": self.kg_provenance_path,
-                "provenance_source": (
-                    "declared by download sidecar (not measured at matrix build time)"
-                ),
+                "provenance_source": self.kg_provenance_source,
                 "inputs": [asdict(item) for item in self.kg_inputs],
             },
             "note": (
@@ -272,11 +274,16 @@ def summary_lines(identity: CorpusIdentity) -> list[str]:
         f"{matrix.retained_trait_columns} retained)",
         f"  profile rows     {matrix.profile_rows}",
         f"BugSigDB vintage:  {identity.bugsigdb_vintage or 'unknown'}",
-        f"KG-Microbe:        {identity.kg_release_tag} (sidecar: {identity.kg_provenance_path})",
+        f"KG-Microbe:        {identity.kg_release_tag or 'unknown (release identity unverified)'} "
+        f"(provenance: {identity.kg_provenance_path})",
     ]
     lines.extend(
-        f"  {item.name:<22} declared md5 (sidecar) {item.declared_md5 or '(not recorded)'}"
-        f"{'' if item.present else '  [file not present]'}"
+        (
+            f"  {item.name:<22} measured sha256 {item.sha256}"
+            if item.sha256 is not None
+            else f"  {item.name:<22} declared md5 (sidecar) {item.declared_md5 or '(not recorded)'}"
+        )
+        + ("" if item.present else "  [file not present]")
         for item in identity.kg_inputs
     )
     return lines

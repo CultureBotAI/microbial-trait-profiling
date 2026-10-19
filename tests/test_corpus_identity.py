@@ -399,6 +399,17 @@ def test_rerun_recipe_hygiene_invariants() -> None:
         encoding="utf-8"
     )
     assert 'just table1-taxon-influence-from "data/kg-microbe" "data/derived"' in noel_script
+    # The arms read the canonical human table, and check it against the committed .gz (#656)
+    assert (
+        "study-trait-profiles: taxa-trait-matrix\n"
+        '\tuv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" '
+        "--drop-empty-traits\n" in justfile_text
+    )
+    jed_script = (repo_root / "scripts" / "rerun_composition_arm_jed.sh").read_text(
+        encoding="utf-8"
+    )
+    for script in (noel_script, jed_script):
+        assert "\njust study-trait-profiles-check\n" in script
     assert "\njust table1-taxon-influence\n" not in noel_script
 
     prov_path = repo_root / "data" / "raw" / "download_provenance.json"

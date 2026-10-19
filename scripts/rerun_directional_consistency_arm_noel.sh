@@ -34,6 +34,8 @@ for required_file in \
         exit 1
     fi
 done
+# The arms read the canonical human profile table committed as a .gz (#656).
+just study-trait-profiles-check
 
 echo "=== [1/9] Running full-manifest study sign-test directional screen (#255, #265) ==="
 just trait-direction-screen
