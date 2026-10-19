@@ -70,11 +70,13 @@ from the disease-versus-healthy population rather than into it.
      are cohort matching criteria rather than the contrast when both groups carry the
      exact same treatment/exposure tokens and one group is a comparison group; they
      are flagged `shared_treatment_term`.
-   - **Treated disease groups opposite a healthy control** ("Healthy Controls" vs
-     "Parkinson's disease Patients treated with entacapone") compare healthy controls
-     against medicated cases rather than two arms of a trial; they are retained in
+   - **Treated disease groups opposite a comparison group** ("Healthy Controls" vs
+     "Parkinson's disease Patients treated with entacapone") compare controls against
+     medicated cases rather than two arms of a trial; they are retained in
      `disease_vs_healthy` with flag `treated_disease_group` and stratified into
-     `tier_3_hospital_comorbid_or_tissue`.
+     `tier_3_hospital_comorbid_or_tissue`. Since `contrast-orientation-v4` (#569) the
+     comparison group may rest on weak evidence too ("Lean" vs "Obese patients treated
+     with liraglutide"), for every condition.
    - **People with HIV on antiretroviral therapy opposite an HIV-negative comparison
      group** (`contrast-orientation-v4`, #569) are the same design: "healthy control"
      vs "HAART-treated HIV+ patients", "Controls/ People living without HIV (PLWOH)"
@@ -82,12 +84,14 @@ from the disease-versus-healthy population rather than into it.
      "People Living With HIV on Antiretroviral therapy (ART+ PLWH)". The therapy is
      what the cases are on, not what the two groups differ by, so these are
      `disease_vs_healthy` with flag `treated_disease_group`. The cue is "ART-",
-     "cART-" or "HAART-treated", or "on", "taking", "receiving" or "under" ART or
-     antiretroviral therapy, and a weak comparison group ("HIV-") is enough. Treated
+     "cART-" or "HAART-treated", or "on", "taking", "receiving" or "under" ART, cART,
+     HAART or antiretroviral therapy, and a weak comparison group ("HIV-") is enough.
+     "PLWH", "PWH" or the virus spelled out names the disease group as "HIV" does
+     (#627). Treated
      against untreated people who all have HIV ("HAART-naive HIV-1 patients" vs
      "HAART-treated HIV-1 patients") has no comparison group and stays
-     `treatment_exposure`, as do the same people before and on therapy. A treated
-     group that is also named by time keeps the treatment reading, because clearing it
+     `treatment_exposure`, as do the same people before and on therapy. A contrast
+     with a time word in either group keeps the treatment reading, because clearing it
      would leave only the time reading (see Limits).
 
      The treatment is recorded as the existing flag and tier rather than a new manifest
@@ -248,7 +252,8 @@ people with the condition against people without it:
   filter in code, and it defines `disease_vs_healthy_tier1_2_subject_controls`.
 
 Either way the 1 reversed experiment still has to be relabelled, which
-`oriented_profiles` does. Filtering on `contrast_type` and on `flags` can be combined:
+`oriented_profiles` does. It filters only on control tiers and strong evidence, so a
+`contrast_type` filter has to be applied to the classes before it is called. Filtering on `contrast_type` and on `flags` can be combined:
 dropping rows flagged `treated_disease_group` from the `case_vs_control_subject` rows
 keeps hospital and symptomatic controls but sets aside cases named as treated.
 
@@ -396,7 +401,10 @@ subset ($q = 0.0079$ and $q = 0.011$, with the other two at nominal $p = 0.0078$
 $p = 0.0057$).
 
 Two log-ratios crossed $q = 0.05$ between `contrast-orientation-v3` and `-v4`, both by
-small margins and both in populations that the 10 HIV experiments joined:
+small margins and both in populations the HIV experiments joined. All 10 joined
+`disease_vs_healthy_oriented`; 7 joined `disease_vs_healthy_strong_evidence`, which grew
+from 863 to 870 experiments, while 33102244-1, 37721699-2 and 39880958-1 rest on weak
+evidence:
 `cellulose / moderately_halophilic` in `disease_vs_healthy_oriented` went from
 $q = 0.0498$ to $0.052$, and `cellulose / sphere_shaped` in
 `disease_vs_healthy_strong_evidence` (514 studies) went from $q = 0.043$ to $0.054$. In
@@ -432,7 +440,15 @@ Known remaining limitations:
   (MHD) group", two dose arms in a mouse study, so it would trade one recovered
   experiment for two new errors.
 - **Some HIV-negative against HIV-positive contrasts are still outside
-  `disease_vs_healthy`.** None of them is in the analysed corpus. 29808701-1
+  `disease_vs_healthy`, five of them in the analysed corpus (#625, #626).** 25057045-1
+  and -2 ("HIV-uninfected controls" against "Chronic HIV-infected cases" on suppressive
+  ART, feces) and 37660163-13 (healthy controls against HCV/HIV coinfection) stay
+  `treatment_exposure` because their curated condition is "Response to antiviral drug",
+  which the classifier reads before the group names. 41011452-3 and -4 (HIV-negative
+  against HIV-positive people with oral candidiasis or HPV infection) are `disease_vs_disease`
+  because the condition has two values. Whether a group-name design should override
+  such a condition label is #626. Among experiments outside the corpus, 29411528-3 and
+  33324725-2 also stay out, as do the following. 29808701-1
   ("Age-matched HIV-uninfected women" against "HIV-positive women who have been
   taking ART for more than 1 year") stays `treatment_exposure`: "for more than 1
   year" is read as a time point, and the treatment reading is kept rather than leave

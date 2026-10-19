@@ -183,6 +183,16 @@ CONDITION_NEGATIVE = re.compile(
 #: People living without HIV, as an initialism. It names no condition, so it counts as a
 #: comparison only where HIV is the condition; elsewhere HIV status describes the cohort.
 WITHOUT_HIV = _pattern(r"plwoh", r"pwoh")
+#: A condition that is HIV itself: the acronym or the virus spelled out. Testing the text,
+#: not the initialism, keeps "Helminth infection" or "HOMA-IR" out (#627).
+HIV_CONDITION = re.compile(r"(?<![a-z])hiv(?![a-z])|human immunodeficiency virus", re.IGNORECASE)
+#: Names for people with HIV that carry no "HIV" token: "PLWH", "PWH", or the virus
+#: spelled out without its acronym (#627).
+WITH_HIV = re.compile(
+    r"(?<![a-z])(?:plwh|pwh)(?![a-z])|human immunodeficiency virus", re.IGNORECASE
+)
+#: Small Roman numerals, as in "Type II diabetes mellitus": numbers, not acronyms (#627).
+ROMAN_NUMERAL = re.compile(r"X{0,3}(?:IX|IV|V?I{0,3})")
 #: "Negative for COVID-19 viral RNA": the sign comes before its subject.
 NEGATIVE_FOR = re.compile(
     "(?<![\\w])negative\\s+for\\s+((?:[\\w'\\u2019.]+[\\s-]*){1,4})", re.IGNORECASE
@@ -795,6 +805,14 @@ def _mentions_condition(text: str, condition: str) -> bool:
     )
 
 
+def _names_condition(name: str, condition: str) -> bool:
+    """Does a group name name the condition? For HIV, "PLWH", "PWH" and the spelled-out
+    virus count too, which :func:`_mentions_condition` cannot see (#627)."""
+    return _mentions_condition(name, condition) or bool(
+        HIV_CONDITION.search(condition) and WITH_HIV.search(name)
+    )
+
+
 def _acronym_spelled_out(words: list[str], condition: str) -> list[str]:
     """Leading words that spell out an acronym of the condition, replaced by the acronym.
 
@@ -803,7 +821,11 @@ def _acronym_spelled_out(words: list[str], condition: str) -> list[str]:
     condition writes in capitals is an acronym, so the "to" of "Response to antiviral
     drug" or the "Non" of "Non-alcoholic fatty liver disease" is never spelled out.
     """
-    acronyms = {word.lower() for word in re.findall(r"(?<![\w])[A-Z]{2,5}(?![a-z])", condition)}
+    acronyms = {
+        word.lower()
+        for word in re.findall(r"(?<![\w])[A-Z]{2,5}(?![a-z])", condition)
+        if not ROMAN_NUMERAL.fullmatch(word)
+    }
     for acronym in sorted(acronyms, key=len, reverse=True):
         if "".join(word[0] for word in words[: len(acronym)]) == acronym:
             return [acronym, *words[len(acronym) :]]
@@ -998,7 +1020,7 @@ def _comparison(name: str, other: str, condition: str) -> tuple[list[str], list[
         + _self_scoped_absence(name, other)
     )
     weak = _matches(WEAK_COMPARISON, resemblance) + [text for text, _span in absence]
-    if _mentions_condition("hiv", condition):
+    if HIV_CONDITION.search(condition):
         weak += _matches(WITHOUT_HIV, name)
     mine, theirs = _markers(name), _markers(other)
     negative = [
@@ -1183,14 +1205,16 @@ def classify(record: ExperimentRecord) -> Classification:
     # not a treatment-arm trial. Treated against untreated people who all have the disease
     # has no comparison group and stays a treatment contrast. A treated group also named by
     # time keeps the treatment reading: without it only the time word would be left, and
-    # in "taking ART for more than 1 year" that word is a duration, not a later visit.
+    # in "taking ART for more than 1 year" that word is a duration, not a later visit. The
+    # guard reads a time word in either group. "on HAART" or "on cART" counts as therapy
+    # even though TREATMENT_TERMS reads only a whole "ART" (#627).
     if (
-        treatment_terms
+        (treatment_terms or ON_ANTIRETROVIRAL.search(g1))
         and control_0
         and not control_1
         and not treat_0
         and not one_sided_time
-        and _mentions_condition(g1, condition)
+        and _names_condition(g1, condition)
         and (TREATED_WITH_CONF.search(g1) or ON_ANTIRETROVIRAL.search(g1))
     ):
         flags.append("treated_disease_group")

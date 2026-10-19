@@ -48,6 +48,7 @@ from bsdbng.contrast_orientation import (
     write_manifest,
 )
 from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
+from mtp.contrast_orientation import _acronym_spelled_out
 
 BASE = ExperimentRecord(
     study_id="bsdb:1",
@@ -1534,12 +1535,14 @@ def test_treated_cases_are_flagged_rather_than_made_a_treatment_contrast() -> No
         assert "treated_disease_group" in found.flags.split(",")
 
 
-def test_a_treated_group_named_by_time_keeps_the_treatment_reading() -> None:
+def test_known_miss_a_treated_group_named_by_time_keeps_the_treatment_reading() -> None:
     """29808701-1: "for more than 1 year" reads as a time point, not as a duration.
 
     Clearing the treatment reading would leave only that time reading, so the experiment
     stays ``treatment_exposure`` instead of turning into a ``longitudinal_timepoint`` it is
-    not. It compares HIV-negative and HIV-positive women, and is a known remaining miss.
+    not. This pins a known limitation (#581): the experiment compares HIV-negative and
+    HIV-positive women, so once #581 is fixed it should become ``disease_vs_healthy`` and
+    this expectation should change with it (#628).
     """
     assert _classify(
         condition="HIV infection",
@@ -1640,3 +1643,96 @@ def test_tumour_against_adjacent_tissue_can_be_kept_out_of_subject_level_control
         control_tiers={TIER_1_HEALTHY_NORMAL, TIER_2_CONDITION_NEGATIVE_SCREENED},
     )
     assert {p.experiment_id for p in subject_level} == {"bsdb:1-2"}
+
+
+@pytest.mark.parametrize(
+    ("group_0", "group_1"),
+    [
+        ("Healthy controls", "HIV patients on HAART"),
+        ("HIV-negative controls", "HIV patients on cART"),
+        ("HIV-negative controls", "People with HIV taking ART"),
+        ("HIV-negative controls", "People with HIV receiving ART"),
+        ("HIV-negative controls", "People with HIV under ART"),
+        ("PLWOH", "PLWH on ART"),
+        ("HIV-negative controls", "PWH on ART"),
+        ("Healthy controls", "Human immunodeficiency virus positive on ART"),
+    ],
+)
+def test_every_antiretroviral_cue_and_name_for_hiv_reaches_the_treated_rule(
+    group_0: str, group_1: str
+) -> None:
+    """ART spellings that TREATMENT_TERMS cannot read, and PLWH, PWH or the spelled-out
+    virus as the name of the disease group, all reach the treated-cases rule (#627, #628)."""
+    found = classify(
+        replace(BASE, condition="HIV infection", group_0_name=group_0, group_1_name=group_1)
+    )
+    assert (found.contrast_class, found.orientation) == (DISEASE_VS_HEALTHY, NATIVE)
+    assert found.control_tier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+    assert "treated_disease_group" in found.flags.split(",")
+
+
+@pytest.mark.parametrize(
+    ("condition", "group_0", "group_1"),
+    [
+        # Group 1 does not name the condition
+        ("Obesity", "Lean controls", "Patients treated with metformin"),
+        # Group 1 is a comparison group itself
+        ("Obesity", "Lean controls", "Non-obese controls treated with metformin"),
+        # Group 0 carries a treatment word too (bsdb:32733788-1)
+        (
+            "Response to immunochemotherapy",
+            "non-responders (patients treated with conventional dose)",
+            "responders (patients treated with metronomic dose of capecitabine)",
+        ),
+    ],
+)
+def test_the_treated_rule_needs_each_of_its_guards(
+    condition: str, group_0: str, group_1: str
+) -> None:
+    found = classify(replace(BASE, condition=condition, group_0_name=group_0, group_1_name=group_1))
+    assert found.contrast_class == TREATMENT
+    assert "treated_disease_group" not in found.flags.split(",")
+
+
+@pytest.mark.parametrize(
+    ("condition", "group_0", "group_1"),
+    [
+        # The "II" of "Type II" is a number, not an acronym of "insulin injection"
+        (
+            "Type II diabetes mellitus",
+            "T2D without insulin injection",
+            "T2D with insulin injection",
+        ),
+        # PLWOH is a comparison only where HIV is the condition, not any "hi" initialism
+        ("Helminth infection", "PLWOH", "PLWH"),
+        ("HOMA-IR", "PLWOH", "PLWH"),
+    ],
+)
+def test_acronym_and_hiv_readings_stay_with_their_conditions(
+    condition: str, group_0: str, group_1: str
+) -> None:
+    """Both were unresolved in v3 and must stay so (#627)."""
+    assert _classify(condition=condition, group_0_name=group_0, group_1_name=group_1) == (
+        UNRESOLVED,
+        NOT_APPLICABLE,
+    )
+
+
+def test_acronyms_are_the_capital_words_of_the_condition() -> None:
+    """Pins case, length and the rest of the phrase (#628)."""
+    # Lower-case words such as the "to" of "Response to …" are never acronyms
+    assert _acronym_spelled_out(["toxic", "outcome"], "Response to antiviral drug") == [
+        "toxic",
+        "outcome",
+    ]
+    # The rest of the phrase follows the acronym
+    assert _acronym_spelled_out(
+        ["human", "immunodeficiency", "virus", "positive"], "HIV infection"
+    ) == ["hiv", "positive"]
+    # Two-letter acronyms count
+    assert _acronym_spelled_out(["crohn's", "disease", "free"], "CD flare") == ["cd", "free"]
+    # Roman numerals do not
+    assert _acronym_spelled_out(["insulin", "injection"], "Type II diabetes mellitus") == [
+        "insulin",
+        "injection",
+    ]
