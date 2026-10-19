@@ -1873,7 +1873,7 @@ def interaction_summary_rows(interaction: pd.DataFrame) -> list[dict[str, Any]]:
         stratified = row["short_condition"] == POOLED_STRATIFIED
         slug = "pooled_stratified" if stratified else row["short_condition"]
         population_name = row["contrast_population"]
-        # Studies counted in both rows of the table; a stratified row sums its conditions'.
+        # Studies that sampled both compartments; a stratified row sums its conditions'.
         same = interaction[
             interaction["contrast_population"].eq(population_name)
             & interaction["unit"].eq(row["unit"])
@@ -1919,8 +1919,8 @@ def interaction_summary_rows(interaction: pd.DataFrame) -> list[dict[str, Any]]:
 def interaction_interpretation(row: pd.Series | Mapping[str, Any], shared: int = 0) -> str:
     """What one Feces-vs-GI row shows, given its p, interval, unit and population (#631).
 
-    ``shared`` counts the studies that sampled both compartments, which a study-level
-    table counts in both of its rows.
+    ``shared`` counts the studies that sampled both compartments, so a study-level row's
+    two compartments are not fully independent samples.
     """
     p = row["fisher_p_two_sided"]
     low, high = row["conditional_or_ci95_low"], row["conditional_or_ci95_high"]
@@ -1943,8 +1943,7 @@ def interaction_interpretation(row: pd.Series | Mapping[str, Any], shared: int =
         caveats.append("experiments of one study are treated as independent")
     elif shared:
         caveats.append(
-            f"{shared} {'study' if shared == 1 else 'studies'} sampled both compartments and "
-            f"{'counts' if shared == 1 else 'count'} in both rows"
+            f"{shared} {'study' if shared == 1 else 'studies'} sampled both compartments"
         )
     if row["contrast_population"] == ALL_CONTRASTS:
         caveats.append("most CRC mucosa/lumen experiments do not compare patients with controls")

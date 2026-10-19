@@ -261,6 +261,8 @@ def test_importing_the_figures_changes_no_matplotlib_setting() -> None:
     before = dict(matplotlib.rcParams)
     importlib.reload(figures)
     assert dict(matplotlib.rcParams) == before
+    # The module was imported at collection, so compare with the style too.
+    assert matplotlib.rcParams["svg.hashsalt"] != figures.STYLE["svg.hashsalt"]
 
 
 def test_the_figures_are_drawn_in_their_style(

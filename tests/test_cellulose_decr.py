@@ -738,11 +738,9 @@ def test_interaction_wording_follows_p_unit_and_population() -> None:
     }
     text = interaction_interpretation(healthy, shared=2)
     assert text.startswith("No difference in direction")
-    # Study rows count the studies that sampled both compartments in both rows (#631).
-    assert "2 studies sampled both compartments and count in both rows" in text
-    assert "1 study sampled both compartments and counts in both rows" in (
-        interaction_interpretation(healthy, shared=1)
-    )
+    # Study rows say how many studies sampled both compartments (#631).
+    assert "; 2 studies sampled both compartments;" in text
+    assert "; 1 study sampled both compartments;" in interaction_interpretation(healthy, shared=1)
     assert "sampled both" not in interaction_interpretation(healthy)
     assert "do not compare patients with controls" not in text
     assert text.endswith("not a test of anatomical specificity.")
