@@ -409,16 +409,21 @@ def oxygen_switch_text(metrics: dict) -> str:
     fecal = [r for r in strata if r["body_site_display"] == "Feces"]
     other = [r for r in strata if r["body_site_display"] != "Feces"]
     exceptions = [r for r in fecal if score(r) < 0] + [r for r in other if score(r) > 0]
+
+    def group(count: int, total: int, kind: str) -> str:
+        noun, verb = ("stratum", "scores") if total == 1 else ("strata", "score")
+        return f"{count} of {total} {kind} {noun} {verb}"
+
     counts = []
     if fecal:
         counts.append(
-            f"{sum(score(r) > 0 for r in fecal)} of {len(fecal)} fecal strata score aerobe-up / "
+            f"{group(sum(score(r) > 0 for r in fecal), len(fecal), 'fecal')} aerobe-up / "
             "anaerobe-down"
         )
     if other:
         counts.append(
-            f"{sum(score(r) < 0 for r in other)} of {len(other)} other strata score anaerobe-up "
-            "/ aerobe-down"
+            f"{group(sum(score(r) < 0 for r in other), len(other), 'other')} anaerobe-up / "
+            "aerobe-down"
         )
     shown = f"{len(strata)} {'stratum' if len(strata) == 1 else 'strata'}"
     text = f"Of the {shown} shown, {' and '.join(counts)}."
@@ -806,8 +811,9 @@ def pd_direction_caveat(model: dict[str, str], positive: dict[str, str]) -> str:
         "Exploratory PD diagnostic. Its profile-level Fisher test treats the profiles of one "
         "study as independent. In the study-clustered model "
         "(pd_cellulose_interaction_model.tsv), the extra PD effect in decreased feces is "
-        f"{float(model['coefficient']):+.2f} cellulose z (95% CI {float(model['ci_low']):+.2f} "
-        f"to {float(model['ci_high']):+.2f}, p = {p_text(float(model['p_value']))}), and "
+        f"{signed(float(model['coefficient']), 2)} cellulose z (95% CI "
+        f"{signed(float(model['ci_low']), 2)} to {signed(float(model['ci_high']), 2)}, p = "
+        f"{p_text(float(model['p_value']))}), and "
         f"{signed(100 * float(positive['coefficient']))} percentage points (95% CI "
         f"{signed(100 * float(positive['ci_low']))} to {signed(100 * float(positive['ci_high']))}"
         f", p = {p_text(float(positive['p_value']))}) in the share of profiles with cellulose "
@@ -982,8 +988,9 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": oxygen_switch_text(metrics),
             "caveat": "Colorectal cancer splits by sampling compartment in O₂ switch score "
-            "(Feces +0.68 vs Lower GI tract -0.79). The cellulose comparison between the "
-            "same compartments is on the cellulose deep-dive slides; most of its mucosal "
+            "(Feces +0.68 vs Lower GI tract -0.79). The cellulose deep-dive slides compare CRC "
+            "stool with non-fecal GI samples, pooling the colon and intestinal mucosa sites this "
+            "plate splits into Lower GI tract and Intestinal / GI mucosa; most of those mucosal "
             "contrasts are not patients against controls.",
             "methods_path": "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
             "README.md",
@@ -1777,6 +1784,20 @@ UPSTREAM_STEPS = (
 )
 
 
+def current_commands(series: Sequence[str]) -> list[str]:
+    """A record's command series with each upstream recipe described as it runs today.
+
+    The source YAML annotated them with a nonexistent `mtp.cli` and left out
+    `just download-kg` (#615, #621).
+    """
+    current = {command.split("  #")[0]: command for command in UPSTREAM_COMMANDS}
+    commands = [current.get(command.split("  #")[0], command) for command in series]
+    recipes = [command.split("  #")[0] for command in commands]
+    if "just taxa-trait-matrix" in recipes and "just download-kg" not in recipes:
+        commands.insert(recipes.index("just taxa-trait-matrix"), current["just download-kg"])
+    return commands
+
+
 def cellulose_figure_provenance(rec: dict[str, Any], tables: dict[str, str]) -> None:
     """Point a cellulose_decr figure's provenance record at what draws it (#556).
 
@@ -2509,11 +2530,13 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
                 "v2_slide_number": r.get("v2_slide", "NA"),
                 "statistical_result_ids": [],
             }
-        # The source YAML placed the KG files under data/raw, which holds none (#609).
+        # The source YAML placed the KG files under data/raw, which holds none (#609), and
+        # described the upstream recipes with a nonexistent mtp.cli (#621).
         rec["upstream_raw_inputs"] = [
             path.replace("data/raw/merged-kg_", "data/kg-microbe/merged-kg_")
             for path in rec.get("upstream_raw_inputs", [])
         ]
+        rec["command_series"] = current_commands(rec.get("command_series", []))
         if fp.startswith(CELLULOSE_FIGURES):
             cellulose_figure_provenance(rec, cellulose_figures["inputs"])
         new_figures_list.append(rec)

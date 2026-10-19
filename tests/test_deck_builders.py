@@ -257,7 +257,7 @@ def test_plate_five_text_names_the_exceptions() -> None:
     assert [r["condition"] for r in chosen] == [f"U{i}" for i in range(11, 1, -1)]
     only_other = {"oxygen_switch": [rows[1]]}
     assert deck.oxygen_switch_text(only_other) == (
-        "Of the 1 stratum shown, 1 of 1 other strata score anaerobe-up / aerobe-down."
+        "Of the 1 stratum shown, 1 of 1 other stratum scores anaerobe-up / aerobe-down."
     )
 
 
@@ -312,6 +312,21 @@ def test_p_values_do_not_round_across_the_threshold() -> None:
     assert deck.p_text(0.979) == "0.98"
     assert deck.signed(-0.004) == "0.0"
     assert deck.signed(18.59) == "+18.6"
+    assert deck.signed(-0.004, 2) == "0.00"
+
+
+def test_carried_over_records_get_the_current_commands() -> None:
+    """The source YAML described the upstream recipes with a nonexistent mtp.cli (#621)."""
+    series = [
+        "just download  # uv run python -m mtp.cli download",
+        "just ingest  # uv run python -m mtp.cli ingest",
+        "just study-tsvs  # uv run python -m mtp.cli study-tsvs",
+        "just taxa-trait-matrix  # uv run python -m mtp.cli taxa-trait-matrix",
+        "just study-trait-profiles  # uv run python -m mtp.cli study-trait-profiles",
+        "uv run python scripts/x.py",
+    ]
+    assert deck.current_commands(series) == [*deck.UPSTREAM_COMMANDS, "uv run python scripts/x.py"]
+    assert not any("mtp.cli" in command for command in deck.current_commands(series))
 
 
 def test_plate_slides_link_their_code_at_the_drawing_commit(tmp_path: Path) -> None:

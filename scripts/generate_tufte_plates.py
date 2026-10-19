@@ -3468,6 +3468,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if any(out_dir.glob("*.png")) and not args.overwrite:
         raise SystemExit(f"{out_dir} has plates; back them up and pass --overwrite to replace them")
     out_dir.mkdir(parents=True, exist_ok=True)
+    # A run that fails partway must not leave new plates beside the previous record (#621).
+    (out_dir / "plates_provenance.json").unlink(missing_ok=True)
 
     setup_tufte_rc()
     paths = [
