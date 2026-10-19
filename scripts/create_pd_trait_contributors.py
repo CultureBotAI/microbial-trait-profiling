@@ -354,8 +354,12 @@ def select_contributor_taxa(counts: pd.DataFrame, names: dict[str, str]) -> pd.D
 
 
 def contributor_names(base: Base, graph: Graph) -> dict[str, str]:
-    """Taxon names, KG first: the contributors are KG taxa, named as the KG names them."""
-    return {**base.names, **graph.names}
+    """Taxon names, KG first: the contributors are KG taxa, named as the KG names them.
+
+    Some KG taxa have an empty name, which must not hide the matrix name (#703).
+    """
+    named = {taxon: name for taxon, name in graph.names.items() if name.strip()}
+    return {**base.names, **named}
 
 
 def taxon_display_name(taxon: str, name: str) -> str:

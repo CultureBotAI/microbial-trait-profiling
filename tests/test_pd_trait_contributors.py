@@ -449,6 +449,17 @@ def test_unnamed_selected_taxa_are_refused() -> None:
         contributors.select_contributor_taxa(counts, {"NCBITaxon:9": "Named"})
 
 
+@pytest.mark.parametrize("kg_name", ["", "  "])
+def test_an_empty_kg_name_does_not_hide_the_matrix_name(kg_name: str) -> None:
+    """Some KG taxa have an empty name; the matrix name stands for it (#703)."""
+    base, graph, _ = ledger_fixture()
+    graph.names[S1] = kg_name
+
+    names = contributors.contributor_names(base, graph)
+
+    assert (names[S1], names[S2], names[F]) == ("Matrix name one", "Species two", "Family F")
+
+
 def trait_intervals(values: dict[str, float]) -> pd.DataFrame:
     return pd.DataFrame(
         {

@@ -35,8 +35,13 @@ def test_pinned_kg_passes(tmp_path: Path, capsys: pytest.CaptureFixture[str]) ->
     assert "match the md5s in protocol.json" in capsys.readouterr().out
 
 
-def test_changed_kg_file_is_refused(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match=r"Pinned KG mismatch .*merged-kg_edges\.tsv"):
+def test_changed_kg_file_is_refused_and_names_the_forced_refetch(tmp_path: Path) -> None:
+    """`just download-kg` compares sizes only, so the remedy is the forced download (#703)."""
+    with pytest.raises(
+        SystemExit,
+        match=r"Pinned KG mismatch .*merged-kg_edges\.tsv.*; refetch the KG with "
+        r"`just download-kg-force`$",
+    ):
         contribution_inputs.main(pinned_kg(tmp_path, edges=b"another release\n"))
 
 

@@ -295,7 +295,12 @@ def main(argv: list[str] | None = None) -> None:
             f"{args.kg_dir} lacks the pinned KG files {', '.join(missing)}; run `just download-kg`"
         )
         raise SystemExit(msg)
-    verify_kg(args.kg_dir, expected)
+    try:
+        verify_kg(args.kg_dir, expected)
+    except ValueError as error:
+        # `just download-kg` keeps a local file whose size matches, so it would not refetch it.
+        msg = f"{error}; refetch the KG with `just download-kg-force`"
+        raise SystemExit(msg) from error
     print(f"{', '.join(sorted(expected))} in {args.kg_dir} match the md5s in {args.protocol.name}")
 
 
