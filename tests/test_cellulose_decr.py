@@ -6,6 +6,8 @@ import itertools
 import json
 import math
 import shutil
+from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -481,7 +483,112 @@ def test_figures_draw_from_the_committed_tables(tmp_path: Path) -> None:
     # does not (SIGNIFICANT_RESULTS_SUMMARY.md, Table A2).
     direction = captions["figures"]["figures_graphical/fig3_direction_by_body_site.svg"]
     assert direction["title"].endswith(
-        "PD, CRC and all three pooled under every condition definition; HIV only under some"
+        "in PD, CRC and all three pooled under every condition definition; in HIV only under some"
     )
-    assert "HIV 9↓ 0↑" in direction["takeaway"]
+    assert "HIV 9 : 0 : 2" in direction["takeaway"]
+    assert captions["statements"]["fragile"].startswith("the HIV result depends")
     assert captions["statements"]["crc_compartments"] in direction["caveat"]
+
+
+# --------------------------------------------------------------------------- captions
+
+
+@pytest.fixture(scope="module")
+def results() -> figures.Results:
+    return figures.load(ANALYSIS_DIR)
+
+
+def _with_scenarios(
+    results: figures.Results, edit: Callable[[pd.DataFrame], None]
+) -> figures.Results:
+    table = results.scenarios.copy()
+    edit(table)
+    return replace(results, scenarios=table)
+
+
+def _healthy_studies(table: pd.DataFrame, short: str) -> pd.Series:
+    return (
+        table["contrast_population"].eq(ORIENTED)
+        & table["short_condition"].eq(short)
+        & table["unit"].eq("study")
+    )
+
+
+def test_direction_caption_follows_the_direction_not_only_p(results: figures.Results) -> None:
+    """A condition significant the other way is named as such, not as a decrease (#589)."""
+
+    def swap_crc(table: pd.DataFrame) -> None:
+        rows = _healthy_studies(table, "CRC")
+        table.loc[rows, ["down", "up"]] = table.loc[rows, ["up", "down"]].to_numpy()
+
+    title = figures.caption_direction(_with_scenarios(results, swap_crc)).title
+    assert "the increased signature does in CRC" in title
+    assert "in PD and all three pooled under every condition definition" in title
+
+
+def test_direction_caption_without_significance_or_data(results: figures.Results) -> None:
+    def no_significance(table: pd.DataFrame) -> None:
+        table["binom_p_two_sided"] = 0.5
+
+    title = figures.caption_direction(_with_scenarios(results, no_significance)).title
+    assert title.endswith("in no condition at p < 0.05")
+    assert " not " not in title
+
+    def no_hiv(table: pd.DataFrame) -> None:
+        table.drop(table.index[_healthy_studies(table, "HIV")], inplace=True)
+
+    title = figures.caption_direction(_with_scenarios(results, no_hiv)).title
+    assert title.endswith("; no data for HIV")
+    assert figures.fragile_statement(_with_scenarios(results, no_hiv)) == ""
+
+
+@pytest.mark.parametrize(
+    ("mean_p", "core_p", "ending"),
+    [
+        (0.19, 0.73, "random sets of whole stool signatures overlap about as much"),
+        (0.01, 0.02, "they overlap more than random sets of whole stool signatures"),
+        (0.99, 0.98, "they overlap less than random sets of whole stool signatures"),
+        (0.04, 0.73, "mean-distance p = 0.040 and core p = 0.73"),
+    ],
+)
+def test_overlap_statement_reads_both_u6_endpoints(
+    results: figures.Results, mean_p: float, core_p: float, ending: str
+) -> None:
+    summary = json.loads(json.dumps(results.summary))
+    summary["null_models"]["U6"]["mean_pairwise_jaccard_distance"]["p"] = mean_p
+    summary["null_models"]["U6"]["three_way_core"]["p"] = core_p
+    assert figures.overlap_statement(replace(results, summary=summary)).endswith(ending)
+
+
+def test_shared_taxa_caption_counts_direct_edges(results: figures.Results) -> None:
+    catalog = results.catalog.copy()
+    core = catalog.index[catalog["is_3way_core"].astype(bool)]
+    catalog.loc[core[0], "has_direct_trait_edge"] = True
+    summary = {**results.summary, "core_taxa_with_direct_trait_edge": 1}
+    edited = replace(results, catalog=catalog, summary=summary)
+    caption = figures.caption_shared_taxa(edited)
+    assert caption.title.endswith(", 1 annotated directly")
+    assert caption.takeaway.startswith("1 carries its own cellulose annotation edge")
+    assert figures.direct_core_text(edited).startswith("1 of the 17 core taxa has its own")
+
+
+def test_crc_statement_names_the_excluded_experiment_only_when_it_matters(
+    results: figures.Results,
+) -> None:
+    assert "without the tumour-vs-adjacent-tissue experiment" in (
+        figures.crc_compartment_statement(results)
+    )
+    table = results.scenario_interaction.copy()
+    primary = figures.interaction_row(results, ORIENTED, "CRC", "study")
+    excluded = table["scenario"].eq("crc_within_patient_excluded")
+    table.loc[excluded, "fisher_p_two_sided"] = primary["fisher_p_two_sided"]
+    statement = figures.crc_compartment_statement(replace(results, scenario_interaction=table))
+    assert "without" not in statement
+    assert "does not show anatomical specificity" in statement
+
+
+def test_p_values_keep_two_significant_digits() -> None:
+    assert figures.sci(0.0097) == "0.0097"
+    assert figures.sci(0.0596) == "0.060"
+    assert figures.sci(0.19) == "0.19"
+    assert figures.sci(1.2e-5) == "1.2" + figures.TIMES + "10⁻⁵"
