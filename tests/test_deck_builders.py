@@ -2,6 +2,7 @@
 
 import hashlib
 import importlib.util
+import itertools
 import json
 import shutil
 from pathlib import Path
@@ -9,6 +10,9 @@ from types import ModuleType
 from typing import Any
 
 import pytest
+
+from mtp.table1_directions import ALL_STUDIES, CODES, ORIENTED, populations
+from mtp.table1_directions import CELLULOSE as CELLULOSE_TRAIT
 
 REPO = Path(__file__).resolve().parents[1]
 CELLULOSE = REPO / "data" / "analysis" / "cellulose_decr"
@@ -648,11 +652,9 @@ def test_unverified_slides_say_so() -> None:
     assert "NOT VERIFIED" not in deck.revision_stamp({**row, "unverified": ""})
 
 
-def _deck_root(tmp_path: Path, version: str) -> Path:
+def _root(tmp_path: Path) -> Path:
     root = tmp_path / "root"
-    provenance = root / deck.CONTRAST_PROVENANCE
-    provenance.parent.mkdir(parents=True)
-    provenance.write_text(json.dumps({"classifier_version": version}))
+    root.mkdir()
     return root
 
 
@@ -667,15 +669,8 @@ def _deck_args(tmp_path: Path, root: Path) -> list[str]:
     ]
 
 
-def test_deck_refuses_another_contrast_version(tmp_path: Path) -> None:
-    root = _deck_root(tmp_path, "contrast-orientation-v3")
-    with pytest.raises(SystemExit, match="#579"):
-        deck.main(_deck_args(tmp_path, root))
-    assert not (tmp_path / "slides").exists()
-
-
 def test_deck_refuses_to_replace_a_deck(tmp_path: Path) -> None:
-    root = _deck_root(tmp_path, deck.TYPED_CONTRAST_VERSION)
+    root = _root(tmp_path)
     existing = tmp_path / "slides" / "selected_figures_v6.html"
     existing.parent.mkdir()
     existing.write_text("old deck")
@@ -685,30 +680,14 @@ def test_deck_refuses_to_replace_a_deck(tmp_path: Path) -> None:
 
 
 def test_deck_needs_git_listings_or_a_review_build(tmp_path: Path) -> None:
-    root = _deck_root(tmp_path, deck.TYPED_CONTRAST_VERSION)
+    root = _root(tmp_path)
     with pytest.raises(SystemExit, match="--allow-unverified"):
         deck.main(_deck_args(tmp_path, root))
     assert not (tmp_path / "slides").exists()
 
 
-def _plates_root(tmp_path: Path, version: str) -> Path:
-    root = tmp_path / "root"
-    provenance = root / plates.CONTRAST_PROVENANCE
-    provenance.parent.mkdir(parents=True)
-    provenance.write_text(json.dumps({"classifier_version": version}))
-    return root
-
-
-def test_plates_refuse_another_contrast_version(tmp_path: Path) -> None:
-    root = _plates_root(tmp_path, "contrast-orientation-v3")
-    out = tmp_path / "plates"
-    with pytest.raises(SystemExit, match="#579"):
-        plates.main(["--input-root", str(root), "--output-dir", str(out)])
-    assert not out.exists()
-
-
 def test_plates_refuse_to_replace_plates(tmp_path: Path) -> None:
-    root = _plates_root(tmp_path, plates.TYPED_CONTRAST_VERSION)
+    root = _root(tmp_path)
     out = tmp_path / "plates"
     out.mkdir()
     (out / "old.png").write_bytes(b"old")
@@ -721,7 +700,7 @@ def test_a_failed_plate_run_drops_the_old_record(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """New plates must not sit beside the previous run's commit and inputs (#621)."""
-    root = _plates_root(tmp_path, plates.TYPED_CONTRAST_VERSION)
+    root = _root(tmp_path)
     out = tmp_path / "plates"
     out.mkdir()
     (out / "plates_provenance.json").write_text("{}")
@@ -1073,3 +1052,328 @@ def test_slide_eight_says_whether_the_mucosa_stratum_is_shown() -> None:
 def test_plate_one_subtitle_grammar_for_one_survivor() -> None:
     summary = plates.plate1_summary(*_plate_one_tables(halophily_selected=False))
     assert "1 passes Scale 5 (cellulose: HIV, PD)" in plates.plate1_subtitle(summary)
+
+
+# ------------------------------------------------------------------------ Table 1 text (#579)
+
+FA_CEL = ("facultatively_aerobic", "cellulose_catabolic_process")
+CEL_SPH = ("cellulose_catabolic_process", "sphere_shaped")
+CEL_ARS = ("cellulose_catabolic_process", "arsenate_reduction")
+CEL_HAL = ("cellulose_catabolic_process", "moderately_halophilic")
+ALL_PASSING = {FA_CEL, CEL_SPH, CEL_ARS}
+
+
+def _comparison(
+    population: str, studies: int, passing: set[tuple[str, str]], cellulose: tuple[int, int]
+) -> list[dict[str, str]]:
+    """disease_control_comparison.tsv rows: cellulose shifts down, the other five up, and
+    the ``passing`` log-ratios at BY q = 0.01 (the rest 0.3)."""
+    up, down = cellulose
+    rows = []
+    for trait in CODES:
+        shifted = (up, down) if trait == CELLULOSE_TRAIT else (60, 40)
+        rows.append(
+            {
+                "population": population,
+                "comparison": "fraction",
+                "numerator": trait,
+                "reference": "",
+                "population_studies": str(studies),
+                "studies_scored": str(sum(shifted)),
+                "studies_up": str(shifted[0]),
+                "studies_down": str(shifted[1]),
+                "p_value": "4.1302e-06" if trait == CELLULOSE_TRAIT else "0.001",
+                "q_value": "0.002",
+            }
+        )
+    for numerator, reference in itertools.combinations(CODES, 2):
+        rows.append(
+            {
+                "population": population,
+                "comparison": "log_ratio",
+                "numerator": numerator,
+                "reference": reference,
+                "population_studies": str(studies),
+                "studies_scored": "237",
+                "studies_up": "96",
+                "studies_down": "141",
+                "p_value": "0.004",
+                "q_value": "0.01" if (numerator, reference) in passing else "0.3",
+            }
+        )
+    return rows
+
+
+def _signs(oriented: set[tuple[str, str]]) -> dict[str, Any]:
+    return populations(
+        _comparison(ALL_STUDIES, 959, ALL_PASSING, (333, 441))
+        + _comparison(ORIENTED, 592, oriented, (187, 288))
+    )
+
+
+def test_ratio_text_names_what_the_oriented_subset_changes() -> None:
+    same = deck.ratio_survivors_text({"table1": _signs(ALL_PASSING)})
+    assert same == (
+        "3 pairs pass 15-test BY q ≤ 0.05 across all 959 studies (FA/CEL, CEL/SPH and "
+        "CEL/ARS) and 3 in the 592 oriented studies"
+    )
+    added = deck.ratio_survivors_text({"table1": _signs(ALL_PASSING | {CEL_HAL})})
+    assert added.endswith(", adding CEL/HAL (96↑:141↓ [40.5%], BY q = 0.010)")
+    lost = deck.ratio_survivors_text({"table1": _signs({FA_CEL, CEL_SPH})})
+    assert lost.endswith("and 2 in the 592 oriented studies; CEL/ARS does not pass there")
+
+
+def test_increased_side_caveat_counts_the_pairs_among_them() -> None:
+    caveat = deck.increased_side_caveat({"table1": _signs(ALL_PASSING)})
+    assert caveat.startswith("None of the 10 pairs among the 5 increased-side traits passes")
+    coccus = ("facultatively_aerobic", "coccus_shaped")
+    caveat = deck.increased_side_caveat({"table1": _signs(ALL_PASSING | {coccus})})
+    assert caveat.startswith("Among the 5 increased-side traits, FA/COC passes BY q ≤ 0.05")
+
+
+def test_cover_quotes_the_comparison_table() -> None:
+    text = deck.cover_table1_text({"table1": _signs(ALL_PASSING)})
+    assert text == (
+        "Arm 3 study-level Table 1: all 6 traits pass BH q &lt; 0.01 across 959 studies (in 592 "
+        "disease-vs-healthy oriented studies, cellulose is 288/475 down (60.6%↓), p = "
+        "4.1 \N{MULTIPLICATION SIGN} 10⁻⁶, and 3 log-ratios pass BY q ≤ 0.05: FA/CEL, CEL/SPH "
+        "and CEL/ARS)"
+    )
+
+
+def test_oriented_cellulose_text_reads_both_populations() -> None:
+    assert deck.oriented_cellulose_text({"table1": _signs(ALL_PASSING)}) == (
+        "cellulose catabolism goes from 43.0%↑ (57.0%↓, BH q = 0.0020) to 39.4%↑ (60.6%↓, "
+        "p = 4.1e-06, BH q = 0.0020), BH over the six Table 1 traits"
+    )
+
+
+def test_direction_shift_slide_quotes_its_map_and_the_oriented_subset() -> None:
+    """The typed 283/465 matched no version of the table (#606)."""
+    shift = {
+        trait: {
+            "trait": trait,
+            "studies_up": "532" if trait == "facultatively_aerobic" else "333",
+            "studies_down": "383" if trait == "facultatively_aerobic" else "441",
+            "studies_scored": "915" if trait == "facultatively_aerobic" else "774",
+            "share_up": "0.581421" if trait == "facultatively_aerobic" else "0.430233",
+            "bh_q": "0.03" if trait == "coccus_shaped" else "5.66164e-06",
+        }
+        for trait in CODES
+    }
+    metrics = {
+        "table1": _signs(ALL_PASSING),
+        "table1_shift": shift,
+        "contrast_classifier": "contrast-orientation-v4",
+    }
+    title, takeaway, caveat = deck.direction_shift_text(metrics)
+    assert title.startswith("6 of the 6 Table 1 traits shift in one direction")
+    assert "532/915 scored studies (58.1%, BH q = 5.7e-06)" in takeaway
+    assert "decreased signature in 441/774 (43.0%↑ / 57.0%↓" in takeaway
+    oriented = "592 disease-vs-healthy oriented studies, not drawn here, cellulose is 288/475"
+    assert f"{oriented} down (60.6%↓, p = 4.1e-06, BH q = 0.0020)." in takeaway
+    assert "contrast-orientation-v4" in caveat
+    assert "317" not in takeaway + caveat
+
+
+def test_sci_writes_out_powers_of_ten() -> None:
+    assert deck.sci(4.1302e-06) == "4.1 \N{MULTIPLICATION SIGN} 10⁻⁶"
+    assert deck.sci(0.0518) == "0.052"
+
+
+def test_plate_seven_slide_reads_the_plate_counts() -> None:
+    counts = {
+        "table1_concordant": 6,
+        "screened_traits": 317,
+        "three_arm_additional": 11,
+        "three_arm_concordant": 17,
+        "three_arm_strict_by": 8,
+        "ora_inverted": 2,
+    }
+    assert deck.three_arm_text({"plate_counts": counts}) == (
+        "6 of the 6 original Table 1 traits (★) pass all 3 arms with concordant direction; "
+        "screening all 317 traits finds 11 more 3-arm-concordant traits (17 in all at study BH "
+        "q ≤ 0.05; 8 at strict BY q ≤ 0.05) plus 2 paired-down / ORA-inverted traits."
+    )
+    # Plates drawn before the counts were recorded say so rather than print a number
+    assert deck.three_arm_text({"plate_counts": {}}).startswith("? of the 6 original")
+
+
+def test_plates_count_plate_seven_groups() -> None:
+    def trait(in_t1: bool, concordant: bool) -> dict[str, Any]:
+        return {"in_t1": in_t1, "all3_concordant": concordant, "a1_st_q": 0.01, "a3_bh_q": 0.01}
+
+    selected = [trait(True, True)] * 5 + [trait(True, False)] + [trait(False, True)] * 3
+    selected += [trait(False, False)] * 2
+    assert plates.plate_seven_groups(selected) == {
+        "table1_traits": 6,
+        "table1_concordant": 5,
+        "three_arm_additional": 3,
+        "ora_inverted": 2,
+    }
+
+
+def test_plate_three_labels_follow_the_table() -> None:
+    signs = _signs(ALL_PASSING)
+    every, oriented = signs[ALL_STUDIES], signs[ORIENTED]
+    cellulose = [(CELLULOSE_TRAIT, trait) for trait in plates.increased_side(every)]
+    increased = list(itertools.combinations(plates.increased_side(every), 2))
+    assert plates.oriented_cellulose_pairs_text(every, oriented, cellulose) == (
+        "Oriented disease-vs-healthy filter: the same 3 of 5 Cellulose pairs pass BY; nearest "
+        "other CEL/COC BY q = 0.3"
+    )
+    assert plates.increased_pairs_text(every, oriented, increased) == (
+        "all BY q ≥ 0.30 in both all & oriented"
+    )
+    signs = _signs(ALL_PASSING | {CEL_HAL})
+    assert plates.oriented_cellulose_pairs_text(signs[ALL_STUDIES], signs[ORIENTED], cellulose) == (
+        "Oriented disease-vs-healthy filter adds CEL/HAL (4 of 5 Cellulose pairs pass BY)"
+    )
+    assert plates.survivor_codes(signs[ORIENTED]) == "FA/CEL, CEL/SPH, CEL/ARS, CEL/HAL"
+
+
+# ----------------------------------------------------------------------- links (#614, #661)
+
+
+def test_moved_table1_maps_show_the_maps_main_draws() -> None:
+    row = {"figure_file_path": "methods/figures/table1_traits_direction_shift.png"}
+    deck.moved_figure(row)
+    assert row["figure_file_path"] == "data/derived/table1_traits/table1_traits_direction_shift.png"
+    assert row["evidence_path"].endswith("table1_traits_direction_shift.tsv")
+    oral = {"figure_file_path": "methods/figures/table1_traits_focus_oral.png"}
+    deck.moved_figure(oral)
+    assert oral["evidence_path"].endswith("table1_traits_condition_body_site_matrix.tsv")
+    for linked in (row["code_path"], row["methods_path"]):
+        assert (REPO / linked).exists(), linked
+
+
+def test_relinked_code_and_evidence_are_on_main() -> None:
+    """The never-committed create_trait_Heatmaps.py and create_oral_six_trait_heatmap.py
+    are replaced by the scripts main runs, with the tables they write (#614)."""
+    for linked in (*deck.TRAIT_HEATMAP_CODE.values(), deck.ORAL_HEATMAP_CODE):
+        assert (REPO / linked).exists(), linked
+    assert (REPO / deck.ORAL_HEATMAP_EVIDENCE).exists()
+    for figure in deck.TRAIT_HEATMAP_CODE:
+        if "/bsdb-taxa-only/" in figure:
+            assert (REPO / figure.replace(".png", "_matrix.tsv")).exists(), figure
+
+
+def test_unmerged_code_is_linked_at_its_pull_request() -> None:
+    entry: dict[str, Any] = {
+        "figure_file_path": "data/derived/x/gram_positive_inc_sankey.png",
+        "code_path": "src/bsdbng/gram_sankey.py",
+    }
+    deck.mark_unmerged(entry)
+    name, ref = deck.UNMERGED_GRAM_SANKEY
+    assert entry["code_ref"] == ref
+    assert entry["not_rerun"] == f"{name} at {ref[:12]}"
+    assert deck.slide_links(entry, entry["figure_file_path"])["code_url"].endswith(
+        f"/blob/{ref}/src/bsdbng/gram_sankey.py"
+    )
+    row = {"figure_file_path": entry["figure_file_path"], "commit": deck.COMMIT, **entry}
+    assert deck.revision_stamp(row) == f"Not rerun on main · code in {name} at {ref[:12]}"
+    assert {ref, deck.UNMERGED_ORA_FIGURES[1]} <= set(deck.cited_refs())
+    merged: dict[str, Any] = {"code_path": deck.ORAL_HEATMAP_CODE}
+    deck.mark_unmerged(merged)
+    assert "code_ref" not in merged
+
+
+def test_unmerged_code_is_not_on_main() -> None:
+    """Code merged into main is linked and rerun there, not at a pull request."""
+    for code in deck.UNMERGED_CODE:
+        assert not (REPO / code).exists(), code
+
+
+def test_a_slide_shows_the_figure_it_records(tmp_path: Path) -> None:
+    """A static svg_sources/ copy would show an older image than the PNG (#661)."""
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "assets_svg").mkdir()
+    png = tmp_path / "figure.png"
+    png.write_bytes(b"png")
+    assert deck.copy_asset(png, tmp_path, 2) == "assets/v6_slide_002_figure.png"
+    png.with_suffix(".svg").write_text("<svg/>")
+    assert deck.copy_asset(png, tmp_path, 2) == "assets_svg/v6_slide_002_figure.svg"
+    assert (tmp_path / "assets/v6_slide_002_figure.png").read_bytes() == b"png"
+
+
+# ----------------------------------------------------------------- provenance (#615, #622)
+
+
+def _recipes() -> dict[str, str]:
+    recipes: dict[str, str] = deck.justfile_recipes((REPO / "Justfile").read_text("utf-8"))
+    return recipes
+
+
+def test_pipeline_steps_name_real_recipes_and_code() -> None:
+    recipes = _recipes()
+    seen: set[str] = set()
+    for step in deck.PIPELINE_STEPS:
+        assert set(step["recipes"]) <= set(recipes), step["step_id"]
+        assert (REPO / step["script_or_module"]).exists(), step["script_or_module"]
+        assert set(step["prerequisite_step_ids"]) <= seen, step["step_id"]
+        seen.add(step["step_id"])
+    steps = deck.pipeline_steps()
+    assert [step["step_order"] for step in steps] == list(range(1, len(steps) + 1))
+    assert steps[3]["command_line"] == "just download-kg && just taxa-trait-matrix"
+    assert "recipes" not in steps[0]
+
+
+def test_recipes_are_found_by_the_code_they_run() -> None:
+    by_code = deck.recipes_by_code(_recipes())
+    assert by_code["scripts/create_table1_trait_maps.py"] == ["table1-trait-maps"]
+    assert by_code["src/mtp/trait_screen.py"] == ["trait-direction-screen"]
+    assert by_code[deck.ORAL_HEATMAP_CODE] == [
+        "six-shared-trait-heatmaps",
+        "oral-six-trait-heatmap",
+    ]
+
+
+def test_command_series_drop_what_no_longer_exists() -> None:
+    recipes = _recipes()
+    by_code = deck.recipes_by_code(recipes)
+    series = [
+        *deck.UPSTREAM_COMMANDS,
+        "just trait-profile-investigation  # uv run python scripts/create_trait_Heatmaps.py",
+        "uv run python scripts/create_trait_Heatmaps.py",
+        "uv run python -m mtp.cli analyze --mode enrichment",
+        "just no-such-recipe",
+    ]
+    assert deck.figure_commands(
+        series, "scripts/create_taxa_guild_heatmap.py", recipes, by_code
+    ) == [*deck.UPSTREAM_COMMANDS, "just trait-profile-investigation", "just trait-heatmaps"]
+    name, ref = deck.UNMERGED_ORA_FIGURES
+    assert deck.figure_commands(
+        series, "scripts/plot_enrichment_histograms.py", recipes, by_code
+    ) == [f"# not rerun on main: scripts/plot_enrichment_histograms.py is only in {name}, at {ref}"]
+
+
+def test_command_series_do_not_repeat_the_drawing_step() -> None:
+    recipes = _recipes()
+    series = [*deck.UPSTREAM_COMMANDS, "just oral-six-trait-heatmap  # old note"]
+    assert deck.figure_commands(
+        series, deck.ORAL_HEATMAP_CODE, recipes, deck.recipes_by_code(recipes)
+    ) == [
+        *deck.UPSTREAM_COMMANDS,
+        "just six-shared-trait-heatmaps && just oral-six-trait-heatmap",
+    ]
+
+
+def test_figure_records_name_their_code_and_existing_steps() -> None:
+    recipes = _recipes()
+    by_code = deck.recipes_by_code(recipes)
+    row = {
+        "code_path": "scripts/create_taxa_guild_heatmap.py",
+        "figure_file_path": "trait-visualization/taxa_guild_discovery_clustered_heatmap.png",
+        "evidence_path": "",
+        "methods_path": "",
+    }
+    rec: dict[str, Any] = {"pipeline_step_ids": ["step_01_download", "step_99_gone"]}
+    deck.drawn_provenance(rec, row, recipes, by_code)
+    assert rec["generator_script_path"] == row["code_path"]
+    assert rec["just_recipe"] == "just trait-heatmaps"
+    assert rec["pipeline_step_ids"] == ["step_01_download"]
+    unmerged = {**row, "code_path": "src/bsdbng/gram_sankey.py"}
+    rec = {"pipeline_step_ids": ["step_01_download"]}
+    deck.drawn_provenance(rec, unmerged, recipes, by_code)
+    assert rec["just_recipe"].startswith("# not rerun on main")
+    assert rec["pipeline_step_ids"] == []

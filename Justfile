@@ -256,15 +256,15 @@ deck_schema := "data/derived/figure_review_2026-09-21/provenance/figure_provenan
 # The selected-figure deck: the HTML, slide manifest and assets in {{deck_slides}}, the
 # figure provenance YAML in {{deck_provenance}} (validated against its LinkML schema),
 # the PDF, and deck_build_status.json recording that validation and printing succeeded.
-# Many inputs are gitignored local outputs (earlier deck manifests, svg_sources/,
-# data/derived figures), so a fresh clone cannot build it. The build refuses to replace
-# an existing deck without --overwrite (back up slides/ and provenance/ first) and
-# refuses contrast-orientation inputs other than the version its typed numbers describe
-# (#573, #579, #592). The plates and cellulose_decr figures come from this checkout, where
-# their recipes draw them; the rest from --input-root. The build checks every committed
-# file a slide links or quotes against the revision the slide cites, from `git ls-tree`
-# listings written here, and refuses when one differs; --allow-unverified builds a marked
-# review deck instead (#637). Choose other folders with the variables, e.g.
+# Many inputs are gitignored local outputs (earlier deck manifests, data/derived figures),
+# so a fresh clone cannot build it. The build refuses to replace an existing deck without
+# --overwrite (back up slides/ and provenance/ first) (#573, #592). The slide text reads
+# its numbers from the rerun's tables (#579). The plates and cellulose_decr figures come
+# from this checkout, where their recipes draw them; the rest from --input-root. Slides
+# whose code was never merged link it at its pull request (#614). The build checks every
+# committed file a slide links or quotes against the revision the slide cites, from
+# `git ls-tree` listings written here, and refuses when one differs; --allow-unverified
+# builds a marked review deck instead (#637). Choose other folders with the variables, e.g.
 # `just deck_slides=/tmp/s deck_provenance=/tmp/p figure-review-deck`, so that every
 # step uses them; --output-dir and --provenance-dir are refused here. A worktree has no
 # data/derived, so there also set deck_schema= to the schema beside the input root's YAML.
@@ -305,10 +305,12 @@ figure-review-deck *ARGS:
 	if [ "$overwrite" = 1 ]; then
 		rm -f "$slides/deck_build_status.json"
 	fi
-	# The committed files at each revision the slides cite, for the build to check (#637)
+	# The committed files at each revision the slides cite, for the build to check (#637).
+	# The unmerged pull requests' commits are fetched when this clone lacks them (#614).
 	trees="$(mktemp -d)"
 	trap 'rm -rf "$trees"' EXIT
 	for ref in $(uv run python scripts/build_slide_deck.py --print-refs); do
+		git cat-file -e "$ref^{commit}" 2>/dev/null || git fetch --quiet origin "$ref" || true
 		git ls-tree -r -z --full-tree "$ref" > "$trees/$ref.tree" || rm -f "$trees/$ref.tree"
 	done
 	uv run python scripts/build_slide_deck.py --output-dir "$slides" --provenance-dir "$provenance" --git-trees "$trees" "$@"
