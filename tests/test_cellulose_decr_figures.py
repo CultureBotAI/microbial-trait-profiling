@@ -67,7 +67,7 @@ def test_figures_draw_from_the_committed_tables(tmp_path: Path) -> None:
     assert direction["title"].endswith(
         "in PD, CRC and all three pooled under every condition definition; in HIV only under some"
     )
-    assert "HIV 9 : 0 : 2" in direction["takeaway"]
+    assert "HIV 10 : 2 : 2" in direction["takeaway"]
     assert captions["statements"]["fragile"].startswith("the HIV result depends")
     assert captions["statements"]["crc_compartments"] in direction["caveat"]
 
