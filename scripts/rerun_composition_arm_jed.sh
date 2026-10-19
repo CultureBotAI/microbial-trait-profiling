@@ -36,6 +36,8 @@ for required_file in \
         exit 1
     fi
 done
+# The arms read the canonical human profile table committed as a .gz (#656).
+just study-trait-profiles-check
 
 echo "=== [1/9] Running paired within-study log-ratio analysis (15 Table 1 pairs) ==="
 just table1-compositional-stats
