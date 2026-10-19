@@ -173,7 +173,7 @@ The PD case study adds further interpretation limits. Its units are curated diff
 
 ### 8. [`pd_ecological_reporter_combined.png`](pd_ecological_reporter_combined.png)
 
-**What it shows.** Panel A compares equal-study-weighted six-trait fingerprints and the ecological-reporter composite across 13 qualifying fecal condition labels. Panel B places those conditions on two summary axes: reversed cellulose contrast and the three-trait increased-side composite. Panel C maps reported PD genera and species to KG-Microbe annotations and BugSigDB direction support.
+**What it shows.** Panel A compares equal-study-weighted six-trait fingerprints and the ecological-reporter composite across 13 qualifying fecal condition labels (*study-majority labels*, pending #585). Panel B places those conditions on two summary axes: reversed cellulose contrast and the three-trait increased-side composite. Panel C maps reported PD genera and species to KG-Microbe annotations and BugSigDB direction support.
 
 **Interpretation.** PD has the proposed opposing pattern: moderately halophilic `+0.53`, facultatively aerobic `+0.46`, arsenate reduction `+0.51`, cellulose `-0.65`, and composite `+1.15`, with `n=45` paired studies (*study-majority labels*, pending #585). Coccus and sphere morphology estimates are small. PD sits in the upper-right quadrant in Panel B, but colorectal cancer, COVID-19, stroke, graft-versus-host disease, ulcerative colitis, and other labels share parts of that region. The pattern therefore agrees with the ecological-reporter hypothesis but is not specific to PD. Panel C shows where trait annotations enter the score; it does not show activity or statistical mediation.
 
