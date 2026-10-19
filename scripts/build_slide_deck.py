@@ -152,6 +152,14 @@ def read_tsv(path: Path, quoted: bool = True) -> list[dict[str, str]]:
         return list(csv.DictReader(f, delimiter="\t"))
 
 
+def read_json(path: Path) -> Any:
+    """A JSON record the slides quote, checked like a quoted table (#637)."""
+    if not path.exists():
+        raise FileNotFoundError(f"missing {path}")
+    TABLES_READ.add(path)
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def listing(names: list[str]) -> str:
     """'A', 'A and B' or 'A, B and C'."""
     if len(names) < 2:
@@ -290,6 +298,12 @@ def load_rerun_metrics(repo: Path) -> dict:
     )
     metrics["pd_cellulose_drivers"] = [r["taxon_name"] for r in drivers[:3]]
     metrics["pd_six_trait_summary"] = read_tsv(pd_dir / "pd_six_trait_direction_summary.tsv")
+    # The exploratory taxa heatmap's counts, which its slide quotes (#579, #584)
+    heatmap = "pd_exploratory_taxa_six_traits_influence_heatmap"
+    metrics["pd_exploratory"] = {
+        "manifest": read_json(pd_dir / f"{heatmap}_manifest.json"),
+        "taxa": {r["taxon_name"]: r for r in read_tsv(pd_dir / f"{heatmap}_taxa.tsv")},
+    }
     model_rows = read_tsv(pd_dir / "pd_cellulose_interaction_model.tsv")
     for outcome, key in (
         ("cellulose_z", "pd_interaction"),
@@ -510,6 +524,38 @@ def cover_table1_text(metrics: dict) -> str:
         f"{plural(len(survivors), 'log-ratio')} {'passes' if len(survivors) == 1 else 'pass'} BY "
         f"q ≤ 0.05{named})"
     )
+
+
+def exploratory_heatmap_text(metrics: dict) -> tuple[str, str, str]:
+    """The PD exploratory taxa heatmap's slide, from its manifest and taxa table (#579)."""
+    manifest = metrics["pd_exploratory"]["manifest"]
+    taxa = metrics["pd_exploratory"]["taxa"]
+    rows = int(manifest["displayed_rows"])
+    agreement = manifest["literature_bug_sig_direction_agreement_counts"]
+    status = manifest["status_counts"]
+    supported = int(status.get("inc", 0)) + int(status.get("dec", 0))
+    recurrence = [
+        f"{short} {taxa[name]['increased_profiles']} increased / "
+        f"{taxa[name]['decreased_profiles']} decreased"
+        for name, short in (("Escherichia coli", "E. coli"), ("Escherichia", "Escherichia"))
+        if name in taxa
+    ]
+    title = f"{rows} PD taxa compared on literature direction and six-trait influence"
+    takeaway = (
+        f"{rows} taxa across {len(manifest['taxonomic_ranks'])} ranks; "
+        f"{manifest['displayed_rows_with_literature_reference']} have a PD literature "
+        f"direction, which agrees with the BugSigDB direction for {agreement.get('agrees', 0)} "
+        f"and differs for {agreement.get('differs', 0)}."
+        + (f" Recurrence: {'; '.join(recurrence)}." if recurrence else "")
+    )
+    caveat = (
+        "Influence is exploratory, non-additive and non-causal: "
+        f"{supported} of {manifest['cells']} cells have supported directions; "
+        f"{status.get('mixed', 0)} are mixed and {status.get('low support', 0)} low support. "
+        "The literature reference includes studies that are also in the analysed corpus, such "
+        "as Wallen 2020 and 2022."
+    )
+    return title, takeaway, caveat
 
 
 def direction_shift_text(metrics: dict) -> tuple[str, str, str]:
@@ -1092,10 +1138,7 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
                 )
 
     elif fig_path.endswith("pd_exploratory_taxa_six_traits_influence_heatmap.png"):
-        caveat += (
-            " The literature reference includes studies that are also in the analysed corpus, "
-            "such as Wallen 2020 and 2022."
-        )
+        title, takeaway, caveat = exploratory_heatmap_text(metrics)
 
     elif fig_path == "data/derived/enrichment_infographic.png":
         title = "66,240 ORA enrichment calls describe individual microbial profiles"
@@ -1194,7 +1237,7 @@ def pd_direction_caveat(model: dict[str, str], positive: dict[str, str]) -> str:
     shown = [float(r["p_value"]) < 0.05 and float(r["coefficient"]) > 0 for r in rows]
     against = [float(r["p_value"]) < 0.05 and float(r["coefficient"]) < 0 for r in rows]
     if any(against):
-        verdict = "at least one measure points the other way, against the figure's title"
+        verdict = "at least one measure points the other way"
     elif all(shown):
         verdict = "a PD-specific direction is shown at p < 0.05"
     elif any(shown):
@@ -1788,8 +1831,9 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "code_path": "scripts/create_pd_trait_contributors.py",
             "takeaway": "Quantifies how often the six shared traits are co-annotated on the same "
             "PD contributor taxa in KG-Microbe.",
-            "caveat": "Co-carriage explains why facultative aerobiosis, halophily, coccus shape, "
-            "and arsenate reduction covary across signatures.",
+            "caveat": "Traits annotated on the same contributor taxa shift together whenever "
+            "those taxa are reported; the edges count shared annotated taxa, not linked "
+            "biology (#584).",
             "methods_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
             "README.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
@@ -1917,6 +1961,12 @@ def get_remaining_appendix_slides(
         if root_path.exists():
             all_pngs.extend(sorted(root_path.rglob("*.png")))
 
+    # A figure byte-identical to one already shown is a copy, whatever its name (#586)
+    shown = {
+        sha256_file(figure_root(repo, rel) / rel)
+        for rel in already_included
+        if (figure_root(repo, rel) / rel).exists()
+    }
     appendix_slides: list[dict[str, str]] = []
     for png_path in all_pngs:
         rel = png_path.relative_to(repo).as_posix()
@@ -1924,6 +1974,10 @@ def get_remaining_appendix_slides(
             continue
         if any(rel.startswith(p) for p in excluded_prefixes):
             continue
+        digest = sha256_file(png_path)
+        if digest in shown:
+            continue
+        shown.add(digest)
         # The full oral heatmap is a Main slide, so any number of its pages is redundant (#641)
         if re.search(r"/oral_six_trait_heatmap_page_\d+\.png$", rel):
             continue
@@ -1982,14 +2036,14 @@ def get_remaining_appendix_slides(
                 f"{metrics['pd_net_total']}-test study-level fecal Wilcoxon screen."
             )
             if png_path.name == "pd_cellulose_direction_specificity.png":
-                # The figure's own title calls the signal direction-specific (#590).
+                # The study-clustered model of the interaction the figure plots (#590, #599)
                 caveat = pd_direction_caveat(
                     metrics["pd_interaction"], metrics["pd_interaction_positive"]
                 )
             elif png_path.name == "pd_cellulose_taxon_six_trait_heatmap.png":
                 caveat = (
-                    "Exploratory PD diagnostic. A \N{LEFT DOUBLE QUOTATION MARK}cellulose-"
-                    "carrier\N{RIGHT DOUBLE QUOTATION MARK} taxon is one whose KG-Microbe "
+                    "Exploratory PD diagnostic. A cellulose-annotated taxon is one whose "
+                    "KG-Microbe "
                     "annotations, its own or its descendants\N{RIGHT SINGLE QUOTATION MARK}, "
                     "include cellulose catabolic process; cell numbers count the annotated taxa "
                     "at or below each row. It is an annotation, not measured cellulose "
@@ -2070,13 +2124,17 @@ def get_remaining_appendix_slides(
             owner = "Jed / Ilyas"
             code_path = "scripts/analyze_enrichment_infographic_followup.py"
             tag = "Jed · Appendix · ORA organism-trait followup"
-            title = f"Top-enriched traits vs organisms heatmap ({parent_name})"
+            title = f"Traits vs organisms heatmap ({parent_name})"
             takeaway = (
-                "Maps top ORA-enriched traits against contributing organisms "
-                f"({png_path.name}) from the fresh ORA rerun."
+                "Organisms annotated with the follow-up's selected traits in the profiles of "
+                f"its target conditions ({png_path.name}); the folder README says how the "
+                "traits were chosen."
             )
-            caveat = "Shows KG-Microbe organism-trait annotations underlying top ORA hits."
-            evidence_path = "data/derived/trait_enrichment_results.tsv"
+            caveat = (
+                "KG-Microbe annotations of reported taxa. The trait columns are fixed by the "
+                "follow-up, not a fresh ORA ranking (#586)."
+            )
+            evidence_path = rel.replace("_heatmap.png", "_heatmap_matrix.tsv")
         elif "/six-shared-traits/oral/" in rel:
             owner = "Jed"
             code_path = ORAL_HEATMAP_CODE

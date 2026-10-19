@@ -296,7 +296,7 @@ def _model(coefficient: float, p: float) -> dict[str, str]:
         ((0.4098, 0.08004), (0.1859, 0.0553), "a PD-specific direction is not shown at p < 0.05"),
         ((0.41, 0.01), (0.19, 0.02), "a PD-specific direction is shown at p < 0.05."),
         ((0.41, 0.01), (0.19, 0.2), "is shown at p < 0.05 for one measure only"),
-        ((-0.41, 0.04), (0.19, 0.2), "points the other way, against the figure's title"),
+        ((-0.41, 0.04), (0.19, 0.2), "points the other way"),
     ],
 )
 def test_pd_direction_caveat_quotes_the_clustered_model(
@@ -1407,3 +1407,51 @@ def test_only_recipes_that_run_without_arguments_are_steps() -> None:
         "src/mtp/workflow.py": ["workflow-check"],
         "scripts/quiet.py": ["quiet"],
     }
+
+
+def test_exploratory_heatmap_slide_reads_its_manifest() -> None:
+    """The September text typed 23 literature matches; after #584 there are 25 (#579)."""
+    manifest = {
+        "displayed_rows": 30,
+        "taxonomic_ranks": ["species", "genus", "family"],
+        "displayed_rows_with_literature_reference": 25,
+        "literature_bug_sig_direction_agreement_counts": {"agrees": 22, "differs": 3},
+        "cells": 180,
+        "status_counts": {"mixed": 161, "low support": 12, "dec": 6, "inc": 1},
+    }
+    taxa = {
+        "Escherichia coli": {"increased_profiles": "1", "decreased_profiles": "2"},
+        "Escherichia": {"increased_profiles": "9", "decreased_profiles": "2"},
+    }
+    title, takeaway, caveat = deck.exploratory_heatmap_text(
+        {"pd_exploratory": {"manifest": manifest, "taxa": taxa}}
+    )
+    assert title.startswith("30 PD taxa")
+    assert takeaway == (
+        "30 taxa across 3 ranks; 25 have a PD literature direction, which agrees with the "
+        "BugSigDB direction for 22 and differs for 3. Recurrence: E. coli 1 increased / 2 "
+        "decreased; Escherichia 9 increased / 2 decreased."
+    )
+    assert caveat.startswith("Influence is exploratory, non-additive and non-causal: 7 of 180")
+    assert "161 are mixed and 12 low support" in caveat
+
+
+def test_plate_four_arrows_follow_the_means() -> None:
+    assert plates.lead_arrow({"study_weighted_mean_contrast": "-0.677"}) == "↓"
+    assert plates.lead_arrow({"study_weighted_mean_contrast": "1.136"}) == "↑"
+    assert plates.lead_arrow({"study_weighted_mean_contrast": "NA"}) == ""
+    assert plates.lead_arrow({}) == ""
+
+
+def test_appendix_skips_byte_identical_copies(tmp_path: Path) -> None:
+    """Copies of one heatmap under several names became separate slides (#586)."""
+    folder = tmp_path / "trait-visualization" / "trait-profile-investigation" / "taxa-coverage"
+    folder.mkdir(parents=True)
+    for name in ("a_heatmap.png", "b_heatmap.png"):
+        (folder / name).write_bytes(b"same image")
+    (folder / "c_heatmap.png").write_bytes(b"another image")
+    slides = deck.get_remaining_appendix_slides(set(), tmp_path, {})
+    assert [Path(slide["figure_file_path"]).name for slide in slides] == [
+        "a_heatmap.png",
+        "c_heatmap.png",
+    ]

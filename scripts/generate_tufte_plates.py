@@ -2512,21 +2512,30 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
         and r.get("body_site_group") == "Feces"
     }
 
+    # Each row names its paired studies, read from the reporter table (#579)
+    studies = {
+        r["condition"]: int(r["paired_study_count"])
+        for r in eco_summary
+        if r["trait"] == "ecological-reporter composite"
+    }
     conditions = [
-        ("Parkinson's disease", "Parkinson's disease (45 st.)"),
-        ("Colorectal cancer", "Colorectal cancer (24 st.)"),
-        ("HIV infection", "HIV infection (17 st.)"),
-        ("Irritable bowel syndrome", "Irritable bowel syndrome (13 st.)"),
-        ("COVID-19", "COVID-19 (11 st.)"),
-        ("Gestational diabetes", "Gestational diabetes (7 st.)"),
-        ("Age", "Age / aging (6 st.)"),
-        ("Acute lymphoblastic leukemia", "Acute lymphoblastic leukemia (4 st.)"),
-        ("Atopic eczema", "Atopic eczema (4 st.)"),
-        ("Autism", "Autism (4 st.)"),
-        ("Stroke", "Stroke (4 st.)"),
-        ("Ulcerative colitis", "Ulcerative colitis (4 st.)"),
-        ("Clinical treatment", "Clinical treatment (3 st.)"),
-        ("Socioeconomic status", "Socioeconomic status (3 st.)"),
+        (condition, f"{shown} ({studies[condition]} st.)")
+        for condition, shown in (
+            ("Parkinson's disease", "Parkinson's disease"),
+            ("Colorectal cancer", "Colorectal cancer"),
+            ("HIV infection", "HIV infection"),
+            ("Irritable bowel syndrome", "Irritable bowel syndrome"),
+            ("COVID-19", "COVID-19"),
+            ("Gestational diabetes", "Gestational diabetes"),
+            ("Age", "Age / aging"),
+            ("Acute lymphoblastic leukemia", "Acute lymphoblastic leukemia"),
+            ("Atopic eczema", "Atopic eczema"),
+            ("Autism", "Autism"),
+            ("Stroke", "Stroke"),
+            ("Ulcerative colitis", "Ulcerative colitis"),
+            ("Clinical treatment", "Clinical treatment"),
+            ("Socioeconomic status", "Socioeconomic status"),
+        )
     ]
 
     traits_cols = [
@@ -2559,7 +2568,8 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     fig.text(
         0.03,
         0.920,
-        "Left: Study-weighted mean paired shift Δz across 14 Fecal cohorts \N{MULTIPLICATION SIGN} "
+        f"Left: Study-weighted mean paired shift Δz across {len(conditions)} Fecal cohorts "
+        "\N{MULTIPLICATION SIGN} "
         "6 Table 1 traits + Ecological Composite · Right: Study win/loss consistency & 95% CIs for "
         "the lead disease cohorts",
         fontsize=8.9,
@@ -2650,18 +2660,22 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     despine(ax, top=True, right=True, left=True, bottom=True)
 
     # --- Panel B: Lead Fecal Cohort Forest Plot (Mean Δz ± 95% CI + Study Win/Loss + Fisher q) ---
+    # Each label's arrow is the sign of the study-weighted mean it plots (#579)
     lead_specs = [
-        ("Parkinson's disease", "ecological-reporter composite", "PD · Ecological Composite ↑"),
-        ("Parkinson's disease", "moderately halophilic", "PD · Moderately halophilic ↑"),
-        ("Parkinson's disease", "arsenate reduction", "PD · Arsenate reduction ↑"),
-        ("Parkinson's disease", "facultatively aerobic", "PD · Facultatively aerobic ↑"),
-        ("Colorectal cancer", "ecological-reporter composite", "CRC · Ecological Composite ↑"),
-        ("Colorectal cancer", "moderately halophilic", "CRC · Moderately halophilic ↑"),
-        ("HIV infection", "ecological-reporter composite", "HIV · Ecological Composite ↑"),
-        ("COVID-19", "cellulose catabolic process", "COVID-19 · Cellulose catabolism ↓"),
-        ("Parkinson's disease", "cellulose catabolic process", "PD · Cellulose catabolism ↓"),
-        ("Colorectal cancer", "cellulose catabolic process", "CRC · Cellulose catabolism ↓"),
-        ("HIV infection", "cellulose catabolic process", "HIV · Cellulose catabolism ↓"),
+        (condition, trait, f"{short} · {shown} {lead_arrow(by_eco.get((condition, trait), {}))}")
+        for condition, short, trait, shown in (
+            ("Parkinson's disease", "PD", "ecological-reporter composite", "Ecological Composite"),
+            ("Parkinson's disease", "PD", "moderately halophilic", "Moderately halophilic"),
+            ("Parkinson's disease", "PD", "arsenate reduction", "Arsenate reduction"),
+            ("Parkinson's disease", "PD", "facultatively aerobic", "Facultatively aerobic"),
+            ("Colorectal cancer", "CRC", "ecological-reporter composite", "Ecological Composite"),
+            ("Colorectal cancer", "CRC", "moderately halophilic", "Moderately halophilic"),
+            ("HIV infection", "HIV", "ecological-reporter composite", "Ecological Composite"),
+            ("COVID-19", "COVID-19", "cellulose catabolic process", "Cellulose catabolism"),
+            ("Parkinson's disease", "PD", "cellulose catabolic process", "Cellulose catabolism"),
+            ("Colorectal cancer", "CRC", "cellulose catabolic process", "Cellulose catabolism"),
+            ("HIV infection", "HIV", "cellulose catabolic process", "Cellulose catabolism"),
+        )
     ]
     y_l = np.arange(len(lead_specs))[::-1]
     # Room below the rows for the cellulose callout
@@ -2781,6 +2795,15 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
 # ==============================================================================
 # PLATE 5: Anatomical Oxygen-Switch Polarity Inversion & Cross-Disease Switchers
 # ==============================================================================
+def lead_arrow(row: Mapping[str, str]) -> str:
+    """'↑' or '↓' for the sign of a reporter row's study-weighted mean, '' without one."""
+    value = row.get("study_weighted_mean_contrast")
+    if not has_value(value):
+        return ""
+    mean = float(str(value))
+    return "↑" if mean > 0 else "↓" if mean < 0 else "="
+
+
 def plate5_strata(
     rows: Sequence[dict[str, str]],
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
