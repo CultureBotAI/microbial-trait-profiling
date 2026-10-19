@@ -77,9 +77,19 @@ def test_excluded_host_note_counts_one_direction() -> None:
     )
     assert excluded_host_note(excluded, "decreased") == (
         "Human-host profiles only: 1 decreased-profile occurrence (1 profile) "
-        "from non-human or unrecorded hosts are excluded."
+        "from non-human or unrecorded hosts is excluded."
     )
     assert excluded_host_note(excluded.iloc[0:0], "increased") == "Human-host profiles only."
+
+
+def test_excluded_host_summary_agrees_in_number() -> None:
+    _, excluded = join_human_host_profiles(
+        occurrences().iloc[[2]], profiles(["s1|s1-1|inc"]), experiment_hosts()
+    )
+    assert excluded_host_summary(excluded) == (
+        "1 occurrence (1 increased) in 1 profile from 1 study comes from "
+        "experiments whose host is not Homo sapiens: Mus musculus 1."
+    )
 
 
 def test_excluded_host_summary_counts_directions_and_hosts() -> None:

@@ -78,6 +78,11 @@ def join_human_host_profiles(
     return joined, excluded
 
 
+def _counted(count: int, singular: str, plural: str) -> str:
+    """Return `count` with the noun form that agrees with it."""
+    return f"{count:,} {singular if count == 1 else plural}"
+
+
 def excluded_host_summary(excluded: pd.DataFrame) -> str:
     """Return a sentence counting the set-aside occurrences by direction and host."""
     if excluded.empty:
@@ -91,11 +96,12 @@ def excluded_host_summary(excluded: pd.DataFrame) -> str:
         f"{host} {int(count):,}"
         for host, count in sorted(hosts.items(), key=lambda item: (-item[1], item[0]))
     )
+    verb = "comes" if len(excluded) == 1 else "come"
     return (
-        f"{len(excluded):,} occurrences ({direction_text}) in "
-        f"{excluded['profile_id'].nunique():,} profiles from "
-        f"{excluded['study_id'].nunique():,} studies come from experiments whose host "
-        f"is not {HUMAN_HOST_SPECIES}: {host_text}."
+        f"{_counted(len(excluded), 'occurrence', 'occurrences')} ({direction_text}) in "
+        f"{_counted(excluded['profile_id'].nunique(), 'profile', 'profiles')} from "
+        f"{_counted(excluded['study_id'].nunique(), 'study', 'studies')} {verb} from "
+        f"experiments whose host is not {HUMAN_HOST_SPECIES}: {host_text}."
     )
 
 
@@ -111,9 +117,11 @@ def excluded_host_note(excluded: pd.DataFrame, direction: str) -> str:
         if selected["host_species"].eq(UNRECORDED_HOST).any()
         else "non-human hosts"
     )
-    occurrence_word = "occurrence" if count == 1 else "occurrences"
-    profile_word = "profile" if profile_count == 1 else "profiles"
+    occurrences = _counted(
+        count, f"{direction}-profile occurrence", f"{direction}-profile occurrences"
+    )
+    verb = "is" if count == 1 else "are"
     return (
-        f"Human-host profiles only: {count:,} {direction}-profile {occurrence_word} "
-        f"({profile_count:,} {profile_word}) from {hosts} are excluded."
+        f"Human-host profiles only: {occurrences} "
+        f"({_counted(profile_count, 'profile', 'profiles')}) from {hosts} {verb} excluded."
     )
