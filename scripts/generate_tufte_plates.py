@@ -14,6 +14,7 @@ import argparse
 import csv
 import json
 import math
+import re
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -21,9 +22,12 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
+from mtp.trait_guilds import OXYGEN_GUILDS
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PLATES_DIR = Path("data/derived/tufte_plates")
 CELLULOSE_DIR = Path("data/analysis/cellulose_decr")
+TRAIT_COLUMNS = Path("data/derived/taxa_trait_matrix_columns.tsv")
 # Plates III and VII type numbers from this contrast classifier (569 oriented studies) beside
 # rows read from its tables; another version would contradict them (#579).
 TYPED_CONTRAST_VERSION = "contrast-orientation-v2"
@@ -52,6 +56,29 @@ def read_tsv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(lines, delimiter="\t"))
 
 
+def fmt_p(value: float) -> str:
+    return f"{value:.2g}" if value >= 0.001 else f"{value:.1e}"
+
+
+def trait_labels(repo: Path) -> dict[str, str]:
+    """Each trait column's object_name, the label the plates must show (#556, #591)."""
+    return {
+        row["column_id"]: row["object_name"].replace("_", " ")
+        for row in read_tsv(repo / TRAIT_COLUMNS)
+    }
+
+
+def canonical_display(display: str, label: str | None) -> str:
+    """A row label with its trait name replaced by the canonical one; tags and marks kept."""
+    if label is None:
+        return display
+    match = re.match(r"^(\[[^\]]*\]\s+)?(.*?)((?:\s+\[[^\]]*\])?(?:\s+★)?)$", display)
+    if match is None:
+        return display
+    prefix, _, suffix = match.groups()
+    return f"{prefix or ''}{label[:1].upper()}{label[1:]}{suffix}"
+
+
 def cellulose_decr_notes(repo: Path) -> dict[str, str]:
     """Plate annotations for the cellulose_decr results, read from its committed tables.
 
@@ -78,20 +105,18 @@ def cellulose_decr_notes(repo: Path) -> dict[str, str]:
     observed = summary["observed"]
     u6 = summary["null_models"]["U6"]
     counts = f"stool {stool['a_down']}↓:{stool['a_up']}↑ vs GI {stool['b_down']}↓:{stool['b_up']}↑"
-    odds = f"OR {float(stool['conditional_or']):.1f}, p={float(stool['fisher_p_two_sided']):.1e}"
+    odds = f"OR {float(stool['conditional_or']):.1f}, p={fmt_p(float(stool['fisher_p_two_sided']))}"
+    healthy_p = f"disease-vs-healthy studies p={fmt_p(float(healthy['fisher_p_two_sided']))}"
     return {
-        "crc_callout": (
-            f"★ CRC cellulose: {counts} · {odds} · disease-vs-healthy studies "
-            f"p={float(healthy['fisher_p_two_sided']):.2f}"
-        ),
+        "crc_callout": f"• CRC cellulose, paired experiments: {counts} · {odds} · {healthy_p}",
         "overlap_callout": (
             f"• Stool overlap: {observed['three_way_core']} of {observed['three_way_union']} "
             "taxa in all three · whole-signature null "
-            f"p={float(u6['mean_pairwise_jaccard_distance']['p']):.2f} (mean d_J), "
-            f"{float(u6['three_way_core']['p']):.2f} (core)"
+            f"p={fmt_p(float(u6['mean_pairwise_jaccard_distance']['p']))} (mean d_J), "
+            f"{fmt_p(float(u6['three_way_core']['p']))} (core)"
         ),
         "crc_short": f"Cell. {counts}",
-        "crc_source": f"CRC cellulose stool vs GI: {odds} (cellulose_decr).",
+        "crc_source": f"CRC cellulose stool vs GI: {odds}; {healthy_p} (cellulose_decr).",
     }
 
 
@@ -129,7 +154,20 @@ def despine(
 # ==============================================================================
 # METHODS PLATE 1: High-Level Data & Taxonomic Integration Architecture
 # ==============================================================================
-def build_methods_plate1(out_dir: Path) -> Path:
+def guild_text(labels: dict[str, str]) -> str:
+    """The aerobe and anaerobe guild terms of mtp.trait_guilds, by canonical label."""
+    lines = []
+    for guild, terms in OXYGEN_GUILDS.items():
+        first, *rest = terms
+        others = ", ".join(f"{labels[term]} ({term.removeprefix('METPO:')})" for term in rest)
+        lines.append(
+            f"• {guild.capitalize()} Guild ({len(terms)} terms): {labels[first]} ({first}),\n"
+            f"  {others}"
+        )
+    return "\n".join(lines)
+
+
+def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
     ax = fig.add_axes([0.03, 0.08, 0.94, 0.80])
     ax.axis("off")
@@ -566,10 +604,8 @@ def build_methods_plate1(out_dir: Path) -> Path:
     ax.text(
         72.6,
         36.5,
-        "• Aerobe Guild (3 terms): aerobic (METPO:1000602),\n  facultatively aerobic (1000608), "
-        "obligately aerobic (1000609)\n• Anaerobe Guild (2 terms): anaerobic (METPO:1000603),\n  "
-        "obligately anaerobic (METPO:1000607)\n• Gram Envelope: Gram+ (1000698) vs "
-        "Gram\N{MINUS SIGN} (1000699)",
+        guild_text(trait_labels(repo))
+        + "\n• Gram Envelope: Gram+ (1000698) vs Gram\N{MINUS SIGN} (1000699)",
         fontsize=7.4,
         color=INK,
         ha="left",
@@ -1473,6 +1509,7 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         )
     }
 
+    labels = trait_labels(repo)
     trait_rows_spec = [
         # Increased Guilds
         ("METPO:1000608", "[O₂ Guild]  Facultatively aerobic ★", "O₂ / Aerotolerance"),
@@ -1540,6 +1577,16 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
             "Acetogenesis",
             "Anaerobe / Reductive H₂ ↓",
         ),
+    ]
+    # METPO phenotype rows take their object_name; compound columns (|GO, |CHEBI, |pathways)
+    # keep names that carry their predicate, such as "Raffinose utilization".
+    trait_rows_spec = [
+        (
+            trait_id,
+            display if "|" in trait_id else canonical_display(display, labels.get(trait_id)),
+            group,
+        )
+        for trait_id, display, group in trait_rows_spec
     ]
 
     fig = plt.figure(figsize=(16.0, 9.2), facecolor=BG_COLOR)
@@ -2904,8 +2951,6 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
 # PLATE 7: Three-Arm 317-Trait Concordance & Expanded Table 1 Forest Plot
 # ==============================================================================
 def build_plate7(repo: Path, out_dir: Path) -> Path:
-    import re
-
     arm1_rows = {
         r["trait"]: r
         for r in read_tsv(
@@ -3353,7 +3398,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     setup_tufte_rc()
     paths = [
-        build_methods_plate1(out_dir),
+        build_methods_plate1(repo, out_dir),
         build_methods_plate2(out_dir),
         build_plate1(repo, out_dir),
         build_plate2(repo, out_dir),

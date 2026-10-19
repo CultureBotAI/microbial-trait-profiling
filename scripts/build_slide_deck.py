@@ -60,6 +60,31 @@ def read_tsv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(f, delimiter="\t"))
 
 
+def listing(names: list[str]) -> str:
+    """'A', 'A and B' or 'A, B and C'."""
+    if len(names) < 2:
+        return "".join(names)
+    return f"{', '.join(names[:-1])} and {names[-1]}"
+
+
+def arrow(delta: float) -> str:
+    return "↑" if delta > 0 else "↓"
+
+
+def fragile_sentence(metrics: dict) -> str:
+    """' In the cellulose deep-dive, the HIV result depends on ...' or '' (#590)."""
+    fragile = metrics["cellulose_statements"]["fragile"]
+    return f" In the cellulose deep-dive, {fragile}." if fragile else ""
+
+
+def taxon_family_text(metrics: dict) -> str:
+    survivors = metrics["pd_taxon_survivors"]
+    family = metrics["pd_taxon_family"]
+    if survivors == 0:
+        return f"no taxon survives the separate {family}-test family"
+    return f"{survivors} of the separate {family}-test taxon family survive BH"
+
+
 def check_contrast_version(repo: Path, allow_mismatch: bool) -> None:
     """Refuse contrast-orientation inputs from another classifier than the typed text (#579)."""
     path = repo / CONTRAST_PROVENANCE
@@ -127,6 +152,35 @@ def load_rerun_metrics(repo: Path) -> dict:
         ):
             metrics["pd_halo_wilcoxon"] = r
             break
+
+    for r in pd_net_rows:
+        if (
+            r.get("condition") == "Parkinson's disease"
+            and r.get("trait") == "cellulose catabolic process"
+        ):
+            metrics["pd_cellulose_wilcoxon"] = r
+            break
+    if pd_net_rows:
+        metrics["pd_net_lead"] = min(pd_net_rows, key=lambda r: float(r["q_value"]))
+    pd_dir = repo / "trait-visualization/trait-profile-investigation/PD-cellulose"
+    family = [
+        r
+        for r in read_tsv(pd_dir / "pd_condition_taxon_trait_network_condition_taxon_tests.tsv")
+        if r.get("passes_min_taxon_studies") == "True"
+    ]
+    metrics["pd_taxon_family"] = len(family)
+    metrics["pd_taxon_survivors"] = sum(r.get("selected_after_bh") == "True" for r in family)
+    drivers = sorted(
+        (
+            r
+            for r in read_tsv(pd_dir / "pd_cellulose_taxon_drivers.tsv")
+            if r.get("cellulose_catabolic_process_present") == "True"
+            and float(r["net_decreased_minus_increased_profiles"]) > 0
+        ),
+        key=lambda r: (-float(r["net_decreased_minus_increased_profiles"]), r["taxon_name"]),
+    )
+    metrics["pd_cellulose_drivers"] = [r["taxon_name"] for r in drivers[:3]]
+    metrics["pd_six_trait_summary"] = read_tsv(pd_dir / "pd_six_trait_direction_summary.tsv")
 
     # 3. PD ecological reporter combined
     pd_eco_path = (
@@ -289,17 +343,30 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
                 "cellulose catabolic process",
             )
         )
+        cells = [("PD", pd_cell), ("HIV", hiv_cell), ("colorectal cancer", crc_cell)]
         if pd_cell and hiv_cell and crc_cell:
-            takeaway = (
-                "Cellulose-positive profiles favor the decreased direction in PD (q = "
-                f"{float(pd_cell['fisher_q_value']):.5f}), "
-                f"HIV ({float(hiv_cell['fisher_q_value']):.5f}) and colorectal cancer "
-                f"({float(crc_cell['fisher_q_value']):.5f})."
+            favored = [
+                name
+                for name, cell in cells
+                if cell["selected_after_bh"] == "True"
+                and float(cell["increased_minus_decreased_positive_fraction"]) < 0
+            ]
+            title = (
+                "More cellulose-positive profiles among decreased fecal signatures in "
+                f"{listing(favored)}"
+                if favored
+                else "No cellulose fecal profile contrast in PD, HIV or colorectal cancer passes BH"
+            )
+            takeaway = "Profile-level Fisher BH q for cellulose-positive profiles: " + ", ".join(
+                f"{name} {float(cell['fisher_q_value']):.5f} "
+                f"({arrow(float(cell['increased_minus_decreased_positive_fraction']))})"
+                for name, cell in cells
             )
             caveat = (
                 "PD = Parkinson\N{RIGHT SINGLE QUOTATION MARK}s disease. Positive z-scores "
                 "describe trait annotations; "
                 f"profile-level Fisher tests use a {metrics['ind_total_tests']:,}-row BH family."
+                f"{fragile_sentence(metrics)}"
             )
 
     elif fig_path.endswith(
@@ -404,16 +471,19 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
                 title = "Study-level testing links PD fecal signatures to halophily"
                 takeaway = (
                     f"PD moderately halophilic scores rise by {mean_c:.3f} across {n_st} paired "
-                    "studies "
-                    f"(BH q = {q_val:.5f}); no taxon survives the separate 264-test family."
+                    f"studies (BH q = {q_val:.5f}); {taxon_family_text(metrics)}."
                 )
             else:
-                title = "PD halophily leads the 336-test study-level fecal screen (BH q = 0.0561)"
+                leads = "leads" if metrics.get("pd_net_lead") is w_row else "in"
+                title = (
+                    f"PD halophily {leads} the {metrics['pd_net_total']}-test study-level fecal "
+                    f"screen (BH q = {q_val:.3g})"
+                )
                 takeaway = (
-                    f"PD moderately halophilic scores rise by +{mean_c:.3f} across {n_st} paired "
-                    "studies "
-                    f"(33 up vs 8 down, p = {p_val:.2e}, BH q = {q_val:.4f}); no taxon survives "
-                    "the 264-test family."
+                    f"PD moderately halophilic scores change by {mean_c:+.3f} across {n_st} "
+                    f"paired studies ({w_row['positive_study_count']} up vs "
+                    f"{w_row['negative_study_count']} down, p = {p_val:.2e}, BH q = "
+                    f"{q_val:.4f}); {taxon_family_text(metrics)}."
                 )
 
     elif fig_path == "data/derived/enrichment_infographic.png":
@@ -487,11 +557,13 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
         takeaway = (
             "Across 959 human studies (post-drop_zero_total_pairs), facultatively aerobic "
             "increases in "
-            "532/915 non-tied studies (58.1%, BH q = 5.66e-6) while cellulose catabolism decreases "
+            "532/915 non-tied studies (58.1%, BH q = 5.66e-6) while the cellulose catabolic "
+            "process share decreases "
             "in "
             "441/774 studies (43.0%↑ / 57.0%↓, BH q = 2.35e-4); in 569 disease-vs-healthy oriented "
             "studies, "
-            "cellulose depletion strengthens to 283/465 down (60.8%↓, p = 4.21e-6, q_317 = "
+            "the cellulose shift toward decreased signatures strengthens to 283/465 down (60.8%↓, "
+            "p = 4.21e-6, q_317 = "
             "2.09e-4)."
         )
         caveat = (
@@ -503,7 +575,29 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
     return title, takeaway, caveat
 
 
-def get_new_slides_metadata() -> list[dict[str, str]]:
+CONDITION_SHORT = {
+    "Parkinson's disease": "PD",
+    "HIV infection": "HIV",
+    "Colorectal cancer": "CRC",
+}
+TRAIT_SHORT = {"cellulose catabolic process": "cellulose", "moderately halophilic": "halophily"}
+
+
+def survivor_text(metrics: dict) -> str:
+    """The profile-level Fisher FDR survivors with their direction, read from the table."""
+    rows = metrics["ind_sig_rows"]
+    listed = ", ".join(
+        f"{CONDITION_SHORT.get(r['condition'], r['condition'])}"
+        f"{'' if r['body_site_group'] == 'Feces' else ' ' + r['body_site_group']} "
+        f"{TRAIT_SHORT.get(r['trait_label'], r['trait_label'])} "
+        f"{arrow(float(r['increased_minus_decreased_positive_fraction']))}"
+        for r in rows
+    )
+    noun = "survivor" if len(rows) == 1 else "survivors"
+    return f"the {len(rows)} profile Fisher FDR {noun} (★ q ≤ 0.05: {listed})"
+
+
+def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
     """Metadata for the Methods plates, the Tufte plates and the newly generated figures."""
     new_slides = [
         # --- Section 0A: Two High-Level Visual Methods Architecture Plates ---
@@ -618,10 +712,9 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "15-test BY q ≤ 0.05 across all 959 studies (FA/CEL, CEL/ARS, CEL/SPH) and "
             "4 pass in the 569 oriented studies, adding CEL/HAL (91↑:141↓ [39.2%], BY "
             "q = 0.0155★).",
-            "caveat": "All 10 pairs among the 5 increased-side traits cancel toward 50:50 in both "
-            "959-study and 569-study cohorts (BY q = 1.00), proving that increased-side "
-            "traits co-move at comparable rates while cellulose catabolism diverges "
-            "against them.",
+            "caveat": "None of the 10 pairs among the 5 increased-side traits passes BY "
+            "q ≤ 0.05 in either cohort. That is a failure to detect a difference among them, "
+            "not evidence that they co-move.",
             "methods_path": "methods/table1_trait_direction_shift.md",
             "evidence_path": "data/derived/table1_composition/trait_log_ratio_stats.tsv",
             "deck_section": "Main",
@@ -642,10 +735,9 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "Δz heatmap (left) with a focused forest plot of the 12 lead Fecal Disease "
             "\N{MULTIPLICATION SIGN} Trait contrasts in PD, CRC, HIV, and COVID-19 "
             "(right).",
-            "caveat": "Highlights the 4 profile Fisher FDR survivors (★ q ≤ 0.05: PD/HIV/CRC "
-            "cellulose ↓, PD halophily ↑). The cellulose deep-dive slides test the CRC "
-            "stool-versus-mucosa difference and the overlap of decreased taxa across PD, HIV "
-            "and CRC.",
+            "caveat": f"Highlights {survivor_text(metrics)}.{fragile_sentence(metrics)} The "
+            "cellulose deep-dive slides test the CRC stool-versus-mucosa difference and the "
+            "overlap of decreased taxa across PD, HIV and CRC.",
             "methods_path": "methods/table1_trait_condition_body_site_maps.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
             "pd_condition_taxon_trait_network_condition_trait_tests.tsv",
@@ -1008,16 +1100,22 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
         },
         {
             "owner": "Jed",
-            "title": "PD six-trait direction lollipop across 45 paired fecal studies",
+            "title": "PD six-trait direction lollipop across "
+            f"{metrics['pd_cellulose_wilcoxon']['paired_study_count']} paired fecal studies",
             "tag": "Jed · PD six-trait direction summary",
             "figure_file_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
             "pd_six_trait_direction_lollipop.png",
             "code_path": "scripts/create_pd_cellulose_analysis.py",
-            "takeaway": "Summarizes PD fecal directional shifts across the six shared traits: "
-            "halophily, arsenate reduction, and facultative aerobiosis increase while "
-            "cellulose catabolism decreases.",
-            "caveat": "Within-PD directional summary across 45 paired studies; global 336-test "
-            "Wilcoxon q = 0.0561 for halophily and 0.607 for cellulose.",
+            "takeaway": "Mean annotation z-score, increased minus decreased PD fecal profiles: "
+            + ", ".join(
+                f"{r['trait']} {float(r['increased_minus_decreased_mean_z']):+.2f}"
+                for r in metrics["pd_six_trait_summary"]
+            )
+            + ".",
+            "caveat": "Profile-level summary. In the "
+            f"{metrics['pd_net_total']}-test study-level Wilcoxon screen, PD halophily has BH "
+            f"q = {float(metrics['pd_halo_wilcoxon']['q_value']):.3g} and cellulose q = "
+            f"{float(metrics['pd_cellulose_wilcoxon']['q_value']):.3g}.",
             "methods_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
             "README.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
@@ -1034,14 +1132,14 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
             "figure_file_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
             "pd_cellulose_taxon_driver_bar.png",
             "code_path": "scripts/create_pd_cellulose_analysis.py",
-            "takeaway": "Identifies the specific cellulose-annotated taxa (e.g., Ruminococcaceae, "
-            "Faecalibacterium, Roseburia) driving decreased PD fecal cellulose scores.",
-            "caveat": "Descriptive contributor breakdown across PD fecal signatures; taxon-level "
-            "Wilcoxon tests do not survive 264-test FDR.",
+            "takeaway": "The cellulose-annotated taxa with the most net-decreased PD fecal "
+            f"profiles are {listing(metrics['pd_cellulose_drivers'])}.",
+            "caveat": "Descriptive contributor breakdown across PD fecal signatures; "
+            f"{taxon_family_text(metrics)}.",
             "methods_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
             "README.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
-            "pd_cellulose_taxon_driver_summary.tsv",
+            "pd_cellulose_taxon_drivers.tsv",
             "deck_section": "Main",
             "analysis": "pd_cellulose_taxon_driver_bar",
             "selection_reason": "Key PD cellulose driver figure from "
@@ -1092,7 +1190,9 @@ def get_new_slides_metadata() -> list[dict[str, str]]:
     return new_slides
 
 
-def get_remaining_appendix_slides(already_included: set[str], repo: Path) -> list[dict[str, str]]:
+def get_remaining_appendix_slides(
+    already_included: set[str], repo: Path, metrics: dict
+) -> list[dict[str, str]]:
     """Collect all remaining distinct regenerated PNGs after pruning redundant/superseded views."""
     # Exclude exact duplicate audit/mirror directories and low-res preview
     excluded_prefixes = (
@@ -1241,9 +1341,15 @@ def get_remaining_appendix_slides(already_included: set[str], repo: Path) -> lis
                 "matrix."
             )
             caveat = (
-                "Exploratory PD diagnostic; evaluate alongside the 336-test study-level fecal "
-                "Wilcoxon screen."
+                "Exploratory PD diagnostic; evaluate alongside the "
+                f"{metrics['pd_net_total']}-test study-level fecal Wilcoxon screen."
             )
+            if png_path.name == "pd_cellulose_direction_specificity.png":
+                caveat = (
+                    "Exploratory PD diagnostic. Its profile-level Fisher test treats the "
+                    "profiles of one study as independent; the study-clustered model of "
+                    "pd_cellulose_enrichment_test is the test of a PD-specific direction."
+                )
             evidence_path = (
                 "trait-visualization/trait-profile-investigation/PD-cellulose/"
                 "pd_condition_taxon_trait_network_condition_trait_tests.tsv"
@@ -1478,6 +1584,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
     (slides_dir / "assets").mkdir(parents=True, exist_ok=True)
     metrics = load_rerun_metrics(repo)
     cellulose = load_cellulose_captions(repo)
+    metrics["cellulose_statements"] = cellulose["statements"]
 
     # The September decks' manifests are inputs; slide_manifest.tsv itself is now this
     # script's output, so it must not stand in for a missing v1 manifest.
@@ -1575,7 +1682,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
     ordered_entries: list[dict[str, str]] = []
     already_included: set[str] = set()
 
-    new_slides_all = get_new_slides_metadata()
+    new_slides_all = get_new_slides_metadata(metrics)
     tufte_and_methods_slides = [
         item
         for item in new_slides_all
@@ -1631,7 +1738,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         already_included.add(fp)
 
     # 5. All remaining distinct non-redundant figures across the rerun (Appendix)
-    for item in get_remaining_appendix_slides(already_included, repo):
+    for item in get_remaining_appendix_slides(already_included, repo, metrics):
         fp = item["figure_file_path"]
         if fp not in already_included and (repo / fp).exists():
             item["v1_slide"] = "NA"
@@ -1770,6 +1877,8 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
     # Build HTML (selected_figures_v6.html and selected_figures.html)
     total_slides = len(manifest_rows) + 1
     n_prev = sum(1 for r in manifest_rows if r["v1_slide"] != "NA" or r["v2_slide"] != "NA")
+    n_methods = sum(1 for r in manifest_rows if r["analysis"].startswith("methods_plate"))
+    n_tufte = sum(1 for r in manifest_rows if r["analysis"].startswith("tufte_plate"))
     n_new = len(manifest_rows) - n_prev
 
     # Extract cover table rows from rerun contrasts
@@ -1843,6 +1952,10 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
     pd_w_q = float(pd_w.get("q_value", 0.05609))
     pd_w_p = float(pd_w.get("p_value", 0.000167))
 
+    statements = cellulose["statements"]
+    cellulose_note = statements["overlap"] + (
+        f"; {statements['fragile']}" if statements["fragile"] else ""
+    )
     html_lines = [
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
         "<title>Microbial trait patterns — v6 complete vector deduplicated rerun figure "
@@ -1850,7 +1963,8 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         "*{box-sizing:border-box}html,body{margin:0;padding:0;background:#edf1f5;color:#142335;font-family:Arial,Helvetica,sans-serif}",
         "@page{size:1600px 1000px;margin:0}",
         ".slide{width:1600px;height:1000px;padding:28px "
-        "40px;background:white;display:grid;grid-template-rows:70px minmax(0,1fr) 70px "
+        "40px;background:white;display:grid;grid-template-rows:minmax(70px,auto) minmax(0,1fr) "
+        "minmax(70px,auto) "
         "86px;gap:10px;break-after:page;page-break-after:always;overflow:hidden}",
         ".slide:last-child{break-after:auto;page-break-after:auto}",
         "header{display:flex;flex-direction:column;justify-content:center;border-bottom:2px solid "
@@ -1890,10 +2004,12 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         "Deduplicated Rerun Deck · Marcin / Jed / Noel / Ilyas · 17 October 2026</div>"
         f"<h1>Three-arm microbial trait profiling deck ({len(manifest_rows)} figures across "
         f"{total_slides} slides)</h1></header>"
-        '<main class="cover-body"><p class="deck-subtitle">Opens with 2 high-level visual Methods '
-        "architectures, 7 simplified Tufte analytical plates, and "
+        '<main class="cover-body"><p class="deck-subtitle">Opens with '
+        f"{n_methods} high-level visual Methods "
+        f"architectures, {n_tufte} simplified Tufte analytical plates, and "
         f"{len(cellulose_main)} cellulose deep-dive figures, followed by {n_prev} deduplicated "
-        f"v1/v2 slides and {n_new - 9 - len(cellulose_main)} distinct new rerun and "
+        f"v1/v2 slides and {n_new - n_methods - n_tufte - len(cellulose_main)} distinct new "
+        "rerun and "
         "deep-dive figures across all three arms on <code>main</code> "
         f"(<code>{SHORT_COMMIT}</code>, BugSigDB vintage <code>2026-04-24_00:41_UTC</code> "
         "\N{MULTIPLICATION SIGN} KG-Microbe <code>20260120</code>, 4,670 human profiles across "
@@ -1910,10 +2026,15 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         "studies, where Cellulose ↓ reaches 60.8%, p = 4.21 \N{MULTIPLICATION SIGN} 10⁻⁶, with 4 "
         "BY-significant log-ratios including CEL/HAL BY q = 0.0155); oxygen-guild McNemar OR = "
         "1.448 (420 vs 290 discordant studies, p = 1.21 \N{MULTIPLICATION SIGN} 10⁻⁶).</p></main>"
-        '<aside class="note"><p><strong>Evidence across scales:</strong> In the 336-test fecal '
-        "study Wilcoxon screen, PD moderately halophilic leads (+0.529 mean contrast across 45 "
-        f"studies, 33↑:8↓, p = {pd_w_p:.2e}, BH q = {pd_w_q:.4f}). In the cellulose deep-dive, "
-        f"{html.escape(cellulose['statements']['overlap'])}.</p>"
+        '<aside class="note"><p><strong>Evidence across scales:</strong> In the '
+        f"{metrics['pd_net_total']}-test fecal study Wilcoxon screen, PD moderately halophilic "
+        f"{'leads' if metrics.get('pd_net_lead') is metrics['pd_halo_wilcoxon'] else 'has'} "
+        f"({float(metrics['pd_halo_wilcoxon']['mean_contrast']):+.3f} mean contrast across "
+        f"{metrics['pd_halo_wilcoxon']['paired_study_count']} studies, "
+        f"{metrics['pd_halo_wilcoxon']['positive_study_count']}↑:"
+        f"{metrics['pd_halo_wilcoxon']['negative_study_count']}↓, p = {pd_w_p:.2e}, BH q = "
+        f"{pd_w_q:.4f}). In the cellulose deep-dive, "
+        f"{html.escape(cellulose_note)}.</p>"
         "<p>Every figure in this deck is verified by SHA-256 against the freshly regenerated "
         "rerun output on disk. Trait annotations describe organism potential, not measured in "
         "vivo metabolic flux.</p></aside>"
@@ -1986,6 +2107,9 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
         raise FileNotFoundError(f"missing figure provenance {prov_source}")
     with prov_source.open("r", encoding="utf-8") as f:
         prov_doc = yaml.safe_load(f)
+    cellulose_figures = json.loads(
+        (repo / CELLULOSE_DIR / "figures" / "figures_provenance.json").read_text(encoding="utf-8")
+    )
     prov_doc["dataset_id"] = "mtp_v6_three_arm_figure_provenance_2026_10_17"
     prov_doc["title"] = (
         "Microbial Trait Profiling v6 Complete Three-Arm Figure Provenance & Standardized "
@@ -2060,6 +2184,23 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
                 "v2_slide_number": r.get("v2_slide", "NA"),
                 "statistical_result_ids": [],
             }
+            if fp.startswith(f"{CELLULOSE_DIR}/figures"):
+                # Drawn from the committed tables by `just cellulose-decr-figures`, which
+                # records the tables it read and their hashes.
+                tables = cellulose_figures["inputs"]
+                rec["just_recipe"] = "just cellulose-decr-figures"
+                rec["command_series"] = [
+                    *rec["command_series"][:-1],
+                    "just contrast-orientation",
+                    "just cellulose-decr",
+                    "just cellulose-decr-figures",
+                ]
+                rec["upstream_raw_inputs"] = [
+                    "data/raw/full_dump.csv",
+                    "data/kg-microbe/merged-kg_edges.tsv",
+                ]
+                rec["input_data_files"] = [f"{CELLULOSE_DIR}/{name}" for name in tables]
+                rec["input_data_sha256s"] = list(tables.values())
             new_figures_list.append(rec)
 
     prov_doc["figures"] = new_figures_list

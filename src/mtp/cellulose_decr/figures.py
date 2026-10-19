@@ -1070,6 +1070,8 @@ def graphical_benchmark(results: Results) -> Figure:
     stop = math.ceil(max(values) * 50) / 50
     bins = [round(start + 0.02 * step, 2) for step in range(round((stop - start) / 0.02) + 1)]
     ax.hist(values, bins=bins, color="#c9c8c2", edgecolor="white")
+    # Headroom so the labels at the top clear the tallest bar.
+    ax.set_ylim(0, ax.get_ylim()[1] * 1.15)
     median = float(np.median(values))
     ax.axvline(median, color=INK2, linestyle="--", linewidth=1)
     top_y = ax.get_ylim()[1]
