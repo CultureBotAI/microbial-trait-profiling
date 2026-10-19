@@ -6,6 +6,7 @@ import itertools
 import json
 import math
 import shutil
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -25,14 +26,20 @@ from mtp.cellulose_decr.analysis import (
     ORIENTED,
     OTHER,
     SHORT,
+    STRONG,
     TRAIT_ID,
     NullDraws,
     benjamini_hochberg,
     check_input_drift,
     choose,
     compartment_of,
+    direct_trait_subjects,
     hypergeom_pair,
+    label_corrections,
     load_corpus,
+    merge_synonyms,
+    most_common_label,
+    net_decreased,
     paired_deltas,
     population,
     sign_tests,
@@ -59,6 +66,11 @@ def test_hypergeom_pair_matches_enumeration(k: int) -> None:
     assert result["expected_intersection"] == pytest.approx(1.5)
 
 
+def test_hypergeom_pair_odds_ratio() -> None:
+    """k(N - a - b + k) / ((a - k)(b - k)): 3 * 4 / (1 * 2) = 6."""
+    assert hypergeom_pair(10, 4, 5, 3)["odds_ratio"] == pytest.approx(6.0)
+
+
 @pytest.mark.parametrize("k", [0, 1, 2, 3])
 def test_three_way_exact_matches_enumeration(k: int) -> None:
     """P(|A∩B∩C| >= k) equals the share of all (B, C) draws for a fixed A."""
@@ -66,10 +78,10 @@ def test_three_way_exact_matches_enumeration(k: int) -> None:
     cores = [
         len(a & set(b) & set(c))
         for b in itertools.combinations(range(7), 4)
-        for c in itertools.combinations(range(7), 3)
+        for c in itertools.combinations(range(7), 2)
     ]
     expected = sum(core >= k for core in cores) / len(cores)
-    assert three_way_exact(7, (3, 4, 3), k)["p_3way_exact"] == pytest.approx(expected)
+    assert three_way_exact(7, (3, 4, 2), k)["p_3way_exact"] == pytest.approx(expected)
 
 
 # --------------------------------------------------------------------------- Monte Carlo
@@ -110,6 +122,45 @@ def test_signature_null_draws_distinct_studies() -> None:
     # Two studies per condition, each adding its own taxon and one unit's taxon.
     for short, values in draws.sizes.items():
         assert (np.concatenate(values) == 4).all(), short
+
+
+def test_signature_null_draws_studies_and_units_at_random() -> None:
+    """With fewer studies drawn than exist, every study and every unit within a study is
+    drawn about equally often (#595).
+
+    Unit k carries its study's taxon and k + 1 taxa of its own, so the size of a
+    condition's set when it draws one unit is k + 2 and identifies the unit.
+    """
+    n_studies, per_study = 6, 2
+    unit_study = np.repeat(np.arange(n_studies), per_study).astype(np.int64)
+    n_units = unit_study.size
+    units = np.zeros((n_units, n_studies + n_units * (n_units + 1) // 2), dtype=bool)
+    offset = n_studies
+    for unit, study in enumerate(unit_study):
+        units[unit, study] = True
+        units[unit, offset : offset + unit + 1] = True
+        offset += unit + 1
+    counts = {"PD": 1, "HIV": 1, "CRC": 1}
+    draws = signature_null(np.random.default_rng(4), units, unit_study, counts, 6000)
+    for name, values in draws.pair_intersection.items():
+        assert (np.concatenate(values) == 0).all(), name
+    sizes = np.concatenate(draws.sizes["PD"])
+    shares = np.bincount(sizes - 2, minlength=n_units) / sizes.size
+    assert shares == pytest.approx(np.full(n_units, 1 / n_units), abs=0.02)
+
+
+def test_size_matched_draws_keep_sizes_within_tolerance() -> None:
+    """Draws are kept when every set size is within max(2, 10%) of the observed size."""
+    draws = NullDraws.empty()
+    draws.sizes = {short: [np.array([18, 23, 20, 22])] for short in SHORT}
+    draws.core = [np.array([1, 2, 3, 4])]
+    draws.mean_distance = [np.array([0.1, 0.2, 0.3, 0.4])]
+    for name in draws.pair_distance:
+        draws.pair_distance[name] = [np.array([0.1, 0.2, 0.3, 0.4])]
+        draws.pair_intersection[name] = [np.array([1, 2, 3, 4])]
+    matched, kept = draws.size_matched({"sizes": dict.fromkeys(SHORT, 20)}, 0.1)
+    assert kept == 3
+    assert list(np.concatenate(matched.core)) == [1, 3, 4]
 
 
 def test_null_p_values_count_the_observed_value() -> None:
@@ -253,6 +304,8 @@ def test_benjamini_hochberg_matches_scipy_and_keeps_missing() -> None:
     present = p.dropna()
     assert q[present.index].to_numpy() == pytest.approx(false_discovery_control(present.to_numpy()))
     assert math.isnan(q["b"])
+    stepped = benjamini_hochberg(pd.Series([0.01, 0.011, 0.04, 0.5]))
+    assert list(stepped) == pytest.approx([0.022, 0.022, 0.04 * 4 / 3, 0.5])
 
 
 # --------------------------------------------------------------------------- inputs
@@ -315,18 +368,18 @@ def test_input_pins_need_a_provenance_or_repin(tmp_path: Path) -> None:
         check_input_drift(now, legacy, allow=False, repin=False)
 
 
-# Study s1 has two PD experiments and one HIV experiment, so its modal label is PD.
-# Study s2 has two colon experiments and one feces experiment, so its modal site is
-# colon. study_trait_profile_study_metadata.tsv carries those modal labels (#555).
+# Study bsdb:1 has two PD experiments and one HIV experiment, so its modal condition is
+# PD. Study bsdb:2 has two colon experiments and one feces experiment, so its modal site
+# is colon. Since #555 study_trait_profile_study_metadata.tsv carries each experiment's
+# own labels, so the study-modal labels must come from full_dump.csv (#594).
 EXPERIMENTS = [
-    ("s1", "e1", "Parkinson's disease", "Feces", "disease_vs_healthy", "native"),
-    ("s1", "e2", "Parkinson's disease", "Feces", "disease_vs_healthy", "reversed"),
-    ("s1", "e3", "HIV infection", "Feces", "treatment_exposure", "not_applicable"),
-    ("s2", "e1", "Colorectal cancer", "Colon", "disease_vs_healthy", "native"),
-    ("s2", "e2", "Colorectal cancer", "Colon", "disease_vs_healthy", "native"),
-    ("s2", "e3", "Colorectal cancer", "Feces", "disease_vs_healthy", "native"),
+    ("bsdb:1", "bsdb:1-1", "Parkinson's disease", "Feces", "disease_vs_healthy", "native"),
+    ("bsdb:1", "bsdb:1-2", "Parkinson's disease", "Feces", "disease_vs_healthy", "reversed"),
+    ("bsdb:1", "bsdb:1-3", "HIV infection", "Feces", "treatment_exposure", "not_applicable"),
+    ("bsdb:2", "bsdb:2-1", "Colorectal cancer", "Colon", "disease_vs_healthy", "native"),
+    ("bsdb:2", "bsdb:2-2", "Colorectal cancer", "Colon", "disease_vs_healthy", "native"),
+    ("bsdb:2", "bsdb:2-3", "Colorectal cancer", "Feces", "disease_vs_healthy", "native"),
 ]
-MODAL = {"s1": ("Parkinson's disease", "Feces"), "s2": ("Colorectal cancer", "Colon")}
 HALOPHILIC = "METPO:1000623"
 MEDIUM = "mediadive.medium:1"
 
@@ -339,9 +392,9 @@ def _write(path: Path, frame: pd.DataFrame, index: bool = True) -> None:
 def _input_root(root: Path, classifier_version: str = CLASSIFIER_VERSION) -> dict[str, Path]:
     """The analysis inputs that load_corpus reads, for the six experiments above."""
     paths = {key: root / relative for key, relative in INPUTS.items()}
-    profiles, counts, taxa = [], [], []
-    for index, (study, experiment, *_rest) in enumerate(EXPERIMENTS):
-        for inc_dec, cellulose in (("inc", index), ("dec", 6 - index)):
+    profiles, counts, taxa, dump = [], [], [], []
+    for index, (study, experiment, condition, site, *_rest) in enumerate(EXPERIMENTS):
+        for signature, (inc_dec, cellulose) in enumerate((("inc", index), ("dec", 6 - index)), 1):
             other, medium = 2, 5
             profiles.append(
                 {
@@ -349,8 +402,8 @@ def _input_root(root: Path, classifier_version: str = CLASSIFIER_VERSION) -> dic
                     "study_id": study,
                     "experiment_id": experiment,
                     "inc_dec": inc_dec,
-                    "condition": MODAL[study][0],
-                    "body_site": MODAL[study][1],
+                    "condition": condition,
+                    "body_site": site,
                     "total_trait_signal": cellulose + other,
                 }
             )
@@ -374,9 +427,21 @@ def _input_root(root: Path, classifier_version: str = CLASSIFIER_VERSION) -> dic
                         "taxon_id": taxon,
                     }
                 )
+            number = experiment.rsplit("-", 1)[1]
+            dump.append(
+                {
+                    "BSDB ID": f"{study}/{number}/{signature}",
+                    "Condition": condition,
+                    "Body site": site,
+                }
+            )
     _write(paths["profile_metadata"], pd.DataFrame(profiles), index=False)
     _write(paths["profile_counts"], pd.DataFrame(counts), index=False)
     _write(paths["signature_taxa"], pd.DataFrame(taxa), index=False)
+    paths["full_dump"].parent.mkdir(parents=True, exist_ok=True)
+    paths["full_dump"].write_text(
+        "# BugSigDB 2026-04-24_00:41_UTC\n" + pd.DataFrame(dump).to_csv(index=False)
+    )
     columns = ["study_id", "experiment_id", "condition", "body_site"]
     experiments = pd.DataFrame([row[:4] for row in EXPERIMENTS], columns=columns)
     _write(paths["experiments"], experiments.assign(host_species="Homo sapiens"), index=False)
@@ -409,21 +474,37 @@ def _input_root(root: Path, classifier_version: str = CLASSIFIER_VERSION) -> dic
 
 @pytest.mark.parametrize("label_source", ["experiment", "study_modal"])
 def test_load_corpus_label_sources(tmp_path: Path, label_source: str) -> None:
-    """``experiment`` labels each profile with its own experiment, ``study_modal`` with
-    the study's most common label, as the October 16 outputs did."""
+    """``experiment`` labels each profile with its own experiment, ``study_modal`` with the
+    study's most common label in full_dump.csv, as the October 16 outputs did, even though
+    the metadata table now holds per-experiment labels (#594)."""
     corpus = load_corpus(_input_root(tmp_path), label_source)
     profiles = corpus.profiles
     if label_source == "experiment":
-        assert profiles.loc["s1|e3|dec", "condition"] == "HIV infection"
-        assert profiles.loc["s2|e3|dec", "compartment"] == FECES
+        assert profiles.loc["bsdb:1|bsdb:1-3|dec", "condition"] == "HIV infection"
+        assert profiles.loc["bsdb:2|bsdb:2-3|dec", "compartment"] == FECES
     else:
-        assert profiles.loc["s1|e3|dec", "condition"] == "Parkinson's disease"
-        assert profiles.loc["s2|e3|dec", "compartment"] == NON_FECAL_GI
+        assert profiles.loc["bsdb:1|bsdb:1-3|dec", "condition"] == "Parkinson's disease"
+        assert profiles.loc["bsdb:2|bsdb:2-3|dec", "compartment"] == NON_FECAL_GI
     # Signature taxa carry their profile's labels.
     labelled = corpus.taxa.set_index("profile_id")
     assert (labelled["condition"] == profiles.loc[labelled.index, "condition"]).all()
     # The share is over retained columns only; the MediaDive column is left out.
-    assert profiles.loc["s1|e1|dec", "frac"] == pytest.approx(6 / 8)
+    assert profiles.loc["bsdb:1|bsdb:1-1|dec", "frac"] == pytest.approx(6 / 8)
+
+
+def test_label_corrections_compare_study_modal_and_experiment_labels(tmp_path: Path) -> None:
+    corrections = label_corrections(_input_root(tmp_path))
+    assert list(corrections["experiment_id"]) == ["bsdb:1-3", "bsdb:2-3"]
+    assert list(corrections["condition_study_modal"]) == [
+        "Parkinson's disease",
+        "Colorectal cancer",
+    ]
+
+
+def test_most_common_label_ignores_blanks_and_breaks_ties_alphabetically() -> None:
+    assert most_common_label(["B", "A", "B", "A", "NA", " ", "C"]) == "A"
+    assert most_common_label(["nan", "", "NA"]) == "unknown"
+    assert most_common_label([" Feces ", "Feces", "Colon"]) == "Feces"
 
 
 def test_load_corpus_refuses_another_classifier_version(tmp_path: Path) -> None:
@@ -436,11 +517,61 @@ def test_oriented_population_flips_reversed_experiments(tmp_path: Path) -> None:
     """Only disease-vs-healthy experiments are kept, and reversed ones swap inc and dec."""
     corpus = load_corpus(_input_root(tmp_path), "experiment")
     profiles, taxa = population(corpus, ORIENTED)
-    assert {"s1|e3|inc", "s1|e3|dec"}.isdisjoint(profiles.index)
-    assert profiles.loc["s1|e1|inc", "dir"] == "inc"
-    assert profiles.loc["s1|e2|inc", "dir"] == "dec"
-    assert profiles.loc["s1|e2|dec", "dir"] == "inc"
+    assert {"bsdb:1|bsdb:1-3|inc", "bsdb:1|bsdb:1-3|dec"}.isdisjoint(profiles.index)
+    assert profiles.loc["bsdb:1|bsdb:1-1|inc", "dir"] == "inc"
+    assert profiles.loc["bsdb:1|bsdb:1-2|inc", "dir"] == "dec"
+    assert profiles.loc["bsdb:1|bsdb:1-2|dec", "dir"] == "inc"
     assert set(taxa["profile_id"]) <= set(profiles.index)
+
+
+def test_strong_population_drops_weak_comparisons(tmp_path: Path) -> None:
+    corpus = load_corpus(_input_root(tmp_path), "experiment")
+    manifest = corpus.manifest.copy()
+    manifest.loc[("bsdb:2", "bsdb:2-1"), "flags"] = "weak_comparison_evidence"
+    corpus = replace(corpus, manifest=manifest)
+    oriented, _ = population(corpus, ORIENTED)
+    strong, _ = population(corpus, STRONG)
+    assert "bsdb:2|bsdb:2-1|dec" in oriented.index
+    assert "bsdb:2|bsdb:2-1|dec" not in strong.index
+    assert len(strong) == len(oriented) - 2
+
+
+def test_synonym_labels_merge_under_their_disease() -> None:
+    merged = merge_synonyms(
+        pd.Series(["Human immunodeficiency virus", "Colorectal carcinoma", "Asthma"])
+    )
+    assert list(merged) == ["HIV infection", "Colorectal cancer", "Asthma"]
+
+
+def test_direct_trait_subjects_need_the_predicate_and_a_taxon(tmp_path: Path) -> None:
+    edges = tmp_path / "edges.tsv"
+    edges.write_text(
+        "id\tsubject\tpredicate\tobject\n"
+        "e1\tNCBITaxon:1\tMETPO:2000103\tGO:0030245\n"
+        "e2\tNCBITaxon:2\tMETPO:2000006\tGO:0030245\n"
+        "e3\tCHEBI:1\tMETPO:2000103\tGO:0030245\n"
+        "e4\tNCBITaxon:3\tMETPO:2000103\tGO:0045493\n"
+    )
+    assert direct_trait_subjects(edges, "METPO:2000103|GO:0030245") == {"NCBITaxon:1"}
+    with pytest.raises(ValueError, match="no METPO:2000103 -> GO:9999999 edges"):
+        direct_trait_subjects(edges, "METPO:2000103|GO:9999999")
+
+
+def test_net_decreased_needs_more_decreased_than_increased() -> None:
+    """A tie between decreased and increased studies is not net decreased."""
+    rows = [
+        ("t1", "dec", "a"),
+        ("t1", "dec", "b"),
+        ("t1", "inc", "c"),
+        ("t1", "inc", "d"),
+        ("t2", "dec", "a"),
+        ("t2", "dec", "b"),
+        ("t2", "inc", "c"),
+    ]
+    taxa = pd.DataFrame(rows, columns=["taxon_id", "dir", "study_id"]).assign(
+        condition="Parkinson's disease", compartment=FECES
+    )
+    assert net_decreased(taxa, {"t1", "t2"}, "study_id")["PD"] == {"t2"}
 
 
 # --------------------------------------------------------------------------- figures
