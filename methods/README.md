@@ -82,8 +82,8 @@ in Parkinson's disease, HIV infection and colorectal cancer:
 - the direction of the cellulose annotation shift at experiment and study level,
   under exact and synonym condition labels.
 
-Its tables are committed and its figures are regenerated. Its scripts sit beside
-their outputs until #557 moves them into `src/mtp`.
+Its tables are committed and its figures are regenerated. The code is the
+`mtp.cellulose_decr` package (`src/mtp/cellulose_decr/`).
 
 The [GPT Rosalind discussion and review](../docs/rosalind-six-trait-interpretation.md)
 archives proposed biological explanations for the six traits, with a separate
