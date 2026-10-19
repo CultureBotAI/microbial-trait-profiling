@@ -44,6 +44,7 @@ from mtp.enrichment_stats import (
 from mtp.enrichment_stats import (
     hypergeom_sf_many as _core_hypergeom_sf_many,
 )
+from mtp.paths import file_sha256
 from mtp.trait_guilds import MEDIADIVE_MARKER
 
 
@@ -248,6 +249,8 @@ def main(argv: list[str] | None = None) -> None:
             ],
         )
 
+    # Bind exported tests to actual input bytes, including non-core invocations (#705).
+    profiles_sha256 = file_sha256(args.input)
     with open_input_text(args.input) as fh:
         reader = csv.DictReader(fh, delimiter="\t")
         fieldnames = reader.fieldnames or []
@@ -364,6 +367,7 @@ def main(argv: list[str] | None = None) -> None:
     # Determine reference population M and background successes K from taxa_matrix
     if not args.taxa_matrix.exists():
         raise FileNotFoundError(f"Specified taxa matrix file does not exist: {args.taxa_matrix}")
+    taxa_matrix_sha256 = file_sha256(args.taxa_matrix)
     background_counts: dict[str, int] = dict.fromkeys(trait_columns, 0)
     matrix_taxa_total = 0
     with open_input_text(args.taxa_matrix) as m_fh:
@@ -567,6 +571,8 @@ def main(argv: list[str] | None = None) -> None:
         all_hits.sort(key=lambda h: (h["fdr_q"], h["study_id"], h["experiment_id"], h["trait"]))
         with args.all_results_output.open("w", encoding="utf-8", newline="") as out_fh:
             # Metadata header
+            out_fh.write(f"# Profiles-SHA256: {profiles_sha256}\n")
+            out_fh.write(f"# Taxa-Matrix-SHA256: {taxa_matrix_sha256}\n")
             out_fh.write(f"# Tail: {args.tail}\n")
             out_fh.write("# Testable-Set: K>0 & N>0\n")
             out_fh.write(f"# FDR: {args.fdr}\n")

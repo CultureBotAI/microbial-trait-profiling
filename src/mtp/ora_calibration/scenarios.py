@@ -11,10 +11,10 @@ k never exceed draw counts N or population counts K (resolving #348).
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import pandas as pd
+
+from mtp.trait_guilds import MEDIADIVE_MARKER
 
 
 def flip_profile_dataframe(
@@ -91,13 +91,27 @@ def signature_size_column(profiles_df: pd.DataFrame) -> str:
     )
 
 
-def shared_trait_columns(profiles_df: pd.DataFrame, taxa_matrix_df: pd.DataFrame) -> list[str]:
-    """Find trait columns present in both profiles and taxa matrix."""
+def shared_trait_columns(
+    profiles_df: pd.DataFrame,
+    taxa_matrix_df: pd.DataFrame,
+    *,
+    include_mediadive: bool = False,
+) -> list[str]:
+    """Find shared biological traits using the production MediaDive exclusion.
+
+    ``include_mediadive`` is for auditing the input family before filtering.
+    Zero-background traits remain here; the adapter applies production K > 0
+    eligibility when forming its BH family.
+    """
     profile_traits = {
         col for col in profiles_df.columns if col not in set(PROFILE_METADATA_COLUMNS)
     }
     taxa_traits = {col for col in taxa_matrix_df.columns if col not in set(TAXA_METADATA_COLUMNS)}
-    shared = sorted(profile_traits & taxa_traits)
+    shared = sorted(
+        col
+        for col in profile_traits & taxa_traits
+        if include_mediadive or MEDIADIVE_MARKER not in col.lower()
+    )
     return shared
 
 
@@ -130,45 +144,36 @@ def profile_identifiers(profiles_df: pd.DataFrame) -> np.ndarray:
     return id_array
 
 
-def _parse_strict_count(val: Any) -> int:
-    """Parse count strictly matching production rules."""
-    if val is None or val == "" or (isinstance(val, float) and np.isnan(val)):
-        return 0
-    if isinstance(val, int | np.integer):
-        if val < 0:
-            raise ValueError(f"Negative count: {val}")
-        return int(val)
-    val_str = str(val).strip()
-    if not val_str or val_str == "0":
-        return 0
-    try:
-        val_float = float(val_str)
-    except ValueError as err:
-        raise ValueError(f"Invalid count value: {val!r}") from err
-    if not val_float.is_integer():
-        raise ValueError(f"Count must be an integer: {val!r}")
-    if val_float < 0:
-        raise ValueError(f"Negative count: {val!r}")
-    return int(val_float)
+def trait_presence_matrix(taxa_matrix_df: pd.DataFrame, trait_columns: list[str]) -> np.ndarray:
+    """Validate production count cells before reducing them to taxon presence.
+
+    Empty cells mean zero, as in production ORA. Malformed, negative, fractional,
+    and infinite counts must not silently become absence or presence in a null
+    background. Validate before binarization for both CLI and direct callers.
+    """
+    presence = np.zeros((len(taxa_matrix_df), len(trait_columns)), dtype=np.int64)
+    for col_idx, col in enumerate(trait_columns):
+        series = taxa_matrix_df[col]
+        if not pd.api.types.is_numeric_dtype(series):
+            series = series.replace(r"^\s*$", "0", regex=True)
+        try:
+            numeric = pd.to_numeric(series, errors="raise").fillna(0)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid count in column {col}") from exc
+        values = numeric.to_numpy(dtype=float)
+        if not np.all(np.isfinite(values)):
+            raise ValueError(f"Non-finite count in column {col}")
+        if np.any(values < 0):
+            raise ValueError(f"Negative count in column {col}")
+        if not np.all(values == np.floor(values)):
+            raise ValueError(f"Non-integer count in column {col}")
+        presence[:, col_idx] = values > 0
+    return presence
 
 
 def trait_population_counts(taxa_matrix_df: pd.DataFrame, trait_columns: list[str]) -> np.ndarray:
     """Count taxa carrying each trait (K) in the background universe."""
-    counts = np.zeros(len(trait_columns), dtype=np.int64)
-    for col_idx, col in enumerate(trait_columns):
-        series = taxa_matrix_df[col]
-        if pd.api.types.is_integer_dtype(series):
-            arr = series.to_numpy()
-            if np.any(arr < 0):
-                raise ValueError(f"Negative count in column {col}")
-            counts[col_idx] = int(np.sum(arr > 0))
-        else:
-            col_k = 0
-            for val in series:
-                c = _parse_strict_count(val)
-                if c > 0:
-                    col_k += 1
-            counts[col_idx] = col_k
+    counts: np.ndarray = trait_presence_matrix(taxa_matrix_df, trait_columns).sum(axis=0)
     return counts
 
 
@@ -200,13 +205,7 @@ def generate_complete_null_ora_profiles(
     simulated_k = np.zeros((n_profiles, n_traits), dtype=np.int64)
 
     # Convert taxa trait matrix to numeric binary presence matrix (M x T) (#348)
-    numeric_matrix = (
-        taxa_trait_matrix_df[trait_columns]
-        .apply(pd.to_numeric, errors="coerce")
-        .fillna(0)
-        .to_numpy()
-    )
-    taxa_traits = (numeric_matrix > 0).astype(np.int64)
+    taxa_traits = trait_presence_matrix(taxa_trait_matrix_df, trait_columns)
 
     for i, n_draw in enumerate(signature_sizes):
         if n_draw <= 0:
@@ -265,6 +264,11 @@ def generate_mixed_signal_ora_profiles(
     - Treats near-twin/co-annotated traits with identical presence vectors in the universe
       as ground-truth true discoveries alongside the spiked trait (#390).
     - Supports both enrichment and depletion test scopes (#351, #390).
+
+    The spike trait's count is fixed by N, K and the requested signal fraction
+    before drawing taxa. Declare a directional signal only when that fixed count
+    lies strictly above (enrichment) or below (depletion) N*K/M. Truth eligibility
+    therefore does not depend on which random taxa are sampled or on test results.
     """
     if not 0.0 < signal_strength <= 1.0:
         raise ValueError(f"signal_strength must be in (0, 1], got {signal_strength}")
@@ -291,13 +295,7 @@ def generate_mixed_signal_ora_profiles(
     simulated_k = np.zeros((n_profiles, n_traits), dtype=np.int64)
 
     # Convert taxa trait matrix to numeric binary presence matrix (M x T) (#348)
-    numeric_matrix = (
-        taxa_trait_matrix_df[trait_columns]
-        .apply(pd.to_numeric, errors="coerce")
-        .fillna(0)
-        .to_numpy()
-    )
-    taxa_traits = (numeric_matrix > 0).astype(np.int64)
+    taxa_traits = trait_presence_matrix(taxa_trait_matrix_df, trait_columns)
 
     trait_to_idx = {col: idx for idx, col in enumerate(trait_columns)}
     true_signal_pairs: set[tuple[str, str]] = set()
@@ -351,17 +349,18 @@ def generate_mixed_signal_ora_profiles(
         if test_type == "depletion":
             # Depletion spike (#351, #390): draw taxa exclusively from negative indices
             # so k_observed = 0, creating a significant depletion signal
+            n_pos = max(0, int(n_draw) - len(neg_indices))
             if len(neg_indices) >= int(n_draw):
                 sampled_taxa = rng.choice(neg_indices, size=int(n_draw), replace=False)
             else:
                 n_neg = len(neg_indices)
-                n_pos = int(n_draw) - n_neg
                 pos_taxa = rng.choice(pos_indices, size=n_pos, replace=False)
                 sampled_taxa = np.concatenate([pos_taxa, neg_indices])
 
             simulated_k[i, :] = taxa_traits[sampled_taxa].sum(axis=0)
-            for twin in twin_traits_map[spike_trait]:
-                true_signal_pairs.add((p_id, twin))
+            if n_pos < n_draw * k_total / n_universe:
+                for twin in twin_traits_map[spike_trait]:
+                    true_signal_pairs.add((p_id, twin))
         else:
             # Enrichment spike (#348, #390): oversample positive taxa
             desired_pos = max(1, round(n_draw * signal_strength))
@@ -383,7 +382,7 @@ def generate_mixed_signal_ora_profiles(
             sampled_taxa = np.concatenate([pos_taxa, neg_taxa])
             simulated_k[i, :] = taxa_traits[sampled_taxa].sum(axis=0)
 
-            if n_pos > 0:
+            if n_pos > n_draw * k_total / n_universe:
                 for twin in twin_traits_map[spike_trait]:
                     true_signal_pairs.add((p_id, twin))
 

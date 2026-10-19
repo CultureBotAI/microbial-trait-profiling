@@ -11,6 +11,7 @@ import pytest
 from scipy.stats import hypergeom, ttest_1samp
 
 from mtp.contribution_inputs import Base
+from mtp.influence_assessment import read_influence_assessment
 from mtp.native_taxon_influence import (
     composition_q_sensitivity_table,
     export_native,
@@ -353,6 +354,32 @@ def test_native_exports_end_to_end_with_an_empty_stratum(tmp_path: Path) -> None
     fixed = zero_reference["fixed_baseline_sd"]
     assert fixed["before_pairs"] == fixed["after_pairs"] == "0"
     assert fixed["before_effect"] == fixed["after_effect"] == ""
+
+    # Feed genuine producer outputs (including the empty stratum and zero-row
+    # removal vector) through the consumer inventory check, not a mocked result.
+    manifest = {
+        "completed": True,
+        "protocol": {
+            "version": "190-native-v2",
+            "composition": POLICY,
+            "ora": {"backgrounds": ["fixed_baseline", "recomputed_remaining"]},
+        },
+        "protocol_sha256": "a" * 64,
+        "contribution_manifest_sha256": "b" * 64,
+        "input_sha256": {
+            "study_trait_profiles_wide.tsv": "c" * 64,
+            "experiments.tsv": "d" * 64,
+        },
+        "code_commit": "e" * 40,
+        "code_dirty": False,
+        "code_sha256": {"native_taxon_influence.py": "f" * 64},
+        "results": result,
+    }
+    manifest_path = tmp_path / "native_manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    assessment = read_influence_assessment(manifest_path)
+    assert assessment.default.startswith("native influence results reported;")
+    assert not assessment.verdicts
 
 
 def test_zero_total_lineage_exclusion_reported_as_lost_pairs_not_matched_change(

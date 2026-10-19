@@ -363,6 +363,7 @@ def test_export_trait_enrichment_rankings_uses_n_profiles_tested_denominator() -
         "fdr_q",
         total_profiles=50,
         fdr_scope="global",
+        complete_results=True,
     )
     row = out.iloc[0]
     assert int(row["testable_profiles"]) == 50
@@ -370,6 +371,10 @@ def test_export_trait_enrichment_rankings_uses_n_profiles_tested_denominator() -
     assert int(row["hit_rows"]) == 2
     assert float(row["prevalence"]) == pytest.approx(0.5)
     assert row["prevalence_summary"] == "2 / 4"
+
+    # Significant-only inputs carry a flag too; it is not proof of completeness.
+    selected = mod.build_overall_table(df[df["is_significant"]], "fdr_q")
+    assert selected.iloc[0]["prevalence_summary"] == "2 / 50"
 
     with pytest.raises(ValueError, match="Unsupported fdr_scope"):
         mod.build_overall_table(

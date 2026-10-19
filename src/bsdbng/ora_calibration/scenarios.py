@@ -11,7 +11,6 @@ from mtp.ora_calibration.scenarios import (
     PROFILE_ID_COLUMNS,
     PROFILE_METADATA_COLUMNS,
     TAXA_METADATA_COLUMNS,
-    _parse_strict_count,
     flip_profile_dataframe,
     generate_complete_null_ora_profiles,
     generate_mixed_signal_ora_profiles,
@@ -21,13 +20,13 @@ from mtp.ora_calibration.scenarios import (
     shared_trait_columns,
     signature_size_column,
     trait_population_counts,
+    trait_presence_matrix,
 )
 
 __all__ = [
     "PROFILE_ID_COLUMNS",
     "PROFILE_METADATA_COLUMNS",
     "TAXA_METADATA_COLUMNS",
-    "_parse_strict_count",
     "flip_profile_dataframe",
     "generate_complete_null_ora_profiles",
     "generate_mixed_signal_ora_profiles",
@@ -37,6 +36,7 @@ __all__ = [
     "shared_trait_columns",
     "signature_size_column",
     "trait_population_counts",
+    "trait_presence_matrix",
 ]
 
 import mtp.ora_calibration.scenarios as _target

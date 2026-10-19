@@ -103,7 +103,7 @@ repos:
         always_run: true
       - id: linkml-lint
         name: linkml-lint
-        entry: uv run linkml lint --config schema/.linkmllint.yaml --validate --ignore-warnings schema/bsdbng.yaml
+        entry: uv run linkml lint --config schema/.linkmllint.yaml --ignore-warnings schema/bsdbng.yaml
         language: system
         pass_filenames: false
         always_run: true

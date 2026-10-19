@@ -1,0 +1,12 @@
+feature	term_id	matrix_column
+aerobe	METPO:1000602	METPO:1000602
+aerobe	METPO:1000608	METPO:1000608
+aerobe	METPO:1000604	METPO:1000604
+anaerobe	METPO:1000603	METPO:1000603
+anaerobe	METPO:1000607	METPO:1000607
+arsenate_reduction	pathways:arsenate_reduction	METPO:2000103|pathways:arsenate_reduction
+cellulose_catabolic_process	GO:0030245	METPO:2000103|GO:0030245
+coccus_shaped	METPO:1000668	METPO:1000668
+facultatively_aerobic	METPO:1000608	METPO:1000608
+moderately_halophilic	METPO:1000623	METPO:1000623
+sphere_shaped	METPO:1000683	METPO:1000683

@@ -1,0 +1,319 @@
+{
+  "version": "integrated-evidence-v2",
+  "bugsigdb_vintage": "2026-04-24_00:41_UTC",
+  "code_commit": "402ef5c25b7105c9aa73398085956dcf1f372bb4+dirty",
+  "profile_sha256": "c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f",
+  "experiments_sha256": "403afea98d9b0a5b56939f68bcc9aace56a8eda350232a586806fe7bf30ad230",
+  "analysis_source_sha256": "1d0cf8409792d3fb671fe9422d215dea8be169e5526845cdea245e15ac598d92",
+  "native_sources": {
+    "arm1_pooled_stats": {
+      "path": "/private/tmp/mtp-pipeline-20261017/data/derived/trait_profile_paired_contrast_trait_stats_pooled.tsv",
+      "sha256": "65906f64f4bc7d1a872e5f8fdabda6cb6dc800372bdfbd8491ea129465899641"
+    },
+    "arm2_enrichment": {
+      "path": "/private/tmp/mtp-pipeline-20261017/data/derived/trait_enrichment_all_results.tsv",
+      "sha256": "cf2aa839d0902aa002a5c7d2c4f7d86a713b977ada4211f6bd7524082cbca92d"
+    },
+    "arm2_depletion": {
+      "path": "/private/tmp/mtp-pipeline-20261017/data/derived/trait_depletion_all_results.tsv",
+      "sha256": "27c029105e9b8ac595a2f40d25c8b5e057acff8d0d4cf5a0fdf180202fb76532"
+    },
+    "full_screen": {
+      "path": "/private/tmp/mtp-pipeline-20261017/data/derived/trait_screen/trait_direction_screen.tsv",
+      "sha256": "65450c1ce74312e56bfd032ba8139533de1b9fa3a4ef0ea4aaad034130b36c21"
+    },
+    "full_screen_provenance": {
+      "path": "/private/tmp/mtp-pipeline-20261017/data/derived/trait_screen/trait_screen_provenance.json",
+      "sha256": "8b47804be2d7cc72549ffc12b75f77d65797ed739d724dc91e7ee126bd1399ab"
+    }
+  },
+  "corpus": {
+    "profile_rows": 5829,
+    "experiments_seen": 3494,
+    "unmatched_experiments": 0,
+    "dropped_non_human": 0,
+    "dropped_unpaired": 1159,
+    "mediadive_columns_excluded": 2290,
+    "trait_columns_used": 317,
+    "kept_experiments": 2335,
+    "kept_profiles": 4670
+  },
+  "pair_exclusion": {
+    "zero_total_experiments": 94,
+    "studies_before": 959,
+    "studies_after": 939,
+    "studies_lost": 20,
+    "experiments_kept": 2241,
+    "rule": "a whole experiment pair is dropped when its retained-annotation total is zero on either side; the share is undefined, not zero, and scoring it as zero would count the pair as a tie"
+  },
+  "thresholds": {
+    "q_threshold": 0.05,
+    "q_threshold_source": "chosen by this integration for display, matching the q <= 0.05 overlay of PR #173",
+    "strict_q_threshold": 0.001,
+    "strict_q_threshold_source": "the manuscript's q <= 0.001 rule, as the enrichment arm's committed run applies it"
+  },
+  "assessment_status": {
+    "calibration_status": {
+      "issue": "#182",
+      "verdicts_by_procedure": {
+        "fraction_sign_test": "pass #182 [per_test_level=pass (sanity check), family_error=pass, power_reported=pass]",
+        "guild_mcnemar": "pass #182 [per_test_level=pass (sanity check), family_error=pass]",
+        "log_ratio_sign_test": "pass #182 [per_test_level=pass (sanity check), family_error=pass, power_reported=pass]",
+        "screened_fraction_sign_test": "fail #182 [per_test_level=fail, family_error=fail, selection_inflation_measured=reported]"
+      },
+      "status_for_a_procedure_it_is_silent_about": "not_calibrated_here #182",
+      "detail_rows": 25
+    },
+    "coverage_status": {
+      "issue": "#184",
+      "verdicts_by_procedure": {},
+      "status_for_a_procedure_it_is_silent_about": "pending #184",
+      "detail_rows": 0
+    },
+    "orientation_status": {
+      "issue": "#188",
+      "verdicts_by_procedure": {},
+      "status_for_a_procedure_it_is_silent_about": "contrast population described, hand_review_disagreements_unresolved, no verdict #188",
+      "detail_rows": 19
+    },
+    "sensitivity_status": {
+      "issue": "#183",
+      "verdicts_by_procedure": {
+        "log_ratio_sign_test": "scenarios reported, no verdict #183"
+      },
+      "status_for_a_procedure_it_is_silent_about": "pending #183",
+      "detail_rows": 58
+    },
+    "taxon_influence_status": {
+      "issue": "#190",
+      "verdicts_by_procedure": {},
+      "status_for_a_procedure_it_is_silent_about": "pending #190",
+      "detail_rows": 0
+    }
+  },
+  "methods": [
+    {
+      "method": "aggregated_profile_support",
+      "records": 6,
+      "families": "",
+      "tested": 0,
+      "profile_test_summaries": 0,
+      "untested_or_unsupplied": 6,
+      "significant": 0,
+      "not_significant": 0,
+      "undecided": 6,
+      "effect_units": "",
+      "combined_guarantee": "none; each family is corrected on its own"
+    },
+    {
+      "method": "composition_arm_native_transformed_contrast",
+      "records": 6,
+      "families": "native_composition_pooled_study",
+      "tested": 6,
+      "profile_test_summaries": 0,
+      "untested_or_unsupplied": 0,
+      "significant": 6,
+      "not_significant": 0,
+      "undecided": 0,
+      "effect_units": "study mean of increased-minus-decreased transformed annotation contrast",
+      "combined_guarantee": "none; each family is corrected on its own"
+    },
+    {
+      "method": "directional_consistency_fraction_sign_test",
+      "records": 6,
+      "families": "table1_six_fractions",
+      "tested": 6,
+      "profile_test_summaries": 0,
+      "untested_or_unsupplied": 0,
+      "significant": 6,
+      "not_significant": 0,
+      "undecided": 0,
+      "effect_units": "share of non-tied studies shifting toward the increased side",
+      "combined_guarantee": "none; each family is corrected on its own"
+    },
+    {
+      "method": "directional_consistency_log_ratio_sign_test",
+      "records": 15,
+      "families": "table1_fifteen_ratios",
+      "tested": 15,
+      "profile_test_summaries": 0,
+      "untested_or_unsupplied": 0,
+      "significant": 3,
+      "not_significant": 12,
+      "undecided": 0,
+      "effect_units": "share of non-tied eligible studies with a higher log2 ratio",
+      "combined_guarantee": "none; each family is corrected on its own"
+    },
+    {
+      "method": "enrichment_arm_profile_hypergeometric",
+      "records": 6,
+      "families": "native_profile_ORA_enrichment_global",
+      "tested": 0,
+      "profile_test_summaries": 6,
+      "untested_or_unsupplied": 0,
+      "significant": 0,
+      "not_significant": 0,
+      "undecided": 6,
+      "effect_units": "",
+      "combined_guarantee": "none; each family is corrected on its own"
+    },
+    {
+      "method": "oxygen_guild_cell_support",
+      "records": 1872,
+      "families": "",
+      "tested": 0,
+      "profile_test_summaries": 0,
+      "untested_or_unsupplied": 1872,
+      "significant": 0,
+      "not_significant": 0,
+      "undecided": 1872,
+      "effect_units": "",
+      "combined_guarantee": "none; each family is corrected on its own"
+    },
+    {
+      "method": "oxygen_guild_mcnemar",
+      "records": 1,
+      "families": "guild_mcnemar",
+      "tested": 1,
+      "profile_test_summaries": 0,
+      "untested_or_unsupplied": 0,
+      "significant": 0,
+      "not_significant": 0,
+      "undecided": 1,
+      "effect_units": "odds ratio of discordant study signs",
+      "combined_guarantee": "none; each family is corrected on its own"
+    }
+  ],
+  "families": [
+    {
+      "family_id": "guild_mcnemar",
+      "family_size": 1,
+      "family_scope": "complete",
+      "family_source": "",
+      "correction_method": "none; a single uncorrected test, so no q is computed",
+      "methods": "oxygen_guild_mcnemar",
+      "rows_exported": 1,
+      "tested": 1,
+      "with_q_value": 0,
+      "significant_at_q_threshold": 0,
+      "significant_at_strict_q_threshold": 0
+    },
+    {
+      "family_id": "native_composition_pooled_study",
+      "family_size": 315,
+      "family_scope": "source_subset",
+      "family_source": "trait_profile_paired_contrast_trait_stats_pooled.tsv@65906f64f4bc7d1a872e5f8fdabda6cb6dc800372bdfbd8491ea129465899641",
+      "correction_method": "Benjamini-Hochberg",
+      "methods": "composition_arm_native_transformed_contrast",
+      "rows_exported": 6,
+      "tested": 6,
+      "with_q_value": 6,
+      "significant_at_q_threshold": 6,
+      "significant_at_strict_q_threshold": 4
+    },
+    {
+      "family_id": "native_profile_ORA_enrichment_global",
+      "family_size": 1480390,
+      "family_scope": "profile_test_summary",
+      "family_source": "trait_enrichment_all_results.tsv@cf2aa839d0902aa002a5c7d2c4f7d86a713b977ada4211f6bd7524082cbca92d",
+      "correction_method": "Benjamini-Hochberg",
+      "methods": "enrichment_arm_profile_hypergeometric",
+      "rows_exported": 6,
+      "tested": 0,
+      "with_q_value": 0,
+      "significant_at_q_threshold": 0,
+      "significant_at_strict_q_threshold": 0
+    },
+    {
+      "family_id": "table1_fifteen_ratios",
+      "family_size": 15,
+      "family_scope": "complete",
+      "family_source": "",
+      "correction_method": "Benjamini-Yekutieli",
+      "methods": "directional_consistency_log_ratio_sign_test",
+      "rows_exported": 15,
+      "tested": 15,
+      "with_q_value": 15,
+      "significant_at_q_threshold": 3,
+      "significant_at_strict_q_threshold": 0
+    },
+    {
+      "family_id": "table1_six_fractions",
+      "family_size": 6,
+      "family_scope": "complete",
+      "family_source": "",
+      "correction_method": "Benjamini-Hochberg",
+      "methods": "directional_consistency_fraction_sign_test",
+      "rows_exported": 6,
+      "tested": 6,
+      "with_q_value": 6,
+      "significant_at_q_threshold": 6,
+      "significant_at_strict_q_threshold": 3
+    }
+  ],
+  "feature_columns": {
+    "aerobe": [
+      [
+        "METPO:1000602",
+        "METPO:1000602"
+      ],
+      [
+        "METPO:1000608",
+        "METPO:1000608"
+      ],
+      [
+        "METPO:1000604",
+        "METPO:1000604"
+      ]
+    ],
+    "anaerobe": [
+      [
+        "METPO:1000603",
+        "METPO:1000603"
+      ],
+      [
+        "METPO:1000607",
+        "METPO:1000607"
+      ]
+    ],
+    "arsenate_reduction": [
+      [
+        "pathways:arsenate_reduction",
+        "METPO:2000103|pathways:arsenate_reduction"
+      ]
+    ],
+    "cellulose_catabolic_process": [
+      [
+        "GO:0030245",
+        "METPO:2000103|GO:0030245"
+      ]
+    ],
+    "coccus_shaped": [
+      [
+        "METPO:1000668",
+        "METPO:1000668"
+      ]
+    ],
+    "facultatively_aerobic": [
+      [
+        "METPO:1000608",
+        "METPO:1000608"
+      ]
+    ],
+    "moderately_halophilic": [
+      [
+        "METPO:1000623",
+        "METPO:1000623"
+      ]
+    ],
+    "sphere_shaped": [
+      [
+        "METPO:1000683",
+        "METPO:1000683"
+      ]
+    ]
+  },
+  "declared_terms_without_a_matrix_column": [],
+  "no_combined_guarantee": "each family is corrected on its own; a union of decisions has no false discovery rate",
+  "selection_note": "the six Table 1 traits were selected on this corpus by the composition arm; correcting within them is not independent confirmation"
+}

@@ -1339,8 +1339,7 @@ def plot_matrix_heatmap(
     fig.patch.set_facecolor("white")
     ax.set_facecolor(SLATE_100)
 
-    cmap = plt.get_cmap(cmap_name).copy()
-    cmap.set_bad(SLATE_100)
+    cmap = plt.get_cmap(cmap_name).with_extremes(bad=SLATE_100)
     values = (
         matrix.to_numpy(dtype=float)
         if len(matrix.index)
@@ -1501,8 +1500,7 @@ def plot_clustered_contrast_heatmap(
     ordered_labels = clustered_labels + clustering.insufficient_row_labels
     ordered_matrix = clustering.matrix.loc[ordered_labels]
     ordered_borders = significance_borders.reindex(ordered_matrix.index)
-    cmap = plt.get_cmap("RdBu_r").copy()
-    cmap.set_bad(SLATE_100)
+    cmap = plt.get_cmap("RdBu_r").with_extremes(bad=SLATE_100)
     values = ordered_matrix.to_numpy(dtype=float)
     if ordered_matrix.empty:
         values = np.full((1, len(trait_order)), np.nan)
