@@ -161,8 +161,10 @@ pd-trait-contributors:
 pd-significant-ecological-network:
 	uv run python scripts/create_pd_significant_condition_taxon_trait_network.py
 
-# Redraw the combined ecological-reporter figure after retaining conditions with
-# a descriptive 95% interval excluding zero for at least one of the six traits.
+# Build the ecological-reporter tables from the profile inputs (paired within-study
+# contrasts of the six-trait z-scores, and the PD genus/species taxon panel), then draw
+# the combined figure for the conditions with a descriptive 95% interval excluding zero
+# for at least one of the six traits.
 pd-ecological-reporter-combined:
 	uv run python scripts/create_pd_ecological_reporter_combined.py
 
