@@ -1781,10 +1781,17 @@ class Verdict:
 DEFINITION_DEPENDENT = ("some", "opposite some", "mixed")
 
 
+#: How a p range names its direction where it is not the decreased signature's (#589, #608).
+SPAN_DIRECTION = {
+    "mixed": " in opposite directions",
+    "opposite some": " toward the increased signature",
+}
+
+
 def p_span(verdict: Verdict, before: str, between: str) -> str:
-    """A verdict's p range, which says so when its significant results point both ways (#589)."""
-    opposite = " in opposite directions" if verdict.kind == "mixed" else ""
-    return f"{before}{sci(verdict.low)}{between}{sci(verdict.high)}{opposite}"
+    """A verdict's p range, naming its direction unless that is the decreased signature's."""
+    direction = SPAN_DIRECTION.get(verdict.kind, "")
+    return f"{before}{sci(verdict.low)}{between}{sci(verdict.high)}{direction}"
 
 
 def direction_verdicts(results: Results) -> dict[str, Verdict]:

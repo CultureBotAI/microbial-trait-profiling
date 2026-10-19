@@ -207,10 +207,22 @@ cellulose-decr *ARGS:
 # Draw the cellulose_decr figures from its tables. The figures are regenerated, not
 # committed (CONTRIBUTING.md, "Generated outputs on main"; #560). Their provenance records
 # this checkout's commit, with +dirty when its code or tables are modified; the deck links
-# the figures' code and tables at that commit (#556).
+# the figures' code and tables at that commit (#556). That commit describes this
+# checkout's tables only, so --analysis-dir is refused here (#609).
 [positional-arguments]
 cellulose-decr-figures *ARGS:
-	uv run python -m mtp.cellulose_decr.figures --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} data/analysis/cellulose_decr && git diff --cached --quiet -- {{code_paths}} data/analysis/cellulose_decr || echo +dirty)" "$@"
+	#!/usr/bin/env bash
+	set -euo pipefail
+	for arg in "$@"; do
+		case "$arg" in
+			--analysis-dir*)
+				echo "run this recipe in the checkout that holds the tables instead of $arg" >&2
+				exit 1
+				;;
+		esac
+	done
+	commit="$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} data/analysis/cellulose_decr && git diff --cached --quiet -- {{code_paths}} data/analysis/cellulose_decr || echo +dirty)"
+	uv run python -m mtp.cellulose_decr.figures --code-commit "$commit" "$@"
 
 # The two methods plates and seven Tufte plates of the selected-figure deck, drawn
 # from the rerun tables into this checkout's data/derived/tufte_plates/ (#573). Plates IV

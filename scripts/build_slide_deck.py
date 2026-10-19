@@ -184,16 +184,19 @@ def load_rerun_metrics(repo: Path) -> dict:
     )
     metrics["pd_cellulose_drivers"] = [r["taxon_name"] for r in drivers[:3]]
     metrics["pd_six_trait_summary"] = read_tsv(pd_dir / "pd_six_trait_direction_summary.tsv")
-    interaction = [
-        r
-        for r in read_tsv(pd_dir / "pd_cellulose_interaction_model.tsv")
-        if r["outcome"] == "cellulose_z" and r["term"] == "pd_x_decreased"
-    ]
-    if len(interaction) != 1:
-        raise ValueError(
-            "pd_cellulose_interaction_model.tsv needs one cellulose_z pd_x_decreased row"
-        )
-    metrics["pd_interaction"] = interaction[0]
+    model_rows = read_tsv(pd_dir / "pd_cellulose_interaction_model.tsv")
+    for outcome, key in (
+        ("cellulose_z", "pd_interaction"),
+        ("cellulose_positive_z", "pd_interaction_positive"),
+    ):
+        interaction = [
+            r for r in model_rows if r["outcome"] == outcome and r["term"] == "pd_x_decreased"
+        ]
+        if len(interaction) != 1:
+            raise ValueError(
+                f"pd_cellulose_interaction_model.tsv needs one {outcome} pd_x_decreased row"
+            )
+        metrics[key] = interaction[0]
 
     # 3. PD ecological reporter combined
     pd_eco_path = (
@@ -241,35 +244,150 @@ def load_rerun_metrics(repo: Path) -> dict:
     paired_dir = repo / "trait-visualization/trait-profile-investigation"
     metrics["paired_contrasts"] = {
         stratum: read_tsv(paired_dir / f"trait_profile_paired_contrast_trait_stats_{stratum}.tsv")
-        for stratum in ("pooled", "feces")
+        for stratum in ("pooled", "feces", "feces_excluded", "saliva")
     }
+    # 6. Oxygen-switch scores, quoted by Tufte Plate V's slide
+    metrics["oxygen_switch"] = read_tsv(
+        paired_dir / "taxa-oxygen-switches" / "condition_oxygen_switch_scores.tsv"
+    )
 
     return metrics
 
 
+def p_text(value: float) -> str:
+    """A p-value to two significant digits, or three where two would round across 0.05."""
+    text = f"{value:#.2g}"
+    if (float(text) < 0.05) != (value < 0.05):
+        text = f"{value:#.3g}"
+    return text
+
+
+def plural(count: int, noun: str) -> str:
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+
+
+def tested_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Traits with a study-level q-value, the family the stratum's BH ran over."""
+    return [r for r in rows if r.get("study_q_value") not in (None, "", "NA", "nan")]
+
+
 def study_bh_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
     """Traits passing study-level BH q ≤ 0.05, by mean Δz (increased minus decreased)."""
-    passing = [r for r in rows if r.get("study_q_value") and float(r["study_q_value"]) <= 0.05]
-    return sorted(passing, key=lambda r: float(r["study_mean_increased_minus_decreased"]))
+    passing = [r for r in tested_rows(rows) if float(r["study_q_value"]) <= 0.05]
+    return sorted(passing, key=mean_dz)
+
+
+def mean_dz(row: dict[str, str]) -> float:
+    return float(row["study_mean_increased_minus_decreased"])
+
+
+def trait_names(rows: list[dict[str, str]]) -> str:
+    # trait_label ends with the trait's ID, e.g. "xylan catabolic process GO:0045493"
+    return listing([r["trait_label"].rsplit(" ", 1)[0] for r in rows])
+
+
+def paired_contrast_title(metrics: dict) -> str:
+    """Tufte Plate II's slide title, read from the pooled table (#607)."""
+    passing = study_bh_rows(metrics["paired_contrasts"]["pooled"])
+    return (
+        f"Tufte Plate II: {plural(len(passing), 'trait')} pass study-level BH pooled, by "
+        "direction and body site"
+    )
 
 
 def paired_contrast_text(metrics: dict) -> str:
-    """Tufte Plate II's takeaway, read from the stratum tables (#556)."""
-    pooled = metrics["paired_contrasts"]["pooled"]
-    passing = study_bh_rows(pooled)
-
-    def names(rows: list[dict[str, str]]) -> str:
-        # trait_label ends with the trait's ID, e.g. "xylan catabolic process GO:0045493"
-        return listing([r["trait_label"].rsplit(" ", 1)[0] for r in rows])
-
-    lower = [r for r in passing if float(r["study_mean_increased_minus_decreased"]) < 0]
-    higher = [r for r in passing if float(r["study_mean_increased_minus_decreased"]) > 0][::-1]
-    return (
-        f"Of {len(pooled)} traits tested pooled, {len(passing)} pass study-level BH q ≤ 0.05 "
-        f"({len(study_bh_rows(metrics['paired_contrasts']['feces']))} in Feces): "
-        f"{len(lower)} with mean Δz < 0, higher in decreased signatures ({names(lower)}), and "
-        f"{len(higher)} with Δz > 0, led by {names(higher[:3])}."
+    """Tufte Plate II's takeaway, read from the stratum tables (#556, #608)."""
+    contrasts = metrics["paired_contrasts"]
+    passing = study_bh_rows(contrasts["pooled"])
+    lower = [r for r in passing if mean_dz(r) < 0]
+    higher = [r for r in passing if mean_dz(r) > 0][::-1]
+    level = [r for r in passing if mean_dz(r) == 0]
+    subject = "the annotation z-score"
+    sides = []
+    if lower:
+        sides.append(
+            f"in {len(lower)} {subject} is higher in decreased signatures "
+            f"(mean Δz < 0: {trait_names(lower)})"
+        )
+    if higher:
+        sides.append(
+            f"in {len(higher)} {'it' if lower else subject} is higher in increased signatures "
+            f"(Δz > 0), led by {trait_names(higher[:3])}"
+        )
+    if level:
+        sides.append(f"in {len(level)} the mean Δz is 0")
+    tested = len(tested_rows(contrasts["pooled"]))
+    feces = len(study_bh_rows(contrasts["feces"]))
+    head = (
+        f"Of {plural(tested, 'trait')} tested pooled, {len(passing)} "
+        f"{'passes' if len(passing) == 1 else 'pass'} study-level BH q ≤ 0.05 ({feces} in Feces)"
     )
+    return f"{head}: {'; '.join(sides)}." if sides else f"{head}."
+
+
+def paired_contrast_caveat(metrics: dict) -> str:
+    """Tufte Plate II's caveat: the strata without Feces, and saliva's nominal nitrate sign."""
+    contrasts = metrics["paired_contrasts"]
+
+    def studies(stratum: str) -> int:
+        return max(int(float(r["study_count"])) for r in contrasts[stratum])
+
+    def nitrate(stratum: str) -> dict[str, str]:
+        return next(
+            r
+            for r in contrasts[stratum]
+            if r["trait"] == "METPO:2000103|pathways:nitrate_reduction"
+        )
+
+    saliva, feces = nitrate("saliva"), nitrate("feces")
+    t_saliva, t_feces = float(saliva["study_t_statistic"]), float(feces["study_t_statistic"])
+    sign = "the opposite sign to" if (t_saliva > 0) != (t_feces > 0) else "the same sign as"
+    support = "BH q ≤ 0.05" if float(saliva["study_q_value"]) <= 0.05 else "a nominal p only"
+    excluded = contrasts["feces_excluded"]
+    return (
+        f"Without Feces ({studies('feces_excluded')} studies), {len(study_bh_rows(excluded))} "
+        f"of {plural(len(tested_rows(excluded)), 'trait')} pass study BH q ≤ 0.05; in "
+        f"Saliva ({studies('saliva')} studies), {len(study_bh_rows(contrasts['saliva']))} of "
+        f"{len(tested_rows(contrasts['saliva']))}. Saliva's nitrate reduction has {sign} "
+        f"Feces' at {support} (t = {t_saliva:+.2f}, p = "
+        f"{p_text(float(saliva['study_p_value']))}, q = {p_text(float(saliva['study_q_value']))}; "
+        f"Feces t = {t_feces:+.2f}, q = {p_text(float(feces['study_q_value']))}), and no test "
+        "compares the two sites."
+    )
+
+
+def oxygen_switch_strata(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Plate V's strata: the first 10 scoring above 0.20 and the 10 lowest below -0.15."""
+
+    def score(row: dict[str, str]) -> float:
+        return float(row["aerobe_up_anaerobe_down_score"])
+
+    up = [r for r in rows if score(r) > 0.20][:10]
+    down = sorted((r for r in rows if score(r) < -0.15), key=score)[:10]
+    return up + down
+
+
+def oxygen_switch_text(metrics: dict) -> str:
+    """Tufte Plate V's takeaway: how the strata it shows split by site (#610)."""
+    strata = oxygen_switch_strata(metrics["oxygen_switch"])
+
+    def score(row: dict[str, str]) -> float:
+        return float(row["aerobe_up_anaerobe_down_score"])
+
+    fecal = [r for r in strata if r["body_site_display"] == "Feces"]
+    other = [r for r in strata if r["body_site_display"] != "Feces"]
+    exceptions = [r for r in fecal if score(r) < 0] + [r for r in other if score(r) > 0]
+    text = (
+        f"Of the {len(strata)} strata shown, {sum(score(r) > 0 for r in fecal)} of {len(fecal)} "
+        "fecal strata score aerobe-up / anaerobe-down and "
+        f"{sum(score(r) < 0 for r in other)} of {len(other)} other strata the reverse."
+    )
+    if exceptions:
+        listed = listing(
+            [f"{r['condition']} · {r['body_site_display']} {score(r):+.2f}" for r in exceptions]
+        )
+        text += f" The exceptions: {listed}."
+    return text
 
 
 def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str, str, str]:
@@ -627,16 +745,31 @@ CONDITION_SHORT = {
 TRAIT_SHORT = {"cellulose catabolic process": "cellulose", "moderately halophilic": "halophily"}
 
 
-def pd_direction_caveat(model: dict[str, str]) -> str:
-    """The study-clustered test of a PD-specific cellulose direction, from its model row."""
-    p_value = float(model["p_value"])
+def pd_direction_caveat(model: dict[str, str], positive: dict[str, str]) -> str:
+    """The study-clustered test of a PD-specific cellulose direction, from its model rows.
+
+    ``model`` is the cellulose z-score outcome; ``positive`` the share of profiles with a
+    positive z-score, which the figure's right panel plots (#590, #608).
+    """
+    rows = (model, positive)
+    shown = [float(r["p_value"]) < 0.05 and float(r["coefficient"]) > 0 for r in rows]
+    against = [float(r["p_value"]) < 0.05 and float(r["coefficient"]) < 0 for r in rows]
+    if any(against):
+        verdict = "at least one measure points the other way, against the figure's title"
+    elif all(shown):
+        verdict = "a PD-specific direction is shown at p < 0.05"
+    elif any(shown):
+        verdict = "a PD-specific direction is shown at p < 0.05 for one measure only"
+    else:
+        verdict = "a PD-specific direction is not shown at p < 0.05"
     return (
         "Exploratory PD diagnostic. Its profile-level Fisher test treats the profiles of one "
         "study as independent. In the study-clustered model "
         "(pd_cellulose_interaction_model.tsv), the extra PD effect in decreased feces is "
         f"{float(model['coefficient']):+.2f} cellulose z (95% CI {float(model['ci_low']):+.2f} "
-        f"to {float(model['ci_high']):+.2f}, p = {p_value:#.2g}), so a PD-specific direction "
-        f"is {'' if p_value < 0.05 else 'not '}shown at p < 0.05."
+        f"to {float(model['ci_high']):+.2f}, p = {p_text(float(model['p_value']))}), and "
+        f"{float(positive['coefficient']):+.2f} (p = {p_text(float(positive['p_value']))}) for "
+        f"the share of profiles with cellulose z > 0 that the right panel plots, so {verdict}."
     )
 
 
@@ -735,16 +868,13 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
         },
         {
             "owner": "Marcin / Noel",
-            "title": f"Tufte Plate II: {len(study_bh_rows(metrics['paired_contrasts']['pooled']))} "
-            "traits split by direction, and a saliva sign flip",
+            "title": paired_contrast_title(metrics),
             "tag": "Tufte synthesis · Plate II",
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate2_317_trait_guild_dichotomy.png",
             "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": paired_contrast_text(metrics),
-            "caveat": "Excluding Feces (365 non-fecal studies) leaves 0 traits passing study BH q "
-            "≤ 0.05; in Saliva (55 studies), nitrate reduction reverses sign (study t = "
-            "-2.30, p = 0.0252) relative to Feces (t = +3.97, q = 0.00126).",
+            "caveat": paired_contrast_caveat(metrics),
             "methods_path": "methods/trait_profile_paired_contrasts.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/"
             "trait_profile_paired_contrast_trait_stats_feces.tsv",
@@ -807,10 +937,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate5_anatomical_oxygen_polarity_and_switchers.png",
             "code_path": "scripts/generate_tufte_plates.py",
-            "takeaway": "Lumenal fecal cohorts shift toward aerotolerant taxa (PCOS +1.18, UC "
-            "+1.13, myeloma +1.07, CRC feces +0.68), whereas oral, mucosal, lung, and "
-            "ocular cohorts invert toward obligate anaerobes (Oral RA -1.01, Lower GI "
-            "mucosa CRC -0.79, Periodontitis -0.47).",
+            "takeaway": oxygen_switch_text(metrics),
             "caveat": "Colorectal cancer splits by sampling compartment in O₂ switch score "
             "(Feces +0.68 vs Lower GI mucosa -0.79). The cellulose comparison between the "
             "same compartments is on the cellulose deep-dive slides; most of its mucosal "
@@ -1189,7 +1316,8 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "takeaway": "The cellulose-annotated taxa with the most net-decreased PD fecal "
             f"profiles are {listing(metrics['pd_cellulose_drivers'])}.",
             "caveat": "Descriptive contributor breakdown across PD fecal signatures; "
-            f"{taxon_family_text(metrics)}.",
+            f"{taxon_family_text(metrics)}. A taxon counts as cellulose-annotated when it or a "
+            "taxon below it carries the annotation.",
             "methods_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
             "README.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/PD-cellulose/"
@@ -1400,14 +1528,17 @@ def get_remaining_appendix_slides(
             )
             if png_path.name == "pd_cellulose_direction_specificity.png":
                 # The figure's own title calls the signal direction-specific (#590).
-                caveat = pd_direction_caveat(metrics["pd_interaction"])
+                caveat = pd_direction_caveat(
+                    metrics["pd_interaction"], metrics["pd_interaction_positive"]
+                )
             elif png_path.name == "pd_cellulose_taxon_six_trait_heatmap.png":
                 caveat = (
                     "Exploratory PD diagnostic. A \N{LEFT DOUBLE QUOTATION MARK}cellulose-"
                     "carrier\N{RIGHT DOUBLE QUOTATION MARK} taxon is one whose KG-Microbe "
                     "annotations, its own or its descendants\N{RIGHT SINGLE QUOTATION MARK}, "
-                    "include cellulose catabolic process. It is an annotation, not measured "
-                    "cellulose degradation."
+                    "include cellulose catabolic process; cell numbers count the annotated taxa "
+                    "at or below each row. It is an annotation, not measured cellulose "
+                    "degradation."
                 )
             evidence_path = (
                 "trait-visualization/trait-profile-investigation/PD-cellulose/"
@@ -1592,6 +1723,8 @@ UPSTREAM_COMMANDS = (
     "just taxa-trait-matrix  # uv run python -m mtp.cli taxa-trait-matrix",
     "just study-trait-profiles  # uv run python -m mtp.cli study-trait-profiles",
 )
+# KG-Microbe files `just taxa-trait-matrix` reads (src/mtp/taxa_trait_matrix.py).
+KG_INPUTS = ("data/kg-microbe/merged-kg_nodes.tsv", "data/kg-microbe/merged-kg_edges.tsv")
 UPSTREAM_STEPS = (
     "step_01_download",
     "step_02_ingest",
@@ -1618,10 +1751,7 @@ def cellulose_figure_provenance(rec: dict[str, Any], tables: dict[str, str]) -> 
         "just cellulose-decr-figures",
     ]
     rec["pipeline_step_ids"] = list(UPSTREAM_STEPS)
-    rec["upstream_raw_inputs"] = [
-        "data/raw/full_dump.csv",
-        "data/kg-microbe/merged-kg_edges.tsv",
-    ]
+    rec["upstream_raw_inputs"] = ["data/raw/full_dump.csv", *KG_INPUTS]
     rec["input_data_files"] = [f"{CELLULOSE_DIR}/{name}" for name in tables]
     rec["input_data_sha256s"] = list(tables.values())
     rec["methods_doc_path"] = "methods/cellulose_decr.md"
@@ -2288,11 +2418,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
                 "just_recipe": f"uv run python {r['code_path']}",
                 "command_series": [*UPSTREAM_COMMANDS, f"uv run python {r['code_path']}"],
                 "pipeline_step_ids": list(UPSTREAM_STEPS),
-                "upstream_raw_inputs": [
-                    "data/raw/full_dump.csv",
-                    "data/raw/merged-kg_nodes.tsv",
-                    "data/raw/merged-kg_edges.tsv",
-                ],
+                "upstream_raw_inputs": ["data/raw/full_dump.csv", *KG_INPUTS],
                 "input_data_files": [ev_rel] if ev_rel else [],
                 "input_data_sha256s": [ev_sha] if ev_sha else [],
                 "methods_doc_path": r.get("methods_path", ""),
@@ -2302,6 +2428,11 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
                 "v2_slide_number": r.get("v2_slide", "NA"),
                 "statistical_result_ids": [],
             }
+        # The source YAML placed the KG files under data/raw, which holds none (#609).
+        rec["upstream_raw_inputs"] = [
+            path.replace("data/raw/merged-kg_", "data/kg-microbe/merged-kg_")
+            for path in rec.get("upstream_raw_inputs", [])
+        ]
         if fp.startswith(CELLULOSE_FIGURES):
             cellulose_figure_provenance(rec, cellulose_figures["inputs"])
         new_figures_list.append(rec)

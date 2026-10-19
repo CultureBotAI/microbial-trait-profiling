@@ -102,48 +102,168 @@ def test_cellulose_provenance_replaces_a_carried_over_record() -> None:
     ]
     assert record["input_data_sha256s"] == ["f" * 64]
     assert record["methods_doc_path"] == "methods/cellulose_decr.md"
+    # `just taxa-trait-matrix` reads both KG files from data/kg-microbe (#609).
+    assert record["upstream_raw_inputs"] == [
+        "data/raw/full_dump.csv",
+        "data/kg-microbe/merged-kg_nodes.tsv",
+        "data/kg-microbe/merged-kg_edges.tsv",
+    ]
     text = json.dumps(record)
-    for stale in ("plot_cellulose_decr", "core17", "EXECUTIVE_SUMMARY", "merged-kg_nodes"):
+    for stale in ("plot_cellulose_decr", "core17", "EXECUTIVE_SUMMARY", "data/raw/merged-kg"):
         assert stale not in text
 
 
-def test_plate_two_text_reads_the_stratum_tables() -> None:
-    def row(label: str, q: float, mean: float) -> dict[str, str]:
-        return {
-            "trait_label": label,
-            "study_q_value": str(q),
-            "study_mean_increased_minus_decreased": str(mean),
-        }
+def _paired(label: str, q: object, mean: float, **extra: str) -> dict[str, str]:
+    return {
+        "trait_label": label,
+        "study_q_value": str(q),
+        "study_mean_increased_minus_decreased": str(mean),
+        **extra,
+    }
 
+
+def test_plate_two_text_reads_the_stratum_tables() -> None:
     pooled = [
-        row("cellulose catabolic process GO:0030245", 0.01, -0.2),
-        row("coccus shaped METPO:1000668", 0.02, 0.3),
-        row("anaerobic METPO:1000603", 0.5, -0.4),
-        row("euryhaline METPO:1000627", 0.04, 0.1),
-        row("arsenate reduction arsenate_reduction", 0.03, 0.2),
-        row("aerobic METPO:1000602", 0.01, 0.25),
+        _paired("cellulose catabolic process GO:0030245", 0.01, -0.2),
+        _paired("coccus shaped METPO:1000668", 0.02, 0.3),
+        _paired("anaerobic METPO:1000603", 0.5, -0.4),
+        _paired("euryhaline METPO:1000627", 0.04, 0.1),
+        _paired("arsenate reduction arsenate_reduction", 0.03, 0.2),
+        _paired("aerobic METPO:1000602", 0.01, 0.25),
     ]
-    feces = [row("x X:1", 0.01, 0.1), row("y Y:1", 0.2, 0.1)]
-    text = deck.paired_contrast_text({"paired_contrasts": {"pooled": pooled, "feces": feces}})
-    assert text == (
-        "Of 6 traits tested pooled, 5 pass study-level BH q ≤ 0.05 (1 in Feces): 1 with mean "
-        "Δz < 0, higher in decreased signatures (cellulose catabolic process), and 4 with "
-        "Δz > 0, led by coccus shaped, aerobic and arsenate reduction."
+    feces = [_paired("x X:1", 0.01, 0.1), _paired("y Y:1", 0.2, 0.1)]
+    metrics = {"paired_contrasts": {"pooled": pooled, "feces": feces}}
+    assert deck.paired_contrast_text(metrics) == (
+        "Of 6 traits tested pooled, 5 pass study-level BH q ≤ 0.05 (1 in Feces): in 1 the "
+        "annotation z-score is higher in decreased signatures (mean Δz < 0: cellulose catabolic "
+        "process); in 4 it is higher in increased signatures (Δz > 0), led by coccus shaped, "
+        "aerobic and arsenate reduction."
+    )
+    assert deck.paired_contrast_title(metrics) == (
+        "Tufte Plate II: 5 traits pass study-level BH pooled, by direction and body site"
     )
 
 
-@pytest.mark.parametrize(("p_value", "verdict"), [("0.0800", "is not shown"), ("0.01", "is shown")])
-def test_pd_direction_caveat_quotes_the_clustered_model(p_value: str, verdict: str) -> None:
-    """The figure's title says direction-specific; the study-clustered model decides (#590)."""
-    model = {"coefficient": "0.4098", "ci_low": "-0.0492", "ci_high": "0.8687", "p_value": p_value}
-    caveat = deck.pd_direction_caveat(model)
-    assert "+0.41 cellulose z (95% CI -0.05 to +0.87" in caveat
-    assert f"a PD-specific direction {verdict} at p < 0.05" in caveat
+def test_plate_two_text_edge_cases() -> None:
+    """One side empty, one trait, a missing q and a zero mean Δz (#608)."""
+    pooled = [_paired("aerobic METPO:1000602", 0.01, 0.25), _paired("x X:1", "", -0.3)]
+    metrics = {"paired_contrasts": {"pooled": pooled, "feces": []}}
+    assert deck.paired_contrast_text(metrics) == (
+        "Of 1 trait tested pooled, 1 passes study-level BH q ≤ 0.05 (0 in Feces): in 1 the "
+        "annotation z-score is higher in increased signatures (Δz > 0), led by aerobic."
+    )
+    level = {"paired_contrasts": {"pooled": [_paired("z Z:1", 0.01, 0.0)], "feces": []}}
+    assert deck.paired_contrast_text(level).endswith(": in 1 the mean Δz is 0.")
+    none = {"paired_contrasts": {"pooled": [_paired("z Z:1", 0.5, 0.2)], "feces": []}}
+    assert deck.paired_contrast_text(none) == (
+        "Of 1 trait tested pooled, 0 pass study-level BH q ≤ 0.05 (0 in Feces)."
+    )
 
 
-def test_pd_direction_caveat_keeps_two_significant_digits() -> None:
-    model = {"coefficient": "0.41", "ci_low": "-0.05", "ci_high": "0.87", "p_value": "0.08004"}
-    assert "p = 0.080)" in deck.pd_direction_caveat(model)
+NITRATE = "METPO:2000103|pathways:nitrate_reduction"
+
+
+def _nitrate(t: float, p: float, q: float, studies: int) -> list[dict[str, str]]:
+    return [
+        _paired(
+            "nitrate reduction nitrate_reduction",
+            q,
+            t / 10,
+            trait=NITRATE,
+            study_t_statistic=str(t),
+            study_p_value=str(p),
+            study_count=str(studies),
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    ("saliva", "expected"),
+    [
+        (
+            (-2.30, 0.0252, 0.979),
+            "Saliva's nitrate reduction has the opposite sign to Feces' at a nominal p only "
+            "(t = -2.30, p = 0.025, q = 0.98; Feces t = +3.97, q = 0.0013)",
+        ),
+        ((2.5, 0.001, 0.01), "the same sign as Feces' at BH q ≤ 0.05"),
+    ],
+)
+def test_plate_two_caveat_reads_saliva_and_feces(
+    saliva: tuple[float, float, float], expected: str
+) -> None:
+    """A nominal saliva sign is not headlined as a site difference (#607)."""
+    metrics = {
+        "paired_contrasts": {
+            "feces": _nitrate(3.97, 8.04e-5, 0.00126, 594),
+            "feces_excluded": _nitrate(-1.14, 0.256, 0.994, 365),
+            "saliva": _nitrate(*saliva, 55),
+        }
+    }
+    caveat = deck.paired_contrast_caveat(metrics)
+    assert caveat.startswith("Without Feces (365 studies), 0 of 1 trait pass study BH q ≤ 0.05")
+    assert expected in caveat
+    assert caveat.endswith("and no test compares the two sites.")
+
+
+def test_plate_five_text_names_the_exceptions() -> None:
+    """Fecal strata are not all aerobe-up; the slide says which are not (#610)."""
+
+    def stratum(condition: str, site: str, score: float) -> dict[str, str]:
+        return {
+            "condition": condition,
+            "body_site_display": site,
+            "aerobe_up_anaerobe_down_score": str(score),
+        }
+
+    rows = [
+        stratum("A", "Feces", 1.18),
+        stratum("C", "Lower airway / lung", 0.97),
+        stratum("B", "Feces", -0.51),
+        stratum("D", "Oral cavity / dental", -1.01),
+        stratum("E", "Feces", 0.1),
+    ]
+    assert deck.oxygen_switch_text({"oxygen_switch": rows}) == (
+        "Of the 4 strata shown, 1 of 2 fecal strata score aerobe-up / anaerobe-down and 1 of 2 "
+        "other strata the reverse. The exceptions: B · Feces -0.51 and "
+        "C · Lower airway / lung +0.97."
+    )
+    clean = {"oxygen_switch": [rows[0], rows[3]]}
+    assert "exceptions" not in deck.oxygen_switch_text(clean)
+
+
+def _model(coefficient: float, p: float) -> dict[str, str]:
+    return {
+        "coefficient": str(coefficient),
+        "ci_low": str(coefficient - 0.46),
+        "ci_high": str(coefficient + 0.46),
+        "p_value": str(p),
+    }
+
+
+@pytest.mark.parametrize(
+    ("model", "positive", "verdict"),
+    [
+        ((0.4098, 0.08004), (0.1859, 0.0553), "a PD-specific direction is not shown at p < 0.05"),
+        ((0.41, 0.01), (0.19, 0.02), "a PD-specific direction is shown at p < 0.05."),
+        ((0.41, 0.01), (0.19, 0.2), "is shown at p < 0.05 for one measure only"),
+        ((-0.41, 0.04), (0.19, 0.2), "points the other way, against the figure's title"),
+    ],
+)
+def test_pd_direction_caveat_quotes_the_clustered_model(
+    model: tuple[float, float], positive: tuple[float, float], verdict: str
+) -> None:
+    """The figure's title says direction-specific; the clustered model decides (#590, #608)."""
+    caveat = deck.pd_direction_caveat(_model(*model), _model(*positive))
+    assert f"{model[0]:+.2f} cellulose z" in caveat
+    assert "the share of profiles with cellulose z > 0" in caveat
+    assert verdict in caveat
+
+
+def test_p_values_do_not_round_across_the_threshold() -> None:
+    assert deck.p_text(0.08004) == "0.080"
+    assert deck.p_text(0.0495) == "0.0495"
+    assert deck.p_text(0.00126) == "0.0013"
+    assert deck.p_text(0.979) == "0.98"
 
 
 # --------------------------------------------------------------------------- plates
@@ -176,6 +296,23 @@ def test_plate_four_callout_without_definition_dependence(tmp_path: Path) -> Non
     callout = plates.cellulose_decr_notes(_cellulose_repo(tmp_path, ""))["plate4_callout"]
     assert "deep-dive" not in callout
     assert sum(line.startswith("• ") for line in callout.splitlines()) == 2
+
+
+def test_plate_labels_name_carbon_sources(tmp_path: Path) -> None:
+    """A compound's object_name alone names no trait (#607)."""
+    columns = tmp_path / plates.TRAIT_COLUMNS
+    columns.parent.mkdir(parents=True)
+    columns.write_text(
+        "column_id\tobject_name\tpredicate_name\n"
+        "METPO:2000006|CHEBI:16634\traffinose\tuses as carbon source\n"
+        "METPO:2000103|pathways:nitrate_reduction\tnitrate_reduction\tcapable of\n"
+        "METPO:1000606\tobligately aerobic\t\n"
+    )
+    assert plates.trait_labels(tmp_path) == {
+        "METPO:2000006|CHEBI:16634": "raffinose (carbon source)",
+        "METPO:2000103|pathways:nitrate_reduction": "nitrate reduction",
+        "METPO:1000606": "obligately aerobic",
+    }
 
 
 def test_plates_need_the_cellulose_captions(tmp_path: Path) -> None:

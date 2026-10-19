@@ -668,7 +668,10 @@ def test_direction_caption_follows_the_direction_not_only_p(results: figures.Res
         figures.caption_direction(edited).title
     )
     assert "CRC: p from " in figures.caption_direction(edited).caveat
-    assert figures.fragile_statement(edited).startswith("the HIV and CRC results depend")
+    fragile = figures.fragile_statement(edited)
+    assert fragile.startswith("the HIV and CRC results depend")
+    # Quoted beside decreased-direction claims, it must say which way CRC goes (#608).
+    assert fragile.endswith(" toward the increased signature)")
 
 
 def test_mixed_direction_is_named_not_only_its_p_range(results: figures.Results) -> None:

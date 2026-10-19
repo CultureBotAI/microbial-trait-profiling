@@ -70,11 +70,18 @@ def study_bh_count(rows: dict[str, dict[str, str]]) -> int:
 
 
 def trait_labels(repo: Path) -> dict[str, str]:
-    """Each trait column's object_name, the label the plates must show (#556, #591)."""
-    return {
-        row["column_id"]: row["object_name"].replace("_", " ")
-        for row in read_tsv(repo / TRAIT_COLUMNS)
-    }
+    """Each trait column's label as the plates show it (#556, #591, #607).
+
+    The label is the column's object_name. A compound the taxon uses as a carbon source
+    adds "(carbon source)", since its object_name alone ("raffinose") names no trait.
+    """
+    labels = {}
+    for row in read_tsv(repo / TRAIT_COLUMNS):
+        name = row["object_name"].replace("_", " ")
+        if row.get("predicate_name") == "uses as carbon source":
+            name = f"{name} (carbon source)"
+        labels[row["column_id"]] = name
+    return labels
 
 
 def canonical_display(display: str, label: str | None) -> str:
@@ -1533,7 +1540,6 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
     trait_rows_spec = [
         # Increased Guilds
         ("METPO:1000608", "[O₂ Guild]  Facultatively aerobic ★", "O₂ / Aerotolerance"),
-        ("METPO:1000605", "Facultative O₂ preference", "O₂ / Aerotolerance"),
         ("METPO:1000606", "Microaerophilic", "O₂ / Aerotolerance"),
         ("METPO:1000602", "Aerobic", "O₂ / Aerotolerance"),
         ("METPO:1000623", "[Halophily]  Moderately halophilic ★", "Halotolerance / Osmotic"),
@@ -1541,71 +1547,58 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         ("METPO:1000627", "Euryhaline", "Halotolerance / Osmotic"),
         (
             "METPO:2000103|pathways:arsenate_reduction",
-            "[Redox / S·N]  Arsenate reduction ★",
-            "Redox / S & N / Oxyanion",
+            "[Redox]  Arsenate reduction ★",
+            "Redox",
         ),
         (
             "METPO:2000103|pathways:trithionate_oxidation",
             "Trithionate oxidation",
-            "Redox / S & N / Oxyanion",
+            "Redox",
         ),
         (
             "METPO:2000103|pathways:thiosulfate_oxidation",
             "Thiosulfate oxidation",
-            "Redox / S & N / Oxyanion",
+            "Redox",
         ),
         (
             "METPO:2000103|pathways:thiosulfate_oxidation_dark",
             "Thiosulfate oxidation (dark)",
-            "Redox / S & N / Oxyanion",
+            "Redox",
         ),
-        ("METPO:2000103|GO:0019646", "Urea catabolic process", "Redox / S & N / Oxyanion"),
-        (
-            "METPO:2000103|pathways:nitrate_reduction",
-            "Nitrate reduction [Saliva flip!]",
-            "Redox / S & N / Oxyanion",
-        ),
+        ("METPO:2000103|pathways:nitrate_reduction", "Nitrate reduction", "Redox"),
         (
             "METPO:2000103|pathways:methane_oxidation",
             "Methane oxidation",
-            "Redox / S & N / Oxyanion",
+            "Redox",
         ),
         ("METPO:1000668", "[Morphology]  Coccus shaped ★", "Morphology"),
         ("METPO:1000683", "Sphere shaped ★", "Morphology"),
-        (
-            "METPO:2000006|CHEBI:320055",
-            "[Simple C / Nuc]  Methyl β-D-glucopyranoside",
-            "Simple Carbon / Nucleoside",
-        ),
-        ("METPO:2000103|GO:0046274", "Lignin catabolic process", "Simple Carbon / Nucleoside"),
-        ("METPO:2000006|CHEBI:16808", "2-Dehydro-D-gluconate", "Simple Carbon / Nucleoside"),
-        ("METPO:2000006|CHEBI:17596", "Inosine utilization", "Simple Carbon / Nucleoside"),
-        ("METPO:2000006|CHEBI:25115", "Malate utilization", "Simple Carbon / Nucleoside"),
+        # The tag sits on the shortest label so the row fits the left margin.
+        ("METPO:2000006|CHEBI:25115", "[Carbon sources]  Malate", "Carbon sources"),
+        ("METPO:2000006|CHEBI:17596", "Inosine", "Carbon sources"),
+        ("METPO:2000006|CHEBI:16808", "2-Dehydro-D-gluconate", "Carbon sources"),
+        ("METPO:2000006|CHEBI:320055", "Methyl β-D-glucopyranoside", "Carbon sources"),
+        ("METPO:2000103|GO:0046274", "Lignin catabolic process", "Carbon sources"),
         # Decreased Guilds
         (
             "METPO:2000103|GO:0030245",
-            "[Carbohydrate ↓]  Cellulose catabolic process ★",
-            "Carbohydrate ↓",
+            "[Plant glycan ↓]  Cellulose catabolic process ★",
+            "Plant glycan ↓",
         ),
-        ("METPO:2000103|GO:0045493", "Xylan catabolic process", "Carbohydrate ↓"),
-        ("METPO:2000006|CHEBI:16634", "Raffinose utilization", "Carbohydrate ↓"),
-        ("METPO:1000429", "[Anaerobe / H₂ ↓]  GC low (<45%)", "Anaerobe / Reductive H₂ ↓"),
-        ("METPO:1000603", "Anaerobic", "Anaerobe / Reductive H₂ ↓"),
-        ("METPO:1000607", "Obligately anaerobic", "Anaerobe / Reductive H₂ ↓"),
-        (
-            "METPO:1000845",
-            "Acetogenesis",
-            "Anaerobe / Reductive H₂ ↓",
-        ),
+        ("METPO:2000103|GO:0045493", "Xylan catabolic process", "Plant glycan ↓"),
+        ("METPO:2000006|CHEBI:16634", "Raffinose", "Plant glycan ↓"),
+        ("METPO:1000429", "[Anaerobic / low GC ↓]  GC low", "Anaerobic / low GC ↓"),
+        ("METPO:1000603", "Anaerobic", "Anaerobic / low GC ↓"),
+        ("METPO:1000607", "Obligately anaerobic", "Anaerobic / low GC ↓"),
+        ("METPO:1000845", "Acetogenesis", "Anaerobic / low GC ↓"),
     ]
-    # METPO phenotype rows take their object_name; compound columns (|GO, |CHEBI, |pathways)
-    # keep names that carry their predicate, such as "Raffinose utilization".
+    tables = (pooled, feces, nonfeces, saliva)
+    absent = [trait for trait, _, _ in trait_rows_spec if not any(trait in t for t in tables)]
+    if absent:
+        raise ValueError(f"Plate II rows missing from every stratum table: {absent}")
+    # Every row takes the label its column has in taxa_trait_matrix_columns.tsv (#607).
     trait_rows_spec = [
-        (
-            trait_id,
-            display if "|" in trait_id else canonical_display(display, labels.get(trait_id)),
-            group,
-        )
+        (trait_id, canonical_display(display, labels.get(trait_id)), group)
         for trait_id, display, group in trait_rows_spec
     ]
 
@@ -1623,7 +1616,7 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
 
     fig.suptitle(
         f"TUFTE PLATE 2 · Beyond Table 1: {len(trait_rows_spec)} Traits by Direction of "
-        "Annotation Shift & Anatomical Stratification",
+        "Annotation Shift & Body Site",
         fontsize=15.0,
         fontweight="bold",
         x=0.03,
@@ -1634,10 +1627,10 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
     fig.text(
         0.03,
         0.922,
-        "Study-level paired contrasts (mean Δz ± 95% CI): Feces (594 studies) drives the pooled "
-        f"signal, Feces-Excluded (365 studies) has {study_bh_count(nonfeces)} FDR hits, and "
-        "Saliva (55 studies) flips "
-        "Nitrate Reduction",
+        "Study-level paired contrasts (mean Δz ± 95% CI) · ** study BH q ≤ 0.005 · * q ≤ 0.05 · "
+        "† nominal p ≤ 0.05 · Feces (594 studies) carries most of the pooled signal; "
+        f"{study_bh_count(nonfeces)} traits pass BH without Feces and {study_bh_count(saliva)} "
+        "in Saliva",
         fontsize=9.0,
         color=MUTED,
     )
@@ -1662,7 +1655,8 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
             (-0.40, 0.56),
         ),
         (
-            "Saliva Only\n(55 studies · 129 pairs\nNitrate red. flips negative!)",
+            "Saliva Only\n(55 studies · 129 pairs\n"
+            f"{study_bh_count(saliva)} traits study BH q ≤ 0.05)",
             saliva,
             (-0.78, 0.92),
         ),
@@ -1670,7 +1664,9 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
 
     n_rows = len(trait_rows_spec)
     y_positions = np.arange(n_rows)[::-1]
-    div_y = y_positions[20] - 0.5
+    # The rule between the increased groups and the first decreased (↓) group
+    first_decreased = next(i for i, row in enumerate(trait_rows_spec) if row[2].endswith("↓"))
+    div_y = y_positions[first_decreased] + 0.5
 
     for col_idx, (col_title, data_dict, xlim) in enumerate(strata):
         ax = fig.add_subplot(gs[0, col_idx])
@@ -1758,8 +1754,8 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         0.025,
         "Source: Rerun on main (402ef5c) · "
         "trait_profile_paired_contrast_trait_stats_{pooled,feces,feces_excluded,saliva}.tsv · "
-        "★ Table 1 trait · phenotype rows show their object_name; compound and pathway rows "
-        "add a predicate.",
+        "★ Table 1 trait · rows show the object_name of taxa_trait_matrix_columns.tsv, with "
+        '"(carbon source)" for compounds used as carbon sources.',
         fontsize=7.9,
         color=MUTED,
     )
@@ -2485,16 +2481,6 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
         y=0.96,
         color=INK,
     )
-    fig.text(
-        0.05,
-        0.922,
-        "Lumenal Feces signatures shift toward aerotolerant taxa (aerobe-up / anaerobe-down), "
-        "whereas Oral, Lower-GI Mucosal, and Ocular sites shift toward anaerobes — and major "
-        "genera flip direction across diseases.",
-        fontsize=8.8,
-        color=MUTED,
-    )
-
     # --- Panel A: Anatomical Oxygen-Switch Polarity Inversion ---
     ax_oxy = fig.add_subplot(gs[0, 0])
 
@@ -2505,6 +2491,20 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
     )[:10]
     combined_oxy = pos_strata + neg_strata[::-1]
     combined_oxy.sort(key=lambda r: float(r["aerobe_up_anaerobe_down_score"]))
+
+    fecal = [r for r in combined_oxy if r["body_site_display"] == "Feces"]
+    other = [r for r in combined_oxy if r["body_site_display"] != "Feces"]
+    fecal_up = sum(float(r["aerobe_up_anaerobe_down_score"]) > 0 for r in fecal)
+    other_down = sum(float(r["aerobe_up_anaerobe_down_score"]) < 0 for r in other)
+    fig.text(
+        0.05,
+        0.922,
+        f"Of the {len(combined_oxy)} strata shown, {fecal_up} of {len(fecal)} fecal strata score "
+        f"aerobe-up / anaerobe-down and {other_down} of {len(other)} other strata the reverse; "
+        "major genera switch direction across diseases.",
+        fontsize=8.8,
+        color=MUTED,
+    )
 
     ax_oxy.set_ylim(-0.7, len(combined_oxy) - 0.2)
     ax_oxy.set_xlim(-1.45, 1.50)
