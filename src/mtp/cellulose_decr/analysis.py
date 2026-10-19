@@ -17,10 +17,14 @@ experiment.
 
 Other work regenerates the inputs in place, so a run stops when an input's hash
 differs from the committed provenance or the contrast manifest came from another
-classifier version (#562). The pins describe a v2 contrast manifest and the metadata
-table before #555 relabelled it, so until #580 re-pins them a checkout with a newer
-classifier or metadata refuses to run; the committed tables reproduce at the
-provenance's ``code_commit`` from the pinned inputs (#642).
+classifier version (#562). The committed tables reproduce at the provenance's
+``code_commit`` from the pinned inputs (#642).
+
+The disease-versus-healthy populations keep the ``disease_vs_healthy`` contrasts that
+compare people with the condition against people without it, ``contrast_type``
+``case_vs_control_subject`` (#580). The condition-definition scenarios set aside
+treated cases or Tier 3 controls, or count the paired-tissue and comorbidity contrasts
+as well (``CASE_CONTROL_RULES``).
 
 The counts are annotation counts of curated signature taxa, not measurements of
 patients, cells or pathway activity (methods/biological_interpretation.md).
@@ -50,7 +54,12 @@ import scipy
 from scipy import optimize, special, stats
 
 from mtp.composition_denominators import load_retained_profiles, trait_fractions
-from mtp.contrast_orientation import CLASSIFIER_VERSION
+from mtp.contrast_orientation import (
+    CASE_VS_CONTROL_SUBJECT,
+    CLASSIFIER_VERSION,
+    TIER_1_HEALTHY_NORMAL,
+    TIER_2_CONDITION_NEGATIVE_SCREENED,
+)
 from mtp.paths import REPO_ROOT, file_sha256
 
 ANALYSIS_DIR = REPO_ROOT / "data" / "analysis" / "cellulose_decr"
@@ -85,21 +94,26 @@ SITE_MISCURATIONS = {
         "McHardy et al. 2013: rectal mucosa collected with a sponge, curated as Feces"
     ),
 }
-# HIV experiments the contrast classifier does not call disease-vs-healthy although
-# they compare people with and without HIV (#569); counted in sensitivities only.
-HIV_RECLASSIFIED = {
-    ("bsdb:33102244", "bsdb:33102244-1"): "HIV- vs HIV+ (classified disease_vs_disease)",
-}
-HIV_ON_ART = {
-    ("bsdb:29411528", "bsdb:29411528-5"): "HAART-treated HIV+ vs controls (treatment_exposure)",
-    ("bsdb:38383483", "bsdb:38383483-3"): "PLWH on ART vs PLWOH (treatment_exposure)",
-    ("bsdb:39880958", "bsdb:39880958-1"): "PLWH on ART vs HIV- (treatment_exposure)",
-}
-# A within-patient tumour-vs-adjacent-tissue contrast the classifier calls
-# disease-vs-healthy (#569); left out in a sensitivity.
-CRC_WITHIN_PATIENT = {
-    ("bsdb:25699023", "bsdb:25699023-2"): (
-        "adjacent non-cancerous vs cancerous tissue (classified disease_vs_healthy)"
+# Which disease_vs_healthy contrasts count as patients against controls (#580; see
+# "Selecting patients against controls" in methods/contrast_orientation.md). The
+# primary analysis keeps subject-level case-control contrasts; the condition-definition
+# scenarios apply the others. Since contrast-orientation-v4 the classifier itself calls
+# HIV-negative vs HIV-positive and treated-HIV contrasts disease vs healthy and marks
+# tumour-vs-adjacent tissue as paired_tissue_autologous (#569), which this analysis
+# used to hand-code.
+SUBJECT_CONTROLS = "subject_controls"
+CASE_CONTROL_RULES = {
+    SUBJECT_CONTROLS: f"contrast_type {CASE_VS_CONTROL_SUBJECT} (primary analysis)",
+    "untreated_cases": (
+        f"contrast_type {CASE_VS_CONTROL_SUBJECT}, without contrasts whose cases are named as "
+        "treated (flag treated_disease_group)"
+    ),
+    "control_tiers_1_2": (
+        f"control_tier {TIER_1_HEALTHY_NORMAL} or {TIER_2_CONDITION_NEGATIVE_SCREENED}; "
+        "hospital, comorbid, tissue and treated-case contrasts (Tier 3) set aside"
+    ),
+    "every_contrast_type": (
+        "every disease_vs_healthy contrast, paired-tissue and comorbidity contrasts included"
     ),
 }
 SHORT = list(CONDITIONS)
@@ -214,6 +228,7 @@ class Corpus:
     manifest: pd.DataFrame
     label_source: str
     condition_labels: str = "exact"
+    case_control: str = SUBJECT_CONTROLS
 
 
 SYNONYM_TO_CONDITION = {
@@ -428,12 +443,33 @@ def msm_mentioned(manifest: pd.DataFrame) -> pd.Series:
     return joined.map(lambda value: bool(MSM_PATTERN.search(value)))
 
 
+def case_controls(rows: pd.DataFrame, rule: str) -> BoolArray:
+    """Manifest rows that compare patients with controls under a CASE_CONTROL_RULES rule."""
+    if rule not in CASE_CONTROL_RULES:
+        raise ValueError(f"unknown case-control rule {rule!r}")
+    if rule == "every_contrast_type":
+        return np.ones(len(rows), dtype=bool)
+    if rule == "control_tiers_1_2":
+        tiers: BoolArray = (
+            rows["control_tier"]
+            .isin([TIER_1_HEALTHY_NORMAL, TIER_2_CONDITION_NEGATIVE_SCREENED])
+            .to_numpy()
+        )
+        return tiers
+    keep: BoolArray = rows["contrast_type"].to_numpy() == CASE_VS_CONTROL_SUBJECT
+    if rule == "untreated_cases":
+        flags = rows["flags"].str.split(",")
+        keep &= ~flags.map(lambda values: "treated_disease_group" in values).to_numpy()
+    return keep
+
+
 def population(corpus: Corpus, name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Profiles and taxa of one contrast population, with ``dir`` as the used direction.
 
-    For the disease-versus-healthy populations, experiments classified ``reversed``
-    are relabelled so ``dec`` always means lower in the disease group
-    (mtp.contrast_orientation.oriented_profiles).
+    The disease-versus-healthy populations keep the ``disease_vs_healthy`` experiments
+    that ``corpus.case_control`` counts as patients against controls. Experiments
+    classified ``reversed`` are relabelled so ``dec`` always means lower in the disease
+    group (mtp.contrast_orientation.oriented_profiles).
     """
     profiles = corpus.profiles
     if name == ALL_CONTRASTS:
@@ -446,6 +482,7 @@ def population(corpus: Corpus, name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
             raise ValueError(f"{int((~found).sum())} profiles have no contrast-manifest row")
         rows = manifest.reindex(index)
         keep = rows["contrast_class"].to_numpy() == "disease_vs_healthy"
+        keep &= case_controls(rows, corpus.case_control)
         flags = rows["flags"].str.split(",")
         if name == STRONG:
             keep &= ~flags.map(lambda values: "weak_comparison_evidence" in values).to_numpy()
@@ -457,20 +494,6 @@ def population(corpus: Corpus, name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     taxa = corpus.taxa[corpus.taxa["profile_id"].isin(kept.index)]
     taxa = taxa.assign(dir=taxa["profile_id"].map(kept["dir"]).to_numpy())
     return kept, taxa
-
-
-def reclassified(
-    corpus: Corpus, keys: Iterable[tuple[str, str]], contrast_class: str = "disease_vs_healthy"
-) -> Corpus:
-    """The corpus with the given experiments given another contrast class."""
-    manifest = corpus.manifest.copy()
-    chosen = list(keys)
-    missing = [key for key in chosen if key not in manifest.index]
-    if missing:
-        raise ValueError(f"reclassified experiments missing from the manifest: {missing}")
-    index = pd.MultiIndex.from_tuples(chosen, names=["study_id", "experiment_id"])
-    manifest.loc[index, "contrast_class"] = contrast_class
-    return dataclasses.replace(corpus, manifest=manifest)
 
 
 def without_studies(corpus: Corpus, studies: Iterable[str]) -> Corpus:
@@ -2093,6 +2116,31 @@ def label_inventory(
     )
 
 
+def case_control_inventory(corpus: Corpus) -> list[dict[str, Any]]:
+    """The three conditions' disease-vs-healthy experiments that a case-control rule sets aside.
+
+    Each row names the rules that count the experiment, so no exclusion is silent (#580).
+    """
+    keys = ["study_id", "experiment_id"]
+    described = [*keys, "condition", "compartment"]
+    classified = ["contrast_type", "control_tier", "flags"]
+    target = corpus.profiles[corpus.profiles["condition"].isin(CONDITIONS.values())]
+    experiments = target[described].drop_duplicates(keys).sort_values(["condition", *keys])
+    rows = corpus.manifest.reindex(pd.MultiIndex.from_frame(experiments[keys]))
+    counted = {rule: case_controls(rows, rule) for rule in CASE_CONTROL_RULES}
+    chosen = (rows["contrast_class"].to_numpy() == "disease_vs_healthy") & ~np.logical_and.reduce(
+        list(counted.values())
+    )
+    return [
+        {
+            **{column: experiments.iloc[position][column] for column in described},
+            **{column: rows.iloc[position][column] for column in classified},
+            "counted_under": [rule for rule, kept in counted.items() if kept[position]],
+        }
+        for position in np.flatnonzero(chosen)
+    ]
+
+
 def u6_units(
     profiles: pd.DataFrame, taxa: pd.DataFrame, cellulose: set[str]
 ) -> tuple[BoolArray, IntArray, dict[str, int], pd.DataFrame]:
@@ -2123,41 +2171,39 @@ def u6_units(
 
 
 def scenario_corpora(corpus: Corpus) -> list[tuple[str, str, Corpus]]:
-    """Condition and contrast definitions that change which experiments count (#561, #566).
+    """Condition and contrast definitions that change which experiments count (#561, #566, #580).
 
-    ``corpus`` must use the exact condition labels; each scenario is built from it.
+    ``corpus`` must use the exact condition labels and the primary case-control rule;
+    each scenario is built from it.
     """
     if corpus.condition_labels != "exact":
         raise ValueError("scenarios are defined relative to the exact condition labels")
-    merged = with_synonyms(corpus)
+    if corpus.case_control != SUBJECT_CONTROLS:
+        raise ValueError("scenarios are defined relative to the primary case-control rule")
     return [
         ("exact_labels", "Exact condition labels (primary analysis)", corpus),
-        ("synonyms_merged", "Synonym labels counted under their disease", merged),
+        ("synonyms_merged", "Synonym labels counted under their disease", with_synonyms(corpus)),
         (
-            "hiv_minus_vs_plus_counted",
-            "Exact labels; the HIV- vs HIV+ experiment counted as disease vs healthy",
-            reclassified(corpus, HIV_RECLASSIFIED),
+            "treated_cases_excluded",
+            "Exact labels; disease-vs-healthy contrasts whose cases are named as treated set aside",
+            dataclasses.replace(corpus, case_control="untreated_cases"),
         ),
         (
-            "synonyms_and_hiv_minus_vs_plus",
-            "Synonyms counted and the HIV- vs HIV+ experiment counted",
-            reclassified(merged, HIV_RECLASSIFIED),
+            "control_tiers_1_2",
+            "Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case "
+            "contrasts set aside)",
+            dataclasses.replace(corpus, case_control="control_tiers_1_2"),
         ),
         (
-            "synonyms_hiv_minus_vs_plus_and_art",
-            "Synonyms, the HIV- vs HIV+ experiment and three HIV+ on ART vs uninfected counted",
-            reclassified(merged, [*HIV_RECLASSIFIED, *HIV_ON_ART]),
+            "every_contrast_type",
+            "Exact labels; paired-tissue and comorbidity contrasts also counted as disease vs "
+            "healthy",
+            dataclasses.replace(corpus, case_control="every_contrast_type"),
         ),
         (
             "without_site_miscurations",
             "Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)",
             without_studies(corpus, SITE_MISCURATIONS),
-        ),
-        (
-            "crc_within_patient_excluded",
-            "Exact labels; the CRC tumour-vs-adjacent-tissue experiment not counted as disease "
-            "vs healthy",
-            reclassified(corpus, CRC_WITHIN_PATIENT, "within_patient_tissue"),
         ),
     ]
 
@@ -2579,10 +2625,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             CONDITIONS[short]: list(labels) for short, labels in CONDITION_SYNONYMS.items()
         },
         "site_miscurations": SITE_MISCURATIONS,
-        "hiv_contrasts_counted_in_sensitivities": {
-            f"{experiment}": reason
-            for (_, experiment), reason in {**HIV_RECLASSIFIED, **HIV_ON_ART}.items()
-        },
+        "case_control_rules": CASE_CONTROL_RULES,
+        "case_control_inventory": case_control_inventory(corpus),
         "definitions": {
             "profile": (
                 "one study/experiment/direction aggregate of curated signature taxa (human hosts)"
@@ -2595,6 +2639,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "exact BugSigDB condition label of the experiment; condition_synonyms are "
                 "counted only in the synonyms_merged sensitivity or with "
                 "--condition-labels synonyms"
+            ),
+            "disease_vs_healthy": (
+                "contrast_class disease_vs_healthy and contrast_type case_vs_control_subject, "
+                "with reversed experiments relabelled so dec means lower in the disease group; "
+                "the condition_definition_* tables apply the other case_control_rules, and "
+                "case_control_inventory lists the experiments in the three conditions that a "
+                "rule sets aside"
             ),
             "set": "matrix taxa annotated with the trait in at least one feces decreased profile",
             "annotation": (

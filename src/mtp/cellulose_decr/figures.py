@@ -998,17 +998,17 @@ def graphical_compartments(results: Results) -> Figure:
     merged_hiv = scenario_row(
         results, "synonyms_merged", "disease_vs_healthy_oriented", "HIV", "study"
     )
-    art_hiv = scenario_row(
-        results, "synonyms_hiv_minus_vs_plus_and_art", "disease_vs_healthy_oriented", "HIV", "study"
+    untreated_hiv = scenario_row(
+        results, "treated_cases_excluded", "disease_vs_healthy_oriented", "HIV", "study"
     )
     gi_all = compartment_row(results, "all_contrasts", NON_FECAL_GI, "CRC")
     gi_healthy = compartment_row(results, "disease_vs_healthy_oriented", NON_FECAL_GI, "CRC")
     gi_note = ""
     if gi_all is not None and gi_healthy is not None:
         table = results.scenario_interaction
-        without = only(
+        counted = only(
             table[
-                table["scenario"].eq("crc_within_patient_excluded")
+                table["scenario"].eq("every_contrast_type")
                 & table["contrast_population"].eq("disease_vs_healthy_oriented")
                 & table["short_condition"].eq("CRC")
                 & table["unit"].eq("study")
@@ -1016,9 +1016,9 @@ def graphical_compartments(results: Results) -> Figure:
         )
         gi_note = (
             f"only {int(gi_healthy['paired_experiments'])} of {int(gi_all['paired_experiments'])} "
-            "paired CRC mucosa/lumen experiments are classified disease vs healthy, and one of "
-            "those compares tumour with adjacent tissue (without it the disease-vs-healthy "
-            f"study row of B gives p = {sci(float(without['fisher_p_two_sided']))}), "
+            "paired CRC mucosa/lumen experiments compare patients with controls (counting the "
+            "tumour-vs-adjacent-tissue and comorbidity contrasts too, the disease-vs-healthy "
+            f"study row of B gives p = {sci(float(counted['fisher_p_two_sided']))}), "
         )
     footnote(
         fig,
@@ -1030,9 +1030,10 @@ def graphical_compartments(results: Results) -> Figure:
         f"(p = {sci(exact_hiv['binom_p_two_sided'])}) with exact labels, "
         f"{int(merged_hiv['down'])}↓ {int(merged_hiv['up'])}↑ "
         f"(p = {sci(merged_hiv['binom_p_two_sided'])}) with synonym labels, "
-        f"{int(art_hiv['down'])}↓ {int(art_hiv['up'])}↑ (p = {sci(art_hiv['binom_p_two_sided'])}) "
-        "when HIV-negative-vs-positive and treated contrasts are added "
-        "(condition_definition_sensitivity.tsv). The B tests treat units as independent, "
+        f"{int(untreated_hiv['down'])}↓ {int(untreated_hiv['up'])}↑ "
+        f"(p = {sci(untreated_hiv['binom_p_two_sided'])}) when contrasts whose cases are named as "
+        "treated are set aside (condition_definition_sensitivity.tsv). The B tests treat units "
+        "as independent, "
         f"{gi_note}and the sites differ in sampling effort (C), so a difference between "
         f"compartments is not evidence of anatomical specificity. {vintage_note(results)}",
         width=178,
@@ -1618,7 +1619,9 @@ def detailed_compartments(results: Results) -> Figure:
         fig,
         "Experiments within a study are not independent; the study rows collapse them to one "
         "vote per study. Disease-vs-healthy rows keep experiments the contrast manifest classifies "
-        "disease_vs_healthy, relabelled so decreased means lower in disease. Intervals are exact "
+        "disease_vs_healthy that compare patients with subject-level controls "
+        "(case_vs_control_subject), relabelled so decreased means lower in disease. Intervals are "
+        "exact "
         f"(Clopper{DASH}Pearson for shares; conditional maximum likelihood for odds ratios). "
         "Stratified rows test a common odds ratio across PD, HIV and CRC, so the conditions' "
         "different sampling of the sites does not enter the estimate. "
@@ -1901,33 +1904,37 @@ def overlap_statement(results: Results) -> str:
 def crc_compartment_statement(results: Results) -> str:
     """CRC stool against GI mucosa / lumen, by unit and population.
 
-    The tumour-vs-adjacent-tissue experiment is named only while excluding it changes the
-    disease-vs-healthy study result, as it did on the v2 contrast manifest (#569, #580).
+    The tumour-vs-adjacent-tissue and comorbidity contrasts are named only while counting
+    them changes the disease-vs-healthy study result, as they did on the v2 contrast
+    manifest (#569, #580).
     """
     crc = interaction_row(results, ALL_CONTRASTS, "CRC", "experiment")
     experiments = interaction_row(results, ORIENTED, "CRC", "experiment")
     studies = interaction_row(results, ORIENTED, "CRC", "study")
     table = results.scenario_interaction
     chosen = table[
-        table["scenario"].eq("crc_within_patient_excluded")
+        table["scenario"].eq("every_contrast_type")
         & table["contrast_population"].eq(ORIENTED)
         & table["short_condition"].eq("CRC")
         & table["unit"].eq("study")
         & table["compartment_b"].eq(NON_FECAL_GI)
     ]
     study_p = float(studies["fisher_p_two_sided"])
-    without = ""
+    counted = ""
     if len(chosen):
-        without_p = float(only(chosen)["fisher_p_two_sided"])
-        if not math.isclose(without_p, study_p):
-            without = f" ({sci(without_p)} without the tumour-vs-adjacent-tissue experiment)"
+        counted_p = float(only(chosen)["fisher_p_two_sided"])
+        if not math.isclose(counted_p, study_p):
+            counted = (
+                f" ({sci(counted_p)} counting the tumour-vs-adjacent-tissue and comorbidity "
+                "contrasts too)"
+            )
     return (
         f"CRC stool vs GI mucosa / lumen, all contrasts: {int(crc['a_down'])}↓ "
         f"{int(crc['a_up'])}↑ vs {int(crc['b_down'])}↓ {int(crc['b_up'])}↑ experiments "
         f"(odds ratio {float(crc['conditional_or']):.1f}, "
         f"p = {sci(float(crc['fisher_p_two_sided']))}); disease vs healthy: "
         f"p = {sci(float(experiments['fisher_p_two_sided']))} by experiment, {sci(study_p)} "
-        f"by study{without}. The sites differ in contrast mix and sampling, so this does not "
+        f"by study{counted}. The sites differ in contrast mix and sampling, so this does not "
         "show anatomical specificity"
     )
 

@@ -7,8 +7,6 @@ import json
 import math
 from dataclasses import replace
 from pathlib import Path
-from types import SimpleNamespace
-from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -17,7 +15,6 @@ from scipy import stats
 from scipy.stats import false_discovery_control
 from scipy.stats.contingency import odds_ratio
 
-import mtp.cellulose_decr.analysis as analysis_module
 from mtp.cellulose_decr.analysis import (
     ALL_CONTRASTS,
     FECES,
@@ -33,6 +30,7 @@ from mtp.cellulose_decr.analysis import (
     NullDraws,
     benjamini_hochberg,
     binomial_power,
+    case_control_inventory,
     check_input_drift,
     choose,
     clean,
@@ -62,7 +60,14 @@ from mtp.cellulose_decr.analysis import (
     u5_weights,
     u6_units,
 )
-from mtp.contrast_orientation import CLASSIFIER_VERSION
+from mtp.contrast_orientation import (
+    CASE_VS_CONTROL_SUBJECT,
+    CLASSIFIER_VERSION,
+    PAIRED_TISSUE_AUTOLOGOUS,
+    TIER_1_HEALTHY_NORMAL,
+    TIER_2_CONDITION_NEGATIVE_SCREENED,
+    TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+)
 
 # --------------------------------------------------------------------------- exact tests
 
@@ -504,6 +509,8 @@ def _input_root(root: Path, classifier_version: str = CLASSIFIER_VERSION) -> dic
         columns=["study_id", "experiment_id", "contrast_class", "orientation"],
     ).assign(
         classifier_version=classifier_version,
+        contrast_type=CASE_VS_CONTROL_SUBJECT,
+        control_tier=TIER_1_HEALTHY_NORMAL,
         flags="",
         group_0_name="Controls",
         group_1_name="Cases",
@@ -675,18 +682,73 @@ def test_u6_units_number_the_studies_in_order() -> None:
             )
 
 
-def test_the_art_scenario_counts_synonyms(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Both synonym scenarios start from the merged corpus (#632)."""
-    monkeypatch.setattr(analysis_module, "with_synonyms", lambda _corpus: "merged")
-    monkeypatch.setattr(
-        analysis_module, "reclassified", lambda corpus, ids, *_args: (corpus, tuple(ids))
-    )
-    monkeypatch.setattr(analysis_module, "without_studies", lambda corpus, _ids: corpus)
-    corpus = cast(Corpus, SimpleNamespace(condition_labels="exact"))
+def _case_control_corpus(root: Path) -> Corpus:
+    """The fixture corpus with three CRC contrasts that the case-control rules tell apart.
+
+    bsdb:2-1 compares tumour with adjacent tissue, bsdb:2-2 treated cases with Tier 3
+    controls and bsdb:2-3 cases with screened controls.
+    """
+    corpus = load_corpus(_input_root(root), "experiment")
+    manifest = corpus.manifest.copy()
+    manifest.loc[("bsdb:2", "bsdb:2-1"), ["contrast_type", "control_tier"]] = [
+        PAIRED_TISSUE_AUTOLOGOUS,
+        TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+    ]
+    manifest.loc[("bsdb:2", "bsdb:2-2"), ["control_tier", "flags"]] = [
+        TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+        "no_group_0_definition_in_export,treated_disease_group",
+    ]
+    manifest.loc[("bsdb:2", "bsdb:2-3"), "control_tier"] = TIER_2_CONDITION_NEGATIVE_SCREENED
+    return replace(corpus, manifest=manifest)
+
+
+def test_case_control_rules_keep_patients_against_controls(tmp_path: Path) -> None:
+    """The primary rule leaves out tumour-vs-adjacent tissue; the others vary it (#580)."""
+    corpus = _case_control_corpus(tmp_path)
+
+    def kept(rule: str) -> set[str]:
+        profiles, _ = population(replace(corpus, case_control=rule), ORIENTED)
+        return set(profiles["experiment_id"])
+
+    # bsdb:1-3 is a treatment contrast, never disease vs healthy.
+    healthy = {"bsdb:1-1", "bsdb:1-2"}
+    assert kept("subject_controls") == healthy | {"bsdb:2-2", "bsdb:2-3"}
+    assert kept("untreated_cases") == healthy | {"bsdb:2-3"}
+    assert kept("control_tiers_1_2") == healthy | {"bsdb:2-3"}
+    assert kept("every_contrast_type") == healthy | {"bsdb:2-1", "bsdb:2-2", "bsdb:2-3"}
+    with pytest.raises(ValueError, match="unknown case-control rule 'tissue'"):
+        population(replace(corpus, case_control="tissue"), ORIENTED)
+
+
+def test_case_control_inventory_names_the_rules_that_count_each_experiment(
+    tmp_path: Path,
+) -> None:
+    """Only experiments that some rule sets aside are listed, so none is dropped silently."""
+    inventory = case_control_inventory(_case_control_corpus(tmp_path))
+    assert [(row["experiment_id"], row["counted_under"]) for row in inventory] == [
+        ("bsdb:2-1", ["every_contrast_type"]),
+        ("bsdb:2-2", ["subject_controls", "every_contrast_type"]),
+    ]
+    assert inventory[0]["contrast_type"] == PAIRED_TISSUE_AUTOLOGOUS
+    assert inventory[0]["compartment"] == NON_FECAL_GI
+
+
+def test_each_scenario_changes_the_labels_or_the_case_control_rule(tmp_path: Path) -> None:
+    """Scenarios start from the primary corpus and change one definition (#561, #566, #580)."""
+    corpus = load_corpus(_input_root(tmp_path), "experiment")
     scenarios = {slug: scenario for slug, _label, scenario in scenario_corpora(corpus)}
-    assert cast(tuple[Any, ...], scenarios["synonyms_hiv_minus_vs_plus_and_art"])[0] == "merged"
-    assert cast(tuple[Any, ...], scenarios["synonyms_and_hiv_minus_vs_plus"])[0] == "merged"
-    assert cast(tuple[Any, ...], scenarios["hiv_minus_vs_plus_counted"])[0] is corpus
+    assert scenarios["exact_labels"] is corpus
+    assert scenarios["synonyms_merged"].condition_labels == "synonyms"
+    assert {slug: scenario.case_control for slug, scenario in scenarios.items()} == {
+        "exact_labels": "subject_controls",
+        "synonyms_merged": "subject_controls",
+        "treated_cases_excluded": "untreated_cases",
+        "control_tiers_1_2": "control_tiers_1_2",
+        "every_contrast_type": "every_contrast_type",
+        "without_site_miscurations": "subject_controls",
+    }
+    with pytest.raises(ValueError, match="primary case-control rule"):
+        scenario_corpora(replace(corpus, case_control="untreated_cases"))
 
 
 def test_direction_tests_ask_whether_decreased_signatures_carry_more() -> None:
