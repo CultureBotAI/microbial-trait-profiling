@@ -18,9 +18,8 @@ from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from dulwich.errors import NotGitRepository
-from dulwich.porcelain import status
-from dulwich.repo import Repo
+from git import Repo
+from git.exc import GitError
 
 from mtp.workflow.definition import read_definition, safe_relative_path, unique, validate_definition
 from mtp.workflow.models import (
@@ -182,15 +181,21 @@ def _code_identity(
 
 
 def repository_state(root: Path) -> tuple[str, bool]:
-    """Read commit and dirty state, including linked worktrees, without spawning Git."""
+    """Read native Git state without refreshing the index or acquiring optional locks."""
     try:
-        with Repo(str(root)) as repository:
-            commit = repository.head().decode("ascii")
-            changes = status(
-                repository, ignored=False, untracked_files="normal", optional_locks=False
+        with (
+            Repo(str(root), search_parent_directories=False, expand_vars=False) as repository,
+            repository.git.custom_environment(GIT_OPTIONAL_LOCKS="0"),
+        ):
+            commit = repository.head.commit.hexsha
+            # Repo.is_dirty uses raw diff, which can rewrite the stat cache or
+            # mistake stat-only changes for content changes when refresh is off.
+            dirty = bool(
+                repository.git.status(
+                    porcelain=True, untracked_files="normal", ignore_submodules="none"
+                )
             )
-            dirty = bool(changes.unstaged or changes.untracked or any(changes.staged.values()))
-    except (NotGitRepository, KeyError, OSError, UnicodeError) as error:
+    except (GitError, OSError, ValueError) as error:
         raise ValueError(f"Cannot read repository provenance from {root}: {error}") from error
     return commit, dirty
 

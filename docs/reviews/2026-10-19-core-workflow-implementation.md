@@ -1,6 +1,7 @@
 # Execution-checked LinkML core workflow implementation
 
 Implementation issue: [#629](https://github.com/CultureBotAI/microbial-trait-profiling/issues/629).
+Implementation PR: [#634](https://github.com/CultureBotAI/microbial-trait-profiling/pull/634).
 Branch: `629-execution-checked-linkml-workflow`, based on main. The original
 working checkout and its existing analysis/figure changes were preserved;
 implementation and verification use `/private/tmp/mtp-workflow-629`.
@@ -195,11 +196,11 @@ ordered feature vocabulary.
 
 Repository verification passed:
 
-- `just check`: 937 tests passed, 4 skipped, 1 deselected; generated models,
+- `just check`: 944 tests passed, 4 skipped, 1 deselected; generated models,
   typing, lint, LinkML graph/schema checks, Bandit, dependency declarations,
   secret scan and dependency vulnerability audit passed.
-- `just precommit`: every hook passed. Git provenance uses declared Dulwich
-  rather than subprocess calls; tests compare its results with Git for clean,
+- `just precommit`: every hook passed. Git provenance uses GitPython's
+  maintained native-Git interface; tests compare its results with Git for clean,
   dirty, detached and linked-worktree states and check that reading provenance
   does not rewrite the index.
 - `just core-fixture`, `core-screen`, `core-ora`, `core-verify-consumer` and
@@ -210,10 +211,36 @@ Repository verification passed:
   conflicting checkout KG metadata. Verified consumption uses the bound run's
   measured KG identity and leaves the unverified KG release unset.
 
-The checks are recorded in `.tmp/workflow-check-final.log` and
-`.tmp/precommit-final.log`. The four skipped tests require optional production
-inputs or archived harness data absent from this isolated checkout; the
+The final complete checks are recorded in `.tmp/workflow-check-git-fix.log` and
+`.tmp/precommit-git-fix.log`. The four skipped tests require production-derived
+inputs absent from this isolated checkout; the
 separate production execution and comparison above use actual local inputs.
+
+A second full production execution completed as
+`run-49a0c712ad3d4fc59d10804951fe511a`, at
+`/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/run.json`.
+It records commit `3218b146a53db9d16ff3a85f33d36b8a55eeb3fc`; its matrix and both
+profile files are byte-identical to the first execution. Its conservative
+`git_dirty=true` value exposed the tracked-directory-symlink classification bug
+in Dulwich, recorded in [#635](https://github.com/CultureBotAI/microbial-trait-profiling/issues/635).
+The manifest remains unchanged. The final implementation uses native Git
+semantics, and the regression cases also cover genuine untracked symlinks and
+empty symlink targets. The diagnostic helper is retained under
+[`scripts/adhoc/issue629_audit_git_state.py`](../../scripts/adhoc/issue629_audit_git_state.py).
+This metadata correction changes neither the scientific operations nor their
+validated numerical outputs.
+
+The public production composition command also completed against the first
+verified bundle. It read 7,329 profiles, excluded 1,500 nonhuman and 1,159
+unpaired profiles, retained 4,670 profiles from 2,335 experiments, and used
+317 nonmedia feature columns. Its statistics, provenance and checked core
+consumption record are under
+`/private/tmp/mtp-workflow-629/.tmp/consumer-smoke/production-composition/`.
+The provenance records the run's actual KG hashes and leaves KG release
+identity explicitly unverified.
+
+CI and external review status are available on the implementation PR. No merge
+was performed.
 
 ## Boundaries
 

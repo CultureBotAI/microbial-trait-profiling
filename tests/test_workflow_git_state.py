@@ -1,12 +1,15 @@
-"""Compare issue-629 repository provenance with Git's observed repository state."""
+"""Compare issue-635 repository provenance with Git's observed repository state."""
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from pathlib import Path
 
 import pytest
+from dulwich.porcelain import status
+from dulwich.repo import Repo
 
 from mtp.workflow import runtime
 
@@ -82,14 +85,82 @@ def test_repository_state_supports_detached_head(repository: Path) -> None:
     assert runtime.repository_state(repository) == (git(repository, "rev-parse", "HEAD"), False)
 
 
+@pytest.mark.parametrize(
+    "case", ["tracked", "changed_target", "real_directory", "untracked", "untracked_empty_target"]
+)
+def test_directory_symlink_is_classified_by_its_own_index_entry(
+    repository: Path, case: str
+) -> None:
+    target = repository / "target"
+    target.mkdir()
+    (target / "content.txt").write_text("tracked target\n", encoding="utf-8")
+    other = repository / "other-target"
+    other.mkdir()
+    (other / "other.txt").write_text("another tracked target\n", encoding="utf-8")
+    git(repository, "add", "target/content.txt", "other-target/other.txt")
+    git(repository, "commit", "-m", "directory target fixture")
+    link_target = "target"
+    if case == "untracked_empty_target":
+        (repository / "empty-target").mkdir()
+        link_target = "empty-target"
+    (repository / "directory-link").symlink_to(link_target, target_is_directory=True)
+    if not case.startswith("untracked"):
+        git(repository, "add", "directory-link")
+        git(repository, "commit", "-m", "tracked directory symlink fixture")
+    if case == "changed_target":
+        (repository / "directory-link").unlink()
+        (repository / "directory-link").symlink_to("other-target", target_is_directory=True)
+    elif case == "real_directory":
+        (repository / "directory-link").unlink()
+        (repository / "directory-link").mkdir()
+        (repository / "directory-link" / "new.txt").write_text("new file\n", encoding="utf-8")
+    expected_dirty = bool(git(repository, "status", "--porcelain", "--untracked-files=normal"))
+    assert expected_dirty == (case != "tracked")
+    observed_by_mode: dict[str, bool] = {}
+    with Repo(str(repository)) as repo:
+        for mode in ("normal", "all"):
+            changes = status(repo, ignored=False, untracked_files=mode, optional_locks=False)
+            observed_by_mode[mode] = bool(
+                changes.unstaged or changes.untracked or any(changes.staged.values())
+            )
+    print(json.dumps({"case": case, "git_dirty": expected_dirty, "dulwich": observed_by_mode}))
+    assert runtime.repository_state(repository)[1] == expected_dirty
+
+
 def test_repository_provenance_does_not_refresh_or_rewrite_the_index(repository: Path) -> None:
-    index = repository / ".git" / "index"
-    before = index.read_bytes()
+    git_dir = repository / ".git"
+    before = {
+        path.relative_to(git_dir): (path.read_bytes(), path.stat().st_mtime_ns)
+        for path in git_dir.rglob("*")
+        if path.is_file()
+    }
     tracked = repository / "tracked.txt"
     original = tracked.stat()
     os.utime(tracked, ns=(original.st_atime_ns, original.st_mtime_ns + 1_000_000_000))
     assert runtime.repository_state(repository)[1] is False
-    assert index.read_bytes() == before
+    after = {
+        path.relative_to(git_dir): (path.read_bytes(), path.stat().st_mtime_ns)
+        for path in git_dir.rglob("*")
+        if path.is_file()
+    }
+    assert after == before
+
+
+def test_repository_provenance_works_while_another_process_holds_the_index_lock(
+    repository: Path,
+) -> None:
+    lock = repository / ".git" / "index.lock"
+    lock.write_bytes(b"another process owns this lock\n")
+    before = lock.read_bytes()
+    assert runtime.repository_state(repository) == (git(repository, "rev-parse", "HEAD"), False)
+    assert lock.read_bytes() == before
+
+
+def test_repository_provenance_does_not_search_parent_directories(repository: Path) -> None:
+    nested = repository / "nested"
+    nested.mkdir()
+    with pytest.raises(ValueError, match="repository provenance"):
+        runtime.repository_state(nested)
 
 
 def test_linked_worktree_uses_its_own_head_index_and_working_files(repository: Path) -> None:

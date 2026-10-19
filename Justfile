@@ -53,7 +53,7 @@ workflow-describe:
 
 # Explicit bindings, e.g. --input raw_dump=/path/full_dump.csv --output-root /path/runs.
 [positional-arguments]
-core-run spec="workflows/bugsigdb_core.yaml" *ARGS:
+core-run *ARGS:
 	uv run python -m mtp.workflow run "$@"
 
 core-validate run:
