@@ -42,5 +42,58 @@
       "increased_minus_decreased_mean_z": -0.7007499414209016,
       "trait_direction": "decreased"
     }
-  ]
+  ],
+  "input_sha256_chunks": {
+    "bugsigdb_taxa.tsv": [
+      "e7fa982b",
+      "23ea8245",
+      "6247bcd8",
+      "41fd97d4",
+      "fe71518e",
+      "09eaaa27",
+      "aee65d9a",
+      "db271c59"
+    ],
+    "taxa_trait_matrix.tsv": [
+      "f6de0576",
+      "63f3a3b0",
+      "026579df",
+      "af341745",
+      "faac27df",
+      "7f9c0afd",
+      "6f5fa3e6",
+      "aa034178"
+    ],
+    "study_trait_profiles_wide.tsv": [
+      "c07d589f",
+      "6cc88724",
+      "e43c683e",
+      "bd132bcd",
+      "5c7f316f",
+      "36b95df3",
+      "ff9acad2",
+      "4ebbf62f"
+    ],
+    "study_trait_profile_study_metadata.tsv": [
+      "9ba32acc",
+      "a337f1e5",
+      "2dbe6d91",
+      "d8b799cf",
+      "0b36a5e0",
+      "cca71a9c",
+      "b32ba033",
+      "ec26e12a"
+    ],
+    "pd_six_trait_direction_summary.tsv": [
+      "eb4ed70b",
+      "8f796c05",
+      "e4e14e12",
+      "4109e526",
+      "a04d28a0",
+      "ea861fc0",
+      "e7a4d628",
+      "26480ea7"
+    ]
+  },
+  "sha256_chunk_encoding": "concatenate each input's eight chunks in order"
 }
