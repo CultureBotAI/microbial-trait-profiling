@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 from pathlib import Path
@@ -32,8 +31,11 @@ from lookup_pd_trait_taxa import (
     EVIDENCE_NAME,
     PROVENANCE_NAME,
     SUMMARY_NAME,
+    input_fingerprints,
     pd_feces_profile_ids,
     profile_set_fingerprint,
+    sha256_chunks,
+    tracked_inputs,
     trait_directions,
 )
 from mtp.composition_denominators import retained_trait_counts, trait_fractions
@@ -390,8 +392,23 @@ def taxon_specificity_from_occurrences(
     return pd.DataFrame.from_records(records)
 
 
+def recorded_traits(provenance: dict[str, object]) -> dict[str, tuple[str, float]]:
+    """The lollipop traits the evidence was built with: direction and mean-z difference."""
+    traits = provenance.get("traits")
+    return {
+        str(trait["trait_id"]): (
+            str(trait["trait_direction"]),
+            float(trait["increased_minus_decreased_mean_z"]),
+        )
+        for trait in (traits if isinstance(traits, list) else [])
+    }
+
+
 def trait_problems(name: str, table: pd.DataFrame, expected: dict[str, str]) -> list[str]:
-    """Differences between a table's traits and directions and the current lollipop's."""
+    """A table's traits must be recorded lollipop traits, each with its recorded direction.
+
+    A trait that no PD-reported taxon carries has no rows, so a trait may be absent (#694).
+    """
     if "trait_direction" not in table:
         return [f"{name} has no trait_direction column, so it predates the six-trait design"]
     recorded: dict[str, set[str]] = {}
@@ -400,20 +417,16 @@ def trait_problems(name: str, table: pd.DataFrame, expected: dict[str, str]) -> 
     ):
         recorded.setdefault(trait_id, set()).add(direction)
     problems = []
-    missing = sorted(set(expected) - set(recorded))
     extra = sorted(set(recorded) - set(expected))
-    if missing or extra:
-        problems.append(
-            f"{name} traits differ from {SUMMARY_NAME} (missing: {', '.join(missing) or 'none'}; "
-            f"extra: {', '.join(extra) or 'none'})"
-        )
+    if extra:
+        problems.append(f"{name} has traits its provenance does not record: {', '.join(extra)}")
     changed = [
-        f"{trait_id} {'/'.join(sorted(recorded[trait_id]))}, now {expected[trait_id]}"
+        f"{trait_id} {'/'.join(sorted(recorded[trait_id]))}, recorded {expected[trait_id]}"
         for trait_id in sorted(set(expected) & set(recorded))
         if recorded[trait_id] != {expected[trait_id]}
     ]
     if changed:
-        problems.append(f"{name} trait directions differ from {SUMMARY_NAME}: {'; '.join(changed)}")
+        problems.append(f"{name} trait directions differ from its provenance: {'; '.join(changed)}")
     return problems
 
 
@@ -421,8 +434,9 @@ def provenance_problems(
     provenance: dict[str, object],
     directions: pd.DataFrame,
     metadata: pd.DataFrame,
+    current_inputs: dict[str, list[str]],
 ) -> list[str]:
-    """Differences between the recorded PD fecal profiles and lollipop and the current ones."""
+    """Differences between what the evidence was built from and the current files."""
     problems = []
     current = profile_set_fingerprint(pd_feces_profile_ids(metadata))
     recorded_count = provenance.get("pd_feces_profiles")
@@ -437,26 +451,52 @@ def provenance_problems(
             f"{current['pd_feces_profiles']} (id sha256 "
             f"{str(current['pd_feces_profile_ids_sha256'])[:12]})"
         )
-    traits = provenance.get("traits")
-    recorded_values = {
-        str(trait["trait_id"]): float(trait["increased_minus_decreased_mean_z"])
-        for trait in (traits if isinstance(traits, list) else [])
-    }
-    changed = [
-        str(trait.trait_id)
-        for trait in directions.itertuples(index=False)
-        if str(trait.trait_id) not in recorded_values
-        or not math.isclose(
-            recorded_values[str(trait.trait_id)],
+    recorded = recorded_traits(provenance)
+    lollipop = {
+        str(trait.trait_id): (
+            str(trait.trait_direction),
             float(trait.increased_minus_decreased_mean_z),
-            rel_tol=1e-9,
-            abs_tol=1e-12,
+        )
+        for trait in directions.itertuples(index=False)
+    }
+    missing = sorted(set(lollipop) - set(recorded))
+    extra = sorted(set(recorded) - set(lollipop))
+    if missing or extra:
+        problems.append(
+            f"its recorded traits differ from {SUMMARY_NAME} (missing: "
+            f"{', '.join(missing) or 'none'}; extra: {', '.join(extra) or 'none'})"
+        )
+    both = sorted(set(recorded) & set(lollipop))
+    flipped = [
+        f"{trait_id} {recorded[trait_id][0]}, now {lollipop[trait_id][0]}"
+        for trait_id in both
+        if recorded[trait_id][0] != lollipop[trait_id][0]
+    ]
+    if flipped:
+        problems.append(f"its trait directions differ from {SUMMARY_NAME}: {'; '.join(flipped)}")
+    moved = [
+        trait_id
+        for trait_id in both
+        if recorded[trait_id][0] == lollipop[trait_id][0]
+        and not math.isclose(
+            recorded[trait_id][1], lollipop[trait_id][1], rel_tol=1e-9, abs_tol=1e-12
         )
     ]
-    if changed:
+    if moved:
         problems.append(
-            f"its recorded mean-z differences differ from {SUMMARY_NAME} for {', '.join(changed)}"
+            f"its recorded mean-z differences differ from {SUMMARY_NAME} for {', '.join(moved)}"
         )
+    recorded_inputs = provenance.get("input_sha256_chunks")
+    if not isinstance(recorded_inputs, dict):
+        problems.append("it records no input hashes, so it predates the input check")
+    else:
+        changed_inputs = sorted(
+            name
+            for name in set(recorded_inputs) | set(current_inputs)
+            if recorded_inputs.get(name) != current_inputs.get(name)
+        )
+        if changed_inputs:
+            problems.append(f"{', '.join(changed_inputs)} changed since it was built (#693)")
     return problems
 
 
@@ -466,22 +506,23 @@ def check_trait_taxa_evidence(
     provenance: dict[str, object],
     trait_summary: pd.DataFrame,
     metadata: pd.DataFrame,
+    current_inputs: dict[str, list[str]],
 ) -> None:
     """Refuse trait-taxa evidence that does not match the current PD profiles or lollipop.
 
     `just pd-trait-taxa` builds the evidence and carrier tables from the PD fecal profiles
     and all six lollipop traits, gives each trait its observed direction, and records the
-    profile set and the lollipop it used (#584, #649). If either has changed since, tables
-    built from the evidence would mix two sources, so stop instead of writing them.
+    profile set, the lollipop and the hashes of the files it read (#584, #649, #693). If any
+    has changed since, tables built from the evidence would mix two sources, so stop instead
+    of writing them.
     """
-    directions = trait_directions(trait_summary)
-    expected = dict(
-        zip(directions["trait_id"], directions["trait_direction"].astype(str), strict=True)
-    )
+    expected = {
+        trait_id: direction for trait_id, (direction, _) in recorded_traits(provenance).items()
+    }
     problems = [
         *trait_problems("the evidence", evidence, expected),
         *trait_problems("the carrier table", carriers, expected),
-        *provenance_problems(provenance, directions, metadata),
+        *provenance_problems(provenance, trait_directions(trait_summary), metadata, current_inputs),
     ]
     current_profiles = set(pd_feces_profile_ids(metadata))
     stale_profiles = sorted(set(evidence["profile_id"].astype(str)) - current_profiles)
@@ -513,6 +554,7 @@ def require_current_trait_taxa_evidence(metadata: pd.DataFrame, output_dir: Path
         json.loads(provenance_path.read_text(encoding="utf-8")),
         read_tsv(output_dir / SUMMARY_NAME),
         metadata,
+        input_fingerprints(tracked_inputs(output_dir)),
     )
 
 
@@ -1637,16 +1679,6 @@ def plot_heatmap(
             newline="\n",
         )
     plt.close(fig)
-
-
-def sha256_chunks(path: Path) -> list[str]:
-    """Return a streamed SHA-256 digest in unambiguous eight-character chunks."""
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    value = digest.hexdigest()
-    return [value[offset : offset + 8] for offset in range(0, len(value), 8)]
 
 
 def main() -> None:

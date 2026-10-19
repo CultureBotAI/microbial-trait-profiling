@@ -1,5 +1,6 @@
 """The PD trait-taxa lookup traces all six traits and carries their direction as data (#584)."""
 
+import hashlib
 import importlib.util
 import math
 import sys
@@ -160,3 +161,44 @@ def test_note_names_every_trait_with_its_direction() -> None:
     assert note.count("Observed direction: decreased") == 3
     assert note.count("in positive-z decreased profiles, the trait's observed direction") == 3
     assert "four" not in note
+
+
+def test_stale_summary_names_itself_and_how_to_rebuild_it() -> None:
+    """A rebuilt metadata table moves the profile counts; the saved lollipop is then stale."""
+    saved = summary().assign(increased_profiles=128)
+    recomputed = saved.assign(increased_profiles=127)
+
+    lookup.check_saved_summary(saved.copy(), saved)
+    with pytest.raises(
+        ValueError, match=r"pd_six_trait_direction_summary\.tsv no longer matches"
+    ) as error:
+        lookup.check_saved_summary(recomputed, saved)
+    assert "scripts/create_pd_cellulose_analysis.py" in str(error.value)
+    assert "increased_profiles" in str(error.value)
+
+
+def test_tracked_inputs_are_the_files_the_evidence_reads(tmp_path: Path) -> None:
+    inputs = lookup.tracked_inputs(tmp_path)
+
+    assert sorted(inputs) == [
+        "bugsigdb_taxa.tsv",
+        "pd_six_trait_direction_summary.tsv",
+        "study_trait_profile_study_metadata.tsv",
+        "study_trait_profiles_wide.tsv",
+        "taxa_trait_matrix.tsv",
+    ]
+    assert inputs["pd_six_trait_direction_summary.tsv"] == tmp_path / lookup.SUMMARY_NAME
+
+
+def test_input_fingerprints_are_sha256_chunks_and_empty_when_missing(tmp_path: Path) -> None:
+    present = tmp_path / "present.tsv"
+    present.write_bytes(b"trait_id\tvalue\n")
+
+    fingerprints = lookup.input_fingerprints(
+        {"present.tsv": present, "missing.tsv": tmp_path / "missing.tsv"}
+    )
+
+    digest = hashlib.sha256(b"trait_id\tvalue\n").hexdigest()
+    assert "".join(fingerprints["present.tsv"]) == digest
+    assert [len(chunk) for chunk in fingerprints["present.tsv"]] == [8] * 8
+    assert fingerprints["missing.tsv"] == []

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 
 import pandas as pd
 
@@ -16,6 +17,8 @@ from create_pd_cellulose_analysis import (
     FECES,
     OUTPUT_DIR,
     PD_CONDITION,
+    PROFILE_MATRIX_PATH,
+    PROFILE_METADATA_PATH,
     TAXA_PATH,
     TAXA_TRAIT_MATRIX_PATH,
     build_pd_trait_direction_summary,
@@ -38,6 +41,7 @@ DIRECTION_MEANINGS = {
     "neither": "its mean z is the same in both directions",
 }
 TOP_TAXA_PER_TRAIT = 12
+SUMMARY_REBUILD = "`uv run python scripts/create_pd_cellulose_analysis.py`"
 
 
 def trait_direction(increased_minus_decreased_mean_z: float) -> str:
@@ -71,6 +75,51 @@ def pd_feces_mask(metadata: pd.DataFrame) -> pd.Series:
 def pd_feces_profile_ids(metadata: pd.DataFrame) -> list[str]:
     """Sorted ids of the PD fecal profiles that the evidence is built from."""
     return sorted(metadata.loc[pd_feces_mask(metadata), "profile_id"].astype(str))
+
+
+def sha256_chunks(path: Path) -> list[str]:
+    """Return a streamed SHA-256 digest in unambiguous eight-character chunks."""
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    value = digest.hexdigest()
+    return [value[offset : offset + 8] for offset in range(0, len(value), 8)]
+
+
+def tracked_inputs(output_dir: Path) -> dict[str, Path]:
+    """The files the evidence is built from, by name: inputs, profile metadata and lollipop."""
+    paths = [
+        TAXA_PATH,
+        TAXA_TRAIT_MATRIX_PATH,
+        PROFILE_MATRIX_PATH,
+        PROFILE_METADATA_PATH,
+        output_dir / SUMMARY_NAME,
+    ]
+    return {path.name: path for path in paths}
+
+
+def input_fingerprints(inputs: dict[str, Path]) -> dict[str, list[str]]:
+    """Each input's sha256 in eight-character chunks; a missing file has no chunks."""
+    return {name: sha256_chunks(path) if path.exists() else [] for name, path in inputs.items()}
+
+
+def check_saved_summary(recomputed: pd.DataFrame, saved: pd.DataFrame) -> None:
+    """Refuse a saved lollipop summary that the current profiles no longer reproduce (#693)."""
+    try:
+        pd.testing.assert_frame_equal(
+            recomputed.sort_values("trait_id").reset_index(drop=True),
+            saved.sort_values("trait_id").reset_index(drop=True),
+            check_dtype=False,
+        )
+    except AssertionError as error:
+        detail = str(error).strip().splitlines()[0]
+        msg = (
+            f"{SUMMARY_NAME} no longer matches the summary recomputed from the current PD fecal "
+            f"profiles ({detail}). Rebuild it with {SUMMARY_REBUILD}, then rerun "
+            "`just pd-trait-taxa`."
+        )
+        raise ValueError(msg) from error
 
 
 def profile_set_fingerprint(profile_ids: list[str]) -> dict[str, object]:
@@ -291,11 +340,7 @@ def main() -> None:
     zscores = build_zscore_matrix(metadata, trait_ids)
     summary = build_pd_trait_direction_summary(metadata, zscores, traits)
     saved = read_tsv(OUTPUT_DIR / SUMMARY_NAME)
-    pd.testing.assert_frame_equal(
-        summary.sort_values("trait_id").reset_index(drop=True),
-        saved.sort_values("trait_id").reset_index(drop=True),
-        check_dtype=False,
-    )
+    check_saved_summary(summary, saved)
     directions = trait_directions(saved)
 
     profile_ids = pd_feces_profile_ids(metadata)
@@ -335,6 +380,8 @@ def main() -> None:
         **profile_set_fingerprint(profile_ids),
         "pd_feces_profile_ids_encoding": "sha256 of the sorted profile_id values, one per line",
         "traits": directions.to_dict(orient="records"),
+        "input_sha256_chunks": input_fingerprints(tracked_inputs(OUTPUT_DIR)),
+        "sha256_chunk_encoding": "concatenate each input's eight chunks in order",
     }
     write_tsv(carriers, OUTPUT_DIR / CARRIERS_NAME)
     write_tsv(evidence, OUTPUT_DIR / EVIDENCE_NAME)

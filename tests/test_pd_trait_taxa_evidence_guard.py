@@ -1,7 +1,8 @@
-"""The PD trait-taxa recipes refuse evidence built from other profiles or another lollipop.
+"""The PD trait-taxa recipes refuse evidence built from other profiles, inputs or lollipop.
 
-The evidence must cover the six lollipop traits with their current directions (#584) and the
-exact current set of PD fecal profiles, in both directions (#644, #649).
+The evidence must hold recorded lollipop traits with their directions (#584, #694), the exact
+current set of PD fecal profiles, in both directions (#644, #649), and the inputs and summary
+it was built from, unchanged (#693).
 """
 
 import importlib.util
@@ -34,6 +35,14 @@ exploratory = load_script("create_pd_exploratory_taxa_influence_heatmap")
 contributors = load_script("create_pd_trait_contributors")
 
 TRAITS = {"halo": 0.5, "aero": 0.3, "coccus": -0.08, "cellulose": -0.7}
+INPUT_NAMES = [
+    "bugsigdb_taxa.tsv",
+    "taxa_trait_matrix.tsv",
+    "study_trait_profiles_wide.tsv",
+    "study_trait_profile_study_metadata.tsv",
+    "pd_six_trait_direction_summary.tsv",
+]
+INPUTS = {name: [f"{index:08x}"] * 8 for index, name in enumerate(INPUT_NAMES)}
 
 
 def metadata(pd_feces: tuple[str, ...] = ("s1|e1|inc", "s1|e1|dec")) -> pd.DataFrame:
@@ -84,12 +93,15 @@ def carriers(values: dict[str, float] = TRAITS) -> pd.DataFrame:
 
 
 def provenance(
-    profiles: pd.DataFrame | None = None, values: dict[str, float] = TRAITS
+    profiles: pd.DataFrame | None = None,
+    values: dict[str, float] = TRAITS,
+    inputs: dict[str, list[str]] = INPUTS,
 ) -> dict[str, object]:
     profile_ids = lookup.pd_feces_profile_ids(metadata() if profiles is None else profiles)
     return {
         **lookup.profile_set_fingerprint(profile_ids),
         "traits": lookup.trait_directions(summary(values)).to_dict(orient="records"),
+        "input_sha256_chunks": inputs,
     }
 
 
@@ -101,6 +113,7 @@ def check(**changes: object) -> None:
         "provenance": provenance(),
         "trait_summary": summary(),
         "metadata": metadata(),
+        "current_inputs": INPUTS,
     }
     inputs.update(changes)
     heatmap.check_trait_taxa_evidence(**inputs)
@@ -146,19 +159,56 @@ def test_pd_feces_profile_swapped_for_another_is_refused() -> None:
         check(metadata=swapped, evidence=evidence(("s1|e1|inc",)))
 
 
-def test_flipped_direction_is_refused_and_named() -> None:
+def test_changed_input_file_is_refused_and_named() -> None:
+    """A data/derived rebuild that keeps the PD profile ids is still a change (#693)."""
+    rebuilt = {**INPUTS, "taxa_trait_matrix.tsv": ["ffffffff"] * 8}
+
+    with pytest.raises(ValueError, match=r"taxa_trait_matrix\.tsv changed since it was built"):
+        check(current_inputs=rebuilt)
+
+
+def test_missing_input_file_is_refused() -> None:
+    missing = {**INPUTS, "bugsigdb_taxa.tsv": []}
+
+    with pytest.raises(ValueError, match=r"bugsigdb_taxa\.tsv changed since it was built"):
+        check(current_inputs=missing)
+
+
+def test_provenance_without_input_hashes_is_refused() -> None:
+    old_format = {key: value for key, value in provenance().items() if key != "input_sha256_chunks"}
+
+    with pytest.raises(ValueError, match="records no input hashes"):
+        check(provenance=old_format)
+
+
+def test_flipped_lollipop_direction_is_refused_and_named() -> None:
     flipped = {**TRAITS, "coccus": 0.08}
 
     with pytest.raises(
-        ValueError, match=r"evidence trait directions differ .*coccus decreased, now increased"
+        ValueError, match=r"its trait directions differ .*coccus decreased, now increased"
     ):
-        check(trait_summary=summary(flipped), provenance=provenance(values=flipped))
+        check(trait_summary=summary(flipped))
 
 
-def test_flipped_direction_in_the_carrier_table_is_refused() -> None:
+def test_evidence_direction_other_than_its_provenance_is_refused() -> None:
     flipped = {**TRAITS, "coccus": 0.08}
 
-    with pytest.raises(ValueError, match=r"carrier table trait directions differ .*coccus"):
+    with pytest.raises(
+        ValueError,
+        match=r"the evidence trait directions differ from its provenance: "
+        r"coccus decreased, recorded increased",
+    ):
+        check(
+            provenance=provenance(values=flipped),
+            trait_summary=summary(flipped),
+            carriers=carriers(flipped),
+        )
+
+
+def test_carrier_direction_other_than_its_provenance_is_refused() -> None:
+    flipped = {**TRAITS, "coccus": 0.08}
+
+    with pytest.raises(ValueError, match=r"the carrier table trait directions differ .*coccus"):
         check(
             evidence=evidence(values=flipped),
             trait_summary=summary(flipped),
@@ -174,11 +224,27 @@ def test_changed_lollipop_value_is_refused() -> None:
         check(trait_summary=summary(moved))
 
 
-def test_missing_and_extra_traits_are_listed() -> None:
+def test_trait_without_pd_carriers_is_accepted() -> None:
+    """No PD-reported taxon carries sphere shaped, so no rows name it (#694)."""
     with_sphere = {**TRAITS, "sphere": -0.1}
 
-    with pytest.raises(ValueError, match=r"evidence traits differ .*missing: sphere; extra: none"):
-        check(trait_summary=summary(with_sphere), provenance=provenance(values=with_sphere))
+    check(trait_summary=summary(with_sphere), provenance=provenance(values=with_sphere))
+
+
+def test_evidence_trait_missing_from_its_provenance_is_refused() -> None:
+    with_sphere = {**TRAITS, "sphere": -0.1}
+
+    with pytest.raises(ValueError, match="the evidence has traits its provenance does not record"):
+        check(evidence=evidence(values=with_sphere))
+
+
+def test_provenance_missing_a_lollipop_trait_is_refused() -> None:
+    with_sphere = {**TRAITS, "sphere": -0.1}
+
+    with pytest.raises(
+        ValueError, match=r"its recorded traits differ .*missing: sphere; extra: none"
+    ):
+        check(trait_summary=summary(with_sphere))
 
 
 def test_evidence_without_directions_is_refused() -> None:
@@ -188,49 +254,42 @@ def test_evidence_without_directions_is_refused() -> None:
         check(evidence=old_format)
 
 
+def write_saved_evidence(directory: Path, profile_ids: tuple[str, ...]) -> None:
+    evidence(profile_ids).to_csv(directory / lookup.EVIDENCE_NAME, sep="\t", index=False)
+    carriers().to_csv(directory / lookup.CARRIERS_NAME, sep="\t", index=False)
+    summary().to_csv(directory / lookup.SUMMARY_NAME, sep="\t", index=False)
+    (directory / lookup.PROVENANCE_NAME).write_text(json.dumps(provenance()), encoding="utf-8")
+
+
 def test_evidence_without_provenance_is_refused(tmp_path: Path) -> None:
-    evidence().to_csv(tmp_path / lookup.EVIDENCE_NAME, sep="\t", index=False)
-    carriers().to_csv(tmp_path / lookup.CARRIERS_NAME, sep="\t", index=False)
-    summary().to_csv(tmp_path / lookup.SUMMARY_NAME, sep="\t", index=False)
+    write_saved_evidence(tmp_path, ("s1|e1|inc", "s1|e1|dec"))
+    (tmp_path / lookup.PROVENANCE_NAME).unlink()
 
     with pytest.raises(ValueError, match=r"has no pd_six_trait_taxon_evidence_provenance\.json"):
         heatmap.require_current_trait_taxa_evidence(metadata(), tmp_path)
 
 
-def test_saved_matching_evidence_passes(tmp_path: Path) -> None:
-    evidence().to_csv(tmp_path / lookup.EVIDENCE_NAME, sep="\t", index=False)
-    carriers().to_csv(tmp_path / lookup.CARRIERS_NAME, sep="\t", index=False)
-    summary().to_csv(tmp_path / lookup.SUMMARY_NAME, sep="\t", index=False)
-    (tmp_path / lookup.PROVENANCE_NAME).write_text(json.dumps(provenance()), encoding="utf-8")
+def fingerprint_inputs_as(monkeypatch: pytest.MonkeyPatch, guard: ModuleType) -> None:
+    """Make the guard see INPUTS as the current input hashes."""
+    globals_ = guard.require_current_trait_taxa_evidence.__globals__
+    monkeypatch.setitem(globals_, "input_fingerprints", lambda _inputs: INPUTS)
+
+
+def test_saved_matching_evidence_passes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    write_saved_evidence(tmp_path, ("s1|e1|inc", "s1|e1|dec"))
+    fingerprint_inputs_as(monkeypatch, heatmap)
 
     heatmap.require_current_trait_taxa_evidence(metadata(), tmp_path)
 
 
-def write_contributor_inputs(directory: Path) -> None:
-    """Write what the contributors recipe reads before its first write.
+def test_saved_evidence_is_checked_against_the_files_it_read(tmp_path: Path) -> None:
+    """Without the stand-in hashes, the guard hashes the real inputs, which differ from INPUTS."""
+    write_saved_evidence(tmp_path, ("s1|e1|inc", "s1|e1|dec"))
 
-    With these in place, a guard moved below that write lets the write happen, and the
-    snapshot comparison sees it.
-    """
-    for name in (
-        "pd_trait_contributors_cells.tsv",
-        "pd_trait_contributors_rank_coverage.tsv",
-        "pd_species_six_traits_influence_heatmap_traits.tsv",
+    with pytest.raises(
+        ValueError, match=r"pd_six_trait_direction_summary\.tsv.* changed since it was built"
     ):
-        pd.DataFrame({"unused": [0]}).to_csv(directory / name, sep="\t", index=False)
-    pd.DataFrame({"taxon": ["NCBITaxon:853"]}).to_csv(
-        directory / "pd_trait_contributors_selected_taxa.tsv", sep="\t", index=False
-    )
-    pd.DataFrame(
-        {
-            "study_id": ["s1", "s3"],
-            "experiment_id": ["e1", "e3"],
-            "direction": ["decreased", "decreased"],
-            "taxon_id": ["NCBITaxon:853", "NCBITaxon:853"],
-            "taxon_name": ["Faecalibacterium prausnitzii"] * 2,
-            "taxonomic_rank": ["species"] * 2,
-        }
-    ).to_csv(directory / "bugsigdb_taxa.tsv", sep="\t", index=False)
+        heatmap.require_current_trait_taxa_evidence(metadata(), tmp_path)
 
 
 def snapshot(directory: Path) -> dict[str, bytes]:
@@ -250,24 +309,20 @@ def file_stamps(directory: Path) -> dict[str, tuple[int, int]]:
 def test_recipe_stops_before_writing_when_evidence_is_stale(
     module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    evidence(("s1|e1|inc", "s2|e2|inc")).to_csv(
-        tmp_path / lookup.EVIDENCE_NAME, sep="\t", index=False
+    write_saved_evidence(tmp_path, ("s1|e1|inc", "s2|e2|inc"))
+    # The contributors recipe reads the species heatmap's trait table before it writes.
+    lookup.trait_directions(summary()).to_csv(
+        tmp_path / "pd_species_six_traits_influence_heatmap_traits.tsv", sep="\t", index=False
     )
-    carriers().to_csv(tmp_path / lookup.CARRIERS_NAME, sep="\t", index=False)
-    summary().to_csv(tmp_path / lookup.SUMMARY_NAME, sep="\t", index=False)
-    (tmp_path / lookup.PROVENANCE_NAME).write_text(json.dumps(provenance()), encoding="utf-8")
-    write_contributor_inputs(tmp_path)
     before = snapshot(tmp_path)
     # A path bound to the committed output folder at import would escape the redirect.
     committed_dir = module.OUTPUT_DIR
     committed_before = file_stamps(committed_dir)
     monkeypatch.setattr(module, "OUTPUT_DIR", tmp_path)
     monkeypatch.setattr(module, "load_profile_metadata", metadata)
-    # load_taxon_specificity reads TAXA_PATH from the module that defines it.
-    taxa_module = sys.modules[contributors.load_taxon_specificity.__module__]
-    monkeypatch.setattr(taxa_module, "TAXA_PATH", tmp_path / "bugsigdb_taxa.tsv")
+    fingerprint_inputs_as(monkeypatch, module)
 
-    with pytest.raises(ValueError, match="not current PD fecal profiles"):
+    with pytest.raises(ValueError, match=r"^[^;]*not current PD fecal profiles"):
         module.main()
 
     assert snapshot(tmp_path) == before
