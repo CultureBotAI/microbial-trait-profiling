@@ -17,6 +17,8 @@ instead of writing an empty successful report.
 from __future__ import annotations
 
 import argparse
+import csv
+import gzip
 import re
 import sys
 from dataclasses import dataclass, fields
@@ -186,7 +188,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--tested-output",
         type=Path,
-        help="Complete trait summary for diagnostics; requires an unfiltered results TSV.",
+        help="Complete trait summary; requires an unfiltered results TSV and --profiles.",
     )
     parser.add_argument(
         "--pair-discoveries-only",
@@ -203,7 +205,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--profiles",
         type=Path,
         default=None,
-        help="Optional path to profiles TSV to compute empirical background K (trait totals).",
+        help=(
+            "Profile TSV defining the full input trait universe (required with --tested-output). "
+            "Also supplies legacy profile-count totals when reference K is unavailable."
+        ),
     )
     parser.add_argument(
         "--tail",
@@ -228,6 +233,39 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Explicit FDR multiplicity scope ('global' or 'profile'; overrides metadata if set).",
     )
     return parser.parse_args(argv)
+
+
+def read_profile_trait_universe(profiles_path: Path) -> list[str]:
+    """Read the declared trait universe strictly, without inferring it from tested rows."""
+    try:
+        opener = gzip.open if profiles_path.suffix == ".gz" else open
+        with opener(profiles_path, "rt", encoding="utf-8", newline="") as handle:
+            header = next(csv.reader(handle, delimiter="\t", strict=True), None)
+    except (OSError, UnicodeError, csv.Error) as exc:
+        raise MalformedResultsError(
+            f"Cannot read complete-summary profile schema {profiles_path}: {exc}"
+        ) from exc
+    if not header or any(not column.strip() for column in header):
+        raise MalformedResultsError(
+            f"Profile schema is empty or has blank columns: {profiles_path}"
+        )
+    if len(header) != len(set(header)):
+        raise MalformedResultsError(f"Profile schema has duplicate columns: {profiles_path}")
+    required = {"study_id", "experiment_id", "inc_dec", "taxa_count"}
+    if missing := required - set(header):
+        raise MalformedResultsError(
+            f"Profile schema lacks required columns {sorted(missing)}: {profiles_path}"
+        )
+    traits = [
+        column
+        for column in header
+        if column not in required | {"body_site"} and "mediadive.medium:" not in column.lower()
+    ]
+    if not traits:
+        raise MalformedResultsError(
+            f"Profile schema has no retained trait columns: {profiles_path}"
+        )
+    return traits
 
 
 def compute_trait_totals_from_profiles(profiles_path: Path) -> dict[str, int]:
@@ -815,12 +853,15 @@ def main(argv: list[str] | None = None) -> int:
     results_path = args.results or resolve_default_results(args.input)
 
     trait_totals: dict[str, int] = {}
-    if args.tested_output and args.profiles is not None and not args.profiles.is_file():
-        return _fail(f"Complete trait summary profiles are unavailable: {args.profiles}")
-    if args.profiles and args.profiles.is_file():
+    input_traits: list[str] = []
+    if args.tested_output and args.profiles is None:
+        return _fail("--tested-output requires --profiles to identify untested input traits.")
+    if not args.tested_output and args.profiles and args.profiles.is_file():
         trait_totals = compute_trait_totals_from_profiles(args.profiles)
 
     try:
+        if args.tested_output:
+            input_traits = read_profile_trait_universe(args.profiles)
         if results_path.exists():
             print(f"Loading data from results TSV: {results_path}")
             results_meta = detect_metadata(results_path)
@@ -845,6 +886,11 @@ def main(argv: list[str] | None = None) -> int:
             analyzer_hits = table.significant_hits
             result_status = table.status
             if args.tested_output:
+                if extra_traits := set(table.frame["trait"]) - set(input_traits):
+                    raise MalformedResultsError(
+                        "Complete results contain traits absent from the supplied profile schema: "
+                        f"{sorted(extra_traits)}"
+                    )
                 if not is_unfiltered or table.tests_performed is None:
                     raise MalformedResultsError(
                         "--tested-output requires complete results with declared test counts."
@@ -1041,8 +1087,7 @@ def main(argv: list[str] | None = None) -> int:
     if write_pair and pair_out is not None:
         _write_table(pair_out, pairs, pair_header, pair_warnings)
     if args.tested_output:
-        traits = list(trait_totals)
-        tested = build_tested_trait_table(frame, traits)
+        tested = build_tested_trait_table(frame, input_traits)
         _write_table(
             args.tested_output,
             tested,

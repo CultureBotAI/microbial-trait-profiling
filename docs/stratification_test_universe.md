@@ -41,6 +41,14 @@ No fallback to a discovery-only ranking is allowed for the diagnostic.
 Legacy text-report rankings without an eligible-profile count retain missing
 denominators and prevalence (for example, `2 / NA`), not an infinite proportion.
 
+Standalone exports using `--tested-output` must supply `--profiles` from the
+analyzed input. The exporter reads its trait schema strictly before writing any
+output, including traits with no eligible tests. Missing, unreadable or malformed
+schemas and tested traits absent from that schema fail instead of silently
+publishing zero untested traits (#708). The normal stratification runner already
+supplies this input. The schema establishes the declared trait vocabulary; it is
+not a substitute for core provenance or an input-content checksum.
+
 These quantities describe the relationship between reported taxon sets and
 organism-level trait annotations. They do not measure physiological activity or
 establish calibration bias. The diagnostic is descriptive; see

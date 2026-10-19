@@ -32,6 +32,7 @@ from mtp.stratification import (
     is_feces_site,
     partition_profiles,
     run_stratification_pipeline,
+    run_stratum_enrichment,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -611,6 +612,72 @@ def test_density_rejects_selected_rankings() -> None:
         compute_annotation_density_deciles(
             pd.DataFrame({"trait_total": [10], "best_qvalue": [0.01]})
         )
+
+
+@pytest.mark.parametrize(
+    ("schema_case", "error"),
+    [
+        ("omitted", "requires --profiles"),
+        ("missing", "Cannot read complete-summary profile schema"),
+        ("empty", "Profile schema is empty"),
+        ("report", "Profile schema lacks required columns"),
+        ("duplicate", "Profile schema has duplicate columns"),
+        ("missing_count", "Profile schema lacks required columns"),
+        ("only_media", "Profile schema has no retained trait columns"),
+        ("mismatched", "traits absent from the supplied profile schema"),
+        ("unreadable", "Cannot read complete-summary profile schema"),
+    ],
+)
+def test_complete_summary_requires_profile_universe(
+    tmp_path: Path, schema_case: str, error: str
+) -> None:
+    """Standalone exports must not silently erase unsupported traits (#708)."""
+    matrix = tmp_path / "matrix.tsv"
+    matrix.write_text("taxon_id\tNull\tUnsupported\nNCBITaxon:1\t1\t0\nNCBITaxon:2\t0\t0\n")
+    profiles = tmp_path / "profiles.tsv"
+    id_columns = "study_id\texperiment_id\tinc_dec\ttaxa_count"
+    profiles.write_text(
+        f"{id_columns}\tNull\tUnsupported\ns1\te1\tinc\t1\t0\t0\ns1\te1\tdec\t1\t0\t0\n"
+    )
+    outputs = run_stratum_enrichment("pooled", profiles, tmp_path / "analyzed", taxa_matrix=matrix)
+    assert outputs.tested_traits_tsv is not None
+    baseline = pd.read_csv(outputs.tested_traits_tsv, sep="\t", comment="#").set_index("trait")
+    assert baseline.loc["Unsupported", "test_status"] == "zero_eligible_tests"
+
+    schema = tmp_path / "supplied_profiles.tsv"
+    schema_contents = {
+        "empty": "",
+        "report": "FDR q <= 0.001\n",
+        "duplicate": f"{id_columns}\tNull\tNull\n",
+        "missing_count": "study_id\texperiment_id\tinc_dec\tNull\n",
+        "only_media": f"{id_columns}\tmediadive.medium:1\n",
+        "mismatched": f"{id_columns}\tDifferentTrait\n",
+    }
+    if schema_case in schema_contents:
+        schema.write_text(schema_contents[schema_case])
+    elif schema_case == "unreadable":
+        schema.write_bytes(b"\xff\xfe\n")
+    destinations = [tmp_path / name for name in ("tested.tsv", "ranked.tsv", "pairs.tsv")]
+    command = [
+        sys.executable,
+        str(REPO_ROOT / "scripts" / "export_trait_enrichment_rankings.py"),
+        "--input",
+        str(outputs.report_txt),
+        "--results",
+        str(outputs.all_results_tsv),
+        "--tested-output",
+        str(destinations[0]),
+        "--overall-output",
+        str(destinations[1]),
+        "--pair-output",
+        str(destinations[2]),
+    ]
+    if schema_case != "omitted":
+        command.extend(["--profiles", str(schema)])
+    result = subprocess.run(command, capture_output=True, text=True)
+    assert result.returncode == 1, result.stdout
+    assert error in result.stderr
+    assert not any(path.exists() for path in destinations)
 
 
 def test_report_only_export_preserves_unavailable_denominator(tmp_path: Path) -> None:
