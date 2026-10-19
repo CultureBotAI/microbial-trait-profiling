@@ -586,6 +586,13 @@ def test_plate_problems_need_the_rerun_and_unchanged_inputs(tmp_path: Path) -> N
     }
 
 
+def test_gitignored_outputs_are_not_checked_against_a_revision() -> None:
+    assert deck.committed("trait-visualization/x.tsv")
+    assert deck.committed("data/analysis/cellulose_decr/pairwise_jaccard_significance.tsv")
+    assert not deck.committed("data/derived/x.tsv")
+    assert not deck.committed("data/analysis/cellulose_decr/figures/figure_captions.json")
+
+
 def test_results_must_cite_figures_in_the_deck() -> None:
     """A dropped figure's results were re-attached to the next figure's slide (#638)."""
     doc = {

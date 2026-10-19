@@ -3202,7 +3202,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
         0.04,
         0.025,
         f"{RERUN_SOURCE} · taxa_coverage_by_rank.tsv, "
-        "top_zero_trait_bugsigdb_taxa.tsv (scripts/create_taxa_coverage_histogram.py). Remapping "
+        "top_zero_trait_bugsigdb_taxa.tsv (create_taxa_coverage_histogram.py). Remapping "
         "NCBITaxon:541000 → 216572 recovers 162 traits across 60 studies; NCBITaxon:508215 → 32207 "
         "recovers 87 traits across 23 studies.",
         fontsize=7.7,

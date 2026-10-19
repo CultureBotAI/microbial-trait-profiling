@@ -2104,8 +2104,9 @@ def revision_problem(
 
 
 def committed(rel: str) -> bool:
-    """Whether a slide file is a committed one; data/derived holds gitignored outputs."""
-    return not rel.startswith("data/derived/")
+    """Whether a slide file is a committed one. data/derived and the cellulose_decr figure
+    folders hold gitignored outputs, which only their recorded hashes identify."""
+    return not rel.startswith(("data/derived/", *CELLULOSE_FIGURES))
 
 
 def plate_problems(
@@ -2465,14 +2466,14 @@ def build_deck(
         fig_rel = entry["figure_file_path"]
         links = slide_links(entry, fig_rel)
         found = []
-        for rel, url in (
-            (fig_rel, links["figure_url"]),
-            (entry.get("evidence_path", ""), links["evidence_url"]),
-        ):
-            if url != "NA":
-                reason = revision_problem(
-                    checks, links["commit"], rel, figure_root(repo, rel) / rel
-                )
+        linked = {
+            fig_rel: links["figure_url"],
+            entry.get("evidence_path", ""): links["evidence_url"],
+        }
+        for rel, url in linked.items():
+            if rel and url != "NA":
+                path = figure_root(repo, rel) / rel
+                reason = revision_problem(checks, links["commit"], rel, path)
                 if reason:
                     found.append(f"{rel}: {reason}")
         if found:
@@ -2498,9 +2499,11 @@ def build_deck(
             reason = revision_problem(checks, COMMIT, rel, path)
             if reason:
                 quoted.append(f"{rel}: {reason}")
-    problems = [f"{fig}: {item}" for fig, found in unverified.items() for item in found] + [
-        f"quoted table {item}" for item in quoted
-    ]
+    problems = [
+        item if item.startswith(f"{fig}:") else f"{item} (slide of {fig})"
+        for fig, found in unverified.items()
+        for item in found
+    ] + [f"quoted table {item}" for item in quoted]
     review = list(review)
     if trees is None:
         review.append("nothing was checked against its revision")
@@ -2662,8 +2665,10 @@ def build_deck(
     )
     n_reference = n_cellulose - len(cellulose_main)
     n_checked = sum(1 for r in manifest_rows if r["figure_url"] != "NA")
+    # One line, so the cover header keeps its height; deck_validation_v6.json lists them all.
     review_html = (
-        '<div class="tag" style="color:#b8332a">Review build, not for distribution: '
+        '<div class="tag" style="color:#b8332a;white-space:nowrap;overflow:hidden;'
+        'text-overflow:ellipsis">Review build, not for distribution: '
         f"{html.escape('; '.join(review))}</div>"
         if review
         else ""
@@ -2778,7 +2783,7 @@ def build_deck(
         "a{color:inherit;text-decoration:none;overflow-wrap:anywhere;word-break:break-word}",
         ".stamp{margin-top:auto;display:flex;justify-content:space-between;gap:20px;font:12px "
         "Arial,sans-serif;color:#617589;padding-top:4px}",
-        ".cover{grid-template-rows:125px minmax(0,1fr) minmax(86px,auto) 86px}",
+        ".cover{grid-template-rows:minmax(125px,auto) minmax(0,1fr) minmax(86px,auto) 86px}",
         ".cover h1{font-size:47px;line-height:1.08}.cover .tag{font-size:15px}",
         ".cover-body{display:flex;flex-direction:column;justify-content:center}",
         ".deck-subtitle{font-size:22px;line-height:1.45;color:#405568;max-width:1420px;margin:0 0 "
