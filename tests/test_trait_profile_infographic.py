@@ -330,11 +330,9 @@ def test_body_site_panel_keeps_labels_and_bubbles_apart() -> None:
             ],
         }
     )
-    # The bottom-left panel of create_infographic's grid.
-    fig = plt.figure(figsize=(18.5, 12.5), dpi=180)
-    grid = fig.add_gridspec(
-        2, 2, left=0.07, right=0.97, top=0.84, bottom=0.08, hspace=0.42, wspace=0.38
-    )
+    # Panel C is the bottom-left cell of create_infographic's grid.
+    fig = plt.figure(figsize=infographic.FIGURE_SIZE, dpi=infographic.FIGURE_DPI)
+    grid = fig.add_gridspec(2, 2, **infographic.PANEL_GRID)
     ax = fig.add_subplot(grid[1, 0])
     try:
         infographic.plot_body_site_summary(ax, summary)
@@ -357,5 +355,8 @@ def test_body_site_panel_keeps_labels_and_bubbles_apart() -> None:
             if math.dist(a.center, b.center) < a.radius + b.radius
         ]
         assert touching_bubbles == []
+        # Leader lines run above the bubbles, so a line crossing one stays visible (#712).
+        leaders = [line for line in ax.lines if line.get_zorder() > bubbles[0].get_zorder()]
+        assert len(leaders) == len(summary)
     finally:
         plt.close(fig)

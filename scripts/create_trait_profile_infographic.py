@@ -48,6 +48,17 @@ MAX_STRATIFIED_PROFILE_SUPPORT_FRACTION = 0.95
 MIN_CONDITION_PAIRS = 10
 MIN_BODY_SITE_PAIRS = 3
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
+# Page and 2 x 2 panel grid of the infographic; panel C is grid[1, 0].
+FIGURE_SIZE = (18.5, 12.5)
+FIGURE_DPI = 180
+PANEL_GRID = {
+    "left": 0.07,
+    "right": 0.97,
+    "top": 0.84,
+    "bottom": 0.08,
+    "hspace": 0.42,
+    "wspace": 0.38,
+}
 
 EXCLUDED_CONDITION_LABELS = {
     "Body fat distribution",
@@ -1161,17 +1172,8 @@ def create_infographic(
             "figure.facecolor": "white",
         }
     )
-    fig = plt.figure(figsize=(18.5, 12.5), dpi=180, facecolor="white")
-    grid = fig.add_gridspec(
-        2,
-        2,
-        left=0.07,
-        right=0.97,
-        top=0.84,
-        bottom=0.08,
-        hspace=0.42,
-        wspace=0.38,
-    )
+    fig = plt.figure(figsize=FIGURE_SIZE, dpi=FIGURE_DPI, facecolor="white")
+    grid = fig.add_gridspec(2, 2, **PANEL_GRID)
     ax_traits = fig.add_subplot(grid[0, 0])
     ax_conditions = fig.add_subplot(grid[0, 1])
     ax_body = fig.add_subplot(grid[1, 0])

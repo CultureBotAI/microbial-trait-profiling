@@ -2,10 +2,11 @@
 
 `data/derived/bugsigdb_taxa.tsv` lists the reported taxa of every BugSigDB host.
 The profile metadata of the trait-profile investigations,
-`trait-visualization/study_trait_profile_study_metadata.tsv`, keeps human-host
-profiles only (`scripts/create_study_trait_profile_heatmap.py`). An occurrence
-outside that corpus has no condition or body site, so it is set aside and counted
-instead of being drawn as an `unknown` condition.
+`trait-visualization/study_trait_profile_study_metadata.tsv`, keeps the profiles
+whose experiment host is recorded as Homo sapiens in `data/raw/full_dump.csv`
+(`scripts/create_study_trait_profile_heatmap.py`). An occurrence outside that
+corpus has no condition or body site, so it is set aside and counted instead of
+being drawn as an `unknown` condition.
 """
 
 from __future__ import annotations
@@ -22,6 +23,9 @@ __all__ = [
 
 HUMAN_HOST_SPECIES = "Homo sapiens"
 UNRECORDED_HOST = "not recorded"
+# Values that mean the source has no host for an experiment; "unknown" is what the
+# corpus's full-dump parser writes for an empty field.
+UNRECORDED_HOST_VALUES = {"", "unknown", "na", "nan"}
 EXPERIMENT_KEY = ["study_id", "experiment_id"]
 
 
@@ -34,11 +38,14 @@ def join_human_host_profiles(
 
     `occurrences` has one row per taxon and profile, with `study_id`, `experiment_id`
     and `profile_id`; `profiles` is the corpus metadata indexed by profile ID;
-    `experiment_hosts` gives `host_species` per study and experiment. Columns that
-    both tables carry keep the occurrence values with a `_taxa` suffix.
+    `experiment_hosts` gives `host_species` per study and experiment, read from the
+    file the corpus filter read (#713). Columns that both tables carry keep the
+    occurrence values with a `_taxa` suffix.
 
     An occurrence outside the corpus must come from an experiment whose host is not
-    Homo sapiens. Any other absence raises, so a key mismatch cannot pass as a host
+    recorded as Homo sapiens: another species, or no host at all, which is reported
+    as "not recorded". An occurrence of a Homo sapiens experiment, or of an
+    experiment with no host row, raises, so a key mismatch cannot pass as a host
     exclusion.
     """
     in_corpus = occurrences["profile_id"].isin(profiles.index)
@@ -57,8 +64,9 @@ def join_human_host_profiles(
         )
         raise ValueError(msg)
     excluded = excluded.drop(columns="_merge")
-    excluded["host_species"] = (
-        excluded["host_species"].fillna("").astype(str).str.strip().replace("", UNRECORDED_HOST)
+    hosts = excluded["host_species"].fillna("").astype(str).str.strip()
+    excluded["host_species"] = hosts.where(
+        ~hosts.str.lower().isin(UNRECORDED_HOST_VALUES), UNRECORDED_HOST
     )
     human = excluded.loc[excluded["host_species"] == HUMAN_HOST_SPECIES, "profile_id"]
     if not human.empty:
@@ -74,6 +82,7 @@ def join_human_host_profiles(
         right_index=True,
         how="left",
         suffixes=("_taxa", ""),
+        validate="many_to_one",
     )
     return joined, excluded
 

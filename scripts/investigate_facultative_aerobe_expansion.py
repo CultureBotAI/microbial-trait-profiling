@@ -13,6 +13,7 @@ from matplotlib.colors import TwoSlopeNorm
 from matplotlib.patches import Circle, PathPatch
 from matplotlib.path import Path as MplPath
 
+from create_study_trait_profile_heatmap import load_raw_experiment_metadata
 from mtp.body_site_diagram import (
     add_colorbar_beside,
     anatomical_site_base,
@@ -1010,10 +1011,11 @@ def load_target_taxa_occurrences(
     taxa["profile_id"] = taxa.apply(profile_id_from_taxa_row, axis=1)
     taxa = taxa.drop_duplicates(subset=["taxon_id", "profile_id"])
     taxa["target_taxon_name"] = taxa["taxon_id"].map(TARGET_TAXA)
-    experiment_hosts = read_tsv(
-        REPO_ROOT / "data/derived/experiments.tsv",
-        usecols=["study_id", "experiment_id", "host_species"],
-    )
+    # The human-host corpus filter reads the host from full_dump.csv, so the set-aside
+    # check reads it from the same file with the same parser (#713).
+    experiment_hosts = load_raw_experiment_metadata(
+        REPO_ROOT / "data/raw/full_dump.csv"
+    ).reset_index()[["study_id", "experiment_id", "host_species"]]
     profile_columns = [
         "study_id",
         "experiment_id",
@@ -1488,6 +1490,29 @@ def save_anatomical_sites_diagram(
     plt.close(fig)
 
 
+def save_target_taxa_condition_charts(
+    occurrences: pd.DataFrame,
+    excluded_occurrences: pd.DataFrame,
+    condition_summary: pd.DataFrame,
+) -> None:
+    """Save the increased-profile target-taxon condition charts with the set-aside note."""
+    direction = "increased"
+    excluded_note = excluded_host_note(excluded_occurrences, direction)
+    save_condition_breakdown_bar_chart(
+        count_target_taxa_conditions(occurrences, direction),
+        output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_bar.png",
+        title_prefix="Inc-profile aerobe v2 target taxa",
+        color="#dc2626",
+        note=excluded_note,
+    )
+    save_condition_target_taxa_stacked_bar_chart(
+        occurrences,
+        condition_summary,
+        output_path=OUTPUT_DIR / "condition_target_taxa_stacked_bar.png",
+        note=excluded_note,
+    )
+
+
 def make_plots(
     taxa_summary: pd.DataFrame,
     condition_summary: pd.DataFrame,
@@ -1563,21 +1588,7 @@ def make_plots(
     fig.savefig(OUTPUT_DIR / "guild_trait_direction_shift.png")
     plt.close(fig)
 
-    condition_counts = count_target_taxa_conditions(occurrences, "increased")
-    excluded_note = excluded_host_note(excluded_occurrences, "increased")
-    save_condition_breakdown_bar_chart(
-        condition_counts,
-        output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_bar.png",
-        title_prefix="Inc-profile aerobe v2 target taxa",
-        color="#dc2626",
-        note=excluded_note,
-    )
-    save_condition_target_taxa_stacked_bar_chart(
-        occurrences,
-        condition_summary,
-        output_path=OUTPUT_DIR / "condition_target_taxa_stacked_bar.png",
-        note=excluded_note,
-    )
+    save_target_taxa_condition_charts(occurrences, excluded_occurrences, condition_summary)
     save_anatomical_sites_diagram(
         body_site_summary,
         output_path=OUTPUT_DIR / "anatomical_sites_diagram.png",

@@ -56,6 +56,23 @@ def test_occurrences_outside_the_corpus_are_set_aside_with_their_host() -> None:
     assert excluded["host_species"].tolist() == ["Mus musculus", "Mus musculus", UNRECORDED_HOST]
 
 
+@pytest.mark.parametrize("unrecorded", [None, "", "unknown", "NA"])
+def test_an_unrecorded_host_is_set_aside_as_not_recorded(unrecorded: str | None) -> None:
+    """The corpus parser writes "unknown" for an empty host field (#713)."""
+    hosts = experiment_hosts()
+    hosts.loc[2, "host_species"] = unrecorded
+    _, excluded = join_human_host_profiles(
+        occurrences(), profiles(["s1|s1-1|inc", "s1|s1-1|dec"]), hosts
+    )
+    assert excluded.loc[excluded["study_id"] == "s3", "host_species"].tolist() == [UNRECORDED_HOST]
+
+
+def test_duplicate_profile_metadata_raises() -> None:
+    duplicated = profiles(["s1|s1-1|inc", "s1|s1-1|dec", "s1|s1-1|dec"])
+    with pytest.raises(pd.errors.MergeError):
+        join_human_host_profiles(occurrences(), duplicated, experiment_hosts())
+
+
 def test_a_human_host_profile_missing_from_the_corpus_raises() -> None:
     with pytest.raises(ValueError, match="human-host profile"):
         join_human_host_profiles(occurrences(), profiles(["s1|s1-1|inc"]), experiment_hosts())
