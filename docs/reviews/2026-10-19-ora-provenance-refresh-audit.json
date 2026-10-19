@@ -1,0 +1,408 @@
+{
+  "issue": 720,
+  "manifest": "/private/tmp/mtp-analysis-review-20261019/docs/reviews/2026-10-19-ora-provenance-refresh-inputs.json",
+  "manifest_sha256": "c8d4d4a9f55d3264c47c2cc0d2d7b9343c1773151cf382d1aa0c2f17d7cc559d",
+  "passed": true,
+  "pairs": [
+    {
+      "label": "pooled_enrichment",
+      "historical": {
+        "path": "/private/tmp/mtp-workflow-629/.tmp/issue658-ilyas-production/trait_enrichment_all_results.tsv",
+        "sha256": "cf2aa839d0902aa002a5c7d2c4f7d86a713b977ada4211f6bd7524082cbca92d",
+        "body_sha256": "8be8cb88ed522a7dbb97af27f8670c08a91c562a5eae924efa573be88113b1db",
+        "body_bytes": 216517237,
+        "rows": 1480390,
+        "significant_rows": 66240,
+        "metadata": {
+          "Tail": "upper",
+          "Testable-Set": "K>0 & N>0",
+          "FDR": "True",
+          "FDR-Scope": "global",
+          "P-Threshold": "0.001",
+          "Min-Fold": "1.5",
+          "Background-Mode": "TaxaMatrix (taxa_trait_matrix.tsv)",
+          "Total-Profiles-Input": "4670",
+          "Testable-Profiles": "4670",
+          "Background-Taxa-Universe-M": "5829",
+          "Background-Universe-Definition": "BugSigDB-reported taxa rows of taxa_trait_matrix.tsv (mixed ranks, inherited positivity)",
+          "Mean-Taxa-Per-Testable-Profile-N": "9.05",
+          "Total-Tests-Performed": "1480390",
+          "Significant-Hits": "66240",
+          "Result-Status": "discoveries"
+        },
+        "errors": []
+      },
+      "current": {
+        "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/enrichment/all_results.tsv",
+        "sha256": "7cf70813d488dd1a993b7598c2ed0f6f8c9d29f11832ddce91d50252653ed2de",
+        "body_sha256": "8be8cb88ed522a7dbb97af27f8670c08a91c562a5eae924efa573be88113b1db",
+        "body_bytes": 216517237,
+        "rows": 1480390,
+        "significant_rows": 66240,
+        "metadata": {
+          "Profiles-SHA256": "8ff8b1637039d7d548bd5a3fb956d562ed29e61b2067ca507f7779903799152a",
+          "Taxa-Matrix-SHA256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178",
+          "Tail": "upper",
+          "Testable-Set": "K>0 & N>0",
+          "FDR": "True",
+          "FDR-Scope": "global",
+          "P-Threshold": "0.001",
+          "Min-Fold": "1.5",
+          "Background-Mode": "TaxaMatrix (taxa_trait_matrix.tsv)",
+          "Total-Profiles-Input": "4670",
+          "Testable-Profiles": "4670",
+          "Background-Taxa-Universe-M": "5829",
+          "Background-Universe-Definition": "BugSigDB-reported taxa rows of taxa_trait_matrix.tsv (mixed ranks, inherited positivity)",
+          "Mean-Taxa-Per-Testable-Profile-N": "9.05",
+          "Total-Tests-Performed": "1480390",
+          "Significant-Hits": "66240",
+          "Result-Status": "discoveries"
+        },
+        "errors": []
+      },
+      "inputs": {
+        "profiles": {
+          "path": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/ora_profiles/derived/study_trait_profiles_ora_wide.tsv",
+          "sha256": "8ff8b1637039d7d548bd5a3fb956d562ed29e61b2067ca507f7779903799152a"
+        },
+        "taxa_matrix": {
+          "path": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/taxa_matrix/derived/taxa_trait_matrix.tsv",
+          "sha256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178"
+        }
+      },
+      "metadata_changes": {
+        "Profiles-SHA256": {
+          "historical": null,
+          "current": "8ff8b1637039d7d548bd5a3fb956d562ed29e61b2067ca507f7779903799152a"
+        },
+        "Taxa-Matrix-SHA256": {
+          "historical": null,
+          "current": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178"
+        }
+      },
+      "table_body_equal": true,
+      "passed": true,
+      "errors": []
+    },
+    {
+      "label": "pooled_depletion",
+      "historical": {
+        "path": "/private/tmp/mtp-workflow-629/.tmp/issue658-ilyas-production/trait_depletion_all_results.tsv",
+        "sha256": "27c029105e9b8ac595a2f40d25c8b5e057acff8d0d4cf5a0fdf180202fb76532",
+        "body_sha256": "5e0c0d08ca359650cbd68de454bcfde6a5c800c88060bed71ccb46a5d15bad37",
+        "body_bytes": 220205807,
+        "rows": 1480390,
+        "significant_rows": 23,
+        "metadata": {
+          "Tail": "lower",
+          "Testable-Set": "K>0 & N>0",
+          "FDR": "True",
+          "FDR-Scope": "global",
+          "P-Threshold": "0.001",
+          "Max-Fold": "0.5",
+          "Background-Mode": "TaxaMatrix (taxa_trait_matrix.tsv)",
+          "Total-Profiles-Input": "4670",
+          "Testable-Profiles": "4670",
+          "Background-Taxa-Universe-M": "5829",
+          "Background-Universe-Definition": "BugSigDB-reported taxa rows of taxa_trait_matrix.tsv (mixed ranks, inherited positivity)",
+          "Mean-Taxa-Per-Testable-Profile-N": "9.05",
+          "Total-Tests-Performed": "1480390",
+          "Significant-Hits": "23",
+          "Result-Status": "discoveries"
+        },
+        "errors": []
+      },
+      "current": {
+        "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/depletion/all_results.tsv",
+        "sha256": "7538e6f686fc135af17017d581d59d76c9e2cf55a5f0ab3fe0ebb67ac7280acf",
+        "body_sha256": "5e0c0d08ca359650cbd68de454bcfde6a5c800c88060bed71ccb46a5d15bad37",
+        "body_bytes": 220205807,
+        "rows": 1480390,
+        "significant_rows": 23,
+        "metadata": {
+          "Profiles-SHA256": "8ff8b1637039d7d548bd5a3fb956d562ed29e61b2067ca507f7779903799152a",
+          "Taxa-Matrix-SHA256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178",
+          "Tail": "lower",
+          "Testable-Set": "K>0 & N>0",
+          "FDR": "True",
+          "FDR-Scope": "global",
+          "P-Threshold": "0.001",
+          "Max-Fold": "0.5",
+          "Background-Mode": "TaxaMatrix (taxa_trait_matrix.tsv)",
+          "Total-Profiles-Input": "4670",
+          "Testable-Profiles": "4670",
+          "Background-Taxa-Universe-M": "5829",
+          "Background-Universe-Definition": "BugSigDB-reported taxa rows of taxa_trait_matrix.tsv (mixed ranks, inherited positivity)",
+          "Mean-Taxa-Per-Testable-Profile-N": "9.05",
+          "Total-Tests-Performed": "1480390",
+          "Significant-Hits": "23",
+          "Result-Status": "discoveries"
+        },
+        "errors": []
+      },
+      "inputs": {
+        "profiles": {
+          "path": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/ora_profiles/derived/study_trait_profiles_ora_wide.tsv",
+          "sha256": "8ff8b1637039d7d548bd5a3fb956d562ed29e61b2067ca507f7779903799152a"
+        },
+        "taxa_matrix": {
+          "path": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/taxa_matrix/derived/taxa_trait_matrix.tsv",
+          "sha256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178"
+        }
+      },
+      "metadata_changes": {
+        "Profiles-SHA256": {
+          "historical": null,
+          "current": "8ff8b1637039d7d548bd5a3fb956d562ed29e61b2067ca507f7779903799152a"
+        },
+        "Taxa-Matrix-SHA256": {
+          "historical": null,
+          "current": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178"
+        }
+      },
+      "table_body_equal": true,
+      "passed": true,
+      "errors": []
+    },
+    {
+      "label": "strata_pooled",
+      "historical": {
+        "path": "/private/tmp/mtp-issue664/.tmp/issue664-strata/trait_enrichment_all_results_pooled.tsv",
+        "sha256": "cf2aa839d0902aa002a5c7d2c4f7d86a713b977ada4211f6bd7524082cbca92d",
+        "body_sha256": "8be8cb88ed522a7dbb97af27f8670c08a91c562a5eae924efa573be88113b1db",
+        "body_bytes": 216517237,
+        "rows": 1480390,
+        "significant_rows": 66240,
+        "metadata": {
+          "Tail": "upper",
+          "Testable-Set": "K>0 & N>0",
+          "FDR": "True",
+          "FDR-Scope": "global",
+          "P-Threshold": "0.001",
+          "Min-Fold": "1.5",
+          "Background-Mode": "TaxaMatrix (taxa_trait_matrix.tsv)",
+          "Total-Profiles-Input": "4670",
+          "Testable-Profiles": "4670",
+          "Background-Taxa-Universe-M": "5829",
+          "Background-Universe-Definition": "BugSigDB-reported taxa rows of taxa_trait_matrix.tsv (mixed ranks, inherited positivity)",
+          "Mean-Taxa-Per-Testable-Profile-N": "9.05",
+          "Total-Tests-Performed": "1480390",
+          "Significant-Hits": "66240",
+          "Result-Status": "discoveries"
+        },
+        "errors": []
+      },
+      "current": {
+        "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/strata/trait_enrichment_all_results_pooled.tsv",
+        "sha256": "7cf70813d488dd1a993b7598c2ed0f6f8c9d29f11832ddce91d50252653ed2de",
+        "body_sha256": "8be8cb88ed522a7dbb97af27f8670c08a91c562a5eae924efa573be88113b1db",
+        "body_bytes": 216517237,
+        "rows": 1480390,
+        "significant_rows": 66240,
+        "metadata": {
+          "Profiles-SHA256": "8ff8b1637039d7d548bd5a3fb956d562ed29e61b2067ca507f7779903799152a",
+          "Taxa-Matrix-SHA256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178",
+          "Tail": "upper",
+          "Testable-Set": "K>0 & N>0",
+          "FDR": "True",
+          "FDR-Scope": "global",
+          "P-Threshold": "0.001",
+          "Min-Fold": "1.5",
+          "Background-Mode": "TaxaMatrix (taxa_trait_matrix.tsv)",
+          "Total-Profiles-Input": "4670",
+          "Testable-Profiles": "4670",
+          "Background-Taxa-Universe-M": "5829",
+          "Background-Universe-Definition": "BugSigDB-reported taxa rows of taxa_trait_matrix.tsv (mixed ranks, inherited positivity)",
+          "Mean-Taxa-Per-Testable-Profile-N": "9.05",
+          "Total-Tests-Performed": "1480390",
+          "Significant-Hits": "66240",
+          "Result-Status": "discoveries"
+        },
+        "errors": []
+      },
+      "inputs": {
+        "profiles": {
+          "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/strata/study_trait_profiles_pooled.tsv",
+          "sha256": "8ff8b1637039d7d548bd5a3fb956d562ed29e61b2067ca507f7779903799152a"
+        },
+        "taxa_matrix": {
+          "path": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/taxa_matrix/derived/taxa_trait_matrix.tsv",
+          "sha256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178"
+        }
+      },
+      "metadata_changes": {
+        "Profiles-SHA256": {
+          "historical": null,
+          "current": "8ff8b1637039d7d548bd5a3fb956d562ed29e61b2067ca507f7779903799152a"
+        },
+        "Taxa-Matrix-SHA256": {
+          "historical": null,
+          "current": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178"
+        }
+      },
+      "table_body_equal": true,
+      "passed": true,
+      "errors": []
+    },
+    {
+      "label": "strata_feces",
+      "historical": {
+        "path": "/private/tmp/mtp-issue664/.tmp/issue664-strata/trait_enrichment_all_results_feces.tsv",
+        "sha256": "5cff21fa73dd3f74d69f75af43b30c69a78df4289b5b83b86760b1511cc9448b",
+        "body_sha256": "85fbcee82cf0ef7dead1572005c563b414ab6f5cc1da9ea56b1d4ee3052ef42a",
+        "body_bytes": 136869357,
+        "rows": 935150,
+        "significant_rows": 36562,
+        "metadata": {
+          "Tail": "upper",
+          "Testable-Set": "K>0 & N>0",
+          "FDR": "True",
+          "FDR-Scope": "global",
+          "P-Threshold": "0.001",
+          "Min-Fold": "1.5",
+          "Background-Mode": "TaxaMatrix (taxa_trait_matrix.tsv)",
+          "Total-Profiles-Input": "2950",
+          "Testable-Profiles": "2950",
+          "Background-Taxa-Universe-M": "5829",
+          "Background-Universe-Definition": "BugSigDB-reported taxa rows of taxa_trait_matrix.tsv (mixed ranks, inherited positivity)",
+          "Mean-Taxa-Per-Testable-Profile-N": "8.82",
+          "Total-Tests-Performed": "935150",
+          "Significant-Hits": "36562",
+          "Result-Status": "discoveries"
+        },
+        "errors": []
+      },
+      "current": {
+        "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/strata/trait_enrichment_all_results_feces.tsv",
+        "sha256": "4310ce0beda1de109a3455a683fea0abb94fa3b58618ea1c2148bd82efa83c61",
+        "body_sha256": "85fbcee82cf0ef7dead1572005c563b414ab6f5cc1da9ea56b1d4ee3052ef42a",
+        "body_bytes": 136869357,
+        "rows": 935150,
+        "significant_rows": 36562,
+        "metadata": {
+          "Profiles-SHA256": "943f2bc65a13858428f31f58236e456f699349c595c642e5f01e0a4340910491",
+          "Taxa-Matrix-SHA256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178",
+          "Tail": "upper",
+          "Testable-Set": "K>0 & N>0",
+          "FDR": "True",
+          "FDR-Scope": "global",
+          "P-Threshold": "0.001",
+          "Min-Fold": "1.5",
+          "Background-Mode": "TaxaMatrix (taxa_trait_matrix.tsv)",
+          "Total-Profiles-Input": "2950",
+          "Testable-Profiles": "2950",
+          "Background-Taxa-Universe-M": "5829",
+          "Background-Universe-Definition": "BugSigDB-reported taxa rows of taxa_trait_matrix.tsv (mixed ranks, inherited positivity)",
+          "Mean-Taxa-Per-Testable-Profile-N": "8.82",
+          "Total-Tests-Performed": "935150",
+          "Significant-Hits": "36562",
+          "Result-Status": "discoveries"
+        },
+        "errors": []
+      },
+      "inputs": {
+        "profiles": {
+          "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/strata/study_trait_profiles_feces.tsv",
+          "sha256": "943f2bc65a13858428f31f58236e456f699349c595c642e5f01e0a4340910491"
+        },
+        "taxa_matrix": {
+          "path": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/taxa_matrix/derived/taxa_trait_matrix.tsv",
+          "sha256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178"
+        }
+      },
+      "metadata_changes": {
+        "Profiles-SHA256": {
+          "historical": null,
+          "current": "943f2bc65a13858428f31f58236e456f699349c595c642e5f01e0a4340910491"
+        },
+        "Taxa-Matrix-SHA256": {
+          "historical": null,
+          "current": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178"
+        }
+      },
+      "table_body_equal": true,
+      "passed": true,
+      "errors": []
+    },
+    {
+      "label": "strata_feces_excluded",
+      "historical": {
+        "path": "/private/tmp/mtp-issue664/.tmp/issue664-strata/trait_enrichment_all_results_feces_excluded.tsv",
+        "sha256": "cba3e4d4b803dc211ca9298f5d430a19d608f5220adf60ccbf8ec0fcef086efd",
+        "body_sha256": "6ed87030b3b3d7992042a3db4dfc8f82010236ac4ea7a4ce319521300fd9e5df",
+        "body_bytes": 79646225,
+        "rows": 545240,
+        "significant_rows": 29498,
+        "metadata": {
+          "Tail": "upper",
+          "Testable-Set": "K>0 & N>0",
+          "FDR": "True",
+          "FDR-Scope": "global",
+          "P-Threshold": "0.001",
+          "Min-Fold": "1.5",
+          "Background-Mode": "TaxaMatrix (taxa_trait_matrix.tsv)",
+          "Total-Profiles-Input": "1720",
+          "Testable-Profiles": "1720",
+          "Background-Taxa-Universe-M": "5829",
+          "Background-Universe-Definition": "BugSigDB-reported taxa rows of taxa_trait_matrix.tsv (mixed ranks, inherited positivity)",
+          "Mean-Taxa-Per-Testable-Profile-N": "9.45",
+          "Total-Tests-Performed": "545240",
+          "Significant-Hits": "29498",
+          "Result-Status": "discoveries"
+        },
+        "errors": []
+      },
+      "current": {
+        "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/strata/trait_enrichment_all_results_feces_excluded.tsv",
+        "sha256": "59f132c3f73b1c1d71015cae3bce716c2774bfdaff043cf6825d0e5b08951a16",
+        "body_sha256": "6ed87030b3b3d7992042a3db4dfc8f82010236ac4ea7a4ce319521300fd9e5df",
+        "body_bytes": 79646225,
+        "rows": 545240,
+        "significant_rows": 29498,
+        "metadata": {
+          "Profiles-SHA256": "d375a2ce766d8b1e2f2f1a0a3f63e0eb30b9ba8543d4cf5814d77fe2cdbb4963",
+          "Taxa-Matrix-SHA256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178",
+          "Tail": "upper",
+          "Testable-Set": "K>0 & N>0",
+          "FDR": "True",
+          "FDR-Scope": "global",
+          "P-Threshold": "0.001",
+          "Min-Fold": "1.5",
+          "Background-Mode": "TaxaMatrix (taxa_trait_matrix.tsv)",
+          "Total-Profiles-Input": "1720",
+          "Testable-Profiles": "1720",
+          "Background-Taxa-Universe-M": "5829",
+          "Background-Universe-Definition": "BugSigDB-reported taxa rows of taxa_trait_matrix.tsv (mixed ranks, inherited positivity)",
+          "Mean-Taxa-Per-Testable-Profile-N": "9.45",
+          "Total-Tests-Performed": "545240",
+          "Significant-Hits": "29498",
+          "Result-Status": "discoveries"
+        },
+        "errors": []
+      },
+      "inputs": {
+        "profiles": {
+          "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/strata/study_trait_profiles_feces_excluded.tsv",
+          "sha256": "d375a2ce766d8b1e2f2f1a0a3f63e0eb30b9ba8543d4cf5814d77fe2cdbb4963"
+        },
+        "taxa_matrix": {
+          "path": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/taxa_matrix/derived/taxa_trait_matrix.tsv",
+          "sha256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178"
+        }
+      },
+      "metadata_changes": {
+        "Profiles-SHA256": {
+          "historical": null,
+          "current": "d375a2ce766d8b1e2f2f1a0a3f63e0eb30b9ba8543d4cf5814d77fe2cdbb4963"
+        },
+        "Taxa-Matrix-SHA256": {
+          "historical": null,
+          "current": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178"
+        }
+      },
+      "table_body_equal": true,
+      "passed": true,
+      "errors": []
+    }
+  ]
+}
