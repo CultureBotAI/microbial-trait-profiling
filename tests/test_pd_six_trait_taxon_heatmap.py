@@ -473,3 +473,15 @@ def test_baseline_opposes_lollipop_only_for_opposite_signs(
     lollipop: float, baseline: float, opposes: bool
 ) -> None:
     assert heatmap.baseline_opposes_lollipop(lollipop, baseline) is opposes
+
+
+def test_subtitle_fills_every_placeholder_and_says_what_a_sign_means() -> None:
+    subtitle = heatmap.heatmap_subtitle("species", 3)
+
+    assert "{" not in subtitle
+    assert "}" not in subtitle
+    assert "Only values > +0.01 or < -0.01 are shown" in subtitle
+    assert "at least 3 studies" in subtitle
+    assert "positive values push the paired contrast toward increased profiles" in subtitle
+    assert "an asterisk marks a baseline whose sign is opposite to the lollipop's" in subtitle
+    assert heatmap.heatmap_subtitle("taxon", 2, "Rows are grouped.").endswith("Rows are grouped.")

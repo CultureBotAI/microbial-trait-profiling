@@ -1377,6 +1377,30 @@ def trait_column_label(trait: str, direction: str, lollipop: float, baseline: fl
     )
 
 
+def heatmap_subtitle(
+    taxon_unit: str, min_support_studies: int, method_note: str | None = None
+) -> str:
+    """The figure's explanation of arrows, baselines, cells, outlines and annotations."""
+    subtitle = (
+        "Column arrows give each trait's observed direction in the PD six-trait lollipop: ↑ "
+        "where its mean z is higher in increased profiles, ↓ where it is higher in decreased "
+        "profiles; `lollipop` is that mean-z difference. `baseline Δz` is this figure's "
+        "full-data, study-weighted paired PD increased-minus-decreased contrast before taxon "
+        "removal; an asterisk marks a baseline whose sign is opposite to the lollipop's. A cell "
+        f"is baseline Δz minus the recomputed Δz after removing the reported {taxon_unit}: "
+        "positive values push the paired contrast toward increased profiles and negative values "
+        "toward decreased profiles. They are influence diagnostics, not causal effects. Only "
+        f"values > +{MIN_ABSOLUTE_INFLUENCE_Z:g} or "
+        f"< -{MIN_ABSOLUTE_INFLUENCE_Z:g} are shown. Black outlines mark direct "
+        "organism-to-trait annotations; unoutlined cells are denominator-only effects. Low-support "
+        f"cells remain hatched; TSV inc/dec calls require at least {min_support_studies} studies "
+        "and a 95% interval wholly above/below zero. Literature fill follows direction (red=inc, "
+        "blue=dec); green borders mark Hamming distance 0 (similar) and red borders mark distance "
+        "1 (different) versus BugSigDB recurrence. Row labels include BugSigDB PD inc/dec counts."
+    )
+    return f"{subtitle} {method_note}" if method_note else subtitle
+
+
 def plot_heatmap(
     cells: pd.DataFrame,
     rows: pd.DataFrame,
@@ -1615,29 +1639,10 @@ def plot_heatmap(
         fontweight="bold",
         va="top",
     )
-    subtitle = (
-        "Column arrows give each trait's observed direction in the PD six-trait lollipop: ↑ "
-        "where its mean z is higher in increased profiles, ↓ where it is higher in decreased "
-        "profiles; `lollipop` is that mean-z difference. `baseline Δz` is this figure's "
-        "full-data, study-weighted paired PD increased-minus-decreased contrast before taxon "
-        "removal; an asterisk marks a baseline whose sign is opposite to the lollipop's. A cell "
-        f"is baseline Δz minus the recomputed Δz after removing the reported {taxon_unit}: "
-        "positive values push the paired contrast toward increased profiles and negative values "
-        "toward decreased profiles. They are influence diagnostics, not causal effects. Only "
-        "values > +{MIN_ABSOLUTE_INFLUENCE_Z:g} or "
-        f"< -{MIN_ABSOLUTE_INFLUENCE_Z:g} are shown. Black outlines mark direct "
-        "organism-to-trait annotations; unoutlined cells are denominator-only effects. Low-support "
-        f"cells remain hatched; TSV inc/dec calls require at least {min_support_studies} studies "
-        "and a 95% interval wholly above/below zero. Literature fill follows direction (red=inc, "
-        "blue=dec); green borders mark Hamming distance 0 (similar) and red borders mark distance "
-        "1 (different) versus BugSigDB recurrence. Row labels include BugSigDB PD inc/dec counts."
-    )
-    if method_note:
-        subtitle = f"{subtitle} {method_note}"
     fig.text(
         0.03,
         1 - 0.48 / height,
-        "\n".join(wrap(subtitle, width=140)),
+        "\n".join(wrap(heatmap_subtitle(taxon_unit, min_support_studies, method_note), width=140)),
         fontsize=9,
         color="#4b5563",
         va="top",
