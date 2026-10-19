@@ -358,11 +358,12 @@ figure-review-deck *ARGS:
 		rm -f "$slides/deck_build_status.json"
 	fi
 	# The committed files at each revision the slides cite, for the build to check (#637).
-	# The unmerged pull requests' commits are fetched when this clone lacks them (#614).
+	# The unmerged pull requests' commits are fetched when this clone lacks them (#614); a
+	# fetch slower than 1 kB/s for 30 s gives up, and the build then refuses that ref (#686).
 	trees="$(mktemp -d)"
 	trap 'rm -rf "$trees"' EXIT
 	for ref in $(uv run python scripts/build_slide_deck.py --print-refs); do
-		git cat-file -e "$ref^{commit}" 2>/dev/null || git fetch --quiet origin "$ref" || true
+		git cat-file -e "$ref^{commit}" 2>/dev/null || git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --quiet origin "$ref" || true
 		git ls-tree -r -z --full-tree "$ref" > "$trees/$ref.tree" || rm -f "$trees/$ref.tree"
 	done
 	uv run python scripts/build_slide_deck.py --output-dir "$slides" --provenance-dir "$provenance" --git-trees "$trees" "$@"

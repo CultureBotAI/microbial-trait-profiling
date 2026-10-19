@@ -5,6 +5,7 @@ import importlib.util
 import itertools
 import json
 import shutil
+from dataclasses import replace
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -348,8 +349,10 @@ def test_plate_records_name_the_plate_script() -> None:
     assert record["generator_script_path"] == "scripts/generate_tufte_plates.py"
     assert record["methods_doc_path"] == "methods/table1_paired_log_ratios.md"
     assert record["just_recipe"] == "just figure-review-plates"
-    assert record["command_series"][-3:] == [
+    assert record["command_series"][-5:] == [
         "just analyze",
+        "just contrast-orientation",
+        "just cellulose-decr",
         "just cellulose-decr-figures",
         "just figure-review-plates",
     ]
@@ -360,6 +363,13 @@ def test_plate_records_name_the_plate_script() -> None:
     before = json.dumps(record)
     deck.plate_provenance(record, "methods/table1_paired_log_ratios.md", inputs)
     assert json.dumps(record) == before
+    # trait-profile-investigation reads what trait-heatmaps writes (#681)
+    investigation = {"command_series": ["just trait-profile-investigation", "just analyze"]}
+    deck.plate_provenance(investigation, "", {})
+    assert investigation["command_series"][:2] == [
+        "just trait-heatmaps",
+        "just trait-profile-investigation",
+    ]
 
 
 def test_carried_over_records_get_the_current_commands() -> None:
@@ -658,6 +668,15 @@ def _root(tmp_path: Path) -> Path:
     return root
 
 
+def _same_classifier(root: Path) -> None:
+    """The contrast classifier this checkout's cellulose_decr tables were built on."""
+    provenance = REPO / "data/analysis/cellulose_decr/cellulose_decr_provenance.json"
+    version = json.loads(provenance.read_text())["contrast_classifier_version"]
+    contrasts = root / plates.CONTRAST_PROVENANCE
+    contrasts.parent.mkdir(parents=True)
+    contrasts.write_text(json.dumps({"classifier_version": version}))
+
+
 def _deck_args(tmp_path: Path, root: Path) -> list[str]:
     return [
         "--input-root",
@@ -701,6 +720,7 @@ def test_a_failed_plate_run_drops_the_old_record(
 ) -> None:
     """New plates must not sit beside the previous run's commit and inputs (#621)."""
     root = _root(tmp_path)
+    _same_classifier(root)
     out = tmp_path / "plates"
     out.mkdir()
     (out / "plates_provenance.json").write_text("{}")
@@ -948,6 +968,42 @@ def test_slides_are_checked_link_by_link(tmp_path: Path) -> None:
     assert checked["methods_url"] == ""
 
 
+def test_a_slide_not_rerun_is_checked_by_its_figure(tmp_path: Path) -> None:
+    """Its figure must be the pull request's committed file; the methods it quotes are
+    only linked there, since this checkout holds main's version (#614)."""
+    figure = tmp_path / "methods" / "figures" / "table1_traits_focus_oral.png"
+    figure.parent.mkdir(parents=True)
+    figure.write_text("pr173")
+    notes = tmp_path / "methods" / "notes.md"
+    notes.write_text("main's version")
+    ref = deck.UNMERGED_TABLE1_MAPS[1]
+    trees = _trees(
+        tmp_path,
+        {
+            "methods/figures/table1_traits_focus_oral.png": deck.git_blob_id(figure),
+            "methods/notes.md": "0" * 40,
+            "src/bsdbng/table1_trait_maps.py": "1" * 40,
+        },
+        ref,
+    )
+    entry: dict[str, Any] = {
+        "figure_file_path": "methods/figures/table1_traits_focus_oral.png",
+        "code_path": "src/bsdbng/table1_trait_maps.py",
+        "methods_path": "methods/notes.md",
+        "evidence_path": "methods/notes.md",
+    }
+    deck.mark_unmerged(entry)
+    unverified, _ = deck.check_slides(tmp_path, [entry], trees, [])
+    assert unverified == {}
+    figure.write_text("main's map")
+    unverified, _ = deck.check_slides(tmp_path, [entry], trees, [])
+    assert unverified == {
+        "methods/figures/table1_traits_focus_oral.png": [
+            ("methods/figures/table1_traits_focus_oral.png", f"differs from {ref[:12]}")
+        ]
+    }
+
+
 def test_files_that_differ_stop_the_build_unless_it_is_a_review() -> None:
     assert deck.refuse_or_review([], allow_unverified=False) == []
     with pytest.raises(SystemExit, match="1 files differ"):
@@ -1067,8 +1123,10 @@ def _comparison(
     population: str, studies: int, passing: set[tuple[str, str]], cellulose: tuple[int, int]
 ) -> list[dict[str, str]]:
     """disease_control_comparison.tsv rows: cellulose shifts down, the other five up, and
-    the ``passing`` log-ratios at BY q = 0.01 (the rest 0.3)."""
+    the ``passing`` log-ratios at BY q = 0.01 (the rest 0.3). 20 studies have a zero
+    annotation total; the rest are scored or tied in every fraction test."""
     up, down = cellulose
+    tested = studies - 20
     rows = []
     for trait in CODES:
         shifted = (up, down) if trait == CELLULOSE_TRAIT else (60, 40)
@@ -1082,6 +1140,7 @@ def _comparison(
                 "studies_scored": str(sum(shifted)),
                 "studies_up": str(shifted[0]),
                 "studies_down": str(shifted[1]),
+                "studies_tied": str(tested - sum(shifted)),
                 "p_value": "4.1302e-06" if trait == CELLULOSE_TRAIT else "0.001",
                 "q_value": "0.002",
             }
@@ -1097,6 +1156,7 @@ def _comparison(
                 "studies_scored": "237",
                 "studies_up": "96",
                 "studies_down": "141",
+                "studies_tied": "0",
                 "p_value": "0.004",
                 "q_value": "0.01" if (numerator, reference) in passing else "0.3",
             }
@@ -1134,17 +1194,19 @@ def test_increased_side_caveat_counts_the_pairs_among_them() -> None:
 def test_cover_quotes_the_comparison_table() -> None:
     text = deck.cover_table1_text({"table1": _signs(ALL_PASSING)})
     assert text == (
-        "Arm 3 study-level Table 1: all 6 traits pass BH q &lt; 0.01 across 959 studies (in 592 "
-        "disease-vs-healthy oriented studies, cellulose is 288/475 down (60.6%↓), p = "
-        "4.1 \N{MULTIPLICATION SIGN} 10⁻⁶, and 3 log-ratios pass BY q ≤ 0.05: FA/CEL, CEL/SPH "
-        "and CEL/ARS)"
+        "Arm 3 study-level Table 1: all 6 traits pass BH q &lt; 0.01 across the 939 studies with "
+        "a nonzero annotation total (in the 572 such disease-vs-healthy oriented studies, the "
+        "cellulose annotation share is larger in the decreased signature in 288 of 475 scored "
+        "studies (60.6%; 97 tied), p = 4.1 \N{MULTIPLICATION SIGN} 10⁻⁶, and 3 log-ratios pass "
+        "BY q ≤ 0.05: FA/CEL, CEL/SPH and CEL/ARS)"
     )
 
 
 def test_oriented_cellulose_text_reads_both_populations() -> None:
     assert deck.oriented_cellulose_text({"table1": _signs(ALL_PASSING)}) == (
-        "cellulose catabolism goes from 43.0%↑ (57.0%↓, BH q = 0.0020) to 39.4%↑ (60.6%↓, "
-        "p = 4.1e-06, BH q = 0.0020), BH over the six Table 1 traits"
+        "the cellulose catabolism annotation share is larger in the decreased signature in "
+        "57.0% of scored studies (BH q = 0.0020) and in 60.6% of the oriented ones (p = "
+        "4.1e-06, BH q = 0.0020), BH over the six Table 1 traits"
     )
 
 
@@ -1170,8 +1232,12 @@ def test_direction_shift_slide_quotes_its_map_and_the_oriented_subset() -> None:
     assert title.startswith("6 of the 6 Table 1 traits shift in one direction")
     assert "532/915 scored studies (58.1%, BH q = 5.7e-06)" in takeaway
     assert "decreased signature in 441/774 (43.0%↑ / 57.0%↓" in takeaway
-    oriented = "592 disease-vs-healthy oriented studies, not drawn here, cellulose is 288/475"
-    assert f"{oriented} down (60.6%↓, p = 4.1e-06, BH q = 0.0020)." in takeaway
+    oriented = (
+        "572 disease-vs-healthy oriented studies with a nonzero annotation total, not drawn "
+        "here, the cellulose share is larger in the decreased signature in 288 of 475 scored "
+        "studies (60.6%; 97 tied)"
+    )
+    assert f"{oriented}, p = 4.1e-06, BH q = 0.0020." in takeaway
     assert "contrast-orientation-v4" in caveat
     assert "317" not in takeaway + caveat
 
@@ -1189,27 +1255,43 @@ def test_plate_seven_slide_reads_the_plate_counts() -> None:
         "three_arm_concordant": 17,
         "three_arm_strict_by": 8,
         "ora_inverted": 2,
+        "not_concordant": 0,
     }
     assert deck.three_arm_text({"plate_counts": counts}) == (
         "6 of the 6 original Table 1 traits (★) pass all 3 arms with concordant direction; "
         "screening all 317 traits finds 11 more 3-arm-concordant traits (17 in all at study BH "
-        "q ≤ 0.05; 8 at strict BY q ≤ 0.05) plus 2 paired-down / ORA-inverted traits."
+        "q ≤ 0.05; 8 at strict BY q ≤ 0.05), 2 traits whose paired and sign-test directions "
+        "agree while ORA points the other way."
+    )
+    counts["not_concordant"] = 1
+    assert deck.three_arm_text({"plate_counts": counts}).endswith(
+        "the other way and 1 trait whose arms disagree otherwise."
     )
     # Plates drawn before the counts were recorded say so rather than print a number
     assert deck.three_arm_text({"plate_counts": {}}).startswith("? of the 6 original")
 
 
 def test_plates_count_plate_seven_groups() -> None:
-    def trait(in_t1: bool, concordant: bool) -> dict[str, Any]:
-        return {"in_t1": in_t1, "all3_concordant": concordant, "a1_st_q": 0.01, "a3_bh_q": 0.01}
+    def trait(in_t1: bool, concordant: bool, group: str) -> dict[str, Any]:
+        return {
+            "in_t1": in_t1,
+            "all3_concordant": concordant,
+            "a1_st_q": 0.01,
+            "a3_bh_q": 0.01,
+            "group": group,
+        }
 
-    selected = [trait(True, True)] * 5 + [trait(True, False)] + [trait(False, True)] * 3
-    selected += [trait(False, False)] * 2
+    selected = [trait(True, True, "table1")] * 5 + [trait(True, False, "table1")]
+    selected += [trait(False, True, "concordant")] * 3
+    selected += [trait(False, False, "ora_inverted")] * 2
+    selected += [trait(False, False, "not_concordant")]
     assert plates.plate_seven_groups(selected) == {
         "table1_traits": 6,
         "table1_concordant": 5,
         "three_arm_additional": 3,
         "ora_inverted": 2,
+        "not_concordant": 1,
+        "forest_traits": 12,
     }
 
 
@@ -1220,7 +1302,7 @@ def test_plate_three_labels_follow_the_table() -> None:
     increased = list(itertools.combinations(plates.increased_side(every), 2))
     assert plates.oriented_cellulose_pairs_text(every, oriented, cellulose) == (
         "Oriented disease-vs-healthy filter: the same 3 of 5 Cellulose pairs pass BY; nearest "
-        "other CEL/COC BY q = 0.3"
+        "other CEL/COC BY q = 0.30"
     )
     assert plates.increased_pairs_text(every, oriented, increased) == (
         "all BY q ≥ 0.30 in both all & oriented"
@@ -1235,16 +1317,48 @@ def test_plate_three_labels_follow_the_table() -> None:
 # ----------------------------------------------------------------------- links (#614, #661)
 
 
-def test_moved_table1_maps_show_the_maps_main_draws() -> None:
+def test_only_the_direction_shift_map_moves_to_main() -> None:
+    """Its text is rebuilt from main's table; main draws the other maps without PR #173's
+    outlines and triangles, which their text describes (#614)."""
+    assert list(deck.MOVED_FIGURES) == ["methods/figures/table1_traits_direction_shift.png"]
     row = {"figure_file_path": "methods/figures/table1_traits_direction_shift.png"}
     deck.moved_figure(row)
     assert row["figure_file_path"] == "data/derived/table1_traits/table1_traits_direction_shift.png"
     assert row["evidence_path"].endswith("table1_traits_direction_shift.tsv")
-    oral = {"figure_file_path": "methods/figures/table1_traits_focus_oral.png"}
-    deck.moved_figure(oral)
-    assert oral["evidence_path"].endswith("table1_traits_condition_body_site_matrix.tsv")
     for linked in (row["code_path"], row["methods_path"]):
         assert (REPO / linked).exists(), linked
+
+
+def test_pr173_maps_are_shown_and_checked_at_its_head() -> None:
+    entry: dict[str, Any] = {
+        "figure_file_path": "methods/figures/table1_traits_focus_oral.png",
+        "code_path": "src/bsdbng/table1_trait_maps.py",
+        "methods_path": "methods/table1_trait_condition_body_site_maps.md",
+        "evidence_path": "methods/table1_trait_condition_body_site_maps.md",
+    }
+    deck.mark_unmerged(entry)
+    name, ref = deck.UNMERGED_TABLE1_MAPS
+    assert entry["link_ref"] == entry["code_ref"] == ref
+    links = deck.slide_links(entry, entry["figure_file_path"])
+    for key in ("figure_url", "methods_url", "evidence_url", "code_url"):
+        assert f"/blob/{ref}/" in links[key], key
+    row = {"commit": links["commit"], **entry}
+    assert deck.revision_stamp(row) == f"Not rerun on main · code in {name} at {ref[:12]}"
+    assert ref in deck.cited_refs()
+    assert deck.drawing_command(entry["code_path"], {}, entry["figure_file_path"]) == (
+        f"# not rerun on main: drawn by src/bsdbng/table1_trait_maps.py as {name} has it, at {ref}"
+    )
+    # Main's own map from the shim of the same name is rerun
+    main_map: dict[str, Any] = {
+        "figure_file_path": "data/derived/table1_traits/table1_traits_focus_oral.png",
+        "code_path": "src/bsdbng/table1_trait_maps.py",
+    }
+    deck.mark_unmerged(main_map)
+    assert "not_rerun" not in main_map
+    # The feces-vs-other slide shows PR #173's map too, and its record follows it
+    assert deck.RENAMED_FIGURES[
+        "data/derived/table1_traits/table1_traits_focus_feces_other.png"
+    ] == (deck.PR173_FECES_OTHER)
 
 
 def test_relinked_code_and_evidence_are_on_main() -> None:
@@ -1340,7 +1454,7 @@ def test_command_series_drop_what_no_longer_exists() -> None:
     ]
     assert deck.figure_commands(
         series, "scripts/create_taxa_guild_heatmap.py", recipes, by_code
-    ) == [*deck.UPSTREAM_COMMANDS, "just trait-profile-investigation", "just trait-heatmaps"]
+    ) == [*deck.UPSTREAM_COMMANDS, "just trait-heatmaps"]
     name, ref = deck.UNMERGED_ORA_FIGURES
     assert deck.figure_commands(
         series, "scripts/plot_enrichment_histograms.py", recipes, by_code
@@ -1455,3 +1569,150 @@ def test_appendix_skips_byte_identical_copies(tmp_path: Path) -> None:
         "a_heatmap.png",
         "c_heatmap.png",
     ]
+
+
+# ------------------------------------------------------------- review of #665 (#677-#686)
+
+
+def test_kept_commands_run_in_pipeline_order() -> None:
+    """trait-profile-investigation reads what trait-heatmaps writes (#681)."""
+    recipes = _recipes()
+    series = ["just trait-profile-investigation", "just analyze", "just trait-heatmaps"]
+    by_code = deck.recipes_by_code(recipes)
+    assert deck.figure_commands(series, "scripts/create_guild_maps.py", recipes, by_code)[
+        -4:-1
+    ] == [
+        "just trait-heatmaps",
+        "just trait-profile-investigation",
+        "just analyze",
+    ]
+    assert deck.step_order("just no-such-recipe") == len(deck.PIPELINE_STEPS)
+
+
+def test_plate_two_rows_keep_their_group_sign() -> None:
+    pooled = {
+        "a": {"study_mean_increased_minus_decreased": "0.2"},
+        "b": {"study_mean_increased_minus_decreased": "-0.1"},
+    }
+    plates.check_plate_two_directions([("a", "A", "Redox"), ("b", "B", "Plant glycan ↓")], pooled)
+    with pytest.raises(ValueError, match=r"other sign: \['b in Redox at -0.100'\]"):
+        plates.check_plate_two_directions([("b", "B", "Redox")], pooled)
+
+
+def test_pd_split_reads_the_switch_table() -> None:
+    """The typed 23 and 32 matched only 402ef5c (#680)."""
+
+    def genus(name: str, inc: str, dec: str) -> dict[str, str]:
+        return {
+            "taxon_name": name,
+            "top_increased_conditions": inc,
+            "top_decreased_conditions": dec,
+        }
+
+    pd = "Parkinson's disease ({} profiles, 15 studies); Obesity (3 profiles, 2 studies)"
+    rows = [
+        genus("Bifidobacterium", pd.format(26), "Eczema (8 profiles, 2 studies)"),
+        genus("Roseburia", "Glaucoma (5 profiles, 2 studies)", pd.format(33)),
+        genus("Lactobacillus", pd.format(16), ""),
+        genus("Blautia", "", "COVID-19 (9 profiles, 7 studies); " + pd.format(17)),
+        genus("Prevotella", pd.format(4), pd.format(2)),
+    ]
+    assert plates.pd_split(rows) == (
+        "Bifidobacterium (26↑) & Lactobacillus (16↑) vs Roseburia (33↓) & Blautia (17↓)"
+    )
+    assert plates.pd_split(rows[:1]) == "Bifidobacterium (26↑) vs none"
+
+
+def test_plate_three_pairs_follow_what_panel_b_draws() -> None:
+    """Cellulose on the increased side made ratio(CEL, CEL) raise KeyError (#686)."""
+    rows = _comparison(ALL_STUDIES, 959, ALL_PASSING, (441, 333)) + _comparison(
+        ORIENTED, 592, ALL_PASSING, (288, 187)
+    )
+    signs = populations(rows)
+    every, oriented = signs[ALL_STUDIES], signs[ORIENTED]
+    assert CELLULOSE_TRAIT in plates.increased_side(every)
+    others = [trait for trait in every.fractions if trait != CELLULOSE_TRAIT]
+    pairs = [(CELLULOSE_TRAIT, trait) for trait in others]
+    assert plates.oriented_cellulose_pairs_text(every, oriented, pairs).startswith(
+        "Oriented disease-vs-healthy filter: the same 3 of 5 Cellulose pairs pass BY"
+    )
+    assert plates.increased_pairs_text(every, oriented, []) == "no pairs"
+    coccus = ("facultatively_aerobic", "coccus_shaped")
+    one = populations(
+        _comparison(ALL_STUDIES, 959, ALL_PASSING | {coccus}, (333, 441))
+        + _comparison(ORIENTED, 592, ALL_PASSING, (187, 288))
+    )
+    assert plates.increased_pairs_text(one[ALL_STUDIES], one[ORIENTED], [coccus]) == (
+        "FA/COC passes BY in all or oriented"
+    )
+
+
+def test_deck_text_counts_one_trait_and_one_pair() -> None:
+    signs = _signs(ALL_PASSING)
+    every = signs[ALL_STUDIES]
+    fractions = dict(every.fractions)
+    for trait in list(fractions)[1:]:
+        fractions[trait] = replace(fractions[trait], q_value=0.2)
+    single = {**signs, ALL_STUDIES: replace(every, fractions=fractions)}
+    assert "1 of the 6 traits passes BH" in deck.cover_table1_text({"table1": single})
+    # Two traits on the increased side (FA, COC) leave one pair; none leaves no pair to test
+    for trait in list(fractions)[3:]:
+        fractions[trait] = replace(fractions[trait], studies_up=10, studies_down=90)
+    two = {**signs, ALL_STUDIES: replace(every, fractions=fractions)}
+    assert deck.increased_side_caveat({"table1": two}).startswith(
+        "The one pair of increased-side traits does not pass BY q ≤ 0.05"
+    )
+    for trait in list(fractions)[:3]:
+        fractions[trait] = replace(fractions[trait], studies_up=10, studies_down=90)
+    none = {**signs, ALL_STUDIES: replace(every, fractions=fractions)}
+    assert deck.increased_side_caveat({"table1": none}) == (
+        "0 Table 1 traits are on the increased side, so no pair among them is tested."
+    )
+
+
+def test_plates_refuse_mixed_contrast_classifiers(tmp_path: Path) -> None:
+    """The cellulose_decr notes and the Table 1 text must define disease vs healthy alike
+    (#679)."""
+    root = _root(tmp_path)
+    _same_classifier(root)
+    plates.check_classifiers(REPO, root)
+    (root / plates.CONTRAST_PROVENANCE).write_text(json.dumps({"classifier_version": "v0"}))
+    with pytest.raises(SystemExit, match="Table 1 tables v0"):
+        plates.check_classifiers(REPO, root)
+
+
+def test_appendix_refuses_a_figure_it_cannot_credit(tmp_path: Path) -> None:
+    """Any data/derived PNG used to be credited to PR #315's histogram script (#686)."""
+    histogram = tmp_path / "data/derived/trait_enrichment_x_histogram.png"
+    histogram.parent.mkdir(parents=True)
+    histogram.write_bytes(b"histogram")
+    (slide,) = deck.get_remaining_appendix_slides(set(), tmp_path, {})
+    assert slide["code_path"] == "scripts/plot_enrichment_histograms.py"
+    assert "September rerun by PR #315" in slide["takeaway"]
+    unknown = tmp_path / "data/derived/new_figure.png"
+    unknown.write_bytes(b"new")
+    with pytest.raises(ValueError, match=r"no generator is known for data/derived/new_figure\.png"):
+        deck.get_remaining_appendix_slides(set(), tmp_path, {})
+
+
+def test_the_svg_a_slide_shows_is_checked_like_its_png(tmp_path: Path) -> None:
+    """The deck certified the PNG but showed whatever SVG sat beside it (#684)."""
+    png = tmp_path / "trait-visualization" / "map.png"
+    png.parent.mkdir()
+    png.write_text("png")
+    svg = png.with_suffix(".svg")
+    svg.write_text("committed svg")
+    tree = {
+        "trait-visualization/map.png": deck.git_blob_id(png),
+        "trait-visualization/map.svg": deck.git_blob_id(svg),
+    }
+    trees = _trees(tmp_path, tree, deck.COMMIT)
+    entry = {"figure_file_path": "trait-visualization/map.png"}
+    assert deck.check_slides(tmp_path, [entry], trees, [])[0] == {}
+    svg.write_text("an older run's svg")
+    unverified, _ = deck.check_slides(tmp_path, [entry], trees, [])
+    assert unverified == {
+        "trait-visualization/map.png": [
+            ("trait-visualization/map.svg", f"differs from {deck.SHORT_COMMIT}")
+        ]
+    }

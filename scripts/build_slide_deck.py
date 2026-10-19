@@ -37,6 +37,15 @@ from typing import Any
 
 import yaml
 
+from mtp.quoted_results import (
+    CALIBRATION_CRITERIA,
+    GUILD_CORRELATION,
+    ORA_DEPLETION,
+    ORA_ENRICHMENT,
+    McNemar,
+    OraCalls,
+    screened_rejection_rate,
+)
 from mtp.table1_directions import (
     ALL_STUDIES,
     CELLULOSE,
@@ -74,6 +83,7 @@ COVER_CODE = "scripts/create_six_shared_trait_cytoscape_heatmaps.py"
 # keeps as refs/pull/<n>/head after the branch goes.
 UNMERGED_ORA_FIGURES = ("closed PR #315", "d500113ffb367d01de80a750d85c60ef38d30b54")
 UNMERGED_GRAM_SANKEY = ("open PR #148", "3778492a7e14e685a39c46f380bd9ab415120a1d")
+UNMERGED_TABLE1_MAPS = ("open PR #173", "bf235552cf58e0400fa24d6fc4836c44bc4a99f4")
 UNMERGED_CODE = {
     "scripts/create_trait_enrichment_heatmap.py": UNMERGED_ORA_FIGURES,
     "scripts/generate_cytoscape_diagram.py": UNMERGED_ORA_FIGURES,
@@ -112,19 +122,38 @@ ORAL_HEATMAP_EVIDENCE = (
     "trait-visualization/trait-profile-investigation/six-shared-traits/oral/"
     "oral_six_trait_cells.tsv"
 )
-# The September decks showed the Table 1 maps from methods/figures/, which only PR #173's
-# branch committed. `just table1-trait-maps` draws them on main, so the slides show those
-# and are rerun (#614).
+# The September decks showed the Table 1 maps that only PR #173's branch committed, in
+# methods/figures/. Their outlines and triangles mark the ORA support and the composition
+# screen, which the maps `just table1-trait-maps` draws on main do not, so those slides
+# show PR #173's maps and are not rerun. The direction-shift slide's text is rebuilt from
+# main's table, so it shows main's map (#614).
+# Code a September slide credited to a compatibility shim of the bsdbng package, replaced
+# by the script its recipe runs, as `just guild-maps` runs create_guild_maps.py (#681).
+SHIM_CODE = {"src/bsdbng/guild_maps.py": "scripts/create_guild_maps.py"}
 TABLE1_MAPS = "data/derived/table1_traits/"
 MOVED_FIGURES = {
-    f"methods/figures/table1_traits_{name}.png": f"{TABLE1_MAPS}table1_traits_{name}.png"
+    "methods/figures/table1_traits_direction_shift.png": (
+        f"{TABLE1_MAPS}table1_traits_direction_shift.png"
+    )
+}
+PR173_FECES_OTHER = "methods/figures/table1_traits_focus_feces_other.png"
+# Main keeps src/bsdbng/table1_trait_maps.py only as a shim to its own maps, so PR #173's
+# committed figures, not that path, mark the slides its code drew.
+PR173_MAPS = frozenset(
+    f"methods/figures/table1_traits_{name}.png"
     for name in (
         "condition_body_site_heatmap",
-        "direction_shift",
         "focus_cervical",
         "focus_feces",
+        "focus_feces_other",
         "focus_oral",
     )
+)
+# Figure records whose figure the deck now shows from another path: the records keep
+# the results that cite them (#614).
+RENAMED_FIGURES = {
+    **MOVED_FIGURES,
+    f"{TABLE1_MAPS}table1_traits_focus_feces_other.png": PR173_FECES_OTHER,
 }
 
 
@@ -211,7 +240,7 @@ def cited_refs() -> list[str]:
     the commit that drew the cellulose_decr figures, the one that drew the plates, and the
     pull requests whose unmerged code drew the slides that are not rerun (#614)."""
     refs = [COMMIT]
-    unmerged = [ref for _, ref in UNMERGED_CODE.values()]
+    unmerged = [ref for _, ref in (*UNMERGED_CODE.values(), UNMERGED_TABLE1_MAPS)]
     for ref in (cellulose_revision(REPO_ROOT), plate_revision(REPO_ROOT), *unmerged):
         if ref and ref not in refs:
             refs.append(ref)
@@ -397,8 +426,23 @@ def load_rerun_metrics(repo: Path) -> dict:
     metrics["table1_shift"] = {
         r["trait"]: r for r in read_tsv(repo / TABLE1_MAPS / "table1_traits_direction_shift.tsv")
     }
+    # 10. Arm 2's tests and calls, the oxygen-guild McNemar test and the screen's
+    # post-selection rejection rate, quoted by the cover and Methods Plate II's slide (#579)
+    metrics["ora_enrichment"] = ora_calls(repo / ORA_ENRICHMENT)
+    metrics["ora_depletion"] = ora_calls(repo / ORA_DEPLETION)
+    metrics["mcnemar"] = McNemar.from_rows(read_tsv(repo / GUILD_CORRELATION))
+    metrics["screening_bias"] = screened_rejection_rate(read_tsv(repo / CALIBRATION_CRITERIA))
 
     return metrics
+
+
+def ora_calls(path: Path) -> OraCalls:
+    """An ORA table's tests and calls, from the lines heading it (#579)."""
+    if not path.exists():
+        raise FileNotFoundError(f"missing {path}")
+    TABLES_READ.add(path)
+    with path.open(encoding="utf-8") as f:
+        return OraCalls.from_header(f)
 
 
 def p_text(value: float) -> str:
@@ -433,8 +477,12 @@ def sci(value: float) -> str:
 
 
 def down_text(test: SignTest) -> str:
-    """'288/475 down (60.6%↓)'."""
-    return f"{test.studies_down}/{test.studies_scored} down ({test.share_down:.1%}↓)"
+    """'larger in the decreased signature in 288 of 475 scored studies (60.6%; 101 tied)',
+    as the interpretation guide words a sign test (#685)."""
+    return (
+        f"larger in the decreased signature in {test.studies_down} of {test.studies_scored} "
+        f"scored studies ({test.share_down:.1%}; {test.studies_tied} tied)"
+    )
 
 
 def ratio_survivors_text(metrics: dict) -> str:
@@ -483,10 +531,20 @@ def increased_side_caveat(metrics: dict) -> str:
             if population.ratio(a, b).passes()
         }
     )
-    if not passing:
+    if not pairs:
         return (
-            f"None of the {len(pairs)} pairs among the {len(increased)} increased-side traits "
-            "passes BY q ≤ 0.05 in either cohort. That is a failure to detect a difference "
+            f"{plural(len(increased), 'Table 1 trait')} {'is' if len(increased) == 1 else 'are'} "
+            "on the increased side, so no pair among them is tested."
+        )
+    if not passing:
+        among = (
+            "The one pair of increased-side traits does not pass"
+            if len(pairs) == 1
+            else f"None of the {len(pairs)} pairs among the {len(increased)} increased-side "
+            "traits passes"
+        )
+        return (
+            f"{among} BY q ≤ 0.05 in either cohort. That is a failure to detect a difference "
             "among them, not evidence that they co-move."
         )
     return (
@@ -498,14 +556,34 @@ def increased_side_caveat(metrics: dict) -> str:
 
 
 def oriented_cellulose_text(metrics: dict) -> str:
-    """Cellulose in all studies and in the oriented subset (#579, #606)."""
+    """Cellulose in all studies and in the oriented subset (#579, #606), as the share of
+    scored studies whose decreased signature has the larger annotation share (#685)."""
     every = metrics["table1"][ALL_STUDIES].fractions[CELLULOSE]
     oriented = metrics["table1"][ORIENTED].fractions[CELLULOSE]
     return (
-        f"cellulose catabolism goes from {every.share_up:.1%}↑ ({every.share_down:.1%}↓, BH q = "
-        f"{p_text(every.q_value)}) to {oriented.share_up:.1%}↑ ({oriented.share_down:.1%}↓, "
-        f"p = {p_text(oriented.p_value)}, BH q = {p_text(oriented.q_value)}), BH over the six "
-        "Table 1 traits"
+        "the cellulose catabolism annotation share is larger in the decreased signature in "
+        f"{every.share_down:.1%} of scored studies (BH q = {p_text(every.q_value)}) and in "
+        f"{oriented.share_down:.1%} of the oriented ones (p = {p_text(oriented.p_value)}, BH q = "
+        f"{p_text(oriented.q_value)}), BH over the six Table 1 traits"
+    )
+
+
+def arm_two_text(metrics: dict) -> str:
+    """The cover's Arm 2 sentence, from the ORA tables' headers (#579)."""
+    enriched, depleted = metrics["ora_enrichment"], metrics["ora_depletion"]
+    return (
+        f"Arm 2 taxon-level ORA: {enriched.calls:,} enrichments (fold ≥ {enriched.fold}, BH q ≤ "
+        f"{enriched.p_threshold}) and {depleted.calls:,} depletions (fold ≤ {depleted.fold}, "
+        f"BH q ≤ {depleted.p_threshold}) across {enriched.tests:,} tests."
+    )
+
+
+def mcnemar_text(metrics: dict) -> str:
+    """The oxygen-guild McNemar test, from the guild table (#579)."""
+    test = metrics["mcnemar"]
+    return (
+        f"oxygen-guild McNemar OR = {test.odds_ratio:.3f} ({test.aerobe_up_anaerobe_down} vs "
+        f"{test.anaerobe_up_aerobe_down} discordant studies, p = {sci(test.p_value)})"
     )
 
 
@@ -513,13 +591,18 @@ def cover_table1_text(metrics: dict) -> str:
     """The cover's Arm 3 sentence, from disease_control_comparison.tsv (#579)."""
     every, oriented = metrics["table1"][ALL_STUDIES], metrics["table1"][ORIENTED]
     passing = sum(test.q_value < 0.01 for test in every.fractions.values())
-    traits = "all 6 traits pass" if passing == 6 else f"{passing} of the 6 traits pass"
+    traits = (
+        "all 6 traits pass"
+        if passing == 6
+        else f"{passing} of the 6 traits {'passes' if passing == 1 else 'pass'}"
+    )
     cellulose = oriented.fractions[CELLULOSE]
     survivors = oriented.ratio_survivors()
     named = f": {listing([test.label for test in survivors])}" if survivors else ""
     return (
-        f"Arm 3 study-level Table 1: {traits} BH q &lt; 0.01 across {every.studies:,} studies (in "
-        f"{oriented.studies:,} disease-vs-healthy oriented studies, cellulose is "
+        f"Arm 3 study-level Table 1: {traits} BH q &lt; 0.01 across the {every.tested_studies:,} "
+        f"studies with a nonzero annotation total (in the {oriented.tested_studies:,} such "
+        "disease-vs-healthy oriented studies, the cellulose annotation share is "
         f"{down_text(cellulose)}, p = {sci(cellulose.p_value)}, and "
         f"{plural(len(survivors), 'log-ratio')} {'passes' if len(survivors) == 1 else 'pass'} BY "
         f"q ≤ 0.05{named})"
@@ -578,10 +661,10 @@ def direction_shift_text(metrics: dict) -> tuple[str, str, str]:
         f"({float(aerobic['share_up']):.1%}, BH q = {p_text(float(aerobic['bh_q']))}) and the "
         f"cellulose catabolic process share in the decreased signature in {down}/{scored} "
         f"({up / scored:.1%}↑ / {down / scored:.1%}↓, BH q = {p_text(float(cellulose['bh_q']))}). "
-        f"In the {oriented_population.studies:,} disease-vs-healthy oriented studies, not drawn "
-        f"here, cellulose is {oriented.studies_down}/{oriented.studies_scored} down "
-        f"({oriented.share_down:.1%}↓, p = {p_text(oriented.p_value)}, BH q = "
-        f"{p_text(oriented.q_value)})."
+        f"In the {oriented_population.tested_studies:,} disease-vs-healthy oriented studies with "
+        "a nonzero annotation total, not drawn here, the cellulose share is "
+        f"{down_text(oriented)}, p = {p_text(oriented.p_value)}, BH q = "
+        f"{p_text(oriented.q_value)}."
     )
     caveat = (
         "Study-level binomial sign tests, BH over the 6 Table 1 traits; experiments with a zero "
@@ -592,23 +675,48 @@ def direction_shift_text(metrics: dict) -> tuple[str, str, str]:
     return title, takeaway, caveat
 
 
+# The counts the plates record for the slides that quote them (#579, #640). A record from
+# older plates lacks some, so the build is a review build that prints "?" (#682).
+PLATE_COUNT_KEYS = (
+    "table1_concordant",
+    "screened_traits",
+    "three_arm_additional",
+    "three_arm_concordant",
+    "three_arm_strict_by",
+    "ora_inverted",
+    "not_concordant",
+    "forest_traits",
+)
+
+
+def plate_count(metrics: dict, key: str) -> str:
+    return str(metrics["plate_counts"].get(key, "?"))
+
+
 def three_arm_text(metrics: dict) -> str:
-    """Tufte Plate VII's takeaway, from the counts the plates record (#579, #640). A record
-    from older plates lacks them, which a review build shows as "?"."""
+    """Tufte Plate VII's takeaway, from the counts the plates record (#579, #640, #685)."""
     counts = metrics["plate_counts"]
 
     def count(key: str) -> str:
-        return str(counts.get(key, "?"))
+        return plate_count(metrics, key)
 
-    inverted = counts.get("ora_inverted")
-    noun = "paired-down / ORA-inverted trait"
+    def traits(key: str, what: str) -> str:
+        n = counts.get(key)
+        return f"{'?' if n is None else n} trait{'' if n == 1 else 's'} {what}"
+
+    other = counts.get("not_concordant")
     return (
         f"{count('table1_concordant')} of the 6 original Table 1 traits (★) pass all 3 arms "
         f"with concordant direction; screening all {count('screened_traits')} traits finds "
         f"{count('three_arm_additional')} more 3-arm-concordant traits "
         f"({count('three_arm_concordant')} in all at study BH q ≤ 0.05; "
-        f"{count('three_arm_strict_by')} at strict BY q ≤ 0.05) plus "
-        f"{plural(inverted, noun) if isinstance(inverted, int) else f'? {noun}s'}."
+        f"{count('three_arm_strict_by')} at strict BY q ≤ 0.05), "
+        + traits(
+            "ora_inverted",
+            "whose paired and sign-test directions agree while ORA points the other way",
+        )
+        + (f" and {traits('not_concordant', 'whose arms disagree otherwise')}" if other else "")
+        + "."
     )
 
 
@@ -845,18 +953,12 @@ def prior_label(url: str, studies: Mapping[str, dict[str, str]]) -> str:
 
 
 def moved_figure(row: dict[str, str]) -> None:
-    """Point a September Table 1 map slide at the figure `just table1-trait-maps` draws on
-    main, with that recipe's script and the table behind the figure (#614)."""
-    figure = MOVED_FIGURES[row["figure_file_path"]]
-    shift = figure.endswith("_direction_shift.png")
-    row["figure_file_path"] = figure
+    """Point the September direction-shift slide at the map `just table1-trait-maps` draws
+    on main, with that recipe's script and the table its text is rebuilt from (#614)."""
+    row["figure_file_path"] = MOVED_FIGURES[row["figure_file_path"]]
     row["code_path"] = "scripts/create_table1_trait_maps.py"
     row["methods_path"] = "methods/table1_trait_condition_body_site_maps.md"
-    row["evidence_path"] = TABLE1_MAPS + (
-        "table1_traits_direction_shift.tsv"
-        if shift
-        else "table1_traits_condition_body_site_matrix.tsv"
-    )
+    row["evidence_path"] = f"{TABLE1_MAPS}table1_traits_direction_shift.tsv"
     row["source_note"] = (
         "The September decks showed PR #173's copy of this map from methods/figures/; this "
         "slide shows the one `just table1-trait-maps` draws on main (#614)."
@@ -1149,7 +1251,8 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
             "35,977 inc vs 30,263 dec)."
         )
         caveat = (
-            "Regenerated on current taxon-level hypergeometric ORA model (mean 9.63 hits/profile; "
+            "Drawn in the September rerun by PR #315's code, with its taxon-level "
+            "hypergeometric ORA model (mean 9.63 hits/profile; "
             "top density: Dental plaque at 224.06 calls/100 samples). Profile ORA is not a paired "
             "condition test."
         )
@@ -1185,7 +1288,8 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
         takeaway = (
             "Flows trace condition → body site → facultatively aerobic ORA enrichment (BH q ≤ "
             "0.001, "
-            "fold ≥ 1.5) among increased taxon signatures on the rerun corpus."
+            "fold ≥ 1.5) among increased taxon signatures, drawn in the September rerun by "
+            "PR #315's code."
         )
         caveat = (
             "Width summarizes enriched profile counts and color summarizes mean -log10(q); "
@@ -1324,16 +1428,21 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": "Compares the statistical unit, test formulation, and multiplicity control "
             "across Arm 1 (continuous Δz paired contrasts & positive-z Fisher screen), "
-            "Arm 2 (taxon-calibrated hypergeometric ORA: 66,240 enrichments vs 23 "
-            "depletions), and Arm 3 (study binomial sign tests, McNemar O₂-guild test, "
+            "Arm 2 (taxon-calibrated hypergeometric ORA: "
+            f"{metrics['ora_enrichment'].calls:,} enrichments vs "
+            f"{metrics['ora_depletion'].calls:,} depletions), and Arm 3 (study binomial sign "
+            "tests, McNemar O₂-guild test, "
             "and 15-pair compositional log-ratios across all "
             f"{metrics['table1'][ALL_STUDIES].studies:,} studies and "
-            f"{metrics['table1'][ORIENTED].studies:,} disease-vs-healthy oriented studies).",
+            f"{metrics['table1'][ORIENTED].studies:,} disease-vs-healthy oriented studies; the "
+            f"sign tests keep {metrics['table1'][ALL_STUDIES].tested_studies:,} and "
+            f"{metrics['table1'][ORIENTED].tested_studies:,} after the zero-total exclusion).",
             "caveat": "Bottom convergence bar shows how 317 KG-Microbe traits narrow to "
-            f"{metrics['plate_counts'].get('three_arm_concordant', '?')} three-arm concordant "
-            f"study-BH traits ({metrics['plate_counts'].get('three_arm_strict_by', '?')} at "
+            f"{plate_count(metrics, 'three_arm_concordant')} three-arm concordant "
+            f"study-BH traits ({plate_count(metrics, 'three_arm_strict_by')} at "
             "strict BY q ≤ 0.05), explains "
-            "why screened_fraction_sign_test = 0.091 is a post-selection artifact, and "
+            f"why screened_fraction_sign_test = {metrics['screening_bias']:.3f} is a "
+            "post-selection artifact, and "
             f"highlights {oriented_ratio_count(metrics)} "
             f"in the {metrics['table1'][ORIENTED].studies:,} oriented disease-vs-healthy "
             "studies.",
@@ -1473,16 +1582,17 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
         },
         {
             "owner": "Marcin / Noel / Ilyas",
-            "title": "Tufte Plate VII: Three-arm concordance scatter & 19-trait study-FDR forest "
-            "plot",
+            "title": "Tufte Plate VII: Three-arm concordance scatter & "
+            f"{plate_count(metrics, 'forest_traits')}-trait study-FDR forest plot",
             "tag": "Tufte synthesis · Plate VII",
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate7_three_arm_317_trait_concordance.png",
             "code_path": "scripts/generate_tufte_plates.py",
             "takeaway": three_arm_text(metrics),
             "caveat": "Panel B overlays the "
-            f"{metrics['table1'][ORIENTED].studies:,} disease-vs-healthy oriented studies (○) "
-            f"on the {metrics['table1'][ALL_STUDIES].studies:,}-study sign test (●): "
+            f"{metrics['table1'][ORIENTED].tested_studies:,} disease-vs-healthy oriented studies "
+            f"(○) on the {metrics['table1'][ALL_STUDIES].tested_studies:,}-study sign test (●) of "
+            "the studies with a nonzero annotation total: "
             f"{oriented_cellulose_text(metrics)}.",
             "methods_path": "methods/three_arm_statistics.md",
             "evidence_path": "data/derived/trait_screen/trait_direction_screen.tsv",
@@ -1516,16 +1626,16 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "owner": "Noel",
             "title": "Feces vs pooled Other body-site focus for the six Table 1 traits",
             "tag": "Noel · Table 1 anatomical focus",
-            "figure_file_path": "data/derived/table1_traits/table1_traits_focus_feces_other.png",
+            "figure_file_path": PR173_FECES_OTHER,
             "code_path": "src/bsdbng/table1_trait_maps.py",
             "takeaway": "Side-by-side comparison of Feces and pooled Other body sites across the "
             "51-condition Table 1 atlas.",
             "caveat": "Solid cell outlines indicate profile-level ORA support; no individual "
             "condition \N{MULTIPLICATION SIGN} site cell passes the 18,152-test sign "
             "screen.",
-            "methods_path": "methods/README.md",
-            "evidence_path": "data/derived/table1_traits/"
-            "table1_traits_condition_body_site_matrix.tsv",
+            # PR #173's methods, at its head, give the outline rule and the screen
+            "methods_path": "methods/table1_trait_condition_body_site_maps.md",
+            "evidence_path": "methods/table1_trait_condition_body_site_maps.md",
             "deck_section": "Main",
             "analysis": "table1_traits_focus_feces_other",
             "selection_reason": "Retained concise Feces-vs-Other comparison alongside the full "
@@ -1539,15 +1649,15 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "gram_positive_inc_sankey.png",
             "code_path": "src/bsdbng/gram_sankey.py",
             "takeaway": "Traces condition → body site → Gram-positive trait support in increased "
-            "signatures on the current wide trait matrix.",
+            "signatures, drawn in the September rerun by PR #148's code.",
             "caveat": "Descriptive flow summary of positive trait shares; does not test paired "
             "within-study sign consistency.",
             "methods_path": "",
             "evidence_path": "data/derived/study_trait_profiles_wide.tsv",
             "deck_section": "Main",
             "analysis": "gram_positive_inc_sankey",
-            "selection_reason": "PR #148 Gram-stain Sankey suite regenerated on current wide "
-            "matrix.",
+            "selection_reason": "PR #148 Gram-stain Sankey suite from its September rerun; not "
+            "rerun on main.",
         },
         {
             "owner": "Noel",
@@ -1557,15 +1667,15 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "gram_positive_dec_sankey.png",
             "code_path": "src/bsdbng/gram_sankey.py",
             "takeaway": "Traces condition → body site → Gram-positive trait support in decreased "
-            "signatures on the current wide trait matrix.",
+            "signatures, drawn in the September rerun by PR #148's code.",
             "caveat": "Descriptive flow summary of positive trait shares; compare alongside "
             "Gram-positive increased flows.",
             "methods_path": "",
             "evidence_path": "data/derived/study_trait_profiles_wide.tsv",
             "deck_section": "Main",
             "analysis": "gram_positive_dec_sankey",
-            "selection_reason": "PR #148 Gram-stain Sankey suite regenerated on current wide "
-            "matrix.",
+            "selection_reason": "PR #148 Gram-stain Sankey suite from its September rerun; not "
+            "rerun on main.",
         },
         {
             "owner": "Noel",
@@ -1575,15 +1685,15 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "gram_negative_inc_sankey.png",
             "code_path": "src/bsdbng/gram_sankey.py",
             "takeaway": "Traces condition → body site → Gram-negative trait support in increased "
-            "signatures on the current wide trait matrix.",
+            "signatures, drawn in the September rerun by PR #148's code.",
             "caveat": "Descriptive flow summary of positive trait shares; does not isolate "
             "condition-specific FDR effects.",
             "methods_path": "",
             "evidence_path": "data/derived/study_trait_profiles_wide.tsv",
             "deck_section": "Main",
             "analysis": "gram_negative_inc_sankey",
-            "selection_reason": "PR #148 Gram-stain Sankey suite regenerated on current wide "
-            "matrix.",
+            "selection_reason": "PR #148 Gram-stain Sankey suite from its September rerun; not "
+            "rerun on main.",
         },
         {
             "owner": "Noel",
@@ -1593,15 +1703,15 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "gram_negative_dec_sankey.png",
             "code_path": "src/bsdbng/gram_sankey.py",
             "takeaway": "Traces condition → body site → Gram-negative trait support in decreased "
-            "signatures on the current wide trait matrix.",
+            "signatures, drawn in the September rerun by PR #148's code.",
             "caveat": "Descriptive flow summary of positive trait shares; compare alongside "
             "Gram-negative increased flows.",
             "methods_path": "",
             "evidence_path": "data/derived/study_trait_profiles_wide.tsv",
             "deck_section": "Main",
             "analysis": "gram_negative_dec_sankey",
-            "selection_reason": "PR #148 Gram-stain Sankey suite regenerated on current wide "
-            "matrix.",
+            "selection_reason": "PR #148 Gram-stain Sankey suite from its September rerun; not "
+            "rerun on main.",
         },
         # --- Section C: Distinct Ilyas Figures (Combined Guild Sankey, Six-Trait ORA Sankeys,
         # Cytoscape Networks & Category Distance) ---
@@ -1629,7 +1739,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "figure_file_path": "data/derived/Sankey_Diagrams/six_trait_sankey_increased.png",
             "code_path": "scripts/generate_six_trait_sankey.py",
             "takeaway": "Maps condition → body site → six-shared-trait ORA enrichments within "
-            "increased signatures on the rerun corpus.",
+            "increased signatures, drawn in the September rerun by PR #315's code.",
             "caveat": "Uses Arm 2 profile ORA calls (BH q ≤ 0.001, fold ≥ 1.5) rather than Arm 1 "
             "positive-z profile shares.",
             "methods_path": "",
@@ -1645,7 +1755,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "figure_file_path": "data/derived/Sankey_Diagrams/six_trait_sankey_decreased.png",
             "code_path": "scripts/generate_six_trait_sankey.py",
             "takeaway": "Maps condition → body site → six-shared-trait ORA enrichments within "
-            "decreased signatures on the rerun corpus.",
+            "decreased signatures, drawn in the September rerun by PR #315's code.",
             "caveat": "Uses Arm 2 profile ORA calls (BH q ≤ 0.001, fold ≥ 1.5) rather than Arm 1 "
             "positive-z profile shares.",
             "methods_path": "",
@@ -1867,6 +1977,20 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
     return new_slides
 
 
+# The appendix histograms PR #315's scripts/plot_enrichment_histograms.py drew (checked at
+# d500113); not rerun on main (#614)
+PR315_HISTOGRAMS = frozenset(
+    f"data/derived/{name}.png"
+    for name in (
+        "profile_enrichment_y_histogram",
+        "trait_enrichment_x_condition_all_counts",
+        "trait_enrichment_x_condition_dec_counts",
+        "trait_enrichment_x_condition_inc_counts",
+        "trait_enrichment_x_histogram",
+    )
+)
+
+
 def get_remaining_appendix_slides(
     already_included: set[str], repo: Path, metrics: dict
 ) -> list[dict[str, str]]:
@@ -2000,21 +2124,21 @@ def get_remaining_appendix_slides(
             title = f"Guild ORA Sankey ({stem})"
             takeaway = (
                 "Includes unenriched profile flows alongside ORA-enriched flows "
-                f"({png_path.name}) on the rerun corpus."
+                f"({png_path.name}), drawn in the September rerun by PR #315's code."
             )
             caveat = (
                 "Descriptive ORA flow summary (BH q ≤ 0.001, fold ≥ 1.5); unenriched bands "
                 "show total signature volume."
             )
             evidence_path = "data/derived/trait_enrichment_results.tsv"
-        elif rel.startswith("data/derived/"):
+        elif rel in PR315_HISTOGRAMS:
             owner = "Ilyas"
             code_path = "scripts/plot_enrichment_histograms.py"
             tag = "Ilyas · Appendix · ORA distribution"
             title = f"ORA enrichment distribution: {stem}"
             takeaway = (
-                f"Distribution of taxon-calibrated ORA calls ({png_path.name}) across the "
-                "4,670-profile human rerun."
+                f"Distribution of taxon-calibrated ORA calls ({png_path.name}), drawn in the "
+                "September rerun by PR #315's code."
             )
             caveat = (
                 "Summarizes marginal ORA hit counts across traits, profiles, or conditions; "
@@ -2183,6 +2307,10 @@ def get_remaining_appendix_slides(
         elif "/bsdb-taxa-only/" in rel:
             owner = "Jed"
             # `just trait-heatmaps` draws each with its own script and writes its matrix (#614)
+            if rel not in TRAIT_HEATMAP_CODE:
+                raise ValueError(
+                    f"no generator is recorded for {rel}: add it to TRAIT_HEATMAP_CODE (#686)"
+                )
             code_path = TRAIT_HEATMAP_CODE[rel]
             tag = "Jed · Appendix · Taxa-only clustering"
             title = f"BugSigDB taxa-only clustered heatmap: {stem}"
@@ -2192,6 +2320,11 @@ def get_remaining_appendix_slides(
             )
             caveat = "Taxon-occurrence clustering without KG-Microbe trait weighting."
             evidence_path = rel.removesuffix(".png") + "_matrix.tsv"
+        elif rel.startswith("data/derived/"):
+            raise ValueError(
+                f"no generator is known for {rel}: name its code in "
+                "get_remaining_appendix_slides or exclude it (#686)"
+            )
         else:
             owner = "Jed"
             code_path = "scripts/regenerate_trait_profile_investigation.py"
@@ -2305,10 +2438,11 @@ PIPELINE_STEPS: tuple[dict[str, Any], ...] = (
         "recipes": ("study-trait-profiles",),
         "script_or_module": "scripts/create_study_trait_profiles.py",
         "prerequisite_step_ids": ["step_04_taxa_trait_matrix"],
-        "input_files": ["data/derived/taxa_trait_matrix.tsv", "data/derived/bugsigdb_taxa.tsv"],
+        "input_files": ["data/studies/", "data/derived/taxa_trait_matrix.tsv"],
         "output_files": ["data/derived/study_trait_profiles_wide.tsv"],
         "description": "Sum the trait annotations of each signature's taxa into one profile per "
-        "study, experiment and direction.",
+        "study, experiment and direction, for human hosts, dropping traits that are empty in "
+        "every profile (#656).",
     },
     {
         "step_id": "step_06_study_trait_profiles_ora",
@@ -2316,10 +2450,10 @@ PIPELINE_STEPS: tuple[dict[str, Any], ...] = (
         "recipes": ("study-trait-profiles-ora",),
         "script_or_module": "scripts/create_study_trait_profiles.py",
         "prerequisite_step_ids": ["step_04_taxa_trait_matrix"],
-        "input_files": ["data/derived/taxa_trait_matrix.tsv", "data/derived/bugsigdb_taxa.tsv"],
+        "input_files": ["data/studies/", "data/derived/taxa_trait_matrix.tsv"],
         "output_files": ["data/derived/study_trait_profiles_ora_wide.tsv"],
-        "description": "Binary trait counts with taxon totals, for the over-representation "
-        "analysis.",
+        "description": "Binary trait counts with taxon totals, for human hosts, for the "
+        "over-representation analysis.",
     },
     {
         "step_id": "step_07_trait_heatmaps",
@@ -2420,6 +2554,7 @@ PIPELINE_STEPS: tuple[dict[str, Any], ...] = (
             "data/derived/trait_enrichment_results.tsv",
             "data/derived/trait_enrichment_traits_overall_ranked.tsv",
             "data/derived/trait_depletion_results.tsv",
+            "data/derived/trait_depletion_traits_overall_ranked.tsv",
         ],
         "description": "Taxon-level hypergeometric enrichment and depletion of every profile.",
     },
@@ -2436,9 +2571,14 @@ PIPELINE_STEPS: tuple[dict[str, Any], ...] = (
         ),
         "script_or_module": "scripts/create_table1_trait_maps.py",
         "prerequisite_step_ids": ["step_05_study_trait_profiles", "step_11_arm2_ora_analysis"],
-        "input_files": ["data/derived/study_trait_profiles_wide.tsv"],
+        "input_files": [
+            "data/derived/study_trait_profiles_wide.tsv",
+            "data/derived/experiments.tsv",
+            "data/raw/full_dump.csv",
+        ],
         "output_files": [
             f"{TABLE1_MAPS}table1_traits_direction_shift.tsv",
+            f"{TABLE1_MAPS}table1_traits_condition_body_site_matrix.tsv",
             "data/derived/table1_composition/trait_log_ratio_stats.tsv",
             "data/derived/trait_screen/trait_direction_screen.tsv",
             COMPARISON.as_posix(),
@@ -2464,7 +2604,7 @@ PIPELINE_STEPS: tuple[dict[str, Any], ...] = (
             "step_11_arm2_ora_analysis",
             "step_12_arm3_sign_and_logratios",
         ],
-        "input_files": [COMPARISON.as_posix(), f"{CELLULOSE_DIR}/cellulose_decr_summary.json"],
+        "input_files": [COMPARISON.as_posix()],
         "output_files": [
             f"{PLATES_DIR}plates_provenance.json",
             f"{DECK_DIR}/slides/slide_manifest_v6.tsv",
@@ -2548,11 +2688,21 @@ def recipes_by_code(recipes: Mapping[str, str]) -> dict[str, list[str]]:
     return found
 
 
-def drawing_command(code: str, by_code: Mapping[str, Sequence[str]]) -> str:
+def unmerged_source(code: str, figure: str) -> tuple[str, str] | None:
+    """The pull request whose unmerged code drew a figure, or None when main draws it
+    (#614)."""
+    if figure in PR173_MAPS:
+        return UNMERGED_TABLE1_MAPS
+    return UNMERGED_CODE.get(code)
+
+
+def drawing_command(code: str, by_code: Mapping[str, Sequence[str]], figure: str = "") -> str:
     """What draws a figure: the recipes that run its code, or why nothing here does (#622)."""
-    unmerged = UNMERGED_CODE.get(code)
+    unmerged = unmerged_source(code, figure)
     if unmerged:
         name, ref = unmerged
+        if (REPO_ROOT / code).exists():
+            return f"# not rerun on main: drawn by {code} as {name} has it, at {ref}"
         return f"# not rerun on main: {code} is only in {name}, at {ref}"
     if code in by_code:
         return " && ".join(f"just {recipe}" for recipe in by_code[code])
@@ -2563,8 +2713,14 @@ def drawing_command(code: str, by_code: Mapping[str, Sequence[str]]) -> str:
 
 def valid_command(command: str, recipes: Mapping[str, str]) -> str | None:
     """A carried-over command without its note, or None when it runs a recipe, script or
-    module that does not exist (#622)."""
-    parts = [part.strip() for part in command.split("  #")[0].split("&&")]
+    module that does not exist (#622). A note naming a script that does not exist marks a
+    command that stood in for that script, as `just trait-profile-investigation  # uv run
+    python scripts/create_trait_Heatmaps.py` did, so it goes too (#681)."""
+    run, _, note = command.partition("  #")
+    for script, module in RUNS.findall(note):
+        if not (REPO_ROOT / (script or f"src/{module.replace('.', '/')}.py")).exists():
+            return None
+    parts = [part.strip() for part in run.split("&&")]
     for part in parts:
         words = part.split()
         if words[:1] == ["just"] and len(words) > 1 and words[1] in recipes:
@@ -2583,11 +2739,12 @@ def figure_commands(
     code: str,
     recipes: Mapping[str, str],
     by_code: Mapping[str, Sequence[str]],
+    figure: str = "",
 ) -> list[str]:
     """A figure's command series: the upstream recipes, the carried-over steps that still
     exist, and what draws the figure (#615, #622). A figure that nothing here draws gets
     only the reason."""
-    drawn = drawing_command(code, by_code)
+    drawn = drawing_command(code, by_code, figure)
     if drawn.startswith("#"):
         return [drawn]
     upstream = [command.split("  #")[0] for command in UPSTREAM_COMMANDS]
@@ -2598,10 +2755,27 @@ def figure_commands(
         # A step the drawing command runs anyway is not repeated before it
         if valid and valid not in (*upstream, *kept) and not set(valid.split(" && ")) <= drawing:
             kept.append(valid)
-    return [*UPSTREAM_COMMANDS, *kept, drawn]
+    return [*UPSTREAM_COMMANDS, *sorted(kept, key=step_order), drawn]
 
 
-PLATE_COMMANDS = ("just cellulose-decr-figures", "just figure-review-plates")
+def step_order(command: str) -> int:
+    """Where a command's first recipe runs in PIPELINE_STEPS, or after them all (#681)."""
+    words = command.split()
+    recipe = words[1] if words[:1] == ["just"] and len(words) > 1 else ""
+    return next(
+        (order for order, step in enumerate(PIPELINE_STEPS) if recipe in step["recipes"]),
+        len(PIPELINE_STEPS),
+    )
+
+
+# The plates read disease_control_comparison.tsv and the cellulose_decr tables and captions,
+# so the recipes that write those run first (#681).
+PLATE_COMMANDS = (
+    "just contrast-orientation",
+    "just cellulose-decr",
+    "just cellulose-decr-figures",
+    "just figure-review-plates",
+)
 
 
 def plate_provenance(rec: dict[str, Any], methods_path: str, inputs: Mapping[str, str]) -> None:
@@ -2622,6 +2796,9 @@ def plate_provenance(rec: dict[str, Any], methods_path: str, inputs: Mapping[str
         for c in rec.get("command_series", [])
         if "generate_tufte_plates.py" not in c and c not in PLATE_COMMANDS
     ]
+    # trait-profile-investigation reads the metadata `just trait-heatmaps` writes (#681)
+    if "just trait-profile-investigation" in series and "just trait-heatmaps" not in series:
+        series.insert(series.index("just trait-profile-investigation"), "just trait-heatmaps")
     rec["command_series"] = [*series, *PLATE_COMMANDS]
     rec["input_data_files"] = list(inputs)
     rec["input_data_sha256s"] = list(inputs.values())
@@ -2643,13 +2820,15 @@ def drawn_provenance(
     """
     code = row["code_path"]
     rec["generator_script_path"] = code
-    rec["command_series"] = figure_commands(rec.get("command_series", []), code, recipes, by_code)
+    figure = row["figure_file_path"]
+    rec["command_series"] = figure_commands(
+        rec.get("command_series", []), code, recipes, by_code, figure
+    )
     rec["just_recipe"] = rec["command_series"][-1]
     # A figure drawn by unmerged code comes from no step of main's pipeline
+    unmerged = unmerged_source(code, figure)
     rec["pipeline_step_ids"] = [
-        step
-        for step in rec.get("pipeline_step_ids", [])
-        if step in STEP_IDS and code not in UNMERGED_CODE
+        step for step in rec.get("pipeline_step_ids", []) if step in STEP_IDS and not unmerged
     ]
     if row["figure_file_path"] in MOVED_FIGURES.values():
         rec["input_data_files"] = [row["evidence_path"]]
@@ -2880,14 +3059,22 @@ def check_slides(
 
     The figure and evidence table a slide shows and quotes must be the committed files at
     its revision. Its code and methods documents are only linked, so they must exist there.
+    A slide not rerun on main quotes its pull request's files, which this checkout holds
+    only in main's version, so its evidence is only linked too (#614).
     """
     unverified: dict[str, list[tuple[str, str]]] = {}
     for entry in entries:
         fig_rel = entry["figure_file_path"]
         links = slide_links(entry, fig_rel)
+        quoted_here = not entry.get("not_rerun")
         linked = (
             (fig_rel, links["figure_url"] != "NA", links["commit"], True),
-            (entry.get("evidence_path", ""), links["evidence_url"] != "NA", links["commit"], True),
+            (
+                entry.get("evidence_path", ""),
+                links["evidence_url"] != "NA",
+                links["commit"],
+                quoted_here,
+            ),
             (entry.get("code_path", ""), bool(links["code_url"]), links["code_commit"], False),
             (entry.get("methods_path", ""), bool(links["methods_url"]), links["commit"], False),
         )
@@ -2901,6 +3088,14 @@ def check_slides(
                 )
                 if reason:
                     found.append((rel, reason))
+        # A linked figure's slide shows the SVG beside it, which must be the committed
+        # file too, as the PNG is (#661, #684)
+        svg_rel = fig_rel.removesuffix(".png") + ".svg"
+        svg = figure_root(repo, fig_rel) / svg_rel
+        if links["figure_url"] != "NA" and svg_rel != fig_rel and svg.exists():
+            reason = revision_problem(trees, links["commit"] or None, svg_rel, svg)
+            if reason:
+                found.append((svg_rel, reason))
         if found:
             unverified[fig_rel] = found
     quoted = []
@@ -3030,12 +3225,17 @@ def copy_asset(png: Path, slides_dir: Path, slide: int) -> str:
 
 def mark_unmerged(entry: dict[str, Any]) -> None:
     """A slide whose code was never merged links it at its pull request's head commit and
-    says it is not rerun on main (#614)."""
-    unmerged = UNMERGED_CODE.get(entry.get("code_path", ""))
+    says it is not rerun on main (#614). A figure the pull request committed, as PR #173
+    did the Table 1 maps, is linked and checked there too, with the slide's table and
+    methods."""
+    figure = entry.get("figure_file_path", "")
+    unmerged = unmerged_source(entry.get("code_path", ""), figure)
     if unmerged:
         name, ref = unmerged
         entry["code_ref"] = ref
         entry["not_rerun"] = f"{name} at {ref[:12]}"
+        if not figure.startswith(UNLINKED_FIGURES):
+            entry["link_ref"] = ref
 
 
 def revision_stamp(row: dict[str, str]) -> str:
@@ -3160,6 +3360,21 @@ def build_deck(
     )
     # Counts Methods Plate II draws, which its slide quotes (#640)
     metrics["plate_counts"] = plate_record.get("counts", {})
+    record_problems = [
+        f'plates_provenance.json: no {key} count, so its slides print "?" (#682)'
+        for key in PLATE_COUNT_KEYS
+        if key not in metrics["plate_counts"]
+    ]
+    # The cellulose_decr slides and plates must define disease vs healthy as the Table 1
+    # text does (#679)
+    cellulose_classifier = json.loads(
+        (REPO_ROOT / CELLULOSE_DIR / "cellulose_decr_provenance.json").read_text(encoding="utf-8")
+    ).get("contrast_classifier_version")
+    if cellulose_classifier != metrics["contrast_classifier"]:
+        record_problems.append(
+            f"the cellulose_decr tables use {cellulose_classifier}, the Table 1 text "
+            f"{metrics['contrast_classifier']} (#679)"
+        )
 
     # The September decks' manifests are inputs; slide_manifest.tsv itself is now this
     # script's output, so it must not stand in for a missing v1 manifest.
@@ -3234,6 +3449,7 @@ def build_deck(
         v2_num = v2_by_fig[fig_path]["slide"] if fig_path in v2_by_fig else "NA"
         if fig_path in MOVED_FIGURES:
             moved_figure(base)
+        base["code_path"] = SHIM_CODE.get(base["code_path"], base["code_path"])
         title, takeaway, caveat = update_previous_slide_text(base, metrics)
         base["title"] = title
         base["takeaway"] = takeaway
@@ -3241,19 +3457,22 @@ def build_deck(
         base["deck_section"] = section_override
         base["v1_slide"] = v1_num
         base["v2_slide"] = v2_num
+        # A slide whose code was never merged keeps its September figure (#614, #682)
+        updated = (
+            "not rerun on main"
+            if unmerged_source(base["code_path"], base["figure_file_path"])
+            else "updated with fresh rerun data"
+        )
         if v1_num != "NA" and v2_num != "NA":
             base["selection_reason"] = (
-                f"Retained from v1 (slide {v1_num}) and v2 (slide {v2_num}); updated with fresh "
-                "rerun data."
+                f"Retained from v1 (slide {v1_num}) and v2 (slide {v2_num}); {updated}."
             )
         elif v1_num != "NA":
             base["selection_reason"] = (
-                f"Restored from v1 (slide {v1_num}, omitted in v2); updated with fresh rerun data."
+                f"Restored from v1 (slide {v1_num}, omitted in v2); {updated}."
             )
         else:
-            base["selection_reason"] = (
-                f"Retained from v2 (slide {v2_num}); updated with fresh rerun data."
-            )
+            base["selection_reason"] = f"Retained from v2 (slide {v2_num}); {updated}."
         return base
 
     ordered_entries: list[dict[str, str]] = []
@@ -3343,7 +3562,7 @@ def build_deck(
         prov_doc = yaml.safe_load(f)
     # The moved Table 1 maps keep their records and the results that cite them (#614)
     for figure in prov_doc.get("figures", []):
-        moved = MOVED_FIGURES.get(figure["figure_file_path"])
+        moved = RENAMED_FIGURES.get(figure["figure_file_path"])
         if moved:
             figure["figure_file_path"] = moved
     check_results_cite_the_deck(
@@ -3379,6 +3598,7 @@ def build_deck(
     ]
     problems += [f"cover link {rel}: {reason}" for rel, reason in cover_found]
     problems += [f"quoted table {item}" for item in quoted]
+    problems += record_problems
     review = list(review)
     if trees is None:
         review.append("nothing was checked against its revision")
@@ -3439,10 +3659,14 @@ def build_deck(
         elif fig_rel.startswith(CELLULOSE_FIGURES):
             source_note = legacy
         elif entry.get("not_rerun"):
+            shown = (
+                "the figure committed there"
+                if entry.get("link_ref") == entry["code_ref"]
+                else "the September figure, identified by its SHA-256 in the provenance"
+            )
             source_note = (
                 f"Not rerun on main: {code_rel} was never merged, so the slide links it in "
-                f"{entry['not_rerun']} and shows the September figure, identified by its "
-                "SHA-256 in the provenance (#614)."
+                f"{entry['not_rerun']} and shows {shown} (#614)."
             )
         elif figure_state == "verified":
             source_note = f"The figure matches the committed file at {ref[:12]}." + (
@@ -3477,6 +3701,8 @@ def build_deck(
                 "unverified": "; ".join(f"{rel}: {reason}" for rel, reason in found),
                 "not_rerun": entry.get("not_rerun", ""),
                 "figure_sha256": src_sha,
+                # What the slide shows, which is the SVG when there is one (#684)
+                "asset_sha256": sha256_file(slides_dir / asset_rel),
                 "deck_section": entry.get("deck_section", "Main"),
                 "analysis": entry.get("analysis", ""),
                 "evidence_path": evidence_rel,
@@ -3510,6 +3736,7 @@ def build_deck(
         "unverified",
         "not_rerun",
         "figure_sha256",
+        "asset_sha256",
         "deck_section",
         "analysis",
         "evidence_path",
@@ -3619,9 +3846,9 @@ def build_deck(
             f"<td>{delta_str}</td><td>{studies_str}</td><td>{q_str}</td></tr>"
         )
 
-    pd_w = metrics.get("pd_halo_wilcoxon", {})
-    pd_w_q = float(pd_w.get("q_value", 0.05609))
-    pd_w_p = float(pd_w.get("p_value", 0.000167))
+    pd_w = metrics["pd_halo_wilcoxon"]
+    pd_w_q = float(pd_w["q_value"])
+    pd_w_p = float(pd_w["p_value"])
 
     statements = cellulose["statements"]
     cellulose_note = statements["overlap"] + (
@@ -3629,8 +3856,7 @@ def build_deck(
     )
     html_lines = [
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
-        "<title>Microbial trait patterns — v6 complete vector deduplicated rerun figure "
-        "deck</title><style>",
+        "<title>Microbial trait patterns — v6 deduplicated rerun figure deck</title><style>",
         "*{box-sizing:border-box}html,body{margin:0;padding:0;background:#edf1f5;color:#142335;font-family:Arial,Helvetica,sans-serif}",
         "@page{size:1600px 1000px;margin:0}",
         ".slide{width:1600px;height:1000px;padding:28px "
@@ -3673,7 +3899,7 @@ def build_deck(
         "print{html,body{background:white;-webkit-print-color-adjust:exact;print-color-adjust:exact}.slide{margin:0}}",
         "</style></head><body>",
         f'<section class="slide cover"><header>{review_html}<div class="tag">Version 6 · '
-        "Complete Vector Deduplicated Rerun Deck · Marcin / Jed / Noel / Ilyas · 17 October "
+        "Deduplicated Rerun Deck · Marcin / Jed / Noel / Ilyas · 17 October "
         "2026</div>"
         f"<h1>Three-arm microbial trait profiling deck ({len(manifest_rows)} figures across "
         f"{total_slides} slides)</h1></header>"
@@ -3693,10 +3919,8 @@ def build_deck(
         f"<tbody>{''.join(cover_tr_html)}</tbody></table>"
         '<p class="lead">Δ = increased minus decreased proportion of profiles with a positive '
         f"trait z-score ({metrics['ind_total_tests']:,}-row profile-level Fisher family).<br>"
-        "Arm 2 taxon-level ORA: 66,240 enrichments (fold ≥ 1.5, BH q ≤ 0.001) and 23 depletions "
-        f"(fold ≤ 0.5, BH q ≤ 0.001) across 1,480,390 tests. {cover_table1_text(metrics)}; "
-        "oxygen-guild McNemar OR = 1.448 (420 vs 290 discordant studies, p = 1.21 "
-        "\N{MULTIPLICATION SIGN} 10⁻⁶).</p></main>"
+        f"{arm_two_text(metrics)} {cover_table1_text(metrics)}; {mcnemar_text(metrics)}."
+        "</p></main>"
         '<aside class="note"><p><strong>Evidence across scales:</strong> In the '
         f"{metrics['pd_net_total']}-test fecal study Wilcoxon screen, PD moderately halophilic "
         f"{'leads' if metrics.get('pd_net_lead') is metrics['pd_halo_wilcoxon'] else 'has'} "
@@ -3710,18 +3934,20 @@ def build_deck(
         f"slides cite; {n_untracked} are gitignored outputs, identified by SHA-256 in the "
         "provenance"
         + (f"; {n_differs} differ from their revision and are not linked" if n_differs else "")
+        + "."
         + (
-            f"; {n_not_rerun} come from code never merged into main and are not rerun"
+            f" {n_not_rerun} of these slides come from code never merged into main and are "
+            "not rerun."
             if n_not_rerun
             else ""
         )
-        + ". Trait annotations describe organism potential, not measured in vivo metabolic "
+        + " Trait annotations describe organism potential, not measured in vivo metabolic "
         "flux.</p></aside>"
         '<footer><div class="path"><b>FIGURE</b><a '
         f'href="{cover_href}">{COVER_FIGURE}</a></div>'
         f'<div class="path"><b>CODE</b><a href="{cover_code_href}">{COVER_CODE}</a></div>'
         '<div class="stamp"><span>CultureBotAI/microbial-trait-profiling · Jed / Noel / Ilyas · '
-        f"Rerun revision {SHORT_COMMIT}{' · REVIEW BUILD' if review else ''} · v6 vector"
+        f"Rerun revision {SHORT_COMMIT}{' · REVIEW BUILD' if review else ''} · v6"
         "</span><span>01 / "
         f"{total_slides:02d}</span></div></footer></section>",
     ]
@@ -3762,7 +3988,7 @@ def build_deck(
             f"{prior_div}"
             '<div class="stamp"><span>CultureBotAI/microbial-trait-profiling · '
             f"{html.escape(owner)} · {revision_stamp(row)}"
-            f"{' · REVIEW BUILD' if review else ''} · v6 vector"
+            f"{' · REVIEW BUILD' if review else ''} · v6"
             f"{lineage_str}</span>"
             f"<span>{s_num:02d} / {total_slides:02d}</span></div></footer></section>"
         )
@@ -3854,12 +4080,16 @@ def build_deck(
             cellulose_figure_provenance(rec, cellulose_figures["inputs"])
         if not fp.startswith((PLATES_DIR, *CELLULOSE_FIGURES)):
             drawn_provenance(rec, r, recipes, by_code)
-            # Today's hashes, in one format, and the inputs that changed since they were
-            # recorded (#637)
-            rec["input_data_sha256s"], changed = refreshed_hashes(
-                repo, rec.get("input_data_files", []), rec.get("input_data_sha256s", [])
-            )
-            changed_inputs.extend({"figure": fp, "input": rel} for rel in changed)
+            if r["not_rerun"]:
+                # Its code read September's files, which today's do not identify (#682)
+                rec["input_data_sha256s"] = []
+            else:
+                # Today's hashes, in one format, and the inputs that changed since they were
+                # recorded (#637)
+                rec["input_data_sha256s"], changed = refreshed_hashes(
+                    repo, rec.get("input_data_files", []), rec.get("input_data_sha256s", [])
+                )
+                changed_inputs.extend({"figure": fp, "input": rel} for rel in changed)
         new_figures_list.append(rec)
 
     prov_doc["figures"] = new_figures_list

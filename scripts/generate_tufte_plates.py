@@ -29,6 +29,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from mtp.paths import file_sha256
+from mtp.quoted_results import (
+    CALIBRATION_CRITERIA,
+    GUILD_CORRELATION,
+    ORA_DEPLETION,
+    ORA_ENRICHMENT,
+    McNemar,
+    OraCalls,
+    screened_rejection_rate,
+)
 from mtp.table1_directions import (
     ALL_STUDIES,
     CELLULOSE,
@@ -87,10 +96,68 @@ def read_json(path: Path) -> Any:
 def fmt_p(value: float) -> str:
     """A p-value to two significant digits, or more where fewer would round across 0.05."""
     for digits in range(2, 8):
-        text = f"{value:.{digits}g}" if value >= 0.001 else f"{value:.{digits - 1}e}"
+        text = f"{value:#.{digits}g}" if value >= 0.001 else f"{value:.{digits - 1}e}"
         if (float(text) < 0.05) == (value < 0.05):
             return text
     return repr(value)
+
+
+SUPERSCRIPT = str.maketrans("-0123456789", "⁻⁰¹²³⁴⁵⁶⁷⁸⁹")
+
+
+def sci(value: float) -> str:
+    """A p-value as fmt_p gives it, with any power of ten written out as 10⁻⁶."""
+    text = fmt_p(value)
+    if "e" not in text:
+        return text
+    mantissa, exponent = text.split("e")
+    return f"{mantissa} \N{MULTIPLICATION SIGN} 10{str(int(exponent)).translate(SUPERSCRIPT)}"
+
+
+def ora_calls(path: Path) -> OraCalls:
+    """An ORA table's tests and calls, from the lines heading it (#579)."""
+    INPUTS_READ.add(path)
+    with path.open(encoding="utf-8") as f:
+        return OraCalls.from_header(f)
+
+
+def screening_bias(repo: Path) -> str:
+    """The screened sign test's rejection rate under the complete null, "0.091" (#579)."""
+    return f"{screened_rejection_rate(read_tsv(repo / CALIBRATION_CRITERIA)):.3f}"
+
+
+def stratum_size(rows: Mapping[str, Mapping[str, str]]) -> tuple[int, int]:
+    """A paired-contrast stratum's studies and pairs: the most any trait is scored on."""
+    studies = max(int(float(r["study_count"])) for r in rows.values())
+    pairs = max(int(float(r["pair_count"])) for r in rows.values())
+    return studies, pairs
+
+
+def stratum_text(rows: Mapping[str, Mapping[str, str]]) -> str:
+    """'959 studies · 2,335 pairs', from the stratum's table (#579)."""
+    studies, pairs = stratum_size(rows)
+    return f"{studies:,} studies · {pairs:,} pairs"
+
+
+def pd_split(rows: Sequence[Mapping[str, str]], per_side: int = 2) -> str:
+    """Plate V's note on Parkinson's disease: the genera in the panel with the most PD
+    profiles on each side, from the switch table's top-condition columns (#680)."""
+
+    def pd_profiles(conditions: str) -> int:
+        for part in conditions.split(";"):
+            found = re.match(r"\s*Parkinson's disease \((\d+) profiles", part)
+            if found:
+                return int(found.group(1))
+        return 0
+
+    sides = []
+    for column, arrow in (("top_increased_conditions", "↑"), ("top_decreased_conditions", "↓")):
+        counts = sorted(
+            ((pd_profiles(r[column]), r["taxon_name"]) for r in rows), key=lambda c: -c[0]
+        )
+        named = [f"{name} ({n}{arrow})" for n, name in counts[:per_side] if n]
+        sides.append(" & ".join(named) or "none")
+    return " vs ".join(sides)
 
 
 def table1_signs(repo: Path) -> dict[str, Population]:
@@ -117,7 +184,10 @@ def passing_pairs(population: Population, pairs: Sequence[tuple[str, str]]) -> i
 def increased_pairs_text(
     every: Population, oriented: Population, pairs: Sequence[tuple[str, str]]
 ) -> str:
-    """Plate III's label for the pairs among the increased-side traits (#579)."""
+    """Plate III's label for a group of pairs: those passing BY in either cohort, or the
+    lowest BY q among them (#579, #686)."""
+    if not pairs:
+        return "no pairs"
     passing = sorted(
         {
             population.ratio(*pair).label
@@ -127,7 +197,8 @@ def increased_pairs_text(
         }
     )
     if passing:
-        return f"{', '.join(passing)} pass BY in all or oriented"
+        verb = "passes" if len(passing) == 1 else "pass"
+        return f"{', '.join(passing)} {verb} BY in all or oriented"
     lowest = min(
         population.ratio(*pair).q_value for population in (every, oriented) for pair in pairs
     )
@@ -143,7 +214,8 @@ def oriented_cellulose_pairs_text(
     passing = [test for test in after if test.passes()]
     added = [test.label for test in passing if test.label not in before]
     lost = sorted(before - {test.label for test in passing})
-    counted = f"{len(passing)} of {len(pairs)} Cellulose pairs pass BY"
+    verb = "passes" if len(passing) == 1 else "pass"
+    counted = f"{len(passing)} of {len(pairs)} Cellulose pairs {verb} BY"
     if added or lost:
         changes = [f"adds {', '.join(added)}"] if added else []
         changes += [f"loses {', '.join(lost)}"] if lost else []
@@ -169,6 +241,37 @@ def check_plate_two_rows(trait_ids: Sequence[str], pooled: dict[str, dict[str, s
     missing = [trait for trait in trait_ids if trait not in pooled]
     if missing:
         raise ValueError(f"Plate II rows missing from the pooled table: {missing}")
+
+
+def check_plate_two_directions(
+    rows: Sequence[tuple[str, str, str]], pooled: Mapping[str, Mapping[str, str]]
+) -> None:
+    """Plate II groups its rows by direction and tags the decreased groups "↓", so a row's
+    pooled study contrast must have its group's sign. A trait that changed sides in a rerun
+    stops the plate rather than sitting under the wrong tag (#579)."""
+    wrong = []
+    for trait, _, group in rows:
+        value = pooled[trait].get("study_mean_increased_minus_decreased")
+        if value and (float(value) < 0) != group.endswith("↓"):
+            wrong.append(f"{trait} in {group} at {float(value):+.3f}")
+    if wrong:
+        raise ValueError(f"Plate II rows whose pooled contrast has the other sign: {wrong}")
+
+
+def check_classifiers(repo_root: Path, input_root: Path) -> None:
+    """Refuse to draw plates whose cellulose_decr notes and Table 1 text define disease vs
+    healthy with different contrast classifiers (#679)."""
+    provenance = repo_root / CELLULOSE_DIR / "cellulose_decr_provenance.json"
+    cellulose = json.loads(provenance.read_text(encoding="utf-8")).get(
+        "contrast_classifier_version"
+    )
+    contrasts = input_root / CONTRAST_PROVENANCE
+    table1 = json.loads(contrasts.read_text(encoding="utf-8"))["classifier_version"]
+    if cellulose != table1:
+        raise SystemExit(
+            f"the cellulose_decr tables use {cellulose} and the Table 1 tables {table1}; re-pin "
+            "cellulose_decr (just cellulose-decr) or rerun just contrast-orientation (#679)"
+        )
 
 
 def input_record(repo: Path) -> dict[str, str]:
@@ -876,6 +979,12 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
         read_tsv(stats / "PD-cellulose/pd_condition_taxon_trait_network_condition_trait_tests.tsv")
     )
     screen = read_tsv(repo / "data/derived/trait_screen/trait_direction_screen.tsv")
+    # Arm 2's tests and calls and the oxygen-guild McNemar test, read from their tables (#579)
+    enriched, depleted = ora_calls(repo / ORA_ENRICHMENT), ora_calls(repo / ORA_DEPLETION)
+    enrichment_rows = read_tsv(repo / ORA_ENRICHMENT)
+    by_side = {side: sum(r["inc_dec"] == side for r in enrichment_rows) for side in ("inc", "dec")}
+    enriched_traits = {r["trait"] for r in enrichment_rows}
+    mcnemar = McNemar.from_rows(read_tsv(repo / GUILD_CORRELATION))
     concordant, strict = three_arm_counts(
         three_arm_traits(
             paired["pooled"],
@@ -1084,8 +1193,8 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
     ax.text(
         50.0,
         70.8,
-        "1,480,390 profile \N{MULTIPLICATION SIGN} trait tests (BH q ≤ 0.001)\nEach taxon counts "
-        "once (prevents genus hub inflation)",
+        f"{enriched.tests:,} profile \N{MULTIPLICATION SIGN} trait tests (BH q ≤ "
+        f"{enriched.p_threshold})\nEach taxon counts once (prevents genus hub inflation)",
         fontsize=7.7,
         color=MUTED,
         ha="center",
@@ -1161,7 +1270,7 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
     ax.text(
         46.9,
         41.35,
-        "66,240 Enrich. vs 23 Depl.!",
+        f"{enriched.calls:,} Enrich. vs {depleted.calls:,} Depl.!",
         fontsize=7.3,
         fontweight="bold",
         color=TEAL_ACCENT,
@@ -1172,7 +1281,8 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
     ax.text(
         50.0,
         30.5,
-        "Arm 2 Survivors: 35,977 Inc + 30,263 Dec\nenrichments across 288 traits (fold ≥ 1.5)",
+        f"Arm 2 Survivors: {by_side['inc']:,} Inc + {by_side['dec']:,} Dec\nenrichments across "
+        f"{len(enriched_traits)} traits (fold ≥ {enriched.fold})",
         fontsize=8.2,
         fontweight="bold",
         color=TEAL_ACCENT,
@@ -1195,15 +1305,17 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
         (
             68.5,
             "1. Study Exact Binomial Sign Test",
-            f"Majority vote per study ({every.studies:,} all / {oriented.studies:,} oriented)\n"
-            f"{len(screen)}-trait BH/BY screen (fixes 0.091 screening bias)",
+            f"Majority vote per study ({every.tested_studies:,} all / "
+            f"{oriented.tested_studies:,} oriented)\n"
+            f"{len(screen)}-trait BH/BY screen (fixes {screening_bias(repo)} screening bias)",
             "#f3eef8",
         ),
         (
             53.5,
             "2. Coupled Oxygen-Guild McNemar Test",
-            "932 paired studies: 420 Aerobe↑/Anaerobe↓\nvs 290 opposite (OR = 1.45, p = 1.21 "
-            "\N{MULTIPLICATION SIGN} 10⁻⁶)",
+            f"{mcnemar.discordant:,} discordant studies: {mcnemar.aerobe_up_anaerobe_down} "
+            f"Aerobe↑/Anaerobe↓\nvs {mcnemar.anaerobe_up_aerobe_down} opposite (OR = "
+            f"{mcnemar.odds_ratio:.2f}, p = {sci(mcnemar.p_value)})",
             "#fef9ec",
         ),
         (
@@ -1245,7 +1357,7 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
     ax.text(
         83.25,
         30.5,
-        f"{arm3}\nOriented ({oriented.studies:,} st.): Cellulose ↓ "
+        f"{arm3}\nOriented ({oriented.tested_studies:,} st.): Cellulose ↓ "
         f"p={fmt_p(oriented.fractions[CELLULOSE].p_value)} · "
         f"{len(oriented.ratio_survivors())} LR BY hits",
         fontsize=8.0,
@@ -1317,7 +1429,8 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
             75.5,
             "6 Table 1 + Oriented Audit",
             f"{len(increased_side(every))} Inc (↑) vs Cellulose (↓)\nOriented "
-            f"{oriented.studies:,} st.: Cell. BH₆ q={fmt_p(oriented.fractions[CELLULOSE].q_value)}",
+            f"{oriented.tested_studies:,} st.: Cell. BH₆ "
+            f"q={fmt_p(oriented.fractions[CELLULOSE].q_value)}",
             "#f5d7d4",
             INC_COLOR,
         ),
@@ -1900,6 +2013,7 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         ("METPO:1000845", "Acetogenesis", "Anaerobic / low GC ↓"),
     ]
     check_plate_two_rows([trait for trait, _, _ in trait_rows_spec], pooled)
+    check_plate_two_directions(trait_rows_spec, pooled)
     # Every row takes the label its column has in taxa_trait_matrix_columns.tsv (#607).
     trait_rows_spec = [
         (trait_id, canonical_display(display, labels.get(trait_id)), group)
@@ -1932,7 +2046,8 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         0.03,
         0.922,
         "Study-level paired contrasts (mean Δz ± 95% CI) · ** study BH q ≤ 0.005 · * q ≤ 0.05 · "
-        "† nominal p ≤ 0.05 · Feces (594 studies) carries most of the pooled signal; "
+        f"† nominal p ≤ 0.05 · Feces ({stratum_size(feces)[0]:,} studies) carries most of the "
+        "pooled signal; "
         f"{study_bh_count(nonfeces)} traits pass BH without Feces and {study_bh_count(saliva)} "
         "in Saliva",
         fontsize=9.0,
@@ -1941,25 +2056,25 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
 
     strata = [
         (
-            "Pooled All Sites\n(959 studies · 2,335 pairs\n"
+            f"Pooled All Sites\n({stratum_text(pooled)}\n"
             f"{study_bh_count(pooled)} traits study BH q ≤ 0.05)",
             pooled,
             (-0.38, 0.72),
         ),
         (
-            "Feces Only\n(594 studies · 1,485 pairs\n"
+            f"Feces Only\n({stratum_text(feces)}\n"
             f"{study_bh_count(feces)} traits study BH q ≤ 0.05)",
             feces,
             (-0.44, 0.78),
         ),
         (
-            "Feces Excluded\n(365 studies · 850 pairs\n"
+            f"Feces Excluded\n({stratum_text(nonfeces)}\n"
             f"{study_bh_count(nonfeces)} traits study BH q ≤ 0.05)",
             nonfeces,
             (-0.40, 0.56),
         ),
         (
-            "Saliva Only\n(55 studies · 129 pairs\n"
+            f"Saliva Only\n({stratum_text(saliva)}\n"
             f"{study_bh_count(saliva)} traits study BH q ≤ 0.05)",
             saliva,
             (-0.78, 0.92),
@@ -2154,8 +2269,9 @@ def build_plate3(repo: Path, out_dir: Path) -> Path:
         color=MUTED,
     )
 
-    cellulose_pairs = [(CELLULOSE, trait) for trait in increased_side(every)]
-    increased_pairs = list(itertools.combinations(increased_side(every), 2))
+    others = [trait for trait in every.fractions if trait != CELLULOSE]
+    cellulose_pairs = [(CELLULOSE, trait) for trait in others]
+    increased_pairs = list(itertools.combinations(others, 2))
 
     # --- Panel A: 6x6 Matrix of 15 Pairs ---
     ax_mat = fig.add_subplot(gs[0, 0])
@@ -2839,6 +2955,7 @@ def crc_oxygen_split(rows: Sequence[dict[str, str]]) -> str:
 
 def build_plate5(repo: Path, out_dir: Path) -> Path:
     cellulose = cellulose_decr_notes(REPO_ROOT)
+    mcnemar = McNemar.from_rows(read_tsv(repo / GUILD_CORRELATION))
     oxy_rows = read_tsv(
         repo / "trait-visualization/trait-profile-investigation/taxa-oxygen-switches/"
         "condition_oxygen_switch_scores.tsv"
@@ -3061,8 +3178,8 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
         fontweight="bold",
     )
     ax_sw.set_title(
-        "B. Top 12 Cross-Disease Switcher Genera (Context-Dependent Polarity)\nNote PD split: "
-        "Bifidobacterium (23↑) & Lactobacillus (16↑) vs Roseburia (32↓) & Blautia (17↓)",
+        f"B. Top {len(top_sw)} Cross-Disease Switcher Genera (Context-Dependent Polarity)\n"
+        f"Note PD split: {pd_split(top_sw)}",
         fontsize=9.5,
         fontweight="bold",
         loc="left",
@@ -3074,8 +3191,10 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
         0.05,
         0.025,
         f"{RERUN_SOURCE} · condition_oxygen_switch_scores.tsv, "
-        "taxa_cross_disease_switch_summary.tsv. Pooled McNemar OR = 1.448 (420 vs 290 st., p = "
-        f"1.21e-6); {cellulose['crc_source']}",
+        "taxa_cross_disease_switch_summary.tsv. Pooled McNemar OR = "
+        f"{mcnemar.odds_ratio:.3f} ({mcnemar.aerobe_up_anaerobe_down} vs "
+        f"{mcnemar.anaerobe_up_aerobe_down} st., p = {fmt_p(mcnemar.p_value)}); "
+        f"{cellulose['crc_source']}",
         fontsize=7.8,
         color=MUTED,
     )
@@ -3414,6 +3533,16 @@ def three_arm_traits(
             arm3_dir = "inc" if sh_up > 0.5 else "dec"
             arm2_dir = "inc" if inc_h > dec_h else ("dec" if dec_h > inc_h else "tie")
             all3_concordant = (paired_dir == arm3_dir == arm2_dir) and tot_h > 0
+            # Arms 1 and 3 agree and ORA points the other way, or the arms differ otherwise:
+            # no ORA call, an ORA tie, or Arms 1 and 3 disagreeing (#685)
+            if tid in t1_ids:
+                group = "table1"
+            elif all3_concordant:
+                group = "concordant"
+            elif paired_dir == arm3_dir and arm2_dir not in (paired_dir, "tie"):
+                group = "ora_inverted"
+            else:
+                group = "not_concordant"
 
             selected_traits.append(
                 {
@@ -3433,10 +3562,18 @@ def three_arm_traits(
                     "paired_dir": paired_dir,
                     "arm2_dir": arm2_dir,
                     "all3_concordant": all3_concordant,
+                    "group": group,
                 }
             )
 
     return selected_traits
+
+
+# Plate VII's markers, label badges and notes for its trait groups (#685)
+MARKERS = {"table1": "D", "concordant": "o", "ora_inverted": "^", "not_concordant": "s"}
+PREFIXES = {"table1": "★ ", "concordant": "", "ora_inverted": "▲ ", "not_concordant": "■ "}
+NOTES = {"table1": "", "concordant": "", "ora_inverted": " (ORA inv.)", "not_concordant": ""}
+CELLULOSE_ID = "METPO:2000103|GO:0030245"
 
 
 def three_arm_counts(selected: Sequence[dict[str, Any]]) -> tuple[int, int]:
@@ -3451,7 +3588,8 @@ def three_arm_counts(selected: Sequence[dict[str, Any]]) -> tuple[int, int]:
 
 
 def plate_seven_groups(selected: Sequence[dict[str, Any]]) -> dict[str, int]:
-    """The Table 1, additional concordant and ORA-inverted traits Plate VII draws (#579)."""
+    """The Table 1, additional concordant, ORA-inverted and otherwise discordant traits
+    Plate VII draws (#579, #685)."""
     concordant = [
         t
         for t in selected
@@ -3461,7 +3599,9 @@ def plate_seven_groups(selected: Sequence[dict[str, Any]]) -> dict[str, int]:
         "table1_traits": sum(t["in_t1"] for t in selected),
         "table1_concordant": sum(t["in_t1"] for t in concordant),
         "three_arm_additional": sum(not t["in_t1"] for t in concordant),
-        "ora_inverted": sum(not t["in_t1"] and not t["all3_concordant"] for t in selected),
+        "ora_inverted": sum(t["group"] == "ora_inverted" for t in selected),
+        "not_concordant": sum(t["group"] == "not_concordant" for t in selected),
+        "forest_traits": len(selected),
     }
 
 
@@ -3505,17 +3645,16 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
 
     # Sort: 1) Original 6 Table 1 traits (by share_up desc), 2) Additional 3-Arm Concordant
     # traits (by share_up desc), 3) ORA-inverted traits
-    selected_traits.sort(
-        key=lambda x: (
-            0 if x["in_t1"] else (1 if x["all3_concordant"] else 2),
-            -x["sh_up"],
-        )
+    order = ("table1", "concordant", "ora_inverted", "not_concordant")
+    selected_traits.sort(key=lambda x: (order.index(x["group"]), -x["sh_up"]))
+    group_of = {t["tid"]: t["group"] for t in selected_traits}
+    arm1_studies = max(
+        int(float(r["study_count"])) for r in arm1_rows.values() if r.get("study_count")
     )
     # The groups the plate and its slide count (#579, #640)
     concordant, _ = three_arm_counts(selected_traits)
     groups = plate_seven_groups(selected_traits)
     PLATE_COUNTS.update({**groups, "screened_traits": len(arm3_screen_rows)})
-    shift = "strengthens" if cellulose.share_down > cellulose_all.share_down else "weakens"
 
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
     gs = fig.add_gridspec(
@@ -3525,8 +3664,8 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
     ax_for = fig.add_subplot(gs[0, 1])
 
     fig.suptitle(
-        "TUFTE PLATE 7 · Three-Arm Concordance & Expanded Table 1 Forest Plot Across All 317 "
-        "Traits",
+        "TUFTE PLATE 7 · Three-Arm Concordance & Expanded Table 1 Forest Plot Across All "
+        f"{len(arm3_screen_rows)} Traits",
         fontsize=15.0,
         fontweight="bold",
         x=0.05,
@@ -3537,16 +3676,18 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
     fig.text(
         0.05,
         0.916,
-        f"Full {len(arm3_screen_rows)}-trait BH/BY screen (correcting 0.091 post-selection bias) "
-        f"yields {concordant} three-arm concordant traits; the oriented {oriented.studies:,}-study "
-        f"filter {shift} Cellulose ↓ to {cellulose.share_down:.1%} (p = "
-        f"{fmt_p(cellulose.p_value)}, BH₆ q = {fmt_p(cellulose.q_value)}).",
+        f"Full {len(arm3_screen_rows)}-trait BH/BY screen (correcting {screening_bias(repo)} "
+        f"post-selection bias) yields {concordant} three-arm concordant traits; Cellulose is "
+        f"{cellulose.share_down:.1%}↓ in the {oriented.tested_studies:,} oriented studies (p = "
+        f"{fmt_p(cellulose.p_value)}, BH₆ q = {fmt_p(cellulose.q_value)}) and "
+        f"{cellulose_all.share_down:.1%}↓ in all {every.tested_studies:,}.",
         fontsize=8.9,
         color=MUTED,
         ha="left",
     )
 
-    # --- Panel A (Left): Cross-Arm Concordance Scatter Plot Across All 315 Tested Traits ---
+    # --- Panel A (Left): Cross-Arm Concordance Scatter Plot Across Every Tested Trait ---
+    drawn = 0
     for tid, s_row in arm3_screen_rows.items():
         a1 = arm1_rows.get(tid)
         if (
@@ -3567,6 +3708,7 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
         )
 
         if tid in t1_ids:
+            drawn += 1
             col = INC_COLOR if t_st > 0 else DEC_COLOR
             ax_scat.scatter(
                 t_st, sh_u, s=90, color=col, edgecolor=INK, linewidth=1.3, zorder=5, marker="D"
@@ -3586,9 +3728,10 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
                     marker="o",
                 )
         elif a1_sq <= 0.05 and a3_bq <= 0.05:
-            is_inv = tid in ("METPO:1000429", "METPO:1000603")
+            drawn += 1
+            is_inv = group_of.get(tid) in ("ora_inverted", "not_concordant")
             col = GOLD_ACCENT if is_inv else (TEAL_ACCENT if t_st > 0 else PURPLE_ACCENT)
-            mk = "^" if is_inv else "o"
+            mk = MARKERS[group_of.get(tid, "concordant")]
             ax_scat.scatter(
                 t_st,
                 sh_u,
@@ -3600,6 +3743,7 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
                 marker=mk,
             )
         else:
+            drawn += 1
             ax_scat.scatter(t_st, sh_u, s=18, color="#cbd5e1", alpha=0.65, zorder=2)
 
     ax_scat.set_xlim(-5.8, 7.2)
@@ -3607,24 +3751,33 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
     ax_scat.axhline(0, color=MID_RULE, lw=0.9, ls="--")
     ax_scat.axvline(0, color=MID_RULE, lw=0.9, ls="--")
 
+    # Where each label sits; its badge, arrow and note come from the tables (#685)
     annot_specs = [
-        ("METPO:2000103|GO:0046274", "Lignin catabolism ↑ (3-arm BY ✓)", (-5.5, 18.2)),
-        ("METPO:1000608", "★ Facultatively aerobic ↑", (-5.5, 14.2)),
-        ("METPO:1000623", "★ Moderately halophilic ↑", (-5.5, 10.6)),
-        ("METPO:2000103|pathways:arsenate_reduction", "★ Arsenate reduction ↑", (-5.5, 7.0)),
-        ("METPO:1000683", "★ Sphere shaped ↑", (-5.5, 3.6)),
-        ("METPO:1000668", "★ Coccus shaped ↑", (1.6, 1.4)),
-        ("METPO:1000429", "▲ GC low ↓ (ORA inv.)", (-5.6, -4.5)),
-        (
-            "METPO:2000103|GO:0030245",
-            f"★ Cellulose ↓ (Or.{oriented.studies}: {(cellulose.share_up - 0.5) * 100:+.1f}%, "
-            f"BH₆ q={fmt_p(cellulose.q_value)})",
-            (-5.6, -13.3),
-        ),
-        ("METPO:1000603", "▲ Anaerobic ↓ (ORA inv.)", (-5.6, -16.0)),
+        ("METPO:2000103|GO:0046274", "Lignin catabolism", (-5.5, 18.2)),
+        ("METPO:1000608", "Facultatively aerobic", (-5.5, 14.2)),
+        ("METPO:1000623", "Moderately halophilic", (-5.5, 10.6)),
+        ("METPO:2000103|pathways:arsenate_reduction", "Arsenate reduction", (-5.5, 7.0)),
+        ("METPO:1000683", "Sphere shaped", (-5.5, 3.6)),
+        ("METPO:1000668", "Coccus shaped", (1.6, 1.4)),
+        ("METPO:1000429", "GC low", (-5.6, -4.5)),
+        ("METPO:2000103|GO:0030245", "Cellulose", (-5.6, -13.3)),
+        ("METPO:1000603", "Anaerobic", (-5.6, -16.0)),
     ]
-    for tid, text_lbl, (tx_pos, ty_pos) in annot_specs:
+    traits_by_id = {t["tid"]: t for t in selected_traits}
+    for tid, name, (tx_pos, ty_pos) in annot_specs:
         if tid in arm1_rows and tid in arm3_screen_rows:
+            share = float(arm3_screen_rows[tid]["share_up"])
+            text_lbl = f"{name} {'↑' if share > 0.5 else '↓'}"
+            trait = traits_by_id.get(tid)
+            if trait is not None:
+                text_lbl = f"{PREFIXES[trait['group']]}{text_lbl}{NOTES[trait['group']]}"
+                if trait["group"] == "concordant" and trait["a3_by_q"] <= 0.05:
+                    text_lbl += " (3-arm BY ✓)"
+            if tid == CELLULOSE_ID:
+                text_lbl += (
+                    f" (Or.{oriented.tested_studies}: {(cellulose.share_up - 0.5) * 100:+.1f}%, "
+                    f"BH₆ q={fmt_p(cellulose.q_value)})"
+                )
             tx = float(arm1_rows[tid]["study_t_statistic"])
             ty = (float(arm3_screen_rows[tid]["share_up"]) - 0.5) * 100.0
             ax_scat.annotate(
@@ -3649,9 +3802,14 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
         0.97,
         0.04,
         f"◆ ★ Original 6 Table 1 traits ({groups['table1_concordant']} with all 3 arms ✓)\n"
-        f"○ Oriented {oriented.studies}-st. Table 1 (Cell. ↓ p={fmt_p(cellulose.p_value)})\n"
+        f"○ Oriented {oriented.tested_studies}-st. Table 1 (Cell. ↓ p={fmt_p(cellulose.p_value)})\n"
         f"● {groups['three_arm_additional']} Additional 3-Arm Study-FDR traits (✓)\n"
-        f"▲ {groups['ora_inverted']} Paired-Down / Unpaired-ORA-Inverted traits",
+        f"▲ {groups['ora_inverted']} with Arms 1 & 3 agreeing, ORA opposite"
+        + (
+            f"\n■ {groups['not_concordant']} with the arms differing otherwise"
+            if groups["not_concordant"]
+            else ""
+        ),
         transform=ax_scat.transAxes,
         fontsize=7.0,
         fontweight="bold",
@@ -3668,7 +3826,7 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
     )
 
     ax_scat.set_xlabel(
-        "Arm 1 Study-Level Paired Contrast t-Statistic (N = 959 studies)",
+        f"Arm 1 Study-Level Paired Contrast t-Statistic (N = {arm1_studies:,} studies)",
         fontsize=8.6,
         fontweight="bold",
     )
@@ -3678,7 +3836,7 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
         fontweight="bold",
     )
     ax_scat.set_title(
-        "A. Cross-Arm Alignment Across All 315 Tested Traits\nStrong concordance between "
+        f"A. Cross-Arm Alignment Across All {drawn} Tested Traits\nStrong concordance between "
         "continuous Δz (Arm 1) and study sign-test share (Arm 3)",
         fontsize=9.3,
         fontweight="bold",
@@ -3694,6 +3852,12 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
     ax_for.set_xlim(30.0, 117.0)
     ax_for.axvline(50.0, color=INK, lw=1.1, ls="--", zorder=2)
 
+    # A rule above the first trait of each group after the Table 1 traits
+    boundaries = [
+        idx
+        for idx in range(1, n_tr)
+        if selected_traits[idx]["group"] != selected_traits[idx - 1]["group"]
+    ]
     y_labels_for = []
     for idx, tr in enumerate(selected_traits):
         yp = y_pos[idx]
@@ -3703,8 +3867,9 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
         ci_lo = max(31.0, pct - 1.96 * se_pct)
         ci_hi = min(73.0, pct + 1.96 * se_pct)
 
-        if idx in (6, 17):
-            ax_for.axhline(yp + 0.5, color=GOLD_ACCENT if idx == 6 else MID_RULE, lw=1.0, ls=":")
+        if idx in boundaries:
+            first = idx == boundaries[0]
+            ax_for.axhline(yp + 0.5, color=GOLD_ACCENT if first else MID_RULE, lw=1.0, ls=":")
 
         if tr["in_t1"]:
             ax_for.axhspan(yp - 0.44, yp + 0.44, color="#fef9ec", alpha=0.85, zorder=0)
@@ -3714,7 +3879,7 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
             col = GOLD_ACCENT
 
         ax_for.plot([ci_lo, ci_hi], [yp, yp], color=col, lw=2.2, zorder=3)
-        mk = "D" if tr["in_t1"] else ("^" if not tr["all3_concordant"] else "o")
+        mk = MARKERS[tr["group"]]
         ax_for.scatter(
             [pct],
             [yp],
@@ -3743,9 +3908,9 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
                     lw=1.4,
                     zorder=5,
                 )
-                or_badge = f" · Or.{oriented.studies}:{or_pct:.1f}% (p={or_p:.1e})"
+                or_badge = f" · Or.{oriented.tested_studies}:{or_pct:.1f}% (p={or_p:.1e})"
 
-        prefix = "★ " if tr["in_t1"] else ("▲ " if not tr["all3_concordant"] else "• ")
+        prefix = PREFIXES[tr["group"]] or "• "
         arrow = "↑" if tr["paired_dir"] == "inc" else "↓"
         y_labels_for.append(f"{prefix}{arrow} {tr['label'][:28]}")
 
@@ -3774,15 +3939,17 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
     ax_for.set_xticks([35, 45, 50, 55, 65])
     ax_for.set_xticklabels(["35%", "45%", "50% (Null)", "55%", "65%"], fontsize=8.0)
     ax_for.set_xlabel(
-        f"Arm 3 Study Sign-Test % Increased (◆/● All {every.studies:,} st. ±95% CI  |  ○ Oriented "
-        f"{oriented.studies:,} st. for Table 1)",
+        f"Arm 3 Study Sign-Test % Increased (◆/● All {every.tested_studies:,} st. ±95% CI  |  "
+        f"○ Oriented {oriented.tested_studies:,} st. for Table 1)",
         fontsize=8.4,
         fontweight="bold",
     )
     ax_for.set_title(
         f"B. The {len(selected_traits)} Study-FDR Multi-Arm Traits ({groups['table1_traits']} "
         f"Table 1 ★ + {groups['three_arm_additional']} Expanded 3-Arm ✓ + "
-        f"{groups['ora_inverted']} ORA-Inv. ▲)\nOriented {oriented.studies:,}-study filter (○): "
+        f"{groups['ora_inverted']} ORA-Inv. ▲"
+        + (f" + {groups['not_concordant']} Discordant ■" if groups["not_concordant"] else "")
+        + f")\nOriented {oriented.tested_studies:,}-study filter (○): "
         f"Cellulose {cellulose.share_up:.1%}↑ / {cellulose.share_down:.1%}↓ (p = "
         f"{fmt_p(cellulose.p_value)}, BH₆ q = {fmt_p(cellulose.q_value)})",
         fontsize=8.35,
@@ -3843,6 +4010,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     out_dir = args.output_dir
     if any(out_dir.glob("*.png")) and not args.overwrite:
         raise SystemExit(f"{out_dir} has plates; back them up and pass --overwrite to replace them")
+    check_classifiers(REPO_ROOT, repo)
     out_dir.mkdir(parents=True, exist_ok=True)
     # A run that fails partway must not leave new plates beside the previous record (#621).
     (out_dir / "plates_provenance.json").unlink(missing_ok=True)
