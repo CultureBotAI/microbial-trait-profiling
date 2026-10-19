@@ -2,16 +2,16 @@
 
 Source figure: https://github.com/CultureBotAI/bsdbng/blob/enrichment-analysis-heatmap-cluster/data/derived/enrichment_infographic.png
 
-The target conditions for this run are selected from the infographic top three condition-level outliers. The local follow-up uses the full `data/derived/study_trait_profiles_wide.tsv` matrix and raw BugSigDB experiment metadata to list titles, find similar profiles, and connect enriched traits to organisms.
+The target conditions for this run are selected from the infographic top three condition-level outliers. The local follow-up uses the full `data/derived/study_trait_profiles_wide.tsv` matrix to list titles, find similar profiles, and connect enriched traits to organisms. Profiles carry their own experiment's condition, body site and host from `trait-visualization/study_trait_profile_study_metadata.tsv`; experiment details and reported taxa come from the pinned `data/raw/full_dump.csv`, and only profiles in this corpus are counted.
 
 ## Target Conditions
 
 | condition | infographic avg enrichment depth | local profiles | studies | experiments | local mean nonzero traits/profile | local percentile | local outlier? |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Sleep Disorder | 216.00 | 7 | 2 | 5 | 107.0 | 48.8% | no |
-| Head and neck squamous cell carcinoma | 210.33 | 25 | 4 | 13 | 60.0 | 21.4% | no |
+| Sleep Disorder | 216.00 | 7 | 2 | 5 | 107.0 | 48.9% | no |
+| Head and neck squamous cell carcinoma | 210.33 | 25 | 4 | 13 | 60.0 | 21.6% | no |
 
-Target conditions with fewer than 2 profiles in this corpus are missing from every table here: Thalassemia (0 profiles).
+Target conditions with fewer than 2 profiles in this corpus are not summarized or queried: Thalassemia (0 profiles).
 
 Interpretation: condition support matters because profile counts, study counts, and body-site mix vary across exact BugSigDB condition labels.
 
@@ -35,24 +35,15 @@ Interpretation: condition support matters because profile counts, study counts, 
 | Sleep Disorder | Short-Chain Fatty Acid-Producing Gut Microbiota Is Decreased in Parkinson's Disease but Not in Rapid-Eye-Movement Sleep Behavior Disorder (bsdb:33293403) | 2020 | Experiment 1: Healthy Controls vs Rapid-eye-movement sleep behavior disorder (iRBD) patients | 1 |
 | Sleep Disorder | Short-Chain Fatty Acid-Producing Gut Microbiota Is Decreased in Parkinson's Disease but Not in Rapid-Eye-Movement Sleep Behavior Disorder (bsdb:33293403) | 2020 | Experiment 2: Healthy Controls vs Rapid-eye-movement sleep behavior disorder (iRBD) patients | 1 |
 | Sleep Disorder | Short-Chain Fatty Acid-Producing Gut Microbiota Is Decreased in Parkinson's Disease but Not in Rapid-Eye-Movement Sleep Behavior Disorder (bsdb:33293403) | 2020 | Experiment 3: Healthy Controls vs Rapid-eye-movement sleep behavior disorder (iRBD) patients | 1 |
-| Sleep Disorder | nan (bsdb:35362675) | nan | Experiment 1: Normal rearing control maternal group  (C-M) vs Maternal sleep deprivation maternal group (MSD-M) | 0 |
-| Sleep Disorder | nan (bsdb:35362675) | nan | Experiment 2: Normal rearing control offspring group, postnatal day 1 (C-P1) vs MSD offspring group, postnatal day 1 (MSD-P1) | 0 |
-| Sleep Disorder | nan (bsdb:35362675) | nan | Experiment 3: Normal rearing control offspring group, postnatal day 7 (C-P7) vs MSD offspring group, postnatal day 7 (MSD-P7) | 0 |
-| Sleep Disorder | nan (bsdb:35362675) | nan | Experiment 4: Normal rearing control offspring group, postnatal day 14 (C-P14) vs MSD offspring group, postnatal day 14 (MSD-P14) | 0 |
-| Sleep Disorder | nan (bsdb:35362675) | nan | Experiment 5: Normal rearing control offspring group, postnatal day 56 (C-P56) vs MSD offspring group, postnatal day 56 (MSD-P56) | 0 |
 | Sleep Disorder | Preliminary analysis of salivary microbiota in catathrenia (nocturnal groaning) using machine learning algorithms (bsdb:40247863) | 2025 | Experiment 1: Healthy control group vs Catathrenia group | 2 |
 | Sleep Disorder | Preliminary analysis of salivary microbiota in catathrenia (nocturnal groaning) using machine learning algorithms (bsdb:40247863) | 2025 | Experiment 2: Pre treatment of Mandibular Advancement Devices (MAD) group vs Post treatment of Mandibular Advancement Devices (MAD) group | 2 |
-| Thalassemia | nan (bsdb:39438708) | nan | Experiment 1: Control vs Thalassemia | 0 |
-| Thalassemia | nan (bsdb:39438708) | nan | Experiment 2: Non-transfusion dependent thalassemia vs Transfusion dependent Thalassemia | 0 |
-
-7 of these experiments have no profile in this corpus, for example because the host is not human or the study was added to the live `experiments.csv` export after the pinned release. The pinned study table has no title for studies it lacks.
 
 ## Autism Label Check
 
 | exact label | EFO IDs | profiles | studies | experiments | interpretation |
 | --- | --- | ---: | ---: | ---: | --- |
-| Autism | MONDO:0005260 | 14 | 4 | 10 | Distinct exact BugSigDB label; analyze separately unless an explicit autism/ASD grouping is declared. |
-| Autism spectrum disorder | MONDO:0005258 | 7 | 3 | 5 | Distinct exact BugSigDB label; analyze separately unless an explicit autism/ASD grouping is declared. |
+| Autism | EFO:0003758 | 14 | 4 | 10 | Distinct exact BugSigDB label; analyze separately unless an explicit autism/ASD grouping is declared. |
+| Autism spectrum disorder | EFO:0003756 | 7 | 3 | 5 | Distinct exact BugSigDB label; analyze separately unless an explicit autism/ASD grouping is declared. |
 
 Autism and autism spectrum disorder should not be silently treated as the same exact condition label. For a clinical/domain rollup, they can be grouped as `Autism / autism spectrum disorder` if the merge is declared, but exact label and EFO-level analyses should keep them separate.
 
@@ -77,7 +68,6 @@ Profile similarity uses cosine similarity over log1p-transformed full non-MediaD
 
 | query condition | any other target in top 5 profiles? | matched target conditions |
 | --- | --- | --- |
-| Thalassemia | no | NA |
 | Sleep Disorder | no | NA |
 | Head and neck squamous cell carcinoma | no | NA |
 

@@ -2,7 +2,7 @@ query_condition	rank	neighbor_condition	neighbor_is_other_target_condition	cosin
 Multiple sclerosis	1	Ulcerative colitis	False	0.9802051782608032	44	14	25
 Multiple sclerosis	2	Physical activity	False	0.9743314981460571	10	2	5
 Multiple sclerosis	3	Chronic kidney disease	False	0.9740617275238037	31	10	16
-Multiple sclerosis	4	Obesity	False	0.9731258153915405	169	36	96
+Multiple sclerosis	4	Obesity	False	0.9734514355659485	171	37	97
 Multiple sclerosis	5	Socioeconomic status	False	0.9730049967765808	27	11	14
 Stroke	1	Age	False	0.988923966884613	57	14	36
 Stroke	2	Response to immunochemotherapy	False	0.9863227605819702	18	9	9
@@ -10,7 +10,7 @@ Stroke	3	Cervical cancer	False	0.9852871298789978	22	7	12
 Stroke	4	Parkinson's disease	False	0.9852663278579712	274	58	162
 Stroke	5	Polycystic ovary syndrome	False	0.9852098822593689	54	13	29
 Constipation	1	Schizophrenia	False	0.9912869930267334	47	16	26
-Constipation	2	Colorectal cancer	False	0.9883100390434265	195	54	110
+Constipation	2	Colorectal cancer	False	0.9883066415786743	197	55	111
 Constipation	3	HIV infection	False	0.9882166385650635	94	30	53
 Constipation	4	Polycystic ovary syndrome	False	0.9871132373809814	54	13	29
-Constipation	5	Type II diabetes mellitus	False	0.9863171577453613	56	19	31
+Constipation	5	Obesity	False	0.9866688251495361	171	37	97

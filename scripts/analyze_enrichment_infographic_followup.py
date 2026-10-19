@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import io
 import math
 import re
 from collections import Counter
@@ -37,7 +38,11 @@ PAIRED_CONDITION_SUMMARY_PATH = (
     / "trait-profile-investigation"
     / "trait_profile_paired_contrast_condition_summary.tsv"
 )
+PROFILE_LABELS_PATH = REPO_ROOT / "trait-visualization" / "study_trait_profile_study_metadata.tsv"
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
+# Taken from each profile's own experiment in the profile metadata table (#555, #688).
+PROFILE_LABEL_COLUMNS = ["condition", "body_site", "location", "host_species"]
+MISSING_TITLE = "(title missing from the pinned study table)"
 TARGET_CONDITIONS = (
     "Thalassemia",
     "Sleep Disorder",
@@ -154,25 +159,6 @@ def resolve_trait_column_id(trait_id: str, trait_labels: pd.DataFrame) -> str:
     return trait_id
 
 
-def study_id_from_raw_study(value: object) -> str:
-    """Convert a raw BugSigDB Study field to the local study_id format."""
-    return f"bsdb:{clean_text(value)}"
-
-
-def experiment_number_from_name(value: object) -> str:
-    """Extract the integer suffix from a BugSigDB experiment page name."""
-    match = re.search(r"(\d+)", clean_text(value))
-    return match.group(1) if match else ""
-
-
-def experiment_id_from_raw_parts(study: object, experiment_name: object) -> str:
-    """Build a local experiment_id from raw BugSigDB experiment metadata."""
-    experiment_number = experiment_number_from_name(experiment_name)
-    if not experiment_number:
-        return f"{study_id_from_raw_study(study)}-unknown"
-    return f"{study_id_from_raw_study(study)}-{experiment_number}"
-
-
 def study_id_from_bsdb_id(bsdb_id: object) -> str:
     """Convert a full raw signature ID to a local study_id."""
     compact_id = clean_text(bsdb_id).removeprefix("bsdb:").split("/", 1)[0]
@@ -234,20 +220,21 @@ def join_unique(values: pd.Series, max_items: int = 12) -> str:
     return "; ".join(unique_values)
 
 
-def load_raw_experiments(path: Path) -> pd.DataFrame:
-    """Load raw BugSigDB experiment metadata with local IDs."""
-    raw = pd.read_csv(path, dtype=str, comment="#").fillna("")
-    raw["study_id"] = raw["Study"].map(study_id_from_raw_study)
-    raw["experiment_id"] = [
-        experiment_id_from_raw_parts(study, experiment_name)
-        for study, experiment_name in raw[["Study", "Experiment page name"]].itertuples(
-            index=False,
-            name=None,
-        )
-    ]
+def load_experiments(full_dump_path: Path) -> pd.DataFrame:
+    """Load one row of experiment metadata per experiment from the pinned full dump.
+
+    The profiles are built from this dump, so its experiment names, condition IDs and
+    group definitions describe the same experiments; the live ``experiments.csv`` export
+    is not pinned (README.md).
+    """
+    with full_dump_path.open(encoding="utf-8", newline="") as handle:
+        rows = "".join(line for line in handle if not line.startswith("#"))
+    raw = pd.read_csv(io.StringIO(rows), dtype=str).fillna("")
+    raw["study_id"] = raw["BSDB ID"].map(study_id_from_bsdb_id)
+    raw["experiment_id"] = raw["BSDB ID"].map(experiment_id_from_bsdb_id)
     raw = raw.rename(
         columns={
-            "Experiment page name": "experiment_name",
+            "Experiment": "experiment_name",
             "Location of subjects": "location",
             "Host species": "host_species",
             "Body site": "body_site",
@@ -327,12 +314,24 @@ def load_trait_labels(path: Path) -> pd.DataFrame:
     return labels
 
 
+def load_profile_labels(path: Path) -> pd.DataFrame:
+    """Load each profile's own experiment labels, indexed by profile ID."""
+    labels = pd.read_csv(path, sep="\t", index_col=0, dtype=str)
+    return labels[PROFILE_LABEL_COLUMNS]
+
+
 def load_profiles(
     profile_path: Path,
     experiments: pd.DataFrame,
     studies: pd.DataFrame,
+    profile_labels: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
-    """Load the full study-trait profile matrix and profile metadata."""
+    """Load the profile matrix and its metadata.
+
+    Condition, body site, location and host come from ``profile_labels``, the table every
+    other analysis labels profiles with; experiment and study details come from the
+    pinned dump and the study table.
+    """
     profiles = pd.read_csv(profile_path, sep="\t")
     trait_columns = [
         column for column in profiles.columns if column not in PROFILE_METADATA_COLUMNS
@@ -361,8 +360,13 @@ def load_profiles(
     )
     metadata["profile_trait_count"] = values.gt(0).sum(axis=1).to_numpy(dtype=int)
     metadata["total_trait_signal"] = values.sum(axis=1).to_numpy(dtype=float)
-    metadata = metadata.merge(experiments, on=["study_id", "experiment_id"], how="left")
+    metadata = metadata.merge(
+        experiments.drop(columns=PROFILE_LABEL_COLUMNS, errors="ignore"),
+        on=["study_id", "experiment_id"],
+        how="left",
+    )
     metadata = metadata.merge(studies, on="study_id", how="left", suffixes=("", "_study"))
+    metadata = metadata.join(profile_labels, on="profile_id")
     for column in [
         "condition",
         "body_site",
@@ -444,11 +448,19 @@ def write_target_title_table(
     studies: pd.DataFrame,
     output_path: Path,
 ) -> pd.DataFrame:
-    """Write the BugSigDB study and experiment labels behind target conditions."""
+    """Write the study and experiment labels behind the target conditions' profiles.
+
+    Only experiments with a profile in this corpus are listed; their labels are the
+    profiles' own.
+    """
     profiles = metadata[metadata["condition"].isin(TARGET_CONDITIONS)].copy()
-    profile_summary = (
+    table = (
         profiles.groupby(["study_id", "experiment_id"], dropna=False)
         .agg(
+            condition=("condition", most_common),
+            body_site=("body_site", most_common),
+            location=("location", most_common),
+            host_species=("host_species", most_common),
             profile_count=("profile_id", "size"),
             nonzero_profile_count=(
                 "profile_trait_count",
@@ -461,20 +473,15 @@ def write_target_title_table(
         )
         .reset_index()
     )
-    table = experiments[experiments["condition"].isin(TARGET_CONDITIONS)].merge(
-        studies,
-        on="study_id",
+    table = table.merge(
+        experiments.drop(columns=PROFILE_LABEL_COLUMNS, errors="ignore"),
+        on=["study_id", "experiment_id"],
         how="left",
-    )
-    table = table.merge(profile_summary, on=["study_id", "experiment_id"], how="left")
-    for column in [
-        "profile_count",
-        "nonzero_profile_count",
-        "mean_profile_trait_count",
-        "max_profile_trait_count",
-        "total_trait_signal",
-    ]:
-        table[column] = pd.to_numeric(table[column], errors="coerce").fillna(0)
+    ).merge(studies, on="study_id", how="left")
+    for column in ["efo_id", "experiment_label", "group_1_definition", "sequencing_type"]:
+        table[column] = table[column].map(clean_text)
+    table["title"] = table["title"].map(clean_optional_text).replace("", MISSING_TITLE)
+    table["publication_year"] = table["publication_year"].map(clean_text)
     ordered_columns = [
         "condition",
         "efo_id",
@@ -633,6 +640,9 @@ def compute_profile_neighbors(
 
     crosscheck_records: list[dict[str, object]] = []
     for query_condition in TARGET_CONDITIONS:
+        # A target without a centroid was never queried, so it has no neighbours to check.
+        if query_condition not in centroids:
+            continue
         hits = neighbors[
             (neighbors["query_condition"] == query_condition)
             & (neighbors["neighbor_is_other_target_condition"])
@@ -973,6 +983,11 @@ def build_traits_vs_organisms_heatmap(
         fill_with_high_signal_traits,
     )
     occurrences = load_target_taxa_occurrences(full_dump_path)
+    # The dump also holds signatures outside the profile corpus, such as other hosts.
+    occurrences = occurrences[occurrences["profile_id"].isin(metadata.index)].copy()
+    if occurrences.empty:
+        msg = "No target-condition taxon occurrences belong to profiles in this corpus."
+        raise ValueError(msg)
     preferred_occurrences = occurrences[
         occurrences["taxonomic_rank"].isin(PREFERRED_HEATMAP_RANKS)
     ].copy()
@@ -1272,9 +1287,12 @@ def write_report(
         "",
         f"The target conditions for this run are selected from {target_condition_description}. "
         "The local follow-up uses the full "
-        "`data/derived/study_trait_profiles_wide.tsv` matrix and raw BugSigDB experiment "
-        "metadata to list titles, find similar profiles, and connect enriched traits to "
-        "organisms.",
+        "`data/derived/study_trait_profiles_wide.tsv` matrix to list titles, find similar "
+        "profiles, and connect enriched traits to organisms. Profiles carry their own "
+        "experiment's condition, body site and host from "
+        "`trait-visualization/study_trait_profile_study_metadata.tsv`; experiment details and "
+        "reported taxa come from the pinned `data/raw/full_dump.csv`, and only profiles in "
+        "this corpus are counted.",
         "",
         "## Target Conditions",
         "",
@@ -1304,7 +1322,7 @@ def write_report(
             [
                 "",
                 f"Target conditions with fewer than {min_condition_profiles} profiles in this "
-                f"corpus are missing from every table here: {dropped}.",
+                f"corpus are not summarized or queried: {dropped}.",
             ]
         )
 
@@ -1326,18 +1344,6 @@ def write_report(
             f"{row['publication_year']} | {row['experiment_label']} | "
             f"{int(row['profile_count'])} |"
         )
-    unprofiled = titles[titles["profile_count"].eq(0)]
-    if not unprofiled.empty:
-        lines.extend(
-            [
-                "",
-                f"{len(unprofiled)} of these experiments have no profile in this corpus, for "
-                "example because the host is not human or the study was added to the live "
-                "`experiments.csv` export after the pinned release. The pinned study table has "
-                "no title for studies it lacks.",
-            ]
-        )
-
     lines.extend(
         [
             "",
@@ -1488,10 +1494,10 @@ def parse_args() -> argparse.Namespace:
         help="Input wide study trait profiles TSV path.",
     )
     parser.add_argument(
-        "--raw-experiments-input",
+        "--profile-metadata-input",
         type=Path,
-        default=REPO_ROOT / "data/raw/experiments.csv",
-        help="Input raw BugSigDB experiments CSV path.",
+        default=PROFILE_LABELS_PATH,
+        help="Profile metadata TSV giving each profile's own experiment labels.",
     )
     parser.add_argument(
         "--full-dump-input",
@@ -1606,10 +1612,15 @@ def main() -> None:
     args = parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    experiments = load_raw_experiments(args.raw_experiments_input)
+    experiments = load_experiments(args.full_dump_input)
     studies = load_studies(args.studies_input)
     trait_labels = load_trait_labels(args.taxa_trait_columns_input)
-    values, metadata, _ = load_profiles(args.profiles_input, experiments, studies)
+    values, metadata, _ = load_profiles(
+        args.profiles_input,
+        experiments,
+        studies,
+        load_profile_labels(args.profile_metadata_input),
+    )
     target_condition_description = "the infographic top three condition-level outliers"
     condition_score_label = "infographic avg enrichment depth"
     condition_source_title = "Infographic Outlier Conditions"

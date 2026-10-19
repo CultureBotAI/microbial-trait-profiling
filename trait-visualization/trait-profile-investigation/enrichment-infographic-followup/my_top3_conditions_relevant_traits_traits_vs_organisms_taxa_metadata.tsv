@@ -1,46 +1,46 @@
 taxon_id	taxon_name	taxonomic_rank	target_profile_count	target_study_count	target_experiment_count	target_condition_count	target_conditions	target_directions	increased	decreased	dominant_direction	dominant_condition	selected_trait_count	display_condition
-NCBITaxon:239935	Akkermansia muciniphila	species	19	2	19	2	Multiple sclerosis; Stroke	decreased; increased	13	6	increased	Multiple sclerosis	6	Multiple sclerosis
-NCBITaxon:69825	Lacrimispora indolis	species	17	1	17	1	Multiple sclerosis	decreased; increased	8	9	decreased	Multiple sclerosis	4	Multiple sclerosis
-NCBITaxon:69824	Thomasclavelia cocleata	species	16	1	16	1	Multiple sclerosis	decreased; increased	12	4	increased	Multiple sclerosis	6	Multiple sclerosis
-NCBITaxon:169435	Anaerotruncus colihominis	species	15	2	15	1	Multiple sclerosis	decreased; increased	7	8	decreased	Multiple sclerosis	17	Multiple sclerosis
-NCBITaxon:29347	[Clostridium] scindens	species	12	1	12	1	Multiple sclerosis	decreased; increased	10	2	increased	Multiple sclerosis	8	Multiple sclerosis
-NCBITaxon:154288	Turicibacter sanguinis	species	12	1	12	1	Multiple sclerosis	decreased; increased	7	5	increased	Multiple sclerosis	5	Multiple sclerosis
-NCBITaxon:259063	Anaerocolumna jejuensis	species	11	1	11	1	Multiple sclerosis	decreased; increased	6	5	increased	Multiple sclerosis	19	Multiple sclerosis
-NCBITaxon:166486	Roseburia intestinalis	species	11	1	10	1	Multiple sclerosis	decreased; increased	3	8	decreased	Multiple sclerosis	6	Multiple sclerosis
-NCBITaxon:39486	Dorea formicigenerans	species	9	1	8	1	Multiple sclerosis	decreased; increased	1	8	decreased	Multiple sclerosis	6	Multiple sclerosis
-NCBITaxon:1544	Faecalicatena orotica	species	7	1	7	1	Multiple sclerosis	decreased; increased	4	3	increased	Multiple sclerosis	13	Multiple sclerosis
-NCBITaxon:1350	Enterococcus	genus	16	4	16	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	14	2	increased	Stroke	33	Multiple sclerosis
-NCBITaxon:239934	Akkermansia	genus	13	6	13	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	9	4	increased	Constipation	18	Multiple sclerosis
-NCBITaxon:47246	[Clostridium] viride	species	6	1	6	1	Multiple sclerosis	decreased; increased	1	5	decreased	Multiple sclerosis	6	Multiple sclerosis
-NCBITaxon:138595	Olsenella profusa	species	6	1	6	1	Multiple sclerosis	decreased; increased	2	4	decreased	Multiple sclerosis	3	Multiple sclerosis
-NCBITaxon:879566	Acetatifactor muris	species	6	1	6	1	Multiple sclerosis	decreased; increased	1	5	decreased	Multiple sclerosis	2	Multiple sclerosis
-NCBITaxon:841	Roseburia	genus	16	4	16	2	Multiple sclerosis; Stroke	decreased; increased	3	13	decreased	Stroke	10	Stroke
-NCBITaxon:216851	Faecalibacterium	genus	10	6	10	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	4	6	decreased	Stroke	8	Stroke
+NCBITaxon:838	Prevotella	genus	7	4	7	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	2	5	decreased	Multiple sclerosis	22	Multiple sclerosis
+NCBITaxon:239934	Akkermansia	genus	7	4	7	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	6	1	increased	Multiple sclerosis	18	Multiple sclerosis
+NCBITaxon:165179	Segatella copri	species	5	3	4	2	Multiple sclerosis; Stroke	decreased; increased	1	4	decreased	Multiple sclerosis	13	Multiple sclerosis
+NCBITaxon:574697	Butyricimonas	genus	4	1	4	1	Multiple sclerosis	decreased	0	4	decreased	Multiple sclerosis	13	Multiple sclerosis
+NCBITaxon:28050	Lachnospira	genus	9	6	9	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	4	5	decreased	Stroke	10	Multiple sclerosis
+NCBITaxon:40544	Sutterella	genus	6	3	6	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	2	4	decreased	Multiple sclerosis	11	Multiple sclerosis
+NCBITaxon:310298	Phocaeicola coprocola	species	5	3	4	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	1	4	decreased	Multiple sclerosis	14	Multiple sclerosis
+NCBITaxon:437897	Megamonas funiformis	species	4	2	3	2	Multiple sclerosis; Stroke	decreased; increased	2	2	mixed	Multiple sclerosis	10	Multiple sclerosis
+NCBITaxon:1308	Streptococcus thermophilus	species	3	1	2	1	Multiple sclerosis	decreased; increased	2	1	increased	Multiple sclerosis	12	Multiple sclerosis
+NCBITaxon:1304	Streptococcus salivarius	species	3	1	2	1	Multiple sclerosis	decreased; increased	2	1	increased	Multiple sclerosis	10	Multiple sclerosis
+NCBITaxon:2172	Methanobrevibacter	genus	3	1	3	1	Multiple sclerosis	increased	3	0	increased	Multiple sclerosis	9	Multiple sclerosis
+NCBITaxon:387090	Phocaeicola coprophilus	species	3	1	2	1	Multiple sclerosis	decreased; increased	1	2	decreased	Multiple sclerosis	9	Multiple sclerosis
+NCBITaxon:216851	Faecalibacterium	genus	10	6	10	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	4	6	decreased	Stroke	8	Multiple sclerosis
+NCBITaxon:572511	Blautia	genus	5	4	4	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	3	2	increased	Multiple sclerosis	13	Multiple sclerosis
+NCBITaxon:487174	Barnesiella intestinihominis	species	4	3	4	2	Multiple sclerosis; Stroke	decreased; increased	3	1	increased	Multiple sclerosis	15	Multiple sclerosis
+NCBITaxon:841	Roseburia	genus	14	3	14	1	Stroke	decreased; increased	3	11	decreased	Stroke	10	Stroke
+NCBITaxon:1350	Enterococcus	genus	10	3	10	2	Constipation; Stroke	increased	10	0	increased	Stroke	33	Stroke
 NCBITaxon:551	Erwinia	genus	5	1	5	1	Stroke	increased	5	0	increased	Stroke	18	Stroke
-NCBITaxon:1578	Lactobacillus	genus	20	7	20	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	15	5	increased	Constipation	29	Stroke
-NCBITaxon:28050	Lachnospira	genus	9	6	9	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	4	5	decreased	Stroke	10	Stroke
+NCBITaxon:1578	Lactobacillus	genus	5	4	5	2	Multiple sclerosis; Stroke	decreased; increased	4	1	increased	Stroke	29	Stroke
 NCBITaxon:702	Plesiomonas	genus	4	1	4	1	Stroke	increased	4	0	increased	Stroke	10	Stroke
-NCBITaxon:375288	Parabacteroides	genus	11	4	11	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	6	5	increased	Constipation	23	Stroke
-NCBITaxon:872	Desulfovibrio	genus	9	6	9	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	7	2	increased	Constipation	18	Stroke
-NCBITaxon:35832	Bilophila	genus	6	4	6	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	5	1	increased	Stroke	5	Stroke
+NCBITaxon:375288	Parabacteroides	genus	5	3	5	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	4	1	increased	Stroke	23	Stroke
+NCBITaxon:872	Desulfovibrio	genus	5	5	5	3	Constipation; Multiple sclerosis; Stroke	increased	5	0	increased	Stroke	18	Stroke
+NCBITaxon:35832	Bilophila	genus	5	3	5	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	4	1	increased	Stroke	5	Stroke
 NCBITaxon:29465	Veillonella	genus	5	3	5	2	Constipation; Stroke	increased	5	0	increased	Stroke	20	Stroke
-NCBITaxon:1263	Ruminococcus	genus	14	7	14	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	4	10	decreased	Constipation	16	Stroke
-NCBITaxon:572511	Blautia	genus	7	5	6	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	3	4	decreased	Multiple sclerosis	13	Stroke
-NCBITaxon:487174	Barnesiella intestinihominis	species	4	3	4	2	Multiple sclerosis; Stroke	decreased; increased	3	1	increased	Multiple sclerosis	15	Stroke
 NCBITaxon:102106	Collinsella	genus	4	4	4	2	Multiple sclerosis; Stroke	decreased; increased	1	3	decreased	Multiple sclerosis	13	Stroke
 NCBITaxon:207244	Anaerostipes	genus	3	2	3	2	Multiple sclerosis; Stroke	decreased; increased	2	1	increased	Stroke	19	Stroke
-NCBITaxon:1485	Clostridium	genus	14	6	14	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	7	7	mixed	Constipation	28	Constipation
-NCBITaxon:2086	Anaeroplasma	genus	13	2	13	2	Constipation; Multiple sclerosis	decreased; increased	6	7	decreased	Constipation	1	Constipation
-NCBITaxon:1678	Bifidobacterium	genus	11	2	11	2	Constipation; Multiple sclerosis	decreased; increased	10	1	increased	Constipation	29	Constipation
-NCBITaxon:283168	Odoribacter	genus	10	2	10	2	Constipation; Stroke	decreased; increased	4	6	decreased	Constipation	10	Constipation
-NCBITaxon:44748	Sporobacter	genus	8	2	7	2	Constipation; Multiple sclerosis	decreased; increased	2	6	decreased	Constipation	8	Constipation
-NCBITaxon:239759	Alistipes	genus	7	2	7	1	Constipation	decreased; increased	2	5	decreased	Constipation	15	Constipation
-NCBITaxon:191303	Turicibacter	genus	10	4	10	2	Constipation; Multiple sclerosis	decreased; increased	5	5	mixed	Constipation	8	Constipation
-NCBITaxon:33042	Coprococcus	genus	7	4	7	2	Constipation; Stroke	decreased; increased	5	2	increased	Constipation	8	Constipation
-NCBITaxon:838	Prevotella	genus	11	5	11	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	4	7	decreased	Constipation	22	Constipation
-NCBITaxon:816	Bacteroides	genus	8	5	8	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	5	3	increased	Constipation	29	Constipation
-NCBITaxon:459786	Oscillibacter	genus	7	4	7	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	2	5	decreased	Constipation	20	Constipation
-NCBITaxon:119852	Oscillospira	genus	7	4	7	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	2	5	decreased	Constipation	1	Constipation
-NCBITaxon:189330	Dorea	genus	8	3	8	2	Constipation; Multiple sclerosis	decreased; increased	3	5	decreased	Constipation	7	Constipation
-NCBITaxon:28138	Rikenella	genus	5	1	5	1	Constipation	decreased; increased	1	4	decreased	Constipation	6	Constipation
-NCBITaxon:447020	Adlercreutzia	genus	5	4	4	2	Constipation; Multiple sclerosis	decreased; increased	3	2	increased	Constipation	16	Constipation
+NCBITaxon:1263	Ruminococcus	genus	3	3	3	2	Constipation; Stroke	decreased; increased	1	2	decreased	Stroke	16	Stroke
+NCBITaxon:561	Escherichia	genus	2	2	2	1	Stroke	increased	2	0	increased	Stroke	25	Stroke
+NCBITaxon:906	Megasphaera	genus	2	2	2	1	Stroke	decreased; increased	1	1	mixed	Stroke	18	Stroke
+NCBITaxon:416916	Aggregatibacter	genus	2	1	2	1	Stroke	increased	2	0	increased	Stroke	10	Stroke
+NCBITaxon:33042	Coprococcus	genus	4	3	4	2	Constipation; Stroke	decreased; increased	2	2	mixed	Constipation	8	Constipation
+NCBITaxon:33024	Phascolarctobacterium	genus	4	4	4	2	Constipation; Multiple sclerosis	decreased; increased	3	1	increased	Constipation	6	Constipation
+NCBITaxon:46255	Weissella	genus	3	2	3	1	Constipation	decreased; increased	1	2	decreased	Constipation	27	Constipation
+NCBITaxon:570	Klebsiella	genus	3	3	3	1	Constipation	decreased; increased	2	1	increased	Constipation	18	Constipation
+NCBITaxon:1164882	Lachnoanaerobaculum	genus	3	2	3	1	Constipation	decreased; increased	2	1	increased	Constipation	11	Constipation
+NCBITaxon:119044	Filomicrobium	genus	3	1	3	1	Constipation	increased	3	0	increased	Constipation	3	Constipation
+NCBITaxon:577309	Paraprevotella	genus	4	3	4	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	1	3	decreased	Constipation	13	Constipation
+NCBITaxon:1407607	Fusicatenibacter	genus	4	3	4	3	Constipation; Multiple sclerosis; Stroke	decreased; increased	1	3	decreased	Constipation	12	Constipation
+NCBITaxon:84111	Eggerthella	genus	3	2	3	2	Constipation; Multiple sclerosis	increased	3	0	increased	Constipation	8	Constipation
+NCBITaxon:2163168	Kineothrix	genus	2	1	2	1	Constipation	decreased	0	2	decreased	Constipation	16	Constipation
+NCBITaxon:265488	Rhodopirellula	genus	2	1	2	1	Constipation	decreased	0	2	decreased	Constipation	15	Constipation
+NCBITaxon:174708	Allobaculum	genus	2	1	2	1	Constipation	increased	2	0	increased	Constipation	5	Constipation
+NCBITaxon:209879	Dialister	genus	2	1	2	1	Constipation	decreased; increased	1	1	mixed	Constipation	2	Constipation
+NCBITaxon:42322	Eubacterium ruminantium	species	2	2	2	1	Constipation	decreased; increased	1	1	mixed	Constipation	1	Constipation
+NCBITaxon:286136	uncultured Coriobacterium sp.	species	2	1	2	1	Constipation	decreased; increased	1	1	mixed	Constipation	1	Constipation
