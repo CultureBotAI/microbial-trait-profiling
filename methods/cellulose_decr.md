@@ -37,7 +37,7 @@ The run's `cellulose_decr_provenance.json` records:
 - the code commit, seeds and package versions.
 
 Numbers in this note come from BugSigDB vintage `2026-04-24_00:41_UTC` and
-classifier `contrast-orientation-v2`.
+classifier `contrast-orientation-v4`.
 
 **Pinned inputs.** The inputs are gitignored, and other work rebuilds them in
 place. The provenance therefore keeps the reference hashes in `pinned_inputs`,
@@ -56,11 +56,9 @@ Two options change this:
   old pins forward, so the next ordinary run still refuses them.
 - `--repin` adopts the current inputs as the pins.
 
-See #562 and #571. The pins describe the v2 contrast manifest and the profile metadata
-table before #555 relabelled it per experiment. Until #580 re-pins the analysis on the
-current manifest, a checkout with a newer classifier (v3 since #554) or the relabelled
-metadata refuses to run, and the committed tables reproduce by checking out the
-provenance's `code_commit` with the pinned inputs (#642).
+See #562 and #571. The pins describe the v4 contrast manifest and the profile metadata
+table with each experiment's own labels (#555, #580). The committed tables reproduce
+by checking out the provenance's `code_commit` with the pinned inputs (#642).
 
 **Condition and body site come from each experiment's own record**
 (`experiments.tsv`). The October 16 outputs took them from the profile metadata
@@ -120,8 +118,14 @@ the larger share. Ties are excluded.
   the three conditions.
 - **Populations:**
   - all contrasts;
-  - disease-versus-healthy contrasts, with reversed experiments relabelled so
-    *decreased* means lower in disease (`disease_vs_healthy_oriented`);
+  - disease-versus-healthy contrasts that compare people with the condition
+    against people without it (`contrast_type` `case_vs_control_subject`, #580),
+    with reversed experiments relabelled so *decreased* means lower in disease
+    (`disease_vs_healthy_oriented`). The classifier also calls
+    tumour-vs-adjacent-tissue and comorbidity contrasts disease vs healthy; these
+    do not count here
+    ([`contrast_orientation.md`](contrast_orientation.md), "Selecting patients
+    against controls");
   - the same without experiments flagged `weak_comparison_evidence`;
   - for HIV, the oriented population without experiments whose group names or
     descriptions mention MSM. That last filter is lexical. It does not adjust for
@@ -129,16 +133,20 @@ the larger share. Ties are excluded.
 - **Condition definitions.** `condition_definition_sensitivity.tsv` repeats the
   feces tests under these definitions:
   - the synonym labels;
-  - the HIV– versus HIV+ experiment the classifier calls disease versus disease;
-  - three ART-treated HIV+ versus uninfected experiments the classifier calls
-    treatment exposure (#569);
-  - without the one HIV study whose "feces" was rectal mucosa (#566);
-  - without the CRC experiment the classifier counts as disease vs healthy
-    although it compares cancerous with adjacent non-cancerous tissue of the
-    same patients (#569).
+  - without contrasts whose cases are named as treated (`treated_disease_group`),
+    such as people with HIV on antiretroviral therapy against people without HIV;
+  - Tier 1–2 controls only, which also sets aside hospital, symptomatic and
+    comorbid controls (Tier 3);
+  - every disease-versus-healthy contrast type, counting the
+    tumour-vs-adjacent-tissue and comorbidity contrasts as well;
+  - without the one HIV study whose "feces" was rectal mucosa (#566).
 
   `condition_definition_interaction.tsv` repeats the Feces-vs-GI test under each
-  of these definitions.
+  of these definitions. Since classifier v4 the HIV– versus HIV+ and ART-treated
+  HIV+ versus uninfected experiments are disease vs healthy, and
+  tumour-vs-adjacent tissue is `paired_tissue_autologous` (#569), so the analysis
+  no longer hand-codes them (#580). The summary's `case_control_inventory` lists
+  each experiment in the three conditions that one of these rules sets aside.
 - **Compartments:**
   - For each compartment and condition, the table reports the smallest two-sided
     p a sign test can reach with the observed untied pairs, and the power to
@@ -206,8 +214,9 @@ condition definition.
 - genus and species ranks only;
 - taxa with more decreased than increased profiles or studies;
 - all body sites;
-- disease-versus-healthy contrasts;
+- disease-versus-healthy contrasts, with all or only strong comparison evidence;
 - the synonym labels;
+
 - without the rectal-mucosa study;
 - every decreased feces taxon regardless of trait.
 
