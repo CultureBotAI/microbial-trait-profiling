@@ -611,12 +611,12 @@ def test_plates_must_record_their_inputs_and_be_the_plates_drawn(tmp_path: Path)
         (plates_dir / name).write_text(name)
     old = {"rerun_commit": deck.COMMIT, "plates": ["p.png"]}
     assert deck.plate_problems(tmp_path, old, {}, None, plates_dir) == {
-        "p.png": ["no inputs recorded", "p.png: no hash recorded", "p.svg: no hash recorded"]
+        "p.png": ["no inputs recorded", "PNG: no hash recorded", "SVG: no hash recorded"]
     }
     drawn = {"p.png": "0" * 64, "p.svg": hashlib.sha256(b"p.svg").hexdigest()}
     record = {**old, "inputs": {"p.png": {}}, "outputs": drawn}
     assert deck.plate_problems(tmp_path, record, {}, None, plates_dir) == {
-        "p.png": ["p.png: not the plate that was drawn"]
+        "p.png": ["PNG: not the plate that was drawn"]
     }
 
 
@@ -1005,16 +1005,23 @@ def test_cellulose_figures_must_be_the_ones_drawn(tmp_path: Path) -> None:
     table = tmp_path / deck.CELLULOSE_DIR / "t.tsv"
     (tmp_path / deck.CELLULOSE_DIR / "figures").mkdir(parents=True)
     (tmp_path / figure).write_text("drawn")
+    captions = tmp_path / deck.CELLULOSE_DIR / "figures" / "figure_captions.json"
+    captions.write_text("{}")
     table.write_text("t")
     record = {
         "inputs": {"t.tsv": hashlib.sha256(b"t").hexdigest()},
-        "outputs": {"figures/fig1.svg": hashlib.sha256(b"drawn").hexdigest()},
+        "outputs": {
+            "figures/fig1.svg": hashlib.sha256(b"drawn").hexdigest(),
+            "figures/figure_captions.json": hashlib.sha256(b"{}").hexdigest(),
+        },
     }
     trees = _trees(tmp_path, {f"{deck.CELLULOSE_DIR}/t.tsv": deck.git_blob_id(table)}, COMMIT)
     assert deck.cellulose_problems(record, [figure], trees, COMMIT, tmp_path) == []
     (tmp_path / figure).write_text("redrawn")
+    captions.write_text('{"edited": true}')
     assert deck.cellulose_problems(record, [figure], trees, COMMIT, tmp_path) == [
-        f"{figure}: not the figure that was drawn"
+        f"{figure}: not the file that was drawn",
+        f"{deck.CELLULOSE_DIR}/figures/figure_captions.json: not the file that was drawn",
     ]
     old = {**record, "outputs": ["figures/fig1.svg"]}
     assert deck.cellulose_problems(old, [figure], trees, COMMIT, tmp_path) == [

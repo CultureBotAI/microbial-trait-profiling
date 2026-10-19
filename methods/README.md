@@ -111,7 +111,8 @@ the recipe writes. It refuses when a file differs. `--allow-unverified` builds a
 deck instead: the files that differ are not linked, their slides say so, and the cover and
 every stamp read "review build", as they do for `--allow-contrast-version-mismatch` (#637).
 Gitignored figures cannot be checked against a revision; the provenance records their
-SHA-256. The provenance folder's `figure_provenance_and_results.json`,
+SHA-256. The check reads the local repository, so push the commits that drew the plates and
+cellulose figures before sharing a deck: the slides link them on GitHub. The provenance folder's `figure_provenance_and_results.json`,
 `figures_manifest.tsv` and `figure_statistical_results.tsv` have no generator and are not
 updated by a rebuild (#639).
 

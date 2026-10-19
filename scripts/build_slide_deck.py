@@ -2189,10 +2189,11 @@ def plate_problems(
         # The plate the deck places must be the one drawn, not a later overwrite.
         for drawn in (plate, str(Path(plate).with_suffix(".svg"))):
             path = plates_dir / drawn
+            kind = Path(drawn).suffix.removeprefix(".").upper()
             if drawn not in outputs:
-                found.append(f"{drawn}: no hash recorded")
+                found.append(f"{kind}: no hash recorded")
             elif not path.exists() or sha256_file(path) != outputs[drawn]:
-                found.append(f"{drawn}: not the plate that was drawn")
+                found.append(f"{kind}: not the plate that was drawn")
         if found:
             problems[plate] = found
     return problems
@@ -2222,11 +2223,12 @@ def cellulose_problems(
     outputs = record.get("outputs")
     if not isinstance(outputs, dict):
         return [*found, "the figures' provenance records no output hashes"]
-    for rel in figures:
+    # The figures shown and the captions their slides print must be what the run wrote.
+    for rel in [*figures, f"{CELLULOSE_DIR}/figures/figure_captions.json"]:
         name = rel.removeprefix(f"{CELLULOSE_DIR}/")
         path = root / rel
         if name not in outputs or not path.exists() or sha256_file(path) != outputs[name]:
-            found.append(f"{rel}: not the figure that was drawn")
+            found.append(f"{rel}: not the file that was drawn")
     return found
 
 
