@@ -1265,8 +1265,8 @@ def test_main_writes_every_artifact_and_its_provenance(tmp_path: Path) -> None:
         assessments = list(csv.DictReader(handle, delimiter="\t"))
     assert assessments
     assert {row["state_value"] for row in assessments} == {
-        f"pending {issue}" for issue in ASSESSMENTS.values()
-    }
+        f"pending {issue}" for issue in ASSESSMENTS.values() if issue != "#190"
+    } | {"pending #190: influence evidence not supplied"}
     assert {row["calibration_status"] for row in rows} == {"pending #182"}
 
     view = (output / "integrated_evidence.md").read_text(encoding="utf-8")
