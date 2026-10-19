@@ -98,7 +98,10 @@ them, whatever `--input-root` points at. They refuse to replace an existing deck
 plates without `--overwrite`; there is no other copy, so back up `slides/`,
 `provenance/` and `data/derived/tufte_plates/` first. They also refuse
 contrast-orientation inputs from a classifier other than the v2 their typed numbers
-describe, until #579 reads those numbers from the tables (#592).
+describe, until #579 reads those numbers from the tables (#592). To build into other
+folders, set them as `just deck_slides=DIR deck_provenance=DIR figure-review-deck`, so the
+validation, PDF and copy steps use them too; the recipe ends by writing
+`deck_build_status.json`.
 
 The [GPT Rosalind discussion and review](../docs/rosalind-six-trait-interpretation.md)
 archives proposed biological explanations for the six traits, with a separate
