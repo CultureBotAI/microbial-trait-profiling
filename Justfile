@@ -91,7 +91,8 @@ oral-six-trait-heatmap:
 	fi && \
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py --oral-only --source-commit "$source_commit"
 
-# Trace PD lollipop traits to observed taxa and profile evidence.
+# Trace all six PD lollipop traits, each with its observed direction, to observed taxa and
+# profile evidence, and record the PD fecal profile set the evidence was built from (#584).
 pd-trait-taxa:
 	uv run python scripts/lookup_pd_trait_taxa.py
 
@@ -100,7 +101,8 @@ pd-trait-taxa-heatmap:
 	uv run python scripts/create_pd_six_trait_taxon_heatmap.py
 	uv run python scripts/create_pd_exploratory_taxa_influence_heatmap.py
 
-# Refresh PD trait contributor dot heatmap with specificity and co-carriage checks.
+# Build PD trait contributor tables from the Table 1 contribution ledger (#190) on the pinned
+# KG in data/kg-microbe, then draw the dot heatmap and co-carriage network (#584).
 pd-trait-contributors:
 	uv run python scripts/create_pd_trait_contributors.py
 

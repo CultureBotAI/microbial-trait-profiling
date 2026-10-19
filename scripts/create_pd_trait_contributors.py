@@ -1,9 +1,16 @@
-"""Refresh PD trait contributor plots with specificity and co-carriage checks."""
+"""Build PD trait contributor tables and plots with specificity and co-carriage checks.
+
+The contributor counts come from the Table 1 contribution ledger (#190): every trait-bearing
+KG taxon below a reported taxon contributes one count to that profile's trait count, and is
+attributed to its species and family when the pinned taxonomy gives exactly one (#584).
+"""
 
 from __future__ import annotations
 
 import itertools
+import json
 import math
+from collections import defaultdict
 from pathlib import Path
 from textwrap import wrap
 
@@ -18,16 +25,40 @@ from create_pd_cellulose_analysis import (
     FECES,
     OUTPUT_DIR,
     PD_CONDITION,
+    REPO_ROOT,
     load_profile_metadata,
     read_tsv,
     write_tsv,
 )
 from create_pd_six_trait_taxon_heatmap import (
+    DIRECTION_ARROWS,
     load_taxon_specificity,
     require_current_trait_taxa_evidence,
+    sha256_chunks,
 )
+from lookup_pd_trait_taxa import SUMMARY_NAME, pd_feces_profile_ids, trait_directions
+from mtp.contribution_inputs import Base, Graph, Key, load_base, load_graph, verify_kg
+from mtp.taxon_contributions import Ledger, reconcile
+from mtp.trait_guilds import TABLE1_TRAIT_LABELS
 
 STEM = "pd_trait_contributors"
+SCOPE = "parkinsons_feces"
+KG_DIR = REPO_ROOT / "data/kg-microbe"
+DERIVED_DIR = REPO_ROOT / "data/derived"
+KG_PROTOCOL_PATH = REPO_ROOT / "methods/table1_taxon_influence_protocol.json"
+LEDGER_INPUTS = (
+    "study_trait_profiles_wide.tsv",
+    "experiments.tsv",
+    "bugsigdb_taxa.tsv",
+    "taxa_trait_matrix.tsv",
+)
+CONTRIBUTOR_RANKS = ("species", "family")
+RESOLVED_STATUS = "resolved_from_reported_rank_and_pinned_taxonomy"
+TOP_SPECIES_PER_TRAIT_DIRECTION = 5
+MAX_SELECTED_SPECIES = 50
+TOP_FAMILIES = 25
+SPECIES_SELECTION = "union_top_5_resolved_species_per_trait_direction_capped_at_50"
+FAMILY_SELECTION = "top_25_resolved_families_by_total_count"
 
 RANK_ORDER = {"species": 0, "family": 1}
 DIRECTION_ORDER = {"inc": 0, "dec": 1}
@@ -49,10 +80,282 @@ def base_trait_label(value: object) -> str:
     return str(value).split(" (", maxsplit=1)[0]
 
 
+def trait_display_labels(coverage: pd.DataFrame) -> dict[str, str]:
+    """Trait labels led by the arrow for the trait's observed direction in the lollipop."""
+    traits = coverage.drop_duplicates("trait_slug")
+    return {
+        str(row.trait_slug): (
+            f"{DIRECTION_ARROWS.get(str(row.trait_direction), '·')} "
+            f"{base_trait_label(row.trait_label)}"
+        )
+        for row in traits.itertuples(index=False)
+    }
+
+
 def strip_svg_trailing_whitespace(path: Path) -> None:
     """Normalize Matplotlib's multiline path output for clean generated diffs."""
     lines = path.read_text(encoding="utf-8").splitlines()
     path.write_text("\n".join(line.rstrip() for line in lines) + "\n", encoding="utf-8")
+
+
+def load_contribution_ledger(
+    kg_dir: Path,
+    derived_dir: Path,
+    protocol_path: Path,
+) -> tuple[Base, Graph, Ledger]:
+    """Load the pinned KG and the profile inputs and reconcile them, as `mtp.taxon_contributions`.
+
+    The reconciliation rebuilds every taxa-trait matrix and profile count from the KG, so a
+    KG that does not reproduce the matrix stops the analysis here.
+    """
+    protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
+    verify_kg(kg_dir, protocol["kg_md5"])
+    base = load_base(*(derived_dir / name for name in LEDGER_INPUTS))
+    graph = load_graph(
+        kg_dir / "merged-kg_edges.tsv",
+        kg_dir / "merged-kg_nodes.tsv",
+        set(base.columns),
+        set(base.traits.values()),
+    )
+    ledger = reconcile(base, graph)
+    if ledger.mismatches:
+        msg = (
+            f"{len(ledger.mismatches)} taxa-trait matrix or profile counts differ from the KG "
+            "rebuild; check the KG and data/derived inputs with `just table1-taxon-influence`."
+        )
+        raise ValueError(msg)
+    return base, graph, ledger
+
+
+def pd_contribution_profiles(base: Base, metadata: pd.DataFrame) -> list[Key]:
+    """PD fecal profiles that the ledger retains: human, in experiments with both directions."""
+    pd_feces = set(pd_feces_profile_ids(metadata))
+    keys = [
+        (str(row.study_id), str(row.experiment_id), str(row.inc_dec))
+        for row in metadata.itertuples(index=False)
+        if str(row.profile_id) in pd_feces
+    ]
+    return sorted(key for key in keys if key in base.profiles)
+
+
+def count_contributions(
+    base: Base,
+    graph: Graph,
+    ledger: Ledger,
+    keys: list[Key],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Attribute each profile's trait count to species and families.
+
+    Every trait-bearing KG taxon at or below a reported taxon adds one to the profile's trait
+    count, once per reported taxon, exactly as the taxa-trait matrix and the profile sums count
+    it. Each such source is resolved to its species and family when the pinned taxonomy gives
+    one ancestor at that rank, and is otherwise unresolved (none) or ambiguous (several).
+    """
+    counts: defaultdict[tuple[str, str, str, str], int] = defaultdict(int)
+    studies: defaultdict[tuple[str, str, str, str], set[str]] = defaultdict(set)
+    coverage: defaultdict[tuple[str, str, str, str], int] = defaultdict(int)
+    resolved: dict[tuple[str, str], tuple[str, str]] = {}
+    for key in keys:
+        study_id, _, direction = key
+        for trait_key in base.traits.values():
+            for target in base.reported[key]:
+                for source in ledger.sources[target]:
+                    if trait_key not in graph.traits.get(source, set()):
+                        continue
+                    for rank in CONTRIBUTOR_RANKS:
+                        if (source, rank) not in resolved:
+                            resolved[(source, rank)] = graph.ranked(source, rank, base.ranks)
+                        taxon, status = resolved[(source, rank)]
+                        coverage[(rank, direction, trait_key, status)] += 1
+                        if taxon:
+                            counts[(rank, taxon, direction, trait_key)] += 1
+                            studies[(rank, taxon, direction, trait_key)].add(study_id)
+    count_table = pd.DataFrame(
+        [
+            {
+                "rank": rank,
+                "taxon": taxon,
+                "direction": direction,
+                "trait_key": trait_key,
+                "count": value,
+                "studies": len(studies[(rank, taxon, direction, trait_key)]),
+            }
+            for (rank, taxon, direction, trait_key), value in sorted(counts.items())
+        ],
+        columns=["rank", "taxon", "direction", "trait_key", "count", "studies"],
+    )
+    coverage_table = pd.DataFrame(
+        [
+            {
+                "rank": rank,
+                "direction": direction,
+                "trait_key": trait_key,
+                "status": status,
+                "count": value,
+            }
+            for (rank, direction, trait_key, status), value in sorted(coverage.items())
+        ],
+        columns=["rank", "direction", "trait_key", "status", "count"],
+    )
+    return count_table, coverage_table
+
+
+def trait_frame(base: Base, directions: pd.DataFrame) -> pd.DataFrame:
+    """The six traits in Table 1 order with their slugs, labels and lollipop directions."""
+    by_key = directions.set_index("trait_id")["trait_direction"]
+    missing = sorted(set(base.traits.values()) - set(by_key.index))
+    if missing:
+        msg = f"{SUMMARY_NAME} has no direction for {', '.join(missing)}"
+        raise ValueError(msg)
+    return pd.DataFrame(
+        [
+            {
+                "trait_key": trait_key,
+                "trait_slug": slug,
+                "trait_label": TABLE1_TRAIT_LABELS[slug],
+                "trait_direction": by_key[trait_key],
+            }
+            for slug, trait_key in base.traits.items()
+        ]
+    )
+
+
+def build_rank_coverage(coverage_counts: pd.DataFrame, traits: pd.DataFrame) -> pd.DataFrame:
+    """Resolved, unresolved and ambiguous count totals for each rank, trait and direction."""
+    records = []
+    for rank in CONTRIBUTOR_RANKS:
+        for trait in traits.itertuples(index=False):
+            for direction in DIRECTION_ORDER:
+                cell = coverage_counts[
+                    coverage_counts["rank"].eq(rank)
+                    & coverage_counts["direction"].eq(direction)
+                    & coverage_counts["trait_key"].eq(trait.trait_key)
+                ]
+                by_status = cell.groupby("status")["count"].sum()
+                total = int(by_status.sum())
+                resolved = int(by_status.get(RESOLVED_STATUS, 0))
+                unresolved = int(by_status.get("unresolved_rank", 0))
+                ambiguous = int(by_status.get("ambiguous_rank", 0))
+                records.append(
+                    {
+                        "scope": SCOPE,
+                        "rank": rank,
+                        "direction": direction,
+                        "trait_key": trait.trait_key,
+                        "trait_slug": trait.trait_slug,
+                        "trait_label": trait.trait_label,
+                        "trait_direction": trait.trait_direction,
+                        "total_count": total,
+                        "resolved_count": resolved,
+                        "unresolved_rank_count": unresolved,
+                        "ambiguous_rank_count": ambiguous,
+                        "other_unresolved_count": total - resolved - unresolved - ambiguous,
+                        "unresolved_or_ambiguous_count": total - resolved,
+                        "resolved_share": resolved / total if total else 0.0,
+                        "unresolved_or_ambiguous_share": (total - resolved) / total
+                        if total
+                        else 0.0,
+                    }
+                )
+    return pd.DataFrame.from_records(records)
+
+
+def select_contributor_taxa(counts: pd.DataFrame, names: dict[str, str]) -> pd.DataFrame:
+    """Top resolved species per trait-direction cell (capped) and top families by total count.
+
+    Taxa with equal totals are listed by name.
+    """
+    totals = (
+        counts.groupby(["rank", "taxon"])
+        .agg(
+            total_count=("count", "sum"),
+            filled_cells=("count", lambda values: int((values > 0).sum())),
+            max_studies=("studies", "max"),
+        )
+        .reset_index()
+    )
+    totals.insert(2, "name", [names.get(str(taxon), str(taxon)) for taxon in totals["taxon"]])
+    ranked = counts.sort_values(
+        ["count", "studies", "taxon"], ascending=[False, False, True], kind="stable"
+    )
+    species_cells = ranked[ranked["rank"].eq("species")]
+    species = set(
+        species_cells.groupby(["trait_key", "direction"], sort=False).head(
+            TOP_SPECIES_PER_TRAIT_DIRECTION
+        )["taxon"]
+    )
+    species_rows = (
+        totals[totals["rank"].eq("species") & totals["taxon"].isin(species)]
+        .sort_values(["total_count", "name"], ascending=[False, True], kind="stable")
+        .head(MAX_SELECTED_SPECIES)
+        .assign(selection_reason=SPECIES_SELECTION)
+    )
+    family_rows = (
+        totals[totals["rank"].eq("family")]
+        .sort_values(["total_count", "name"], ascending=[False, True], kind="stable")
+        .head(TOP_FAMILIES)
+        .assign(selection_reason=FAMILY_SELECTION)
+    )
+    return pd.concat([species_rows, family_rows], ignore_index=True)
+
+
+def contributor_names(base: Base, graph: Graph) -> dict[str, str]:
+    """Taxon names, KG first: the contributors are KG taxa, named as the KG names them."""
+    return {**base.names, **graph.names}
+
+
+def taxon_display_name(taxon: str, name: str) -> str:
+    """Name with the NCBI Taxonomy number, as the contributor plots label rows."""
+    return f"{name} ({taxon.split(':', maxsplit=1)[-1]})"
+
+
+def build_contributor_tables(
+    counts: pd.DataFrame,
+    coverage_counts: pd.DataFrame,
+    traits: pd.DataFrame,
+    names: dict[str, str],
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Cells for each selected taxon, trait and direction; rank coverage; selected taxa."""
+    coverage = build_rank_coverage(coverage_counts, traits)
+    selected = select_contributor_taxa(counts, names)
+    selected.insert(0, "scope", SCOPE)
+    selected.insert(
+        4,
+        "display_name",
+        [
+            taxon_display_name(str(row.taxon), str(row.name))
+            for row in selected.itertuples(index=False)
+        ],
+    )
+    indexed = counts.set_index(["rank", "taxon", "direction", "trait_key"])
+    totals = coverage.set_index(["rank", "direction", "trait_key"])["total_count"]
+    records = []
+    for taxon in selected.itertuples(index=False):
+        for trait in traits.itertuples(index=False):
+            for direction in DIRECTION_ORDER:
+                key = (taxon.rank, taxon.taxon, direction, trait.trait_key)
+                count = int(indexed.loc[key, "count"]) if key in indexed.index else 0
+                studies = int(indexed.loc[key, "studies"]) if key in indexed.index else 0
+                total = int(totals.loc[(taxon.rank, direction, trait.trait_key)])
+                records.append(
+                    {
+                        "scope": SCOPE,
+                        "rank": taxon.rank,
+                        "taxon": taxon.taxon,
+                        "name": taxon.name,
+                        "display_name": taxon.display_name,
+                        "direction": direction,
+                        "trait_key": trait.trait_key,
+                        "trait_slug": trait.trait_slug,
+                        "trait_label": trait.trait_label,
+                        "trait_direction": trait.trait_direction,
+                        "count": count,
+                        "share": count / total if total else 0.0,
+                        "studies": studies,
+                        "status": "resolved" if count else "absent",
+                    }
+                )
+    return pd.DataFrame.from_records(records), coverage, selected
 
 
 def clean_existing_specificity(selected: pd.DataFrame) -> pd.DataFrame:
@@ -374,11 +677,12 @@ def plot_rank_panel(
 
     ax.set_xlim(-0.5, len(columns) - 0.5)
     ax.set_ylim(len(taxa) + 0.5, -0.65)
+    labels = trait_display_labels(coverage)
     ax.set_xticks(
         x_positions,
         [
-            f"{direction}\n" + "\n".join(wrap(base_trait_label(label), width=12))
-            for trait_slug, label, direction in columns
+            f"{direction}\n" + "\n".join(wrap(labels[trait_slug], width=15, break_long_words=False))
+            for trait_slug, _, direction in columns
         ],
         fontsize=7.5,
     )
@@ -510,7 +814,9 @@ def plot_contributor_heatmap(
         "Rows require at least one absolute increased-versus-decreased full-cell contributor-share "
         f"difference of {MIN_LARGE_DIRECTION_SHARE_DIFFERENCE:.0%}. Paired red/blue backgrounds "
         "show total propagated counts and unresolved mass; contributor-circle area scales with "
-        "full-cell share. The right strip uses PD minus other-feces prevalence, not a raw ratio."
+        "full-cell share. The right strip uses PD minus other-feces prevalence, not a raw ratio. "
+        "Arrows give each trait's observed direction in the PD six-trait lollipop: up where its "
+        "mean z is higher in increased profiles, down where it is higher in decreased profiles."
     )
     fig.text(
         0.03,
@@ -574,7 +880,11 @@ def build_trait_cocarriage_tables(
     coverage: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Build direction-specific trait sharing and retain changed pairs for display."""
-    trait_order = coverage[["trait_slug", "trait_label"]].drop_duplicates().reset_index(drop=True)
+    trait_order = (
+        coverage[["trait_slug", "trait_label", "trait_direction"]]
+        .drop_duplicates()
+        .reset_index(drop=True)
+    )
     summary = selected.copy()
     summary["taxon_key"] = summary["rank"].astype(str) + "|" + summary["taxon"].astype(str)
 
@@ -629,8 +939,10 @@ def build_trait_cocarriage_tables(
             {
                 "trait_a_slug": first_slug,
                 "trait_a_label": base_trait_label(first.trait_label),
+                "trait_a_direction": first.trait_direction,
                 "trait_b_slug": second_slug,
                 "trait_b_label": base_trait_label(second.trait_label),
+                "trait_b_direction": second.trait_direction,
                 "increased_shared_taxa": len(increased),
                 "decreased_shared_taxa": len(decreased),
                 "increased_minus_decreased_shared_taxa": difference,
@@ -661,7 +973,7 @@ def plot_trait_cocarriage_network(
 ) -> None:
     """Plot only trait pairs whose selected-taxon co-carriage changes by direction."""
     traits = coverage[["trait_slug", "trait_label"]].drop_duplicates().reset_index(drop=True)
-    labels = {row.trait_slug: base_trait_label(row.trait_label) for row in traits.itertuples()}
+    labels = trait_display_labels(coverage)
     active_slugs = set(edges["trait_a_slug"]).union(edges["trait_b_slug"])
     slugs = [slug for slug in traits["trait_slug"].astype(str) if slug in active_slugs]
     angles = np.linspace(math.pi / 2, math.pi / 2 + 2 * math.pi, len(slugs), endpoint=False)
@@ -746,7 +1058,8 @@ def plot_trait_cocarriage_network(
     ax.text(
         0,
         -1.38,
-        "Only pairs with different increased/decreased shared-taxon counts are shown.",
+        "Only pairs with different increased/decreased shared-taxon counts are shown.\n"
+        "Node arrows give each trait's observed direction in the PD six-trait lollipop.",
         ha="center",
         va="center",
         fontsize=9,
@@ -788,6 +1101,7 @@ def write_note(
     coverage: pd.DataFrame,
     trait_intervals: pd.DataFrame,
     total_direction_pairs: int,
+    scope: dict[str, int],
     output_path: Path,
 ) -> None:
     """Write interpretation, bias limits, and the change-only results."""
@@ -810,6 +1124,23 @@ def write_note(
         "# PD Trait Contributor Dot Heatmap",
         "",
         f"![Contributor heatmap]({STEM}_species_family_dot_heatmap.png)",
+        "",
+        "Counts come from the Table 1 contribution ledger (`mtp.contribution_inputs`, "
+        "`mtp.taxon_contributions`, #190) on the pinned KG-Microbe release. They cover the "
+        f"{scope['ledger_profiles']} PD fecal profiles that the ledger retains "
+        f"({scope['ledger_increased_profiles']} increased and "
+        f"{scope['ledger_decreased_profiles']} decreased, from {scope['ledger_studies']} "
+        f"studies): human profiles in experiments with both directions, out of "
+        f"{scope['pd_feces_profiles']} PD fecal profiles. Every trait-bearing KG taxon at or below "
+        "a reported taxon adds one count, once per reported taxon, exactly as the taxa-trait "
+        "matrix and the profile trait sums count it. Each such taxon is attributed to its species "
+        "and its family when the pinned taxonomy gives exactly one; otherwise it is unresolved "
+        "(no ancestor at that rank) or ambiguous (several).",
+        "",
+        "Each trait carries its observed direction in the PD six-trait lollipop, the sign of "
+        "`increased_minus_decreased_mean_z` in `pd_six_trait_direction_summary.tsv`: the "
+        "`trait_direction` column in the cell, coverage and co-carriage tables, and an up or "
+        "down arrow in the figure labels.",
         "",
         "The background row replaces the separate unresolved-share bars. Within each trait, "
         "paired red/blue circle area compares the increased/decreased propagated count; the grey "
@@ -861,13 +1192,14 @@ def write_note(
             "test. As external context, the existing paired, study-weighted aggregate analysis "
             "has 95% intervals excluding zero for these traits:",
             "",
-            "| trait | mean increased - decreased z | 95% interval | pattern |",
-            "| --- | ---: | ---: | --- |",
+            "| trait | lollipop direction | mean increased - decreased z | 95% interval | "
+            "pattern |",
+            "| --- | --- | ---: | ---: | --- |",
         ]
     )
     for row in supported_patterns.itertuples(index=False):
         lines.append(
-            f"| {row.trait} | {float(row.overall_mean_z_contrast):.3f} | "
+            f"| {row.trait} | {row.trait_direction} | {float(row.overall_mean_z_contrast):.3f} | "
             f"[{float(row.overall_ci95_low):.3f}, {float(row.overall_ci95_high):.3f}] | "
             f"{row.overall_direction} |"
         )
@@ -917,9 +1249,11 @@ def write_note(
             "- Counts are propagated taxon-trait assertions, not independent patients, samples, "
             "or original source assertions. Repeated experiments and descendant propagation can "
             "increase them.",
-            "- The displayed taxa are the union of the top five resolved contributors per "
-            "trait-direction cell. Broadly annotated or frequently reported taxa therefore have "
-            "more opportunities to enter and remain in the selected set.",
+            "- The candidate species are the union of the top five resolved species per "
+            f"trait-direction cell (at most {MAX_SELECTED_SPECIES}), and the candidate families "
+            f"are the {TOP_FAMILIES} resolved families with the largest total count. Broadly "
+            "annotated or frequently reported taxa therefore have more opportunities to enter and "
+            "remain in the selected set.",
             "- Species and family panels are separate resolution views. Parent and descendant "
             "labels must not be added as if they were disjoint contributors.",
             "- Co-carriage means that the selected label contributes to both annotation cells; it "
@@ -928,6 +1262,8 @@ def write_note(
             "Audit files:",
             "",
             f"- `{STEM}_cells.tsv`: long-form source dot cells.",
+            f"- `{STEM}_rank_coverage.tsv`: resolved, unresolved and ambiguous count totals.",
+            f"- `{STEM}_manifest.json`: profile scope, KG check, input hashes and selection rules.",
             f"- `{STEM}_direction_differences.tsv`: change-only taxon-trait direction pairs.",
             f"- `{STEM}_heatmap_taxa.tsv`: taxa passing the large-difference row filter.",
             f"- `{STEM}_selected_taxa.tsv`: selected taxa with normalized specificity context.",
@@ -943,17 +1279,22 @@ def write_note(
 
 
 def main() -> None:
-    """Refresh contributor artifacts from existing contributor tables."""
+    """Build contributor tables from the contribution ledger, then their plots and note."""
     metadata = load_profile_metadata()
     require_current_trait_taxa_evidence(metadata, OUTPUT_DIR)
     # Every path is built from OUTPUT_DIR here, so redirecting it redirects every write.
-    selected_taxa_path = OUTPUT_DIR / f"{STEM}_selected_taxa.tsv"
-    cells = read_tsv(OUTPUT_DIR / f"{STEM}_cells.tsv")
-    selected = read_tsv(selected_taxa_path)
-    coverage = read_tsv(OUTPUT_DIR / f"{STEM}_rank_coverage.tsv")
+    directions = trait_directions(read_tsv(OUTPUT_DIR / SUMMARY_NAME))
     trait_intervals = read_tsv(OUTPUT_DIR / "pd_species_six_traits_influence_heatmap_traits.tsv")
+    base, graph, ledger = load_contribution_ledger(KG_DIR, DERIVED_DIR, KG_PROTOCOL_PATH)
+    keys = pd_contribution_profiles(base, metadata)
+    counts, coverage_counts = count_contributions(base, graph, ledger, keys)
+    traits = trait_frame(base, directions)
+    names = contributor_names(base, graph)
+    cells, coverage, selected = build_contributor_tables(counts, coverage_counts, traits, names)
+    write_tsv(cells, OUTPUT_DIR / f"{STEM}_cells.tsv")
+    write_tsv(coverage, OUTPUT_DIR / f"{STEM}_rank_coverage.tsv")
     selected = augment_selected_taxa(selected, metadata)
-    write_tsv(selected, selected_taxa_path)
+    write_tsv(selected, OUTPUT_DIR / f"{STEM}_selected_taxa.tsv")
     differences = build_direction_differences(cells, coverage)
     write_tsv(differences, OUTPUT_DIR / f"{STEM}_direction_differences.tsv")
     heatmap_taxa = select_large_difference_taxa(selected, differences)
@@ -1002,6 +1343,33 @@ def main() -> None:
         coverage,
         OUTPUT_DIR / f"{STEM}_trait_cocarriage_network.png",
     )
+    scope = {
+        "pd_feces_profiles": len(pd_feces_profile_ids(metadata)),
+        "ledger_profiles": len(keys),
+        "ledger_increased_profiles": sum(key[2] == "inc" for key in keys),
+        "ledger_decreased_profiles": sum(key[2] == "dec" for key in keys),
+        "ledger_studies": len({key[0] for key in keys}),
+    }
+    manifest = {
+        "method": "Table 1 contribution ledger (#190) restricted to PD fecal profiles",
+        "profile_scope": "human PD fecal profiles in experiments with both directions",
+        **scope,
+        "ranks": list(CONTRIBUTOR_RANKS),
+        "rank_statuses": [RESOLVED_STATUS, "unresolved_rank", "ambiguous_rank"],
+        "species_selection": SPECIES_SELECTION,
+        "family_selection": FAMILY_SELECTION,
+        "selection_tie_break": (
+            "within a cell: count, then studies, descending, then taxon id; "
+            "across selected taxa: total count descending, then name"
+        ),
+        "traits": traits.to_dict(orient="records"),
+        "kg_md5_verified_against": KG_PROTOCOL_PATH.relative_to(REPO_ROOT).as_posix(),
+        "input_sha256_chunks": {name: sha256_chunks(DERIVED_DIR / name) for name in LEDGER_INPUTS},
+        "sha256_chunk_encoding": "concatenate each input's eight chunks in order",
+    }
+    (OUTPUT_DIR / f"{STEM}_manifest.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
     write_note(
         selected,
         heatmap_taxa,
@@ -1011,12 +1379,14 @@ def main() -> None:
         coverage,
         trait_intervals,
         cells.groupby(["rank", "taxon", "trait_slug"]).ngroups,
+        scope,
         OUTPUT_DIR / f"{STEM}.md",
     )
     print(
         f"Wrote {len(selected)} selected taxa, {len(heatmap_taxa)} large-difference heatmap taxa, "
         f"{len(differences)} direction differences, "
-        f"and {len(changed_cocarriage_edges)}/{len(all_cocarriage_edges)} changed trait pairs"
+        f"and {len(changed_cocarriage_edges)}/{len(all_cocarriage_edges)} changed trait pairs "
+        f"from {len(keys)} PD fecal profiles"
     )
     print(OUTPUT_DIR / f"{STEM}_species_family_dot_heatmap.png")
     print(OUTPUT_DIR / f"{STEM}_trait_cocarriage_network.png")
