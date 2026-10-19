@@ -805,6 +805,39 @@ def append_pattern_label_table(
     lines.append("")
 
 
+def trait_z_shift_phrase(label: str, row: pd.Series) -> str:
+    """Describe one label's increased-minus-decreased trait z shift with its sign, size and n."""
+    shift = float(row["increased_minus_decreased_guild_z"])
+    sign = "positive" if shift > 0 else "negative" if shift < 0 else "zero"
+    return (
+        f"`{label}` has a {sign} increased-minus-decreased trait z shift ({shift:+.3f}; "
+        f"{int(row['increased_profile_count'])} increased and "
+        f"{int(row['decreased_profile_count'])} decreased profiles from "
+        f"{int(row['study_count'])} studies)"
+    )
+
+
+def autism_label_contrast_sentence(profile_summary: pd.DataFrame) -> str:
+    """Explain why exact Autism and ASD are kept apart, from their computed shifts (#128)."""
+    labels = ("Autism", "Autism spectrum disorder")
+    rows = profile_summary.set_index("condition")
+    lead = (
+        "Exact `Autism` and `Autism spectrum disorder` are reported separately rather than pooled"
+    )
+    if not all(label in rows.index for label in labels):
+        return f"{lead} (#128)."
+    autism, asd = (rows.loc[label] for label in labels)
+    autism_shift = float(autism["increased_minus_decreased_guild_z"])
+    asd_shift = float(asd["increased_minus_decreased_guild_z"])
+    phrases = [trait_z_shift_phrase(label, rows.loc[label]) for label in labels]
+    if autism_shift * asd_shift < 0:
+        return (
+            f"{lead} because their directional skews diverge: {phrases[0]}, whereas "
+            f"{phrases[1]} (#128)."
+        )
+    return f"{lead} (#128): {phrases[0]}, and {phrases[1]}."
+
+
 def write_readme(
     profile_summary: pd.DataFrame,
     grouped_summary: pd.DataFrame,
@@ -850,10 +883,7 @@ def write_readme(
             "",
             "The tables below count unique taxon/profile occurrences after deduplicating "
             "the same taxon within the same study/experiment/direction profile. "
-            "Exact `Autism` and `Autism spectrum disorder` are reported separately rather "
-            "than pooled because their directional skews diverge (`Autism` has a positive "
-            "increased-minus-decreased trait z shift, whereas `Autism spectrum disorder` "
-            "is slightly negative/decreased-skewed across observed taxa; #128).",
+            + autism_label_contrast_sentence(profile_summary),
             "",
         ]
     )
