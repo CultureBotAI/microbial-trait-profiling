@@ -6,6 +6,7 @@ import csv
 import hashlib
 import itertools
 import json
+from collections import Counter
 from dataclasses import replace
 from pathlib import Path
 
@@ -14,6 +15,7 @@ import pytest
 from bsdbng.contrast_orientation import (
     ARM_GROUP,
     CASE_VS_CONTROL_SUBJECT,
+    CLASSES,
     CLASSIFIER_VERSION,
     COMORBIDITY_WITHIN_DISEASE,
     DISEASE_VS_DISEASE,
@@ -113,8 +115,12 @@ def _classify(**changes: str) -> tuple[str, str]:
             (LONGITUDINAL, NOT_APPLICABLE),
         ),
         (
-            {"group_0_name": "Recovered patients", "group_1_name": "Healthy controls"},
+            {"group_0_name": "COVID-19 patients", "group_1_name": "Recovered COVID-19 patients"},
             (LONGITUDINAL, NOT_APPLICABLE),
+        ),
+        (
+            {"group_0_name": "Recovered patients", "group_1_name": "Healthy controls"},
+            (OTHER, NOT_APPLICABLE),
         ),
         ({"group_0_name": "Placebo", "group_1_name": "Probiotic"}, (TREATMENT, NOT_APPLICABLE)),
         ({"group_0_name": "non-smokers", "group_1_name": "smokers"}, (TREATMENT, NOT_APPLICABLE)),
@@ -754,16 +760,16 @@ def test_the_committed_review_covers_the_sample_it_claims_and_is_joined_back() -
     review = Path(__file__).resolve().parents[1] / "methods" / "contrast_orientation_review.tsv"
     rows = list(csv.DictReader(review.open(encoding="utf-8", newline=""), delimiter="\t"))
     assert len(rows) == 60
-    assert {row["verdict"] for row in rows} == {"agree", "disagree"}
+    assert Counter(row["sampled_class"] for row in rows) == dict.fromkeys(CLASSES, 10)
+    assert {row["verdict"] for row in rows} == {"agree"}
     assert all(row["reviewer"] for row in rows)
-    assert all(row["note"] for row in rows if row["verdict"] == "disagree")
     statuses = read_review(review)
     assert len(statuses) == len(rows)
-    assert set(statuses.values()) == {"reviewed_agreed", "reviewed_disagreed"}
+    assert set(statuses.values()) == {"reviewed_agreed"}
 
 
 def test_an_unreviewed_row_in_the_review_table_is_an_error(tmp_path: Path) -> None:
-    """A blank verdict would otherwise be counted as neither agreement nor disagreement."""
+    """A blank verdict or invalid label/consistency in the review table raises ValueError."""
     review = tmp_path / "review.tsv"
     review.write_text(
         "\t".join(REVIEW_FIELDS) + "\n" + "\t".join(["bsdb:1", "bsdb:1-1"] + [""] * 11) + "\n",
@@ -771,6 +777,96 @@ def test_an_unreviewed_row_in_the_review_table_is_an_error(tmp_path: Path) -> No
     )
     with pytest.raises(ValueError, match="must be reviewed"):
         read_review(review)
+
+    # Invalid sampled_class raises
+    review.write_text(
+        "\t".join(REVIEW_FIELDS)
+        + "\n"
+        + "\t".join(
+            [
+                "bsdb:1",
+                "bsdb:1-1",
+                "1",
+                "CRC",
+                "HC",
+                "CRC",
+                "invalid_class",
+                NATIVE,
+                "rev",
+                "agree",
+                "",
+                DISEASE_VS_HEALTHY,
+                NATIVE,
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="invalid sampled labels"):
+        read_review(review)
+
+    # Disagree without a note raises
+    review.write_text(
+        "\t".join(REVIEW_FIELDS)
+        + "\n"
+        + "\t".join(
+            [
+                "bsdb:1",
+                "bsdb:1-1",
+                "1",
+                "CRC",
+                "HC",
+                "CRC",
+                UNRESOLVED,
+                NOT_APPLICABLE,
+                "rev",
+                "disagree",
+                "",
+                DISEASE_VS_HEALTHY,
+                NATIVE,
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="without a note"):
+        read_review(review)
+
+    # Valid disagree row with note passes when classifier disagrees, and raises when it matches
+    review.write_text(
+        "\t".join(REVIEW_FIELDS)
+        + "\n"
+        + "\t".join(
+            [
+                "bsdb:1",
+                "bsdb:1-1",
+                "1",
+                "CRC",
+                "HC",
+                "CRC",
+                UNRESOLVED,
+                NOT_APPLICABLE,
+                "rev",
+                "disagree",
+                "reason",
+                DISEASE_VS_HEALTHY,
+                NATIVE,
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    assert read_review(
+        review,
+        classes={("bsdb:1", "bsdb:1-1"): Classification(UNRESOLVED, NOT_APPLICABLE, "", "")},
+    ) == {("bsdb:1", "bsdb:1-1"): "reviewed_disagreed"}
+    with pytest.raises(ValueError, match="classifier matches reviewed labels"):
+        read_review(
+            review,
+            classes={
+                ("bsdb:1", "bsdb:1-1"): Classification(DISEASE_VS_HEALTHY, NATIVE, "", ""),
+            },
+        )
 
 
 def test_a_verdict_reaches_the_manifest_and_an_unsampled_row_stays_unreviewed(
@@ -1165,7 +1261,7 @@ def test_v3_contrast_type_and_control_tier_stratification() -> None:
     assert comorbid.control_tier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
     assert "comorbidity_control" in comorbid.flags.split(",")
 
-    # Tier 3: treated disease group vs healthy control
+    # Tier 3: treated disease group vs healthy control (native and reversed)
     treated_conf = classify(
         replace(
             BASE,
@@ -1180,8 +1276,37 @@ def test_v3_contrast_type_and_control_tier_stratification() -> None:
     assert treated_conf.control_tier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
     assert "treated_disease_group" in treated_conf.flags.split(",")
 
-    # Resolved disease subtype of longitudinal_timepoint
-    resolved = classify(
+    treated_conf_rev = classify(
+        replace(
+            BASE,
+            condition="HIV infection",
+            group_0_name="HIV Patients treated with Maraviroc",
+            group_1_name="Controls",
+        )
+    )
+    assert treated_conf_rev.contrast_class == DISEASE_VS_HEALTHY
+    assert treated_conf_rev.orientation == REVERSED
+    assert treated_conf_rev.contrast_type == CASE_VS_CONTROL_SUBJECT
+    assert treated_conf_rev.control_tier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+    assert "treated_disease_group" in treated_conf_rev.flags.split(",")
+
+    # Tier 3: hospital or symptomatic non-healthy control
+    hosp_ctrl = classify(
+        replace(
+            BASE,
+            condition="Colorectal cancer",
+            group_0_name="Hospital controls",
+            group_1_name="CRC patients",
+        )
+    )
+    assert hosp_ctrl.contrast_class == DISEASE_VS_HEALTHY
+    assert hosp_ctrl.orientation == NATIVE
+    assert hosp_ctrl.contrast_type == CASE_VS_CONTROL_SUBJECT
+    assert hosp_ctrl.control_tier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+    assert "hospital_or_symptomatic_control" in hosp_ctrl.flags.split(",")
+
+    # Cross-sectional recovered vs healthy control routes to OTHER with RESOLVED_DISEASE
+    resolved_cs = classify(
         replace(
             BASE,
             condition="COVID-19",
@@ -1189,9 +1314,22 @@ def test_v3_contrast_type_and_control_tier_stratification() -> None:
             group_1_name="Recovered patients",
         )
     )
-    assert resolved.contrast_class == LONGITUDINAL
-    assert resolved.contrast_type == RESOLVED_DISEASE
-    assert resolved.control_tier == NOT_APPLICABLE
+    assert resolved_cs.contrast_class == OTHER
+    assert resolved_cs.contrast_type == RESOLVED_DISEASE
+    assert resolved_cs.control_tier == NOT_APPLICABLE
+
+    # Longitudinal active vs recovered routes to LONGITUDINAL with RESOLVED_DISEASE
+    resolved_long = classify(
+        replace(
+            BASE,
+            condition="COVID-19",
+            group_0_name="SARS-CoV-2 infected patients",
+            group_1_name="SARS-CoV-2 recovered individuals",
+        )
+    )
+    assert resolved_long.contrast_class == LONGITUDINAL
+    assert resolved_long.contrast_type == RESOLVED_DISEASE
+    assert resolved_long.control_tier == NOT_APPLICABLE
 
 
 def test_v3_review_sample_disagreement_fixes() -> None:

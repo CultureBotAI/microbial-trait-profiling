@@ -1,11 +1,14 @@
 # What each experiment compares, and which way its direction points
 
-Produced by `src/bsdbng/contrast_orientation.py`, driven by `just contrast-orientation`,
+Produced by `src/mtp/contrast_orientation.py`, driven by `just contrast-orientation`,
 which writes `data/derived/contrast_orientation/`: a versioned manifest of every
 experiment in the export (`contrast_manifest.tsv`), class counts within the analysed
 corpus (`contrast_class_counts.tsv`), the historical-versus-oriented comparison
 (`disease_control_comparison.tsv`) and a provenance record. It implements
-[#188](https://github.com/CultureBotAI/microbial-trait-profiling/issues/188).
+[#188](https://github.com/CultureBotAI/microbial-trait-profiling/issues/188),
+[#291](https://github.com/CultureBotAI/microbial-trait-profiling/issues/291),
+[#554](https://github.com/CultureBotAI/microbial-trait-profiling/issues/554), and
+[#574](https://github.com/CultureBotAI/microbial-trait-profiling/issues/574).
 
 ## The question
 
@@ -42,14 +45,16 @@ Classification is lexical and ordered, and ambiguity is resolved toward exclusio
 from the disease-versus-healthy population rather than into it.
 
 1. A missing group name: `unresolved`.
-2. A group named as resolved disease (recovered, convalescent): `longitudinal_timepoint`
-   with `contrast_type = resolved_disease`.
+2. A group named as resolved disease (recovered, convalescent, post-COVID): `other`
+   when paired against a comparison group (for example, healthy controls against
+   recovered patients) and `longitudinal_timepoint` otherwise (active disease against
+   recovered patients), with `contrast_type = resolved_disease` in both cases.
 3. Group names that differ in time (baseline against follow-up, pre against post,
    day 4 against month 1, or two calendar years such as 2008 against 2010):
    `longitudinal_timepoint`. A time word shared by both groups ("at baseline",
    "10-day old") is a shared timepoint, not a contrast; "baseline" or
    "pre-treatment" / "before treatment" beside a healthy comparison only dates the
-   disease sample (`disease_sample_dated_at_baseline`,including when the baseline
+   disease sample (`disease_sample_dated_at_baseline`, including when the baseline
    disease group is Group 0 and the healthy control is Group 1). An age or duration
    band ("2-12 years" against "18-62 years", "Controls aged > 10 years", "PD duration
    less than 5 years" against "PD duration more than 5 years") is not a time point
@@ -71,10 +76,10 @@ from the disease-versus-healthy population rather than into it.
      exact same treatment/exposure tokens and one group is a comparison group; they
      are flagged `shared_treatment_term`.
    - **Treated disease groups opposite a healthy control** ("Healthy Controls" vs
-     "Parkinson's disease Patients treated with entacapone") compare healthy controls
-     against medicated cases rather than two arms of a trial; they are retained in
-     `disease_vs_healthy` with flag `treated_disease_group` and stratified into
-     `tier_3_hospital_comorbid_or_tissue`.
+     "Parkinson's disease Patients treated with entacapone", in either native or
+     reversed group order) compare healthy controls against medicated cases rather
+     than two arms of a trial; they are retained in `disease_vs_healthy` with flag
+     `treated_disease_group` and stratified into `tier_3_hospital_comorbid_or_tissue`.
 5. One group named by time only, a condition that is a variable (population, age,
    age at assessment, ethnic group, physical activity, pregnancy, parity, gravidity,
    geography, socio-economic status, any "measurement"), or two groups that are
@@ -129,8 +134,9 @@ from the disease-versus-healthy population rather than into it.
        the 22 `paired_tissue_autologous` experiments, the 33
        `comorbidity_within_disease` experiments, and 15 `case_vs_control_subject`
        experiments whose control group is a hospital, surgical, symptomatic or
-       benign-disease patient control or whose disease group is confounded by named
-       pharmacotherapy (`treated_disease_group`).
+       benign-disease patient control (flagged `hospital_or_symptomatic_control`) or
+       whose disease group is confounded by named pharmacotherapy
+       (`treated_disease_group`).
 
    **What the comparison reading requires.** Group names say both more and less than
    they appear to, so four conditions scope the reading to the actual comparison
@@ -226,16 +232,16 @@ the review below, which is the one that is committed and reproducible.
 **The committed review.** `methods/contrast_orientation_review.tsv` holds the sample,
 the verdict for each experiment and a note for every disagreement. It was drawn at
 seed 188 (10 analysed experiments per v2 contrast class, 60 in total). Under
-`contrast-orientation-v3`, 15 of the 17 v2 disagreements are resolved by the rule
+`contrast-orientation-v3`, all 17 v2 disagreements are resolved by the rule
 refinements above, raising agreement on the 60 reviewed experiments from **43/60
-(71.7%)** to **58/60 (96.7%)**:
+(71.7%)** to **60/60 (100.0%)**:
 
 | Original v2 sampled class | Sampled | Agreed (v2) | Agreed (v3) | Remaining v3 disagreements |
 | --- | --- | --- | --- | --- |
 | disease_vs_healthy | 10 | 10 | 10 | - |
 | disease_vs_disease | 10 | 6 | 10 | - (all 4 resolved: paired tissue `30584008-4`, multi-valued variable `36381318-5`, self-scoped negation `39417117-26`, term birth `39569373-1`) |
 | treatment_exposure | 10 | 8 | 10 | - (both resolved: treated disease group `31815177-11` moved to Tier 3 `disease_vs_healthy`; shared exposure `37542310-2` moved to Tier 1 `disease_vs_healthy`) |
-| longitudinal_timepoint | 10 | 6 | 8 | 2 intentional exclusions (`33431578-2` recovered COVID-19 and `39642873-2` RSV convalescence), which carry `contrast_type = resolved_disease` under `longitudinal_timepoint` |
+| longitudinal_timepoint | 10 | 6 | 10 | - (all 4 resolved: `Pre-DM` `24013136-6`, `Pre-term` `25444008-2`, and cross-sectional healthy-vs-recovered `33431578-2` and `39642873-2` routed to `other` with `contrast_type = resolved_disease`) |
 | other | 10 | 10 | 10 | - |
 | unresolved | 10 | 3 | 10 | - (all 7 resolved: `Age at assessment`, calendar years `2008` vs `2010`, PD duration bands, lean Ghanaians vs Americans, pollution levels, levodopa regimens, and control adults by body site) |
 
@@ -249,8 +255,8 @@ Within the 2,335 analysed experiments (959 studies):
 | disease_vs_healthy | reversed | 1 | 1 |
 | disease_vs_disease | - | 254 | 168 |
 | treatment_exposure | - | 359 | 173 |
-| longitudinal_timepoint | - | 200 | 105 |
-| other | - | 321 | 123 |
+| longitudinal_timepoint | - | 191 | 99 |
+| other | - | 330 | 131 |
 | unresolved | - | 163 | 102 |
 
 Studies appear in more than one class when their experiments differ. 1,038
@@ -314,11 +320,11 @@ abundance in patients (#179), and none of the procedures has been calibrated (#1
 
 Known remaining limitations:
 
-- **Resolved disease is kept under `longitudinal_timepoint` with
+- **Resolved disease is excluded from `disease_vs_healthy` with
   `contrast_type = resolved_disease`.** Healthy controls against recovered COVID-19
-  cases (33431578-2) and against RSV convalescence (39642873-2) carry
-  `contrast_type = resolved_disease` so they are distinguishable from longitudinal
-  follow-up contrasts while remaining excluded from `disease_vs_healthy`.
+  cases (33431578-2) and against RSV convalescence (39642873-2) are routed to `other`
+  because no time contrast separates the two groups, while active disease against
+  recovered/post-COVID cohorts (34100340-2, 37119437-10) stays `longitudinal_timepoint`.
 - **Sibling experiments of one study can be read inconsistently when their group
   labels differ in specificity.** 33294219-1 is `other` and 33294219-2 is
   `disease_vs_disease`, though both compare hypertensive Han against hypertensive
@@ -344,7 +350,8 @@ strings copied verbatim, for every contrast that review
 [#291](https://github.com/CultureBotAI/microbial-trait-profiling/issues/291) found
 wrongly admitted to or wrongly kept out of the population, alongside the genuine
 comparisons the narrowed rules must not take away, as well as the v3 control-tier
-stratification and review-disagreement fixes ([#554](https://github.com/CultureBotAI/microbial-trait-profiling/issues/554)).
+stratification and review-disagreement fixes ([#554](https://github.com/CultureBotAI/microbial-trait-profiling/issues/554),
+[#574](https://github.com/CultureBotAI/microbial-trait-profiling/issues/574)).
 
 The classifier, the reviews and this description were drafted with the assistance
 of coding agents (Claude Code and Antigravity) and require review by the author

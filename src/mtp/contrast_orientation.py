@@ -79,6 +79,7 @@ CLASSES = (DISEASE_VS_HEALTHY, DISEASE_VS_DISEASE, TREATMENT, LONGITUDINAL, OTHE
 NATIVE = "native"
 REVERSED = "reversed"
 NOT_APPLICABLE = "not_applicable"
+ORIENTATIONS = (NATIVE, REVERSED, NOT_APPLICABLE)
 
 CASE_VS_CONTROL_SUBJECT = "case_vs_control_subject"
 COMORBIDITY_WITHIN_DISEASE = "comorbidity_within_disease"
@@ -1094,8 +1095,9 @@ def classify(record: ExperimentRecord) -> Classification:
 
     resolved = _matches(RESOLVED, f"{g0} | {g1}")
     if resolved:
+        resolved_class = OTHER if (control_0 or control_1) else LONGITUDINAL
         return result(
-            LONGITUDINAL,
+            resolved_class,
             NOT_APPLICABLE,
             f"a group is resolved disease: {resolved}",
             contrast_type=RESOLVED_DISEASE,
@@ -1140,15 +1142,23 @@ def classify(record: ExperimentRecord) -> Classification:
         treatment_terms = sorted(set(treat_0) | set(treat_1))
 
     # A healthy control compared against a disease group that happens to be on therapy
-    # ("Controls" vs "HIV Patients treated with Maraviroc") is a confounded disease-vs-healthy
-    # contrast (Tier 3), not a treatment-arm trial.
-    if (
-        treatment_terms
-        and strong_0
-        and not control_1
-        and not treat_0
-        and _mentions_condition(g1, condition)
-        and TREATED_WITH_CONF.search(g1)
+    # ("Controls" vs "HIV Patients treated with Maraviroc", in either group order) is a
+    # confounded disease-vs-healthy contrast (Tier 3), not a treatment-arm trial.
+    if treatment_terms and (
+        (
+            strong_0
+            and not control_1
+            and not treat_0
+            and _mentions_condition(g1, condition)
+            and TREATED_WITH_CONF.search(g1)
+        )
+        or (
+            strong_1
+            and not control_0
+            and not treat_1
+            and _mentions_condition(g0, condition)
+            and TREATED_WITH_CONF.search(g0)
+        )
     ):
         flags.append("treated_disease_group")
         treatment_terms = []
@@ -1234,6 +1244,12 @@ def classify(record: ExperimentRecord) -> Classification:
                 flags.append("paired_tissue_comparison")
             elif ctype == COMORBIDITY_WITHIN_DISEASE:
                 flags.append("comorbidity_control")
+            elif (
+                ctype == CASE_VS_CONTROL_SUBJECT
+                and ctier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+                and "treated_disease_group" not in flags
+            ):
+                flags.append("hospital_or_symptomatic_control")
             return result(
                 DISEASE_VS_HEALTHY,
                 NATIVE,
@@ -1248,6 +1264,12 @@ def classify(record: ExperimentRecord) -> Classification:
                 flags.append("paired_tissue_comparison")
             elif ctype == COMORBIDITY_WITHIN_DISEASE:
                 flags.append("comorbidity_control")
+            elif (
+                ctype == CASE_VS_CONTROL_SUBJECT
+                and ctier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+                and "treated_disease_group" not in flags
+            ):
+                flags.append("hospital_or_symptomatic_control")
             return result(
                 DISEASE_VS_HEALTHY,
                 REVERSED,
@@ -1431,21 +1453,73 @@ def review_sample(
     return rows
 
 
-def read_review(path: Path) -> dict[tuple[str, str], str]:
+def _validate_review_row(
+    path: Path,
+    row: Mapping[str, str],
+    classes: Mapping[tuple[str, str], Classification] | None = None,
+) -> tuple[tuple[str, str], str]:
+    exp_id = row["experiment_id"]
+    verdict = row["verdict"].strip().lower()
+    if verdict not in {"agree", "disagree"}:
+        msg = (
+            f"{path}: experiment {exp_id} has verdict {row['verdict']!r}; "
+            "every sampled row must be reviewed as 'agree' or 'disagree'"
+        )
+        raise ValueError(msg)
+    sampled_class = row.get("sampled_class", "").strip()
+    sampled_orientation = row.get("sampled_orientation", "").strip()
+    if sampled_class not in CLASSES or sampled_orientation not in ORIENTATIONS:
+        msg = (
+            f"{path}: experiment {exp_id} has invalid sampled labels "
+            f"({sampled_class!r}, {sampled_orientation!r})"
+        )
+        raise ValueError(msg)
+    reviewed_class = row.get("reviewed_class", "").strip()
+    reviewed_orientation = row.get("reviewed_orientation", "").strip()
+    if reviewed_class not in CLASSES or reviewed_orientation not in ORIENTATIONS:
+        msg = (
+            f"{path}: experiment {exp_id} has invalid reviewed labels "
+            f"({reviewed_class!r}, {reviewed_orientation!r})"
+        )
+        raise ValueError(msg)
+    if verdict == "disagree" and not row.get("note", "").strip():
+        msg = f"{path}: experiment {exp_id} has verdict 'disagree' without a note"
+        raise ValueError(msg)
+    key = (row["study_id"], exp_id)
+    if classes is not None and key in classes:
+        found = classes[key]
+        matches = (found.contrast_class, found.orientation) == (
+            reviewed_class,
+            reviewed_orientation,
+        )
+        if verdict == "agree" and not matches:
+            msg = (
+                f"{path}: experiment {exp_id} has verdict 'agree' for "
+                f"({reviewed_class}, {reviewed_orientation}), but classifier produced "
+                f"({found.contrast_class}, {found.orientation})"
+            )
+            raise ValueError(msg)
+        if verdict == "disagree" and matches:
+            msg = (
+                f"{path}: experiment {exp_id} has verdict 'disagree', but classifier "
+                f"matches reviewed labels ({reviewed_class}, {reviewed_orientation})"
+            )
+            raise ValueError(msg)
+    return key, f"reviewed_{verdict}d"
+
+
+def read_review(
+    path: Path,
+    classes: Mapping[tuple[str, str], Classification] | None = None,
+) -> dict[tuple[str, str], str]:
     """Each reviewed experiment's validation status, from the committed review table."""
     if not path.exists():
         return {}
     statuses: dict[tuple[str, str], str] = {}
     with path.open(encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle, delimiter="\t"):
-            verdict = row["verdict"].strip().lower()
-            if verdict not in {"agree", "disagree"}:
-                msg = (
-                    f"{path}: experiment {row['experiment_id']} has verdict {row['verdict']!r}; "
-                    "every sampled row must be reviewed as 'agree' or 'disagree'"
-                )
-                raise ValueError(msg)
-            statuses[(row["study_id"], row["experiment_id"])] = f"reviewed_{verdict}d"
+            key, status = _validate_review_row(path, row, classes=classes)
+            statuses[key] = status
     return statuses
 
 
@@ -1695,7 +1769,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"seed {args.review_seed}, {args.review_per_class} per class")
         return 0
 
-    validation = read_review(args.review_input)
+    validation = read_review(args.review_input, classes=classes)
     output = args.output_dir
     output.mkdir(parents=True, exist_ok=True)
     counts = class_counts(classes, corpus)
