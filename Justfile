@@ -234,7 +234,8 @@ deck_schema := "data/derived/figure_review_2026-09-21/provenance/figure_provenan
 # refuses contrast-orientation inputs other than the version its typed numbers describe
 # (#573, #579, #592). Choose other folders with the variables, e.g.
 # `just deck_slides=/tmp/s deck_provenance=/tmp/p figure-review-deck`, so that every
-# step uses them; --output-dir and --provenance-dir are refused here.
+# step uses them; --output-dir and --provenance-dir are refused here. A worktree has no
+# data/derived, so there also set deck_schema= to the schema beside the input root's YAML.
 [positional-arguments]
 figure-review-deck *ARGS:
 	#!/usr/bin/env bash
@@ -247,9 +248,15 @@ figure-review-deck *ARGS:
 				;;
 		esac
 	done
+	if [ ! -f "{{deck_schema}}" ]; then
+		echo "no LinkML schema at {{deck_schema}}; set deck_schema=" >&2
+		exit 1
+	fi
 	slides="{{deck_slides}}"
 	provenance="{{deck_provenance}}"
 	uv run python scripts/build_slide_deck.py --output-dir "$slides" --provenance-dir "$provenance" "$@"
+	# The previous status describes the previous deck; it is rewritten only if every step passes.
+	rm -f "$slides/deck_build_status.json"
 	uv run linkml-validate -s "{{deck_schema}}" "$provenance/figure_provenance_and_results.yaml"
 	just html-to-pdf "$slides/selected_figures_v6.html" "$slides/microbial-trait-profiling_v6.pdf"
 	cp "$slides/microbial-trait-profiling_v6.pdf" "$slides/microbial-trait-profiling.pdf"

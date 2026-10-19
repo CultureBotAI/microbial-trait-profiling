@@ -56,6 +56,16 @@ def test_cellulose_slides_carry_their_revision() -> None:
     assert "no revision is linked" in slide["source_note"]
 
 
+def test_stamp_names_the_drawing_commit_of_cellulose_figures() -> None:
+    cellulose = "data/analysis/cellulose_decr/figures/fig1_x.svg"
+    rerun = {"figure_file_path": "trait-visualization/x.png", "commit": deck.COMMIT}
+    assert deck.revision_stamp(rerun) == f"Rerun revision {deck.SHORT_COMMIT}"
+    drawn = {"figure_file_path": cellulose, "commit": COMMIT}
+    assert deck.revision_stamp(drawn) == f"Figures drawn at {COMMIT[:12]}"
+    unpinned = {"figure_file_path": cellulose, "commit": ""}
+    assert deck.revision_stamp(unpinned) == "Figures drawn without a clean commit"
+
+
 def test_figure_folders_match_whole_names() -> None:
     base = "data/analysis/cellulose_decr"
     assert f"{base}/figures/a.svg".startswith(deck.CELLULOSE_FIGURES)

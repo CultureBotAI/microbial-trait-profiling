@@ -1651,6 +1651,15 @@ def cellulose_revision(repo: Path) -> str | None:
     return commit if re.fullmatch(r"[0-9a-f]{40}", commit) else None
 
 
+def revision_stamp(row: dict[str, str]) -> str:
+    """A slide's revision: the rerun's, or the commit that drew a cellulose_decr figure."""
+    if not row["figure_file_path"].startswith(CELLULOSE_FIGURES):
+        return f"Rerun revision {row['commit'][:12]}"
+    if row["commit"]:
+        return f"Figures drawn at {row['commit'][:12]}"
+    return "Figures drawn without a clean commit"
+
+
 def cellulose_decr_slides(
     captions: dict[str, dict[str, Any]],
     folder: str,
@@ -1692,8 +1701,8 @@ def cellulose_decr_slides(
                     f"Drawn by `just cellulose-decr-figures` at {revision[:12]} from the "
                     "committed data/analysis/cellulose_decr tables; SHA-256 verified."
                     if revision
-                    else "Drawn by `just cellulose-decr-figures` from modified code or tables, "
-                    "so no revision is linked; SHA-256 verified."
+                    else "Drawn without a clean recorded commit (modified code or tables, or "
+                    "no commit recorded), so no revision is linked; SHA-256 verified."
                 ),
             }
         )
@@ -1936,7 +1945,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
                 "tag": entry["tag"],
                 "figure_file_path": fig_rel,
                 "code_path": code_rel,
-                "commit": ref or "modified",
+                "commit": ref or "",
                 "branch": BRANCH,
                 "figure_url": fig_url,
                 "code_url": code_url,
@@ -2211,7 +2220,7 @@ def build_deck(repo: Path, slides_dir: Path, provenance_dir: Path) -> None:
             f'href="{html.escape(code_href)}">{html.escape(row["code_path"])}</a></div>'
             f"{prior_div}"
             '<div class="stamp"><span>CultureBotAI/microbial-trait-profiling · '
-            f"{html.escape(owner)} · Rerun revision {row['commit'][:12]} · v6 vector"
+            f"{html.escape(owner)} · {revision_stamp(row)} · v6 vector"
             f"{lineage_str}</span>"
             f"<span>{s_num:02d} / {total_slides:02d}</span></div></footer></section>"
         )
