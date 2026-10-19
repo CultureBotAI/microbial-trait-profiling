@@ -95,5 +95,27 @@
       "26480ea7"
     ]
   },
-  "sha256_chunk_encoding": "concatenate each input's eight chunks in order"
+  "output_sha256_chunks": {
+    "pd_six_trait_taxon_carriers.tsv": [
+      "108eb1aa",
+      "8e5e2cd1",
+      "05f63586",
+      "594412c1",
+      "bc0955c9",
+      "dc20707d",
+      "077faa37",
+      "98db32ec"
+    ],
+    "pd_six_trait_taxon_profile_evidence.tsv": [
+      "3bae40c3",
+      "2d21db49",
+      "90b5b088",
+      "0b83fe2b",
+      "7e08978f",
+      "32212f78",
+      "7cf6bf49",
+      "c0e2fc54"
+    ]
+  },
+  "sha256_chunk_encoding": "concatenate each file's eight chunks in order"
 }

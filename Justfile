@@ -144,7 +144,9 @@ oral-six-trait-heatmap:
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py --oral-only --source-commit "$source_commit"
 
 # Trace all six PD lollipop traits, each with its observed direction, to observed taxa and
-# profile evidence, and record the PD fecal profile set the evidence was built from (#584).
+# profile evidence, and record the PD fecal profile set and the hashes of the inputs read and
+# the tables written, which the readers check (#584, #693, #703). After a data/derived change,
+# run `just trait-heatmaps` and the summary rebuild first (PD-cellulose/README.md).
 pd-trait-taxa:
 	uv run python scripts/lookup_pd_trait_taxa.py
 
@@ -224,7 +226,8 @@ download-kg-force:
 	uv run --extra kg python scripts/download_kg_microbe.py --force
 
 # Check data/kg-microbe against the md5s pinned in methods/table1_taxon_influence_protocol.json,
-# which the Table 1 influence audit and `just pd-trait-contributors` read.
+# which the Table 1 influence audit and `just pd-trait-contributors` read. Refetch a changed
+# file with `just download-kg-force`: `just download-kg` compares sizes only.
 verify-pinned-kg:
 	uv run python -m mtp.contribution_inputs
 
