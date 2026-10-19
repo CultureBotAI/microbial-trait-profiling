@@ -55,9 +55,9 @@ For the three cellulose pairs, the paired direction tests in
 level among disease-versus-healthy contrasts:
 
 - PD: 24 of 34 untied studies down (p = 0.024).
-- HIV: 9 of 9 (p = 0.0039) with the exact label. Counting two studies filed as
-  "Human immunodeficiency virus" gives 9 of 11 (p = 0.065), so the HIV result
-  is fragile (#561).
+- HIV: 10 of 12 (p = 0.039) with the exact label. Counting two studies filed as
+  "Human immunodeficiency virus" gives 10 of 14 (p = 0.18), so the HIV result
+  is fragile (#561, #580).
 - CRC: 14 of 17 (p = 0.013).
 
 Taxon overlap between the three conditions is not detectably larger than among
@@ -106,9 +106,11 @@ published shotgun datasets, one of them from the USA.
 Zhou et al. 2020 compared groups by HIV status and sexual orientation. One of its
 experiments compares MSM with non-MSM and is classified `unresolved` in the
 contrast manifest. Another compares HIV– with HIV+ individuals
-(`bsdb:33102244-1`), but it is classified `disease_vs_disease`, so the
-disease-versus-healthy tests leave it out. Counted, the HIV study-level result
-becomes 10 of 10 (#569).
+(`bsdb:33102244-1`). Since classifier v4 it is `disease_vs_healthy` with
+screened controls (Tier 2), so the disease-versus-healthy tests count it (#569).
+The HIV study-level result is 10 of 10 (p = 0.0020) when the contrasts whose cases
+are named as treated are set aside, or with Tier 1–2 controls only (#580).
+
 
 Vujkovic-Cvijin et al. 2020 (*Nature Communications*, PMID 32415070,
 `bsdb:32415070`) is also a corpus study for pair 2; it reports Lachnospiraceae.

@@ -1,9 +1,9 @@
 {
- "generated_at_utc": "2026-10-19T09:24:33Z",
- "code_commit": "abe94d8a80eaa9bf2a3751ae34b5aca402e42d62",
+ "generated_at_utc": "2026-10-19T19:15:56Z",
+ "code_commit": "0a6f267bf387e23dc0b8bcad312701db877d8225",
  "script": "src/mtp/cellulose_decr/analysis.py",
  "bugsigdb_vintage": "2026-04-24_00:41_UTC",
- "contrast_classifier_version": "contrast-orientation-v2",
+ "contrast_classifier_version": "contrast-orientation-v4",
  "label_source": "experiment",
  "condition_labels": "exact",
  "permutations": 100000,
@@ -19,14 +19,14 @@
  },
  "scripts": {
   "src/mtp/cellulose_decr/__init__.py": "907a8db757a96e48d0a04ff342c7f4391e5a7e7ae2c691a67390f1e26a13fe20",
-  "src/mtp/cellulose_decr/analysis.py": "2da7516224005ba6da7716f0385e3ec22d238d757d8e737d5a8cc5bc94b7cfaf",
-  "src/mtp/cellulose_decr/figures.py": "9b5c12c321ff78a24590c66a6e607d6fd9bef140fd6050fdef7639a733be77bd"
+  "src/mtp/cellulose_decr/analysis.py": "8b37dfed3aed46ccc853d6f9a0b2f9522f24acf1360162ef0d20d7fa4bc2f941",
+  "src/mtp/cellulose_decr/figures.py": "7891d20b77a123a4a15f2bf05708b8586f53d06a1bae7be38dc4c4b7ec74ef8a"
  },
  "inputs": {
   "profile_metadata": {
    "path": "trait-visualization/study_trait_profile_study_metadata.tsv",
-   "sha256": "c3437804d76c4f595009fae9503249e25c71e32c5614598f0e344fee997a8e5a",
-   "bytes": 2005429
+   "sha256": "9ba32acca337f1e52dbe6d91d8b799cf0b36a5e0cca71a9cb32ba033ec26e12a",
+   "bytes": 2246342
   },
   "experiments": {
    "path": "data/derived/experiments.tsv",
@@ -60,8 +60,8 @@
   },
   "contrast_manifest": {
    "path": "data/derived/contrast_orientation/contrast_manifest.tsv",
-   "sha256": "d7d9f1abac2479fdc6efe69ceb2960cc22ef416fabe7302d6eff689a68775666",
-   "bytes": 3322220
+   "sha256": "8722d8855be6fc8e7325e747d394eeff58ab8d498273905a3166b6e7ff6dfaec",
+   "bytes": 3494590
   },
   "full_dump": {
    "path": "data/raw/full_dump.csv",
@@ -77,8 +77,8 @@
  "pinned_inputs": {
   "profile_metadata": {
    "path": "trait-visualization/study_trait_profile_study_metadata.tsv",
-   "sha256": "c3437804d76c4f595009fae9503249e25c71e32c5614598f0e344fee997a8e5a",
-   "bytes": 2005429
+   "sha256": "9ba32acca337f1e52dbe6d91d8b799cf0b36a5e0cca71a9cb32ba033ec26e12a",
+   "bytes": 2246342
   },
   "experiments": {
    "path": "data/derived/experiments.tsv",
@@ -112,8 +112,8 @@
   },
   "contrast_manifest": {
    "path": "data/derived/contrast_orientation/contrast_manifest.tsv",
-   "sha256": "d7d9f1abac2479fdc6efe69ceb2960cc22ef416fabe7302d6eff689a68775666",
-   "bytes": 3322220
+   "sha256": "8722d8855be6fc8e7325e747d394eeff58ab8d498273905a3166b6e7ff6dfaec",
+   "bytes": 3494590
   },
   "full_dump": {
    "path": "data/raw/full_dump.csv",

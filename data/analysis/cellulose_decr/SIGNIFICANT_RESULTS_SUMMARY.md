@@ -24,43 +24,51 @@ Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`).
    annotations than of the increased signature's. The share counts annotations,
    not taxa.
    - **CRC:** 19 of 21 untied studies (p = 2.2e-4). Among disease-versus-healthy
-     contrasts it is 14 of 17 (p = 0.013, q = 0.022), and 16 of 20 with synonym
-     labels counted.
-   - **PD, disease vs healthy:** 24 of 34 studies (p = 0.024, q = 0.037).
+     contrasts it is 14 of 17 (p = 0.013, q = 0.026), and 16 of 20 with synonym
+     labels counted. Counting the comorbidity contrasts gives 15 of 18 (p = 0.0075).
+     Among them is the Yachida 2019 study, whose polyp-bearing controls the
+     classifier misreads as a comorbidity (#672).
+   - **PD, disease vs healthy:** 24 of 34 studies (p = 0.024, q = 0.041).
    - **PD, all contrasts:** the study-level sign test gives 27 of 41 (p = 0.060).
      The study-level Wilcoxon test gives p = 0.0093, and a majority vote of
      experiment signs gives 28 of 40 (p = 0.017).
-   - **Pooled:** 58 of 78 untied studies (p = 2.0e-5) and 47 of 60 among
-     disease-versus-healthy contrasts (p = 1.2e-5). The pooled result stays at
+   - **Pooled:** 58 of 78 untied studies (p = 2.0e-5) and 48 of 63 among
+     disease-versus-healthy contrasts (p = 3.8e-5). The pooled result stays at
      p ≤ 1.4e-4 under every label and contrast definition tried
      ([`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv)).
 
 ## What is fragile
 
 1. **HIV.** Counting the exact label "HIV infection" and disease-versus-healthy
-   contrasts, 9 of 9 untied studies point down (p = 0.0039). That is one of several
-   defensible readings, and across them the study-level p runs from 0.002 to 0.18:
+   contrasts, 10 of 12 untied studies point down (p = 0.039, q = 0.057). That is
+   one of several defensible readings, and across them the study-level p runs from
+   0.002 to 0.18:
+   - Since contrast classifier v4, this reading counts the HIV– vs HIV+ experiment
+     and the ART-treated HIV+ vs uninfected experiments as disease vs healthy
+     (#569, #580).
+   - The two studies that point up, `bsdb:38383483` and `bsdb:39880958`, compare
+     people with HIV on antiretroviral therapy against people without HIV. Setting
+     aside contrasts whose cases are named as treated gives 10 down and none up
+     (p = 0.0020). Keeping only Tier 1–2 controls gives the same.
+   - The treated flag reads group names only. `bsdb:32415070-1`, whose group
+     definition names people on antiretroviral therapy, is not flagged and points
+     down. The readings separate contrasts by their wording, not by treatment
+     (#676).
    - Two studies that compare people with and without HIV are filed as "Human
-     immunodeficiency virus". Counting them gives 9 down and 2 up (p = 0.065).
-   - Counting the HIV– vs HIV+ experiment that the classifier calls disease vs
-     disease gives 10 down and none up (p = 0.0020).
-   - Counting both of these and three ART-treated HIV+ vs uninfected experiments,
-     which the classifier calls treatment exposure, gives 10 down and 4 up
-     (p = 0.18).
+     immunodeficiency virus". Counting them gives 10 down and 4 up (p = 0.18).
 
-   Table A2 lists every reading (#561, #569).
+   Table A2 lists every reading (#561, #569, #580).
 2. **The direction in CRC mucosa and lumen differs from feces, but the samples
    differ too.** In feces, 32 of 38 untied experiments point down; in mucosa or lumen,
    4 of 15 do. The conditional odds ratio is 13.6 (95% CI 2.9–81.0,
    p = 1.2e-4). However:
-   - Only 12 of the 31 paired mucosa and lumen experiments are classified
-     disease vs healthy. The rest compare tumour with adjacent tissue, cancer
-     subgroups or treatments.
-   - One of the 12, `bsdb:25699023-2`, is itself a within-patient
-     tumour-vs-adjacent comparison (#569).
-   - Among disease-versus-healthy studies, the test gives odds ratio 5.7
-     (95% CI 0.6–65.5, p = 0.13) with that experiment, and 10.2 (1.07–158,
-     p = 0.021) without it. The result rests on one experiment either way.
+   - Only 11 of the 31 paired mucosa and lumen experiments compare patients with
+     controls (`contrast_type` `case_vs_control_subject`). The rest compare tumour
+     with adjacent tissue, cancer subgroups or treatments.
+   - Among disease-versus-healthy studies, the test gives odds ratio 10.2
+     (95% CI 1.07–158, p = 0.021). Counting the tumour-vs-adjacent-tissue contrast
+     `bsdb:25699023-2` gives 5.66 (0.61–65.5, p = 0.13), the v2 result. The result
+     rests on that one experiment either way (#569, #580, #673).
 
 ## What does not hold
 
@@ -87,7 +95,7 @@ Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`).
    - Outside feces, single conditions have at most five untied pairs, too few for
      p < 0.05, except CRC mucosa and lumen.
    - The CRC contrasts there are mostly not patient-versus-control, and the
-     disease-vs-healthy comparison turns on one experiment (fragile #2).
+     disease-vs-healthy comparison rests on one experiment (fragile #2).
 4. **The trait ranking is descriptive.** Cellulose catabolic process ranks second
    of 142 non-MediaDive traits by cross-condition distance, after Acetogenesis
    (`METPO:1000845`). The ranking is not a test, and traits share taxa.
@@ -102,13 +110,13 @@ of the TSV) are for the study sign test.
 | Condition | Contrasts | Experiments | p | Studies | p | q | Study Wilcoxon p |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | PD | all | 58 : 24 : 17 | 2.2e-4 | 27 : 14 : 4 | 0.060 | 0.079 | 0.0093 |
-| PD | disease vs healthy | 47 : 15 : 10 | 5.8e-5 | 24 : 10 : 4 | 0.024 | 0.037 | 0.015 |
-| HIV | all | 18 : 7 : 3 | 0.043 | 12 : 4 : 2 | 0.077 | 0.097 | 0.30 |
-| HIV | disease vs healthy | 11 : 1 : 3 | 0.0063 | 9 : 0 : 2 | 0.0039 | 0.0087 | 0.0039 |
+| PD | disease vs healthy | 47 : 15 : 12 | 5.8e-5 | 24 : 10 : 4 | 0.024 | 0.041 | 0.015 |
+| HIV | all | 18 : 7 : 3 | 0.043 | 12 : 4 : 2 | 0.077 | 0.093 | 0.30 |
+| HIV | disease vs healthy | 13 : 3 : 3 | 0.021 | 10 : 2 : 2 | 0.039 | 0.057 | 0.18 |
 | CRC | all | 32 : 6 : 11 | 2.4e-5 | 19 : 2 : 7 | 2.2e-4 | 7.2e-4 | 2.0e-4 |
-| CRC | disease vs healthy | 21 : 4 : 8 | 9.1e-4 | 14 : 3 : 7 | 0.013 | 0.022 | 0.0021 |
-| All three | all | 108 : 37 : 31 | 3.0e-9 | 58 : 20 : 13 | 2.0e-5 | 1.4e-4 | 4.1e-5 |
-| All three | disease vs healthy | 79 : 20 : 21 | 1.8e-9 | 47 : 13 : 13 | 1.2e-5 | 1.2e-4 | 2.0e-5 |
+| CRC | disease vs healthy | 18 : 5 : 8 | 0.011 | 14 : 3 : 7 | 0.013 | 0.026 | 0.0026 |
+| All three | all | 108 : 37 : 31 | 3.0e-9 | 58 : 20 : 13 | 2.0e-5 | 1.8e-4 | 4.1e-5 |
+| All three | disease vs healthy | 78 : 23 : 23 | 3.6e-8 | 48 : 15 : 13 | 3.8e-5 | 2.2e-4 | 1.2e-4 |
 
 Experiment-level p-values treat experiments from one study as independent, so
 they are optimistic. The majority-vote study counts are in
@@ -118,12 +126,13 @@ they are optimistic. The majority-vote study counts are in
 
 | Reading | Experiments | p | Studies | p |
 | --- | --- | --- | --- | --- |
-| Exact label (primary) | 11 : 1 : 3 | 0.0063 | 9 : 0 : 2 | 0.0039 |
-| + synonym labels | 11 : 3 : 3 | 0.057 | 9 : 2 : 2 | 0.065 |
-| + HIV– vs HIV+ experiment classed disease vs disease | 12 : 1 : 3 | 0.0034 | 10 : 0 : 2 | 0.0020 |
-| + both | 12 : 3 : 3 | 0.035 | 10 : 2 : 2 | 0.039 |
-| + also three HIV+ on ART vs uninfected | 13 : 5 : 3 | 0.096 | 10 : 4 : 2 | 0.18 |
-| Exact label, without the rectal-mucosa study | 10 : 1 : 3 | 0.012 | 8 : 0 : 2 | 0.0078 |
+| Exact label (primary) | 13 : 3 : 3 | 0.021 | 10 : 2 : 2 | 0.039 |
+| + synonym labels | 13 : 5 : 3 | 0.096 | 10 : 4 : 2 | 0.18 |
+| Contrasts whose cases are named as treated set aside | 12 : 1 : 3 | 0.0034 | 10 : 0 : 2 | 0.0020 |
+| Tier 1–2 controls only | 12 : 1 : 3 | 0.0034 | 10 : 0 : 2 | 0.0020 |
+| Paired-tissue contrasts also counted | 13 : 3 : 3 | 0.021 | 10 : 2 : 2 | 0.039 |
+| Comorbidity contrasts also counted | 13 : 3 : 3 | 0.021 | 10 : 2 : 2 | 0.039 |
+| Exact label, without the rectal-mucosa study | 12 : 3 : 3 | 0.035 | 9 : 2 : 2 | 0.065 |
 
 ## Table B. Overlap against the null models
 
@@ -164,9 +173,10 @@ The flags are `has_direct_trait_edge`, `is_direct_or_genus_species`,
 | --- | --- | --- | --- | --- | --- |
 | CRC | experiments | 32 : 6 | 4 : 11 | 13.6 (2.9–81.0) | 1.2e-4 |
 | CRC | studies | 19 : 2 | 3 : 8 | 21.6 (2.7–309) | 5.6e-4 |
-| CRC, disease vs healthy | studies | 14 : 3 | 3 : 4 | 5.7 (0.6–65.5) | 0.13 |
-| CRC, disease vs healthy, without bsdb:25699023-2 | studies | 14 : 3 | 2 : 5 | 10.2 (1.07–158) | 0.021 |
+| CRC, disease vs healthy | studies | 14 : 3 | 2 : 5 | 10.2 (1.07–158) | 0.021 |
+| CRC, disease vs healthy, paired-tissue contrasts counted | studies | 14 : 3 | 3 : 4 | 5.66 (0.61–65.5) | 0.13 |
 | All three, stratified by condition | experiments | 108 : 37 | 9 : 12 | 4.79 (1.52–15.8) | 0.0049 |
+
 | All three, stratified by condition | studies | 58 : 20 | 5 : 9 | 8.46 (1.79–49.9) | 0.0021 |
 
 The stratified rows test a common odds ratio across PD, HIV and CRC. Crude
