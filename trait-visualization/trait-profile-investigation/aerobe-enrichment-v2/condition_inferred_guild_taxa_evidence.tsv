@@ -1,33 +1,4 @@
 condition	focus_direction	trait_id	trait_name	trait_category	taxon_id	taxon_name	taxonomic_rank	taxon_profile_count	study_count	trait_annotation_count
-Time	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:724	Haemophilus	genus	20	1	38
-Time	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1279	Staphylococcus	genus	20	1	798
-Time	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:583	Proteus	genus	19	1	7
-Time	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	18	1	736
-Time	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:482	Neisseria	genus	11	1	5
-Time	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	9	1	75
-Time	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	1	1	7
-Time	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	1	1	5
-Time	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:963	Herbaspirillum	genus	20	1	16
-Time	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1279	Staphylococcus	genus	20	1	73
-Time	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:475	Moraxella	genus	19	1	28
-Time	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:583	Proteus	genus	19	1	10
-Time	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	18	1	33
-Time	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:482	Neisseria	genus	11	1	103
-Time	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:836	Porphyromonas	genus	11	1	1
-Time	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:28100	Phyllobacterium	genus	10	1	3
-Time	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	9	1	122
-Time	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:29393	Dolosigranulum	genus	4	1	1
-Time	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	1	1	1
-Time	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:724	Haemophilus	genus	20	1	17
-Time	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:963	Herbaspirillum	genus	20	1	2
-Time	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1279	Staphylococcus	genus	20	1	17
-Time	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:475	Moraxella	genus	19	1	11
-Time	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	18	1	141
-Time	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:482	Neisseria	genus	11	1	28
-Time	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	9	1	76
-Time	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:29393	Dolosigranulum	genus	4	1	1
-Time	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	1	1	3
-Time	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	1	1	1
 Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:546	Citrobacter freundii	species	2	1	5
 Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:550	Enterobacter cloacae	species	2	1	6
 Multiple myeloma	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:548	Klebsiella aerogenes	species	2	1	1
@@ -446,3 +417,14 @@ Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:80840	Burkh
 Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	227
 Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	8
 Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171552	Prevotellaceae	family	1	1	1
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	4	1	281
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	4	1	63
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	2	1	331
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31979	Clostridiaceae	family	2	1	2
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:84998	Coriobacteriia	class	2	1	1
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91061	Bacilli	class	1	1	651
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	7
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	1	1	1
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	1	1	564
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	154
+Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	1	1	141

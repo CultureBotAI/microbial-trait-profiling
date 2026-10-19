@@ -69,11 +69,11 @@ Guardrail: the increased-profile anaerobe score is retained in every condition a
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Acute graft vs. host disease | 6 | 2 | 2.306 |  |  | 2 | 1.044 |
 | Age-related macular degeneration | 24 | 5 | 1.301 | 1.957 | 3.04e-05 | 12 | 0.825 |
-| Graft versus host disease | 14 | 5 | 1.283 | 1.562 | 0.0523 | 4 | 0.872 |
+| Graft versus host disease | 14 | 5 | 1.283 |  |  | 4 | 0.872 |
 | Diarrhea | 24 | 3 | 1.227 | 1.041 | 0.00414 | 12 | 0.720 |
-| Response to antibiotic | 9 | 3 | 1.133 | 0.567 | 0.43 | 3 | 0.682 |
-| Inflammatory bowel disease | 12 | 4 | 1.115 | 7.602 | 0.00572 | 3 | 0.681 |
-| Respiratory tract infectious disease | 10 | 2 | 0.969 | 0.400 | 0.482 | 4 | 0.463 |
+| Response to antibiotic | 9 | 3 | 1.133 |  |  | 3 | 0.682 |
+| Inflammatory bowel disease | 12 | 4 | 1.115 |  |  | 3 | 0.681 |
+| Respiratory tract infectious disease | 10 | 2 | 0.969 |  |  | 4 | 0.463 |
 | Response to antiviral drug | 32 | 6 | 0.949 | 1.251 | 0.000429 | 14 | 0.777 |
 
 ## Condition Enriched-Profile Histogram
