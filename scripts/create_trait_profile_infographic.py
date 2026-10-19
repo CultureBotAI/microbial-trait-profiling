@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import math
 import re
 from collections.abc import Sequence
@@ -17,7 +18,13 @@ from matplotlib.path import Path as MplPath
 from scipy import stats
 
 from mtp.body_site_diagram import anatomical_site_base
-from mtp.composition_denominators import retained_trait_counts, trait_fractions
+from mtp.composition_denominators import (
+    DENOMINATOR_DEFINITION,
+    retained_trait_counts,
+    trait_fractions,
+)
+from mtp.paths import file_sha256
+from mtp.trait_guilds import load_profiles
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -182,6 +189,94 @@ def profile_ids_for_pairs(pair_metadata: pd.DataFrame) -> list[str]:
         profile_ids.extend(split_profile_ids(row.increased_profile_ids))
         profile_ids.extend(split_profile_ids(row.decreased_profile_ids))
     return list(dict.fromkeys(profile_ids))
+
+
+def core_pair_metadata(profiles_path: Path, experiments_path: Path) -> pd.DataFrame:
+    """Derive the historical human paired cohort from actual core input rows.
+
+    Zero-total profiles remain included, matching the native pooled estimand.
+    Neither a heatmap selection nor an old paired-metadata file defines this
+    cohort. Repeated direction rows refer to the same summed raw profile.
+    """
+    profiles, corpus = load_profiles(
+        profiles_path, experiments_path, {}, reject_missing_counts=True
+    )
+    if not profiles:
+        raise ValueError("No human paired profiles in the verified core inputs")
+    groups: dict[tuple[str, str], dict[str, object]] = {}
+    for profile in profiles:
+        key = (profile.study_id, profile.experiment_id)
+        if key not in groups:
+            groups[key] = {
+                "pair_id": f"{profile.study_id}|{profile.experiment_id}|paired_inc_minus_dec",
+                "study_id": profile.study_id,
+                "experiment_id": profile.experiment_id,
+                "condition": profile.condition,
+                "body_site": profile.body_site,
+                "host_species": "Homo sapiens",
+                "zero_total_policy": "included_in_historical_native_composition",
+            }
+        direction = "increased" if profile.inc_dec == "inc" else "decreased"
+        groups[key][f"{direction}_profile_ids"] = (
+            f"{profile.study_id}|{profile.experiment_id}|{profile.inc_dec}"
+        )
+        groups[key][f"{direction}_profile_count"] = 1
+    metadata = pd.DataFrame.from_records(list(groups.values())).set_index("pair_id")
+    for name, value in (
+        ("input_profile_rows", corpus.profile_rows),
+        ("nonhuman_profile_rows_excluded", corpus.dropped_non_human),
+        ("unpaired_profile_rows_excluded", corpus.dropped_unpaired),
+        ("missing_metadata_profile_rows_excluded", corpus.unmatched_experiments),
+    ):
+        metadata[name] = value
+    return metadata
+
+
+def pair_denominator_summary(
+    profile_matrix: pd.DataFrame, pair_metadata: pd.DataFrame
+) -> dict[str, object]:
+    """Report historical inclusion and nonzero-pair eligibility from raw retained counts.
+
+    A pair is nonzero only if every referenced profile has a positive retained
+    annotation total, matching ``drop_zero_total_pairs``. Historical native
+    composition includes zero-total profiles in standardization and inference;
+    this audit does not change that estimand or interpret missing signal as
+    measured absence. Totals use every retained trait, before trait selection.
+    """
+    retained = retained_trait_counts(profile_matrix)
+    profile_ids = profile_ids_for_pairs(pair_metadata)
+    missing = pd.Index(profile_ids).difference(retained.index)
+    if len(missing):
+        raise ValueError(f"Paired metadata references missing raw profiles: {list(missing[:3])}")
+    if not retained.index.is_unique or not pair_metadata.index.is_unique:
+        raise ValueError("Profile and pair identifiers must be unique for denominator reporting")
+    totals = retained.loc[profile_ids].sum(axis=1)
+    nonzero_pairs: list[object] = []
+    for pair_id, row in pair_metadata.iterrows():
+        inc_ids = split_profile_ids(row["increased_profile_ids"])
+        dec_ids = split_profile_ids(row["decreased_profile_ids"])
+        if not inc_ids or not dec_ids:
+            raise ValueError(f"Pair {pair_id} lacks an increased or decreased profile")
+        if totals.loc[inc_ids + dec_ids].gt(0).all():
+            nonzero_pairs.append(pair_id)
+    study_ids = (
+        pair_metadata["study_id"]
+        if "study_id" in pair_metadata.columns
+        else pd.Series(pair_metadata.index, index=pair_metadata.index)
+    )
+    n_nonzero_studies = int(study_ids.loc[nonzero_pairs].nunique())
+    return {
+        "n_experiments": len(pair_metadata),
+        "n_nonzero_experiments": len(nonzero_pairs),
+        "n_zero_total_experiments": len(pair_metadata) - len(nonzero_pairs),
+        "n_zero_total_excluded": 0,
+        "n_nonzero_studies": n_nonzero_studies,
+        "n_studies_without_nonzero_experiments": int(study_ids.nunique()) - n_nonzero_studies,
+        "n_zero_total_profiles": int(totals.le(0).sum()),
+        "retained_trait_count": len(retained.columns),
+        "zero_total_policy": "included_in_historical_native_composition",
+        "denominator_definition": DENOMINATOR_DEFINITION,
+    }
 
 
 def select_stratum_traits(
@@ -367,6 +462,7 @@ def compute_trait_stats(
     stratum_kind: str = "pooled",
     stratum: str = "pooled",
     selected_profile_count: int | None = None,
+    denominator_summary: dict[str, object] | None = None,
 ) -> pd.DataFrame:
     """Calculate paired and study-averaged one-sample t-test summaries for each trait column."""
     if trait_metadata is None:
@@ -391,6 +487,23 @@ def compute_trait_stats(
     study_series = study_series.fillna(pd.Series(matrix.index, index=matrix.index))
     study_matrix = matrix.groupby(study_series, sort=False).mean()
     study_count = len(study_matrix)
+    denominator_columns = [
+        "n_experiments",
+        "n_nonzero_experiments",
+        "n_zero_total_experiments",
+        "n_zero_total_excluded",
+        "n_nonzero_studies",
+        "n_studies_without_nonzero_experiments",
+        "n_zero_total_profiles",
+        "retained_trait_count",
+        "zero_total_policy",
+        "denominator_definition",
+    ]
+    denominator_fields = {
+        column: (denominator_summary or {}).get(column, pd.NA) for column in denominator_columns
+    }
+    if denominator_summary is not None and denominator_summary["n_experiments"] != len(matrix):
+        raise ValueError("Denominator audit and analyzed pair matrix must describe the same pairs")
 
     records: list[dict[str, object]] = []
     for column in matrix.columns:
@@ -401,11 +514,21 @@ def compute_trait_stats(
         std_contrast = float(values.std(ddof=1)) if pair_n >= 2 else 0.0
 
         if pair_n < 2 or np.isclose(std_contrast, 0.0):
+            pair_test_status = (
+                "insufficient_support"
+                if pair_n < 2
+                else (
+                    "all_tied"
+                    if std_contrast == 0 and mean_contrast == 0
+                    else "insufficient_variance"
+                )
+            )
             t_stat = float("nan")
             p_value = float("nan")
             ci95_lower = float("nan")
             ci95_upper = float("nan")
         else:
+            pair_test_status = "tested"
             result = stats.ttest_1samp(values, 0.0)
             t_stat = float(result.statistic)
             p_value = float(result.pvalue)
@@ -421,11 +544,17 @@ def compute_trait_stats(
         study_std = float(study_values.std(ddof=1)) if study_n >= 2 else 0.0
 
         if study_n < 2 or np.isclose(study_std, 0.0):
+            study_test_status = (
+                "insufficient_support"
+                if study_n < 2
+                else ("all_tied" if study_std == 0 and study_mean == 0 else "insufficient_variance")
+            )
             study_t_stat = float("nan")
             study_p_value = float("nan")
             study_ci95_lower = float("nan")
             study_ci95_upper = float("nan")
         else:
+            study_test_status = "tested"
             study_result = stats.ttest_1samp(study_values, 0.0)
             study_t_stat = float(study_result.statistic)
             study_p_value = float(study_result.pvalue)
@@ -449,6 +578,12 @@ def compute_trait_stats(
                 "stratum": stratum,
                 "selected_trait_rank": metadata_row.get("selected_trait_rank", pd.NA),
                 "pair_count": pair_n,
+                **denominator_fields,
+                "test_method": "two_sided_one_sample_t_test",
+                "pair_test_status": pair_test_status,
+                "study_test_status": study_test_status,
+                "correction_method": "BH",
+                "correction_family_size": len(matrix.columns),
                 "profile_count": selected_profile_count
                 if selected_profile_count is not None
                 else pd.NA,
@@ -502,6 +637,12 @@ def compute_trait_stats(
         "stratum",
         "selected_trait_rank",
         "pair_count",
+        *denominator_columns,
+        "test_method",
+        "pair_test_status",
+        "study_test_status",
+        "correction_method",
+        "correction_family_size",
         "profile_count",
         "n_profiles_where_annotated",
         "annotated_profile_fraction",
@@ -619,6 +760,7 @@ def compute_stratum_trait_stats(
     max_profile_support_fraction: float = MAX_STRATIFIED_PROFILE_SUPPORT_FRACTION,
 ) -> pd.DataFrame:
     """Select traits and calculate paired contrast statistics within one stratum."""
+    denominator_summary = pair_denominator_summary(profile_matrix, pair_metadata)
     profile_ids = [
         profile_id
         for profile_id in profile_ids_for_pairs(pair_metadata)
@@ -648,6 +790,7 @@ def compute_stratum_trait_stats(
         stratum=stratum,
         selected_profile_count=len(selected_profile_matrix),
         study_ids=study_ids,
+        denominator_summary=denominator_summary,
     )
 
 
@@ -1224,10 +1367,55 @@ def create_infographic(
     plt.close(fig)
 
 
-def main() -> None:
-    _paired_matrix, metadata, _paired_trait_metadata = load_paired_inputs()
-    profile_matrix = load_profile_matrix()
-    trait_labels = load_trait_labels()
+def main(argv: Sequence[str] | None = None) -> None:
+    from mtp.workflow.consumers import (
+        bind_count_arguments,
+        preflight_consumer_outputs,
+        write_consumer_record,
+    )
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--stats-only", action="store_true", help="Write only the pooled stats TSV")
+    parser.add_argument("--output-dir", type=Path, default=INVESTIGATION_DIR)
+    parser.add_argument("--core-run", type=Path, help="Verified core run for --stats-only")
+    parser.add_argument("--profiles", dest="profile_input", type=Path)
+    parser.add_argument("--pair-metadata", type=Path)
+    parser.add_argument("--trait-labels", dest="column_labels", type=Path)
+    parser.set_defaults(experiments_input=None, full_dump_input=None)
+    args = parser.parse_args(argv)
+    if not args.stats_only and args.output_dir != INVESTIGATION_DIR:
+        parser.error("--output-dir is supported only with --stats-only")
+    if args.core_run is not None and not args.stats_only:
+        parser.error("--core-run requires --stats-only")
+    if args.core_run is not None and args.pair_metadata is not None:
+        parser.error("--core-run derives pair metadata; omit --pair-metadata")
+    bundle = bind_count_arguments(args)
+    output_path = trait_stats_path(args.output_dir, "pooled")
+    record_path = args.output_dir / "core_consumption.json"
+    if bundle is not None:
+        args.pair_metadata = args.output_dir / "trait_profile_paired_contrast_pair_metadata.tsv"
+        preflight_consumer_outputs(
+            bundle,
+            record_path,
+            [output_path, args.pair_metadata],
+            output_directory=args.output_dir,
+        )
+        metadata = core_pair_metadata(args.profile_input, args.experiments_input)
+        for source_name, source_path in (
+            ("profile", args.profile_input),
+            ("experiments", args.experiments_input),
+            ("trait_labels", args.column_labels),
+        ):
+            metadata[f"{source_name}_source"] = display_path(source_path)
+            metadata[f"{source_name}_sha256"] = file_sha256(source_path)
+    else:
+        args.profile_input = args.profile_input or PROFILE_MATRIX_PATH
+        args.pair_metadata = args.pair_metadata or PAIRED_METADATA_PATH
+        args.column_labels = args.column_labels or TRAIT_COLUMNS_PATH
+        metadata = pd.read_csv(args.pair_metadata, sep="\t", index_col=0)
+    profile_matrix = load_profile_matrix(args.profile_input)
+    trait_labels = load_trait_labels(args.column_labels)
+    denominator_summary = pair_denominator_summary(profile_matrix, metadata)
     pooled_profile_ids = [
         profile_id
         for profile_id in profile_ids_for_pairs(metadata)
@@ -1250,7 +1438,33 @@ def main() -> None:
         stratum="pooled",
         selected_profile_count=len(pooled_profile_matrix),
         study_ids=study_ids,
+        denominator_summary=denominator_summary,
     )
+    if bundle is not None:
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        metadata.to_csv(args.pair_metadata, sep="\t")
+        trait_stats["experiments_source"] = display_path(args.experiments_input)
+        trait_stats["experiments_sha256"] = file_sha256(args.experiments_input)
+    for source_name, source_path in [
+        ("profile", args.profile_input),
+        ("pair_metadata", args.pair_metadata),
+        ("trait_labels", args.column_labels),
+    ]:
+        trait_stats[f"{source_name}_source"] = display_path(source_path)
+        trait_stats[f"{source_name}_sha256"] = file_sha256(source_path)
+    if args.stats_only:
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        trait_stats.to_csv(output_path, sep="\t", index=False)
+        if bundle is not None:
+            write_consumer_record(
+                bundle,
+                record_path,
+                consumer="native-pooled-composition-stats",
+                outputs=[output_path, args.pair_metadata],
+            )
+        print(f"Wrote: {output_path}")
+        print(f"Pair denominator audit: {denominator_summary}")
+        return
     scored = add_pair_scores(matrix, metadata)
     condition_summary = summarize_groups(
         scored,

@@ -114,6 +114,11 @@ format:
 trait-profile-investigation:
 	uv run python scripts/regenerate_trait_profile_investigation.py
 
+# Native pooled statistics only, with explicit zero-total eligibility (#551).
+[positional-arguments]
+trait-profile-pooled-stats *ARGS:
+	uv run python scripts/create_trait_profile_infographic.py --stats-only --output-dir data/derived "$@"
+
 # Regenerate six-trait pattern and full-table signed direction heatmaps.
 six-shared-trait-heatmaps:
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py
@@ -199,6 +204,10 @@ typecheck:
 
 test:
 	uv run pytest
+
+# Analyzer, ranking exporter, and complete-universe density regression checks (#664).
+test-stratification:
+	uv run pytest tests/test_stratification.py tests/test_enrichment_pipeline.py tests/test_corpus_identity.py
 
 test-cov:
 	uv run pytest --cov=mtp --cov=bsdbng --cov-report=term-missing
@@ -539,20 +548,26 @@ export-rankings: analyze analyze-depletion
 
 # Run the ORA harness benchmark check suite over synthetic null and mixed scenarios (Refs #263, #343, #348, #351).
 calibrate replicates="10" seed="42" scenario="all": study-trait-profiles-ora
-	just timed calibrate "uv run python -m mtp.ora_calibration.harness \
-	  --profiles data/derived/study_trait_profiles_ora_wide.tsv \
-	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
-	  --output-dir data/derived/ora_calibration \
-	  --replicates {{replicates}} \
-	  --seed {{seed}} \
-	  --scenario {{scenario}} \
+	just calibrate-from data/derived/study_trait_profiles_ora_wide.tsv data/derived/taxa_trait_matrix.tsv data/derived/ora_calibration "{{replicates}}" "{{seed}}" "{{scenario}}"
+
+# Calibrate existing, explicitly selected products without rebuilding another corpus (#551).
+[positional-arguments]
+calibrate-from profiles taxa output replicates="10" seed="42" scenario="all":
+	uv run python -m mtp.ora_calibration.harness \
+	  --profiles "$1" \
+	  --taxa-matrix "$2" \
+	  --output-dir "$3" \
+	  --replicates "$4" \
+	  --seed "$5" \
+	  --scenario "$6" \
 	  --alpha 0.05 \
 	  --fdr-q 0.05 \
+	  --q-thresholds 0.05 0.001 \
 	  --signal-strength 0.6 \
 	  --n-spike-traits 3 \
 	  --test-type enrichment \
 	  --min-fold 1.5 \
-	  --max-fold 0.67"
+	  --max-fold 0.5
 
 # Run paired composition arm calibration against the study-flip complete null (#263).
 calibrate-composition replicates="100" seed="182":
@@ -564,6 +579,16 @@ calibrate-composition replicates="100" seed="182":
 	  --seed {{seed}}"
 
 # Run ORA background stratification and annotation-density sensitivity evaluation (#118).
+# Run against explicit existing products without rebuilding source data (#664).
+[positional-arguments]
+analyze-strata-inputs *ARGS:
+	uv run python scripts/run_stratified_enrichment.py "$@"
+
+# Compare legacy selected denominators with complete-universe outputs (#664).
+[positional-arguments]
+audit-stratification-universe before after:
+	uv run python scripts/adhoc/issue664_compare_stratification.py "$@"
+
 analyze-strata: study-trait-profiles-ora
 	just timed analyze-strata "uv run python scripts/run_stratified_enrichment.py \
 	  --profiles data/derived/study_trait_profiles_ora_wide.tsv \
@@ -667,9 +692,7 @@ validate-schema:
 	uv run linkml validate {{legacy_schema}}
 
 lint-schema:
-	uv run linkml lint --config {{lintconfig}} --validate --ignore-warnings {{schema}}
 	uv run linkml lint --config {{lintconfig}} --ignore-warnings {{schema}}
-	uv run linkml lint --config {{lintconfig}} --validate --ignore-warnings {{legacy_schema}}
 	uv run linkml lint --config {{lintconfig}} --ignore-warnings {{legacy_schema}}
 
 check-schema: validate-schema lint-schema

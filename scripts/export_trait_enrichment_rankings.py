@@ -17,6 +17,8 @@ instead of writing an empty successful report.
 from __future__ import annotations
 
 import argparse
+import csv
+import gzip
 import re
 import sys
 from dataclasses import dataclass, fields
@@ -184,6 +186,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Output TSV for trait-study pair ranking. Defaults to dynamic path based on stats.",
     )
     parser.add_argument(
+        "--tested-output",
+        type=Path,
+        help="Complete trait summary; requires an unfiltered results TSV and --profiles.",
+    )
+    parser.add_argument(
+        "--pair-discoveries-only",
+        action="store_true",
+        help="Keep the pair ranking discovery-only when reading complete results.",
+    )
+    parser.add_argument(
         "--body-site-group",
         type=str,
         default=None,
@@ -193,7 +205,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--profiles",
         type=Path,
         default=None,
-        help="Optional path to profiles TSV to compute empirical background K (trait totals).",
+        help=(
+            "Profile TSV defining the full input trait universe (required with --tested-output). "
+            "Also supplies legacy profile-count totals when reference K is unavailable."
+        ),
     )
     parser.add_argument(
         "--tail",
@@ -218,6 +233,39 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Explicit FDR multiplicity scope ('global' or 'profile'; overrides metadata if set).",
     )
     return parser.parse_args(argv)
+
+
+def read_profile_trait_universe(profiles_path: Path) -> list[str]:
+    """Read the declared trait universe strictly, without inferring it from tested rows."""
+    try:
+        opener = gzip.open if profiles_path.suffix == ".gz" else open
+        with opener(profiles_path, "rt", encoding="utf-8", newline="") as handle:
+            header = next(csv.reader(handle, delimiter="\t", strict=True), None)
+    except (OSError, UnicodeError, csv.Error) as exc:
+        raise MalformedResultsError(
+            f"Cannot read complete-summary profile schema {profiles_path}: {exc}"
+        ) from exc
+    if not header or any(not column.strip() for column in header):
+        raise MalformedResultsError(
+            f"Profile schema is empty or has blank columns: {profiles_path}"
+        )
+    if len(header) != len(set(header)):
+        raise MalformedResultsError(f"Profile schema has duplicate columns: {profiles_path}")
+    required = {"study_id", "experiment_id", "inc_dec", "taxa_count"}
+    if missing := required - set(header):
+        raise MalformedResultsError(
+            f"Profile schema lacks required columns {sorted(missing)}: {profiles_path}"
+        )
+    traits = [
+        column
+        for column in header
+        if column not in required | {"body_site"} and "mediadive.medium:" not in column.lower()
+    ]
+    if not traits:
+        raise MalformedResultsError(
+            f"Profile schema has no retained trait columns: {profiles_path}"
+        )
+    return traits
 
 
 def compute_trait_totals_from_profiles(profiles_path: Path) -> dict[str, int]:
@@ -540,8 +588,9 @@ def build_overall_table(
     fdr_scope: str = "global",
     body_site_group: str | None = None,
     trait_totals: dict[str, int] | None = None,
+    complete_results: bool = False,
 ) -> pd.DataFrame:
-    _ = total_profiles  # Reserved for future weighting
+    _ = total_profiles, trait_totals  # Legacy arguments; parsed rows carry authoritative K.
     if fdr_scope not in {"global", "profile"}:
         raise ValueError(f"Unsupported fdr_scope: {fdr_scope!r}; expected 'global' or 'profile'.")
     columns = overall_columns(stat_type, censored=bool(max_traits), body_site_group=body_site_group)
@@ -614,19 +663,21 @@ def build_overall_table(
         overall["trait_total"] = 0
     else:
         overall["trait_total"] = overall["trait_total"].fillna(0).astype(int)
-    if trait_totals:
-        for t, tot in trait_totals.items():
-            mask = overall["trait"] == t
-            if mask.any():
-                overall.loc[mask, "trait_total"] = tot
-
-    if "is_significant" in frame.columns and frame["profile_id"].nunique() > 0:
+    # Parsed rows already prefer the analyzer's reference-population K. Profile
+    # sums are not that population and must not overwrite it here (#664).
+    if complete_results:
         tested_per_trait = frame.groupby("trait")["profile_id"].nunique()
         overall["n_profiles_tested"] = (
             overall["trait"].map(tested_per_trait).fillna(overall["testable_profiles"]).astype(int)
         )
     else:
         overall["n_profiles_tested"] = overall["testable_profiles"]
+    # Text reports may have discoveries but no eligible-profile denominator.
+    # Keep that unavailable rather than deriving a denominator from discoveries
+    # or dividing by the legacy placeholder zero.
+    overall["n_profiles_tested"] = (
+        overall["n_profiles_tested"].where(overall["n_profiles_tested"] > 0).astype("Int64")
+    )
 
     # Calculate net direction based on vote count
     def get_net_direction(row: pd.Series) -> str:
@@ -654,7 +705,9 @@ def build_overall_table(
 
     # Add human-readable prevalence summary
     overall["prevalence_summary"] = (
-        overall["hit_rows"].astype(str) + " / " + overall["n_profiles_tested"].astype(str)
+        overall["hit_rows"].astype(str)
+        + " / "
+        + overall["n_profiles_tested"].astype("string").fillna("NA")
     )
 
     # #115: Minimum hit thresholding for overall ranking to reduce noise.
@@ -680,6 +733,48 @@ def build_overall_table(
 
     # Enforce the declared schema (raises if the computed table drifts from it).
     return overall[columns]
+
+
+def build_tested_trait_table(frame: pd.DataFrame, traits: list[str]) -> pd.DataFrame:
+    """Summarize every eligible trait, keeping untested input traits explicit.
+
+    Statistics and mean folds cover all eligible tests. Discovery counts use the
+    analyzer's exact q/p and fold rule; no minimum discovery-count filter applies.
+    """
+    columns = [
+        "trait",
+        "test_status",
+        "n_profiles_tested",
+        "trait_total",
+        "hit_rows",
+        "prevalence",
+        "best_qvalue",
+        "best_pvalue",
+        "mean_fold",
+    ]
+    if frame.empty:
+        summary = pd.DataFrame(columns=columns).set_index("trait")
+    else:
+        summary = frame.groupby("trait").agg(
+            n_profiles_tested=("profile_id", "nunique"),
+            trait_total=("trait_total", "first"),
+            hit_rows=("is_significant", "sum"),
+            best_qvalue=("fdr_q", "min"),
+            best_pvalue=("p_value", "min"),
+            mean_fold=("fold", "mean"),
+        )
+        summary["prevalence"] = summary["hit_rows"] / summary["n_profiles_tested"]
+        summary["test_status"] = "tested_nonsignificant"
+        summary.loc[summary["hit_rows"] > 0, "test_status"] = "tested_significant"
+    summary = summary.reindex(sorted(set(summary.index) | set(traits)))
+    summary.index.name = "trait"
+    untested = summary["n_profiles_tested"].isna()
+    summary.loc[untested, "test_status"] = "zero_eligible_tests"
+    summary.loc[untested, ["n_profiles_tested", "hit_rows"]] = 0
+    summary[["n_profiles_tested", "hit_rows"]] = summary[["n_profiles_tested", "hit_rows"]].astype(
+        int
+    )
+    return summary.reset_index()[columns]
 
 
 def build_pair_table(
@@ -758,10 +853,15 @@ def main(argv: list[str] | None = None) -> int:
     results_path = args.results or resolve_default_results(args.input)
 
     trait_totals: dict[str, int] = {}
-    if args.profiles and args.profiles.is_file():
+    input_traits: list[str] = []
+    if args.tested_output and args.profiles is None:
+        return _fail("--tested-output requires --profiles to identify untested input traits.")
+    if not args.tested_output and args.profiles and args.profiles.is_file():
         trait_totals = compute_trait_totals_from_profiles(args.profiles)
 
     try:
+        if args.tested_output:
+            input_traits = read_profile_trait_universe(args.profiles)
         if results_path.exists():
             print(f"Loading data from results TSV: {results_path}")
             results_meta = detect_metadata(results_path)
@@ -776,7 +876,8 @@ def main(argv: list[str] | None = None) -> int:
             if results_meta.get("max_fold") is not None:
                 max_fold = results_meta["max_fold"]
             fdr_scope = args.fdr_scope or results_meta.get("fdr_scope", fdr_scope)
-            testable_profiles = results_meta.get("testable_profiles") or testable_profiles
+            if results_meta.get("testable_profiles") is not None:
+                testable_profiles = results_meta["testable_profiles"]
 
             if args.unfiltered or "all_results" in str(results_path):
                 is_unfiltered = True
@@ -784,6 +885,48 @@ def main(argv: list[str] | None = None) -> int:
             tests_performed = table.tests_performed
             analyzer_hits = table.significant_hits
             result_status = table.status
+            if args.tested_output:
+                if extra_traits := set(table.frame["trait"]) - set(input_traits):
+                    raise MalformedResultsError(
+                        "Complete results contain traits absent from the supplied profile schema: "
+                        f"{sorted(extra_traits)}"
+                    )
+                if not is_unfiltered or table.tests_performed is None:
+                    raise MalformedResultsError(
+                        "--tested-output requires complete results with declared test counts."
+                    )
+                required = {"is_significant", "background_k", "eligibility_status"}
+                if not required.issubset(table.frame.columns):
+                    raise MalformedResultsError(
+                        f"Complete trait summaries require analyzer columns {sorted(required)}."
+                    )
+                flags = table.frame["is_significant"].str.lower()
+                if not flags.isin(["true", "false", "1", "0"]).all():
+                    raise MalformedResultsError("Invalid is_significant value in complete results.")
+                if int(flags.isin(["true", "1"]).sum()) != table.significant_hits:
+                    raise MalformedResultsError(
+                        "Complete result discovery flags disagree with metadata."
+                    )
+                if not table.frame["eligibility_status"].eq("testable").all():
+                    raise MalformedResultsError(
+                        "Complete results contain unsupported eligibility states."
+                    )
+                if table.frame.duplicated(["study_id", "experiment_id", "inc_dec", "trait"]).any():
+                    raise MalformedResultsError(
+                        "Complete results contain duplicate profile-trait tests."
+                    )
+                counts = table.frame.groupby("trait").size()
+                if not counts.eq(testable_profiles).all():
+                    raise MalformedResultsError(
+                        "Complete results lack declared testable-profile coverage for each trait."
+                    )
+                background = pd.to_numeric(table.frame["background_k"], errors="coerce")
+                if (background.isna() | (background <= 0) | (background % 1 != 0)).any():
+                    raise MalformedResultsError(
+                        "Tested traits require a positive integer background K."
+                    )
+                if table.frame.groupby("trait")["background_k"].nunique().gt(1).any():
+                    raise MalformedResultsError("Reference background K varies within a trait.")
 
             rows = parse_results_tsv(
                 results_path,
@@ -799,6 +942,10 @@ def main(argv: list[str] | None = None) -> int:
             is_source_truncated = False
             max_traits = None
         else:
+            if args.tested_output:
+                return _fail(
+                    "--tested-output requires a complete results TSV; reports are insufficient."
+                )
             if not args.input.is_file():
                 return _fail(
                     f"Neither the results TSV ({results_path}) nor the report ({args.input}) "
@@ -854,13 +1001,14 @@ def main(argv: list[str] | None = None) -> int:
         fdr_scope=fdr_scope,
         body_site_group=args.body_site_group,
         trait_totals=trait_totals,
+        complete_results=is_unfiltered,
     )
     pairs = build_pair_table(
         frame,
         stat_type,
         tail=tail,
         body_site_group=args.body_site_group,
-        unfiltered=is_unfiltered,
+        unfiltered=is_unfiltered and not args.pair_discoveries_only,
     )
 
     # Resolve dynamic filenames
@@ -938,6 +1086,22 @@ def main(argv: list[str] | None = None) -> int:
         _write_table(overall_out, overall, overall_header, overall_warnings)
     if write_pair and pair_out is not None:
         _write_table(pair_out, pairs, pair_header, pair_warnings)
+    if args.tested_output:
+        tested = build_tested_trait_table(frame, input_traits)
+        _write_table(
+            args.tested_output,
+            tested,
+            [
+                *common,
+                ("Summary-Universe", "all eligible tests plus untested input traits"),
+                ("Fold-Summary-Set", "all eligible tests"),
+                ("Tested-Traits", int(tested["n_profiles_tested"].gt(0).sum())),
+                ("Untested-Traits", int(tested["n_profiles_tested"].eq(0).sum())),
+                ("Total-Testable-Profiles", na(testable_profiles)),
+            ],
+            [],
+        )
+        print(f"Wrote complete trait summary: {args.tested_output}")
 
     print(f"Result status: {result_status}")
     print(f"Tests performed: {na(tests_performed)}")

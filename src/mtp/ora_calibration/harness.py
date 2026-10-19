@@ -31,12 +31,18 @@ import numpy as np
 import pandas as pd
 
 from mtp.calibration import replicate_rng
-from mtp.ora_calibration.adapters.ilyas_ora import IlyasORAAdapter
+from mtp.ora_calibration.adapters.ilyas_ora import (
+    DEFAULT_MAX_FOLD,
+    DEFAULT_MIN_FOLD,
+    IlyasORAAdapter,
+)
 from mtp.ora_calibration.metrics import (
     FDRMetric,
+    PowerMetric,
     TypeIErrorMetric,
     compute_discrete_ecdf,
     compute_empirical_fdr,
+    compute_empirical_power,
     compute_type_i_error,
 )
 from mtp.ora_calibration.protocol import MethodAdapter
@@ -47,6 +53,7 @@ from mtp.ora_calibration.scenarios import (
     resolve_signature_sizes,
     shared_trait_columns,
     trait_population_counts,
+    trait_presence_matrix,
 )
 from mtp.paths import DERIVED_DATA_DIR, file_sha256
 
@@ -77,6 +84,10 @@ class ReplicateRecord:
     status: str
     n_tests: int = 0
     n_discoveries: int = 0
+    q_threshold: float | None = None
+    n_true_signals: int | None = None
+    n_true_discoveries: int | None = None
+    true_positive_rate: float | None = None
     type_i_rate: float | None = None
     fdp: float | None = None
     error_message: str | None = None
@@ -102,6 +113,19 @@ class CalibrationProvenance:
 
 
 @dataclass
+class DiscoveryThresholdMetrics:
+    """FDR and power for one q/effect decision rule on the same simulations."""
+
+    q_threshold: float
+    test_type: str
+    min_fold: float
+    max_fold: float
+    complete_null_fdr: FDRMetric | None
+    mixed_signal_fdr: FDRMetric | None
+    mixed_signal_tpr: PowerMetric | None
+
+
+@dataclass
 class CalibrationBenchmarkReport:
     """Aggregated results, metrics, and provenance of a calibration benchmark run."""
 
@@ -116,11 +140,16 @@ class CalibrationBenchmarkReport:
     complete_null_type_i: TypeIErrorMetric | None = None
     study_flip_null_type_i: TypeIErrorMetric | None = None
     mixed_signal_fdr: FDRMetric | None = None
+    mixed_signal_tpr: PowerMetric | None = None
+    discovery_thresholds: list[DiscoveryThresholdMetrics] = field(default_factory=list)
+    inference_family: dict[str, Any] = field(default_factory=dict)
     provenance: CalibrationProvenance | None = None
 
     @property
     def harness_check_passed(self) -> bool:
         """Verdict: True if null benchmark was conducted and is conservative (#389)."""
+        if self.status != STATUS_SUCCESS:
+            return False
         if self.complete_null_type_i is not None and not self.complete_null_type_i.is_conservative:
             return False
         if (
@@ -141,6 +170,13 @@ class CalibrationBenchmarkReport:
             "status": self.status,
             "harness_check_passed": self.harness_check_passed,
             "is_calibrated": self.is_calibrated,
+            "verdict_scope": "harness_check_passed/is_calibrated assess the complete-null "
+            "raw-p benchmark only; they do not certify mixed-signal FDR or biological validity",
+            "truth_definition": "explicit spike trait and traits with identical background "
+            "presence vectors, restricted to tested profile-trait pairs in each replicate",
+            "mixed_signal_limitation": "Other correlated traits may also shift under whole-taxon "
+            "spiking but are outside the declared truth set. Reported FDR is a declared-spike "
+            "FDP benchmark, not proof of false-discovery control for every induced alternative.",
             "requested_replicates": self.requested_replicates,
             "completed_replicates": self.completed_replicates,
             "failed_replicates": self.failed_replicates,
@@ -153,6 +189,9 @@ class CalibrationBenchmarkReport:
                 asdict(self.study_flip_null_type_i) if self.study_flip_null_type_i else None
             ),
             "mixed_signal_fdr": (asdict(self.mixed_signal_fdr) if self.mixed_signal_fdr else None),
+            "mixed_signal_tpr": (asdict(self.mixed_signal_tpr) if self.mixed_signal_tpr else None),
+            "discovery_thresholds": [asdict(metric) for metric in self.discovery_thresholds],
+            "inference_family": self.inference_family,
             "provenance": asdict(self.provenance) if self.provenance else None,
         }
 
@@ -177,14 +216,28 @@ def _software_versions() -> dict[str, str]:
 
 
 def select_spike_traits(
-    profiles_df: pd.DataFrame, taxa_matrix_df: pd.DataFrame, n_spikes: int = 3
+    profiles_df: pd.DataFrame,
+    taxa_matrix_df: pd.DataFrame,
+    n_spikes: int = 3,
+    *,
+    test_type: str = "enrichment",
+    signal_strength: float = 0.6,
 ) -> list[str]:
-    """Select the most prevalent shared traits in the taxa matrix as spike targets."""
+    """Select prevalent traits for which the requested spike moves in the target direction.
+
+    Universal traits cannot be enriched or depleted. Enrichment spike fractions
+    below background prevalence do not define enrichment alternatives.
+    """
     traits = shared_trait_columns(profiles_df, taxa_matrix_df)
     if not traits:
         raise ValueError("No shared trait columns between profiles and taxa matrix")
     k_counts = trait_population_counts(taxa_matrix_df, traits)
-    ranked_indices = np.argsort(-k_counts)
+    eligible = (k_counts > 0) & (k_counts < len(taxa_matrix_df))
+    if test_type == "enrichment":
+        eligible &= k_counts / len(taxa_matrix_df) < signal_strength
+    ranked_indices = [i for i in np.argsort(-k_counts) if eligible[i]]
+    if not ranked_indices:
+        raise ValueError("No shared traits support the requested mixed-signal alternative")
     selected = [traits[i] for i in ranked_indices[: min(n_spikes, len(traits))]]
     return selected
 
@@ -201,6 +254,7 @@ def run_ora_calibration_benchmark(
     config: dict[str, Any] | None = None,
     fdr_q: float | None = None,
     signal_strength: float = 0.6,
+    q_thresholds: Sequence[float] = (0.05, 0.001),
 ) -> CalibrationBenchmarkReport:
     """Run a Monte Carlo calibration benchmark on an ORA adapter (#348, #351, #343)."""
     if replicates <= 0:
@@ -210,6 +264,9 @@ def run_ora_calibration_benchmark(
     fdr_q = alpha if fdr_q is None else fdr_q
     if not 0.0 < fdr_q < 1.0:
         raise ValueError(f"FDR target q must be in (0, 1), got {fdr_q}")
+    thresholds = sorted({*q_thresholds, fdr_q}, reverse=True)
+    if any(not 0.0 < q < 1.0 for q in thresholds):
+        raise ValueError("All discovery q thresholds must be in (0, 1)")
     if scenario not in (*SCENARIOS, "study_flip"):
         raise ValueError(f"Unknown scenario '{scenario}'; expected one of {SCENARIOS}")
     if empirical_profiles_df.empty:
@@ -221,15 +278,29 @@ def run_ora_calibration_benchmark(
     # dropped from active ORA calibration scenarios (#388)
     run_study_flip = scenario == "study_flip"
     run_mixed = scenario in ("all", "mixed")
-    test_type = config.get("test_type", "enrichment") if config else "enrichment"
+    config = dict(config or {})
+    # Keep adapter decisions and the legacy target-q summary aligned, including
+    # direct Python callers rather than only the CLI (#551).
+    config["alpha"] = fdr_q
+    test_type = str(config.get("test_type", "enrichment"))
+    min_fold_arg = config.get("min_fold")
+    max_fold_arg = config.get("max_fold")
+    min_fold = DEFAULT_MIN_FOLD if min_fold_arg is None else float(min_fold_arg)
+    max_fold = DEFAULT_MAX_FOLD if max_fold_arg is None else float(max_fold_arg)
+    input_traits = shared_trait_columns(empirical_profiles_df, taxa_matrix_df)
+    n_input_shared_traits = len(
+        shared_trait_columns(empirical_profiles_df, taxa_matrix_df, include_mediadive=True)
+    )
 
     replicate_records: list[ReplicateRecord] = []
     null_pvals_all: list[float] = []
     study_flip_pvals_all: list[float] = []
     null_rep_rates: list[float] = []
     study_flip_rep_rates: list[float] = []
-    mixed_rep_discoveries: list[set[tuple[str, str]]] = []
-    true_spikes_pooled: set[tuple[str, str]] = set()
+    mixed_rep_discoveries: dict[float, list[set[tuple[str, str]]]] = {q: [] for q in thresholds}
+    null_rep_discoveries: dict[float, list[set[tuple[str, str]]]] = {q: [] for q in thresholds}
+    true_spikes_by_replicate: list[set[tuple[str, str]]] = []
+    inference_family: dict[str, Any] = {}
 
     n_completed = 0
     n_failed = 0
@@ -246,6 +317,7 @@ def run_ora_calibration_benchmark(
                     empirical_profiles_df, taxa_matrix_df, null_rng
                 )
                 null_res = adapter.run_inference(null_df, taxa_matrix_df, config=config)
+                inference_family = null_res.metadata
                 pvals = null_res.results_df["p_value"].dropna().to_numpy(dtype=float)
                 if len(pvals) == 0:
                     n_invalid += 1
@@ -263,6 +335,22 @@ def run_ora_calibration_benchmark(
                     rate = sig_cnt / len(pvals)
                     null_rep_rates.append(rate)
                     null_pvals_all.extend(pvals.tolist())
+                    for q in thresholds:
+                        discoveries = _discoveries_at_threshold(
+                            null_res.results_df, q, test_type, min_fold, max_fold
+                        )
+                        null_rep_discoveries[q].append(discoveries)
+                        replicate_records.append(
+                            ReplicateRecord(
+                                replicate_id=rep_idx,
+                                scenario="null_bh",
+                                status="SUCCESS",
+                                n_tests=len(pvals),
+                                n_discoveries=len(discoveries),
+                                q_threshold=q,
+                                fdp=float(bool(discoveries)),
+                            )
+                        )
                     replicate_records.append(
                         ReplicateRecord(
                             replicate_id=rep_idx,
@@ -291,6 +379,7 @@ def run_ora_calibration_benchmark(
             try:
                 flip_df = generate_study_flip_null_ora_profiles(empirical_profiles_df, flip_rng)
                 flip_res = adapter.run_inference(flip_df, taxa_matrix_df, config=config)
+                inference_family = flip_res.metadata
                 pvals = flip_res.results_df["p_value"].dropna().to_numpy(dtype=float)
                 if len(pvals) == 0:
                     n_invalid += 1
@@ -342,20 +431,41 @@ def run_ora_calibration_benchmark(
                     rng=mixed_rng,
                     test_type=test_type,
                 )
-                true_spikes_pooled.update(true_spikes)
                 mixed_res = adapter.run_inference(mixed_df, taxa_matrix_df, config=config)
-                sig_hits = mixed_res.results_df[mixed_res.results_df["is_significant"]]
-                discoveries = set(zip(sig_hits["profile_id"], sig_hits["trait"], strict=True))
-                mixed_rep_discoveries.append(discoveries)
-                replicate_records.append(
-                    ReplicateRecord(
-                        replicate_id=rep_idx,
-                        scenario="mixed",
-                        status="SUCCESS",
-                        n_tests=len(mixed_res.results_df),
-                        n_discoveries=len(discoveries),
+                inference_family = mixed_res.metadata
+                if mixed_res.results_df.empty:
+                    raise ValueError("Zero tests evaluated in mixed scenario")
+                # A spike in an unpaired or zero-draw profile is not testable and
+                # must not inflate the TPR denominator.
+                tested = set(
+                    zip(
+                        mixed_res.results_df["profile_id"],
+                        mixed_res.results_df["trait"],
+                        strict=True,
                     )
                 )
+                truth = true_spikes & tested
+                true_spikes_by_replicate.append(truth)
+                for q in thresholds:
+                    discoveries = _discoveries_at_threshold(
+                        mixed_res.results_df, q, test_type, min_fold, max_fold
+                    )
+                    mixed_rep_discoveries[q].append(discoveries)
+                    n_true = len(discoveries & truth)
+                    replicate_records.append(
+                        ReplicateRecord(
+                            replicate_id=rep_idx,
+                            scenario="mixed",
+                            status="SUCCESS",
+                            n_tests=len(mixed_res.results_df),
+                            n_discoveries=len(discoveries),
+                            q_threshold=q,
+                            n_true_signals=len(truth),
+                            n_true_discoveries=n_true,
+                            true_positive_rate=n_true / len(truth) if truth else None,
+                            fdp=len(discoveries - truth) / max(1, len(discoveries)),
+                        )
+                    )
             except Exception as exc:
                 n_failed += 1
                 replicate_records.append(
@@ -390,15 +500,50 @@ def run_ora_calibration_benchmark(
         else None
     )
     fdr_metric = (
-        compute_empirical_fdr(mixed_rep_discoveries, true_spikes_pooled, target_q=fdr_q)
-        if run_mixed and mixed_rep_discoveries
+        compute_empirical_fdr(
+            mixed_rep_discoveries[fdr_q], true_spikes_by_replicate, target_q=fdr_q
+        )
+        if mixed_rep_discoveries[fdr_q]
         else None
     )
+    power_metric = (
+        compute_empirical_power(mixed_rep_discoveries[fdr_q], true_spikes_by_replicate)
+        if mixed_rep_discoveries[fdr_q]
+        else None
+    )
+    discovery_metrics = [
+        DiscoveryThresholdMetrics(
+            q_threshold=q,
+            test_type=test_type,
+            min_fold=min_fold,
+            max_fold=max_fold,
+            complete_null_fdr=(
+                compute_empirical_fdr(null_rep_discoveries[q], set(), target_q=q)
+                if null_rep_discoveries[q]
+                else None
+            ),
+            mixed_signal_fdr=(
+                compute_empirical_fdr(
+                    mixed_rep_discoveries[q], true_spikes_by_replicate, target_q=q
+                )
+                if mixed_rep_discoveries[q]
+                else None
+            ),
+            mixed_signal_tpr=(
+                compute_empirical_power(mixed_rep_discoveries[q], true_spikes_by_replicate)
+                if mixed_rep_discoveries[q]
+                else None
+            ),
+        )
+        for q in thresholds
+    ]
 
     # Use null p-values for discrete ECDF check
     pvals_for_ecdf = null_pvals_all if null_pvals_all else study_flip_pvals_all
     ecdf_df = compute_discrete_ecdf(pvals_for_ecdf)
     null_pvals_df = pd.DataFrame({"p_value": pvals_for_ecdf})
+    inference_family["n_input_shared_traits"] = n_input_shared_traits
+    inference_family["n_excluded_mediadive_columns"] = n_input_shared_traits - len(input_traits)
 
     return CalibrationBenchmarkReport(
         status=overall_status,
@@ -412,7 +557,20 @@ def run_ora_calibration_benchmark(
         complete_null_type_i=t1_null,
         study_flip_null_type_i=t1_flip,
         mixed_signal_fdr=fdr_metric,
+        mixed_signal_tpr=power_metric,
+        discovery_thresholds=discovery_metrics,
+        inference_family=inference_family,
     )
+
+
+def _discoveries_at_threshold(
+    results: pd.DataFrame, q: float, test_type: str, min_fold: float, max_fold: float
+) -> set[tuple[str, str]]:
+    """Apply the q and effect rule to the unchanged global-BH results."""
+    effects = results["effect_size"]
+    effect_mask = effects >= min_fold if test_type == "enrichment" else effects <= max_fold
+    hits = results[(results["q_value"] <= q) & effect_mask]
+    return set(zip(hits["profile_id"], hits["trait"], strict=True))
 
 
 def save_calibration_results(
@@ -487,7 +645,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--fdr-q",
         type=_probability,
         default=None,
-        help="BH target q for discoveries in the mixed scenario (default: --alpha).",
+        help="BH target q for the legacy top-level summary (default: --alpha).",
+    )
+    parser.add_argument(
+        "--q-thresholds",
+        type=_probability,
+        nargs="+",
+        default=[0.05, 0.001],
+        help="BH thresholds evaluated on each identical simulation (default: 0.05 0.001).",
     )
     parser.add_argument("--scenario", choices=SCENARIOS, default="all")
     parser.add_argument("--test-type", choices=["enrichment", "depletion"], default="enrichment")
@@ -555,10 +720,7 @@ def _load_inputs(
         raise ValueError("All profiles have signature size 0; nothing to test")
 
     # Binarize taxa matrix trait columns so cells never exceed presence (> 0) (#348)
-    for col in shared:
-        taxa_matrix_df[col] = (
-            pd.to_numeric(taxa_matrix_df[col], errors="coerce").fillna(0) > 0
-        ).astype(np.int64)
+    taxa_matrix_df[shared] = trait_presence_matrix(taxa_matrix_df, shared)
 
     return profiles_df, taxa_matrix_df
 
@@ -572,6 +734,7 @@ def main(args: Sequence[str] | None = None) -> int:
     output_dir: Path = parsed.output_dir
 
     command_args = {k: (str(v) if isinstance(v, Path) else v) for k, v in vars(parsed).items()}
+    command_args["trait_filter"] = "exclude_mediadive_before_simulation_and_spike_selection"
     inputs: dict[str, dict[str, Any]] = {}
     report: CalibrationBenchmarkReport | None = None
     error_message: str | None = None
@@ -595,7 +758,11 @@ def main(args: Sequence[str] | None = None) -> int:
         spike_traits: list[str] = []
         if parsed.scenario in ("all", "mixed"):
             spike_traits = parsed.spike_traits or select_spike_traits(
-                profiles_df, taxa_matrix_df, parsed.n_spike_traits
+                profiles_df,
+                taxa_matrix_df,
+                parsed.n_spike_traits,
+                test_type=parsed.test_type,
+                signal_strength=parsed.signal_strength,
             )
         command_args["spike_traits"] = spike_traits
         logger.info(
@@ -617,6 +784,7 @@ def main(args: Sequence[str] | None = None) -> int:
             fdr_q=parsed.fdr_q,
             scenario=parsed.scenario,
             signal_strength=parsed.signal_strength,
+            q_thresholds=parsed.q_thresholds,
             config={
                 "test_type": parsed.test_type,
                 "min_fold": parsed.min_fold,
@@ -691,14 +859,19 @@ def main(args: Sequence[str] | None = None) -> int:
             t1_flip.monte_carlo_se,
             t1_flip.n_tests,
         )
-    if report.mixed_signal_fdr is not None:
-        fdr = report.mixed_signal_fdr
+    for threshold in report.discovery_thresholds:
+        fdr = threshold.mixed_signal_fdr
+        power = threshold.mixed_signal_tpr
+        if fdr is None or power is None:
+            continue
         logger.info(
-            "Mixed-signal empirical FDR at q=%.3f: %.4f (FDP sd %.4f, mean discoveries %.1f)",
+            "Mixed-signal declared-spike FDR at q=%.3f: %.4f "
+            "(FDP sd %.4f, mean discoveries %.1f); TPR=%s",
             fdr.target_q,
             fdr.empirical_fdr,
             fdr.fdp_std,
             fdr.mean_discoveries,
+            power.empirical_tpr,
         )
     return {STATUS_SUCCESS: EXIT_SUCCESS, STATUS_PARTIAL: EXIT_PARTIAL}.get(status, EXIT_FAILURE)
 
