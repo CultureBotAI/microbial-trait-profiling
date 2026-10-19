@@ -100,8 +100,31 @@ def tracked_inputs(output_dir: Path) -> dict[str, Path]:
 
 
 def input_fingerprints(inputs: dict[str, Path]) -> dict[str, list[str]]:
-    """Each input's sha256 in eight-character chunks; a missing file has no chunks."""
+    """Each file's sha256 in eight-character chunks; a missing file has no chunks."""
     return {name: sha256_chunks(path) if path.exists() else [] for name, path in inputs.items()}
+
+
+def table_fingerprints(output_dir: Path) -> dict[str, list[str]]:
+    """The carrier and evidence tables' hashes, which bind them to their provenance (#703)."""
+    return input_fingerprints({name: output_dir / name for name in (CARRIERS_NAME, EVIDENCE_NAME)})
+
+
+def changed_files(recorded: dict[str, list[str]], current: dict[str, list[str]]) -> list[str]:
+    """Names whose hashes differ, counting a file that only one side has."""
+    return sorted(
+        name for name in set(recorded) | set(current) if recorded.get(name) != current.get(name)
+    )
+
+
+def check_inputs_unchanged(read: dict[str, list[str]], current: dict[str, list[str]]) -> None:
+    """Refuse to write evidence from inputs that changed while the lookup read them (#703)."""
+    changed = changed_files(read, current)
+    if changed:
+        msg = (
+            f"Inputs changed while `just pd-trait-taxa` read them: {', '.join(changed)}. "
+            "Rerun it once they stop changing."
+        )
+        raise ValueError(msg)
 
 
 def check_saved_summary(recomputed: pd.DataFrame, saved: pd.DataFrame) -> None:
@@ -123,9 +146,12 @@ def check_saved_summary(recomputed: pd.DataFrame, saved: pd.DataFrame) -> None:
 
 
 def evidence_provenance(
-    profile_ids: list[str], directions: pd.DataFrame, output_dir: Path
+    profile_ids: list[str],
+    directions: pd.DataFrame,
+    input_hashes: dict[str, list[str]],
+    table_hashes: dict[str, list[str]],
 ) -> dict[str, object]:
-    """What the readers check: profile set, lollipop traits and the hashes of the inputs."""
+    """What the readers check: profile set, lollipop traits, inputs read and tables written."""
     return {
         "evidence": EVIDENCE_NAME,
         "carriers": CARRIERS_NAME,
@@ -133,8 +159,9 @@ def evidence_provenance(
         **profile_set_fingerprint(profile_ids),
         "pd_feces_profile_ids_encoding": "sha256 of the sorted profile_id values, one per line",
         "traits": directions.to_dict(orient="records"),
-        "input_sha256_chunks": input_fingerprints(tracked_inputs(output_dir)),
-        "sha256_chunk_encoding": "concatenate each input's eight chunks in order",
+        "input_sha256_chunks": input_hashes,
+        "output_sha256_chunks": table_hashes,
+        "sha256_chunk_encoding": "concatenate each file's eight chunks in order",
     }
 
 
@@ -348,8 +375,11 @@ def lookup_note(
     return "\n".join(lines)
 
 
-def main() -> None:
-    """Write carrier lists, taxon/profile evidence, and the provenance the readers check."""
+def trace_traits() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Read the inputs and trace the lollipop traits.
+
+    Returns the trait directions, the PD fecal profiles, the carriers and the evidence.
+    """
     traits = load_trait_summary()
     trait_ids = traits["trait_id"].tolist()
     metadata = load_profile_metadata()
@@ -359,7 +389,6 @@ def main() -> None:
     check_saved_summary(summary, saved)
     directions = trait_directions(saved)
 
-    profile_ids = pd_feces_profile_ids(metadata)
     profiles = metadata[pd_feces_mask(metadata)].copy()
     profiles["direction"] = profiles["inc_dec"].map({"inc": "increased", "dec": "decreased"})
     taxa = read_tsv(TAXA_PATH)
@@ -389,9 +418,21 @@ def main() -> None:
         observed["taxonomic_rank_reported"]
     )
     carriers, evidence = build_carriers_and_evidence(observed, zscores, directions)
-    provenance = evidence_provenance(profile_ids, directions, OUTPUT_DIR)
+    return directions, profiles, carriers, evidence
+
+
+def main() -> None:
+    """Write carrier lists, taxon/profile evidence, and the provenance the readers check."""
+    inputs = tracked_inputs(OUTPUT_DIR)
+    # Hashed before reading and checked after, so the recorded hashes are of what was read.
+    read_hashes = input_fingerprints(inputs)
+    directions, profiles, carriers, evidence = trace_traits()
+    check_inputs_unchanged(read_hashes, input_fingerprints(inputs))
     write_tsv(carriers, OUTPUT_DIR / CARRIERS_NAME)
     write_tsv(evidence, OUTPUT_DIR / EVIDENCE_NAME)
+    provenance = evidence_provenance(
+        pd_feces_profile_ids(profiles), directions, read_hashes, table_fingerprints(OUTPUT_DIR)
+    )
     (OUTPUT_DIR / PROVENANCE_NAME).write_text(
         json.dumps(provenance, indent=2) + "\n", encoding="utf-8"
     )

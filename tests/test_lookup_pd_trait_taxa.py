@@ -2,8 +2,10 @@
 
 import hashlib
 import importlib.util
+import json
 import math
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pandas as pd
@@ -204,15 +206,69 @@ def test_input_fingerprints_are_sha256_chunks_and_empty_when_missing(tmp_path: P
     assert fingerprints["missing.tsv"] == []
 
 
-def test_provenance_records_the_profiles_traits_and_input_hashes(tmp_path: Path) -> None:
-    (tmp_path / lookup.SUMMARY_NAME).write_bytes(b"trait_id\n")
-    directions = lookup.trait_directions(summary())
+def run_lookup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, while_reading: Callable[[], None]
+) -> tuple[Path, dict[str, Path]]:
+    """Run the lookup on two stand-in inputs; `while_reading` runs while it reads them."""
+    inputs = {name: tmp_path / name for name in ("taxa.tsv", "metadata.tsv")}
+    for name, path in inputs.items():
+        path.write_text(f"{name}\n", encoding="utf-8")
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    directions = lookup.trait_directions(summary({"halo": 0.494, "cellulose": -0.701}))
+    carriers, evidence = lookup.build_carriers_and_evidence(
+        observed_occurrences(), zscores(), directions
+    )
+    profile_ids = zscores().index
+    profiles = pd.DataFrame(
+        {
+            "profile_id": profile_ids,
+            "inc_dec": profile_ids.str.split("|").str[2],
+            "condition": lookup.PD_CONDITION,
+            "body_site_group": lookup.FECES,
+        }
+    )
 
-    provenance = lookup.evidence_provenance(["p2", "p1"], directions, tmp_path)
+    def trace() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        while_reading()
+        return directions, profiles, carriers, evidence
 
-    assert provenance["pd_feces_profiles"] == 2
-    assert [trait["trait_id"] for trait in provenance["traits"]] == list(LOLLIPOP)
-    hashes = provenance["input_sha256_chunks"]
-    assert sorted(hashes) == sorted(lookup.tracked_inputs(tmp_path))
-    summary_digest = hashlib.sha256(b"trait_id\n").hexdigest()
-    assert "".join(hashes[lookup.SUMMARY_NAME]) == summary_digest
+    monkeypatch.setattr(lookup, "OUTPUT_DIR", output_dir)
+    monkeypatch.setattr(lookup, "tracked_inputs", lambda _output_dir: inputs)
+    monkeypatch.setattr(lookup, "trace_traits", trace)
+    lookup.main()
+    return output_dir, inputs
+
+
+def test_provenance_records_the_inputs_read_and_the_tables_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output_dir, inputs = run_lookup(tmp_path, monkeypatch, while_reading=lambda: None)
+
+    provenance = json.loads((output_dir / lookup.PROVENANCE_NAME).read_text(encoding="utf-8"))
+
+    assert provenance["pd_feces_profiles"] == 6
+    assert [trait["trait_id"] for trait in provenance["traits"]] == ["halo", "cellulose"]
+    assert provenance["input_sha256_chunks"] == lookup.input_fingerprints(inputs)
+    taxa_digest = hashlib.sha256(b"taxa.tsv\n").hexdigest()
+    assert "".join(provenance["input_sha256_chunks"]["taxa.tsv"]) == taxa_digest
+    tables = provenance["output_sha256_chunks"]
+    assert sorted(tables) == [lookup.CARRIERS_NAME, lookup.EVIDENCE_NAME]
+    for name, chunks in tables.items():
+        assert "".join(chunks) == hashlib.sha256((output_dir / name).read_bytes()).hexdigest()
+
+
+def test_input_changed_while_the_lookup_reads_it_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An in-place rebuild during the lookup would mix two versions of the inputs (#703)."""
+
+    def rebuild() -> None:
+        (tmp_path / "metadata.tsv").write_text("rebuilt\n", encoding="utf-8")
+
+    with pytest.raises(
+        ValueError, match=r"Inputs changed while `just pd-trait-taxa` read them: metadata\.tsv\."
+    ):
+        run_lookup(tmp_path, monkeypatch, while_reading=rebuild)
+
+    assert list((tmp_path / "out").iterdir()) == []

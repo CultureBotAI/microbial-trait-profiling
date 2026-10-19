@@ -31,10 +31,12 @@ from lookup_pd_trait_taxa import (
     EVIDENCE_NAME,
     PROVENANCE_NAME,
     SUMMARY_NAME,
+    changed_files,
     input_fingerprints,
     pd_feces_profile_ids,
     profile_set_fingerprint,
     sha256_chunks,
+    table_fingerprints,
     tracked_inputs,
     trait_directions,
 )
@@ -435,8 +437,9 @@ def provenance_problems(
     directions: pd.DataFrame,
     metadata: pd.DataFrame,
     current_inputs: dict[str, list[str]],
+    current_tables: dict[str, list[str]],
 ) -> list[str]:
-    """Differences between what the evidence was built from and the current files."""
+    """Differences between what the evidence was built from and wrote, and the current files."""
     problems = []
     current = profile_set_fingerprint(pd_feces_profile_ids(metadata))
     recorded_count = provenance.get("pd_feces_profiles")
@@ -490,13 +493,22 @@ def provenance_problems(
     if not isinstance(recorded_inputs, dict):
         problems.append("it records no input hashes, so it predates the input check")
     else:
-        changed_inputs = sorted(
-            name
-            for name in set(recorded_inputs) | set(current_inputs)
-            if recorded_inputs.get(name) != current_inputs.get(name)
-        )
+        changed_inputs = changed_files(recorded_inputs, current_inputs)
         if changed_inputs:
             problems.append(f"{', '.join(changed_inputs)} changed since it was built (#693)")
+    # A trait may lack rows, so only the tables' hashes tell lost rows from no carriers.
+    recorded_tables = provenance.get("output_sha256_chunks")
+    if not isinstance(recorded_tables, dict):
+        problems.append(
+            "it records no hashes of the tables it wrote, so it predates the table check"
+        )
+    else:
+        changed_tables = changed_files(recorded_tables, current_tables)
+        if changed_tables:
+            problems.append(
+                "the tables changed after `just pd-trait-taxa` wrote them: "
+                f"{', '.join(changed_tables)} (#703)"
+            )
     return problems
 
 
@@ -507,14 +519,15 @@ def check_trait_taxa_evidence(
     trait_summary: pd.DataFrame,
     metadata: pd.DataFrame,
     current_inputs: dict[str, list[str]],
+    current_tables: dict[str, list[str]],
 ) -> None:
     """Refuse trait-taxa evidence that does not match the current PD profiles or lollipop.
 
     `just pd-trait-taxa` builds the evidence and carrier tables from the PD fecal profiles
     and all six lollipop traits, gives each trait its observed direction, and records the
-    profile set, the lollipop and the hashes of the files it read (#584, #649, #693). If any
-    has changed since, tables built from the evidence would mix two sources, so stop instead
-    of writing them.
+    profile set, the lollipop, the hashes of the files it read and the hashes of the tables
+    it wrote (#584, #649, #693, #703). If any has changed since, tables built from the
+    evidence would mix two sources, so stop instead of writing them.
     """
     expected = {
         trait_id: direction for trait_id, (direction, _) in recorded_traits(provenance).items()
@@ -522,7 +535,9 @@ def check_trait_taxa_evidence(
     problems = [
         *trait_problems("the evidence", evidence, expected),
         *trait_problems("the carrier table", carriers, expected),
-        *provenance_problems(provenance, trait_directions(trait_summary), metadata, current_inputs),
+        *provenance_problems(
+            provenance, trait_directions(trait_summary), metadata, current_inputs, current_tables
+        ),
     ]
     current_profiles = set(pd_feces_profile_ids(metadata))
     stale_profiles = sorted(set(evidence["profile_id"].astype(str)) - current_profiles)
@@ -555,6 +570,7 @@ def require_current_trait_taxa_evidence(metadata: pd.DataFrame, output_dir: Path
         read_tsv(output_dir / SUMMARY_NAME),
         metadata,
         input_fingerprints(tracked_inputs(output_dir)),
+        table_fingerprints(output_dir),
     )
 
 

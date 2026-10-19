@@ -2,11 +2,13 @@
 
 The evidence must hold recorded lollipop traits with their directions (#584, #694), the exact
 current set of PD fecal profiles, in both directions (#644, #649), and the inputs and summary
-it was built from, unchanged (#693).
+it was built from, unchanged (#693). The evidence and carrier tables must be the ones the
+lookup wrote (#703).
 """
 
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -43,6 +45,7 @@ INPUT_NAMES = [
     "pd_six_trait_direction_summary.tsv",
 ]
 INPUTS = {name: [f"{index:08x}"] * 8 for index, name in enumerate(INPUT_NAMES)}
+TABLES = {lookup.CARRIERS_NAME: ["0000000c"] * 8, lookup.EVIDENCE_NAME: ["0000000e"] * 8}
 
 
 def metadata(pd_feces: tuple[str, ...] = ("s1|e1|inc", "s1|e1|dec")) -> pd.DataFrame:
@@ -96,12 +99,14 @@ def provenance(
     profiles: pd.DataFrame | None = None,
     values: dict[str, float] = TRAITS,
     inputs: dict[str, list[str]] = INPUTS,
+    tables: dict[str, list[str]] = TABLES,
 ) -> dict[str, object]:
     profile_ids = lookup.pd_feces_profile_ids(metadata() if profiles is None else profiles)
     return {
         **lookup.profile_set_fingerprint(profile_ids),
         "traits": lookup.trait_directions(summary(values)).to_dict(orient="records"),
         "input_sha256_chunks": inputs,
+        "output_sha256_chunks": tables,
     }
 
 
@@ -114,6 +119,7 @@ def check(**changes: object) -> None:
         "trait_summary": summary(),
         "metadata": metadata(),
         "current_inputs": INPUTS,
+        "current_tables": TABLES,
     }
     inputs.update(changes)
     heatmap.check_trait_taxa_evidence(**inputs)
@@ -186,6 +192,27 @@ def test_provenance_without_input_hashes_is_refused() -> None:
     old_format = {key: value for key, value in provenance().items() if key != "input_sha256_chunks"}
 
     with pytest.raises(ValueError, match="records no input hashes"):
+        check(provenance=old_format)
+
+
+@pytest.mark.parametrize("table", [lookup.EVIDENCE_NAME, lookup.CARRIERS_NAME])
+def test_table_other_than_the_one_the_lookup_wrote_is_refused(table: str) -> None:
+    """Without the hash, a trait whose rows were lost looks like one without carriers (#703)."""
+    edited = {**TABLES, table: ["ffffffff"] * 8}
+
+    with pytest.raises(
+        ValueError,
+        match=rf"the tables changed after `just pd-trait-taxa` wrote them: {re.escape(table)}",
+    ):
+        check(current_tables=edited)
+
+
+def test_provenance_without_table_hashes_is_refused() -> None:
+    old_format = {
+        key: value for key, value in provenance().items() if key != "output_sha256_chunks"
+    }
+
+    with pytest.raises(ValueError, match="records no hashes of the tables it wrote"):
         check(provenance=old_format)
 
 
@@ -263,10 +290,12 @@ def test_evidence_without_directions_is_refused() -> None:
 
 
 def write_saved_evidence(directory: Path, profile_ids: tuple[str, ...]) -> None:
+    """Write the tables, then a provenance that records their hashes, as the lookup does."""
     evidence(profile_ids).to_csv(directory / lookup.EVIDENCE_NAME, sep="\t", index=False)
     carriers().to_csv(directory / lookup.CARRIERS_NAME, sep="\t", index=False)
     summary().to_csv(directory / lookup.SUMMARY_NAME, sep="\t", index=False)
-    (directory / lookup.PROVENANCE_NAME).write_text(json.dumps(provenance()), encoding="utf-8")
+    written = provenance(tables=lookup.table_fingerprints(directory))
+    (directory / lookup.PROVENANCE_NAME).write_text(json.dumps(written), encoding="utf-8")
 
 
 def test_evidence_without_provenance_is_refused(tmp_path: Path) -> None:
@@ -288,6 +317,28 @@ def test_saved_matching_evidence_passes(tmp_path: Path, monkeypatch: pytest.Monk
     fingerprint_inputs_as(monkeypatch, heatmap)
 
     heatmap.require_current_trait_taxa_evidence(metadata(), tmp_path)
+
+
+def test_saved_tables_missing_a_traits_rows_are_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Rows lost for a whole trait show only in the tables' hashes (#703).
+
+    With every coccus row dropped from both tables, the traits left still match the provenance.
+    """
+    write_saved_evidence(tmp_path, ("s1|e1|inc", "s1|e1|dec"))
+    for name in (lookup.EVIDENCE_NAME, lookup.CARRIERS_NAME):
+        table = pd.read_csv(tmp_path / name, sep="\t")
+        kept = table[table["trait_id"].ne("coccus")]
+        kept.to_csv(tmp_path / name, sep="\t", index=False)
+    fingerprint_inputs_as(monkeypatch, heatmap)
+
+    with pytest.raises(
+        ValueError,
+        match=r"changed after `just pd-trait-taxa` wrote them: "
+        r"pd_six_trait_taxon_carriers\.tsv, pd_six_trait_taxon_profile_evidence\.tsv",
+    ):
+        heatmap.require_current_trait_taxa_evidence(metadata(), tmp_path)
 
 
 def test_saved_evidence_is_checked_against_the_files_it_read(tmp_path: Path) -> None:
