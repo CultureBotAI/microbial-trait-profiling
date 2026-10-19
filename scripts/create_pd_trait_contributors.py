@@ -22,7 +22,10 @@ from create_pd_cellulose_analysis import (
     read_tsv,
     write_tsv,
 )
-from create_pd_six_trait_taxon_heatmap import load_taxon_specificity
+from create_pd_six_trait_taxon_heatmap import (
+    load_taxon_specificity,
+    require_current_trait_taxa_evidence,
+)
 
 STEM = "pd_trait_contributors"
 CELLS_PATH = OUTPUT_DIR / f"{STEM}_cells.tsv"
@@ -948,11 +951,13 @@ def write_note(
 
 def main() -> None:
     """Refresh contributor artifacts from existing contributor tables."""
+    metadata = load_profile_metadata()
+    require_current_trait_taxa_evidence(metadata, OUTPUT_DIR)
     cells = read_tsv(CELLS_PATH)
     selected = read_tsv(SELECTED_TAXA_PATH)
     coverage = read_tsv(RANK_COVERAGE_PATH)
     trait_intervals = read_tsv(TRAIT_INTERVALS_PATH)
-    selected = augment_selected_taxa(selected)
+    selected = augment_selected_taxa(selected, metadata)
     write_tsv(selected, SELECTED_TAXA_PATH)
     differences = build_direction_differences(cells, coverage)
     write_tsv(differences, DIRECTION_DIFFERENCES_PATH)
