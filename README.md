@@ -280,6 +280,12 @@ microbial-trait-profiling/
 
 ## Schema
 
+The [execution-checked core workflow](docs/workflow.md) adds a tracked LinkML
+specification for raw snapshot inputs, study collections, flattened tables,
+trait matrices, distinct count/ORA profiles, coverage, and actual execution
+records. Start with `just workflow-check` and `just core-fixture`; use
+`just core-validate RUN` to recheck a completed bundle before downstream analysis.
+
 The schema defines four entity types, all inheriting from `NamedThing`:
 
 - **Study** — one published microbiome study (tree root)

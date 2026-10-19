@@ -24,6 +24,8 @@ gen-pydantic:
 	mkdir -p src/mtp/datamodel src/bsdbng/datamodel
 	uv run gen-pydantic {{schema}} > src/mtp/datamodel/mtp_pydantic.py
 	uv run gen-pydantic {{legacy_schema}} > src/bsdbng/datamodel/bsdbng_pydantic.py
+	uv run gen-pydantic schema/workflow.yaml > src/mtp/datamodel/workflow_pydantic.py
+	uv run gen-pydantic schema/core_products.yaml > src/mtp/datamodel/core_products_pydantic.py
 
 gen-derived: gen-pydantic
 
@@ -33,7 +35,57 @@ check-generated:
 	uv run gen-pydantic {{schema}} > "$tmpfile" && \
 	diff -u src/mtp/datamodel/mtp_pydantic.py "$tmpfile" && \
 	uv run gen-pydantic {{legacy_schema}} > "$tmpfile" && \
-	diff -u src/bsdbng/datamodel/bsdbng_pydantic.py "$tmpfile"
+	diff -u src/bsdbng/datamodel/bsdbng_pydantic.py "$tmpfile" && \
+	uv run gen-pydantic schema/workflow.yaml > "$tmpfile" && \
+	diff -u src/mtp/datamodel/workflow_pydantic.py "$tmpfile" && \
+	uv run gen-pydantic schema/core_products.yaml > "$tmpfile" && \
+	diff -u src/mtp/datamodel/core_products_pydantic.py "$tmpfile"
+
+# Validate the executable specification and its graph without reading large inputs.
+workflow-check spec="workflows/bugsigdb_core.yaml":
+	uv run python -m mtp.workflow check "{{spec}}"
+	uv run linkml validate -s schema/workflow.yaml -C WorkflowDefinition "{{spec}}"
+	uv run linkml lint --config {{lintconfig}} --ignore-warnings schema/workflow.yaml
+	uv run linkml lint --config {{lintconfig}} --ignore-warnings schema/core_products.yaml
+
+workflow-describe:
+	uv run python -m mtp.workflow describe workflows/bugsigdb_core.yaml > docs/workflow-products.md
+
+# Explicit bindings, e.g. --input raw_dump=/path/full_dump.csv --output-root /path/runs.
+[positional-arguments]
+core-run *ARGS:
+	uv run python -m mtp.workflow run "$@"
+
+core-validate run:
+	uv run python -m mtp.workflow validate "{{run}}"
+
+[positional-arguments]
+core-lineage run product *ARGS:
+	uv run python -m mtp.workflow lineage "$@"
+
+# A network-free execution from raw fixture inputs through both profile units.
+core-fixture output=".tmp/core-fixture":
+	uv run python -m mtp.workflow fixture --output-root "{{output}}"
+
+# Historical claims remain explicitly unverified; no execution history is invented.
+core-import-legacy source output:
+	uv run python -m mtp.workflow import-legacy "{{source}}" "{{output}}"
+
+core-compare run baseline_dir output:
+	uv run python -m mtp.workflow compare-legacy "{{run}}" "{{baseline_dir}}" "{{output}}"
+
+core-screen run output:
+	uv run python -m mtp.trait_screen --core-run "{{run}}" --output-dir "{{output}}"
+
+core-composition run output:
+	uv run python -m mtp.trait_composition --core-run "{{run}}" --output-dir "{{output}}"
+
+core-ora run output:
+	uv run python scripts/trait_enrichment.py --core-run "{{run}}" \
+	  --output "{{output}}/report.txt" --tsv-output "{{output}}/results.tsv"
+
+core-verify-consumer record:
+	uv run python -m mtp.workflow verify-consumer "{{record}}"
 
 sync:
 	uv sync --all-extras --group dev --group qa
@@ -596,7 +648,7 @@ check-agent-docs:
 	uv run python scripts/sync_agent_docs.py
 	git diff --exit-code .github/copilot-instructions.md
 
-check: check-generated check-agent-docs lint typecheck test check-schema security
+check: check-generated check-agent-docs lint typecheck test check-schema workflow-check security
 
 # --- pipeline steps (timed, logged) ---
 
