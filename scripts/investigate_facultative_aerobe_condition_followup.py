@@ -808,12 +808,20 @@ def append_pattern_label_table(
 def trait_z_shift_phrase(label: str, row: pd.Series) -> str:
     """Describe one label's increased-minus-decreased trait z shift with its sign, size and n."""
     shift = float(row["increased_minus_decreased_guild_z"])
-    sign = "positive" if shift > 0 else "negative" if shift < 0 else "zero"
-    return (
-        f"`{label}` has a {sign} increased-minus-decreased trait z shift ({shift:+.3f}; "
+    counts = (
         f"{int(row['increased_profile_count'])} increased and "
         f"{int(row['decreased_profile_count'])} decreased profiles from "
-        f"{int(row['study_count'])} studies)"
+        f"{int(row['study_count'])} studies"
+    )
+    if pd.isna(shift):
+        # The shift is the increased mean minus the decreased mean, so it needs both.
+        return (
+            f"`{label}` has no computable increased-minus-decreased trait z shift, which "
+            f"needs both increased and decreased profiles ({counts})"
+        )
+    sign = "positive" if shift > 0 else "negative" if shift < 0 else "zero"
+    return (
+        f"`{label}` has a {sign} increased-minus-decreased trait z shift ({shift:+.3f}; {counts})"
     )
 
 
@@ -830,6 +838,7 @@ def autism_label_contrast_sentence(profile_summary: pd.DataFrame) -> str:
     autism_shift = float(autism["increased_minus_decreased_guild_z"])
     asd_shift = float(asd["increased_minus_decreased_guild_z"])
     phrases = [trait_z_shift_phrase(label, rows.loc[label]) for label in labels]
+    # An undefined (NaN) shift makes this comparison false, so it never claims divergence.
     if autism_shift * asd_shift < 0:
         return (
             f"{lead} because their directional skews diverge: {phrases[0]}, whereas "

@@ -1,6 +1,7 @@
 """The autism follow-up sentence is built from the computed trait z shifts (#647)."""
 
 import importlib.util
+import math
 import sys
 from pathlib import Path
 
@@ -58,6 +59,25 @@ def test_missing_label_keeps_only_the_reason_for_separate_reporting() -> None:
     sentence = followup.autism_label_contrast_sentence(summary)
 
     assert sentence.endswith("reported separately rather than pooled (#128).")
+
+
+@pytest.mark.parametrize("undefined", ["Autism", "Autism spectrum disorder"])
+def test_undefined_shift_is_not_called_zero_or_divergent(undefined: str) -> None:
+    summary = profile_summary(0.744, -1.682)
+    no_decreased = summary["condition"].eq(undefined)
+    summary.loc[no_decreased, "increased_minus_decreased_guild_z"] = math.nan
+    summary.loc[no_decreased, "decreased_profile_count"] = 0
+
+    sentence = followup.autism_label_contrast_sentence(summary)
+
+    assert (
+        f"`{undefined}` has no computable increased-minus-decreased trait z shift, which needs "
+        "both increased and decreased profiles ("
+    ) in sentence
+    assert " and 0 decreased profiles from " in sentence
+    assert "diverge" not in sentence
+    assert "zero" not in sentence
+    assert "nan" not in sentence
 
 
 def test_readme_states_the_computed_shifts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
