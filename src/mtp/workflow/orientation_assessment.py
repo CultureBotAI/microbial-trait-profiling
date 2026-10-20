@@ -105,7 +105,7 @@ def write_assessment(
     if not set(corpus).issubset(classes):
         raise ValueError("Analysed profiles have no original raw classification")
 
-    validation = read_review(review_input)
+    validation = read_review(review_input, classes=classes)
     corpus_review = {key: validation[key] for key in corpus if key in validation}
     vintage = read_bugsigdb_vintage(full_dump_input)
     counts = class_counts(classes, corpus)

@@ -3534,11 +3534,13 @@ def three_arm_traits(
         a1_st_q = (
             float(a1["study_q_value"]) if a1.get("study_q_value") not in (None, "", "NA") else 1.0
         )
-        a1_diff = (
-            float(a1["mean_increased_minus_decreased"])
-            if a1.get("mean_increased_minus_decreased") not in (None, "", "NA")
-            else 0.0
+        # Arm 1 tests the study-level mean increased-minus-decreased difference, so the
+        # plate's Arm 1 direction uses that same study-level statistic (#716).
+        study_mean = a1.get("study_mean_increased_minus_decreased")
+        study_stat = (
+            study_mean if study_mean not in (None, "", "NA") else a1.get("study_t_statistic")
         )
+        a1_diff = float(study_stat) if study_stat not in (None, "", "NA") else 0.0
         a3_bh_q = (
             float(s_row["bh_q_nominal"])
             if s_row.get("bh_q_nominal") not in (None, "", "NA")
@@ -3807,12 +3809,16 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
     traits_by_id = {t["tid"]: t for t in selected_traits}
     for tid, name, (tx_pos, ty_pos) in annot_specs:
         if tid in arm1_rows and tid in arm3_screen_rows:
-            paired = float(arm1_rows[tid]["study_t_statistic"]) > 0
+            trait = traits_by_id.get(tid)
+            paired = (
+                trait["paired_dir"] == "inc"
+                if trait is not None
+                else float(arm1_rows[tid]["study_t_statistic"]) > 0
+            )
             shared = float(arm3_screen_rows[tid]["share_up"]) > 0.5
             text_lbl = f"{name} {'↑' if paired else '↓'}"
             if shared != paired:
                 text_lbl += f" (Arm 3 {'↑' if shared else '↓'})"
-            trait = traits_by_id.get(tid)
             if trait is not None:
                 text_lbl = f"{PREFIXES[trait['group']]}{text_lbl}{NOTES[trait['group']]}"
                 if trait["group"] == "concordant" and trait["a3_by_q"] <= 0.05:

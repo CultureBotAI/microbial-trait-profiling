@@ -2565,6 +2565,7 @@ PIPELINE_STEPS: tuple[dict[str, Any], ...] = (
         "recipes": (
             "six-shared-trait-heatmaps",
             "oral-six-trait-heatmap",
+            "six-shared-trait-sankeys",
             "six-shared-trait-combined-sankey",
             "six-shared-trait-high-support-sankeys",
         ),
@@ -2577,6 +2578,7 @@ PIPELINE_STEPS: tuple[dict[str, Any], ...] = (
         "output_files": [
             f"{PAIRED}six-shared-traits/six_shared_trait_selection.tsv",
             f"{PAIRED}six-shared-traits/six_shared_trait_condition_body_site_direction_contrasts.tsv",
+            f"{PAIRED}six-shared-traits/six_shared_trait_summary.tsv",
             ORAL_HEATMAP_EVIDENCE,
         ],
         "description": "Condition by body-site direction contrasts, heatmaps and Sankeys of the "
@@ -2586,6 +2588,7 @@ PIPELINE_STEPS: tuple[dict[str, Any], ...] = (
         "step_id": "step_10_pd_cellulose_and_switches",
         "analytical_arm": "arm1_composition",
         "recipes": (
+            "pd-cellulose-analysis",
             "pd-trait-taxa",
             "pd-trait-taxa-heatmap",
             "pd-trait-contributors",
@@ -2597,8 +2600,10 @@ PIPELINE_STEPS: tuple[dict[str, Any], ...] = (
         "input_files": [
             "data/derived/study_trait_profiles_wide.tsv",
             "trait-visualization/study_trait_profile_study_metadata.tsv",
+            f"{PAIRED}six-shared-traits/six_shared_trait_summary.tsv",
         ],
         "output_files": [
+            f"{PAIRED}PD-cellulose/pd_six_trait_direction_summary.tsv",
             f"{PAIRED}PD-cellulose/pd_condition_taxon_trait_network_condition_trait_tests.tsv",
             f"{PAIRED}PD-cellulose/pd_ecological_reporter_combined_condition_trait_summary.tsv",
             f"{PAIRED}PD-cellulose/pd_trait_contributors_trait_cocarriage_edges.tsv",
@@ -2798,6 +2803,17 @@ def valid_command(command: str, recipes: Mapping[str, str]) -> str | None:
     return " && ".join(parts)
 
 
+# Scripts that read trait-visualization/trait-profile-investigation/six-shared-traits/
+# six_shared_trait_summary.tsv, which `just six-shared-trait-sankeys` writes (#716).
+SIX_SHARED_SUMMARY = f"{PAIRED}six-shared-traits/six_shared_trait_summary.tsv"
+SIX_SHARED_SUMMARY_READERS = frozenset(
+    {
+        "scripts/create_pd_cellulose_analysis.py",
+        "scripts/create_pd_significant_condition_taxon_trait_network.py",
+    }
+)
+
+
 def figure_commands(
     series: Sequence[str],
     code: str,
@@ -2829,6 +2845,12 @@ def figure_commands(
         if valid.startswith("just ") and step_order(valid) > last:
             continue
         kept.append(valid)
+    if (
+        code in SIX_SHARED_SUMMARY_READERS
+        and "six-shared-trait-sankeys" in recipes
+        and "just six-shared-trait-sankeys" not in kept
+    ):
+        kept.append("just six-shared-trait-sankeys")
     return [*UPSTREAM_COMMANDS, *sorted(kept, key=step_order), drawn]
 
 
@@ -2925,6 +2947,11 @@ def drawn_provenance(
         rec["input_data_files"] = [row["evidence_path"]]
         rec["input_data_sha256s"] = []
         rec["methods_doc_path"] = row["methods_path"]
+    elif code in SIX_SHARED_SUMMARY_READERS:
+        inputs = list(rec.get("input_data_files", []))
+        if SIX_SHARED_SUMMARY not in inputs:
+            inputs.append(SIX_SHARED_SUMMARY)
+            rec["input_data_files"] = inputs
 
 
 def cellulose_figure_provenance(rec: dict[str, Any], tables: dict[str, str]) -> None:

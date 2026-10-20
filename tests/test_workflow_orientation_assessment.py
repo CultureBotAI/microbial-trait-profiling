@@ -149,7 +149,11 @@ def inputs(tmp_path: Path) -> dict[str, Path]:
     )
     review = tmp_path / "review.tsv"
     review.write_text(
-        "study_id\texperiment_id\tverdict\nbsdb:1\tbsdb:1-1\tagree\nbsdb:3\tbsdb:3-1\tdisagree\n",
+        "study_id\texperiment_id\tsampled_class\tsampled_orientation\t"
+        "verdict\tnote\treviewed_class\treviewed_orientation\n"
+        "bsdb:1\tbsdb:1-1\tdisease_vs_healthy\tnative\tagree\t\tdisease_vs_healthy\tnative\n"
+        "bsdb:3\tbsdb:3-1\ttreatment_exposure\tnot_applicable\t"
+        "disagree\tfixture disagreement\tdisease_vs_healthy\tnative\n",
         encoding="utf-8",
     )
     return {
