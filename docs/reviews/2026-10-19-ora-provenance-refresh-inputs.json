@@ -1,0 +1,39 @@
+{
+  "pairs": [
+    {
+      "label": "pooled_enrichment",
+      "historical": "/private/tmp/mtp-workflow-629/.tmp/issue658-ilyas-production/trait_enrichment_all_results.tsv",
+      "current": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/enrichment/all_results.tsv",
+      "profiles": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/ora_profiles/derived/study_trait_profiles_ora_wide.tsv",
+      "taxa_matrix": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/taxa_matrix/derived/taxa_trait_matrix.tsv"
+    },
+    {
+      "label": "pooled_depletion",
+      "historical": "/private/tmp/mtp-workflow-629/.tmp/issue658-ilyas-production/trait_depletion_all_results.tsv",
+      "current": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/depletion/all_results.tsv",
+      "profiles": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/ora_profiles/derived/study_trait_profiles_ora_wide.tsv",
+      "taxa_matrix": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/taxa_matrix/derived/taxa_trait_matrix.tsv"
+    },
+    {
+      "label": "strata_pooled",
+      "historical": "/private/tmp/mtp-issue664/.tmp/issue664-strata/trait_enrichment_all_results_pooled.tsv",
+      "current": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/strata/trait_enrichment_all_results_pooled.tsv",
+      "profiles": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/strata/study_trait_profiles_pooled.tsv",
+      "taxa_matrix": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/taxa_matrix/derived/taxa_trait_matrix.tsv"
+    },
+    {
+      "label": "strata_feces",
+      "historical": "/private/tmp/mtp-issue664/.tmp/issue664-strata/trait_enrichment_all_results_feces.tsv",
+      "current": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/strata/trait_enrichment_all_results_feces.tsv",
+      "profiles": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/strata/study_trait_profiles_feces.tsv",
+      "taxa_matrix": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/taxa_matrix/derived/taxa_trait_matrix.tsv"
+    },
+    {
+      "label": "strata_feces_excluded",
+      "historical": "/private/tmp/mtp-issue664/.tmp/issue664-strata/trait_enrichment_all_results_feces_excluded.tsv",
+      "current": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/strata/trait_enrichment_all_results_feces_excluded.tsv",
+      "profiles": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720/strata/study_trait_profiles_feces_excluded.tsv",
+      "taxa_matrix": "/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/steps/taxa_matrix/derived/taxa_trait_matrix.tsv"
+    }
+  ]
+}

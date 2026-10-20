@@ -85,9 +85,17 @@ core-screen run output:
 core-composition run output:
 	uv run python -m mtp.trait_composition --core-run "{{run}}" --output-dir "{{output}}"
 
-core-ora run output:
-	uv run python scripts/trait_enrichment.py --core-run "{{run}}" \
-	  --output "{{output}}/report.txt" --tsv-output "{{output}}/results.tsv"
+# Complete exports carry the verified input fingerprints needed for integration.
+[positional-arguments]
+core-ora run output tail="upper":
+	uv run python scripts/trait_enrichment.py --core-run "$1" \
+	  --output "$2/report.txt" --tsv-output "$2/results.tsv" \
+	  --all-results-output "$2/all_results.tsv" --tail "$3" \
+	  --p-threshold 0.001 --min-fold 1.5 --max-fold 0.5 --fdr-scope global
+
+[positional-arguments]
+audit-ora-refresh manifest output:
+	uv run python scripts/adhoc/issue720_audit_ora_refresh.py --manifest "$1" --output "$2"
 
 core-verify-consumer record:
 	uv run python -m mtp.workflow verify-consumer "{{record}}"
