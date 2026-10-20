@@ -27,6 +27,11 @@ import numpy as np
 import pandas as pd
 
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
+from mtp.workflow.consumers import (
+    open_core_bundle,
+    preflight_consumer_outputs,
+    write_consumer_record,
+)
 
 DEFAULT_PROFILES_PATH = (
     DERIVED_DATA_DIR / "study_trait_profiles_ora_wide.tsv"
@@ -67,6 +72,15 @@ def classify_site_stratum(raw_site: str | None) -> str:
     return "feces" if is_feces_site(raw_site) else "feces_excluded"
 
 
+def _validate_strata(strata: list[str] | tuple[str, ...]) -> None:
+    """Require distinct names that cannot redirect partition/result writes (#727)."""
+    if not strata or len(set(strata)) != len(strata):
+        raise ValueError("Strata must be a nonempty set of distinct names")
+    for name in strata:
+        if not name.strip() or name in {".", ".."} or any(c in name for c in "/\\\0"):
+            raise ValueError(f"Invalid stratum name: {name!r}")
+
+
 def partition_profiles(
     profiles_path: Path,
     experiments_path: Path,
@@ -79,15 +93,33 @@ def partition_profiles(
       output_dir / f"study_trait_profiles_{stratum}.tsv"
     for each stratum in strata. Returns a dictionary mapping stratum name to Path.
     """
-    output_dir.mkdir(parents=True, exist_ok=True)
+    _validate_strata(strata)
     profiles_df = pd.read_csv(profiles_path, sep="\t")
     experiments_df = pd.read_csv(experiments_path, sep="\t")
 
     meta_cols = ["study_id", "experiment_id", "body_site"]
     exp_subset = experiments_df[meta_cols].drop_duplicates()
-    merged = profiles_df.merge(exp_subset, on=["study_id", "experiment_id"], how="left")
+    keys = ["study_id", "experiment_id"]
+    for label, frame in (("profiles", profiles_df), ("experiments", exp_subset)):
+        if (
+            frame[keys].isna().any().any()
+            or frame[keys].apply(lambda column: column.astype(str).str.strip().eq("")).any().any()
+        ):
+            raise ValueError(f"Blank experiment keys in {label}")
+    if exp_subset.duplicated(keys).any():
+        raise ValueError("Conflicting body-site metadata for the same experiment key")
+    merged = profiles_df.drop(columns="body_site", errors="ignore").merge(
+        exp_subset, on=keys, how="left", validate="many_to_one", indicator=True
+    )
+    if not merged["_merge"].eq("both").all():
+        missing = merged.loc[merged["_merge"] != "both", keys].drop_duplicates()
+        raise ValueError(
+            "Profile experiment keys missing from experiment metadata: "
+            f"{missing.to_dict('records')}"
+        )
 
     partition_paths: dict[str, Path] = {}
+    partition_frames: dict[str, pd.DataFrame] = {}
     profile_cols = [c for c in profiles_df.columns if c != "body_site"]
 
     for stratum in strata:
@@ -118,8 +150,13 @@ def partition_profiles(
                 f"using experiments from {experiments_path}."
             )
 
+        partition_frames[stratum] = stratum_df
+
+    # Validate every requested partition before publishing any of them (#728).
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for stratum, frame in partition_frames.items():
         out_path = output_dir / f"study_trait_profiles_{stratum}.tsv"
-        stratum_df.to_csv(out_path, sep="\t", index=False)
+        frame.to_csv(out_path, sep="\t", index=False)
         partition_paths[stratum] = out_path
 
     return partition_paths
@@ -137,6 +174,35 @@ class StratumOutputs:
     pairs_ranked_tsv: Path
     all_results_tsv: Path | None = None
     tested_traits_tsv: Path | None = None
+
+    def files(self) -> list[Path]:
+        """List the actual products, including the partition that determines eligibility."""
+        return [
+            path
+            for path in (
+                self.profiles_tsv,
+                self.results_tsv,
+                self.report_txt,
+                self.overall_ranked_tsv,
+                self.pairs_ranked_tsv,
+                self.all_results_tsv,
+                self.tested_traits_tsv,
+            )
+            if path is not None
+        ]
+
+
+def _stratum_outputs(stratum: str, profiles_tsv: Path, output_dir: Path) -> StratumOutputs:
+    return StratumOutputs(
+        stratum=stratum,
+        profiles_tsv=profiles_tsv,
+        results_tsv=output_dir / f"trait_enrichment_results_{stratum}.tsv",
+        report_txt=output_dir / f"trait_enrichment_report_{stratum}.txt",
+        overall_ranked_tsv=output_dir / f"trait_enrichment_traits_overall_ranked_{stratum}.tsv",
+        pairs_ranked_tsv=output_dir / f"trait_enrichment_trait_study_pairs_ranked_{stratum}.tsv",
+        all_results_tsv=output_dir / f"trait_enrichment_all_results_{stratum}.tsv",
+        tested_traits_tsv=output_dir / f"trait_enrichment_traits_tested_{stratum}.tsv",
+    )
 
 
 def _run_script(script_path: Path, args: list[str]) -> None:
@@ -167,12 +233,7 @@ def run_stratum_enrichment(
 ) -> StratumOutputs:
     """Execute ORA enrichment and rankings export for one stratum."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    results_tsv = output_dir / f"trait_enrichment_results_{stratum}.tsv"
-    report_txt = output_dir / f"trait_enrichment_report_{stratum}.txt"
-    all_results_tsv = output_dir / f"trait_enrichment_all_results_{stratum}.tsv"
-    overall_ranked_tsv = output_dir / f"trait_enrichment_traits_overall_ranked_{stratum}.tsv"
-    pairs_ranked_tsv = output_dir / f"trait_enrichment_trait_study_pairs_ranked_{stratum}.tsv"
-    tested_traits_tsv = output_dir / f"trait_enrichment_traits_tested_{stratum}.tsv"
+    outputs = _stratum_outputs(stratum, profiles_tsv, output_dir)
 
     resolved_matrix = taxa_matrix or DEFAULT_TAXA_MATRIX_PATH
     if not resolved_matrix.exists():
@@ -185,11 +246,11 @@ def run_stratum_enrichment(
         "--input",
         str(profiles_tsv),
         "--output",
-        str(report_txt),
+        str(outputs.report_txt),
         "--tsv-output",
-        str(results_tsv),
+        str(outputs.results_tsv),
         "--all-results-output",
-        str(all_results_tsv),
+        str(outputs.all_results_tsv),
         "--taxa-matrix",
         str(resolved_matrix),
         "--p-threshold",
@@ -206,34 +267,25 @@ def run_stratum_enrichment(
 
     exporter_args: list[str] = [
         "--input",
-        str(report_txt),
+        str(outputs.report_txt),
         "--results",
-        str(all_results_tsv),
+        str(outputs.all_results_tsv),
         "--unfiltered",
         "--pair-discoveries-only",
         "--tested-output",
-        str(tested_traits_tsv),
+        str(outputs.tested_traits_tsv),
         "--profiles",
         str(profiles_tsv),
         "--overall-output",
-        str(overall_ranked_tsv),
+        str(outputs.overall_ranked_tsv),
         "--pair-output",
-        str(pairs_ranked_tsv),
+        str(outputs.pairs_ranked_tsv),
         "--body-site-group",
         stratum,
     ]
     _run_script(REPO_ROOT / "scripts" / "export_trait_enrichment_rankings.py", exporter_args)
 
-    return StratumOutputs(
-        stratum=stratum,
-        profiles_tsv=profiles_tsv,
-        results_tsv=results_tsv,
-        report_txt=report_txt,
-        overall_ranked_tsv=overall_ranked_tsv,
-        pairs_ranked_tsv=pairs_ranked_tsv,
-        all_results_tsv=all_results_tsv,
-        tested_traits_tsv=tested_traits_tsv,
-    )
+    return outputs
 
 
 def compute_annotation_density_deciles(
@@ -603,8 +655,8 @@ def generate_sensitivity_reports(
 
 
 def run_stratification_pipeline(
-    profiles_path: Path = DEFAULT_PROFILES_PATH,
-    experiments_path: Path = DEFAULT_EXPERIMENTS_PATH,
+    profiles_path: Path | None = None,
+    experiments_path: Path | None = None,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
     p_threshold: float = 0.001,
     min_fold: float = 1.5,
@@ -612,8 +664,42 @@ def run_stratification_pipeline(
     fdr_scope: str = "global",
     strata: list[str] | tuple[str, ...] = PRIMARY_STRATA,
     taxa_matrix: Path | None = None,
+    core_run: Path | None = None,
 ) -> tuple[dict[str, StratumOutputs], Path, Path]:
     """Execute the full background stratification pipeline."""
+    _validate_strata(strata)
+    bundle = open_core_bundle(core_run, "ora_profiles") if core_run is not None else None
+    bindings = {
+        "profiles": (profiles_path, "ora_profiles", DEFAULT_PROFILES_PATH),
+        "experiments": (experiments_path, "experiments", DEFAULT_EXPERIMENTS_PATH),
+        "taxa-matrix": (taxa_matrix, "taxa_matrix", DEFAULT_TAXA_MATRIX_PATH),
+    }
+    resolved: dict[str, Path] = {}
+    for argument, (supplied, product, default) in bindings.items():
+        if bundle is not None:
+            path = bundle.path(product)
+            if supplied is not None and supplied.resolve() != path.resolve():
+                raise ValueError(f"--core-run conflicts with explicit --{argument}")
+            resolved[argument] = path
+        else:
+            resolved[argument] = supplied or default
+    profiles_path = resolved["profiles"]
+    experiments_path = resolved["experiments"]
+    taxa_matrix = resolved["taxa-matrix"]
+    products = [
+        path
+        for stratum in strata
+        for path in _stratum_outputs(
+            stratum, output_dir / f"study_trait_profiles_{stratum}.tsv", output_dir
+        ).files()
+    ] + [
+        output_dir / "stratification_sensitivity_summary.tsv",
+        output_dir / "stratification_sensitivity_summary.txt",
+        output_dir / "annotation_density_deciles.tsv",
+    ]
+    record = output_dir / "core_consumption.json"
+    if bundle is not None:
+        preflight_consumer_outputs(bundle, record, products, output_directory=output_dir)
     print("=" * 80)
     print("Running ORA Background Stratification Pipeline (#118)")
     print(f"Strata: {', '.join(strata)}")
@@ -656,6 +742,8 @@ def run_stratification_pipeline(
         stratum_outputs=stratum_outputs,
         output_dir=output_dir,
     )
+    if bundle is not None:
+        write_consumer_record(bundle, record, consumer="mtp.stratification", outputs=products)
     print(f"Wrote sensitivity summary TSV : {tsv_path}")
     print(f"Wrote sensitivity summary text: {txt_path}")
     print("Stratification pipeline complete.\n")
@@ -669,16 +757,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Evaluate ORA background stratification and annotation-density sensitivity (#118)"
         )
     )
+    parser.add_argument("--core-run", type=Path, help="Verified core workflow run manifest")
     parser.add_argument(
         "--profiles",
         type=Path,
-        default=DEFAULT_PROFILES_PATH,
         help="Path to study trait profiles wide TSV.",
     )
     parser.add_argument(
         "--experiments",
         type=Path,
-        default=DEFAULT_EXPERIMENTS_PATH,
         help="Path to experiments TSV containing body_site metadata.",
     )
     parser.add_argument(
@@ -726,7 +813,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--taxa-matrix",
         type=Path,
-        default=DEFAULT_TAXA_MATRIX_PATH,
         help="Path to taxa_trait_matrix.tsv (default: data/derived/taxa_trait_matrix.tsv).",
     )
     return parser.parse_args(argv)
@@ -745,6 +831,7 @@ def main(argv: list[str] | None = None) -> int:
         fdr_scope=args.fdr_scope,
         strata=strata,
         taxa_matrix=args.taxa_matrix,
+        core_run=args.core_run,
     )
     return 0
 
