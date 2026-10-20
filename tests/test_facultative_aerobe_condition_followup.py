@@ -112,3 +112,65 @@ def test_readme_states_the_computed_shifts(tmp_path: Path, monkeypatch: pytest.M
     readme = (tmp_path / "autism_autoimmune_followup.md").read_text(encoding="utf-8")
     assert followup.autism_label_contrast_sentence(summary) in readme
     assert "slightly" not in readme
+
+
+def test_load_taxa_occurrences_audits_nonhuman_and_missing_human_profiles() -> None:
+    profiles = pd.DataFrame(
+        {
+            "profile_id": ["s1|s1-1|inc"],
+            "study_id": ["s1"],
+            "experiment_id": ["s1-1"],
+            "condition_group_followup": ["Autism"],
+            "condition": ["Autism"],
+            "direction_label": ["increased"],
+            "body_site": ["Feces"],
+            "body_site_group": ["Feces"],
+            "title": ["Study 1"],
+            "publication_year": ["2024"],
+            "guild_z_mean": [0.8],
+            "oxygen_tolerance_z_mean": [0.8],
+        },
+        index=pd.Index(["s1|s1-1|inc"], name="profile_id"),
+    )
+    taxa = pd.DataFrame(
+        [
+            ("s1", "s1-1", "s1-1-1", "increased", "NCBITaxon:562", "Escherichia coli", "species"),
+            ("s2", "s2-1", "s2-1-1", "increased", "NCBITaxon:562", "Escherichia coli", "species"),
+        ],
+        columns=[
+            "study_id",
+            "experiment_id",
+            "signature_id",
+            "direction",
+            "taxon_id",
+            "taxon_name",
+            "taxonomic_rank",
+        ],
+    )
+    experiment_metadata = pd.DataFrame(
+        [
+            ("s1", "s1-1", "Autism", "Homo sapiens"),
+            ("s2", "s2-1", "Autism", "Mus musculus"),
+        ],
+        columns=["study_id", "experiment_id", "condition", "host_species"],
+    )
+
+    joined, excluded = followup.load_taxa_occurrences(
+        profiles,
+        taxa=taxa,
+        experiment_metadata=experiment_metadata,
+    )
+
+    assert joined["profile_id"].tolist() == ["s1|s1-1|inc"]
+    assert joined["condition_group"].tolist() == ["Autism"]
+    assert excluded["profile_id"].tolist() == ["s2|s2-1|inc"]
+    assert excluded["host_species"].tolist() == ["Mus musculus"]
+    assert excluded["condition_group"].tolist() == ["Autism"]
+
+    experiment_metadata.loc[1, "host_species"] = "Homo sapiens"
+    with pytest.raises(ValueError, match="human-host profile"):
+        followup.load_taxa_occurrences(
+            profiles,
+            taxa=taxa,
+            experiment_metadata=experiment_metadata,
+        )

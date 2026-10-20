@@ -9,6 +9,7 @@ import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.patches import Patch, Rectangle
 
+from create_study_trait_profile_heatmap import load_raw_experiment_metadata
 from investigate_facultative_aerobe_expansion import (
     GUILD_TRAITS,
     REPO_ROOT,
@@ -22,6 +23,7 @@ from investigate_facultative_aerobe_expansion import (
 from investigate_facultative_aerobe_expansion import (
     OUTPUT_DIR as FACULTATIVE_OUTPUT_DIR,
 )
+from mtp.human_host_corpus import excluded_host_summary, join_human_host_profiles
 
 OUTPUT_DIR = FACULTATIVE_OUTPUT_DIR
 CONDITION_GROUPS = {
@@ -109,10 +111,14 @@ def summarize_profiles(profiles: pd.DataFrame) -> pd.DataFrame:
     return summary.sort_values("condition_order").drop(columns="condition_order")
 
 
-def load_taxa_occurrences(profiles: pd.DataFrame) -> pd.DataFrame:
-    """Load taxon/profile occurrences for focused profiles."""
+def load_taxa_occurrences(
+    profiles: pd.DataFrame,
+    *,
+    taxa: pd.DataFrame | None = None,
+    experiment_metadata: pd.DataFrame | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return taxon/profile occurrences for focused human-host profiles and those set aside."""
     profile_columns = [
-        "profile_id",
         "study_id",
         "experiment_id",
         "condition_group_followup",
@@ -125,18 +131,37 @@ def load_taxa_occurrences(profiles: pd.DataFrame) -> pd.DataFrame:
         "guild_z_mean",
         "oxygen_tolerance_z_mean",
     ]
-    taxa = pd.read_csv(
-        REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
-        sep="\t",
-        usecols=[
-            "study_id",
-            "experiment_id",
-            "signature_id",
-            "direction",
-            "taxon_id",
-            "taxon_name",
-            "taxonomic_rank",
-        ],
+    if taxa is None:
+        taxa = pd.read_csv(
+            REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
+            sep="\t",
+            usecols=[
+                "study_id",
+                "experiment_id",
+                "signature_id",
+                "direction",
+                "taxon_id",
+                "taxon_name",
+                "taxonomic_rank",
+            ],
+        )
+    else:
+        taxa = taxa.copy()
+    if experiment_metadata is None:
+        experiment_metadata = load_raw_experiment_metadata(
+            REPO_ROOT / "data/raw/full_dump.csv"
+        ).reset_index()
+    else:
+        experiment_metadata = experiment_metadata.copy()
+
+    lookup = condition_group_lookup()
+    followup_experiments = experiment_metadata[experiment_metadata["condition"].isin(lookup)][
+        ["study_id", "experiment_id", "condition", "host_species"]
+    ].copy()
+    taxa = taxa.merge(
+        followup_experiments[["study_id", "experiment_id"]],
+        on=["study_id", "experiment_id"],
+        how="inner",
     )
     taxa["profile_id"] = [
         profile_id_from_parts(study_id, experiment_id, direction)
@@ -144,14 +169,27 @@ def load_taxa_occurrences(profiles: pd.DataFrame) -> pd.DataFrame:
             ["study_id", "experiment_id", "direction"]
         ].itertuples(index=False, name=None)
     ]
-    occurrences = taxa.merge(
-        profiles[profile_columns],
-        on="profile_id",
-        how="inner",
-        suffixes=("_taxa", ""),
+    indexed_profiles = (
+        profiles.set_index("profile_id", drop=False)
+        if "profile_id" in profiles.columns
+        else profiles
     )
-    occurrences["condition_group"] = occurrences["condition_group_followup"]
-    return occurrences.drop(columns="condition_group_followup")
+    available_columns = [col for col in profile_columns if col in indexed_profiles.columns]
+    occurrences, excluded = join_human_host_profiles(
+        taxa,
+        indexed_profiles[available_columns],
+        followup_experiments[["study_id", "experiment_id", "host_species"]],
+    )
+    excluded = excluded.merge(
+        followup_experiments[["study_id", "experiment_id", "condition"]],
+        on=["study_id", "experiment_id"],
+        how="left",
+    )
+    excluded["condition_group"] = excluded["condition"].map(lookup)
+    if "condition_group_followup" in occurrences.columns:
+        occurrences["condition_group"] = occurrences["condition_group_followup"]
+        occurrences = occurrences.drop(columns="condition_group_followup")
+    return occurrences, excluded
 
 
 def load_guild_trait_annotations(taxon_ids: set[str]) -> pd.DataFrame:
@@ -855,8 +893,13 @@ def write_readme(
     pattern_labels: pd.DataFrame,
     inferred_group_summary: pd.DataFrame,
     kg_microbe_taxon_universe: pd.DataFrame,
+    excluded_occurrences: pd.DataFrame | None = None,
 ) -> None:
     """Write a compact human-readable follow-up summary."""
+    if excluded_occurrences is None:
+        excluded_occurrences = pd.DataFrame(
+            columns=["direction", "profile_id", "study_id", "host_species"]
+        )
     lines = [
         "# Autism and Autoimmune Disease Follow-Up: Aerobe v2",
         "",
@@ -892,6 +935,7 @@ def write_readme(
             "",
             "The tables below count unique taxon/profile occurrences after deduplicating "
             "the same taxon within the same study/experiment/direction profile. "
+            f"Human-host profiles only; {excluded_host_summary(excluded_occurrences)} "
             + autism_label_contrast_sentence(profile_summary),
             "",
         ]
@@ -1047,6 +1091,7 @@ def write_readme(
             "- `autism_autoimmune_inferred_guild_summary.tsv`",
             "- `autism_autoimmune_inferred_guild_trait_evidence.tsv`",
             "- `autism_autoimmune_inferred_guild_taxa_evidence.tsv`",
+            "- `autism_autoimmune_excluded_host_occurrences.tsv`",
             "- `kg_microbe_candidate_taxon_universe.tsv`",
             "",
         ]
@@ -1065,7 +1110,7 @@ def main() -> None:
         raise ValueError(msg)
 
     profile_summary = summarize_profiles(profiles)
-    occurrences = load_taxa_occurrences(profiles)
+    occurrences, excluded_occurrences = load_taxa_occurrences(profiles)
     taxa_direction_summary = summarize_taxa_by_direction(occurrences)
     grouped_taxa_summary = summarize_taxa_by_group_direction(occurrences)
     signed_balance = build_signed_taxa_balance(occurrences)
@@ -1135,6 +1180,11 @@ def main() -> None:
         sep="\t",
         index=False,
     )
+    excluded_occurrences.sort_values(["taxon_name", "profile_id"]).to_csv(
+        OUTPUT_DIR / "autism_autoimmune_excluded_host_occurrences.tsv",
+        sep="\t",
+        index=False,
+    )
     save_heatmap(
         heatmap_matrix,
         profile_summary,
@@ -1149,11 +1199,13 @@ def main() -> None:
         pattern_labels,
         inferred_group_summary,
         kg_microbe_taxon_universe,
+        excluded_occurrences,
     )
 
     print(f"Wrote follow-up outputs to: {OUTPUT_DIR}")
     print(f"Profiles analyzed: {len(profiles)}")
     print(f"Taxon/profile occurrence rows: {len(occurrences)}")
+    print(f"Taxon/profile occurrences outside the human-host corpus: {len(excluded_occurrences)}")
     print(f"Unique taxa observed: {occurrences['taxon_id'].nunique()}")
     print(f"KG-Microbe candidate taxon universe rows: {len(kg_microbe_taxon_universe)}")
     print(f"Inferred guild rows: {len(inferred_group_summary)}")

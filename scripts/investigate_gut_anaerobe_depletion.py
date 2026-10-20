@@ -71,12 +71,16 @@ EXCLUDED_CONDITION_SUMMARY_LABELS = {
     "Body fat distribution",
     "Clinical treatment",
     "Exposure",
+    "Glucose",
     "Health study participation",
     "Health trait",
     "Microbiome",
-    "Population",
     "Physical activity",
+    "Population",
+    "Socioeconomic status",
+    "Time",
     "Timepoint",
+    "Tumor stage",
 }
 # A paired d (and its paired t-test p) from fewer matched profile pairs is reported as NA.
 MIN_PAIRED_SMD_PROFILE_PAIRS = 5
@@ -97,13 +101,22 @@ NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE = (
     "not recomputed from the trait-enrichment score."
 )
 TARGET_TAXON_COLORS = {
-    "Faecalibacterium prausnitzii": "#2563eb",
-    "Lachnospira eligens": "#d97706",
-    "Agathobacter rectalis": "#059669",
-    "Anaerobutyricum hallii": "#dc2626",
-    "Roseburia intestinalis": "#7c3aed",
-    "Roseburia inulinivorans": "#0891b2",
+    "Faecalibacterium prausnitzii": "#0072b2",
+    "Lachnospira eligens": "#e69f00",
+    "Agathobacter rectalis": "#009e73",
+    "Anaerobutyricum hallii": "#d55e00",
+    "Roseburia intestinalis": "#cc79a7",
+    "Roseburia inulinivorans": "#56b4e9",
     "Ruminococcus bromii": "#64748b",
+}
+TARGET_TAXON_HATCHES = {
+    "Faecalibacterium prausnitzii": "",
+    "Lachnospira eligens": "//",
+    "Agathobacter rectalis": "..",
+    "Anaerobutyricum hallii": "\\\\",
+    "Roseburia intestinalis": "xx",
+    "Roseburia inulinivorans": "--",
+    "Ruminococcus bromii": "||",
 }
 TARGET_TAXON_LEGEND_LABELS = {
     "Faecalibacterium prausnitzii": "F. prausnitzii",
@@ -450,6 +463,7 @@ def select_top_conditions(condition_summary: pd.DataFrame, limit: int) -> pd.Dat
     top_conditions = (
         condition_summary[
             (condition_summary["decreased_profile_count"] >= 3)
+            & (condition_summary["increased_profile_count"] >= 3)
             & (condition_summary["study_count"] >= 2)
             & (condition_summary["decreased_minus_increased_guild_z"] > 0)
             & (condition_summary["decreased_mean_guild_z"] > 0)
@@ -1434,6 +1448,9 @@ def save_condition_target_taxa_stacked_bar_chart(
             values,
             left=left,
             color=TARGET_TAXON_COLORS.get(taxon, "#475569"),
+            edgecolor="#ffffff",
+            linewidth=0.6,
+            hatch=TARGET_TAXON_HATCHES.get(taxon, ""),
             label=TARGET_TAXON_LEGEND_LABELS.get(taxon, taxon),
         )
         left = left + values
@@ -2391,10 +2408,11 @@ def write_summary_report(
                 "",
                 "## Condition Enriched-Profile Histogram",
                 "",
-                "The enrichment-filtered histogram counts conditions by how many profiles "
-                "remain after dropping profiles with zero positive anaerobe v2 selected-trait "
-                "z-scores. The dropped profiles are still retained in the main trait-enrichment "
-                "summaries and are reported here by profile direction.",
+                "The enrichment-filtered histogram counts non-excluded conditions "
+                "(`is_excluded_condition_label`) by how many profiles remain after dropping "
+                "profiles with zero positive anaerobe v2 selected-trait z-scores. The dropped "
+                "profiles are still retained in the main trait-enrichment summaries and are "
+                "reported here by profile direction across condition-filtered profiles.",
                 "",
                 "| direction | conditions with retained profiles | retained profiles | "
                 "zero-enriched profiles | retained / total profiles |",
@@ -2417,9 +2435,9 @@ def write_summary_report(
                 "",
                 "The trait-side companion histogram counts selected heatmap traits by "
                 "how many retained enriched profiles have a positive z-score for each "
-                "trait. The retained-profile universe is the same one used by the "
-                "condition histogram: profiles with at least one positive anaerobe v2 "
-                "selected-trait z-score.",
+                "trait across all human-host profiles with at least one positive anaerobe v2 "
+                "selected-trait z-score (before `is_excluded_condition_label` condition-label "
+                "filtering used in the condition histogram above).",
                 "",
                 "| direction | trait | positive retained profiles | retained profile fraction |",
                 "| --- | --- | ---: | ---: |",

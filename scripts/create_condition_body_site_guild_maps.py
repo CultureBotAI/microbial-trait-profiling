@@ -156,13 +156,18 @@ FACULTATIVE_CONFIG = MapConfig(
     excluded_condition_labels=frozenset(
         {
             "Body fat distribution",
+            "Clinical treatment",
             "Exposure",
+            "Glucose",
+            "Health study participation",
             "Health trait",
             "Microbiome",
-            "Population",
             "Physical activity",
+            "Population",
+            "Socioeconomic status",
             "Time",
             "Timepoint",
+            "Tumor stage",
         }
     ),
 )
@@ -181,12 +186,16 @@ ANAEROBE_CONFIG = MapConfig(
             "Body fat distribution",
             "Clinical treatment",
             "Exposure",
+            "Glucose",
             "Health study participation",
             "Health trait",
             "Microbiome",
-            "Population",
             "Physical activity",
+            "Population",
+            "Socioeconomic status",
+            "Time",
             "Timepoint",
+            "Tumor stage",
         }
     ),
 )

@@ -473,22 +473,27 @@ def top_condition_text(
     rows: pd.DataFrame,
     direction: str,
     count_column: str,
+    study_column: str | None = None,
     max_items: int = 4,
 ) -> str:
     """Describe top condition evidence for one switch side."""
+    if study_column is None:
+        study_column = (
+            "increased_study_count" if direction == "increased" else "decreased_study_count"
+        )
     subset = rows[rows["dominant_direction"] == direction].copy()
     subset = subset[
         (subset[count_column] >= MIN_SWITCH_SIDE_PROFILES)
-        & (subset["study_count"] >= MIN_SWITCH_SIDE_STUDIES)
+        & (subset[study_column] >= MIN_SWITCH_SIDE_STUDIES)
     ]
     subset = subset.sort_values(
-        [count_column, "study_count", "condition"],
+        [count_column, study_column, "condition"],
         ascending=[False, False, True],
     )
     labels = [
         (
             f"{row['condition']} ({int(row[count_column])} profiles, "
-            f"{int(row['study_count'])} studies)"
+            f"{int(row[study_column])} studies)"
         )
         for _, row in subset.head(max_items).iterrows()
     ]
@@ -505,17 +510,15 @@ def summarize_taxon_switches(taxon_condition: pd.DataFrame) -> pd.DataFrame:
         )
     ].copy()
     strong = annotated[
-        (annotated["dominant_direction"].isin({"increased", "decreased"}))
-        & (annotated["study_count"] >= MIN_SWITCH_SIDE_STUDIES)
-        & (
-            (
-                (annotated["dominant_direction"] == "increased")
-                & (annotated["increased_profile_count"] >= MIN_SWITCH_SIDE_PROFILES)
-            )
-            | (
-                (annotated["dominant_direction"] == "decreased")
-                & (annotated["decreased_profile_count"] >= MIN_SWITCH_SIDE_PROFILES)
-            )
+        (
+            (annotated["dominant_direction"] == "increased")
+            & (annotated["increased_profile_count"] >= MIN_SWITCH_SIDE_PROFILES)
+            & (annotated["increased_study_count"] >= MIN_SWITCH_SIDE_STUDIES)
+        )
+        | (
+            (annotated["dominant_direction"] == "decreased")
+            & (annotated["decreased_profile_count"] >= MIN_SWITCH_SIDE_PROFILES)
+            & (annotated["decreased_study_count"] >= MIN_SWITCH_SIDE_STUDIES)
         )
     ].copy()
 
@@ -560,11 +563,13 @@ def summarize_taxon_switches(taxon_condition: pd.DataFrame) -> pd.DataFrame:
                     group,
                     "increased",
                     "increased_profile_count",
+                    "increased_study_count",
                 ),
                 "top_decreased_conditions": top_condition_text(
                     group,
                     "decreased",
                     "decreased_profile_count",
+                    "decreased_study_count",
                 ),
                 "aerobic_traits": join_unique(group["aerobic_traits"]),
                 "anaerobic_traits": join_unique(group["anaerobic_traits"]),

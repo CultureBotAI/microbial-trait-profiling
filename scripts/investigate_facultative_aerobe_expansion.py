@@ -77,13 +77,18 @@ TARGET_TAXA = {
 }
 EXCLUDED_CONDITION_SUMMARY_LABELS = {
     "Body fat distribution",
+    "Clinical treatment",
     "Exposure",
+    "Glucose",
+    "Health study participation",
     "Health trait",
     "Microbiome",
-    "Population",
     "Physical activity",
+    "Population",
+    "Socioeconomic status",
     "Time",
     "Timepoint",
+    "Tumor stage",
 }
 # A paired d (and its paired t-test p) from fewer matched profile pairs is reported as NA.
 MIN_PAIRED_SMD_PROFILE_PAIRS = 5
@@ -104,16 +109,28 @@ NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE = (
     "not recomputed from the trait-enrichment score."
 )
 TARGET_TAXON_COLORS = {
-    "Escherichia coli": "#dc2626",
-    "Fusobacterium nucleatum": "#2563eb",
-    "Veillonella dispar": "#0891b2",
-    "Klebsiella pneumoniae": "#d97706",
-    "Enterocloster bolteae": "#7c3aed",
-    "Parvimonas micra": "#059669",
-    "Streptococcus anginosus": "#be123c",
+    "Escherichia coli": "#d55e00",
+    "Fusobacterium nucleatum": "#0072b2",
+    "Veillonella dispar": "#56b4e9",
+    "Klebsiella pneumoniae": "#e69f00",
+    "Enterocloster bolteae": "#cc79a7",
+    "Parvimonas micra": "#009e73",
+    "Streptococcus anginosus": "#882255",
     "Eggerthella lenta": "#64748b",
-    "Porphyromonas gingivalis": "#9333ea",
-    "Prevotella intermedia": "#65a30d",
+    "Porphyromonas gingivalis": "#332288",
+    "Prevotella intermedia": "#999933",
+}
+TARGET_TAXON_HATCHES = {
+    "Escherichia coli": "",
+    "Fusobacterium nucleatum": "//",
+    "Veillonella dispar": "..",
+    "Klebsiella pneumoniae": "\\\\",
+    "Enterocloster bolteae": "xx",
+    "Parvimonas micra": "--",
+    "Streptococcus anginosus": "++",
+    "Eggerthella lenta": "||",
+    "Porphyromonas gingivalis": "oo",
+    "Prevotella intermedia": "**",
 }
 TARGET_TAXON_LEGEND_LABELS = {
     "Escherichia coli": "E. coli",
@@ -433,6 +450,7 @@ def select_top_conditions(condition_summary: pd.DataFrame, limit: int) -> pd.Dat
     top_conditions = (
         condition_summary[
             (condition_summary["increased_profile_count"] >= 3)
+            & (condition_summary["decreased_profile_count"] >= 3)
             & (condition_summary["study_count"] >= 2)
             & (condition_summary["increased_minus_decreased_guild_z"] > 0)
             & (condition_summary["increased_mean_guild_z"] > 0)
@@ -1210,6 +1228,9 @@ def save_condition_target_taxa_stacked_bar_chart(
             values,
             left=left,
             color=TARGET_TAXON_COLORS.get(taxon, "#475569"),
+            edgecolor="#ffffff",
+            linewidth=0.6,
+            hatch=TARGET_TAXON_HATCHES.get(taxon, ""),
             label=TARGET_TAXON_LEGEND_LABELS.get(taxon, taxon),
         )
         left = left + values

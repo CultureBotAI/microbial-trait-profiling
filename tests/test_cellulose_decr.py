@@ -19,6 +19,7 @@ from mtp.cellulose_decr.analysis import (
     ALL_CONTRASTS,
     FECES,
     INPUTS,
+    NO_MSM,
     NON_FECAL_GI,
     ORAL,
     ORIENTED,
@@ -28,9 +29,11 @@ from mtp.cellulose_decr.analysis import (
     TRAIT_ID,
     Corpus,
     NullDraws,
+    benchmark_table,
     benjamini_hochberg,
     binomial_power,
     case_control_inventory,
+    catalog_table,
     check_input_drift,
     choose,
     clean,
@@ -44,6 +47,7 @@ from mtp.cellulose_decr.analysis import (
     load_corpus,
     merge_synonyms,
     most_common_label,
+    msm_mentioned,
     net_decreased,
     paired_deltas,
     population,
@@ -59,6 +63,7 @@ from mtp.cellulose_decr.analysis import (
     three_way_exact,
     u5_weights,
     u6_units,
+    without_studies,
 )
 from mtp.contrast_orientation import (
     CASE_VS_CONTROL_SUBJECT,
@@ -883,3 +888,113 @@ def test_synonym_mode_merges_labels_when_loading(tmp_path: Path) -> None:
     assert exact.loc["bsdb:1|bsdb:1-3|dec", "condition"] == "HIV-1 infection"
     merged = load_corpus(paths, "experiment", "synonyms").profiles
     assert merged.loc["bsdb:1|bsdb:1-3|dec", "condition"] == "HIV infection"
+
+
+def test_no_msm_population_drops_msm_mentions(tmp_path: Path) -> None:
+    """msm_mentioned checks group names, group_1_definition and description (#595)."""
+    corpus = load_corpus(_input_root(tmp_path), "experiment")
+    manifest = corpus.manifest.copy()
+    manifest.loc[("bsdb:1", "bsdb:1-1"), "description"] = "Men who have sex with men (MSM)"
+    manifest.loc[("bsdb:2", "bsdb:2-1"), "group_1_definition"] = "Gay and bisexual men"
+    assert list(msm_mentioned(manifest)) == [True, False, False, True, False, False]
+    corpus = replace(corpus, manifest=manifest)
+    oriented, _ = population(corpus, ORIENTED)
+    no_msm, taxa = population(corpus, NO_MSM)
+    assert {"bsdb:1|bsdb:1-1|dec", "bsdb:2|bsdb:2-1|dec"} <= set(oriented.index)
+    assert {"bsdb:1|bsdb:1-1|dec", "bsdb:2|bsdb:2-1|dec"}.isdisjoint(no_msm.index)
+    assert set(taxa["profile_id"]) <= set(no_msm.index)
+
+
+def test_without_studies_drops_profiles_and_taxa_of_dropped_studies(tmp_path: Path) -> None:
+    """without_studies removes every profile and taxon of the excluded studies (#595)."""
+    corpus = load_corpus(_input_root(tmp_path), "experiment")
+    trimmed = without_studies(corpus, ["bsdb:1"])
+    assert set(trimmed.profiles["study_id"]) == {"bsdb:2"}
+    assert set(trimmed.taxa["study_id"]) == {"bsdb:2"}
+
+
+def test_catalog_table_records_rolled_up_counts_direct_edges_and_core_class() -> None:
+    """catalog_table records rolled-up counts, direct edges and net-dec (#595)."""
+    matrix = pd.DataFrame(
+        {
+            "taxon_name": ["Roseburia", "Lachnospiraceae", "Bacteroides"],
+            "taxonomic_rank": ["genus", "family", "genus"],
+            TRAIT_ID: [3, 17, 1],
+        },
+        index=pd.Index(["t1", "t2", "t3"], name="taxon_id"),
+    )
+    rows = [
+        ("p1", "s1", "Parkinson's disease", FECES, "dec", "t1"),
+        ("p2", "s1", "Parkinson's disease", FECES, "dec", "t2"),
+        ("p3", "s2", "HIV infection", FECES, "dec", "t1"),
+        ("p4", "s2", "HIV infection", FECES, "dec", "t2"),
+        ("p5", "s3", "Colorectal cancer", FECES, "dec", "t1"),
+        ("p6", "s3", "Colorectal cancer", FECES, "dec", "t2"),
+        ("p7", "s4", "Colorectal cancer", FECES, "inc", "t2"),
+        ("p8", "s5", "Parkinson's disease", FECES, "dec", "t3"),
+    ]
+    taxa = pd.DataFrame(
+        rows, columns=["profile_id", "study_id", "condition", "compartment", "dir", "taxon_id"]
+    )
+    sets = {"PD": {"t1", "t2", "t3"}, "HIV": {"t1", "t2"}, "CRC": {"t1", "t2"}}
+    catalog = catalog_table(taxa, matrix, sets, direct={"t3"}).set_index("taxon_id")
+    assert list(catalog.index) == ["t2", "t1", "t3"]
+    assert catalog.loc["t1", "matrix_trait_bearing_taxa_at_or_below"] == 3
+    assert catalog.loc["t2", "matrix_trait_bearing_taxa_at_or_below"] == 17
+    assert bool(catalog.loc["t1", "is_strictly_net_decreased_all3"]) is True
+    assert bool(catalog.loc["t2", "is_strictly_net_decreased_all3"]) is False
+    assert catalog.loc["t1", "core_class"] == "3-way core, genus or species rank"
+    assert catalog.loc["t2", "core_class"] == "3-way core, family-to-phylum rank"
+    assert catalog.loc["t3", "core_class"] == "not in 3-way core"
+    assert bool(catalog.loc["t3", "has_direct_trait_edge"]) is True
+
+
+def test_benchmark_table_filters_to_ten_per_condition_and_ranks_non_media() -> None:
+    """benchmark_table keeps traits with >=10 dec taxa per condition and ranks non-media (#595)."""
+    taxon_ids = [f"t{i}" for i in range(12)]
+    matrix = pd.DataFrame(
+        {
+            "taxon_name": taxon_ids,
+            "taxonomic_rank": ["genus"] * 12,
+            "trait_high": [1] * 12,
+            "mediadive.medium:1": [1] * 10 + [0, 0],
+            "trait_low": [1] * 10 + [0, 0],
+            "trait_too_small": [1] * 9 + [0, 0, 0],
+        },
+        index=pd.Index(taxon_ids, name="taxon_id"),
+    )
+    # PD, HIV, CRC each report 10 taxa decreased for trait_low and mediadive.medium:1;
+    # CRC also reports t10 and t11 decreased for trait_high.
+    rows = []
+    for short, members in (
+        ("Parkinson's disease", taxon_ids[:10]),
+        ("HIV infection", taxon_ids[:10]),
+        ("Colorectal cancer", taxon_ids[:12]),
+    ):
+        for taxon in members:
+            rows.append((f"{short}-{taxon}", short, FECES, "dec", taxon))
+    taxa = pd.DataFrame(rows, columns=["profile_id", "condition", "compartment", "dir", "taxon_id"])
+    labels = pd.DataFrame(
+        {
+            "object_name": ["high overlap", "medium 1", "perfect overlap", "small"],
+            "predicate_name": ["p", "p", "p", "p"],
+        },
+        index=pd.Index(
+            ["trait_high", "mediadive.medium:1", "trait_low", "trait_too_small"], name="column_id"
+        ),
+    )
+    bench = benchmark_table(taxa, matrix, labels)
+    # trait_too_small has only 9 taxa per condition and is excluded.
+    # mediadive.medium:1 and trait_low have identical 10-taxon sets across all 3 conditions
+    # (d_J = 0); trait_high has 10 in PD/HIV and 12 in CRC (d_J > 0).
+    assert list(bench["trait_id"]) == ["mediadive.medium:1", "trait_low", "trait_high"]
+    assert list(bench["rank_by_convergence"]) == [1, 2, 3]
+    assert list(bench["rank_excluding_growth_media"].dropna()) == [1, 2]
+    assert pd.isna(
+        bench.loc[
+            bench["trait_id"].eq("mediadive.medium:1"), "percentile_excluding_growth_media"
+        ].iloc[0]
+    )
+    assert bench.loc[bench["trait_id"].eq("trait_low"), "percentile_excluding_growth_media"].iloc[
+        0
+    ] == pytest.approx(0.5)

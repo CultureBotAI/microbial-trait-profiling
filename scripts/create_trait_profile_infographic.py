@@ -1053,6 +1053,13 @@ def plot_top_traits(ax: plt.Axes, trait_stats: pd.DataFrame) -> None:
             ha="left",
             fontsize=8.2,
             color=SLATE_700,
+            zorder=4,
+            bbox={
+                "boxstyle": "round,pad=0.15",
+                "facecolor": "white",
+                "edgecolor": "none",
+                "alpha": 0.9,
+            },
         )
     ax.set_xlim(0, max_p * 1.38)
 
