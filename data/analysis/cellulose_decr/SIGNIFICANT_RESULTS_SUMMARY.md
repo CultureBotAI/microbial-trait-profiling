@@ -24,23 +24,23 @@ Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`).
    annotations than of the increased signature's. The share counts annotations,
    not taxa.
    - **CRC:** 19 of 21 untied studies (p = 2.2e-4). Among disease-versus-healthy
-     contrasts it is 14 of 17 (p = 0.013, q = 0.026), and 16 of 20 with synonym
-     labels counted. Counting the comorbidity contrasts gives 15 of 18 (p = 0.0075).
-     Among them is the Yachida 2019 study, whose polyp-bearing controls the
-     classifier misreads as a comorbidity (#672).
-   - **PD, disease vs healthy:** 24 of 34 studies (p = 0.024, q = 0.041).
+     contrasts it is 15 of 18 (p = 0.0075, q = 0.016), and 17 of 21 with synonym
+     labels counted (p = 0.0072). Keeping only Tier 1–2 controls sets aside the
+     Yachida 2019 study, whose controls had "a few polyps" (#672), giving 14 of 17
+     (p = 0.013).
+   - **PD, disease vs healthy:** 24 of 34 studies (p = 0.024, q = 0.037).
    - **PD, all contrasts:** the study-level sign test gives 27 of 41 (p = 0.060).
      The study-level Wilcoxon test gives p = 0.0093, and a majority vote of
      experiment signs gives 28 of 40 (p = 0.017).
-   - **Pooled:** 58 of 78 untied studies (p = 2.0e-5) and 48 of 63 among
-     disease-versus-healthy contrasts (p = 3.8e-5). The pooled result stays at
-     p ≤ 1.4e-4 under every label and contrast definition tried
+   - **Pooled:** 58 of 78 untied studies (p = 2.0e-5) and 49 of 64 among
+     disease-versus-healthy contrasts (p = 2.4e-5). The pooled result stays at
+     p ≤ 8.8e-5 under every label and contrast definition tried
      ([`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv)).
 
 ## What is fragile
 
 1. **HIV.** Counting the exact label "HIV infection" and disease-versus-healthy
-   contrasts, 10 of 12 untied studies point down (p = 0.039, q = 0.057). That is
+   contrasts, 10 of 12 untied studies point down (p = 0.039, q = 0.056). That is
    one of several defensible readings, and across them the study-level p runs from
    0.002 to 0.18:
    - Since contrast classifier v4, this reading counts the HIV– vs HIV+ experiment
@@ -65,10 +65,11 @@ Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`).
    - Only 11 of the 31 paired mucosa and lumen experiments compare patients with
      controls (`contrast_type` `case_vs_control_subject`). The rest compare tumour
      with adjacent tissue, cancer subgroups or treatments.
-   - Among disease-versus-healthy studies, the test gives odds ratio 10.2
-     (95% CI 1.07–158, p = 0.021). Counting the tumour-vs-adjacent-tissue contrast
-     `bsdb:25699023-2` gives 5.66 (0.61–65.5, p = 0.13), the v2 result. The result
-     rests on that one experiment either way (#569, #580, #673).
+   - Among disease-versus-healthy studies, the test gives odds ratio 10.9
+     (95% CI 1.15–169, p = 0.017). Counting the tumour-vs-adjacent-tissue contrast
+     `bsdb:25699023-2` gives 6.05 (0.66–69.7, p = 0.066). Keeping only Tier 1–2
+     controls gives 10.2 (1.07–158, p = 0.021). The result rests on that one
+     experiment either way (#569, #580, #672, #673).
 
 ## What does not hold
 
@@ -109,14 +110,14 @@ of the TSV) are for the study sign test.
 
 | Condition | Contrasts | Experiments | p | Studies | p | q | Study Wilcoxon p |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| PD | all | 58 : 24 : 17 | 2.2e-4 | 27 : 14 : 4 | 0.060 | 0.079 | 0.0093 |
-| PD | disease vs healthy | 47 : 15 : 12 | 5.8e-5 | 24 : 10 : 4 | 0.024 | 0.041 | 0.015 |
+| PD | all | 58 : 24 : 17 | 2.2e-4 | 27 : 14 : 4 | 0.060 | 0.075 | 0.0093 |
+| PD | disease vs healthy | 47 : 15 : 12 | 5.8e-5 | 24 : 10 : 4 | 0.024 | 0.037 | 0.015 |
 | HIV | all | 18 : 7 : 3 | 0.043 | 12 : 4 : 2 | 0.077 | 0.093 | 0.30 |
-| HIV | disease vs healthy | 13 : 3 : 3 | 0.021 | 10 : 2 : 2 | 0.039 | 0.057 | 0.18 |
+| HIV | disease vs healthy | 13 : 3 : 3 | 0.021 | 10 : 2 : 2 | 0.039 | 0.056 | 0.18 |
 | CRC | all | 32 : 6 : 11 | 2.4e-5 | 19 : 2 : 7 | 2.2e-4 | 7.2e-4 | 2.0e-4 |
-| CRC | disease vs healthy | 18 : 5 : 8 | 0.011 | 14 : 3 : 7 | 0.013 | 0.026 | 0.0026 |
-| All three | all | 108 : 37 : 31 | 3.0e-9 | 58 : 20 : 13 | 2.0e-5 | 1.8e-4 | 4.1e-5 |
-| All three | disease vs healthy | 78 : 23 : 23 | 3.6e-8 | 48 : 15 : 13 | 3.8e-5 | 2.2e-4 | 1.2e-4 |
+| CRC | disease vs healthy | 22 : 5 : 8 | 0.0015 | 15 : 3 : 7 | 0.0075 | 0.016 | 0.0013 |
+| All three | all | 108 : 37 : 31 | 3.0e-9 | 58 : 20 : 13 | 2.0e-5 | 1.4e-4 | 4.1e-5 |
+| All three | disease vs healthy | 82 : 23 : 23 | 6.0e-9 | 49 : 15 : 13 | 2.4e-5 | 1.4e-4 | 7.3e-5 |
 
 Experiment-level p-values treat experiments from one study as independent, so
 they are optimistic. The majority-vote study counts are in
@@ -173,8 +174,8 @@ The flags are `has_direct_trait_edge`, `is_direct_or_genus_species`,
 | --- | --- | --- | --- | --- | --- |
 | CRC | experiments | 32 : 6 | 4 : 11 | 13.6 (2.9–81.0) | 1.2e-4 |
 | CRC | studies | 19 : 2 | 3 : 8 | 21.6 (2.7–309) | 5.6e-4 |
-| CRC, disease vs healthy | studies | 14 : 3 | 2 : 5 | 10.2 (1.07–158) | 0.021 |
-| CRC, disease vs healthy, paired-tissue contrasts counted | studies | 14 : 3 | 3 : 4 | 5.66 (0.61–65.5) | 0.13 |
+| CRC, disease vs healthy | studies | 15 : 3 | 2 : 5 | 10.9 (1.15–169) | 0.017 |
+| CRC, disease vs healthy, paired-tissue contrasts counted | studies | 15 : 3 | 3 : 4 | 6.05 (0.66–69.7) | 0.066 |
 | All three, stratified by condition | experiments | 108 : 37 | 9 : 12 | 4.79 (1.52–15.8) | 0.0049 |
 
 | All three, stratified by condition | studies | 58 : 20 | 5 : 9 | 8.46 (1.79–49.9) | 0.0021 |
