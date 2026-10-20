@@ -64,7 +64,7 @@ from mtp.trait_guilds import (
     write_stats_report,
 )
 
-CLASSIFIER_VERSION = "contrast-orientation-v4"
+CLASSIFIER_VERSION = "contrast-orientation-v5"
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "contrast_orientation"
 DIRECTION_CONVENTION = "inc = higher abundance in Group 1 than in Group 0 (BugSigDB)"
 
@@ -79,6 +79,7 @@ CLASSES = (DISEASE_VS_HEALTHY, DISEASE_VS_DISEASE, TREATMENT, LONGITUDINAL, OTHE
 NATIVE = "native"
 REVERSED = "reversed"
 NOT_APPLICABLE = "not_applicable"
+ORIENTATIONS = (NATIVE, REVERSED, NOT_APPLICABLE)
 
 CASE_VS_CONTROL_SUBJECT = "case_vs_control_subject"
 COMORBIDITY_WITHIN_DISEASE = "comorbidity_within_disease"
@@ -585,8 +586,6 @@ COMORBIDITY_DISEASE_TERMS = _pattern(
     r"colitis",
     r"crohn\w*",
     r"glaucoma\w*",
-    r"polyps?",
-    r"adenomas?",
     r"atopic",
     r"stroke",
     r"covid(?:[- ]?19)?",
@@ -610,6 +609,13 @@ HOSPITAL_OR_SYMPTOMATIC_CONTROL = _pattern(
     r"non[- ]?ibd controls?",
     r"unrelated [\w\s-]+ conditions?",
     r"benign",
+)
+#: Precursor lesions that, when present un-negated in a comparison group's name (for example
+#: "healthy control (normal and a few polyps)" in a colorectal cancer study, #672), mark a
+#: Tier 3 subject control with a precursor lesion rather than a shared background comorbidity.
+PRECURSOR_LESION_CONTROL = _pattern(
+    r"polyps?",
+    r"adenomas?",
 )
 DIRECTLY_NEGATED_DISEASE = re.compile(
     r"\b(?:free (?:from|of)|without|no|non|(?<!positive and )negative(?:\s+for)?)[- ]+"
@@ -1087,9 +1093,11 @@ def _classify_control_tier(
     ) and not _mentions_condition("cirrhosis", condition):
         return COMORBIDITY_WITHIN_DISEASE, TIER_3_HOSPITAL_COMORBID_OR_TISSUE
 
-    # 3. Hospital, surgical, symptomatic or patient controls, or treated-disease confound.
+    # 3. Hospital, surgical, symptomatic, precursor-lesion or patient controls, or
+    # treated-disease confound.
     if (
         _matches(HOSPITAL_OR_SYMPTOMATIC_CONTROL, control_group_name)
+        or _matches(PRECURSOR_LESION_CONTROL, residual)
         or "treated_disease_group" in flags
         or (not strong_control and re.search(r"\bpatients?\b", control_group_name, re.IGNORECASE))
         or re.search(r"\bhiv\s+negative\s+patients?\b", control_group_name, re.IGNORECASE)
@@ -1154,8 +1162,9 @@ def classify(record: ExperimentRecord) -> Classification:
 
     resolved = _matches(RESOLVED, f"{g0} | {g1}")
     if resolved:
+        resolved_class = OTHER if (control_0 or control_1) else LONGITUDINAL
         return result(
-            LONGITUDINAL,
+            resolved_class,
             NOT_APPLICABLE,
             f"a group is resolved disease: {resolved}",
             contrast_type=RESOLVED_DISEASE,
@@ -1200,14 +1209,17 @@ def classify(record: ExperimentRecord) -> Classification:
         treatment_terms = sorted(set(treat_0) | set(treat_1))
 
     # A healthy control compared against a disease group that happens to be on therapy
-    # ("Controls" vs "HIV Patients treated with Maraviroc", "HIV-" vs "People Living With
-    # HIV on Antiretroviral therapy") is a confounded disease-vs-healthy contrast (Tier 3),
-    # not a treatment-arm trial. Treated against untreated people who all have the disease
-    # has no comparison group and stays a treatment contrast. A treated group also named by
-    # time keeps the treatment reading: without it only the time word would be left, and
-    # in "taking ART for more than 1 year" that word is a duration, not a later visit. The
-    # guard reads a time word in either group. "on HAART" or "on cART" counts as therapy
-    # even though TREATMENT_TERMS reads only a whole "ART" (#627).
+    # ("Controls" vs "HIV Patients treated with Maraviroc", in either group order, or
+    # "HIV-" vs "People Living With HIV on Antiretroviral therapy") is a confounded
+    # disease-vs-healthy contrast (Tier 3), not a treatment-arm trial. Treated against
+    # untreated people who all have the disease has no comparison group and stays a
+    # treatment contrast. A treated group also named by time keeps the treatment reading:
+    # without it only the time word would be left, and in "taking ART for more than 1 year"
+    # that word is a duration, not a later visit. The guard reads a time word in either
+    # group. "on HAART" or "on cART" counts as therapy even though TREATMENT_TERMS reads
+    # only a whole "ART" (#627). In reversed group order, strong_1 is required so a weak
+    # Group 1 comparison does not receive treated_disease_group on a row that later lands in
+    # unresolved (#574, #630).
     if (
         (treatment_terms or ON_ANTIRETROVIRAL.search(g1))
         and control_0
@@ -1216,6 +1228,14 @@ def classify(record: ExperimentRecord) -> Classification:
         and not one_sided_time
         and _names_condition(g1, condition)
         and (TREATED_WITH_CONF.search(g1) or ON_ANTIRETROVIRAL.search(g1))
+    ) or (
+        (treatment_terms or ON_ANTIRETROVIRAL.search(g0))
+        and strong_1
+        and not control_0
+        and not treat_1
+        and not one_sided_time
+        and _names_condition(g0, condition)
+        and (TREATED_WITH_CONF.search(g0) or ON_ANTIRETROVIRAL.search(g0))
     ):
         flags.append("treated_disease_group")
         treatment_terms = []
@@ -1301,6 +1321,12 @@ def classify(record: ExperimentRecord) -> Classification:
                 flags.append("paired_tissue_comparison")
             elif ctype == COMORBIDITY_WITHIN_DISEASE:
                 flags.append("comorbidity_control")
+            elif (
+                ctype == CASE_VS_CONTROL_SUBJECT
+                and ctier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+                and "treated_disease_group" not in flags
+            ):
+                flags.append("hospital_or_symptomatic_control")
             return result(
                 DISEASE_VS_HEALTHY,
                 NATIVE,
@@ -1315,6 +1341,12 @@ def classify(record: ExperimentRecord) -> Classification:
                 flags.append("paired_tissue_comparison")
             elif ctype == COMORBIDITY_WITHIN_DISEASE:
                 flags.append("comorbidity_control")
+            elif (
+                ctype == CASE_VS_CONTROL_SUBJECT
+                and ctier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+                and "treated_disease_group" not in flags
+            ):
+                flags.append("hospital_or_symptomatic_control")
             return result(
                 DISEASE_VS_HEALTHY,
                 REVERSED,
@@ -1498,21 +1530,73 @@ def review_sample(
     return rows
 
 
-def read_review(path: Path) -> dict[tuple[str, str], str]:
+def _validate_review_row(
+    path: Path,
+    row: Mapping[str, str],
+    classes: Mapping[tuple[str, str], Classification] | None = None,
+) -> tuple[tuple[str, str], str]:
+    exp_id = row["experiment_id"]
+    verdict = row["verdict"].strip().lower()
+    if verdict not in {"agree", "disagree"}:
+        msg = (
+            f"{path}: experiment {exp_id} has verdict {row['verdict']!r}; "
+            "every sampled row must be reviewed as 'agree' or 'disagree'"
+        )
+        raise ValueError(msg)
+    sampled_class = row.get("sampled_class", "").strip()
+    sampled_orientation = row.get("sampled_orientation", "").strip()
+    if sampled_class not in CLASSES or sampled_orientation not in ORIENTATIONS:
+        msg = (
+            f"{path}: experiment {exp_id} has invalid sampled labels "
+            f"({sampled_class!r}, {sampled_orientation!r})"
+        )
+        raise ValueError(msg)
+    reviewed_class = row.get("reviewed_class", "").strip()
+    reviewed_orientation = row.get("reviewed_orientation", "").strip()
+    if reviewed_class not in CLASSES or reviewed_orientation not in ORIENTATIONS:
+        msg = (
+            f"{path}: experiment {exp_id} has invalid reviewed labels "
+            f"({reviewed_class!r}, {reviewed_orientation!r})"
+        )
+        raise ValueError(msg)
+    if verdict == "disagree" and not row.get("note", "").strip():
+        msg = f"{path}: experiment {exp_id} has verdict 'disagree' without a note"
+        raise ValueError(msg)
+    key = (row["study_id"], exp_id)
+    if classes is not None and key in classes:
+        found = classes[key]
+        matches = (found.contrast_class, found.orientation) == (
+            reviewed_class,
+            reviewed_orientation,
+        )
+        if verdict == "agree" and not matches:
+            msg = (
+                f"{path}: experiment {exp_id} has verdict 'agree' for "
+                f"({reviewed_class}, {reviewed_orientation}), but classifier produced "
+                f"({found.contrast_class}, {found.orientation})"
+            )
+            raise ValueError(msg)
+        if verdict == "disagree" and matches:
+            msg = (
+                f"{path}: experiment {exp_id} has verdict 'disagree', but classifier "
+                f"matches reviewed labels ({reviewed_class}, {reviewed_orientation})"
+            )
+            raise ValueError(msg)
+    return key, f"reviewed_{verdict}d"
+
+
+def read_review(
+    path: Path,
+    classes: Mapping[tuple[str, str], Classification] | None = None,
+) -> dict[tuple[str, str], str]:
     """Each reviewed experiment's validation status, from the committed review table."""
     if not path.exists():
         return {}
     statuses: dict[tuple[str, str], str] = {}
     with path.open(encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle, delimiter="\t"):
-            verdict = row["verdict"].strip().lower()
-            if verdict not in {"agree", "disagree"}:
-                msg = (
-                    f"{path}: experiment {row['experiment_id']} has verdict {row['verdict']!r}; "
-                    "every sampled row must be reviewed as 'agree' or 'disagree'"
-                )
-                raise ValueError(msg)
-            statuses[(row["study_id"], row["experiment_id"])] = f"reviewed_{verdict}d"
+            key, status = _validate_review_row(path, row, classes=classes)
+            statuses[key] = status
     return statuses
 
 
@@ -1762,7 +1846,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"seed {args.review_seed}, {args.review_per_class} per class")
         return 0
 
-    validation = read_review(args.review_input)
+    validation = read_review(args.review_input, classes=classes)
     output = args.output_dir
     output.mkdir(parents=True, exist_ok=True)
     counts = class_counts(classes, corpus)

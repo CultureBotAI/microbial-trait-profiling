@@ -5,7 +5,11 @@ which writes `data/derived/contrast_orientation/`: a versioned manifest of every
 experiment in the export (`contrast_manifest.tsv`), class counts within the analysed
 corpus (`contrast_class_counts.tsv`), the historical-versus-oriented comparison
 (`disease_control_comparison.tsv`) and a provenance record. It implements
-[#188](https://github.com/CultureBotAI/microbial-trait-profiling/issues/188).
+[#188](https://github.com/CultureBotAI/microbial-trait-profiling/issues/188),
+[#291](https://github.com/CultureBotAI/microbial-trait-profiling/issues/291),
+[#554](https://github.com/CultureBotAI/microbial-trait-profiling/issues/554),
+[#569](https://github.com/CultureBotAI/microbial-trait-profiling/issues/569), and
+[#574](https://github.com/CultureBotAI/microbial-trait-profiling/issues/574).
 
 ## The question
 
@@ -27,7 +31,7 @@ both sample sizes and the description - with the curated direction convention, t
 assigned `contrast_class`, `orientation`, `contrast_type`, and `control_tier`, the
 matched evidence, flags, whether the experiment is in the analysed corpus, its
 `validation_status` from the committed hand review, the classifier version
-(`contrast-orientation-v4`) and the BugSigDB vintage. The export holds no Group 0
+(`contrast-orientation-v5`) and the BugSigDB vintage. The export holds no Group 0
 definition, so every row carries the flag `no_group_0_definition_in_export`; a Group
 0 reading rests on its name alone.
 
@@ -42,14 +46,16 @@ Classification is lexical and ordered, and ambiguity is resolved toward exclusio
 from the disease-versus-healthy population rather than into it.
 
 1. A missing group name: `unresolved`.
-2. A group named as resolved disease (recovered, convalescent): `longitudinal_timepoint`
-   with `contrast_type = resolved_disease`.
+2. A group named as resolved disease (recovered, convalescent, post-COVID): `other`
+   when paired against a comparison group (for example, healthy controls against
+   recovered patients) and `longitudinal_timepoint` otherwise (active disease against
+   recovered patients), with `contrast_type = resolved_disease` in both cases.
 3. Group names that differ in time (baseline against follow-up, pre against post,
    day 4 against month 1, or two calendar years such as 2008 against 2010):
    `longitudinal_timepoint`. A time word shared by both groups ("at baseline",
    "10-day old") is a shared timepoint, not a contrast; "baseline" or
    "pre-treatment" / "before treatment" beside a healthy comparison only dates the
-   disease sample (`disease_sample_dated_at_baseline`,including when the baseline
+   disease sample (`disease_sample_dated_at_baseline`, including when the baseline
    disease group is Group 0 and the healthy control is Group 1). An age or duration
    band ("2-12 years" against "18-62 years", "Controls aged > 10 years", "PD duration
    less than 5 years" against "PD duration more than 5 years") is not a time point
@@ -71,12 +77,15 @@ from the disease-versus-healthy population rather than into it.
      exact same treatment/exposure tokens and one group is a comparison group; they
      are flagged `shared_treatment_term`.
    - **Treated disease groups opposite a comparison group** ("Healthy Controls" vs
-     "Parkinson's disease Patients treated with entacapone") compare controls against
-     medicated cases rather than two arms of a trial; they are retained in
-     `disease_vs_healthy` with flag `treated_disease_group` and stratified into
-     `tier_3_hospital_comorbid_or_tissue`. Since `contrast-orientation-v4` (#569) the
-     comparison group may rest on weak evidence too ("Lean" vs "Obese patients treated
-     with liraglutide"), for every condition.
+     "Parkinson's disease Patients treated with entacapone", in either native or
+     reversed group order) compare controls against medicated cases rather than two
+     arms of a trial; they are retained in `disease_vs_healthy` with flag
+     `treated_disease_group` and stratified into `tier_3_hospital_comorbid_or_tissue`.
+     Since `contrast-orientation-v4` (#569) a native comparison group (`Group 0`) may
+     rest on weak evidence too ("Lean" vs "Obese patients treated with liraglutide"),
+     for every condition; a reversed comparison group (`Group 1`) requires strong
+     comparison evidence (`strong_1`) so a weak Group 1 comparison does not receive
+     `treated_disease_group` on a row that later lands in `unresolved` (#574, #630).
    - **People with HIV on antiretroviral therapy opposite an HIV-negative comparison
      group** (`contrast-orientation-v4`, #569) are the same design: "healthy control"
      vs "HAART-treated HIV+ patients", "Controls/ People living without HIV (PLWOH)"
@@ -85,14 +94,13 @@ from the disease-versus-healthy population rather than into it.
      what the cases are on, not what the two groups differ by, so these are
      `disease_vs_healthy` with flag `treated_disease_group`. The cue is "ART-",
      "cART-" or "HAART-treated", or "on", "taking", "receiving" or "under" ART, cART,
-     HAART or antiretroviral therapy, and a weak comparison group ("HIV-") is enough.
-     "PLWH", "PWH" or the virus spelled out names the disease group as "HIV" does
-     (#627). Treated
-     against untreated people who all have HIV ("HAART-naive HIV-1 patients" vs
-     "HAART-treated HIV-1 patients") has no comparison group and stays
-     `treatment_exposure`, as do the same people before and on therapy. A contrast
-     with a time word in either group keeps the treatment reading, because clearing it
-     would leave only the time reading (see Limits).
+     HAART or antiretroviral therapy, and in native group order a weak comparison
+     group ("HIV-") is enough. "PLWH", "PWH" or the virus spelled out names the disease
+     group as "HIV" does (#627). Treated against untreated people who all have HIV
+     ("HAART-naive HIV-1 patients" vs "HAART-treated HIV-1 patients") has no
+     comparison group and stays `treatment_exposure`, as do the same people before and
+     on therapy. A contrast with a time word in either group keeps the treatment
+     reading, because clearing it would leave only the time reading (see Limits).
 
      The treatment is recorded as the existing flag and tier rather than a new manifest
      column. Tier 3 already holds treated cases opposite healthy controls, and keeping
@@ -142,9 +150,9 @@ from the disease-versus-healthy population rather than into it.
    stratified along two orthogonal columns:
 
    - `contrast_type`:
-     - `case_vs_control_subject` (993 analysed experiments, 573 studies): subject-level
+     - `case_vs_control_subject` (997 analysed experiments, 574 studies): subject-level
        case versus control comparisons.
-     - `comorbidity_within_disease` (33 analysed experiments, 18 studies): both groups
+     - `comorbidity_within_disease` (29 analysed experiments, 17 studies): both groups
        share a background disease or clinical state and differ in a second condition
        (for example, "Maintenance Hemodialysis without Constipation" vs "Maintenance
        Hemodialysis with Constipation", flagged `comorbidity_control`).
@@ -162,12 +170,15 @@ from the disease-versus-healthy population rather than into it.
        **970 subject-level Disease Case vs. Healthy/Normal Control experiments across
        563 studies**.
      - `tier_3_hospital_comorbid_or_tissue` (78 analysed experiments, 45 studies):
-       the 22 `paired_tissue_autologous` experiments, the 33
-       `comorbidity_within_disease` experiments, and 23 `case_vs_control_subject`
-       experiments whose control group is a hospital, surgical, symptomatic or
-       benign-disease patient control or whose disease group is confounded by named
-       pharmacotherapy (`treated_disease_group`: 11 experiments in 6 studies, 8 of
-       them people with HIV on antiretroviral therapy).
+       the 22 `paired_tissue_autologous` experiments, the 29
+       `comorbidity_within_disease` experiments, and 27 `case_vs_control_subject`
+       experiments whose control group is a hospital, surgical, symptomatic,
+       precursor-lesion or benign-disease patient control (flagged
+       `hospital_or_symptomatic_control`: 16 experiments in 10 studies, including 4
+       colorectal-cancer contrasts against controls with a few polyps, #672) or whose
+       disease group is confounded by named pharmacotherapy (`treated_disease_group`:
+       11 experiments in 6 studies, 8 of them people with HIV on antiretroviral
+       therapy).
 
    **What the comparison reading requires.** Group names say both more and less than
    they appear to, so four conditions scope the reading to the actual comparison
@@ -239,13 +250,13 @@ from the disease-versus-healthy population rather than into it.
 comparison. Of its 1,048 analysed experiments, 22 are `paired_tissue_autologous`:
 tumour or lesional tissue against adjacent normal tissue from the same patients, such
 as 25699023-2 ("adjacent non-cancerous tissues" against "cancerous tissues", colorectal
-mucosa). Another 33 are `comorbidity_within_disease`. A consumer that filters on the
+mucosa). Another 29 are `comorbidity_within_disease`. A consumer that filters on the
 class alone counts these as patients against controls. To keep only comparisons of
 people with the condition against people without it:
 
-- filter the manifest on `contrast_type = case_vs_control_subject` (993 analysed
-  experiments, 573 studies). This drops the paired-tissue and comorbidity contrasts and
-  keeps the Tier 3 hospital, symptomatic and treated-case contrasts; or
+- filter the manifest on `contrast_type = case_vs_control_subject` (997 analysed
+  experiments, 574 studies). This drops the paired-tissue and comorbidity contrasts and
+  keeps the Tier 3 hospital, symptomatic, precursor-lesion and treated-case contrasts; or
 - filter on `control_tier` in {`tier_1_healthy_normal`,
   `tier_2_condition_negative_screened`} (970 experiments, 563 studies), which drops all
   of Tier 3. `oriented_profiles(profiles, classes, control_tiers=...)` applies this
@@ -287,22 +298,26 @@ the review below, which is the one that is committed and reproducible.
 **The committed review.** `methods/contrast_orientation_review.tsv` holds the sample,
 the verdict for each experiment and a note for every disagreement. It was drawn at
 seed 188 (10 analysed experiments per v2 contrast class, 60 in total). Under
-`contrast-orientation-v3`, 15 of the 17 v2 disagreements are resolved by the rule
+`contrast-orientation-v3`, all 17 v2 disagreements are resolved by the rule
 refinements above, raising agreement on the 60 reviewed experiments from **43/60
-(71.7%)** to **58/60 (96.7%)**:
+(71.7%)** to **60/60 (100.0%)**:
 
 | Original v2 sampled class | Sampled | Agreed (v2) | Agreed (v3) | Remaining v3 disagreements |
 | --- | --- | --- | --- | --- |
 | disease_vs_healthy | 10 | 10 | 10 | - |
 | disease_vs_disease | 10 | 6 | 10 | - (all 4 resolved: paired tissue `30584008-4`, multi-valued variable `36381318-5`, self-scoped negation `39417117-26`, term birth `39569373-1`) |
 | treatment_exposure | 10 | 8 | 10 | - (both resolved: treated disease group `31815177-11` moved to Tier 3 `disease_vs_healthy`; shared exposure `37542310-2` moved to Tier 1 `disease_vs_healthy`) |
-| longitudinal_timepoint | 10 | 6 | 8 | 2 intentional exclusions (`33431578-2` recovered COVID-19 and `39642873-2` RSV convalescence), which carry `contrast_type = resolved_disease` under `longitudinal_timepoint` |
+| longitudinal_timepoint | 10 | 6 | 10 | - (all 4 resolved: `Pre-DM` `24013136-6`, `Pre-term` `25444008-2`, and cross-sectional healthy-vs-recovered `33431578-2` and `39642873-2` routed to `other` with `contrast_type = resolved_disease`) |
 | other | 10 | 10 | 10 | - |
 | unresolved | 10 | 3 | 10 | - (all 7 resolved: `Age at assessment`, calendar years `2008` vs `2010`, PD duration bands, lean Ghanaians vs Americans, pollution levels, levodopa regimens, and control adults by body site) |
 
-`contrast-orientation-v4` changes none of the 60 reviewed experiments, so agreement
-stays at 58/60. The one reviewed row that names HIV, 38162648-3 ("HIV+ MASLD-"
-against "HIV- MASLD+"), is still `unresolved`.
+Neither `contrast-orientation-v4` (#569) nor `contrast-orientation-v5` (#574) changes
+the two HIV rows in the 60-experiment sample (38162648-3, "HIV+ MASLD-" against "HIV-
+MASLD+", stays `unresolved`), while `contrast-orientation-v5` resolves the two
+remaining v2/v3 cross-sectional recovered-versus-healthy rows (`33431578-2` and
+`39642873-2`, routed from `longitudinal_timepoint` to `other` with
+`contrast_type = resolved_disease`), bringing agreement on the 60 reviewed experiments
+to **60/60 (100.0%)**.
 
 ## Retained, reversed, excluded and unresolved
 
@@ -314,8 +329,8 @@ Within the 2,335 analysed experiments (959 studies):
 | disease_vs_healthy | reversed | 1 | 1 |
 | disease_vs_disease | - | 252 | 166 |
 | treatment_exposure | - | 351 | 169 |
-| longitudinal_timepoint | - | 200 | 105 |
-| other | - | 321 | 123 |
+| longitudinal_timepoint | - | 191 | 99 |
+| other | - | 330 | 131 |
 | unresolved | - | 163 | 102 |
 
 Studies appear in more than one class when their experiments differ. 1,048
@@ -327,8 +342,8 @@ reversed; 1,124 are excluded as other classes and 163 are unresolved. Within the
 | --- | --- | --- | --- |
 | `case_vs_control_subject` | `tier_1_healthy_normal` | 821 | 491 |
 | `case_vs_control_subject` | `tier_2_condition_negative_screened` | 149 | 78 |
-| `case_vs_control_subject` | `tier_3_hospital_comorbid_or_tissue` | 23 | 15 |
-| `comorbidity_within_disease` | `tier_3_hospital_comorbid_or_tissue` | 33 | 18 |
+| `case_vs_control_subject` | `tier_3_hospital_comorbid_or_tissue` | 27 | 16 |
+| `comorbidity_within_disease` | `tier_3_hospital_comorbid_or_tissue` | 29 | 17 |
 | `paired_tissue_autologous` | `tier_3_hospital_comorbid_or_tissue` | 22 | 13 |
 
 ## Changes from `contrast-orientation-v3` to `-v4` (#569)
@@ -362,6 +377,37 @@ Tiers 1 + 2. Analysed `disease_vs_healthy` experiments whose condition names HIV
 contrast raised in the same issue, was already `paired_tissue_autologous` in Tier 3
 under v3 and is unchanged; what #569 adds for it is the guidance in "Selecting
 patients against controls" above.
+
+## Changes from `contrast-orientation-v4` to `-v5` (#574, #630, #672)
+
+Compared on the same pinned inputs, `contrast-orientation-v5` keeps the
+`disease_vs_healthy` class membership, Tier 1+2 subject controls (`970` experiments,
+`563` studies), and all 105 rows of `disease_control_comparison.tsv` identical to
+`contrast-orientation-v4`:
+
+- **Cross-sectional resolved-disease contrasts opposite a comparison group**: 16
+  experiments in the export (9 of them in the analysed corpus, across 8 studies,
+  including reviewed experiments `33431578-2` and `39642873-2`) move from
+  `longitudinal_timepoint` to `other` with `contrast_type = resolved_disease`, while
+  active-versus-recovered cohorts without a healthy comparison group stay
+  `longitudinal_timepoint`.
+- **Precursor lesions in control groups (`PRECURSOR_LESION_CONTROL`, #672)**: 4
+  colorectal-cancer experiments in Yachida et al. 2019 (`31171880-1` to `-4`, all in
+  the analysed corpus, 1 study, "healthy control (normal and a few polyps)" against
+  CRC stages) move within `tier_3_hospital_comorbid_or_tissue` from
+  `comorbidity_within_disease` (flagged `comorbidity_control`) to
+  `case_vs_control_subject` (flagged `hospital_or_symptomatic_control`), raising
+  `case_vs_control_subject` across Tiers 1–3 from 993 experiments (573 studies) to
+  997 experiments (574 studies). Explicitly negated adenoma controls
+  ("Adenoma-free (controls)", "Non-adenoma") remain Tier 1 or Tier 2.
+- **Hospital and symptomatic control flag (`hospital_or_symptomatic_control`)**: 23
+  experiments in the export (16 of them in the analysed corpus, across 10 studies,
+  including the 4 Yachida et al. 2019 contrasts above) carry the explicit
+  `hospital_or_symptomatic_control` flag in `flags` under `case_vs_control_subject`
+  (`tier_3_hospital_comorbid_or_tissue`).
+- **Symmetric reversed `treated_disease_group` rule and review-table validation**:
+  adds the reversed `Group 0` branch of `treated_disease_group` (requiring `strong_1`)
+  and enforces label and verdict consistency in `read_review` (60/60 `reviewed_agreed`).
 
 ## The oriented and control-tier subsets against the historical corpus
 
@@ -425,11 +471,11 @@ abundance in patients (#179), and none of the procedures has been calibrated (#1
 
 Known remaining limitations:
 
-- **Resolved disease is kept under `longitudinal_timepoint` with
+- **Resolved disease is excluded from `disease_vs_healthy` with
   `contrast_type = resolved_disease`.** Healthy controls against recovered COVID-19
-  cases (33431578-2) and against RSV convalescence (39642873-2) carry
-  `contrast_type = resolved_disease` so they are distinguishable from longitudinal
-  follow-up contrasts while remaining excluded from `disease_vs_healthy`.
+  cases (33431578-2) and against RSV convalescence (39642873-2) are routed to `other`
+  because no time contrast separates the two groups, while active disease against
+  recovered/post-COVID cohorts (34100340-2, 37119437-10) stays `longitudinal_timepoint`.
 - **Sibling experiments of one study can be read inconsistently when their group
   labels differ in specificity.** 33294219-1 is `other` and 33294219-2 is
   `disease_vs_disease`, though both compare hypertensive Han against hypertensive
@@ -487,10 +533,16 @@ strings copied verbatim, for every contrast that review
 [#291](https://github.com/CultureBotAI/microbial-trait-profiling/issues/291) found
 wrongly admitted to or wrongly kept out of the population, alongside the genuine
 comparisons the narrowed rules must not take away, as well as the v3 control-tier
-stratification and review-disagreement fixes ([#554](https://github.com/CultureBotAI/microbial-trait-profiling/issues/554))
-and the v4 HIV-status and treated-case readings, with the HIV contrasts that must stay
+stratification and review-disagreement fixes ([#554](https://github.com/CultureBotAI/microbial-trait-profiling/issues/554)),
+the v4 HIV-status and treated-case readings with the HIV contrasts that must stay
 `treatment_exposure` and the tumour-against-adjacent-tissue contrast that the tiers keep
-out of subject-level populations ([#569](https://github.com/CultureBotAI/microbial-trait-profiling/issues/569)).
+out of subject-level populations ([#569](https://github.com/CultureBotAI/microbial-trait-profiling/issues/569)),
+and the v5 symmetric treated-disease rule, cross-sectional resolved-disease routing,
+precursor-lesion control handling, `hospital_or_symptomatic_control` flag, and
+review-table invariants
+([#574](https://github.com/CultureBotAI/microbial-trait-profiling/issues/574),
+[#630](https://github.com/CultureBotAI/microbial-trait-profiling/issues/630),
+[#672](https://github.com/CultureBotAI/microbial-trait-profiling/issues/672)).
 
 The classifier, the reviews and this description were drafted with the assistance
 of coding agents (Claude Code and Antigravity) and require review by the author
