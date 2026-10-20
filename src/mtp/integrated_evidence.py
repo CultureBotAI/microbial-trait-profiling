@@ -1405,6 +1405,8 @@ class AssessmentStatus:
     #: where scenario and contrast-class detail belongs: attached to the scope it
     #: describes rather than summarised onto a result row.
     detail: tuple[tuple[str, str, str, str], ...] = ()
+    #: Identity and corpus-binding result for an imported assessment (#729).
+    source: dict[str, object] = field(default_factory=dict)
 
     def for_procedure(self, procedure: str) -> str:
         """The status that applies to one procedure, never another's verdict."""
@@ -1617,25 +1619,144 @@ def read_status(
         )
         return AssessmentStatus(issue, influence.verdicts, influence.default, influence.detail)
     if path is None or not path.exists():
-        return AssessmentStatus(issue=issue, verdicts={}, default=f"pending {issue}")
+        return AssessmentStatus(
+            issue=issue,
+            verdicts={},
+            default=f"pending {issue}",
+            source={"path": str(path) if path is not None else None, "binding": "not_supplied"},
+        )
     try:
         content = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
+    except (OSError, UnicodeError, json.JSONDecodeError):
         return AssessmentStatus(issue=issue, verdicts={}, default=f"unreadable {issue}")
     if not isinstance(content, dict):
         return _unreadable(issue, f"the file holds a JSON {type(content).__name__}, not an object")
-    if key == "calibration_status":
-        return _calibration_status(content, issue)
+    if key in {"calibration_status", "orientation_status"}:
+        return _bound_assessment(path, content, key, issue, expected_input_sha256)
     if key == "sensitivity_status":
         return _sensitivity_status(content, issue)
-    if key == "orientation_status":
-        return _orientation_status(content, issue)
     value = content.get(key)
     if value is None:
         return AssessmentStatus(issue, {}, f"pending {issue}")
     if not isinstance(value, str):
         return _unreadable(issue, f"{key} is a {type(value).__name__}, not a string")
     return AssessmentStatus(issue, {}, value, (("note", key, "status", value),))
+
+
+def _bound_assessment(
+    path: Path,
+    content: Mapping[str, object],
+    key: str,
+    issue: str,
+    expected: Mapping[str, str] | None,
+) -> AssessmentStatus:
+    """Keep historical producer identity and reject another corpus's assessment."""
+    calibration = key == "calibration_status"
+    claimed = content.get("inputs", {}) if calibration else content
+    if not isinstance(claimed, Mapping):
+        return _unreadable(issue, "assessment inputs are not an object")
+    source: dict[str, object] = {
+        "path": str(path.resolve()),
+        "sha256": _sha256(path),
+        "producer_version": content.get("version" if calibration else "classifier_version"),
+        "code_commit": content.get("code_commit"),
+        "analysis_source_sha256": claimed.get("analysis_source_sha256"),
+        "protocol": content.get("protocol") if calibration else None,
+        "protocol_sha256": claimed.get("protocol_sha256") if calibration else None,
+        "review": content.get("review") if not calibration else None,
+        "eligibility": content.get("eligibility") if calibration else None,
+        "input_sha256": {
+            name: claimed.get(name)
+            for name in ("profile_sha256", "experiments_sha256", "full_dump_sha256")
+        },
+        "expected_input_sha256": dict(expected) if expected is not None else None,
+        "binding": "not_checked" if expected is None else "matched",
+        "validation_scope": (
+            "Exact assessment input fingerprints against the integration inputs; "
+            "not an independent assessment of calibration, orientation or biological validity"
+            if expected is not None
+            else "No integration input fingerprints supplied; corpus compatibility not checked"
+        ),
+    }
+    if expected is not None:
+        for name in ("profile_sha256", "experiments_sha256", "full_dump_sha256"):
+            actual = claimed.get(name)
+            required = expected.get(name)
+            if (
+                not isinstance(actual, str)
+                or len(actual) != 64
+                or any(char not in "0123456789abcdef" for char in actual)
+                or not required
+                or actual != required
+            ):
+                source["binding"] = "mismatch_or_missing_identity"
+                return replace(
+                    _unreadable(issue, f"assessment {name} missing or mismatched"), source=source
+                )
+        identity_fields = {
+            "producer_version": source["producer_version"],
+            "code_commit": source["code_commit"],
+            "analysis_source_sha256": source["analysis_source_sha256"],
+        }
+        if calibration:
+            identity_fields["protocol_sha256"] = source["protocol_sha256"]
+        for name, identity in identity_fields.items():
+            if (
+                not isinstance(identity, str)
+                or not identity.strip()
+                or (
+                    name.endswith("sha256")
+                    and (
+                        len(identity) != 64
+                        or any(char not in "0123456789abcdef" for char in identity)
+                    )
+                )
+            ):
+                source["binding"] = "missing_producer_identity"
+                return replace(_unreadable(issue, f"assessment lacks valid {name}"), source=source)
+    status = (
+        _calibration_status(content, issue) if calibration else _orientation_status(content, issue)
+    )
+    if calibration and expected is not None and "guild_mcnemar" in status.verdicts:
+        # Identical files do not establish identical tested populations (#730).
+        # Earlier producers retained zero-total pairs for guild McNemar even
+        # though the integrated production method excludes those whole pairs.
+        eligibility = content.get("eligibility")
+        procedures = content.get("procedures")
+        guild = procedures.get("guild_mcnemar") if isinstance(procedures, Mapping) else None
+        policy = "whole_pair_nonzero_retained_totals_v1"
+        applicable = (
+            isinstance(eligibility, Mapping)
+            and eligibility.get("id") == policy
+            and isinstance(guild, Mapping)
+            and guild.get("eligibility_policy") == policy
+        )
+        source["guild_eligibility_applicability"] = "matched" if applicable else "not_established"
+        if not applicable:
+            status = replace(
+                status,
+                verdicts={
+                    **status.verdicts,
+                    "guild_mcnemar": f"not_applicable {issue}: guild eligibility missing or "
+                    "mismatched (#730); historical report retained",
+                },
+                detail=(
+                    *status.detail,
+                    (
+                        "procedure",
+                        "guild_mcnemar",
+                        "current_eligibility_applicability",
+                        "not_established",
+                    ),
+                ),
+            )
+    detail = (
+        *status.detail,
+        ("source", key, "path", str(source["path"])),
+        ("source", key, "sha256", str(source["sha256"])),
+        ("source", key, "corpus_binding", str(source["binding"])),
+    )
+    return replace(status, detail=detail, source=source)
 
 
 def assessed_procedure(method: str) -> str:
@@ -2335,12 +2456,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         experiments_sha256=_sha256(args.experiments_input),
     )
 
+    assessment_inputs = {
+        "profile_sha256": _sha256(args.profile_input),
+        "experiments_sha256": _sha256(args.experiments_input),
+        "full_dump_sha256": (
+            _sha256(args.full_dump_input) if args.full_dump_input.is_file() else ""
+        ),
+    }
     statuses = {
-        "calibration_status": read_status(args.calibration_status, "calibration_status", "#182"),
+        "calibration_status": read_status(
+            args.calibration_status,
+            "calibration_status",
+            "#182",
+            expected_input_sha256=assessment_inputs,
+        ),
         "sensitivity_status": read_status(args.sensitivity_status, "sensitivity_status", "#183"),
         "coverage_status": read_status(args.coverage_status, "coverage_status", "#184"),
         "orientation_status": read_status(
-            args.orientation_provenance, "orientation_status", "#188"
+            args.orientation_provenance,
+            "orientation_status",
+            "#188",
+            expected_input_sha256=assessment_inputs,
         ),
         "taxon_influence_status": read_status(
             args.influence_status,
@@ -2450,6 +2586,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "verdicts_by_procedure": status.verdicts,
                 "status_for_a_procedure_it_is_silent_about": status.default,
                 "detail_rows": len(status.detail),
+                "source": status.source,
             }
             for key, status in sorted(statuses.items())
         },

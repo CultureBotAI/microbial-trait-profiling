@@ -337,3 +337,20 @@ of #178.
 
 The protocol, code and this description were drafted with the assistance of a coding
 agent (Claude Code) and require review by the author before manuscript use.
+
+## Calibration-v3 eligibility amendment (#730, 2026-10-19)
+
+The historical results above use calibration-v2. Review found that its guild
+McNemar adapter retained experiment pairs with a zero annotation total on one
+side, although the integrated production analysis excludes the entire pair.
+On the current core, 94 pairs are affected: eligible support is 939 studies and
+4,482 profiles, compared with the 959 studies and 4,670 profiles used to generate
+the flip assignments. Guild discordant study counts change from 420/290 to
+420/293. A v2 guild verdict therefore does not certify the production procedure.
+
+Calibration-v3 applies the existing whole-pair exclusion inside each guild
+replicate and exports its policy and support. It preserves the complete loaded
+corpus for deterministic flip assignment generation, the seed 182, 1,400
+replicates per null, 400 per injected scenario and the acceptance criteria.
+The protocol amendment records what was already observed. Historical outputs
+remain historical; a fresh full-budget execution is required for a v3 finding.
