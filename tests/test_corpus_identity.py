@@ -363,6 +363,7 @@ def test_export_trait_enrichment_rankings_uses_n_profiles_tested_denominator() -
         "fdr_q",
         total_profiles=50,
         fdr_scope="global",
+        complete_results=True,
     )
     row = out.iloc[0]
     assert int(row["testable_profiles"]) == 50
@@ -370,6 +371,10 @@ def test_export_trait_enrichment_rankings_uses_n_profiles_tested_denominator() -
     assert int(row["hit_rows"]) == 2
     assert float(row["prevalence"]) == pytest.approx(0.5)
     assert row["prevalence_summary"] == "2 / 4"
+
+    # Significant-only inputs carry a flag too; it is not proof of completeness.
+    selected = mod.build_overall_table(df[df["is_significant"]], "fdr_q")
+    assert selected.iloc[0]["prevalence_summary"] == "2 / 50"
 
     with pytest.raises(ValueError, match="Unsupported fdr_scope"):
         mod.build_overall_table(
@@ -399,7 +404,25 @@ def test_rerun_recipe_hygiene_invariants() -> None:
         encoding="utf-8"
     )
     assert 'just table1-taxon-influence-from "data/kg-microbe" "data/derived"' in noel_script
+    # The arms read the canonical human table, and check it against the committed .gz (#656)
+    assert (
+        "study-trait-profiles: taxa-trait-matrix\n"
+        '\tuv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" '
+        "--drop-empty-traits\n" in justfile_text
+    )
+    jed_script = (repo_root / "scripts" / "rerun_composition_arm_jed.sh").read_text(
+        encoding="utf-8"
+    )
+    for script in (noel_script, jed_script):
+        assert "\njust study-trait-profiles-check\n" in script
     assert "\njust table1-taxon-influence\n" not in noel_script
+    # Figures are drawn headless, whatever the session's display (#719)
+    assert '\nexport MPLBACKEND := "Agg"\n' in justfile_text
+    ilyas_script = (repo_root / "scripts" / "rerun_enrichment_ora_arm_ilyas.sh").read_text(
+        encoding="utf-8"
+    )
+    for script in (noel_script, jed_script, ilyas_script):
+        assert "\nexport MPLBACKEND=Agg\n" in script
 
     prov_path = repo_root / "data" / "raw" / "download_provenance.json"
     assert prov_path.exists()

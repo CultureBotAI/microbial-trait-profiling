@@ -60,6 +60,8 @@ The selected traits are enriched in increased profiles relative to decreased pro
 | Fusobacterium nucleatum | Ovarian cancer | Other | 4 / 1 | 2 |
 | Escherichia coli | Obesity | Feces | 4 / 10 | 2 |
 
+Target-taxon occurrence views (`target_taxa_condition_breakdown_bar.png`, `condition_target_taxa_stacked_bar.png`, `candidate_taxa_profile_occurrences.tsv` and `candidate_taxa_condition_direction.tsv`) count human-host profiles only, the corpus of the profile metadata. 72 occurrences (18 decreased, 54 increased) in 63 profiles from 19 studies come from experiments whose host is not recorded as Homo sapiens: Mus musculus 56, Rattus norvegicus 7, Sus scrofa domesticus 4, Bos taurus 2, Canis lupus familiaris 2, Elephas maximus 1. They have no profile metadata, so they are not counted under any condition; `candidate_taxa_excluded_host_occurrences.tsv` lists them.
+
 ## Contexts With Aerobe v2 Trait Enrichment in Increased Profiles
 
 | condition | profiles | studies | increased - decreased z | paired d | paired p | matched pairs | increased mean trait z |
@@ -139,6 +141,7 @@ For the top condition signals, this table uses all taxa observed in the increase
 - `candidate_taxa_trait_presence.tsv`
 - `candidate_taxa_condition_direction.tsv`
 - `candidate_taxa_profile_occurrences.tsv`
+- `candidate_taxa_excluded_host_occurrences.tsv`
 - `kg_microbe_candidate_taxon_universe.tsv`
 - `condition_inferred_guild_summary.tsv`
 - `condition_inferred_guild_trait_evidence.tsv`

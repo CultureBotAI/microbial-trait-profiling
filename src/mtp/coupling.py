@@ -159,13 +159,21 @@ def compute_composition_arm(
     stats_list: list[dict[str, float]] = []
     for t in focal_traits:
         diffs = (pvt_z[(t, "inc")] - pvt_z[(t, "dec")]).to_numpy(dtype=float)
-        tt = stats.ttest_1samp(diffs, 0.0)
-        p_val = float(tt.pvalue) if not np.isnan(tt.pvalue) else 1.0
+        if len(diffs) > 1 and np.all(diffs == diffs[0]):
+            # Evaluate the exact zero-variance limits without asking SciPy to
+            # subtract identical observations (#551). Do not approximate
+            # near-constant samples or change their ordinary t-test.
+            p_val = 1.0 if diffs[0] == 0.0 else 0.0
+            t_stat = 0.0 if diffs[0] == 0.0 else float(np.copysign(np.inf, diffs[0]))
+        else:
+            tt = stats.ttest_1samp(diffs, 0.0)
+            p_val = float(tt.pvalue) if not np.isnan(tt.pvalue) else 1.0
+            t_stat = float(tt.statistic) if not np.isnan(tt.statistic) else 0.0
         p_vals.append(p_val)
         stats_list.append(
             {
                 "effect": float(np.mean(diffs)),
-                "t_stat": float(tt.statistic) if not np.isnan(tt.statistic) else 0.0,
+                "t_stat": t_stat,
                 "p_val": p_val,
             }
         )
@@ -296,8 +304,14 @@ def compute_ora_arm(
         if n_tested > 0:
             q_arr = benjamini_hochberg(valid_p)
             hits_q05 = float(np.sum(np.array(q_arr) <= 0.05))
-            _, fisher_p = stats.combine_pvalues(valid_p, method="fisher")
-            fisher_p_val = float(fisher_p) if not np.isnan(fisher_p) else 1.0
+            if 0.0 in valid_p:
+                # Fisher's statistic is +inf if any component is zero, so its
+                # upper-tail probability is zero. Preserve this limit rather
+                # than clamping underflowed probabilities or taking log(0).
+                fisher_p_val = 0.0
+            else:
+                _, fisher_p = stats.combine_pvalues(valid_p, method="fisher")
+                fisher_p_val = float(fisher_p) if not np.isnan(fisher_p) else 1.0
         else:
             hits_q05 = 0.0
             fisher_p_val = 1.0

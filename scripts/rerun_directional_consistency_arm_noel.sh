@@ -17,6 +17,8 @@
 # ==============================================================================
 
 set -euo pipefail
+# Headless Agg, as every recipe uses, for the scripts this arm runs directly too (#719)
+export MPLBACKEND=Agg
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_ROOT}"
@@ -34,6 +36,8 @@ for required_file in \
         exit 1
     fi
 done
+# The arms read the canonical human profile table committed as a .gz (#656).
+just study-trait-profiles-check
 
 echo "=== [1/9] Running full-manifest study sign-test directional screen (#255, #265) ==="
 just trait-direction-screen

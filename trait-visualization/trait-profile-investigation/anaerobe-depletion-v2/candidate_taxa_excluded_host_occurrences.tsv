@@ -1,0 +1,61 @@
+study_id	experiment_id	signature_id	direction	taxon_id	taxon_name	taxonomic_rank	profile_id	target_taxon_name	host_species
+bsdb:23724144	bsdb:23724144-1	bsdb:23724144-1-2	decreased	NCBITaxon:39491	Agathobacter rectalis	species	bsdb:23724144|bsdb:23724144-1|dec	Agathobacter rectalis	Rattus norvegicus
+bsdb:23724144	bsdb:23724144-2	bsdb:23724144-2-2	decreased	NCBITaxon:39491	Agathobacter rectalis	species	bsdb:23724144|bsdb:23724144-2|dec	Agathobacter rectalis	Rattus norvegicus
+bsdb:34401412	bsdb:34401412-2	bsdb:34401412-2-1	increased	NCBITaxon:39491	Agathobacter rectalis	species	bsdb:34401412|bsdb:34401412-2|inc	Agathobacter rectalis	Mus musculus
+bsdb:34401412	bsdb:34401412-4	bsdb:34401412-4-1	increased	NCBITaxon:39491	Agathobacter rectalis	species	bsdb:34401412|bsdb:34401412-4|inc	Agathobacter rectalis	Mus musculus
+bsdb:34401412	bsdb:34401412-6	bsdb:34401412-6-1	increased	NCBITaxon:39491	Agathobacter rectalis	species	bsdb:34401412|bsdb:34401412-6|inc	Agathobacter rectalis	Mus musculus
+bsdb:34401412	bsdb:34401412-7	bsdb:34401412-7-1	increased	NCBITaxon:39491	Agathobacter rectalis	species	bsdb:34401412|bsdb:34401412-7|inc	Agathobacter rectalis	Mus musculus
+bsdb:36171758	bsdb:36171758-9	bsdb:36171758-9-1	increased	NCBITaxon:39491	Agathobacter rectalis	species	bsdb:36171758|bsdb:36171758-9|inc	Agathobacter rectalis	Bos taurus
+bsdb:38627869	bsdb:38627869-12	bsdb:38627869-12-1	increased	NCBITaxon:39491	Agathobacter rectalis	species	bsdb:38627869|bsdb:38627869-12|inc	Agathobacter rectalis	Sus scrofa domesticus
+bsdb:33485388	bsdb:33485388-1	bsdb:33485388-1-1	increased	NCBITaxon:39488	Anaerobutyricum hallii	species	bsdb:33485388|bsdb:33485388-1|inc	Anaerobutyricum hallii	Theropithecus gelada
+bsdb:38115159	bsdb:38115159-3	bsdb:38115159-3-2	decreased	NCBITaxon:39488	Anaerobutyricum hallii	species	bsdb:38115159|bsdb:38115159-3|dec	Anaerobutyricum hallii	Sus scrofa domesticus
+bsdb:38317217	bsdb:38317217-5	bsdb:38317217-5-1	increased	NCBITaxon:39488	Anaerobutyricum hallii	species	bsdb:38317217|bsdb:38317217-5|inc	Anaerobutyricum hallii	Sus scrofa domesticus
+bsdb:39953051	bsdb:39953051-3	bsdb:39953051-3-1	increased	NCBITaxon:39488	Anaerobutyricum hallii	species	bsdb:39953051|bsdb:39953051-3|inc	Anaerobutyricum hallii	Hoolock tianxing
+bsdb:39953051	bsdb:39953051-9	bsdb:39953051-9-1	increased	NCBITaxon:39488	Anaerobutyricum hallii	species	bsdb:39953051|bsdb:39953051-9|inc	Anaerobutyricum hallii	Nomascus hainanus
+bsdb:24828543	bsdb:24828543-1	bsdb:24828543-1-2	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:24828543|bsdb:24828543-1|dec	Faecalibacterium prausnitzii	Mus musculus
+bsdb:24828543	bsdb:24828543-1	bsdb:24828543-1-1	increased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:24828543|bsdb:24828543-1|inc	Faecalibacterium prausnitzii	Mus musculus
+bsdb:24828543	bsdb:24828543-2	bsdb:24828543-2-2	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:24828543|bsdb:24828543-2|dec	Faecalibacterium prausnitzii	Mus musculus
+bsdb:24828543	bsdb:24828543-3	bsdb:24828543-3-1	increased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:24828543|bsdb:24828543-3|inc	Faecalibacterium prausnitzii	Mus musculus
+bsdb:24828543	bsdb:24828543-4	bsdb:24828543-4-2	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:24828543|bsdb:24828543-4|dec	Faecalibacterium prausnitzii	Mus musculus
+bsdb:24828543	bsdb:24828543-5	bsdb:24828543-5-1	increased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:24828543|bsdb:24828543-5|inc	Faecalibacterium prausnitzii	Mus musculus
+bsdb:24828543	bsdb:24828543-6	bsdb:24828543-6-1	increased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:24828543|bsdb:24828543-6|inc	Faecalibacterium prausnitzii	Mus musculus
+bsdb:31759120	bsdb:31759120-1	bsdb:31759120-1-2	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:31759120|bsdb:31759120-1|dec	Faecalibacterium prausnitzii	Gallus gallus
+bsdb:33178173	bsdb:33178173-4	bsdb:33178173-4-1	increased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:33178173|bsdb:33178173-4|inc	Faecalibacterium prausnitzii	Felis catus
+bsdb:36362360	bsdb:36362360-4	bsdb:36362360-4-1	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:36362360|bsdb:36362360-4|dec	Faecalibacterium prausnitzii	Rattus norvegicus
+bsdb:37936065	bsdb:37936065-1	bsdb:37936065-1-1	increased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:37936065|bsdb:37936065-1|inc	Faecalibacterium prausnitzii	Ovis aries
+bsdb:38317217	bsdb:38317217-5	bsdb:38317217-5-1	increased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:38317217|bsdb:38317217-5|inc	Faecalibacterium prausnitzii	Sus scrofa domesticus
+bsdb:38317217	bsdb:38317217-6	bsdb:38317217-6-1	increased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:38317217|bsdb:38317217-6|inc	Faecalibacterium prausnitzii	Sus scrofa domesticus
+bsdb:39277616	bsdb:39277616-2	bsdb:39277616-2-2	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:39277616|bsdb:39277616-2|dec	Faecalibacterium prausnitzii	Mus musculus
+bsdb:39277616	bsdb:39277616-4	bsdb:39277616-4-2	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:39277616|bsdb:39277616-4|dec	Faecalibacterium prausnitzii	Mus musculus
+bsdb:39976263	bsdb:39976263-11	bsdb:39976263-11-2	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:39976263|bsdb:39976263-11|dec	Faecalibacterium prausnitzii	Mus musculus
+bsdb:39976263	bsdb:39976263-1	bsdb:39976263-1-1	increased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:39976263|bsdb:39976263-1|inc	Faecalibacterium prausnitzii	Mus musculus
+bsdb:39976263	bsdb:39976263-3	bsdb:39976263-3-2	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:39976263|bsdb:39976263-3|dec	Faecalibacterium prausnitzii	Mus musculus
+bsdb:39976263	bsdb:39976263-4	bsdb:39976263-4-2	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:39976263|bsdb:39976263-4|dec	Faecalibacterium prausnitzii	Mus musculus
+bsdb:39976263	bsdb:39976263-6	bsdb:39976263-6-2	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:39976263|bsdb:39976263-6|dec	Faecalibacterium prausnitzii	Mus musculus
+bsdb:39976263	bsdb:39976263-7	bsdb:39976263-7-2	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	bsdb:39976263|bsdb:39976263-7|dec	Faecalibacterium prausnitzii	Mus musculus
+bsdb:33485388	bsdb:33485388-1	bsdb:33485388-1-1	increased	NCBITaxon:39485	Lachnospira eligens	species	bsdb:33485388|bsdb:33485388-1|inc	Lachnospira eligens	Theropithecus gelada
+bsdb:38317217	bsdb:38317217-5	bsdb:38317217-5-1	increased	NCBITaxon:39485	Lachnospira eligens	species	bsdb:38317217|bsdb:38317217-5|inc	Lachnospira eligens	Sus scrofa domesticus
+bsdb:39953051	bsdb:39953051-3	bsdb:39953051-3-1	increased	NCBITaxon:39485	Lachnospira eligens	species	bsdb:39953051|bsdb:39953051-3|inc	Lachnospira eligens	Hoolock tianxing
+bsdb:28390422	bsdb:28390422-1	bsdb:28390422-1-1	increased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:28390422|bsdb:28390422-1|inc	Roseburia intestinalis	Mus musculus
+bsdb:28390422	bsdb:28390422-2	bsdb:28390422-2-1	increased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:28390422|bsdb:28390422-2|inc	Roseburia intestinalis	Mus musculus
+bsdb:29302014	bsdb:29302014-3	bsdb:29302014-3-2	decreased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:29302014|bsdb:29302014-3|dec	Roseburia intestinalis	Mus musculus
+bsdb:34225483	bsdb:34225483-6	bsdb:34225483-6-2	decreased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:34225483|bsdb:34225483-6|dec	Roseburia intestinalis	Mus musculus
+bsdb:36253847	bsdb:36253847-10	bsdb:36253847-10-1	increased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:36253847|bsdb:36253847-10|inc	Roseburia intestinalis	Mus musculus
+bsdb:36253847	bsdb:36253847-11	bsdb:36253847-11-1	increased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:36253847|bsdb:36253847-11|inc	Roseburia intestinalis	Mus musculus
+bsdb:36253847	bsdb:36253847-12	bsdb:36253847-12-2	decreased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:36253847|bsdb:36253847-12|dec	Roseburia intestinalis	Mus musculus
+bsdb:36253847	bsdb:36253847-13	bsdb:36253847-13-3	decreased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:36253847|bsdb:36253847-13|dec	Roseburia intestinalis	Mus musculus
+bsdb:36253847	bsdb:36253847-18	bsdb:36253847-18-1	decreased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:36253847|bsdb:36253847-18|dec	Roseburia intestinalis	Mus musculus
+bsdb:36253847	bsdb:36253847-19	bsdb:36253847-19-1	decreased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:36253847|bsdb:36253847-19|dec	Roseburia intestinalis	Mus musculus
+bsdb:36253847	bsdb:36253847-4	bsdb:36253847-4-2	decreased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:36253847|bsdb:36253847-4|dec	Roseburia intestinalis	Mus musculus
+bsdb:36253847	bsdb:36253847-5	bsdb:36253847-5-1	decreased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:36253847|bsdb:36253847-5|dec	Roseburia intestinalis	Mus musculus
+bsdb:36253847	bsdb:36253847-6	bsdb:36253847-6-1	decreased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:36253847|bsdb:36253847-6|dec	Roseburia intestinalis	Mus musculus
+bsdb:36253847	bsdb:36253847-7	bsdb:36253847-7-2	decreased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:36253847|bsdb:36253847-7|dec	Roseburia intestinalis	Mus musculus
+bsdb:36253847	bsdb:36253847-7	bsdb:36253847-7-1	increased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:36253847|bsdb:36253847-7|inc	Roseburia intestinalis	Mus musculus
+bsdb:39277616	bsdb:39277616-2	bsdb:39277616-2-2	decreased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:39277616|bsdb:39277616-2|dec	Roseburia intestinalis	Mus musculus
+bsdb:39953051	bsdb:39953051-3	bsdb:39953051-3-1	increased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:39953051|bsdb:39953051-3|inc	Roseburia intestinalis	Hoolock tianxing
+bsdb:39976263	bsdb:39976263-1	bsdb:39976263-1-1	increased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:39976263|bsdb:39976263-1|inc	Roseburia intestinalis	Mus musculus
+bsdb:39976263	bsdb:39976263-6	bsdb:39976263-6-2	decreased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:39976263|bsdb:39976263-6|dec	Roseburia intestinalis	Mus musculus
+bsdb:39976263	bsdb:39976263-7	bsdb:39976263-7-2	decreased	NCBITaxon:166486	Roseburia intestinalis	species	bsdb:39976263|bsdb:39976263-7|dec	Roseburia intestinalis	Mus musculus
+bsdb:28390422	bsdb:28390422-1	bsdb:28390422-1-1	increased	NCBITaxon:360807	Roseburia inulinivorans	species	bsdb:28390422|bsdb:28390422-1|inc	Roseburia inulinivorans	Mus musculus
+bsdb:28390422	bsdb:28390422-2	bsdb:28390422-2-1	increased	NCBITaxon:360807	Roseburia inulinivorans	species	bsdb:28390422|bsdb:28390422-2|inc	Roseburia inulinivorans	Mus musculus
+bsdb:38317217	bsdb:38317217-5	bsdb:38317217-5-1	increased	NCBITaxon:360807	Roseburia inulinivorans	species	bsdb:38317217|bsdb:38317217-5|inc	Roseburia inulinivorans	Sus scrofa domesticus

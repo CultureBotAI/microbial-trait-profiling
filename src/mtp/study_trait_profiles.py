@@ -14,6 +14,7 @@ import yaml
 
 from mtp.count_input import COMPLETE_COUNT_MODE, CountInputMode, taxa_trait_count_reader
 from mtp.paths import DERIVED_DATA_DIR, STUDY_DATA_DIR
+from mtp.trait_guilds import MEDIADIVE_MARKER
 
 DEFAULT_TAXA_TRAIT_MATRIX_PATH = DERIVED_DATA_DIR / "taxa_trait_matrix.tsv"
 DEFAULT_OUTPUT_PATH = DERIVED_DATA_DIR / "study_trait_profiles_wide.tsv"
@@ -48,6 +49,7 @@ class StudyTraitProfileStats:
     study_dir: Path
     taxa_trait_matrix_path: Path
     output_format: ProfileFormat
+    dropped_trait_columns: tuple[str, ...] = ()
 
 
 def _as_text(value: Any) -> str:
@@ -243,8 +245,14 @@ def create_study_trait_profiles(
     binary: bool = False,
     include_taxa_count: bool = False,
     host_species: str | None = None,
+    drop_empty_traits: bool = False,
 ) -> StudyTraitProfileStats:
-    """Create a study profile TSV by aggregating taxa-trait presence from YAML taxa."""
+    """Create a study profile TSV by aggregating taxa-trait presence from YAML taxa.
+
+    ``drop_empty_traits`` leaves out the trait columns that are zero in every written
+    profile. With ``host_species="Homo sapiens"`` it writes the canonical table the
+    analyses use, the one committed as ``study_trait_profiles_wide.tsv.gz`` (#656).
+    """
     if output_format not in PROFILE_FORMATS:
         raise ValueError(f"Unsupported output format: {output_format}")
     if include_taxa_count and output_format == "long":
@@ -259,7 +267,9 @@ def create_study_trait_profiles(
     if not taxa_trait_matrix_path.exists():
         raise FileNotFoundError(f"Taxa trait matrix TSV not found: {taxa_trait_matrix_path}")
 
-    is_ora = binary or include_taxa_count or (host_species is not None)
+    # Only the ORA counts go to the ORA path; a host filter alone does not, so the canonical
+    # human table cannot overwrite the ORA arm's input (#656).
+    is_ora = binary or include_taxa_count
     if output_path is None:
         output_path = _default_output_path(output_format, is_ora=is_ora)
     elif output_path == DEFAULT_OUTPUT_PATH and is_ora:
@@ -277,6 +287,16 @@ def create_study_trait_profiles(
         binary=binary,
     )
 
+    trait_columns = matrix.trait_columns
+    dropped: tuple[str, ...] = ()
+    if drop_empty_traits:
+        dropped = tuple(
+            column
+            for column in trait_columns
+            if not any(counts.get(column, 0) for counts in profile_counts.values())
+        )
+        trait_columns = [column for column in trait_columns if column not in set(dropped)]
+
     if output_format == "wide":
         profile_taxa_counts = None
         if include_taxa_count:
@@ -289,15 +309,15 @@ def create_study_trait_profiles(
         write_wide_profiles(
             output_path,
             profile_counts,
-            matrix.trait_columns,
+            trait_columns,
             profile_taxa_counts=profile_taxa_counts,
         )
     else:
-        write_long_profiles(output_path, profile_counts, matrix.trait_columns)
+        write_long_profiles(output_path, profile_counts, trait_columns)
 
     return StudyTraitProfileStats(
         profiles=len(profile_counts),
-        trait_columns=len(matrix.trait_columns),
+        trait_columns=len(trait_columns),
         taxon_observations=taxon_observations,
         profile_taxa=sum(len(taxon_ids) for taxon_ids in profile_taxa.values()),
         matched_profile_taxa=matched_profile_taxa,
@@ -307,6 +327,7 @@ def create_study_trait_profiles(
         study_dir=study_dir,
         taxa_trait_matrix_path=taxa_trait_matrix_path,
         output_format=output_format,
+        dropped_trait_columns=dropped,
     )
 
 
@@ -371,6 +392,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional filter by host species (e.g. 'Homo sapiens').",
     )
+    parser.add_argument(
+        "--drop-empty-traits",
+        action="store_true",
+        help="Leave out trait columns that are zero in every written profile.",
+    )
     return parser
 
 
@@ -387,6 +413,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             binary=args.binary,
             include_taxa_count=args.include_taxa_count,
             host_species=args.host_species,
+            drop_empty_traits=args.drop_empty_traits,
         )
     except ValueError as exc:
         parser.error(str(exc))
@@ -394,6 +421,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"Wrote {stats.output_format} study trait profiles: {stats.output_path}")
     print(f"Profiles: {stats.profiles}")
     print(f"Trait columns: {stats.trait_columns}")
+    if stats.dropped_trait_columns:
+        # Today every dropped column is a MediaDive medium; name any other, since the
+        # trait screen reads its family from this header (#670)
+        others = [c for c in stats.dropped_trait_columns if MEDIADIVE_MARKER not in c.lower()]
+        print(
+            f"Trait columns dropped as empty in every profile: {len(stats.dropped_trait_columns)}"
+            f" ({len(stats.dropped_trait_columns) - len(others)} MediaDive)"
+        )
+        if others:
+            print(f"Non-MediaDive trait columns dropped: {', '.join(others)}")
     print(f"Taxon observations in YAML: {stats.taxon_observations}")
     print(f"Profile taxa summed: {stats.profile_taxa}")
     print(f"Matched profile taxa: {stats.matched_profile_taxa}")

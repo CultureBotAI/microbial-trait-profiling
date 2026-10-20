@@ -1,5 +1,10 @@
 set shell := ["bash", "-cu"]
 
+# Every recipe draws with matplotlib's headless Agg backend. The macOS backend lays a figure
+# out at the display's pixel ratio, so the same command wrote different bytes in different
+# sessions (#719).
+export MPLBACKEND := "Agg"
+
 schema := "schema/mtp.yaml"
 legacy_schema := "schema/bsdbng.yaml"
 lintconfig := "schema/.linkmllint.yaml"
@@ -114,6 +119,11 @@ format:
 trait-profile-investigation:
 	uv run python scripts/regenerate_trait_profile_investigation.py
 
+# Native pooled statistics only, with explicit zero-total eligibility (#551).
+[positional-arguments]
+trait-profile-pooled-stats *ARGS:
+	uv run python scripts/create_trait_profile_infographic.py --stats-only --output-dir data/derived "$@"
+
 # Regenerate six-trait pattern and full-table signed direction heatmaps.
 six-shared-trait-heatmaps:
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py
@@ -149,7 +159,10 @@ oral-six-trait-heatmap:
 pd-cellulose-analysis:
 	uv run python scripts/create_pd_cellulose_analysis.py
 
-# Trace PD lollipop traits to observed taxa and profile evidence.
+# Trace all six PD lollipop traits, each with its observed direction, to observed taxa and
+# profile evidence, and record the PD fecal profile set and the hashes of the inputs read and
+# the tables written, which the readers check (#584, #693, #703). After a data/derived change,
+# run `just trait-heatmaps` and `just pd-cellulose-analysis` first (PD-cellulose/README.md).
 pd-trait-taxa:
 	uv run python scripts/lookup_pd_trait_taxa.py
 
@@ -158,7 +171,8 @@ pd-trait-taxa-heatmap:
 	uv run python scripts/create_pd_six_trait_taxon_heatmap.py
 	uv run python scripts/create_pd_exploratory_taxa_influence_heatmap.py
 
-# Refresh PD trait contributor dot heatmap with specificity and co-carriage checks.
+# Build PD trait contributor tables from the Table 1 contribution ledger (#190) on the pinned
+# KG in data/kg-microbe, then draw the dot heatmap and co-carriage network (#584).
 pd-trait-contributors:
 	uv run python scripts/create_pd_trait_contributors.py
 
@@ -215,6 +229,10 @@ typecheck:
 test:
 	uv run pytest
 
+# Analyzer, ranking exporter, and complete-universe density regression checks (#664).
+test-stratification:
+	uv run pytest tests/test_stratification.py tests/test_enrichment_pipeline.py tests/test_corpus_identity.py
+
 test-cov:
 	uv run pytest --cov=mtp --cov=bsdbng --cov-report=term-missing
 
@@ -235,6 +253,12 @@ download-kg:
 
 download-kg-force:
 	uv run --extra kg python scripts/download_kg_microbe.py --force
+
+# Check data/kg-microbe against the md5s pinned in methods/table1_taxon_influence_protocol.json,
+# which the Table 1 influence audit and `just pd-trait-contributors` read. Refetch a changed
+# file with `just download-kg-force`: `just download-kg` compares sizes only.
+verify-pinned-kg:
+	uv run python -m mtp.contribution_inputs
 
 # Check that every identifier the guild, gram-stain and Table 1 figures group exists
 # in data/kg-microbe/merged-kg_nodes.tsv with its expected label (run `just download-kg` first).
@@ -323,15 +347,15 @@ deck_schema := "data/derived/figure_review_2026-09-21/provenance/figure_provenan
 # The selected-figure deck: the HTML, slide manifest and assets in {{deck_slides}}, the
 # figure provenance YAML in {{deck_provenance}} (validated against its LinkML schema),
 # the PDF, and deck_build_status.json recording that validation and printing succeeded.
-# Many inputs are gitignored local outputs (earlier deck manifests, svg_sources/,
-# data/derived figures), so a fresh clone cannot build it. The build refuses to replace
-# an existing deck without --overwrite (back up slides/ and provenance/ first) and
-# refuses contrast-orientation inputs other than the version its typed numbers describe
-# (#573, #579, #592). The plates and cellulose_decr figures come from this checkout, where
-# their recipes draw them; the rest from --input-root. The build checks every committed
-# file a slide links or quotes against the revision the slide cites, from `git ls-tree`
-# listings written here, and refuses when one differs; --allow-unverified builds a marked
-# review deck instead (#637). Choose other folders with the variables, e.g.
+# Many inputs are gitignored local outputs (earlier deck manifests, data/derived figures),
+# so a fresh clone cannot build it. The build refuses to replace an existing deck without
+# --overwrite (back up slides/ and provenance/ first) (#573, #592). The slide text reads
+# its numbers from the rerun's tables (#579). The plates and cellulose_decr figures come
+# from this checkout, where their recipes draw them; the rest from --input-root. Slides
+# whose code was never merged link it at its pull request (#614). The build checks every
+# committed file a slide links or quotes against the revision the slide cites, from
+# `git ls-tree` listings written here, and refuses when one differs; --allow-unverified
+# builds a marked review deck instead (#637). Choose other folders with the variables, e.g.
 # `just deck_slides=/tmp/s deck_provenance=/tmp/p figure-review-deck`, so that every
 # step uses them; --output-dir and --provenance-dir are refused here. A worktree has no
 # data/derived, so there also set deck_schema= to the schema beside the input root's YAML.
@@ -372,10 +396,13 @@ figure-review-deck *ARGS:
 	if [ "$overwrite" = 1 ]; then
 		rm -f "$slides/deck_build_status.json"
 	fi
-	# The committed files at each revision the slides cite, for the build to check (#637)
+	# The committed files at each revision the slides cite, for the build to check (#637).
+	# The unmerged pull requests' commits are fetched when this clone lacks them (#614); a
+	# fetch slower than 1 kB/s for 30 s gives up, and the build then refuses that ref (#686).
 	trees="$(mktemp -d)"
 	trap 'rm -rf "$trees"' EXIT
 	for ref in $(uv run python scripts/build_slide_deck.py --print-refs); do
+		git cat-file -e "$ref^{commit}" 2>/dev/null || git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --quiet origin "$ref" || true
 		git ls-tree -r -z --full-tree "$ref" > "$trees/$ref.tree" || rm -f "$trees/$ref.tree"
 	done
 	uv run python scripts/build_slide_deck.py --output-dir "$slides" --provenance-dir "$provenance" --git-trees "$trees" "$@"
@@ -452,8 +479,38 @@ html-to-pdf HTML PDF:
 taxa-trait-matrix: download-kg study-tsvs
 	uv run python scripts/create_taxa_trait_matrix.py
 
+# The analyses read human hosts only, without the trait columns that are zero in every
+# human profile, as committed in data/derived/study_trait_profiles_wide.tsv.gz (#656).
+# Build the canonical study trait profile table (human hosts, non-empty trait columns).
 study-trait-profiles: taxa-trait-matrix
-	uv run python scripts/create_study_trait_profiles.py
+	uv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" --drop-empty-traits
+
+# After an intended input change, such as a BugSigDB release or a new KG pin, refresh the
+# committed copy with `just study-trait-profiles-refresh-gz` and commit it (#667).
+# Check that the profile table is the committed canonical one (#656).
+study-trait-profiles-check:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	table=data/derived/study_trait_profiles_wide.tsv
+	committed="$table.gz"
+	if [ ! -s "$committed" ] || ! gzip -t "$committed" 2>/dev/null; then
+		echo "$committed is missing, empty or not gzip; restore it: git checkout -- $committed (#667)" >&2
+		exit 1
+	fi
+	if [ ! -s "$table" ]; then
+		echo "$table is missing or empty; run just study-trait-profiles, or gzip -dc $committed > $table" >&2
+		exit 1
+	fi
+	if ! gzip -dc "$committed" | cmp -s - "$table"; then
+		echo "$table differs from the committed $committed (#656)." >&2
+		echo "  Unintended: run just study-trait-profiles, or gzip -dc $committed > $table" >&2
+		echo "  After an intended input change: just study-trait-profiles-refresh-gz, then commit $committed" >&2
+		exit 1
+	fi
+
+# Replace the committed canonical profile table with the current one, then commit it (#667).
+study-trait-profiles-refresh-gz:
+	gzip -9 -n -c data/derived/study_trait_profiles_wide.tsv > data/derived/study_trait_profiles_wide.tsv.gz
 
 # Source-count reconciliation and rule-declared genus/family influence (#190).
 # The default entry point declares the complete clean-clone input chain.
@@ -521,20 +578,26 @@ export-rankings: analyze analyze-depletion
 
 # Run the ORA harness benchmark check suite over synthetic null and mixed scenarios (Refs #263, #343, #348, #351).
 calibrate replicates="10" seed="42" scenario="all": study-trait-profiles-ora
-	just timed calibrate "uv run python -m mtp.ora_calibration.harness \
-	  --profiles data/derived/study_trait_profiles_ora_wide.tsv \
-	  --taxa-matrix data/derived/taxa_trait_matrix.tsv \
-	  --output-dir data/derived/ora_calibration \
-	  --replicates {{replicates}} \
-	  --seed {{seed}} \
-	  --scenario {{scenario}} \
+	just calibrate-from data/derived/study_trait_profiles_ora_wide.tsv data/derived/taxa_trait_matrix.tsv data/derived/ora_calibration "{{replicates}}" "{{seed}}" "{{scenario}}"
+
+# Calibrate existing, explicitly selected products without rebuilding another corpus (#551).
+[positional-arguments]
+calibrate-from profiles taxa output replicates="10" seed="42" scenario="all":
+	uv run python -m mtp.ora_calibration.harness \
+	  --profiles "$1" \
+	  --taxa-matrix "$2" \
+	  --output-dir "$3" \
+	  --replicates "$4" \
+	  --seed "$5" \
+	  --scenario "$6" \
 	  --alpha 0.05 \
 	  --fdr-q 0.05 \
+	  --q-thresholds 0.05 0.001 \
 	  --signal-strength 0.6 \
 	  --n-spike-traits 3 \
 	  --test-type enrichment \
 	  --min-fold 1.5 \
-	  --max-fold 0.67"
+	  --max-fold 0.5
 
 # Run paired composition arm calibration against the study-flip complete null (#263).
 calibrate-composition replicates="100" seed="182":
@@ -546,6 +609,16 @@ calibrate-composition replicates="100" seed="182":
 	  --seed {{seed}}"
 
 # Run ORA background stratification and annotation-density sensitivity evaluation (#118).
+# Run against explicit existing products without rebuilding source data (#664).
+[positional-arguments]
+analyze-strata-inputs *ARGS:
+	uv run python scripts/run_stratified_enrichment.py "$@"
+
+# Compare legacy selected denominators with complete-universe outputs (#664).
+[positional-arguments]
+audit-stratification-universe before after:
+	uv run python scripts/adhoc/issue664_compare_stratification.py "$@"
+
 analyze-strata: study-trait-profiles-ora
 	just timed analyze-strata "uv run python scripts/run_stratified_enrichment.py \
 	  --profiles data/derived/study_trait_profiles_ora_wide.tsv \
@@ -649,9 +722,7 @@ validate-schema:
 	uv run linkml validate {{legacy_schema}}
 
 lint-schema:
-	uv run linkml lint --config {{lintconfig}} --validate --ignore-warnings {{schema}}
 	uv run linkml lint --config {{lintconfig}} --ignore-warnings {{schema}}
-	uv run linkml lint --config {{lintconfig}} --validate --ignore-warnings {{legacy_schema}}
 	uv run linkml lint --config {{lintconfig}} --ignore-warnings {{legacy_schema}}
 
 check-schema: validate-schema lint-schema

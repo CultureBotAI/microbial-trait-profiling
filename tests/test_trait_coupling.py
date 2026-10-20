@@ -91,6 +91,36 @@ def test_compute_composition_arm(
     assert res_no_t3["t1"].primary_stat != pytest.approx(res_all["t1"].primary_stat, abs=1e-12)
 
 
+@pytest.mark.filterwarnings("error")
+@pytest.mark.parametrize(("inc_count", "dec_count"), [(2, 1), (1, 2), (1, 1)])
+def test_composition_exact_constant_contrasts_use_t_test_limits(
+    inc_count: int, dec_count: int
+) -> None:
+    """Identical paired differences have exact t-test limits, without precision warnings."""
+    profiles = pd.DataFrame(
+        [
+            {
+                "study_id": f"s{i}",
+                "experiment_id": f"e{i}",
+                "inc_dec": direction,
+                "focal": count,
+                "background": 1,
+            }
+            for i in range(3)
+            for direction, count in [("inc", inc_count), ("dec", dec_count)]
+        ]
+    )
+    result = compute_composition_arm(profiles, ["focal", "background"], ["focal"])["focal"]
+    if inc_count == dec_count:
+        assert result.primary_stat == 0.0
+        assert result.p_value == result.q_value == 1.0
+        assert result.extra_stat == 0.0
+    else:
+        assert np.sign(result.primary_stat) == np.sign(inc_count - dec_count)
+        assert result.p_value == result.q_value == 0.0
+        assert result.extra_stat == np.copysign(np.inf, inc_count - dec_count)
+
+
 def test_compute_directional_arm(
     synthetic_coupling_data: tuple[pd.DataFrame, pd.DataFrame, list[str]],
 ) -> None:
@@ -150,6 +180,16 @@ def test_compute_ora_arm_unbiased_with_zeros() -> None:
     assert res["t_zero"].primary_stat == 0.0
     assert res["t_zero"].p_value == 1.0
     assert res["t_zero"].extra_stat == 0.0
+
+
+@pytest.mark.filterwarnings("error")
+def test_ora_fisher_preserves_zero_probability_limit() -> None:
+    """An underflowed hypergeometric tail yields Fisher p=0 without computing log(0)."""
+    profiles = pd.DataFrame({"focal": [10000, 0], "background": [0, 10000]})
+    result = compute_ora_arm(profiles, ["focal", "background"], ["focal"])["focal"]
+    assert result.primary_stat == 1.0
+    assert result.p_value == result.q_value == 0.0
+    assert result.extra_stat == 1.0
 
 
 def test_evaluate_loto_structure(

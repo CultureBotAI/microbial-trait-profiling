@@ -1,0 +1,138 @@
+issue	assessment	scope_kind	scope	state_variable	state_value
+#182	calibration_status	procedure	aggregated_profile_support	status_applied	not_calibrated_here #182
+#182	calibration_status	procedure	composition_arm_native_transformed_contrast	status_applied	not_calibrated_here #182
+#182	calibration_status	procedure	enrichment_arm_profile_hypergeometric	status_applied	not_calibrated_here #182
+#182	calibration_status	procedure	fraction_sign_test	status_applied	pass #182 [per_test_level=pass (sanity check), family_error=pass, power_reported=pass]
+#182	calibration_status	procedure	guild_mcnemar	status_applied	pass #182 [per_test_level=pass (sanity check), family_error=pass]
+#182	calibration_status	procedure	log_ratio_sign_test	status_applied	pass #182 [per_test_level=pass (sanity check), family_error=pass, power_reported=pass]
+#182	calibration_status	procedure	oxygen_guild_cell_support	status_applied	not_calibrated_here #182
+#182	calibration_status	procedure	fraction_sign_test	overall	pass
+#182	calibration_status	procedure	fraction_sign_test	criterion:per_test_level	pass (sanity check)
+#182	calibration_status	procedure	fraction_sign_test	criterion:family_error	pass
+#182	calibration_status	procedure	fraction_sign_test	criterion:power_reported	pass
+#182	calibration_status	procedure	guild_mcnemar	overall	pass
+#182	calibration_status	procedure	guild_mcnemar	criterion:per_test_level	pass (sanity check)
+#182	calibration_status	procedure	guild_mcnemar	criterion:family_error	pass
+#182	calibration_status	procedure	log_ratio_sign_test	overall	pass
+#182	calibration_status	procedure	log_ratio_sign_test	criterion:per_test_level	pass (sanity check)
+#182	calibration_status	procedure	log_ratio_sign_test	criterion:family_error	pass
+#182	calibration_status	procedure	log_ratio_sign_test	criterion:power_reported	pass
+#182	calibration_status	procedure	screened_fraction_sign_test	overall	fail
+#182	calibration_status	procedure	screened_fraction_sign_test	criterion:per_test_level	fail
+#182	calibration_status	procedure	screened_fraction_sign_test	criterion:family_error	fail
+#182	calibration_status	procedure	screened_fraction_sign_test	criterion:selection_inflation_measured	reported
+#182	calibration_status	note	not_calibrated_here	procedure	the enrichment arm's hypergeometric urn (#131)
+#182	calibration_status	note	not_calibrated_here	procedure	the composition arm's native transformed test
+#182	calibration_status	note	not_calibrated_here	procedure	the aggregated profile-support rule (#177)
+#182	calibration_status	scenario	complete_null_experiment_flip	replicates_completed	1400
+#182	calibration_status	scenario	complete_null_study_flip	replicates_completed	1400
+#182	calibration_status	scenario	injected_1.1x_study_flip	replicates_completed	400
+#182	calibration_status	scenario	injected_1.3x_study_flip	replicates_completed	400
+#182	calibration_status	scenario	injected_2x_study_flip	replicates_completed	400
+#182	calibration_status	scenario	injected_4x_study_flip	replicates_completed	400
+#182	calibration_status	note	calibration_status_rule	rule	per procedure: 'fail' if any judged criterion failed; otherwise 'pass' only if every judged criterion passed; otherwise 'not_certified' (a criterion was insufficient_budget or not_evaluated). 'reported' rows and passing sanity checks are not judged; a failing sanity check is.
+#184	coverage_status	procedure	aggregated_profile_support	status_applied	pending #184
+#184	coverage_status	procedure	composition_arm_native_transformed_contrast	status_applied	pending #184
+#184	coverage_status	procedure	enrichment_arm_profile_hypergeometric	status_applied	pending #184
+#184	coverage_status	procedure	fraction_sign_test	status_applied	pending #184
+#184	coverage_status	procedure	guild_mcnemar	status_applied	pending #184
+#184	coverage_status	procedure	log_ratio_sign_test	status_applied	pending #184
+#184	coverage_status	procedure	oxygen_guild_cell_support	status_applied	pending #184
+#188	orientation_status	procedure	aggregated_profile_support	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
+#188	orientation_status	procedure	composition_arm_native_transformed_contrast	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
+#188	orientation_status	procedure	enrichment_arm_profile_hypergeometric	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
+#188	orientation_status	procedure	fraction_sign_test	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
+#188	orientation_status	procedure	guild_mcnemar	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
+#188	orientation_status	procedure	log_ratio_sign_test	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
+#188	orientation_status	procedure	oxygen_guild_cell_support	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
+#188	orientation_status	contrast_class	disease_vs_healthy:native	experiments	1003
+#188	orientation_status	contrast_class	disease_vs_healthy:native	studies	569
+#188	orientation_status	contrast_class	disease_vs_healthy:reversed	experiments	1
+#188	orientation_status	contrast_class	disease_vs_healthy:reversed	studies	1
+#188	orientation_status	contrast_class	disease_vs_disease:not_applicable	experiments	260
+#188	orientation_status	contrast_class	disease_vs_disease:not_applicable	studies	173
+#188	orientation_status	contrast_class	treatment_exposure:not_applicable	experiments	366
+#188	orientation_status	contrast_class	treatment_exposure:not_applicable	studies	174
+#188	orientation_status	contrast_class	longitudinal_timepoint:not_applicable	experiments	200
+#188	orientation_status	contrast_class	longitudinal_timepoint:not_applicable	studies	105
+#188	orientation_status	contrast_class	other:not_applicable	experiments	275
+#188	orientation_status	contrast_class	other:not_applicable	studies	105
+#188	orientation_status	contrast_class	unresolved:not_applicable	experiments	230
+#188	orientation_status	contrast_class	unresolved:not_applicable	studies	136
+#188	orientation_status	validation	hand_review	reviewed_experiments	60
+#188	orientation_status	validation	hand_review	agreed	43
+#188	orientation_status	validation	hand_review	disagreed	17
+#188	orientation_status	validation	hand_review	validation_status	hand_review_disagreements_unresolved
+#188	orientation_status	note	classifier_version	version	contrast-orientation-v2
+#183	sensitivity_status	procedure	aggregated_profile_support	status_applied	pending #183
+#183	sensitivity_status	procedure	composition_arm_native_transformed_contrast	status_applied	pending #183
+#183	sensitivity_status	procedure	enrichment_arm_profile_hypergeometric	status_applied	pending #183
+#183	sensitivity_status	procedure	fraction_sign_test	status_applied	pending #183
+#183	sensitivity_status	procedure	guild_mcnemar	status_applied	pending #183
+#183	sensitivity_status	procedure	log_ratio_sign_test	status_applied	scenarios reported, no verdict #183
+#183	sensitivity_status	procedure	oxygen_guild_cell_support	status_applied	pending #183
+#183	sensitivity_status	family	S0:six_fractions	correction	Benjamini-Hochberg
+#183	sensitivity_status	family	S0:six_fractions	family_size	6
+#183	sensitivity_status	family	S0:six_fractions	q_at_or_below_0.05	6
+#183	sensitivity_status	family	S0:six_fractions	scenario	S0_historical_fraction
+#183	sensitivity_status	family	S0:six_fractions	tested	6
+#183	sensitivity_status	family	S10:fifteen_ratios	correction	Benjamini-Yekutieli
+#183	sensitivity_status	family	S10:fifteen_ratios	family_size	15
+#183	sensitivity_status	family	S10:fifteen_ratios	insufficient_support	10
+#183	sensitivity_status	family	S10:fifteen_ratios	scenario	S10_other_gut_no_feces
+#183	sensitivity_status	family	S10:fifteen_ratios	tested	5
+#183	sensitivity_status	family	S11:fifteen_ratios	correction	Benjamini-Yekutieli
+#183	sensitivity_status	family	S11:fifteen_ratios	family_size	15
+#183	sensitivity_status	family	S11:fifteen_ratios	scenario	S11_no_gut_label
+#183	sensitivity_status	family	S11:fifteen_ratios	tested	15
+#183	sensitivity_status	family	S1:six_fractions	correction	Benjamini-Hochberg
+#183	sensitivity_status	family	S1:six_fractions	family_size	6
+#183	sensitivity_status	family	S1:six_fractions	q_at_or_below_0.05	6
+#183	sensitivity_status	family	S1:six_fractions	scenario	S1_fraction_baseline
+#183	sensitivity_status	family	S1:six_fractions	tested	6
+#183	sensitivity_status	family	S2:fifteen_ratios	correction	Benjamini-Yekutieli
+#183	sensitivity_status	family	S2:fifteen_ratios	family_size	15
+#183	sensitivity_status	family	S2:fifteen_ratios	q_at_or_below_0.05	3
+#183	sensitivity_status	family	S2:fifteen_ratios	scenario	S2_ratio_complete_case
+#183	sensitivity_status	family	S2:fifteen_ratios	tested	15
+#183	sensitivity_status	family	S3:thirty_matched_fractions	correction	Benjamini-Yekutieli
+#183	sensitivity_status	family	S3:thirty_matched_fractions	family_size	30
+#183	sensitivity_status	family	S3:thirty_matched_fractions	q_at_or_below_0.05	6
+#183	sensitivity_status	family	S3:thirty_matched_fractions	scenario	S3_ratio_matched_fractions
+#183	sensitivity_status	family	S3:thirty_matched_fractions	tested	30
+#183	sensitivity_status	family	S4:fifteen_ratios	correction	Benjamini-Yekutieli
+#183	sensitivity_status	family	S4:fifteen_ratios	family_size	15
+#183	sensitivity_status	family	S4:fifteen_ratios	q_at_or_below_0.05	4
+#183	sensitivity_status	family	S4:fifteen_ratios	scenario	S4_six_trait_common_support
+#183	sensitivity_status	family	S4:fifteen_ratios	tested	15
+#183	sensitivity_status	family	S4:six_fractions	correction	Benjamini-Hochberg
+#183	sensitivity_status	family	S4:six_fractions	family_size	6
+#183	sensitivity_status	family	S4:six_fractions	q_at_or_below_0.05	2
+#183	sensitivity_status	family	S4:six_fractions	scenario	S4_six_trait_common_support
+#183	sensitivity_status	family	S4:six_fractions	tested	6
+#183	sensitivity_status	family	S5:sixty_triple_ratios	correction	Benjamini-Yekutieli
+#183	sensitivity_status	family	S5:sixty_triple_ratios	family_size	60
+#183	sensitivity_status	family	S5:sixty_triple_ratios	q_at_or_below_0.05	13
+#183	sensitivity_status	family	S5:sixty_triple_ratios	scenario	S5_triple_common_support
+#183	sensitivity_status	family	S5:sixty_triple_ratios	tested	60
+#183	sensitivity_status	family	S6:fifteen_ratios	correction	Benjamini-Yekutieli
+#183	sensitivity_status	family	S6:fifteen_ratios	family_size	15
+#183	sensitivity_status	family	S6:fifteen_ratios	q_at_or_below_0.05	4
+#183	sensitivity_status	family	S6:fifteen_ratios	scenario	S6_feces_only
+#183	sensitivity_status	family	S6:fifteen_ratios	tested	15
+#183	sensitivity_status	family	S7:fifteen_ratios	correction	Benjamini-Yekutieli
+#183	sensitivity_status	family	S7:fifteen_ratios	family_size	15
+#183	sensitivity_status	family	S7:fifteen_ratios	scenario	S7_excluding_feces
+#183	sensitivity_status	family	S7:fifteen_ratios	tested	15
+#183	sensitivity_status	family	S9:fifteen_ratios	correction	Benjamini-Yekutieli
+#183	sensitivity_status	family	S9:fifteen_ratios	family_size	15
+#183	sensitivity_status	family	S9:fifteen_ratios	q_at_or_below_0.05	4
+#183	sensitivity_status	family	S9:fifteen_ratios	scenario	S9_feces_any_label
+#183	sensitivity_status	family	S9:fifteen_ratios	tested	15
+#190	taxon_influence_status	procedure	aggregated_profile_support	status_applied	pending #190
+#190	taxon_influence_status	procedure	composition_arm_native_transformed_contrast	status_applied	pending #190
+#190	taxon_influence_status	procedure	enrichment_arm_profile_hypergeometric	status_applied	pending #190
+#190	taxon_influence_status	procedure	fraction_sign_test	status_applied	pending #190
+#190	taxon_influence_status	procedure	guild_mcnemar	status_applied	pending #190
+#190	taxon_influence_status	procedure	log_ratio_sign_test	status_applied	pending #190
+#190	taxon_influence_status	procedure	oxygen_guild_cell_support	status_applied	pending #190
