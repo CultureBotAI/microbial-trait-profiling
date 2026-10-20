@@ -70,7 +70,7 @@ REPO_URL = "https://github.com/CultureBotAI/microbial-trait-profiling"
 # Where `just figure-review-plates` draws the methods and Tufte plates.
 PLATES_DIR = "data/derived/tufte_plates/"
 PROVENANCE_NAME = "figure_provenance_and_results.yaml"
-COMMIT = "402ef5c25b7105c9aa73398085956dcf1f372bb4"
+COMMIT = "622e5c71d8c8e4190981a98c4220823b5e6060df"
 SHORT_COMMIT = COMMIT[:12]
 BRANCH = "main"
 GITHUB_BLOB = f"{REPO_URL}/blob/{COMMIT}"
@@ -1889,7 +1889,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "figure_file_path": "trait-visualization/condition_trait_module_clustered_heatmap.png",
             "code_path": "scripts/create_condition_trait_module_heatmap.py",
             "takeaway": "Clusters human conditions against co-varying microbial trait modules "
-            "across the 4,670-profile wide matrix.",
+            "across the 5,829-profile wide matrix.",
             "caveat": "Exploratory hierarchical clustering of condition-level trait profiles; "
             "module labels are data-derived.",
             "methods_path": "trait-visualization/trait-profile-investigation/README.md",

@@ -55,7 +55,7 @@ CELLULOSE_DIR = Path("data/analysis/cellulose_decr")
 TRAIT_COLUMNS = Path("data/derived/taxa_trait_matrix_columns.tsv")
 # The rerun the plates' tables come from. The deck stamps and links the plate slides at the
 # same revision and refuses inputs that differ from it (#637); the two move together (#579).
-RERUN_COMMIT = "402ef5c25b7105c9aa73398085956dcf1f372bb4"
+RERUN_COMMIT = "622e5c71d8c8e4190981a98c4220823b5e6060df"
 RERUN_SOURCE = f"Source: Rerun on main ({RERUN_COMMIT[:7]})"
 
 # Tufte palette: muted, high-contrast, colorblind-safe ink on warm paper/clean white
@@ -521,6 +521,28 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
         lw=1.5,
     )
 
+    paired_dir = repo / "trait-visualization/trait-profile-investigation"
+    pooled = read_tsv(paired_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv")
+    feces = read_tsv(paired_dir / "trait_profile_paired_contrast_trait_stats_feces.tsv")
+    feces_excluded = read_tsv(
+        paired_dir / "trait_profile_paired_contrast_trait_stats_feces_excluded.tsv"
+    )
+    pairs = max(int(r["pair_count"]) for r in pooled)
+    studies = max(int(float(r["study_count"])) for r in pooled)
+    feces_studies = max(int(float(r["study_count"])) for r in feces)
+    non_feces_studies = max(int(float(r["study_count"])) for r in feces_excluded)
+    ind_cells = [
+        r
+        for r in read_tsv(
+            paired_dir
+            / "six-shared-traits"
+            / "six_shared_trait_condition_body_site_direction_contrasts.tsv"
+        )
+        if r.get("view_key") == "individual_conditions_direction_contrast"
+    ]
+    cond_count = len({r["condition"] for r in ind_cells})
+    site_count = len({r["body_site_group"] for r in ind_cells})
+
     funnel_steps = [
         (
             74.0,
@@ -531,17 +553,18 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
         ),
         (
             56.0,
-            "2,335 Paired Experiments",
-            "959 unique studies with both INC & DEC taxon sets\n594 Feces studies  ·  365 "
-            "Non-Feces studies",
+            f"{pairs:,} Paired Experiments",
+            f"{studies:,} unique studies with both INC & DEC taxon sets\n"
+            f"{feces_studies:,} Feces studies  ·  {non_feces_studies:,} Non-Feces studies",
             "#e1effa",
             DEC_COLOR,
         ),
         (
             37.0,
-            "4,670 Directional Signatures",
-            "2,335 Increased (↑) + 2,335 Decreased (↓) profiles\nSpanning 106 conditions "
-            "\N{MULTIPLICATION SIGN} 16 anatomical sites",
+            f"{2 * pairs:,} Directional Signatures",
+            f"{pairs:,} Increased (↑) + {pairs:,} Decreased (↓) profiles\n"
+            f"Spanning {cond_count:,} conditions \N{MULTIPLICATION SIGN} {site_count:,} anatomical "
+            "sites",
             "#d4e6f4",
             DEC_COLOR,
         ),
