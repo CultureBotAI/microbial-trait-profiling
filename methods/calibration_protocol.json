@@ -1,9 +1,15 @@
 {
-  "protocol": "calibration-v2",
+  "protocol": "calibration-v3",
   "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/182",
   "declared_before_first_run": false,
-  "declared_by": "calibration-v1 was drafted by a coding agent (Claude Code) before any calibration result was computed. calibration-v2 is an amendment made after review (#293) with the v1 results in hand; the amendments array records what changed, why, and what was already known when the change was made. Nothing here should be read as predeclared except where an amendment says it is unchanged from v1.",
+  "declared_by": "calibration-v1 was drafted by a coding agent (Claude Code) before any calibration result was computed. calibration-v2 was amended after review (#293) with the v1 results in hand. calibration-v3 repairs the guild population mismatch identified in #730. The amendments array records what changed, why, and what was already known when each change was made. Nothing here should be read as predeclared except where an amendment says it is unchanged from v1.",
   "scope": "procedures owned by this repository's directional-consistency framework. The composition arm's and the enrichment arm's native procedures are not evaluated here; their adapters belong to their owners (#182 assigns them), and the assertion-level urn of #131 is a separate model question.",
+  "eligibility": {
+    "id": "whole_pair_nonzero_retained_totals_v1",
+    "rule": "Fraction signs, screened fraction signs and guild McNemar exclude the entire experiment pair when either retained annotation total is zero. Log-ratio tests additionally require positive counts for both named traits on both sides.",
+    "application": "Eligibility is applied by each procedure within each replicate. Direction swaps and the fixed-total injection preserve this eligibility, so the same zero-total pairs are excluded from every replicate.",
+    "resampling_universe": "Retain all loaded human paired profiles for flip assignment generation, including those later excluded by a procedure. This preserves the historical deterministic assignments for before/after comparison; eligible analysis support is recorded separately."
+  },
   "procedures": [
     {
       "id": "fraction_sign_test",
@@ -168,6 +174,14 @@
     "dependence between studies (shared cohorts, reused datasets, overlapping populations): a flip of whole studies treats studies as independent, so no criterion here can detect inflation from cohort-level dependence (#182 'study/cohort blocks', #360)"
   ],
   "amendments": [
+    {
+      "date": "2026-10-19",
+      "protocol": "calibration-v3",
+      "change": "Apply the shared whole-pair zero-total exclusion to guild McNemar within each replicate and record the eligibility policy and actual retained/excluded support. Fraction and screened-fraction procedures already apply this rule; log-ratio positive-count eligibility already excludes zero-total pairs.",
+      "reason": "Issue #730 demonstrated that the native calibration guild procedure included 94 zero-total pairs excluded by integrated production on the same core inputs. The observed discordant counts were 420/290 before exclusion versus 420/293 after exclusion. File identity alone therefore did not establish procedure parity.",
+      "known_when_amended": "The historical one-replicate report, the observed population/parity audit, and older full-budget results on a different profile file. A full-budget v2 run on the current core was still executing when this amendment was specified; its artifacts are preserved separately.",
+      "unchanged": "The seed 182, null and injection designs, full-corpus deterministic flip assignments, replicate budgets, error-rate thresholds, criteria and negative control. This amendment repairs eligibility rather than tuning the method to obtain a passing calibration verdict."
+    },
     {
       "date": "2026-09-16",
       "protocol": "calibration-v1",

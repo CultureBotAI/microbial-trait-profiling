@@ -800,6 +800,16 @@ stats:
 calibration-report *ARGS:
 	uv run python -m mtp.calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 
+# Compare the calibration guild's eligible population with integrated production (#730).
+[positional-arguments]
+audit-calibration-eligibility profiles experiments output:
+	uv run python scripts/adhoc/issue730_audit_calibration_eligibility.py --profiles "$1" --experiments "$2" --output "$3"
+
+# Preserve scientific results while refreshing applicable assessment evidence (#729).
+[positional-arguments]
+audit-assessment-refresh *ARGS:
+	uv run python scripts/adhoc/issue729_audit_assessment_refresh.py "$@"
+
 # Just the shared flip-assignment artefact of #263: which studies each replicate of
 # complete_null_study_flip exchanges, for another arm to rerun its own pipeline on
 # the identical null. Seconds, not minutes.

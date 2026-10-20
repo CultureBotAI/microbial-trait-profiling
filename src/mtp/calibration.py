@@ -61,6 +61,7 @@ from mtp.trait_guilds import (
     OXYGEN_GUILDS,
     TABLE1_TRAITS,
     Profile,
+    drop_zero_total_pairs,
     load_profiles,
     read_bugsigdb_vintage,
     write_stats_report,
@@ -68,7 +69,7 @@ from mtp.trait_guilds import (
 
 PROTOCOL_PATH = REPO_ROOT / "methods" / "calibration_protocol.json"
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "calibration"
-VERSION = "calibration-v2"
+VERSION = "calibration-v3"
 
 ALPHA = 0.05
 Q_THRESHOLD = 0.05
@@ -91,6 +92,7 @@ def load_protocol(path: Path = PROTOCOL_PATH) -> dict[str, Any]:
 
 
 _PROTOCOL = load_protocol()
+ELIGIBILITY_POLICY = str(_PROTOCOL["eligibility"]["id"])
 SEED = int(_PROTOCOL["replicates"]["seed"])
 NULL_REPLICATES = int(_PROTOCOL["replicates"]["null"])
 POWER_REPLICATES = int(_PROTOCOL["replicates"]["power"])
@@ -213,7 +215,8 @@ def guild_mcnemar_with(matrix: GuildMatrix) -> Procedure:
     """
 
     def procedure(profiles: Sequence[Profile]) -> list[Outcome]:
-        correlation = compute_correlation(list(profiles), matrix)
+        eligible = drop_zero_total_pairs(profiles).profiles
+        correlation = compute_correlation(eligible, matrix)
         return [
             Outcome(
                 "guild_mcnemar",
@@ -1367,6 +1370,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     vintage = read_bugsigdb_vintage(args.full_dump_input)
     write_stats_report(stats, vintage)
+    exclusion = drop_zero_total_pairs(profiles)
+    eligibility = {
+        "id": ELIGIBILITY_POLICY,
+        "zero_total_experiments": exclusion.zero_total_experiments,
+        "studies_before": exclusion.studies_before,
+        "studies_after": exclusion.studies_after,
+        "studies_lost": exclusion.studies_lost,
+        "profiles_after": len(exclusion.profiles),
+        "resampling_universe": "all loaded human paired profiles; procedure eligibility "
+        "is applied within each replicate, preserving the historical flip assignment order",
+    }
     inputs = {
         "profile_path": str(args.profile_input),
         "profile_sha256": file_sha256(args.profile_input),
@@ -1432,6 +1446,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "replicates_completed": completed,
         "inputs": inputs,
         "corpus": asdict(stats),
+        "eligibility": eligibility,
         "procedures": {
             "fraction_sign_test": {
                 "tested_level": "study",
@@ -1441,7 +1456,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "tested_level": "study",
                 "family": "Benjamini-Yekutieli over 15 trait pairs",
             },
-            "guild_mcnemar": {"tested_level": "study", "family": "single test"},
+            "guild_mcnemar": {
+                "tested_level": "study",
+                "family": "single test",
+                "eligibility_policy": ELIGIBILITY_POLICY,
+            },
             "screened_fraction_sign_test": {
                 "tested_level": "study",
                 "family": f"Benjamini-Hochberg over {SCREEN_KEEP} traits selected in the replicate",

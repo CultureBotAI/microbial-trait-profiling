@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Sequence
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -46,6 +47,9 @@ from bsdbng.calibration import (
 from bsdbng.guild_maps import study_direction_means
 from bsdbng.table1_trait_maps import compute_direction_shifts
 from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
+from mtp.calibration import guild_mcnemar_with
+from mtp.guild_maps import build_matrix, compute_correlation
+from mtp.trait_guilds import drop_zero_total_pairs
 
 TRAITS = tuple(TABLE1_TRAITS)
 #: The trials the declared null budget gives the least-powered procedure: one test
@@ -148,6 +152,57 @@ def test_flipping_by_experiment_can_split_a_study() -> None:
     assert by_experiment != by_study
     with pytest.raises(ValueError, match="flip unit"):
         flip_directions(profiles, replicate_rng(SEED, "s", 1), unit="condition")
+
+
+def test_guild_calibration_uses_production_whole_pair_eligibility() -> None:
+    """A zero-total side must not dilute its study's valid directional contrast."""
+    profiles: list[Profile] = []
+    for study in range(3):
+        for direction in ("inc", "dec"):
+            aerobe = 6 if (direction == "inc") == (study > 0) else 4
+            profiles.append(
+                Profile(
+                    study_id=f"s{study}",
+                    experiment_id=f"s{study}-valid",
+                    inc_dec=direction,
+                    condition="C",
+                    body_site="Feces",
+                    guild_counts={"aerobe": aerobe, "anaerobe": 10 - aerobe},
+                    total=10,
+                )
+            )
+    profiles.extend(
+        [
+            replace(
+                profiles[0], experiment_id="s0-invalid", guild_counts={"aerobe": 10, "anaerobe": 0}
+            ),
+            replace(
+                profiles[1],
+                experiment_id="s0-invalid",
+                guild_counts={"aerobe": 0, "anaerobe": 0},
+                total=0,
+            ),
+        ]
+    )
+    exclusion = drop_zero_total_pairs(profiles)
+    matrix = build_matrix(profiles, max_conditions=60, max_body_sites=8, min_studies=3)
+    production = compute_correlation(exclusion.profiles, matrix)
+    raw = compute_correlation(profiles, matrix)
+    assert raw.discordant != production.discordant
+    outcome = guild_mcnemar_with(matrix)(profiles)[0]
+    assert outcome.p_value == production.mcnemar_p
+    assert outcome.scored == sum(production.discordant)
+    for unit in ("study", "experiment"):
+        flipped = flip_directions(profiles, replicate_rng(SEED, "eligibility", 3), unit=unit)
+        retained = drop_zero_total_pairs(flipped)
+        assert retained.zero_total_experiments == exclusion.zero_total_experiments == 1
+        assert {(p.study_id, p.experiment_id) for p in retained.profiles} == {
+            (p.study_id, p.experiment_id) for p in exclusion.profiles
+        }
+        assert (
+            guild_mcnemar_with(matrix)(flipped)[0].p_value
+            == compute_correlation(retained.profiles, matrix).mcnemar_p
+        )
 
 
 def test_injection_leaves_every_other_trait_bit_identical() -> None:
