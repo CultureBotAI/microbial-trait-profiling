@@ -124,10 +124,11 @@ class ProductDefinition(ConfiguredBaseModel):
                        'ArtifactInstance',
                        'StepExecution',
                        'ConsumerRecord',
-                       'LegacyImportRecord']} })
+                       'LegacyImportRecord',
+                       'EvidenceArchive']} })
     description: Optional[str] = Field(default=None, title="Description", description="""Human-readable product meaning.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition', 'StepDefinition', 'WorkflowDefinition']} })
     kind: str = Field(default=..., title="Kind", description="""Scientific validator contract name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition']} })
-    storage_kind: StorageKind = Field(default=..., title="Storage kind", description="""Whether the artifact is a regular file or an inventoried directory.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition']} })
+    storage_kind: StorageKind = Field(default=..., title="Storage kind", description="""Whether the artifact is a regular file or an inventoried directory.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition', 'ArchivedLocation']} })
     format: str = Field(default=..., title="Format", description="""Serialization format.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition']} })
     filename: str = Field(default=..., title="Filename", description="""Relative path inside a producer bundle.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition']} })
     external: Optional[bool] = Field(default=False, title="External", description="""Whether this product is supplied explicitly rather than produced by a step.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition'], 'ifabsent': 'false'} })
@@ -201,7 +202,8 @@ class StepDefinition(ConfiguredBaseModel):
                        'ArtifactInstance',
                        'StepExecution',
                        'ConsumerRecord',
-                       'LegacyImportRecord']} })
+                       'LegacyImportRecord',
+                       'EvidenceArchive']} })
     operation: str = Field(default=..., title="Operation", description="""Key resolving to an explicitly registered Python callable.""", json_schema_extra = { "linkml_meta": {'domain_of': ['StepDefinition']} })
     description: Optional[str] = Field(default=None, title="Description", description="""Purpose of this step.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition', 'StepDefinition', 'WorkflowDefinition']} })
     inputs: list[str] = Field(default=..., title="Inputs", description="""Product references whose verified artifact paths are passed to the operation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['StepDefinition']} })
@@ -240,7 +242,8 @@ class WorkflowDefinition(ConfiguredBaseModel):
                        'ArtifactInstance',
                        'StepExecution',
                        'ConsumerRecord',
-                       'LegacyImportRecord']} })
+                       'LegacyImportRecord',
+                       'EvidenceArchive']} })
     version: str = Field(default=..., title="Version", description="""Version of the declared workflow contract.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowDefinition']} })
     description: Optional[str] = Field(default=None, title="Description", description="""Workflow purpose and scope.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition', 'StepDefinition', 'WorkflowDefinition']} })
     products: list[ProductDefinition] = Field(default=..., title="Products", description="""Scientific product contracts available to this workflow.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowDefinition']} })
@@ -272,8 +275,8 @@ class FileInventoryEntry(ConfiguredBaseModel):
          'title': 'File Inventory Entry'})
 
     path: str = Field(default=..., title="Path", description="""Relative member path, or the file basename.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FileInventoryEntry', 'ArtifactInstance']} })
-    sha256: str = Field(default=..., title="Sha256", description="""Lowercase SHA-256 of file bytes or the canonical collection inventory.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FileInventoryEntry', 'ArtifactInstance']} })
-    size_bytes: int = Field(default=..., title="Size bytes", description="""Total number of regular-file bytes represented by this record.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['FileInventoryEntry', 'ArtifactInstance']} })
+    sha256: str = Field(default=..., title="Sha256", description="""Lowercase SHA-256 of file bytes or the canonical collection inventory.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FileInventoryEntry', 'ArtifactInstance', 'ArchivedLocation']} })
+    size_bytes: int = Field(default=..., title="Size bytes", description="""Total number of regular-file bytes represented by this record.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['FileInventoryEntry', 'ArtifactInstance', 'ArchivedLocation']} })
 
     @field_validator('sha256')
     def pattern_sha256(cls, v):
@@ -315,15 +318,16 @@ class ArtifactInstance(ConfiguredBaseModel):
                        'ArtifactInstance',
                        'StepExecution',
                        'ConsumerRecord',
-                       'LegacyImportRecord']} })
+                       'LegacyImportRecord',
+                       'EvidenceArchive']} })
     product_id: str = Field(default=..., title="Product id", description="""Reference to the embedded product contract.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArtifactInstance']} })
     run_id: str = Field(default=..., title="Run id", description="""Unique execution-attempt identifier, distinct from the deterministic fingerprint.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArtifactInstance', 'WorkflowRun', 'ConsumerRecord']} })
     producer_step: Optional[str] = Field(default=None, title="Producer step", description="""Reference to the execution that produced this artifact; absent for inputs.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArtifactInstance'], 'slot_uri': 'prov:wasGeneratedBy'} })
     path: str = Field(default=..., title="Path", description="""Absolute external path or run-relative output path.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FileInventoryEntry', 'ArtifactInstance']} })
     requested_path: Optional[str] = Field(default=None, title="Requested path", description="""Original external binding before symlink resolution.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArtifactInstance']} })
-    sha256: str = Field(default=..., title="Sha256", description="""Lowercase SHA-256 of file bytes or the canonical collection inventory.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FileInventoryEntry', 'ArtifactInstance']} })
-    size_bytes: int = Field(default=..., title="Size bytes", description="""Total number of regular-file bytes represented by this record.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['FileInventoryEntry', 'ArtifactInstance']} })
-    inventory: list[FileInventoryEntry] = Field(default=..., title="Inventory", description="""Complete sorted list of regular-file members and their byte hashes.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArtifactInstance']} })
+    sha256: str = Field(default=..., title="Sha256", description="""Lowercase SHA-256 of file bytes or the canonical collection inventory.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FileInventoryEntry', 'ArtifactInstance', 'ArchivedLocation']} })
+    size_bytes: int = Field(default=..., title="Size bytes", description="""Total number of regular-file bytes represented by this record.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['FileInventoryEntry', 'ArtifactInstance', 'ArchivedLocation']} })
+    inventory: list[FileInventoryEntry] = Field(default=..., title="Inventory", description="""Complete sorted list of regular-file members and their byte hashes.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArtifactInstance', 'ArchivedLocation']} })
     validations: list[ValidationResult] = Field(default=..., title="Validations", description="""Recorded inventory and scientific product validation outcomes.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArtifactInstance']} })
     unit: Optional[str] = Field(default=None, title="Unit", description="""Effective observational unit.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition', 'ArtifactInstance']} })
     cohort: Optional[str] = Field(default=None, title="Cohort", description="""Effective population selection policy or parameter value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition', 'ArtifactInstance', 'ConsumerRecord']} })
@@ -358,7 +362,8 @@ class StepExecution(ConfiguredBaseModel):
                        'ArtifactInstance',
                        'StepExecution',
                        'ConsumerRecord',
-                       'LegacyImportRecord']} })
+                       'LegacyImportRecord',
+                       'EvidenceArchive']} })
     step_id: str = Field(default=..., title="Step id", description="""Reference to the declared step contract.""", json_schema_extra = { "linkml_meta": {'domain_of': ['StepExecution']} })
     status: ExecutionStatus = Field(default=..., title="Status", description="""Explicit lifecycle or validation outcome; only completed verified runs are consumable.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ValidationResult', 'StepExecution', 'WorkflowRun']} })
     started_at: datetime  = Field(default=..., title="Started at", description="""UTC timestamp when this execution attempt began.""", json_schema_extra = { "linkml_meta": {'domain_of': ['StepExecution', 'WorkflowRun']} })
@@ -483,7 +488,8 @@ class ConsumerRecord(ConfiguredBaseModel):
                        'ArtifactInstance',
                        'StepExecution',
                        'ConsumerRecord',
-                       'LegacyImportRecord']} })
+                       'LegacyImportRecord',
+                       'EvidenceArchive']} })
     run_id: str = Field(default=..., title="Run id", description="""Unique execution-attempt identifier, distinct from the deterministic fingerprint.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArtifactInstance', 'WorkflowRun', 'ConsumerRecord']} })
     run_manifest_path: str = Field(default=..., title="Run manifest path", description="""Explicit path to the verified producing run manifest.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ConsumerRecord']} })
     run_manifest_sha256: str = Field(default=..., title="Run manifest sha256", description="""SHA-256 of the producing run manifest consumed by the analysis.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ConsumerRecord']} })
@@ -492,7 +498,7 @@ class ConsumerRecord(ConfiguredBaseModel):
     artifact_ids: list[str] = Field(default=..., title="Artifact ids", description="""Concrete verified artifacts consumed by this analysis.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ConsumerRecord']} })
     feature_policy: str = Field(default=..., title="Feature policy", description="""Feature inclusion and identity policy.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition', 'ArtifactInstance', 'ConsumerRecord']} })
     cohort: str = Field(default=..., title="Cohort", description="""Expected population selection policy.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition', 'ArtifactInstance', 'ConsumerRecord']} })
-    created_at: datetime  = Field(default=..., title="Created at", description="""UTC timestamp when this consumer record was created.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ConsumerRecord']} })
+    created_at: datetime  = Field(default=..., title="Created at", description="""UTC timestamp when this consumer record was created.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ConsumerRecord', 'EvidenceArchive']} })
     coverage_path: str = Field(default=..., title="Coverage path", description="""Path to reconciled annotation coverage under the actual consumer feature filter.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ConsumerRecord']} })
     feature_filter_id: str = Field(default=..., title="Feature filter id", description="""SHA-256 identity of the exact ordered retained analysis features.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ConsumerRecord']} })
     coverage_scope: str = Field(default=..., title="Coverage scope", description="""Coverage describes the input cohort before analysis-specific eligibility exclusions.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ConsumerRecord']} })
@@ -551,7 +557,8 @@ class LegacyImportRecord(ConfiguredBaseModel):
                        'ArtifactInstance',
                        'StepExecution',
                        'ConsumerRecord',
-                       'LegacyImportRecord']} })
+                       'LegacyImportRecord',
+                       'EvidenceArchive']} })
     source_path: str = Field(default=..., title="Source path", description="""Location of the historical source whose claims are being preserved.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LegacyImportRecord']} })
     source_sha256: str = Field(default=..., title="Source sha256", description="""SHA-256 of the historical source bytes at import time.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LegacyImportRecord']} })
     imported_at: datetime  = Field(default=..., title="Imported at", description="""UTC timestamp of legacy import, not the unknown historical execution time.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LegacyImportRecord']} })
@@ -585,6 +592,68 @@ class LegacyImportRecord(ConfiguredBaseModel):
         return v
 
 
+class ArchivedLocation(ConfiguredBaseModel):
+    """
+    Original file or collection locations mapped to one immutable retained copy.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/mtp/workflow', 'title': 'Archived Location'})
+
+    original_paths: list[str] = Field(default=..., title="Original paths", description="""Absolute recorded locations, including any declared input alias; never rewritten in source records.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArchivedLocation']} })
+    archive_path: str = Field(default=..., title="Archive path", description="""Safe relative location inside the archive, independent of its current root directory.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArchivedLocation']} })
+    storage_kind: StorageKind = Field(default=..., title="Storage kind", description="""File or collection storage contract for the retained copy.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition', 'ArchivedLocation']} })
+    sha256: str = Field(default=..., title="Sha256", description="""File digest or canonical collection inventory digest.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FileInventoryEntry', 'ArtifactInstance', 'ArchivedLocation']} })
+    size_bytes: int = Field(default=..., title="Size bytes", description="""Total bytes of retained regular files.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['FileInventoryEntry', 'ArtifactInstance', 'ArchivedLocation']} })
+    inventory: list[FileInventoryEntry] = Field(default=..., title="Inventory", description="""Complete regular-file inventory, including hidden members.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArtifactInstance', 'ArchivedLocation']} })
+
+    @field_validator('sha256')
+    def pattern_sha256(cls, v):
+        pattern=re.compile(r"^[0-9a-f]{64}$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid sha256 format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid sha256 format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
+class EvidenceArchive(ConfiguredBaseModel):
+    """
+    Retained bytes and explicit location mappings; archival verification does not invent historical execution or authorship.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/mtp/workflow', 'title': 'Evidence Archive'})
+
+    id: str = Field(default=..., title="Id", description="""Unique archive identifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ProductDefinition',
+                       'StepDefinition',
+                       'WorkflowDefinition',
+                       'ArtifactInstance',
+                       'StepExecution',
+                       'ConsumerRecord',
+                       'LegacyImportRecord',
+                       'EvidenceArchive']} })
+    archive_version: str = Field(default=..., title="Archive version", description="""Version of the retention and verification contract.""", json_schema_extra = { "linkml_meta": {'domain_of': ['EvidenceArchive']} })
+    created_at: datetime  = Field(default=..., title="Created at", description="""UTC archival time, distinct from original execution times.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ConsumerRecord', 'EvidenceArchive']} })
+    core_manifests: list[str] = Field(default=..., title="Core manifests", description="""Original absolute locations of retained core runs whose full scientific contracts are revalidated.""", json_schema_extra = { "linkml_meta": {'domain_of': ['EvidenceArchive']} })
+    consumer_records: Optional[list[str]] = Field(default=None, title="Consumer records", description="""Original absolute locations of consumer records whose output and core bindings are revalidated.""", json_schema_extra = { "linkml_meta": {'domain_of': ['EvidenceArchive']} })
+    retained_paths: Optional[list[str]] = Field(default=None, title="Retained paths", description="""Explicit supplemental evidence preserved by byte identity; preservation alone does not validate its scientific claims.""", json_schema_extra = { "linkml_meta": {'domain_of': ['EvidenceArchive']} })
+    locations: list[ArchivedLocation] = Field(default=..., title="Locations", description="""Complete hash-checked source-to-retained-location mapping.""", json_schema_extra = { "linkml_meta": {'domain_of': ['EvidenceArchive']} })
+
+    @field_validator('archive_version')
+    def pattern_archive_version(cls, v):
+        pattern=re.compile(r"^1$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid archive_version format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid archive_version format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
 # Model rebuild
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 ProductDefinition.model_rebuild()
@@ -599,3 +668,5 @@ StepExecution.model_rebuild()
 WorkflowRun.model_rebuild()
 ConsumerRecord.model_rebuild()
 LegacyImportRecord.model_rebuild()
+ArchivedLocation.model_rebuild()
+EvidenceArchive.model_rebuild()

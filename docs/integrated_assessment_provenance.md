@@ -58,6 +58,20 @@ policy before attaching its guild verdict. An older or mismatched policy yields
 `not_applicable` for guild McNemar while preserving the historical findings in
 the sidecar. The other procedure-specific results remain scoped separately.
 
+The retained-output comparator, `just audit-assessment-refresh`, accepts explicit
+`--before-calibration`, `--after-calibration`, `--before-integration`,
+`--after-integration` directories and a fresh `--output` JSON path. It is scoped
+to this v2-to-v3 repair: all non-guild calibration values and all integrated
+columns except `calibration_status` must remain exact. Flip assignments, injection
+summaries, feature mappings and family inventories must remain byte-identical.
+Issue [#734](https://github.com/CultureBotAI/microbial-trait-profiling/issues/734)
+also requires the intentionally changed guild outputs to retain unique result,
+replicate and criterion identities, declared replicate counts and fixed policy.
+Their eligibility-dependent tested counts and statistical outcomes may change.
+This comparison complements the integration's source-binding checks, consumer
+record verification and inspection of assessment/provenance sidecars; it does
+not replace them or independently establish calibration validity.
+
 ## Influence applicability
 
 The completed `190-native-v2` influence diagnostic is deliberately reported as

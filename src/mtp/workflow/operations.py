@@ -347,7 +347,11 @@ def _validate_delimited(path: Path, required: tuple[str, ...], *, raw_csv: bool 
 
 
 def validate_core_product(
-    product: ProductDefinition, path: Path, context: Mapping[str, Path]
+    product: ProductDefinition,
+    path: Path,
+    context: Mapping[str, Path],
+    *,
+    recorded_sources: Mapping[str, Path] | None = None,
 ) -> list[ValidationResult]:
     """Validate one scientific product using the execution's declared related products."""
     from mtp.workflow.contracts import validate_product
@@ -364,7 +368,7 @@ def validate_core_product(
     elif kind == "study_collection":
         details = validate_study_sources(context["raw_dump"], path, context["ingest_log"])
     elif kind == "source_identity":
-        details = validate_source_identity(path, context)
+        details = validate_source_identity(path, context, recorded_sources=recorded_sources)
     elif kind == "ingest_log":
         value = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):

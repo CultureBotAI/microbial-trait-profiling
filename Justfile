@@ -97,8 +97,28 @@ core-ora run output tail="upper":
 audit-ora-refresh manifest output:
 	uv run python scripts/adhoc/issue720_audit_ora_refresh.py --manifest "$1" --output "$2"
 
+# Bind all anatomical partitions and summaries to the same verified ORA core.
+[positional-arguments]
+core-strata run output *ARGS:
+	uv run python scripts/run_stratified_enrichment.py --core-run "$1" --output-dir "$2" "${@:3}"
+
+[positional-arguments]
+audit-core-strata historical current:
+	uv run python scripts/adhoc/issue727_compare_core_strata.py "$1" "$2"
+
 core-verify-consumer record:
 	uv run python -m mtp.workflow verify-consumer "{{record}}"
+
+# Retain original records and declared dependencies; --retain adds explicit supporting evidence.
+[positional-arguments]
+evidence-archive output *ARGS:
+	uv run python -m mtp.workflow archive --output "$1" "${@:2}"
+
+evidence-verify archive:
+	uv run python -m mtp.workflow verify-archive "{{archive}}"
+
+evidence-resolve archive original:
+	uv run python -m mtp.workflow archive-resolve "{{archive}}" "{{original}}"
 
 sync:
 	uv sync --all-extras --group dev --group qa
@@ -239,7 +259,7 @@ test:
 
 # Analyzer, ranking exporter, and complete-universe density regression checks (#664).
 test-stratification:
-	uv run pytest tests/test_stratification.py tests/test_enrichment_pipeline.py tests/test_corpus_identity.py
+	uv run pytest tests/test_stratification.py tests/test_stratification_core.py tests/test_enrichment_pipeline.py tests/test_corpus_identity.py
 
 test-cov:
 	uv run pytest --cov=mtp --cov=bsdbng --cov-report=term-missing
@@ -784,6 +804,11 @@ calibration-report *ARGS:
 [positional-arguments]
 audit-calibration-eligibility profiles experiments output:
 	uv run python scripts/adhoc/issue730_audit_calibration_eligibility.py --profiles "$1" --experiments "$2" --output "$3"
+
+# Preserve scientific results while refreshing applicable assessment evidence (#729).
+[positional-arguments]
+audit-assessment-refresh *ARGS:
+	uv run python scripts/adhoc/issue729_audit_assessment_refresh.py "$@"
 
 # Just the shared flip-assignment artefact of #263: which studies each replicate of
 # complete_null_study_flip exchanges, for another arm to rerun its own pipeline on

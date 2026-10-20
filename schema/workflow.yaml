@@ -575,3 +575,78 @@ classes:
         title: Claims json
         description: Original historical claims preserved as JSON without inventing executed steps.
     title: Legacy Import Record
+  ArchivedLocation:
+    title: Archived Location
+    description: Original file or collection locations mapped to one immutable retained copy.
+    attributes:
+      original_paths:
+        title: Original paths
+        description: Absolute recorded locations, including any declared input alias; never rewritten in source records.
+        multivalued: true
+        required: true
+      archive_path:
+        title: Archive path
+        description: Safe relative location inside the archive, independent of its current root directory.
+        required: true
+      storage_kind:
+        title: Storage kind
+        description: File or collection storage contract for the retained copy.
+        range: StorageKind
+        required: true
+      sha256:
+        title: Sha256
+        description: File digest or canonical collection inventory digest.
+        pattern: ^[0-9a-f]{64}$
+        required: true
+      size_bytes:
+        title: Size bytes
+        description: Total bytes of retained regular files.
+        range: integer
+        minimum_value: 0
+        required: true
+      inventory:
+        title: Inventory
+        description: Complete regular-file inventory, including hidden members.
+        range: FileInventoryEntry
+        multivalued: true
+        inlined_as_list: true
+        required: true
+  EvidenceArchive:
+    title: Evidence Archive
+    description: Retained bytes and explicit location mappings; archival verification does not invent historical execution or authorship.
+    attributes:
+      id:
+        title: Id
+        description: Unique archive identifier.
+        identifier: true
+        required: true
+      archive_version:
+        title: Archive version
+        description: Version of the retention and verification contract.
+        pattern: ^1$
+        required: true
+      created_at:
+        title: Created at
+        description: UTC archival time, distinct from original execution times.
+        range: datetime
+        required: true
+      core_manifests:
+        title: Core manifests
+        description: Original absolute locations of retained core runs whose full scientific contracts are revalidated.
+        multivalued: true
+        required: true
+      consumer_records:
+        title: Consumer records
+        description: Original absolute locations of consumer records whose output and core bindings are revalidated.
+        multivalued: true
+      retained_paths:
+        title: Retained paths
+        description: Explicit supplemental evidence preserved by byte identity; preservation alone does not validate its scientific claims.
+        multivalued: true
+      locations:
+        title: Locations
+        description: Complete hash-checked source-to-retained-location mapping.
+        range: ArchivedLocation
+        multivalued: true
+        inlined_as_list: true
+        required: true
