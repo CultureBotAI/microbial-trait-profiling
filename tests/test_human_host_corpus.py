@@ -105,7 +105,7 @@ def test_excluded_host_summary_agrees_in_number() -> None:
     )
     assert excluded_host_summary(excluded) == (
         "1 occurrence (1 increased) in 1 profile from 1 study comes from "
-        "experiments whose host is not Homo sapiens: Mus musculus 1."
+        "experiments whose host is not recorded as Homo sapiens: Mus musculus 1."
     )
 
 
@@ -115,5 +115,5 @@ def test_excluded_host_summary_counts_directions_and_hosts() -> None:
     )
     assert excluded_host_summary(excluded) == (
         "3 occurrences (1 decreased, 2 increased) in 2 profiles from 2 studies come from "
-        "experiments whose host is not Homo sapiens: Mus musculus 2, not recorded 1."
+        "experiments whose host is not recorded as Homo sapiens: Mus musculus 2, not recorded 1."
     )

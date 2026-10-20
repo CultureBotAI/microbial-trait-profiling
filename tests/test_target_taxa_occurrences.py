@@ -138,3 +138,73 @@ def test_condition_charts_note_the_set_aside_focus_direction(
     assert calls["stacked"]["note"] == note
     counts = calls["breakdown"]["args"][0]
     assert counts.to_dict() == {"Colorectal cancer": 1}
+
+
+@pytest.mark.parametrize("script", SCRIPTS)
+def test_anatomical_sites_diagram_orders_labels_and_clears_count_bars(
+    script: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Caller diagrams order labels by leader_order_key and clear the count bars (#718)."""
+    module, _, _ = SCRIPTS[script]
+    summary = pd.DataFrame(
+        {
+            "body_site_group": ["Dental", "Throat"],
+            "profile_count": [10, 10],
+            "signal": [0.1, -0.1],
+        }
+    )
+    real_close = module.plt.close
+    monkeypatch.setattr(module.plt, "close", lambda *_a, **_k: None)
+    try:
+        module.save_anatomical_sites_diagram(
+            summary,
+            output_path=tmp_path / f"{script}_sites.png",
+            title="Anatomical Sites",
+            signal_column="signal",
+            signal_label="z",
+        )
+        fig = module.plt.gcf()
+        fig.canvas.draw()
+        ax = fig.axes[0]
+        label_y = {text.get_text(): text.get_position()[1] for text in ax.texts}
+        assert label_y["Throat"] > label_y["Dental"]
+        bars = [line for line in ax.lines if line.get_zorder() == 3]
+        assert len(bars) == 2
+        bar_right = max(
+            ax.transData.transform((max(line.get_xdata()), line.get_ydata()[0]))[0]
+            + 0.5 * line.get_linewidth() * fig.dpi / 72.0
+            for line in bars
+        )
+        cbar_ax = ax.child_axes[0]
+        assert cbar_ax.get_window_extent().x0 > bar_right
+    finally:
+        real_close("all")
+
+
+def test_anatomical_enriched_diagram_orders_labels_by_leader_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The anaerobe enriched-profile diagram also orders labels by leader_order_key (#718)."""
+    summary = pd.DataFrame(
+        {
+            "body_site_group": ["Subgingival dental plaque", "Throat"],
+            "enriched_profile_count": [10, 10],
+            "increased_enriched_profile_count": [4, 4],
+            "decreased_enriched_profile_count": [6, 6],
+        }
+    )
+    real_close = anaerobe.plt.close
+    monkeypatch.setattr(anaerobe.plt, "close", lambda *_a, **_k: None)
+    try:
+        anaerobe.save_anatomical_enriched_profile_diagram(
+            summary,
+            {"inc": 1, "dec": 2},
+            output_path=tmp_path / "enriched_sites.png",
+        )
+        fig = anaerobe.plt.gcf()
+        fig.canvas.draw()
+        ax = fig.axes[0]
+        label_y = {text.get_text(): text.get_position()[1] for text in ax.texts}
+        assert label_y["Throat"] > label_y["Subgingival dental plaque"]
+    finally:
+        real_close("all")

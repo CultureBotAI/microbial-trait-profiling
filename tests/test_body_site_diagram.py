@@ -257,13 +257,15 @@ def test_leader_lines_clear_each_other_and_the_bubbles(layout: str, groups: list
     """The current 8 groups plus any of the next six, up to the most each figure draws."""
     segments = leader_segments(groups, layout)
     largest = max(SITE_PROFILE_COUNTS[group] for group in groups)
+    # Keep at least 0.002 outline units (~1.5 pt, > the 0.85 pt combined half-strokes)
+    # between each leader segment and every other bubble's edge (#718).
     through_bubbles = [
         (group, other)
         for group, (start, end) in segments.items()
         for other in groups
         if other != group
         and segment_distance(anatomical_site_base(other), start, end)
-        < bubble_radius(SITE_PROFILE_COUNTS[other], largest)
+        < bubble_radius(SITE_PROFILE_COUNTS[other], largest) + 0.002
     ]
     assert through_bubbles == []
     crossing = [

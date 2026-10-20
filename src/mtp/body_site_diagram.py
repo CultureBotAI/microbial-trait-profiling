@@ -49,12 +49,12 @@ UNKNOWN_ANCHOR = (0.16, 0.16)
 # site the first rule with a keyword in it wins, so "nasopharynx" precedes the neck
 # rule's "pharynx", and "colorect" and "large intestine" keep "Colorectum" and
 # "Large intestine" with the colon rather than the rectum or the small intestine.
-# Mouth and oral cavity sit side by side on the face (#612); dental plaque is at the
-# jaw and saliva at the parotid gland beside the ear, both just outside the head
-# circle. Stomach, lung base, descending colon and skin (forearm) are on the subject's
-# left, the caecum on the right; the small intestine is central and the rectum sits
-# low on the midline, above feces (#620). The positions were chosen so that leader
-# lines stay clear of each other and of the bubbles (#711).
+# Mouth and oral cavity sit side by side on the face (#612); dental plaque is below
+# the jaw, beside the neck, and saliva at the parotid gland beside the ear, both just
+# outside the head circle. Stomach, lung base, descending colon and skin (forearm) are
+# on the subject's left, the caecum on the right; the small intestine is central and
+# the rectum sits low on the midline, above feces (#620). The positions were chosen so
+# that leader lines stay clear of each other and of the bubbles (#711).
 SITE_ANCHORS: tuple[tuple[tuple[str, ...], tuple[float, float]], ...] = (
     (("nasopharynx", "airway"), (0.300, 0.888)),
     (("subgingival", "dental"), (0.255, 0.816)),

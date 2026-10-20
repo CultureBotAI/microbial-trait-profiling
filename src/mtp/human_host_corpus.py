@@ -110,7 +110,7 @@ def excluded_host_summary(excluded: pd.DataFrame) -> str:
         f"{_counted(len(excluded), 'occurrence', 'occurrences')} ({direction_text}) in "
         f"{_counted(excluded['profile_id'].nunique(), 'profile', 'profiles')} from "
         f"{_counted(excluded['study_id'].nunique(), 'study', 'studies')} {verb} from "
-        f"experiments whose host is not {HUMAN_HOST_SPECIES}: {host_text}."
+        f"experiments whose host is not recorded as {HUMAN_HOST_SPECIES}: {host_text}."
     )
 
 

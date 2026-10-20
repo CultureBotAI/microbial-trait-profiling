@@ -63,7 +63,7 @@ Guardrail: the increased-profile anaerobe score is retained in every condition a
 | Agathobacter rectalis | Parkinson's disease | Feces | 3 / 0 | 3 |
 | Roseburia intestinalis | Colorectal cancer | Feces | 3 / 0 | 3 |
 
-Target-taxon occurrence views (`target_taxa_condition_breakdown_bar.png`, `condition_target_taxa_stacked_bar.png`, `candidate_taxa_profile_occurrences.tsv` and `candidate_taxa_condition_direction.tsv`) count human-host profiles only, the corpus of the profile metadata. 60 occurrences (28 decreased, 32 increased) in 48 profiles from 19 studies come from experiments whose host is not Homo sapiens: Mus musculus 40, Sus scrofa domesticus 7, Hoolock tianxing 3, Rattus norvegicus 3, Theropithecus gelada 2, Bos taurus 1, Felis catus 1, Gallus gallus 1, Nomascus hainanus 1, Ovis aries 1. They have no profile metadata, so they are not counted under any condition; `candidate_taxa_excluded_host_occurrences.tsv` lists them.
+Target-taxon occurrence views (`target_taxa_condition_breakdown_bar.png`, `condition_target_taxa_stacked_bar.png`, `candidate_taxa_profile_occurrences.tsv` and `candidate_taxa_condition_direction.tsv`) count human-host profiles only, the corpus of the profile metadata. 60 occurrences (28 decreased, 32 increased) in 48 profiles from 19 studies come from experiments whose host is not recorded as Homo sapiens: Mus musculus 40, Sus scrofa domesticus 7, Hoolock tianxing 3, Rattus norvegicus 3, Theropithecus gelada 2, Bos taurus 1, Felis catus 1, Gallus gallus 1, Nomascus hainanus 1, Ovis aries 1. They have no profile metadata, so they are not counted under any condition; `candidate_taxa_excluded_host_occurrences.tsv` lists them.
 
 ## Conditions With Anaerobe v2 Trait Enrichment in Decreased Profiles
 

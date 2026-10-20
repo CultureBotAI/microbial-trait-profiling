@@ -533,6 +533,9 @@ def test_body_site_panel_keeps_labels_and_bubbles_apart() -> None:
         # Leader lines run above the bubbles, so a line crossing one stays visible (#712).
         leaders = [line for line in ax.lines if line.get_zorder() > bubbles[0].get_zorder()]
         assert len(leaders) == len(summary)
+        # Throat sits above Subgingival dental plaque under leader_order_key (#718).
+        label_y = {text.get_text(): text.get_position()[1] for text in ax.texts}
+        assert label_y["Throat"] > label_y["Subgingival dental plaque"]
     finally:
         plt.close(fig)
 
