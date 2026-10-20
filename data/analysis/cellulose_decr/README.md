@@ -18,9 +18,9 @@ here was reported decreased in at least one study, not consistently lost
 The trait and the three conditions were chosen as an exploratory lead from this
 same corpus, so every p-value here is nominal. Section 4 adds adjusted values.
 
-## What changed on 2026-10-19 (#580)
+## What changed on 2026-10-19 (#580, #672)
 
-The analysis now reads contrast classifier v4 and is re-pinned on it.
+The analysis now reads contrast classifier v5 and is re-pinned on it.
 
 - **Disease vs healthy means patients against controls.** The disease-versus-healthy
   populations keep `disease_vs_healthy` contrasts whose `contrast_type` is
@@ -38,27 +38,26 @@ The analysis now reads contrast classifier v4 and is re-pinned on it.
     Tier 1–2 controls, or count the paired-tissue or the comorbidity contrasts as well.
   - The summary's `case_control_inventory` lists the 21 experiments in the three
     conditions that one of these rules sets aside.
-- **One CRC study is miscalled (#672).** The classifier calls Yachida et al. 2019
-  (`bsdb:31171880-1` to `-4`) comorbidity contrasts because its controls are "normal
-  and a few polyps".
-  - The primary analysis therefore leaves out these four paired stool experiments, all
-    of which point down.
-  - Counting the comorbidity contrasts (`comorbidity_counted`, which also adds
-    `bsdb:36959686-4`) gives CRC stool 22 : 5 : 8 experiments (p = 0.0015) and
-    15 : 3 : 7 studies (p = 0.0075).
-  - Without them it is 18 : 5 : 8 (p = 0.011) and 14 : 3 : 7 (p = 0.013).
+- **One CRC study with polyp-bearing controls is Tier 3 case vs control (#672).** In
+  classifier v5, Yachida et al. 2019 (`bsdb:31171880-1` to `-4`, controls "normal and a
+  few polyps") is classified as `case_vs_control_subject` with Tier 3
+  `hospital_or_symptomatic_control` rather than `comorbidity_within_disease`.
+  - The primary disease-vs-healthy analysis (`subject_controls`) therefore includes
+    these four paired stool experiments, all of which point down, giving CRC stool
+    22 : 5 : 8 experiments (p = 0.0015) and 15 : 3 : 7 studies (p = 0.0075).
+  - Keeping only Tier 1–2 controls (`control_tiers_1_2`) sets them aside, giving
+    18 : 5 : 8 (p = 0.011) and 14 : 3 : 7 (p = 0.013).
 - **What moved.** The all-contrast tests, sets, nulls, catalog and benchmark are
   unchanged. Only their Benjamini-Hochberg q-values move, because those are taken over
   every test in the summary table. Among disease-versus-healthy contrasts:
   - HIV stool studies go from 9 : 0 : 2 (p = 0.0039) to 10 : 2 : 2 (p = 0.039).
-  - CRC stool experiments go from 21 : 4 : 8 (p = 9.1e-4) to 18 : 5 : 8 (p = 0.011),
-    mostly because of the Yachida study above.
-  - The CRC study majority vote goes from 14 : 2 : 8 (p = 0.0042) to 13 : 2 : 9
-    (p = 0.0074).
+  - CRC stool experiments go from 21 : 4 : 8 (p = 9.1e-4) to 22 : 5 : 8 (p = 0.0015),
+    and studies from 14 : 2 : 8 to 15 : 3 : 7 (p = 0.0075).
+  - The CRC study majority vote is 14 : 2 : 9 (p = 0.0042).
   - PD ties go from 10 to 12: the two PD experiments whose cases are named as treated
     (`bsdb:31815177-8`, `-11`) are tied.
-  - The CRC stool-vs-GI study test goes from p = 0.13 to 0.021 (section 5). It rests
-    on one experiment either way: counting `bsdb:25699023-2` gives 0.13 again.
+  - The CRC stool-vs-GI study test goes from p = 0.13 to 0.017 (section 5). It rests
+    on one experiment either way: counting `bsdb:25699023-2` gives 0.066.
 
 ## What changed on 2026-10-17 (#552)
 
@@ -278,14 +277,14 @@ vote: the sign of its mean paired difference
 | HIV | all | 18 : 7 : 3 | 0.043 | 12 : 4 : 2 | 0.077 | 0.30 |
 | HIV | disease vs healthy | 13 : 3 : 3 | 0.021 | 10 : 2 : 2 | 0.039 | 0.18 |
 | CRC | all | 32 : 6 : 11 | 2.4e-5 | 19 : 2 : 7 | 2.2e-4 | 2.0e-4 |
-| CRC | disease vs healthy | 18 : 5 : 8 | 0.011 | 14 : 3 : 7 | 0.013 | 0.0026 |
+| CRC | disease vs healthy | 22 : 5 : 8 | 0.0015 | 15 : 3 : 7 | 0.0075 | 0.0013 |
 | All three | all | 108 : 37 : 31 | 3.0e-9 | 58 : 20 : 13 | 2.0e-5 | 4.1e-5 |
-| All three | disease vs healthy | 78 : 23 : 23 | 3.6e-8 | 48 : 15 : 13 | 3.8e-5 | 1.2e-4 |
+| All three | disease vs healthy | 82 : 23 : 23 | 6.0e-9 | 49 : 15 : 13 | 2.4e-5 | 7.3e-5 |
 
 [`significant_results_summary.tsv`](significant_results_summary.tsv) gives
 Benjamini-Hochberg q-values over its 29 tests. The four disease-vs-healthy
-study-level rows have q = 0.041 (PD), 0.057 (HIV), 0.026 (CRC) and 2.2e-4
-(pooled). The all-contrasts study-level PD and HIV rows have q = 0.079 and 0.093.
+study-level rows have q = 0.037 (PD), 0.056 (HIV), 0.016 (CRC) and 1.4e-4
+(pooled). The all-contrasts study-level PD and HIV rows have q = 0.075 and 0.093.
 
 **How the rows change:**
 
@@ -295,12 +294,12 @@ study-level rows have q = 0.041 (PD), 0.057 (HIV), 0.026 (CRC) and 2.2e-4
   (p = 0.060).
 - **Majority vote.** Taking each study's majority of experiment signs instead of
   its mean difference gives PD 28 : 12 : 5 (p = 0.017). For disease vs healthy
-  it gives PD 24 : 9 : 5 (p = 0.014) and CRC 13 : 2 : 9 (p = 0.0074).
+  it gives PD 24 : 9 : 5 (p = 0.014) and CRC 14 : 2 : 9 (p = 0.0042).
 - **Disease-vs-healthy contrasts only.**
   - This strengthens the PD and HIV sign tests. PD's study-level Wilcoxon
     weakens slightly, from 0.0093 to 0.015.
   - It weakens CRC, though CRC stays below 0.05: the study sign-test p moves
-    from 2.2e-4 to 0.013.
+    from 2.2e-4 to 0.0075.
   - No experiment in the three conditions is classified as reversed.
 - **Weak comparison evidence.** Dropping these experiments changes only HIV:
   12 : 2 : 1 experiments (p = 0.013) and 9 : 1 : 0 studies (p = 0.021).
@@ -326,9 +325,9 @@ the synonyms counted. PD is unaffected. CRC stays essentially unchanged with its
 synonyms:
 - all contrasts: 37 : 10 : 12 experiments (p = 9.8e-5) and 22 : 3 : 7 studies
   (p = 1.6e-4);
-- disease vs healthy: 16 : 4 : 7 studies (p = 0.012).
+- disease vs healthy: 17 : 4 : 7 studies (p = 0.0072).
 
-The pooled study-level result stays at p ≤ 1.4e-4 in every scenario.
+The pooled study-level result stays at p ≤ 8.8e-5 in every scenario.
 
 Since classifier v4 the primary reading counts the HIV– vs HIV+ experiment
 (`bsdb:33102244-1`) and the ART-treated HIV+ vs uninfected experiments as disease vs
@@ -382,10 +381,10 @@ The table below gives Fisher's exact test of direction by compartment
 | CRC | studies | 19 : 2 | 3 : 8 | 21.6 (2.7–309) | 5.6e-4 |
 | All three, stratified by condition | experiments | 108 : 37 | 9 : 12 | 4.79 (1.52–15.8) | 0.0049 |
 | All three, stratified by condition | studies | 58 : 20 | 5 : 9 | 8.46 (1.79–49.9) | 0.0021 |
-| CRC, disease vs healthy | experiments | 18 : 5 | 2 : 5 | 8.2 (0.99–111) | 0.026 |
-| CRC, disease vs healthy | studies | 14 : 3 | 2 : 5 | 10.2 (1.07–158) | 0.021 |
-| CRC, disease vs healthy, paired-tissue contrasts counted | studies | 14 : 3 | 3 : 4 | 5.66 (0.61–65.5) | 0.13 |
-| All three, stratified, disease vs healthy | studies | 48 : 15 | 4 : 6 | 5.79 (1.03–37.3) | 0.039 |
+| CRC, disease vs healthy | experiments | 22 : 5 | 2 : 5 | 10.0 (1.23–134) | 0.014 |
+| CRC, disease vs healthy | studies | 15 : 3 | 2 : 5 | 10.9 (1.15–169) | 0.017 |
+| CRC, disease vs healthy, paired-tissue contrasts counted | studies | 15 : 3 | 3 : 4 | 6.05 (0.66–69.7) | 0.066 |
+| All three, stratified, disease vs healthy | studies | 49 : 15 | 4 : 6 | 6.06 (1.08–39.0) | 0.019 |
 
 **How to read these odds ratios:**
 
@@ -396,7 +395,8 @@ The table below gives Fisher's exact test of direction by compartment
   are mostly PD and pooled GI pairs mostly CRC.
 - As in Fisher's test, each p-value counts outcomes no more likely than the
   observed one, while each interval comes from two one-sided tails. The two can
-  disagree near 0.05, as in the disease-vs-healthy CRC experiment row.
+  disagree near 0.05, as in the Tier 1–2 CRC experiment row (OR 8.2, 95% CI
+  0.99–111, p = 0.026).
 
 The units are treated as independent. Only 11 of the 31 paired CRC mucosa and
 lumen experiments compare patients with controls (`contrast_type`
@@ -407,12 +407,12 @@ same patients (`bsdb:22761885-2`, `bsdb:25699023-2`). The classifier calls them
 disease vs healthy but `paired_tissue_autologous` (since v3), so they do not count
 here.
 - Counting `bsdb:25699023-2` changes the disease-vs-healthy study-level test from
-  p = 0.021 to p = 0.13
+  p = 0.017 to p = 0.066
   ([`condition_definition_interaction.tsv`](condition_definition_interaction.tsv)).
 - `bsdb:22761885-2` changes nothing.
 - That test therefore rests on one experiment either way.
-- Counting the comorbidity contrasts instead, among them the Yachida study (#672),
-  gives p = 0.017.
+- Keeping only Tier 1–2 controls, which sets aside the Yachida study (#672),
+  gives p = 0.021.
 
 Two CRC studies sampled both compartments. The direction differs between feces and CRC mucosa or lumen. With
 this sampling effort and this mix of contrasts, that does not show the pattern is
@@ -425,8 +425,8 @@ specific to feces.
 | Primary: all ranks | 38 / 24 / 34 | 0.479 | 17 / 47 | 4.8e-23 |
 | Genus and species only | 19 / 12 / 20 | 0.478 | 9 / 25 | 3.5e-12 |
 | Profiles with cellulose z > 0 | 34 / 24 / 33 | 0.496 | 16 / 46 | 4.0e-22 |
-| Disease-vs-healthy contrasts | 33 / 21 / 30 | 0.503 | 14 / 42 | 4.8e-20 |
-| Disease-vs-healthy contrasts, strong comparison evidence | 33 / 19 / 30 | 0.499 | 14 / 41 | 4.9e-21 |
+| Disease-vs-healthy contrasts | 33 / 21 / 31 | 0.512 | 14 / 43 | 8.7e-20 |
+| Disease-vs-healthy contrasts, strong comparison evidence | 33 / 19 / 31 | 0.508 | 14 / 42 | 8.9e-21 |
 | Synonym condition labels counted | 38 / 27 / 37 | 0.456 | 20 / 50 | 1.8e-27 |
 | Without the rectal-mucosa study | 38 / 23 / 34 | 0.496 | 16 / 47 | 2.5e-21 |
 | All body sites | 43 / 28 / 44 | 0.529 | 19 / 60 | 2.0e-21 |
@@ -556,8 +556,8 @@ The options:
 - `--repin` adopts the current inputs as the new pins, for example after a
   BugSigDB release.
 
-The pins are the v4 contrast manifest and the profile metadata table with each
-experiment's own labels (#555), adopted with `--repin` in #580. The committed tables
+The pins are the v5 contrast manifest and the profile metadata table with each
+experiment's own labels (#555), adopted with `--repin` in #580 and #672. The committed tables
 reproduce from the pinned inputs at the provenance's `code_commit` (#642). A commit
 made before a re-pin still carries the old pins, so there, pass
 `--pinned-provenance` with this provenance file, or check out the commit that adds

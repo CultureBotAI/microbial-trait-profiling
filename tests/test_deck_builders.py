@@ -1401,6 +1401,10 @@ def test_unmerged_code_is_not_on_main() -> None:
     """Code merged into main is linked and rerun there, not at a pull request."""
     for code in deck.UNMERGED_CODE:
         assert not (REPO / code).exists(), code
+    with deck.Repo(str(REPO), search_parent_directories=False, expand_vars=False) as repository:
+        tree = repository.head.commit.tree
+        for figure in deck.PR173_MAPS:
+            assert figure not in tree, figure
 
 
 def test_a_slide_shows_the_figure_it_records(tmp_path: Path) -> None:
@@ -1837,3 +1841,69 @@ def test_scripts_no_drawing_recipe_runs_are_kept() -> None:
         "uv run python scripts/create_taxa_guild_heatmap.py",
         "just guild-maps",
     ]
+
+
+def test_pd_six_shared_summary_readers_declare_their_prerequisite() -> None:
+    """The PD scripts reading six_shared_trait_summary.tsv need `just six-shared-trait-sankeys`
+    before them (#716)."""
+    recipes = _recipes()
+    by_code = deck.recipes_by_code(recipes)
+    series = [
+        *deck.UPSTREAM_COMMANDS,
+        "just trait-heatmaps",
+        "just trait-profile-investigation",
+    ]
+    for script, recipe in (
+        ("scripts/create_pd_cellulose_analysis.py", "just pd-cellulose-analysis"),
+        (
+            "scripts/create_pd_significant_condition_taxon_trait_network.py",
+            "just pd-significant-ecological-network",
+        ),
+    ):
+        row = {
+            "code_path": script,
+            "figure_file_path": (
+                "trait-visualization/trait-profile-investigation/PD-cellulose/x.png"
+            ),
+            "evidence_path": "",
+            "methods_path": "",
+        }
+        rec: dict[str, Any] = {
+            "command_series": list(series),
+            "pipeline_step_ids": ["step_09_six_shared_traits", "step_10_pd_cellulose_and_switches"],
+            "input_data_files": ["data/derived/study_trait_profiles_wide.tsv"],
+        }
+        deck.drawn_provenance(rec, row, recipes, by_code)
+        assert rec["command_series"][-4:] == [
+            "just trait-heatmaps",
+            "just trait-profile-investigation",
+            "just six-shared-trait-sankeys",
+            recipe,
+        ]
+        assert deck.SIX_SHARED_SUMMARY in rec["input_data_files"]
+
+
+def test_plate_seven_uses_study_mean_for_arm_one_direction() -> None:
+    """Arm 1 tests the study-level mean difference, not the experiment-level one (#716)."""
+    arm1 = {
+        "t1": {
+            "trait_label": "Trait one",
+            "study_q_value": "0.01",
+            "study_mean_increased_minus_decreased": "-0.12",
+            "mean_increased_minus_decreased": "0.08",
+        }
+    }
+    arm2 = {"t1": {"inc_hits": "2", "dec_hits": "9", "hit_rows": "11"}}
+    arm3 = {
+        "t1": {
+            "bh_q_nominal": "0.01",
+            "by_q_nominal": "0.02",
+            "studies_up": "10",
+            "studies_down": "30",
+            "share_up": "0.25",
+        }
+    }
+    (trait,) = plates.three_arm_traits(arm1, arm2, arm3, set())
+    assert trait["a1_diff"] == pytest.approx(-0.12)
+    assert trait["paired_dir"] == "dec"
+    assert trait["all3_concordant"] is True

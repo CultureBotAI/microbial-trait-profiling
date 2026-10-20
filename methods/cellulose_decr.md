@@ -37,7 +37,7 @@ The run's `cellulose_decr_provenance.json` records:
 - the code commit, seeds and package versions.
 
 Numbers in this note come from BugSigDB vintage `2026-04-24_00:41_UTC` and
-classifier `contrast-orientation-v4`.
+classifier `contrast-orientation-v5`.
 
 **Pinned inputs.** The inputs are gitignored, and other work rebuilds them in
 place. The provenance therefore keeps the reference hashes in `pinned_inputs`,
@@ -56,7 +56,7 @@ Two options change this:
   old pins forward, so the next ordinary run still refuses them.
 - `--repin` adopts the current inputs as the pins.
 
-See #562 and #571. The pins describe the v4 contrast manifest and the profile metadata
+See #562 and #571. The pins describe the v5 contrast manifest and the profile metadata
 table with each experiment's own labels (#555, #580). The committed tables reproduce
 from the pinned inputs at the provenance's `code_commit` (#642). A commit made before
 a re-pin still carries the old pins, so there, pass `--pinned-provenance` with the
@@ -150,9 +150,12 @@ the larger share. Ties are excluded.
   of these definitions, and the significant-results table gives each Feces-vs-GI
   row's p range across them (#673). Since classifier v3 tumour-vs-adjacent tissue is
   `paired_tissue_autologous` (#554). Since v4 the HIV– versus HIV+ and ART-treated
-  HIV+ versus uninfected experiments are disease vs healthy (#569). The analysis
-  therefore no longer hand-codes them (#580). The summary's `case_control_inventory`
-  lists each experiment in the three conditions that one of these rules sets aside.
+  HIV+ versus uninfected experiments are disease vs healthy (#569). Since v5 the
+  Yachida et al. 2019 CRC experiments with polyp-bearing controls are
+  `case_vs_control_subject` with Tier 3 `hospital_or_symptomatic_control` (#672).
+  The analysis therefore no longer hand-codes them (#580). The summary's
+  `case_control_inventory` lists each experiment in the three conditions that one
+  of these rules sets aside.
 - **Compartments:**
   - For each compartment and condition, the table reports the smallest two-sided
     p a sign test can reach with the observed untied pairs, and the power to
