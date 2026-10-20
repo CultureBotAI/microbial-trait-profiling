@@ -3,6 +3,8 @@
 Inputs: a JSON manifest of historical/current TSV pairs and their explicit profile
 and taxa-matrix inputs. Output: a JSON audit; nonzero exit on unexpected changes.
 Only new input fingerprint metadata is allowed. Historical exports are read-only.
+Input eligibility, taxon/background counts and profile/trait completeness are
+checked independently (#725); p/q values and effect estimates are not recalculated.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ from dataclasses import asdict, dataclass
 from itertools import chain
 from pathlib import Path
 
+from mtp.count_input import PROFILE_KEY_COLUMNS, open_input_text
 from mtp.enrichment_results import (
     COUNT_COLUMNS,
     FLOAT_COLUMNS,
@@ -29,6 +32,7 @@ from mtp.enrichment_results import (
     classify_result_status,
 )
 from mtp.paths import file_sha256
+from mtp.trait_guilds import MEDIADIVE_MARKER
 
 FINGERPRINTS = {"Profiles-SHA256": "profiles", "Taxa-Matrix-SHA256": "taxa_matrix"}
 PAIR_FIELDS = {"label", "historical", "current", "profiles", "taxa_matrix"}
@@ -40,6 +44,117 @@ COMPLETE_COLUMNS = {
     "correction_family",
     "eligibility_status",
 }
+ProfileKey = tuple[str, str, str]
+
+
+def table_rows(path: Path) -> Iterator[tuple[list[str], list[str]]]:
+    """Stream input rows without accepting duplicate columns or ragged records."""
+    with open_input_text(path) as handle:
+        reader = csv.reader(handle, delimiter="\t", strict=True)
+        header = next(reader, [])
+        if not header or len(header) != len(set(header)) or any(not col for col in header):
+            raise ValueError(f"{path}: missing or duplicate input columns")
+        for row in reader:
+            if not row:
+                continue
+            if len(row) != len(header):
+                raise ValueError(f"{path}: malformed input row {reader.line_num}")
+            yield header, row
+
+
+@dataclass(frozen=True)
+class InputPopulation:
+    """Input-defined profile/trait family; no result rows or statistics are retained."""
+
+    profile_indices: dict[ProfileKey, int]
+    paired_profiles: int
+    background_m: int
+    background_k: dict[str, int]
+
+    def check_metadata(self, metadata: dict[str, str]) -> None:
+        for key, expected in (
+            ("Total-Profiles-Input", self.paired_profiles),
+            ("Testable-Profiles", len(self.profile_indices)),
+            ("Background-Taxa-Universe-M", self.background_m),
+        ):
+            if number(metadata[key], key, integer=True) != expected:
+                raise ValueError(f"{key} differs from input population")
+        if not metadata.get("Background-Mode", "").startswith("TaxaMatrix"):
+            raise ValueError("Background-Mode must declare the supplied taxa matrix")
+
+    def observe(self, row: list[str], indices: dict[str, int], masks: dict[str, int]) -> None:
+        key = (row[indices["study_id"]], row[indices["experiment_id"]], row[indices["inc_dec"]])
+        if key not in self.profile_indices:
+            raise ValueError(f"profile absent from eligible inputs: {key}")
+        trait = row[indices["trait"]]
+        if trait not in self.background_k:
+            raise ValueError(f"trait absent from eligible inputs: {trait}")
+        background = number(row[indices["background_k"]], "background_k", integer=True)
+        if background != self.background_k[trait]:
+            raise ValueError(f"background_k differs from input matrix: {trait}")
+        bit = 1 << self.profile_indices[key]
+        if masks[trait] & bit:
+            raise ValueError(f"duplicate profile/trait test: {key}, {trait}")
+        masks[trait] |= bit
+
+
+def input_population(profiles: Path, matrix: Path) -> InputPopulation:
+    """Recover producer eligibility: paired profiles with N>0, non-MediaDive traits with K>0."""
+    draws: dict[ProfileKey, int] = {}
+    directions: dict[tuple[str, str], set[str]] = {}
+    traits: list[str] = []
+    positions: dict[str, int] = {}
+    for header, row in table_rows(profiles):
+        if not positions:
+            if not {*PROFILE_KEY_COLUMNS, "taxa_count"}.issubset(header):
+                raise ValueError(f"{profiles}: missing profile identifiers or taxa_count")
+            traits = [
+                col
+                for col in header
+                if col not in {*PROFILE_KEY_COLUMNS, "taxa_count"}
+                and MEDIADIVE_MARKER not in col.lower()
+            ]
+            positions = {col: index for index, col in enumerate(header)}
+        key = tuple(row[positions[col]].strip() for col in PROFILE_KEY_COLUMNS)
+        profile_key = (key[0], key[1], key[2])
+        if not all(profile_key) or profile_key[2] not in {"inc", "dec"}:
+            raise ValueError(f"{profiles}: invalid profile identifier")
+        if profile_key in draws:
+            raise ValueError(f"{profiles}: duplicate input profile: {profile_key}")
+        draws[profile_key] = int(number(row[positions["taxa_count"]], "taxa_count", integer=True))
+        directions.setdefault(profile_key[:2], set()).add(profile_key[2])
+    if not draws or not traits:
+        raise ValueError(f"{profiles}: no input profiles or retained trait columns")
+    paired = {key for key, observed in directions.items() if observed == {"inc", "dec"}}
+    eligible = [key for key, count in draws.items() if key[:2] in paired and count > 0]
+    background = dict.fromkeys(traits, 0)
+    taxa: set[str] = set()
+    positions = {}
+    trait_positions: dict[str, int] = {}
+    for header, row in table_rows(matrix):
+        if not positions:
+            if "taxon_id" not in header:
+                raise ValueError(f"{matrix}: missing taxon_id")
+            positions = {col: index for index, col in enumerate(header)}
+            trait_positions = {trait: positions[trait] for trait in traits if trait in positions}
+        taxon = row[positions["taxon_id"]].strip()
+        if not taxon or taxon in taxa:
+            raise ValueError(f"{matrix}: missing or duplicate taxon_id: {taxon!r}")
+        taxa.add(taxon)
+        for trait, position in trait_positions.items():
+            # The producer interprets empty trait cells as zero and accepts integer floats.
+            count = number(row[position].strip() or "0", trait, integer=True)
+            background[trait] += count > 0
+    if not taxa:
+        raise ValueError(f"{matrix}: no taxon rows")
+    if any(draws[key] > len(taxa) for key in draws if key[:2] in paired):
+        raise ValueError("profile taxa_count exceeds input matrix population")
+    return InputPopulation(
+        profile_indices={key: index for index, key in enumerate(eligible)},
+        paired_profiles=sum(key[:2] in paired for key in draws),
+        background_m=len(taxa),
+        background_k={trait: count for trait, count in background.items() if count > 0},
+    )
 
 
 def number(
@@ -177,7 +292,7 @@ class TableAudit:
     errors: list[str]
 
 
-def read_table(path: Path) -> TableAudit:
+def read_table(path: Path, population: InputPopulation) -> TableAudit:
     """Stream a complete export and reconcile its declared and observed counts."""
     metadata: dict[str, str] = {}
     body_digest = hashlib.sha256()
@@ -185,6 +300,7 @@ def read_table(path: Path) -> TableAudit:
     rows = 0
     significant = 0
     errors: list[str] = []
+    masks = dict.fromkeys(population.background_k, 0)
     with path.open("rb") as handle:
         first_line = handle.readline()
         while first_line.startswith(b"#"):
@@ -207,6 +323,7 @@ def read_table(path: Path) -> TableAudit:
             raise ValueError(f"{path}: missing or duplicate complete-result columns")
         try:
             contract = row_contract(header, metadata)
+            population.check_metadata(metadata)
         except ValueError as exc:
             raise ValueError(f"{path}: {exc}") from exc
         for row in reader:
@@ -215,6 +332,7 @@ def read_table(path: Path) -> TableAudit:
                 raise ValueError(f"{path}: malformed table row {rows}")
             try:
                 significant += contract.selected(row)
+                population.observe(row, contract.indices, masks)
             except ValueError as exc:
                 raise ValueError(f"{path}: row {rows}: {exc}") from exc
     for key, observed in ((META_TESTS_PERFORMED, rows), (META_SIGNIFICANT_HITS, significant)):
@@ -230,6 +348,9 @@ def read_table(path: Path) -> TableAudit:
             f"{META_RESULT_STATUS}: declared {metadata.get(META_RESULT_STATUS)!r}, "
             f"observed {status!r}"
         )
+    complete = (1 << len(population.profile_indices)) - 1
+    if any(mask != complete for mask in masks.values()):
+        errors.append("incomplete eligible profile/trait family")
     return TableAudit(
         path=str(path),
         sha256=file_sha256(path),
@@ -246,8 +367,9 @@ def audit_pair(pair: dict[str, str], base: Path) -> dict[str, object]:
     paths = {key: (base / value).resolve() for key, value in pair.items() if key != "label"}
     if same_path(paths["historical"], paths["current"]):
         raise ValueError(f"{pair['label']}: historical and current paths must differ")
-    historical = read_table(paths["historical"])
-    current = read_table(paths["current"])
+    population = input_population(paths["profiles"], paths["taxa_matrix"])
+    historical = read_table(paths["historical"], population)
+    current = read_table(paths["current"], population)
     old_meta = historical.metadata
     new_meta = current.metadata
     inputs = {

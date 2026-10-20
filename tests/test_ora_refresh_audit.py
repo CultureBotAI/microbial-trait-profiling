@@ -19,19 +19,30 @@ def refresh_manifest(tmp_path: Path, request: pytest.FixtureRequest) -> Path:
     """Use actual producer output, including mixed metadata/table line endings."""
     settings: dict[str, str] = getattr(request, "param", {})
     zero = settings.get("zero")
-    draws = 0 if zero == "draws" else 2
+    draws = 0 if zero in {"draws", "one_draw"} else 2
+    dec_draws = 2 if zero == "one_draw" else draws
     annotated = 0 if zero else 2
+    extra_trait = settings.get("extra_trait", "")
+    extra_name = "mediadive.medium:1" if extra_trait == "medium" else "TraitB"
+    extra_header = f"\t{extra_name}" if extra_trait else ""
+    extra_inc = ("\t0" if extra_trait == "zero" else "\t1") if extra_trait else ""
+    extra_dec = "\t0" if extra_trait else ""
+    decreased = f"s1\te1\tdec\t{dec_draws}\t0{extra_dec}\n"
+    if settings.get("unpaired") == "only":
+        decreased = ""
     profiles = tmp_path / "profiles.tsv"
     matrix = tmp_path / "matrix.tsv"
     profiles.write_text(
-        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
-        f"s1\te1\tinc\t{draws}\t{annotated}\n"
-        f"s1\te1\tdec\t{draws}\t0\n",
+        f"study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA{extra_header}\n"
+        f"s1\te1\tinc\t{draws}\t{annotated}{extra_inc}\n"
+        f"{decreased}",
         encoding="utf-8",
     )
     positive = 0 if zero == "traits" else 1
     matrix.write_text(
-        f"taxon_id\tTraitA\n1\t{positive}\n2\t{positive}\n3\t0\n4\t0\n", encoding="utf-8"
+        f"taxon_id\tTraitA{extra_header}\n1\t{positive}{extra_inc}\n"
+        f"2\t{positive}{extra_dec}\n3\t0{extra_dec}\n4\t0{extra_dec}\n",
+        encoding="utf-8",
     )
     current = tmp_path / "current.tsv"
     subprocess.run(
@@ -140,7 +151,7 @@ def test_refresh_audit_rejects_changed_or_incomplete_results(
     current = refresh_manifest.parent / "current.tsv"
     contents = current.read_bytes()
     if mutation == "body":
-        current.write_bytes(contents.replace(b"s1\te1\tinc", b"s2\te1\tinc"))
+        mutate_table(current, "p_value", "0.25")
     elif mutation == "truncated":
         current.write_bytes(b"".join(contents.splitlines(keepends=True)[:-1]))
     elif mutation == "selected_count":
@@ -182,22 +193,25 @@ def test_refresh_audit_cannot_overwrite_historical_input(
     assert file_sha256(historical) == before
 
 
+def mutate_table(path: Path, column: str, value: str | None) -> None:
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    start = next(index for index, line in enumerate(lines) if not line.startswith("#"))
+    rows = list(csv.reader(lines[start:], delimiter="\t"))
+    index = rows[0].index(column)
+    if value is None:
+        for row in rows:
+            del row[index]
+    else:
+        rows[1][index] = value
+    output = io.StringIO(newline="")
+    csv.writer(output, delimiter="\t").writerows(rows)
+    path.write_text("".join(lines[:start]) + output.getvalue(), encoding="utf-8", newline="")
+
+
 def mutate_both_tables(manifest: Path, column: str, value: str | None) -> None:
     """Keep both bodies identical so comparison cannot conceal invalid results (#724)."""
     for filename in ("historical.tsv", "current.tsv"):
-        path = manifest.parent / filename
-        lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
-        start = next(index for index, line in enumerate(lines) if not line.startswith("#"))
-        rows = list(csv.reader(lines[start:], delimiter="\t"))
-        index = rows[0].index(column)
-        if value is None:
-            for row in rows:
-                del row[index]
-        else:
-            rows[1][index] = value
-        output = io.StringIO(newline="")
-        csv.writer(output, delimiter="\t").writerows(rows)
-        path.write_text("".join(lines[:start]) + output.getvalue(), encoding="utf-8", newline="")
+        mutate_table(manifest.parent / filename, column, value)
 
 
 @pytest.mark.parametrize(
@@ -290,6 +304,11 @@ def test_refresh_audit_rejects_identical_invalid_settings(
         ({"threshold": "0.0"}, "zero_discoveries", 2),
         ({"zero": "traits"}, "zero_eligible_tests", 0),
         ({"zero": "draws"}, "zero_eligible_tests", 0),
+        ({"zero": "one_draw"}, "discoveries", 1),
+        ({"unpaired": "only"}, "zero_eligible_tests", 0),
+        ({"extra_trait": "yes"}, "discoveries", 4),
+        ({"extra_trait": "medium"}, "discoveries", 2),
+        ({"extra_trait": "zero"}, "discoveries", 2),
         pytest.param(
             {"tail": "lower", "max_fold": "inf"}, "discoveries", 2, id="lower-infinite-cutoff"
         ),
@@ -308,3 +327,97 @@ def test_refresh_audit_preserves_supported_producer_modes_and_empty_results(
     current = report["pairs"][0]["current"]
     assert current["rows"] == rows
     assert current["metadata"]["Result-Status"] == status
+
+
+@pytest.mark.parametrize(
+    ("column", "value", "message"),
+    [
+        ("inc_dec", "dec", "duplicate profile/trait"),
+        ("study_id", "unknown-study", "profile absent from eligible inputs"),
+        ("trait", "UnknownTrait", "trait absent from eligible inputs"),
+        ("background_k", "3", "background_k differs from input matrix"),
+    ],
+)
+def test_refresh_audit_binds_identical_rows_to_input_population(
+    refresh_manifest: Path, column: str, value: str, message: str
+) -> None:
+    """Reproduce population loss concealed by equal table bodies (#725)."""
+    mutate_both_tables(refresh_manifest, column, value)
+    output = refresh_manifest.parent / "audit.json"
+    result = run_audit(refresh_manifest, output)
+    assert result.returncode == 1, result.stdout
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert any(message in error for error in report["pairs"][0]["errors"])
+
+
+@pytest.mark.parametrize("refresh_manifest", [{"extra_trait": "yes"}], indirect=True)
+def test_refresh_audit_rejects_identical_missing_trait_family(refresh_manifest: Path) -> None:
+    """Adjust declared counts too; an absent entire trait must still fail (#725)."""
+    for filename in ("historical.tsv", "current.tsv"):
+        path = refresh_manifest.parent / filename
+        content = path.read_bytes()
+        content = b"".join(
+            line for line in content.splitlines(keepends=True) if b"\tTraitB\t" not in line
+        )
+        content = content.replace(b"Total-Tests-Performed: 4", b"Total-Tests-Performed: 2")
+        content = content.replace(b"Significant-Hits: 4", b"Significant-Hits: 2")
+        path.write_bytes(content)
+    output = refresh_manifest.parent / "audit.json"
+    result = run_audit(refresh_manifest, output)
+    assert result.returncode == 1, result.stdout
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert any(
+        "incomplete eligible profile/trait family" in error
+        for error in report["pairs"][0]["errors"]
+    )
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    [("Total-Profiles-Input", "3"), ("Background-Mode", "LegacyProfileCounts")],
+)
+def test_refresh_audit_checks_population_metadata(
+    refresh_manifest: Path, field: str, replacement: str
+) -> None:
+    for filename in ("historical.tsv", "current.tsv"):
+        path = refresh_manifest.parent / filename
+        lines = path.read_bytes().splitlines(keepends=True)
+        prefix = f"# {field}: ".encode()
+        path.write_bytes(
+            b"".join(
+                prefix + replacement.encode() + b"\n" if line.startswith(prefix) else line
+                for line in lines
+            )
+        )
+    output = refresh_manifest.parent / "audit.json"
+    result = run_audit(refresh_manifest, output)
+    assert result.returncode == 1, result.stdout
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert any(field in error for error in report["pairs"][0]["errors"])
+
+
+@pytest.mark.parametrize(
+    ("filename", "column", "value", "fingerprint", "message"),
+    [
+        ("profiles.tsv", "inc_dec", "dec", "Profiles-SHA256", "duplicate input profile"),
+        ("matrix.tsv", "taxon_id", "2", "Taxa-Matrix-SHA256", "duplicate taxon_id"),
+    ],
+)
+def test_refresh_audit_rejects_duplicate_input_identities(
+    refresh_manifest: Path, filename: str, column: str, value: str, fingerprint: str, message: str
+) -> None:
+    path = refresh_manifest.parent / filename
+    mutate_table(path, column, value)
+    current = refresh_manifest.parent / "current.tsv"
+    prefix = f"# {fingerprint}: ".encode()
+    current.write_bytes(
+        b"".join(
+            prefix + file_sha256(path).encode() + b"\n" if line.startswith(prefix) else line
+            for line in current.read_bytes().splitlines(keepends=True)
+        )
+    )
+    output = refresh_manifest.parent / "audit.json"
+    result = run_audit(refresh_manifest, output)
+    assert result.returncode == 1, result.stdout
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert any(message in error for error in report["pairs"][0]["errors"])
