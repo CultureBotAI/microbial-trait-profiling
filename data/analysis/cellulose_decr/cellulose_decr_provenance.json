@@ -1,6 +1,6 @@
 {
- "generated_at_utc": "2026-10-19T19:15:56Z",
- "code_commit": "0a6f267bf387e23dc0b8bcad312701db877d8225",
+ "generated_at_utc": "2026-10-20T02:38:43Z",
+ "code_commit": "42300e031e0631198e81b11752904064aa61ab41",
  "script": "src/mtp/cellulose_decr/analysis.py",
  "bugsigdb_vintage": "2026-04-24_00:41_UTC",
  "contrast_classifier_version": "contrast-orientation-v4",

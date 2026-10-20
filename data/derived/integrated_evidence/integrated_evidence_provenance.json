@@ -1,30 +1,33 @@
 {
   "version": "integrated-evidence-v2",
   "bugsigdb_vintage": "2026-04-24_00:41_UTC",
-  "code_commit": "402ef5c25b7105c9aa73398085956dcf1f372bb4+dirty",
+  "code_commit": "42300e031e0631198e81b11752904064aa61ab41",
   "profile_sha256": "c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f",
   "experiments_sha256": "403afea98d9b0a5b56939f68bcc9aace56a8eda350232a586806fe7bf30ad230",
-  "analysis_source_sha256": "1d0cf8409792d3fb671fe9422d215dea8be169e5526845cdea245e15ac598d92",
+  "analysis_source_sha256": "544fd22c89b90348b8127bbbd064dd8d63db91c122252bc4541a5e18a7b0f29f",
+  "core_run_id": null,
+  "core_manifest_sha256": null,
+  "ora_eligibility_source": null,
   "native_sources": {
     "arm1_pooled_stats": {
-      "path": "/private/tmp/mtp-pipeline-20261017/data/derived/trait_profile_paired_contrast_trait_stats_pooled.tsv",
-      "sha256": "65906f64f4bc7d1a872e5f8fdabda6cb6dc800372bdfbd8491ea129465899641"
+      "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/trait_profile_paired_contrast_trait_stats_pooled.tsv",
+      "sha256": "81055ad0fb50ca48488f15915d4e1a9c8956f05140fc43b0ba82a1935a2381f5"
     },
     "arm2_enrichment": {
-      "path": "/private/tmp/mtp-pipeline-20261017/data/derived/trait_enrichment_all_results.tsv",
-      "sha256": "cf2aa839d0902aa002a5c7d2c4f7d86a713b977ada4211f6bd7524082cbca92d"
+      "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/trait_enrichment_all_results.tsv",
+      "sha256": "7cf70813d488dd1a993b7598c2ed0f6f8c9d29f11832ddce91d50252653ed2de"
     },
     "arm2_depletion": {
-      "path": "/private/tmp/mtp-pipeline-20261017/data/derived/trait_depletion_all_results.tsv",
-      "sha256": "27c029105e9b8ac595a2f40d25c8b5e057acff8d0d4cf5a0fdf180202fb76532"
+      "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/trait_depletion_all_results.tsv",
+      "sha256": "7538e6f686fc135af17017d581d59d76c9e2cf55a5f0ab3fe0ebb67ac7280acf"
     },
     "full_screen": {
-      "path": "/private/tmp/mtp-pipeline-20261017/data/derived/trait_screen/trait_direction_screen.tsv",
+      "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/trait_screen/trait_direction_screen.tsv",
       "sha256": "65450c1ce74312e56bfd032ba8139533de1b9fa3a4ef0ea4aaad034130b36c21"
     },
     "full_screen_provenance": {
-      "path": "/private/tmp/mtp-pipeline-20261017/data/derived/trait_screen/trait_screen_provenance.json",
-      "sha256": "8b47804be2d7cc72549ffc12b75f77d65797ed739d724dc91e7ee126bd1399ab"
+      "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/trait_screen/trait_screen_provenance.json",
+      "sha256": "6ca58f62abde1b0dce95fdc985acad7b8e7935c1e7aef97d7d550e0d893fdcd9"
     }
   },
   "corpus": {
@@ -87,7 +90,7 @@
     "taxon_influence_status": {
       "issue": "#190",
       "verdicts_by_procedure": {},
-      "status_for_a_procedure_it_is_silent_about": "pending #190",
+      "status_for_a_procedure_it_is_silent_about": "pending #190: influence evidence not supplied",
       "detail_rows": 0
     }
   },
@@ -202,7 +205,7 @@
       "family_id": "native_composition_pooled_study",
       "family_size": 315,
       "family_scope": "source_subset",
-      "family_source": "trait_profile_paired_contrast_trait_stats_pooled.tsv@65906f64f4bc7d1a872e5f8fdabda6cb6dc800372bdfbd8491ea129465899641",
+      "family_source": "trait_profile_paired_contrast_trait_stats_pooled.tsv@81055ad0fb50ca48488f15915d4e1a9c8956f05140fc43b0ba82a1935a2381f5",
       "correction_method": "Benjamini-Hochberg",
       "methods": "composition_arm_native_transformed_contrast",
       "rows_exported": 6,
@@ -215,7 +218,7 @@
       "family_id": "native_profile_ORA_enrichment_global",
       "family_size": 1480390,
       "family_scope": "profile_test_summary",
-      "family_source": "trait_enrichment_all_results.tsv@cf2aa839d0902aa002a5c7d2c4f7d86a713b977ada4211f6bd7524082cbca92d",
+      "family_source": "trait_enrichment_all_results.tsv@7cf70813d488dd1a993b7598c2ed0f6f8c9d29f11832ddce91d50252653ed2de",
       "correction_method": "Benjamini-Hochberg",
       "methods": "enrichment_arm_profile_hypergeometric",
       "rows_exported": 6,
