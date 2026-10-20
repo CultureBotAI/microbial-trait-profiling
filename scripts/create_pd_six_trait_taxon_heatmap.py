@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 from pathlib import Path
@@ -27,6 +26,20 @@ from create_pd_cellulose_analysis import (
     read_tsv,
     write_tsv,
 )
+from lookup_pd_trait_taxa import (
+    CARRIERS_NAME,
+    EVIDENCE_NAME,
+    PROVENANCE_NAME,
+    SUMMARY_NAME,
+    changed_files,
+    input_fingerprints,
+    pd_feces_profile_ids,
+    profile_set_fingerprint,
+    sha256_chunks,
+    table_fingerprints,
+    tracked_inputs,
+    trait_directions,
+)
 from mtp.composition_denominators import retained_trait_counts, trait_fractions
 
 PROFILE_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
@@ -38,6 +51,7 @@ ROW_COLOR_LIMIT = 3.0
 INCREASED_COLOR = "#b91c1c"
 DECREASED_COLOR = "#1d4ed8"
 UNAVAILABLE_COLOR = "#e5e7eb"
+DIRECTION_ARROWS = {"increased": "↑", "decreased": "↓"}
 EXCLUDED_TAXON_IDS = frozenset({"NCBITaxon:33039"})
 EXCLUDED_TAXON_NAMES = frozenset({"Mediterraneibacter torques"})
 REFERENCE_TABLE_STEM = "pd_species_six_traits_reference"
@@ -378,6 +392,186 @@ def taxon_specificity_from_occurrences(
             }
         )
     return pd.DataFrame.from_records(records)
+
+
+def recorded_traits(provenance: dict[str, object]) -> dict[str, tuple[str, float]]:
+    """The lollipop traits the evidence was built with: direction and mean-z difference."""
+    traits = provenance.get("traits")
+    return {
+        str(trait["trait_id"]): (
+            str(trait["trait_direction"]),
+            float(trait["increased_minus_decreased_mean_z"]),
+        )
+        for trait in (traits if isinstance(traits, list) else [])
+    }
+
+
+def trait_problems(name: str, table: pd.DataFrame, expected: dict[str, str]) -> list[str]:
+    """A table's traits must be recorded lollipop traits, each with its recorded direction.
+
+    A trait that no PD-reported taxon carries has no rows, so a trait may be absent (#694).
+    """
+    if "trait_direction" not in table:
+        return [f"{name} has no trait_direction column, so it predates the six-trait design"]
+    recorded: dict[str, set[str]] = {}
+    for trait_id, direction in zip(
+        table["trait_id"].astype(str), table["trait_direction"].astype(str), strict=True
+    ):
+        recorded.setdefault(trait_id, set()).add(direction)
+    problems = []
+    extra = sorted(set(recorded) - set(expected))
+    if extra:
+        problems.append(f"{name} has traits its provenance does not record: {', '.join(extra)}")
+    changed = [
+        f"{trait_id} {'/'.join(sorted(recorded[trait_id]))}, recorded {expected[trait_id]}"
+        for trait_id in sorted(set(expected) & set(recorded))
+        if recorded[trait_id] != {expected[trait_id]}
+    ]
+    if changed:
+        problems.append(f"{name} trait directions differ from its provenance: {'; '.join(changed)}")
+    return problems
+
+
+def provenance_problems(
+    provenance: dict[str, object],
+    directions: pd.DataFrame,
+    metadata: pd.DataFrame,
+    current_inputs: dict[str, list[str]],
+    current_tables: dict[str, list[str]],
+) -> list[str]:
+    """Differences between what the evidence was built from and wrote, and the current files."""
+    problems = []
+    current = profile_set_fingerprint(pd_feces_profile_ids(metadata))
+    recorded_count = provenance.get("pd_feces_profiles")
+    recorded_digest = str(provenance.get("pd_feces_profile_ids_sha256"))
+    if (recorded_count, recorded_digest) != (
+        current["pd_feces_profiles"],
+        current["pd_feces_profile_ids_sha256"],
+    ):
+        problems.append(
+            f"it was built from {recorded_count} PD fecal profiles (id sha256 "
+            f"{recorded_digest[:12]}), and the current metadata has "
+            f"{current['pd_feces_profiles']} (id sha256 "
+            f"{str(current['pd_feces_profile_ids_sha256'])[:12]})"
+        )
+    recorded = recorded_traits(provenance)
+    lollipop = {
+        str(trait.trait_id): (
+            str(trait.trait_direction),
+            float(trait.increased_minus_decreased_mean_z),
+        )
+        for trait in directions.itertuples(index=False)
+    }
+    missing = sorted(set(lollipop) - set(recorded))
+    extra = sorted(set(recorded) - set(lollipop))
+    if missing or extra:
+        problems.append(
+            f"its recorded traits differ from {SUMMARY_NAME} (missing: "
+            f"{', '.join(missing) or 'none'}; extra: {', '.join(extra) or 'none'})"
+        )
+    both = sorted(set(recorded) & set(lollipop))
+    flipped = [
+        f"{trait_id} {recorded[trait_id][0]}, now {lollipop[trait_id][0]}"
+        for trait_id in both
+        if recorded[trait_id][0] != lollipop[trait_id][0]
+    ]
+    if flipped:
+        problems.append(f"its trait directions differ from {SUMMARY_NAME}: {'; '.join(flipped)}")
+    moved = [
+        trait_id
+        for trait_id in both
+        if recorded[trait_id][0] == lollipop[trait_id][0]
+        and not math.isclose(
+            recorded[trait_id][1], lollipop[trait_id][1], rel_tol=1e-9, abs_tol=1e-12
+        )
+    ]
+    if moved:
+        problems.append(
+            f"its recorded mean-z differences differ from {SUMMARY_NAME} for {', '.join(moved)}"
+        )
+    recorded_inputs = provenance.get("input_sha256_chunks")
+    if not isinstance(recorded_inputs, dict):
+        problems.append("it records no input hashes, so it predates the input check")
+    else:
+        changed_inputs = changed_files(recorded_inputs, current_inputs)
+        if changed_inputs:
+            problems.append(f"{', '.join(changed_inputs)} changed since it was built (#693)")
+    # A trait may lack rows, so only the tables' hashes tell lost rows from no carriers.
+    recorded_tables = provenance.get("output_sha256_chunks")
+    if not isinstance(recorded_tables, dict):
+        problems.append(
+            "it records no hashes of the tables it wrote, so it predates the table check"
+        )
+    else:
+        changed_tables = changed_files(recorded_tables, current_tables)
+        if changed_tables:
+            problems.append(
+                "the tables changed after `just pd-trait-taxa` wrote them: "
+                f"{', '.join(changed_tables)} (#703)"
+            )
+    return problems
+
+
+def check_trait_taxa_evidence(
+    evidence: pd.DataFrame,
+    carriers: pd.DataFrame,
+    provenance: dict[str, object],
+    trait_summary: pd.DataFrame,
+    metadata: pd.DataFrame,
+    current_inputs: dict[str, list[str]],
+    current_tables: dict[str, list[str]],
+) -> None:
+    """Refuse trait-taxa evidence that does not match the current PD profiles or lollipop.
+
+    `just pd-trait-taxa` builds the evidence and carrier tables from the PD fecal profiles
+    and all six lollipop traits, gives each trait its observed direction, and records the
+    profile set, the lollipop, the hashes of the files it read and the hashes of the tables
+    it wrote (#584, #649, #693, #703). If any has changed since, tables built from the
+    evidence would mix two sources, so stop instead of writing them.
+    """
+    expected = {
+        trait_id: direction for trait_id, (direction, _) in recorded_traits(provenance).items()
+    }
+    problems = [
+        *trait_problems("the evidence", evidence, expected),
+        *trait_problems("the carrier table", carriers, expected),
+        *provenance_problems(
+            provenance, trait_directions(trait_summary), metadata, current_inputs, current_tables
+        ),
+    ]
+    current_profiles = set(pd_feces_profile_ids(metadata))
+    stale_profiles = sorted(set(evidence["profile_id"].astype(str)) - current_profiles)
+    if stale_profiles:
+        problems.append(
+            f"{len(stale_profiles)} evidence profiles are not current PD fecal profiles "
+            f"(first: {stale_profiles[0]})"
+        )
+    if problems:
+        msg = (
+            f"{EVIDENCE_NAME} does not match the current PD fecal profiles and six-trait "
+            f"lollipop: {'; '.join(problems)}. Regenerate it with `just pd-trait-taxa`."
+        )
+        raise ValueError(msg)
+
+
+def require_current_trait_taxa_evidence(metadata: pd.DataFrame, output_dir: Path) -> None:
+    """Read the saved evidence, carriers, provenance and lollipop and check that they agree."""
+    provenance_path = output_dir / PROVENANCE_NAME
+    if not provenance_path.exists():
+        msg = (
+            f"{EVIDENCE_NAME} has no {PROVENANCE_NAME}, so it predates the six-trait design. "
+            "Regenerate it with `just pd-trait-taxa`."
+        )
+        raise ValueError(msg)
+    check_trait_taxa_evidence(
+        read_tsv(output_dir / EVIDENCE_NAME),
+        read_tsv(output_dir / CARRIERS_NAME),
+        json.loads(provenance_path.read_text(encoding="utf-8")),
+        read_tsv(output_dir / SUMMARY_NAME),
+        metadata,
+        input_fingerprints(tracked_inputs(output_dir)),
+        table_fingerprints(output_dir),
+    )
 
 
 def load_taxon_specificity(taxon_ids: pd.Index, metadata: pd.DataFrame) -> pd.DataFrame:
@@ -813,7 +1007,8 @@ def interpret_reference_row(row: pd.Series) -> str:
     if pd.notna(influence) and math.isfinite(float(influence)):
         strongest = (
             f" Strongest current influence: {row['strongest_influence_trait']} "
-            f"({float(influence):+.2f} fixed-reference z, {row['strongest_influence_status']})."
+            f"(lollipop direction {row['strongest_influence_trait_direction']}; "
+            f"{float(influence):+.2f} fixed-reference z, {row['strongest_influence_status']})."
         )
     else:
         strongest = ""
@@ -871,10 +1066,11 @@ def build_pd_taxa_reference_table(
     finite_cells["absolute_influence_z"] = finite_cells["mean_influence_contrast_z"].abs()
     strongest = finite_cells.loc[
         finite_cells.groupby("taxon_id")["absolute_influence_z"].idxmax(),
-        ["taxon_id", "trait", "status", "mean_influence_contrast_z"],
+        ["taxon_id", "trait", "trait_direction", "status", "mean_influence_contrast_z"],
     ].rename(
         columns={
             "trait": "strongest_influence_trait",
+            "trait_direction": "strongest_influence_trait_direction",
             "status": "strongest_influence_status",
             "mean_influence_contrast_z": "strongest_influence_z",
         }
@@ -921,6 +1117,7 @@ def build_pd_taxa_reference_table(
         "annotated_trait_count",
         "supported_influence_cells",
         "strongest_influence_trait",
+        "strongest_influence_trait_direction",
         "strongest_influence_status",
         "strongest_influence_z",
         "interpretation",
@@ -938,7 +1135,10 @@ def write_reference_interpretation(reference_table: pd.DataFrame, output_path: P
         "current influence value.",
         "",
         "Rows follow the heatmap order: descending BugSigDB PD increased/decreased log2 "
-        "profile-count ratio, with count-based and alphabetical tie-breakers.",
+        "profile-count ratio, with count-based and alphabetical tie-breakers. The arrow after "
+        "the strongest-influence trait gives its observed direction in the PD six-trait "
+        "lollipop: up where its mean z is higher in increased profiles, down where it is "
+        "higher in decreased profiles.",
         "",
         "## Agreement Summary",
         "",
@@ -948,8 +1148,9 @@ def write_reference_interpretation(reference_table: pd.DataFrame, output_path: P
     ]
     for row in reference_table.itertuples(index=False):
         strongest = (
-            f"{row.strongest_influence_trait} ({float(row.strongest_influence_z):+.2f}; "
-            f"{row.strongest_influence_status})"
+            f"{row.strongest_influence_trait} "
+            f"{DIRECTION_ARROWS.get(str(row.strongest_influence_trait_direction), '·')} "
+            f"({float(row.strongest_influence_z):+.2f}; {row.strongest_influence_status})"
             if pd.notna(row.strongest_influence_z)
             else "not available"
         )
@@ -1033,7 +1234,7 @@ def build_influence_cells(
     remove_all_low_support_taxa: bool = True,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, int]:
     """Build six-trait taxon cells, row annotations, and trait metadata."""
-    traits = trait_summary.sort_values("increased_minus_decreased_mean_z", ascending=False).copy()
+    traits = trait_directions(trait_summary)
     trait_ids = traits["trait_id"].astype(str).tolist()
     human_ids = metadata.index[metadata["host_species"].eq("Homo sapiens")]
     baseline_z, totals, _, reference_sd = fixed_reference(profile_counts, trait_ids, human_ids)
@@ -1049,10 +1250,15 @@ def build_influence_cells(
             {
                 "trait_id": str(trait.trait_id),
                 "trait": trait.trait,
+                "trait_direction": trait.trait_direction,
+                "increased_minus_decreased_mean_z": trait.increased_minus_decreased_mean_z,
                 "overall_mean_z_contrast": mean,
                 "overall_ci95_low": low,
                 "overall_ci95_high": high,
                 "overall_direction": "inc" if mean > 0 else "dec" if mean < 0 else "mixed",
+                "baseline_opposes_lollipop": baseline_opposes_lollipop(
+                    float(trait.increased_minus_decreased_mean_z), mean
+                ),
             }
         )
     trait_metadata = pd.DataFrame(overall_records)
@@ -1108,6 +1314,7 @@ def build_influence_cells(
                     "taxonomic_rank": vector["taxonomic_rank"],
                     "trait_id": trait_id,
                     "trait": trait.trait,
+                    "trait_direction": trait.trait_direction,
                     "trait_overall_direction": trait.overall_direction,
                     "trait_overall_mean_z_contrast": trait.overall_mean_z_contrast,
                     "annotation_count": annotation_count,
@@ -1165,6 +1372,49 @@ def build_influence_cells(
     specificity = load_taxon_specificity(pd.Index(row_metadata["taxon_id"]), metadata)
     row_metadata = row_metadata.merge(specificity, on="taxon_id", how="left")
     return cells_table, row_metadata, trait_metadata, removed_low_support_taxa
+
+
+def baseline_opposes_lollipop(lollipop: float, baseline: float) -> bool:
+    """Whether the figure's paired baseline and the lollipop difference have opposite signs."""
+    return lollipop * baseline < 0
+
+
+def trait_column_label(trait: str, direction: str, lollipop: float, baseline: float) -> str:
+    """Column header: lollipop direction arrow, trait, lollipop difference and baseline Δz.
+
+    An asterisk marks a baseline whose sign is opposite to the lollipop's (#696).
+    """
+    marker = " *" if baseline_opposes_lollipop(lollipop, baseline) else ""
+    return (
+        f"{DIRECTION_ARROWS.get(direction, '·')} "
+        + "\n".join(wrap(trait, width=17))
+        + f"\nlollipop {lollipop:+.2f}"
+        + f"\nbaseline Δz\n{baseline:+.2f}{marker}"
+    )
+
+
+def heatmap_subtitle(
+    taxon_unit: str, min_support_studies: int, method_note: str | None = None
+) -> str:
+    """The figure's explanation of arrows, baselines, cells, outlines and annotations."""
+    subtitle = (
+        "Column arrows give each trait's observed direction in the PD six-trait lollipop: ↑ "
+        "where its mean z is higher in increased profiles, ↓ where it is higher in decreased "
+        "profiles; `lollipop` is that mean-z difference. `baseline Δz` is this figure's "
+        "full-data, study-weighted paired PD increased-minus-decreased contrast before taxon "
+        "removal; an asterisk marks a baseline whose sign is opposite to the lollipop's. A cell "
+        f"is baseline Δz minus the recomputed Δz after removing the reported {taxon_unit}: "
+        "positive values push the paired contrast toward increased profiles and negative values "
+        "toward decreased profiles. They are influence diagnostics, not causal effects. Only "
+        f"values > +{MIN_ABSOLUTE_INFLUENCE_Z:g} or "
+        f"< -{MIN_ABSOLUTE_INFLUENCE_Z:g} are shown. Black outlines mark direct "
+        "organism-to-trait annotations; unoutlined cells are denominator-only effects. Low-support "
+        f"cells remain hatched; TSV inc/dec calls require at least {min_support_studies} studies "
+        "and a 95% interval wholly above/below zero. Literature fill follows direction (red=inc, "
+        "blue=dec); green borders mark Hamming distance 0 (similar) and red borders mark distance "
+        "1 (different) versus BugSigDB recurrence. Row labels include BugSigDB PD inc/dec counts."
+    )
+    return f"{subtitle} {method_note}" if method_note else subtitle
 
 
 def plot_heatmap(
@@ -1225,9 +1475,12 @@ def plot_heatmap(
     ax.set_xticks(
         range(len(traits)),
         [
-            f"{'↑' if row.overall_mean_z_contrast > 0 else '↓'} "
-            + "\n".join(wrap(str(row.trait), width=17))
-            + f"\nbaseline Δz\n{row.overall_mean_z_contrast:+.2f}"
+            trait_column_label(
+                str(row.trait),
+                str(row.trait_direction),
+                float(row.increased_minus_decreased_mean_z),
+                float(row.overall_mean_z_contrast),
+            )
             for row in traits.itertuples(index=False)
         ],
         fontsize=9,
@@ -1402,25 +1655,10 @@ def plot_heatmap(
         fontweight="bold",
         va="top",
     )
-    subtitle = (
-        "Each column header gives the full-data PD increased-minus-decreased contrast (overall "
-        "Δz) before taxon removal. A cell is baseline Δz minus the recomputed Δz after removing "
-        f"the reported {taxon_unit}; positive values support the positive trait contrast and "
-        "negative values support the negative contrast, but they are influence diagnostics, not "
-        f"causal effects. Only values > +{MIN_ABSOLUTE_INFLUENCE_Z:g} or "
-        f"< -{MIN_ABSOLUTE_INFLUENCE_Z:g} are shown. Black outlines mark direct "
-        "organism-to-trait annotations; unoutlined cells are denominator-only effects. Low-support "
-        f"cells remain hatched; TSV inc/dec calls require at least {min_support_studies} studies "
-        "and a 95% interval wholly above/below zero. Literature fill follows direction (red=inc, "
-        "blue=dec); green borders mark Hamming distance 0 (similar) and red borders mark distance "
-        "1 (different) versus BugSigDB recurrence. Row labels include BugSigDB PD inc/dec counts."
-    )
-    if method_note:
-        subtitle = f"{subtitle} {method_note}"
     fig.text(
         0.03,
         1 - 0.48 / height,
-        "\n".join(wrap(subtitle, width=140)),
+        "\n".join(wrap(heatmap_subtitle(taxon_unit, min_support_studies, method_note), width=140)),
         fontsize=9,
         color="#4b5563",
         va="top",
@@ -1477,20 +1715,11 @@ def plot_heatmap(
     plt.close(fig)
 
 
-def sha256_chunks(path: Path) -> list[str]:
-    """Return a streamed SHA-256 digest in unambiguous eight-character chunks."""
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    value = digest.hexdigest()
-    return [value[offset : offset + 8] for offset in range(0, len(value), 8)]
-
-
 def main() -> None:
     """Generate the six-trait influence heatmap and its auditable tables."""
-    counts, trait_columns = read_profile_counts(PROFILE_MATRIX_PATH)
     metadata = load_profile_metadata()
+    require_current_trait_taxa_evidence(metadata, OUTPUT_DIR)
+    counts, trait_columns = read_profile_counts(PROFILE_MATRIX_PATH)
     taxon_vectors = read_taxon_vectors(TAXA_TRAIT_MATRIX_PATH, trait_columns)
     evidence_path = OUTPUT_DIR / "pd_six_trait_taxon_profile_evidence.tsv"
     evidence = read_tsv(evidence_path)
@@ -1626,6 +1855,17 @@ def main() -> None:
         "is that baseline Δz minus the contrast recomputed after removing the taxon. The cell "
         "values therefore explain sensitivity of the column-level contrast, but they do not sum "
         "to it because profile fractions are nonlinear and taxon annotations overlap.\n\n"
+        "Each column also carries the trait's observed direction in the PD six-trait lollipop, "
+        "the sign of `increased_minus_decreased_mean_z` in `pd_six_trait_direction_summary.tsv`: "
+        "an up arrow where the trait's mean z is higher in increased profiles and a down arrow "
+        "where it is higher in decreased profiles, with the difference labeled `lollipop`. The "
+        "trait and cell tables carry it as `trait_direction`. The lollipop value is an unpaired "
+        "difference of profile means, while baseline Δz pairs profiles within experiments and "
+        "weights studies equally, so the two can differ in size and, for traits near zero, in "
+        "sign; an asterisk after the baseline Δz marks such a column, and the trait table's "
+        "`baseline_opposes_lollipop` flags it. A positive cell pushes the paired contrast toward "
+        "increased profiles and a negative cell toward decreased profiles, whatever the column's "
+        "arrow.\n\n"
         "Rows are sorted from the most increased-skewed to the most decreased-skewed "
         "BugSigDB PD recurrence using the log2 increased/decreased profile-count ratio; "
         "ties use the signed count difference, total support, and taxon name.\n\n"

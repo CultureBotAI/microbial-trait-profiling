@@ -1,0 +1,246 @@
+# Execution-checked core workflow
+
+Issue [#629](https://github.com/CultureBotAI/microbial-trait-profiling/issues/629)
+implements the raw BugSigDB snapshot to downstream core-product specification.
+The authoritative graph is [`workflows/bugsigdb_core.yaml`](../workflows/bugsigdb_core.yaml).
+The [product and stage tables](workflow-products.md) are generated from that file.
+The Python operation registry provides implementations; it does not maintain a
+second dependency graph. Just recipes expose the interface.
+
+## Run and verify
+
+Install the declared environment with `just sync`. Validate definitions with
+`just workflow-check`, and run the offline synthetic fixture with
+`just core-fixture`. Each attempt creates a new directory and prints its
+`run.json` path. The fixture needs no downloads or production data.
+
+Run existing local production inputs in a new output root:
+
+```bash
+just core-run workflows/bugsigdb_core.yaml \
+  --input raw_dump=/absolute/path/data/raw/full_dump.csv \
+  --input kg_edges=/absolute/path/data/kg-microbe/merged-kg_edges.tsv \
+  --input kg_nodes=/absolute/path/data/kg-microbe/merged-kg_nodes.tsv \
+  --parameter source_mode=pinned \
+  --output-root /absolute/path/core-runs
+just core-validate /absolute/path/core-runs/run-ID/run.json
+just core-lineage /absolute/path/core-runs/run-ID/run.json ora_profiles
+```
+
+`source_mode=pinned` checks the actual BugSigDB bytes against the repository's
+pinned release checksum and length. An arbitrary supplied file is not promoted
+to a pinned release by a filename or user label. The source identity product
+records actual consumed files and the dump's embedded timestamp. The external
+raw snapshot is the workflow boundary: download execution predating this run
+is not reconstructed. Existing download provenance remains a source declaration.
+The separately downloaded live studies, experiments, and signatures CSVs are
+not inputs to this core workflow. Only the full dump is ingested.
+
+The supplied KG export used for the production check has a header continuation,
+repeated agent-field names and
+manual-agent metadata continued across physical lines. Its input contract
+reconstructs these known records, assigns distinct names to repeated fields,
+counts the repairs and rejects unfamiliar malformed rows. It preserves the
+native builder's taxon/predicate/object tuples; it does not silently discard
+short physical lines or rewrite the source files.
+
+To query the fixture's overlapping genus and species annotations:
+
+```bash
+just core-lineage /absolute/path/run-ID/run.json count_profiles \
+  --profile bsdb:1 bsdb:1-1 inc --feature METPO:1000608
+```
+
+The query verifies the run, reads the recorded KG inputs, and reconciles source
+taxa with the stored matrix count. It distinguishes a direct assertion subject
+from a descendant subject, returns supporting source edges, and reports source
+taxa reused by multiple reported taxa. A higher-rank row with inherited positive
+counts does not establish a universal genus or family phenotype.
+
+## Contracts and biological units
+
+[`schema/workflow.yaml`](../schema/workflow.yaml) defines workflow/product
+definitions, parameter declarations, executions, artifacts, validations,
+downstream bindings, and unverified historical imports. Its generated Pydantic
+classes validate actual persisted records. Graph validation separately rejects
+duplicate IDs, unresolved references, cycles, overlapping paths, duplicate
+producers, incompatible bindings, and undeclared parameters.
+[`schema/core_products.yaml`](../schema/core_products.yaml) defines scientific
+row contracts alongside the existing Study and taxon/trait model. Wide TSVs
+remain the efficient physical representation; validators stream their rows.
+The legacy files named `*_long.tsv` are transposes, not tidy observation tables.
+
+| Product | Counting and selection rule |
+| --- | --- |
+| Studies | Exactly the YAML members emitted by this ingest attempt, individually hashed and validated. Earlier YAML files cannot enter through a shared directory glob. |
+| Flattened tables | Explicit study, experiment, signature and occurrence keys, parent references, and declared multiplicities. Taxon occurrences can repeat across signatures. |
+| Feature catalog | Qualified feature identifiers retain predicates where needed. Culture-medium features are explicitly classified. Core products retain MediaDive. |
+| Taxon-trait matrix | Each cell counts distinct source taxa at or below the reported row taxon with the annotation. Duplicate source edges do not create extra source taxa. |
+| Count profiles | Sum matrix count vectors over distinct reported taxon IDs per study/experiment/direction. All hosts are retained by default. |
+| ORA profiles | Count distinct reported IDs whose inherited matrix count is positive. `taxa_count` is the number of distinct reported IDs present in the matrix. Default host: `Homo sapiens`. |
+| Coverage | Reported = matched + unmatched; matched = annotated + unannotated. Status and sorted unmatched/unannotated IDs accompany the retained-feature digest. |
+
+Matrix matching and KG membership are different. The current matrix builder
+emits every reported taxon, including a zero row when the KG provides no
+annotation. Such a taxon is matrix-matched and remains in ORA's denominator.
+No annotation is not evidence of biological absence. Aggregate coverage says
+`lineage_resolution=unresolved`; the selected-cell query resolves direct versus
+descendant evidence from the original KG instead of guessing from counts.
+
+Count profiles can reuse the same source annotation through a reported ancestor
+and its reported child. In the fixture, G has three annotated descendants,
+including A, and the reported sequence is G, G, A. Deduplicating reported IDs
+gives a count-profile value of 4 and an ORA value of 2 with N=2. These are
+annotation representation units, not four organisms or independent observations.
+
+The core's increased/decreased direction is the curated report for Group 1
+relative to Group 0. It does not by itself establish disease-case versus
+healthy-control orientation; downstream contrast classification must make that
+determination explicitly.
+
+Strict `count-input-v1` validation is adapted from issue #184 / PR #224 while
+preserving the current binary ORA builder. Duplicate headers/keys, ragged rows,
+blank counts, negative counts, and non-ASCII or noninteger count strings fail.
+Legacy blank-as-zero handling is available only as an explicit reader mode;
+the core workflow uses the complete-count contract.
+
+Host filtering is an explicit parameter at the profile stage. Pairing,
+zero-total exclusions, MediaDive removal, background construction and multiple
+testing are downstream analysis choices; the raw core does not silently apply
+them. A cohort override changes the recorded artifact cohort, and consumers
+can reject a bundle that does not match their expected cohort.
+
+## What execution records establish
+
+Every attempt has a unique run ID. Its deterministic fingerprint binds the
+workflow definition, actual external input content, resolved parameter values,
+code inventory, lockfile and runtime identity. Time and output destination do
+not define scientific identity. Source hashes include the working tree's actual
+Python and schema bytes, so a Git revision alone cannot hide uncommitted edits.
+Only declared environment variables can supply parameter values.
+
+Collection identity is a canonical sorted inventory of relative member paths,
+sizes and SHA-256 hashes. Adding, removing or changing a YAML member changes
+identity. The run embeds its definition and product bindings; it does not infer
+provenance by searching for similarly named files.
+
+Each stage writes to a fresh run-scoped staging directory on the publication
+filesystem. Declared outputs are checked before the stage bundle is renamed
+into place. The runtime verifies inputs before and after operations, rejects
+undeclared outputs, and checks for changes to code, specification or lockfile
+during execution. A failed attempt persists diagnostics but cannot be opened
+as a complete core bundle. Successful earlier stages remain available for
+inspection; they are not mislabeled as a complete downstream run.
+
+`core-validate` has three distinct responsibilities: schema/graph validation,
+actual artifact and inventory verification, and scientific cross-product
+validation. The last reconciles study membership and metadata with raw source
+records and documented exclusions, flattened exports with the Study collection,
+and matrix annotation counts and metadata with the consumed KG. It also
+recomputes profile aggregates and denominators from the recorded reported-taxon
+and matrix products and checks their catalogs, cohort membership, coverage,
+keys and parent references. Source identity claims must agree with actual bytes.
+
+These records establish consistency of explicit-I/O Python execution. They are
+not an operating-system audit of every file open, a cryptographic signature by
+a trusted producer, or proof that an upstream biological annotation is true.
+Historical runs can be read after checkout code changes; their recorded code
+inventory remains evidence of the bytes used then. External input files must
+remain accessible for complete revalidation.
+
+## Downstream consumption and migration
+
+The native trait screen, paired composition analysis, Table 1 trait plots and
+ORA command accept `--core-run /absolute/path/run.json`. They obtain input paths
+from the verified run and write a `core_consumption.json` binding (ORA places
+it beside the report with the `.core_consumption.json` suffix). Conflicting
+explicit input paths fail. Count and ORA profiles are not interchangeable.
+The binding contains the run-manifest hash, product/artifact references, cohort,
+feature policy and hashes of the downstream outputs.
+
+Core consumers reject output paths that collide with their binding or coverage
+sidecars, or overlap the immutable core run and source files. Directory-based
+consumers require a dedicated analysis output directory; existing symlink or
+hardlink aliases cannot redirect writes into protected artifacts.
+
+Each binding also includes a checked annotation-coverage TSV for the consumer's
+actual retained feature vocabulary. Thus a MediaDive-only taxon is recorded as
+matched without retained annotations when the analysis excludes MediaDive.
+This coverage describes the input cohort before analysis-specific pairing,
+host/body-site restrictions or zero-total exclusions; those exclusions remain
+in the analysis's own statistics and provenance.
+
+```bash
+just core-screen /absolute/path/run.json /absolute/path/screen
+just core-composition /absolute/path/run.json /absolute/path/composition
+just core-ora /absolute/path/run.json /absolute/path/ora
+just core-ora /absolute/path/run.json /absolute/path/ora-depletion lower
+just core-strata /absolute/path/run.json /absolute/path/strata
+just core-verify-consumer /absolute/path/screen/core_consumption.json
+```
+
+`core-ora` writes `report.txt`, the selected `results.tsv`, the complete
+`all_results.tsv`, and the report's consumer/coverage sidecars. Both tails use
+global BH with q ≤ 0.001; enrichment requires fold ≥ 1.5 and depletion requires
+fold ≤ 0.5. The complete export records the actual profile and taxa-matrix
+SHA-256 values required by core-bound integrated evidence. Use a fresh output
+directory when regenerating historical exports; adding fingerprints to an old
+file does not establish that it was executed with those inputs.
+
+`core-strata` binds human ORA profiles, experiments and the taxa matrix from the
+verified core. It writes pooled, feces and feces-excluded partitions, complete
+and selected ORA results, rankings, complete-trait summaries, density diagnostics
+and sensitivity summaries. Its `core_consumption.json` inventories all these
+products and the coverage sidecar; verify it with `just core-verify-consumer`.
+The coverage describes the core input cohort before anatomical-site and
+paired-profile eligibility restrictions. Extra analysis arguments, such as
+`--site saliva`, follow the output directory. Explicit input overrides must
+resolve to the bound core paths.
+
+Partitioning rejects conflicting experiment body sites and missing experiment
+keys before writing partitions. A present experiment with an unknown body site
+still belongs to `feces_excluded`, which means "not identified as feces", not
+"confirmed non-fecal". Identical metadata rows may be collapsed. The feces and
+feces-excluded partitions are disjoint and together retain the pooled profiles.
+Direct-path commands remain available without verified core provenance. This
+standalone binding complements the owner rerun orchestration in #658 / PR #660.
+
+The shared `verify_consumer_record` API is the integration boundary for deck
+builders such as PR #575: verify the input analysis binding before accepting
+its results or figures. A legacy figure/deck manifest cannot acquire verified
+core lineage merely because its filenames match new products. Rebuild its
+analysis/figure producer using a verified core run first. Existing direct-path
+analysis commands remain available for historical reproducibility; they do not
+emit a verified core binding.
+
+Preserve old provenance claims without endorsing them:
+
+```bash
+just core-import-legacy /absolute/path/old-provenance.yaml /absolute/path/legacy.json
+just core-compare /absolute/path/run.json /absolute/path/old-derived \
+  /absolute/path/comparison.json
+```
+
+The import uses the tracked `LegacyImportRecord` schema. It hashes the original
+document and retains its claims as `imported_unverified`; nonexistent historical
+commands and paths do not become execution records. No ignored figure schema is
+needed to read or validate the new workflow's provenance.
+
+The comparison matches typed numerical cells by IDs and qualified features,
+reports added/removed rows and columns, and distinguishes MediaDive differences.
+Even identical values do not establish a historical baseline's producer or
+inputs. Comparison never overwrites baseline or current products.
+
+## Checks and maintenance
+
+`just check` includes generated-model consistency, schema lint, graph checks,
+and the offline pytest fixtures. CI also executes `just core-fixture` and saves
+its run evidence. Tests cover mixed ranks, duplicate observations/source edges,
+MediaDive-only and zero-annotation taxa, missing matrix matches, incomplete
+pairs, nonhuman hosts, malformed counts, stale collections, changed inputs,
+failed publication and consumer incompatibility.
+
+Change schema first, regenerate with `just gen-pydantic`, update the executable
+specification, and run `just workflow-describe` to refresh the product table.
+Change the workflow version when its scientific contract changes. Do not edit
+run manifests to make an old result pass a new contract.

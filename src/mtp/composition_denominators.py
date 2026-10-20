@@ -48,7 +48,10 @@ def validate_cached_totals(counts: pd.DataFrame, metadata: pd.DataFrame) -> None
     if not counts.index.is_unique or not metadata.index.is_unique:
         raise ValueError("Profile keys must be unique before checking cached totals")
     if not metadata.index.isin(counts.index).all():
-        raise ValueError("Cached metadata contains profile keys missing from the raw matrix")
+        raise ValueError(
+            "Cached metadata contains profile keys missing from the raw matrix. "
+            "Regenerate profile metadata from it with `just trait-heatmaps`."
+        )
     expected = retained_trait_counts(counts).sum(axis=1).reindex(metadata.index)
     cached = pd.to_numeric(metadata["total_trait_signal"], errors="raise")
     mismatch = expected.ne(cached) | cached.isna()
@@ -56,7 +59,8 @@ def validate_cached_totals(counts: pd.DataFrame, metadata: pd.DataFrame) -> None
         examples = ", ".join(map(str, metadata.index[mismatch][:3]))
         raise ValueError(
             f"Stale or incompatible non-MediaDive denominator cache: {examples}. "
-            "Regenerate profile metadata from the same full raw matrix."
+            "Regenerate profile metadata from the same full raw matrix with "
+            "`just trait-heatmaps`."
         )
 
 

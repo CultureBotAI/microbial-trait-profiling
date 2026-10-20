@@ -215,8 +215,8 @@
     }
   ],
   "provenance": {
-    "elapsed_seconds": 1.394,
-    "finished_utc": "2026-10-16T06:18:33.432838+00:00",
+    "elapsed_seconds": 1.553,
+    "finished_utc": "2026-10-20T01:14:16.823891+00:00",
     "inputs": {
       "columns": {
         "path": "data/derived/taxa_trait_matrix_columns.tsv",
@@ -235,6 +235,6 @@
       "pandas": "3.0.6",
       "scipy": "1.17.1"
     },
-    "started_utc": "2026-10-16T06:18:32.038441+00:00"
+    "started_utc": "2026-10-20T01:14:15.271212+00:00"
   }
 }

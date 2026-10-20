@@ -1,25 +1,25 @@
 shared_pattern_rank	condition	body_site_group	shared_pattern_trait_count	shared_pattern_link_count	shared_pattern_focus_profile_count	shared_pattern_max_focus_profile_count	shared_pattern_max_rank_score	focus_direction
-1	Metabolic / endocrine	Feces	6	6	623	122	972.5673005434414	increased
-2	Neurologic / cognitive disease	Feces	6	6	583	122	1096.898643671734	increased
-3	Infectious disease	Feces	6	6	385	83	624.9292527738148	increased
-4	Cancer / neoplasia	Feces	6	6	288	68	464.4407843814363	increased
-5	Colorectal neoplasia	Feces	6	6	249	56	354.273228958994	increased
-6	Infectious disease	Upper airway / nasal	6	6	143	35	177.16794766027948	increased
-7	Ocular / eye disease	Ocular / eye	6	6	139	33	150.46766886694007	increased
-8	Infectious disease	Vaginal / reproductive	6	6	125	30	149.49294789170537	increased
-9	Cancer / neoplasia	Oral cavity / dental	6	6	122	38	200.3226160606725	increased
-10	Cancer / neoplasia	Vaginal / reproductive	6	6	117	31	117.68780241761294	increased
-11	Cancer / neoplasia	Stomach / esophagus	6	6	98	22	102.13805707657569	increased
-12	Colorectal neoplasia	Lower GI tract	6	6	88	21	97.7233371628385	increased
-1	Metabolic / endocrine	Feces	6	6	567	110	856.1583442867923	decreased
-2	Neurologic / cognitive disease	Feces	6	6	486	106	1062.4778767453304	decreased
-3	Infectious disease	Feces	6	6	317	69	548.2487123325661	decreased
-4	Cancer / neoplasia	Feces	6	6	232	48	341.4182776054673	decreased
-5	Colorectal neoplasia	Feces	6	6	218	44	336.87752766721724	decreased
-6	Cancer / neoplasia	Oral cavity / dental	6	6	179	46	267.5589845320029	decreased
-7	Infectious disease	Upper airway / nasal	6	6	161	36	170.71808209400555	decreased
-8	Reproductive / hormonal health	Vaginal / reproductive	6	6	144	32	168.96510457356118	decreased
-9	Infectious disease	Vaginal / reproductive	6	6	123	31	174.47792115557758	decreased
-10	Cancer / neoplasia	Vaginal / reproductive	6	6	98	23	83.95034609582996	decreased
-11	Respiratory / airway disease	Feces	6	6	80	18	76.98882579801769	decreased
-12	Colorectal neoplasia	Lower GI tract	6	6	78	19	103.0904356785966	decreased
+1	Metabolic / endocrine	Feces	6	6	602	114	937.468297929106	increased
+2	Neurologic / cognitive disease	Feces	6	6	574	119	1081.8442518711392	increased
+3	Infectious disease	Feces	6	6	391	84	635.6088716584345	increased
+4	Cancer / neoplasia	Feces	6	6	302	72	535.1229111664494	increased
+5	Colorectal neoplasia	Feces	6	6	251	56	353.86611742586194	increased
+6	Reproductive / hormonal health	Vaginal / reproductive	6	6	169	40	300.7261156799288	increased
+7	Cancer / neoplasia	Oral cavity / dental	6	6	141	43	232.66431115073368	increased
+8	Ocular / eye disease	Ocular / eye	6	6	138	33	140.93744649452952	increased
+9	Infectious disease	Vaginal / reproductive	6	6	129	32	154.61972657031106	increased
+10	Infectious disease	Upper airway / nasal	6	6	129	31	157.8811973354358	increased
+11	Respiratory / airway disease	Feces	6	6	92	19	93.4429539781984	increased
+12	Cancer / neoplasia	Stomach / esophagus	6	6	90	20	92.39543787420855	increased
+1	Metabolic / endocrine	Feces	6	6	539	99	751.7572156010759	decreased
+2	Neurologic / cognitive disease	Feces	6	6	474	105	1045.1193301097553	decreased
+3	Infectious disease	Feces	6	6	322	73	580.4651974141201	decreased
+4	Cancer / neoplasia	Feces	6	6	238	49	395.0107158175928	decreased
+5	Colorectal neoplasia	Feces	6	6	205	41	337.41430362306335	decreased
+6	Cancer / neoplasia	Oral cavity / dental	6	6	198	51	298.6266886043253	decreased
+7	Infectious disease	Upper airway / nasal	6	6	152	35	167.758168280878	decreased
+8	Infectious disease	Vaginal / reproductive	6	6	143	36	200.1210900646696	decreased
+9	Reproductive / hormonal health	Vaginal / reproductive	6	6	118	24	154.4999757310254	decreased
+10	Ocular / eye disease	Ocular / eye	6	6	80	21	99.22348168590749	decreased
+11	Respiratory / airway disease	Feces	6	6	80	18	78.17846467177993	decreased
+12	Colorectal neoplasia	Lower GI tract	6	6	79	20	114.1484719344827	decreased

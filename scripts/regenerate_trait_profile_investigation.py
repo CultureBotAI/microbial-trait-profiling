@@ -19,6 +19,23 @@ PPTX_PATH = INVESTIGATION_DIR / "trait_profile_investigation_figures.pptx"
 
 FACULTATIVE_DIR = INVESTIGATION_DIR / "aerobe-enrichment-v2"
 ANAEROBE_DIR = INVESTIGATION_DIR / "anaerobe-depletion-v2"
+FOLLOWUP_DIR = INVESTIGATION_DIR / "enrichment-infographic-followup"
+
+# The infographic-outlier run, then the paired-profile run under each name it is committed
+# under; the three paired-profile copies are identical.
+PAIRED_TOP_ARGS = (
+    "--condition-source",
+    "paired-top",
+    "--trait-source",
+    "paired-top",
+    "--fill-heatmap-traits",
+)
+FOLLOWUP_RUNS: list[tuple[str, ...]] = [
+    (),
+    ("--artifact-prefix", "my_top3_", *PAIRED_TOP_ARGS),
+    ("--artifact-prefix", "my_top3_conditions_relevant_traits_", *PAIRED_TOP_ARGS),
+    ("--output-dir", str(FOLLOWUP_DIR / "my-top3-enriched-traits"), *PAIRED_TOP_ARGS),
+]
 
 SLIDE_IMAGE_SOURCES = {
     "ppt/media/image.png": FACULTATIVE_DIR / "candidate_taxa_increased_profile_tendency.png",
@@ -162,15 +179,15 @@ PPTX_TEXT_REPLACEMENTS = {
 }
 
 
-def run_script(script_name: str) -> None:
-    """Run one repo script using this interpreter."""
+def run_script(script_name: str, *args: str) -> None:
+    """Run one repo script with optional arguments using this interpreter."""
     script = REPO_ROOT / "scripts" / script_name
-    print(f"==> {script.relative_to(REPO_ROOT)}")
+    print(" ".join(["==>", str(script.relative_to(REPO_ROOT)), *args]))
     previous_cwd = Path.cwd()
     previous_argv = sys.argv[:]
     try:
         os.chdir(REPO_ROOT)
-        sys.argv = [str(script)]
+        sys.argv = [str(script), *args]
         runpy.run_path(str(script), run_name="__main__")
     finally:
         sys.argv = previous_argv
@@ -406,6 +423,12 @@ def main() -> None:
     run_script("create_profile_enrichment_guild_assignment_diagram.py")
     run_script("create_trait_profile_infographic.py")
     run_script("analyze_parkinsons_disease_trait_profiles.py")
+    # Each run rewrites profile-condition-bars/README.md, which describes the last one.
+    run_script("create_profile_condition_enrichment_bars.py", "--focus-direction", "inc")
+    run_script("create_profile_condition_enrichment_bars.py", "--focus-direction", "dec")
+    # The paired-top runs read the paired-contrast tables written by the infographic above.
+    for arguments in FOLLOWUP_RUNS:
+        run_script("analyze_enrichment_infographic_followup.py", *arguments)
     run_script("annotate_trait_profile_investigation_figures.py")
     refresh_powerpoint()
     print("Regenerated current trait-profile investigation outputs.")

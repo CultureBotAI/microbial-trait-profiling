@@ -3,8 +3,8 @@
 Addresses Issue #118:
 1. Partition study trait profiles into stratified universes (pooled, feces, feces_excluded,
    or specific user-selected anatomical site strata).
-2. Run hypergeometric ORA enrichment per stratum, computing background universes (M, K)
-   within each stratum.
+2. Run hypergeometric ORA enrichment per stratum, retaining the supplied taxa-matrix
+   background (M, K) while changing the tested profile set.
 3. Export ranked tables under stable filenames:
    - trait_enrichment_traits_overall_ranked_<stratum>.tsv
    - trait_enrichment_trait_study_pairs_ranked_<stratum>.tsv
@@ -27,6 +27,11 @@ import numpy as np
 import pandas as pd
 
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
+from mtp.workflow.consumers import (
+    open_core_bundle,
+    preflight_consumer_outputs,
+    write_consumer_record,
+)
 
 DEFAULT_PROFILES_PATH = (
     DERIVED_DATA_DIR / "study_trait_profiles_ora_wide.tsv"
@@ -67,6 +72,15 @@ def classify_site_stratum(raw_site: str | None) -> str:
     return "feces" if is_feces_site(raw_site) else "feces_excluded"
 
 
+def _validate_strata(strata: list[str] | tuple[str, ...]) -> None:
+    """Require distinct names that cannot redirect partition/result writes (#727)."""
+    if not strata or len(set(strata)) != len(strata):
+        raise ValueError("Strata must be a nonempty set of distinct names")
+    for name in strata:
+        if not name.strip() or name in {".", ".."} or any(c in name for c in "/\\\0"):
+            raise ValueError(f"Invalid stratum name: {name!r}")
+
+
 def partition_profiles(
     profiles_path: Path,
     experiments_path: Path,
@@ -79,15 +93,33 @@ def partition_profiles(
       output_dir / f"study_trait_profiles_{stratum}.tsv"
     for each stratum in strata. Returns a dictionary mapping stratum name to Path.
     """
-    output_dir.mkdir(parents=True, exist_ok=True)
+    _validate_strata(strata)
     profiles_df = pd.read_csv(profiles_path, sep="\t")
     experiments_df = pd.read_csv(experiments_path, sep="\t")
 
     meta_cols = ["study_id", "experiment_id", "body_site"]
     exp_subset = experiments_df[meta_cols].drop_duplicates()
-    merged = profiles_df.merge(exp_subset, on=["study_id", "experiment_id"], how="left")
+    keys = ["study_id", "experiment_id"]
+    for label, frame in (("profiles", profiles_df), ("experiments", exp_subset)):
+        if (
+            frame[keys].isna().any().any()
+            or frame[keys].apply(lambda column: column.astype(str).str.strip().eq("")).any().any()
+        ):
+            raise ValueError(f"Blank experiment keys in {label}")
+    if exp_subset.duplicated(keys).any():
+        raise ValueError("Conflicting body-site metadata for the same experiment key")
+    merged = profiles_df.drop(columns="body_site", errors="ignore").merge(
+        exp_subset, on=keys, how="left", validate="many_to_one", indicator=True
+    )
+    if not merged["_merge"].eq("both").all():
+        missing = merged.loc[merged["_merge"] != "both", keys].drop_duplicates()
+        raise ValueError(
+            "Profile experiment keys missing from experiment metadata: "
+            f"{missing.to_dict('records')}"
+        )
 
     partition_paths: dict[str, Path] = {}
+    partition_frames: dict[str, pd.DataFrame] = {}
     profile_cols = [c for c in profiles_df.columns if c != "body_site"]
 
     for stratum in strata:
@@ -118,8 +150,13 @@ def partition_profiles(
                 f"using experiments from {experiments_path}."
             )
 
+        partition_frames[stratum] = stratum_df
+
+    # Validate every requested partition before publishing any of them (#728).
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for stratum, frame in partition_frames.items():
         out_path = output_dir / f"study_trait_profiles_{stratum}.tsv"
-        stratum_df.to_csv(out_path, sep="\t", index=False)
+        frame.to_csv(out_path, sep="\t", index=False)
         partition_paths[stratum] = out_path
 
     return partition_paths
@@ -136,6 +173,36 @@ class StratumOutputs:
     overall_ranked_tsv: Path
     pairs_ranked_tsv: Path
     all_results_tsv: Path | None = None
+    tested_traits_tsv: Path | None = None
+
+    def files(self) -> list[Path]:
+        """List the actual products, including the partition that determines eligibility."""
+        return [
+            path
+            for path in (
+                self.profiles_tsv,
+                self.results_tsv,
+                self.report_txt,
+                self.overall_ranked_tsv,
+                self.pairs_ranked_tsv,
+                self.all_results_tsv,
+                self.tested_traits_tsv,
+            )
+            if path is not None
+        ]
+
+
+def _stratum_outputs(stratum: str, profiles_tsv: Path, output_dir: Path) -> StratumOutputs:
+    return StratumOutputs(
+        stratum=stratum,
+        profiles_tsv=profiles_tsv,
+        results_tsv=output_dir / f"trait_enrichment_results_{stratum}.tsv",
+        report_txt=output_dir / f"trait_enrichment_report_{stratum}.txt",
+        overall_ranked_tsv=output_dir / f"trait_enrichment_traits_overall_ranked_{stratum}.tsv",
+        pairs_ranked_tsv=output_dir / f"trait_enrichment_trait_study_pairs_ranked_{stratum}.tsv",
+        all_results_tsv=output_dir / f"trait_enrichment_all_results_{stratum}.tsv",
+        tested_traits_tsv=output_dir / f"trait_enrichment_traits_tested_{stratum}.tsv",
+    )
 
 
 def _run_script(script_path: Path, args: list[str]) -> None:
@@ -166,11 +233,7 @@ def run_stratum_enrichment(
 ) -> StratumOutputs:
     """Execute ORA enrichment and rankings export for one stratum."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    results_tsv = output_dir / f"trait_enrichment_results_{stratum}.tsv"
-    report_txt = output_dir / f"trait_enrichment_report_{stratum}.txt"
-    all_results_tsv = output_dir / f"trait_enrichment_all_results_{stratum}.tsv"
-    overall_ranked_tsv = output_dir / f"trait_enrichment_traits_overall_ranked_{stratum}.tsv"
-    pairs_ranked_tsv = output_dir / f"trait_enrichment_trait_study_pairs_ranked_{stratum}.tsv"
+    outputs = _stratum_outputs(stratum, profiles_tsv, output_dir)
 
     resolved_matrix = taxa_matrix or DEFAULT_TAXA_MATRIX_PATH
     if not resolved_matrix.exists():
@@ -183,11 +246,11 @@ def run_stratum_enrichment(
         "--input",
         str(profiles_tsv),
         "--output",
-        str(report_txt),
+        str(outputs.report_txt),
         "--tsv-output",
-        str(results_tsv),
+        str(outputs.results_tsv),
         "--all-results-output",
-        str(all_results_tsv),
+        str(outputs.all_results_tsv),
         "--taxa-matrix",
         str(resolved_matrix),
         "--p-threshold",
@@ -204,35 +267,36 @@ def run_stratum_enrichment(
 
     exporter_args: list[str] = [
         "--input",
-        str(report_txt),
+        str(outputs.report_txt),
         "--results",
-        str(results_tsv),
+        str(outputs.all_results_tsv),
+        "--unfiltered",
+        "--pair-discoveries-only",
+        "--tested-output",
+        str(outputs.tested_traits_tsv),
         "--profiles",
         str(profiles_tsv),
         "--overall-output",
-        str(overall_ranked_tsv),
+        str(outputs.overall_ranked_tsv),
         "--pair-output",
-        str(pairs_ranked_tsv),
+        str(outputs.pairs_ranked_tsv),
         "--body-site-group",
         stratum,
     ]
     _run_script(REPO_ROOT / "scripts" / "export_trait_enrichment_rankings.py", exporter_args)
 
-    return StratumOutputs(
-        stratum=stratum,
-        profiles_tsv=profiles_tsv,
-        results_tsv=results_tsv,
-        report_txt=report_txt,
-        overall_ranked_tsv=overall_ranked_tsv,
-        pairs_ranked_tsv=pairs_ranked_tsv,
-        all_results_tsv=all_results_tsv,
-    )
+    return outputs
 
 
 def compute_annotation_density_deciles(
     pooled_overall_df: pd.DataFrame, n_deciles: int = 10
 ) -> pd.DataFrame:
-    """Bin traits into background-annotation-density deciles based on trait_total."""
+    """Bin all tested traits by reference K, counting the analyzer's discoveries.
+
+    Untested traits are excluded, not reclassified as nonsignificant. A selected
+    ranking is not a valid input: the complete summary's tested counts and hit
+    counts must be supplied explicitly.
+    """
     df = pooled_overall_df.copy()
     empty_deciles = pd.DataFrame(
         columns=[
@@ -244,8 +308,17 @@ def compute_annotation_density_deciles(
             "pct_significant",
         ]
     )
-    if df.empty or "trait_total" not in df.columns:
+    if df.empty:
         return empty_deciles
+    required = {"trait", "trait_total", "n_profiles_tested", "hit_rows", "test_status"}
+    if not required.issubset(df.columns):
+        raise ValueError(
+            f"Density diagnostics require a complete trait summary: {sorted(required)}"
+        )
+    df = df.loc[df["n_profiles_tested"] > 0].copy()
+    if df["trait_total"].isna().any() or df["hit_rows"].isna().any():
+        raise ValueError("Tested traits require background K and discovery counts.")
+    df = df.sort_values("trait")
 
     actual_bins = min(n_deciles, len(df))
     if actual_bins <= 0:
@@ -260,8 +333,7 @@ def compute_annotation_density_deciles(
         group = df.loc[df["density_decile"].eq(decile)]
         t_total = group["trait_total"]
         n_traits = len(group)
-        stat_col = "best_qvalue" if "best_qvalue" in group.columns else "best_pvalue"
-        sig_count = (group[stat_col] <= 0.05).sum() if stat_col in group.columns else n_traits
+        sig_count = group["hit_rows"].gt(0).sum()
         rows.append(
             {
                 "decile": decile,
@@ -288,8 +360,8 @@ def build_sensitivity_summary_table(
     meta_records: list[dict[str, Any]] = []
 
     for stratum, outputs in stratum_outputs.items():
-        if outputs.overall_ranked_tsv.exists():
-            df = pd.read_csv(outputs.overall_ranked_tsv, sep="\t", comment="#")
+        if outputs.tested_traits_tsv is not None and outputs.tested_traits_tsv.exists():
+            df = pd.read_csv(outputs.tested_traits_tsv, sep="\t", comment="#")
             overall_dfs[stratum] = df
         else:
             overall_dfs[stratum] = pd.DataFrame()
@@ -310,7 +382,12 @@ def build_sensitivity_summary_table(
                 "stratum": stratum,
                 "total_testable_profiles": n_testable,
                 "ranked_traits": n_ranked,
-                "correction_family": "Benjamini-Hochberg (global)",
+                "tested_traits": int(
+                    overall_dfs[stratum].get("n_profiles_tested", pd.Series(dtype=int)).gt(0).sum()
+                ),
+                "untested_traits": int(
+                    overall_dfs[stratum].get("n_profiles_tested", pd.Series(dtype=int)).eq(0).sum()
+                ),
             }
         )
 
@@ -339,28 +416,32 @@ def build_sensitivity_summary_table(
         fe_row = _get_row(feces_ex_df, trait)
 
         p_trait_tot = (
-            int(p_row["trait_total"]) if p_row is not None and "trait_total" in p_row else 0
+            float(p_row["trait_total"]) if p_row is not None and "trait_total" in p_row else np.nan
         )
         p_tested = (
             int(p_row["n_profiles_tested"])
             if p_row is not None and "n_profiles_tested" in p_row
-            else 0
+            else np.nan
         )
         f_tested = (
             int(f_row["n_profiles_tested"])
             if f_row is not None and "n_profiles_tested" in f_row
-            else 0
+            else np.nan
         )
         fe_tested = (
             int(fe_row["n_profiles_tested"])
             if fe_row is not None and "n_profiles_tested" in fe_row
-            else 0
+            else np.nan
         )
 
-        p_prev = float(p_row["prevalence"]) if p_row is not None and "prevalence" in p_row else 0.0
-        f_prev = float(f_row["prevalence"]) if f_row is not None and "prevalence" in f_row else 0.0
+        p_prev = (
+            float(p_row["prevalence"]) if p_row is not None and "prevalence" in p_row else np.nan
+        )
+        f_prev = (
+            float(f_row["prevalence"]) if f_row is not None and "prevalence" in f_row else np.nan
+        )
         fe_prev = (
-            float(fe_row["prevalence"]) if fe_row is not None and "prevalence" in fe_row else 0.0
+            float(fe_row["prevalence"]) if fe_row is not None and "prevalence" in fe_row else np.nan
         )
 
         p_fold = float(p_row["mean_fold"]) if p_row is not None and "mean_fold" in p_row else np.nan
@@ -382,12 +463,34 @@ def build_sensitivity_summary_table(
         f_q = _extract_q_or_p(f_row)
         fe_q = _extract_q_or_p(fe_row)
 
-        p_sig = bool(p_row is not None and (pd.isna(p_q) or p_q <= 0.05))
-        f_sig = bool(f_row is not None and (pd.isna(f_q) or f_q <= 0.05))
-        fe_sig = bool(fe_row is not None and (pd.isna(fe_q) or fe_q <= 0.05))
+        def _state(row: pd.Series | None, stratum: str) -> str:
+            if row is not None:
+                return str(row["test_status"])
+            outputs = stratum_outputs.get(stratum)
+            if (
+                outputs is None
+                or outputs.tested_traits_tsv is None
+                or not outputs.tested_traits_tsv.exists()
+            ):
+                return "unavailable_analysis"
+            return "unavailable_trait"
+
+        def _significant(row: pd.Series | None) -> bool | None:
+            if row is None or row["n_profiles_tested"] == 0:
+                return None
+            return bool(row["hit_rows"] > 0)
+
+        p_sig = _significant(p_row)
+        f_sig = _significant(f_row)
+        fe_sig = _significant(fe_row)
+        p_state = _state(p_row, "pooled")
+        f_state = _state(f_row, "feces")
+        fe_state = _state(fe_row, "feces_excluded")
 
         # Determine support status
-        if f_tested < 2 or fe_tested < 2:
+        if f_state.startswith("unavailable") or fe_state.startswith("unavailable"):
+            support_status = "unavailable_comparison"
+        elif f_tested < 2 or fe_tested < 2:
             support_status = "insufficient_support"
         elif f_sig and fe_sig:
             support_status = "both_strata_significant"
@@ -412,16 +515,19 @@ def build_sensitivity_summary_table(
                 "pooled_best_stat": p_q,
                 "pooled_mean_fold": p_fold,
                 "pooled_significant": p_sig,
+                "pooled_test_status": p_state,
                 "feces_n_tested": f_tested,
                 "feces_prevalence": f_prev,
                 "feces_best_stat": f_q,
                 "feces_mean_fold": f_fold,
                 "feces_significant": f_sig,
+                "feces_test_status": f_state,
                 "feces_excluded_n_tested": fe_tested,
                 "feces_excluded_prevalence": fe_prev,
                 "feces_excluded_best_stat": fe_q,
                 "feces_excluded_mean_fold": fe_fold,
                 "feces_excluded_significant": fe_sig,
+                "feces_excluded_test_status": fe_state,
                 "support_status": support_status,
                 "delta_mean_fold": delta_fold,
                 "delta_prevalence": delta_prev,
@@ -443,11 +549,17 @@ def generate_sensitivity_reports(
 
     per_trait_df, strata_summary_df = build_sensitivity_summary_table(stratum_outputs)
 
-    # Compute annotation density deciles from pooled overall table
+    # Use the complete eligible universe, never the discovery-filtered ranking.
     pooled_df = pd.DataFrame()
-    if "pooled" in stratum_outputs and stratum_outputs["pooled"].overall_ranked_tsv.exists():
-        pooled_df = pd.read_csv(stratum_outputs["pooled"].overall_ranked_tsv, sep="\t", comment="#")
+    pooled_outputs = stratum_outputs.get("pooled")
+    if (
+        pooled_outputs is not None
+        and pooled_outputs.tested_traits_tsv is not None
+        and pooled_outputs.tested_traits_tsv.exists()
+    ):
+        pooled_df = pd.read_csv(pooled_outputs.tested_traits_tsv, sep="\t", comment="#")
     decile_df = compute_annotation_density_deciles(pooled_df)
+    decile_df.to_csv(output_dir / "annotation_density_deciles.tsv", sep="\t", index=False)
 
     # Write TSV with metadata comments
     with tsv_path.open("w", encoding="utf-8", newline="") as f:
@@ -474,7 +586,7 @@ def generate_sensitivity_reports(
         "",
         f"DIAGNOSTIC NOTE: {ANNOTATION_DENSITY_NOTE}",
         "",
-        "2. STRATUM PROFILE AND REPAIR COUNTS",
+        "2. STRATUM PROFILE AND TEST COUNTS",
         "-" * 80,
     ]
 
@@ -483,7 +595,7 @@ def generate_sensitivity_reports(
             f"Stratum: {row['stratum']:<15} | "
             f"Testable Profiles: {row['total_testable_profiles']:<6} | "
             f"Ranked Traits: {row['ranked_traits']:<5} | "
-            f"Correction: {row['correction_family']}"
+            f"Tested Traits: {row['tested_traits']} | Untested Traits: {row['untested_traits']}"
         )
 
     txt_lines.extend(
@@ -492,6 +604,10 @@ def generate_sensitivity_reports(
             "3. ANNOTATION-DENSITY SENSITIVITY DIAGNOSTIC (POOLED BACKGROUND K)",
             "-" * 80,
             "Traits binned by background annotation count (trait_total) deciles:",
+            "Universe: all eligible tested traits, including traits with zero discoveries.",
+            "Sig Traits: any test passing the analyzer's declared p/q and fold thresholds.",
+            "Untested traits and unavailable analyses are excluded; "
+            "empty diagnostics are not zero discovery rates.",
             (
                 f"{'Decile':<8} {'Min K':<8} {'Max K':<8} {'Total Traits':<14} "
                 f"{'Sig Traits':<12} {'% Sig':<8}"
@@ -530,6 +646,7 @@ def generate_sensitivity_reports(
     for stratum, outs in stratum_outputs.items():
         txt_lines.append(f"  - Stratum '{stratum}' overall ranking  : {outs.overall_ranked_tsv}")
         txt_lines.append(f"  - Stratum '{stratum}' pair rankings     : {outs.pairs_ranked_tsv}")
+        txt_lines.append(f"  - Stratum '{stratum}' complete summary : {outs.tested_traits_tsv}")
 
     txt_lines.append("=" * 80 + "\n")
 
@@ -538,8 +655,8 @@ def generate_sensitivity_reports(
 
 
 def run_stratification_pipeline(
-    profiles_path: Path = DEFAULT_PROFILES_PATH,
-    experiments_path: Path = DEFAULT_EXPERIMENTS_PATH,
+    profiles_path: Path | None = None,
+    experiments_path: Path | None = None,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
     p_threshold: float = 0.001,
     min_fold: float = 1.5,
@@ -547,8 +664,42 @@ def run_stratification_pipeline(
     fdr_scope: str = "global",
     strata: list[str] | tuple[str, ...] = PRIMARY_STRATA,
     taxa_matrix: Path | None = None,
+    core_run: Path | None = None,
 ) -> tuple[dict[str, StratumOutputs], Path, Path]:
     """Execute the full background stratification pipeline."""
+    _validate_strata(strata)
+    bundle = open_core_bundle(core_run, "ora_profiles") if core_run is not None else None
+    bindings = {
+        "profiles": (profiles_path, "ora_profiles", DEFAULT_PROFILES_PATH),
+        "experiments": (experiments_path, "experiments", DEFAULT_EXPERIMENTS_PATH),
+        "taxa-matrix": (taxa_matrix, "taxa_matrix", DEFAULT_TAXA_MATRIX_PATH),
+    }
+    resolved: dict[str, Path] = {}
+    for argument, (supplied, product, default) in bindings.items():
+        if bundle is not None:
+            path = bundle.path(product)
+            if supplied is not None and supplied.resolve() != path.resolve():
+                raise ValueError(f"--core-run conflicts with explicit --{argument}")
+            resolved[argument] = path
+        else:
+            resolved[argument] = supplied or default
+    profiles_path = resolved["profiles"]
+    experiments_path = resolved["experiments"]
+    taxa_matrix = resolved["taxa-matrix"]
+    products = [
+        path
+        for stratum in strata
+        for path in _stratum_outputs(
+            stratum, output_dir / f"study_trait_profiles_{stratum}.tsv", output_dir
+        ).files()
+    ] + [
+        output_dir / "stratification_sensitivity_summary.tsv",
+        output_dir / "stratification_sensitivity_summary.txt",
+        output_dir / "annotation_density_deciles.tsv",
+    ]
+    record = output_dir / "core_consumption.json"
+    if bundle is not None:
+        preflight_consumer_outputs(bundle, record, products, output_directory=output_dir)
     print("=" * 80)
     print("Running ORA Background Stratification Pipeline (#118)")
     print(f"Strata: {', '.join(strata)}")
@@ -591,6 +742,8 @@ def run_stratification_pipeline(
         stratum_outputs=stratum_outputs,
         output_dir=output_dir,
     )
+    if bundle is not None:
+        write_consumer_record(bundle, record, consumer="mtp.stratification", outputs=products)
     print(f"Wrote sensitivity summary TSV : {tsv_path}")
     print(f"Wrote sensitivity summary text: {txt_path}")
     print("Stratification pipeline complete.\n")
@@ -604,16 +757,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Evaluate ORA background stratification and annotation-density sensitivity (#118)"
         )
     )
+    parser.add_argument("--core-run", type=Path, help="Verified core workflow run manifest")
     parser.add_argument(
         "--profiles",
         type=Path,
-        default=DEFAULT_PROFILES_PATH,
         help="Path to study trait profiles wide TSV.",
     )
     parser.add_argument(
         "--experiments",
         type=Path,
-        default=DEFAULT_EXPERIMENTS_PATH,
         help="Path to experiments TSV containing body_site metadata.",
     )
     parser.add_argument(
@@ -661,7 +813,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--taxa-matrix",
         type=Path,
-        default=DEFAULT_TAXA_MATRIX_PATH,
         help="Path to taxa_trait_matrix.tsv (default: data/derived/taxa_trait_matrix.tsv).",
     )
     return parser.parse_args(argv)
@@ -680,6 +831,7 @@ def main(argv: list[str] | None = None) -> int:
         fdr_scope=args.fdr_scope,
         strata=strata,
         taxa_matrix=args.taxa_matrix,
+        core_run=args.core_run,
     )
     return 0
 

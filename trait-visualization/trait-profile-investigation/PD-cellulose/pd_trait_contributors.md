@@ -2,6 +2,10 @@
 
 ![Contributor heatmap](pd_trait_contributors_species_family_dot_heatmap.png)
 
+Counts come from the Table 1 contribution ledger (`mtp.contribution_inputs`, `mtp.taxon_contributions`, #190) on the pinned KG-Microbe release. They cover the 198 PD fecal profiles that the ledger retains (99 increased and 99 decreased, from 45 studies): human profiles in experiments with both directions, out of 247 PD fecal profiles. Every trait-bearing KG taxon at or below a reported taxon adds one count, once per reported taxon, exactly as the taxa-trait matrix and the profile trait sums count it. Each such taxon is attributed to its species and its family when the pinned taxonomy gives exactly one; otherwise it is unresolved (no ancestor at that rank) or ambiguous (several).
+
+Each trait carries its observed direction in the PD six-trait lollipop, the sign of `increased_minus_decreased_mean_z` in `pd_six_trait_direction_summary.tsv`: the `trait_direction` column in the cell, coverage and co-carriage tables, and an up or down arrow in the figure labels.
+
 The background row replaces the separate unresolved-share bars. Within each trait, paired red/blue circle area compares the increased/decreased propagated count; the grey outer area is the portion unresolved or ambiguous at the displayed rank. Contributor circle area uses the full cell denominator, so unresolved mass already reduces the colored contributor share rather than being discarded.
 
 The heatmap retains `11` of `53` candidate taxa. A row must have at least one absolute increased-versus-decreased full-cell contributor share difference of `5%`. This removes rows containing only small directional changes.
@@ -26,12 +30,11 @@ Only 3 of 15 trait pairs have different selected-taxon co-carriage counts betwee
 
 The contributor counts are not valid independent observations for a significance test. As external context, the existing paired, study-weighted aggregate analysis has 95% intervals excluding zero for these traits:
 
-| trait | mean increased - decreased z | 95% interval | pattern |
-| --- | ---: | ---: | --- |
-| moderately halophilic | 0.473 | [0.208, 0.738] | inc |
-| facultatively aerobic | 0.412 | [0.045, 0.778] | inc |
-| arsenate reduction | 0.516 | [0.043, 0.989] | inc |
-| cellulose catabolic process | -0.698 | [-1.200, -0.196] | dec |
+| trait | lollipop direction | mean increased - decreased z | 95% interval | pattern |
+| --- | --- | ---: | ---: | --- |
+| moderately halophilic | increased | 0.434 | [0.175, 0.694] | inc |
+| arsenate reduction | increased | 0.512 | [0.062, 0.961] | inc |
+| cellulose catabolic process | decreased | -0.691 | [-1.177, -0.205] | dec |
 
 These intervals are aggregate directional context, not contributor-level tests, and the table does not add a new multiple-testing correction.
 
@@ -54,22 +57,24 @@ Top profile-pool-normalized reported taxon labels (descriptive):
 
 | rank | taxon | PD/other profiles | PD/other prevalence | prevalence difference |
 | --- | --- | ---: | ---: | ---: |
-| family | Lachnospiraceae (186803) | 49/307 | 19.37%/8.98% | +10.39 pp |
-| family | Oscillospiraceae (216572) | 28/222 | 11.07%/6.49% | +4.57 pp |
-| family | Bifidobacteriaceae (31953) | 16/106 | 6.32%/3.10% | +3.22 pp |
-| family | Lactobacillaceae (33958) | 17/128 | 6.72%/3.74% | +2.98 pp |
-| family | Streptococcaceae (1300) | 14/107 | 5.53%/3.13% | +2.40 pp |
+| family | Lachnospiraceae (186803) | 49/307 | 19.84%/9.15% | +10.69 pp |
+| family | Oscillospiraceae (216572) | 27/222 | 10.93%/6.61% | +4.32 pp |
+| family | Lactobacillaceae (33958) | 17/128 | 6.88%/3.81% | +3.07 pp |
+| family | Bifidobacteriaceae (31953) | 15/106 | 6.07%/3.16% | +2.92 pp |
+| family | Enterobacteriaceae (543) | 20/196 | 8.10%/5.84% | +2.26 pp |
 
 ## Counting and selection bias
 
 - Counts are propagated taxon-trait assertions, not independent patients, samples, or original source assertions. Repeated experiments and descendant propagation can increase them.
-- The displayed taxa are the union of the top five resolved contributors per trait-direction cell. Broadly annotated or frequently reported taxa therefore have more opportunities to enter and remain in the selected set.
+- The candidate species are the union of the top five resolved species per trait-direction cell (at most 50), and the candidate families are the 25 resolved families with the largest total count. Broadly annotated or frequently reported taxa therefore have more opportunities to enter and remain in the selected set.
 - Species and family panels are separate resolution views. Parent and descendant labels must not be added as if they were disjoint contributors.
 - Co-carriage means that the selected label contributes to both annotation cells; it does not establish within-sample expression, mechanism, or causal PD specificity.
 
 Audit files:
 
 - `pd_trait_contributors_cells.tsv`: long-form source dot cells.
+- `pd_trait_contributors_rank_coverage.tsv`: resolved, unresolved and ambiguous count totals.
+- `pd_trait_contributors_manifest.json`: profile scope, KG check, input hashes and selection rules.
 - `pd_trait_contributors_direction_differences.tsv`: change-only taxon-trait direction pairs.
 - `pd_trait_contributors_heatmap_taxa.tsv`: taxa passing the large-difference row filter.
 - `pd_trait_contributors_selected_taxa.tsv`: selected taxa with normalized specificity context.

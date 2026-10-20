@@ -1,0 +1,173 @@
+{
+  "status": "SUCCESS",
+  "harness_check_passed": true,
+  "is_calibrated": true,
+  "verdict_scope": "harness_check_passed/is_calibrated assess the complete-null raw-p benchmark only; they do not certify mixed-signal FDR or biological validity",
+  "truth_definition": "explicit spike trait and traits with identical background presence vectors, restricted to tested profile-trait pairs in each replicate",
+  "mixed_signal_limitation": "Other correlated traits may also shift under whole-taxon spiking but are outside the declared truth set. Reported FDR is a declared-spike FDP benchmark, not proof of false-discovery control for every induced alternative.",
+  "requested_replicates": 10,
+  "completed_replicates": 10,
+  "failed_replicates": 0,
+  "invalid_replicates": 0,
+  "n_null_pvalues": 14803900,
+  "complete_null_type_i": {
+    "alpha": 0.05,
+    "empirical_rate": 0.015269962644978688,
+    "monte_carlo_se": 0.00015682025177174983,
+    "replicates": 10,
+    "is_conservative": true,
+    "n_tests": 14803900
+  },
+  "study_flip_null_type_i": null,
+  "mixed_signal_fdr": {
+    "target_q": 0.05,
+    "empirical_fdr": 0.22285714285714286,
+    "fdp_std": 0.37351064788253713,
+    "replicates": 10,
+    "mean_discoveries": 2.8,
+    "mean_false_discoveries": 1.8
+  },
+  "mixed_signal_tpr": {
+    "empirical_tpr": 0.0004282655246252676,
+    "tpr_std": 5.714247181928225e-20,
+    "replicates": 10,
+    "replicates_without_signal": 0,
+    "mean_true_signals": 2335.0,
+    "mean_true_discoveries": 1.0
+  },
+  "discovery_thresholds": [
+    {
+      "q_threshold": 0.05,
+      "test_type": "enrichment",
+      "min_fold": 1.5,
+      "max_fold": 0.5,
+      "complete_null_fdr": {
+        "target_q": 0.05,
+        "empirical_fdr": 0.0,
+        "fdp_std": 0.0,
+        "replicates": 10,
+        "mean_discoveries": 0.0,
+        "mean_false_discoveries": 0.0
+      },
+      "mixed_signal_fdr": {
+        "target_q": 0.05,
+        "empirical_fdr": 0.22285714285714286,
+        "fdp_std": 0.37351064788253713,
+        "replicates": 10,
+        "mean_discoveries": 2.8,
+        "mean_false_discoveries": 1.8
+      },
+      "mixed_signal_tpr": {
+        "empirical_tpr": 0.0004282655246252676,
+        "tpr_std": 5.714247181928225e-20,
+        "replicates": 10,
+        "replicates_without_signal": 0,
+        "mean_true_signals": 2335.0,
+        "mean_true_discoveries": 1.0
+      }
+    },
+    {
+      "q_threshold": 0.001,
+      "test_type": "enrichment",
+      "min_fold": 1.5,
+      "max_fold": 0.5,
+      "complete_null_fdr": {
+        "target_q": 0.001,
+        "empirical_fdr": 0.0,
+        "fdp_std": 0.0,
+        "replicates": 10,
+        "mean_discoveries": 0.0,
+        "mean_false_discoveries": 0.0
+      },
+      "mixed_signal_fdr": {
+        "target_q": 0.001,
+        "empirical_fdr": 0.075,
+        "fdp_std": 0.23717082451262847,
+        "replicates": 10,
+        "mean_discoveries": 1.3,
+        "mean_false_discoveries": 0.3
+      },
+      "mixed_signal_tpr": {
+        "empirical_tpr": 0.0004282655246252676,
+        "tpr_std": 5.714247181928225e-20,
+        "replicates": 10,
+        "replicates_without_signal": 0,
+        "mean_true_signals": 2335.0,
+        "mean_true_discoveries": 1.0
+      }
+    }
+  ],
+  "inference_family": {
+    "test_type": "enrichment",
+    "alpha": 0.05,
+    "min_fold": 1.5,
+    "max_fold": 0.5,
+    "test_scope": "pairs_with_k_pop_gt_0_and_n_draws_gt_0",
+    "m_universe": 5829,
+    "n_trait_columns": 317,
+    "trait_filter": "exclude_mediadive",
+    "n_excluded_mediadive_columns": 2333,
+    "correction_method": "BH",
+    "correction_family": "all_testable_paired_profile_trait_pairs",
+    "n_profiles": 4670,
+    "n_testable_traits": 317,
+    "n_tests": 1480390,
+    "n_input_shared_traits": 2650
+  },
+  "provenance": {
+    "started_utc": "2026-10-20T02:27:40.490557+00:00",
+    "finished_utc": "2026-10-20T02:28:58.536153+00:00",
+    "elapsed_seconds": 78.045,
+    "command_args": {
+      "profiles": "data/derived/study_trait_profiles_ora_wide.tsv",
+      "taxa_matrix": "data/derived/taxa_trait_matrix.tsv",
+      "output_dir": "data/derived/ora_calibration",
+      "replicates": 10,
+      "seed": 42,
+      "alpha": 0.05,
+      "fdr_q": 0.05,
+      "q_thresholds": [
+        0.05,
+        0.001
+      ],
+      "scenario": "all",
+      "test_type": "enrichment",
+      "min_fold": 1.5,
+      "max_fold": 0.5,
+      "signal_strength": 0.6,
+      "spike_traits": [
+        "METPO:1000872",
+        "METPO:1000699",
+        "METPO:1000667"
+      ],
+      "n_spike_traits": 3,
+      "max_profiles": null,
+      "trait_filter": "exclude_mediadive_before_simulation_and_spike_selection"
+    },
+    "inputs": {
+      "profiles": {
+        "path": "data/derived/study_trait_profiles_ora_wide.tsv",
+        "sha256": "8ff8b1637039d7d548bd5a3fb956d562ed29e61b2067ca507f7779903799152a",
+        "rows_used": 5829
+      },
+      "taxa_matrix": {
+        "path": "data/derived/taxa_trait_matrix.tsv",
+        "sha256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178",
+        "rows": 5829
+      }
+    },
+    "output_dir": "data/derived/ora_calibration",
+    "software": {
+      "python": "3.11.5",
+      "numpy": "2.4.4",
+      "pandas": "3.0.6",
+      "platform": "macOS-26.5.1-arm64-arm-64bit"
+    },
+    "requested_replicates": 10,
+    "completed_replicates": 10,
+    "failed_replicates": 0,
+    "invalid_replicates": 0,
+    "status": "SUCCESS",
+    "error_message": null
+  }
+}

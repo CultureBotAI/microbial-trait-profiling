@@ -50,6 +50,7 @@ from mtp.integrated_evidence import (
     write_table,
     write_view,
 )
+from mtp.paths import file_sha256
 from mtp.table1_trait_maps import compute_direction_shifts
 from mtp.trait_composition import compute_log_ratio_shifts
 from mtp.trait_guilds import (
@@ -1155,6 +1156,7 @@ def test_main_writes_every_artifact_and_its_provenance(tmp_path: Path) -> None:
     assert exit_code == 0
     written = {
         "integrated_evidence.tsv",
+        "integrated_evidence_method_results.tsv",
         "integrated_evidence_features.tsv",
         "integrated_evidence_families.tsv",
         "integrated_evidence_assessments.tsv",
@@ -1264,8 +1266,8 @@ def test_main_writes_every_artifact_and_its_provenance(tmp_path: Path) -> None:
         assessments = list(csv.DictReader(handle, delimiter="\t"))
     assert assessments
     assert {row["state_value"] for row in assessments} == {
-        f"pending {issue}" for issue in ASSESSMENTS.values()
-    }
+        f"pending {issue}" for issue in ASSESSMENTS.values() if issue != "#190"
+    } | {"pending #190: influence evidence not supplied"}
     assert {row["calibration_status"] for row in rows} == {"pending #182"}
 
     view = (output / "integrated_evidence.md").read_text(encoding="utf-8")
@@ -1348,3 +1350,199 @@ def test_orientation_carries_class_orientation_and_validation() -> None:
     assert status.for_procedure("anything") == (
         "contrast population described, hand_review_disagreements_unresolved, no verdict #188"
     )
+
+
+def _bound_status_payload(key: str, inputs: dict[str, str]) -> dict[str, object]:
+    identity = {**inputs, "analysis_source_sha256": "a" * 64}
+    if key == "calibration_status":
+        return {
+            "version": "calibration-v3",
+            "code_commit": "historical-producer-revision",
+            "inputs": {**identity, "protocol_sha256": "b" * 64},
+            "protocol": "methods/calibration_protocol.json",
+            "eligibility": {"id": "whole_pair_nonzero_retained_totals_v1"},
+            "procedures": {
+                "guild_mcnemar": {"eligibility_policy": "whole_pair_nonzero_retained_totals_v1"}
+            },
+            "calibration_status": {
+                "fraction_sign_test": {"overall": "pass", "criteria": {"family_error": "pass"}},
+                "guild_mcnemar": {"overall": "fail", "criteria": {"family_error": "fail"}},
+            },
+            "not_calibrated_here": ["native ORA and composition"],
+        }
+    return {
+        **identity,
+        "classifier_version": "contrast-orientation-v4",
+        "code_commit": "historical-classifier-revision",
+        "class_counts": [
+            {"contrast_class": "unresolved", "orientation": "not_applicable", "experiments": 2}
+        ],
+        "review": {"reviewed_experiments": 60, "agreed": 58, "disagreed": 2},
+    }
+
+
+@pytest.mark.parametrize("key", ["calibration_status", "orientation_status"])
+@pytest.mark.parametrize("bad_field", ["profile_sha256", "experiments_sha256", "full_dump_sha256"])
+@pytest.mark.parametrize("corruption", ["mismatch", "missing", "malformed"])
+def test_assessment_cannot_attach_verdicts_from_another_corpus(
+    tmp_path: Path, key: str, bad_field: str, corruption: str
+) -> None:
+    expected = {
+        "profile_sha256": "1" * 64,
+        "experiments_sha256": "2" * 64,
+        "full_dump_sha256": "3" * 64,
+    }
+    declared = dict(expected)
+    if corruption == "missing":
+        del declared[bad_field]
+    else:
+        declared[bad_field] = "4" * 64 if corruption == "mismatch" else "not-a-checksum"
+    path = tmp_path / "assessment.json"
+    path.write_text(json.dumps(_bound_status_payload(key, declared)), encoding="utf-8")
+    status = read_status(path, key, "#729", expected_input_sha256=expected)
+    assert status.verdicts == {}
+    assert status.default == f"unreadable #729: assessment {bad_field} missing or mismatched"
+    assert status.source["sha256"] == file_sha256(path)
+    assert status.source["binding"] == "mismatch_or_missing_identity"
+
+
+@pytest.mark.parametrize("key", ["calibration_status", "orientation_status"])
+def test_bound_assessment_preserves_historical_identity_and_scoped_findings(
+    tmp_path: Path, key: str
+) -> None:
+    expected = {
+        "profile_sha256": "1" * 64,
+        "experiments_sha256": "2" * 64,
+        "full_dump_sha256": "3" * 64,
+    }
+    path = tmp_path / "assessment.json"
+    payload = _bound_status_payload(key, expected)
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    status = read_status(path, key, "#729", expected_input_sha256=expected)
+    assert status.source["binding"] == "matched"
+    assert status.source["input_sha256"] == expected
+    assert status.source["code_commit"] == payload["code_commit"]
+    assert status.source["sha256"] == file_sha256(path)
+    assert "not an independent assessment" in str(status.source["validation_scope"])
+    if key == "calibration_status":
+        assert status.for_procedure("fraction_sign_test").startswith("pass #729")
+        assert status.for_procedure("guild_mcnemar").startswith("fail #729")
+        assert status.for_procedure("composition_arm_native_transformed_contrast") == (
+            "not_calibrated_here #729"
+        )
+    else:
+        assert "hand_review_disagreements_unresolved" in status.default
+        assert "no verdict" in status.default
+
+
+@pytest.mark.parametrize("key", ["calibration_status", "orientation_status"])
+@pytest.mark.parametrize("missing", ["version", "code_commit", "analysis_source_sha256"])
+def test_input_match_without_producer_identity_cannot_supply_a_verdict(
+    tmp_path: Path, key: str, missing: str
+) -> None:
+    expected = {
+        "profile_sha256": "1" * 64,
+        "experiments_sha256": "2" * 64,
+        "full_dump_sha256": "3" * 64,
+    }
+    payload = _bound_status_payload(key, expected)
+    if missing == "analysis_source_sha256" and key == "calibration_status":
+        inputs = payload["inputs"]
+        assert isinstance(inputs, dict)
+        del inputs[missing]
+    else:
+        field_name = missing
+        if missing == "version" and key == "orientation_status":
+            field_name = "classifier_version"
+        del payload[field_name]
+    path = tmp_path / "assessment.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    status = read_status(path, key, "#729", expected_input_sha256=expected)
+    assert status.verdicts == {}
+    assert status.default.startswith("unreadable #729: assessment lacks valid ")
+    assert status.source["binding"] == "missing_producer_identity"
+
+
+def test_calibration_without_protocol_identity_cannot_supply_a_verdict(tmp_path: Path) -> None:
+    expected = dict.fromkeys(("profile_sha256", "experiments_sha256", "full_dump_sha256"), "1" * 64)
+    payload = _bound_status_payload("calibration_status", expected)
+    inputs = payload["inputs"]
+    assert isinstance(inputs, dict)
+    del inputs["protocol_sha256"]
+    path = tmp_path / "assessment.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    status = read_status(path, "calibration_status", "#729", expected_input_sha256=expected)
+    assert status.verdicts == {}
+    assert status.default == "unreadable #729: assessment lacks valid protocol_sha256"
+
+
+@pytest.mark.parametrize("missing", ["eligibility", "procedures"])
+def test_matched_historical_calibration_does_not_certify_different_guild_eligibility(
+    tmp_path: Path, missing: str
+) -> None:
+    expected = dict.fromkeys(("profile_sha256", "experiments_sha256", "full_dump_sha256"), "1" * 64)
+    payload = _bound_status_payload("calibration_status", expected)
+    payload["version"] = "calibration-v2"
+    del payload[missing]
+    path = tmp_path / "assessment.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    status = read_status(path, "calibration_status", "#182", expected_input_sha256=expected)
+    assert status.source["binding"] == "matched"
+    assert status.source["guild_eligibility_applicability"] == "not_established"
+    assert status.for_procedure("guild_mcnemar").startswith("not_applicable #182")
+    assert status.for_procedure("fraction_sign_test").startswith("pass #182")
+    # The historical failure remains inspectable; it is not relabeled a pass.
+    assert ("procedure", "guild_mcnemar", "overall", "fail") in status.detail
+
+
+def test_cli_binds_imported_assessments_to_its_actual_inputs(tmp_path: Path) -> None:
+    profiles, experiments = _corpus(tmp_path)
+    dump = tmp_path / "dump.csv"
+    dump.write_text("unversioned test dump\n", encoding="utf-8")
+    expected = {
+        "profile_sha256": file_sha256(profiles),
+        "experiments_sha256": file_sha256(experiments),
+        "full_dump_sha256": file_sha256(dump),
+    }
+    calibration = tmp_path / "calibration.json"
+    calibration.write_text(
+        json.dumps(_bound_status_payload("calibration_status", expected)), encoding="utf-8"
+    )
+    orientation = tmp_path / "orientation.json"
+    orientation.write_text(
+        json.dumps(
+            _bound_status_payload("orientation_status", {**expected, "profile_sha256": "0" * 64})
+        ),
+        encoding="utf-8",
+    )
+    output = tmp_path / "integrated"
+    assert (
+        main(
+            [
+                "--profile-input",
+                str(profiles),
+                "--experiments-input",
+                str(experiments),
+                "--full-dump-input",
+                str(dump),
+                "--calibration-status",
+                str(calibration),
+                "--orientation-provenance",
+                str(orientation),
+                "--output-dir",
+                str(output),
+            ]
+        )
+        == 0
+    )
+    provenance = json.loads((output / "integrated_evidence_provenance.json").read_text())
+    statuses = provenance["assessment_status"]
+    assert statuses["calibration_status"]["source"]["binding"] == "matched"
+    assert statuses["orientation_status"]["source"]["binding"] == "mismatch_or_missing_identity"
+    with (output / "integrated_evidence_method_results.tsv").open() as handle:
+        records = list(csv.DictReader(handle, delimiter="\t"))
+    assert all(row["orientation_status"].startswith("unreadable #188") for row in records)
+    fraction = next(
+        row for row in records if row["method"] == "directional_consistency_fraction_sign_test"
+    )
+    assert fraction["calibration_status"].startswith("pass #182")

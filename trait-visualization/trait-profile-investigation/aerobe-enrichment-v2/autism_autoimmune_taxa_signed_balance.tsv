@@ -75,7 +75,6 @@ Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1470349	Candidatus S
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1472762	Enorma	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1481960	Peptoclostridium	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1485	Clostridium	genus	0	2	2	2	1	microaerophilic	False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1501226	Romboutsia	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1506553	Lachnoclostridium	genus	1	1	0	2	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1506577	Tyzzerella	genus	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1508657	Ruminiclostridium	genus	0	1	1	1	0		False	
@@ -88,47 +87,38 @@ Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1660	Schaalia odonto
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:171552	Prevotellaceae	family	1	0	-1	1	1	aerobic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1716	Corynebacterium	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:172900	Victivallis	genus	0	1	1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1730	Eubacterium	genus	0	1	1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1769710	Sellimonas	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:186803	Lachnospiraceae	family	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1870884	Clostridioides	genus	0	2	2	2	1	facultatively aerobic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2039302	Monoglobus	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:207244	Anaerostipes	genus	1	0	-1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:239759	Alistipes	genus	0	3	3	3	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:239934	Akkermansia	genus	0	1	1	1	1	aerobic	False	
+Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:239759	Alistipes	genus	0	2	2	2	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:248744	Marvinbryantia	genus	1	0	-1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2569097	Anaerobutyricum	genus	1	1	0	2	0		False	
+Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2569097	Anaerobutyricum	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2719313	Enterocloster	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2740	Peptococcus	genus	0	1	1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:28050	Lachnospira	genus	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:283	Comamonas	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:283168	Odoribacter	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:286	Pseudomonas	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2888809	Novisyntrophococcus	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:291645	Bacteroides nordii	species	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29391	Gemella morbillorum	species	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:3025755	Thomasclavelia	genus	1	2	1	3	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33024	Phascolarctobacterium	genus	0	2	2	2	0		False	
+Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33024	Phascolarctobacterium	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33038	Mediterraneibacter gnavus	species	1	0	-1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33042	Coprococcus	genus	1	3	2	4	0		False	
+Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33042	Coprococcus	genus	0	3	3	3	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33882	Microbacterium	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:35517	[Eubacterium] brachy	species	1	0	-1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:361177	Altererythrobacter	genus	0	2	2	2	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:375288	Parabacteroides	genus	0	3	3	3	0		False	
+Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:375288	Parabacteroides	genus	0	2	2	2	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:39485	Lachnospira eligens	species	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:39497	Eubacterium xylanophilum	species	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:397864	Barnesiella	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:399320	Sphaerochaeta	genus	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:407	Methylobacterium	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:447020	Adlercreutzia	genus	0	1	1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:475	Moraxella	genus	0	2	2	2	2	aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:475961	Longilinea	genus	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:48736	Ralstonia	genus	1	0	-1	1	1	aerobic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:570	Klebsiella	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:577309	Paraprevotella	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:707003	uncultured Oscillospiraceae bacterium	species	0	1	1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:816	Bacteroides	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:838	Prevotella	genus	2	0	-2	2	0		False	
+Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:838	Prevotella	genus	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:84107	Coriobacteriaceae	family	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:848	Fusobacterium	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:872	Desulfovibrio	genus	0	1	1	1	2	facultatively aerobic; microaerophilic	False	

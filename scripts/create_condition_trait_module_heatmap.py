@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import math
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 from textwrap import fill
 
@@ -14,6 +13,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.patches import FancyBboxPatch, Patch, Rectangle
 
+from create_study_trait_profile_heatmap import load_raw_experiment_metadata
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
     retained_trait_counts,
@@ -62,21 +62,6 @@ def wrapped(value: str, width: int) -> str:
     return "\n".join(fill(line, width=width) for line in value.split("\n"))
 
 
-def study_id_from_bsdb_id(bsdb_id: str) -> str:
-    """Convert a full BugSigDB signature ID into the derived study ID format."""
-    compact_id = bsdb_id.strip().removeprefix("bsdb:").split("/", 1)[0]
-    return f"bsdb:{compact_id}"
-
-
-def experiment_id_from_bsdb_id(bsdb_id: str) -> str:
-    """Convert a full BugSigDB signature ID into the derived experiment ID format."""
-    compact_id = bsdb_id.strip().removeprefix("bsdb:")
-    parts = compact_id.split("/")
-    if len(parts) < 2:
-        return "unknown"
-    return f"bsdb:{parts[0]}-{parts[1]}"
-
-
 def most_common_label(values: list[str]) -> str:
     """Return the most common non-empty label with deterministic ties."""
     labels = [clean_value(value) for value in values if clean_value(value) != "unknown"]
@@ -84,80 +69,6 @@ def most_common_label(values: list[str]) -> str:
         return "unknown"
     counts = Counter(labels)
     return sorted(counts.items(), key=lambda item: (-item[1], item[0]))[0][0]
-
-
-def load_raw_study_metadata(full_dump_path: Path) -> pd.DataFrame:
-    """Extract per-study condition and body-site labels from BugSigDB full_dump.csv."""
-    values_by_study: dict[str, dict[str, list[str]]] = defaultdict(
-        lambda: {
-            "condition": [],
-            "body_site": [],
-            "location": [],
-            "host_species": [],
-        }
-    )
-    with full_dump_path.open(encoding="utf-8", newline="") as handle:
-        rows = (line for line in handle if not line.startswith("#"))
-        reader = csv.DictReader(rows)
-        for row in reader:
-            bsdb_id = clean_value(row.get("BSDB ID"))
-            if bsdb_id == "unknown":
-                continue
-            study_id = study_id_from_bsdb_id(bsdb_id)
-            values_by_study[study_id]["condition"].append(clean_value(row.get("Condition")))
-            values_by_study[study_id]["body_site"].append(clean_value(row.get("Body site")))
-            values_by_study[study_id]["location"].append(
-                clean_value(row.get("Location of subjects"))
-            )
-            values_by_study[study_id]["host_species"].append(clean_value(row.get("Host species")))
-
-    records = []
-    for study_id, metadata in values_by_study.items():
-        records.append(
-            {
-                "study_id": study_id,
-                "condition": most_common_label(metadata["condition"]),
-                "body_site": most_common_label(metadata["body_site"]),
-                "location": most_common_label(metadata["location"]),
-                "host_species": most_common_label(metadata["host_species"]),
-                "condition_count": len(
-                    {value for value in metadata["condition"] if clean_value(value) != "unknown"}
-                ),
-                "body_site_count": len(
-                    {value for value in metadata["body_site"] if clean_value(value) != "unknown"}
-                ),
-            }
-        )
-    return pd.DataFrame.from_records(records).set_index("study_id")
-
-
-def load_raw_experiment_hosts(full_dump_path: Path) -> pd.DataFrame:
-    """Extract host species labels for each BugSigDB study/experiment profile."""
-    values_by_experiment: dict[tuple[str, str], list[str]] = defaultdict(list)
-    with full_dump_path.open(encoding="utf-8", newline="") as handle:
-        rows = (line for line in handle if not line.startswith("#"))
-        reader = csv.DictReader(rows)
-        for row in reader:
-            bsdb_id = clean_value(row.get("BSDB ID"))
-            if bsdb_id == "unknown":
-                continue
-            experiment_id = experiment_id_from_bsdb_id(bsdb_id)
-            if experiment_id == "unknown":
-                continue
-            study_id = study_id_from_bsdb_id(bsdb_id)
-            values_by_experiment[(study_id, experiment_id)].append(
-                clean_value(row.get("Host species"))
-            )
-
-    records = [
-        {
-            "study_id": study_id,
-            "experiment_id": experiment_id,
-            "host_species": most_common_label(host_species_values),
-        }
-        for (study_id, experiment_id), host_species_values in values_by_experiment.items()
-    ]
-    return pd.DataFrame.from_records(records).set_index(["study_id", "experiment_id"])
 
 
 def load_study_titles(studies_path: Path) -> pd.DataFrame:
@@ -200,6 +111,8 @@ def load_aggregated_study_profiles(
     profile_path: Path,
     human_experiment_ids: set[str] | None = None,
     direction: str = "all",
+    experiment_metadata: pd.DataFrame | None = None,
+    group_by: list[str] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Aggregate experiment profiles to study-level trait profiles.
 
@@ -207,9 +120,20 @@ def load_aggregated_study_profiles(
     study are summed to measure direction-agnostic study trait load. Pass
     `direction="inc"` or `direction="dec"` to restrict aggregation to a single
     direction (#134).
+
+    With `experiment_metadata` (labels indexed by study and experiment), each profile
+    keeps its own experiment's labels and profiles are summed per study and `group_by`
+    label combination. A study whose experiments differ in condition or body site then
+    contributes one row to each of those modules instead of pooling every experiment
+    under the study's majority label (#555).
     """
     if direction not in {"all", "inc", "dec"}:
         msg = f"Unsupported direction filter: {direction!r}; expected 'all', 'inc', or 'dec'."
+        raise ValueError(msg)
+    if experiment_metadata is not None and not group_by:
+        # Without grouping fields every study collapses to one row, which hands each
+        # experiment its study's majority label again (#555, #646).
+        msg = "experiment_metadata needs group_by, the experiment labels to sum profiles by."
         raise ValueError(msg)
     profiles = pd.read_csv(profile_path, sep="\t")
     unfiltered_profile_count = len(profiles)
@@ -236,13 +160,27 @@ def load_aggregated_study_profiles(
     values = retained_trait_counts(
         profiles[trait_columns].apply(pd.to_numeric, errors="coerce").fillna(0)
     )
-    study_matrix = values.groupby(profiles["study_id"], sort=False).sum()
+    aggregations: dict[str, tuple[str, object]] = {
+        "study_id": ("study_id", "first"),
+        "profile_count": ("experiment_id", "size"),
+        "experiment_count": ("experiment_id", "nunique"),
+    }
+    if experiment_metadata is None:
+        row_ids = profiles["study_id"]
+    else:
+        label_columns = experiment_metadata.columns.tolist()
+        profiles = profiles.join(experiment_metadata, on=["study_id", "experiment_id"], how="left")
+        for column in label_columns:
+            profiles[column] = profiles[column].map(clean_value)
+            aggregations[column] = (column, most_common_label)
+        row_ids = profiles[["study_id", *(group_by or [])]].agg(" | ".join, axis=1)
+    # study_id stays a column; an index of the same name breaks reset_index() and
+    # join(on="study_id").
+    row_ids = row_ids.rename("row_id")
+    study_matrix = values.groupby(row_ids, sort=False).sum()
 
-    profile_metadata = profiles.groupby("study_id", sort=False).agg(
-        profile_count=("experiment_id", "size"),
-        experiment_count=("experiment_id", "nunique"),
-    )
-    direction_counts = pd.crosstab(profiles["study_id"], profiles["inc_dec"])
+    profile_metadata = profiles.groupby(row_ids, sort=False).agg(**aggregations)
+    direction_counts = pd.crosstab(row_ids, profiles["inc_dec"])
     for dir_label in ["inc", "dec"]:
         if dir_label not in direction_counts.columns:
             direction_counts[dir_label] = 0
@@ -291,7 +229,7 @@ def build_condition_modules(
     group_matrix = study_matrix.loc[metadata.index].groupby(metadata["module_id"], sort=False).sum()
 
     group_metadata = metadata.groupby("module_id", sort=False).agg(
-        study_count=("profile_count", "size"),
+        study_count=("study_id", "nunique"),
         profile_count=("profile_count", "sum"),
         experiment_count=("experiment_count", "sum"),
         condition=("condition", most_common_label),
@@ -922,21 +860,24 @@ def main() -> None:
         parser.error("MediaDive is excluded before composition normalization (#174).")
 
     group_by = normalize_group_fields(args.group_by)
-    experiment_hosts = load_raw_experiment_hosts(args.full_dump_input)
+    experiment_metadata = load_raw_experiment_metadata(args.full_dump_input)
     human_experiment_ids = set(
-        experiment_hosts.index.get_level_values("experiment_id")[
-            experiment_hosts["host_species"].map(clean_value) == HUMAN_HOST_SPECIES
+        experiment_metadata.index.get_level_values("experiment_id")[
+            experiment_metadata["host_species"].map(clean_value) == HUMAN_HOST_SPECIES
         ]
     )
     study_matrix, profile_metadata = load_aggregated_study_profiles(
         args.study_trait_profiles_input,
         human_experiment_ids,
         direction=args.direction,
+        experiment_metadata=experiment_metadata,
+        group_by=group_by,
     )
-    study_metadata = profile_metadata.join(load_study_titles(args.studies_input), how="left")
-    study_metadata = study_metadata.join(load_raw_study_metadata(args.full_dump_input), how="left")
-    for column in ["condition", "body_site", "location", "host_species"]:
-        study_metadata[column] = study_metadata[column].map(clean_value)
+    study_metadata = profile_metadata.join(
+        load_study_titles(args.studies_input),
+        on="study_id",
+        how="left",
+    )
     study_metadata["host_species"] = HUMAN_HOST_SPECIES
 
     group_matrix, group_metadata = build_condition_modules(

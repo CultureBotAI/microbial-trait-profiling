@@ -1,9 +1,9 @@
 {
   "source_table": "six_shared_trait_condition_body_site_direction_contrasts.tsv",
-  "source_table_sha256": "2b46f2639c79dda6fea82aa54942914be8a223579b3145d3d70e36938faa2738",
+  "source_table_sha256": "8d567f5710447a1b7d7cc5fd748015b76f945a859d032b1289bb6629964fe960",
   "source_trait_table": "six_shared_trait_selection.tsv",
   "source_trait_table_sha256": "5c6419982e81f7e42023387c2b3fe293553400a9fceef025e6e153304909a65d",
-  "source_artifact_commit": "59e9ee8e8dd3f0df6965c5c257695e19fa5440e7",
+  "source_artifact_commit": "42300e031e0631198e81b11752904064aa61ab41",
   "selection": "oral_site OR oral_disease; individual condition labels only",
   "oral_body_site_groups": [
     "Oral cavity / dental"
@@ -23,26 +23,27 @@
     "periodontitis",
     "root caries"
   ],
-  "source_individual_bh_family_size": 2388,
+  "source_individual_bh_family_size": 3144,
   "inference": "source Fisher p and BH q retained; no subset refit or correction",
   "q_cutoff": 0.05,
-  "selected_rows": 80,
-  "main_figure_rows": 28,
-  "selected_cells": 385,
-  "displayed_cells": 69,
+  "selected_rows": 117,
+  "main_figure_rows": 33,
+  "selected_cells": 522,
+  "displayed_cells": 83,
   "bh_significant_displayed_cells": 0,
   "bh_selected_cell_count": 0,
-  "nominal_p_value_cell_count": 1,
-  "significant_cell_count": 1,
-  "oral_site_only_rows": 67,
+  "nominal_p_value_cell_count": 2,
+  "significant_cell_count": 2,
+  "oral_site_only_rows": 103,
   "oral_disease_only_rows": 0,
-  "both_rows": 13,
+  "both_rows": 14,
   "figures": [
     "oral_six_trait_heatmap.png",
     "oral_six_trait_heatmap_all_rows.pdf",
     "oral_six_trait_heatmap_page_01.png",
     "oral_six_trait_heatmap_page_02.png",
     "oral_six_trait_heatmap_page_03.png",
-    "oral_six_trait_heatmap_page_04.png"
+    "oral_six_trait_heatmap_page_04.png",
+    "oral_six_trait_heatmap_page_05.png"
   ]
 }

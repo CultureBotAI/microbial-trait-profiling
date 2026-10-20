@@ -13,11 +13,17 @@
 #     `data/derived/taxa_trait_matrix_columns.tsv`,
 #     `data/derived/experiments.tsv`, and
 #     `data/derived/bugsigdb_taxa.tsv` already present on disk).
+#   - The pinned KG-Microbe release in `data/kg-microbe/merged-kg_edges.tsv` and
+#     `merged-kg_nodes.tsv` (`just download-kg`), whose md5s are pinned in
+#     `methods/table1_taxon_influence_protocol.json`; step 8 builds the PD trait
+#     contributor tables from it (#584, #695).
 #   - For Kaleido figure PNG export (`guild-maps`, `table1-trait-maps`), ensure
 #     headless Chrome is installed (`just get-chrome`).
 # ==============================================================================
 
 set -euo pipefail
+# Headless Agg, as every recipe uses, for the scripts this arm runs directly too (#719)
+export MPLBACKEND=Agg
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_ROOT}"
@@ -29,13 +35,19 @@ for required_file in \
     "data/derived/taxa_trait_matrix.tsv" \
     "data/derived/taxa_trait_matrix_columns.tsv" \
     "data/derived/experiments.tsv" \
-    "data/derived/bugsigdb_taxa.tsv"; do
+    "data/derived/bugsigdb_taxa.tsv" \
+    "data/kg-microbe/merged-kg_edges.tsv" \
+    "data/kg-microbe/merged-kg_nodes.tsv"; do
     if [[ ! -f "${required_file}" ]]; then
         echo "ERROR: Required input '${required_file}' not found." >&2
         echo "Run 'just study-trait-profiles' (after 'just download-kg', 'just pipeline', 'just study-tsvs', 'just taxa-trait-matrix') first." >&2
         exit 1
     fi
 done
+# The arms read the canonical human profile table committed as a .gz (#656).
+just study-trait-profiles-check
+# Step 8 reads the KG release whose md5s the Table 1 influence protocol pins (#695).
+just verify-pinned-kg
 
 echo "=== [1/9] Running paired within-study log-ratio analysis (15 Table 1 pairs) ==="
 just table1-compositional-stats
@@ -56,18 +68,23 @@ echo "=== [6/9] Regenerating clustered trait/condition/guild heatmaps & investig
 just trait-heatmaps
 just trait-profile-investigation
 
-echo "=== [7/9] Regenerating six-shared-trait Cytoscape heatmaps, oral view & Sankey diagrams ==="
+echo "=== [7/9] Regenerating six-shared-trait tables, Cytoscape heatmaps, oral view & Sankey diagrams ==="
+# First: the summary and individual-condition edge tables that step 8 reads (#687).
+just six-shared-trait-sankeys
 just six-shared-trait-heatmaps
 just oral-six-trait-heatmap
 just six-shared-trait-combined-sankey
 just six-shared-trait-high-support-sankeys
 
-echo "=== [8/9] Regenerating Parkinson disease 6-trait taxon heatmaps, contributors & networks ==="
+echo "=== [8/9] Regenerating Parkinson disease cellulose, reporter, taxon, contributor & network outputs ==="
+# pd-trait-taxa compares against the direction summary that pd-cellulose-analysis writes; the
+# reporter reads neither, so it runs before the trait-taxa recipes (#687).
+just pd-cellulose-analysis
+just pd-ecological-reporter-combined
 just pd-trait-taxa
 just pd-trait-taxa-heatmap
 just pd-trait-contributors
 just pd-significant-ecological-network
-just pd-ecological-reporter-combined
 
 echo "=== [9/9] Rendering paired composition guild maps & Table 1 trait maps ==="
 just guild-maps

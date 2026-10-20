@@ -278,9 +278,11 @@ Ilyas leads the battery; the format is a proposal, not a fait accompli.
 
 ## What this does not cover
 
-- The enrichment arm's hypergeometric procedure. Its urn draws trait-annotation
-  assertions rather than taxa (#131), which is a model question a resampling study
-  of this shape cannot settle, and its adapter belongs to its owner.
+- The enrichment arm's hypergeometric procedure. Its production urn now draws
+  distinct taxa rather than trait-annotation assertions (#131), but nested taxa
+  inherit the same annotations and are not independent draws. That is a model
+  question a resampling study of this shape cannot settle; its calibration at the
+  production thresholds is tracked in #551, and its adapter belongs to its owner.
 - The composition arm's native transformed test, for the same reason. Because those
   two arms are not covered, this work is part of #182 and does not close it.
 - The aggregated profile-support rule of #177, whose code is not on main.
@@ -335,3 +337,29 @@ of #178.
 
 The protocol, code and this description were drafted with the assistance of a coding
 agent (Claude Code) and require review by the author before manuscript use.
+
+## Calibration-v3 eligibility amendment (#730, 2026-10-19)
+
+The historical results above use calibration-v2. Review found that its guild
+McNemar adapter retained experiment pairs with a zero annotation total on one
+side, although the integrated production analysis excludes the entire pair.
+On the current core, 94 pairs are affected: eligible support is 939 studies and
+4,482 profiles, compared with the 959 studies and 4,670 profiles used to generate
+the flip assignments. Guild discordant study counts change from 420/290 to
+420/293. A v2 guild verdict therefore does not certify the production procedure.
+
+Calibration-v3 applies the existing whole-pair exclusion inside each guild
+replicate and exports its policy and support. It preserves the complete loaded
+corpus for deterministic flip assignment generation, the seed 182, 1,400
+replicates per null, 400 per injected scenario and the acceptance criteria.
+The protocol amendment records what was already observed. Historical outputs
+remain historical; a fresh full-budget execution is required for a v3 finding.
+
+That execution completed from clean revision
+`58b2ce841a88725603624007ca43d12c4a541c9d` with all declared replicates.
+The [follow-up review](../docs/reviews/2026-10-19-ora-refresh-follow-up-review.md)
+records its exact family-error bounds, retained historical comparison and
+integration checks. The three directional procedures meet their
+declared criteria; the screened negative control remains failed. Passing the
+power-reporting criterion does not imply sufficient power for small signals,
+and these results do not calibrate the native ORA or composition methods.

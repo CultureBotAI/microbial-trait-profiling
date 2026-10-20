@@ -1,0 +1,113 @@
+scenario	scenario_label	contrast_population	short_condition	unit	down	up	tied	share_down_untied	binom_p_two_sided	wilcoxon_p_two_sided
+exact_labels	Exact condition labels (primary analysis)	all_contrasts	PD	experiment	58	24	17	0.707317	0.000221964	0.000757636
+exact_labels	Exact condition labels (primary analysis)	all_contrasts	PD	study	27	14	4	0.658537	0.0595839	0.0092576
+exact_labels	Exact condition labels (primary analysis)	all_contrasts	HIV	experiment	18	7	3	0.72	0.0432853	0.135332
+exact_labels	Exact condition labels (primary analysis)	all_contrasts	HIV	study	12	4	2	0.75	0.0768127	0.297852
+exact_labels	Exact condition labels (primary analysis)	all_contrasts	CRC	experiment	32	6	11	0.842105	2.43426e-05	1.40128e-05
+exact_labels	Exact condition labels (primary analysis)	all_contrasts	CRC	study	19	2	7	0.904762	0.000221252	0.000197411
+exact_labels	Exact condition labels (primary analysis)	all_contrasts	Pooled	experiment	108	37	31	0.744828	2.97006e-09	1.01352e-07
+exact_labels	Exact condition labels (primary analysis)	all_contrasts	Pooled	study	58	20	13	0.74359	1.95191e-05	4.10215e-05
+exact_labels	Exact condition labels (primary analysis)	disease_vs_healthy_oriented	PD	experiment	47	15	12	0.758065	5.77837e-05	0.000878574
+exact_labels	Exact condition labels (primary analysis)	disease_vs_healthy_oriented	PD	study	24	10	4	0.705882	0.0243065	0.0145535
+exact_labels	Exact condition labels (primary analysis)	disease_vs_healthy_oriented	HIV	experiment	13	3	3	0.8125	0.0212708	0.19281
+exact_labels	Exact condition labels (primary analysis)	disease_vs_healthy_oriented	HIV	study	10	2	2	0.833333	0.0385742	0.17627
+exact_labels	Exact condition labels (primary analysis)	disease_vs_healthy_oriented	CRC	experiment	18	5	8	0.782609	0.010622	0.00241566
+exact_labels	Exact condition labels (primary analysis)	disease_vs_healthy_oriented	CRC	study	14	3	7	0.823529	0.0127258	0.00257874
+exact_labels	Exact condition labels (primary analysis)	disease_vs_healthy_oriented	Pooled	experiment	78	23	23	0.772277	3.55206e-08	4.04832e-06
+exact_labels	Exact condition labels (primary analysis)	disease_vs_healthy_oriented	Pooled	study	48	15	13	0.761905	3.76061e-05	0.000122702
+synonyms_merged	Synonym labels counted under their disease	all_contrasts	PD	experiment	58	24	17	0.707317	0.000221964	0.000757636
+synonyms_merged	Synonym labels counted under their disease	all_contrasts	PD	study	27	14	4	0.658537	0.0595839	0.0092576
+synonyms_merged	Synonym labels counted under their disease	all_contrasts	HIV	experiment	19	10	3	0.655172	0.136046	0.53771
+synonyms_merged	Synonym labels counted under their disease	all_contrasts	HIV	study	13	6	2	0.684211	0.167068	0.650749
+synonyms_merged	Synonym labels counted under their disease	all_contrasts	CRC	experiment	37	10	12	0.787234	9.84888e-05	3.21974e-06
+synonyms_merged	Synonym labels counted under their disease	all_contrasts	CRC	study	22	3	7	0.88	0.000156522	2.66433e-05
+synonyms_merged	Synonym labels counted under their disease	all_contrasts	Pooled	experiment	114	44	32	0.721519	2.40322e-08	8.01269e-08
+synonyms_merged	Synonym labels counted under their disease	all_contrasts	Pooled	study	62	23	13	0.729412	2.77136e-05	3.23723e-05
+synonyms_merged	Synonym labels counted under their disease	disease_vs_healthy_oriented	PD	experiment	47	15	12	0.758065	5.77837e-05	0.000878574
+synonyms_merged	Synonym labels counted under their disease	disease_vs_healthy_oriented	PD	study	24	10	4	0.705882	0.0243065	0.0145535
+synonyms_merged	Synonym labels counted under their disease	disease_vs_healthy_oriented	HIV	experiment	13	5	3	0.722222	0.0962524	0.579842
+synonyms_merged	Synonym labels counted under their disease	disease_vs_healthy_oriented	HIV	study	10	4	2	0.714286	0.179565	0.625732
+synonyms_merged	Synonym labels counted under their disease	disease_vs_healthy_oriented	CRC	experiment	21	6	8	0.777778	0.00592461	0.000535667
+synonyms_merged	Synonym labels counted under their disease	disease_vs_healthy_oriented	CRC	study	16	4	7	0.8	0.0118179	0.000850677
+synonyms_merged	Synonym labels counted under their disease	disease_vs_healthy_oriented	Pooled	experiment	81	26	23	0.757009	9.37451e-08	4.97891e-06
+synonyms_merged	Synonym labels counted under their disease	disease_vs_healthy_oriented	Pooled	study	50	18	13	0.735294	0.000130839	0.000213171
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	all_contrasts	PD	experiment	58	24	17	0.707317	0.000221964	0.000757636
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	all_contrasts	PD	study	27	14	4	0.658537	0.0595839	0.0092576
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	all_contrasts	HIV	experiment	18	7	3	0.72	0.0432853	0.135332
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	all_contrasts	HIV	study	12	4	2	0.75	0.0768127	0.297852
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	all_contrasts	CRC	experiment	32	6	11	0.842105	2.43426e-05	1.40128e-05
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	all_contrasts	CRC	study	19	2	7	0.904762	0.000221252	0.000197411
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	all_contrasts	Pooled	experiment	108	37	31	0.744828	2.97006e-09	1.01352e-07
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	all_contrasts	Pooled	study	58	20	13	0.74359	1.95191e-05	4.10215e-05
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	disease_vs_healthy_oriented	PD	experiment	47	15	10	0.758065	5.77837e-05	0.000878574
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	disease_vs_healthy_oriented	PD	study	24	10	4	0.705882	0.0243065	0.0145535
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	disease_vs_healthy_oriented	HIV	experiment	12	1	3	0.923077	0.00341797	0.0170898
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	disease_vs_healthy_oriented	HIV	study	10	0	2	1	0.00195312	0.00195312
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	disease_vs_healthy_oriented	CRC	experiment	18	5	8	0.782609	0.010622	0.00241566
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	disease_vs_healthy_oriented	CRC	study	14	3	7	0.823529	0.0127258	0.00257874
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	disease_vs_healthy_oriented	Pooled	experiment	77	21	21	0.785714	1.08925e-08	1.01673e-06
+named_treated_cases_excluded	Exact labels; contrasts whose cases are named as treated set aside	disease_vs_healthy_oriented	Pooled	study	48	13	13	0.786885	7.66517e-06	1.77304e-05
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	all_contrasts	PD	experiment	58	24	17	0.707317	0.000221964	0.000757636
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	all_contrasts	PD	study	27	14	4	0.658537	0.0595839	0.0092576
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	all_contrasts	HIV	experiment	18	7	3	0.72	0.0432853	0.135332
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	all_contrasts	HIV	study	12	4	2	0.75	0.0768127	0.297852
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	all_contrasts	CRC	experiment	32	6	11	0.842105	2.43426e-05	1.40128e-05
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	all_contrasts	CRC	study	19	2	7	0.904762	0.000221252	0.000197411
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	all_contrasts	Pooled	experiment	108	37	31	0.744828	2.97006e-09	1.01352e-07
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	all_contrasts	Pooled	study	58	20	13	0.74359	1.95191e-05	4.10215e-05
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	disease_vs_healthy_oriented	PD	experiment	47	15	10	0.758065	5.77837e-05	0.000878574
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	disease_vs_healthy_oriented	PD	study	24	10	4	0.705882	0.0243065	0.0145535
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	disease_vs_healthy_oriented	HIV	experiment	12	1	3	0.923077	0.00341797	0.0170898
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	disease_vs_healthy_oriented	HIV	study	10	0	2	1	0.00195312	0.00195312
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	disease_vs_healthy_oriented	CRC	experiment	18	5	8	0.782609	0.010622	0.00241566
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	disease_vs_healthy_oriented	CRC	study	14	3	7	0.823529	0.0127258	0.00257874
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	disease_vs_healthy_oriented	Pooled	experiment	77	21	21	0.785714	1.08925e-08	1.01673e-06
+control_tiers_1_2	Exact labels; Tier 1-2 controls only (hospital, comorbid, tissue and treated-case contrasts set aside)	disease_vs_healthy_oriented	Pooled	study	48	13	13	0.786885	7.66517e-06	1.77304e-05
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	all_contrasts	PD	experiment	58	24	17	0.707317	0.000221964	0.000757636
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	all_contrasts	PD	study	27	14	4	0.658537	0.0595839	0.0092576
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	all_contrasts	HIV	experiment	18	7	3	0.72	0.0432853	0.135332
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	all_contrasts	HIV	study	12	4	2	0.75	0.0768127	0.297852
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	all_contrasts	CRC	experiment	32	6	11	0.842105	2.43426e-05	1.40128e-05
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	all_contrasts	CRC	study	19	2	7	0.904762	0.000221252	0.000197411
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	all_contrasts	Pooled	experiment	108	37	31	0.744828	2.97006e-09	1.01352e-07
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	all_contrasts	Pooled	study	58	20	13	0.74359	1.95191e-05	4.10215e-05
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	disease_vs_healthy_oriented	PD	experiment	47	15	12	0.758065	5.77837e-05	0.000878574
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	disease_vs_healthy_oriented	PD	study	24	10	4	0.705882	0.0243065	0.0145535
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	disease_vs_healthy_oriented	HIV	experiment	13	3	3	0.8125	0.0212708	0.19281
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	disease_vs_healthy_oriented	HIV	study	10	2	2	0.833333	0.0385742	0.17627
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	disease_vs_healthy_oriented	CRC	experiment	18	5	8	0.782609	0.010622	0.00241566
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	disease_vs_healthy_oriented	CRC	study	14	3	7	0.823529	0.0127258	0.00257874
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	disease_vs_healthy_oriented	Pooled	experiment	78	23	23	0.772277	3.55206e-08	4.04832e-06
+paired_tissue_counted	Exact labels; tumour-vs-adjacent-tissue (paired tissue) contrasts also counted	disease_vs_healthy_oriented	Pooled	study	48	15	13	0.761905	3.76061e-05	0.000122702
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	all_contrasts	PD	experiment	58	24	17	0.707317	0.000221964	0.000757636
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	all_contrasts	PD	study	27	14	4	0.658537	0.0595839	0.0092576
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	all_contrasts	HIV	experiment	18	7	3	0.72	0.0432853	0.135332
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	all_contrasts	HIV	study	12	4	2	0.75	0.0768127	0.297852
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	all_contrasts	CRC	experiment	32	6	11	0.842105	2.43426e-05	1.40128e-05
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	all_contrasts	CRC	study	19	2	7	0.904762	0.000221252	0.000197411
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	all_contrasts	Pooled	experiment	108	37	31	0.744828	2.97006e-09	1.01352e-07
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	all_contrasts	Pooled	study	58	20	13	0.74359	1.95191e-05	4.10215e-05
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	disease_vs_healthy_oriented	PD	experiment	47	15	12	0.758065	5.77837e-05	0.000878574
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	disease_vs_healthy_oriented	PD	study	24	10	4	0.705882	0.0243065	0.0145535
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	disease_vs_healthy_oriented	HIV	experiment	13	3	3	0.8125	0.0212708	0.19281
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	disease_vs_healthy_oriented	HIV	study	10	2	2	0.833333	0.0385742	0.17627
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	disease_vs_healthy_oriented	CRC	experiment	22	5	8	0.814815	0.00151372	0.000412142
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	disease_vs_healthy_oriented	CRC	study	15	3	7	0.833333	0.00753784	0.00128937
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	disease_vs_healthy_oriented	Pooled	experiment	82	23	23	0.780952	5.9565e-09	7.65807e-07
+comorbidity_counted	Exact labels; comorbidity contrasts also counted	disease_vs_healthy_oriented	Pooled	study	49	15	13	0.765625	2.43646e-05	7.31838e-05
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	all_contrasts	PD	experiment	58	24	17	0.707317	0.000221964	0.000757636
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	all_contrasts	PD	study	27	14	4	0.658537	0.0595839	0.0092576
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	all_contrasts	HIV	experiment	17	7	3	0.708333	0.0639147	0.179296
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	all_contrasts	HIV	study	11	4	2	0.733333	0.118469	0.389404
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	all_contrasts	CRC	experiment	32	6	11	0.842105	2.43426e-05	1.40128e-05
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	all_contrasts	CRC	study	19	2	7	0.904762	0.000221252	0.000197411
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	all_contrasts	Pooled	experiment	107	37	31	0.743056	4.44435e-09	1.34246e-07
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	all_contrasts	Pooled	study	57	20	13	0.74026	2.92631e-05	5.48242e-05
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	disease_vs_healthy_oriented	PD	experiment	47	15	12	0.758065	5.77837e-05	0.000878574
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	disease_vs_healthy_oriented	PD	study	24	10	4	0.705882	0.0243065	0.0145535
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	disease_vs_healthy_oriented	HIV	experiment	12	3	3	0.8	0.0351562	0.25238
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	disease_vs_healthy_oriented	HIV	study	9	2	2	0.818182	0.0654297	0.240234
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	disease_vs_healthy_oriented	CRC	experiment	18	5	8	0.782609	0.010622	0.00241566
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	disease_vs_healthy_oriented	CRC	study	14	3	7	0.823529	0.0127258	0.00257874
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	disease_vs_healthy_oriented	Pooled	experiment	77	23	23	0.77	5.51358e-08	5.30503e-06
+without_site_miscurations	Exact labels without bsdb:24451087 (rectal mucosa curated as Feces)	disease_vs_healthy_oriented	Pooled	study	47	15	13	0.758065	5.77837e-05	0.000164263

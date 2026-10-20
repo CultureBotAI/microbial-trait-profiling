@@ -1,46 +1,46 @@
-taxon_id	taxon_name	taxonomic_rank	target_profile_count	target_study_count	target_experiment_count	target_condition_count	target_conditions	target_directions	increased	decreased	dominant_direction	dominant_condition	selected_trait_count
-NCBITaxon:1654	Actinomyces	genus	6	3	6	3	Head and neck squamous cell carcinoma; Sleep Disorder; Thalassemia	decreased; increased	1	5	decreased	Head and neck squamous cell carcinoma	29
-NCBITaxon:239934	Akkermansia	genus	5	2	5	2	Sleep Disorder; Thalassemia	increased	5	0	increased	Sleep Disorder	18
-NCBITaxon:239759	Alistipes	genus	5	2	5	2	Sleep Disorder; Thalassemia	increased	5	0	increased	Sleep Disorder	18
-NCBITaxon:1350	Enterococcus	genus	4	2	3	2	Sleep Disorder; Thalassemia	decreased; increased	1	3	decreased	Thalassemia	32
-NCBITaxon:1283313	Alloprevotella	genus	4	2	4	2	Sleep Disorder; Thalassemia	decreased; increased	3	1	increased	Sleep Disorder	19
-NCBITaxon:543311	Parvimonas	genus	4	2	4	2	Head and neck squamous cell carcinoma; Thalassemia	decreased; increased	3	1	increased	Head and neck squamous cell carcinoma	8
-NCBITaxon:177971	Shuttleworthella	genus	4	2	3	2	Sleep Disorder; Thalassemia	decreased; increased	2	2	mixed	Thalassemia	7
-NCBITaxon:469	Acinetobacter	genus	3	2	3	2	Sleep Disorder; Thalassemia	decreased; increased	1	2	decreased	Thalassemia	24
-NCBITaxon:2701	Gardnerella	genus	3	2	3	2	Sleep Disorder; Thalassemia	decreased; increased	2	1	increased	Thalassemia	18
-NCBITaxon:29465	Veillonella	genus	3	2	3	2	Sleep Disorder; Thalassemia	decreased	0	3	decreased	Thalassemia	17
-NCBITaxon:1257	Peptostreptococcus	genus	3	2	3	2	Sleep Disorder; Thalassemia	decreased; increased	1	2	decreased	Thalassemia	13
-NCBITaxon:2172	Methanobrevibacter	genus	4	1	2	1	Thalassemia	decreased; increased	2	2	mixed	Thalassemia	9
-NCBITaxon:1386	Bacillus	genus	3	1	2	1	Thalassemia	decreased; increased	1	2	decreased	Thalassemia	32
-NCBITaxon:1663	Arthrobacter	genus	3	1	2	1	Thalassemia	decreased; increased	1	2	decreased	Thalassemia	26
-NCBITaxon:375288	Parabacteroides	genus	3	1	2	1	Thalassemia	decreased; increased	1	2	decreased	Thalassemia	24
-NCBITaxon:204516	Phocaeicola massiliensis	species	3	1	3	1	Head and neck squamous cell carcinoma	decreased	0	3	decreased	Head and neck squamous cell carcinoma	20
-NCBITaxon:39948	Dialister	genus	3	1	2	1	Thalassemia	decreased; increased	2	1	increased	Thalassemia	14
-NCBITaxon:1531	Enterocloster clostridioformis	species	3	1	3	1	Head and neck squamous cell carcinoma	increased	3	0	increased	Head and neck squamous cell carcinoma	9
-NCBITaxon:848	Fusobacterium	genus	3	1	2	1	Thalassemia	decreased; increased	1	2	decreased	Thalassemia	9
-NCBITaxon:1573535	Holdemanella	genus	3	1	2	1	Thalassemia	decreased; increased	1	2	decreased	Thalassemia	8
-NCBITaxon:1547	Thomasclavelia ramosa	species	3	1	3	1	Head and neck squamous cell carcinoma	increased	3	0	increased	Head and neck squamous cell carcinoma	8
-NCBITaxon:28117	Alistipes putredinis	species	3	1	3	1	Head and neck squamous cell carcinoma	decreased	0	3	decreased	Head and neck squamous cell carcinoma	7
-NCBITaxon:1937008	Dubosiella	genus	3	1	2	1	Thalassemia	decreased; increased	2	1	increased	Thalassemia	7
-NCBITaxon:1550024	Ruthenibacterium lactatiformans	species	3	1	3	1	Head and neck squamous cell carcinoma	increased	3	0	increased	Head and neck squamous cell carcinoma	7
-NCBITaxon:105841	Anaerostipes caccae	species	3	1	3	1	Head and neck squamous cell carcinoma	increased	3	0	increased	Head and neck squamous cell carcinoma	6
-NCBITaxon:109326	Anaerovorax	genus	3	1	2	1	Thalassemia	decreased; increased	1	2	decreased	Thalassemia	6
-NCBITaxon:1573534	Faecalitalea	genus	3	1	2	1	Thalassemia	decreased; increased	2	1	increased	Thalassemia	6
-NCBITaxon:33038	Mediterraneibacter gnavus	species	3	1	3	1	Head and neck squamous cell carcinoma	increased	3	0	increased	Head and neck squamous cell carcinoma	6
-NCBITaxon:1918511	Frisingicoccus	genus	3	1	2	1	Thalassemia	decreased; increased	2	1	increased	Thalassemia	2
-NCBITaxon:1678	Bifidobacterium	genus	2	1	2	1	Thalassemia	decreased; increased	1	1	mixed	Thalassemia	32
-NCBITaxon:44249	Paenibacillus	genus	2	1	2	1	Thalassemia	decreased	0	2	decreased	Thalassemia	32
-NCBITaxon:816	Bacteroides	genus	2	1	2	1	Thalassemia	decreased; increased	1	1	mixed	Thalassemia	31
-NCBITaxon:1301	Streptococcus	genus	2	1	2	1	Thalassemia	decreased; increased	1	1	mixed	Thalassemia	31
-NCBITaxon:286	Pseudomonas	genus	2	1	2	1	Thalassemia	decreased	0	2	decreased	Thalassemia	29
-NCBITaxon:400634	Lysinibacillus	genus	2	1	2	1	Thalassemia	decreased	0	2	decreased	Thalassemia	26
-NCBITaxon:1279	Staphylococcus	genus	2	1	2	1	Thalassemia	increased	2	0	increased	Thalassemia	26
-NCBITaxon:561	Escherichia	genus	2	1	2	1	Thalassemia	decreased; increased	1	1	mixed	Thalassemia	24
-NCBITaxon:596767	Hydrogenoanaerobacterium	genus	2	1	2	1	Thalassemia	increased	2	0	increased	Thalassemia	22
-NCBITaxon:57493	Kocuria	genus	2	1	2	1	Thalassemia	increased	2	0	increased	Thalassemia	22
-NCBITaxon:653683	Anaerosporobacter	genus	2	1	2	1	Thalassemia	decreased	0	2	decreased	Thalassemia	21
-NCBITaxon:1269	Micrococcus	genus	2	1	2	1	Thalassemia	decreased; increased	1	1	mixed	Thalassemia	21
-NCBITaxon:2737	Vagococcus	genus	2	1	2	1	Thalassemia	decreased	0	2	decreased	Thalassemia	21
-NCBITaxon:207244	Anaerostipes	genus	2	1	2	1	Thalassemia	decreased; increased	1	1	mixed	Thalassemia	20
-NCBITaxon:283	Comamonas	genus	2	1	2	1	Thalassemia	decreased	0	2	decreased	Thalassemia	20
-NCBITaxon:158846	Megamonas	genus	2	1	2	1	Thalassemia	decreased; increased	1	1	mixed	Thalassemia	20
+taxon_id	taxon_name	taxonomic_rank	target_profile_count	target_study_count	target_experiment_count	target_condition_count	target_conditions	target_directions	increased	decreased	dominant_direction	dominant_condition	selected_trait_count	display_condition
+NCBITaxon:1654	Actinomyces	genus	4	2	4	2	Head and neck squamous cell carcinoma; Sleep Disorder	decreased; increased	1	3	decreased	Head and neck squamous cell carcinoma	30	Head and neck squamous cell carcinoma
+NCBITaxon:204516	Phocaeicola massiliensis	species	3	1	3	1	Head and neck squamous cell carcinoma	decreased	0	3	decreased	Head and neck squamous cell carcinoma	20	Head and neck squamous cell carcinoma
+NCBITaxon:239759	Alistipes	genus	3	1	3	1	Sleep Disorder	increased	3	0	increased	Sleep Disorder	19	Sleep Disorder
+NCBITaxon:239934	Akkermansia	genus	3	1	3	1	Sleep Disorder	increased	3	0	increased	Sleep Disorder	18	Sleep Disorder
+NCBITaxon:1531	Enterocloster clostridioformis	species	3	1	3	1	Head and neck squamous cell carcinoma	increased	3	0	increased	Head and neck squamous cell carcinoma	8	Head and neck squamous cell carcinoma
+NCBITaxon:28117	Alistipes putredinis	species	3	1	3	1	Head and neck squamous cell carcinoma	decreased	0	3	decreased	Head and neck squamous cell carcinoma	7	Head and neck squamous cell carcinoma
+NCBITaxon:1550024	Ruthenibacterium lactatiformans	species	3	1	3	1	Head and neck squamous cell carcinoma	increased	3	0	increased	Head and neck squamous cell carcinoma	7	Head and neck squamous cell carcinoma
+NCBITaxon:1547	Thomasclavelia ramosa	species	3	1	3	1	Head and neck squamous cell carcinoma	increased	3	0	increased	Head and neck squamous cell carcinoma	7	Head and neck squamous cell carcinoma
+NCBITaxon:105841	Anaerostipes caccae	species	3	1	3	1	Head and neck squamous cell carcinoma	increased	3	0	increased	Head and neck squamous cell carcinoma	6	Head and neck squamous cell carcinoma
+NCBITaxon:33038	Mediterraneibacter gnavus	species	3	1	3	1	Head and neck squamous cell carcinoma	increased	3	0	increased	Head and neck squamous cell carcinoma	6	Head and neck squamous cell carcinoma
+NCBITaxon:1283313	Alloprevotella	genus	2	1	2	1	Sleep Disorder	decreased; increased	1	1	mixed	Sleep Disorder	19	Sleep Disorder
+NCBITaxon:47715	Lacticaseibacillus rhamnosus	species	2	1	2	1	Head and neck squamous cell carcinoma	decreased; increased	1	1	mixed	Head and neck squamous cell carcinoma	15	Head and neck squamous cell carcinoma
+NCBITaxon:228604	Segatella salivae	species	2	1	2	1	Head and neck squamous cell carcinoma	decreased	0	2	decreased	Head and neck squamous cell carcinoma	15	Head and neck squamous cell carcinoma
+NCBITaxon:425941	Hoylesella nanceiensis	species	2	2	2	1	Head and neck squamous cell carcinoma	decreased	0	2	decreased	Head and neck squamous cell carcinoma	14	Head and neck squamous cell carcinoma
+NCBITaxon:1351	Enterococcus faecalis	species	2	1	2	1	Head and neck squamous cell carcinoma	increased	2	0	increased	Head and neck squamous cell carcinoma	14	Head and neck squamous cell carcinoma
+NCBITaxon:357276	Phocaeicola dorei	species	2	1	2	1	Head and neck squamous cell carcinoma	decreased	0	2	decreased	Head and neck squamous cell carcinoma	12	Head and neck squamous cell carcinoma
+NCBITaxon:240427	Secundilactobacillus paracollinoides	species	2	1	2	1	Head and neck squamous cell carcinoma	increased	2	0	increased	Head and neck squamous cell carcinoma	12	Head and neck squamous cell carcinoma
+NCBITaxon:1653434	Sellimonas intestinalis	species	2	1	2	1	Head and neck squamous cell carcinoma	increased	2	0	increased	Head and neck squamous cell carcinoma	11	Head and neck squamous cell carcinoma
+NCBITaxon:1276	Kytococcus sedentarius	species	2	1	2	1	Head and neck squamous cell carcinoma	increased	2	0	increased	Head and neck squamous cell carcinoma	10	Head and neck squamous cell carcinoma
+NCBITaxon:638849	Pyramidobacter piscolens	species	2	1	2	1	Head and neck squamous cell carcinoma	increased	2	0	increased	Head and neck squamous cell carcinoma	9	Head and neck squamous cell carcinoma
+NCBITaxon:1305	Streptococcus sanguinis	species	2	1	2	1	Head and neck squamous cell carcinoma	decreased	0	2	decreased	Head and neck squamous cell carcinoma	9	Head and neck squamous cell carcinoma
+NCBITaxon:543311	Parvimonas	genus	2	1	2	1	Head and neck squamous cell carcinoma	increased	2	0	increased	Head and neck squamous cell carcinoma	8	Head and neck squamous cell carcinoma
+NCBITaxon:72	Simonsiella muelleri	species	2	1	2	1	Head and neck squamous cell carcinoma	decreased	0	2	decreased	Head and neck squamous cell carcinoma	8	Head and neck squamous cell carcinoma
+NCBITaxon:40520	Blautia obeum	species	2	1	2	1	Head and neck squamous cell carcinoma	decreased	0	2	decreased	Head and neck squamous cell carcinoma	7	Head and neck squamous cell carcinoma
+NCBITaxon:34105	Streptobacillus moniliformis	species	2	1	2	1	Head and neck squamous cell carcinoma	increased	2	0	increased	Head and neck squamous cell carcinoma	7	Head and neck squamous cell carcinoma
+NCBITaxon:39486	Dorea formicigenerans	species	2	1	2	1	Head and neck squamous cell carcinoma	decreased	0	2	decreased	Head and neck squamous cell carcinoma	6	Head and neck squamous cell carcinoma
+NCBITaxon:116085	Pseudocoprococcus catus	species	2	1	2	1	Head and neck squamous cell carcinoma	decreased	0	2	decreased	Head and neck squamous cell carcinoma	6	Head and neck squamous cell carcinoma
+NCBITaxon:166486	Roseburia intestinalis	species	2	1	2	1	Head and neck squamous cell carcinoma	decreased	0	2	decreased	Head and neck squamous cell carcinoma	6	Head and neck squamous cell carcinoma
+NCBITaxon:1522	[Clostridium] innocuum	species	2	1	2	1	Head and neck squamous cell carcinoma	increased	2	0	increased	Head and neck squamous cell carcinoma	6	Head and neck squamous cell carcinoma
+NCBITaxon:1473216	Senegalimassilia anaerobia	species	2	1	2	1	Head and neck squamous cell carcinoma	decreased	0	2	decreased	Head and neck squamous cell carcinoma	5	Head and neck squamous cell carcinoma
+NCBITaxon:502558	Eggerthella sp. YY7918	species	2	1	2	1	Head and neck squamous cell carcinoma	increased	2	0	increased	Head and neck squamous cell carcinoma	4	Head and neck squamous cell carcinoma
+NCBITaxon:39496	Eubacterium ventriosum	species	2	1	2	1	Head and neck squamous cell carcinoma	decreased	0	2	decreased	Head and neck squamous cell carcinoma	3	Head and neck squamous cell carcinoma
+NCBITaxon:36874	Porphyromonas cangingivalis	species	2	1	2	1	Head and neck squamous cell carcinoma	increased	2	0	increased	Head and neck squamous cell carcinoma	3	Head and neck squamous cell carcinoma
+NCBITaxon:1392486	Prevotella sp. HUN102	species	2	1	2	1	Head and neck squamous cell carcinoma	increased	2	0	increased	Head and neck squamous cell carcinoma	1	Head and neck squamous cell carcinoma
+NCBITaxon:1350	Enterococcus	genus	1	1	1	1	Sleep Disorder	decreased	0	1	decreased	Sleep Disorder	32	Sleep Disorder
+NCBITaxon:1716	Corynebacterium	genus	1	1	1	1	Head and neck squamous cell carcinoma	decreased	0	1	decreased	Head and neck squamous cell carcinoma	31	Head and neck squamous cell carcinoma
+NCBITaxon:33882	Microbacterium	genus	1	1	1	1	Sleep Disorder	increased	1	0	increased	Sleep Disorder	28	Sleep Disorder
+NCBITaxon:84567	Pedobacter	genus	1	1	1	1	Sleep Disorder	increased	1	0	increased	Sleep Disorder	27	Sleep Disorder
+NCBITaxon:13687	Sphingomonas	genus	1	1	1	1	Sleep Disorder	increased	1	0	increased	Sleep Disorder	26	Sleep Disorder
+NCBITaxon:41275	Brevundimonas	genus	1	1	1	1	Sleep Disorder	increased	1	0	increased	Sleep Disorder	25	Sleep Disorder
+NCBITaxon:469	Acinetobacter	genus	1	1	1	1	Sleep Disorder	increased	1	0	increased	Sleep Disorder	24	Sleep Disorder
+NCBITaxon:32207	Rothia	genus	1	1	1	1	Sleep Disorder	decreased	0	1	decreased	Sleep Disorder	24	Sleep Disorder
+NCBITaxon:32008	Burkholderia	genus	1	1	1	1	Sleep Disorder	increased	1	0	increased	Sleep Disorder	23	Sleep Disorder
+NCBITaxon:1203033	Lactobacillus hominis	species	1	1	1	1	Head and neck squamous cell carcinoma	increased	1	0	increased	Head and neck squamous cell carcinoma	23	Head and neck squamous cell carcinoma
+NCBITaxon:838	Prevotella	genus	1	1	1	1	Sleep Disorder	decreased	0	1	decreased	Sleep Disorder	23	Sleep Disorder

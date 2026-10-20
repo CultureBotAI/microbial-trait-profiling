@@ -16,6 +16,9 @@ aer = "aer"
 # "Much0-1" and "Much2", which changes curated data into something the export does not
 # contain.
 muc = "muc"
+# Bifidobacterium longum subsp. infantis. BugSigDB experiment labels quote it verbatim in the
+# enrichment-infographic-followup READMEs, and typos rewrites it to "infants" (#586).
+infantis = "infantis"
 
 [files]
 extend-exclude = ["uv.lock", ".venv"]

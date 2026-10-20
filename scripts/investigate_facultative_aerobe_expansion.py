@@ -13,10 +13,23 @@ from matplotlib.colors import TwoSlopeNorm
 from matplotlib.patches import Circle, PathPatch
 from matplotlib.path import Path as MplPath
 
+from create_study_trait_profile_heatmap import load_raw_experiment_metadata
+from mtp.body_site_diagram import (
+    add_colorbar_beside,
+    anatomical_site_base,
+    bubble_radius,
+    leader_line,
+    leader_order_key,
+)
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
     load_retained_profiles,
     trait_fractions,
+)
+from mtp.human_host_corpus import (
+    excluded_host_note,
+    excluded_host_summary,
+    join_human_host_profiles,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -69,8 +82,15 @@ EXCLUDED_CONDITION_SUMMARY_LABELS = {
     "Microbiome",
     "Population",
     "Physical activity",
+    "Time",
+    "Timepoint",
 }
-MIN_PAIRED_SMD_PROFILE_PAIRS = 3
+# A paired d (and its paired t-test p) from fewer matched profile pairs is reported as NA.
+MIN_PAIRED_SMD_PROFILE_PAIRS = 5
+# Leader lines in the anatomical diagrams bend at LEADER_ELBOW_X and end at
+# LEADER_END_X, just before the labels.
+LEADER_ELBOW_X = 0.52
+LEADER_END_X = 0.57
 INFERRED_GUILD_TOP_TRAITS_PER_GROUP = 12
 INFERRED_GUILD_TOP_TAXA_PER_TRAIT = 12
 INFERRED_GUILD_TOP_TAXA_PER_GROUP = 12
@@ -976,7 +996,10 @@ def load_target_taxa_trait_counts() -> pd.DataFrame:
     )
 
 
-def load_target_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
+def load_target_taxa_occurrences(
+    scored_profiles: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return target-taxon occurrences in human-host profiles and those set aside (#587)."""
     taxa = read_tsv(
         REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
         usecols=[
@@ -993,6 +1016,11 @@ def load_target_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
     taxa["profile_id"] = taxa.apply(profile_id_from_taxa_row, axis=1)
     taxa = taxa.drop_duplicates(subset=["taxon_id", "profile_id"])
     taxa["target_taxon_name"] = taxa["taxon_id"].map(TARGET_TAXA)
+    # The human-host corpus filter reads the host from full_dump.csv, so the set-aside
+    # check reads it from the same file with the same parser (#713).
+    experiment_hosts = load_raw_experiment_metadata(
+        REPO_ROOT / "data/raw/full_dump.csv"
+    ).reset_index()[["study_id", "experiment_id", "host_species"]]
     profile_columns = [
         "study_id",
         "experiment_id",
@@ -1009,14 +1037,7 @@ def load_target_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
         "guild_z_mean",
         "oxygen_tolerance_z_mean",
     ]
-    profiles = scored_profiles[profile_columns].copy()
-    return taxa.merge(
-        profiles,
-        left_on="profile_id",
-        right_index=True,
-        how="left",
-        suffixes=("_taxa", ""),
-    )
+    return join_human_host_profiles(taxa, scored_profiles[profile_columns], experiment_hosts)
 
 
 def summarize_taxa_conditions(occurrences: pd.DataFrame) -> pd.DataFrame:
@@ -1091,8 +1112,9 @@ def save_condition_breakdown_bar_chart(
     output_path: Path,
     title_prefix: str,
     color: str,
+    note: str,
 ) -> None:
-    """Save a horizontal bar chart for condition counts."""
+    """Save a horizontal bar chart for condition counts, with `note` as its footer."""
     if counts.empty:
         return
 
@@ -1105,7 +1127,8 @@ def save_condition_breakdown_bar_chart(
     add_specificity_note(ax, NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE)
     for index, value in enumerate(bar_counts.to_numpy()):
         ax.text(value, index, f" {int(value)}", va="center", fontsize=8)
-    fig.tight_layout()
+    fig.text(0.01, 0.01, note, fontsize=8, color="#475569")
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
     fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)
 
@@ -1143,9 +1166,13 @@ def save_condition_target_taxa_stacked_bar_chart(
     condition_summary: pd.DataFrame,
     *,
     output_path: Path,
+    note: str,
     limit: int = 12,
 ) -> None:
-    """Save a stacked bar chart of increased-profile focal-taxon recurrence by condition."""
+    """Save a stacked bar chart of increased-profile focal-taxon recurrence by condition.
+
+    `note` follows the occurrence-count caveat in the footer.
+    """
     selected = occurrences[occurrences["direction"] == "increased"].copy()
     selected["condition"] = selected["condition"].map(clean_text)
     selected = selected[~selected["condition"].map(is_excluded_condition_label)].copy()
@@ -1197,7 +1224,7 @@ def save_condition_target_taxa_stacked_bar_chart(
         body_site = body_site_labels.get(condition, "site unknown")
         label = (
             f"{total} occ.; {study_count} "
-            f"{pluralize(study_count, 'study')}; {body_site}"
+            f"{pluralize(study_count, 'study', 'studies')}; {body_site}"
             f"{guild_delta_label(condition, condition_summary)}"
         )
         ax.text(total + x_pad, y_pos, label, va="center", fontsize=8, color="#334155")
@@ -1224,7 +1251,7 @@ def save_condition_target_taxa_stacked_bar_chart(
         0.01,
         0.01,
         "Counts are target-taxon/profile occurrences; a profile can contribute "
-        "once per focal taxon.",
+        f"once per focal taxon. {note}",
         fontsize=8,
         color="#475569",
     )
@@ -1243,30 +1270,6 @@ def display_body_site(value: object) -> str:
 
 def is_other_body_site(value: object) -> bool:
     return clean_text(value).lower() == "other"
-
-
-def anatomical_site_base(value: object) -> tuple[float, float]:
-    """Map body-site group labels to approximate body-diagram coordinates."""
-    label = clean_text(value).lower()
-    if "nasopharynx" in label or "airway" in label:
-        return 0.30, 0.86
-    if "subgingival" in label or "dental" in label:
-        return 0.275, 0.825
-    if "saliva" in label:
-        return 0.325, 0.825
-    if "mouth" in label or "oral" in label:
-        return 0.30, 0.825
-    if "colon" in label:
-        return 0.285, 0.47
-    if "caecum" in label or "cecum" in label:
-        return 0.33, 0.46
-    if "feces" in label or "faeces" in label or "stool" in label:
-        return 0.31, 0.37
-    if "vagina" in label or "urogenital" in label:
-        return 0.31, 0.25
-    if "unknown" in label:
-        return 0.16, 0.16
-    return 0.16, 0.47
 
 
 def add_anatomical_outline(ax: plt.Axes) -> None:
@@ -1381,8 +1384,9 @@ def save_anatomical_sites_diagram(
     points = [anatomical_site_base(site) for site in plot_sites["body_site_group"]]
     plot_sites["anchor_x"] = [point[0] for point in points]
     plot_sites["anchor_y"] = [point[1] for point in points]
+    plot_sites["label_order"] = [leader_order_key(point, LEADER_ELBOW_X) for point in points]
     plot_sites = plot_sites.sort_values(
-        ["anchor_y", "profile_count"],
+        ["label_order", "profile_count"],
         ascending=[False, False],
     )
 
@@ -1404,29 +1408,33 @@ def save_anatomical_sites_diagram(
         step = 0.70 / (len(plot_sites) - 1)
         label_ys = [0.84 - index * step for index in range(len(plot_sites))]
 
+    label_texts = []
+    count_bars = []
     for label_y, row in zip(label_ys, plot_sites.itertuples(index=False), strict=False):
         count = int(row.profile_count)
         signal = float(getattr(row, signal_column))
         color = cmap(norm(signal))
-        size = 95 + 900 * math.sqrt(count / max_count)
-        ax.scatter(
-            [row.anchor_x],
-            [row.anchor_y],
-            s=size,
-            c=[color],
-            edgecolors="#111827",
-            linewidths=0.8,
-            zorder=4,
+        radius = bubble_radius(count, max_count)
+        ax.add_patch(
+            Circle(
+                (row.anchor_x, row.anchor_y),
+                radius,
+                facecolor=color,
+                edgecolor="#111827",
+                linewidth=0.8,
+                zorder=4,
+            )
         )
         ax.plot(
-            [row.anchor_x, 0.52, 0.57],
-            [row.anchor_y, label_y, label_y],
+            *leader_line(
+                (row.anchor_x, row.anchor_y), radius, label_y, LEADER_ELBOW_X, LEADER_END_X
+            ),
             color="#6b7280",
             lw=0.9,
-            zorder=2,
+            zorder=5,
         )
         bar_width = 0.30 * count / max_count
-        ax.plot(
+        (count_bar,) = ax.plot(
             [0.58, 0.58 + bar_width],
             [label_y, label_y],
             color=color,
@@ -1434,29 +1442,35 @@ def save_anatomical_sites_diagram(
             solid_capstyle="round",
             zorder=3,
         )
-        ax.text(
-            0.58,
-            label_y + 0.018,
-            display_body_site(row.body_site_group),
-            ha="left",
-            va="bottom",
-            fontsize=10,
-            fontweight="bold",
+        count_bars.append(count_bar)
+        label_texts.append(
+            ax.text(
+                0.58,
+                label_y + 0.018,
+                display_body_site(row.body_site_group),
+                ha="left",
+                va="bottom",
+                fontsize=10,
+                fontweight="bold",
+            )
         )
-        ax.text(
-            0.58,
-            label_y - 0.018,
-            f"{count:,} profiles; {signal_label} {signal:+.2f}",
-            ha="left",
-            va="top",
-            fontsize=8.5,
-            color="#374151",
+        label_texts.append(
+            ax.text(
+                0.58,
+                label_y - 0.018,
+                f"{count:,} profiles; {signal_label} {signal:+.2f}",
+                ha="left",
+                va="top",
+                fontsize=8.5,
+                color="#374151",
+            )
         )
 
-    ax.text(0.02, 0.965, title, ha="left", va="top", fontsize=17, fontweight="bold")
+    # Title, note and footer sit outside the outline, clear of the head and feet.
+    ax.text(0.02, 1.005, title, ha="left", va="bottom", fontsize=17, fontweight="bold")
     ax.text(
         0.02,
-        0.925,
+        0.995,
         GUILD_SPECIFIC_NOTE,
         ha="left",
         va="top",
@@ -1467,24 +1481,46 @@ def save_anatomical_sites_diagram(
         "Bubble and bar length show profile count; color shows direction-specific trait enrichment."
     )
     if legend_note:
-        footer = f"{footer} {legend_note}"
+        footer = f"{footer}\n{legend_note}"
     ax.text(
         0.02,
-        0.035,
+        0.02,
         footer,
         ha="left",
-        va="bottom",
+        va="top",
         fontsize=8.5,
         color="#374151",
     )
     scalar_mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
     scalar_mappable.set_array([])
-    colorbar = fig.colorbar(scalar_mappable, ax=ax, fraction=0.03, pad=0.02)
-    colorbar.set_label(signal_label)
 
     fig.tight_layout()
+    add_colorbar_beside(fig, ax, scalar_mappable, label_texts, signal_label, count_bars)
     fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)
+
+
+def save_target_taxa_condition_charts(
+    occurrences: pd.DataFrame,
+    excluded_occurrences: pd.DataFrame,
+    condition_summary: pd.DataFrame,
+) -> None:
+    """Save the increased-profile target-taxon condition charts with the set-aside note."""
+    direction = "increased"
+    excluded_note = excluded_host_note(excluded_occurrences, direction)
+    save_condition_breakdown_bar_chart(
+        count_target_taxa_conditions(occurrences, direction),
+        output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_bar.png",
+        title_prefix="Inc-profile aerobe v2 target taxa",
+        color="#dc2626",
+        note=excluded_note,
+    )
+    save_condition_target_taxa_stacked_bar_chart(
+        occurrences,
+        condition_summary,
+        output_path=OUTPUT_DIR / "condition_target_taxa_stacked_bar.png",
+        note=excluded_note,
+    )
 
 
 def make_plots(
@@ -1493,6 +1529,7 @@ def make_plots(
     direction_summary: pd.DataFrame,
     body_site_summary: pd.DataFrame,
     occurrences: pd.DataFrame,
+    excluded_occurrences: pd.DataFrame,
 ) -> None:
     plt.rcParams.update({"figure.dpi": 160, "savefig.dpi": 200})
 
@@ -1561,18 +1598,7 @@ def make_plots(
     fig.savefig(OUTPUT_DIR / "guild_trait_direction_shift.png")
     plt.close(fig)
 
-    condition_counts = count_target_taxa_conditions(occurrences, "increased")
-    save_condition_breakdown_bar_chart(
-        condition_counts,
-        output_path=OUTPUT_DIR / "target_taxa_condition_breakdown_bar.png",
-        title_prefix="Inc-profile aerobe v2 target taxa",
-        color="#dc2626",
-    )
-    save_condition_target_taxa_stacked_bar_chart(
-        occurrences,
-        condition_summary,
-        output_path=OUTPUT_DIR / "condition_target_taxa_stacked_bar.png",
-    )
+    save_target_taxa_condition_charts(occurrences, excluded_occurrences, condition_summary)
     save_anatomical_sites_diagram(
         body_site_summary,
         output_path=OUTPUT_DIR / "anatomical_sites_diagram.png",
@@ -1581,7 +1607,7 @@ def make_plots(
         signal_label="increased-profile trait z",
         legend_note=(
             "Unknown body site means no specific BugSigDB body-site label was available; "
-            "it is plotted off-body."
+            "it is plotted at the lower left, beside the legs."
         ),
     )
 
@@ -1595,6 +1621,7 @@ def write_summary_report(
     inferred_group_summary: pd.DataFrame,
     kg_microbe_taxon_universe: pd.DataFrame,
     top_increased_profiles: pd.DataFrame,
+    excluded_occurrences: pd.DataFrame,
 ) -> None:
     direction_rows = direction_summary[
         direction_summary["trait"].isin(GUILD_TRAITS.values())
@@ -1682,6 +1709,18 @@ def write_summary_report(
             f"{int(row.increased_profile_count)} / {int(row.decreased_profile_count)} | "
             f"{int(row.increased_study_count)} |"
         )
+    lines.extend(
+        [
+            "",
+            "Target-taxon occurrence views (`target_taxa_condition_breakdown_bar.png`, "
+            "`condition_target_taxa_stacked_bar.png`, `candidate_taxa_profile_occurrences.tsv` "
+            "and `candidate_taxa_condition_direction.tsv`) count human-host profiles only, "
+            "the corpus of the profile metadata. "
+            f"{excluded_host_summary(excluded_occurrences)} "
+            "They have no profile metadata, so they are not counted under any condition; "
+            "`candidate_taxa_excluded_host_occurrences.tsv` lists them.",
+        ]
+    )
 
     lines.extend(
         [
@@ -1709,11 +1748,15 @@ def write_summary_report(
     lines.extend(
         [
             "",
-            "Broad labels such as `Exposure`, `Population`, and labels containing "
-            "`measurement` come from BugSigDB condition metadata but usually describe "
-            "study design, cohort, exposure, or measurement context rather than a "
-            "disease/condition context. They are excluded from displayed condition "
-            "bar charts and condition summaries.",
+            "Paired d and paired p are blank for conditions with fewer than "
+            f"{MIN_PAIRED_SMD_PROFILE_PAIRS} matched increased/decreased profile pairs, or with "
+            "zero variance among the paired differences.",
+            "",
+            "Broad labels such as `Exposure`, `Population`, `Time`, `Timepoint`, and labels "
+            "containing `measurement` come from BugSigDB condition metadata but usually "
+            "describe study design, cohort, sampling time, exposure, or measurement context "
+            "rather than a disease/condition context. They are excluded from displayed "
+            "condition bar charts and condition summaries.",
             "",
             "Oral-site increased-profile trait signals are expected in this analysis because "
             "the oral cavity is oxygen-exposed and several focal taxa are common oral "
@@ -1812,6 +1855,7 @@ def write_summary_report(
             "- `candidate_taxa_trait_presence.tsv`",
             "- `candidate_taxa_condition_direction.tsv`",
             "- `candidate_taxa_profile_occurrences.tsv`",
+            "- `candidate_taxa_excluded_host_occurrences.tsv`",
             "- `kg_microbe_candidate_taxon_universe.tsv`",
             "- `condition_inferred_guild_summary.tsv`",
             "- `condition_inferred_guild_trait_evidence.tsv`",
@@ -1854,7 +1898,7 @@ def main() -> None:
     condition_summary_output = remove_excluded_condition_labels(condition_summary)
     taxa_summary = load_taxa_direction_summary()
     trait_presence = load_target_taxa_trait_counts()
-    occurrences = load_target_taxa_occurrences(scored_profiles)
+    occurrences, excluded_occurrences = load_target_taxa_occurrences(scored_profiles)
     condition_taxa_summary = summarize_taxa_conditions(occurrences)
     profile_taxa_occurrences = load_profile_taxa_occurrences(scored_profiles)
     kg_microbe_taxon_universe = build_kg_microbe_taxon_universe()
@@ -1903,6 +1947,11 @@ def main() -> None:
         sep="\t",
         index=False,
     )
+    excluded_occurrences.sort_values(["target_taxon_name", "profile_id"]).to_csv(
+        OUTPUT_DIR / "candidate_taxa_excluded_host_occurrences.tsv",
+        sep="\t",
+        index=False,
+    )
     kg_microbe_taxon_universe.to_csv(
         OUTPUT_DIR / "kg_microbe_candidate_taxon_universe.tsv",
         sep="\t",
@@ -1935,7 +1984,14 @@ def main() -> None:
         index=False,
     )
 
-    make_plots(taxa_summary, condition_summary, direction_summary, body_site_summary, occurrences)
+    make_plots(
+        taxa_summary,
+        condition_summary,
+        direction_summary,
+        body_site_summary,
+        occurrences,
+        excluded_occurrences,
+    )
     write_summary_report(
         direction_summary,
         body_site_summary,
@@ -1945,11 +2001,13 @@ def main() -> None:
         inferred_group_summary,
         kg_microbe_taxon_universe,
         top_increased_profiles,
+        excluded_occurrences,
     )
 
     print(f"Wrote investigation outputs to: {OUTPUT_DIR}")
     print(f"Study profiles analyzed: {len(scored_profiles)}")
     print(f"Target taxa occurrence rows: {len(occurrences)}")
+    print(f"Target taxa occurrences outside the human-host corpus: {len(excluded_occurrences)}")
     print(f"KG-Microbe candidate taxon universe rows: {len(kg_microbe_taxon_universe)}")
     print(f"Inferred guild condition rows: {len(inferred_group_summary)}")
     print(f"Condition/taxon rows: {len(condition_taxa_summary)}")

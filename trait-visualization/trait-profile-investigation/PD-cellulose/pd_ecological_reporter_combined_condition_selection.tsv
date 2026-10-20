@@ -1,14 +1,17 @@
 condition	qualifying_significant_trait_count	qualifying_significant_traits	selection_rule	is_parkinsons_disease
 Parkinson's disease	4	moderately halophilic; facultatively aerobic; arsenate reduction; cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	True
-Colorectal cancer	4	moderately halophilic; arsenate reduction; sphere shaped; cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
-Irritable bowel syndrome	3	facultatively aerobic; coccus shaped; sphere shaped	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
+Colorectal cancer	5	moderately halophilic; facultatively aerobic; arsenate reduction; sphere shaped; cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
+COVID-19	4	moderately halophilic; facultatively aerobic; arsenate reduction; cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
+Irritable bowel syndrome	4	facultatively aerobic; arsenate reduction; coccus shaped; sphere shaped	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
+Chronic kidney disease	3	moderately halophilic; facultatively aerobic; cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
 Atopic eczema	2	coccus shaped; sphere shaped	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
-COVID-19	2	arsenate reduction; cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
+Crohn's disease	2	facultatively aerobic; arsenate reduction	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
+Epilepsy	2	moderately halophilic; facultatively aerobic	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
 Stroke	2	moderately halophilic; arsenate reduction	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
-Age	1	coccus shaped	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
+Antimicrobial agent	1	cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
 Autism	1	coccus shaped	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
-Clinical treatment	1	coccus shaped	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
-Gestational diabetes	1	facultatively aerobic	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
+Constipation	1	cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
+Diarrhea	1	cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
+Gastric cancer	1	facultatively aerobic	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
 Graft versus host disease	1	moderately halophilic	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
 Socioeconomic status	1	cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
-Ulcerative colitis	1	moderately halophilic	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False

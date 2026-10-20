@@ -44,15 +44,16 @@ from mtp.enrichment_stats import (
 from mtp.enrichment_stats import (
     hypergeom_sf_many as _core_hypergeom_sf_many,
 )
-
-MEDIADIVE_MEDIUM_PREFIX = "mediadive.medium:"
+from mtp.paths import file_sha256
+from mtp.trait_guilds import MEDIADIVE_MARKER
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Trait enrichment or depletion report with hypergeometric p-values"
     )
-    parser.add_argument("--input", type=Path, required=True, help="Path to trait TSV file")
+    parser.add_argument("--core-run", type=Path, help="Verified core workflow run manifest")
+    parser.add_argument("--input", type=Path, help="Path to trait TSV file")
     parser.add_argument("--output", type=Path, required=True, help="Path to write text report")
     parser.add_argument(
         "--tsv-output",
@@ -67,7 +68,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--taxa-matrix",
         type=Path,
-        required=True,
         help=(
             "Path to taxa_trait_matrix.tsv defining reference background M "
             "(BugSigDB-reported taxa rows; mixed ranks, inherited positivity) and K."
@@ -118,7 +118,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=0,
         help="Maximum number of bullet traits to show per row in text report (0 or -1 for all)",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.core_run is None and (args.input is None or args.taxa_matrix is None):
+        parser.error("Supply --core-run or both --input and --taxa-matrix")
+    return args
 
 
 def _parse_count(value: Any, trait: str = "", row_idx: int = 0, source: str = "") -> int:
@@ -220,8 +223,34 @@ def open_input_text(path: Path) -> TextIO:
 
 
 def main(argv: list[str] | None = None) -> None:
-    args = parse_args(argv)
+    from mtp.workflow.consumers import (
+        open_core_bundle,
+        preflight_consumer_outputs,
+        write_consumer_record,
+    )
 
+    args = parse_args(argv)
+    bundle = None
+    if args.core_run is not None:
+        bundle = open_core_bundle(args.core_run, "ora_profiles")
+        for argument, product in (("input", "ora_profiles"), ("taxa_matrix", "taxa_matrix")):
+            path = bundle.path(product)
+            supplied = getattr(args, argument)
+            if supplied is not None and supplied.resolve() != path.resolve():
+                raise ValueError(f"--core-run conflicts with --{argument.replace('_', '-')}")
+            setattr(args, argument, path)
+        preflight_consumer_outputs(
+            bundle,
+            args.output.with_suffix(".core_consumption.json"),
+            [
+                path
+                for path in (args.output, args.tsv_output, args.all_results_output)
+                if path is not None
+            ],
+        )
+
+    # Bind exported tests to actual input bytes, including non-core invocations (#705).
+    profiles_sha256 = file_sha256(args.input)
     with open_input_text(args.input) as fh:
         reader = csv.DictReader(fh, delimiter="\t")
         fieldnames = reader.fieldnames or []
@@ -234,7 +263,7 @@ def main(argv: list[str] | None = None) -> None:
         trait_columns = [
             col
             for col in fieldnames
-            if col not in exclude_cols and MEDIADIVE_MEDIUM_PREFIX not in col
+            if col not in exclude_cols and MEDIADIVE_MARKER not in col.lower()
         ]
         if not trait_columns:
             raise ValueError("No trait columns found in input TSV")
@@ -338,6 +367,7 @@ def main(argv: list[str] | None = None) -> None:
     # Determine reference population M and background successes K from taxa_matrix
     if not args.taxa_matrix.exists():
         raise FileNotFoundError(f"Specified taxa matrix file does not exist: {args.taxa_matrix}")
+    taxa_matrix_sha256 = file_sha256(args.taxa_matrix)
     background_counts: dict[str, int] = dict.fromkeys(trait_columns, 0)
     matrix_taxa_total = 0
     with open_input_text(args.taxa_matrix) as m_fh:
@@ -541,6 +571,8 @@ def main(argv: list[str] | None = None) -> None:
         all_hits.sort(key=lambda h: (h["fdr_q"], h["study_id"], h["experiment_id"], h["trait"]))
         with args.all_results_output.open("w", encoding="utf-8", newline="") as out_fh:
             # Metadata header
+            out_fh.write(f"# Profiles-SHA256: {profiles_sha256}\n")
+            out_fh.write(f"# Taxa-Matrix-SHA256: {taxa_matrix_sha256}\n")
             out_fh.write(f"# Tail: {args.tail}\n")
             out_fh.write("# Testable-Set: K>0 & N>0\n")
             out_fh.write(f"# FDR: {args.fdr}\n")
@@ -676,6 +708,17 @@ def main(argv: list[str] | None = None) -> None:
     print(f"Trait columns: {len(trait_columns)}")
     print(f"Candidate traits (K > 0): {len(candidate_traits)}")
     print(f"Total testable profiles (N > 0): {testable_profile_count}")
+    if bundle is not None:
+        write_consumer_record(
+            bundle,
+            args.output.with_suffix(".core_consumption.json"),
+            consumer="scripts/trait_enrichment.py",
+            outputs=[
+                path
+                for path in (args.output, args.tsv_output, args.all_results_output)
+                if path is not None
+            ],
+        )
     print(f"Background taxa universe M: {background_taxa_universe}")
     print(f"Total tests performed: {len(all_hits)}")
     print(f"Significant hits: {len(significant_hits)}")

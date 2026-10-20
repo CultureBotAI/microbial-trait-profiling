@@ -1,0 +1,652 @@
+id: https://w3id.org/mtp/workflow
+name: mtp_workflow
+title: Execution-checked microbial trait workflow
+description: Versioned product and workflow contracts, execution attempts, and verified artifact instances.
+  Structural validation is supplemented by graph, filesystem, checksum, and scientific product checks.
+license: MIT
+version: 1.0.0
+default_prefix: mtpw
+default_range: string
+prefixes:
+  linkml: https://w3id.org/linkml/
+  mtpw: https://w3id.org/mtp/workflow/
+  prov: http://www.w3.org/ns/prov#
+imports:
+  - linkml:types
+enums:
+  StorageKind:
+    permissible_values:
+      file: null
+      collection: null
+    title: Storage Kind
+    description: Permitted storage kind values.
+  ExecutionStatus:
+    permissible_values:
+      running: null
+      completed: null
+      failed: null
+      imported_unverified: null
+    title: Execution Status
+    description: Permitted execution status values.
+  ValidationStatus:
+    permissible_values:
+      passed: null
+      failed: null
+    title: Validation Status
+    description: Permitted validation status values.
+classes:
+  ProductDefinition:
+    description: A stable scientific product contract, independent of its location.
+    attributes:
+      id:
+        identifier: true
+        required: true
+        pattern: ^[A-Za-z][A-Za-z0-9_.-]*$
+        title: Id
+        description: Identifier unique within its containing document.
+      description:
+        description: Human-readable product meaning.
+        title: Description
+      kind:
+        required: true
+        description: Scientific validator contract name.
+        title: Kind
+      storage_kind:
+        range: StorageKind
+        required: true
+        title: Storage kind
+        description: Whether the artifact is a regular file or an inventoried directory.
+      format:
+        required: true
+        description: Serialization format.
+        title: Format
+      filename:
+        required: true
+        description: Relative path inside a producer bundle.
+        title: Filename
+      external:
+        range: boolean
+        ifabsent: 'false'
+        title: External
+        description: Whether this product is supplied explicitly rather than produced by a step.
+      schema_ref:
+        description: Versioned scientific schema reference.
+        title: Schema ref
+      unit:
+        description: Meaning of one row or observation.
+        title: Unit
+      cohort:
+        description: Expected population selection policy.
+        title: Cohort
+      cohort_parameter:
+        range: ParameterDefinition
+        description: Parameter determining effective cohort.
+        title: Cohort parameter
+      feature_policy:
+        description: Feature inclusion and identity policy.
+        title: Feature policy
+      coverage_policy:
+        description: Required coverage and exclusion accounting.
+        title: Coverage policy
+    title: Product Definition
+  ParameterDefinition:
+    description: An explicitly resolved string parameter; undeclared overrides are rejected.
+    attributes:
+      name:
+        identifier: true
+        required: true
+        pattern: ^[A-Za-z][A-Za-z0-9_]*$
+        title: Name
+        description: Declared parameter identifier.
+      default:
+        description: Default value before explicit environment and API overrides.
+        title: Default
+      environment:
+        description: Optional explicitly permitted environment variable.
+        title: Environment
+      required:
+        range: boolean
+        ifabsent: 'false'
+        title: Required
+        description: Whether execution requires an effective parameter value.
+    title: Parameter Definition
+  ParameterValue:
+    description: The effective value and source of one declared parameter.
+    attributes:
+      name:
+        required: true
+        title: Name
+        description: Declared parameter identifier.
+      value:
+        required: true
+        title: Value
+        description: Effective resolved parameter value passed to the operation.
+      source:
+        required: true
+        title: Source
+        description: 'Origin of the effective value: default, declared environment variable, or override.'
+    title: Parameter Value
+  StepDefinition:
+    description: An operation registry key and its typed input and output products.
+    attributes:
+      id:
+        identifier: true
+        required: true
+        pattern: ^[A-Za-z][A-Za-z0-9_.-]*$
+        title: Id
+        description: Identifier unique within its containing document.
+      operation:
+        required: true
+        title: Operation
+        description: Key resolving to an explicitly registered Python callable.
+      description:
+        description: Purpose of this step.
+        title: Description
+      inputs:
+        range: ProductDefinition
+        multivalued: true
+        required: true
+        title: Inputs
+        description: Product references whose verified artifact paths are passed to the operation.
+      outputs:
+        range: ProductDefinition
+        multivalued: true
+        required: true
+        title: Outputs
+        description: Declared outputs; references are resolved and checked against their producers.
+      depends_on:
+        range: StepDefinition
+        multivalued: true
+        title: Depends on
+        description: Additional prerequisite step references beyond input-producing dependencies.
+      parameters:
+        range: ParameterDefinition
+        multivalued: true
+        title: Parameters
+        description: Declared or effective parameters scoped to this definition or execution.
+    title: Step Definition
+  WorkflowDefinition:
+    tree_root: true
+    description: Versioned graph of typed products and registered Python operations.
+    attributes:
+      id:
+        identifier: true
+        required: true
+        pattern: ^[A-Za-z][A-Za-z0-9_.-]*$
+        title: Id
+        description: Identifier unique within its containing document.
+      version:
+        required: true
+        title: Version
+        description: Version of the declared workflow contract.
+      description:
+        description: Workflow purpose and scope.
+        title: Description
+      products:
+        range: ProductDefinition
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Products
+        description: Scientific product contracts available to this workflow.
+      steps:
+        range: StepDefinition
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Steps
+        description: Ordered or dependency-resolved workflow stages or their attempted executions.
+      parameters:
+        range: ParameterDefinition
+        multivalued: true
+        inlined_as_list: true
+        title: Parameters
+        description: Declared or effective parameters scoped to this definition or execution.
+    title: Workflow Definition
+  FileInventoryEntry:
+    description: One regular file in an artifact; symlinks and special files are rejected.
+    attributes:
+      path:
+        required: true
+        description: Relative member path, or the file basename.
+        title: Path
+      sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Sha256
+        description: Lowercase SHA-256 of file bytes or the canonical collection inventory.
+      size_bytes:
+        range: integer
+        minimum_value: 0
+        required: true
+        title: Size bytes
+        description: Total number of regular-file bytes represented by this record.
+    title: File Inventory Entry
+  ValidationResult:
+    description: A recorded structural, semantic, or scientific validation outcome.
+    attributes:
+      validator:
+        required: true
+        title: Validator
+        description: Versioned validation procedure identifier.
+      status:
+        range: ValidationStatus
+        required: true
+        title: Status
+        description: Explicit lifecycle or validation outcome; only completed verified runs are consumable.
+      message:
+        required: true
+        title: Message
+        description: Human-readable validation result.
+      details_json:
+        description: Validator-specific facts encoded as canonical JSON.
+        title: Details json
+    title: Validation Result
+  ArtifactInstance:
+    class_uri: prov:Entity
+    description: Immutable product content bound to a particular execution attempt.
+    attributes:
+      id:
+        identifier: true
+        required: true
+        title: Id
+        description: Identifier unique within its containing document.
+      product_id:
+        range: ProductDefinition
+        required: true
+        title: Product id
+        description: Reference to the embedded product contract.
+      run_id:
+        range: WorkflowRun
+        required: true
+        title: Run id
+        description: Unique execution-attempt identifier, distinct from the deterministic fingerprint.
+      producer_step:
+        range: StepExecution
+        slot_uri: prov:wasGeneratedBy
+        title: Producer step
+        description: Reference to the execution that produced this artifact; absent for inputs.
+      path:
+        required: true
+        description: Absolute external path or run-relative output path.
+        title: Path
+      requested_path:
+        description: Original external binding before symlink resolution.
+        title: Requested path
+      sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Sha256
+        description: Lowercase SHA-256 of file bytes or the canonical collection inventory.
+      size_bytes:
+        range: integer
+        minimum_value: 0
+        required: true
+        title: Size bytes
+        description: Total number of regular-file bytes represented by this record.
+      inventory:
+        range: FileInventoryEntry
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Inventory
+        description: Complete sorted list of regular-file members and their byte hashes.
+      validations:
+        range: ValidationResult
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Validations
+        description: Recorded inventory and scientific product validation outcomes.
+      unit:
+        description: Effective observational unit.
+        title: Unit
+      cohort:
+        description: Effective population selection policy or parameter value.
+        title: Cohort
+      feature_policy:
+        description: Effective feature inclusion policy.
+        title: Feature policy
+      coverage_policy:
+        description: Effective exclusion accounting policy.
+        title: Coverage policy
+    title: Artifact Instance
+  StepExecution:
+    class_uri: prov:Activity
+    description: One attempted operation with concrete inputs and staged outputs.
+    attributes:
+      id:
+        identifier: true
+        required: true
+        title: Id
+        description: Identifier unique within its containing document.
+      step_id:
+        range: StepDefinition
+        required: true
+        title: Step id
+        description: Reference to the declared step contract.
+      status:
+        range: ExecutionStatus
+        required: true
+        title: Status
+        description: Explicit lifecycle or validation outcome; only completed verified runs are consumable.
+      started_at:
+        range: datetime
+        required: true
+        title: Started at
+        description: UTC timestamp when this execution attempt began.
+      finished_at:
+        range: datetime
+        title: Finished at
+        description: UTC timestamp when this execution attempt finished or failed.
+      input_artifacts:
+        range: ArtifactInstance
+        slot_uri: prov:used
+        multivalued: true
+        title: Input artifacts
+        description: Concrete artifact references actually bound as operation inputs.
+      output_artifacts:
+        range: ArtifactInstance
+        slot_uri: prov:generated
+        multivalued: true
+        title: Output artifacts
+        description: Concrete artifact references published by this completed operation.
+      parameters:
+        range: ParameterValue
+        multivalued: true
+        inlined_as_list: true
+        title: Parameters
+        description: Declared or effective parameters scoped to this definition or execution.
+      error:
+        description: Failure diagnostic; failed artifacts are never published.
+        title: Error
+    title: Step Execution
+  WorkflowRun:
+    class_uri: prov:Activity
+    description: Unique execution attempt with an embedded contract and content fingerprint.
+    attributes:
+      run_id:
+        identifier: true
+        required: true
+        title: Run id
+        description: Unique execution-attempt identifier, distinct from the deterministic fingerprint.
+      definition:
+        range: WorkflowDefinition
+        inlined: true
+        required: true
+        title: Definition
+        description: Embedded validated workflow definition used by this attempt.
+      status:
+        range: ExecutionStatus
+        required: true
+        title: Status
+        description: Explicit lifecycle or validation outcome; only completed verified runs are consumable.
+      started_at:
+        range: datetime
+        required: true
+        title: Started at
+        description: UTC timestamp when this execution attempt began.
+      finished_at:
+        range: datetime
+        title: Finished at
+        description: UTC timestamp when this execution attempt finished or failed.
+      manifest_path:
+        required: true
+        title: Manifest path
+        description: Location of this run manifest; relocation does not change execution identity.
+      spec_path:
+        required: true
+        title: Spec path
+        description: Source location of the workflow specification at execution time.
+      spec_sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Spec sha256
+        description: SHA-256 of the exact source specification bytes.
+      definition_sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Definition sha256
+        description: SHA-256 of the canonical embedded validated workflow definition.
+      execution_fingerprint:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Execution fingerprint
+        description: Deterministic hash of contracts, inputs, code, environment, and resolved values.
+      code_sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Code sha256
+        description: SHA-256 of the complete recorded code inventory.
+      code_inventory:
+        range: FileInventoryEntry
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Code inventory
+        description: Source and schema files, including untracked code, used to identify implementation.
+      lock_sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Lock sha256
+        description: SHA-256 of the dependency lockfile used for this attempt.
+      git_commit:
+        required: true
+        title: Git commit
+        description: Repository commit at execution start; code hashes also capture local changes.
+      git_dirty:
+        range: boolean
+        required: true
+        title: Git dirty
+        description: Whether tracked or untracked repository changes existed at execution start.
+      runtime_json:
+        required: true
+        title: Runtime json
+        description: Canonical JSON describing Python, installed package versions, platform, and operations.
+      parameters:
+        range: ParameterValue
+        multivalued: true
+        inlined_as_list: true
+        title: Parameters
+        description: Declared or effective parameters scoped to this definition or execution.
+      steps:
+        range: StepExecution
+        multivalued: true
+        inlined_as_list: true
+        title: Steps
+        description: Ordered or dependency-resolved workflow stages or their attempted executions.
+      artifacts:
+        range: ArtifactInstance
+        multivalued: true
+        inlined_as_list: true
+        title: Artifacts
+        description: Concrete external input and published output artifact instances.
+      outputs:
+        range: ArtifactInstance
+        multivalued: true
+        title: Outputs
+        description: Declared outputs; references are resolved and checked against their producers.
+      error:
+        description: Failure diagnostic for the attempt.
+        title: Error
+    title: Workflow Run
+  ConsumerRecord:
+    description: Verified binding of downstream analysis products to a completed workflow run.
+    attributes:
+      id:
+        identifier: true
+        required: true
+        title: Id
+        description: Identifier unique within its containing document.
+      run_id:
+        range: WorkflowRun
+        required: true
+        title: Run id
+        description: Unique execution-attempt identifier, distinct from the deterministic fingerprint.
+      run_manifest_path:
+        required: true
+        title: Run manifest path
+        description: Explicit path to the verified producing run manifest.
+      run_manifest_sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Run manifest sha256
+        description: SHA-256 of the producing run manifest consumed by the analysis.
+      consumer:
+        required: true
+        title: Consumer
+        description: Identifier of the downstream analysis or presentation operation.
+      product_ids:
+        range: ProductDefinition
+        multivalued: true
+        required: true
+        title: Product ids
+        description: Product contracts explicitly consumed by this analysis.
+      artifact_ids:
+        range: ArtifactInstance
+        multivalued: true
+        required: true
+        title: Artifact ids
+        description: Concrete verified artifacts consumed by this analysis.
+      feature_policy:
+        required: true
+        title: Feature policy
+        description: Feature inclusion and identity policy.
+      cohort:
+        required: true
+        title: Cohort
+        description: Expected population selection policy.
+      created_at:
+        range: datetime
+        required: true
+        title: Created at
+        description: UTC timestamp when this consumer record was created.
+      coverage_path:
+        required: true
+        title: Coverage path
+        description: Path to reconciled annotation coverage under the actual consumer feature filter.
+      feature_filter_id:
+        required: true
+        pattern: '^sha256:[0-9a-f]{64}$'
+        title: Feature filter id
+        description: SHA-256 identity of the exact ordered retained analysis features.
+      coverage_scope:
+        required: true
+        pattern: '^input_cohort_before_analysis_specific_exclusions$'
+        title: Coverage scope
+        description: Coverage describes the input cohort before analysis-specific eligibility exclusions.
+      outputs:
+        range: FileInventoryEntry
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Outputs
+        description: Declared outputs; references are resolved and checked against their producers.
+    title: Consumer Record
+  LegacyImportRecord:
+    description: Historical claims preserved without asserting a verified producing execution.
+    attributes:
+      id:
+        identifier: true
+        required: true
+        title: Id
+        description: Identifier unique within its containing document.
+      source_path:
+        required: true
+        title: Source path
+        description: Location of the historical source whose claims are being preserved.
+      source_sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Source sha256
+        description: SHA-256 of the historical source bytes at import time.
+      imported_at:
+        range: datetime
+        required: true
+        title: Imported at
+        description: UTC timestamp of legacy import, not the unknown historical execution time.
+      verification_status:
+        required: true
+        pattern: ^imported_unverified$
+        title: Verification status
+        description: Explicitly unverified historical execution; byte integrity alone is insufficient.
+      claims_json:
+        required: true
+        title: Claims json
+        description: Original historical claims preserved as JSON without inventing executed steps.
+    title: Legacy Import Record
+  ArchivedLocation:
+    title: Archived Location
+    description: Original file or collection locations mapped to one immutable retained copy.
+    attributes:
+      original_paths:
+        title: Original paths
+        description: Absolute recorded locations, including any declared input alias; never rewritten in source records.
+        multivalued: true
+        required: true
+      archive_path:
+        title: Archive path
+        description: Safe relative location inside the archive, independent of its current root directory.
+        required: true
+      storage_kind:
+        title: Storage kind
+        description: File or collection storage contract for the retained copy.
+        range: StorageKind
+        required: true
+      sha256:
+        title: Sha256
+        description: File digest or canonical collection inventory digest.
+        pattern: ^[0-9a-f]{64}$
+        required: true
+      size_bytes:
+        title: Size bytes
+        description: Total bytes of retained regular files.
+        range: integer
+        minimum_value: 0
+        required: true
+      inventory:
+        title: Inventory
+        description: Complete regular-file inventory, including hidden members.
+        range: FileInventoryEntry
+        multivalued: true
+        inlined_as_list: true
+        required: true
+  EvidenceArchive:
+    title: Evidence Archive
+    description: Retained bytes and explicit location mappings; archival verification does not invent historical execution or authorship.
+    attributes:
+      id:
+        title: Id
+        description: Unique archive identifier.
+        identifier: true
+        required: true
+      archive_version:
+        title: Archive version
+        description: Version of the retention and verification contract.
+        pattern: ^1$
+        required: true
+      created_at:
+        title: Created at
+        description: UTC archival time, distinct from original execution times.
+        range: datetime
+        required: true
+      core_manifests:
+        title: Core manifests
+        description: Original absolute locations of retained core runs whose full scientific contracts are revalidated.
+        multivalued: true
+        required: true
+      consumer_records:
+        title: Consumer records
+        description: Original absolute locations of consumer records whose output and core bindings are revalidated.
+        multivalued: true
+      retained_paths:
+        title: Retained paths
+        description: Explicit supplemental evidence preserved by byte identity; preservation alone does not validate its scientific claims.
+        multivalued: true
+      locations:
+        title: Locations
+        description: Complete hash-checked source-to-retained-location mapping.
+        range: ArchivedLocation
+        multivalued: true
+        inlined_as_list: true
+        required: true

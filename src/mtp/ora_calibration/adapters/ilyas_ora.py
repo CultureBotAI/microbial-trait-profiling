@@ -86,6 +86,15 @@ class IlyasORAAdapter:
             ),
             "m_universe": m_universe,
             "n_trait_columns": len(trait_columns),
+            "trait_filter": "exclude_mediadive",
+            "n_excluded_mediadive_columns": len(
+                shared_trait_columns(profiles_df, taxa_matrix_df, include_mediadive=True)
+            )
+            - len(trait_columns),
+            "correction_method": "BH",
+            "correction_family": "all_testable_paired_profile_trait_pairs",
+            "n_profiles": 0,
+            "n_testable_traits": 0,
             "n_tests": 0,
         }
         if not trait_columns or m_universe <= 0:
@@ -111,11 +120,13 @@ class IlyasORAAdapter:
 
         if profiles_df.empty:
             return self._empty_result(metadata)
+        metadata["n_profiles"] = len(profiles_df)
 
         # 2. Extract sizes, IDs, population counts, and observed counts
         signature_sizes = resolve_signature_sizes(profiles_df)
         profile_ids = profile_identifiers(profiles_df)
         k_pop_arr = trait_population_counts(taxa_matrix_df, trait_columns)
+        metadata["n_testable_traits"] = int(np.sum(k_pop_arr > 0))
         observed = (
             profiles_df[trait_columns].apply(pd.to_numeric, errors="raise").to_numpy(dtype=np.int64)
         )

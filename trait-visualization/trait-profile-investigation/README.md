@@ -19,7 +19,9 @@ uv run python scripts/regenerate_trait_profile_investigation.py
 
 The regeneration command writes the current v2 output folders, summary diagram,
 all-BugSigDB direction maps, direction-grid TSV, figure annotations, and the
-PowerPoint deck media.
+PowerPoint deck media. It also writes `profile-condition-bars/` (increased and
+decreased runs) and `enrichment-infographic-followup/` (the infographic run and
+the paired-profile run under its three names) (#586).
 
 The current workflow diagram uses `waldronlab/BugSigDBExports` `v1.3.1`
 `full_dump.csv` (`BugSigDB 2026-04-24_00:41_UTC`, DOI
@@ -88,7 +90,10 @@ Feces-only and Feces-excluded analyses, and one file per body-site group with at
 least 50 matched pairs. The manifest lists the emitted strata, pair counts, and
 file paths. Pooled and per-stratum TSVs include every trait that passes the
 analysis-set support and variance filters; they are not capped to the top 60
-variable traits.
+variable traits. The committed `trait_profile_paired_contrast_trait_stats*.tsv`
+tables in this directory (and `data/derived/trait_profile_paired_contrast_trait_stats_pooled.tsv`)
+were regenerated from `main` at commit `42300e0` via
+`scripts/rerun_directional_consistency_arm_noel.sh` and `just trait-profile-pooled-stats`.
 
 `all-bugsigdb-condition-body-site-maps/` contains increased-profile and
 decreased-profile condition/body-site maps generated from all human-host
@@ -104,21 +109,24 @@ orchestrated refresh. It uses the same human-host study trait-profile heatmap
 outputs as the v2 investigation scripts.
 
 `PD-cellulose/pd_species_six_traits_influence_heatmap.png` is the species-level
-follow-up for all six Parkinson's disease traits. Unlike the adjacent raw
-carrier lookup, its cells are trait-specific fixed-reference leave-one-species-
-out influence contrasts. Every computable species-trait estimate is retained:
-outlined cells include direct removal of that trait, while unoutlined cells show
-the denominator-mediated effect when the species has no direct annotation for
-the displayed trait. Species whose six cells are all low support are omitted,
-and the remaining rows are sorted by the BugSigDB log2 increased/decreased
-profile-count ratio, from increased to decreased skew. The two separate
-right-hand annotations show raw increased/decreased recurrence and a direct
-literature comparison. The latter prints the literature direction plus
-`agrees`, `DIFFERS`, or `balanced`; the current `DIFFERS` rows are
-*Mediterraneibacter torques* and *Escherichia coli*. PD-versus-other-feces
-specificity is retained in a companion audit TSV but is no longer plotted. The
-reference table and interpretation document the targeted narrative-review and
-direction-assignment methods. Regenerate the complete set with
+follow-up for all six Parkinson's disease traits, whatever their sign; each column
+carries the trait's observed direction in the six-trait lollipop as an up or down
+arrow (#584). Unlike the adjacent raw carrier lookup, its cells are
+trait-specific fixed-reference leave-one-species-out influence contrasts. Every
+computable species-trait estimate is kept in the cell TSV, and the figure draws
+the cells whose absolute influence exceeds 0.01: outlined cells include direct
+removal of that trait, while unoutlined cells show the denominator-mediated
+effect when the species has no direct annotation for the displayed trait.
+Species whose six cells are all low support or below that threshold are
+omitted, and the remaining rows are sorted by the BugSigDB log2
+increased/decreased profile-count ratio, from increased to decreased skew. The
+two separate right-hand annotations show raw increased/decreased recurrence and
+the literature direction with its one-position Hamming distance from BugSigDB
+recurrence; *Escherichia coli* is the one displayed species whose directions
+differ. PD-versus-other-feces specificity is retained in a companion audit TSV
+but is no longer plotted. The reference table and interpretation document the
+targeted narrative-review and direction-assignment methods. Regenerate the
+evidence with `just pd-trait-taxa`, then the heatmaps with
 `just pd-trait-taxa-heatmap`.
 
 ## Cleanup Note

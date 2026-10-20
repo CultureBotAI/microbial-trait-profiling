@@ -26,6 +26,7 @@ from create_pd_six_trait_taxon_heatmap import (
     plot_heatmap,
     read_profile_counts,
     read_taxon_vectors,
+    require_current_trait_taxa_evidence,
     sha256_chunks,
     write_reference_interpretation,
 )
@@ -150,7 +151,13 @@ def write_exploratory_note(
         "not final directional claims. The x-axis `baseline Δz` is the full-data paired trait "
         "contrast before taxon removal; each cell is baseline Δz minus the recomputed contrast "
         "after removing that row taxon. These non-additive influence values show whether a taxon "
-        "changes the trait contrast, not whether it causally produces the trait effect.\n\n"
+        "changes the trait contrast, not whether it causally produces the trait effect. Column "
+        "arrows and `lollipop` values give each trait's observed direction in the PD six-trait "
+        "lollipop, the sign of `increased_minus_decreased_mean_z` in "
+        "`pd_six_trait_direction_summary.tsv`; the trait and cell tables carry it as "
+        "`trait_direction`. An asterisk marks a column whose baseline Δz has the opposite sign "
+        "(`baseline_opposes_lollipop` in the trait table); a positive cell pushes the paired "
+        "contrast toward increased profiles whatever the column's arrow.\n\n"
         f"[Cell statistics]({STEM}_cells.tsv) | [Taxon row annotations]({STEM}_taxa.tsv) | "
         f"[PD specificity]({STEM}_specificity.tsv) | [Trait summary]({STEM}_traits.tsv) | "
         f"[PD taxa reference]({REFERENCE_TABLE_STEM}_table.tsv) | "
@@ -162,8 +169,9 @@ def write_exploratory_note(
 
 def main() -> None:
     """Generate the exploratory genus/family/species influence heatmap and tables."""
-    counts, trait_columns = read_profile_counts(PROFILE_MATRIX_PATH)
     metadata = load_profile_metadata()
+    require_current_trait_taxa_evidence(metadata, OUTPUT_DIR)
+    counts, trait_columns = read_profile_counts(PROFILE_MATRIX_PATH)
     taxon_vectors = read_taxon_vectors(TAXA_TRAIT_MATRIX_PATH, trait_columns)
     evidence_path = OUTPUT_DIR / "pd_six_trait_taxon_profile_evidence.tsv"
     evidence = read_tsv(evidence_path)
