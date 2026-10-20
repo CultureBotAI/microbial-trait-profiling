@@ -383,9 +383,10 @@ def select_traits(
     ]
 
     max_support = max(2, int(len(selected_profile_matrix) * max_profile_support_fraction))
+    is_required = trait_metadata.index.isin(REQUIRED_PAIRED_TRAITS)
     eligible = trait_metadata[
         (trait_metadata["profile_support"] >= min_profile_support)
-        & (trait_metadata["profile_support"] <= max_support)
+        & ((trait_metadata["profile_support"] <= max_support) | is_required)
         & (trait_metadata["composition_variance"] > 0)
     ].copy()
     if not include_media_traits:

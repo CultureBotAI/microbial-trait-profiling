@@ -350,6 +350,14 @@ def test_prior_assessment_is_preserved(inputs: dict[str, Path]) -> None:
     assert sentinel.read_text(encoding="utf-8") == "previous assessment\n"
 
 
+def test_empty_precreated_output_directory_is_accepted(inputs: dict[str, Path]) -> None:
+    output = inputs["output_dir"]
+    output.mkdir()
+    provenance = _run(inputs)
+    assert provenance.is_file()
+    assert (output / "contrast_manifest.tsv").is_file()
+
+
 @pytest.mark.parametrize("overwrite_core", [False, True])
 def test_native_profiles_with_identical_keys_cannot_claim_core_orientation(
     inputs: dict[str, Path], tmp_path: Path, overwrite_core: bool

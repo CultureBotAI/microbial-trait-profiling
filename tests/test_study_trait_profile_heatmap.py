@@ -192,3 +192,53 @@ def test_load_raw_experiment_metadata_takes_the_value_beside_a_blank(
     labels = heatmap.load_raw_experiment_metadata(full_dump_path)
 
     assert labels.loc[("bsdb:study1", "bsdb:study1-1"), column] == LABEL_VALUES[column][0]
+
+
+def test_select_traits_retains_required_paired_traits_above_max_support_cap() -> None:
+    profiles = [f"study{idx}|exp1|inc" for idx in range(20)]
+    matrix = pd.DataFrame(
+        {
+            "METPO:1000615": [10] * 19 + [1],
+            "METPO:1000698": [8, 2] * 9 + [0, 0],
+            "METPO:1000703": [5, 5] * 9 + [0, 0],
+            "GO:0030245": [4, 1] * 8 + [0] * 4,
+        },
+        index=profiles,
+    )
+    labels = pd.DataFrame(
+        {
+            "display_label": [
+                "mesophilic (METPO:1000615)",
+                "gram positive (METPO:1000698)",
+                "non motile (METPO:1000703)",
+                "cellulose catabolic process (GO:0030245)",
+            ],
+            "column_label": [
+                "METPO:1000615",
+                "METPO:1000698",
+                "METPO:1000703",
+                "GO:0030245",
+            ],
+            "object_name": [
+                "mesophilic",
+                "gram positive",
+                "non motile",
+                "cellulose catabolic process",
+            ],
+            "object_category": ["METPO", "METPO", "METPO", "GO"],
+            "display_category": ["Temperature", "Gram stain", "Motility", "Metabolism"],
+        },
+        index=["METPO:1000615", "METPO:1000698", "METPO:1000703", "GO:0030245"],
+    )
+
+    selected_ids, selected_meta = heatmap.select_traits(
+        selected_profile_matrix=matrix,
+        trait_labels=labels,
+        max_traits=4,
+        min_profile_support=5,
+        max_profile_support_fraction=0.90,
+        include_media_traits=False,
+    )
+
+    assert set(heatmap.REQUIRED_PAIRED_TRAITS).issubset(selected_ids)
+    assert "METPO:1000615" in selected_meta.index

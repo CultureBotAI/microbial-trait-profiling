@@ -114,12 +114,14 @@ def write_assessment(
     # Passing these profiles through oriented_profiles would undo that relabelling.
     comparisons = comparison_rows([(population, profiles)])
     output = output_dir.resolve()
-    if output_dir.exists() or output_dir.is_symlink():
+    if output_dir.is_symlink() or (
+        output_dir.exists() and (not output_dir.is_dir() or any(output_dir.iterdir()))
+    ):
         raise FileExistsError(f"Orientation assessment output already exists: {output_dir}")
     preflight_consumer_outputs(
         bundle, output / "contrast_orientation_provenance.json", output_directory=output
     )
-    output.mkdir(parents=True)
+    output.mkdir(parents=True, exist_ok=True)
     write_manifest(output / "contrast_manifest.tsv", records, classes, corpus, vintage, validation)
     _write_table(output / "contrast_class_counts.tsv", counts)
     _write_table(output / "contrast_control_tier_counts.tsv", tiers)
