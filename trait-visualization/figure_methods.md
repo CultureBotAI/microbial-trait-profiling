@@ -478,10 +478,13 @@ least 10 matched pairs. The companion table is
 
 Panel C groups matched pairs by explicit body-site group, excluding `Other` and
 `unknown`, and displays the strongest anatomical contrast-load groups on the
-same simplified body-outline convention used by the v2 guild body-site panels.
+same simplified body-outline convention used by the v2 guild body-site panels,
+with the same anatomical anchors from `src/mtp/body_site_diagram.py`.
 Bubble size is the number of matched pairs, color is the net
 increased-minus-decreased contrast, and labels report the average absolute
-contrast load. The companion table is
+contrast load. Bubbles are sized in the outline's own units, as in the v2
+panels, so they keep the same proportion to the body in this smaller panel and
+do not overlap their neighbors (#620). The companion table is
 `trait_profile_paired_contrast_body_site_summary.tsv`.
 
 Panel D states the interpretation guardrail: Ilyas's enrichment figure ranks
@@ -838,7 +841,9 @@ total target-taxon/profile occurrence count, the number of unique studies in the
 focus direction, the dominant body-site group among plotted occurrences, and the
 condition-level focus-minus-comparator v2 trait-enrichment contrast when available.
 The unit remains an occurrence count: a single BugSigDB profile can contribute
-multiple counts if multiple focal taxa are observed in that profile.
+multiple counts if multiple focal taxa are observed in that profile. As in the
+breakdown bars, only human-host profiles are counted; the footer states how many
+focus-direction occurrences from other hosts were left out (#587).
 
 ### Shared Data Collection and Label Definitions
 
@@ -1042,8 +1047,10 @@ body-site group is excluded from the display. Bubble size and adjacent bar
 length encode profile count. Color encodes `increased_mean_guild_z`, the
 backward-compatible column for the mean aerobe v2 trait-enrichment
 score among increased profiles at that body-site
-group. Labels are positioned on a simplified front-view body outline; `unknown`
-is placed off-body because it is missing metadata, not an anatomical location.
+group. Labels are positioned on a simplified front-view body outline, each
+group at its own anchor from `src/mtp/body_site_diagram.py`, so mouth and oral
+cavity are separate bubbles (#612); `unknown` is placed at the lower left beside
+the legs because it is missing metadata, not an anatomical location.
 
 The highest increased-profile mean trait z-scores are oral cavity (0.493; 75
 profiles), saliva (0.390; 374 profiles), mouth (0.294; 80 profiles), uterine
@@ -1062,10 +1069,12 @@ as a gut signal.
 #### Slide 5: Top Conditions for Increased Target-Taxon Occurrences
 
 `target_taxa_condition_breakdown_bar.png` is not a guild-score figure. It loads
-target-taxon occurrences from `data/derived/taxa.tsv`, limits them to the fixed
+target-taxon occurrences from `data/derived/bugsigdb_taxa.tsv`, limits them to the fixed
 focal NCBI Taxonomy IDs, deduplicates by taxon and study profile, joins the
 scored profile metadata, removes broad metadata-like condition labels, and
-counts increased target taxon-profile occurrences by condition.
+counts increased target taxon-profile occurrences by condition. Only
+occurrences in human-host profiles, the corpus of the profile metadata, are
+counted (#587).
 
 The x-axis unit is target taxon-profile occurrences. It is not unique studies,
 not unique experiments, and not a trait-enrichment z-score. A single profile can contribute
@@ -1075,9 +1084,12 @@ The largest condition labels after the broad-label filter are colorectal cancer
 (42 increased focal taxon-profile occurrences), aging (14), type II diabetes
 mellitus (10), COVID-19 (10), periodontitis (10), obesity (8), gastric cancer
 (8), mucositis (8), HIV infection (7), Parkinson's disease (7), and rheumatoid
-arthritis (7). Another 54 increased occurrences come from profiles that are not
-in the plotted profile metadata, so they have no condition label; the chart
-shows them as an `unknown` bar, the longest in the panel.
+arthritis (7). Another 54 increased occurrences (49 profiles) come from
+experiments whose host is not recorded as Homo sapiens, mostly mouse and rat. The
+human-host profile metadata has no condition for them, so the chart leaves them
+out and states their count in its footer; earlier versions showed them as an
+`unknown` bar. `aerobe-enrichment-v2/candidate_taxa_excluded_host_occurrences.tsv`
+lists them with their host species.
 
 Interpretation: colorectal cancer dominates the labelled conditions in the fixed
 target-taxon recurrence view, with both gut-associated and oral-associated focal
@@ -1220,10 +1232,11 @@ condition-label screen by itself.
 #### Slide 10: Top Conditions for Decreased Target-Taxon Occurrences
 
 `target_taxa_condition_breakdown_bar.png` is not a trait-enrichment figure. It uses
-the fixed focal anaerobe taxon list, loads occurrences from `data/derived/taxa.tsv`,
+the fixed focal anaerobe taxon list, loads occurrences from `data/derived/bugsigdb_taxa.tsv`,
 deduplicates by taxon and study profile, joins profile metadata, removes broad
 metadata-like condition labels, and counts decreased focal taxon-profile
-occurrences by condition.
+occurrences by condition. Only occurrences in human-host profiles, the corpus of
+the profile metadata, are counted (#587).
 
 The x-axis unit is target taxon-profile occurrences. A condition can have a
 large count because many focal taxa recur in the same condition, because the
@@ -1232,9 +1245,12 @@ condition has many profiles, or both.
 The largest labels are aging (59 decreased occurrences), Parkinson's disease
 (40), COVID-19 (36), colorectal cancer (27), inflammatory bowel disease (13),
 colorectal carcinoma (12), psoriasis vulgaris (12), tumor stage (8), obesity
-(8), and chronic constipation (7). Another 28 decreased occurrences come from
-profiles that are not in the plotted profile metadata and are shown as an
-`unknown` bar.
+(8), and chronic constipation (7). Another 28 decreased occurrences (25
+profiles) come from experiments whose host is not recorded as Homo sapiens, mostly mouse.
+The human-host profile metadata has no condition for them, so the chart leaves
+them out and states their count in its footer; earlier versions showed them as
+an `unknown` bar. `anaerobe-depletion-v2/candidate_taxa_excluded_host_occurrences.tsv`
+lists them with their host species.
 
 Interpretation: the fixed focal anaerobe taxa recur as decreased across several
 gut, metabolic, neuro, immune, and infection contexts. This panel is consistent
@@ -1846,7 +1862,7 @@ For each selected trait, the script calculated the mean z-score in all increased
 
 Guild-specificity: yes. Color encodes the aerobe v2 trait-enrichment score among increased profiles at each body-site group.
 
-Study profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean aerobe v2 trait z-score among increased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway, oral (including saliva and subgingival/dental), throat/pharynx (neck), colon, caecum, feces/stool, cervix/uterus (pelvis), and vagina/urogenital labels; a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. Unknown body site means the BugSigDB profile did not have a specific body-site label; these profiles are placed off-body, as is `Other` wherever a figure keeps it, and should not be interpreted as a physical anatomical location.
+Study profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean aerobe v2 trait z-score among increased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway/nasopharynx, mouth and oral cavity (side by side, #612), subgingival/dental plaque (below the jaw, beside the neck) and saliva (at the parotid gland beside the ear), both just outside the head circle, throat/pharynx (neck), lung/bronchus (base of the subject's left lung), stomach (subject's left upper abdomen), small intestine (mid abdomen), colon (subject's left), caecum (subject's right lower abdomen), rectum (low midline), feces/stool, cervix/uterus (pelvis), vagina/urogenital, and skin (subject's left forearm) labels (#620). A label that lists several sites is placed by its first-listed site (#714); a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. Unknown body site means the BugSigDB profile did not have a specific body-site label; these profiles are placed at the lower left beside the legs, and `Other`, wherever a figure keeps it, left of the subject's right arm. Neither should be interpreted as a physical anatomical location. Bubbles are sized in the outline's own units, so they keep the same proportion to the body in every figure that draws it. Labels run top to bottom in the order of `leader_order_key`, the height at which a 45-degree line from the anchor would meet the leader-line bend; with the fixed anchors, no leader crosses another or passes through a bubble for the current eight groups plus up to four of the next six (#711). Leader lines start at each bubble's edge and run above the other bubbles, and the colorbar sits right of the longest value label and count bar, so it covers neither (#612, #711).
 
 Oral-site increased-profile trait signals are biologically plausible because the oral cavity is oxygen-exposed and includes aerotolerant, facultatively aerobic, or microaerophilic taxa such as Streptococcus, Fusobacterium, Prevotella, Porphyromonas, and Veillonella. Those oral-site signals should be interpreted as body-site-specific microbial ecology, not as a gut aerobe v2 increased-profile trait-enrichment signal.
 
@@ -1862,7 +1878,7 @@ The edge TSV `condition_body_site_guild_map_edges.tsv` records the ranked condit
 
 Guild-specificity: no. This is a fixed target-taxon occurrence-count view; it is not recomputed from the v2 trait-enrichment score.
 
-Target-taxon occurrences were loaded from `data/derived/taxa.tsv`, limited to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study profile, and joined to the scored study profiles. This produces one row per focal taxon/profile occurrence with condition, body site, direction, and trait-enrichment metadata. The bar chart counts increased focal-taxon/profile occurrences by condition after removing the broad non-condition and metadata labels described above. A condition with multiple focal taxa can therefore contribute multiple occurrences; the chart is an occurrence breakdown, not a unique-study breakdown. It displays the top 20 explicit condition labels as horizontal bars, with bar labels showing occurrence counts.
+Target-taxon occurrences were loaded from `data/derived/bugsigdb_taxa.tsv`, limited to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study profile, and joined to the scored study profiles. Only occurrences whose profile is in the human-host profile metadata are kept: an occurrence outside it must come from an experiment whose host is not recorded as Homo sapiens in `data/raw/full_dump.csv`, read with the parser the corpus filter uses (#713). An experiment with no host is listed as "not recorded"; an occurrence of a Homo sapiens experiment, or of an experiment missing from the dump, stops the script with an error. The set-aside occurrences are listed with their host in `candidate_taxa_excluded_host_occurrences.tsv`, counted in the README, and their focus-direction count is stated in the footers of this chart and of `condition_target_taxa_stacked_bar.png` (#587). This produces one row per focal taxon/profile occurrence with condition, body site, direction, and trait-enrichment metadata. The bar chart counts increased focal-taxon/profile occurrences by condition after removing the broad non-condition and metadata labels described above. A condition with multiple focal taxa can therefore contribute multiple occurrences; the chart is an occurrence breakdown, not a unique-study breakdown. It displays the top 20 explicit condition labels as horizontal bars, with bar labels showing occurrence counts.
 
 #### `condition_target_taxa_stacked_bar.png`
 
@@ -1929,13 +1945,13 @@ Profiles were grouped by `body_site_group`, requiring at least 10 total profiles
 
 Guild-specificity: yes. This figure is the increased-profile companion to `anatomical_sites_diagram.png`; color encodes the anaerobe v2 trait-enrichment score among increased profiles at each body-site group.
 
-Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 trait z-score among increased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway, oral (including saliva and subgingival/dental), throat/pharynx (neck), colon, caecum, feces/stool, cervix/uterus (pelvis), and vagina/urogenital labels. `unknown` is placed off the body, as is `Other` wherever a figure keeps it; a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. The diagram legend also reports how many increased and decreased profiles have zero enriched anaerobe v2 traits.
+Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 trait z-score among increased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway/nasopharynx, mouth and oral cavity (side by side, #612), subgingival/dental plaque (below the jaw, beside the neck) and saliva (at the parotid gland beside the ear), both just outside the head circle, throat/pharynx (neck), lung/bronchus (base of the subject's left lung), stomach (subject's left upper abdomen), small intestine (mid abdomen), colon (subject's left), caecum (subject's right lower abdomen), rectum (low midline), feces/stool, cervix/uterus (pelvis), vagina/urogenital, and skin (subject's left forearm) labels (#620). A label that lists several sites is placed by its first-listed site (#714). `unknown` is placed at the lower left beside the legs and `Other`, wherever a figure keeps it, left of the subject's right arm; a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. Bubbles are sized in the outline's own units, labels follow `leader_order_key` so that no leader crosses another or a bubble (#711), leader lines start at each bubble's edge and run above the other bubbles, and the colorbar sits right of the longest value label and count bar (#612, #711). The footer also reports how many increased and decreased profiles have zero enriched anaerobe v2 traits.
 
 #### `anatomical_sites_diagram.png`
 
 Guild-specificity: yes. Color encodes the anaerobe v2 trait-enrichment score among decreased profiles at each body-site group.
 
-Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 trait z-score among decreased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway, oral (including saliva and subgingival/dental), throat/pharynx (neck), colon, caecum, feces/stool, cervix/uterus (pelvis), and vagina/urogenital labels. `unknown` is placed off the body, as is `Other` wherever a figure keeps it; a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. The diagram legend also reports how many increased and decreased profiles have zero enriched anaerobe v2 traits.
+Profiles were grouped by `body_site_group`, requiring at least 10 profiles per group. The display excludes the generic `Other` body-site group. Bubble and bar length encode the number of study profiles in the body-site group. Color encodes the mean anaerobe v2 trait z-score among decreased profiles at that body site. Body-site labels were placed on a simplified, neutral front-view body outline using the fixed anatomical coordinates in `src/mtp/body_site_diagram.py` for airway/nasopharynx, mouth and oral cavity (side by side, #612), subgingival/dental plaque (below the jaw, beside the neck) and saliva (at the parotid gland beside the ear), both just outside the head circle, throat/pharynx (neck), lung/bronchus (base of the subject's left lung), stomach (subject's left upper abdomen), small intestine (mid abdomen), colon (subject's left), caecum (subject's right lower abdomen), rectum (low midline), feces/stool, cervix/uterus (pelvis), vagina/urogenital, and skin (subject's left forearm) labels (#620). A label that lists several sites is placed by its first-listed site (#714). `unknown` is placed at the lower left beside the legs and `Other`, wherever a figure keeps it, left of the subject's right arm; a body-site group with no coordinate rule stops the script with an error instead of being placed arbitrarily. Bubbles are sized in the outline's own units, labels follow `leader_order_key` so that no leader crosses another or a bubble (#711), leader lines start at each bubble's edge and run above the other bubbles, and the colorbar sits right of the longest value label and count bar (#612, #711). The footer also reports how many increased and decreased profiles have zero enriched anaerobe v2 traits.
 
 #### `condition_body_site_guild_map.png`
 
@@ -1949,7 +1965,7 @@ The edge TSV `condition_body_site_guild_map_edges.tsv` records the ranked condit
 
 Guild-specificity: no. This is a fixed target-taxon occurrence-count view; it is not recomputed from the v2 trait-enrichment score.
 
-Target-taxon occurrences were loaded from `data/derived/taxa.tsv`, limited to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study profile, and joined to the scored study profiles. This produces one row per focal taxon/profile occurrence with condition, body site, direction, and trait-enrichment metadata. The bar chart counts decreased target-taxon/profile occurrences by condition after removing the broad non-condition and metadata labels described above. A condition with multiple focal taxa can therefore contribute multiple occurrences; the chart is an occurrence breakdown, not a unique-study breakdown. It displays the top 20 explicit condition labels as horizontal bars, with bar labels showing occurrence counts.
+Target-taxon occurrences were loaded from `data/derived/bugsigdb_taxa.tsv`, limited to the fixed focal NCBI Taxonomy IDs, deduplicated by taxon and study profile, and joined to the scored study profiles. Only occurrences whose profile is in the human-host profile metadata are kept: an occurrence outside it must come from an experiment whose host is not recorded as Homo sapiens in `data/raw/full_dump.csv`, read with the parser the corpus filter uses (#713). An experiment with no host is listed as "not recorded"; an occurrence of a Homo sapiens experiment, or of an experiment missing from the dump, stops the script with an error. The set-aside occurrences are listed with their host in `candidate_taxa_excluded_host_occurrences.tsv`, counted in the README, and their focus-direction count is stated in the footers of this chart and of `condition_target_taxa_stacked_bar.png` (#587). This produces one row per focal taxon/profile occurrence with condition, body site, direction, and trait-enrichment metadata. The bar chart counts decreased target-taxon/profile occurrences by condition after removing the broad non-condition and metadata labels described above. A condition with multiple focal taxa can therefore contribute multiple occurrences; the chart is an occurrence breakdown, not a unique-study breakdown. It displays the top 20 explicit condition labels as horizontal bars, with bar labels showing occurrence counts.
 
 #### `condition_target_taxa_stacked_bar.png`
 

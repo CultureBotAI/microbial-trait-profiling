@@ -1,10 +1,13 @@
 import importlib.util
+import math
+from itertools import combinations
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
+from matplotlib.patches import Circle
 
 from mtp.integrated_evidence import native_composition_records
 from mtp.paths import REPO_ROOT, file_sha256
@@ -468,6 +471,71 @@ def test_plot_top_traits_renders_with_study_level_stats() -> None:
         texts = [t.get_text() for t in ax.texts]
         assert any("[+0.14, +0.28]" in t for t in texts)
         assert any("[-0.22, -0.08]" in t for t in texts)
+    finally:
+        plt.close(fig)
+
+
+def test_body_site_panel_keeps_labels_and_bubbles_apart() -> None:
+    """Panel C at its size in the infographic: nothing overlaps (#612, #620)."""
+    summary = pd.DataFrame(
+        {
+            "body_site_group": [
+                "Throat",
+                "Uterine cervix",
+                "Feces",
+                "Subgingival dental plaque",
+                "Mouth",
+                "Saliva",
+                "Vagina",
+                "Oral cavity",
+                "Nasopharynx",
+            ],
+            "pair_count": [28, 35, 1460, 35, 34, 158, 48, 27, 25],
+            "absolute_contrast_load": [0.65, 0.62, 0.60, 0.58, 0.56, 0.55, 0.48, 0.44, 0.40],
+            "net_increased_minus_decreased": [
+                0.08,
+                0.04,
+                0.02,
+                0.10,
+                -0.13,
+                -0.07,
+                -0.04,
+                -0.18,
+                0.01,
+            ],
+        }
+    )
+    # Panel C is the bottom-left cell of create_infographic's grid.
+    fig = plt.figure(figsize=infographic.FIGURE_SIZE, dpi=infographic.FIGURE_DPI)
+    grid = fig.add_gridspec(2, 2, **infographic.PANEL_GRID)
+    ax = fig.add_subplot(grid[1, 0])
+    try:
+        infographic.plot_body_site_summary(ax, summary)
+        fig.canvas.draw()
+        boxes = [text.get_window_extent() for text in ax.texts]
+        assert len(boxes) == 2 * len(summary) + 1
+        touching_text = [
+            (ax.texts[a].get_text(), ax.texts[b].get_text())
+            for a, b in combinations(range(len(boxes)), 2)
+            if boxes[a].overlaps(boxes[b])
+        ]
+        assert touching_text == []
+        bubbles = [
+            patch for patch in ax.patches if isinstance(patch, Circle) and patch.get_zorder() == 4
+        ]
+        assert len(bubbles) == len(summary)
+        touching_bubbles = [
+            (a.center, b.center)
+            for a, b in combinations(bubbles, 2)
+            if math.dist(a.center, b.center) < a.radius + b.radius
+        ]
+        assert touching_bubbles == []
+        # Leader lines run above the bubbles, so a line crossing one stays visible (#712).
+        leaders = [line for line in ax.lines if line.get_zorder() > bubbles[0].get_zorder()]
+        assert len(leaders) == len(summary)
+        # Throat sits above Subgingival dental plaque under leader_order_key (#718).
+        label_y = {text.get_text(): text.get_position()[1] for text in ax.texts}
+        assert label_y["Throat"] > label_y["Subgingival dental plaque"]
     finally:
         plt.close(fig)
 
