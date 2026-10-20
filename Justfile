@@ -100,6 +100,17 @@ audit-ora-refresh manifest output:
 core-verify-consumer record:
 	uv run python -m mtp.workflow verify-consumer "{{record}}"
 
+# Retain original records and declared dependencies; --retain adds explicit supporting evidence.
+[positional-arguments]
+evidence-archive output *ARGS:
+	uv run python -m mtp.workflow archive --output "$1" "${@:2}"
+
+evidence-verify archive:
+	uv run python -m mtp.workflow verify-archive "{{archive}}"
+
+evidence-resolve archive original:
+	uv run python -m mtp.workflow archive-resolve "{{archive}}" "{{original}}"
+
 sync:
 	uv sync --all-extras --group dev --group qa
 

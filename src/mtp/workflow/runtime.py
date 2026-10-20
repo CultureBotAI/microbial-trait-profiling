@@ -22,6 +22,7 @@ from git import Repo
 from git.exc import GitError
 
 from mtp.workflow.definition import read_definition, safe_relative_path, unique, validate_definition
+from mtp.workflow.locations import LocationResolver, locate
 from mtp.workflow.models import (
     ArtifactInstance,
     ExecutionStatus,
@@ -265,23 +266,27 @@ def _make_artifact(
     )
 
 
-def artifact_path(run: WorkflowRun, product_id: str) -> Path:
+def artifact_path(
+    run: WorkflowRun, product_id: str, resolver: LocationResolver | None = None
+) -> Path:
     """Resolve exactly one recorded product binding, never guess legacy paths."""
     matches = [item for item in run.artifacts or [] if item.product_id == product_id]
     if len(matches) != 1:
         raise ValueError(f"Expected one artifact for {product_id}; found {len(matches)}")
     path = Path(matches[0].path)
-    return path if path.is_absolute() else Path(run.manifest_path).parent / path
+    return locate(path if path.is_absolute() else Path(run.manifest_path).parent / path, resolver)
 
 
-def _verify_artifact(run: WorkflowRun, artifact: ArtifactInstance) -> None:
+def _verify_artifact(
+    run: WorkflowRun, artifact: ArtifactInstance, resolver: LocationResolver | None = None
+) -> None:
     products = {item.id: item for item in run.definition.products}
     product = products[artifact.product_id]
-    path = artifact_path(run, product.id)
+    path = artifact_path(run, product.id, resolver)
     if (
         product.external
         and artifact.requested_path
-        and Path(artifact.requested_path).resolve(strict=True) != path
+        and locate(Path(artifact.requested_path), resolver).resolve(strict=True) != path
     ):
         raise ValueError(f"External binding target changed: {product.id}")
     if not product.external:
@@ -492,20 +497,30 @@ def execute_workflow(
         raise WorkflowExecutionError(run.error, run) from error
 
 
-def validate_run(run_path: str | Path, verify_inputs: bool = True) -> WorkflowRun:
+def validate_run(
+    run_path: str | Path,
+    verify_inputs: bool = True,
+    *,
+    resolver: LocationResolver | None = None,
+) -> WorkflowRun:
     """Require a complete, internally consistent run and verify artifact bytes.
 
     The embedded definition and recorded execution fingerprint are authoritative;
     current checkout code/spec files need not remain available to read an old run.
     This validates evidence consistency, not cryptographic authorship.
     """
-    manifest = Path(run_path).resolve()
+    manifest = locate(Path(run_path), resolver).resolve()
     run = WorkflowRun.model_validate_json(manifest.read_text(encoding="utf-8"))
     run.manifest_path = str(manifest)
-    return _validate_run_record(run, manifest, verify_inputs)
+    return _validate_run_record(run, manifest, verify_inputs, resolver)
 
 
-def _validate_run_record(run: WorkflowRun, manifest: Path, verify_inputs: bool) -> WorkflowRun:
+def _validate_run_record(
+    run: WorkflowRun,
+    manifest: Path,
+    verify_inputs: bool,
+    resolver: LocationResolver | None = None,
+) -> WorkflowRun:
     order = validate_definition(run.definition)
     if run.status != "completed" or run.finished_at is None:
         raise ValueError(f"Run is not completed: {run.status}")
@@ -590,7 +605,7 @@ def _validate_run_record(run: WorkflowRun, manifest: Path, verify_inputs: bool) 
             raise ValueError(f"Artifact lacks scientific validation: {product.id}")
         unique([item.path for item in artifact.inventory], "artifact inventory paths")
         if verify_inputs or not product.external:
-            _verify_artifact(run, artifact)
+            _verify_artifact(run, artifact, resolver)
     if _fingerprint(run) != run.execution_fingerprint:
         raise ValueError("Execution fingerprint mismatch")
     return run

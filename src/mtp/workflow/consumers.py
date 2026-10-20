@@ -23,6 +23,7 @@ from mtp.datamodel.workflow_pydantic import (
     WorkflowRun,
 )
 from mtp.paths import file_sha256
+from mtp.workflow.locations import LocationResolver, locate
 from mtp.workflow.runtime import artifact_path
 from mtp.workflow.verification import verify_core_run
 
@@ -41,10 +42,11 @@ class CoreBundle:
     run: WorkflowRun
     profile_product: ProfileKind
     cohort: str
+    resolver: LocationResolver | None = None
 
     def path(self, product_id: str) -> Path:
         """Resolve only an artifact declared by this execution."""
-        return artifact_path(self.run, product_id)
+        return artifact_path(self.run, product_id, self.resolver)
 
 
 def open_core_bundle(
@@ -279,13 +281,15 @@ def write_consumer_record(
     return path
 
 
-def verify_consumer_record(path: Path) -> ConsumerRecord:
+def verify_consumer_record(
+    path: Path, *, resolver: LocationResolver | None = None
+) -> ConsumerRecord:
     """Check a deck/figure input's entire recorded chain before accepting its outputs."""
-    record = ConsumerRecord.model_validate_json(path.read_text(encoding="utf-8"))
-    manifest = Path(record.run_manifest_path)
+    record = ConsumerRecord.model_validate_json(locate(path, resolver).read_text(encoding="utf-8"))
+    manifest = locate(Path(record.run_manifest_path), resolver)
     if file_sha256(manifest) != record.run_manifest_sha256:
         raise ValueError("Consumer's core manifest changed")
-    run = verify_core_run(manifest)
+    run = verify_core_run(manifest, resolver=resolver)
     if run.run_id != record.run_id:
         raise ValueError("Consumer references a different execution")
     artifacts = {artifact.id: artifact for artifact in run.artifacts or []}
@@ -327,7 +331,7 @@ def verify_consumer_record(path: Path) -> ConsumerRecord:
     if not record.outputs or len({item.path for item in record.outputs}) != len(record.outputs):
         raise ValueError("Consumer outputs must be a nonempty set of distinct files")
     for output in record.outputs:
-        actual = Path(output.path)
+        actual = locate(Path(output.path), resolver)
         if actual.stat().st_size != output.size_bytes or file_sha256(actual) != output.sha256:
             raise ValueError(f"Consumer output changed: {actual}")
     if record.coverage_path not in {output.path for output in record.outputs}:
@@ -336,8 +340,8 @@ def verify_consumer_record(path: Path) -> ConsumerRecord:
         "count_profiles" if profile.product_id == "count_profiles" else "ora_profiles"
     )
     facts = validate_consumer_coverage(
-        CoreBundle(manifest, run, profile_kind, record.cohort),
-        Path(record.coverage_path),
+        CoreBundle(manifest, run, profile_kind, record.cohort, resolver),
+        locate(Path(record.coverage_path), resolver),
         record.feature_policy,
     )
     if (

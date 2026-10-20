@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from mtp.paths import REPO_ROOT
+from mtp.workflow.archive import ArchiveResolver, create_archive, verify_archive
 from mtp.workflow.comparison import compare_legacy_bundle
 from mtp.workflow.consumers import import_legacy_provenance, verify_consumer_record
 from mtp.workflow.definition import read_definition
@@ -86,6 +87,16 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("manifest", type=Path)
     compare.add_argument("baseline_dir", type=Path)
     compare.add_argument("output", type=Path)
+    archive = sub.add_parser("archive", help="Retain immutable core and consumer evidence")
+    archive.add_argument("--output", type=Path, required=True)
+    archive.add_argument("--core-run", type=Path, action="append", default=[])
+    archive.add_argument("--consumer", type=Path, action="append", default=[])
+    archive.add_argument("--retain", type=Path, action="append", default=[])
+    archived = sub.add_parser("verify-archive", help="Verify retained bytes without original paths")
+    archived.add_argument("manifest", type=Path)
+    resolve = sub.add_parser("archive-resolve", help="Locate a declared retained input")
+    resolve.add_argument("manifest", type=Path)
+    resolve.add_argument("original", type=Path)
     return parser
 
 
@@ -183,6 +194,20 @@ def main(argv: list[str] | None = None) -> int:
         print(verify_consumer_record(args.record).id)
     elif args.command == "compare-legacy":
         print(compare_legacy_bundle(args.manifest, args.baseline_dir, args.output))
+    elif args.command == "archive":
+        print(
+            create_archive(
+                args.output,
+                core_manifests=args.core_run,
+                consumer_records=args.consumer,
+                retained_paths=args.retain,
+            )
+        )
+    elif args.command == "verify-archive":
+        record = verify_archive(args.manifest)
+        print(f"Verified {record.id}: retained bytes, core contracts and consumer chains")
+    elif args.command == "archive-resolve":
+        print(ArchiveResolver(args.manifest).resolve(args.original))
     return 0
 
 
