@@ -18,7 +18,12 @@ from mtp.download import (
 from mtp.paths import file_sha256
 
 
-def validate_source_identity(path: Path, context: Mapping[str, Path]) -> dict[str, object]:
+def validate_source_identity(
+    path: Path,
+    context: Mapping[str, Path],
+    *,
+    recorded_sources: Mapping[str, Path] | None = None,
+) -> dict[str, object]:
     """Check source identifiers, pin claims and snapshot header independently of labels."""
     source = SourceIdentity.model_validate_json(path.read_text(encoding="utf-8"))
     if set(source.consumed_files) != {"raw_dump", "kg_edges", "kg_nodes"}:
@@ -29,7 +34,7 @@ def validate_source_identity(path: Path, context: Mapping[str, Path]) -> dict[st
             record.product_id != name
             or record.sha256 != file_sha256(actual)
             or record.size_bytes != actual.stat().st_size
-            or record.path != str(actual.resolve())
+            or record.path != str(recorded_sources[name] if recorded_sources else actual.resolve())
         ):
             raise ValueError(f"Source identity does not match consumed file: {name}")
 
