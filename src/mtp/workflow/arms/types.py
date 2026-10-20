@@ -19,6 +19,7 @@ class ArmContext:
     replicates: int | None
     seed: int | None
     figures: bool
+    contrast_population: str = "all_paired"
 
 
 @dataclass(frozen=True)

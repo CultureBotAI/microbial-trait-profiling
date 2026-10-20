@@ -19,6 +19,7 @@ from mtp.datamodel.workflow_pydantic import (
     ArmCommandDefinition,
     ArmCommandExecution,
     ArmRun,
+    ContrastPopulation,
     ExecutionStatus,
     FileInventoryEntry,
     ParameterValue,
@@ -340,6 +341,7 @@ def execute_arm(
         replicates=replicates,
         seed=seed,
         figures=figures,
+        contrast_population=ContrastPopulation(bundle.run.contrast_population).value,
     )
     commands = planner(context)
     _validate_plan(commands, context)
@@ -357,6 +359,8 @@ def execute_arm(
         core_manifest_sha256=sha256_file(manifest),
         core_run_id=bundle.run.run_id,
         profile_product=profile,
+        contrast_population=bundle.run.contrast_population,
+        direction_basis=bundle.run.direction_basis,
         git_commit=commit,
         git_dirty=dirty,
         repository_path=str(repository),
@@ -474,6 +478,11 @@ def verify_arm(path: Path) -> ArmRun:
     core = verify_core_run(manifest)
     if core.run_id != record.core_run_id:
         raise ValueError("Core execution identity changed")
+    if (
+        core.contrast_population != record.contrast_population
+        or core.direction_basis != record.direction_basis
+    ):
+        raise ValueError("Arm contrast population or direction basis differs from its core")
     expected_profile = "ora_profiles" if record.arm == "ilyas" else "count_profiles"
     if record.profile_product != expected_profile:
         raise ValueError("Arm profile unit is incompatible")
@@ -492,6 +501,7 @@ def verify_arm(path: Path) -> ArmRun:
         replicates=None,
         seed=None,
         figures=True,
+        contrast_population=ContrastPopulation(record.contrast_population).value,
     )
     commands = [
         Command(

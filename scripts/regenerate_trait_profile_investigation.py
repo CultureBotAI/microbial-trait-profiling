@@ -12,6 +12,7 @@ import zipfile
 from pathlib import Path
 
 import defusedxml.ElementTree as ET
+import matplotlib as mpl
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INVESTIGATION_DIR = REPO_ROOT / "trait-visualization" / "trait-profile-investigation"
@@ -180,7 +181,7 @@ PPTX_TEXT_REPLACEMENTS = {
 
 
 def run_script(script_name: str, *args: str) -> None:
-    """Run one repo script with optional arguments using this interpreter."""
+    """Run one repo script with independent plotting defaults in this interpreter."""
     script = REPO_ROOT / "scripts" / script_name
     print(" ".join(["==>", str(script.relative_to(REPO_ROOT)), *args]))
     previous_cwd = Path.cwd()
@@ -188,7 +189,11 @@ def run_script(script_name: str, *args: str) -> None:
     try:
         os.chdir(REPO_ROOT)
         sys.argv = [str(script), *args]
-        runpy.run_path(str(script), run_name="__main__")
+        # Scripts may change DPI, fonts or other global plot settings (#723).
+        # Start each at defaults and restore the caller's state even on failure.
+        with mpl.rc_context():
+            mpl.rcdefaults()
+            runpy.run_path(str(script), run_name="__main__")
     finally:
         sys.argv = previous_argv
         os.chdir(previous_cwd)

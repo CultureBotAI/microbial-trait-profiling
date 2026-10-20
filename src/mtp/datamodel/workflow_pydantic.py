@@ -85,6 +85,42 @@ linkml_meta = LinkMLMeta({'default_prefix': 'mtpw',
      'source_file': 'schema/workflow.yaml',
      'title': 'Execution-checked microbial trait workflow'} )
 
+class ContrastPopulation(str, Enum):
+    """
+    Executed experiment selection policy, separate from downstream trait eligibility.
+    """
+    all_paired = "all_paired"
+    """
+    Preserve the unfiltered core; downstream analyses retain their human pairing rules.
+    """
+    disease_vs_healthy_tier1_2_subject_controls = "disease_vs_healthy_tier1_2_subject_controls"
+    """
+    Paired human disease contrasts with Tier 1 or Tier 2 subject controls.
+    """
+    case_vs_control_subject = "case_vs_control_subject"
+    """
+    Paired human disease contrasts with subject controls, including Tier 3.
+    """
+    disease_vs_healthy_oriented = "disease_vs_healthy_oriented"
+    """
+    All paired human contrasts classified as disease versus healthy, including non-subject comparisons.
+    """
+
+
+class DirectionBasis(str, Enum):
+    """
+    Meaning of increased and decreased in the consumed core products.
+    """
+    group_1_vs_group_0 = "group_1_vs_group_0"
+    """
+    Original BugSigDB Group 1 relative to Group 0.
+    """
+    disease_vs_comparison = "disease_vs_comparison"
+    """
+    Disease group relative to the selected comparison, after explicit reversal where required.
+    """
+
+
 class StorageKind(str, Enum):
     """
     Permitted storage kind values.
@@ -429,6 +465,9 @@ class WorkflowRun(ConfiguredBaseModel):
          'title': 'Workflow Run'})
 
     run_id: str = Field(default=..., title="Run id", description="""Unique execution-attempt identifier, distinct from the deterministic fingerprint.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArtifactInstance', 'WorkflowRun', 'ConsumerRecord']} })
+    contrast_population: Optional[ContrastPopulation] = Field(default=ContrastPopulation.all_paired, title="Contrast population", description="""Executed selection policy; historical records without this field retain the unfiltered policy.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun', 'ArmRun'], 'ifabsent': 'string(all_paired)'} })
+    direction_basis: Optional[DirectionBasis] = Field(default=DirectionBasis.group_1_vs_group_0, title="Direction basis", description="""Direction semantics of selected Study signatures and all products derived from them.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun', 'ArmRun'],
+         'ifabsent': 'string(group_1_vs_group_0)'} })
     definition: WorkflowDefinition = Field(default=..., title="Definition", description="""Embedded validated workflow definition used by this attempt.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun']} })
     status: ExecutionStatus = Field(default=..., title="Status", description="""Explicit lifecycle or validation outcome; only completed verified runs are consumable.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ValidationResult',
                        'StepExecution',
@@ -855,6 +894,9 @@ class ArmRun(ConfiguredBaseModel):
                        'ArmCommandExecution',
                        'ArmRun']} })
     arm: str = Field(default=..., title="Arm", description="""Owner of the declared standard analysis suite.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArmRun']} })
+    contrast_population: Optional[ContrastPopulation] = Field(default=ContrastPopulation.all_paired, title="Contrast population", description="""Selection inherited from the verified upstream core, never independently overridden.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun', 'ArmRun'], 'ifabsent': 'string(all_paired)'} })
+    direction_basis: Optional[DirectionBasis] = Field(default=DirectionBasis.group_1_vs_group_0, title="Direction basis", description="""Upstream direction semantics; disease-oriented inputs must not be reversed a second time.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun', 'ArmRun'],
+         'ifabsent': 'string(group_1_vs_group_0)'} })
     scope: str = Field(default=..., title="Scope", description="""Explicit scope; historical PD and presentation investigations are separate.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArmRun']} })
     status: ExecutionStatus = Field(default=..., title="Status", description="""Actual attempt status.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ValidationResult',
                        'StepExecution',

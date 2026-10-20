@@ -46,6 +46,7 @@ from mtp.workflow.coverage import (
 )
 from mtp.workflow.kg_inputs import audit_kg_edges, iter_kg_edges
 from mtp.workflow.models import ProductDefinition, ValidationResult, ValidationStatus
+from mtp.workflow.population import select_contrasts, validate_population
 from mtp.workflow.source_contracts import validate_export_sources, validate_study_sources
 from mtp.workflow.source_identity import validate_source_identity
 
@@ -65,6 +66,15 @@ class _ScientificSemantics:
 # These are implementation contracts, not a second workflow graph. A declarative
 # label cannot change the numerical meaning implemented by the native builders.
 _SCHEMA = "schema/core_products.yaml#"
+SOURCE_EXPORTS = (
+    "study_table",
+    "experiments",
+    "experiment_ontology_terms",
+    "signatures",
+    "reported_taxa",
+    "taxon_profiles_wide",
+    "taxon_profiles_long",
+)
 _CORE_SEMANTICS = {
     "raw_csv": _ScientificSemantics("literature_signature_record", "as_supplied"),
     "kg_edges": _ScientificSemantics("knowledge_graph_edge", "as_supplied"),
@@ -77,6 +87,14 @@ _CORE_SEMANTICS = {
         "all_hosts",
         coverage_policy="exact_current_ingest_collection",
         schema_ref="schema/mtp.yaml#Study",
+    ),
+    "contrast_study_collection": _ScientificSemantics(
+        "study",
+        coverage_policy="contrast_population_v1",
+        schema_ref="schema/mtp.yaml#Study",
+    ),
+    "contrast_selection": _ScientificSemantics(
+        "experiment_selection_decision", coverage_policy="contrast_population_v1"
     ),
     "ingest_log": _ScientificSemantics("ingest_event", "all_hosts"),
     "study_table": _ScientificSemantics("study", "all_hosts", schema_ref=_SCHEMA + "StudyTableRow"),
@@ -253,6 +271,43 @@ def export_tables_operation(
     generate_tables(inputs["studies"], outputs["study_table"].parent, output_paths=paths)
 
 
+def ingest_source_operation(
+    inputs: dict[str, Path], outputs: dict[str, Path], parameters: dict[str, object]
+) -> None:
+    """Retain the complete native ingest before the explicit selection step."""
+    ingest_operation(
+        inputs,
+        {"studies": outputs["source_studies"], "ingest_log": outputs["ingest_log"]},
+        parameters,
+    )
+
+
+def export_source_tables_operation(
+    inputs: dict[str, Path], outputs: dict[str, Path], parameters: dict[str, object]
+) -> None:
+    """Keep full-source exports for provenance and the fixed ORA background."""
+    export_tables_operation(
+        {"studies": inputs["source_studies"]},
+        {name: outputs[f"source_{name}"] for name in SOURCE_EXPORTS},
+        parameters,
+    )
+
+
+def source_taxa_matrix_operation(
+    inputs: dict[str, Path], outputs: dict[str, Path], parameters: dict[str, object]
+) -> None:
+    """Build the same full-source taxon matrix regardless of contrast selection."""
+    taxa_matrix_operation(
+        {
+            "reported_taxa": inputs["source_reported_taxa"],
+            "kg_edges": inputs["kg_edges"],
+            "kg_nodes": inputs["kg_nodes"],
+        },
+        outputs,
+        parameters,
+    )
+
+
 def taxa_matrix_operation(
     inputs: dict[str, Path], outputs: dict[str, Path], parameters: dict[str, object]
 ) -> None:
@@ -324,6 +379,10 @@ OPERATIONS: dict[str, Operation] = {
     "feature_catalog": feature_catalog_operation,
     "count_profiles": count_profiles_operation,
     "ora_profiles": ora_profiles_operation,
+    "ingest_source": ingest_source_operation,
+    "export_source_tables": export_source_tables_operation,
+    "source_taxa_matrix": source_taxa_matrix_operation,
+    "select_contrasts": select_contrasts,
 }
 
 
@@ -358,6 +417,14 @@ def validate_core_product(
 
     _validate_semantic_descriptor(product)
     kind = product.kind
+    if product.id in {f"source_{name}" for name in SOURCE_EXPORTS}:
+        context = {
+            **context,
+            "studies": context["source_studies"],
+            **{name: context[f"source_{name}"] for name in SOURCE_EXPORTS},
+        }
+    elif kind == "taxa_matrix" and "source_reported_taxa" in context:
+        context = {**context, "reported_taxa": context["source_reported_taxa"]}
     details: dict[str, object]
     if kind == "raw_csv":
         details = {"rows": _validate_delimited(path, RAW_COLUMNS, raw_csv=True)}
@@ -374,6 +441,14 @@ def validate_core_product(
         if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
             raise ValueError("Ingest log must be a list of event mappings")
         details = {"events": len(value)}
+    elif kind in {"contrast_study_collection", "contrast_selection"}:
+        details = validate_population(
+            context["studies"],
+            context["contrast_selection"],
+            context["source_studies"],
+            context["raw_dump"],
+            product.cohort or "",
+        )
     else:
         details = validate_product(path, kind, context=context, cohort=product.cohort)
         if kind == "study_table":

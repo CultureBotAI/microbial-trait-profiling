@@ -68,6 +68,29 @@ def build_commands(context: ArmContext) -> list[Command]:
     native_commit_args: tuple[str, ...] = ("--code-commit", native_commit)
     if native_commit != context.code_commit:
         native_commit_args += ("--code-dirty",)
+    orientation_module = "mtp.contrast_orientation"
+    orientation_extra_args: tuple[str, ...] = ()
+    orientation_extra_inputs: tuple[Path, ...] = ()
+    if context.contrast_population != "all_paired":
+        orientation_module = "mtp.workflow.orientation_assessment"
+        orientation_extra_inputs = (
+            context.manifest,
+            products["contrast_selection"],
+            products["studies"],
+            products["source_studies"],
+        )
+        orientation_extra_args = (
+            "--core-run",
+            str(context.manifest),
+            "--population",
+            context.contrast_population,
+            "--selection-input",
+            str(products["contrast_selection"]),
+            "--studies-input",
+            str(products["studies"]),
+            "--source-studies-input",
+            str(products["source_studies"]),
+        )
 
     commands = [
         command(
@@ -147,16 +170,17 @@ def build_commands(context: ArmContext) -> list[Command]:
         ),
         command(
             "contrast_orientation",
-            "mtp.contrast_orientation",
+            orientation_module,
             (
                 *data_args,
+                *orientation_extra_args,
                 "--output-dir",
                 str(orientation),
                 "--review-input",
                 str(methods / "contrast_orientation_review.tsv"),
                 *commit_args,
             ),
-            (*data_inputs, methods / "contrast_orientation_review.tsv"),
+            (*data_inputs, *orientation_extra_inputs, methods / "contrast_orientation_review.tsv"),
             (
                 orientation,
                 orientation / "contrast_manifest.tsv",

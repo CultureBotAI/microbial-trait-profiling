@@ -55,6 +55,11 @@ workflow-check spec="workflows/bugsigdb_core.yaml":
 
 workflow-describe:
 	uv run python -m mtp.workflow describe workflows/bugsigdb_core.yaml > docs/workflow-products.md
+	uv run python -m mtp.workflow describe workflows/bugsigdb_core_subset.yaml > docs/workflow-subset-products.md
+
+workflow-subset-check:
+	uv run python -m mtp.workflow check workflows/bugsigdb_core_subset.yaml
+	uv run linkml validate -s schema/workflow.yaml -C WorkflowDefinition workflows/bugsigdb_core_subset.yaml
 
 # Explicit bindings, e.g. --input raw_dump=/path/full_dump.csv --output-root /path/runs.
 [positional-arguments]
@@ -122,10 +127,8 @@ evidence-resolve archive original:
 
 # Build one shared raw-to-core execution before rerunning any owner analysis.
 [positional-arguments]
-rerun-core output raw edges nodes source_mode="pinned":
-	uv run python -m mtp.workflow run workflows/bugsigdb_core.yaml --output-root "$1" \
-	  --input "raw_dump=$2" --input "kg_edges=$3" --input "kg_nodes=$4" \
-	  --parameter "source_mode=$5"
+rerun-core output raw edges nodes *ARGS:
+	uv run python -m mtp.workflow prepare-core "$@"
 
 # Standard ORA, depletion, rankings, strata, calibration and optional figures.
 [positional-arguments]
@@ -788,7 +791,7 @@ check-agent-docs:
 	uv run python scripts/sync_agent_docs.py
 	git diff --exit-code .github/copilot-instructions.md
 
-check: check-generated check-agent-docs lint typecheck test check-schema workflow-check security
+check: check-generated check-agent-docs lint typecheck test check-schema workflow-check workflow-subset-check security
 
 # --- pipeline steps (timed, logged) ---
 

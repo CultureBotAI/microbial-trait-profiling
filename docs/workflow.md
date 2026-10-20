@@ -214,8 +214,8 @@ and stops later stages; a failed attempt cannot pass `rerun-verify`. Outputs go
 to the selected fresh directory, with verified core files copied into `inputs/`.
 The source bundle and existing analysis outputs are preserved.
 
-Count profiles retain all hosts in the core. Legacy commands whose numerical
-algorithms assume human-only input receive an execution-recorded human subset
+With the default population, count profiles retain all hosts in the core. Legacy
+commands whose numerical algorithms assume human-only input receive an execution-recorded human subset
 derived from `experiments.tsv`; no pairing, zero-count, or feature filtering is
 added by that subset step. ORA uses the distinct human ORA count product. Native
 consumers retain their own documented cohort and eligibility filters.
@@ -228,6 +228,84 @@ not an operating-system audit of every file read or evidence that an annotation
 is biologically true. Noel's integrated-evidence output retains its existing
 explicit placeholders for unavailable native cross-arm results; running that
 command does not imply that it imported Ilyas's or Jed's separate result tables.
+
+### Contrast populations and disease-oriented inputs
+
+Select a population once when preparing the core. Use fresh destinations for the
+core and every arm; the canonical checkout tables are not overwritten:
+
+```bash
+just rerun-core /tmp/disease-core \
+  /absolute/path/full_dump.csv \
+  /absolute/path/merged-kg_edges.tsv \
+  /absolute/path/merged-kg_nodes.tsv \
+  --contrast-population disease_vs_healthy_tier1_2_subject_controls
+
+# Substitute the run.json printed by rerun-core:
+just rerun-jed /tmp/disease-core/run-ID/run.json /tmp/disease-jed
+just rerun-noel /tmp/disease-core/run-ID/run.json /tmp/disease-noel
+just rerun-ilyas /tmp/disease-core/run-ID/run.json /tmp/disease-ilyas
+just rerun-verify /tmp/disease-jed/arm_run.json
+just rerun-verify /tmp/disease-noel/arm_run.json
+just rerun-verify /tmp/disease-ilyas/arm_run.json
+```
+
+`just core-run --contrast-population ...` exposes the same selection through the
+general workflow CLI. The optional positional source mode still works before the
+flag, for example `fixture --contrast-population ...`; omitting it keeps the
+verified pinned-source requirement.
+
+| Population | Selection and direction |
+| --- | --- |
+| `all_paired` (default) | Preserve the existing unfiltered core and original Group 1 versus Group 0 directions. Human pairing and other eligibility remain downstream rules. The name does not assert that every ingested record is human or paired. |
+| `disease_vs_healthy_tier1_2_subject_controls` | Paired human disease-versus-healthy classifications with subject controls and Tier 1 healthy/normal or Tier 2 condition-negative/screened comparisons. |
+| `case_vs_control_subject` | Paired human disease-versus-healthy classifications with subject controls, including Tier 3 hospital/comorbid controls. |
+| `disease_vs_healthy_oriented` | All paired human disease-versus-healthy classifications, including paired-tissue and within-disease comorbidity comparisons. |
+
+The three non-default selections require both ingested signature directions.
+They do not impose trait-total eligibility, a strong-evidence-only filter or a
+treated-disease flag exclusion. Later analysis filters can reduce support further.
+Tier 2 condition-negative and Tier 3 subject controls are not claims of general
+health; the broad population is not a pure disease-versus-normal subject cohort.
+Counts are measured from execution, never fixed at a historical 959-study total.
+
+The tracked [subset graph](../workflows/bugsigdb_core_subset.yaml) retains the
+original ingested `source_studies` and complete source exports, then publishes an
+exact selected Study collection plus `contrast_selection.json`. The selector uses
+the classifier's `read_experiment_records` and `classify` APIs (there is no
+`classify_corpus` API at this revision), and applies `oriented_profiles` to the
+selected direction identities. Reversed experiments swap increased/decreased
+once. Original group names, definitions, sample sizes, signature IDs and repeated
+taxon occurrences remain intact.
+
+Canonical experiment, signature, reported-taxon, count-profile, ORA-profile and
+coverage products all derive from that same selected collection. Their direction
+is disease relative to the selected comparison. The trait matrix and feature
+catalog still derive from the **full source population**, preserving the ORA
+background and vocabulary. Subset statistics are recomputed; they are not a
+post-filter of the historical discoveries.
+
+The core manifest's LinkML class is `WorkflowRun`. Both it and `ArmRun` record
+`contrast_population` and `direction_basis`; verification checks these against
+the executed parameter, selection stage and upstream core. The selection audit
+records inclusion/exclusion decisions, reversed IDs, source and output inventories,
+raw-input fingerprint and classifier version/source fingerprint. Its validator
+reconstructs the permitted projection and rejects missing, added or altered
+records, taxa, metadata, directions and audit values.
+
+Noel's non-default workflow route uses an assessment adapter that requires a
+verified core manifest and consumes its already oriented profiles directly.
+It retains original raw classifications in its manifest and binds the exact
+profile, experiment, raw-input and selection products from that core;
+it does not reverse those profiles again. Hand-review counts are limited to
+reviewed experiments inside the analysed population. This is classification
+evidence, not physiological validation.
+
+Run from the intended classifier revision. Selection does not repair classifier
+rules, and verification uses the recorded classifier contract against the executing
+implementation. After classifier changes, regenerate the subset core rather than
+relabel an older manifest. Track 2 owns those rule changes and the final production
+subset rerun.
 
 The native trait screen, paired composition analysis, guild and Table 1 trait plots,
 validation-evidence inventory, and ORA command accept `--core-run /absolute/path/run.json`. They obtain input paths

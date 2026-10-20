@@ -25,6 +25,8 @@ from mtp.workflow.definition import read_definition, safe_relative_path, unique,
 from mtp.workflow.locations import LocationResolver, locate
 from mtp.workflow.models import (
     ArtifactInstance,
+    ContrastPopulation,
+    DirectionBasis,
     ExecutionStatus,
     FileInventoryEntry,
     ParameterValue,
@@ -158,6 +160,113 @@ def _effective_product(
             raise ValueError(f"Missing cohort parameter for {product.id}")
         value["cohort"] = parameters[product.cohort_parameter]
     return ProductDefinition.model_validate(value)
+
+
+def _require_full_source_background(definition: WorkflowDefinition) -> None:
+    """Keep non-default selection policies tied to the full raw-source ORA universe."""
+    from mtp.workflow.operations import SOURCE_EXPORTS
+
+    products = {product.id: product for product in definition.products}
+    producers = {output: step for step in definition.steps for output in step.outputs}
+    external = {"raw_dump", "kg_edges", "kg_nodes"}
+    kinds = {
+        "raw_dump": "raw_csv",
+        "kg_edges": "kg_edges",
+        "kg_nodes": "kg_nodes",
+        "source_identity": "source_identity",
+        "source_studies": "study_collection",
+        "ingest_log": "ingest_log",
+        "source_study_table": "study_table",
+        "source_experiments": "experiment_table",
+        "source_experiment_ontology_terms": "ontology_term_table",
+        "source_signatures": "signature_table",
+        "source_reported_taxa": "reported_taxa",
+        "source_taxon_profiles_wide": "taxon_profile_wide",
+        "source_taxon_profiles_long": "taxon_profile_long",
+        "taxa_matrix": "taxa_matrix",
+        "feature_metadata": "feature_metadata",
+        "feature_catalog": "feature_catalog",
+    }
+    diagnostic = "Non-default contrast population requires the full-source background contract"
+    for name, kind in kinds.items():
+        product = products.get(name)
+        if product is None or product.kind != kind or bool(product.external) != (name in external):
+            raise ValueError(f"{diagnostic}: invalid or missing {name}")
+
+    # Match native operation bindings, not step IDs or filenames. Alternative
+    # graph layouts may preserve the contract, but selected taxa cannot replace
+    # the full-source exports that define M, K and the retained feature universe.
+    contracts: tuple[tuple[str, str, set[str], set[str], set[str]], ...] = (
+        (
+            "source_identity",
+            "identify_sources",
+            external,
+            {"source_identity"},
+            {"source_mode"},
+        ),
+        (
+            "source_studies",
+            "ingest_source",
+            {"raw_dump"},
+            {"source_studies", "ingest_log"},
+            set(),
+        ),
+        (
+            "source_reported_taxa",
+            "export_source_tables",
+            {"source_studies"},
+            {f"source_{name}" for name in SOURCE_EXPORTS},
+            set(),
+        ),
+        (
+            "taxa_matrix",
+            "source_taxa_matrix",
+            {"source_reported_taxa", "kg_edges", "kg_nodes"},
+            {"taxa_matrix", "feature_metadata"},
+            set(),
+        ),
+        (
+            "feature_catalog",
+            "feature_catalog",
+            {"feature_metadata", "taxa_matrix"},
+            {"feature_catalog"},
+            set(),
+        ),
+    )
+    for name, operation, inputs, outputs, parameters in contracts:
+        producer = producers.get(name)
+        if (
+            producer is None
+            or producer.operation != operation
+            or set(producer.inputs) != inputs
+            or set(producer.outputs) != outputs
+            or set(producer.parameters or []) != parameters
+        ):
+            raise ValueError(f"{diagnostic}: invalid producer bindings for {name}")
+
+
+def _population_policy(
+    definition: WorkflowDefinition, parameters: Mapping[str, str]
+) -> tuple[ContrastPopulation, DirectionBasis]:
+    """Require an executable selection contract for any non-default population."""
+    population = ContrastPopulation(parameters.get("contrast_population", "all_paired"))
+    if population == ContrastPopulation.all_paired:
+        return population, DirectionBasis.group_1_vs_group_0
+    selections = [step for step in definition.steps if step.operation == "select_contrasts"]
+    products = {product.id: product for product in definition.products}
+    if (
+        len(selections) != 1
+        or set(selections[0].inputs) != {"source_studies", "raw_dump"}
+        or set(selections[0].outputs) != {"studies", "contrast_selection"}
+        or set(selections[0].parameters or []) != {"contrast_population"}
+        or products["studies"].kind != "contrast_study_collection"
+        or products["studies"].cohort_parameter != "contrast_population"
+        or products["contrast_selection"].kind != "contrast_selection"
+        or products["contrast_selection"].cohort_parameter != "contrast_population"
+    ):
+        raise ValueError("Non-default contrast population requires the subset selection contract")
+    _require_full_source_background(definition)
+    return population, DirectionBasis.disease_vs_comparison
 
 
 def _code_identity(
@@ -331,6 +440,7 @@ def execute_workflow(
     registry = {name: operation_registry[name] for name in sorted(operations)}
     parameters = _resolve_parameters(definition, parameter_overrides or {})
     resolved = {item.name: item.value for item in parameters}
+    population, direction_basis = _population_policy(definition, resolved)
     root = (repository_root or Path(__file__).resolve().parents[3]).resolve()
     code_hash, code_entries = _code_identity(root, registry)
     lock_hash = sha256_file(root / "uv.lock")
@@ -342,6 +452,8 @@ def execute_workflow(
     (run_dir / "steps").mkdir()
     run = WorkflowRun(
         run_id=run_id,
+        contrast_population=population,
+        direction_basis=direction_basis,
         definition=definition,
         status=ExecutionStatus.running,
         started_at=datetime.now(UTC),
@@ -533,6 +645,9 @@ def _validate_run_record(
     unique([item.path for item in run.code_inventory], "code inventory paths")
     unique([item.name for item in run.parameters or []], "resolved parameter names")
     parameters = {item.name: item.value for item in run.parameters or []}
+    population, direction_basis = _population_policy(run.definition, parameters)
+    if run.contrast_population != population or run.direction_basis != direction_basis:
+        raise ValueError("Recorded contrast population or direction basis differs from execution")
     parameter_defs = {item.name: item for item in run.definition.parameters or []}
     if set(parameters) - set(parameter_defs):
         raise ValueError("Undeclared resolved parameter")

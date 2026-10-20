@@ -14,6 +14,26 @@ prefixes:
 imports:
   - linkml:types
 enums:
+  ContrastPopulation:
+    title: Contrast Population
+    description: Executed experiment selection policy, separate from downstream trait eligibility.
+    permissible_values:
+      all_paired:
+        description: Preserve the unfiltered core; downstream analyses retain their human pairing rules.
+      disease_vs_healthy_tier1_2_subject_controls:
+        description: Paired human disease contrasts with Tier 1 or Tier 2 subject controls.
+      case_vs_control_subject:
+        description: Paired human disease contrasts with subject controls, including Tier 3.
+      disease_vs_healthy_oriented:
+        description: All paired human contrasts classified as disease versus healthy, including non-subject comparisons.
+  DirectionBasis:
+    title: Direction Basis
+    description: Meaning of increased and decreased in the consumed core products.
+    permissible_values:
+      group_1_vs_group_0:
+        description: Original BugSigDB Group 1 relative to Group 0.
+      disease_vs_comparison:
+        description: Disease group relative to the selected comparison, after explicit reversal where required.
   StorageKind:
     permissible_values:
       file: null
@@ -370,6 +390,16 @@ classes:
         required: true
         title: Run id
         description: Unique execution-attempt identifier, distinct from the deterministic fingerprint.
+      contrast_population:
+        range: ContrastPopulation
+        ifabsent: string(all_paired)
+        title: Contrast population
+        description: Executed selection policy; historical records without this field retain the unfiltered policy.
+      direction_basis:
+        range: DirectionBasis
+        ifabsent: string(group_1_vs_group_0)
+        title: Direction basis
+        description: Direction semantics of selected Study signatures and all products derived from them.
       definition:
         range: WorkflowDefinition
         inlined: true
@@ -764,6 +794,16 @@ classes:
         pattern: ^(ilyas|noel|jed)$
         title: Arm
         description: Owner of the declared standard analysis suite.
+      contrast_population:
+        range: ContrastPopulation
+        ifabsent: string(all_paired)
+        title: Contrast population
+        description: Selection inherited from the verified upstream core, never independently overridden.
+      direction_basis:
+        range: DirectionBasis
+        ifabsent: string(group_1_vs_group_0)
+        title: Direction basis
+        description: Upstream direction semantics; disease-oriented inputs must not be reversed a second time.
       scope:
         required: true
         pattern: ^standard_analysis_calibration_and_optional_figures$

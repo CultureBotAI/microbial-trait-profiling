@@ -11,11 +11,13 @@ from mtp.workflow.archive import ArchiveResolver, create_archive, verify_archive
 from mtp.workflow.comparison import compare_legacy_bundle
 from mtp.workflow.consumers import import_legacy_provenance, verify_consumer_record
 from mtp.workflow.definition import read_definition
+from mtp.workflow.models import ContrastPopulation
 from mtp.workflow.operations import OPERATIONS, trace_profile_feature, validate_core_product
 from mtp.workflow.runtime import artifact_path, execute_workflow
 from mtp.workflow.verification import verify_core_run
 
 DEFAULT_SPEC = REPO_ROOT / "workflows" / "bugsigdb_core.yaml"
+SUBSET_SPEC = REPO_ROOT / "workflows" / "bugsigdb_core_subset.yaml"
 
 
 def _bindings(values: list[str]) -> dict[str, str]:
@@ -65,8 +67,25 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--input", action="append", default=[], metavar="PRODUCT=PATH")
     run.add_argument("--parameter", action="append", default=[], metavar="NAME=VALUE")
     run.add_argument("--output-root", type=Path, required=True)
+    run.add_argument("--contrast-population", choices=[item.value for item in ContrastPopulation])
+    prepare = sub.add_parser("prepare-core", help="Prepare the shared verified owner-rerun core")
+    prepare.add_argument("output_root", type=Path)
+    prepare.add_argument("raw", type=Path)
+    prepare.add_argument("edges", type=Path)
+    prepare.add_argument("nodes", type=Path)
+    prepare.add_argument(
+        "source_mode", nargs="?", default="pinned", choices=["pinned", "fixture", "live", "unknown"]
+    )
+    prepare.add_argument(
+        "--contrast-population",
+        choices=[item.value for item in ContrastPopulation],
+        default="all_paired",
+    )
     fixture = sub.add_parser("fixture", help="Run the small offline fixture from raw inputs")
     fixture.add_argument("--output-root", type=Path, required=True)
+    fixture.add_argument(
+        "--contrast-population", choices=[item.value for item in ContrastPopulation]
+    )
     validate = sub.add_parser("validate", help="Recheck execution records and actual artifacts")
     validate.add_argument("manifest", type=Path)
     lineage = sub.add_parser("lineage", help="Trace a product, optionally a profile/trait cell")
@@ -111,18 +130,38 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Validated {spec.id}: {len(spec.steps)} steps, {len(spec.products)} products")
     elif args.command == "describe":
         print(describe(args.spec), end="")
-    elif args.command in {"run", "fixture"}:
+    elif args.command in {"run", "fixture", "prepare-core"}:
         if args.command == "fixture":
             source = REPO_ROOT / "tests" / "fixtures" / "workflow"
             inputs = {
-                "raw_dump": source / "full_dump.csv",
+                "raw_dump": source
+                / (
+                    "contrast_population.csv"
+                    if args.contrast_population not in {None, "all_paired"}
+                    else "full_dump.csv"
+                ),
                 "kg_edges": source / "merged-kg_edges.tsv",
                 "kg_nodes": source / "merged-kg_nodes.tsv",
             }
             spec_path, parameters = DEFAULT_SPEC, {"source_mode": "fixture"}
+        elif args.command == "prepare-core":
+            inputs = {"raw_dump": args.raw, "kg_edges": args.edges, "kg_nodes": args.nodes}
+            spec_path, parameters = DEFAULT_SPEC, {"source_mode": args.source_mode}
         else:
             inputs = {key: Path(value) for key, value in _bindings(args.input).items()}
             spec_path, parameters = args.spec, _bindings(args.parameter)
+        if args.contrast_population is not None:
+            prior = parameters.get("contrast_population")
+            if prior is not None and prior != args.contrast_population:
+                parser.error("--contrast-population conflicts with --parameter contrast_population")
+            parameters["contrast_population"] = args.contrast_population
+        population = parameters.get("contrast_population", "all_paired")
+        if population != "all_paired" and spec_path.resolve() == DEFAULT_SPEC.resolve():
+            spec_path = SUBSET_SPEC
+        elif spec_path.resolve() == DEFAULT_SPEC.resolve():
+            # The original graph has no selection step. Its explicit manifest
+            # policy is identity; preserve its historical parameter contract.
+            parameters.pop("contrast_population", None)
         run = execute_workflow(
             spec_path,
             inputs,
