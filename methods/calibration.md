@@ -354,3 +354,12 @@ corpus for deterministic flip assignment generation, the seed 182, 1,400
 replicates per null, 400 per injected scenario and the acceptance criteria.
 The protocol amendment records what was already observed. Historical outputs
 remain historical; a fresh full-budget execution is required for a v3 finding.
+
+That execution completed from clean revision
+`58b2ce841a88725603624007ca43d12c4a541c9d` with all declared replicates.
+The [follow-up review](../docs/reviews/2026-10-19-ora-refresh-follow-up-review.md)
+records its exact family-error bounds, retained historical comparison and
+integration checks. The three directional procedures meet their
+declared criteria; the screened negative control remains failed. Passing the
+power-reporting criterion does not imply sufficient power for small signals,
+and these results do not calibrate the native ORA or composition methods.
