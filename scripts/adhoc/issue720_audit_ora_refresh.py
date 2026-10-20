@@ -11,15 +11,20 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 from collections.abc import Iterator
 from dataclasses import asdict, dataclass
 from itertools import chain
 from pathlib import Path
 
 from mtp.enrichment_results import (
+    COUNT_COLUMNS,
+    FLOAT_COLUMNS,
+    ID_COLUMNS,
     META_RESULT_STATUS,
     META_SIGNIFICANT_HITS,
     META_TESTS_PERFORMED,
+    PROBABILITY_COLUMNS,
     RESULT_COLUMNS,
     classify_result_status,
 )
@@ -27,6 +32,130 @@ from mtp.paths import file_sha256
 
 FINGERPRINTS = {"Profiles-SHA256": "profiles", "Taxa-Matrix-SHA256": "taxa_matrix"}
 PAIR_FIELDS = {"label", "historical", "current", "profiles", "taxa_matrix"}
+BACKGROUND_COLUMNS = ("background_m", "background_k")
+COMPLETE_COLUMNS = {
+    *RESULT_COLUMNS,
+    *BACKGROUND_COLUMNS,
+    "is_significant",
+    "correction_family",
+    "eligibility_status",
+}
+
+
+def number(
+    value: str,
+    field: str,
+    *,
+    integer: bool = False,
+    probability: bool = False,
+    positive_infinity: bool = False,
+) -> float:
+    """Apply the shared numeric domains without materializing an ORA table (#724)."""
+    try:
+        parsed = float(value)
+    except ValueError as exc:
+        raise ValueError(f"invalid {field}: {value!r}") from exc
+    if (
+        (not math.isfinite(parsed) and not (positive_infinity and parsed == math.inf))
+        or parsed < 0
+        or (integer and not parsed.is_integer())
+        or (probability and parsed > 1)
+    ):
+        raise ValueError(f"invalid {field}: {value!r}")
+    return parsed
+
+
+@dataclass(frozen=True)
+class RowContract:
+    """Validate each complete row against the producer's declared analysis settings."""
+
+    indices: dict[str, int]
+    upper_tail: bool
+    fdr: bool
+    family: str
+    threshold: float
+    fold_cutoff: float
+    background_m: float
+    testable_profiles: float
+
+    def selected(self, row: list[str]) -> bool:
+        indices = self.indices
+        for column in ID_COLUMNS:
+            if not row[indices[column]].strip():
+                raise ValueError(f"empty {column}")
+        if row[indices["inc_dec"]] not in {"inc", "dec"}:
+            raise ValueError("invalid inc_dec")
+        values = {}
+        for column in PROBABILITY_COLUMNS + FLOAT_COLUMNS + COUNT_COLUMNS + BACKGROUND_COLUMNS:
+            values[column] = number(
+                row[indices[column]],
+                column,
+                integer=column in COUNT_COLUMNS + BACKGROUND_COLUMNS,
+                probability=column in PROBABILITY_COLUMNS,
+            )
+        if (
+            values["background_m"] != self.background_m
+            or values["testable_profiles"] != self.testable_profiles
+        ):
+            raise ValueError("row background_m or testable_profiles differs from metadata")
+        if not 0 < values["background_k"] <= values["background_m"]:
+            raise ValueError("background_k must be positive and not exceed background_m")
+        if values["count"] > values["background_k"]:
+            raise ValueError("count exceeds background_k")
+        if values["expected"] <= 0 or values["testable_profiles"] <= 0:
+            raise ValueError("testable rows require positive expected and testable_profiles")
+        if row[indices["eligibility_status"]] != "testable":
+            raise ValueError("invalid eligibility_status")
+        if row[indices["correction_family"]] != self.family:
+            raise ValueError("correction_family differs from FDR-Scope")
+        if not self.fdr and values["fdr_q"] != values["p_value"]:
+            raise ValueError("fdr_q differs from p_value with FDR disabled")
+        selected = row[indices["is_significant"]]
+        if selected not in {"True", "False"}:
+            raise ValueError("invalid is_significant")
+        statistic = values["fdr_q" if self.fdr else "p_value"]
+        fold_passes = (
+            values["fold"] >= self.fold_cutoff
+            if self.upper_tail
+            else values["fold"] <= self.fold_cutoff
+        )
+        if (selected == "True") != (statistic <= self.threshold and fold_passes):
+            raise ValueError("is_significant disagrees with declared thresholds")
+        return selected == "True"
+
+
+def row_contract(header: list[str], metadata: dict[str, str]) -> RowContract:
+    """Read settings once, accepting both tails, correction scopes and FDR modes."""
+    for key, allowed in (
+        ("Tail", {"upper", "lower"}),
+        ("FDR", {"True", "False"}),
+        ("FDR-Scope", {"global", "profile"}),
+        ("Testable-Set", {"K>0 & N>0"}),
+    ):
+        if metadata.get(key) not in allowed:
+            raise ValueError(f"missing or invalid {key}")
+    fold_key = "Min-Fold" if metadata["Tail"] == "upper" else "Max-Fold"
+    try:
+        total_profiles = number(
+            metadata["Total-Profiles-Input"], "Total-Profiles-Input", integer=True
+        )
+        testable_profiles = number(metadata["Testable-Profiles"], "Testable-Profiles", integer=True)
+        if testable_profiles > total_profiles:
+            raise ValueError("Testable-Profiles exceeds Total-Profiles-Input")
+        return RowContract(
+            indices={column: index for index, column in enumerate(header)},
+            upper_tail=metadata["Tail"] == "upper",
+            fdr=metadata["FDR"] == "True",
+            family=metadata["FDR-Scope"],
+            threshold=number(metadata["P-Threshold"], "P-Threshold", probability=True),
+            fold_cutoff=number(metadata[fold_key], fold_key, positive_infinity=True),
+            background_m=number(
+                metadata["Background-Taxa-Universe-M"], "Background-Taxa-Universe-M", integer=True
+            ),
+            testable_profiles=testable_profiles,
+        )
+    except KeyError as exc:
+        raise ValueError(f"missing metadata: {exc.args[0]}") from exc
 
 
 def same_path(left: Path, right: Path) -> bool:
@@ -74,18 +203,20 @@ def read_table(path: Path) -> TableAudit:
 
         reader = csv.reader(lines(), delimiter="\t", strict=True)
         header = next(reader, [])
-        required = {*RESULT_COLUMNS, "is_significant"}
-        if len(set(header)) != len(header) or not required.issubset(header):
+        if len(set(header)) != len(header) or not COMPLETE_COLUMNS.issubset(header):
             raise ValueError(f"{path}: missing or duplicate complete-result columns")
-        selected_index = header.index("is_significant")
+        try:
+            contract = row_contract(header, metadata)
+        except ValueError as exc:
+            raise ValueError(f"{path}: {exc}") from exc
         for row in reader:
             rows += 1
             if len(row) != len(header):
                 raise ValueError(f"{path}: malformed table row {rows}")
-            selected = row[selected_index]
-            if selected not in {"True", "False"}:
-                raise ValueError(f"{path}: invalid is_significant value in row {rows}")
-            significant += selected == "True"
+            try:
+                significant += contract.selected(row)
+            except ValueError as exc:
+                raise ValueError(f"{path}: row {rows}: {exc}") from exc
     for key, observed in ((META_TESTS_PERFORMED, rows), (META_SIGNIFICANT_HITS, significant)):
         try:
             declared = int(metadata[key])

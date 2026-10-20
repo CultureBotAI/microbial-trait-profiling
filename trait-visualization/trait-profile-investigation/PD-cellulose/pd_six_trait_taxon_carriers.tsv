@@ -1,585 +1,555 @@
-trait_id	trait	positive_side_in_lollipop	taxon_id	taxon_name	taxonomic_rank	annotation_count	increased_profiles	increased_studies	increased_positive_z_profiles	increased_positive_z_studies	decreased_profiles	decreased_studies	decreased_positive_z_profiles	decreased_positive_z_studies
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:543	Enterobacteriaceae	family	15	18	9	18	9	2	2	2	2
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:1224	Pseudomonadota	phylum	20	15	8	15	8	1	1	1	1
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:561	Escherichia	genus	14	9	5	9	5	2	2	2	2
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:186801	Clostridia	class	5	8	7	8	7	6	5	6	5
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:186802	Eubacteriales	order	4	7	6	7	6	7	5	7	5
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:1239	Bacillota	phylum	14	5	5	5	5	14	7	14	7
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:201174	Actinomycetota	phylum	3	8	7	4	4	0	0	0	0
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:91061	Bacilli	class	8	4	2	3	2	3	2	3	2
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:91347	Enterobacterales	order	15	3	2	3	2	0	0	0	0
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:1236	Gammaproteobacteria	class	17	3	3	3	3	1	1	1	1
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:80840	Burkholderiales	order	2	2	2	2	2	0	0	0	0
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:544	Citrobacter	genus	1	2	2	2	2	0	0	0	0
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:191394	Deferribacteraceae	family	1	2	2	2	2	0	0	0	0
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:75682	Oxalobacteraceae	family	1	2	1	2	1	2	1	2	1
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:1760	Actinomycetes	class	3	1	1	1	1	0	0	0	0
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:28211	Alphaproteobacteria	class	1	1	1	1	1	0	0	0	0
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:186817	Bacillaceae	family	6	1	1	1	1	1	1	1	1
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:28216	Betaproteobacteria	class	2	1	1	1	1	0	0	0	0
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:68337	Deferribacteres	class	3	1	1	1	1	0	0	0	0
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:562	Escherichia coli	species	14	1	1	1	1	2	2	2	2
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:85023	Microbacteriaceae	family	1	1	1	1	1	0	0	0	0
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:186807	Peptococcaceae	family	1	1	1	1	1	2	2	2	2
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:72274	Pseudomonadales	order	1	1	1	1	1	0	0	0	0
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:1385	Bacillales	order	8	0	0	0	0	2	1	2	1
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:80864	Comamonadaceae	family	1	0	0	0	0	2	2	1	1
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:1268	Micrococcaceae	family	2	0	0	0	0	2	2	2	2
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	True	NCBITaxon:90964	Staphylococcaceae	family	1	0	0	0	0	1	1	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:216572	Oscillospiraceae	family	33	15	13	14	12	13	8	13	8
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:186803	Lachnospiraceae	family	17	10	7	10	7	39	19	38	18
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:186801	Clostridia	class	65	8	7	8	7	6	5	6	5
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:186802	Eubacteriales	order	44	7	6	7	6	7	5	7	5
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:40520	Blautia obeum	species	1	5	2	5	2	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:1239	Bacillota	phylum	86	5	5	4	4	14	7	14	7
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:841	Roseburia	genus	1	4	4	4	4	31	18	31	18
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:201174	Actinomycetota	phylum	51	8	7	3	3	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:816	Bacteroides	genus	1	3	2	3	2	6	6	6	6
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:91061	Bacilli	class	16	4	2	2	1	3	2	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:1485	Clostridium	genus	7	3	3	2	2	10	7	10	7
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:33039	Mediterraneibacter torques	species	1	3	3	2	2	1	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:572511	Blautia	genus	1	2	2	2	2	15	12	15	12
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:830	Butyrivibrio	genus	3	2	2	2	2	3	2	3	2
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:28050	Lachnospira	genus	1	2	2	2	2	9	5	9	5
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:1263	Ruminococcus	genus	10	2	2	2	2	9	6	9	6
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:1224	Pseudomonadota	phylum	18	15	8	1	1	1	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:186806	Eubacteriaceae	family	2	4	3	1	1	1	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:1236	Gammaproteobacteria	class	14	3	3	1	1	1	1	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:1386	Bacillus	genus	3	2	1	1	1	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:80840	Burkholderiales	order	1	2	2	1	1	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:40518	Ruminococcus bromii	species	2	2	2	1	1	2	1	2	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:1760	Actinomycetes	class	51	1	1	1	1	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:815	Bacteroidaceae	family	1	1	1	1	1	1	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:246787	Bacteroides cellulosilyticus	species	1	1	1	1	1	2	1	2	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:200643	Bacteroidia	class	2	1	1	1	1	6	5	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:186828	Carnobacteriaceae	family	1	1	1	1	1	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:563835	Chitinophagaceae	family	1	1	1	1	1	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:31979	Clostridiaceae	family	7	1	1	1	1	13	8	13	8
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:1506553	Lachnoclostridium	genus	3	1	1	1	1	1	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:84030	Lacrimispora saccharolytica	species	1	1	1	1	1	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:72274	Pseudomonadales	order	1	1	1	1	1	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:200666	Sphingobacteriales	order	1	1	1	1	1	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:117747	Sphingobacteriia	class	1	1	1	1	1	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:39492	[Eubacterium] siraeum	species	1	1	1	1	1	1	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:613	Serratia	genus	5	6	3	0	0	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:91347	Enterobacterales	order	7	3	2	0	0	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:186826	Lactobacillales	order	1	3	2	0	0	3	2	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:207244	Anaerostipes	genus	1	2	1	0	0	2	2	2	2
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:44000	Caldicellulosiruptor	genus	5	2	1	0	0	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:28211	Alphaproteobacteria	class	3	1	1	0	0	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:186817	Bacillaceae	family	7	1	1	0	0	1	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:171549	Bacteroidales	order	1	1	1	0	0	4	4	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:28216	Betaproteobacteria	class	1	1	1	0	0	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:1730	Eubacterium	genus	2	1	1	0	0	1	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:46466	Halocella	genus	1	1	1	0	0	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:356	Hyphomicrobiales	order	1	1	1	0	0	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:85023	Microbacteriaceae	family	1	1	1	0	0	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:135621	Pseudomonadaceae	family	1	1	1	0	0	0	0	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:84566	Sphingobacteriaceae	family	1	1	1	0	0	1	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:649756	Anaerostipes hadrus	species	1	0	0	0	0	1	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:1385	Bacillales	order	15	0	0	0	0	2	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:976	Bacteroidota	phylum	9	0	0	0	0	3	3	0	0
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:80864	Comamonadaceae	family	1	0	0	0	0	2	2	2	2
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:2719231	Lacrimispora	genus	2	0	0	0	0	1	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:2316020	Mediterraneibacter	genus	1	0	0	0	0	1	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:1268	Micrococcaceae	family	1	0	0	0	0	2	2	2	2
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:301302	Roseburia faecis	species	1	0	0	0	0	6	5	6	5
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:1265	Ruminococcus flavefaciens	species	2	0	0	0	0	1	1	1	1
-METPO:2000103|GO:0030245	cellulose catabolic process	False	NCBITaxon:2062	Streptomycetaceae	family	6	0	0	0	0	2	1	2	1
-METPO:1000668	coccus shaped	True	NCBITaxon:1301	Streptococcus	genus	949	11	10	11	10	5	5	5	5
-METPO:1000668	coccus shaped	True	NCBITaxon:74201	Verrucomicrobiota	phylum	15	16	10	9	7	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:162289	Peptoniphilus	genus	9	9	1	9	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1300	Streptococcaceae	family	996	9	6	9	6	5	5	5	5
-METPO:1000668	coccus shaped	True	NCBITaxon:31953	Bifidobacteriaceae	family	14	16	9	7	4	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:216572	Oscillospiraceae	family	18	15	13	7	6	13	8	11	7
-METPO:1000668	coccus shaped	True	NCBITaxon:33958	Lactobacillaceae	family	43	12	8	6	4	5	4	3	2
-METPO:1000668	coccus shaped	True	NCBITaxon:186803	Lachnospiraceae	family	17	10	7	6	6	39	19	32	15
-METPO:1000668	coccus shaped	True	NCBITaxon:186801	Clostridia	class	45	8	7	6	5	6	5	3	2
-METPO:1000668	coccus shaped	True	NCBITaxon:81852	Enterococcaceae	family	134	6	4	6	4	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:543	Enterobacteriaceae	family	4	18	9	5	3	2	2	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:203494	Verrucomicrobiia	class	1	8	8	5	5	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1350	Enterococcus	genus	121	7	7	5	5	2	2	2	2
-METPO:1000668	coccus shaped	True	NCBITaxon:1239	Bacillota	phylum	4478	5	5	5	5	14	7	14	7
-METPO:1000668	coccus shaped	True	NCBITaxon:40520	Blautia obeum	species	2	5	2	5	2	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:186804	Peptostreptococcaceae	family	5	5	1	5	1	3	3	2	2
-METPO:1000668	coccus shaped	True	NCBITaxon:1309	Streptococcus mutans	species	164	5	2	5	2	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1224	Pseudomonadota	phylum	322	15	8	4	3	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:561	Escherichia	genus	1	9	5	4	3	2	2	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:201174	Actinomycetota	phylum	238	8	7	4	3	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:29465	Veillonella	genus	20	5	4	4	3	2	2	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:91061	Bacilli	class	4362	4	2	4	2	3	2	3	2
-METPO:1000668	coccus shaped	True	NCBITaxon:1304	Streptococcus salivarius	species	7	4	4	4	4	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:186826	Lactobacillales	order	1184	3	2	3	2	3	2	3	2
-METPO:1000668	coccus shaped	True	NCBITaxon:1343	Streptococcus vestibularis	species	3	3	1	3	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:191303	Turicibacter	genus	1	3	1	3	1	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:31977	Veillonellaceae	family	32	3	3	3	3	3	2	3	2
-METPO:1000668	coccus shaped	True	NCBITaxon:186802	Eubacteriales	order	23	7	6	2	2	7	5	4	3
-METPO:1000668	coccus shaped	True	NCBITaxon:33039	Mediterraneibacter torques	species	2	3	3	2	2	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:2173	Methanobrevibacter smithii	species	1	3	3	2	2	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:577310	Parasutterella	genus	1	3	3	2	2	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:904	Acidaminococcus	genus	4	2	2	2	2	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:469	Acinetobacter	genus	24	2	2	2	2	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:207244	Anaerostipes	genus	1	2	1	2	1	2	2	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:526524	Erysipelotrichia	class	1	2	2	2	2	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:150022	Finegoldia	genus	3	2	1	2	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1357	Lactococcus	genus	42	2	2	2	2	3	2	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:906	Megasphaera	genus	8	2	2	2	2	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:194924	Desulfovibrionaceae	family	1	5	4	1	1	2	1	2	1
-METPO:1000668	coccus shaped	True	NCBITaxon:2172	Methanobrevibacter	genus	4	4	3	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:84999	Coriobacteriales	order	2	3	3	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1236	Gammaproteobacteria	class	137	3	3	1	1	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:909930	Acidaminococcaceae	family	4	2	2	1	1	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:506	Alcaligenaceae	family	10	2	2	1	1	2	2	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:85004	Bifidobacteriales	order	14	2	2	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:80840	Burkholderiales	order	18	2	2	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:544	Citrobacter	genus	1	2	2	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:84998	Coriobacteriia	class	2	2	2	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:213115	Desulfovibrionales	order	1	2	2	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1263	Ruminococcus	genus	15	2	2	1	1	9	6	7	5
-METPO:1000668	coccus shaped	True	NCBITaxon:40518	Ruminococcus bromii	species	2	2	2	1	1	2	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:40519	Ruminococcus callidus	species	1	2	2	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:46123	Abiotrophia	genus	1	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:187327	Acidaminococcus intestini	species	2	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1654	Actinomyces	genus	2	1	1	1	1	3	2	2	2
-METPO:1000668	coccus shaped	True	NCBITaxon:1760	Actinomycetes	class	236	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:28211	Alphaproteobacteria	class	66	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:165779	Anaerococcus	genus	13	1	1	1	1	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:815	Bacteroidaceae	family	1	1	1	1	1	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:580596	Butyricicoccus	genus	1	1	1	1	1	6	3	5	3
-METPO:1000668	coccus shaped	True	NCBITaxon:33042	Coprococcus	genus	3	1	1	1	1	10	7	5	3
-METPO:1000668	coccus shaped	True	NCBITaxon:526525	Erysipelotrichales	order	1	1	1	1	1	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:562	Escherichia coli	species	1	1	1	1	1	2	2	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:117563	Granulicatella	genus	1	1	1	1	1	2	1	2	1
-METPO:1000668	coccus shaped	True	NCBITaxon:724	Haemophilus	genus	1	1	1	1	1	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:356	Hyphomicrobiales	order	17	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:33038	Mediterraneibacter gnavus	species	2	1	1	1	1	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:85023	Microbacteriaceae	family	4	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:31969	Mollicutes	class	44	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:468	Moraxellaceae	family	55	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:544448	Mycoplasmatota	phylum	137	1	1	1	1	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:909932	Negativicutes	class	36	1	1	1	1	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:497726	Nitrososphaera	genus	1	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1033997	Nitrososphaeraceae	family	2	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1033996	Nitrososphaerales	order	2	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:651137	Nitrososphaerota	phylum	3	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:712	Pasteurellaceae	family	10	1	1	1	1	4	3	3	2
-METPO:1000668	coccus shaped	True	NCBITaxon:135621	Pseudomonadaceae	family	5	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:72274	Pseudomonadales	order	5	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:200666	Sphingobacteriales	order	2	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:117747	Sphingobacteriia	class	2	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:41297	Sphingomonadaceae	family	1	1	1	1	1	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:204457	Sphingomonadales	order	2	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1328	Streptococcus anginosus	species	6	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1305	Streptococcus sanguinis	species	22	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:435842	Streptococcus sp. C150	species	1	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1308	Streptococcus thermophilus	species	12	1	1	1	1	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:457416	Veillonella sp. 3_1_44	species	1	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:450749	Veillonella sp. 6_1_27	species	1	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:172900	Victivallis	genus	1	1	1	1	1	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:39492	[Eubacterium] siraeum	species	1	1	1	1	1	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:91347	Enterobacterales	order	8	3	2	0	0	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:84642	Aeromonadaceae	family	2	2	1	0	0	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:572511	Blautia	genus	7	2	2	0	0	15	12	13	11
-METPO:1000668	coccus shaped	True	NCBITaxon:1716	Corynebacterium	genus	3	2	1	0	0	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:28890	Methanobacteriota	phylum	192	2	1	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:186827	Aerococcaceae	family	8	1	1	0	0	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:186817	Bacillaceae	family	8	1	1	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:171549	Bacteroidales	order	4	1	1	0	0	4	4	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:200643	Bacteroidia	class	4	1	1	0	0	6	5	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:28216	Betaproteobacteria	class	117	1	1	0	0	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:53443	Blautia hydrogenotrophica	species	1	1	1	0	0	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:33035	Blautia producta	species	1	1	1	0	0	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:186828	Carnobacteriaceae	family	3	1	1	0	0	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:49546	Flavobacteriaceae	family	2	1	1	0	0	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:204475	Gemmiger	genus	1	1	1	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:2159	Methanobacteriaceae	family	8	1	1	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:581	Morganella	genus	1	1	1	0	0	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:171552	Prevotellaceae	family	1	1	1	0	0	8	7	6	5
-METPO:1000668	coccus shaped	True	NCBITaxon:2047	Rothia dentocariosa	species	2	1	1	0	0	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:84566	Sphingobacteriaceae	family	2	1	1	0	0	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:137	Spirochaetaceae	family	2	1	1	0	0	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:995019	Sutterellaceae	family	1	1	1	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:157	Treponema	genus	1	1	1	0	0	0	0	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:2146	Acholeplasmataceae	family	11	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:2049	Actinomycetaceae	family	3	0	0	0	0	3	2	2	2
-METPO:1000668	coccus shaped	True	NCBITaxon:2037	Actinomycetales	order	3	0	0	0	0	2	2	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:649756	Anaerostipes hadrus	species	1	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:1385	Bacillales	order	3178	0	0	0	0	2	1	2	1
-METPO:1000668	coccus shaped	True	NCBITaxon:976	Bacteroidota	phylum	10	0	0	0	0	3	3	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1322	Blautia hansenii	species	1	0	0	0	0	3	2	3	2
-METPO:1000668	coccus shaped	True	NCBITaxon:85019	Brevibacteriaceae	family	3	0	0	0	0	4	3	3	2
-METPO:1000668	coccus shaped	True	NCBITaxon:1696	Brevibacterium	genus	2	0	0	0	0	3	2	2	1
-METPO:1000668	coccus shaped	True	NCBITaxon:118882	Brucellaceae	family	7	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:3085642	Butyricicoccaceae	family	1	0	0	0	0	6	2	5	2
-METPO:1000668	coccus shaped	True	NCBITaxon:186818	Caryophanaceae	family	12	0	0	0	0	2	1	2	1
-METPO:1000668	coccus shaped	True	NCBITaxon:80864	Comamonadaceae	family	7	0	0	0	0	2	2	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:1117	Cyanobacteriota	phylum	52	0	0	0	0	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:39948	Dialister	genus	1	0	0	0	0	2	1	2	1
-METPO:1000668	coccus shaped	True	NCBITaxon:44008	Enterococcus cecorum	species	1	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:200644	Flavobacteriales	order	2	0	0	0	0	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:117743	Flavobacteriia	class	2	0	0	0	0	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1378	Gemella	genus	8	0	0	0	0	2	1	2	1
-METPO:1000668	coccus shaped	True	NCBITaxon:1379	Gemella haemolysans	species	3	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:84135	Gemella sanguinis	species	2	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:539738	Gemellaceae	family	9	0	0	0	0	3	2	3	2
-METPO:1000668	coccus shaped	True	NCBITaxon:46124	Granulicatella adiacens	species	1	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:28256	Halomonadaceae	family	1	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:404402	Howardella	genus	1	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:69657	Hyphomonadaceae	family	1	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:85021	Intrasporangiaceae	family	14	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:2316020	Mediterraneibacter	genus	6	0	0	0	0	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:187326	Megasphaera micronuciformis	species	1	0	0	0	0	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1268	Micrococcaceae	family	65	0	0	0	0	2	2	2	2
-METPO:1000668	coccus shaped	True	NCBITaxon:909656	Phocaeicola	genus	1	0	0	0	0	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:415002	Puniceicoccaceae	family	1	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:41295	Rhodospirillaceae	family	1	0	0	0	0	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:204441	Rhodospirillales	order	1	0	0	0	0	1	1	0	0
-METPO:1000668	coccus shaped	True	NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	1	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:1265	Ruminococcus flavefaciens	species	1	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:438033	Ruminococcus gauvreauii	species	2	0	0	0	0	2	1	2	1
-METPO:1000668	coccus shaped	True	NCBITaxon:90964	Staphylococcaceae	family	3142	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:1280	Staphylococcus aureus	species	3003	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:113107	Streptococcus australis	species	2	0	0	0	0	4	1	4	1
-METPO:1000668	coccus shaped	True	NCBITaxon:68892	Streptococcus infantis	species	4	0	0	0	0	2	1	2	1
-METPO:1000668	coccus shaped	True	NCBITaxon:197614	Streptococcus pasteurianus	species	1	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:68891	Streptococcus peroris	species	1	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:1203590	Streptococcus sp. HPH0090	species	1	0	0	0	0	3	1	3	1
-METPO:1000668	coccus shaped	True	NCBITaxon:2062	Streptomycetaceae	family	3	0	0	0	0	2	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:135617	Thiotrichaceae	family	2	0	0	0	0	2	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:39777	Veillonella atypica	species	4	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:39778	Veillonella dispar	species	1	0	0	0	0	1	1	1	1
-METPO:1000668	coccus shaped	True	NCBITaxon:46228	[Ruminococcus] lactaris	species	1	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1678	Bifidobacterium	genus	7	21	11	19	10	2	2	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:543	Enterobacteriaceae	family	1206	18	9	18	9	2	2	2	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1224	Pseudomonadota	phylum	2507	15	8	15	8	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:31953	Bifidobacteriaceae	family	27	16	9	14	7	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1578	Lactobacillus	genus	60	15	12	14	11	6	5	5	4
-METPO:1000608	facultatively aerobic	True	NCBITaxon:203557	Verrucomicrobiaceae	family	2	16	8	13	5	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:74201	Verrucomicrobiota	phylum	10	16	10	12	6	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:33958	Lactobacillaceae	family	238	12	8	11	7	5	4	5	4
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1301	Streptococcus	genus	736	11	10	11	10	5	5	5	5
-METPO:1000608	facultatively aerobic	True	NCBITaxon:872	Desulfovibrio	genus	3	11	7	9	5	3	2	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:561	Escherichia	genus	800	9	5	9	5	2	2	2	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1300	Streptococcaceae	family	763	9	6	9	6	5	5	5	5
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1350	Enterococcus	genus	109	7	7	7	7	2	2	2	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:216572	Oscillospiraceae	family	2	15	13	6	5	13	8	9	5
-METPO:1000608	facultatively aerobic	True	NCBITaxon:81852	Enterococcaceae	family	119	6	4	6	4	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:570	Klebsiella	genus	28	6	4	6	4	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:613	Serratia	genus	23	6	3	6	3	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:201174	Actinomycetota	phylum	197	8	7	5	4	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:186801	Clostridia	class	15	8	7	5	4	6	5	3	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1239	Bacillota	phylum	2377	5	5	5	5	14	7	14	7
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1309	Streptococcus mutans	species	138	5	2	5	2	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:186803	Lachnospiraceae	family	5	10	7	4	4	39	19	22	13
-METPO:1000608	facultatively aerobic	True	NCBITaxon:216816	Bifidobacterium longum	species	1	5	4	4	3	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:712124	Actinomyces sp. oral taxon 448	species	1	4	1	4	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:91061	Bacilli	class	2357	4	2	4	2	3	2	3	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:547	Enterobacter	genus	15	4	3	4	3	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:573	Klebsiella pneumoniae	species	20	4	3	4	3	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1304	Streptococcus salivarius	species	6	4	4	4	4	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:203494	Verrucomicrobiia	class	3	8	8	3	3	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:48461	Verrucomicrobiales	order	3	7	6	3	2	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	1	4	1	3	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:91347	Enterobacterales	order	1482	3	2	3	2	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1236	Gammaproteobacteria	class	2190	3	3	3	3	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:186826	Lactobacillales	order	1138	3	2	3	2	3	2	3	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:191303	Turicibacter	genus	1	3	1	3	1	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:194924	Desulfovibrionaceae	family	4	5	4	2	2	2	1	2	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:186804	Peptostreptococcaceae	family	4	5	1	2	1	3	3	2	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:128827	Erysipelotrichaceae	family	1	4	3	2	2	3	2	2	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:216851	Faecalibacterium	genus	1	4	2	2	2	32	14	23	9
-METPO:1000608	facultatively aerobic	True	NCBITaxon:84642	Aeromonadaceae	family	22	2	1	2	1	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:506	Alcaligenaceae	family	8	2	2	2	2	2	2	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1386	Bacillus	genus	132	2	1	2	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:80840	Burkholderiales	order	75	2	2	2	2	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:544	Citrobacter	genus	14	2	2	2	2	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1716	Corynebacterium	genus	75	2	1	2	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:551	Erwinia	genus	18	2	1	2	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:526524	Erysipelotrichia	class	3	2	2	2	2	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:244366	Klebsiella variicola	species	1	2	1	2	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1357	Lactococcus	genus	23	2	2	2	2	3	2	2	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:28890	Methanobacteriota	phylum	19	2	1	2	1	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:43947	Tolumonas	genus	1	2	1	2	1	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:186802	Eubacteriales	order	6	7	6	1	1	7	5	4	3
-METPO:1000608	facultatively aerobic	True	NCBITaxon:816	Bacteroides	genus	2	3	2	1	1	6	6	2	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:84992	Acidimicrobiia	class	1	2	2	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:85004	Bifidobacteriales	order	27	2	2	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:213115	Desulfovibrionales	order	4	2	2	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1624	Ligilactobacillus salivarius	species	5	2	2	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:75682	Oxalobacteraceae	family	2	2	1	1	1	2	1	2	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:46123	Abiotrophia	genus	1	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1654	Actinomyces	genus	16	1	1	1	1	3	2	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1760	Actinomycetes	class	196	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:186827	Aerococcaceae	family	6	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:416916	Aggregatibacter	genus	39	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:28211	Alphaproteobacteria	class	177	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:92793	Aquabacterium	genus	1	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:186817	Bacillaceae	family	204	1	1	1	1	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:815	Bacteroidaceae	family	5	1	1	1	1	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:28216	Betaproteobacteria	class	134	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:186828	Carnobacteriaceae	family	12	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:563835	Chitinophagaceae	family	3	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:550	Enterobacter cloacae	species	6	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1903409	Erwiniaceae	family	50	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:526525	Erysipelotrichales	order	3	1	1	1	1	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:562	Escherichia coli	species	779	1	1	1	1	2	2	2	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:724	Haemophilus	genus	38	1	1	1	1	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:45401	Hyphomicrobiaceae	family	3	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:356	Hyphomicrobiales	order	98	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1129771	Leptotrichiaceae	family	3	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:32033	Lysobacteraceae	family	5	1	1	1	1	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:135614	Lysobacterales	order	13	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:85023	Microbacteriaceae	family	1	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:31969	Mollicutes	class	31	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:468	Moraxellaceae	family	1	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:544448	Mycoplasmatota	phylum	117	1	1	1	1	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:712	Pasteurellaceae	family	136	1	1	1	1	4	3	4	3
-METPO:1000608	facultatively aerobic	True	NCBITaxon:583	Proteus	genus	7	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:135621	Pseudomonadaceae	family	25	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:72274	Pseudomonadales	order	36	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:82115	Rhizobiaceae	family	25	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:590	Salmonella	genus	261	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:620	Shigella	genus	47	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:84566	Sphingobacteriaceae	family	11	1	1	1	1	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:200666	Sphingobacteriales	order	11	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:117747	Sphingobacteriia	class	11	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:41297	Sphingomonadaceae	family	3	1	1	1	1	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:204457	Sphingomonadales	order	10	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:137	Spirochaetaceae	family	3	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1328	Streptococcus anginosus	species	1	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1305	Streptococcus sanguinis	species	22	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:435842	Streptococcus sp. C150	species	1	1	1	1	1	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1308	Streptococcus thermophilus	species	5	1	1	1	1	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:43948	Tolumonas auensis	species	1	1	1	1	1	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:171549	Bacteroidales	order	8	1	1	0	0	4	4	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:200643	Bacteroidia	class	12	1	1	0	0	6	5	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:49546	Flavobacteriaceae	family	43	1	1	0	0	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1596	Lactobacillus gasseri	species	5	1	1	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	1	1	1	0	0	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:83766	Propionivibrio	genus	1	1	1	0	0	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:196081	Scardovia	genus	2	1	1	0	0	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:78259	Scardovia inopinata	species	2	1	1	0	0	0	0	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:2146	Acholeplasmataceae	family	3	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:2049	Actinomycetaceae	family	40	0	0	0	0	3	2	2	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:2037	Actinomycetales	order	40	0	0	0	0	2	2	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1385	Bacillales	order	1219	0	0	0	0	2	1	2	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:469592	Bacteroides sp. 3_1_19	species	1	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:976	Bacteroidota	phylum	83	0	0	0	0	3	3	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:118882	Brucellaceae	family	15	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:186818	Caryophanaceae	family	3	0	0	0	0	2	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:80864	Comamonadaceae	family	20	0	0	0	0	2	2	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:283	Comamonas	genus	1	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:106589	Cupriavidus	genus	5	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1117	Cyanobacteriota	phylum	44	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1279384	Eggerthia	genus	1	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:31973	Eggerthia catenaformis	species	1	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1647	Erysipelothrix	genus	1	0	0	0	0	2	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:853	Faecalibacterium prausnitzii	species	1	0	0	0	0	13	8	10	7
-METPO:1000608	facultatively aerobic	True	NCBITaxon:200644	Flavobacteriales	order	51	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:117743	Flavobacteriia	class	51	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:237	Flavobacterium	genus	8	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:203491	Fusobacteriales	order	3	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:203490	Fusobacteriia	class	3	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:32066	Fusobacteriota	phylum	3	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1378	Gemella	genus	8	0	0	0	0	2	1	2	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1379	Gemella haemolysans	species	3	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:84135	Gemella sanguinis	species	2	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:539738	Gemellaceae	family	8	0	0	0	0	3	2	3	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:729	Haemophilus parainfluenzae	species	2	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:28256	Halomonadaceae	family	17	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:267893	Idiomarinaceae	family	2	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:85021	Intrasporangiaceae	family	4	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:43995	Johnsonella ignava	species	1	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:186820	Listeriaceae	family	68	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:119045	Methylobacteriaceae	family	4	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1268	Micrococcaceae	family	5	0	0	0	0	2	2	2	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:909656	Phocaeicola	genus	3	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:821	Phocaeicola vulgatus	species	3	0	0	0	0	2	2	2	2
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1743	Propionibacterium	genus	1	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:348581	Propionicicella	genus	1	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:415002	Puniceicoccaceae	family	1	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:41295	Rhodospirillaceae	family	8	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:204441	Rhodospirillales	order	24	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:504481	Sediminibacterium	genus	1	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:90964	Staphylococcaceae	family	804	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:1280	Staphylococcus aureus	species	717	0	0	0	0	1	1	1	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:68892	Streptococcus infantis	species	3	0	0	0	0	2	1	2	1
-METPO:1000608	facultatively aerobic	True	NCBITaxon:197614	Streptococcus pasteurianus	species	1	0	0	0	0	1	1	0	0
-METPO:1000608	facultatively aerobic	True	NCBITaxon:135617	Thiotrichaceae	family	1	0	0	0	0	2	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:543	Enterobacteriaceae	family	14	18	9	18	9	2	2	2	2
-METPO:1000623	moderately halophilic	True	NCBITaxon:1224	Pseudomonadota	phylum	211	15	8	15	8	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:1578	Lactobacillus	genus	1	15	12	11	10	6	5	5	4
-METPO:1000623	moderately halophilic	True	NCBITaxon:31953	Bifidobacteriaceae	family	1	16	9	10	6	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:33958	Lactobacillaceae	family	1	12	8	9	7	5	4	3	2
-METPO:1000623	moderately halophilic	True	NCBITaxon:561	Escherichia	genus	5	9	5	9	5	2	2	2	2
-METPO:1000623	moderately halophilic	True	NCBITaxon:1301	Streptococcus	genus	2	11	10	8	8	5	5	2	2
-METPO:1000623	moderately halophilic	True	NCBITaxon:201174	Actinomycetota	phylum	47	8	7	8	7	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:239759	Alistipes	genus	1	8	8	8	8	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:186801	Clostridia	class	12	8	7	8	7	6	5	6	5
-METPO:1000623	moderately halophilic	True	NCBITaxon:1300	Streptococcaceae	family	4	9	6	7	5	5	5	3	3
-METPO:1000623	moderately halophilic	True	NCBITaxon:1350	Enterococcus	genus	14	7	7	7	7	2	2	2	2
-METPO:1000623	moderately halophilic	True	NCBITaxon:171550	Rikenellaceae	family	1	7	7	7	7	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:81852	Enterococcaceae	family	16	6	4	6	4	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:570	Klebsiella	genus	3	6	4	6	4	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:613	Serratia	genus	1	6	3	6	3	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:1239	Bacillota	phylum	78	5	5	5	5	14	7	14	7
-METPO:1000623	moderately halophilic	True	NCBITaxon:1309	Streptococcus mutans	species	1	5	2	5	2	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:186802	Eubacteriales	order	4	7	6	4	4	7	5	6	5
-METPO:1000623	moderately halophilic	True	NCBITaxon:91061	Bacilli	class	62	4	2	4	2	3	2	3	2
-METPO:1000623	moderately halophilic	True	NCBITaxon:547	Enterobacter	genus	2	4	3	4	3	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:573	Klebsiella pneumoniae	species	3	4	3	4	3	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:91347	Enterobacterales	order	19	3	2	3	2	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:1236	Gammaproteobacteria	class	149	3	3	3	3	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:186826	Lactobacillales	order	22	3	2	3	2	3	2	3	2
-METPO:1000623	moderately halophilic	True	NCBITaxon:84992	Acidimicrobiia	class	1	2	2	2	2	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:469	Acinetobacter	genus	2	2	2	2	2	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:84642	Aeromonadaceae	family	5	2	1	2	1	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:506	Alcaligenaceae	family	2	2	2	2	2	2	2	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:1386	Bacillus	genus	10	2	1	2	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:85004	Bifidobacteriales	order	1	2	2	2	2	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:80840	Burkholderiales	order	16	2	2	2	2	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:544	Citrobacter	genus	1	2	2	2	2	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:1716	Corynebacterium	genus	9	2	1	2	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:213115	Desulfovibrionales	order	2	2	2	2	2	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:551	Erwinia	genus	1	2	1	2	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:1357	Lactococcus	genus	2	2	2	2	2	3	2	3	2
-METPO:1000623	moderately halophilic	True	NCBITaxon:28890	Methanobacteriota	phylum	17	2	1	2	1	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:508458	Synergistota	phylum	1	2	2	2	2	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:1760	Actinomycetes	class	46	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:28211	Alphaproteobacteria	class	44	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:186817	Bacillaceae	family	23	1	1	1	1	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:28216	Betaproteobacteria	class	17	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:186828	Carnobacteriaceae	family	1	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:68337	Deferribacteres	class	1	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:213117	Desulfohalobiaceae	family	1	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:1562	Desulfotomaculum	genus	1	1	1	1	1	2	2	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:550	Enterobacter cloacae	species	1	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:1903409	Erwiniaceae	family	1	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:562	Escherichia coli	species	5	1	1	1	1	2	2	2	2
-METPO:1000623	moderately halophilic	True	NCBITaxon:49546	Flavobacteriaceae	family	9	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:724	Haemophilus	genus	2	1	1	1	1	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:356	Hyphomicrobiales	order	9	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:1596	Lactobacillus gasseri	species	1	1	1	1	1	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:32033	Lysobacteraceae	family	2	1	1	1	1	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:135614	Lysobacterales	order	2	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:85023	Microbacteriaceae	family	2	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:31969	Mollicutes	class	2	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:468	Moraxellaceae	family	3	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:544448	Mycoplasmatota	phylum	3	1	1	1	1	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:1033997	Nitrososphaeraceae	family	1	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:1033996	Nitrososphaerales	order	1	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:651137	Nitrososphaerota	phylum	4	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:712	Pasteurellaceae	family	3	1	1	1	1	4	3	3	2
-METPO:1000623	moderately halophilic	True	NCBITaxon:583	Proteus	genus	2	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:135621	Pseudomonadaceae	family	27	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:72274	Pseudomonadales	order	30	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:82115	Rhizobiaceae	family	5	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:590	Salmonella	genus	2	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:84566	Sphingobacteriaceae	family	1	1	1	1	1	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:200666	Sphingobacteriales	order	1	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:117747	Sphingobacteriia	class	1	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:41297	Sphingomonadaceae	family	2	1	1	1	1	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:204457	Sphingomonadales	order	3	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:137	Spirochaetaceae	family	4	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:649775	Synergistia	class	1	1	1	1	1	0	0	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:171549	Bacteroidales	order	1	1	1	0	0	4	4	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:200643	Bacteroidia	class	1	1	1	0	0	6	5	3	3
-METPO:1000623	moderately halophilic	True	NCBITaxon:203492	Fusobacteriaceae	family	2	1	1	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:186807	Peptococcaceae	family	1	1	1	0	0	2	2	2	2
-METPO:1000623	moderately halophilic	True	NCBITaxon:1385	Bacillales	order	40	0	0	0	0	2	1	2	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:976	Bacteroidota	phylum	14	0	0	0	0	3	3	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:186818	Caryophanaceae	family	2	0	0	0	0	2	1	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:80864	Comamonadaceae	family	4	0	0	0	0	2	2	2	2
-METPO:1000623	moderately halophilic	True	NCBITaxon:283	Comamonas	genus	1	0	0	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:1117	Cyanobacteriota	phylum	5	0	0	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:200644	Flavobacteriales	order	11	0	0	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:117743	Flavobacteriia	class	11	0	0	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:237	Flavobacterium	genus	1	0	0	0	0	1	1	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:203491	Fusobacteriales	order	2	0	0	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:203490	Fusobacteriia	class	2	0	0	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:32066	Fusobacteriota	phylum	2	0	0	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:28256	Halomonadaceae	family	5	0	0	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:267893	Idiomarinaceae	family	1	0	0	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:186820	Listeriaceae	family	5	0	0	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:119045	Methylobacteriaceae	family	2	0	0	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:1268	Micrococcaceae	family	2	0	0	0	0	2	2	2	2
-METPO:1000623	moderately halophilic	True	NCBITaxon:41295	Rhodospirillaceae	family	1	0	0	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:204441	Rhodospirillales	order	4	0	0	0	0	1	1	1	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:90964	Staphylococcaceae	family	5	0	0	0	0	1	1	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:1280	Staphylococcus aureus	species	2	0	0	0	0	1	1	0	0
-METPO:1000623	moderately halophilic	True	NCBITaxon:2062	Streptomycetaceae	family	6	0	0	0	0	2	1	2	1
-METPO:1000623	moderately halophilic	True	NCBITaxon:135617	Thiotrichaceae	family	1	0	0	0	0	2	1	2	1
-METPO:1000683	sphere shaped	False	NCBITaxon:216572	Oscillospiraceae	family	3	15	13	12	10	13	8	12	7
-METPO:1000683	sphere shaped	False	NCBITaxon:74201	Verrucomicrobiota	phylum	3	16	10	11	8	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:1301	Streptococcus	genus	29	11	10	11	10	5	5	5	5
-METPO:1000683	sphere shaped	False	NCBITaxon:33958	Lactobacillaceae	family	7	12	8	9	6	5	4	4	3
-METPO:1000683	sphere shaped	False	NCBITaxon:162289	Peptoniphilus	genus	2	9	1	9	1	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:1300	Streptococcaceae	family	30	9	6	9	6	5	5	5	5
-METPO:1000683	sphere shaped	False	NCBITaxon:201174	Actinomycetota	phylum	140	8	7	8	7	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:186801	Clostridia	class	8	8	7	8	7	6	5	3	2
-METPO:1000683	sphere shaped	False	NCBITaxon:186803	Lachnospiraceae	family	1	10	7	6	5	39	19	22	12
-METPO:1000683	sphere shaped	False	NCBITaxon:81852	Enterococcaceae	family	15	6	4	6	4	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:1224	Pseudomonadota	phylum	76	15	8	5	4	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:1350	Enterococcus	genus	9	7	7	5	5	2	2	2	2
-METPO:1000683	sphere shaped	False	NCBITaxon:186802	Eubacteriales	order	6	7	6	5	5	7	5	4	3
-METPO:1000683	sphere shaped	False	NCBITaxon:1239	Bacillota	phylum	126	5	5	5	5	14	7	14	7
-METPO:1000683	sphere shaped	False	NCBITaxon:186804	Peptostreptococcaceae	family	1	5	1	5	1	3	3	2	2
-METPO:1000683	sphere shaped	False	NCBITaxon:29465	Veillonella	genus	5	5	4	5	4	2	2	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:543	Enterobacteriaceae	family	2	18	9	4	2	2	2	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:91061	Bacilli	class	102	4	2	4	2	3	2	3	2
-METPO:1000683	sphere shaped	False	NCBITaxon:84999	Coriobacteriales	order	1	3	3	3	3	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:186826	Lactobacillales	order	61	3	2	3	2	3	2	3	2
-METPO:1000683	sphere shaped	False	NCBITaxon:31977	Veillonellaceae	family	9	3	3	3	3	3	2	3	2
-METPO:1000683	sphere shaped	False	NCBITaxon:909930	Acidaminococcaceae	family	1	2	2	2	2	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:904	Acidaminococcus	genus	1	2	2	2	2	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:469	Acinetobacter	genus	2	2	2	2	2	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:506	Alcaligenaceae	family	6	2	2	2	2	2	2	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:80840	Burkholderiales	order	10	2	2	2	2	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:84998	Coriobacteriia	class	1	2	2	2	2	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:1357	Lactococcus	genus	1	2	2	2	2	3	2	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:906	Megasphaera	genus	2	2	2	2	2	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:1263	Ruminococcus	genus	2	2	2	2	2	9	6	7	5
-METPO:1000683	sphere shaped	False	NCBITaxon:1236	Gammaproteobacteria	class	35	3	3	1	1	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:1760	Actinomycetes	class	139	1	1	1	1	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:186827	Aerococcaceae	family	8	1	1	1	1	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:28211	Alphaproteobacteria	class	28	1	1	1	1	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:815	Bacteroidaceae	family	1	1	1	1	1	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:28216	Betaproteobacteria	class	13	1	1	1	1	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:580596	Butyricicoccus	genus	1	1	1	1	1	6	3	6	3
-METPO:1000683	sphere shaped	False	NCBITaxon:186828	Carnobacteriaceae	family	1	1	1	1	1	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:356	Hyphomicrobiales	order	7	1	1	1	1	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:85023	Microbacteriaceae	family	2	1	1	1	1	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:468	Moraxellaceae	family	11	1	1	1	1	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:544448	Mycoplasmatota	phylum	1	1	1	1	1	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:909932	Negativicutes	class	10	1	1	1	1	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:171552	Prevotellaceae	family	1	1	1	1	1	8	7	6	5
-METPO:1000683	sphere shaped	False	NCBITaxon:1328	Streptococcus anginosus	species	1	1	1	1	1	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:172900	Victivallis	genus	1	1	1	1	1	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:91347	Enterobacterales	order	2	3	2	0	0	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:84642	Aeromonadaceae	family	2	2	1	0	0	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:1716	Corynebacterium	genus	1	2	1	0	0	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:187327	Acidaminococcus intestini	species	1	1	1	0	0	0	0	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:186817	Bacillaceae	family	6	1	1	0	0	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:171549	Bacteroidales	order	2	1	1	0	0	4	4	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:200643	Bacteroidia	class	2	1	1	0	0	6	5	2	2
-METPO:1000683	sphere shaped	False	NCBITaxon:186807	Peptococcaceae	family	1	1	1	0	0	2	2	2	2
-METPO:1000683	sphere shaped	False	NCBITaxon:2049	Actinomycetaceae	family	6	0	0	0	0	3	2	3	2
-METPO:1000683	sphere shaped	False	NCBITaxon:2037	Actinomycetales	order	6	0	0	0	0	2	2	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:1385	Bacillales	order	41	0	0	0	0	2	1	2	1
-METPO:1000683	sphere shaped	False	NCBITaxon:976	Bacteroidota	phylum	4	0	0	0	0	3	3	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:85019	Brevibacteriaceae	family	3	0	0	0	0	4	3	4	3
-METPO:1000683	sphere shaped	False	NCBITaxon:1696	Brevibacterium	genus	2	0	0	0	0	3	2	3	2
-METPO:1000683	sphere shaped	False	NCBITaxon:118882	Brucellaceae	family	1	0	0	0	0	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:3085642	Butyricicoccaceae	family	1	0	0	0	0	6	2	5	2
-METPO:1000683	sphere shaped	False	NCBITaxon:186818	Caryophanaceae	family	8	0	0	0	0	2	1	2	1
-METPO:1000683	sphere shaped	False	NCBITaxon:80864	Comamonadaceae	family	4	0	0	0	0	2	2	2	2
-METPO:1000683	sphere shaped	False	NCBITaxon:39948	Dialister	genus	1	0	0	0	0	2	1	2	1
-METPO:1000683	sphere shaped	False	NCBITaxon:28256	Halomonadaceae	family	1	0	0	0	0	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:404402	Howardella	genus	1	0	0	0	0	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:85021	Intrasporangiaceae	family	9	0	0	0	0	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:1268	Micrococcaceae	family	38	0	0	0	0	2	2	2	2
-METPO:1000683	sphere shaped	False	NCBITaxon:909656	Phocaeicola	genus	1	0	0	0	0	1	1	0	0
-METPO:1000683	sphere shaped	False	NCBITaxon:415002	Puniceicoccaceae	family	1	0	0	0	0	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:438033	Ruminococcus gauvreauii	species	1	0	0	0	0	2	1	2	1
-METPO:1000683	sphere shaped	False	NCBITaxon:90964	Staphylococcaceae	family	21	0	0	0	0	1	1	1	1
-METPO:1000683	sphere shaped	False	NCBITaxon:2062	Streptomycetaceae	family	2	0	0	0	0	2	1	2	1
+trait_id	trait	trait_direction	trait_increased_minus_decreased_mean_z	taxon_id	taxon_name	taxonomic_rank	annotation_count	increased_profiles	increased_studies	increased_positive_z_profiles	increased_positive_z_studies	decreased_profiles	decreased_studies	decreased_positive_z_profiles	decreased_positive_z_studies
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:543	Enterobacteriaceae	family	14	18	9	18	9	2	2	2	2
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1224	Pseudomonadota	phylum	211	16	9	16	9	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1578	Lactobacillus	genus	1	15	12	11	10	6	5	5	4
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:31953	Bifidobacteriaceae	family	1	15	9	10	6	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:33958	Lactobacillaceae	family	1	12	8	9	7	5	4	3	2
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:561	Escherichia	genus	5	9	5	9	5	2	2	2	2
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:201174	Actinomycetota	phylum	47	8	7	8	7	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:239759	Alistipes	genus	1	8	8	8	8	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:186801	Clostridia	class	12	8	7	8	7	6	5	6	5
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1301	Streptococcus	genus	2	10	9	7	7	5	5	2	2
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1350	Enterococcus	genus	14	7	7	7	7	2	2	2	2
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:171550	Rikenellaceae	family	1	7	7	7	7	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1300	Streptococcaceae	family	4	8	5	6	4	5	5	3	3
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:81852	Enterococcaceae	family	16	6	4	6	4	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:570	Klebsiella	genus	3	6	4	6	4	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:613	Serratia	genus	1	6	3	6	3	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1239	Bacillota	phylum	78	5	5	5	5	15	8	15	8
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:186802	Eubacteriales	order	4	7	6	4	4	7	5	6	5
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:91061	Bacilli	class	62	4	2	4	2	3	2	3	2
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:547	Enterobacter	genus	2	4	3	4	3	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:573	Klebsiella pneumoniae	species	3	4	3	4	3	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:91347	Enterobacterales	order	19	3	2	3	2	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1236	Gammaproteobacteria	class	149	3	3	3	3	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:84992	Acidimicrobiia	class	1	2	2	2	2	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:469	Acinetobacter	genus	2	2	2	2	2	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:84642	Aeromonadaceae	family	5	2	1	2	1	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:506	Alcaligenaceae	family	2	2	2	2	2	2	2	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1386	Bacillus	genus	10	2	1	2	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:85004	Bifidobacteriales	order	1	2	2	2	2	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:80840	Burkholderiales	order	16	2	2	2	2	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:544	Citrobacter	genus	1	2	2	2	2	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1716	Corynebacterium	genus	9	2	1	2	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:213115	Desulfovibrionales	order	2	2	2	2	2	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:551	Erwinia	genus	1	2	1	2	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:186826	Lactobacillales	order	22	2	1	2	1	3	2	3	2
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1357	Lactococcus	genus	2	2	2	2	2	3	2	3	2
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:28890	Methanobacteriota	phylum	17	2	1	2	1	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:508458	Synergistota	phylum	1	2	2	2	2	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:200643	Bacteroidia	class	1	2	2	1	1	6	5	3	3
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1760	Actinomycetes	class	46	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:28211	Alphaproteobacteria	class	44	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:186817	Bacillaceae	family	23	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:28216	Betaproteobacteria	class	17	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:68337	Deferribacteres	class	1	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:213117	Desulfohalobiaceae	family	1	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1562	Desulfotomaculum	genus	1	1	1	1	1	2	2	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:550	Enterobacter cloacae	species	1	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1903409	Erwiniaceae	family	1	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:562	Escherichia coli	species	5	1	1	1	1	2	2	2	2
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:49546	Flavobacteriaceae	family	9	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:724	Haemophilus	genus	2	1	1	1	1	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:356	Hyphomicrobiales	order	9	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1596	Lactobacillus gasseri	species	1	1	1	1	1	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:32033	Lysobacteraceae	family	2	1	1	1	1	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:135614	Lysobacterales	order	2	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:85023	Microbacteriaceae	family	2	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:31969	Mollicutes	class	2	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:468	Moraxellaceae	family	3	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:544448	Mycoplasmatota	phylum	3	1	1	1	1	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1033997	Nitrososphaeraceae	family	1	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1033996	Nitrososphaerales	order	1	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:651137	Nitrososphaerota	phylum	4	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:712	Pasteurellaceae	family	3	1	1	1	1	4	3	3	2
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:583	Proteus	genus	2	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:135621	Pseudomonadaceae	family	27	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:72274	Pseudomonadales	order	30	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:82115	Rhizobiaceae	family	5	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:590	Salmonella	genus	2	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:84566	Sphingobacteriaceae	family	1	1	1	1	1	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:200666	Sphingobacteriales	order	1	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:117747	Sphingobacteriia	class	1	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:41297	Sphingomonadaceae	family	2	1	1	1	1	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:204457	Sphingomonadales	order	3	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:137	Spirochaetaceae	family	4	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1309	Streptococcus mutans	species	1	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:649775	Synergistia	class	1	1	1	1	1	0	0	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:171549	Bacteroidales	order	1	1	1	0	0	4	4	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:203492	Fusobacteriaceae	family	2	1	1	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:186807	Peptococcaceae	family	1	1	1	0	0	2	2	2	2
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:976	Bacteroidota	phylum	14	0	0	0	0	3	3	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:186818	Caryophanaceae	family	2	0	0	0	0	2	1	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:80864	Comamonadaceae	family	4	0	0	0	0	2	2	2	2
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:283	Comamonas	genus	1	0	0	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1117	Cyanobacteriota	phylum	5	0	0	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:200644	Flavobacteriales	order	11	0	0	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:117743	Flavobacteriia	class	11	0	0	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:237	Flavobacterium	genus	1	0	0	0	0	1	1	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:203491	Fusobacteriales	order	2	0	0	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:203490	Fusobacteriia	class	2	0	0	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:32066	Fusobacteriota	phylum	2	0	0	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:28256	Halomonadaceae	family	5	0	0	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:267893	Idiomarinaceae	family	1	0	0	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:119045	Methylobacteriaceae	family	2	0	0	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1268	Micrococcaceae	family	2	0	0	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:41295	Rhodospirillaceae	family	1	0	0	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:204441	Rhodospirillales	order	4	0	0	0	0	1	1	1	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:90964	Staphylococcaceae	family	5	0	0	0	0	1	1	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:1280	Staphylococcus aureus	species	2	0	0	0	0	1	1	0	0
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:2062	Streptomycetaceae	family	6	0	0	0	0	2	1	2	1
+METPO:1000623	moderately halophilic	increased	0.4941071279164387	NCBITaxon:135617	Thiotrichaceae	family	1	0	0	0	0	2	1	2	1
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:543	Enterobacteriaceae	family	15	18	9	18	9	2	2	2	2
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:1224	Pseudomonadota	phylum	20	16	9	16	9	1	1	1	1
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:561	Escherichia	genus	14	9	5	9	5	2	2	2	2
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:186801	Clostridia	class	5	8	7	8	7	6	5	6	5
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:186802	Eubacteriales	order	4	7	6	7	6	7	5	7	5
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:1239	Bacillota	phylum	14	5	5	5	5	15	8	15	8
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:201174	Actinomycetota	phylum	3	8	7	4	4	0	0	0	0
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:91061	Bacilli	class	8	4	2	3	2	3	2	3	2
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:91347	Enterobacterales	order	15	3	2	3	2	0	0	0	0
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:1236	Gammaproteobacteria	class	17	3	3	3	3	1	1	1	1
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:80840	Burkholderiales	order	2	2	2	2	2	0	0	0	0
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:544	Citrobacter	genus	1	2	2	2	2	0	0	0	0
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:191394	Deferribacteraceae	family	1	2	2	2	2	0	0	0	0
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:75682	Oxalobacteraceae	family	1	2	1	2	1	0	0	0	0
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:1760	Actinomycetes	class	3	1	1	1	1	0	0	0	0
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:28211	Alphaproteobacteria	class	1	1	1	1	1	0	0	0	0
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:186817	Bacillaceae	family	6	1	1	1	1	0	0	0	0
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:28216	Betaproteobacteria	class	2	1	1	1	1	0	0	0	0
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:68337	Deferribacteres	class	3	1	1	1	1	0	0	0	0
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:562	Escherichia coli	species	14	1	1	1	1	2	2	2	2
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:85023	Microbacteriaceae	family	1	1	1	1	1	0	0	0	0
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:186807	Peptococcaceae	family	1	1	1	1	1	2	2	2	2
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:72274	Pseudomonadales	order	1	1	1	1	1	0	0	0	0
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:80864	Comamonadaceae	family	1	0	0	0	0	2	2	1	1
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:1268	Micrococcaceae	family	2	0	0	0	0	1	1	1	1
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	increased	0.4200857155718372	NCBITaxon:90964	Staphylococcaceae	family	1	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1678	Bifidobacterium	genus	7	24	12	18	10	2	2	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:543	Enterobacteriaceae	family	1206	18	9	18	9	2	2	2	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1224	Pseudomonadota	phylum	2507	16	9	16	9	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:203557	Verrucomicrobiaceae	family	2	17	9	14	6	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1578	Lactobacillus	genus	60	15	12	14	11	6	5	5	4
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:74201	Verrucomicrobiota	phylum	10	17	11	13	7	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:31953	Bifidobacteriaceae	family	27	15	9	13	7	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:33958	Lactobacillaceae	family	238	12	8	11	7	5	4	5	4
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1301	Streptococcus	genus	736	10	9	10	9	5	5	5	5
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:872	Desulfovibrio	genus	3	11	7	9	5	3	2	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:561	Escherichia	genus	800	9	5	9	5	2	2	2	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1300	Streptococcaceae	family	763	8	5	8	5	5	5	5	5
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1350	Enterococcus	genus	109	7	7	7	7	2	2	2	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:216572	Oscillospiraceae	family	2	15	13	6	5	12	8	8	5
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:81852	Enterococcaceae	family	119	6	4	6	4	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:570	Klebsiella	genus	28	6	4	6	4	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:613	Serratia	genus	23	6	3	6	3	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:201174	Actinomycetota	phylum	197	8	7	5	4	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:186801	Clostridia	class	15	8	7	5	4	6	5	3	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1239	Bacillota	phylum	2377	5	5	5	5	15	8	15	8
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:186803	Lachnospiraceae	family	5	9	7	4	4	40	20	23	14
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:216816	Bifidobacterium longum	species	1	6	5	4	3	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:91061	Bacilli	class	2357	4	2	4	2	3	2	3	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:547	Enterobacter	genus	15	4	3	4	3	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:573	Klebsiella pneumoniae	species	20	4	3	4	3	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:203494	Verrucomicrobiia	class	3	8	8	3	3	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:48461	Verrucomicrobiales	order	3	7	6	3	2	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	1	4	1	3	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:91347	Enterobacterales	order	1482	3	2	3	2	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1236	Gammaproteobacteria	class	2190	3	3	3	3	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1304	Streptococcus salivarius	species	6	3	3	3	3	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:191303	Turicibacter	genus	1	3	1	3	1	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:194924	Desulfovibrionaceae	family	4	5	4	2	2	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:186804	Peptostreptococcaceae	family	4	5	1	2	1	3	3	2	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:816	Bacteroides	genus	2	4	3	2	2	6	6	2	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:216851	Faecalibacterium	genus	1	4	2	2	2	33	15	24	10
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:128827	Erysipelotrichaceae	family	1	3	3	2	2	3	2	2	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:84642	Aeromonadaceae	family	22	2	1	2	1	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:506	Alcaligenaceae	family	8	2	2	2	2	2	2	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1386	Bacillus	genus	132	2	1	2	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:815	Bacteroidaceae	family	5	2	2	2	2	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:80840	Burkholderiales	order	75	2	2	2	2	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:544	Citrobacter	genus	14	2	2	2	2	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1716	Corynebacterium	genus	75	2	1	2	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:551	Erwinia	genus	18	2	1	2	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:526524	Erysipelotrichia	class	3	2	2	2	2	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:244366	Klebsiella variicola	species	1	2	1	2	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:186826	Lactobacillales	order	1138	2	1	2	1	3	2	3	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1357	Lactococcus	genus	23	2	2	2	2	3	2	2	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:28890	Methanobacteriota	phylum	19	2	1	2	1	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:43947	Tolumonas	genus	1	2	1	2	1	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:186802	Eubacteriales	order	6	7	6	1	1	7	5	4	3
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:84992	Acidimicrobiia	class	1	2	2	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:200643	Bacteroidia	class	12	2	2	1	1	6	5	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:85004	Bifidobacteriales	order	27	2	2	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:213115	Desulfovibrionales	order	4	2	2	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1624	Ligilactobacillus salivarius	species	5	2	2	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:75682	Oxalobacteraceae	family	2	2	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:46123	Abiotrophia	genus	1	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1654	Actinomyces	genus	16	1	1	1	1	3	2	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1760	Actinomycetes	class	196	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:186827	Aerococcaceae	family	6	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:416916	Aggregatibacter	genus	39	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:28211	Alphaproteobacteria	class	177	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:92793	Aquabacterium	genus	1	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:186817	Bacillaceae	family	204	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:28216	Betaproteobacteria	class	134	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:563835	Chitinophagaceae	family	3	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:550	Enterobacter cloacae	species	6	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1903409	Erwiniaceae	family	50	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:526525	Erysipelotrichales	order	3	1	1	1	1	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:562	Escherichia coli	species	779	1	1	1	1	2	2	2	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:724	Haemophilus	genus	38	1	1	1	1	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:356	Hyphomicrobiales	order	98	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1129771	Leptotrichiaceae	family	3	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:32033	Lysobacteraceae	family	5	1	1	1	1	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:135614	Lysobacterales	order	13	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:85023	Microbacteriaceae	family	1	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:31969	Mollicutes	class	31	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:468	Moraxellaceae	family	1	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:544448	Mycoplasmatota	phylum	117	1	1	1	1	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:712	Pasteurellaceae	family	136	1	1	1	1	4	3	4	3
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:583	Proteus	genus	7	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:135621	Pseudomonadaceae	family	25	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:72274	Pseudomonadales	order	36	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:82115	Rhizobiaceae	family	25	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:590	Salmonella	genus	261	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:620	Shigella	genus	47	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:84566	Sphingobacteriaceae	family	11	1	1	1	1	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:200666	Sphingobacteriales	order	11	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:117747	Sphingobacteriia	class	11	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:41297	Sphingomonadaceae	family	3	1	1	1	1	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:204457	Sphingomonadales	order	10	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:137	Spirochaetaceae	family	3	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1328	Streptococcus anginosus	species	1	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1309	Streptococcus mutans	species	138	1	1	1	1	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1308	Streptococcus thermophilus	species	5	1	1	1	1	2	2	2	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:43948	Tolumonas auensis	species	1	1	1	1	1	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:171549	Bacteroidales	order	8	1	1	0	0	4	4	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:49546	Flavobacteriaceae	family	43	1	1	0	0	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1596	Lactobacillus gasseri	species	5	1	1	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	1	1	1	0	0	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:83766	Propionivibrio	genus	1	1	1	0	0	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:196081	Scardovia	genus	2	1	1	0	0	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:78259	Scardovia inopinata	species	2	1	1	0	0	0	0	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:2146	Acholeplasmataceae	family	3	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:2049	Actinomycetaceae	family	40	0	0	0	0	3	2	2	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:2037	Actinomycetales	order	40	0	0	0	0	2	2	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:469592	Bacteroides sp. 3_1_19	species	1	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:976	Bacteroidota	phylum	83	0	0	0	0	3	3	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:118882	Brucellaceae	family	15	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:186818	Caryophanaceae	family	3	0	0	0	0	2	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:80864	Comamonadaceae	family	20	0	0	0	0	2	2	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:283	Comamonas	genus	1	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:2810280	Coprobacillaceae	family	1	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:106589	Cupriavidus	genus	5	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1117	Cyanobacteriota	phylum	44	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1279384	Eggerthia	genus	1	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:31973	Eggerthia catenaformis	species	1	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1647	Erysipelothrix	genus	1	0	0	0	0	2	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:853	Faecalibacterium prausnitzii	species	1	0	0	0	0	13	8	10	7
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:200644	Flavobacteriales	order	51	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:117743	Flavobacteriia	class	51	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:237	Flavobacterium	genus	8	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:203491	Fusobacteriales	order	3	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:203490	Fusobacteriia	class	3	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:32066	Fusobacteriota	phylum	3	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1378	Gemella	genus	8	0	0	0	0	2	1	2	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1379	Gemella haemolysans	species	3	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:539738	Gemellaceae	family	8	0	0	0	0	3	2	3	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:729	Haemophilus parainfluenzae	species	2	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:28256	Halomonadaceae	family	17	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:267893	Idiomarinaceae	family	2	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:85021	Intrasporangiaceae	family	4	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:43995	Johnsonella ignava	species	1	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:119045	Methylobacteriaceae	family	4	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1268	Micrococcaceae	family	5	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:909656	Phocaeicola	genus	3	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:821	Phocaeicola vulgatus	species	3	0	0	0	0	2	2	2	2
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1743	Propionibacterium	genus	1	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:348581	Propionicicella	genus	1	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:415002	Puniceicoccaceae	family	1	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:41295	Rhodospirillaceae	family	8	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:204441	Rhodospirillales	order	24	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:504481	Sediminibacterium	genus	1	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:90964	Staphylococcaceae	family	804	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:1280	Staphylococcus aureus	species	717	0	0	0	0	1	1	1	1
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:197614	Streptococcus pasteurianus	species	1	0	0	0	0	1	1	0	0
+METPO:1000608	facultatively aerobic	increased	0.3490150462469152	NCBITaxon:135617	Thiotrichaceae	family	1	0	0	0	0	2	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:186803	Lachnospiraceae	family	17	9	7	5	5	40	20	33	16
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1239	Bacillota	phylum	4478	5	5	5	5	15	8	15	8
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:572511	Blautia	genus	7	2	2	0	0	16	13	14	12
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:216572	Oscillospiraceae	family	18	15	13	7	6	12	8	10	7
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1263	Ruminococcus	genus	15	2	2	1	1	9	6	7	5
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:33042	Coprococcus	genus	3	1	1	1	1	11	8	6	4
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:171552	Prevotellaceae	family	1	1	1	0	0	8	7	6	5
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:3085642	Butyricicoccaceae	family	1	0	0	0	0	6	2	5	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:580596	Butyricicoccus	genus	1	1	1	1	1	6	3	5	3
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1300	Streptococcaceae	family	996	8	5	8	5	5	5	5	5
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1301	Streptococcus	genus	949	10	9	10	9	5	5	5	5
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:186802	Eubacteriales	order	23	7	6	2	2	7	5	4	3
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:186801	Clostridia	class	45	8	7	6	5	6	5	3	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:33958	Lactobacillaceae	family	43	12	8	6	4	5	4	3	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:85019	Brevibacteriaceae	family	3	0	0	0	0	4	3	3	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:712	Pasteurellaceae	family	10	1	1	1	1	4	3	3	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:91061	Bacilli	class	4362	4	2	4	2	3	2	3	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1322	Blautia hansenii	species	1	0	0	0	0	3	2	3	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:539738	Gemellaceae	family	9	0	0	0	0	3	2	3	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:186826	Lactobacillales	order	1184	2	1	2	1	3	2	3	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:31977	Veillonellaceae	family	32	3	3	3	3	3	2	3	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1654	Actinomyces	genus	2	1	1	1	1	3	2	2	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:2049	Actinomycetaceae	family	3	0	0	0	0	3	2	2	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1696	Brevibacterium	genus	2	0	0	0	0	3	2	2	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:186804	Peptostreptococcaceae	family	5	5	1	5	1	3	3	2	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:186818	Caryophanaceae	family	12	0	0	0	0	2	1	2	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:39948	Dialister	genus	1	0	0	0	0	2	1	2	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1350	Enterococcus	genus	121	7	7	5	5	2	2	2	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1378	Gemella	genus	8	0	0	0	0	2	1	2	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:117563	Granulicatella	genus	1	1	1	1	1	2	1	2	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:438033	Ruminococcus gauvreauii	species	2	0	0	0	0	2	1	2	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1308	Streptococcus thermophilus	species	12	1	1	1	1	2	2	2	2
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:200643	Bacteroidia	class	4	2	2	0	0	6	5	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1357	Lactococcus	genus	42	2	2	2	2	3	2	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:2037	Actinomycetales	order	3	0	0	0	0	2	2	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:207244	Anaerostipes	genus	1	2	1	2	1	2	2	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:80864	Comamonadaceae	family	7	0	0	0	0	2	2	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:543	Enterobacteriaceae	family	4	18	9	5	3	2	2	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:561	Escherichia	genus	1	9	5	4	3	2	2	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:562	Escherichia coli	species	1	1	1	1	1	2	2	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:40518	Ruminococcus bromii	species	2	2	2	1	1	2	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:2062	Streptomycetaceae	family	3	0	0	0	0	2	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:135617	Thiotrichaceae	family	2	0	0	0	0	2	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:2146	Acholeplasmataceae	family	11	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:909930	Acidaminococcaceae	family	4	2	2	1	1	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:165779	Anaerococcus	genus	13	1	1	1	1	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:649756	Anaerostipes hadrus	species	1	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:118882	Brucellaceae	family	7	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:44008	Enterococcus cecorum	species	1	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:526525	Erysipelotrichales	order	1	1	1	1	1	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:526524	Erysipelotrichia	class	1	2	2	2	2	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1236	Gammaproteobacteria	class	137	3	3	1	1	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1379	Gemella haemolysans	species	3	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:204475	Gemmiger	genus	1	1	1	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:28256	Halomonadaceae	family	1	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:404402	Howardella	genus	1	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:69657	Hyphomonadaceae	family	1	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:85021	Intrasporangiaceae	family	14	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:2159	Methanobacteriaceae	family	8	1	1	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:28890	Methanobacteriota	phylum	192	2	1	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1268	Micrococcaceae	family	65	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:544448	Mycoplasmatota	phylum	137	1	1	1	1	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:909932	Negativicutes	class	36	1	1	1	1	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1224	Pseudomonadota	phylum	322	16	9	4	3	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:415002	Puniceicoccaceae	family	1	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	1	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1265	Ruminococcus flavefaciens	species	1	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:41297	Sphingomonadaceae	family	1	1	1	1	1	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:90964	Staphylococcaceae	family	3142	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1280	Staphylococcus aureus	species	3003	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:197614	Streptococcus pasteurianus	species	1	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:995019	Sutterellaceae	family	1	1	1	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:191303	Turicibacter	genus	1	3	1	3	1	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:39777	Veillonella atypica	species	4	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:46228	[Ruminococcus] lactaris	species	1	0	0	0	0	1	1	1	1
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:171549	Bacteroidales	order	4	1	1	0	0	4	4	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:976	Bacteroidota	phylum	10	0	0	0	0	3	3	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:506	Alcaligenaceae	family	10	2	2	1	1	2	2	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:29465	Veillonella	genus	20	5	4	4	3	2	2	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:84642	Aeromonadaceae	family	2	2	1	0	0	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:815	Bacteroidaceae	family	1	2	2	1	1	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1117	Cyanobacteriota	phylum	52	0	0	0	0	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:200644	Flavobacteriales	order	2	0	0	0	0	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:117743	Flavobacteriia	class	2	0	0	0	0	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:724	Haemophilus	genus	1	1	1	1	1	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:2316020	Mediterraneibacter	genus	6	0	0	0	0	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:33038	Mediterraneibacter gnavus	species	2	1	1	1	1	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:33039	Mediterraneibacter torques	species	2	3	3	2	2	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:187326	Megasphaera micronuciformis	species	1	0	0	0	0	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:909656	Phocaeicola	genus	1	0	0	0	0	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:41295	Rhodospirillaceae	family	1	0	0	0	0	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:204441	Rhodospirillales	order	1	0	0	0	0	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:84566	Sphingobacteriaceae	family	2	1	1	0	0	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:39492	[Eubacterium] siraeum	species	1	1	1	1	1	1	1	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:46123	Abiotrophia	genus	1	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:904	Acidaminococcus	genus	4	2	2	2	2	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:187327	Acidaminococcus intestini	species	2	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:469	Acinetobacter	genus	24	2	2	2	2	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1760	Actinomycetes	class	236	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:201174	Actinomycetota	phylum	238	8	7	4	3	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:186827	Aerococcaceae	family	8	1	1	0	0	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:28211	Alphaproteobacteria	class	66	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:186817	Bacillaceae	family	8	1	1	0	0	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:28216	Betaproteobacteria	class	117	1	1	0	0	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:31953	Bifidobacteriaceae	family	14	15	9	7	4	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:85004	Bifidobacteriales	order	14	2	2	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:53443	Blautia hydrogenotrophica	species	1	1	1	0	0	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:40520	Blautia obeum	species	2	5	2	5	2	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:33035	Blautia producta	species	1	1	1	0	0	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:80840	Burkholderiales	order	18	2	2	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:544	Citrobacter	genus	1	2	2	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:84999	Coriobacteriales	order	2	3	3	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:84998	Coriobacteriia	class	2	2	2	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1716	Corynebacterium	genus	3	2	1	0	0	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:194924	Desulfovibrionaceae	family	1	5	4	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:213115	Desulfovibrionales	order	1	2	2	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:91347	Enterobacterales	order	8	3	2	0	0	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:81852	Enterococcaceae	family	134	6	4	6	4	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:150022	Finegoldia	genus	3	2	1	2	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:49546	Flavobacteriaceae	family	2	1	1	0	0	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:356	Hyphomicrobiales	order	17	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:906	Megasphaera	genus	8	2	2	2	2	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:2172	Methanobrevibacter	genus	4	4	3	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:2173	Methanobrevibacter smithii	species	1	3	3	2	2	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:85023	Microbacteriaceae	family	4	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:31969	Mollicutes	class	44	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:468	Moraxellaceae	family	55	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:581	Morganella	genus	1	1	1	0	0	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:497726	Nitrososphaera	genus	1	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1033997	Nitrososphaeraceae	family	2	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1033996	Nitrososphaerales	order	2	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:651137	Nitrososphaerota	phylum	3	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:577310	Parasutterella	genus	1	3	3	2	2	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:162289	Peptoniphilus	genus	9	9	1	9	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:135621	Pseudomonadaceae	family	5	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:72274	Pseudomonadales	order	5	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:2047	Rothia dentocariosa	species	2	1	1	0	0	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:40519	Ruminococcus callidus	species	1	2	2	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:200666	Sphingobacteriales	order	2	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:117747	Sphingobacteriia	class	2	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:204457	Sphingomonadales	order	2	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:137	Spirochaetaceae	family	2	1	1	0	0	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1328	Streptococcus anginosus	species	6	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1309	Streptococcus mutans	species	164	1	1	1	1	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:1304	Streptococcus salivarius	species	7	3	3	3	3	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:157	Treponema	genus	1	1	1	0	0	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:203494	Verrucomicrobiia	class	1	8	8	5	5	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:74201	Verrucomicrobiota	phylum	15	17	11	9	7	0	0	0	0
+METPO:1000668	coccus shaped	decreased	-0.0812907155522854	NCBITaxon:172900	Victivallis	genus	1	1	1	1	1	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:186803	Lachnospiraceae	family	1	9	7	6	5	40	20	23	13
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:1239	Bacillota	phylum	126	5	5	5	5	15	8	15	8
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:216572	Oscillospiraceae	family	3	15	13	12	10	12	8	11	7
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:1263	Ruminococcus	genus	2	2	2	2	2	9	6	7	5
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:171552	Prevotellaceae	family	1	1	1	1	1	8	7	6	5
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:580596	Butyricicoccus	genus	1	1	1	1	1	6	3	6	3
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:3085642	Butyricicoccaceae	family	1	0	0	0	0	6	2	5	2
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:1300	Streptococcaceae	family	30	8	5	8	5	5	5	5	5
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:1301	Streptococcus	genus	29	10	9	10	9	5	5	5	5
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:186802	Eubacteriales	order	6	7	6	5	5	7	5	4	3
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:33958	Lactobacillaceae	family	7	12	8	9	6	5	4	4	3
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:85019	Brevibacteriaceae	family	3	0	0	0	0	4	3	4	3
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:186801	Clostridia	class	8	8	7	8	7	6	5	3	2
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:2049	Actinomycetaceae	family	6	0	0	0	0	3	2	3	2
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:91061	Bacilli	class	102	4	2	4	2	3	2	3	2
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:1696	Brevibacterium	genus	2	0	0	0	0	3	2	3	2
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:186826	Lactobacillales	order	61	2	1	2	1	3	2	3	2
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:31977	Veillonellaceae	family	9	3	3	3	3	3	2	3	2
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:200643	Bacteroidia	class	2	2	2	0	0	6	5	2	2
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:186804	Peptostreptococcaceae	family	1	5	1	5	1	3	3	2	2
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:186818	Caryophanaceae	family	8	0	0	0	0	2	1	2	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:80864	Comamonadaceae	family	4	0	0	0	0	2	2	2	2
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:39948	Dialister	genus	1	0	0	0	0	2	1	2	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:1350	Enterococcus	genus	9	7	7	5	5	2	2	2	2
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:186807	Peptococcaceae	family	1	1	1	0	0	2	2	2	2
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:438033	Ruminococcus gauvreauii	species	1	0	0	0	0	2	1	2	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:2062	Streptomycetaceae	family	2	0	0	0	0	2	1	2	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:1357	Lactococcus	genus	1	2	2	2	2	3	2	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:2037	Actinomycetales	order	6	0	0	0	0	2	2	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:506	Alcaligenaceae	family	6	2	2	2	2	2	2	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:543	Enterobacteriaceae	family	2	18	9	4	2	2	2	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:909930	Acidaminococcaceae	family	1	2	2	2	2	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:84642	Aeromonadaceae	family	2	2	1	0	0	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:815	Bacteroidaceae	family	1	2	2	1	1	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:118882	Brucellaceae	family	1	0	0	0	0	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:1236	Gammaproteobacteria	class	35	3	3	1	1	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:28256	Halomonadaceae	family	1	0	0	0	0	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:404402	Howardella	genus	1	0	0	0	0	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:85021	Intrasporangiaceae	family	9	0	0	0	0	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:1268	Micrococcaceae	family	38	0	0	0	0	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:544448	Mycoplasmatota	phylum	1	1	1	1	1	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:909932	Negativicutes	class	10	1	1	1	1	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:1224	Pseudomonadota	phylum	76	16	9	5	4	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:415002	Puniceicoccaceae	family	1	0	0	0	0	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:90964	Staphylococcaceae	family	21	0	0	0	0	1	1	1	1
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:171549	Bacteroidales	order	2	1	1	0	0	4	4	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:976	Bacteroidota	phylum	4	0	0	0	0	3	3	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:29465	Veillonella	genus	5	5	4	5	4	2	2	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:909656	Phocaeicola	genus	1	0	0	0	0	1	1	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:904	Acidaminococcus	genus	1	2	2	2	2	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:187327	Acidaminococcus intestini	species	1	1	1	0	0	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:469	Acinetobacter	genus	2	2	2	2	2	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:1760	Actinomycetes	class	139	1	1	1	1	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:201174	Actinomycetota	phylum	140	8	7	8	7	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:186827	Aerococcaceae	family	8	1	1	1	1	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:28211	Alphaproteobacteria	class	28	1	1	1	1	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:186817	Bacillaceae	family	6	1	1	0	0	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:28216	Betaproteobacteria	class	13	1	1	1	1	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:80840	Burkholderiales	order	10	2	2	2	2	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:84999	Coriobacteriales	order	1	3	3	3	3	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:84998	Coriobacteriia	class	1	2	2	2	2	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:1716	Corynebacterium	genus	1	2	1	0	0	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:91347	Enterobacterales	order	2	3	2	0	0	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:81852	Enterococcaceae	family	15	6	4	6	4	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:356	Hyphomicrobiales	order	7	1	1	1	1	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:906	Megasphaera	genus	2	2	2	2	2	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:85023	Microbacteriaceae	family	2	1	1	1	1	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:468	Moraxellaceae	family	11	1	1	1	1	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:162289	Peptoniphilus	genus	2	9	1	9	1	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:1328	Streptococcus anginosus	species	1	1	1	1	1	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:74201	Verrucomicrobiota	phylum	3	17	11	11	8	0	0	0	0
+METPO:1000683	sphere shaped	decreased	-0.1333351871051159	NCBITaxon:172900	Victivallis	genus	1	1	1	1	1	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:186803	Lachnospiraceae	family	17	9	7	9	7	40	20	39	19
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:841	Roseburia	genus	1	4	4	4	4	33	20	33	20
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:572511	Blautia	genus	1	2	2	2	2	16	13	16	13
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:1239	Bacillota	phylum	86	5	5	4	4	15	8	15	8
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:31979	Clostridiaceae	family	7	2	2	1	1	13	8	13	8
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:216572	Oscillospiraceae	family	33	15	13	14	12	12	8	12	8
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:1485	Clostridium	genus	7	3	3	2	2	10	7	10	7
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:28050	Lachnospira	genus	1	2	2	2	2	9	5	9	5
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:1263	Ruminococcus	genus	10	2	2	2	2	9	6	9	6
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:186802	Eubacteriales	order	44	7	6	7	6	7	5	7	5
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:816	Bacteroides	genus	1	4	3	3	2	6	6	6	6
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:186801	Clostridia	class	65	8	7	8	7	6	5	6	5
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:301302	Roseburia faecis	species	1	0	0	0	0	6	5	6	5
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:830	Butyrivibrio	genus	3	2	2	2	2	3	2	3	2
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:207244	Anaerostipes	genus	1	2	1	0	0	2	2	2	2
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:246787	Bacteroides cellulosilyticus	species	1	1	1	1	1	2	1	2	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:80864	Comamonadaceae	family	1	0	0	0	0	2	2	2	2
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:40518	Ruminococcus bromii	species	2	2	2	1	1	2	1	2	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:2062	Streptomycetaceae	family	6	0	0	0	0	2	1	2	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:200643	Bacteroidia	class	2	2	2	1	1	6	5	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:171549	Bacteroidales	order	1	1	1	0	0	4	4	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:649756	Anaerostipes hadrus	species	1	0	0	0	0	1	1	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:815	Bacteroidaceae	family	1	2	2	1	1	1	1	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:186806	Eubacteriaceae	family	2	4	3	1	1	1	1	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:1730	Eubacterium	genus	2	1	1	0	0	1	1	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:1506553	Lachnoclostridium	genus	3	1	1	1	1	1	1	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:2719231	Lacrimispora	genus	2	0	0	0	0	1	1	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:2316020	Mediterraneibacter	genus	1	0	0	0	0	1	1	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:33039	Mediterraneibacter torques	species	1	3	3	2	2	1	1	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:1268	Micrococcaceae	family	1	0	0	0	0	1	1	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:1224	Pseudomonadota	phylum	18	16	9	1	1	1	1	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:1265	Ruminococcus flavefaciens	species	2	0	0	0	0	1	1	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:84566	Sphingobacteriaceae	family	1	1	1	0	0	1	1	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:39492	[Eubacterium] siraeum	species	1	1	1	1	1	1	1	1	1
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:91061	Bacilli	class	16	4	2	2	1	3	2	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:976	Bacteroidota	phylum	9	0	0	0	0	3	3	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:186826	Lactobacillales	order	1	2	1	0	0	3	2	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:1236	Gammaproteobacteria	class	14	3	3	1	1	1	1	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:1760	Actinomycetes	class	51	1	1	1	1	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:201174	Actinomycetota	phylum	51	8	7	3	3	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:28211	Alphaproteobacteria	class	3	1	1	0	0	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:186817	Bacillaceae	family	7	1	1	0	0	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:1386	Bacillus	genus	3	2	1	1	1	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:28216	Betaproteobacteria	class	1	1	1	0	0	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:40520	Blautia obeum	species	1	5	2	5	2	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:80840	Burkholderiales	order	1	2	2	1	1	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:44000	Caldicellulosiruptor	genus	5	2	1	0	0	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:563835	Chitinophagaceae	family	1	1	1	1	1	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:91347	Enterobacterales	order	7	3	2	0	0	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:46466	Halocella	genus	1	1	1	0	0	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:356	Hyphomicrobiales	order	1	1	1	0	0	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:84030	Lacrimispora saccharolytica	species	1	1	1	1	1	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:85023	Microbacteriaceae	family	1	1	1	0	0	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:135621	Pseudomonadaceae	family	1	1	1	0	0	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:72274	Pseudomonadales	order	1	1	1	1	1	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:613	Serratia	genus	5	6	3	0	0	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:200666	Sphingobacteriales	order	1	1	1	1	1	0	0	0	0
+METPO:2000103|GO:0030245	cellulose catabolic process	decreased	-0.7007499414209016	NCBITaxon:117747	Sphingobacteriia	class	1	1	1	1	1	0	0	0	0

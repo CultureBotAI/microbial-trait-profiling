@@ -2,161 +2,130 @@
 
 Source: `pd_six_trait_direction_lollipop.png` and its companion summary. The recomputed summary matches the saved source table.
 
-Scope: 130 increased and 123 decreased PD fecal profiles. Occurrences are deduplicated by taxon and profile; names and traits come from the local KG-Microbe taxa-trait matrix.
+Scope: 128 increased and 119 decreased PD fecal profiles. Occurrences are deduplicated by taxon and profile; names and traits come from the local KG-Microbe taxa-trait matrix.
 
-The four positive-side traits are moderately halophilic, facultatively aerobic, arsenate reduction, and coccus shaped. Coccus shaped is nearly neutral (+0.017 mean-z difference). A positive lollipop value is not evidence of statistical significance or gene expression. Cellulose breakdown is the strongest negative-side trait.
+All six lollipop traits are traced whatever their sign. Each trait's observed direction is the profile direction in which its mean z is higher, from the sign of `increased_minus_decreased_mean_z` in `pd_six_trait_direction_summary.tsv`; the tables carry it in `trait_direction`. Observed direction (increased minus decreased mean z): moderately halophilic increased (+0.494); arsenate reduction increased (+0.420); facultatively aerobic increased (+0.349); coccus shaped decreased (-0.081); sphere shaped decreased (-0.133); cellulose catabolic process decreased (-0.701). A lollipop value is a descriptive difference in mean z, not evidence of statistical significance or of gene expression.
 
-These are observed annotation carriers, not estimated causal contributions to the z-score difference. Profile z>0 describes relative trait enrichment. The matrix counts trait-bearing taxa at or below each reported taxon (src/bsdbng/taxa_trait_matrix.py, compute_trait_counts). Different descendant taxa can supply different annotations, including for species with strain-level descendants. An all-four matrix intersection therefore does not establish co-occurrence of four traits in one organism. Counts across taxonomic ranks must not be added. Raw KG edges are not present locally, so original assertion and strain provenance were not independently verified.
-
-## facultatively aerobic
-
-Mean-z difference (increased - decreased): +0.436. 110 annotated taxon labels observed in increased profiles; 157 across both directions.
-
-Top genus/species labels by occurrence in positive-z increased profiles:
-
-| Taxon | Rank | Increased profiles | Decreased profiles | Increased positive-z profiles | Increased positive-z studies |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Bifidobacterium | genus | 21 | 2 | 19 | 10 |
-| Lactobacillus | genus | 15 | 6 | 14 | 11 |
-| Streptococcus | genus | 11 | 5 | 11 | 10 |
-| Desulfovibrio | genus | 11 | 3 | 9 | 5 |
-| Escherichia | genus | 9 | 2 | 9 | 5 |
-| Enterococcus | genus | 7 | 2 | 7 | 7 |
-| Klebsiella | genus | 6 | 1 | 6 | 4 |
-| Serratia | genus | 6 | 0 | 6 | 3 |
-| Streptococcus mutans | species | 5 | 0 | 5 | 2 |
-| Bifidobacterium longum | species | 5 | 0 | 4 | 3 |
-| Actinomyces sp. oral taxon 448 | species | 4 | 0 | 4 | 1 |
-| Enterobacter | genus | 4 | 0 | 4 | 3 |
+These are observed annotation carriers, not estimated causal contributions to the z-score difference. Profile z>0 describes relative trait enrichment. The matrix counts trait-bearing taxa at or below each reported taxon (src/bsdbng/taxa_trait_matrix.py, compute_trait_counts). Different descendant taxa can supply different annotations, including for species with strain-level descendants, so one reported label carrying several trait annotations does not establish that one organism has those traits together. Counts across taxonomic ranks must not be added. Raw KG edges are not present locally, so original assertion and strain provenance were not independently verified.
 
 ## moderately halophilic
 
-Mean-z difference (increased - decreased): +0.536. 80 annotated taxon labels observed in increased profiles; 103 across both directions.
+Observed direction: increased (+0.494); its mean z is higher in increased than in decreased PD fecal profiles. Annotated taxon labels observed: 79 in increased profiles, 53 in decreased profiles; 100 across both directions.
 
-Top genus/species labels by occurrence in positive-z increased profiles:
+Top genus/species labels by occurrence in positive-z increased profiles, the trait's observed direction:
 
-| Taxon | Rank | Increased profiles | Decreased profiles | Increased positive-z profiles | Increased positive-z studies |
+| Taxon | Rank | Increased profiles | Decreased profiles | Increased positive-z profiles | Decreased positive-z profiles |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Lactobacillus | genus | 15 | 6 | 11 | 10 |
-| Escherichia | genus | 9 | 2 | 9 | 5 |
-| Streptococcus | genus | 11 | 5 | 8 | 8 |
-| Alistipes | genus | 8 | 0 | 8 | 8 |
-| Enterococcus | genus | 7 | 2 | 7 | 7 |
-| Klebsiella | genus | 6 | 1 | 6 | 4 |
-| Serratia | genus | 6 | 0 | 6 | 3 |
-| Streptococcus mutans | species | 5 | 0 | 5 | 2 |
-| Enterobacter | genus | 4 | 0 | 4 | 3 |
-| Klebsiella pneumoniae | species | 4 | 0 | 4 | 3 |
-| Acinetobacter | genus | 2 | 0 | 2 | 2 |
-| Bacillus | genus | 2 | 0 | 2 | 1 |
-
-## coccus shaped
-
-Mean-z difference (increased - decreased): +0.006. 114 annotated taxon labels observed in increased profiles; 163 across both directions.
-
-Top genus/species labels by occurrence in positive-z increased profiles:
-
-| Taxon | Rank | Increased profiles | Decreased profiles | Increased positive-z profiles | Increased positive-z studies |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Streptococcus | genus | 11 | 5 | 11 | 10 |
-| Peptoniphilus | genus | 9 | 0 | 9 | 1 |
-| Enterococcus | genus | 7 | 2 | 5 | 5 |
-| Blautia obeum | species | 5 | 0 | 5 | 2 |
-| Streptococcus mutans | species | 5 | 0 | 5 | 2 |
-| Escherichia | genus | 9 | 2 | 4 | 3 |
-| Veillonella | genus | 5 | 2 | 4 | 3 |
-| Streptococcus salivarius | species | 4 | 0 | 4 | 4 |
-| Streptococcus vestibularis | species | 3 | 0 | 3 | 1 |
-| Turicibacter | genus | 3 | 1 | 3 | 1 |
-| Mediterraneibacter torques | species | 3 | 1 | 2 | 2 |
-| Methanobrevibacter smithii | species | 3 | 0 | 2 | 2 |
-
-## sphere shaped
-
-Mean-z difference (increased - decreased): -0.096. 54 annotated taxon labels observed in increased profiles; 74 across both directions.
-
-Top genus/species labels by occurrence in positive-z increased profiles:
-
-| Taxon | Rank | Increased profiles | Decreased profiles | Increased positive-z profiles | Increased positive-z studies |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Streptococcus | genus | 11 | 5 | 11 | 10 |
-| Peptoniphilus | genus | 9 | 0 | 9 | 1 |
-| Enterococcus | genus | 7 | 2 | 5 | 5 |
-| Veillonella | genus | 5 | 2 | 5 | 4 |
-| Acidaminococcus | genus | 2 | 0 | 2 | 2 |
-| Acinetobacter | genus | 2 | 0 | 2 | 2 |
-| Lactococcus | genus | 2 | 3 | 2 | 2 |
-| Megasphaera | genus | 2 | 0 | 2 | 2 |
-| Ruminococcus | genus | 2 | 9 | 2 | 2 |
-| Butyricicoccus | genus | 1 | 6 | 1 | 1 |
-| Streptococcus anginosus | species | 1 | 0 | 1 | 1 |
-| Victivallis | genus | 1 | 0 | 1 | 1 |
-
-## cellulose catabolic process
-
-Mean-z difference (increased - decreased): -0.620. 50 annotated taxon labels observed in increased profiles; 60 across both directions.
-
-Top genus/species labels by occurrence in positive-z increased profiles:
-
-| Taxon | Rank | Increased profiles | Decreased profiles | Increased positive-z profiles | Increased positive-z studies |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Blautia obeum | species | 5 | 0 | 5 | 2 |
-| Roseburia | genus | 4 | 31 | 4 | 4 |
-| Bacteroides | genus | 3 | 6 | 3 | 2 |
-| Clostridium | genus | 3 | 10 | 2 | 2 |
-| Mediterraneibacter torques | species | 3 | 1 | 2 | 2 |
-| Blautia | genus | 2 | 15 | 2 | 2 |
-| Butyrivibrio | genus | 2 | 3 | 2 | 2 |
-| Lachnospira | genus | 2 | 9 | 2 | 2 |
-| Ruminococcus | genus | 2 | 9 | 2 | 2 |
-| Bacillus | genus | 2 | 0 | 1 | 1 |
-| Ruminococcus bromii | species | 2 | 2 | 1 | 1 |
-| Bacteroides cellulosilyticus | species | 1 | 2 | 1 | 1 |
+| Lactobacillus | genus | 15 | 6 | 11 | 5 |
+| Escherichia | genus | 9 | 2 | 9 | 2 |
+| Alistipes | genus | 8 | 0 | 8 | 0 |
+| Streptococcus | genus | 10 | 5 | 7 | 2 |
+| Enterococcus | genus | 7 | 2 | 7 | 2 |
+| Klebsiella | genus | 6 | 1 | 6 | 1 |
+| Serratia | genus | 6 | 0 | 6 | 0 |
+| Enterobacter | genus | 4 | 0 | 4 | 0 |
+| Klebsiella pneumoniae | species | 4 | 0 | 4 | 0 |
+| Acinetobacter | genus | 2 | 0 | 2 | 0 |
+| Bacillus | genus | 2 | 0 | 2 | 0 |
+| Citrobacter | genus | 2 | 0 | 2 | 0 |
 
 ## arsenate reduction
 
-Mean-z difference (increased - decreased): +0.401. 23 annotated taxon labels observed in increased profiles; 27 across both directions.
+Observed direction: increased (+0.420); its mean z is higher in increased than in decreased PD fecal profiles. Annotated taxon labels observed: 23 in increased profiles, 13 in decreased profiles; 26 across both directions.
 
-Top genus/species labels by occurrence in positive-z increased profiles:
+Top genus/species labels by occurrence in positive-z increased profiles, the trait's observed direction:
 
-| Taxon | Rank | Increased profiles | Decreased profiles | Increased positive-z profiles | Increased positive-z studies |
+| Taxon | Rank | Increased profiles | Decreased profiles | Increased positive-z profiles | Decreased positive-z profiles |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Escherichia | genus | 9 | 2 | 9 | 5 |
-| Citrobacter | genus | 2 | 0 | 2 | 2 |
-| Escherichia coli | species | 1 | 2 | 1 | 1 |
+| Escherichia | genus | 9 | 2 | 9 | 2 |
+| Citrobacter | genus | 2 | 0 | 2 | 0 |
+| Escherichia coli | species | 1 | 2 | 1 | 2 |
 
-## Taxa Mapped to All Four Positive-Side Annotations
+## facultatively aerobic
 
-Annotation intersection is separate from all four traits having z>0 in a profile.
+Observed direction: increased (+0.349); its mean z is higher in increased than in decreased PD fecal profiles. Annotated taxon labels observed: 105 in increased profiles, 89 in decreased profiles; 149 across both directions.
 
-| Taxon | Rank | Increased profiles | Decreased profiles | Increased profiles with all four z>0 |
-| --- | --- | ---: | ---: | ---: |
-| Enterobacteriaceae | family | 18 | 2 | 5 |
-| Pseudomonadota | phylum | 15 | 1 | 4 |
-| Escherichia | genus | 9 | 2 | 4 |
-| Actinomycetota | phylum | 8 | 0 | 2 |
-| Clostridia | class | 8 | 6 | 5 |
-| Eubacteriales | order | 7 | 7 | 1 |
-| Bacillota | phylum | 5 | 14 | 5 |
-| Bacilli | class | 4 | 3 | 3 |
-| Gammaproteobacteria | class | 3 | 1 | 1 |
-| Enterobacterales | order | 3 | 0 | 0 |
-| Citrobacter | genus | 2 | 0 | 1 |
-| Burkholderiales | order | 2 | 0 | 1 |
-| Alphaproteobacteria | class | 1 | 0 | 1 |
-| Bacillaceae | family | 1 | 1 | 0 |
-| Actinomycetes | class | 1 | 0 | 1 |
-| Escherichia coli | species | 1 | 2 | 1 |
-| Pseudomonadales | order | 1 | 0 | 1 |
-| Microbacteriaceae | family | 1 | 0 | 1 |
-| Betaproteobacteria | class | 1 | 0 | 0 |
-| Bacillales | order | 0 | 2 | 0 |
-| Comamonadaceae | family | 0 | 2 | 0 |
-| Staphylococcaceae | family | 0 | 1 | 0 |
-| Micrococcaceae | family | 0 | 2 | 0 |
+Top genus/species labels by occurrence in positive-z increased profiles, the trait's observed direction:
+
+| Taxon | Rank | Increased profiles | Decreased profiles | Increased positive-z profiles | Decreased positive-z profiles |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Bifidobacterium | genus | 24 | 2 | 18 | 1 |
+| Lactobacillus | genus | 15 | 6 | 14 | 5 |
+| Streptococcus | genus | 10 | 5 | 10 | 5 |
+| Desulfovibrio | genus | 11 | 3 | 9 | 0 |
+| Escherichia | genus | 9 | 2 | 9 | 2 |
+| Enterococcus | genus | 7 | 2 | 7 | 2 |
+| Klebsiella | genus | 6 | 1 | 6 | 0 |
+| Serratia | genus | 6 | 0 | 6 | 0 |
+| Bifidobacterium longum | species | 6 | 0 | 4 | 0 |
+| Enterobacter | genus | 4 | 0 | 4 | 0 |
+| Klebsiella pneumoniae | species | 4 | 0 | 4 | 0 |
+| Burkholderiales bacterium 1_1_47 | species | 4 | 0 | 3 | 0 |
+
+## coccus shaped
+
+Observed direction: decreased (-0.081); its mean z is higher in decreased than in increased PD fecal profiles. Annotated taxon labels observed: 108 in increased profiles, 94 in decreased profiles; 149 across both directions.
+
+Top genus/species labels by occurrence in positive-z decreased profiles, the trait's observed direction:
+
+| Taxon | Rank | Increased profiles | Decreased profiles | Increased positive-z profiles | Decreased positive-z profiles |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Blautia | genus | 2 | 16 | 0 | 14 |
+| Ruminococcus | genus | 2 | 9 | 1 | 7 |
+| Coprococcus | genus | 1 | 11 | 1 | 6 |
+| Butyricicoccus | genus | 1 | 6 | 1 | 5 |
+| Streptococcus | genus | 10 | 5 | 10 | 5 |
+| Blautia hansenii | species | 0 | 3 | 0 | 3 |
+| Actinomyces | genus | 1 | 3 | 1 | 2 |
+| Brevibacterium | genus | 0 | 3 | 0 | 2 |
+| Dialister | genus | 0 | 2 | 0 | 2 |
+| Enterococcus | genus | 7 | 2 | 5 | 2 |
+| Gemella | genus | 0 | 2 | 0 | 2 |
+| Granulicatella | genus | 1 | 2 | 1 | 2 |
+
+## sphere shaped
+
+Observed direction: decreased (-0.133); its mean z is higher in decreased than in increased PD fecal profiles. Annotated taxon labels observed: 53 in increased profiles, 49 in decreased profiles; 72 across both directions.
+
+Top genus/species labels by occurrence in positive-z decreased profiles, the trait's observed direction:
+
+| Taxon | Rank | Increased profiles | Decreased profiles | Increased positive-z profiles | Decreased positive-z profiles |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Ruminococcus | genus | 2 | 9 | 2 | 7 |
+| Butyricicoccus | genus | 1 | 6 | 1 | 6 |
+| Streptococcus | genus | 10 | 5 | 10 | 5 |
+| Brevibacterium | genus | 0 | 3 | 0 | 3 |
+| Dialister | genus | 0 | 2 | 0 | 2 |
+| Enterococcus | genus | 7 | 2 | 5 | 2 |
+| Ruminococcus gauvreauii | species | 0 | 2 | 0 | 2 |
+| Lactococcus | genus | 2 | 3 | 2 | 1 |
+| Howardella | genus | 0 | 1 | 0 | 1 |
+| Veillonella | genus | 5 | 2 | 5 | 0 |
+| Phocaeicola | genus | 0 | 1 | 0 | 0 |
+
+## cellulose catabolic process
+
+Observed direction: decreased (-0.701); its mean z is higher in decreased than in increased PD fecal profiles. Annotated taxon labels observed: 49 in increased profiles, 38 in decreased profiles; 58 across both directions.
+
+Top genus/species labels by occurrence in positive-z decreased profiles, the trait's observed direction:
+
+| Taxon | Rank | Increased profiles | Decreased profiles | Increased positive-z profiles | Decreased positive-z profiles |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Roseburia | genus | 4 | 33 | 4 | 33 |
+| Blautia | genus | 2 | 16 | 2 | 16 |
+| Clostridium | genus | 3 | 10 | 2 | 10 |
+| Lachnospira | genus | 2 | 9 | 2 | 9 |
+| Ruminococcus | genus | 2 | 9 | 2 | 9 |
+| Bacteroides | genus | 4 | 6 | 3 | 6 |
+| Roseburia faecis | species | 0 | 6 | 0 | 6 |
+| Butyrivibrio | genus | 2 | 3 | 2 | 3 |
+| Anaerostipes | genus | 2 | 2 | 0 | 2 |
+| Bacteroides cellulosilyticus | species | 1 | 2 | 1 | 2 |
+| Ruminococcus bromii | species | 2 | 2 | 1 | 2 |
+| Anaerostipes hadrus | species | 0 | 1 | 0 | 1 |
 
 ## Complete Evidence
 
 - [All six trait carrier lists](pd_six_trait_taxon_carriers.tsv)
 - [Taxon/profile/study evidence](pd_six_trait_taxon_profile_evidence.tsv)
-- [All-four annotation intersection](pd_four_positive_trait_shared_taxa.tsv)
+- [PD fecal profile set and trait directions used](pd_six_trait_taxon_evidence_provenance.json)

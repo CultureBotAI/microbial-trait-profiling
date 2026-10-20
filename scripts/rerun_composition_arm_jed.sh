@@ -13,11 +13,17 @@
 #     `data/derived/taxa_trait_matrix_columns.tsv`,
 #     `data/derived/experiments.tsv`, and
 #     `data/derived/bugsigdb_taxa.tsv` already present on disk).
+#   - The pinned KG-Microbe release in `data/kg-microbe/merged-kg_edges.tsv` and
+#     `merged-kg_nodes.tsv` (`just download-kg`), whose md5s are pinned in
+#     `methods/table1_taxon_influence_protocol.json`; step 8 builds the PD trait
+#     contributor tables from it (#584, #695).
 #   - For Kaleido figure PNG export (`guild-maps`, `table1-trait-maps`), ensure
 #     headless Chrome is installed (`just get-chrome`).
 # ==============================================================================
 
 set -euo pipefail
+# Headless Agg, as every recipe uses, for the scripts this arm runs directly too (#719)
+export MPLBACKEND=Agg
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_ROOT}"
@@ -29,7 +35,9 @@ for required_file in \
     "data/derived/taxa_trait_matrix.tsv" \
     "data/derived/taxa_trait_matrix_columns.tsv" \
     "data/derived/experiments.tsv" \
-    "data/derived/bugsigdb_taxa.tsv"; do
+    "data/derived/bugsigdb_taxa.tsv" \
+    "data/kg-microbe/merged-kg_edges.tsv" \
+    "data/kg-microbe/merged-kg_nodes.tsv"; do
     if [[ ! -f "${required_file}" ]]; then
         echo "ERROR: Required input '${required_file}' not found." >&2
         echo "Run 'just study-trait-profiles' (after 'just download-kg', 'just pipeline', 'just study-tsvs', 'just taxa-trait-matrix') first." >&2
@@ -38,6 +46,8 @@ for required_file in \
 done
 # The arms read the canonical human profile table committed as a .gz (#656).
 just study-trait-profiles-check
+# Step 8 reads the KG release whose md5s the Table 1 influence protocol pins (#695).
+just verify-pinned-kg
 
 echo "=== [1/9] Running paired within-study log-ratio analysis (15 Table 1 pairs) ==="
 just table1-compositional-stats

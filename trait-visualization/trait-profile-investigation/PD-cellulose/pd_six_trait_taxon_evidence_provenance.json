@@ -1,0 +1,121 @@
+{
+  "evidence": "pd_six_trait_taxon_profile_evidence.tsv",
+  "carriers": "pd_six_trait_taxon_carriers.tsv",
+  "trait_summary": "pd_six_trait_direction_summary.tsv",
+  "pd_feces_profiles": 247,
+  "pd_feces_profile_ids_sha256": "bd5ce49ed6bfe6f4363d78aff871cd923fc13c1918dbc82b5f6114836365ff24",
+  "pd_feces_profile_ids_encoding": "sha256 of the sorted profile_id values, one per line",
+  "traits": [
+    {
+      "trait_id": "METPO:1000623",
+      "trait": "moderately halophilic",
+      "increased_minus_decreased_mean_z": 0.4941071279164387,
+      "trait_direction": "increased"
+    },
+    {
+      "trait_id": "METPO:2000103|pathways:arsenate_reduction",
+      "trait": "arsenate reduction",
+      "increased_minus_decreased_mean_z": 0.4200857155718372,
+      "trait_direction": "increased"
+    },
+    {
+      "trait_id": "METPO:1000608",
+      "trait": "facultatively aerobic",
+      "increased_minus_decreased_mean_z": 0.3490150462469152,
+      "trait_direction": "increased"
+    },
+    {
+      "trait_id": "METPO:1000668",
+      "trait": "coccus shaped",
+      "increased_minus_decreased_mean_z": -0.0812907155522854,
+      "trait_direction": "decreased"
+    },
+    {
+      "trait_id": "METPO:1000683",
+      "trait": "sphere shaped",
+      "increased_minus_decreased_mean_z": -0.1333351871051159,
+      "trait_direction": "decreased"
+    },
+    {
+      "trait_id": "METPO:2000103|GO:0030245",
+      "trait": "cellulose catabolic process",
+      "increased_minus_decreased_mean_z": -0.7007499414209016,
+      "trait_direction": "decreased"
+    }
+  ],
+  "input_sha256_chunks": {
+    "bugsigdb_taxa.tsv": [
+      "e7fa982b",
+      "23ea8245",
+      "6247bcd8",
+      "41fd97d4",
+      "fe71518e",
+      "09eaaa27",
+      "aee65d9a",
+      "db271c59"
+    ],
+    "taxa_trait_matrix.tsv": [
+      "f6de0576",
+      "63f3a3b0",
+      "026579df",
+      "af341745",
+      "faac27df",
+      "7f9c0afd",
+      "6f5fa3e6",
+      "aa034178"
+    ],
+    "study_trait_profiles_wide.tsv": [
+      "c07d589f",
+      "6cc88724",
+      "e43c683e",
+      "bd132bcd",
+      "5c7f316f",
+      "36b95df3",
+      "ff9acad2",
+      "4ebbf62f"
+    ],
+    "study_trait_profile_study_metadata.tsv": [
+      "9ba32acc",
+      "a337f1e5",
+      "2dbe6d91",
+      "d8b799cf",
+      "0b36a5e0",
+      "cca71a9c",
+      "b32ba033",
+      "ec26e12a"
+    ],
+    "pd_six_trait_direction_summary.tsv": [
+      "eb4ed70b",
+      "8f796c05",
+      "e4e14e12",
+      "4109e526",
+      "a04d28a0",
+      "ea861fc0",
+      "e7a4d628",
+      "26480ea7"
+    ]
+  },
+  "output_sha256_chunks": {
+    "pd_six_trait_taxon_carriers.tsv": [
+      "108eb1aa",
+      "8e5e2cd1",
+      "05f63586",
+      "594412c1",
+      "bc0955c9",
+      "dc20707d",
+      "077faa37",
+      "98db32ec"
+    ],
+    "pd_six_trait_taxon_profile_evidence.tsv": [
+      "3bae40c3",
+      "2d21db49",
+      "90b5b088",
+      "0b83fe2b",
+      "7e08978f",
+      "32212f78",
+      "7cf6bf49",
+      "c0e2fc54"
+    ]
+  },
+  "sha256_chunk_encoding": "concatenate each file's eight chunks in order"
+}

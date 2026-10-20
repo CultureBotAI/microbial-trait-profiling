@@ -17,7 +17,12 @@ from matplotlib.patches import Circle, FancyBboxPatch, PathPatch
 from matplotlib.path import Path as MplPath
 from scipy import stats
 
-from mtp.body_site_diagram import anatomical_site_base
+from mtp.body_site_diagram import (
+    anatomical_site_base,
+    bubble_radius,
+    leader_line,
+    leader_order_key,
+)
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
     retained_trait_counts,
@@ -55,6 +60,20 @@ MAX_STRATIFIED_PROFILE_SUPPORT_FRACTION = 0.95
 MIN_CONDITION_PAIRS = 10
 MIN_BODY_SITE_PAIRS = 3
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
+# Page and 2 x 2 panel grid of the infographic; panel C is grid[1, 0].
+FIGURE_SIZE = (18.5, 12.5)
+FIGURE_DPI = 180
+PANEL_GRID = {
+    "left": 0.07,
+    "right": 0.97,
+    "top": 0.84,
+    "bottom": 0.08,
+    "hspace": 0.42,
+    "wspace": 0.38,
+}
+# Panel C's leader lines bend at LEADER_ELBOW_X and end at LEADER_END_X.
+LEADER_ELBOW_X = 0.55
+LEADER_END_X = 0.60
 
 EXCLUDED_CONDITION_LABELS = {
     "Body fat distribution",
@@ -1097,7 +1116,10 @@ def plot_body_site_summary(ax: plt.Axes, body_site_summary: pd.DataFrame) -> Non
     plot_sites["anchor"] = [anatomical_site_base(site) for site in plot_sites["body_site_group"]]
     plot_sites["anchor_x"] = [point[0] for point in plot_sites["anchor"]]
     plot_sites["anchor_y"] = [point[1] for point in plot_sites["anchor"]]
-    plot_sites = plot_sites.sort_values(["anchor_y", "absolute_contrast_load"], ascending=False)
+    plot_sites["label_order"] = [
+        leader_order_key(point, LEADER_ELBOW_X) for point in plot_sites["anchor"]
+    ]
+    plot_sites = plot_sites.sort_values(["label_order", "absolute_contrast_load"], ascending=False)
 
     ax.set_title("C. Anatomical Profile-Contrast Hotspots", fontsize=14, fontweight="bold", pad=8)
     ax.set_xlim(0, 1)
@@ -1110,31 +1132,35 @@ def plot_body_site_summary(ax: plt.Axes, body_site_summary: pd.DataFrame) -> Non
     max_abs_net = max(float(plot_sites["net_increased_minus_decreased"].abs().max()), 0.05)
     norm = TwoSlopeNorm(vmin=-max_abs_net, vcenter=0, vmax=max_abs_net)
     cmap = plt.get_cmap("RdBu")
-    label_ys = np.linspace(0.84, 0.18, len(plot_sites)) if len(plot_sites) > 1 else [0.52]
+    # The panel is a quarter of the page, so the labels use its full height and sit
+    # close to their leader lines to stay apart (#620).
+    label_ys = np.linspace(0.90, 0.10, len(plot_sites)) if len(plot_sites) > 1 else [0.52]
 
     for label_y, row in zip(label_ys, plot_sites.itertuples(index=False), strict=False):
         signal = float(row.net_increased_minus_decreased)
         color = cmap(norm(signal))
-        size = 130 + 950 * math.sqrt(float(row.pair_count) / max_count)
-        ax.scatter(
-            [row.anchor_x],
-            [row.anchor_y],
-            s=size,
-            c=[color],
-            edgecolors=SLATE_900,
-            linewidths=0.8,
-            zorder=4,
+        radius = bubble_radius(float(row.pair_count), max_count)
+        ax.add_patch(
+            Circle(
+                (row.anchor_x, row.anchor_y),
+                radius,
+                facecolor=color,
+                edgecolor=SLATE_900,
+                linewidth=0.8,
+                zorder=4,
+            )
         )
         ax.plot(
-            [row.anchor_x, 0.55, 0.60],
-            [row.anchor_y, label_y, label_y],
+            *leader_line(
+                (row.anchor_x, row.anchor_y), radius, label_y, LEADER_ELBOW_X, LEADER_END_X
+            ),
             color=SLATE_400,
             lw=0.9,
-            zorder=2,
+            zorder=5,
         )
         ax.text(
             0.61,
-            label_y + 0.018,
+            label_y + 0.008,
             compact_label(row.body_site_group, 28),
             ha="left",
             va="bottom",
@@ -1144,7 +1170,7 @@ def plot_body_site_summary(ax: plt.Axes, body_site_summary: pd.DataFrame) -> Non
         )
         ax.text(
             0.61,
-            label_y - 0.018,
+            label_y - 0.008,
             (
                 f"{int(row.pair_count):,} pairs; load "
                 f"{float(row.absolute_contrast_load):.2f}; net {signal:+.2f}"
@@ -1157,10 +1183,10 @@ def plot_body_site_summary(ax: plt.Axes, body_site_summary: pd.DataFrame) -> Non
 
     ax.text(
         0.02,
-        0.04,
+        0.0,
         "Bubble size = matched pairs; color = net increased-minus-decreased trait contrast.",
         ha="left",
-        va="bottom",
+        va="top",
         fontsize=8.2,
         color=SLATE_500,
     )
@@ -1302,17 +1328,8 @@ def create_infographic(
             "figure.facecolor": "white",
         }
     )
-    fig = plt.figure(figsize=(18.5, 12.5), dpi=180, facecolor="white")
-    grid = fig.add_gridspec(
-        2,
-        2,
-        left=0.07,
-        right=0.97,
-        top=0.84,
-        bottom=0.08,
-        hspace=0.42,
-        wspace=0.38,
-    )
+    fig = plt.figure(figsize=FIGURE_SIZE, dpi=FIGURE_DPI, facecolor="white")
+    grid = fig.add_gridspec(2, 2, **PANEL_GRID)
     ax_traits = fig.add_subplot(grid[0, 0])
     ax_conditions = fig.add_subplot(grid[0, 1])
     ax_body = fig.add_subplot(grid[1, 0])

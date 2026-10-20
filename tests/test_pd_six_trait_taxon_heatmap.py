@@ -79,9 +79,8 @@ def test_classification_preserves_uncertainty_and_low_support() -> None:
     assert heatmap.classify_effect(0.4, 0.1, 0.7, 2) == "low support"
 
 
-def test_unannotated_trait_retains_denominator_mediated_influence(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def pd_pairs_fixture() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Three studies whose t1 is higher in increased profiles and t2 in decreased ones."""
     profile_rows = []
     metadata_rows = []
     evidence_rows = []
@@ -141,6 +140,13 @@ def test_unannotated_trait_retains_denominator_mediated_influence(
             "direction",
         ],
     )
+    return profiles, metadata, taxon_vectors, evidence
+
+
+def test_unannotated_trait_retains_denominator_mediated_influence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    profiles, metadata, taxon_vectors, evidence = pd_pairs_fixture()
     trait_summary = pd.DataFrame(
         [["t1", "Trait one", 1.0], ["t2", "Trait two", -1.0]],
         columns=["trait_id", "trait", "increased_minus_decreased_mean_z"],
@@ -163,6 +169,48 @@ def test_unannotated_trait_retains_denominator_mediated_influence(
     assert pd.notna(by_trait.loc["t2", "mean_influence_contrast_z"])
     assert pd.notna(by_trait.loc["t2", "ci95_low"])
     assert by_trait.loc["t2", "status"] != "not annotated"
+
+
+def test_traits_carry_the_lollipop_direction_as_data(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Direction comes from the lollipop summary even where this figure's baseline disagrees."""
+    profiles, metadata, taxon_vectors, evidence = pd_pairs_fixture()
+    trait_summary = pd.DataFrame(
+        [["t1", "Trait one", -0.2], ["t2", "Trait two", 0.3]],
+        columns=["trait_id", "trait", "increased_minus_decreased_mean_z"],
+    )
+    monkeypatch.setattr(
+        heatmap,
+        "load_taxon_specificity",
+        lambda taxon_ids, _metadata: pd.DataFrame({"taxon_id": taxon_ids}),
+    )
+
+    cells, _, traits, _ = heatmap.build_influence_cells(
+        profiles, metadata, taxon_vectors, evidence, trait_summary
+    )
+
+    assert traits["trait_id"].tolist() == ["t2", "t1"]
+    by_trait = traits.set_index("trait_id")
+    assert by_trait.loc["t1", "trait_direction"] == "decreased"
+    assert by_trait.loc["t1", "increased_minus_decreased_mean_z"] == -0.2
+    assert by_trait.loc["t1", "overall_direction"] == "inc"
+    assert bool(by_trait.loc["t1", "baseline_opposes_lollipop"])
+    assert by_trait.loc["t2", "trait_direction"] == "increased"
+    assert cells.groupby("trait_id")["trait_direction"].first().to_dict() == {
+        "t1": "decreased",
+        "t2": "increased",
+    }
+
+
+def test_column_label_shows_lollipop_direction_and_both_contrasts() -> None:
+    label = heatmap.trait_column_label("coccus shaped", "decreased", -0.0813, 0.0119)
+
+    assert label.startswith("↓ coccus shaped")
+    assert "lollipop -0.08" in label
+    # The baseline's sign is opposite to the lollipop's, so it carries an asterisk (#696).
+    assert label.endswith("baseline Δz\n+0.01 *")
+    same_sign = heatmap.trait_column_label("halo", "increased", 0.49, 0.43)
+    assert same_sign.startswith("↑ halo")
+    assert same_sign.endswith("baseline Δz\n+0.43")
 
 
 def test_filter_all_low_support_taxa_removes_only_fully_low_support_rows() -> None:
@@ -369,15 +417,16 @@ def test_pd_taxa_reference_table_adds_literature_and_interpretation(tmp_path: Pa
     )
     cells = pd.DataFrame(
         [
-            ["taxon-e", "Trait one", "t1", True, 0.2, "mixed"],
-            ["taxon-e", "Trait two", "t2", False, 0.8, "inc"],
-            ["taxon-f", "Trait one", "t1", True, -0.6, "dec"],
-            ["taxon-f", "Trait two", "t2", True, -0.1, "mixed"],
+            ["taxon-e", "Trait one", "t1", "increased", True, 0.2, "mixed"],
+            ["taxon-e", "Trait two", "t2", "decreased", False, 0.8, "inc"],
+            ["taxon-f", "Trait one", "t1", "increased", True, -0.6, "dec"],
+            ["taxon-f", "Trait two", "t2", "decreased", True, -0.1, "mixed"],
         ],
         columns=[
             "taxon_id",
             "trait",
             "trait_id",
+            "trait_direction",
             "has_trait_annotation",
             "mean_influence_contrast_z",
             "status",
@@ -401,12 +450,38 @@ def test_pd_taxa_reference_table_adds_literature_and_interpretation(tmp_path: Pa
     assert table.loc["taxon-f", "direction_agreement"] == "agrees"
     assert "10.1002/mds.28119" in table.loc["taxon-f", "doi_citations"]
     assert table.loc["taxon-f", "kg_microbe_direct_trait_count"] == 2
+    assert table.loc["taxon-e", "strongest_influence_trait_direction"] == "decreased"
+    assert "lollipop direction decreased" in table.loc["taxon-e", "interpretation"]
 
     output_path = tmp_path / "reference.md"
     heatmap.write_reference_interpretation(table.reset_index(), output_path)
     output = output_path.read_text(encoding="utf-8")
     assert "## Agreement Summary" in output
+    assert "| Trait two ↓ (+0.80; inc) |" in output
+    assert "| Trait one ↑ (-0.60; dec) |" in output
     assert "## Methods: Literature Review and Direction Comparison" in output
     assert "targeted narrative review" in output
     assert "increased-profile count is greater than decreased-profile count" in output
     assert "[10.1002/mds.28119](https://doi.org/10.1002/mds.28119)" in output
+
+
+@pytest.mark.parametrize(
+    ("lollipop", "baseline", "opposes"),
+    [(-0.08, 0.01, True), (0.49, 0.43, False), (-0.70, -0.69, False), (0.1, 0.0, False)],
+)
+def test_baseline_opposes_lollipop_only_for_opposite_signs(
+    lollipop: float, baseline: float, opposes: bool
+) -> None:
+    assert heatmap.baseline_opposes_lollipop(lollipop, baseline) is opposes
+
+
+def test_subtitle_fills_every_placeholder_and_says_what_a_sign_means() -> None:
+    subtitle = heatmap.heatmap_subtitle("species", 3)
+
+    assert "{" not in subtitle
+    assert "}" not in subtitle
+    assert "Only values > +0.01 or < -0.01 are shown" in subtitle
+    assert "at least 3 studies" in subtitle
+    assert "positive values push the paired contrast toward increased profiles" in subtitle
+    assert "an asterisk marks a baseline whose sign is opposite to the lollipop's" in subtitle
+    assert heatmap.heatmap_subtitle("taxon", 2, "Rows are grouped.").endswith("Rows are grouped.")
