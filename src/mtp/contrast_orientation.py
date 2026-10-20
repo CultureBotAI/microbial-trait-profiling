@@ -586,8 +586,6 @@ COMORBIDITY_DISEASE_TERMS = _pattern(
     r"colitis",
     r"crohn\w*",
     r"glaucoma\w*",
-    r"polyps?",
-    r"adenomas?",
     r"atopic",
     r"stroke",
     r"covid(?:[- ]?19)?",
@@ -611,6 +609,13 @@ HOSPITAL_OR_SYMPTOMATIC_CONTROL = _pattern(
     r"non[- ]?ibd controls?",
     r"unrelated [\w\s-]+ conditions?",
     r"benign",
+)
+#: Precursor lesions that, when present un-negated in a comparison group's name (for example
+#: "healthy control (normal and a few polyps)" in a colorectal cancer study, #672), mark a
+#: Tier 3 subject control with a precursor lesion rather than a shared background comorbidity.
+PRECURSOR_LESION_CONTROL = _pattern(
+    r"polyps?",
+    r"adenomas?",
 )
 DIRECTLY_NEGATED_DISEASE = re.compile(
     r"\b(?:free (?:from|of)|without|no|non|(?<!positive and )negative(?:\s+for)?)[- ]+"
@@ -1088,9 +1093,11 @@ def _classify_control_tier(
     ) and not _mentions_condition("cirrhosis", condition):
         return COMORBIDITY_WITHIN_DISEASE, TIER_3_HOSPITAL_COMORBID_OR_TISSUE
 
-    # 3. Hospital, surgical, symptomatic or patient controls, or treated-disease confound.
+    # 3. Hospital, surgical, symptomatic, precursor-lesion or patient controls, or
+    # treated-disease confound.
     if (
         _matches(HOSPITAL_OR_SYMPTOMATIC_CONTROL, control_group_name)
+        or _matches(PRECURSOR_LESION_CONTROL, residual)
         or "treated_disease_group" in flags
         or (not strong_control and re.search(r"\bpatients?\b", control_group_name, re.IGNORECASE))
         or re.search(r"\bhiv\s+negative\s+patients?\b", control_group_name, re.IGNORECASE)

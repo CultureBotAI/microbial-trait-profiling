@@ -1921,3 +1921,57 @@ def test_reversed_antiretroviral_cases_require_a_strong_control_group() -> None:
     )
     assert "possible_reversal_unverified" in rev_weak_haart.flags.split(",")
     assert "treated_disease_group" not in rev_weak_haart.flags.split(",")
+
+
+def test_precursor_lesions_in_controls_are_tier3_subject_controls_not_comorbidity() -> None:
+    """31171880-1..4 (Yachida et al. 2019): CRC controls with polyps are Tier 3 subject
+    controls (hospital_or_symptomatic_control), not comorbidity_within_disease (#672).
+    Explicitly negated adenoma controls remain Tier 1 or Tier 2.
+    """
+    yachida = classify(
+        replace(
+            BASE,
+            condition="Colorectal cancer",
+            group_0_name="healthy control (normal and a few polyps)",
+            group_1_name="stage I/II (SI/II)",
+        )
+    )
+    assert (yachida.contrast_class, yachida.orientation) == (DISEASE_VS_HEALTHY, NATIVE)
+    assert yachida.contrast_type == CASE_VS_CONTROL_SUBJECT
+    assert yachida.control_tier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+    assert "hospital_or_symptomatic_control" in yachida.flags.split(",")
+    assert "comorbidity_control" not in yachida.flags.split(",")
+
+    # 22622349-1: negated adenoma with "controls" stays Tier 1
+    adenoma_free = classify(
+        replace(
+            BASE,
+            condition="Adenoma",
+            group_0_name="Adenoma-free (controls)",
+            group_1_name="Adenoma cases",
+        )
+    )
+    assert (adenoma_free.contrast_class, adenoma_free.orientation) == (
+        DISEASE_VS_HEALTHY,
+        NATIVE,
+    )
+    assert adenoma_free.contrast_type == CASE_VS_CONTROL_SUBJECT
+    assert adenoma_free.control_tier == TIER_1_HEALTHY_NORMAL
+    assert "hospital_or_symptomatic_control" not in adenoma_free.flags.split(",")
+
+    # 23335968-1: negated adenoma without strong token stays Tier 2
+    non_adenoma = classify(
+        replace(
+            BASE,
+            condition="Colorectal adenoma",
+            group_0_name="Non-adenoma",
+            group_1_name="Colorectal adenoma",
+        )
+    )
+    assert (non_adenoma.contrast_class, non_adenoma.orientation) == (
+        DISEASE_VS_HEALTHY,
+        NATIVE,
+    )
+    assert non_adenoma.contrast_type == CASE_VS_CONTROL_SUBJECT
+    assert non_adenoma.control_tier == TIER_2_CONDITION_NEGATIVE_SCREENED
+    assert "hospital_or_symptomatic_control" not in non_adenoma.flags.split(",")

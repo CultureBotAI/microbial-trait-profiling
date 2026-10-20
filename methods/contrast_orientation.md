@@ -150,9 +150,9 @@ from the disease-versus-healthy population rather than into it.
    stratified along two orthogonal columns:
 
    - `contrast_type`:
-     - `case_vs_control_subject` (993 analysed experiments, 573 studies): subject-level
+     - `case_vs_control_subject` (997 analysed experiments, 574 studies): subject-level
        case versus control comparisons.
-     - `comorbidity_within_disease` (33 analysed experiments, 18 studies): both groups
+     - `comorbidity_within_disease` (29 analysed experiments, 17 studies): both groups
        share a background disease or clinical state and differ in a second condition
        (for example, "Maintenance Hemodialysis without Constipation" vs "Maintenance
        Hemodialysis with Constipation", flagged `comorbidity_control`).
@@ -170,13 +170,15 @@ from the disease-versus-healthy population rather than into it.
        **970 subject-level Disease Case vs. Healthy/Normal Control experiments across
        563 studies**.
      - `tier_3_hospital_comorbid_or_tissue` (78 analysed experiments, 45 studies):
-       the 22 `paired_tissue_autologous` experiments, the 33
-       `comorbidity_within_disease` experiments, and 23 `case_vs_control_subject`
-       experiments whose control group is a hospital, surgical, symptomatic or
-       benign-disease patient control (flagged `hospital_or_symptomatic_control`: 12
-       experiments in 9 studies) or whose disease group is confounded by named
-       pharmacotherapy (`treated_disease_group`: 11 experiments in 6 studies, 8 of
-       them people with HIV on antiretroviral therapy).
+       the 22 `paired_tissue_autologous` experiments, the 29
+       `comorbidity_within_disease` experiments, and 27 `case_vs_control_subject`
+       experiments whose control group is a hospital, surgical, symptomatic,
+       precursor-lesion or benign-disease patient control (flagged
+       `hospital_or_symptomatic_control`: 16 experiments in 10 studies, including 4
+       colorectal-cancer contrasts against controls with a few polyps, #672) or whose
+       disease group is confounded by named pharmacotherapy (`treated_disease_group`:
+       11 experiments in 6 studies, 8 of them people with HIV on antiretroviral
+       therapy).
 
    **What the comparison reading requires.** Group names say both more and less than
    they appear to, so four conditions scope the reading to the actual comparison
@@ -248,13 +250,13 @@ from the disease-versus-healthy population rather than into it.
 comparison. Of its 1,048 analysed experiments, 22 are `paired_tissue_autologous`:
 tumour or lesional tissue against adjacent normal tissue from the same patients, such
 as 25699023-2 ("adjacent non-cancerous tissues" against "cancerous tissues", colorectal
-mucosa). Another 33 are `comorbidity_within_disease`. A consumer that filters on the
+mucosa). Another 29 are `comorbidity_within_disease`. A consumer that filters on the
 class alone counts these as patients against controls. To keep only comparisons of
 people with the condition against people without it:
 
-- filter the manifest on `contrast_type = case_vs_control_subject` (993 analysed
-  experiments, 573 studies). This drops the paired-tissue and comorbidity contrasts and
-  keeps the Tier 3 hospital, symptomatic and treated-case contrasts; or
+- filter the manifest on `contrast_type = case_vs_control_subject` (997 analysed
+  experiments, 574 studies). This drops the paired-tissue and comorbidity contrasts and
+  keeps the Tier 3 hospital, symptomatic, precursor-lesion and treated-case contrasts; or
 - filter on `control_tier` in {`tier_1_healthy_normal`,
   `tier_2_condition_negative_screened`} (970 experiments, 563 studies), which drops all
   of Tier 3. `oriented_profiles(profiles, classes, control_tiers=...)` applies this
@@ -340,8 +342,8 @@ reversed; 1,124 are excluded as other classes and 163 are unresolved. Within the
 | --- | --- | --- | --- |
 | `case_vs_control_subject` | `tier_1_healthy_normal` | 821 | 491 |
 | `case_vs_control_subject` | `tier_2_condition_negative_screened` | 149 | 78 |
-| `case_vs_control_subject` | `tier_3_hospital_comorbid_or_tissue` | 23 | 15 |
-| `comorbidity_within_disease` | `tier_3_hospital_comorbid_or_tissue` | 33 | 18 |
+| `case_vs_control_subject` | `tier_3_hospital_comorbid_or_tissue` | 27 | 16 |
+| `comorbidity_within_disease` | `tier_3_hospital_comorbid_or_tissue` | 29 | 17 |
 | `paired_tissue_autologous` | `tier_3_hospital_comorbid_or_tissue` | 22 | 13 |
 
 ## Changes from `contrast-orientation-v3` to `-v4` (#569)
@@ -376,10 +378,11 @@ contrast raised in the same issue, was already `paired_tissue_autologous` in Tie
 under v3 and is unchanged; what #569 adds for it is the guidance in "Selecting
 patients against controls" above.
 
-## Changes from `contrast-orientation-v4` to `-v5` (#574)
+## Changes from `contrast-orientation-v4` to `-v5` (#574, #630, #672)
 
 Compared on the same pinned inputs, `contrast-orientation-v5` keeps the
-`disease_vs_healthy` population and `disease_control_comparison.tsv` identical to
+`disease_vs_healthy` class membership, Tier 1+2 subject controls (`970` experiments,
+`563` studies), and all 105 rows of `disease_control_comparison.tsv` identical to
 `contrast-orientation-v4`:
 
 - **Cross-sectional resolved-disease contrasts opposite a comparison group**: 16
@@ -388,11 +391,20 @@ Compared on the same pinned inputs, `contrast-orientation-v5` keeps the
   `longitudinal_timepoint` to `other` with `contrast_type = resolved_disease`, while
   active-versus-recovered cohorts without a healthy comparison group stay
   `longitudinal_timepoint`.
-- **Hospital and symptomatic control flag (`hospital_or_symptomatic_control`)**: 19
-  experiments in the export (12 of them in the analysed corpus, across 9 studies) gain
-  the explicit `hospital_or_symptomatic_control` flag in `flags`, without changing
-  their `disease_vs_healthy` class, `case_vs_control_subject` contrast type, or
-  `tier_3_hospital_comorbid_or_tissue` tier.
+- **Precursor lesions in control groups (`PRECURSOR_LESION_CONTROL`, #672)**: 4
+  colorectal-cancer experiments in Yachida et al. 2019 (`31171880-1` to `-4`, all in
+  the analysed corpus, 1 study, "healthy control (normal and a few polyps)" against
+  CRC stages) move within `tier_3_hospital_comorbid_or_tissue` from
+  `comorbidity_within_disease` (flagged `comorbidity_control`) to
+  `case_vs_control_subject` (flagged `hospital_or_symptomatic_control`), raising
+  `case_vs_control_subject` across Tiers 1–3 from 993 experiments (573 studies) to
+  997 experiments (574 studies). Explicitly negated adenoma controls
+  ("Adenoma-free (controls)", "Non-adenoma") remain Tier 1 or Tier 2.
+- **Hospital and symptomatic control flag (`hospital_or_symptomatic_control`)**: 23
+  experiments in the export (16 of them in the analysed corpus, across 10 studies,
+  including the 4 Yachida et al. 2019 contrasts above) carry the explicit
+  `hospital_or_symptomatic_control` flag in `flags` under `case_vs_control_subject`
+  (`tier_3_hospital_comorbid_or_tissue`).
 - **Symmetric reversed `treated_disease_group` rule and review-table validation**:
   adds the reversed `Group 0` branch of `treated_disease_group` (requiring `strong_1`)
   and enforces label and verdict consistency in `read_review` (60/60 `reviewed_agreed`).
@@ -521,15 +533,16 @@ strings copied verbatim, for every contrast that review
 [#291](https://github.com/CultureBotAI/microbial-trait-profiling/issues/291) found
 wrongly admitted to or wrongly kept out of the population, alongside the genuine
 comparisons the narrowed rules must not take away, as well as the v3 control-tier
-as well as the v3 control-tier
 stratification and review-disagreement fixes ([#554](https://github.com/CultureBotAI/microbial-trait-profiling/issues/554)),
 the v4 HIV-status and treated-case readings with the HIV contrasts that must stay
 `treatment_exposure` and the tumour-against-adjacent-tissue contrast that the tiers keep
 out of subject-level populations ([#569](https://github.com/CultureBotAI/microbial-trait-profiling/issues/569)),
 and the v5 symmetric treated-disease rule, cross-sectional resolved-disease routing,
-`hospital_or_symptomatic_control` flag, and review-table invariants
+precursor-lesion control handling, `hospital_or_symptomatic_control` flag, and
+review-table invariants
 ([#574](https://github.com/CultureBotAI/microbial-trait-profiling/issues/574),
-[#630](https://github.com/CultureBotAI/microbial-trait-profiling/issues/630)).
+[#630](https://github.com/CultureBotAI/microbial-trait-profiling/issues/630),
+[#672](https://github.com/CultureBotAI/microbial-trait-profiling/issues/672)).
 
 The classifier, the reviews and this description were drafted with the assistance
 of coding agents (Claude Code and Antigravity) and require review by the author
