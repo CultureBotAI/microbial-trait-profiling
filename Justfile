@@ -97,6 +97,15 @@ core-ora run output tail="upper":
 audit-ora-refresh manifest output:
 	uv run python scripts/adhoc/issue720_audit_ora_refresh.py --manifest "$1" --output "$2"
 
+# Bind all anatomical partitions and summaries to the same verified ORA core.
+[positional-arguments]
+core-strata run output *ARGS:
+	uv run python scripts/run_stratified_enrichment.py --core-run "$1" --output-dir "$2" "${@:3}"
+
+[positional-arguments]
+audit-core-strata historical current:
+	uv run python scripts/adhoc/issue727_compare_core_strata.py "$1" "$2"
+
 core-verify-consumer record:
 	uv run python -m mtp.workflow verify-consumer "{{record}}"
 
@@ -250,7 +259,7 @@ test:
 
 # Analyzer, ranking exporter, and complete-universe density regression checks (#664).
 test-stratification:
-	uv run pytest tests/test_stratification.py tests/test_enrichment_pipeline.py tests/test_corpus_identity.py
+	uv run pytest tests/test_stratification.py tests/test_stratification_core.py tests/test_enrichment_pipeline.py tests/test_corpus_identity.py
 
 test-cov:
 	uv run pytest --cov=mtp --cov=bsdbng --cov-report=term-missing

@@ -129,6 +129,77 @@ def test_partition_profiles_empty_error(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.parametrize("problem", ["conflicting", "missing", "blank"])
+def test_partition_metadata_corruption_is_rejected_before_writes(
+    tmp_path: Path, problem: str
+) -> None:
+    profiles = tmp_path / "profiles.tsv"
+    profiles.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
+        "s1\te1\tinc\t1\t1\n"
+        "s2\te2\tdec\t1\t0\n"
+    )
+    metadata = "s1\te1\tfeces\ns2\te2\tsaliva\n"
+    if problem == "conflicting":
+        metadata += "s1\te1\tsaliva\n"
+    elif problem == "missing":
+        metadata = "s1\te1\tfeces\n"
+    else:
+        metadata += " \te3\tsaliva\n"
+    experiments = tmp_path / "experiments.tsv"
+    experiments.write_text("study_id\texperiment_id\tbody_site\n" + metadata)
+    output = tmp_path / "partitions"
+    message = {
+        "conflicting": "Conflicting body-site metadata",
+        "missing": "Profile experiment keys missing",
+        "blank": "Blank experiment keys",
+    }[problem]
+    with pytest.raises(ValueError, match=message):
+        partition_profiles(profiles, experiments, output)
+    assert not output.exists()
+
+
+def test_unknown_sites_and_identical_metadata_preserve_disjoint_partition_membership(
+    tmp_path: Path,
+) -> None:
+    profiles = tmp_path / "profiles.tsv"
+    profiles.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
+        "s1\te1\tinc\t1\t1\n"
+        "s1\te1\tdec\t1\t0\n"
+        "s2\te2\tinc\t1\t0\n"
+        "s3\te3\tinc\t1\t0\n"
+    )
+    experiments = tmp_path / "experiments.tsv"
+    experiments.write_text(
+        "study_id\texperiment_id\tbody_site\n"
+        "s1\te1\tfeces\ns1\te1\tfeces\ns2\te2\t\ns3\te3\tsaliva\n"
+    )
+    partitions = partition_profiles(profiles, experiments, tmp_path / "partitions")
+    memberships = {
+        name: set(
+            pd.read_csv(path, sep="\t")[["study_id", "experiment_id", "inc_dec"]].itertuples(
+                index=False, name=None
+            )
+        )
+        for name, path in partitions.items()
+    }
+    assert memberships["feces"].isdisjoint(memberships["feces_excluded"])
+    assert memberships["feces"] | memberships["feces_excluded"] == memberships["pooled"]
+    assert ("s2", "e2", "inc") in memberships["feces_excluded"]
+    assert len(pd.read_csv(partitions["pooled"], sep="\t")) == 4
+    assert len(pd.read_csv(partitions["feces"], sep="\t")) == 2
+
+
+@pytest.mark.parametrize("strata", [["pooled", "pooled"], ["../../escape"], []])
+def test_invalid_stratum_names_are_rejected_without_reading_or_writing(
+    tmp_path: Path, strata: list[str]
+) -> None:
+    with pytest.raises(ValueError, match=r"[Ss]trat"):
+        partition_profiles(tmp_path / "missing", tmp_path / "missing", tmp_path / "out", strata)
+    assert not (tmp_path / "out").exists()
+
+
 def test_compute_annotation_density_deciles() -> None:
     """Verify background annotation density decile binning."""
     df = pd.DataFrame(

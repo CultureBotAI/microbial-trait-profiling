@@ -175,6 +175,7 @@ just core-screen /absolute/path/run.json /absolute/path/screen
 just core-composition /absolute/path/run.json /absolute/path/composition
 just core-ora /absolute/path/run.json /absolute/path/ora
 just core-ora /absolute/path/run.json /absolute/path/ora-depletion lower
+just core-strata /absolute/path/run.json /absolute/path/strata
 just core-verify-consumer /absolute/path/screen/core_consumption.json
 ```
 
@@ -185,6 +186,24 @@ fold ≤ 0.5. The complete export records the actual profile and taxa-matrix
 SHA-256 values required by core-bound integrated evidence. Use a fresh output
 directory when regenerating historical exports; adding fingerprints to an old
 file does not establish that it was executed with those inputs.
+
+`core-strata` binds human ORA profiles, experiments and the taxa matrix from the
+verified core. It writes pooled, feces and feces-excluded partitions, complete
+and selected ORA results, rankings, complete-trait summaries, density diagnostics
+and sensitivity summaries. Its `core_consumption.json` inventories all these
+products and the coverage sidecar; verify it with `just core-verify-consumer`.
+The coverage describes the core input cohort before anatomical-site and
+paired-profile eligibility restrictions. Extra analysis arguments, such as
+`--site saliva`, follow the output directory. Explicit input overrides must
+resolve to the bound core paths.
+
+Partitioning rejects conflicting experiment body sites and missing experiment
+keys before writing partitions. A present experiment with an unknown body site
+still belongs to `feces_excluded`, which means "not identified as feces", not
+"confirmed non-fecal". Identical metadata rows may be collapsed. The feces and
+feces-excluded partitions are disjoint and together retain the pooled profiles.
+Direct-path commands remain available without verified core provenance. This
+standalone binding complements the owner rerun orchestration in #658 / PR #660.
 
 The shared `verify_consumer_record` API is the integration boundary for deck
 builders such as PR #575: verify the input analysis binding before accepting
