@@ -416,6 +416,13 @@ def test_rerun_recipe_hygiene_invariants() -> None:
     for script in (noel_script, jed_script):
         assert "\njust study-trait-profiles-check\n" in script
     assert "\njust table1-taxon-influence\n" not in noel_script
+    # Figures are drawn headless, whatever the session's display (#719)
+    assert '\nexport MPLBACKEND := "Agg"\n' in justfile_text
+    ilyas_script = (repo_root / "scripts" / "rerun_enrichment_ora_arm_ilyas.sh").read_text(
+        encoding="utf-8"
+    )
+    for script in (noel_script, jed_script, ilyas_script):
+        assert "\nexport MPLBACKEND=Agg\n" in script
 
     prov_path = repo_root / "data" / "raw" / "download_provenance.json"
     assert prov_path.exists()

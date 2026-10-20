@@ -1,5 +1,10 @@
 set shell := ["bash", "-cu"]
 
+# Every recipe draws with matplotlib's headless Agg backend. The macOS backend lays a figure
+# out at the display's pixel ratio, so the same command wrote different bytes in different
+# sessions (#719).
+export MPLBACKEND := "Agg"
+
 schema := "schema/mtp.yaml"
 legacy_schema := "schema/bsdbng.yaml"
 lintconfig := "schema/.linkmllint.yaml"
