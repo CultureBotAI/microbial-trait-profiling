@@ -6,6 +6,9 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from mtp.contribution_inputs import Base, Graph
+from mtp.taxon_contributions import Ledger
+
 MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts/create_pd_trait_contributors.py"
 sys.path.insert(0, str(MODULE_PATH.parent))
 SPEC = importlib.util.spec_from_file_location("pd_trait_contributors", MODULE_PATH)
@@ -217,6 +220,7 @@ def test_cocarriage_display_keeps_only_direction_changes() -> None:
         {
             "trait_slug": ["trait_one", "trait_two", "trait_three"],
             "trait_label": ["trait one", "trait two", "trait three"],
+            "trait_direction": ["increased", "decreased", "decreased"],
         }
     )
 
@@ -236,3 +240,302 @@ def test_cocarriage_display_keeps_only_direction_changes() -> None:
     assert changed["decreased_shared_taxa"] == 1
     assert changed["increased_only_taxa"] == "Taxon B"
     assert changed["decreased_only_taxa"] == ""
+    assert (changed["trait_a_direction"], changed["trait_b_direction"]) == (
+        "increased",
+        "decreased",
+    )
+
+
+F, G, H, S1, S2 = "NCBITaxon:100", "NCBITaxon:10", "NCBITaxon:20", "NCBITaxon:1", "NCBITaxon:2"
+STRAIN, LONE, SHARED = "NCBITaxon:1001", "NCBITaxon:2001", "NCBITaxon:3"
+INCREASED = ("st1", "e1", "inc")
+DECREASED = ("st1", "e1", "dec")
+
+
+def ledger_fixture() -> tuple[Base, Graph, Ledger]:
+    """Family F holds genus G (species S1, with a strain, and S2) and genus H, with no species.
+
+    SHARED sits under both S1 and S2, and LONE sits directly under H. The increased profile
+    reports G and H; the decreased one reports S1 and, nested above it, G. All but S1 itself
+    carry trait T1. The KG and the matrix name S1 differently.
+    """
+    parents = {
+        STRAIN: {S1},
+        S1: {G},
+        S2: {G},
+        G: {F},
+        H: {F},
+        LONE: {H},
+        SHARED: {S1, S2},
+    }
+    trait_bearing = {STRAIN: {"T1"}, S2: {"T1"}, LONE: {"T1"}, SHARED: {"T1"}}
+    graph = Graph(parents, trait_bearing, {}, {S1: "Species one", S2: "Species two"}, False)
+    ranks = {F: "family", G: "genus", H: "genus", S1: "species", S2: "species"}
+    sources = {
+        target: {s for s in trait_bearing if target in graph.ancestors(s)} for target in (G, H, S1)
+    }
+    base = Base(
+        columns=["T1"],
+        traits={"facultatively_aerobic": "T1"},
+        profiles={INCREASED: {"T1": 4}, DECREASED: {"T1": 5}},
+        metadata={},
+        reported={
+            INCREASED: {G: {"sig-1"}, H: {"sig-1"}},
+            DECREASED: {S1: {"sig-2"}, G: {"sig-2"}},
+        },
+        taxa={},
+        names={F: "Family F", S1: "Matrix name one"},
+        ranks=ranks,
+        eligibility=[],
+    )
+    return base, graph, Ledger(sources, {}, [])
+
+
+def test_contributions_resolve_each_source_to_one_species_and_family() -> None:
+    base, graph, ledger = ledger_fixture()
+
+    counts, coverage = contributors.count_contributions(base, graph, ledger, [INCREASED, DECREASED])
+
+    by_cell = counts.set_index(["rank", "taxon", "direction"])["count"].to_dict()
+    # Reported nested taxa each count their sources, as the profile trait sums do.
+    assert by_cell == {
+        ("family", F, "dec"): 5,
+        ("family", F, "inc"): 4,
+        ("species", S1, "dec"): 2,
+        ("species", S1, "inc"): 1,
+        ("species", S2, "dec"): 1,
+        ("species", S2, "inc"): 1,
+    }
+    statuses = coverage[coverage["rank"].eq("species") & coverage["direction"].eq("inc")]
+    assert statuses.set_index("status")["count"].to_dict() == {
+        "ambiguous_rank": 1,
+        contributors.RESOLVED_STATUS: 2,
+        "unresolved_rank": 1,
+    }
+    # Every source of the profile's trait count is attributed somewhere at each rank.
+    for key in (INCREASED, DECREASED):
+        in_profile = coverage[coverage["direction"].eq(key[2])]
+        assert int(in_profile["count"].sum()) == 2 * base.profiles[key]["T1"]
+
+
+def test_contributor_tables_carry_shares_status_and_direction() -> None:
+    base, graph, ledger = ledger_fixture()
+    counts, coverage_counts = contributors.count_contributions(
+        base, graph, ledger, [INCREASED, DECREASED]
+    )
+    directions = pd.DataFrame({"trait_id": ["T1"], "trait_direction": ["increased"]})
+    traits = contributors.trait_frame(base, directions)
+
+    cells, coverage, selected = contributors.build_contributor_tables(
+        counts, coverage_counts, traits, contributors.contributor_names(base, graph)
+    )
+
+    species_inc = coverage.set_index(["rank", "direction"]).loc[("species", "inc")]
+    assert (species_inc["total_count"], species_inc["resolved_count"]) == (4, 2)
+    assert (species_inc["unresolved_rank_count"], species_inc["ambiguous_rank_count"]) == (1, 1)
+    assert species_inc["unresolved_or_ambiguous_share"] == pytest.approx(0.5)
+    species_dec = coverage.set_index(["rank", "direction"]).loc[("species", "dec")]
+    assert (species_dec["unresolved_rank_count"], species_dec["ambiguous_rank_count"]) == (0, 2)
+    assert selected["taxon"].tolist() == [S1, S2, F]
+    assert selected["display_name"].tolist() == [
+        "Species one (1)",
+        "Species two (2)",
+        "Family F (100)",
+    ]
+    cell = cells.set_index(["taxon", "direction"])
+    assert cell.loc[(S1, "inc"), "share"] == pytest.approx(0.25)
+    assert cell.loc[(S1, "dec"), "share"] == pytest.approx(0.4)
+    assert cell.loc[(S2, "dec"), "status"] == "resolved"
+    assert (cell.loc[(F, "inc"), "count"], cell.loc[(F, "inc"), "studies"]) == (4, 1)
+    assert set(cells["trait_direction"]) == {"increased"}
+    assert set(cells["trait_label"]) == {"facultatively aerobic (METPO:1000608)"}
+
+
+def test_cells_without_contributions_are_absent() -> None:
+    counts = pd.DataFrame(
+        [("species", "NCBITaxon:7", "inc", "T1", 3, 2)],
+        columns=["rank", "taxon", "direction", "trait_key", "count", "studies"],
+    )
+    coverage_counts = pd.DataFrame(
+        [
+            (rank, direction, "T1", contributors.RESOLVED_STATUS, total)
+            for rank in contributors.CONTRIBUTOR_RANKS
+            for direction, total in (("inc", 4), ("dec", 2))
+        ],
+        columns=["rank", "direction", "trait_key", "status", "count"],
+    )
+    traits = pd.DataFrame(
+        [
+            {
+                "trait_key": "T1",
+                "trait_slug": "facultatively_aerobic",
+                "trait_label": "facultatively aerobic (METPO:1000608)",
+                "trait_direction": "increased",
+            }
+        ]
+    )
+
+    cells, _, _ = contributors.build_contributor_tables(
+        counts, coverage_counts, traits, {"NCBITaxon:7": "Species seven"}
+    )
+
+    by_direction = cells.set_index("direction")
+    assert (by_direction.loc["inc", "status"], by_direction.loc["inc", "share"]) == (
+        "resolved",
+        0.75,
+    )
+    assert by_direction.loc["dec", ["status", "count", "studies"]].tolist() == ["absent", 0, 0]
+
+
+def test_traits_without_a_lollipop_direction_are_refused() -> None:
+    base, _, _ = ledger_fixture()
+    directions = pd.DataFrame({"trait_id": ["other"], "trait_direction": ["increased"]})
+
+    with pytest.raises(ValueError, match="has no direction for T1"):
+        contributors.trait_frame(base, directions)
+
+
+def test_only_paired_human_pd_fecal_profiles_are_counted() -> None:
+    base, _, _ = ledger_fixture()
+    metadata = pd.DataFrame(
+        {
+            "profile_id": ["st1|e1|inc", "st1|e1|dec", "st2|e2|inc", "st3|e3|inc"],
+            "study_id": ["st1", "st1", "st2", "st3"],
+            "experiment_id": ["e1", "e1", "e2", "e3"],
+            "inc_dec": ["inc", "dec", "inc", "inc"],
+            "condition": ["Parkinson's disease"] * 3 + ["Colorectal cancer"],
+            "body_site_group": ["Feces"] * 4,
+        }
+    )
+
+    assert contributors.pd_contribution_profiles(base, metadata) == [DECREASED, INCREASED]
+
+
+def test_selection_keeps_top_species_per_cell_and_top_families(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rows = [("species", f"sp{index}", "inc", "T1", 10 - index, 1) for index in range(7)]
+    rows.append(("species", "sp6", "dec", "T1", 50, 1))
+    rows += [("family", f"fam{index}", "inc", "T1", 5 + index, 1) for index in range(3)]
+    counts = pd.DataFrame(
+        rows, columns=["rank", "taxon", "direction", "trait_key", "count", "studies"]
+    )
+    monkeypatch.setattr(contributors, "TOP_FAMILIES", 2)
+
+    names = {str(taxon): f"Name of {taxon}" for taxon in counts["taxon"]}
+
+    selected = contributors.select_contributor_taxa(counts, names)
+
+    species = selected[selected["rank"].eq("species")]["taxon"].tolist()
+    assert species == ["sp6", "sp0", "sp1", "sp2", "sp3", "sp4"]
+    assert selected[selected["rank"].eq("family")]["taxon"].tolist() == ["fam2", "fam1"]
+
+    monkeypatch.setattr(contributors, "MAX_SELECTED_SPECIES", 2)
+    capped = contributors.select_contributor_taxa(counts, names)
+    assert capped[capped["rank"].eq("species")]["taxon"].tolist() == ["sp6", "sp0"]
+
+
+def test_unnamed_selected_taxa_are_refused() -> None:
+    """A CURIE is a placeholder, not a name (#696)."""
+    counts = pd.DataFrame(
+        [
+            ("species", "NCBITaxon:9", "inc", "T1", 5, 1),
+            ("species", "NCBITaxon:10", "inc", "T1", 4, 1),
+        ],
+        columns=["rank", "taxon", "direction", "trait_key", "count", "studies"],
+    )
+
+    with pytest.raises(ValueError, match=r"No KG or taxa-trait matrix name .*NCBITaxon:10$"):
+        contributors.select_contributor_taxa(counts, {"NCBITaxon:9": "Named"})
+
+
+@pytest.mark.parametrize("kg_name", ["", "  "])
+def test_an_empty_kg_name_does_not_hide_the_matrix_name(kg_name: str) -> None:
+    """Some KG taxa have an empty name; the matrix name stands for it (#703)."""
+    base, graph, _ = ledger_fixture()
+    graph.names[S1] = kg_name
+
+    names = contributors.contributor_names(base, graph)
+
+    assert (names[S1], names[S2], names[F]) == ("Matrix name one", "Species two", "Family F")
+
+
+def trait_intervals(values: dict[str, float]) -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "trait_id": list(values),
+            "trait": [f"{trait_id} trait" for trait_id in values],
+            "increased_minus_decreased_mean_z": list(values.values()),
+            "trait_direction": [
+                "increased" if value > 0 else "decreased" for value in values.values()
+            ],
+            "overall_ci95_low": 0.1,
+            "overall_ci95_high": 0.2,
+        }
+    )
+
+
+LOLLIPOP = {"T1": 0.49, "T2": -0.08}
+
+
+def lollipop_directions(values: dict[str, float] = LOLLIPOP) -> pd.DataFrame:
+    frame = trait_intervals(values)
+    return frame[["trait_id", "trait", "increased_minus_decreased_mean_z", "trait_direction"]]
+
+
+def test_heatmap_trait_table_from_the_current_lollipop_passes() -> None:
+    contributors.check_trait_intervals(trait_intervals(LOLLIPOP), lollipop_directions())
+
+
+@pytest.mark.parametrize(
+    ("values", "problem"),
+    [
+        ({"T1": 0.49}, "missing traits: T2"),
+        ({**LOLLIPOP, "T3": 0.1}, "extra traits: T3"),
+        ({"T1": 0.49, "T2": 0.08}, "other directions: T2"),
+        ({"T1": 0.50, "T2": -0.08}, "other mean-z differences: T1"),
+    ],
+)
+def test_heatmap_trait_table_from_another_lollipop_is_refused(
+    values: dict[str, float], problem: str
+) -> None:
+    """The contributors note quotes this table, so it must match the lollipop (#694)."""
+    with pytest.raises(ValueError, match=rf"heatmap_traits\.tsv does not match .*{problem}"):
+        contributors.check_trait_intervals(trait_intervals(values), lollipop_directions())
+
+
+def test_heatmap_trait_table_without_directions_is_refused() -> None:
+    old_format = trait_intervals(LOLLIPOP).drop(columns="trait_direction")
+
+    with pytest.raises(ValueError, match="lacks trait_direction"):
+        contributors.check_trait_intervals(old_format, lollipop_directions())
+
+
+def test_selected_taxa_with_equal_totals_are_listed_by_name() -> None:
+    counts = pd.DataFrame(
+        [
+            ("species", "NCBITaxon:9", "inc", "T1", 5, 1),
+            ("species", "NCBITaxon:10", "inc", "T1", 5, 1),
+        ],
+        columns=["rank", "taxon", "direction", "trait_key", "count", "studies"],
+    )
+    names = {"NCBITaxon:9": "Zeta", "NCBITaxon:10": "Alpha"}
+
+    selected = contributors.select_contributor_taxa(counts, names)
+
+    assert selected["name"].tolist() == ["Alpha", "Zeta"]
+
+
+def test_trait_labels_lead_with_the_lollipop_direction() -> None:
+    coverage = pd.DataFrame(
+        {
+            "trait_slug": ["a", "b"],
+            "trait_label": ["coccus shaped (METPO:1000668)", "moderately halophilic (x)"],
+            "trait_direction": ["decreased", "increased"],
+        }
+    )
+
+    assert contributors.trait_display_labels(coverage) == {
+        "a": "↓ coccus shaped",
+        "b": "↑ moderately halophilic",
+    }

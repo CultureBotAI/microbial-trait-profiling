@@ -104,21 +104,24 @@ orchestrated refresh. It uses the same human-host study trait-profile heatmap
 outputs as the v2 investigation scripts.
 
 `PD-cellulose/pd_species_six_traits_influence_heatmap.png` is the species-level
-follow-up for all six Parkinson's disease traits. Unlike the adjacent raw
-carrier lookup, its cells are trait-specific fixed-reference leave-one-species-
-out influence contrasts. Every computable species-trait estimate is retained:
-outlined cells include direct removal of that trait, while unoutlined cells show
-the denominator-mediated effect when the species has no direct annotation for
-the displayed trait. Species whose six cells are all low support are omitted,
-and the remaining rows are sorted by the BugSigDB log2 increased/decreased
-profile-count ratio, from increased to decreased skew. The two separate
-right-hand annotations show raw increased/decreased recurrence and a direct
-literature comparison. The latter prints the literature direction plus
-`agrees`, `DIFFERS`, or `balanced`; the current `DIFFERS` rows are
-*Mediterraneibacter torques* and *Escherichia coli*. PD-versus-other-feces
-specificity is retained in a companion audit TSV but is no longer plotted. The
-reference table and interpretation document the targeted narrative-review and
-direction-assignment methods. Regenerate the complete set with
+follow-up for all six Parkinson's disease traits, whatever their sign; each column
+carries the trait's observed direction in the six-trait lollipop as an up or down
+arrow (#584). Unlike the adjacent raw carrier lookup, its cells are
+trait-specific fixed-reference leave-one-species-out influence contrasts. Every
+computable species-trait estimate is kept in the cell TSV, and the figure draws
+the cells whose absolute influence exceeds 0.01: outlined cells include direct
+removal of that trait, while unoutlined cells show the denominator-mediated
+effect when the species has no direct annotation for the displayed trait.
+Species whose six cells are all low support or below that threshold are
+omitted, and the remaining rows are sorted by the BugSigDB log2
+increased/decreased profile-count ratio, from increased to decreased skew. The
+two separate right-hand annotations show raw increased/decreased recurrence and
+the literature direction with its one-position Hamming distance from BugSigDB
+recurrence; *Escherichia coli* is the one displayed species whose directions
+differ. PD-versus-other-feces specificity is retained in a companion audit TSV
+but is no longer plotted. The reference table and interpretation document the
+targeted narrative-review and direction-assignment methods. Regenerate the
+evidence with `just pd-trait-taxa`, then the heatmaps with
 `just pd-trait-taxa-heatmap`.
 
 ## Cleanup Note

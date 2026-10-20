@@ -148,7 +148,10 @@ oral-six-trait-heatmap:
 	fi && \
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py --oral-only --source-commit "$source_commit"
 
-# Trace PD lollipop traits to observed taxa and profile evidence.
+# Trace all six PD lollipop traits, each with its observed direction, to observed taxa and
+# profile evidence, and record the PD fecal profile set and the hashes of the inputs read and
+# the tables written, which the readers check (#584, #693, #703). After a data/derived change,
+# run `just trait-heatmaps` and the summary rebuild first (PD-cellulose/README.md).
 pd-trait-taxa:
 	uv run python scripts/lookup_pd_trait_taxa.py
 
@@ -157,7 +160,8 @@ pd-trait-taxa-heatmap:
 	uv run python scripts/create_pd_six_trait_taxon_heatmap.py
 	uv run python scripts/create_pd_exploratory_taxa_influence_heatmap.py
 
-# Refresh PD trait contributor dot heatmap with specificity and co-carriage checks.
+# Build PD trait contributor tables from the Table 1 contribution ledger (#190) on the pinned
+# KG in data/kg-microbe, then draw the dot heatmap and co-carriage network (#584).
 pd-trait-contributors:
 	uv run python scripts/create_pd_trait_contributors.py
 
@@ -229,6 +233,12 @@ download-kg:
 
 download-kg-force:
 	uv run --extra kg python scripts/download_kg_microbe.py --force
+
+# Check data/kg-microbe against the md5s pinned in methods/table1_taxon_influence_protocol.json,
+# which the Table 1 influence audit and `just pd-trait-contributors` read. Refetch a changed
+# file with `just download-kg-force`: `just download-kg` compares sizes only.
+verify-pinned-kg:
+	uv run python -m mtp.contribution_inputs
 
 # Check that every identifier the guild, gram-stain and Table 1 figures group exists
 # in data/kg-microbe/merged-kg_nodes.tsv with its expected label (run `just download-kg` first).

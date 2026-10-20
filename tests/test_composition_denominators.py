@@ -113,7 +113,10 @@ def test_validate_cached_totals_detects_stale_cache() -> None:
         {"total_trait_signal": [120, 230]},  # Includes MediaDive, stale!
         index=["s1|e1|inc", "s2|e2|dec"],
     )
-    with pytest.raises(ValueError, match="Stale or incompatible non-MediaDive denominator cache"):
+    with pytest.raises(
+        ValueError,
+        match=r"Stale or incompatible non-MediaDive denominator cache.*`just trait-heatmaps`",
+    ):
         validate_cached_totals(counts, stale_metadata)
 
 
@@ -127,7 +130,9 @@ def test_validate_cached_totals_rejects_duplicate_index() -> None:
 def test_validate_cached_totals_rejects_missing_keys() -> None:
     counts = pd.DataFrame({"A": [1, 2]}, index=["k1", "k2"])
     metadata = pd.DataFrame({"total_trait_signal": [1, 2]}, index=["k1", "missing_k"])
-    with pytest.raises(ValueError, match="Cached metadata contains profile keys missing"):
+    with pytest.raises(
+        ValueError, match=r"Cached metadata contains profile keys missing.*`just trait-heatmaps`"
+    ):
         validate_cached_totals(counts, metadata)
 
 
