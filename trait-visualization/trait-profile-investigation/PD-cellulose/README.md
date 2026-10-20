@@ -13,20 +13,25 @@ See [the interpretation guide](pd_ecological_reporter_figures.md) for definition
 **ecological reporter** and **ecological-reporter composite**, a panel-by-panel explanation, and
 details of the second panel's axes.
 
-## Label sources (#555, #584)
+`just pd-cellulose-analysis` writes the `pd_cellulose_*` and `pd_six_trait_direction_*` outputs
+and [interpretations.md](interpretations.md). It reads the individual-condition Sankey edge
+tables from `just six-shared-trait-sankeys` and stops when they no longer match the profile
+inputs. `just pd-ecological-reporter-combined` writes the `pd_ecological_reporter_combined_*`
+tables and figure, and the numbers block of the interpretation guide.
 
-Profiles now take their own experiment's condition and body site. These outputs were regenerated
-with those labels:
+## Label sources (#555, #584, #585)
+
+Profiles now take their own experiment's condition and body site. All outputs in this folder
+were regenerated with those labels:
 
 - `pd_cellulose_*`, `pd_six_trait_direction_*` and `pd_condition_taxon_trait_network*` (#555).
+- `pd_ecological_reporter_combined*` from `just pd-ecological-reporter-combined`, which builds
+  the reporter tables from the profile inputs (#585).
 - The PD trait-taxa outputs (#584): `pd_trait_taxa_lookup.md`, `pd_six_trait_taxon_*` and
   `pd_six_trait_taxon_evidence_provenance.json` from `just pd-trait-taxa`; the
   `pd_species_six_traits_*` and `pd_exploratory_taxa_six_traits_*` heatmaps and reference tables
   from `just pd-trait-taxa-heatmap`; and the `pd_trait_contributors*` tables and figures from
   `just pd-trait-contributors`.
-
-Only the `pd_ecological_reporter_combined_*` source tables still reflect the earlier
-study-majority labels; no script in this repository regenerates them (#585).
 
 ## PD trait-taxa outputs (#584)
 
@@ -56,9 +61,9 @@ After a `data/derived` change, run these steps in order:
 1. `just trait-heatmaps`, which rewrites `study_trait_profile_study_metadata.tsv`. The PD scripts
    stop at the denominator-cache check, which names this command, when the metadata's totals no
    longer match the profile matrix.
-2. `uv run python scripts/create_pd_cellulose_analysis.py`, which rebuilds
-   `pd_six_trait_direction_summary.tsv`. `just pd-trait-taxa` stops when the saved summary no
-   longer matches the current profiles, and names this command.
+2. `just pd-cellulose-analysis`, which rebuilds `pd_six_trait_direction_summary.tsv`.
+   `just pd-trait-taxa` stops when the saved summary no longer matches the current profiles, and
+   names this command.
 3. `just pd-trait-taxa`.
 4. `just pd-trait-taxa-heatmap`.
 5. `just pd-trait-contributors`.

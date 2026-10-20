@@ -187,11 +187,20 @@ def test_followup_profile_metadata_excludes_media_from_counts_and_totals(
 ) -> None:
     module = load_script_module("analyze_enrichment_infographic_followup", monkeypatch)
     experiments = pd.DataFrame(
-        {"study_id": ["s1", "s2", "s3"], "experiment_id": ["e1", "e2", "e3"]}
+        {
+            "study_id": ["s1", "s2", "s3"],
+            "experiment_id": ["e1", "e2", "e3"],
+            "condition": ["export label"] * 3,
+        }
     )
     studies = pd.DataFrame({"study_id": ["s1", "s2", "s3"]})
-    values, metadata, columns = module.load_profiles(profile_path, experiments, studies)
+    labels = pd.DataFrame(
+        {"condition": ["c1", "c1", "c2", "c2", "c3"]},
+        index=counts.index,
+    ).reindex(columns=module.PROFILE_LABEL_COLUMNS)
+    values, metadata, columns = module.load_profiles(profile_path, experiments, studies, labels)
 
+    assert metadata["condition"].tolist() == ["c1", "c1", "c2", "c2", "c3"]
     assert columns == TRAITS.tolist()
     assert metadata.index.tolist() == counts.index.tolist()
     assert metadata["total_trait_signal"].tolist() == [6, 6, 8, 5, 0]

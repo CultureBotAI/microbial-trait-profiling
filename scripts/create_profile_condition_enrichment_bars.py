@@ -381,12 +381,14 @@ def focus_delta_sort_label(focus_direction: str) -> str:
     """Return a readable description of the default focus-delta ranking."""
     focus_label = DIRECTION_LABELS[focus_direction]
     comparator_label = DIRECTION_LABELS[comparator_direction(focus_direction)]
-    return f"how much stronger selected traits are in {focus_label} than {comparator_label}"
+    return (
+        f"the mean number of selected traits with z > 0 in {focus_label} minus {comparator_label}"
+    )
 
 
 def focus_signal_panel_title(focus_direction: str) -> str:
     """Return a plain-language title for focus-delta signal panels."""
-    return f"Trait signal stronger in {DIRECTION_LABELS[focus_direction]}"
+    return f"More selected traits with z > 0 in {DIRECTION_LABELS[focus_direction]}"
 
 
 def focus_sort_label(focus_direction: str, sort_by: str) -> str:
@@ -1076,7 +1078,8 @@ def save_condition_trait_signal_heatmap(
         },
     )
     ax.set_title(
-        f"{focus_output_label(focus_direction).title()}-Profile Condition x Trait Drivers",
+        f"{focus_output_label(focus_direction).title()}-Profile Condition x Trait "
+        "Signal Differences",
         fontsize=15,
         fontweight="bold",
         pad=30,
@@ -1130,6 +1133,7 @@ def write_readme(
     min_decreased_profiles: int,
     body_site: str | None,
     trait_count: int,
+    standalone_bars: bool,
 ) -> None:
     """Write a short methods/readout note for the generated bar plots."""
     top_count = summary.sort_values("positive_profile_count", ascending=False).head(5)
@@ -1168,26 +1172,34 @@ def write_readme(
         "",
         "## Outputs",
         "",
-        "- `condition_positive_profile_count_bar.png`: condition x number of profiles "
-        "with at least one positive selected trait signal, stacked by "
-        "increased/decreased BugSigDB profile direction.",
-        "- `condition_average_positive_traits_bar.png`: condition x average number of "
-        "positive selected traits, stacked as decreased-profile mean plus "
-        "increased-profile mean in the same style as the ORA infographic condition "
-        "panel.",
-        f"- `condition_{focus_label}_trait_signal_bar.png`: focus-condition bars "
-        f"ranked by the selected sort option; signal is `{focus_delta}`.",
-        f"- `condition_{focus_label}_profile_coverage_bar.png`: profile coverage for "
-        "the same focus conditions, stacked by profile direction.",
+    ]
+    if standalone_bars:
+        lines.extend(
+            [
+                "- `condition_positive_profile_count_bar.png`: condition x number of profiles "
+                "with at least one positive selected trait signal, stacked by "
+                "increased/decreased BugSigDB profile direction.",
+                "- `condition_average_positive_traits_bar.png`: condition x average number of "
+                "positive selected traits, stacked as decreased-profile mean plus "
+                "increased-profile mean in the same style as the ORA infographic condition "
+                "panel.",
+                f"- `condition_{focus_label}_trait_signal_bar.png`: focus-condition bars "
+                f"ranked by the selected sort option; signal is `{focus_delta}`.",
+                f"- `condition_{focus_label}_profile_coverage_bar.png`: profile coverage for "
+                "the same focus conditions, stacked by profile direction.",
+            ]
+        )
+    lines += [
         f"- `condition_{focus_label}_profile_signal_diagram.png`: two-panel "
-        "diagram combining direction-specific trait signal and coverage.",
+        "diagram combining the between-direction trait-signal difference and coverage.",
         f"- `condition_{focus_label}_signal_vs_coverage_scatter.png`: uncapped "
-        "scatterplot of direction-specific signal difference versus positive-signal "
+        "scatterplot of the between-direction signal difference versus positive-signal "
         "profile coverage.",
         f"- `condition_{focus_label}_signal_vs_coverage_scatter.tsv`: full data table "
         "used by the scatterplot.",
         f"- `condition_{focus_label}_trait_signal_heatmap.png`: uncapped condition x "
-        "selected-trait heatmap showing which traits drive the direction-specific signal.",
+        "selected-trait heatmap of each trait's positive-signal fraction difference "
+        "between directions.",
         f"- `condition_{focus_label}_trait_signal_heatmap_matrix.tsv`: full condition x "
         "trait matrix used by the heatmap.",
         "- `condition_profile_trait_summary.tsv`: profile-data summary table used by the plots.",
@@ -1272,14 +1284,22 @@ def write_readme(
         ]
     )
 
+    coverage_views = (
+        "The count plot shows where profile coverage is deepest; the average-depth plot shows "
+        "where profiles have the broadest above-average selected trait signal."
+        if standalone_bars
+        else "The two condition tables above show where profile coverage is deepest and where "
+        "profiles have the broadest above-average selected trait signal."
+    )
+    capped_views = (
+        "The diagram and bar plots display" if standalone_bars else "The diagram displays"
+    )
     lines.extend(
         [
             "",
             "## Interpretation Note",
             "",
-            "Use these as a profile-level analogue to the ORA condition panel. The count "
-            "plot shows where profile coverage is deepest; the average-depth plot shows "
-            "where profiles have the broadest above-average selected trait signal. "
+            f"Use these as a profile-level analogue to the ORA condition panel. {coverage_views} "
             "Because the metric is z-score based, it should be described as "
             "`positive selected trait signal` unless it is later replaced with formal "
             "ORA q-value enrichment counts.",
@@ -1290,7 +1310,7 @@ def write_readme(
             "the focus direction has a higher mean positive selected-trait count "
             "than the comparator direction. Hatched rows have limited study support.",
             "",
-            f"The bar plots display the top {top_n} conditions after filtering. "
+            f"{capped_views} the top {top_n} conditions after filtering. "
             "The scatterplot and heatmap are not top-N capped.",
             "",
         ]
@@ -1350,7 +1370,22 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Keep broad study-design/metadata labels in condition rankings.",
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--standalone-bars",
+        action="store_true",
+        help=(
+            "Also draw the four standalone bar charts; needs an --output-dir other than the "
+            "default. The committed folder keeps only the combined diagram, scatterplot and "
+            "heatmap for each direction."
+        ),
+    )
+    args = parser.parse_args()
+    # Every PNG in the committed folder needs a label in
+    # annotate_trait_profile_investigation_figures.py, so extra charts there would stop
+    # `just trait-profile-investigation` (#690).
+    if args.standalone_bars and args.output_dir.resolve() == DEFAULT_OUTPUT_DIR.resolve():
+        parser.error("--standalone-bars needs an --output-dir outside profile-condition-bars/")
+    return args
 
 
 def main() -> None:
@@ -1408,40 +1443,46 @@ def main() -> None:
         args.output_dir / f"condition_{focus_label}_trait_signal_heatmap_matrix.tsv",
         sep="\t",
     )
-    save_stacked_condition_bar(
-        summary,
-        output_path=args.output_dir / "condition_positive_profile_count_bar.png",
-        value_columns=("decreased_positive_profile_count", "increased_positive_profile_count"),
-        total_column="positive_profile_count",
-        title="Profile Data: Conditions by Positive Trait-Signal Coverage",
-        xlabel="Profiles with at least one positive selected trait signal",
-        top_n=args.top_n,
-        label_format="{:.0f}",
-    )
-    save_stacked_condition_bar(
-        summary,
-        output_path=args.output_dir / "condition_average_positive_traits_bar.png",
-        value_columns=(
-            "decreased_mean_positive_selected_trait_count",
-            "increased_mean_positive_selected_trait_count",
-        ),
-        total_column="total_direction_mean_positive_selected_trait_count",
-        title="Profile Data: Avg Positive Trait Signals per Condition",
-        xlabel="Mean positive selected traits per profile (decreased + increased direction means)",
-        top_n=args.top_n,
-        label_format="{:.1f}",
-    )
-    save_focus_signal_bar(
-        focus_conditions,
-        output_path=args.output_dir / f"condition_{focus_label}_trait_signal_bar.png",
-        focus_direction=args.focus_direction,
-        sort_by=args.sort_by,
-    )
-    save_focus_coverage_bar(
-        focus_conditions,
-        output_path=args.output_dir / f"condition_{focus_label}_profile_coverage_bar.png",
-        focus_direction=args.focus_direction,
-    )
+    if args.standalone_bars:
+        save_stacked_condition_bar(
+            summary,
+            output_path=args.output_dir / "condition_positive_profile_count_bar.png",
+            value_columns=(
+                "decreased_positive_profile_count",
+                "increased_positive_profile_count",
+            ),
+            total_column="positive_profile_count",
+            title="Profile Data: Conditions by Positive Trait-Signal Coverage",
+            xlabel="Profiles with at least one positive selected trait signal",
+            top_n=args.top_n,
+            label_format="{:.0f}",
+        )
+        save_stacked_condition_bar(
+            summary,
+            output_path=args.output_dir / "condition_average_positive_traits_bar.png",
+            value_columns=(
+                "decreased_mean_positive_selected_trait_count",
+                "increased_mean_positive_selected_trait_count",
+            ),
+            total_column="total_direction_mean_positive_selected_trait_count",
+            title="Profile Data: Avg Positive Trait Signals per Condition",
+            xlabel=(
+                "Mean positive selected traits per profile (decreased + increased direction means)"
+            ),
+            top_n=args.top_n,
+            label_format="{:.1f}",
+        )
+        save_focus_signal_bar(
+            focus_conditions,
+            output_path=args.output_dir / f"condition_{focus_label}_trait_signal_bar.png",
+            focus_direction=args.focus_direction,
+            sort_by=args.sort_by,
+        )
+        save_focus_coverage_bar(
+            focus_conditions,
+            output_path=args.output_dir / f"condition_{focus_label}_profile_coverage_bar.png",
+            focus_direction=args.focus_direction,
+        )
     save_focus_signal_diagram(
         focus_conditions,
         output_path=args.output_dir / f"condition_{focus_label}_profile_signal_diagram.png",
@@ -1480,6 +1521,7 @@ def main() -> None:
         min_decreased_profiles=args.min_decreased_profiles,
         body_site=args.body_site,
         trait_count=matrix.shape[1],
+        standalone_bars=args.standalone_bars,
     )
 
     print(f"Wrote profile-condition bar plots to: {args.output_dir}")

@@ -153,10 +153,16 @@ oral-six-trait-heatmap:
 	fi && \
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py --oral-only --source-commit "$source_commit"
 
+# PD fecal cellulose tables, figures and interpretations.md from the six-trait profile
+# z-scores and the individual-condition Sankey edge tables that `just six-shared-trait-sankeys`
+# writes. It stops when those tables no longer match the profile inputs (#687).
+pd-cellulose-analysis:
+	uv run python scripts/create_pd_cellulose_analysis.py
+
 # Trace all six PD lollipop traits, each with its observed direction, to observed taxa and
 # profile evidence, and record the PD fecal profile set and the hashes of the inputs read and
 # the tables written, which the readers check (#584, #693, #703). After a data/derived change,
-# run `just trait-heatmaps` and the summary rebuild first (PD-cellulose/README.md).
+# run `just trait-heatmaps` and `just pd-cellulose-analysis` first (PD-cellulose/README.md).
 pd-trait-taxa:
 	uv run python scripts/lookup_pd_trait_taxa.py
 
@@ -175,10 +181,19 @@ pd-trait-contributors:
 pd-significant-ecological-network:
 	uv run python scripts/create_pd_significant_condition_taxon_trait_network.py
 
-# Redraw the combined ecological-reporter figure after retaining conditions with
-# a descriptive 95% interval excluding zero for at least one of the six traits.
+# Build the ecological-reporter tables from the profile inputs (paired within-study
+# contrasts of the six-trait z-scores, and the PD genus/species taxon panel), then draw
+# the combined figure for the conditions with a descriptive 95% interval excluding zero
+# for at least one of the six traits.
 pd-ecological-reporter-combined:
 	uv run python scripts/create_pd_ecological_reporter_combined.py
+
+# Every six-shared-trait table and Sankey figure from the profile inputs, including
+# six_shared_trait_summary.tsv and the individual-condition edge tables that
+# `just pd-cellulose-analysis` reads. It removes the shared high-support node tables, which
+# the two recipes below write again, so run them after it.
+six-shared-trait-sankeys:
+	uv run python scripts/create_six_shared_trait_sankeys.py
 
 # Overlay increased (solid) and decreased (dashed) high-support Sankey links.
 six-shared-trait-combined-sankey:

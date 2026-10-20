@@ -41,7 +41,7 @@ DIRECTION_MEANINGS = {
     "neither": "its mean z is the same in both directions",
 }
 TOP_TAXA_PER_TRAIT = 12
-SUMMARY_REBUILD = "`uv run python scripts/create_pd_cellulose_analysis.py`"
+SUMMARY_REBUILD = "`just pd-cellulose-analysis`"
 
 
 def trait_direction(increased_minus_decreased_mean_z: float) -> str:

@@ -19,7 +19,9 @@ uv run python scripts/regenerate_trait_profile_investigation.py
 
 The regeneration command writes the current v2 output folders, summary diagram,
 all-BugSigDB direction maps, direction-grid TSV, figure annotations, and the
-PowerPoint deck media.
+PowerPoint deck media. It also writes `profile-condition-bars/` (increased and
+decreased runs) and `enrichment-infographic-followup/` (the infographic run and
+the paired-profile run under its three names) (#586).
 
 The current workflow diagram uses `waldronlab/BugSigDBExports` `v1.3.1`
 `full_dump.csv` (`BugSigDB 2026-04-24_00:41_UTC`, DOI

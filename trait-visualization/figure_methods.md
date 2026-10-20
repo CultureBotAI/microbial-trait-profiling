@@ -506,7 +506,9 @@ selected-trait cell is counted as positive when its selected heatmap z-score is
 above zero, meaning the trait fraction is above that trait column's dataset
 average in the selected profile matrix.
 
-The default run writes to `profile-condition-bars/`. Conditions are filtered to
+The default run writes to `profile-condition-bars/`. `just trait-profile-investigation`
+runs it for increased and then decreased profiles, so the folder's `README.md` describes
+the decreased run (#586). Conditions are filtered to
 remove broad metadata-like labels, then retained when they have at least 10
 profiles and at least two studies. The depleted-condition focus additionally
 requires at least three decreased profiles and a positive decreased-minus-increased
@@ -515,8 +517,11 @@ mean positive-trait delta. The default command uses `--focus-direction dec`,
 filter. The bar-style figures display the top 15 focus-condition rows after
 ranking, while the scatterplot and condition x trait heatmap include every
 focus-eligible row after the same filters. Optional arguments allow the same
-workflow to be rerun for increased profiles or for a specific
-`body_site_group`/`body_site`.
+workflow to be rerun for a specific `body_site_group`/`body_site`. The four
+standalone bar charts described next are drawn only with `--standalone-bars`
+and another `--output-dir`;
+the folder keeps the combined diagram, the scatterplot and the heatmap for each
+direction, and `README.md` lists the coverage and depth rankings as tables.
 
 The companion table
 `profile-condition-bars/condition_profile_trait_summary.tsv` records the
@@ -554,10 +559,11 @@ show those two means. The x-axis unit is therefore an average positive-trait
 depth, not a count of profiles.
 
 Interpretation: this figure asks which conditions have broad above-average
-selected-trait signal inside their profiles. It highlights conditions such as
-glaucoma, human immunodeficiency virus, diabetic retinopathy, epilepsy,
-attention deficit-hyperactivity disorder, autism, graft-versus-host disease,
-and vitiligo. Because the plotted total adds decreased and increased means, it
+selected-trait signal inside their profiles. In the current corpus the deepest
+are chronic obstructive pulmonary disease, glaucoma, response to vaccine, human
+immunodeficiency virus, attention deficit-hyperactivity disorder, autism,
+endometrial cancer, breastfeeding duration, vitiligo and epilepsy. Because the
+plotted total adds decreased and increased means, it
 is best used as a signal-depth companion rather than as a claim that one
 direction dominates.
 
@@ -578,12 +584,12 @@ so they are not confused with the red/blue profile-direction coverage encoding.
 Rows with limited study support are hatched.
 
 Interpretation: this is the primary depleted-condition screen in the
-profile-condition bar set. The top displayed labels are bronchiectasis,
-arthritis, acute lymphoblastic leukemia, gastric adenocarcinoma, Chlamydia
-trachomatis infectious disease, vitiligo, phenylketonuria,
-graft-versus-host disease, human immunodeficiency virus, diarrhea, response to
-allogeneic hematopoietic stem cell transplant, head and neck squamous cell
-carcinoma, lung cancer, ulcerative colitis, and oral mucositis. These labels
+profile-condition bar set. In the current corpus the top displayed labels are
+diarrhea, acute lymphoblastic leukemia, response to allogeneic hematopoietic
+stem cell transplant, vitiligo, endometrial cancer, phenylketonuria, lung
+cancer, gastric adenocarcinoma, human papilloma virus infection, oral mucositis,
+eczema, human immunodeficiency virus, chronic kidney disease, head and neck
+squamous cell carcinoma, and graft versus host disease. These labels
 have higher average selected-trait breadth in decreased profiles than in their
 increased-profile comparator rows.
 
@@ -599,10 +605,11 @@ signal plot.
 
 Interpretation: this figure is the support guardrail for the depleted-condition
 screen. It separates a strong direction delta with modest support from a more
-moderate delta with broader profile/study coverage. For example, bronchiectasis
-and arthritis have the largest deltas but relatively small positive-profile
-counts, while diarrhea, ulcerative colitis, oral mucositis, lung cancer, and
-phenylketonuria provide broader profile support among the displayed rows.
+moderate delta with broader profile/study coverage. For example, vitiligo and
+endometrial cancer have large deltas from 10 and 11 positive-signal profiles,
+while human papilloma virus infection (80 profiles, 22 studies), chronic kidney
+disease (31, 10) and lung cancer (27, 8) provide broader support among the
+displayed rows.
 
 #### `condition_depleted_profile_signal_diagram.png`
 
@@ -611,11 +618,12 @@ the direction-specific trait-signal delta from
 `condition_depleted_trait_signal_bar.png`. Panel B is the profile-coverage
 guardrail from `condition_depleted_profile_coverage_bar.png`. The row order is
 shared between panels, so the reader can compare depletion-bias magnitude and
-profile/study support directly for each condition. Panel A is titled "Trait
-signal stronger in decreased profiles", uses purple bars for the trait-signal
-difference, and includes a legend entry for that encoding. Hatched rows denote
-limited study support. The subtitle describes the ranking as how much stronger
-selected traits are in decreased profiles than increased profiles.
+profile/study support directly for each condition. Panel A is titled "More
+selected traits with z > 0 in decreased profiles", uses purple bars for the
+trait-signal difference, and includes a legend entry for that encoding. Hatched
+rows denote limited study support. The subtitle describes the ranking as the
+mean number of selected traits with z > 0 in decreased profiles minus increased
+profiles.
 
 Interpretation: this is the recommended summary figure when presenting
 depleted conditions from the generic profile-condition bar workflow. Panel A
@@ -657,8 +665,8 @@ selected-trait z-score minus the fraction of increased profiles with a positive
 selected-trait z-score. The companion matrix
 `condition_depleted_trait_signal_heatmap_matrix.tsv` records those values.
 
-Interpretation: this figure asks which selected traits drive each
-condition-level depleted-profile signal. Red cells indicate traits more often
+Interpretation: this figure shows how much each selected trait contributes to
+each condition-level depleted-profile signal. Red cells indicate traits more often
 positive in decreased profiles; blue cells indicate traits more often positive
 in increased profiles. Because the heatmap includes all focus-eligible rows and
 all selected traits, it is best used for detailed investigation rather than as a
@@ -1770,15 +1778,27 @@ that preceded the v2 oxygen-tolerance-only comparison.
 
 The enrichment-follow-up organism heatmaps are generated by
 `scripts/analyze_enrichment_infographic_followup.py`. They use the full
-`data/derived/study_trait_profiles_wide.tsv` matrix, raw BugSigDB experiment
-metadata, and `data/derived/taxa_trait_matrix.tsv` to connect target condition
-profiles to organisms and KG-Microbe trait annotations. These panels do not
-rerun ORA; they are organism-by-trait support views for selected condition
-sets.
+`data/derived/study_trait_profiles_wide.tsv` matrix and
+`data/derived/taxa_trait_matrix.tsv` to connect target condition profiles to
+organisms and KG-Microbe trait annotations. Each profile takes its own
+experiment's condition, body site and host from
+`trait-visualization/study_trait_profile_study_metadata.tsv`, and experiment
+names and reported taxa come from the pinned `data/raw/full_dump.csv`, not the
+unpinned `experiments.csv` export (#688). Only experiments and taxa from profiles
+in this corpus are listed. These panels do not rerun ORA; they are
+organism-by-trait support views for selected condition sets.
+
+`just trait-profile-investigation` regenerates both runs described below (#586).
+The paired-profile run is written three times, under the `my_top3_` and
+`my_top3_conditions_relevant_traits_` prefixes and in `my-top3-enriched-traits/`,
+and the three copies are identical.
 
 `enrichment-infographic-followup/traits_vs_organisms_heatmap.png` uses the
 original enrichment-infographic outlier conditions and selects trait columns
-from the infographic top traits plus high-signal target-condition traits.
+from the infographic top traits plus high-signal target-condition traits. The
+conditions, their infographic depths and the infographic traits are fixed in the
+script from that earlier figure; the README names any of them with too few
+profiles in the current corpus (thalassemia has none in the pinned release).
 `enrichment-infographic-followup/my_top3_traits_vs_organisms_heatmap.png`,
 `enrichment-infographic-followup/my_top3_conditions_relevant_traits_traits_vs_organisms_heatmap.png`,
 and

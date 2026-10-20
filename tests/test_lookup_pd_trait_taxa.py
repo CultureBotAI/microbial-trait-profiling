@@ -175,7 +175,7 @@ def test_stale_summary_names_itself_and_how_to_rebuild_it() -> None:
         ValueError, match=r"pd_six_trait_direction_summary\.tsv no longer matches"
     ) as error:
         lookup.check_saved_summary(recomputed, saved)
-    assert "scripts/create_pd_cellulose_analysis.py" in str(error.value)
+    assert "just pd-cellulose-analysis" in str(error.value)
     assert "increased_profiles" in str(error.value)
 
 

@@ -1,4 +1,4 @@
-# PD Cellulose Taxa: Direction-Specific Reports and Background
+# PD Cellulose Taxa: Reports by Direction and Background
 
 Prepared from the local analysis inputs on 2026-09-11. Counts updated on 2026-10-18 after profiles took their own experiment's condition and body site instead of the study majority (#555).
 
