@@ -1,7 +1,7 @@
 ================================================================================
 TRAIT COUPLING SENSITIVITY AUDIT REPORT (Issue #260)
 ================================================================================
-Code commit: 7a6182e79f4c65d31cc84dae2940acd170e8db40
+Code commit: 42300e031e0631198e81b11752904064aa61ab41
 
 1. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA EFFECT MATRIX (6 x 6):
    Rows: Dropped Trait | Columns: Evaluated Trait

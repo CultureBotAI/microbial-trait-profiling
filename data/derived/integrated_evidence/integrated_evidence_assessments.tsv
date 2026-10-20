@@ -45,25 +45,25 @@ issue	assessment	scope_kind	scope	state_variable	state_value
 #188	orientation_status	procedure	guild_mcnemar	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
 #188	orientation_status	procedure	log_ratio_sign_test	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
 #188	orientation_status	procedure	oxygen_guild_cell_support	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
-#188	orientation_status	contrast_class	disease_vs_healthy:native	experiments	1003
-#188	orientation_status	contrast_class	disease_vs_healthy:native	studies	569
+#188	orientation_status	contrast_class	disease_vs_healthy:native	experiments	1047
+#188	orientation_status	contrast_class	disease_vs_healthy:native	studies	592
 #188	orientation_status	contrast_class	disease_vs_healthy:reversed	experiments	1
 #188	orientation_status	contrast_class	disease_vs_healthy:reversed	studies	1
-#188	orientation_status	contrast_class	disease_vs_disease:not_applicable	experiments	260
-#188	orientation_status	contrast_class	disease_vs_disease:not_applicable	studies	173
-#188	orientation_status	contrast_class	treatment_exposure:not_applicable	experiments	366
-#188	orientation_status	contrast_class	treatment_exposure:not_applicable	studies	174
+#188	orientation_status	contrast_class	disease_vs_disease:not_applicable	experiments	252
+#188	orientation_status	contrast_class	disease_vs_disease:not_applicable	studies	166
+#188	orientation_status	contrast_class	treatment_exposure:not_applicable	experiments	351
+#188	orientation_status	contrast_class	treatment_exposure:not_applicable	studies	169
 #188	orientation_status	contrast_class	longitudinal_timepoint:not_applicable	experiments	200
 #188	orientation_status	contrast_class	longitudinal_timepoint:not_applicable	studies	105
-#188	orientation_status	contrast_class	other:not_applicable	experiments	275
-#188	orientation_status	contrast_class	other:not_applicable	studies	105
-#188	orientation_status	contrast_class	unresolved:not_applicable	experiments	230
-#188	orientation_status	contrast_class	unresolved:not_applicable	studies	136
+#188	orientation_status	contrast_class	other:not_applicable	experiments	321
+#188	orientation_status	contrast_class	other:not_applicable	studies	123
+#188	orientation_status	contrast_class	unresolved:not_applicable	experiments	163
+#188	orientation_status	contrast_class	unresolved:not_applicable	studies	102
 #188	orientation_status	validation	hand_review	reviewed_experiments	60
-#188	orientation_status	validation	hand_review	agreed	43
-#188	orientation_status	validation	hand_review	disagreed	17
+#188	orientation_status	validation	hand_review	agreed	58
+#188	orientation_status	validation	hand_review	disagreed	2
 #188	orientation_status	validation	hand_review	validation_status	hand_review_disagreements_unresolved
-#188	orientation_status	note	classifier_version	version	contrast-orientation-v2
+#188	orientation_status	note	classifier_version	version	contrast-orientation-v4
 #183	sensitivity_status	procedure	aggregated_profile_support	status_applied	pending #183
 #183	sensitivity_status	procedure	composition_arm_native_transformed_contrast	status_applied	pending #183
 #183	sensitivity_status	procedure	enrichment_arm_profile_hypergeometric	status_applied	pending #183
@@ -129,10 +129,10 @@ issue	assessment	scope_kind	scope	state_variable	state_value
 #183	sensitivity_status	family	S9:fifteen_ratios	q_at_or_below_0.05	4
 #183	sensitivity_status	family	S9:fifteen_ratios	scenario	S9_feces_any_label
 #183	sensitivity_status	family	S9:fifteen_ratios	tested	15
-#190	taxon_influence_status	procedure	aggregated_profile_support	status_applied	pending #190
-#190	taxon_influence_status	procedure	composition_arm_native_transformed_contrast	status_applied	pending #190
-#190	taxon_influence_status	procedure	enrichment_arm_profile_hypergeometric	status_applied	pending #190
-#190	taxon_influence_status	procedure	fraction_sign_test	status_applied	pending #190
-#190	taxon_influence_status	procedure	guild_mcnemar	status_applied	pending #190
-#190	taxon_influence_status	procedure	log_ratio_sign_test	status_applied	pending #190
-#190	taxon_influence_status	procedure	oxygen_guild_cell_support	status_applied	pending #190
+#190	taxon_influence_status	procedure	aggregated_profile_support	status_applied	pending #190: influence evidence not supplied
+#190	taxon_influence_status	procedure	composition_arm_native_transformed_contrast	status_applied	pending #190: influence evidence not supplied
+#190	taxon_influence_status	procedure	enrichment_arm_profile_hypergeometric	status_applied	pending #190: influence evidence not supplied
+#190	taxon_influence_status	procedure	fraction_sign_test	status_applied	pending #190: influence evidence not supplied
+#190	taxon_influence_status	procedure	guild_mcnemar	status_applied	pending #190: influence evidence not supplied
+#190	taxon_influence_status	procedure	log_ratio_sign_test	status_applied	pending #190: influence evidence not supplied
+#190	taxon_influence_status	procedure	oxygen_guild_cell_support	status_applied	pending #190: influence evidence not supplied

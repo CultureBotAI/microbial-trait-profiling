@@ -90,7 +90,10 @@ Feces-only and Feces-excluded analyses, and one file per body-site group with at
 least 50 matched pairs. The manifest lists the emitted strata, pair counts, and
 file paths. Pooled and per-stratum TSVs include every trait that passes the
 analysis-set support and variance filters; they are not capped to the top 60
-variable traits.
+variable traits. The committed `trait_profile_paired_contrast_trait_stats*.tsv`
+tables in this directory (and `data/derived/trait_profile_paired_contrast_trait_stats_pooled.tsv`)
+were regenerated from `main` at commit `42300e0` via
+`scripts/rerun_directional_consistency_arm_noel.sh` and `just trait-profile-pooled-stats`.
 
 `all-bugsigdb-condition-body-site-maps/` contains increased-profile and
 decreased-profile condition/body-site maps generated from all human-host
