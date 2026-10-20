@@ -150,8 +150,165 @@ remain accessible for complete revalidation.
 
 ## Downstream consumption and migration
 
-The native trait screen, paired composition analysis, Table 1 trait plots and
-ORA command accept `--core-run /absolute/path/run.json`. They obtain input paths
+### Owner rerun commands
+
+The standard owner reruns require a verified core manifest and a fresh output
+directory. They never run the old profile-builder prerequisites or infer their
+inputs from the checkout's `data/derived` files. Prepare one shared core bundle
+and use the printed `run.json` path for all three arms:
+
+```bash
+just rerun-core /absolute/path/core-runs \
+  /absolute/path/data/raw/full_dump.csv \
+  /absolute/path/data/kg-microbe/merged-kg_edges.tsv \
+  /absolute/path/data/kg-microbe/merged-kg_nodes.tsv
+
+just rerun-ilyas /absolute/path/core-runs/run-ID/run.json /absolute/path/reruns/ilyas
+just rerun-noel  /absolute/path/core-runs/run-ID/run.json /absolute/path/reruns/noel
+just rerun-jed   /absolute/path/core-runs/run-ID/run.json /absolute/path/reruns/jed
+
+just rerun-verify /absolute/path/reruns/ilyas/arm_run.json
+just rerun-verify /absolute/path/reruns/noel/arm_run.json
+just rerun-verify /absolute/path/reruns/jed/arm_run.json
+```
+
+`rerun-core` defaults to `source_mode=pinned` and verifies the actual BugSigDB
+release bytes. The final optional argument can select another declared source
+mode; an unverified file never becomes a verified release through this option.
+Use a checkout containing the merged implementation and run `just sync` first.
+The Noel native influence publication stage also enforces its existing clean-code
+and pinned-KG protocol requirements; incompatible inputs fail with diagnostics.
+
+| Command | Standard suite |
+| --- | --- |
+| `rerun-ilyas` | Enrichment, depletion, full rankings, background strata, ORA calibration, and standard Figures 1–5 with a freshly computed density audit. |
+| `rerun-noel` | Directional screen, shared study-flip assignments, directional calibrations, contrast orientation, taxon/native influence, validation evidence, and integrated evidence. |
+| `rerun-jed` | Paired composition, log-ratio sensitivity, calibration, density/coupling audits, ordinary heatmaps, guild maps, and Table 1 maps. |
+
+Stage-specific replicate counts, seeds and statistical thresholds retain their
+existing defaults. `--replicates N` and `--seed N` explicitly override supported
+stochastic stages; `--no-figures` omits optional renderers. Options are captured
+in the execution record. Fixed scientific protocols remain explicit in the
+individual command arguments. Figure rendering requires the existing rendering
+dependencies, including Chrome for Plotly/Kaleido; install it separately with
+`just get-chrome` if needed.
+
+Noel's shared-flip artifact retains its fixed 100 draws. The screen generates
+the reproducible study-flip sequence at the requested seed and replicate count;
+the empirical power component uses at most 400 replicates. The existing
+`matches_shared_flip_artefact` flag describes the seed-182/100-draw protocol,
+so a custom seed or more than 100 screen replicates does not receive that label.
+
+The original `scripts/rerun_*_arm_*.sh` entrypoints forward to these recipes and
+now require the same two paths. A no-argument invocation fails with usage instead
+of silently choosing old derived tables. Historical PD, six-trait exploration,
+PPTX replacement, and branch-only directional scripts are outside this standard
+suite. Their previous command lists remain in Git history; they must not be
+represented as rerun by an `arm_run.json` from this suite.
+
+Each attempt records its complete command plan before execution, actual command
+exit status, logs, input/output checksums, code/configuration inventory, runtime,
+and the upstream core manifest checksum in `arm_run.json`. The tracked LinkML
+`ArmRun` class validates these records. A failed command leaves a failed record
+and stops later stages; a failed attempt cannot pass `rerun-verify`. Outputs go
+to the selected fresh directory, with verified core files copied into `inputs/`.
+The source bundle and existing analysis outputs are preserved.
+
+With the default population, count profiles retain all hosts in the core. Legacy
+commands whose numerical algorithms assume human-only input receive an execution-recorded human subset
+derived from `experiments.tsv`; no pairing, zero-count, or feature filtering is
+added by that subset step. ORA uses the distinct human ORA count product. Native
+consumers retain their own documented cohort and eligibility filters.
+
+Final verification reconciles upstream core bytes, the ordered executed plan,
+stage file snapshots, and the exact final output inventory. A directory snapshot
+may gain files in a later declared stage; its already-recorded members must stay
+unchanged. This records explicit command execution and file contracts; it is
+not an operating-system audit of every file read or evidence that an annotation
+is biologically true. Noel's integrated-evidence output retains its existing
+explicit placeholders for unavailable native cross-arm results; running that
+command does not imply that it imported Ilyas's or Jed's separate result tables.
+
+### Contrast populations and disease-oriented inputs
+
+Select a population once when preparing the core. Use fresh destinations for the
+core and every arm; the canonical checkout tables are not overwritten:
+
+```bash
+just rerun-core /tmp/disease-core \
+  /absolute/path/full_dump.csv \
+  /absolute/path/merged-kg_edges.tsv \
+  /absolute/path/merged-kg_nodes.tsv \
+  --contrast-population disease_vs_healthy_tier1_2_subject_controls
+
+# Substitute the run.json printed by rerun-core:
+just rerun-jed /tmp/disease-core/run-ID/run.json /tmp/disease-jed
+just rerun-noel /tmp/disease-core/run-ID/run.json /tmp/disease-noel
+just rerun-ilyas /tmp/disease-core/run-ID/run.json /tmp/disease-ilyas
+just rerun-verify /tmp/disease-jed/arm_run.json
+just rerun-verify /tmp/disease-noel/arm_run.json
+just rerun-verify /tmp/disease-ilyas/arm_run.json
+```
+
+`just core-run --contrast-population ...` exposes the same selection through the
+general workflow CLI. The optional positional source mode still works before the
+flag, for example `fixture --contrast-population ...`; omitting it keeps the
+verified pinned-source requirement.
+
+| Population | Selection and direction |
+| --- | --- |
+| `all_paired` (default) | Preserve the existing unfiltered core and original Group 1 versus Group 0 directions. Human pairing and other eligibility remain downstream rules. The name does not assert that every ingested record is human or paired. |
+| `disease_vs_healthy_tier1_2_subject_controls` | Paired human disease-versus-healthy classifications with subject controls and Tier 1 healthy/normal or Tier 2 condition-negative/screened comparisons. |
+| `case_vs_control_subject` | Paired human disease-versus-healthy classifications with subject controls, including Tier 3 hospital/comorbid controls. |
+| `disease_vs_healthy_oriented` | All paired human disease-versus-healthy classifications, including paired-tissue and within-disease comorbidity comparisons. |
+
+The three non-default selections require both ingested signature directions.
+They do not impose trait-total eligibility, a strong-evidence-only filter or a
+treated-disease flag exclusion. Later analysis filters can reduce support further.
+Tier 2 condition-negative and Tier 3 subject controls are not claims of general
+health; the broad population is not a pure disease-versus-normal subject cohort.
+Counts are measured from execution, never fixed at a historical 959-study total.
+
+The tracked [subset graph](../workflows/bugsigdb_core_subset.yaml) retains the
+original ingested `source_studies` and complete source exports, then publishes an
+exact selected Study collection plus `contrast_selection.json`. The selector uses
+the classifier's `read_experiment_records` and `classify` APIs (there is no
+`classify_corpus` API at this revision), and applies `oriented_profiles` to the
+selected direction identities. Reversed experiments swap increased/decreased
+once. Original group names, definitions, sample sizes, signature IDs and repeated
+taxon occurrences remain intact.
+
+Canonical experiment, signature, reported-taxon, count-profile, ORA-profile and
+coverage products all derive from that same selected collection. Their direction
+is disease relative to the selected comparison. The trait matrix and feature
+catalog still derive from the **full source population**, preserving the ORA
+background and vocabulary. Subset statistics are recomputed; they are not a
+post-filter of the historical discoveries.
+
+The core manifest's LinkML class is `WorkflowRun`. Both it and `ArmRun` record
+`contrast_population` and `direction_basis`; verification checks these against
+the executed parameter, selection stage and upstream core. The selection audit
+records inclusion/exclusion decisions, reversed IDs, source and output inventories,
+raw-input fingerprint and classifier version/source fingerprint. Its validator
+reconstructs the permitted projection and rejects missing, added or altered
+records, taxa, metadata, directions and audit values.
+
+Noel's non-default workflow route uses an assessment adapter that requires a
+verified core manifest and consumes its already oriented profiles directly.
+It retains original raw classifications in its manifest and binds the exact
+profile, experiment, raw-input and selection products from that core;
+it does not reverse those profiles again. Hand-review counts are limited to
+reviewed experiments inside the analysed population. This is classification
+evidence, not physiological validation.
+
+Run from the intended classifier revision. Selection does not repair classifier
+rules, and verification uses the recorded classifier contract against the executing
+implementation. After classifier changes, regenerate the subset core rather than
+relabel an older manifest. Track 2 owns those rule changes and the final production
+subset rerun.
+
+The native trait screen, paired composition analysis, guild and Table 1 trait plots,
+validation-evidence inventory, and ORA command accept `--core-run /absolute/path/run.json`. They obtain input paths
 from the verified run and write a `core_consumption.json` binding (ORA places
 it beside the report with the `.core_consumption.json` suffix). Conflicting
 explicit input paths fail. Count and ORA profiles are not interchangeable.

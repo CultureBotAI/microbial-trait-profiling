@@ -684,6 +684,7 @@ INFERRED_FUNCTION_FIELDS = (
 )
 #: What the node table was found to be. Only "verified" licenses reading the labels.
 NODES_VERIFIED = "verified_against_provenance"
+NODES_CORE_VERIFIED = "verified_against_core_execution_bytes_release_unverified"
 NODES_MISSING = "missing"
 
 
@@ -724,12 +725,12 @@ def inferred_function_traits(
     production. Both labels are reported so the direction of the claim is explicit.
 
     ``status`` is :func:`nodes_status`' verdict on ``nodes_path``. Anything other than
-    :data:`NODES_VERIFIED` raises: the labels are the entire content of this table, so
-    a table built from an unidentified node file would look like a result while
+    a verified download or core execution raises: the labels are this table's entire
+    content, so a table built from an unidentified node file would look like a result while
     asserting nothing. Returning no rows is a legitimate answer only once the node
     file is known to be the right one.
     """
-    if status != NODES_VERIFIED:
+    if status not in {NODES_VERIFIED, NODES_CORE_VERIFIED}:
         raise ValueError(
             f"{nodes_path} is {status}; the inferred-function labels come from this file, "
             "so they cannot be interpreted. Run `just download-kg` to fetch it."
@@ -1183,11 +1184,18 @@ def markdown_report(output_dir: Path) -> str:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    from mtp.workflow.consumers import (
+        bind_count_arguments,
+        preflight_consumer_outputs,
+        write_consumer_record,
+    )
+
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--profile-input", type=Path, default=DEFAULT_PROFILE_PATH)
-    parser.add_argument("--experiments-input", type=Path, default=DEFAULT_EXPERIMENTS_PATH)
-    parser.add_argument("--full-dump-input", type=Path, default=DEFAULT_FULL_DUMP_PATH)
-    parser.add_argument("--nodes-input", type=Path, default=DEFAULT_NODES_PATH)
+    parser.add_argument("--core-run", type=Path, help="Verified core workflow run manifest")
+    parser.add_argument("--profile-input", type=Path)
+    parser.add_argument("--experiments-input", type=Path)
+    parser.add_argument("--full-dump-input", type=Path)
+    parser.add_argument("--nodes-input", type=Path)
     parser.add_argument("--external-cohorts", type=Path, default=EXTERNAL_COHORTS_PATH)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument(
@@ -1217,6 +1225,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.snapshot_from is not None:
+        if args.core_run is not None:
+            parser.error("--snapshot-from cannot be combined with --core-run")
         if args.snapshot_supplement is None:
             parser.error("--snapshot-from also needs --snapshot-supplement")
         print(
@@ -1225,6 +1235,22 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         )
         return 0
+
+    bundle = bind_count_arguments(args)
+    if bundle is not None:
+        nodes_path = bundle.path("kg_nodes")
+        if args.nodes_input is not None and args.nodes_input.resolve() != nodes_path.resolve():
+            parser.error("--core-run conflicts with explicit --nodes-input")
+        args.nodes_input = nodes_path
+        preflight_consumer_outputs(
+            bundle,
+            args.output_dir / "core_consumption.json",
+            output_directory=args.output_dir,
+        )
+    args.profile_input = args.profile_input or DEFAULT_PROFILE_PATH
+    args.experiments_input = args.experiments_input or DEFAULT_EXPERIMENTS_PATH
+    args.full_dump_input = args.full_dump_input or DEFAULT_FULL_DUMP_PATH
+    args.nodes_input = args.nodes_input or DEFAULT_NODES_PATH
 
     profiles, stats = load_profiles(
         args.profile_input, args.experiments_input, TABLE1_TRAITS, reject_missing_counts=True
@@ -1235,9 +1261,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     evidence = evidence_rows(studies, discovery)
     summary = summary_rows(evidence)
     markers = marker_split_candidates(args.full_dump_input, discovery_experiments)
-    nodes = nodes_status(args.nodes_input)
+    nodes = NODES_CORE_VERIFIED if bundle is not None else nodes_status(args.nodes_input)
+    nodes_verified = nodes in {NODES_VERIFIED, NODES_CORE_VERIFIED}
     functions: list[dict[str, object]] = []
-    if nodes == NODES_VERIFIED:
+    if nodes_verified:
         functions = inferred_function_traits(args.profile_input, args.nodes_input, nodes)
     elif args.require_nodes:
         parser.error(f"--nodes-input {args.nodes_input} is {nodes}")
@@ -1264,8 +1291,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         "full_dump_sha256": _sha256(args.full_dump_input),
         "profile_sha256": _sha256(args.profile_input),
         "nodes_input": str(args.nodes_input),
+        "nodes_sha256": _sha256(args.nodes_input) if nodes_verified else None,
         "nodes_status": nodes,
-        "inferred_function_traits_interpretable": nodes == NODES_VERIFIED,
+        "inferred_function_traits_interpretable": nodes_verified,
         "external_cohorts": str(args.external_cohorts),
         "external_cohorts_sha256": _sha256(args.external_cohorts),
         "external_source": SUN2024_SAMPLE_GROUP_URL,
@@ -1290,6 +1318,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     provenance_path = out / "validation_evidence_provenance.json"
     provenance_path.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
     written.append(provenance_path)
+    if bundle is not None:
+        written.append(
+            write_consumer_record(
+                bundle,
+                out / "core_consumption.json",
+                consumer="mtp.validation_evidence",
+                outputs=written,
+            )
+        )
     if args.report:
         print(markdown_report(out))
         return 0

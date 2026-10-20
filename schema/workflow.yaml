@@ -14,6 +14,26 @@ prefixes:
 imports:
   - linkml:types
 enums:
+  ContrastPopulation:
+    title: Contrast Population
+    description: Executed experiment selection policy, separate from downstream trait eligibility.
+    permissible_values:
+      all_paired:
+        description: Preserve the unfiltered core; downstream analyses retain their human pairing rules.
+      disease_vs_healthy_tier1_2_subject_controls:
+        description: Paired human disease contrasts with Tier 1 or Tier 2 subject controls.
+      case_vs_control_subject:
+        description: Paired human disease contrasts with subject controls, including Tier 3.
+      disease_vs_healthy_oriented:
+        description: All paired human contrasts classified as disease versus healthy, including non-subject comparisons.
+  DirectionBasis:
+    title: Direction Basis
+    description: Meaning of increased and decreased in the consumed core products.
+    permissible_values:
+      group_1_vs_group_0:
+        description: Original BugSigDB Group 1 relative to Group 0.
+      disease_vs_comparison:
+        description: Disease group relative to the selected comparison, after explicit reversal where required.
   StorageKind:
     permissible_values:
       file: null
@@ -370,6 +390,16 @@ classes:
         required: true
         title: Run id
         description: Unique execution-attempt identifier, distinct from the deterministic fingerprint.
+      contrast_population:
+        range: ContrastPopulation
+        ifabsent: string(all_paired)
+        title: Contrast population
+        description: Executed selection policy; historical records without this field retain the unfiltered policy.
+      direction_basis:
+        range: DirectionBasis
+        ifabsent: string(group_1_vs_group_0)
+        title: Direction basis
+        description: Direction semantics of selected Study signatures and all products derived from them.
       definition:
         range: WorkflowDefinition
         inlined: true
@@ -650,3 +680,232 @@ classes:
         multivalued: true
         inlined_as_list: true
         required: true
+  RecordedPath:
+    description: Observed file or directory snapshot; member bytes remain independently checkable.
+    title: Recorded Path
+    attributes:
+      path:
+        required: true
+        title: Path
+        description: Absolute location observed during execution.
+      storage_kind:
+        range: StorageKind
+        required: true
+        title: Storage kind
+        description: File or directory snapshot.
+      sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Sha256
+        description: File checksum or canonical inventory checksum.
+      size_bytes:
+        range: integer
+        minimum_value: 0
+        required: true
+        title: Size bytes
+        description: Observed total file size.
+      inventory:
+        range: FileInventoryEntry
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Inventory
+        description: Exact members observed at this stage; later stages may add directory members.
+  ArmCommandDefinition:
+    description: Explicit command and required file contracts for one downstream stage.
+    title: Arm Command Definition
+    attributes:
+      id:
+        required: true
+        pattern: ^[A-Za-z][A-Za-z0-9_.-]*$
+        title: Id
+        description: Unique stage identifier within the arm.
+      argv:
+        multivalued: true
+        required: true
+        title: Argv
+        description: Exact argument vector executed without a shell.
+      inputs:
+        multivalued: true
+        title: Inputs
+        description: Required input paths, explicitly bound to core or earlier stage products.
+      outputs:
+        multivalued: true
+        required: true
+        title: Outputs
+        description: Required output files or inventoried directories.
+  ArmCommandExecution:
+    description: An attempted command with observed bytes and exit status.
+    title: Arm Command Execution
+    attributes:
+      id:
+        required: true
+        title: Id
+        description: Corresponding command definition identifier.
+      status:
+        range: ExecutionStatus
+        required: true
+        title: Status
+        description: Actual execution state; failed or running stages are never complete.
+      started_at:
+        range: datetime
+        required: true
+        title: Started at
+        description: UTC start time.
+      ended_at:
+        range: datetime
+        title: Ended at
+        description: UTC completion or failure time.
+      exit_code:
+        range: integer
+        title: Exit code
+        description: Actual process exit code when a process was started.
+      inputs:
+        range: RecordedPath
+        multivalued: true
+        inlined_as_list: true
+        title: Inputs
+        description: Observed input snapshots before execution.
+      outputs:
+        range: RecordedPath
+        multivalued: true
+        inlined_as_list: true
+        title: Outputs
+        description: Observed required outputs after successful execution.
+      log:
+        range: RecordedPath
+        inlined: true
+        title: Log
+        description: Captured process output and its checksum.
+      error:
+        title: Error
+        description: Failure diagnostic, if any.
+  ArmRun:
+    description: Execution-generated downstream rerun bound to a verified core bundle.
+    title: Arm Run
+    attributes:
+      id:
+        identifier: true
+        required: true
+        title: Id
+        description: Unique attempt identifier.
+      arm:
+        required: true
+        pattern: ^(ilyas|noel|jed)$
+        title: Arm
+        description: Owner of the declared standard analysis suite.
+      contrast_population:
+        range: ContrastPopulation
+        ifabsent: string(all_paired)
+        title: Contrast population
+        description: Selection inherited from the verified upstream core, never independently overridden.
+      direction_basis:
+        range: DirectionBasis
+        ifabsent: string(group_1_vs_group_0)
+        title: Direction basis
+        description: Upstream direction semantics; disease-oriented inputs must not be reversed a second time.
+      scope:
+        required: true
+        pattern: ^standard_analysis_calibration_and_optional_figures$
+        title: Scope
+        description: Explicit scope; historical PD and presentation investigations are separate.
+      status:
+        range: ExecutionStatus
+        required: true
+        title: Status
+        description: Actual attempt status.
+      started_at:
+        range: datetime
+        required: true
+        title: Started at
+        description: UTC start time.
+      ended_at:
+        range: datetime
+        title: Ended at
+        description: UTC completion or failure time.
+      manifest_path:
+        required: true
+        title: Manifest path
+        description: Absolute location of this execution record.
+      core_manifest_path:
+        required: true
+        title: Core manifest path
+        description: Verified upstream run manifest.
+      core_manifest_sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Core manifest sha256
+        description: Upstream manifest checksum before execution.
+      core_run_id:
+        required: true
+        title: Core run id
+        description: Upstream execution identity.
+      profile_product:
+        required: true
+        pattern: ^(count_profiles|ora_profiles)$
+        title: Profile product
+        description: Scientific count unit used by the primary analysis.
+      plan_sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Plan sha256
+        description: Canonical checksum of the complete ordered command definitions.
+      git_commit:
+        required: true
+        title: Git commit
+        description: Actual checkout revision.
+      git_dirty:
+        range: boolean
+        required: true
+        title: Git dirty
+        description: Whether the checkout contained local changes at start.
+      code_inventory:
+        range: FileInventoryEntry
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Code inventory
+        description: Actual source, schema, methods and workflow configuration bytes.
+      repository_path:
+        required: true
+        title: Repository path
+        description: Source checkout used to execute the commands.
+      runtime_json:
+        required: true
+        title: Runtime json
+        description: Python, platform, package versions and explicitly controlled process settings.
+      parameters:
+        range: ParameterValue
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Parameters
+        description: Resolved arm options; absent overrides preserve stage-specific defaults.
+      prepared_inputs:
+        range: RecordedPath
+        multivalued: true
+        inlined_as_list: true
+        title: Prepared inputs
+        description: Fresh byte-identical copies of verified core products under canonical filenames.
+      plan:
+        range: ArmCommandDefinition
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Plan
+        description: Complete ordered command plan recorded before execution.
+      steps:
+        range: ArmCommandExecution
+        multivalued: true
+        inlined_as_list: true
+        title: Steps
+        description: Commands actually attempted in order.
+      outputs:
+        range: FileInventoryEntry
+        multivalued: true
+        inlined_as_list: true
+        title: Outputs
+        description: Exact final output-tree inventory excluding this manifest and its temporary write.
+      error:
+        title: Error
+        description: Failure diagnostic; no failed attempt can verify as completed.
