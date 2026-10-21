@@ -350,7 +350,7 @@
   "set": "matrix taxa annotated with the trait in at least one feces decreased profile",
   "annotation": "a matrix taxon bears the trait when it or a descendant has the KG edge; has_direct_trait_edge marks the taxon's own edge",
   "annotation_share": "trait count / sum of all retained non-MediaDive trait counts in the profile",
-  "z": "per-trait z-score of log1p(1000 * annotation share) over all 5,829 retained profiles",
+  "z": "per-trait z-score of log1p(1000 * annotation share) over all 5,629 retained profiles",
   "paired_delta": "annotation share in the increased profile minus the decreased profile",
   "down": "the decreased signature has the larger annotation share (paired delta < 0)",
   "study_collapsed": "one vote per study: the sign of the mean paired delta over its experiments; study_majority_* columns use the majority of experiment signs instead",
