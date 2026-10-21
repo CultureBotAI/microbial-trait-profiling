@@ -445,6 +445,9 @@ def load_rerun_metrics(repo: Path) -> dict:
     metrics["pooled_pairs"] = max(int(r["pair_count"]) for r in paired["pooled"])
     metrics["pooled_studies"] = max(int(float(r["study_count"])) for r in paired["pooled"])
     metrics["feces_studies"] = max(int(float(r["study_count"])) for r in paired["feces"])
+    study_meta = read_tsv(repo / "trait-visualization/study_trait_profile_study_metadata.tsv")
+    metrics["retained_profiles"] = len(study_meta)
+    metrics["retained_studies"] = len({r["study_id"] for r in study_meta})
     metrics["ind_conditions"] = len({r["condition"] for r in ind_rows})
     metrics["ind_sites"] = len({r["body_site_group"] for r in ind_rows})
     metrics["ind_median_studies"] = median(int(r["study_count"]) for r in ind_rows)
@@ -469,6 +472,16 @@ def load_rerun_metrics(repo: Path) -> dict:
     # post-selection rejection rate, quoted by the cover and Methods Plate II's slide (#579)
     metrics["ora_enrichment"] = ora_calls(repo / ORA_ENRICHMENT)
     metrics["ora_depletion"] = ora_calls(repo / ORA_DEPLETION)
+    enrichment_rows = read_tsv(repo / ORA_ENRICHMENT)
+    depletion_rows = read_tsv(repo / ORA_DEPLETION)
+    metrics["ora_enrichment_sides"] = (
+        sum(r["inc_dec"] == "inc" for r in enrichment_rows),
+        sum(r["inc_dec"] == "dec" for r in enrichment_rows),
+    )
+    metrics["ora_depletion_sides"] = (
+        sum(r["inc_dec"] == "inc" for r in depletion_rows),
+        sum(r["inc_dec"] == "dec" for r in depletion_rows),
+    )
     metrics["mcnemar"] = McNemar.from_rows(read_tsv(repo / GUILD_CORRELATION))
     metrics["screening_bias"] = screened_rejection_rate(read_tsv(repo / CALIBRATION_CRITERIA))
 
@@ -1304,31 +1317,40 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
         title, takeaway, caveat = exploratory_heatmap_text(metrics)
 
     elif fig_path == "data/derived/enrichment_infographic.png":
-        title = "66,240 ORA enrichment calls describe individual microbial profiles"
+        enriched = metrics["ora_enrichment"]
+        inc_hits, dec_hits = metrics["ora_enrichment_sides"]
+        title = f"{enriched.calls:,} ORA enrichment calls describe individual microbial profiles"
         takeaway = (
-            "66,240 profile \N{MULTIPLICATION SIGN} trait enrichment calls pass BH q ≤ 0.001 and "
-            "fold ≥ 1.5 across "
-            "1,480,390 testable pairs (4,670 human profiles \N{MULTIPLICATION SIGN} 317 traits; "
-            "35,977 inc vs 30,263 dec)."
+            f"{enriched.calls:,} profile \N{MULTIPLICATION SIGN} trait enrichment calls pass BH "
+            f"q ≤ {enriched.p_threshold} and fold ≥ {enriched.fold} across "
+            f"{enriched.tests:,} testable pairs ({2 * metrics['pooled_pairs']:,} human profiles "
+            f"\N{MULTIPLICATION SIGN} 317 traits; {inc_hits:,} inc vs {dec_hits:,} dec)."
         )
         caveat = (
-            "Drawn in the September rerun by PR #315's code, with its taxon-level "
-            "hypergeometric ORA model (mean 9.63 hits/profile; "
+            "Static figure drawn in the September rerun by PR #315's code (showing 66,240 "
+            "calls across 1,480,390 pre-#742 tests; mean 9.63 hits/profile; "
             "top density: Dental plaque at 224.06 calls/100 samples). Profile ORA is not a paired "
             "condition test."
         )
 
     elif fig_path == "data/derived/depletion_infographic.png":
-        title = "23 ORA depletion calls pass strict fold ≤ 0.5 and BH q ≤ 0.001"
+        depleted = metrics["ora_depletion"]
+        inc_dep, dec_dep = metrics["ora_depletion_sides"]
+        title = (
+            f"{depleted.calls:,} ORA depletion calls pass strict fold ≤ {depleted.fold} and BH "
+            f"q ≤ {depleted.p_threshold}"
+        )
         takeaway = (
-            "Under the taxon-level hypergeometric model, only 23 profile \N{MULTIPLICATION SIGN} "
-            "trait pairs pass BH q ≤ 0.001 "
-            "and fold ≤ 0.5 across 1,480,390 tests (1 increased vs 22 decreased; 13 in Feces, 9 in "
-            "Stomach)."
+            f"Under the taxon-level hypergeometric model, only {depleted.calls:,} profile "
+            f"\N{MULTIPLICATION SIGN} trait pairs pass BH q ≤ {depleted.p_threshold} "
+            f"and fold ≤ {depleted.fold} across {depleted.tests:,} tests "
+            f"({inc_dep:,} increased vs {dec_dep:,} decreased)."
         )
         caveat = (
-            "Replaces the legacy assertion-level 100,999-call figure; finite signature sizes limit "
-            "one-sided lower-tail power for low-prevalence traits."
+            "Static figure drawn in the September rerun by PR #315's code (showing 23 calls at "
+            "BH q ≤ 0.001, fold ≤ 0.5 across 1,480,390 pre-#742 tests), replacing the legacy "
+            "assertion-level 100,999-call figure; finite signature sizes limit one-sided "
+            "lower-tail power for low-prevalence traits."
         )
 
     elif fig_path == "data/derived/trait_enrichment_clustered_heatmap.png":
@@ -1463,8 +1485,10 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "figure_file_path": "data/derived/tufte_plates/"
             "methods_plate1_data_architecture_funnel.png",
             "code_path": "scripts/generate_tufte_plates.py",
-            "takeaway": "High-level visual overview of the data ingestion funnel: 1,039 BugSigDB "
-            "v1.3.1 human studies (2,335 paired experiments, 4,670 profiles, 48,370 "
+            "takeaway": f"High-level visual overview of the data ingestion funnel: "
+            f"{metrics['retained_studies']:,} BugSigDB "
+            f"v1.3.1 human studies ({metrics['pooled_pairs']:,} paired experiments, "
+            f"{2 * metrics['pooled_pairs']:,} profiles, 41,279 "
             "taxon occurrences) joined to 5,829 KG-Microbe organisms "
             "\N{MULTIPLICATION SIGN} 317 normalized traits via NCBI Taxonomy subtree "
             "rollup.",
@@ -1889,7 +1913,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "figure_file_path": "trait-visualization/condition_trait_module_clustered_heatmap.png",
             "code_path": "scripts/create_condition_trait_module_heatmap.py",
             "takeaway": "Clusters human conditions against co-varying microbial trait modules "
-            "across the 5,829-profile wide matrix.",
+            f"across the {metrics['retained_profiles']:,}-profile wide matrix.",
             "caveat": "Exploratory hierarchical clustering of condition-level trait profiles; "
             "module labels are data-derived.",
             "methods_path": "trait-visualization/trait-profile-investigation/README.md",
@@ -4075,8 +4099,10 @@ def build_deck(
         f"v1/v2 slides and {n_new - n_methods - n_tufte - n_cellulose} distinct new rerun "
         "figures across all three arms on <code>main</code> "
         f"(<code>{SHORT_COMMIT}</code>, BugSigDB vintage <code>2026-04-24_00:41_UTC</code> "
-        "\N{MULTIPLICATION SIGN} KG-Microbe <code>20260120</code>, 4,670 human profiles across "
-        f"2,335 paired experiments and 959 studies), and {n_reference} cellulose reference "
+        f"\N{MULTIPLICATION SIGN} KG-Microbe <code>20260120</code>, "
+        f"{2 * metrics['pooled_pairs']:,} human profiles across "
+        f"{metrics['pooled_pairs']:,} paired experiments and {metrics['pooled_studies']:,} "
+        f"studies), and {n_reference} cellulose reference "
         "figures drawn from the committed cellulose_decr tables.</p>"
         "<table><thead><tr><th>Leading condition \N{MULTIPLICATION SIGN} "
         "anatomy</th><th>Trait</th><th>Δ positive-z profiles</th><th>Studies</th><th>BH "

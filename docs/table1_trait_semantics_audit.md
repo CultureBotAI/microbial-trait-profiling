@@ -35,14 +35,14 @@ All evidence in this audit is evaluated against the pinned KG-Microbe snapshot r
 
 The machine-readable table captures all required audit attributes across the 6 features:
 
-| Trait Key | Feature Name | Ontology ID & Label | Primary KG Source | Direct KG Taxa | BugSigDB Matrix Taxa | Profile Support ($N=5,829$) | Evidence Status | Decision |
+| Trait Key | Feature Name | Ontology ID & Label | Primary KG Source | Direct KG Taxa | BugSigDB Matrix Taxa | Profile Support ($N=5,629$) | Evidence Status | Decision |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `METPO:1000608` | Facultatively aerobic | `METPO:1000608` (facultatively aerobic) | `infores:madin_etal` (5,496); `infores:bacdive` (53) | 5,496 | 861 (16.6%) | 4,491 (77.0%) | measured + propagated | **keep_separate** |
-| `METPO:2000103\|GO:0030245` | Cellulose catabolic process | `GO:0030245` (cellulose catabolic process) | `infores:madin_etal` (186) | 186 | 164 (3.2%) | 2,963 (50.8%) | measured + propagated | **keep_separate** |
-| `METPO:1000668` | Coccus shaped | `METPO:1000668` (coccus shaped) | `infores:madin_etal` (5,614); `infores:bacdive` (1,476) | 5,614 | 675 (13.0%) | 4,409 (75.6%) | measured + propagated | **keep_separate** |
-| `METPO:1000683` | Sphere shaped | `METPO:1000683` (sphere shaped) | `infores:bactotraits` (381); `infores:bacdive` (11) | 381 | 283 (5.5%) | 3,541 (60.8%) | measured + propagated | **keep_separate** |
-| `METPO:2000103\|pathways:arsenate_reduction` | Arsenate reduction | `pathways:arsenate_reduction` (arsenate_reduction) | `infores:madin_etal` (51) | 51 | 58 (1.1%) | 1,770 (30.4%) | unresolved mechanism + propagated | **unresolved / keep_separate** |
-| `METPO:1000623` | Moderately halophilic | `METPO:1000623` (moderately halophilic) | `infores:madin_etal` (426); `infores:bacdive` (4) | 426 | 337 (6.5%) | 3,424 (58.7%) | measured (discrete) + unresolved (quant) + propagated | **keep_separate** |
+| `METPO:1000608` | Facultatively aerobic | `METPO:1000608` (facultatively aerobic) | `infores:madin_etal` (5,496); `infores:bacdive` (53) | 5,496 | 861 (16.6%) | 4,411 (78.4%) | measured + propagated | **keep_separate** |
+| `METPO:2000103\|GO:0030245` | Cellulose catabolic process | `GO:0030245` (cellulose catabolic process) | `infores:madin_etal` (186) | 186 | 164 (3.2%) | 2,922 (51.9%) | measured + propagated | **keep_separate** |
+| `METPO:1000668` | Coccus shaped | `METPO:1000668` (coccus shaped) | `infores:madin_etal` (5,614); `infores:bacdive` (1,476) | 5,614 | 675 (13.0%) | 4,338 (77.1%) | measured + propagated | **keep_separate** |
+| `METPO:1000683` | Sphere shaped | `METPO:1000683` (sphere shaped) | `infores:bactotraits` (381); `infores:bacdive` (11) | 381 | 283 (5.5%) | 3,490 (62.0%) | measured + propagated | **keep_separate** |
+| `METPO:2000103\|pathways:arsenate_reduction` | Arsenate reduction | `pathways:arsenate_reduction` (arsenate_reduction) | `infores:madin_etal` (51) | 51 | 58 (1.1%) | 1,739 (30.9%) | unresolved mechanism + propagated | **unresolved / keep_separate** |
+| `METPO:1000623` | Moderately halophilic | `METPO:1000623` (moderately halophilic) | `infores:madin_etal` (426); `infores:bacdive` (4) | 426 | 337 (6.5%) | 3,364 (59.8%) | measured (discrete) + unresolved (quant) + propagated | **keep_separate** |
 
 ---
 
@@ -72,9 +72,9 @@ The existence of two sibling terms in METPO is an artifact of upstream multi-sou
    - Sphere taxa in matrix ($K_{\text{sphere}}$): **283**
    - Intersection: **262 taxa** (92.6% of Sphere matrix taxa are in Coccus; 38.8% of Coccus matrix taxa are in Sphere).
    - Jaccard similarity: **0.3764** (37.6%).
-3. **Profile-Level Nonzero Support & Correlation ($N=5,829$ profiles):**
-   - Coccus nonzero profiles: **4,409** (75.6%)
-   - Sphere nonzero profiles: **3,541** (60.8%)
+3. **Profile-Level Nonzero Support & Correlation ($N=5,629$ profiles):**
+   - Coccus nonzero profiles: **4,338** (77.1%)
+   - Sphere nonzero profiles: **3,490** (62.0%)
    - Pearson correlation across profile counts: $r = 0.911$ ($p < 10^{-300}$).
    - Spearman rank correlation: $\rho = 0.847$ ($p < 10^{-300}$).
 
