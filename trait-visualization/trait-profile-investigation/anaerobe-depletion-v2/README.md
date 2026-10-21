@@ -69,7 +69,6 @@ Target-taxon occurrence views (`target_taxa_condition_breakdown_bar.png`, `condi
 
 | condition | profiles | studies | decreased - increased z | paired d | paired p | matched pairs | decreased mean trait z |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Acute graft vs. host disease | 6 | 2 | 2.306 |  |  | 2 | 1.044 |
 | Age-related macular degeneration | 24 | 5 | 1.301 | 1.957 | 3.04e-05 | 12 | 0.825 |
 | Graft versus host disease | 14 | 5 | 1.283 |  |  | 4 | 0.872 |
 | Diarrhea | 24 | 3 | 1.227 | 1.041 | 0.00414 | 12 | 0.720 |
@@ -77,21 +76,22 @@ Target-taxon occurrence views (`target_taxa_condition_breakdown_bar.png`, `condi
 | Inflammatory bowel disease | 12 | 4 | 1.115 |  |  | 3 | 0.681 |
 | Respiratory tract infectious disease | 10 | 2 | 0.969 |  |  | 4 | 0.463 |
 | Response to antiviral drug | 32 | 6 | 0.949 | 1.251 | 0.000429 | 14 | 0.777 |
+| Chronic kidney disease | 31 | 10 | 0.870 | 0.769 | 0.00995 | 15 | 0.654 |
 
 Paired d and paired p are blank for conditions with fewer than 5 matched decreased/increased profile pairs, or with zero variance among the paired differences.
 
 ## Condition Enriched-Profile Histogram
 
-The enrichment-filtered histogram counts conditions by how many profiles remain after dropping profiles with zero positive anaerobe v2 selected-trait z-scores. The dropped profiles are still retained in the main trait-enrichment summaries and are reported here by profile direction.
+The enrichment-filtered histogram counts non-excluded conditions (`is_excluded_condition_label`) by how many profiles remain after dropping profiles with zero positive anaerobe v2 selected-trait z-scores. The dropped profiles are still retained in the main trait-enrichment summaries and are reported here by profile direction across condition-filtered profiles.
 
 | direction | conditions with retained profiles | retained profiles | zero-enriched profiles | retained / total profiles |
 | --- | ---: | ---: | ---: | ---: |
-| decreased profiles | 353 | 1696 | 793 | 0.681 |
-| increased profiles | 355 | 1704 | 1051 | 0.619 |
+| decreased profiles | 349 | 1675 | 790 | 0.680 |
+| increased profiles | 351 | 1661 | 1049 | 0.613 |
 
 ## Trait Enriched-Profile Histogram
 
-The trait-side companion histogram counts selected heatmap traits by how many retained enriched profiles have a positive z-score for each trait. The retained-profile universe is the same one used by the condition histogram: profiles with at least one positive anaerobe v2 selected-trait z-score.
+The trait-side companion histogram counts selected heatmap traits by how many retained enriched profiles have a positive z-score for each trait across all human-host profiles with at least one positive anaerobe v2 selected-trait z-score (before `is_excluded_condition_label` condition-label filtering used in the condition histogram above).
 
 | direction | trait | positive retained profiles | retained profile fraction |
 | --- | --- | ---: | ---: |
@@ -127,8 +127,8 @@ For the top condition signals, this table uses all taxa observed in the decrease
 
 | condition | decreased profiles | universe taxa / observed taxa | enriched traits | supporting taxa |
 | --- | ---: | ---: | --- | --- |
-| Acute graft vs. host disease | 4 | 14 / 14 | anaerobic (+2.53); obligately anaerobic (+2.08) | Blautia (2 traits, 2 profiles); Bacteroides (2 traits, 2 profiles); Roseburia (2 traits, 2 profiles); Bacteroidales (2 traits, 1 profile); Rikenellaceae (2 traits, 1 profile); Clostridia (2 traits, 1 profile); Eubacteriales (2 traits, 1 profile); Lachnospiraceae (2 traits, 1 profile); Bacteroidia (2 traits, 1 profile); Oscillospiraceae (2 traits, 1 profile); Lachnospirales (2 traits, 1 profile); Bacteroidaceae (2 traits, 1 profile) |
 | Age-related macular degeneration | 12 | 31 / 34 | obligately anaerobic (+1.64); anaerobic (+0.96) | Prevotella (2 traits, 5 profiles); Lachnospiraceae (2 traits, 3 profiles); Clostridia (2 traits, 2 profiles); Bacteroides (2 traits, 2 profiles); Bacteroides eggerthii (2 traits, 2 profiles); Blautia (2 traits, 2 profiles); Bacillota (2 traits, 1 profile); Bacteroidales (2 traits, 1 profile); Prevotellaceae (2 traits, 1 profile); Methanobrevibacter (2 traits, 1 profile); Lachnospira (2 traits, 1 profile); Lachnospirales (2 traits, 1 profile) |
+| Chronic kidney disease | 15 | 115 / 131 | anaerobic (+0.95); obligately anaerobic (+0.79) | Bacillota (2 traits, 3 profiles); Clostridia (2 traits, 3 profiles); Eubacteriales (2 traits, 3 profiles); Lachnospiraceae (2 traits, 3 profiles); Lachnospira (2 traits, 3 profiles); Veillonellaceae (2 traits, 3 profiles); Roseburia (2 traits, 3 profiles); Selenomonadales (2 traits, 3 profiles); Negativicutes (2 traits, 3 profiles); Ruminococcus (2 traits, 2 profiles); Prevotellaceae (2 traits, 2 profiles); Blautia (2 traits, 2 profiles) |
 | Diarrhea | 12 | 44 / 46 | obligately anaerobic (+1.53); anaerobic (+0.92) | Bacteroides (2 traits, 8 profiles); Bifidobacterium (2 traits, 6 profiles); Ruminococcus (2 traits, 6 profiles); Blautia (2 traits, 4 profiles); Coriobacteriaceae (2 traits, 4 profiles); Bacteroides fragilis (2 traits, 3 profiles); Lachnospiraceae (2 traits, 2 profiles); Clostridium (2 traits, 1 profile); Prevotellaceae (2 traits, 1 profile); Eubacteriales (2 traits, 1 profile); Actinomycetota (2 traits, 1 profile); Bifidobacteriaceae (2 traits, 1 profile) |
 | Graft versus host disease | 7 | 19 / 22 | obligately anaerobic (+1.48); anaerobic (+1.09) | Lachnospiraceae (2 traits, 5 profiles); Blautia (2 traits, 4 profiles); Clostridia (2 traits, 2 profiles); Eubacteriales (2 traits, 2 profiles); Flavonifractor (2 traits, 2 profiles); Peptostreptococcaceae (2 traits, 1 profile); Bacteroidia (2 traits, 1 profile); Lachnoclostridium (1 trait, 3 profiles); Sellimonas (1 trait, 2 profiles); Erysipelotrichaceae (1 trait, 1 profile); Gemella (1 trait, 1 profile); Intestinimonas (1 trait, 1 profile) |
 | Inflammatory bowel disease | 5 | 39 / 41 | anaerobic (+1.33); obligately anaerobic (+0.90) | Lachnospira eligens (2 traits, 3 profiles); Ruminococcus bromii (2 traits, 3 profiles); Roseburia hominis (2 traits, 2 profiles); Bacteroides caccae (2 traits, 2 profiles); Bacillota (2 traits, 1 profile); Bifidobacterium adolescentis (2 traits, 1 profile); Bacteroides stercoris (2 traits, 1 profile); Bifidobacterium angulatum (1 trait, 3 profiles); Streptococcus thermophilus (1 trait, 2 profiles); [Clostridium] leptum (1 trait, 2 profiles); Lactobacillus acidophilus (1 trait, 2 profiles); Lacticaseibacillus paracasei (1 trait, 2 profiles) |

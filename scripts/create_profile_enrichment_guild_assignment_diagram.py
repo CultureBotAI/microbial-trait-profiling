@@ -63,10 +63,16 @@ EXCLUDED_CONDITION_LABELS = {
     "Body fat distribution",
     "Clinical treatment",
     "Exposure",
+    "Glucose",
+    "Health study participation",
     "Health trait",
     "Microbiome",
-    "Population",
     "Physical activity",
+    "Population",
+    "Socioeconomic status",
+    "Time",
+    "Timepoint",
+    "Tumor stage",
 }
 MIN_CONDITION_PROFILES = 5
 SLATE_50 = "#f8fafc"

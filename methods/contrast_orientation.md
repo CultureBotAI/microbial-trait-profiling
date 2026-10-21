@@ -378,7 +378,7 @@ contrast raised in the same issue, was already `paired_tissue_autologous` in Tie
 under v3 and is unchanged; what #569 adds for it is the guidance in "Selecting
 patients against controls" above.
 
-## Changes from `contrast-orientation-v4` to `-v5` (#574, #630, #672)
+## Changes from `contrast-orientation-v4` to `-v5` (#574, #581, #626, #630, #672)
 
 Compared on the same pinned inputs, `contrast-orientation-v5` keeps the
 `disease_vs_healthy` class membership, Tier 1+2 subject controls (`970` experiments,
@@ -405,6 +405,17 @@ Compared on the same pinned inputs, `contrast-orientation-v5` keeps the
   including the 4 Yachida et al. 2019 contrasts above) carry the explicit
   `hospital_or_symptomatic_control` flag in `flags` under `case_vs_control_subject`
   (`tier_3_hospital_comorbid_or_tissue`).
+- **Duration bands, spaced `pre - <therapy>`, and parenthesized `(ART) Naïve` (#581)**:
+  `DURATION_BAND` masks treatment and disease duration qualifiers ("for more than 1
+  year", "duration less than 5 years") out of `_timepoints` and records
+  `age_band_not_timepoint` (matching reviewed experiment `29776865-2` and moving
+  non-corpus experiment `29808701-1` from `treatment_exposure` to Tier 3
+  `disease_vs_healthy` with `treated_disease_group`), while `SPACED_BASELINE_PRE` and
+  `NEGATED_TREATMENT` recognise spaced `"pre - antiretroviral therapy(ART)"`
+  (`33324725-1` to Tier 1 `disease_vs_healthy`, `33324725-4` to `disease_vs_disease`,
+  both outside the analysed corpus) and `"Antiretroviral therapy (ART) Naïve at
+  baseline"` (`38310301-1` to Tier 1 `disease_vs_healthy`, outside the analysed
+  corpus).
 - **Symmetric reversed `treated_disease_group` rule and review-table validation**:
   adds the reversed `Group 0` branch of `treated_disease_group` (requiring `strong_1`)
   and enforces label and verdict consistency in `read_review` (60/60 `reviewed_agreed`).
@@ -485,28 +496,30 @@ Known remaining limitations:
   admits "Normal (MN) group" against "Medium-dose (MMD) group" and "Model high-dose
   (MHD) group", two dose arms in a mouse study, so it would trade one recovered
   experiment for two new errors.
-- **Some HIV-negative against HIV-positive contrasts are still outside
-  `disease_vs_healthy`, five of them in the analysed corpus (#625, #626).** 25057045-1
+- **Five HIV-negative against HIV-positive contrasts in the analysed corpus remain
+  excluded because of their curated condition scope (#581, #625, #626).** 25057045-1
   and -2 ("HIV-uninfected controls" against "Chronic HIV-infected cases" on suppressive
-  ART, feces) and 37660163-13 (healthy controls against HCV/HIV coinfection) stay
-  `treatment_exposure` because their curated condition is "Response to antiviral drug",
-  which the classifier reads before the group names. 41011452-3 and -4 (HIV-negative
-  against HIV-positive people with oral candidiasis or HPV infection) are `disease_vs_disease`
-  because the condition has two values. Whether a group-name design should override
-  such a condition label is #626. Among experiments outside the corpus, 29411528-3 and
-  33324725-2 also stay out, as do the following. 29808701-1
-  ("Age-matched HIV-uninfected women" against "HIV-positive women who have been
-  taking ART for more than 1 year") stays `treatment_exposure`: "for more than 1
-  year" is read as a time point, and the treatment reading is kept rather than leave
-  only that one. 33324725-1 ("Human immunodeficiency virus negative (HIV-)Uninfected
-  Controls" against "Human immunodeficiency virus positive(HIV+) pre - antiretroviral
-  therapy(ART)") and 38310301-1 ("Healthy controls (HC)" against "Antiretroviral
-  therapy (ART) Naïve at baseline") stay `treatment_exposure`, because neither the
-  spaced "pre - " nor "(ART) Naïve" is read as untreated. 28743816-1 ("HIV
-  seronegative" against "HIV seroconverted") stays `disease_vs_disease`:
-  "seronegative" is not read as a negative test, and men who seroconverted during
-  follow-up may have been sampled before they acquired HIV, which would make it a
-  prospective contrast rather than people with HIV against people without. A hyphen
+  ART in `group_1_definition`, feces) and 37660163-13 (healthy controls against HCV/HIV
+  coinfection) stay `treatment_exposure` because their curated condition is "Response
+  to antiviral drug", which the classifier reads before the group names. Letting a
+  disease-versus-control group-name pair override `TREATMENT_CONDITION` (#626) was
+  tested across all 78 export contrasts with a treatment condition and a comparison
+  group: doing so would falsely admit faecal-microbiota-transplant recipient trials
+  whose group names mirror donor phenotypes (such as `38477534-4`, "Healthy controls -
+  Fecal Microbiota Transplantation (HC-FMT)" against "Chronic Constipation - Fecal
+  Microbiota Transplantation (CC-FMT)", `31391545-1`, "Healthy Control Mice (HC Mice)"
+  against "Schizophrenia Mice (SCZ Mice)", and `40568683-2`, "HC-FMT" against
+  "HGG-FMT") as well as post-intervention comparisons (`40180909-1`, "Healthy spouses
+  after prebiotics" against "Parkinson's Disease patients after prebiotics"). Similarly,
+  41011452-3 and -4 (HIV-negative against HIV-positive people with oral candidiasis or
+  HPV infection) stay `disease_vs_disease` because the condition has two values and both
+  cohorts share the oral candidiasis or HPV infection; only a general comparison token
+  (`GENERAL_COMPARISON`) is allowed to clear a multi-valued condition. Outside the
+  analysed corpus, 29808701-1 ("for more than 1 year"), 33324725-1 ("pre -
+  antiretroviral therapy(ART)"), and 38310301-1 ("Antiretroviral therapy (ART) Naïve at
+  baseline") are resolved in `contrast-orientation-v5` (#581), while 29411528-3 and
+  33324725-2 (untreated vs ART-treated HIV+) and 28743816-1 ("HIV seronegative" against
+  "HIV seroconverted", a prospective seroconversion cohort) remain excluded. A hyphen
   followed by a word ("HIV- women") is not read as a sign; no HIV comparison group in
   the export is written that way.
 - **Tumour against normal tissue is recognised only when a group name says so.**
@@ -538,9 +551,11 @@ the v4 HIV-status and treated-case readings with the HIV contrasts that must sta
 `treatment_exposure` and the tumour-against-adjacent-tissue contrast that the tiers keep
 out of subject-level populations ([#569](https://github.com/CultureBotAI/microbial-trait-profiling/issues/569)),
 and the v5 symmetric treated-disease rule, cross-sectional resolved-disease routing,
-precursor-lesion control handling, `hospital_or_symptomatic_control` flag, and
-review-table invariants
+precursor-lesion control handling, `hospital_or_symptomatic_control` flag, duration and
+pre-ART baseline parsing, and review-table invariants
 ([#574](https://github.com/CultureBotAI/microbial-trait-profiling/issues/574),
+[#581](https://github.com/CultureBotAI/microbial-trait-profiling/issues/581),
+[#626](https://github.com/CultureBotAI/microbial-trait-profiling/issues/626),
 [#630](https://github.com/CultureBotAI/microbial-trait-profiling/issues/630),
 [#672](https://github.com/CultureBotAI/microbial-trait-profiling/issues/672)).
 

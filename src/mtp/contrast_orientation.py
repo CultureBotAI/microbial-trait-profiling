@@ -335,6 +335,22 @@ AGE_BAND = re.compile(
     "|aged?\\s*[<>=\\u2264\\u2265\\s]*\\d+\\s*(?:years?|yrs?|months?|mo)?(?![\\w])",
     re.IGNORECASE,
 )
+#: A treatment or disease duration qualifier ("for more than 1 year", "duration less than
+#: 5 years"), which qualifies how long subjects have had the condition or therapy rather
+#: than naming a longitudinal follow-up visit (#581).
+DURATION_BAND = re.compile(
+    r"(?:for\s+(?:more|less|at\s+least|over|under|longer|fewer)\s+than\s+"
+    r"|duration\s+(?:of\s+)?(?:(?:more|less|at\s+least|over|under|longer|fewer)\s+(?:than\s+)?)?)"
+    r"(?:\d+|one|two|three|four|six|twelve)\s*-?\s*(?:day|week|month|year|yr)s?(?![\w])",
+    re.IGNORECASE,
+)
+#: Spaced "pre - <therapy/treatment>" baseline qualifiers ("pre - antiretroviral therapy(ART)",
+#: #581), normalized to baseline-only "pre-therapy" in :func:`_timepoints`.
+SPACED_BASELINE_PRE = re.compile(
+    r"(?<![\w])pre(?:\s+-\s*|\s*-\s+)(?:antiretroviral\s+therap\w*(?:\s*\(\s*(?:c|ha)?art\s*\))?"
+    r"|(?:c|ha)?art\b|treat\w*|therap\w*|operat\w*|surg\w*)",
+    re.IGNORECASE,
+)
 #: Time words that, beside a healthy comparison, only date the disease sample.
 BASELINE_ONLY = {
     "baseline",
@@ -659,9 +675,12 @@ NEGATED_TREATMENT = re.compile(
     r"(?:[\w-]+\s+){0,3}"
     r"(?:treat\w*|therap\w*|antibiotic\w*|antiretroviral\w*|medication\w*|drugs?|probiotic\w*"
     r"|prebiotic\w*|supplement\w*|ppis?|statins?|metformin|chemotherapy|radiotherapy|art\b)"
-    r"|(?:treatment|therapy|drug|antibiotic|medication|art|c?art)[- ](?:naive|free)"
+    r"|(?:(?:antiretroviral\s+)?(?:treatment|therapy|drug|antibiotic|medication"
+    r"|antiretroviral|(?:c|ha)?art)(?:\s*\(\s*(?:c|ha)?art\s*\))?[- ](?:na[i\u00ef]ve|free))"
     r"|untreated|unmedicated|non[- ]?medicated|unexposed|non[- ]?exposed"
-    r"|pre[- ]?(?:treat\w*|therap\w*|operat\w*|surg\w*)",
+    r"|pre\s*-\s*(?:antiretroviral\s+therap\w*(?:\s*\(\s*(?:c|ha)?art\s*\))?"
+    r"|(?:c|ha)?art\b|treat\w*|therap\w*|operat\w*|surg\w*)"
+    r"|pre(?:treat\w*|therap\w*|operat\w*|surg\w*)",
     re.IGNORECASE,
 )
 #: Both groups named as low/high levels of one variable.
@@ -964,24 +983,41 @@ def _variable_condition(condition: str) -> bool:
 
 
 def _age_bands(name: str) -> list[str]:
-    return sorted({match.group(0).strip().lower() for match in AGE_BAND.finditer(name)})
+    return sorted(
+        {
+            match.group(0).strip().lower()
+            for pattern in (AGE_BAND, DURATION_BAND)
+            for match in pattern.finditer(name)
+        }
+    )
 
 
 def _timepoints(name: str) -> set[str]:
-    """Time words in a group name, excluding those inside an age band or clinical stage.
+    """Time words in a group name, excluding those inside an age/duration band or clinical stage.
 
     "2-12 years" against "18-62 years" and "Controls aged > 10 years" look like
-    durations to :data:`TIMEPOINT` but say how old the subjects were, and "pre-DM" or
-    "pre-hypertension" name a clinical stage rather than a follow-up visit.
+    durations to :data:`TIMEPOINT` but say how old the subjects were, "for more than 1
+    year" and "duration less than 5 years" qualify how long subjects have had the
+    condition or therapy (#581), and "pre-DM" or "pre-hypertension" name a clinical
+    stage rather than a follow-up visit. Spaced "pre - <therapy/treatment>" phrases are
+    normalized to ``"pre-therapy"`` so :data:`BASELINE_ONLY` dates the disease sample.
     """
-    spans = [match.span() for match in AGE_BAND.finditer(name)] + [
-        match.span() for match in NON_TEMPORAL_PRE_POST.finditer(name)
-    ]
-    return {
+    spans = (
+        [match.span() for match in AGE_BAND.finditer(name)]
+        + [match.span() for match in DURATION_BAND.finditer(name)]
+        + [match.span() for match in NON_TEMPORAL_PRE_POST.finditer(name)]
+    )
+    spaced_spans = [match.span() for match in SPACED_BASELINE_PRE.finditer(name)]
+    found = {
         match.group(0).lower()
         for match in TIMEPOINT.finditer(name)
-        if not any(start <= match.start() and match.end() <= end for start, end in spans)
+        if not any(
+            start <= match.start() and match.end() <= end for start, end in spans + spaced_spans
+        )
     }
+    if spaced_spans:
+        found.add("pre-therapy")
+    return found
 
 
 def _stated_intervention(record: ExperimentRecord) -> list[str]:

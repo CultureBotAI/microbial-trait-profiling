@@ -1674,19 +1674,116 @@ def test_treated_cases_are_flagged_rather_than_made_a_treatment_contrast() -> No
 
 
 def test_known_miss_a_treated_group_named_by_time_keeps_the_treatment_reading() -> None:
-    """29808701-1: "for more than 1 year" reads as a time point, not as a duration.
+    """29808701-1: "for more than 1 year" reads as a duration band, not a longitudinal visit (#581).
 
-    Clearing the treatment reading would leave only that time reading, so the experiment
-    stays ``treatment_exposure`` instead of turning into a ``longitudinal_timepoint`` it is
-    not. This pins a known limitation (#581): the experiment compares HIV-negative and
-    HIV-positive women, so once #581 is fixed it should become ``disease_vs_healthy`` and
-    this expectation should change with it (#628).
+    With the duration qualifier masked out of :func:`_timepoints`, the treated-disease-group
+    rule classifies HIV-uninfected women against HIV-positive women on ART (>1 year) as
+    ``disease_vs_healthy`` Tier 3 (``treated_disease_group`` and ``age_band_not_timepoint``),
+    resolving the limitation pinned in #581 / #628.
     """
+    found = classify(
+        replace(
+            BASE,
+            condition="HIV infection",
+            group_0_name="Age-matched HIV-uninfected women",
+            group_1_name="HIV-positive women who have been taking ART for more than 1 year",
+        )
+    )
+    assert (found.contrast_class, found.orientation) == (DISEASE_VS_HEALTHY, NATIVE)
+    assert found.contrast_type == CASE_VS_CONTROL_SUBJECT
+    assert found.control_tier == TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+    assert "treated_disease_group" in found.flags.split(",")
+    assert "age_band_not_timepoint" in found.flags.split(",")
+
+
+def test_spaced_pre_art_and_parenthesized_art_naive_read_as_untreated_baseline_cases() -> None:
+    """33324725-1, 33324725-4, and 38310301-1: spaced "pre - antiretroviral therapy(ART)"
+    and "Antiretroviral therapy (ART) Na\u00efve at baseline" read as untreated baseline
+    disease rather than treatment trials (#581).
+    """
+    pre_art = classify(
+        replace(
+            BASE,
+            condition="HIV infection",
+            group_0_name="Human immunodeficiency virus negative (HIV-)Uninfected Controls",
+            group_1_name=(
+                "Human immunodeficiency virus positive(HIV+) pre - antiretroviral therapy(ART)"
+            ),
+        )
+    )
+    assert (pre_art.contrast_class, pre_art.orientation) == (DISEASE_VS_HEALTHY, NATIVE)
+    assert pre_art.contrast_type == CASE_VS_CONTROL_SUBJECT
+    assert pre_art.control_tier == TIER_1_HEALTHY_NORMAL
+    assert "negated_treatment_term" in pre_art.flags.split(",")
+    assert "disease_sample_dated_at_baseline" in pre_art.flags.split(",")
+
+    # 33324725-4: two untreated HIV+ subcohorts (non-frail vs frail) at pre-ART baseline
+    pre_art_frail = classify(
+        replace(
+            BASE,
+            condition="HIV infection",
+            group_0_name=(
+                "Non- frail Human immunodeficiency virus positive (HIV+) "
+                "pre - antiretroviral therapy(ART)"
+            ),
+            group_1_name=(
+                "Frail Human immunodeficiency virus positive (HIV+) "
+                "pre - antiretroviral therapy(ART)"
+            ),
+        )
+    )
+    assert (pre_art_frail.contrast_class, pre_art_frail.orientation) == (
+        DISEASE_VS_DISEASE,
+        NOT_APPLICABLE,
+    )
+
+    art_naive = classify(
+        replace(
+            BASE,
+            condition="HIV infection",
+            group_0_name="Healthy controls (HC)",
+            group_1_name="Antiretroviral therapy (ART) Na\u00efve at baseline",
+        )
+    )
+    assert (art_naive.contrast_class, art_naive.orientation) == (DISEASE_VS_HEALTHY, NATIVE)
+    assert art_naive.contrast_type == CASE_VS_CONTROL_SUBJECT
+    assert art_naive.control_tier == TIER_1_HEALTHY_NORMAL
+    assert "negated_treatment_term" in art_naive.flags.split(",")
+    assert "disease_sample_dated_at_baseline" in art_naive.flags.split(",")
+
+
+def test_treatment_and_multivalued_conditions_do_not_let_group_names_override_scope() -> None:
+    """#626: group-name comparisons under TREATMENT_CONDITION or multi-valued conditions
+    stay excluded so FMT recipient mouse trials (38477534-4) and comorbidity-matched cohorts
+    (41011452-3) are not misclassified as primary disease-vs-healthy contrasts.
+    """
+    # 25057045-1: curated under "Response to antiviral drug" (ART in group_1_definition)
     assert _classify(
-        condition="HIV infection",
-        group_0_name="Age-matched HIV-uninfected women",
-        group_1_name="HIV-positive women who have been taking ART for more than 1 year",
+        condition="Response to antiviral drug",
+        group_0_name="HIV-uninfected controls",
+        group_1_name="Chronic HIV-infected cases",
     ) == (TREATMENT, NOT_APPLICABLE)
+
+    # 37660163-13: curated under "Response to antiviral drug" (HCV/HIV coinfection)
+    assert _classify(
+        condition="Response to antiviral drug",
+        group_0_name="Healthy controls",
+        group_1_name="patients with HCV/HIV coinfection at baseline",
+    ) == (TREATMENT, NOT_APPLICABLE)
+
+    # 38477534-4: FMT recipient trial with "Healthy controls" vs "Chronic Constipation"
+    assert _classify(
+        condition="Response to transplant",
+        group_0_name="Healthy controls - Fecal Microbiota Transplantation (HC-FMT)",
+        group_1_name="Chronic Constipation - Fecal Microbiota Transplantation (CC-FMT)",
+    ) == (TREATMENT, NOT_APPLICABLE)
+
+    # 41011452-3: both groups have oral candidiasis; only general comparison tokens override
+    assert _classify(
+        condition="HIV infection,Oral candidiasis",
+        group_0_name="HIV-uninfected participants with oral candidiasis",
+        group_1_name="HIV-infected participants with oral candidiasis",
+    ) == (DISEASE_VS_DISEASE, NOT_APPLICABLE)
 
 
 def test_a_minus_sign_or_en_dash_before_a_word_is_a_sign_but_a_hyphen_is_not() -> None:

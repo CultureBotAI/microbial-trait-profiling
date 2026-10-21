@@ -18,7 +18,7 @@ This follow-up starts from aerobe v2 trait enrichment in increased profiles and 
 
 ## Top Taxa
 
-The tables below count unique taxon/profile occurrences after deduplicating the same taxon within the same study/experiment/direction profile. Exact `Autism` and `Autism spectrum disorder` are reported separately rather than pooled because their directional skews diverge: `Autism` has a positive increased-minus-decreased trait z shift (+0.744; 8 increased and 6 decreased profiles from 4 studies), whereas `Autism spectrum disorder` has a negative increased-minus-decreased trait z shift (-1.682; 5 increased and 2 decreased profiles from 3 studies) (#128).
+The tables below count unique taxon/profile occurrences after deduplicating the same taxon within the same study/experiment/direction profile. Human-host profiles only; No occurrence lies outside the human-host corpus. Exact `Autism` and `Autism spectrum disorder` are reported separately rather than pooled because their directional skews diverge: `Autism` has a positive increased-minus-decreased trait z shift (+0.744; 8 increased and 6 decreased profiles from 4 studies), whereas `Autism spectrum disorder` has a negative increased-minus-decreased trait z shift (-1.682; 5 increased and 2 decreased profiles from 3 studies) (#128).
 
 ### Autism
 
@@ -206,4 +206,5 @@ The most defensible interpretation is that the exact autism and autoimmune disea
 - `autism_autoimmune_inferred_guild_summary.tsv`
 - `autism_autoimmune_inferred_guild_trait_evidence.tsv`
 - `autism_autoimmune_inferred_guild_taxa_evidence.tsv`
+- `autism_autoimmune_excluded_host_occurrences.tsv`
 - `kg_microbe_candidate_taxon_universe.tsv`

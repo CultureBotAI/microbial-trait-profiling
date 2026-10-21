@@ -471,6 +471,7 @@ def test_plot_top_traits_renders_with_study_level_stats() -> None:
         texts = [t.get_text() for t in ax.texts]
         assert any("[+0.14, +0.28]" in t for t in texts)
         assert any("[-0.22, -0.08]" in t for t in texts)
+        assert all(t.get_bbox_patch() is not None for t in ax.texts)
     finally:
         plt.close(fig)
 

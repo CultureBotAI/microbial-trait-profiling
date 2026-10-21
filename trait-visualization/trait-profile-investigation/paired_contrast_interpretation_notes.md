@@ -12,16 +12,22 @@ profile guild figures.
 - `trait_profile_paired_contrast_trait_stats_pooled.tsv`: explicit pooled copy
   of the same analysis.
 - `trait_profile_paired_contrast_trait_stats_<body_site_group>.tsv`: body-site
-  or robustness-stratified paired contrast trait statistics.
-- `trait_profile_paired_contrast_trait_stats_manifest.tsv`: emitted strata,
-  pair counts, study counts, trait counts, and paths.
+  or robustness-stratified paired contrast trait statistics (`feces`,
+  `feces_excluded`, `other`, and `saliva` are the four current manifest-listed
+  strata with `>= 50` pairs; `caecum`, `colon`, `mouth`,
+  `subgingival_dental_plaque`, and `vagina` are legacy `< 50`-pair TSVs retained
+  on disk from before the human-host-only and experiment-level body-site
+  restriction in #555).
+- `trait_profile_paired_contrast_trait_stats_manifest.tsv`: emitted strata
+  meeting the `>= 50`-pair threshold (`feces`, `feces_excluded`, `other`,
+  `saliva`), pair counts, study counts, trait counts, and paths.
 - `trait_profile_paired_contrast_condition_summary.tsv`: condition-level paired
   contrast load summary.
 - `trait_profile_paired_contrast_body_site_summary.tsv`: body-site-level paired
   contrast load summary.
-- `facultative-aerobe-v2/condition_increased_guild_signal.png`: condition
+- `aerobe-enrichment-v2/condition_increased_guild_signal.png`: condition
   figure for the increased-profile aerobe v2 story.
-- `facultative-aerobe-v2/anatomical_sites_diagram.png`: body-site figure for
+- `aerobe-enrichment-v2/anatomical_sites_diagram.png`: body-site figure for
   the increased-profile aerobe v2 story.
 - `anaerobe-depletion-v2/condition_decreased_guild_signal.png`: condition
   figure for the decreased-profile anaerobe story.
@@ -34,7 +40,9 @@ The paired contrast data were generated from
 `data/derived/study_trait_profiles_wide.tsv` using matched BugSigDB
 study/experiment profiles that contained both an `increased` and a `decreased`
 direction. For each analysis set, including pooled data, Feces, Feces-excluded,
-and each body-site group with at least 50 matched pairs, traits were selected
+and each body-site group with at least 50 matched pairs (`feces`,
+`feces_excluded`, `other`, and `saliva` in
+`trait_profile_paired_contrast_trait_stats_manifest.tsv`), traits were selected
 within that set by requiring annotation support in at least 6 profiles, presence
 in no more than 95% of profiles, nonzero composition variance, and excluding
 MediaDive medium traits; all eligible traits were retained with no top-60 cap.
@@ -49,14 +57,19 @@ Benjamini-Hochberg q-value, annotation support, and direction label. These
 p-values are screening summaries of curated profile-level trait contrasts, not
 new differential-abundance tests from raw sequencing data.
 
-## What the Mouth Label Means
+## What the Mouth and Legacy Body-Site Labels Mean
 
 In `trait_profile_paired_contrast_trait_stats_mouth.tsv`, `mouth` means the
 `body_site_group` stratum is exactly `Mouth`. It is not a broad synonym search
 for all oral labels. Separate body-site groups such as `Saliva` and
 `Subgingival dental plaque` have their own TSVs. The `Mouth` file uses matched
 increased/decreased study-experiment pairs whose upstream paired metadata has
-`body_site_group = Mouth`.
+`body_site_group = Mouth`. In the current human-host experiment-level corpus
+(#555), only `Feces` (`1,531` pairs), `Feces excluded` (`804` pairs), `Other`
+(`563` pairs), and `Saliva` (`152` pairs) meet the `>= 50`-pair manifest
+threshold; the `caecum`, `colon`, `mouth`, `subgingival_dental_plaque`, and
+`vagina` TSVs on disk are legacy outputs from before that restriction and are
+not listed in `trait_profile_paired_contrast_trait_stats_manifest.tsv`.
 
 The filename token is produced by lowercasing and sanitizing the stratum label,
 so `Mouth` becomes `mouth`. The body-site grouping itself is inherited from the
