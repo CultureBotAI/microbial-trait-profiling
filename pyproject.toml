@@ -63,7 +63,7 @@ viz = [
   "defusedxml>=0.7.1",
   "kaleido>=1.0",
   "matplotlib>=3.10.0",
-  "pillow>=12.0.0",
+  "pillow>=13.0.0",
   "plotly>=7.0",
   "seaborn>=0.13.0",
 ]
