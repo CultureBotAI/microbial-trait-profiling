@@ -1,4 +1,4 @@
-"""The v2 scripts keep human-host target-taxon occurrences and note the rest (#587, #712)."""
+"""The v2 scripts keep human-host target-taxon occurrences and note the rest (#587, #712, #742)."""
 
 import csv
 import importlib.util
@@ -36,7 +36,8 @@ HUMAN_PROFILES = ["bsdb:1|bsdb:1-1|inc", "bsdb:1|bsdb:1-1|dec"]
 
 def write_inputs(root: Path, taxon_ids: list[str]) -> None:
     """A human experiment with one occurrence per direction; two mouse experiments,
-    one with an increased and one with two decreased occurrences."""
+    one with an increased and one with two decreased occurrences; and a human PCR
+    experiment with an increased occurrence, outside the 16S and shotgun corpus (#742)."""
     first, second = taxon_ids[:2]
     derived = root / "data" / "derived"
     raw = root / "data" / "raw"
@@ -49,6 +50,7 @@ def write_inputs(root: Path, taxon_ids: list[str]) -> None:
             ("bsdb:2", "bsdb:2-1", "bsdb:2-1-1", "increased", first),
             ("bsdb:3", "bsdb:3-1", "bsdb:3-1-1", "decreased", first),
             ("bsdb:3", "bsdb:3-1", "bsdb:3-1-1", "decreased", second),
+            ("bsdb:4", "bsdb:4-1", "bsdb:4-1-1", "increased", first),
         ],
         columns=["study_id", "experiment_id", "signature_id", "direction", "taxon_id"],
     )
@@ -58,11 +60,21 @@ def write_inputs(root: Path, taxon_ids: list[str]) -> None:
     with (raw / "full_dump.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         writer.writerow(
-            ["BSDB ID", "Host species", "Condition", "Body site", "Location of subjects"]
+            [
+                "BSDB ID",
+                "Host species",
+                "Condition",
+                "Body site",
+                "Location of subjects",
+                "Sequencing type",
+            ]
         )
-        writer.writerow(["bsdb:1/1/1", "Homo sapiens", "Colorectal cancer", "Feces", "China"])
-        writer.writerow(["bsdb:2/1/1", "Mus musculus", "Obesity", "Feces", "China"])
-        writer.writerow(["bsdb:3/1/1", "Mus musculus", "Obesity", "Feces", "China"])
+        writer.writerow(
+            ["bsdb:1/1/1", "Homo sapiens", "Colorectal cancer", "Feces", "China", "16S"]
+        )
+        writer.writerow(["bsdb:2/1/1", "Mus musculus", "Obesity", "Feces", "China", "16S"])
+        writer.writerow(["bsdb:3/1/1", "Mus musculus", "Obesity", "Feces", "China", "WMS"])
+        writer.writerow(["bsdb:4/1/1", "Homo sapiens", "Obesity", "Feces", "China", "PCR"])
 
 
 def scored_profiles(score_column: str) -> pd.DataFrame:
@@ -107,8 +119,14 @@ def test_loader_keeps_human_host_occurrences_and_sets_aside_the_rest(
     occurrences, excluded = load_occurrences(script, tmp_path, monkeypatch)
     assert sorted(occurrences["profile_id"]) == sorted(HUMAN_PROFILES)
     assert occurrences["condition"].eq("Colorectal cancer").all()
-    assert excluded["host_species"].eq("Mus musculus").all()
-    assert excluded["direction"].value_counts().to_dict() == {"decreased": 2, "increased": 1}
+    reasons = excluded.set_index("study_id")["exclusion_reason"]
+    assert reasons.to_dict() == {
+        "bsdb:2": "host",
+        "bsdb:3": "host",
+        "bsdb:4": "sequencing_type",
+    }
+    assert excluded.loc[excluded["study_id"] == "bsdb:4", "sequencing_type"].tolist() == ["PCR"]
+    assert excluded["direction"].value_counts().to_dict() == {"decreased": 2, "increased": 2}
 
 
 @pytest.mark.parametrize("script", SCRIPTS)
@@ -130,10 +148,11 @@ def test_condition_charts_note_the_set_aside_focus_direction(
     module.save_target_taxa_condition_charts(occurrences, excluded, pd.DataFrame())
 
     expected = {
-        "increased": "1 increased-profile occurrence (1 profile) from non-human hosts is",
+        "increased": "2 increased-profile occurrences (2 profiles) from non-human hosts and "
+        "other sequencing methods are",
         "decreased": "2 decreased-profile occurrences (1 profile) from non-human hosts are",
     }[direction]
-    note = f"Human-host profiles only: {expected} excluded."
+    note = f"Human-host 16S and shotgun profiles only: {expected} excluded."
     assert calls["breakdown"]["note"] == note
     assert calls["stacked"]["note"] == note
     counts = calls["breakdown"]["args"][0]

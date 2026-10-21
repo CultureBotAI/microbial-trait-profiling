@@ -3,7 +3,8 @@ version: '1'
 description: >-
   Offline BugSigDB full-dump to raw core products. The core preserves all
   annotation features including culture-media annotations and incomplete pairs.
-  Count and ORA profiles have distinct, explicit units and host policies.
+  Count and ORA profiles have distinct, explicit units and host policies, and
+  both keep 16S and shotgun (WMS) experiments only (count_input_16s_wms_v1, #742).
 parameters:
   - name: source_mode
     default: unknown
@@ -151,7 +152,7 @@ products:
     cohort: all
     cohort_parameter: count_host_species
     feature_policy: include_mediadive
-    coverage_policy: count_input_v1
+    coverage_policy: count_input_16s_wms_v1
   - id: count_coverage
     kind: profile_coverage
     schema_ref: schema/core_products.yaml#ProfileCoverageRecord
@@ -162,7 +163,7 @@ products:
     cohort: all
     cohort_parameter: count_host_species
     feature_policy: include_mediadive
-    coverage_policy: count_input_v1
+    coverage_policy: count_input_16s_wms_v1
   - id: ora_profiles
     kind: ora_profiles
     schema_ref: schema/core_products.yaml#ORAProfileRow
@@ -173,7 +174,7 @@ products:
     cohort: Homo sapiens
     cohort_parameter: ora_host_species
     feature_policy: include_mediadive
-    coverage_policy: count_input_v1
+    coverage_policy: count_input_16s_wms_v1
   - id: ora_coverage
     kind: profile_coverage
     schema_ref: schema/core_products.yaml#ProfileCoverageRecord
@@ -184,7 +185,7 @@ products:
     cohort: Homo sapiens
     cohort_parameter: ora_host_species
     feature_policy: include_mediadive
-    coverage_policy: count_input_v1
+    coverage_policy: count_input_16s_wms_v1
 steps:
   - id: identify_sources
     operation: identify_sources

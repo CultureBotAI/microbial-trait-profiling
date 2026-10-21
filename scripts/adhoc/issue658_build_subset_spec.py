@@ -35,7 +35,8 @@ def main() -> None:
     definition["description"] = (
         "Verified contrast-population selection and disease orientation before canonical "
         "exports and profiles. Original ingested studies and exports remain preserved. "
-        "The trait matrix, vocabulary and ORA background use the full source population."
+        "The trait matrix, vocabulary and ORA background use the full source population. "
+        "Selected populations and profiles keep 16S and shotgun (WMS) experiments only (#742)."
     )
     products = {product["id"]: product for product in definition["products"]}
     source_studies = deepcopy(products["studies"])
@@ -45,7 +46,7 @@ def main() -> None:
         kind="contrast_study_collection",
         cohort="all_paired",
         cohort_parameter="contrast_population",
-        coverage_policy="contrast_population_v1",
+        coverage_policy="contrast_population_v2",
         description=(
             "Exact selected projection of source_studies. Group metadata remains original; "
             "signature directions follow the recorded WorkflowRun direction_basis."
@@ -65,7 +66,7 @@ def main() -> None:
             "unit": "experiment_selection_decision",
             "cohort": "all_paired",
             "cohort_parameter": "contrast_population",
-            "coverage_policy": "contrast_population_v1",
+            "coverage_policy": "contrast_population_v2",
         }
     )
     steps = {step["id"]: step for step in definition["steps"]}

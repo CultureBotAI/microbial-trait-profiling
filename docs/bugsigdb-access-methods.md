@@ -14,7 +14,8 @@ regenerated figures and derived analysis artifacts.
 - tag SHA: `5815c2638d6b56134ac8db19edc2bb3c4b17f1ca`
 - branch input file: `data/raw/full_dump.csv`
 - branch corpus after ingest: 1,245 usable studies
-- human-host figure corpus: 5,829 profiles from 1,080 studies
+- human-host figure corpus: 5,629 profiles from 1,047 studies, 16S and shotgun
+  (`WMS`) experiments only (#742; 5,829 from 1,080 before)
 
 The live raw exports are downloaded for comparison and future ingestion work,
 but the branch does not use them as the primary input until separate-table

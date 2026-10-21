@@ -19,6 +19,7 @@ from mtp.composition_denominators import (
     retained_trait_counts,
     trait_fractions,
 )
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
@@ -861,9 +862,11 @@ def main() -> None:
 
     group_by = normalize_group_fields(args.group_by)
     experiment_metadata = load_raw_experiment_metadata(args.full_dump_input)
+    # A non-default profile input is held to the 16S and shotgun rule too (#742, #754)
     human_experiment_ids = set(
         experiment_metadata.index.get_level_values("experiment_id")[
-            experiment_metadata["host_species"].map(clean_value) == HUMAN_HOST_SPECIES
+            (experiment_metadata["host_species"].map(clean_value) == HUMAN_HOST_SPECIES)
+            & experiment_metadata["sequencing_type"].map(clean_value).isin(CORPUS_SEQUENCING_TYPES)
         ]
     )
     study_matrix, profile_metadata = load_aggregated_study_profiles(

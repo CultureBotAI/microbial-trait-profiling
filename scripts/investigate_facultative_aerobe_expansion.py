@@ -1036,10 +1036,11 @@ def load_target_taxa_occurrences(
     taxa = taxa.drop_duplicates(subset=["taxon_id", "profile_id"])
     taxa["target_taxon_name"] = taxa["taxon_id"].map(TARGET_TAXA)
     # The human-host corpus filter reads the host from full_dump.csv, so the set-aside
-    # check reads it from the same file with the same parser (#713).
+    # check reads it, and the sequencing type (#742), from the same file with the same
+    # parser (#713).
     experiment_hosts = load_raw_experiment_metadata(
         REPO_ROOT / "data/raw/full_dump.csv"
-    ).reset_index()[["study_id", "experiment_id", "host_species"]]
+    ).reset_index()[["study_id", "experiment_id", "host_species", "sequencing_type"]]
     profile_columns = [
         "study_id",
         "experiment_id",
@@ -1749,8 +1750,8 @@ def write_summary_report(
             "",
             "Target-taxon occurrence views (`target_taxa_condition_breakdown_bar.png`, "
             "`condition_target_taxa_stacked_bar.png`, `candidate_taxa_profile_occurrences.tsv` "
-            "and `candidate_taxa_condition_direction.tsv`) count human-host profiles only, "
-            "the corpus of the profile metadata. "
+            "and `candidate_taxa_condition_direction.tsv`) count human-host 16S and shotgun "
+            "profiles only, the corpus of the profile metadata. "
             f"{excluded_host_summary(excluded_occurrences)} "
             "They have no profile metadata, so they are not counted under any condition; "
             "`candidate_taxa_excluded_host_occurrences.tsv` lists them.",

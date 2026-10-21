@@ -351,9 +351,14 @@ def _export_rows(
 def _compare_rows(path: Path, header: list[str], expected: Iterable[list[str]]) -> None:
     with path.open(encoding="utf-8", newline="") as handle:
         reader = csv.reader(handle, delimiter="\t")
-        if next(reader, []) != header:
+        actual = next(reader, [])
+        if actual != header:
+            missing = [name for name in header if name not in actual]
+            # A core made before #742 has no sequencing_type column (#762)
+            hint = "; the core predates #742, rebuild it" if "sequencing_type" in missing else ""
             raise ValueError(
                 f"source reconciliation: {path.name} differs from Study source records"
+                + (f" (missing columns: {', '.join(missing)}{hint})" if missing else "")
             )
         for number, (actual, source) in enumerate(zip_longest(reader, expected), start=2):
             if actual != source:

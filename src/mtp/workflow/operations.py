@@ -24,6 +24,7 @@ from mtp.download import (
     IntegrityError,
     verify_pinned_dump,
 )
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.ingest import ingest
 from mtp.paths import file_sha256
 from mtp.study_trait_profiles import (
@@ -90,11 +91,11 @@ _CORE_SEMANTICS = {
     ),
     "contrast_study_collection": _ScientificSemantics(
         "study",
-        coverage_policy="contrast_population_v1",
+        coverage_policy="contrast_population_v2",
         schema_ref="schema/mtp.yaml#Study",
     ),
     "contrast_selection": _ScientificSemantics(
-        "experiment_selection_decision", coverage_policy="contrast_population_v1"
+        "experiment_selection_decision", coverage_policy="contrast_population_v2"
     ),
     "ingest_log": _ScientificSemantics("ingest_event", "all_hosts"),
     "study_table": _ScientificSemantics("study", "all_hosts", schema_ref=_SCHEMA + "StudyTableRow"),
@@ -135,19 +136,19 @@ _CORE_SEMANTICS = {
     "count_profiles": _ScientificSemantics(
         "rolled_up_source_taxon_count",
         feature_policy="include_mediadive",
-        coverage_policy="count_input_v1",
+        coverage_policy="count_input_16s_wms_v1",
         schema_ref=_SCHEMA + "CountProfileRow",
     ),
     "ora_profiles": _ScientificSemantics(
         "distinct_matched_reported_taxon_count",
         feature_policy="include_mediadive",
-        coverage_policy="count_input_v1",
+        coverage_policy="count_input_16s_wms_v1",
         schema_ref=_SCHEMA + "ORAProfileRow",
     ),
     "profile_coverage": _ScientificSemantics(
         "distinct_reported_taxon_lookup",
         feature_policy="include_mediadive",
-        coverage_policy="count_input_v1",
+        coverage_policy="count_input_16s_wms_v1",
         schema_ref=_SCHEMA + "ProfileCoverageRecord",
     ),
 }
@@ -340,6 +341,7 @@ def _profiles_operation(
     if set(parameters) != {f"{prefix}_host_species"}:
         raise ValueError(f"{prefix}_profiles requires exactly the {prefix}_host_species parameter")
     host = _host(parameters, f"{prefix}_host_species")
+    # Both profile products keep 16S and shotgun experiments only (#742)
     create_study_trait_profiles(
         study_dir=inputs["studies"],
         taxa_trait_matrix_path=inputs["taxa_matrix"],
@@ -348,9 +350,12 @@ def _profiles_operation(
         binary=ora,
         include_taxa_count=ora,
         deduplicate_taxa=True,
+        sequencing_types=CORPUS_SEQUENCING_TYPES,
     )
     matrix = read_taxa_trait_matrix(inputs["taxa_matrix"])
-    profile_taxa, _ = collect_profile_taxa(inputs["studies"], host_species=host)
+    profile_taxa, _ = collect_profile_taxa(
+        inputs["studies"], host_species=host, sequencing_types=CORPUS_SEQUENCING_TYPES
+    )
     coverage = build_profile_coverage(profile_taxa, matrix)
     output = outputs[f"{prefix}_coverage"]
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -482,7 +487,9 @@ def trace_profile_feature(
     matrix = read_taxa_trait_matrix(matrix_path)
     if feature_id not in matrix.trait_columns:
         raise ValueError(f"Feature is absent from the matrix: {feature_id}")
-    profiles, _ = collect_profile_taxa(study_dir, host_species=host_species)
+    profiles, _ = collect_profile_taxa(
+        study_dir, host_species=host_species, sequencing_types=CORPUS_SEQUENCING_TYPES
+    )
     if profile_key not in profiles:
         raise ValueError(f"Profile is absent from selected study cohort: {profile_key}")
     reported = set(profiles[profile_key])

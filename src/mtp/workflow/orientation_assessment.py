@@ -138,8 +138,8 @@ def write_assessment(
         "profile_directions_relabelled_by_assessment": False,
         "contrast_population": population,
         "analysis_population": (
-            f"{population}; human paired profiles already oriented by the verified core "
-            "selection; inc means higher in the disease group"
+            f"{population}; human paired 16S and shotgun profiles already oriented by the "
+            "verified core selection; inc means higher in the disease group"
         ),
         "bugsigdb_vintage": vintage,
         "code_commit": code_commit,

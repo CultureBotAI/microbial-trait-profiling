@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization/bsdb-taxa-only"
 HUMAN_HOST_SPECIES = "Homo sapiens"
@@ -38,7 +40,10 @@ def experiment_id_from_bsdb_id(bsdb_id: str) -> str:
 
 
 def load_human_experiment_ids(full_dump_path: Path | None) -> set[tuple[str, str]]:
-    """Return study/experiment IDs for Homo sapiens rows in full_dump.csv."""
+    """Return study/experiment IDs for Homo sapiens 16S and WMS rows in full_dump.csv.
+
+    The sequencing type keeps the analysis corpus's rule; a blank one is left out (#742).
+    """
     if full_dump_path is None or not full_dump_path.exists():
         return set()
 
@@ -49,7 +54,12 @@ def load_human_experiment_ids(full_dump_path: Path | None) -> set[tuple[str, str
         for row in reader:
             bsdb_id = clean_value(row.get("BSDB ID"))
             host_species = clean_value(row.get("Host species"))
-            if bsdb_id and host_species == HUMAN_HOST_SPECIES:
+            sequencing_type = clean_value(row.get("Sequencing type"))
+            if (
+                bsdb_id
+                and host_species == HUMAN_HOST_SPECIES
+                and sequencing_type in CORPUS_SEQUENCING_TYPES
+            ):
                 experiment_ids.add(
                     (
                         study_id_from_bsdb_id(bsdb_id),
@@ -72,6 +82,13 @@ def build_binary_matrix(
         usecols=["study_id", "experiment_id", "direction", "taxon_name", "taxonomic_rank"],
     )
     human_experiment_ids = load_human_experiment_ids(full_dump_path)
+    # An export that yields no corpus row must not silently drop both filters (#753)
+    if full_dump_path is not None and full_dump_path.exists() and not human_experiment_ids:
+        msg = (
+            f"{full_dump_path} has no {HUMAN_HOST_SPECIES} 16S or WMS rows; check its "
+            "Host species and Sequencing type columns"
+        )
+        raise ValueError(msg)
     if human_experiment_ids:
         taxa = taxa[
             [
@@ -152,7 +169,8 @@ def save_clustered_heatmap(
     cluster.ax_heatmap.set_ylabel("Profiles")
     cluster.ax_heatmap.set_title(
         "BugSigDB Human-Host Genus Presence/Absence Clustered Heatmap\n"
-        "Top prevalent genera; rows are human-host study|experiment|direction profiles",
+        "Top prevalent genera; rows are human-host 16S and shotgun "
+        "study|experiment|direction profiles",
         pad=18,
     )
 

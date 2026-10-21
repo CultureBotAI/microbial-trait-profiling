@@ -1,11 +1,11 @@
 # BugSigDB fixture-629, License: CC0 synthetic test data
-BSDB ID,Study,Title,Year,Host species,Body site,Condition,Group 0 name,Group 1 name,Abundance in Group 1,NCBI Taxonomy IDs,MetaPhlAn taxon names,State,Reviewer
-bsdb:1/1/1,Study 1,Synthetic overlap and coverage,2026,Homo sapiens,stool,fixture condition,controls,cases,increased,100;100;101,"g__Examplegenus,g__Examplegenus,s__Examplegenus_alpha",Complete,Fixture
-bsdb:1/1/2,Study 1,Synthetic overlap and coverage,2026,Homo sapiens,stool,fixture condition,controls,cases,decreased,300,s__Unannotated_bacterium,Complete,Fixture
-bsdb:1/2/1,Study 1,Synthetic overlap and coverage,2026,Homo sapiens,stool,fixture condition,controls,cases,increased,200,s__Mediaonly_bacterium,Complete,Fixture
-bsdb:1/2/2,Study 1,Synthetic overlap and coverage,2026,Homo sapiens,stool,fixture condition,controls,cases,decreased,999,s__Missingkg_bacterium,Complete,Fixture
-bsdb:1/3/1,Study 1,Synthetic overlap and coverage,2026,Homo sapiens,stool,fixture condition,controls,cases,increased,101,s__Examplegenus_alpha,Complete,Fixture
-bsdb:2/1/1,Study 2,Synthetic mouse contrast,2026,Mus musculus,stool,fixture condition,controls,cases,increased,101,s__Examplegenus_alpha,Complete,Fixture
-bsdb:2/1/2,Study 2,Synthetic mouse contrast,2026,Mus musculus,stool,fixture condition,controls,cases,decreased,300,s__Unannotated_bacterium,Complete,Fixture
-bsdb:3/1/1,Study 3,Synthetic family contrast,2026,Homo sapiens,stool,fixture condition,controls,cases,increased,900,f__Examplefamily,Complete,Fixture
-bsdb:3/1/2,Study 3,Synthetic family contrast,2026,Homo sapiens,stool,fixture condition,controls,cases,decreased,103,s__Examplegenus_gamma,Complete,Fixture
+BSDB ID,Study,Title,Year,Host species,Body site,Condition,Group 0 name,Group 1 name,Abundance in Group 1,NCBI Taxonomy IDs,MetaPhlAn taxon names,State,Reviewer,Sequencing type
+bsdb:1/1/1,Study 1,Synthetic overlap and coverage,2026,Homo sapiens,stool,fixture condition,controls,cases,increased,100;100;101,"g__Examplegenus,g__Examplegenus,s__Examplegenus_alpha",Complete,Fixture,16S
+bsdb:1/1/2,Study 1,Synthetic overlap and coverage,2026,Homo sapiens,stool,fixture condition,controls,cases,decreased,300,s__Unannotated_bacterium,Complete,Fixture,16S
+bsdb:1/2/1,Study 1,Synthetic overlap and coverage,2026,Homo sapiens,stool,fixture condition,controls,cases,increased,200,s__Mediaonly_bacterium,Complete,Fixture,16S
+bsdb:1/2/2,Study 1,Synthetic overlap and coverage,2026,Homo sapiens,stool,fixture condition,controls,cases,decreased,999,s__Missingkg_bacterium,Complete,Fixture,16S
+bsdb:1/3/1,Study 1,Synthetic overlap and coverage,2026,Homo sapiens,stool,fixture condition,controls,cases,increased,101,s__Examplegenus_alpha,Complete,Fixture,16S
+bsdb:2/1/1,Study 2,Synthetic mouse contrast,2026,Mus musculus,stool,fixture condition,controls,cases,increased,101,s__Examplegenus_alpha,Complete,Fixture,16S
+bsdb:2/1/2,Study 2,Synthetic mouse contrast,2026,Mus musculus,stool,fixture condition,controls,cases,decreased,300,s__Unannotated_bacterium,Complete,Fixture,16S
+bsdb:3/1/1,Study 3,Synthetic family contrast,2026,Homo sapiens,stool,fixture condition,controls,cases,increased,900,f__Examplefamily,Complete,Fixture,WMS
+bsdb:3/1/2,Study 3,Synthetic family contrast,2026,Homo sapiens,stool,fixture condition,controls,cases,decreased,103,s__Examplegenus_gamma,Complete,Fixture,WMS

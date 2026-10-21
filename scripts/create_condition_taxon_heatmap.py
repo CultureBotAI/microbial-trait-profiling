@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization/bsdb-taxa-only"
 HUMAN_HOST_SPECIES = "Homo sapiens"
@@ -39,7 +41,11 @@ def experiment_id_from_bsdb_id(bsdb_id: str) -> str:
 
 
 def load_study_condition_pairs(full_dump_path: Path) -> pd.DataFrame:
-    """Extract unique human-host study/experiment condition pairs from full_dump.csv."""
+    """Extract unique human-host study/experiment condition pairs from full_dump.csv.
+
+    Only 16S and WMS experiments are kept, the analysis corpus's rule; a blank
+    sequencing type is left out (#742).
+    """
     experiment_conditions: defaultdict[tuple[str, str], set[str]] = defaultdict(set)
     with full_dump_path.open(encoding="utf-8", newline="") as handle:
         rows = (line for line in handle if not line.startswith("#"))
@@ -48,7 +54,13 @@ def load_study_condition_pairs(full_dump_path: Path) -> pd.DataFrame:
             bsdb_id = clean_value(row.get("BSDB ID"))
             condition = clean_value(row.get("Condition"))
             host_species = clean_value(row.get("Host species"))
-            if not bsdb_id or not condition or host_species != HUMAN_HOST_SPECIES:
+            sequencing_type = clean_value(row.get("Sequencing type"))
+            if (
+                not bsdb_id
+                or not condition
+                or host_species != HUMAN_HOST_SPECIES
+                or sequencing_type not in CORPUS_SEQUENCING_TYPES
+            ):
                 continue
             study_id = study_id_from_bsdb_id(bsdb_id)
             experiment_id = experiment_id_from_bsdb_id(bsdb_id)
@@ -164,7 +176,8 @@ def save_condition_heatmap(
     cluster.ax_heatmap.set_ylabel("Condition")
     cluster.ax_heatmap.set_title(
         "BugSigDB Human-Host Condition x Genus Clustered Heatmap\n"
-        "Cell values are the fraction of human-host studies in each condition containing the genus",
+        "Cell values are the fraction of human-host 16S and shotgun studies in each condition "
+        "containing the genus",
         pad=18,
     )
 

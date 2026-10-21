@@ -35,6 +35,7 @@ def test_filter_human_host_profiles_keeps_only_homo_sapiens() -> None:
                 "Mus musculus",
                 "Canis lupus familiaris",
             ],
+            "sequencing_type": ["16S", "16S", "16S", "WMS"],
         },
         index=profile_matrix.index,
     )
@@ -47,6 +48,19 @@ def test_filter_human_host_profiles_keeps_only_homo_sapiens() -> None:
     assert list(filtered_matrix.index) == ["study1|exp1|inc", "study1|exp1|dec"]
     assert list(filtered_metadata.index) == ["study1|exp1|inc", "study1|exp1|dec"]
     assert set(filtered_metadata["host_species"]) == {"Homo sapiens"}
+
+
+def test_filter_human_host_profiles_drops_other_sequencing_types() -> None:
+    """A human PCR or untyped profile in a non-default input is left out (#754)."""
+    profile_matrix = pd.DataFrame(
+        {"METPO:1": [1, 2, 3]}, index=["s1|e1|inc", "s2|e1|inc", "s3|e1|inc"]
+    )
+    profile_metadata = pd.DataFrame(
+        {"host_species": "Homo sapiens", "sequencing_type": ["WMS", "PCR", None]},
+        index=profile_matrix.index,
+    )
+    filtered_matrix, _ = heatmap.filter_human_host_profiles(profile_matrix, profile_metadata)
+    assert list(filtered_matrix.index) == ["s1|e1|inc"]
 
 
 def test_filter_human_host_profiles_fails_without_host_species() -> None:

@@ -31,6 +31,7 @@ HEADER = (
     "Body site",
     "UBERON ID",
     "Host species",
+    "Sequencing type",
     "Group 0 name",
     "Group 1 name",
     "Group 1 definition",
@@ -107,7 +108,11 @@ def corpus(tmp_path: Path) -> Corpus:
         ("2", "1", "Asthma", "Healthy controls", "Asthma patients", "Mus musculus", True),
         ("3", "1", "Asthma", "Healthy controls", "Asthma patients", "Homo sapiens", False),
         ("4", "1", "Asthma", "Placebo group", "Drug treatment group", "Homo sapiens", True),
+        ("5", "1", "Asthma", "Healthy controls", "Asthma patients", "Homo sapiens", True),
+        ("6", "1", "Asthma", "Healthy controls", "Asthma patients", "Homo sapiens", False),
     )
+    # Every other experiment is 16S, which the profiles keep (#742)
+    fungal = {("5", "1"): "ITS / ITS2", ("6", "1"): "ITS / ITS2"}
     rows = []
     for study, experiment, condition, group0, group1, host, paired in examples:
         directions = ["increased", "decreased"] if paired else ["increased"]
@@ -125,6 +130,7 @@ def corpus(tmp_path: Path) -> Corpus:
                     "Condition": condition,
                     "Body site": "stool",
                     "Host species": host,
+                    "Sequencing type": fungal.get((study, experiment), "16S"),
                     "Group 0 name": group0,
                     "Group 1 name": group1,
                     "Group 1 definition": group1,
@@ -232,7 +238,7 @@ def test_exact_nested_populations_and_single_reversal(
             assert (old["direction"] != new["direction"]) == reversed_
             assert len(new["taxa"]) == 2
     assert source_bytes == {path.name: path.read_bytes() for path in corpus.source.iterdir()}
-    assert audit["counts"]["source"]["experiments"] == 9
+    assert audit["counts"]["source"]["experiments"] == 11
     assert audit["counts"]["selected"]["experiments"] == len(experiments)
     assert corpus.validate(population)["population"] == population
 
@@ -249,6 +255,13 @@ def test_tier2_weak_evidence_is_retained_and_treated_flag_is_not_a_separate_filt
     assert decisions["bsdb:2-1"]["exclusion_reason"] == "non_human"
     assert decisions["bsdb:3-1"]["exclusion_reason"] == "unpaired"
     assert decisions["bsdb:4-1"]["exclusion_reason"] == "contrast_class"
+    # A human paired asthma contrast like bsdb:2-1, but sequenced by ITS (#742)
+    assert decisions["bsdb:5-1"]["exclusion_reason"] == "sequencing_type"
+    # An ITS experiment excluded for another reason keeps that reason (#761)
+    assert decisions["bsdb:6-1"]["exclusion_reason"] == "unpaired"
+    assert audit["schema_version"] == "contrast-selection-v2"
+    assert decisions["bsdb:5-1"]["sequencing_type"] == "ITS / ITS2"
+    assert audit["policy"]["sequencing_types"] == ["16S", "WMS"]
 
 
 @pytest.mark.parametrize(

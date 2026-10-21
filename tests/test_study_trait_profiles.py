@@ -10,6 +10,7 @@ from bsdbng.study_trait_profiles import (
 )
 from bsdbng.taxa_trait_matrix import create_taxa_trait_matrix
 from bsdbng.trait_guilds import retained_trait_columns
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 
 
 def _write_study_yaml(study_dir: Path) -> None:
@@ -716,3 +717,46 @@ def test_without_the_drop_every_matrix_column_is_written(tmp_path: Path) -> None
     assert main([*argv, "--output", str(output), "--host-species", "Homo sapiens"]) == 0
     header = output.read_text(encoding="utf-8").splitlines()[0].split("\t")
     assert header[3:] == ["METPO:1", "METPO:MOUSE", "mediadive.medium:1", "METPO:2"]
+
+
+def test_the_sequencing_filter_keeps_16s_and_shotgun_experiments(tmp_path: Path) -> None:
+    """Only 16S and WMS experiments enter the corpus; ITS, 18S, PCR and an experiment
+    with no recorded type are left out (#742)."""
+    study_dir = tmp_path / "studies"
+    study_dir.mkdir()
+    sequencing_types = ["16S", "WMS", "ITS / ITS2", "18S", "PCR", None]
+    study = {
+        "id": "bsdb:99",
+        "experiments": [
+            {
+                "id": f"bsdb:99-{index}",
+                "host_species": "Homo sapiens",
+                "sequencing_type": sequencing_type,
+                "signatures": [
+                    {
+                        "id": f"bsdb:99-{index}-1",
+                        "direction": "increased",
+                        "taxa": [{"id": "NCBITaxon:1", "taxon_name": "Taxon one"}],
+                    }
+                ],
+            }
+            for index, sequencing_type in enumerate(sequencing_types, start=1)
+        ],
+    }
+    (study_dir / "bsdb_99.yaml").write_text(
+        yaml.dump(study, default_flow_style=False, sort_keys=False), encoding="utf-8"
+    )
+    matrix = tmp_path / "taxa_trait_matrix.tsv"
+    matrix.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1\nNCBITaxon:1\tTaxon one\tspecies\t1\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "profiles.tsv"
+    argv = ["--study-dir", str(study_dir), "--taxa-trait-matrix", str(matrix)]
+    argv += ["--output", str(output), "--host-species", "Homo sapiens"]
+    assert main([*argv, "--sequencing-types", *CORPUS_SEQUENCING_TYPES]) == 0
+    assert [row["experiment_id"] for row in _read_tsv(output)] == ["bsdb:99-1", "bsdb:99-2"]
+
+    # Without the filter every experiment is kept
+    assert main(argv) == 0
+    assert len(_read_tsv(output)) == len(sequencing_types)

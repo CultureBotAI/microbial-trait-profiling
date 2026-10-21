@@ -21,6 +21,7 @@ from mtp.corpus_identity import (
     write_identity,
 )
 from mtp.download import BUGSIGDB_EXPORTS_VERSION, PINNED_FULL_DUMP_MD5
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.paths import file_sha256
 from mtp.trait_composition import (
     LogRatioResult,
@@ -403,11 +404,19 @@ def test_rerun_recipe_hygiene_invariants() -> None:
     noel_script = (repo_root / "scripts" / "rerun_directional_consistency_arm_noel.sh").read_text(
         encoding="utf-8"
     )
-    # The standalone canonical recipe keeps its human-only contract (#656).
+    # The standalone canonical recipe keeps its human-only contract (#656), on 16S and
+    # shotgun experiments only (#742).
     assert (
         "study-trait-profiles: taxa-trait-matrix\n"
         '\tuv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" '
-        "--drop-empty-traits\n" in justfile_text
+        f"--sequencing-types {' '.join(CORPUS_SEQUENCING_TYPES)} --drop-empty-traits\n"
+        in justfile_text
+    )
+    assert (
+        "study-trait-profiles-ora:\n"
+        "\tuv run python scripts/create_study_trait_profiles.py --binary --include-taxa-count "
+        f'--host-species "Homo sapiens" --sequencing-types {" ".join(CORPUS_SEQUENCING_TYPES)}\n'
+        in justfile_text
     )
     jed_script = (repo_root / "scripts" / "rerun_composition_arm_jed.sh").read_text(
         encoding="utf-8"

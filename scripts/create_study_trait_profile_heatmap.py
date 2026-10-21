@@ -20,6 +20,7 @@ from mtp.composition_denominators import (
     retained_trait_counts,
     trait_fractions,
 )
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
@@ -32,6 +33,8 @@ EXPERIMENT_LABEL_COLUMNS = {
     "body_site": "Body site",
     "location": "Location of subjects",
     "host_species": "Host species",
+    # Read for the corpus's 16S and shotgun rule (#742)
+    "sequencing_type": "Sequencing type",
 }
 REQUIRED_PAIRED_TRAITS = {
     "METPO:1000615": "mesophilic",
@@ -289,19 +292,30 @@ def filter_human_host_profiles(
     profile_matrix: pd.DataFrame,
     profile_metadata: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Keep only human-host profiles before downstream profile or trait selection."""
-    if "host_species" not in profile_metadata.columns:
-        msg = "Cannot apply human-host corpus filter: missing host_species metadata."
-        raise ValueError(msg)
+    """Keep only human-host 16S and shotgun profiles before profile or trait selection.
+
+    The canonical table is already restricted; a non-default input is restricted here
+    too, so its figures match their titles (#742, #754).
+    """
+    for column in ("host_species", "sequencing_type"):
+        if column not in profile_metadata.columns:
+            msg = f"Cannot apply human-host corpus filter: missing {column} metadata."
+            raise ValueError(msg)
 
     host_species = profile_metadata["host_species"].map(clean_value)
-    human_profile_ids = profile_metadata.index[host_species == HUMAN_HOST_SPECIES]
+    sequencing_type = profile_metadata["sequencing_type"].map(clean_value)
+    human_profile_ids = profile_metadata.index[
+        (host_species == HUMAN_HOST_SPECIES) & sequencing_type.isin(CORPUS_SEQUENCING_TYPES)
+    ]
     aligned_profile_ids = profile_matrix.index[profile_matrix.index.isin(human_profile_ids)]
     filtered_matrix = profile_matrix.loc[aligned_profile_ids].copy()
     filtered_metadata = profile_metadata.loc[aligned_profile_ids].copy()
     filtered_metadata["host_species"] = host_species.loc[aligned_profile_ids]
     if filtered_metadata.empty:
-        msg = "No Homo sapiens profiles were available after applying the human-host filter."
+        msg = (
+            "No Homo sapiens 16S or WMS profiles were available after applying the "
+            "human-host filter."
+        )
         raise ValueError(msg)
     return filtered_matrix, filtered_metadata
 

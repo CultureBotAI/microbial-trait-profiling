@@ -275,6 +275,12 @@ classes:
         required: true
         description: Reported host species used by explicit cohort selection.
         title: Host species
+      sequencing_type:
+        required: true
+        description: >-
+          Reported sequencing type used by explicit cohort selection (#742), or an
+          empty TSV value.
+        title: Sequencing type
       location_of_subjects:
         required: true
         description: Reported subject location.

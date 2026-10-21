@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle
 
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
@@ -29,6 +31,8 @@ ANAEROBE_GUILD_SELECTION_TSV = (
 )
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
 HUMAN_HOST_SPECIES = "Homo sapiens"
+# The profile corpus keeps 16S and shotgun (WMS) experiments only (#742)
+SEQUENCING_TYPES_TEXT = " or ".join(CORPUS_SEQUENCING_TYPES)
 
 AEROBE_GUILD_TRAITS = {
     "METPO:1000608": "facultatively aerobic",
@@ -1313,7 +1317,7 @@ def create_workflow_diagram(
             (
                 f"Input: BugSigDBExports {bugsigdb_version} full_dump.csv "
                 f"(BugSigDB {bugsigdb_snapshot}; DOI {bugsigdb_doi}). Figures use "
-                f"{HUMAN_HOST_SPECIES} host samples only: "
+                f"{HUMAN_HOST_SPECIES} host samples sequenced by {SEQUENCING_TYPES_TEXT} only: "
                 f"{count_label(counts, 'profile_count')} profiles from "
                 f"{count_label(counts, 'study_count')} studies become profile-trait "
                 "scores, guild calls, edge tables, and condition-to-body-site Sankey maps."
@@ -1339,7 +1343,7 @@ def create_workflow_diagram(
                 f"{bugsigdb_version} full dump: "
                 f"{count_label(counts, 'full_dump_complete_row_count')} complete rows, "
                 f"{count_label(counts, 'full_dump_study_count')} parsed studies. "
-                f"Host filter: {HUMAN_HOST_SPECIES} only."
+                f"Filters: {HUMAN_HOST_SPECIES} host; {SEQUENCING_TYPES_TEXT} sequencing."
             ),
             "accent": SLATE_700,
             "facecolor": "white",
@@ -1487,7 +1491,8 @@ def create_workflow_diagram(
         height=9.4,
         title="Shared profile metadata",
         body=(
-            f"{count_label(counts, 'profile_count')} {HUMAN_HOST_SPECIES} profiles; "
+            f"{count_label(counts, 'profile_count')} {HUMAN_HOST_SPECIES} "
+            f"{' and '.join(CORPUS_SEQUENCING_TYPES)} profiles; "
             f"{count_label(counts, 'experiment_count')} experiments; "
             f"{count_label(counts, 'condition_count')} conditions; "
             f"{count_label(counts, 'body_site_count')} raw body sites in "

@@ -538,9 +538,12 @@ taxa-trait-matrix: download-kg study-tsvs
 
 # The analyses read human hosts only, without the trait columns that are zero in every
 # human profile, as committed in data/derived/study_trait_profiles_wide.tsv.gz (#656).
-# Build the canonical study trait profile table (human hosts, non-empty trait columns).
+# They also read 16S and shotgun (WMS) experiments only, the values of
+# mtp.human_host_corpus.CORPUS_SEQUENCING_TYPES (#742).
+# Build the canonical study trait profile table (human hosts, 16S and WMS experiments,
+# non-empty trait columns).
 study-trait-profiles: taxa-trait-matrix
-	uv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" --drop-empty-traits
+	uv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" --sequencing-types 16S WMS --drop-empty-traits
 
 # After an intended input change, such as a BugSigDB release or a new KG pin, refresh the
 # committed copy with `just study-trait-profiles-refresh-gz` and commit it (#667).
@@ -591,7 +594,7 @@ table1-native-summary output="data/derived/table1_taxon_influence":
 	uv run python -m mtp.native_influence_publication --source "{{output}}" --destination "{{output}}/review"
 
 study-trait-profiles-ora:
-	uv run python scripts/create_study_trait_profiles.py --binary --include-taxa-count --host-species "Homo sapiens"
+	uv run python scripts/create_study_trait_profiles.py --binary --include-taxa-count --host-species "Homo sapiens" --sequencing-types 16S WMS
 
 # Trait enrichment analysis (ORA) with hypergeometric test and Benjamini-Hochberg FDR.
 analyze: study-trait-profiles-ora
