@@ -1,16 +1,16 @@
 label	display_trait_edge_count	display_trait_count	focus_enriched_profile_count	focus_enriched_study_count	profile_count	node_type	area_scale_max_profiles	radius_axis_units
-Metabolic / endocrine	12	6	1141	84	489	condition	1592.0	0.018843510539367028
-Neurologic / cognitive disease	12	6	1048	93	420	condition	1592.0	0.01746352983711653
-Infectious disease	36	6	1266	111	479	condition	1592.0	0.01864984136432728
-Cancer / neoplasia	30	6	969	79	381	condition	1592.0	0.016632972641547644
-Colorectal neoplasia	18	6	535	56	192	condition	1592.0	0.011807501235533948
-Reproductive / hormonal health	12	6	287	30	125	condition	1592.0	0.009527136592822182
-Ocular / eye disease	12	6	218	16	73	condition	1592.0	0.007280627561442916
-Respiratory / airway disease	12	6	172	14	56	condition	1592.0	0.006376779483635496
-Feces	72	6	4070	336	1592	body_site_group	1592.0	0.034
-Vaginal / reproductive	24	6	559	53	227	body_site_group	1592.0	0.012838678214343457
-Oral cavity / dental	12	6	339	32	152	body_site_group	1592.0	0.010505801221062696
-Ocular / eye	12	6	218	16	73	body_site_group	1592.0	0.007280627561442916
-Upper airway / nasal	12	6	281	24	110	body_site_group	1592.0	0.008937246324192733
-Stomach / esophagus	6	6	90	9	26	body_site_group	1592.0	0.004345042805879434
-Lower GI tract	6	6	79	14	35	body_site_group	1592.0	0.005041286826230146
+Neurologic / cognitive disease	12	6	1032	92	411	condition	1519.0	0.017685646538437728
+Metabolic / endocrine	12	6	1055	81	456	condition	1519.0	0.01862869582384748
+Infectious disease	42	6	1329	120	509	condition	1519.0	0.01968153293429769
+Cancer / neoplasia	30	6	967	78	367	condition	1519.0	0.016712178369653607
+Colorectal neoplasia	18	6	528	56	192	condition	1519.0	0.01208789404142896
+Reproductive / hormonal health	12	6	282	29	110	condition	1519.0	0.009149479168706337
+Ocular / eye disease	12	6	216	16	73	condition	1519.0	0.007453520669807448
+Respiratory / airway disease	6	6	79	13	27	condition	1519.0	0.004532960265535859
+Feces	66	6	3852	331	1519	body_site_group	1519.0	0.034
+Vaginal / reproductive	24	6	552	52	212	body_site_group	1519.0	0.012701878687251287
+Oral cavity / dental	18	6	420	45	174	body_site_group	1519.0	0.011507332293405908
+Ocular / eye	12	6	216	16	73	body_site_group	1519.0	0.007453520669807448
+Upper airway / nasal	12	6	279	24	110	body_site_group	1519.0	0.009149479168706337
+Stomach / esophagus	6	6	90	9	22	body_site_group	1519.0	0.004091771475989127
+Lower GI tract	6	6	79	14	35	body_site_group	1519.0	0.005161002296110788

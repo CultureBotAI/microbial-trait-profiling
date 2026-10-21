@@ -1,77 +1,77 @@
 raw_condition	condition	condition_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
-Parkinson's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	276	59	133	198
-Colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	198	55	93	139
-Obesity	Metabolic / endocrine	metabolic/endocrine condition group	173	37	83	138
-COVID-19	Infectious disease	infectious-disease condition group	141	33	69	77
-Irritable bowel syndrome	GI / digestive disease	gi/digestive condition group	99	17	49	78
-Antimicrobial agent	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	98	22	53	65
-Population	Population / social covariates	population/social-covariate condition group	96	4	44	59
-HIV infection	Infectious disease	infectious-disease condition group	94	30	47	69
-Diet	Diet / nutrition / supplements	diet/nutrition/supplement condition group	94	18	40	71
-Chronic constipation	GI / digestive disease	gi/digestive condition group	89	15	41	69
+Parkinson's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	271	57	130	194
+Colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	198	55	93	138
+Obesity	Metabolic / endocrine	metabolic/endocrine condition group	173	37	83	136
+COVID-19	Infectious disease	infectious-disease condition group	123	31	62	74
+Irritable bowel syndrome	GI / digestive disease	gi/digestive condition group	98	16	48	75
+Population	Population / social covariates	population/social-covariate condition group	96	4	44	57
+HIV infection	Infectious disease	infectious-disease condition group	94	30	47	67
+Diet	Diet / nutrition / supplements	diet/nutrition/supplement condition group	94	18	40	70
+Antimicrobial agent	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	93	20	50	62
+Chronic constipation	GI / digestive disease	gi/digestive condition group	89	15	41	68
 Human papilloma virus infection	Infectious disease	infectious-disease condition group	81	22	36	44
-Gastric cancer	Cancer / neoplasia	cancer/neoplasia condition group	75	14	37	38
-Gestational diabetes	Metabolic / endocrine	metabolic/endocrine condition group	70	12	33	49
-Polycystic ovary syndrome	Metabolic / endocrine	metabolic/endocrine condition group	64	14	30	35
-Type II diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	62	21	30	47
-Age	Age / development / sex	age/development/sex condition group	60	16	23	39
-Asthma	Respiratory / airway disease	respiratory/airway condition group	54	12	26	33
+Gastric cancer	Cancer / neoplasia	cancer/neoplasia condition group	67	13	33	38
+Gestational diabetes	Metabolic / endocrine	metabolic/endocrine condition group	67	12	32	47
+Type II diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	60	21	29	47
+Age	Age / development / sex	age/development/sex condition group	60	16	23	37
+Polycystic ovary syndrome	Metabolic / endocrine	metabolic/endocrine condition group	54	13	25	35
+Asthma	Respiratory / airway disease	respiratory/airway condition group	54	12	26	32
 Metabolic toxicity	Metabolic / endocrine	metabolic/endocrine condition group	53	1	27	38
-Schizophrenia	Psychiatric / behavioral health	psychiatric/behavioral condition group	52	17	27	32
-Cervical glandular intraepithelial neoplasia	Reproductive / hormonal health	reproductive/hormonal condition group	50	12	20	35
+Cervical glandular intraepithelial neoplasia	Reproductive / hormonal health	reproductive/hormonal condition group	50	12	20	34
 Dry eye syndrome	Ocular / eye disease	ocular/eye condition group	50	11	21	19
+Schizophrenia	Psychiatric / behavioral health	psychiatric/behavioral condition group	48	16	25	31
 Aging	Age / development / sex	age/development/sex condition group	48	5	21	28
-Lifestyle measurement	Activity / lifestyle score	activity/lifestyle-score condition group	47	7	19	31
 Diet measurement	Diet / nutrition / supplements	diet/nutrition/supplement condition group	47	6	30	38
-Rheumatoid arthritis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	45	14	22	27
-Ulcerative colitis	Inflammatory bowel disease	ibd condition group	45	14	23	30
-Crohn's disease	Inflammatory bowel disease	ibd condition group	45	13	24	35
-Ovarian cancer	Cancer / neoplasia	cancer/neoplasia condition group	45	4	18	20
+Crohn's disease	Inflammatory bowel disease	ibd condition group	45	13	24	34
+Rheumatoid arthritis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	43	13	21	25
+Ulcerative colitis	Inflammatory bowel disease	ibd condition group	43	13	22	28
 Endometriosis	Reproductive / hormonal health	reproductive/hormonal condition group	43	12	15	29
 Stroke	Stroke	stroke condition group	43	5	15	24
-Atopic eczema	Skin / hair disease	skin/hair condition group	40	9	17	26
+Ovarian cancer	Cancer / neoplasia	cancer/neoplasia condition group	43	3	17	18
+Atopic eczema	Skin / hair disease	skin/hair condition group	40	9	17	25
 Ethnic group	Population / social covariates	population/social-covariate condition group	39	8	19	30
-Health study participation	Population / social covariates	population/social-covariate condition group	36	7	13	17
+Lifestyle measurement	Activity / lifestyle score	activity/lifestyle-score condition group	36	6	13	31
 Pancreatic carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	35	6	16	23
 Psoriasis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	34	10	18	24
 Smoking behavior	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	33	11	16	22
-Colorectal adenoma	Colorectal neoplasia	colorectal neoplasia condition group	32	11	14	21
+Colorectal adenoma	Colorectal neoplasia	colorectal neoplasia condition group	32	11	14	19
 Response to antiviral drug	Infectious disease	infectious-disease condition group	32	6	18	27
 Chronic kidney disease	Renal / urinary disease	renal/urinary condition group	31	10	15	21
 Breast cancer	Cancer / neoplasia	cancer/neoplasia condition group	31	8	15	22
-Response to transplant	Transplant / graft response	transplant/graft condition group	30	6	13	15
 Atopic asthma	Respiratory / airway disease	respiratory/airway condition group	30	2	14	17
 Cesarean section	Pregnancy / neonatal	pregnancy/neonatal condition group	29	8	15	17
-Food allergy	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	28	9	14	23
 Multiple sclerosis	Neurologic / cognitive disease	neurologic/cognitive condition group	28	6	14	24
 Response to diet	Medication / clinical treatment	medication/clinical-treatment condition group	28	6	14	16
 Socioeconomic status	Population / social covariates	population/social-covariate condition group	27	11	13	25
 Lung cancer	Respiratory / airway disease	respiratory/airway condition group	27	8	11	14
 Hypertension	Cardiovascular disease	cardiovascular condition group	27	3	15	14
-Phenylketonuria	Metabolic / endocrine	metabolic/endocrine condition group	27	2	14	14
+Phenylketonuria	Metabolic / endocrine	metabolic/endocrine condition group	27	2	14	10
 Helminthiasis	Infectious disease	infectious-disease condition group	27	1	15	13
 Smoking behaviour measurement	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	27	1	13	18
-Eczema	Skin / hair disease	skin/hair condition group	26	4	16	12
-Oral squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	25	7	13	15
-Head and neck squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	25	4	12	13
+Response to transplant	Transplant / graft response	transplant/graft condition group	26	5	11	15
+Eczema	Skin / hair disease	skin/hair condition group	26	4	16	11
 Psoriasis vulgaris	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	25	1	11	22
-Non-alcoholic fatty liver disease	GI / digestive disease	gi/digestive condition group	24	7	12	12
-Age-related macular degeneration	Ocular / eye disease	ocular/eye condition group	24	5	12	15
+Food allergy	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	24	8	12	19
 Human immunodeficiency virus	Infectious disease	infectious-disease condition group	24	4	13	18
 Diarrhea	GI / digestive disease	gi/digestive condition group	24	3	12	12
 Constipation	GI / digestive disease	gi/digestive condition group	23	7	12	15
 Periodontitis	Oral / periodontal disease	oral/periodontal condition group	23	7	10	16
+Oral squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	23	6	12	12
 Glaucoma	Ocular / eye disease	ocular/eye condition group	23	5	10	9
 Smoking status measurement	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	23	5	10	12
-Cervical cancer	Cancer / neoplasia	cancer/neoplasia condition group	22	7	11	14
-Treatment	Medication / clinical treatment	medication/clinical-treatment condition group	22	5	11	14
-Attention deficit-hyperactivity disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	22	3	10	15
+Cervical cancer	Cancer / neoplasia	cancer/neoplasia condition group	22	7	11	13
+Health study participation	Population / social covariates	population/social-covariate condition group	22	6	9	8
+Non-alcoholic fatty liver disease	GI / digestive disease	gi/digestive condition group	22	6	11	10
+Age-related macular degeneration	Ocular / eye disease	ocular/eye condition group	22	5	11	14
+Attention deficit-hyperactivity disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	22	3	10	14
 Time	Sampling site / time protocol	sampling-site/time condition group	22	2	1	22
 Obstructive sleep apnea	Neurologic / cognitive disease	neurologic/cognitive condition group	22	1	12	11
-Delivery method	Pregnancy / neonatal	pregnancy/neonatal condition group	21	6	11	14
-Response to allogeneic hematopoietic stem cell transplant	Blood / immune deficiency	blood/immune-deficiency condition group	20	5	11	10
+Delivery method	Pregnancy / neonatal	pregnancy/neonatal condition group	20	5	11	13
+Response to allogeneic hematopoietic stem cell transplant	Blood / immune deficiency	blood/immune-deficiency condition group	20	5	11	9
 Squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	20	5	11	13
+Head and neck squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	20	4	10	12
 Health-related quality of life measurement	Disease activity / severity	disease-activity/severity condition group	20	4	10	14
+Treatment	Medication / clinical treatment	medication/clinical-treatment condition group	20	4	10	12
 Acute lymphoblastic leukemia	Cancer / neoplasia	cancer/neoplasia condition group	19	5	6	12
 Major depressive disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	19	5	10	13
 Esophageal squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	19	3	10	15
@@ -80,10 +80,8 @@ Response to drug	Medication / clinical treatment	medication/clinical-treatment c
 Response to immunochemotherapy	Medication / clinical treatment	medication/clinical-treatment condition group	18	9	9	14
 Type I diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	18	6	10	14
 Bipolar disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	18	4	7	13
-Oral mucositis	Oral / periodontal disease	oral/periodontal condition group	18	3	8	11
+Oral mucositis	Oral / periodontal disease	oral/periodontal condition group	18	3	8	10
 Waist circumference	Body composition / growth	body-composition/growth condition group	18	2	8	9
-Bacterial vaginosis	Reproductive / hormonal health	reproductive/hormonal condition group	17	4	7	4
-Alzheimer's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	16	6	8	11
 Environmental exposure measurement	Diet / nutrition / supplements	diet/nutrition/supplement condition group	16	5	8	9
 Epilepsy	Neurologic / cognitive disease	neurologic/cognitive condition group	16	5	6	10
 Breastfeeding duration	Pregnancy / neonatal	pregnancy/neonatal condition group	16	2	8	13
@@ -93,24 +91,22 @@ Chronic fatigue syndrome	Psychiatric / behavioral health	psychiatric/behavioral 
 Cognitive impairment	Neurologic / cognitive disease	neurologic/cognitive condition group	15	4	7	7
 HIV mother to child transmission	Infectious disease	infectious-disease condition group	15	1	8	13
 Viral disease	Infectious disease	infectious-disease condition group	15	1	7	4
+Alzheimer's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	14	5	7	10
 Graft versus host disease	Transplant / graft response	transplant/graft condition group	14	5	7	11
 Autism	Neurologic / cognitive disease	neurologic/cognitive condition group	14	4	6	9
 Milk allergic reaction	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	14	4	6	11
 Gastric adenocarcinoma	Cancer / neoplasia	cancer/neoplasia condition group	14	3	6	7
-Dental caries	Oral / periodontal disease	oral/periodontal condition group	14	2	7	6
 Pregnancy	Pregnancy / neonatal	pregnancy/neonatal condition group	13	5	6	8
 Chronic obstructive pulmonary disease	Respiratory / airway disease	respiratory/airway condition group	13	4	6	8
 Microbiome	Microbiome phenotype	microbiome-phenotype condition group	13	4	5	8
 Urinary tract infection	Infectious disease	infectious-disease condition group	13	4	6	8
 Alcohol drinking	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	13	3	7	10
 Colorectal carcinoma	Colorectal neoplasia	colorectal neoplasia condition group	13	3	7	8
-Unipolar depression	Psychiatric / behavioral health	psychiatric/behavioral condition group	13	3	6	11
+Unipolar depression	Psychiatric / behavioral health	psychiatric/behavioral condition group	13	3	6	10
 Chlamydia trachomatis	Infectious disease	infectious-disease condition group	13	2	6	3
 Response to ketogenic diet	Medication / clinical treatment	medication/clinical-treatment condition group	13	2	8	11
 Respiratory Syncytial Virus Infection	Infectious disease	infectious-disease condition group	13	1	6	0
-Acne	Skin / hair disease	skin/hair condition group	12	4	7	4
 Clinical treatment	Medication / clinical treatment	medication/clinical-treatment condition group	12	4	6	9
-Inflammatory bowel disease	Inflammatory bowel disease	ibd condition group	12	4	5	8
 Chronic hepatitis B virus infection	Infectious disease	infectious-disease condition group	12	3	6	8
 Diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	12	3	6	7
 Ischemic stroke	Stroke	stroke condition group	12	3	4	9
@@ -122,9 +118,10 @@ Premature birth	Pregnancy / neonatal	pregnancy/neonatal condition group	11	4	6	6
 Endometrial cancer	Cancer / neoplasia	cancer/neoplasia condition group	11	3	5	6
 Hepatocellular carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	11	3	6	10
 Response to vaccine	Medication / clinical treatment	medication/clinical-treatment condition group	11	2	5	6
+Acne	Skin / hair disease	skin/hair condition group	10	3	6	4
 Esophageal cancer	Cancer / neoplasia	cancer/neoplasia condition group	10	3	5	4
 Vitiligo	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	10	3	5	6
-Gingivitis	Oral / periodontal disease	oral/periodontal condition group	10	2	8	4
+Gingivitis	Oral / periodontal disease	oral/periodontal condition group	10	2	8	2
 Physical activity	Activity / lifestyle score	activity/lifestyle-score condition group	10	2	5	7
 Respiratory tract infectious disease	Infectious disease	infectious-disease condition group	10	2	4	6
 Spontaneous preterm birth	Pregnancy / neonatal	pregnancy/neonatal condition group	10	2	5	6
@@ -132,9 +129,9 @@ Autoantibody measurement	Immune biomarker	immune-biomarker condition group	10	1	
 Body odor measurement	ENT / oral mucosal disease	ent/oral-mucosal condition group	10	1	6	7
 COPRO-seq	Other specific clinical labels	other-specific-clinical-label condition group	10	1	5	10
 Helicobacter pylori	Infectious disease	infectious-disease condition group	10	1	5	0
-Air pollution	Environmental / chemical exposure	environmental/chemical condition group	9	3	5	4
+Air pollution	Environmental / chemical exposure	environmental/chemical condition group	9	3	5	3
 Iron deficiency anemia	Blood / immune deficiency	blood/immune-deficiency condition group	9	3	5	6
-Response to antibiotic	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	9	3	4	6
+Response to antibiotic	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	9	3	4	5
 Birth measurement	Age / development / sex	age/development/sex condition group	9	2	5	6
 Multiple myeloma	Cancer / neoplasia	cancer/neoplasia condition group	9	2	4	4
 Obsessive-compulsive disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	9	2	5	8
@@ -145,21 +142,21 @@ Hypertrophy	Body composition / growth	body-composition/growth condition group	9	
 Lewy body dementia	Neurologic / cognitive disease	neurologic/cognitive condition group	9	1	3	9
 Allergic rhinitis	Respiratory / airway disease	respiratory/airway condition group	8	4	4	4
 Disease progression measurement	Disease activity / severity	disease-activity/severity condition group	8	3	3	3
-Risk factor	Disease activity / severity	disease-activity/severity condition group	8	3	4	7
+Risk factor	Disease activity / severity	disease-activity/severity condition group	8	3	4	6
 Autoimmune disease	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	8	2	4	4
+Dental caries	Oral / periodontal disease	oral/periodontal condition group	8	2	4	6
 Intestinal polyp	GI / digestive disease	gi/digestive condition group	8	2	4	5
 Aggressive periodontitis	Oral / periodontal disease	oral/periodontal condition group	8	1	4	4
 Cannabis use	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	8	1	4	2
 Cardiovascular disease	Cardiovascular disease	cardiovascular condition group	8	1	4	6
 Clostridium difficile infection	Infectious disease	infectious-disease condition group	8	1	4	4
 Genital neoplasm, female	Cancer / neoplasia	cancer/neoplasia condition group	8	1	4	6
-Glucose	Metabolic / endocrine	metabolic/endocrine condition group	8	1	4	6
 Grey matter volume measurement	Brain morphology measurement	brain-morphology condition group	8	1	4	5
 Hippocampal volume	Other specific clinical labels	other-specific-clinical-label condition group	8	1	4	7
 Hormone	Other specific clinical labels	other-specific-clinical-label condition group	8	1	6	5
 Hypothyroidism	Metabolic / endocrine	metabolic/endocrine condition group	8	1	6	1
 Increased intestinal transit time	Sampling site / time protocol	sampling-site/time condition group	8	1	3	8
-Methamphetamine dependence	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	8	1	4	7
+Methamphetamine dependence	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	8	1	4	6
 Peutz-Jeghers Polyp	Cancer / neoplasia	cancer/neoplasia condition group	8	1	4	2
 Preeclampsia	Pregnancy / neonatal	pregnancy/neonatal condition group	8	1	4	8
 SARS coronavirus	Infectious disease	infectious-disease condition group	8	1	4	7
@@ -168,6 +165,7 @@ Visceral adipose tissue measurement	Body composition / growth	body-composition/g
 White matter volume measurement	Other specific clinical labels	other-specific-clinical-label condition group	8	1	4	7
 Anorexia nervosa	Psychiatric / behavioral health	psychiatric/behavioral condition group	7	3	4	4
 Autism spectrum disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	7	3	2	6
+Inflammatory bowel disease	Inflammatory bowel disease	ibd condition group	7	3	2	5
 Anxiety disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	7	2	3	6
 Head and neck carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	7	2	4	4
 Human papillomavirus	Infectious disease	infectious-disease condition group	7	2	4	4
@@ -180,9 +178,7 @@ Essential thrombocythemia	Blood / immune deficiency	blood/immune-deficiency cond
 Female infertility	Reproductive / hormonal health	reproductive/hormonal condition group	7	1	2	4
 High altitude adaptation	Environmental / chemical exposure	environmental/chemical condition group	7	1	2	6
 Hypertriglyceridemia	Other specific clinical labels	other-specific-clinical-label condition group	7	1	4	4
-Insulin	Metabolic / endocrine	metabolic/endocrine condition group	7	1	4	4
 Medroxyprogesterone acetate	Reproductive / hormonal health	reproductive/hormonal condition group	7	1	3	6
-Metabolic process	Metabolic / endocrine	metabolic/endocrine condition group	7	1	4	3
 Response to risperidone	Medication / clinical treatment	medication/clinical-treatment condition group	7	1	5	6
 Systemic lupus erythematosus	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	7	1	4	3
 Arthritis	Musculoskeletal / connective tissue	musculoskeletal/connective condition group	6	4	3	3
@@ -193,10 +189,8 @@ Chlamydia trachomatis infectious disease	Infectious disease	infectious-disease c
 Fasting blood glucose measurement	Metabolic / endocrine	metabolic/endocrine condition group	6	3	3	5
 Sampling site	Sampling site / time protocol	sampling-site/time condition group	6	3	2	4
 Acute graft vs. host disease	Transplant / graft response	transplant/graft condition group	6	2	4	4
-Acute myeloid leukemia	Cancer / neoplasia	cancer/neoplasia condition group	6	2	3	0
 Biliary atresia	GI / digestive disease	gi/digestive condition group	6	2	3	4
-Breast carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	6	2	3	4
-Diabetic retinopathy	Ocular / eye disease	ocular/eye condition group	6	2	3	4
+Breast carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	6	2	3	3
 Menopause	Reproductive / hormonal health	reproductive/hormonal condition group	6	2	3	1
 Non-alcoholic steatohepatitis	Infectious disease	infectious-disease condition group	6	2	2	6
 Prediabetes syndrome	Metabolic / endocrine	metabolic/endocrine condition group	6	2	3	2
@@ -215,7 +209,7 @@ Relapsing-remitting multiple sclerosis	Neurologic / cognitive disease	neurologic
 Response to radiation	Medication / clinical treatment	medication/clinical-treatment condition group	6	1	3	5
 Sensory perception of bitter taste	ENT / oral mucosal disease	ent/oral-mucosal condition group	6	1	3	5
 Small intestine enteropathy	GI / digestive disease	gi/digestive condition group	6	1	2	4
-Specimen	Other specific clinical labels	other-specific-clinical-label condition group	6	1	3	2
+Specimen	Other specific clinical labels	other-specific-clinical-label condition group	6	1	3	1
 Transplant outcome measurement	Transplant / graft response	transplant/graft condition group	6	1	3	4
 Upper digestive tract disease	Other specific clinical labels	other-specific-clinical-label condition group	6	1	0	2
 Bowel dysfunction	Other specific clinical labels	other-specific-clinical-label condition group	5	3	4	3
@@ -231,7 +225,7 @@ Colorectal cancer,Diabetes mellitus	Colorectal neoplasia	colorectal neoplasia co
 Dementia	Neurologic / cognitive disease	neurologic/cognitive condition group	5	1	1	4
 Fat intake measurement	Diet / nutrition / supplements	diet/nutrition/supplement condition group	5	1	3	5
 Hyperglycemia	Other specific clinical labels	other-specific-clinical-label condition group	5	1	2	2
-Intestinal obstruction	GI / digestive disease	gi/digestive condition group	5	1	2	2
+Intestinal obstruction	GI / digestive disease	gi/digestive condition group	5	1	2	1
 Mood disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	5	1	2	5
 Mucositis	ENT / oral mucosal disease	ent/oral-mucosal condition group	5	1	2	3
 Nasopharyngeal squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	5	1	2	2
@@ -241,8 +235,6 @@ Sleep duration	Neurologic / cognitive disease	neurologic/cognitive condition gro
 Treatment refractory schizophrenia	Psychiatric / behavioral health	psychiatric/behavioral condition group	5	1	2	2
 Total cholesterol measurement	Metabolic / endocrine	metabolic/endocrine condition group	4	3	2	2
 Attention deficit hyperactivity disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	4	2	2	2
-Diabetic nephropathy	Renal / urinary disease	renal/urinary condition group	4	2	1	3
-Diabetic neuropathy	Neurologic / cognitive disease	neurologic/cognitive condition group	4	2	2	4
 Estradiol measurement	Reproductive / hormonal health	reproductive/hormonal condition group	4	2	3	3
 Health trait	Experimental phenotype labels	experimental-phenotype-label condition group	4	2	2	2
 Leukemia	Cancer / neoplasia	cancer/neoplasia condition group	4	2	2	3
@@ -263,10 +255,11 @@ Body weight	Body composition / growth	body-composition/growth condition group	4	
 Cancer	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	2
 Cervical squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	4
 Cognitive function measurement	Other specific clinical labels	other-specific-clinical-label condition group	4	1	1	4
+Diabetic retinopathy	Ocular / eye disease	ocular/eye condition group	4	1	2	2
 Disease prognosis measurement	Disease activity / severity	disease-activity/severity condition group	4	1	2	3
 Down syndrome	Neurologic / cognitive disease	neurologic/cognitive condition group	4	1	2	2
 Drug resistance	Medication / clinical treatment	medication/clinical-treatment condition group	4	1	2	2
-Encephalitis	Neurologic / cognitive disease	neurologic/cognitive condition group	4	1	2	1
+Encephalitis	Neurologic / cognitive disease	neurologic/cognitive condition group	4	1	2	0
 Glucose metabolism measurement	Metabolic / endocrine	metabolic/endocrine condition group	4	1	2	4
 Gut microbiome measurement	Microbiome phenotype	microbiome-phenotype condition group	4	1	2	4
 Hepatitis virus-related hepatocellular carcinoma	Infectious disease	infectious-disease condition group	4	1	2	4
@@ -277,8 +270,7 @@ Neonatal jaundice	Pregnancy / neonatal	pregnancy/neonatal condition group	4	1	2	
 Nutraceutical,Colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	4	1	2	3
 Oral leukoplakia	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	0
 Osteoarthritis, knee	Musculoskeletal / connective tissue	musculoskeletal/connective condition group	4	1	2	4
-Osteoarthritis,Rheumatoid arthritis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	4	1	2	3
-Pancreatic ductal adenocarcinoma	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	2
+Osteoarthritis,Rheumatoid arthritis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	4	1	2	2
 Periapical Periodontitis	Oral / periodontal disease	oral/periodontal condition group	4	1	2	2
 Periodontitis,Type II diabetes mellitus	Oral / periodontal disease	oral/periodontal condition group	4	1	2	3
 Primary bacterial infectious disease	Infectious disease	infectious-disease condition group	4	1	2	2
@@ -292,6 +284,7 @@ Tumor size	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	3
 Viral pneumonia	Infectious disease	infectious-disease condition group	4	1	2	2
 Anxiety	Psychiatric / behavioral health	psychiatric/behavioral condition group	3	2	1	2
 Autoimmune type 1 diabetes	Metabolic / endocrine	metabolic/endocrine condition group	3	2	1	2
+Bacterial vaginosis	Reproductive / hormonal health	reproductive/hormonal condition group	3	2	1	3
 Environmental factor	Diet / nutrition / supplements	diet/nutrition/supplement condition group	3	2	1	3
 Fasting blood insulin measurement	Metabolic / endocrine	metabolic/endocrine condition group	3	2	2	1
 Gonorrhea	Infectious disease	infectious-disease condition group	3	2	3	1
@@ -302,6 +295,7 @@ Hormone replacement therapy	Reproductive / hormonal health	reproductive/hormonal
 Lactobacillus rhamnosus GG	Diet / nutrition / supplements	diet/nutrition/supplement condition group	3	2	1	3
 Abnormal stool composition	GI / digestive disease	gi/digestive condition group	3	1	2	3
 Abnormality of the gastrointestinal tract	GI / digestive disease	gi/digestive condition group	3	1	2	2
+Acute myeloid leukemia	Cancer / neoplasia	cancer/neoplasia condition group	3	1	1	0
 Adenomyosis,Endometriosis	Reproductive / hormonal health	reproductive/hormonal condition group	3	1	0	0
 Azithromycin	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	3	1	0	2
 Colorectal Gastrointestinal Stromal Tumor	Cancer / neoplasia	cancer/neoplasia condition group	3	1	1	1
@@ -315,7 +309,6 @@ Graves ophthalmopathy	Ocular / eye disease	ocular/eye condition group	3	1	1	3
 HDL cholesterol	Metabolic / endocrine	metabolic/endocrine condition group	3	1	0	2
 HIV-1 infection	Infectious disease	infectious-disease condition group	3	1	2	3
 Hidradenitis suppurativa	Skin / hair disease	skin/hair condition group	3	1	2	1
-Hypoglycemia	Other specific clinical labels	other-specific-clinical-label condition group	3	1	1	2
 Illness severity status	Disease activity / severity	disease-activity/severity condition group	3	1	1	2
 Necrotizing enterocolitis	GI / digestive disease	gi/digestive condition group	3	1	1	2
 Neoplasm	Cancer / neoplasia	cancer/neoplasia condition group	3	1	1	1
@@ -323,7 +316,7 @@ Postnatal growth retardation	Body composition / growth	body-composition/growth c
 Psoriatic arthritis	Musculoskeletal / connective tissue	musculoskeletal/connective condition group	3	1	2	2
 Response to immune checkpoint inhibitor	Medication / clinical treatment	medication/clinical-treatment condition group	3	1	1	3
 Response to irinotecan	Medication / clinical treatment	medication/clinical-treatment condition group	3	1	1	1
-Response to oxcarbazepine	Medication / clinical treatment	medication/clinical-treatment condition group	3	1	1	2
+Response to oxcarbazepine	Medication / clinical treatment	medication/clinical-treatment condition group	3	1	1	1
 Restricted to specific location	Population / social covariates	population/social-covariate condition group	3	1	1	3
 Retinopathy	Ocular / eye disease	ocular/eye condition group	3	1	1	2
 Rosacea	Skin / hair disease	skin/hair condition group	3	1	2	2
@@ -361,7 +354,6 @@ Body height	Other specific clinical labels	other-specific-clinical-label conditi
 Breast cancer stage	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 C-peptide measurement	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	2
 CD4-positive T-lymphocyte count	Blood / immune deficiency	blood/immune-deficiency condition group	2	1	1	0
-Cancer or benign tumor	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
 Carotid artery intima media thickness	Cardiovascular disease	cardiovascular condition group	2	1	1	2
 Cerebral infarction	Neurologic / cognitive disease	neurologic/cognitive condition group	2	1	1	1
 Cervical carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	0
@@ -383,21 +375,17 @@ Complicated disease course	Other specific clinical labels	other-specific-clinica
 Constipation,Parkinson's disease	GI / digestive disease	gi/digestive condition group	2	1	1	2
 Coronary artery disease	Cardiovascular disease	cardiovascular condition group	2	1	1	2
 Crohn's colitis	Inflammatory bowel disease	ibd condition group	2	1	1	1
-Cutaneous T-cell lymphoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 Cytokine	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	2
-Diabetic foot	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	2
-Diabetic ketoacidosis	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	2
+Diabetic neuropathy	Neurologic / cognitive disease	neurologic/cognitive condition group	2	1	1	1
 Digestive system cancer	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
 Disease recurrence	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
 Distal colitis,Pancolitis	GI / digestive disease	gi/digestive condition group	2	1	1	2
-Doxycycline	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
 Ectopic pregnancy	Pregnancy / neonatal	pregnancy/neonatal condition group	2	1	2	0
 Eczema,Allergic rhinitis	Respiratory / airway disease	respiratory/airway condition group	2	1	1	2
 Eczema,Urticaria	Skin / hair disease	skin/hair condition group	2	1	1	2
 Electroencephalogram measurement	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
 Ethnic group,Socioeconomic status	Population / social covariates	population/social-covariate condition group	2	1	1	2
 Fibromyalgia	Musculoskeletal / connective tissue	musculoskeletal/connective condition group	2	1	1	2
-Gastric adenocarcinoma,Epstein-Barr virus infection	Infectious disease	infectious-disease condition group	2	1	1	0
 Gastric carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
 Glioma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
 Glucose tolerance test	Metabolic / endocrine	metabolic/endocrine condition group	2	1	1	2
@@ -424,7 +412,6 @@ Kidney transplant	Renal / urinary disease	renal/urinary condition group	2	1	1	1
 LDL cholesterol	Metabolic / endocrine	metabolic/endocrine condition group	2	1	1	0
 Leukopenia	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	2
 Luteinizing hormone measurement	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
-M1 distant metastasis stage	Age / development / sex	age/development/sex condition group	2	1	1	0
 Macrophage inflammatory protein 1b measurement	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	2	1	1	2
 Mammographic density measurement	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	2
 Maternal milk	Pregnancy / neonatal	pregnancy/neonatal condition group	2	1	1	1
@@ -442,7 +429,6 @@ Parasitic infection	Infectious disease	infectious-disease condition group	2	1	1	
 Pemphigus vulgaris	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	2	1	1	0
 Peptic esophagitis	GI / digestive disease	gi/digestive condition group	2	1	1	1
 Perceived unattractiveness to mosquitos measurement	Environmental / chemical exposure	environmental/chemical condition group	2	1	1	1
-Phenotype	Experimental phenotype labels	experimental-phenotype-label condition group	2	1	1	1
 Physical activity measurement	Activity / lifestyle score	activity/lifestyle-score condition group	2	1	1	1
 Pituitary Gland Adenoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 Place of residence measurement,Ethnic group	Population / social covariates	population/social-covariate condition group	2	1	1	2
@@ -456,7 +442,6 @@ Pulmonary tuberculosis	Infectious disease	infectious-disease condition group	2	1
 REM sleep behavior disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	2	1	1	2
 Rare dyslipidemia,Polycystic ovary syndrome	Metabolic / endocrine	metabolic/endocrine condition group	2	1	1	1
 Response to clozapine	Medication / clinical treatment	medication/clinical-treatment condition group	2	1	1	1
-Response to platinum-based neoadjuvant chemotherapy	Medication / clinical treatment	medication/clinical-treatment condition group	2	1	1	1
 Response to surgery	Medication / clinical treatment	medication/clinical-treatment condition group	2	1	1	0
 Response to vaccine,Timepoint	Medication / clinical treatment	medication/clinical-treatment condition group	2	1	1	0
 Root caries	Dental / periodontal measurement	dental/periodontal-measurement group	2	1	1	1
@@ -471,7 +456,6 @@ Social interaction measurement	Psychiatric / behavioral health	psychiatric/behav
 Survival time	Disease activity / severity	disease-activity/severity condition group	2	1	1	1
 Temporomandibular joint disorder	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
 Thyroid carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
-Timepoint	Sampling site / time protocol	sampling-site/time condition group	2	1	2	2
 Tongue neoplasm	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	0
 Trichomonas vaginitis	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
 Tumor grading	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
@@ -500,8 +484,8 @@ Creatinine	Other specific clinical labels	other-specific-clinical-label conditio
 Crohn ileitis	Inflammatory bowel disease	ibd condition group	1	1	0	1
 Dehydroepiandrosterone measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	1
 Dermatitis	Skin / hair disease	skin/hair condition group	1	1	0	1
+Diabetic nephropathy	Renal / urinary disease	renal/urinary condition group	1	1	0	1
 Digestive system disease	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1
-Disease staging	Age / development / sex	age/development/sex condition group	1	1	1	1
 Distal colitis	GI / digestive disease	gi/digestive condition group	1	1	0	0
 Equol	Diet / nutrition / supplements	diet/nutrition/supplement condition group	1	1	0	1
 Estrogen receptor status	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1
@@ -517,7 +501,6 @@ HIV infection,Methamphetamine dependence	Infectious disease	infectious-disease c
 HOMA-IR	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1
 Household income	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	0
 Hyperproinsulinemia	Metabolic / endocrine	metabolic/endocrine condition group	1	1	1	1
-Increased inflammatory response	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	1	1	1	1
 Interleukin 1 receptor antagonist measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1
 Interleukin 17 measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	1
 Interleukin 8 measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1
@@ -535,7 +518,6 @@ Postcholecystectomy syndrome	Other specific clinical labels	other-specific-clini
 Postmenopausal	Reproductive / hormonal health	reproductive/hormonal condition group	1	1	0	1
 Prostate carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	1	1	0	1
 Protein intake measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1
-Spontaneous abortion	Reproductive / hormonal health	reproductive/hormonal condition group	1	1	1	0
 Sugar consumption measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1
 Syncope	Cardiovascular disease	cardiovascular condition group	1	1	0	0
 Systolic blood pressure	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1

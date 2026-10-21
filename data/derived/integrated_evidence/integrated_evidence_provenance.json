@@ -1,52 +1,52 @@
 {
   "version": "integrated-evidence-v2",
   "bugsigdb_vintage": "2026-04-24_00:41_UTC",
-  "code_commit": "42300e031e0631198e81b11752904064aa61ab41",
-  "profile_sha256": "c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f",
-  "experiments_sha256": "403afea98d9b0a5b56939f68bcc9aace56a8eda350232a586806fe7bf30ad230",
-  "analysis_source_sha256": "544fd22c89b90348b8127bbbd064dd8d63db91c122252bc4541a5e18a7b0f29f",
+  "code_commit": "8b280a399d71a36d2f8eec639800f282503eeb93",
+  "profile_sha256": "519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c",
+  "experiments_sha256": "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06",
+  "analysis_source_sha256": "79a655e893d186e7e94fc90580de64c4b54eb5aafb01fef0517c85b745b77ece",
   "core_run_id": null,
   "core_manifest_sha256": null,
   "ora_eligibility_source": null,
   "native_sources": {
     "arm1_pooled_stats": {
       "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/trait_profile_paired_contrast_trait_stats_pooled.tsv",
-      "sha256": "81055ad0fb50ca48488f15915d4e1a9c8956f05140fc43b0ba82a1935a2381f5"
+      "sha256": "3f89fca8bcd96659799abd8c0a3ef0ddd9f5a09c8831e656286738ce3d2299fc"
     },
     "arm2_enrichment": {
       "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/trait_enrichment_all_results.tsv",
-      "sha256": "7cf70813d488dd1a993b7598c2ed0f6f8c9d29f11832ddce91d50252653ed2de"
+      "sha256": "ca5b45c11b1c7ef429834444f2245d9c957944f470dd9b396990d95bae327ba4"
     },
     "arm2_depletion": {
       "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/trait_depletion_all_results.tsv",
-      "sha256": "7538e6f686fc135af17017d581d59d76c9e2cf55a5f0ab3fe0ebb67ac7280acf"
+      "sha256": "0ddfb81de4ed260867712e2a834319ce101d07ad6359cf1c7edd3ba7ced3cc93"
     },
     "full_screen": {
       "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/trait_screen/trait_direction_screen.tsv",
-      "sha256": "65450c1ce74312e56bfd032ba8139533de1b9fa3a4ef0ea4aaad034130b36c21"
+      "sha256": "4983a21780860df807c6902a456fa0a2be871904ca39ee41fed0e2e2cac269a8"
     },
     "full_screen_provenance": {
       "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/trait_screen/trait_screen_provenance.json",
-      "sha256": "6ca58f62abde1b0dce95fdc985acad7b8e7935c1e7aef97d7d550e0d893fdcd9"
+      "sha256": "a6ed949865dd6075c4d47f6664d55ab9542917ab236a2c2f9c70ec86314cf37d"
     }
   },
   "corpus": {
-    "profile_rows": 5829,
-    "experiments_seen": 3494,
+    "profile_rows": 5629,
+    "experiments_seen": 3372,
     "unmatched_experiments": 0,
     "dropped_non_human": 0,
-    "dropped_unpaired": 1159,
+    "dropped_unpaired": 1115,
     "mediadive_columns_excluded": 2290,
     "trait_columns_used": 317,
-    "kept_experiments": 2335,
-    "kept_profiles": 4670
+    "kept_experiments": 2257,
+    "kept_profiles": 4514
   },
   "pair_exclusion": {
-    "zero_total_experiments": 94,
-    "studies_before": 959,
-    "studies_after": 939,
-    "studies_lost": 20,
-    "experiments_kept": 2241,
+    "zero_total_experiments": 55,
+    "studies_before": 932,
+    "studies_after": 922,
+    "studies_lost": 10,
+    "experiments_kept": 2202,
     "rule": "a whole experiment pair is dropped when its retained-annotation total is zero on either side; the share is undefined, not zero, and scoring it as zero would count the pair as a tie"
   },
   "thresholds": {
@@ -65,19 +65,84 @@
         "screened_fraction_sign_test": "fail #182 [per_test_level=fail, family_error=fail, selection_inflation_measured=reported]"
       },
       "status_for_a_procedure_it_is_silent_about": "not_calibrated_here #182",
-      "detail_rows": 25
+      "detail_rows": 28,
+      "source": {
+        "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/calibration/calibration_status.json",
+        "sha256": "3007e1f1d3b91189b945abf088e16209635515741ba30e9ecbb266a27b1159a3",
+        "producer_version": "calibration-v3",
+        "code_commit": "8b280a399d71a36d2f8eec639800f282503eeb93",
+        "analysis_source_sha256": "ca6b8a491e4176c8422298c22915e7f73b58536385dcb89edbaba2008ff99760",
+        "protocol": "methods/calibration_protocol.json",
+        "protocol_sha256": "85fc60661879bd522be9770933b29dd9cbfdfaf92a7504b94cf3015af26ba6a3",
+        "review": null,
+        "eligibility": {
+          "id": "whole_pair_nonzero_retained_totals_v1",
+          "zero_total_experiments": 55,
+          "studies_before": 932,
+          "studies_after": 922,
+          "studies_lost": 10,
+          "profiles_after": 4404,
+          "resampling_universe": "all loaded human paired profiles; procedure eligibility is applied within each replicate, preserving the historical flip assignment order"
+        },
+        "input_sha256": {
+          "profile_sha256": "519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c",
+          "experiments_sha256": "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06",
+          "full_dump_sha256": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788"
+        },
+        "expected_input_sha256": {
+          "profile_sha256": "519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c",
+          "experiments_sha256": "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06",
+          "full_dump_sha256": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788"
+        },
+        "binding": "matched",
+        "validation_scope": "Exact assessment input fingerprints against the integration inputs; not an independent assessment of calibration, orientation or biological validity",
+        "guild_eligibility_applicability": "matched"
+      }
     },
     "coverage_status": {
       "issue": "#184",
       "verdicts_by_procedure": {},
       "status_for_a_procedure_it_is_silent_about": "pending #184",
-      "detail_rows": 0
+      "detail_rows": 0,
+      "source": {
+        "path": null,
+        "binding": "not_supplied"
+      }
     },
     "orientation_status": {
       "issue": "#188",
       "verdicts_by_procedure": {},
-      "status_for_a_procedure_it_is_silent_about": "contrast population described, hand_review_disagreements_unresolved, no verdict #188",
-      "detail_rows": 19
+      "status_for_a_procedure_it_is_silent_about": "contrast population described, hand_review_agreed, no verdict #188",
+      "detail_rows": 22,
+      "source": {
+        "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/contrast_orientation/contrast_orientation_provenance.json",
+        "sha256": "12de1b522e2bf963aacb2a5467a1115957abd7a537d730d5acafa40ad43e9889",
+        "producer_version": "contrast-orientation-v5",
+        "code_commit": "8b280a399d71a36d2f8eec639800f282503eeb93",
+        "analysis_source_sha256": "e7d5f4c9ecf37ce566f3ef763362d445d6a32e673d0ee2435d768739924df5d1",
+        "protocol": null,
+        "protocol_sha256": null,
+        "review": {
+          "path": "methods/contrast_orientation_review.tsv",
+          "sha256": "0615f824bbf226e3e8971b0eff4aae389ad38c14910e9ffb65fb1f6f3b996e26",
+          "reviewed_experiments": 60,
+          "agreed": 60,
+          "disagreed": 0
+        },
+        "eligibility": null,
+        "input_sha256": {
+          "profile_sha256": "519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c",
+          "experiments_sha256": "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06",
+          "full_dump_sha256": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788"
+        },
+        "expected_input_sha256": {
+          "profile_sha256": "519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c",
+          "experiments_sha256": "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06",
+          "full_dump_sha256": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788"
+        },
+        "binding": "matched",
+        "validation_scope": "Exact assessment input fingerprints against the integration inputs; not an independent assessment of calibration, orientation or biological validity"
+      }
     },
     "sensitivity_status": {
       "issue": "#183",
@@ -85,13 +150,15 @@
         "log_ratio_sign_test": "scenarios reported, no verdict #183"
       },
       "status_for_a_procedure_it_is_silent_about": "pending #183",
-      "detail_rows": 58
+      "detail_rows": 58,
+      "source": {}
     },
     "taxon_influence_status": {
       "issue": "#190",
       "verdicts_by_procedure": {},
       "status_for_a_procedure_it_is_silent_about": "pending #190: influence evidence not supplied",
-      "detail_rows": 0
+      "detail_rows": 0,
+      "source": {}
     }
   },
   "methods": [
@@ -203,9 +270,9 @@
     },
     {
       "family_id": "native_composition_pooled_study",
-      "family_size": 315,
+      "family_size": 313,
       "family_scope": "source_subset",
-      "family_source": "trait_profile_paired_contrast_trait_stats_pooled.tsv@81055ad0fb50ca48488f15915d4e1a9c8956f05140fc43b0ba82a1935a2381f5",
+      "family_source": "trait_profile_paired_contrast_trait_stats_pooled.tsv@3f89fca8bcd96659799abd8c0a3ef0ddd9f5a09c8831e656286738ce3d2299fc",
       "correction_method": "Benjamini-Hochberg",
       "methods": "composition_arm_native_transformed_contrast",
       "rows_exported": 6,
@@ -216,9 +283,9 @@
     },
     {
       "family_id": "native_profile_ORA_enrichment_global",
-      "family_size": 1480390,
+      "family_size": 1430938,
       "family_scope": "profile_test_summary",
-      "family_source": "trait_enrichment_all_results.tsv@7cf70813d488dd1a993b7598c2ed0f6f8c9d29f11832ddce91d50252653ed2de",
+      "family_source": "trait_enrichment_all_results.tsv@ca5b45c11b1c7ef429834444f2245d9c957944f470dd9b396990d95bae327ba4",
       "correction_method": "Benjamini-Hochberg",
       "methods": "enrichment_arm_profile_hypergeometric",
       "rows_exported": 6,

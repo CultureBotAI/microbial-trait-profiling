@@ -27,21 +27,20 @@ The selected traits are enriched in increased profiles relative to decreased pro
 
 | trait | increased - decreased z |
 | --- | ---: |
-| facultatively aerobic | 0.199 |
-| aerobic | 0.110 |
-| microaerophilic | 0.106 |
+| facultatively aerobic | 0.205 |
+| microaerophilic | 0.118 |
+| aerobic | 0.115 |
 
 ## Target Taxa Most Often Reported In Increased Profiles
 
 | taxon | increased / decreased profiles | increased-profile tendency |
 | --- | ---: | ---: |
 | Eggerthella lenta | 36 / 8 | 0.636 |
-| Enterocloster bolteae | 27 / 6 | 0.636 |
-| Fusobacterium nucleatum | 47 / 11 | 0.621 |
+| Fusobacterium nucleatum | 46 / 11 | 0.614 |
 | Parvimonas micra | 32 / 9 | 0.561 |
 | Klebsiella pneumoniae | 39 / 12 | 0.529 |
-| Streptococcus anginosus | 32 / 14 | 0.391 |
-| Escherichia coli | 82 / 37 | 0.378 |
+| Streptococcus anginosus | 31 / 14 | 0.378 |
+| Escherichia coli | 78 / 36 | 0.368 |
 | Prevotella intermedia | 23 / 12 | 0.314 |
 | Veillonella dispar | 38 / 22 | 0.267 |
 
@@ -55,25 +54,24 @@ The selected traits are enriched in increased profiles relative to decreased pro
 | Prevotella intermedia | Colorectal cancer | Feces | 4 / 0 | 4 |
 | Enterocloster bolteae | COVID-19 | Feces | 4 / 0 | 3 |
 | Klebsiella pneumoniae | Parkinson's disease | Feces | 4 / 0 | 3 |
-| Streptococcus anginosus | Rheumatoid arthritis | Subgingival dental plaque | 4 / 0 | 3 |
 | Veillonella dispar | Type II diabetes mellitus | Feces | 4 / 0 | 2 |
-| Fusobacterium nucleatum | Ovarian cancer | Other | 4 / 1 | 2 |
+| Streptococcus anginosus | Rheumatoid arthritis | Subgingival dental plaque | 3 / 0 | 2 |
 | Escherichia coli | Obesity | Feces | 4 / 10 | 2 |
 
-Target-taxon occurrence views (`target_taxa_condition_breakdown_bar.png`, `condition_target_taxa_stacked_bar.png`, `candidate_taxa_profile_occurrences.tsv` and `candidate_taxa_condition_direction.tsv`) count human-host profiles only, the corpus of the profile metadata. 72 occurrences (18 decreased, 54 increased) in 63 profiles from 19 studies come from experiments whose host is not recorded as Homo sapiens: Mus musculus 56, Rattus norvegicus 7, Sus scrofa domesticus 4, Bos taurus 2, Canis lupus familiaris 2, Elephas maximus 1. They have no profile metadata, so they are not counted under any condition; `candidate_taxa_excluded_host_occurrences.tsv` lists them.
+Target-taxon occurrence views (`target_taxa_condition_breakdown_bar.png`, `condition_target_taxa_stacked_bar.png`, `candidate_taxa_profile_occurrences.tsv` and `candidate_taxa_condition_direction.tsv`) count human-host 16S and shotgun profiles only, the corpus of the profile metadata. 82 occurrences (19 decreased, 63 increased) in 70 profiles from 24 studies lie outside the corpus: 72 come from experiments whose host is not recorded as Homo sapiens (Mus musculus 56, Rattus norvegicus 7, Sus scrofa domesticus 4, Bos taurus 2, Canis lupus familiaris 2, Elephas maximus 1), and 10 from Homo sapiens experiments with a sequencing method other than 16S or WMS, or none recorded (not recorded 7, PCR 3). They have no profile metadata, so they are not counted under any condition; `candidate_taxa_excluded_host_occurrences.tsv` lists them.
 
 ## Contexts With Aerobe v2 Trait Enrichment in Increased Profiles
 
 | condition | profiles | studies | increased - decreased z | paired d | paired p | matched pairs | increased mean trait z |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Multiple myeloma | 9 | 2 | 1.159 |  |  | 4 | 0.353 |
-| Response to antibiotic | 9 | 3 | 1.005 |  |  | 3 | 0.627 |
-| Age-related macular degeneration | 24 | 5 | 0.992 | 1.105 | 0.00281 | 12 | 0.477 |
-| Graft versus host disease | 14 | 5 | 0.923 |  |  | 4 | 0.182 |
-| Epilepsy | 16 | 5 | 0.891 | 1.586 | 0.0116 | 6 | 0.233 |
-| Cognitive impairment | 15 | 4 | 0.889 | 0.815 | 0.142 | 5 | 0.493 |
-| Diarrhea | 24 | 3 | 0.806 | 0.885 | 0.0107 | 12 | 0.661 |
-| Bipolar disorder | 18 | 4 | 0.796 |  |  | 4 | 0.010 |
+| Multiple myeloma | 9 | 2 | 1.167 |  |  | 4 | 0.333 |
+| Response to antibiotic | 9 | 3 | 1.011 |  |  | 3 | 0.609 |
+| Graft versus host disease | 14 | 5 | 0.929 |  |  | 4 | 0.161 |
+| Response to transplant | 26 | 5 | 0.916 | 1.140 | 0.0036 | 11 | 0.151 |
+| Epilepsy | 16 | 5 | 0.898 | 1.587 | 0.0116 | 6 | 0.212 |
+| Cognitive impairment | 15 | 4 | 0.896 | 0.815 | 0.142 | 5 | 0.474 |
+| Age-related macular degeneration | 22 | 5 | 0.893 | 1.030 | 0.00658 | 11 | 0.425 |
+| Diarrhea | 24 | 3 | 0.811 | 0.885 | 0.0107 | 12 | 0.644 |
 
 Paired d and paired p are blank for conditions with fewer than 5 matched increased/decreased profile pairs, or with zero variance among the paired differences.
 
@@ -87,43 +85,43 @@ For the top condition signals, this table uses all taxa observed in the increase
 
 | condition | increased profiles | universe taxa / observed taxa | enriched traits | supporting taxa |
 | --- | ---: | ---: | --- | --- |
-| Age-related macular degeneration | 12 | 29 / 42 | facultatively aerobic (+1.29); microaerophilic (+1.14); aerobic (+0.55) | Streptococcus (3 traits, 5 profiles); Pseudomonadota (3 traits, 1 profile); Gammaproteobacteria (3 traits, 1 profile); Bacillota (3 traits, 1 profile); Streptococcaceae (3 traits, 1 profile); Enterococcus (3 traits, 1 profile); Pseudomonadaceae (3 traits, 1 profile); Lactobacillus (3 traits, 1 profile); Bacteroidales (3 traits, 1 profile); Corynebacterium (3 traits, 1 profile); Lactobacillales (3 traits, 1 profile); Bacteroidia (3 traits, 1 profile) |
-| Bipolar disorder | 11 | 11 / 15 | microaerophilic (+1.28) | Lactobacillus (1 trait, 4 profiles); Lactobacillaceae (1 trait, 4 profiles); Actinomycetota (1 trait, 2 profiles); Clostridiaceae (1 trait, 2 profiles); Coriobacteriia (1 trait, 2 profiles); Streptococcaceae (1 trait, 1 profile); Streptococcus (1 trait, 1 profile); Lachnospiraceae (1 trait, 1 profile); Lactobacillales (1 trait, 1 profile); Enterobacteriaceae (1 trait, 1 profile); Bacilli (1 trait, 1 profile) |
-| Cognitive impairment | 8 | 11 / 25 | microaerophilic (+1.10); facultatively aerobic (+1.10); aerobic (+0.47) | Streptococcus (3 traits, 2 profiles); Lactobacillus (3 traits, 2 profiles); Lactobacillaceae (3 traits, 2 profiles); Pseudomonadota (3 traits, 1 profile); Streptococcaceae (3 traits, 1 profile); Lactococcus (3 traits, 1 profile); Lactobacillales (3 traits, 1 profile); Enterobacteriaceae (3 traits, 1 profile); Verrucomicrobiota (2 traits, 1 profile); Prevotellaceae (1 trait, 1 profile); Faecalibacterium (1 trait, 1 profile) |
-| Diarrhea | 12 | 17 / 30 | facultatively aerobic (+1.03); microaerophilic (+0.83); aerobic (+0.55) | Streptococcus (3 traits, 7 profiles); Enterococcus (3 traits, 4 profiles); Escherichia (3 traits, 4 profiles); Campylobacter (3 traits, 3 profiles); Bifidobacterium (3 traits, 2 profiles); Lactobacillus (3 traits, 1 profile); Bacteroidales (3 traits, 1 profile); Bacteroidia (3 traits, 1 profile); Betaproteobacteria (3 traits, 1 profile); Enterobacteriaceae (3 traits, 1 profile); Burkholderiales (3 traits, 1 profile); Bacteroides (3 traits, 1 profile) |
-| Epilepsy | 10 | 50 / 85 | facultatively aerobic (+1.27); microaerophilic (+0.83); aerobic (+0.57) | Lactobacillales (3 traits, 2 profiles); Enterobacteriaceae (3 traits, 2 profiles); Escherichia (3 traits, 2 profiles); Bacilli (3 traits, 2 profiles); Enterobacterales (3 traits, 2 profiles); Actinomycetota (3 traits, 2 profiles); Pseudomonadota (3 traits, 1 profile); Gammaproteobacteria (3 traits, 1 profile); Bacillota (3 traits, 1 profile); Erysipelotrichaceae (3 traits, 1 profile); Streptococcus (3 traits, 1 profile); Enterococcus (3 traits, 1 profile) |
-| Graft versus host disease | 7 | 12 / 15 | aerobic (+1.30); facultatively aerobic (+1.07) | Bacillota (2 traits, 2 profiles); Stenotrophomonas (2 traits, 2 profiles); Enterobacteriaceae (2 traits, 2 profiles); Pseudomonadota (2 traits, 1 profile); Gammaproteobacteria (2 traits, 1 profile); Lysobacterales (2 traits, 1 profile); Lactococcus (2 traits, 1 profile); Lysobacteraceae (2 traits, 1 profile); Enterobacterales (2 traits, 1 profile); Porphyromonadaceae (1 trait, 1 profile); Faecalibacterium (1 trait, 1 profile); Lautropia (1 trait, 1 profile) |
-| Multiple myeloma | 5 | 20 / 37 | facultatively aerobic (+1.60); aerobic (+1.20) | Streptococcus gordonii (2 traits, 2 profiles); Streptococcus salivarius (2 traits, 2 profiles); Streptococcus pneumoniae (2 traits, 2 profiles); Klebsiella variicola (2 traits, 2 profiles); Streptococcus mitis (2 traits, 2 profiles); Klebsiella ornithinolytica (2 traits, 2 profiles); Citrobacter freundii (2 traits, 2 profiles); Klebsiella aerogenes (2 traits, 2 profiles); Enterobacter cloacae (2 traits, 2 profiles); Klebsiella pneumoniae (2 traits, 2 profiles); Pseudomonadota (2 traits, 1 profile); Streptococcus thermophilus (2 traits, 1 profile) |
-| Response to antibiotic | 5 | 42 / 65 | aerobic (+1.28); microaerophilic (+1.27); facultatively aerobic (+0.46) | Enterobacter (3 traits, 2 profiles); Streptococcus (3 traits, 1 profile); Enterococcus (3 traits, 1 profile); Lactococcus (3 traits, 1 profile); Clostridia (3 traits, 1 profile); Eubacteriales (3 traits, 1 profile); Rothia (3 traits, 1 profile); Methylobacterium (3 traits, 1 profile); Mycoplasmatota (3 traits, 1 profile); Escherichia (3 traits, 1 profile); Klebsiella (3 traits, 1 profile); Klebsiella pneumoniae (3 traits, 1 profile) |
+| Age-related macular degeneration | 11 | 29 / 42 | facultatively aerobic (+1.15); microaerophilic (+1.03) | Streptococcus (2 traits, 4 profiles); Gemella (2 traits, 4 profiles); Actinomyces sp. (2 traits, 2 profiles); Pseudomonadota (2 traits, 1 profile); Gammaproteobacteria (2 traits, 1 profile); Bacillota (2 traits, 1 profile); Streptococcaceae (2 traits, 1 profile); Streptococcus sp. (2 traits, 1 profile); Enterococcus (2 traits, 1 profile); Pseudomonadaceae (2 traits, 1 profile); Lactobacillus (2 traits, 1 profile); Bacteroidales (2 traits, 1 profile) |
+| Cognitive impairment | 8 | 11 / 25 | microaerophilic (+1.11); facultatively aerobic (+1.10); aerobic (+0.47) | Streptococcus (3 traits, 2 profiles); Lactobacillus (3 traits, 2 profiles); Lactobacillaceae (3 traits, 2 profiles); Pseudomonadota (3 traits, 1 profile); Streptococcaceae (3 traits, 1 profile); Lactococcus (3 traits, 1 profile); Lactobacillales (3 traits, 1 profile); Enterobacteriaceae (3 traits, 1 profile); Verrucomicrobiota (2 traits, 1 profile); Prevotellaceae (1 trait, 1 profile); Faecalibacterium (1 trait, 1 profile) |
+| Diarrhea | 12 | 17 / 30 | facultatively aerobic (+1.04); microaerophilic (+0.84); aerobic (+0.55) | Streptococcus (3 traits, 7 profiles); Enterococcus (3 traits, 4 profiles); Escherichia (3 traits, 4 profiles); Campylobacter (3 traits, 3 profiles); Bifidobacterium (3 traits, 2 profiles); Lactobacillus (3 traits, 1 profile); Bacteroidales (3 traits, 1 profile); Bacteroidia (3 traits, 1 profile); Betaproteobacteria (3 traits, 1 profile); Enterobacteriaceae (3 traits, 1 profile); Burkholderiales (3 traits, 1 profile); Bacteroides (3 traits, 1 profile) |
+| Epilepsy | 10 | 50 / 85 | facultatively aerobic (+1.28); microaerophilic (+0.84); aerobic (+0.58) | Lactobacillales (3 traits, 2 profiles); Enterobacteriaceae (3 traits, 2 profiles); Escherichia (3 traits, 2 profiles); Bacilli (3 traits, 2 profiles); Enterobacterales (3 traits, 2 profiles); Actinomycetota (3 traits, 2 profiles); Pseudomonadota (3 traits, 1 profile); Gammaproteobacteria (3 traits, 1 profile); Bacillota (3 traits, 1 profile); Erysipelotrichaceae (3 traits, 1 profile); Streptococcus (3 traits, 1 profile); Enterococcus (3 traits, 1 profile) |
+| Graft versus host disease | 7 | 12 / 15 | aerobic (+1.31); facultatively aerobic (+1.08) | Bacillota (2 traits, 2 profiles); Stenotrophomonas (2 traits, 2 profiles); Enterobacteriaceae (2 traits, 2 profiles); Pseudomonadota (2 traits, 1 profile); Gammaproteobacteria (2 traits, 1 profile); Lysobacterales (2 traits, 1 profile); Lactococcus (2 traits, 1 profile); Lysobacteraceae (2 traits, 1 profile); Enterobacterales (2 traits, 1 profile); Porphyromonadaceae (1 trait, 1 profile); Faecalibacterium (1 trait, 1 profile); Lautropia (1 trait, 1 profile) |
+| Multiple myeloma | 5 | 20 / 37 | facultatively aerobic (+1.62); aerobic (+1.20) | Streptococcus gordonii (2 traits, 2 profiles); Streptococcus salivarius (2 traits, 2 profiles); Streptococcus pneumoniae (2 traits, 2 profiles); Klebsiella variicola (2 traits, 2 profiles); Streptococcus mitis (2 traits, 2 profiles); Klebsiella ornithinolytica (2 traits, 2 profiles); Citrobacter freundii (2 traits, 2 profiles); Klebsiella aerogenes (2 traits, 2 profiles); Enterobacter cloacae (2 traits, 2 profiles); Klebsiella pneumoniae (2 traits, 2 profiles); Pseudomonadota (2 traits, 1 profile); Streptococcus thermophilus (2 traits, 1 profile) |
+| Response to antibiotic | 5 | 42 / 65 | aerobic (+1.29); microaerophilic (+1.28); facultatively aerobic (+0.46) | Enterobacter (3 traits, 2 profiles); Streptococcus (3 traits, 1 profile); Enterococcus (3 traits, 1 profile); Lactococcus (3 traits, 1 profile); Clostridia (3 traits, 1 profile); Eubacteriales (3 traits, 1 profile); Rothia (3 traits, 1 profile); Methylobacterium (3 traits, 1 profile); Mycoplasmatota (3 traits, 1 profile); Escherichia (3 traits, 1 profile); Klebsiella (3 traits, 1 profile); Klebsiella pneumoniae (3 traits, 1 profile) |
+| Response to transplant | 15 | 75 / 201 | microaerophilic (+1.15); facultatively aerobic (+0.85) | Streptococcus (2 traits, 3 profiles); Lactobacillus (2 traits, 3 profiles); Lactobacillales (2 traits, 2 profiles); Lactobacillaceae (2 traits, 2 profiles); Neisseria (2 traits, 2 profiles); Capnocytophaga (2 traits, 1 profile); Sphingobacteriia (2 traits, 1 profile); Gammaproteobacteria (2 traits, 1 profile); Erysipelotrichaceae (2 traits, 1 profile); Staphylococcus hominis (2 traits, 1 profile); Streptococcus oralis (2 traits, 1 profile); Alteromonadales (2 traits, 1 profile) |
 
 ## Body-Site Check
 
 | body_site_group | profiles | increased mean trait z | increased - decreased z |
 | --- | ---: | ---: | ---: |
-| Oral cavity | 75 | 0.493 | -0.057 |
-| Saliva | 374 | 0.390 | -0.029 |
-| Mouth | 80 | 0.294 | -0.131 |
-| Uterine cervix | 81 | 0.241 | -0.062 |
-| Throat | 66 | 0.217 | 0.068 |
-| Other | 1339 | 0.213 | -0.003 |
-| Subgingival dental plaque | 77 | 0.107 | -0.321 |
-| Vagina | 133 | -0.006 | -0.230 |
-| Feces | 3604 | -0.046 | 0.233 |
+| Oral cavity | 70 | 0.599 | -0.077 |
+| Saliva | 370 | 0.375 | -0.039 |
+| Mouth | 76 | 0.359 | -0.139 |
+| Other | 1267 | 0.258 | 0.011 |
+| Uterine cervix | 81 | 0.219 | -0.063 |
+| Throat | 64 | 0.175 | 0.004 |
+| Subgingival dental plaque | 75 | 0.063 | -0.333 |
+| Vagina | 133 | -0.028 | -0.231 |
+| Feces | 3493 | -0.056 | 0.241 |
 
 ## Top Increased Profiles To Inspect
 
 | profile | condition | body site | trait z | title |
 | --- | --- | --- | ---: | --- |
-| bsdb:32115690\|bsdb:32115690-1\|inc | Acute lymphoblastic leukemia | Feces | 1.992 | Gastrointestinal toxicity during induction treatment for childhood acute lymphoblastic ... |
-| bsdb:37596536\|bsdb:37596536-10\|inc | Population | Saliva | 1.691 | Oral microbiome homogeneity across diverse human groups from southern Africa: first res... |
-| bsdb:39738315\|bsdb:39738315-2\|inc | Response to diet | Feces | 1.584 | Modulating the human gut microbiome and health markers through kombucha consumption: a ... |
-| bsdb:39738315\|bsdb:39738315-3\|inc | Response to diet | Feces | 1.584 | Modulating the human gut microbiome and health markers through kombucha consumption: a ... |
-| bsdb:31619731\|bsdb:31619731-4\|inc | Methamphetamine dependence | Rectum | 1.556 | Alterations to the Gastrointestinal Microbiome Associated with Methamphetamine Use amon... |
-| bsdb:39940045\|bsdb:39940045-9\|inc | Diet | Feces | 1.505 | The impact of regular sauerkraut consumption on the human gut microbiota: a crossover i... |
-| bsdb:39940045\|bsdb:39940045-8\|inc | Diet | Feces | 1.505 | The impact of regular sauerkraut consumption on the human gut microbiota: a crossover i... |
-| bsdb:39940045\|bsdb:39940045-6\|inc | Diet | Feces | 1.505 | The impact of regular sauerkraut consumption on the human gut microbiota: a crossover i... |
-| bsdb:39940045\|bsdb:39940045-5\|inc | Diet | Feces | 1.505 | The impact of regular sauerkraut consumption on the human gut microbiota: a crossover i... |
-| bsdb:39940045\|bsdb:39940045-4\|inc | Diet | Feces | 1.505 | The impact of regular sauerkraut consumption on the human gut microbiota: a crossover i... |
+| bsdb:32115690\|bsdb:32115690-1\|inc | Acute lymphoblastic leukemia | Feces | 1.983 | Gastrointestinal toxicity during induction treatment for childhood acute lymphoblastic ... |
+| bsdb:37596536\|bsdb:37596536-10\|inc | Population | Saliva | 1.679 | Oral microbiome homogeneity across diverse human groups from southern Africa: first res... |
+| bsdb:39738315\|bsdb:39738315-2\|inc | Response to diet | Feces | 1.572 | Modulating the human gut microbiome and health markers through kombucha consumption: a ... |
+| bsdb:39738315\|bsdb:39738315-3\|inc | Response to diet | Feces | 1.572 | Modulating the human gut microbiome and health markers through kombucha consumption: a ... |
+| bsdb:31619731\|bsdb:31619731-4\|inc | Methamphetamine dependence | Rectum | 1.543 | Alterations to the Gastrointestinal Microbiome Associated with Methamphetamine Use amon... |
+| bsdb:39940045\|bsdb:39940045-9\|inc | Diet | Feces | 1.493 | The impact of regular sauerkraut consumption on the human gut microbiota: a crossover i... |
+| bsdb:39940045\|bsdb:39940045-8\|inc | Diet | Feces | 1.493 | The impact of regular sauerkraut consumption on the human gut microbiota: a crossover i... |
+| bsdb:39940045\|bsdb:39940045-6\|inc | Diet | Feces | 1.493 | The impact of regular sauerkraut consumption on the human gut microbiota: a crossover i... |
+| bsdb:39940045\|bsdb:39940045-5\|inc | Diet | Feces | 1.493 | The impact of regular sauerkraut consumption on the human gut microbiota: a crossover i... |
+| bsdb:39940045\|bsdb:39940045-4\|inc | Diet | Feces | 1.493 | The impact of regular sauerkraut consumption on the human gut microbiota: a crossover i... |
 
 ## Suggested Follow-Up
 

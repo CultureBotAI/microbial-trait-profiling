@@ -1,6 +1,6 @@
 {
- "generated_at_utc": "2026-10-20T08:13:03Z",
- "code_commit": "fae19263cb60fd0877d3226c25298f06213c8c35",
+ "generated_at_utc": "2026-10-21T04:57:53Z",
+ "code_commit": "8b280a399d71a36d2f8eec639800f282503eeb93",
  "script": "src/mtp/cellulose_decr/analysis.py",
  "bugsigdb_vintage": "2026-04-24_00:41_UTC",
  "contrast_classifier_version": "contrast-orientation-v5",
@@ -25,13 +25,13 @@
  "inputs": {
   "profile_metadata": {
    "path": "trait-visualization/study_trait_profile_study_metadata.tsv",
-   "sha256": "9ba32acca337f1e52dbe6d91d8b799cf0b36a5e0cca71a9cb32ba033ec26e12a",
-   "bytes": 2246342
+   "sha256": "a7c83cb5e2867bdd60e578260e4944d1bc455f3bd77a410b1b594f0c223599f8",
+   "bytes": 2187211
   },
   "experiments": {
    "path": "data/derived/experiments.tsv",
-   "sha256": "403afea98d9b0a5b56939f68bcc9aace56a8eda350232a586806fe7bf30ad230",
-   "bytes": 743453
+   "sha256": "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06",
+   "bytes": 761423
   },
   "studies": {
    "path": "data/derived/studies.tsv",
@@ -40,8 +40,8 @@
   },
   "profile_counts": {
    "path": "data/derived/study_trait_profiles_wide.tsv",
-   "sha256": "c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f",
-   "bytes": 31359448
+   "sha256": "519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c",
+   "bytes": 30299974
   },
   "signature_taxa": {
    "path": "data/derived/bugsigdb_taxa.tsv",
@@ -60,8 +60,8 @@
   },
   "contrast_manifest": {
    "path": "data/derived/contrast_orientation/contrast_manifest.tsv",
-   "sha256": "274ec0ba7a2da542ae8b086a8899d3549216e8deb65ceda1aa7e45527aa5b662",
-   "bytes": 3494956
+   "sha256": "a8ececf262f837f7e9321b26b4ef9e08611f339ac1333001033d7e1682b27920",
+   "bytes": 3495289
   },
   "full_dump": {
    "path": "data/raw/full_dump.csv",
@@ -126,7 +126,12 @@
    "bytes": 1034256091
   }
  },
- "inputs_drifted_from_pinned_provenance": [],
+ "inputs_drifted_from_pinned_provenance": [
+  "profile_metadata",
+  "experiments",
+  "profile_counts",
+  "contrast_manifest"
+ ],
  "repinned": false,
  "environment": {
   "python": "3.11.5",

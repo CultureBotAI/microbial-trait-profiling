@@ -13,13 +13,13 @@
   ],
   "rows_before_display_filter": 183,
   "rows_removed_by_explicit_exclusion": 1,
-  "rows_removed_below_absolute_influence_threshold": 131,
+  "rows_removed_below_absolute_influence_threshold": 130,
   "max_displayed_rows": 30,
-  "eligible_rows_before_display_cap": 51,
+  "eligible_rows_before_display_cap": 52,
   "displayed_rows": 30,
   "traits": 6,
   "cells": 180,
-  "displayed_cells": 68,
+  "displayed_cells": 70,
   "audited_cells_for_displayed_taxa": 180,
   "direct_annotation_cells": 71,
   "denominator_only_cells": 109,
@@ -45,14 +45,14 @@
   },
   "input_sha256_chunks": {
     "data/derived/study_trait_profiles_wide.tsv": [
-      "c07d589f",
-      "6cc88724",
-      "e43c683e",
-      "bd132bcd",
-      "5c7f316f",
-      "36b95df3",
-      "ff9acad2",
-      "4ebbf62f"
+      "519a095b",
+      "09e179dc",
+      "92fb51f9",
+      "d892984a",
+      "52dd100d",
+      "ece4dadf",
+      "6c94b036",
+      "a5323e6c"
     ],
     "data/derived/taxa_trait_matrix.tsv": [
       "f6de0576",
@@ -75,14 +75,14 @@
       "db271c59"
     ],
     "trait-visualization/trait-profile-investigation/PD-cellulose/pd_six_trait_taxon_profile_evidence.tsv": [
-      "3bae40c3",
-      "2d21db49",
-      "90b5b088",
-      "0b83fe2b",
-      "7e08978f",
-      "32212f78",
-      "7cf6bf49",
-      "c0e2fc54"
+      "8793b9a0",
+      "e9209db3",
+      "49b3faab",
+      "512f4ccf",
+      "08c4522f",
+      "ec7b5662",
+      "0c442967",
+      "91d91000"
     ]
   },
   "sha256_chunk_encoding": "concatenate each path's eight chunks in order"

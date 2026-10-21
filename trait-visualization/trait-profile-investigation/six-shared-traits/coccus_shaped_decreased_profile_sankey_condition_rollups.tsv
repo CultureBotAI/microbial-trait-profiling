@@ -1,48 +1,45 @@
 analysis	trait_id	trait_label	trait_slug	trait_color	focus_direction	raw_condition	condition	condition_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Parkinson's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	276	59	133	130
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Parkinson's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	271	57	130	128
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	198	55	93	102
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Obesity	Metabolic / endocrine	metabolic/endocrine condition group	173	37	83	64
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	COVID-19	Infectious disease	infectious-disease condition group	141	33	69	91
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Irritable bowel syndrome	GI / digestive disease	gi/digestive condition group	99	17	49	47
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Antimicrobial agent	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	98	22	53	46
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Population	Population / social covariates	population/social-covariate condition group	96	4	44	31
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Obesity	Metabolic / endocrine	metabolic/endocrine condition group	173	37	83	60
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	COVID-19	Infectious disease	infectious-disease condition group	123	31	62	88
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Irritable bowel syndrome	GI / digestive disease	gi/digestive condition group	98	16	48	47
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Population	Population / social covariates	population/social-covariate condition group	96	4	44	30
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	HIV infection	Infectious disease	infectious-disease condition group	94	30	47	41
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Diet	Diet / nutrition / supplements	diet/nutrition/supplement condition group	94	18	40	23
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Antimicrobial agent	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	93	20	50	45
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Chronic constipation	GI / digestive disease	gi/digestive condition group	89	15	41	37
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Human papilloma virus infection	Infectious disease	infectious-disease condition group	81	22	36	42
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Gastric cancer	Cancer / neoplasia	cancer/neoplasia condition group	75	14	37	37
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Gestational diabetes	Metabolic / endocrine	metabolic/endocrine condition group	70	12	33	25
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Polycystic ovary syndrome	Metabolic / endocrine	metabolic/endocrine condition group	64	14	30	21
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Type II diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	62	21	30	28
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Age	Age / development / sex	age/development/sex condition group	60	16	23	36
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Asthma	Respiratory / airway disease	respiratory/airway condition group	54	12	26	34
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Gastric cancer	Cancer / neoplasia	cancer/neoplasia condition group	67	13	33	37
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Gestational diabetes	Metabolic / endocrine	metabolic/endocrine condition group	67	12	32	23
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Type II diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	60	21	29	28
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Age	Age / development / sex	age/development/sex condition group	60	16	23	35
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Polycystic ovary syndrome	Metabolic / endocrine	metabolic/endocrine condition group	54	13	25	21
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Asthma	Respiratory / airway disease	respiratory/airway condition group	54	12	26	33
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Metabolic toxicity	Metabolic / endocrine	metabolic/endocrine condition group	53	1	27	42
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Schizophrenia	Psychiatric / behavioral health	psychiatric/behavioral condition group	52	17	27	27
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cervical glandular intraepithelial neoplasia	Reproductive / hormonal health	reproductive/hormonal condition group	50	12	20	30
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cervical glandular intraepithelial neoplasia	Reproductive / hormonal health	reproductive/hormonal condition group	50	12	20	29
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Dry eye syndrome	Ocular / eye disease	ocular/eye condition group	50	11	21	21
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Schizophrenia	Psychiatric / behavioral health	psychiatric/behavioral condition group	48	16	25	27
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Aging	Age / development / sex	age/development/sex condition group	48	5	21	15
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Lifestyle measurement	Activity / lifestyle score	activity/lifestyle-score condition group	47	7	19	12
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Diet measurement	Diet / nutrition / supplements	diet/nutrition/supplement condition group	47	6	30	25
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Rheumatoid arthritis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	45	14	22	29
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Ulcerative colitis	Inflammatory bowel disease	ibd condition group	45	14	23	22
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Crohn's disease	Inflammatory bowel disease	ibd condition group	45	13	24	20
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Ovarian cancer	Cancer / neoplasia	cancer/neoplasia condition group	45	4	18	20
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Rheumatoid arthritis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	43	13	21	28
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Ulcerative colitis	Inflammatory bowel disease	ibd condition group	43	13	22	21
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Endometriosis	Reproductive / hormonal health	reproductive/hormonal condition group	43	12	15	22
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Stroke	Stroke	stroke condition group	43	5	15	20
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Ovarian cancer	Cancer / neoplasia	cancer/neoplasia condition group	43	3	17	17
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Atopic eczema	Skin / hair disease	skin/hair condition group	40	9	17	23
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Ethnic group	Population / social covariates	population/social-covariate condition group	39	8	19	13
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Health study participation	Population / social covariates	population/social-covariate condition group	36	7	13	9
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Lifestyle measurement	Activity / lifestyle score	activity/lifestyle-score condition group	36	6	13	12
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Pancreatic carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	35	6	16	12
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Psoriasis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	34	10	18	17
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Smoking behavior	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	33	11	16	23
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Colorectal adenoma	Colorectal neoplasia	colorectal neoplasia condition group	32	11	14	17
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to antiviral drug	Infectious disease	infectious-disease condition group	32	6	18	7
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to antiviral drug	Infectious disease	infectious-disease condition group	32	6	18	6
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Chronic kidney disease	Renal / urinary disease	renal/urinary condition group	31	10	15	18
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Breast cancer	Cancer / neoplasia	cancer/neoplasia condition group	31	8	15	17
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to transplant	Transplant / graft response	transplant/graft condition group	30	6	13	13
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Atopic asthma	Respiratory / airway disease	respiratory/airway condition group	30	2	14	23
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cesarean section	Pregnancy / neonatal	pregnancy/neonatal condition group	29	8	15	15
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Food allergy	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	28	9	14	10
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Multiple sclerosis	Neurologic / cognitive disease	neurologic/cognitive condition group	28	6	14	12
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to diet	Medication / clinical treatment	medication/clinical-treatment condition group	28	6	14	11
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Socioeconomic status	Population / social covariates	population/social-covariate condition group	27	11	13	9
@@ -51,27 +48,30 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Phenylketonuria	Metabolic / endocrine	metabolic/endocrine condition group	27	2	14	11
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Helminthiasis	Infectious disease	infectious-disease condition group	27	1	15	7
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Smoking behaviour measurement	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	27	1	13	13
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to transplant	Transplant / graft response	transplant/graft condition group	26	5	11	13
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Eczema	Skin / hair disease	skin/hair condition group	26	4	16	10
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Oral squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	25	7	13	16
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Head and neck squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	25	4	12	15
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Psoriasis vulgaris	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	25	1	11	5
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Non-alcoholic fatty liver disease	GI / digestive disease	gi/digestive condition group	24	7	12	6
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Age-related macular degeneration	Ocular / eye disease	ocular/eye condition group	24	5	12	13
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Human immunodeficiency virus	Infectious disease	infectious-disease condition group	24	4	13	11
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Food allergy	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	24	8	12	8
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Human immunodeficiency virus	Infectious disease	infectious-disease condition group	24	4	13	9
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Diarrhea	GI / digestive disease	gi/digestive condition group	24	3	12	16
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Constipation	GI / digestive disease	gi/digestive condition group	23	7	12	9
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Periodontitis	Oral / periodontal disease	oral/periodontal condition group	23	7	10	13
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Oral squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	23	6	12	15
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Glaucoma	Ocular / eye disease	ocular/eye condition group	23	5	10	15
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Smoking status measurement	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	23	5	10	7
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cervical cancer	Cancer / neoplasia	cancer/neoplasia condition group	22	7	11	14
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Treatment	Medication / clinical treatment	medication/clinical-treatment condition group	22	5	11	8
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Health study participation	Population / social covariates	population/social-covariate condition group	22	6	9	7
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Non-alcoholic fatty liver disease	GI / digestive disease	gi/digestive condition group	22	6	11	4
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Age-related macular degeneration	Ocular / eye disease	ocular/eye condition group	22	5	11	12
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Attention deficit-hyperactivity disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	22	3	10	10
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Time	Sampling site / time protocol	sampling-site/time condition group	22	2	1	21
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Obstructive sleep apnea	Neurologic / cognitive disease	neurologic/cognitive condition group	22	1	12	14
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Delivery method	Pregnancy / neonatal	pregnancy/neonatal condition group	21	6	11	4
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Delivery method	Pregnancy / neonatal	pregnancy/neonatal condition group	20	5	11	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to allogeneic hematopoietic stem cell transplant	Blood / immune deficiency	blood/immune-deficiency condition group	20	5	11	10
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	20	5	11	15
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Head and neck squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	20	4	10	15
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Health-related quality of life measurement	Disease activity / severity	disease-activity/severity condition group	20	4	10	6
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Treatment	Medication / clinical treatment	medication/clinical-treatment condition group	20	4	10	7
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Acute lymphoblastic leukemia	Cancer / neoplasia	cancer/neoplasia condition group	19	5	6	6
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Major depressive disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	19	5	10	10
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Esophageal squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	19	3	10	9
@@ -82,22 +82,20 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Bipolar disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	18	4	7	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Oral mucositis	Oral / periodontal disease	oral/periodontal condition group	18	3	8	12
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Waist circumference	Body composition / growth	body-composition/growth condition group	18	2	8	12
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Bacterial vaginosis	Reproductive / hormonal health	reproductive/hormonal condition group	17	4	7	2
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Alzheimer's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	16	6	8	7
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Environmental exposure measurement	Diet / nutrition / supplements	diet/nutrition/supplement condition group	16	5	8	7
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Epilepsy	Neurologic / cognitive disease	neurologic/cognitive condition group	16	5	6	8
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Breastfeeding duration	Pregnancy / neonatal	pregnancy/neonatal condition group	16	2	8	11
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Body mass index	Body composition / growth	body-composition/growth condition group	15	9	8	5
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Body mass index	Body composition / growth	body-composition/growth condition group	15	9	8	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Depressive disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	15	6	7	5
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Chronic fatigue syndrome	Psychiatric / behavioral health	psychiatric/behavioral condition group	15	4	8	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cognitive impairment	Neurologic / cognitive disease	neurologic/cognitive condition group	15	4	7	6
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	HIV mother to child transmission	Infectious disease	infectious-disease condition group	15	1	8	8
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Viral disease	Infectious disease	infectious-disease condition group	15	1	7	11
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Alzheimer's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	14	5	7	6
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Graft versus host disease	Transplant / graft response	transplant/graft condition group	14	5	7	6
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Autism	Neurologic / cognitive disease	neurologic/cognitive condition group	14	4	6	5
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Milk allergic reaction	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	14	4	6	5
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Gastric adenocarcinoma	Cancer / neoplasia	cancer/neoplasia condition group	14	3	6	6
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Dental caries	Oral / periodontal disease	oral/periodontal condition group	14	2	7	6
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Pregnancy	Pregnancy / neonatal	pregnancy/neonatal condition group	13	5	6	5
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Chronic obstructive pulmonary disease	Respiratory / airway disease	respiratory/airway condition group	13	4	6	8
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Microbiome	Microbiome phenotype	microbiome-phenotype condition group	13	4	5	5
@@ -108,9 +106,7 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Chlamydia trachomatis	Infectious disease	infectious-disease condition group	13	2	6	9
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to ketogenic diet	Medication / clinical treatment	medication/clinical-treatment condition group	13	2	8	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Respiratory Syncytial Virus Infection	Infectious disease	infectious-disease condition group	13	1	6	5
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Acne	Skin / hair disease	skin/hair condition group	12	4	7	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Clinical treatment	Medication / clinical treatment	medication/clinical-treatment condition group	12	4	6	6
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Inflammatory bowel disease	Inflammatory bowel disease	ibd condition group	12	4	5	7
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Chronic hepatitis B virus infection	Infectious disease	infectious-disease condition group	12	3	6	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	12	3	6	7
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Ischemic stroke	Stroke	stroke condition group	12	3	4	10
@@ -121,7 +117,8 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Premature birth	Pregnancy / neonatal	pregnancy/neonatal condition group	11	4	6	5
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Endometrial cancer	Cancer / neoplasia	cancer/neoplasia condition group	11	3	5	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Hepatocellular carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	11	3	6	2
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to vaccine	Medication / clinical treatment	medication/clinical-treatment condition group	11	2	5	7
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to vaccine	Medication / clinical treatment	medication/clinical-treatment condition group	11	2	5	6
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Acne	Skin / hair disease	skin/hair condition group	10	3	6	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Esophageal cancer	Cancer / neoplasia	cancer/neoplasia condition group	10	3	5	9
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Vitiligo	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	10	3	5	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Gingivitis	Oral / periodontal disease	oral/periodontal condition group	10	2	8	8
@@ -147,13 +144,13 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Disease progression measurement	Disease activity / severity	disease-activity/severity condition group	8	3	3	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Risk factor	Disease activity / severity	disease-activity/severity condition group	8	3	4	5
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Autoimmune disease	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	8	2	4	5
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Intestinal polyp	GI / digestive disease	gi/digestive condition group	8	2	4	5
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Dental caries	Oral / periodontal disease	oral/periodontal condition group	8	2	4	6
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Intestinal polyp	GI / digestive disease	gi/digestive condition group	8	2	4	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Aggressive periodontitis	Oral / periodontal disease	oral/periodontal condition group	8	1	4	5
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cannabis use	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	8	1	4	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cardiovascular disease	Cardiovascular disease	cardiovascular condition group	8	1	4	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Clostridium difficile infection	Infectious disease	infectious-disease condition group	8	1	4	5
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Genital neoplasm, female	Cancer / neoplasia	cancer/neoplasia condition group	8	1	4	4
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Glucose	Metabolic / endocrine	metabolic/endocrine condition group	8	1	4	6
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Grey matter volume measurement	Brain morphology measurement	brain-morphology condition group	8	1	4	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Hippocampal volume	Other specific clinical labels	other-specific-clinical-label condition group	8	1	4	8
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Hormone	Other specific clinical labels	other-specific-clinical-label condition group	8	1	6	4
@@ -168,6 +165,7 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	White matter volume measurement	Other specific clinical labels	other-specific-clinical-label condition group	8	1	4	8
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Anorexia nervosa	Psychiatric / behavioral health	psychiatric/behavioral condition group	7	3	4	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Autism spectrum disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	7	3	2	2
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Inflammatory bowel disease	Inflammatory bowel disease	ibd condition group	7	3	2	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Anxiety disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	7	2	3	5
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Head and neck carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	7	2	4	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Human papillomavirus	Infectious disease	infectious-disease condition group	7	2	4	3
@@ -179,10 +177,8 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Essential thrombocythemia	Blood / immune deficiency	blood/immune-deficiency condition group	7	1	3	5
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Female infertility	Reproductive / hormonal health	reproductive/hormonal condition group	7	1	2	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	High altitude adaptation	Environmental / chemical exposure	environmental/chemical condition group	7	1	2	4
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Hypertriglyceridemia	Other specific clinical labels	other-specific-clinical-label condition group	7	1	4	4
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Insulin	Metabolic / endocrine	metabolic/endocrine condition group	7	1	4	4
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Hypertriglyceridemia	Other specific clinical labels	other-specific-clinical-label condition group	7	1	4	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Medroxyprogesterone acetate	Reproductive / hormonal health	reproductive/hormonal condition group	7	1	3	3
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Metabolic process	Metabolic / endocrine	metabolic/endocrine condition group	7	1	4	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to risperidone	Medication / clinical treatment	medication/clinical-treatment condition group	7	1	5	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Systemic lupus erythematosus	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	7	1	4	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Arthritis	Musculoskeletal / connective tissue	musculoskeletal/connective condition group	6	4	3	4
@@ -193,10 +189,8 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Fasting blood glucose measurement	Metabolic / endocrine	metabolic/endocrine condition group	6	3	3	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Sampling site	Sampling site / time protocol	sampling-site/time condition group	6	3	2	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Acute graft vs. host disease	Transplant / graft response	transplant/graft condition group	6	2	4	3
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Acute myeloid leukemia	Cancer / neoplasia	cancer/neoplasia condition group	6	2	3	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Biliary atresia	GI / digestive disease	gi/digestive condition group	6	2	3	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Breast carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	6	2	3	2
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Diabetic retinopathy	Ocular / eye disease	ocular/eye condition group	6	2	3	6
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Menopause	Reproductive / hormonal health	reproductive/hormonal condition group	6	2	3	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Non-alcoholic steatohepatitis	Infectious disease	infectious-disease condition group	6	2	2	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Prediabetes syndrome	Metabolic / endocrine	metabolic/endocrine condition group	6	2	3	3
@@ -241,8 +235,6 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Treatment refractory schizophrenia	Psychiatric / behavioral health	psychiatric/behavioral condition group	5	1	2	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Total cholesterol measurement	Metabolic / endocrine	metabolic/endocrine condition group	4	3	2	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Attention deficit hyperactivity disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	4	2	2	3
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Diabetic nephropathy	Renal / urinary disease	renal/urinary condition group	4	2	1	1
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Diabetic neuropathy	Neurologic / cognitive disease	neurologic/cognitive condition group	4	2	2	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Estradiol measurement	Reproductive / hormonal health	reproductive/hormonal condition group	4	2	3	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Health trait	Experimental phenotype labels	experimental-phenotype-label condition group	4	2	2	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Leukemia	Cancer / neoplasia	cancer/neoplasia condition group	4	2	2	2
@@ -263,6 +255,7 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cancer	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cervical squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cognitive function measurement	Other specific clinical labels	other-specific-clinical-label condition group	4	1	1	0
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Diabetic retinopathy	Ocular / eye disease	ocular/eye condition group	4	1	2	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Disease prognosis measurement	Disease activity / severity	disease-activity/severity condition group	4	1	2	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Down syndrome	Neurologic / cognitive disease	neurologic/cognitive condition group	4	1	2	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Drug resistance	Medication / clinical treatment	medication/clinical-treatment condition group	4	1	2	3
@@ -276,32 +269,33 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Neonatal jaundice	Pregnancy / neonatal	pregnancy/neonatal condition group	4	1	2	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Nutraceutical,Colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	4	1	2	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Oral leukoplakia	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	2
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Osteoarthritis, knee	Musculoskeletal / connective tissue	musculoskeletal/connective condition group	4	1	2	1
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Osteoarthritis, knee	Musculoskeletal / connective tissue	musculoskeletal/connective condition group	4	1	2	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Osteoarthritis,Rheumatoid arthritis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	4	1	2	3
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Pancreatic ductal adenocarcinoma	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Periapical Periodontitis	Oral / periodontal disease	oral/periodontal condition group	4	1	2	1
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Periodontitis,Type II diabetes mellitus	Oral / periodontal disease	oral/periodontal condition group	4	1	2	2
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Periodontitis,Type II diabetes mellitus	Oral / periodontal disease	oral/periodontal condition group	4	1	2	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Primary bacterial infectious disease	Infectious disease	infectious-disease condition group	4	1	2	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Reaction time measurement	Sampling site / time protocol	sampling-site/time condition group	4	1	2	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Remission	Disease activity / severity	disease-activity/severity condition group	4	1	2	4
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to proton-pump inhibitor	Medication / clinical treatment	medication/clinical-treatment condition group	4	1	2	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Schizophrenia,Metabolic syndrome	Metabolic / endocrine	metabolic/endocrine condition group	4	1	2	2
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Seasonality measurement	Environmental / chemical exposure	environmental/chemical condition group	4	1	2	2
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Seasonality measurement	Environmental / chemical exposure	environmental/chemical condition group	4	1	2	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Short stature	Body composition / growth	body-composition/growth condition group	4	1	0	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Tumor size	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Viral pneumonia	Infectious disease	infectious-disease condition group	4	1	2	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Anxiety	Psychiatric / behavioral health	psychiatric/behavioral condition group	3	2	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Autoimmune type 1 diabetes	Metabolic / endocrine	metabolic/endocrine condition group	3	2	1	2
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Bacterial vaginosis	Reproductive / hormonal health	reproductive/hormonal condition group	3	2	1	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Environmental factor	Diet / nutrition / supplements	diet/nutrition/supplement condition group	3	2	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Fasting blood insulin measurement	Metabolic / endocrine	metabolic/endocrine condition group	3	2	2	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Gonorrhea	Infectious disease	infectious-disease condition group	3	2	3	1
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	HIV infection,Oral candidiasis	Infectious disease	infectious-disease condition group	3	2	1	2
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	HIV infection,Oral candidiasis	Infectious disease	infectious-disease condition group	3	2	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	HbA1c measurement	Other specific clinical labels	other-specific-clinical-label condition group	3	2	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	High density lipoprotein cholesterol measurement	Metabolic / endocrine	metabolic/endocrine condition group	3	2	2	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Hormone replacement therapy	Reproductive / hormonal health	reproductive/hormonal condition group	3	2	1	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Lactobacillus rhamnosus GG	Diet / nutrition / supplements	diet/nutrition/supplement condition group	3	2	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Abnormal stool composition	GI / digestive disease	gi/digestive condition group	3	1	2	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Abnormality of the gastrointestinal tract	GI / digestive disease	gi/digestive condition group	3	1	2	2
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Acute myeloid leukemia	Cancer / neoplasia	cancer/neoplasia condition group	3	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Adenomyosis,Endometriosis	Reproductive / hormonal health	reproductive/hormonal condition group	3	1	0	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Azithromycin	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	3	1	0	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Colorectal Gastrointestinal Stromal Tumor	Cancer / neoplasia	cancer/neoplasia condition group	3	1	1	1
@@ -315,7 +309,6 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	HDL cholesterol	Metabolic / endocrine	metabolic/endocrine condition group	3	1	0	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	HIV-1 infection	Infectious disease	infectious-disease condition group	3	1	2	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Hidradenitis suppurativa	Skin / hair disease	skin/hair condition group	3	1	2	2
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Hypoglycemia	Other specific clinical labels	other-specific-clinical-label condition group	3	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Illness severity status	Disease activity / severity	disease-activity/severity condition group	3	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Necrotizing enterocolitis	GI / digestive disease	gi/digestive condition group	3	1	1	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Neoplasm	Cancer / neoplasia	cancer/neoplasia condition group	3	1	1	1
@@ -325,7 +318,7 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to irinotecan	Medication / clinical treatment	medication/clinical-treatment condition group	3	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to oxcarbazepine	Medication / clinical treatment	medication/clinical-treatment condition group	3	1	1	3
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Restricted to specific location	Population / social covariates	population/social-covariate condition group	3	1	1	1
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Retinopathy	Ocular / eye disease	ocular/eye condition group	3	1	1	2
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Retinopathy	Ocular / eye disease	ocular/eye condition group	3	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Rosacea	Skin / hair disease	skin/hair condition group	3	1	2	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Schizophrenia symptom severity measurement	Psychiatric / behavioral health	psychiatric/behavioral condition group	3	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Serum alanine aminotransferase measurement	Liver / biliary biomarker	liver/biliary-biomarker condition group	3	1	1	0
@@ -361,7 +354,6 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Breast cancer stage	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	C-peptide measurement	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	CD4-positive T-lymphocyte count	Blood / immune deficiency	blood/immune-deficiency condition group	2	1	1	0
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cancer or benign tumor	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Carotid artery intima media thickness	Cardiovascular disease	cardiovascular condition group	2	1	1	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cerebral infarction	Neurologic / cognitive disease	neurologic/cognitive condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cervical carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	0
@@ -383,21 +375,17 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Constipation,Parkinson's disease	GI / digestive disease	gi/digestive condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Coronary artery disease	Cardiovascular disease	cardiovascular condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Crohn's colitis	Inflammatory bowel disease	ibd condition group	2	1	1	2
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cutaneous T-cell lymphoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Cytokine	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Diabetic foot	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Diabetic ketoacidosis	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Diabetic neuropathy	Neurologic / cognitive disease	neurologic/cognitive condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Digestive system cancer	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Disease recurrence	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Distal colitis,Pancolitis	GI / digestive disease	gi/digestive condition group	2	1	1	1
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Doxycycline	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Ectopic pregnancy	Pregnancy / neonatal	pregnancy/neonatal condition group	2	1	2	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Eczema,Allergic rhinitis	Respiratory / airway disease	respiratory/airway condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Eczema,Urticaria	Skin / hair disease	skin/hair condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Electroencephalogram measurement	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Ethnic group,Socioeconomic status	Population / social covariates	population/social-covariate condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Fibromyalgia	Musculoskeletal / connective tissue	musculoskeletal/connective condition group	2	1	1	1
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Gastric adenocarcinoma,Epstein-Barr virus infection	Infectious disease	infectious-disease condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Gastric carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Glioma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Glucose tolerance test	Metabolic / endocrine	metabolic/endocrine condition group	2	1	1	2
@@ -424,7 +412,6 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	LDL cholesterol	Metabolic / endocrine	metabolic/endocrine condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Leukopenia	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Luteinizing hormone measurement	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	M1 distant metastasis stage	Age / development / sex	age/development/sex condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Macrophage inflammatory protein 1b measurement	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Mammographic density measurement	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Maternal milk	Pregnancy / neonatal	pregnancy/neonatal condition group	2	1	1	1
@@ -442,7 +429,6 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Pemphigus vulgaris	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Peptic esophagitis	GI / digestive disease	gi/digestive condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Perceived unattractiveness to mosquitos measurement	Environmental / chemical exposure	environmental/chemical condition group	2	1	1	1
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Phenotype	Experimental phenotype labels	experimental-phenotype-label condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Physical activity measurement	Activity / lifestyle score	activity/lifestyle-score condition group	2	1	1	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Pituitary Gland Adenoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Place of residence measurement,Ethnic group	Population / social covariates	population/social-covariate condition group	2	1	1	1
@@ -456,7 +442,6 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	REM sleep behavior disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	2	1	1	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Rare dyslipidemia,Polycystic ovary syndrome	Metabolic / endocrine	metabolic/endocrine condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to clozapine	Medication / clinical treatment	medication/clinical-treatment condition group	2	1	1	0
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to platinum-based neoadjuvant chemotherapy	Medication / clinical treatment	medication/clinical-treatment condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to surgery	Medication / clinical treatment	medication/clinical-treatment condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Response to vaccine,Timepoint	Medication / clinical treatment	medication/clinical-treatment condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Root caries	Dental / periodontal measurement	dental/periodontal-measurement group	2	1	1	0
@@ -464,14 +449,13 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Self reported educational attainment	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Sex design	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Sex hormone-binding globulin measurement	Reproductive / hormonal health	reproductive/hormonal condition group	2	1	1	0
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Sigmoid neoplasm	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Sigmoid neoplasm	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Sjogren syndrome	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Social anxiety disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Social interaction measurement	Psychiatric / behavioral health	psychiatric/behavioral condition group	2	1	1	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Survival time	Disease activity / severity	disease-activity/severity condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Temporomandibular joint disorder	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Thyroid carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Timepoint	Sampling site / time protocol	sampling-site/time condition group	2	1	2	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Tongue neoplasm	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Trichomonas vaginitis	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Tumor grading	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
@@ -500,8 +484,8 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Crohn ileitis	Inflammatory bowel disease	ibd condition group	1	1	0	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Dehydroepiandrosterone measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Dermatitis	Skin / hair disease	skin/hair condition group	1	1	0	0
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Diabetic nephropathy	Renal / urinary disease	renal/urinary condition group	1	1	0	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Digestive system disease	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Disease staging	Age / development / sex	age/development/sex condition group	1	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Distal colitis	GI / digestive disease	gi/digestive condition group	1	1	0	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Equol	Diet / nutrition / supplements	diet/nutrition/supplement condition group	1	1	0	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Estrogen receptor status	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1
@@ -517,10 +501,9 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	HOMA-IR	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Household income	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Hyperproinsulinemia	Metabolic / endocrine	metabolic/endocrine condition group	1	1	1	0
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Increased inflammatory response	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	1	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Interleukin 1 receptor antagonist measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Interleukin 17 measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	1
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Interleukin 8 measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1
+coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Interleukin 8 measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Interleukin-6 measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Macrophage inflammatory protein 1a measurement	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	1	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Metabolite measurement	Metabolite biomarker	metabolite-biomarker condition group	1	1	0	0
@@ -535,7 +518,6 @@ coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decrea
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Postmenopausal	Reproductive / hormonal health	reproductive/hormonal condition group	1	1	0	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Prostate carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	1	1	0	1
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Protein intake measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1
-coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Spontaneous abortion	Reproductive / hormonal health	reproductive/hormonal condition group	1	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Sugar consumption measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Syncope	Cardiovascular disease	cardiovascular condition group	1	1	0	0
 coccus_shaped_decreased	METPO:1000668	coccus shaped	coccus_shaped	#009e73	decreased	Systolic blood pressure	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1

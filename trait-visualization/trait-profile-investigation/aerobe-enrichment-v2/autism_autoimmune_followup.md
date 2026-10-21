@@ -12,13 +12,13 @@ This follow-up starts from aerobe v2 trait enrichment in increased profiles and 
 
 | condition group | exact condition label | profiles | studies | increased / decreased profiles | increased - decreased trait z | body-site groups |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
-| Autism | Autism | 14 | 4 | 8 / 6 | 0.744 | Feces |
-| Autism spectrum disorder | Autism spectrum disorder | 7 | 3 | 5 / 2 | -1.682 | Feces |
-| Autoimmune disease | Autoimmune disease | 8 | 2 | 4 / 4 | 0.421 | Feces |
+| Autism | Autism | 14 | 4 | 8 / 6 | 0.749 | Feces |
+| Autism spectrum disorder | Autism spectrum disorder | 7 | 3 | 5 / 2 | -1.693 | Feces |
+| Autoimmune disease | Autoimmune disease | 8 | 2 | 4 / 4 | 0.424 | Feces |
 
 ## Top Taxa
 
-The tables below count unique taxon/profile occurrences after deduplicating the same taxon within the same study/experiment/direction profile. Human-host profiles only; No occurrence lies outside the human-host corpus. Exact `Autism` and `Autism spectrum disorder` are reported separately rather than pooled because their directional skews diverge: `Autism` has a positive increased-minus-decreased trait z shift (+0.744; 8 increased and 6 decreased profiles from 4 studies), whereas `Autism spectrum disorder` has a negative increased-minus-decreased trait z shift (-1.682; 5 increased and 2 decreased profiles from 3 studies) (#128).
+The tables below count unique taxon/profile occurrences after deduplicating the same taxon within the same study/experiment/direction profile. Human-host 16S and shotgun profiles only; No occurrence lies outside the human-host corpus. Exact `Autism` and `Autism spectrum disorder` are reported separately rather than pooled because their directional skews diverge: `Autism` has a positive increased-minus-decreased trait z shift (+0.749; 8 increased and 6 decreased profiles from 4 studies), whereas `Autism spectrum disorder` has a negative increased-minus-decreased trait z shift (-1.693; 5 increased and 2 decreased profiles from 3 studies) (#128).
 
 ### Autism
 
@@ -175,14 +175,14 @@ This section uses a data-derived trait-enrichment view: for each exact condition
 
 | condition | increased profiles | universe taxa / observed taxa | enriched traits | supporting taxa |
 | --- | ---: | ---: | --- | --- |
-| Autism | 8 | 24 / 36 | aerobic (+1.04); facultatively aerobic (+0.77); microaerophilic (+0.41) | Pseudomonadota (3 traits, 3 profiles); Enterococcus (3 traits, 3 profiles); Bifidobacteriaceae (3 traits, 3 profiles); Microbacteriaceae (3 traits, 3 profiles); Corynebacteriaceae (3 traits, 2 profiles); Bacteroidota (3 traits, 2 profiles); Bifidobacterium (3 traits, 2 profiles); Erysipelotrichaceae (3 traits, 1 profile); Lactobacillus (3 traits, 1 profile); Corynebacterium (3 traits, 1 profile); Actinomycetes (3 traits, 1 profile); Bacillaceae (3 traits, 1 profile) |
-| Autoimmune disease | 4 | 45 / 84 | facultatively aerobic (+0.60); aerobic (+0.44); microaerophilic (+0.22) | Bacteroides (3 traits, 3 profiles); Pseudomonadota (3 traits, 3 profiles); Gammaproteobacteria (3 traits, 3 profiles); Bacillota (3 traits, 2 profiles); Streptococcaceae (3 traits, 2 profiles); Streptococcus (3 traits, 2 profiles); Bacteroidales (3 traits, 2 profiles); Clostridia (3 traits, 2 profiles); Eubacteriales (3 traits, 2 profiles); Lactobacillales (3 traits, 2 profiles); Bacteroidia (3 traits, 2 profiles); Enterobacteriaceae (3 traits, 2 profiles) |
+| Autism | 8 | 24 / 36 | aerobic (+1.05); facultatively aerobic (+0.78); microaerophilic (+0.42) | Pseudomonadota (3 traits, 3 profiles); Enterococcus (3 traits, 3 profiles); Bifidobacteriaceae (3 traits, 3 profiles); Microbacteriaceae (3 traits, 3 profiles); Corynebacteriaceae (3 traits, 2 profiles); Bacteroidota (3 traits, 2 profiles); Bifidobacterium (3 traits, 2 profiles); Erysipelotrichaceae (3 traits, 1 profile); Lactobacillus (3 traits, 1 profile); Corynebacterium (3 traits, 1 profile); Actinomycetes (3 traits, 1 profile); Bacillaceae (3 traits, 1 profile) |
+| Autoimmune disease | 4 | 45 / 84 | facultatively aerobic (+0.61); aerobic (+0.44); microaerophilic (+0.22) | Bacteroides (3 traits, 3 profiles); Pseudomonadota (3 traits, 3 profiles); Gammaproteobacteria (3 traits, 3 profiles); Bacillota (3 traits, 2 profiles); Streptococcaceae (3 traits, 2 profiles); Streptococcus (3 traits, 2 profiles); Bacteroidales (3 traits, 2 profiles); Clostridia (3 traits, 2 profiles); Eubacteriales (3 traits, 2 profiles); Lactobacillales (3 traits, 2 profiles); Bacteroidia (3 traits, 2 profiles); Enterobacteriaceae (3 traits, 2 profiles) |
 
 ## Interpretation
 
 This v2 follow-up uses only the narrowed aerobe v2 selected traits: facultatively aerobic, aerobic, microaerophilic. It supports a label-dependent signal check rather than a broad causal claim.
 
-Included condition labels with positive increased-minus-decreased v2 trait-enrichment shifts are `Autism` (0.744), `Autoimmune disease` (0.421).
+Included condition labels with positive increased-minus-decreased v2 trait-enrichment shifts are `Autism` (0.749), `Autoimmune disease` (0.424).
 
 At the taxa-list level, overlap should still be interpreted cautiously. The signed heatmap counts direction balance by taxon/profile occurrence, while the guild annotation columns only indicate whether those taxa carry one or more of the v2 oxygen-tolerance traits.
 
