@@ -12,6 +12,8 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.patches import Patch
 
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 MATRIX_METADATA_COLUMNS = ["taxon_id", "taxon_name", "taxonomic_rank"]
@@ -118,7 +120,11 @@ def load_bugsigdb_taxa_records(
     bugsigdb_taxa_path: Path,
     full_dump_path: Path | None,
 ) -> pd.DataFrame:
-    """Load BugSigDB taxa, preferring raw full-dump names/ranks when available."""
+    """Load BugSigDB taxa, preferring raw full-dump names/ranks when available.
+
+    From the full dump only Homo sapiens 16S and WMS experiments are kept, the
+    analysis corpus's rule; a blank sequencing type is left out (#742).
+    """
     if full_dump_path is not None and full_dump_path.exists():
         records: list[dict[str, str]] = []
         with full_dump_path.open(encoding="utf-8", newline="") as handle:
@@ -128,10 +134,12 @@ def load_bugsigdb_taxa_records(
                 bsdb_id = clean_value(row.get("BSDB ID"))
                 direction = clean_value(row.get("Abundance in Group 1")).lower()
                 host_species = clean_value(row.get("Host species"))
+                sequencing_type = clean_value(row.get("Sequencing type"))
                 if (
                     not bsdb_id
                     or direction not in {"increased", "decreased"}
                     or host_species != HUMAN_HOST_SPECIES
+                    or sequencing_type not in CORPUS_SEQUENCING_TYPES
                 ):
                     continue
 
@@ -463,7 +471,8 @@ def save_heatmap(
     )
     cluster.ax_heatmap.set_title(
         "Taxa Guild Discovery: BugSigDB Taxa Clustered by Trait Vectors\n"
-        f"Rows are high-support human-host taxa ({rank_note}); columns are binary "
+        f"Rows are high-support human-host 16S and shotgun taxa ({rank_note}); columns are "
+        "binary "
         "KG-Microbe traits; "
         f"{studies_analyzed} studies and {profiles_analyzed} study/experiment/direction "
         "profiles analyzed",

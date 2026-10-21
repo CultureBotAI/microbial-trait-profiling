@@ -32,6 +32,8 @@ EXPERIMENT_LABEL_COLUMNS = {
     "body_site": "Body site",
     "location": "Location of subjects",
     "host_species": "Host species",
+    # Read for the corpus's 16S and shotgun rule (#742)
+    "sequencing_type": "Sequencing type",
 }
 REQUIRED_PAIRED_TRAITS = {
     "METPO:1000615": "mesophilic",
