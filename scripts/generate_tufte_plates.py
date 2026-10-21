@@ -55,7 +55,7 @@ CELLULOSE_DIR = Path("data/analysis/cellulose_decr")
 TRAIT_COLUMNS = Path("data/derived/taxa_trait_matrix_columns.tsv")
 # The rerun the plates' tables come from. The deck stamps and links the plate slides at the
 # same revision and refuses inputs that differ from it (#637); the two move together (#579).
-RERUN_COMMIT = "622e5c71d8c8e4190981a98c4220823b5e6060df"
+RERUN_COMMIT = "edeb7bef2f0db052bb84aa638d3e74fc6c53ca6f"
 RERUN_SOURCE = f"Source: Rerun on main ({RERUN_COMMIT[:7]})"
 
 # Tufte palette: muted, high-contrast, colorblind-safe ink on warm paper/clean white

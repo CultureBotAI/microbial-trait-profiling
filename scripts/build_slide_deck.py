@@ -70,7 +70,7 @@ REPO_URL = "https://github.com/CultureBotAI/microbial-trait-profiling"
 # Where `just figure-review-plates` draws the methods and Tufte plates.
 PLATES_DIR = "data/derived/tufte_plates/"
 PROVENANCE_NAME = "figure_provenance_and_results.yaml"
-COMMIT = "622e5c71d8c8e4190981a98c4220823b5e6060df"
+COMMIT = "edeb7bef2f0db052bb84aa638d3e74fc6c53ca6f"
 SHORT_COMMIT = COMMIT[:12]
 BRANCH = "main"
 GITHUB_BLOB = f"{REPO_URL}/blob/{COMMIT}"
