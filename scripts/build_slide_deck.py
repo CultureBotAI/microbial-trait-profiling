@@ -184,7 +184,8 @@ def read_tsv(path: Path, quoted: bool = True) -> list[dict[str, str]]:
     if quoted:
         TABLES_READ.add(path)
     with path.open(newline="", encoding="utf-8") as f:
-        return list(csv.DictReader(f, delimiter="\t"))
+        lines = [line for line in f if not line.startswith("#")]
+        return list(csv.DictReader(lines, delimiter="\t"))
 
 
 def read_json(path: Path) -> Any:
