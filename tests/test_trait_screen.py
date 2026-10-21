@@ -437,11 +437,12 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
     assert profiles.units == 5629
     assert profiles.li_ji == pytest.approx(61.0, abs=0.05)
     assert profiles.galwey == pytest.approx(48.8, abs=0.05)
-    assert profiles.cheverud_nyholt == pytest.approx(198.85, abs=0.05)
+    # Tolerances tight enough that the 5,829-profile values fail (#760)
+    assert profiles.cheverud_nyholt == pytest.approx(198.854, abs=0.005)
     assert profiles.pc1_share == pytest.approx(0.604, abs=0.001)
     assert profiles.pairs == 50086
-    assert profiles.median_rho == pytest.approx(0.6105, abs=0.001)
-    assert profiles.share_rho_above_half == pytest.approx(0.634, abs=0.001)
+    assert profiles.median_rho == pytest.approx(0.6105, abs=0.0002)
+    assert profiles.share_rho_above_half == pytest.approx(0.6344, abs=0.0002)
 
 
 def _dependence_record(*, li_ji: float, galwey: float, cheverud_nyholt: float) -> Dependence:

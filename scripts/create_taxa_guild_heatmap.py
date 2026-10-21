@@ -155,6 +155,12 @@ def load_bugsigdb_taxa_records(
                     )
         if records:
             return pd.DataFrame.from_records(records)
+        # An export that yields no corpus row must not silently drop both filters (#753)
+        msg = (
+            f"{full_dump_path} has no {HUMAN_HOST_SPECIES} 16S or WMS taxon rows; check its "
+            "Host species and Sequencing type columns"
+        )
+        raise ValueError(msg)
 
     return pd.read_csv(
         bugsigdb_taxa_path,

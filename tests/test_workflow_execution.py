@@ -14,6 +14,7 @@ from mtp.count_input import read_profile_coverage
 from mtp.ingest import ingest
 from mtp.study_trait_profiles import collect_profile_taxa, read_taxa_trait_matrix
 from mtp.taxa_trait_matrix import read_kg_edges
+from mtp.workflow.consumers import build_consumer_coverage, open_core_bundle
 from mtp.workflow.coverage import build_profile_coverage
 from mtp.workflow.definition import read_definition, validate_definition
 from mtp.workflow.kg_inputs import audit_kg_edges, iter_kg_edges
@@ -376,3 +377,20 @@ def test_only_16s_and_shotgun_experiments_enter_the_profiles(
         after = _rows(artifact_path(run, product))
         assert any(row["study_id"] == "bsdb:3" for row in before)
         assert after == [row for row in before if row["study_id"] != "bsdb:3"]
+    # Consumer coverage and feature lineage apply the same rule (#763)
+    coverage = read_profile_coverage(
+        build_consumer_coverage(open_core_bundle(Path(run.manifest_path)), tmp_path / "cov.tsv")
+    )
+    assert coverage
+    assert {key[0] for key in coverage} == {
+        row["study_id"] for row in _rows(artifact_path(run, "count_profiles"))
+    }
+    with pytest.raises(ValueError, match="absent from selected study cohort"):
+        trace_profile_feature(
+            artifact_path(run, "studies"),
+            artifact_path(run, "taxa_matrix"),
+            INPUTS["kg_edges"],
+            INPUTS["kg_nodes"],
+            ("bsdb:3", "bsdb:3-1", "inc"),
+            TRAIT,
+        )

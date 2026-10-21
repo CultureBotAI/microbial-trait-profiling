@@ -76,8 +76,8 @@ The legacy files named `*_long.tsv` are transposes, not tidy observation tables.
 | Flattened tables | Explicit study, experiment, signature and occurrence keys, parent references, and declared multiplicities. Taxon occurrences can repeat across signatures. |
 | Feature catalog | Qualified feature identifiers retain predicates where needed. Culture-medium features are explicitly classified. Core products retain MediaDive. |
 | Taxon-trait matrix | Each cell counts distinct source taxa at or below the reported row taxon with the annotation. Duplicate source edges do not create extra source taxa. |
-| Count profiles | Sum matrix count vectors over distinct reported taxon IDs per study/experiment/direction. All hosts are retained by default. |
-| ORA profiles | Count distinct reported IDs whose inherited matrix count is positive. `taxa_count` is the number of distinct reported IDs present in the matrix. Default host: `Homo sapiens`. |
+| Count profiles | Sum matrix count vectors over distinct reported taxon IDs per study/experiment/direction. All hosts are retained by default; only 16S and shotgun (`WMS`) experiments are kept (#742). |
+| ORA profiles | Count distinct reported IDs whose inherited matrix count is positive. `taxa_count` is the number of distinct reported IDs present in the matrix. Default host: `Homo sapiens`; only 16S and shotgun (`WMS`) experiments are kept (#742). |
 | Coverage | Reported = matched + unmatched; matched = annotated + unannotated. Status and sorted unmatched/unannotated IDs accompany the retained-feature digest. |
 
 Matrix matching and KG membership are different. The current matrix builder
@@ -257,12 +257,14 @@ verified pinned-source requirement.
 
 | Population | Selection and direction |
 | --- | --- |
-| `all_paired` (default) | Preserve the existing unfiltered core and original Group 1 versus Group 0 directions. Human pairing and other eligibility remain downstream rules. The name does not assert that every ingested record is human or paired. |
+| `all_paired` (default) | Preserve the existing unfiltered core and original Group 1 versus Group 0 directions. Human pairing and other eligibility remain downstream rules; the profiles still keep 16S and shotgun experiments only (#742). The name does not assert that every ingested record is human or paired. |
 | `disease_vs_healthy_tier1_2_subject_controls` | Paired human disease-versus-healthy classifications with subject controls and Tier 1 healthy/normal or Tier 2 condition-negative/screened comparisons. |
 | `case_vs_control_subject` | Paired human disease-versus-healthy classifications with subject controls, including Tier 3 hospital/comorbid controls. |
 | `disease_vs_healthy_oriented` | All paired human disease-versus-healthy classifications, including paired-tissue and within-disease comorbidity comparisons. |
 
-The three non-default selections require both ingested signature directions.
+The three non-default selections require both ingested signature directions and
+a 16S or shotgun (`WMS`) sequencing type; an experiment that fails only the latter
+is recorded with exclusion reason `sequencing_type` (#742).
 They do not impose trait-total eligibility, a strong-evidence-only filter or a
 treated-disease flag exclusion. Later analysis filters can reduce support further.
 Tier 2 condition-negative and Tier 3 subject controls are not claims of general

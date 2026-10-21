@@ -102,6 +102,30 @@ def join_human_host_profiles(
     excluded["exclusion_reason"] = EXCLUDED_BY_HOST
     excluded.loc[human, "exclusion_reason"] = EXCLUDED_BY_SEQUENCING_TYPE
 
+    # The kept occurrences are checked too: profile metadata written before #742 would
+    # otherwise count other methods under a "16S and shotgun only" note (#752)
+    kept = occurrences.loc[in_corpus, [*EXPERIMENT_KEY, "profile_id"]].merge(
+        experiment_hosts[[*EXPERIMENT_KEY, "host_species", "sequencing_type"]],
+        on=EXPERIMENT_KEY,
+        how="left",
+        validate="many_to_one",
+    )
+    outside = kept.loc[
+        (_recorded(kept["host_species"], UNRECORDED_HOST) != HUMAN_HOST_SPECIES)
+        | ~_recorded(kept["sequencing_type"], UNRECORDED_SEQUENCING_TYPE).isin(
+            CORPUS_SEQUENCING_TYPES
+        ),
+        "profile_id",
+    ]
+    if not outside.empty:
+        msg = (
+            f"{outside.nunique():,} profile(s) in the profile metadata are not "
+            f"{HUMAN_HOST_SPECIES} {' or '.join(CORPUS_SEQUENCING_TYPES)} experiments, e.g. "
+            f"{sorted(outside.unique())[:3]}; regenerate the metadata with "
+            "`just trait-heatmaps` (#742)"
+        )
+        raise ValueError(msg)
+
     joined = occurrences.loc[in_corpus].merge(
         profiles,
         left_on="profile_id",
@@ -150,8 +174,8 @@ def excluded_host_summary(excluded: pd.DataFrame) -> str:
         reasons.append(
             (
                 len(by_method),
-                f"{HUMAN_HOST_SPECIES} experiments sequenced by neither "
-                f"{' nor '.join(CORPUS_SEQUENCING_TYPES)}",
+                f"{HUMAN_HOST_SPECIES} experiments with a sequencing method other than "
+                f"{' or '.join(CORPUS_SEQUENCING_TYPES)}, or none recorded",
                 _value_counts_text(by_method["sequencing_type"]),
             )
         )

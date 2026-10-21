@@ -91,11 +91,11 @@ _CORE_SEMANTICS = {
     ),
     "contrast_study_collection": _ScientificSemantics(
         "study",
-        coverage_policy="contrast_population_v1",
+        coverage_policy="contrast_population_v2",
         schema_ref="schema/mtp.yaml#Study",
     ),
     "contrast_selection": _ScientificSemantics(
-        "experiment_selection_decision", coverage_policy="contrast_population_v1"
+        "experiment_selection_decision", coverage_policy="contrast_population_v2"
     ),
     "ingest_log": _ScientificSemantics("ingest_event", "all_hosts"),
     "study_table": _ScientificSemantics("study", "all_hosts", schema_ref=_SCHEMA + "StudyTableRow"),

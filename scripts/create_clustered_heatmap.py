@@ -82,6 +82,13 @@ def build_binary_matrix(
         usecols=["study_id", "experiment_id", "direction", "taxon_name", "taxonomic_rank"],
     )
     human_experiment_ids = load_human_experiment_ids(full_dump_path)
+    # An export that yields no corpus row must not silently drop both filters (#753)
+    if full_dump_path is not None and full_dump_path.exists() and not human_experiment_ids:
+        msg = (
+            f"{full_dump_path} has no {HUMAN_HOST_SPECIES} 16S or WMS rows; check its "
+            "Host species and Sequencing type columns"
+        )
+        raise ValueError(msg)
     if human_experiment_ids:
         taxa = taxa[
             [

@@ -306,6 +306,11 @@ def _profile_taxa(context: Mapping[str, object], cohort: str) -> dict[ProfileKey
     experiments = _records(context, "experiments")
     if experiments is None:
         raise ValueError("Cohort validation requires the experiments product")
+    if experiments and "sequencing_type" not in experiments[0]:
+        raise ValueError(
+            "Cohort validation requires sequencing_type in the experiments product; "
+            "a core made before #742 lacks it and must be rebuilt (#762)"
+        )
     # Profiles keep 16S and shotgun experiments only, whatever the host cohort (#742)
     allowed = {
         (r["study_id"], r["experiment_id"])
@@ -533,7 +538,8 @@ def validate_product(
     are supplied, keys, vocabulary, denominators, and aggregation are checked
     against them. The returned facts explicitly state whether source aggregation
     was available. ``cohort='all'`` means no host filter; other values match the
-    experiments' host_species field exactly.
+    experiments' host_species field exactly. Either way the cohort keeps only
+    experiments whose sequencing_type is one of ``CORPUS_SEQUENCING_TYPES`` (#742).
     """
     kind = _ALIASES.get(kind, kind)
     related = context or {}

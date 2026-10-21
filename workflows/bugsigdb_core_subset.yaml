@@ -2,8 +2,8 @@ id: bugsigdb-core-subset
 version: '1'
 description: Verified contrast-population selection and disease orientation before canonical exports and
   profiles. Original ingested studies and exports remain preserved. The trait matrix, vocabulary and ORA
-  background use the full source population. Selected populations and profiles keep 16S and shotgun
-  (WMS) experiments only (#742).
+  background use the full source population. Selected populations and profiles keep 16S and shotgun (WMS)
+  experiments only (#742).
 parameters:
   - name: source_mode
     default: unknown
@@ -54,7 +54,7 @@ products:
     filename: studies
     unit: study
     cohort: all_paired
-    coverage_policy: contrast_population_v1
+    coverage_policy: contrast_population_v2
     cohort_parameter: contrast_population
     description: Exact selected projection of source_studies. Group metadata remains original; signature
       directions follow the recorded WorkflowRun direction_basis.
@@ -262,7 +262,7 @@ products:
     unit: experiment_selection_decision
     cohort: all_paired
     cohort_parameter: contrast_population
-    coverage_policy: contrast_population_v1
+    coverage_policy: contrast_population_v2
 steps:
   - id: identify_sources
     operation: identify_sources

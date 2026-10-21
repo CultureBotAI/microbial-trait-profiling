@@ -167,13 +167,13 @@ def test_main_builds_modules_from_each_experiments_own_labels(
         "\n".join(
             [
                 "# BugSigDB 2026-04-24_00:41_UTC",
-                "BSDB ID,Condition,Body site,Location of subjects,Host species",
-                "bsdb:1/1/1,Crohn's disease,Feces,Sweden,Homo sapiens",
-                "bsdb:1/1/2,Crohn's disease,Feces,Sweden,Homo sapiens",
-                "bsdb:1/2/1,Crohn's disease,Feces,Sweden,Homo sapiens",
-                "bsdb:1/3/1,Ulcerative colitis,Colonic mucosa,Sweden,Homo sapiens",
-                "bsdb:2/1/1,Ulcerative colitis,Colonic mucosa,Norway,Homo sapiens",
-                "bsdb:3/1/1,Obesity,Feces,Norway,Homo sapiens",
+                "BSDB ID,Condition,Body site,Location of subjects,Host species,Sequencing type",
+                "bsdb:1/1/1,Crohn's disease,Feces,Sweden,Homo sapiens,16S",
+                "bsdb:1/1/2,Crohn's disease,Feces,Sweden,Homo sapiens,16S",
+                "bsdb:1/2/1,Crohn's disease,Feces,Sweden,Homo sapiens,16S",
+                "bsdb:1/3/1,Ulcerative colitis,Colonic mucosa,Sweden,Homo sapiens,16S",
+                "bsdb:2/1/1,Ulcerative colitis,Colonic mucosa,Norway,Homo sapiens,WMS",
+                "bsdb:3/1/1,Obesity,Feces,Norway,Homo sapiens,16S",
             ]
         ),
         encoding="utf-8",

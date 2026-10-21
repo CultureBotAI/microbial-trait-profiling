@@ -2506,8 +2506,8 @@ PIPELINE_STEPS: tuple[dict[str, Any], ...] = (
         "input_files": ["data/studies/", "data/derived/taxa_trait_matrix.tsv"],
         "output_files": ["data/derived/study_trait_profiles_wide.tsv"],
         "description": "Sum the trait annotations of each signature's taxa into one profile per "
-        "study, experiment and direction, for human hosts, dropping traits that are empty in "
-        "every profile (#656).",
+        "study, experiment and direction, for human-host 16S and shotgun experiments (#742), "
+        "dropping traits that are empty in every profile (#656).",
     },
     {
         "step_id": "step_06_study_trait_profiles_ora",
@@ -2517,8 +2517,8 @@ PIPELINE_STEPS: tuple[dict[str, Any], ...] = (
         "prerequisite_step_ids": ["step_04_taxa_trait_matrix"],
         "input_files": ["data/studies/", "data/derived/taxa_trait_matrix.tsv"],
         "output_files": ["data/derived/study_trait_profiles_ora_wide.tsv"],
-        "description": "Binary trait counts with taxon totals, for human hosts, for the "
-        "over-representation analysis.",
+        "description": "Binary trait counts with taxon totals, for human-host 16S and shotgun "
+        "experiments (#742), for the over-representation analysis.",
     },
     {
         "step_id": "step_07_trait_heatmaps",

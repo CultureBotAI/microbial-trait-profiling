@@ -23,7 +23,8 @@ from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.paths import file_sha256
 from mtp.trait_guilds import HUMAN_HOST_SPECIES, Profile
 
-SCHEMA_VERSION = "contrast-selection-v1"
+# v2 adds the sequencing-type rule and its audit fields (#742, #761)
+SCHEMA_VERSION = "contrast-selection-v2"
 ALL_PAIRED = "all_paired"
 POPULATIONS = (
     ALL_PAIRED,
@@ -96,10 +97,6 @@ def _reason(
         return "identity"
     if not human:
         return "non_human"
-    # The profiles keep 16S and shotgun experiments only, so a selected population
-    # must too (#742)
-    if not sequenced:
-        return "sequencing_type"
     if not paired:
         return "unpaired"
     if found is None:
@@ -120,6 +117,11 @@ def _reason(
             return "control_tier"
     if found.orientation not in {orientation.NATIVE, orientation.REVERSED}:
         raise ValueError("Selected population experiment has an invalid orientation")
+    # The profiles keep 16S and shotgun experiments only, so a selected population must
+    # too (#742). Checked last, so the other reasons keep their counts and this one
+    # counts only experiments that would otherwise be selected (#761).
+    if not sequenced:
+        return "sequencing_type"
     return "selected"
 
 

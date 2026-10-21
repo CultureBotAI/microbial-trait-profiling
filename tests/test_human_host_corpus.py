@@ -202,6 +202,21 @@ def test_excluded_host_summary_counts_each_reason() -> None:
     assert excluded_host_summary(excluded) == (
         "6 occurrences (3 decreased, 3 increased) in 5 profiles from 4 studies lie outside "
         "the corpus: 3 come from experiments whose host is not recorded as Homo sapiens "
-        "(Mus musculus 2, not recorded 1), and 3 from Homo sapiens experiments sequenced by "
-        "neither 16S nor WMS (ITS / ITS2 2, not recorded 1)."
+        "(Mus musculus 2, not recorded 1), and 3 from Homo sapiens experiments with a "
+        "sequencing method other than 16S or WMS, or none recorded (ITS / ITS2 2, "
+        "not recorded 1)."
     )
+
+
+def test_profile_metadata_from_before_the_sequencing_rule_raises() -> None:
+    """Metadata that still holds a human ITS profile would count it under a 16S-and-
+    shotgun note, so the kept occurrences are checked as well (#752)."""
+    stale = profiles(["s1|s1-1|inc", "s1|s1-1|dec", "s4|s4-1|inc", "s4|s4-1|dec"])
+    with pytest.raises(ValueError, match=r"s4\|s4-1.*regenerate the metadata"):
+        join_human_host_profiles(other_method_occurrences(), stale, other_method_hosts())
+    # A kept occurrence with no experiment host row cannot be checked either
+    hosts = other_method_hosts().query("study_id != 's1'")
+    with pytest.raises(ValueError, match="not Homo sapiens 16S or WMS"):
+        join_human_host_profiles(
+            occurrences().query("study_id == 's1'"), profiles(["s1|s1-1|inc", "s1|s1-1|dec"]), hosts
+        )

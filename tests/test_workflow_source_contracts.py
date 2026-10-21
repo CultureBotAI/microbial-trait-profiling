@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from mtp.workflow import source_contracts
 from mtp.workflow.definition import read_definition
 from mtp.workflow.operations import (
     OPERATIONS,
@@ -229,3 +230,15 @@ def test_revalidation_checks_raw_source_even_with_updated_artifact_inventory(
     Path(run.manifest_path).write_text(run.model_dump_json(), encoding="utf-8")
     with pytest.raises(ValueError, match="source reconciliation"):
         verify_core_run(Path(run.manifest_path))
+
+
+def test_a_table_without_sequencing_type_is_named_as_predating_742(tmp_path: Path) -> None:
+    """A core export written before #742 names the missing column and the cause (#762)."""
+    table = tmp_path / "experiments.tsv"
+    table.write_text("study_id\texperiment_id\nbsdb:1\tbsdb:1-1\n", encoding="utf-8")
+    with pytest.raises(
+        ValueError, match="missing columns: sequencing_type; the core predates #742"
+    ):
+        source_contracts._compare_rows(
+            table, ["study_id", "experiment_id", "sequencing_type"], [["bsdb:1", "bsdb:1-1", "16S"]]
+        )
