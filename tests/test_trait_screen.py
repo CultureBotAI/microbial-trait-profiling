@@ -387,7 +387,8 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
     Li & Ji 60.0, Galwey 48.9, Cheverud/Nyholt 198.9, PC1 60.4%, median rho
     +0.611 over 50,086 pairs, 63.5% above +0.5. They were computed independently
     of this module, so reproducing them checks the correlation and spectrum code
-    rather than restating it.
+    rather than restating it. The values below are repinned to the 16S and shotgun
+    corpus of #742 (5,629 profiles), where Li & Ji is 61.0 and Galwey 48.8.
     """
     columns = screen_candidates()
     slots = candidate_slots(columns)
@@ -399,30 +400,31 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
     contrast = result.contrast_dependence
     assert contrast is not None
     assert contrast.li_ji == pytest.approx(112.0, abs=0.05)
-    assert contrast.galwey == pytest.approx(110.1, abs=0.05)
-    assert contrast.cheverud_nyholt == pytest.approx(294.4, abs=0.05)
+    assert contrast.galwey == pytest.approx(109.1, abs=0.05)
+    assert contrast.cheverud_nyholt == pytest.approx(294.3, abs=0.05)
     # Li & Ji is 111.99999999999996 here, so a floor instead of a round would
-    # silently correct at 111; the 56 count below is unchanged from 110 to 113 (#416).
+    # silently correct at 111; the 57 count below is unchanged from 110 to 113 (#416).
     assert result.effective_family_size_used == 112
     # The contrast-basis figures the methods note and report lead with (#326).
-    assert contrast.median_rho == pytest.approx(0.089, abs=0.001)
+    assert contrast.median_rho == pytest.approx(0.088, abs=0.001)
     assert contrast.pc1_share == pytest.approx(0.206, abs=0.001)
     assert contrast.share_rho_above_half == pytest.approx(0.076, abs=0.001)
     assert (
-        sum(row.by_q_nominal is not None and row.by_q_nominal <= 0.05 for row in result.rows) == 18
+        sum(row.by_q_nominal is not None and row.by_q_nominal <= 0.05 for row in result.rows) == 38
     )
     assert (
         sum(row.by_q_effective is not None and row.by_q_effective <= 0.05 for row in result.rows)
-        == 56
+        == 57
     )
-    # Tallies and BY q at m = 317 for the six Table 1 traits, as published in #276.
+    # Tallies and BY q at m = 317 for the six Table 1 traits, published in #276 and
+    # repinned to the 16S and shotgun corpus (#742).
     expected = {
-        "facultatively_aerobic": (534, 383, 42, 0.0013864),
-        "moderately_halophilic": (485, 360, 114, 0.00553471),
-        "cellulose_catabolic_process": (334, 440, 185, 0.0315627),
-        "arsenate_reduction": (346, 270, 343, 0.101882),
-        "sphere_shaped": (467, 377, 115, 0.101343),
-        "coccus_shaped": (499, 416, 44, 0.206457),
+        "facultatively_aerobic": (521, 377, 24, 0.00269326),
+        "moderately_halophilic": (476, 353, 93, 0.00628741),
+        "cellulose_catabolic_process": (330, 433, 159, 0.0407693),
+        "arsenate_reduction": (341, 265, 316, 0.0957324),
+        "sphere_shaped": (463, 370, 89, 0.0679272),
+        "coccus_shaped": (488, 408, 26, 0.237474),
     }
     table1 = {row.table1_slug: row for row in result.rows if row.table1_slug}
     assert set(table1) == set(expected)
@@ -432,14 +434,14 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
         assert row.by_q_nominal == pytest.approx(by_q, rel=1e-4), slug
     profiles = result.profile_dependence
     assert profiles is not None
-    assert profiles.units == 5829
-    assert profiles.li_ji == pytest.approx(60.0, abs=0.05)
-    assert profiles.galwey == pytest.approx(48.9, abs=0.05)
-    assert profiles.cheverud_nyholt == pytest.approx(198.9, abs=0.05)
+    assert profiles.units == 5629
+    assert profiles.li_ji == pytest.approx(61.0, abs=0.05)
+    assert profiles.galwey == pytest.approx(48.8, abs=0.05)
+    assert profiles.cheverud_nyholt == pytest.approx(198.85, abs=0.05)
     assert profiles.pc1_share == pytest.approx(0.604, abs=0.001)
     assert profiles.pairs == 50086
-    assert profiles.median_rho == pytest.approx(0.611, abs=0.001)
-    assert profiles.share_rho_above_half == pytest.approx(0.635, abs=0.001)
+    assert profiles.median_rho == pytest.approx(0.6105, abs=0.001)
+    assert profiles.share_rho_above_half == pytest.approx(0.634, abs=0.001)
 
 
 def _dependence_record(*, li_ji: float, galwey: float, cheverud_nyholt: float) -> Dependence:
