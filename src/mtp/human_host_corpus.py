@@ -7,6 +7,9 @@ whose experiment host is recorded as Homo sapiens in `data/raw/full_dump.csv`
 (`scripts/create_study_trait_profile_heatmap.py`). An occurrence outside that
 corpus has no condition or body site, so it is set aside and counted instead of
 being drawn as an `unknown` condition.
+
+The corpus also keeps only bacterial community profiles: experiments sequenced by
+16S amplicon or shotgun (`WMS`) (#742).
 """
 
 from __future__ import annotations
@@ -14,6 +17,7 @@ from __future__ import annotations
 import pandas as pd
 
 __all__ = [
+    "CORPUS_SEQUENCING_TYPES",
     "HUMAN_HOST_SPECIES",
     "UNRECORDED_HOST",
     "excluded_host_note",
@@ -22,6 +26,10 @@ __all__ = [
 ]
 
 HUMAN_HOST_SPECIES = "Homo sapiens"
+# BugSigDB "Sequencing type" values the corpus keeps. ITS / ITS2 and 18S profile fungi
+# and other eukaryotes, which KG-Microbe traits barely cover; PCR is a targeted assay,
+# not a community profile; an experiment with no recorded method is neither (#742).
+CORPUS_SEQUENCING_TYPES = ("16S", "WMS")
 UNRECORDED_HOST = "not recorded"
 # Values that mean the source has no host for an experiment; "unknown" is what the
 # corpus's full-dump parser writes for an empty field.

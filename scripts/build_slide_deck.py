@@ -2431,7 +2431,7 @@ UPSTREAM_COMMANDS = (
     "just download-kg  # uv run --extra kg python scripts/download_kg_microbe.py",
     "just taxa-trait-matrix  # uv run python scripts/create_taxa_trait_matrix.py",
     "just study-trait-profiles  # uv run python scripts/create_study_trait_profiles.py "
-    '--host-species "Homo sapiens" --drop-empty-traits',
+    '--host-species "Homo sapiens" --sequencing-types 16S WMS --drop-empty-traits',
 )
 # KG-Microbe files `just taxa-trait-matrix` reads (src/mtp/taxa_trait_matrix.py).
 KG_INPUTS = ("data/kg-microbe/merged-kg_nodes.tsv", "data/kg-microbe/merged-kg_edges.tsv")

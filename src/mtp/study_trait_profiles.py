@@ -104,8 +104,14 @@ def collect_profile_taxa(
     *,
     deduplicate_taxa: bool = True,
     host_species: str | None = None,
+    sequencing_types: Sequence[str] | None = None,
 ) -> tuple[dict[ProfileKey, list[str]], int]:
-    """Collect taxa from per-study YAML files by study, experiment, and direction."""
+    """Collect taxa from per-study YAML files by study, experiment, and direction.
+
+    ``sequencing_types`` keeps only the experiments whose recorded sequencing type is
+    one of them; an experiment with no recorded type is left out (#742).
+    """
+    kept_types = None if sequencing_types is None else {t.strip() for t in sequencing_types}
     profile_taxa: dict[ProfileKey, list[str]] = {}
     seen_taxa: defaultdict[ProfileKey, set[str]] = defaultdict(set)
     taxon_observations = 0
@@ -123,6 +129,10 @@ def collect_profile_taxa(
             if host_species is not None:
                 host = _as_text(experiment.get("host_species")).strip()
                 if host != host_species.strip():
+                    continue
+
+            if kept_types is not None:
+                if _as_text(experiment.get("sequencing_type")).strip() not in kept_types:
                     continue
 
             experiment_id = _as_text(experiment.get("id")).strip()
@@ -246,12 +256,14 @@ def create_study_trait_profiles(
     include_taxa_count: bool = False,
     host_species: str | None = None,
     drop_empty_traits: bool = False,
+    sequencing_types: Sequence[str] | None = None,
 ) -> StudyTraitProfileStats:
     """Create a study profile TSV by aggregating taxa-trait presence from YAML taxa.
 
     ``drop_empty_traits`` leaves out the trait columns that are zero in every written
-    profile. With ``host_species="Homo sapiens"`` it writes the canonical table the
-    analyses use, the one committed as ``study_trait_profiles_wide.tsv.gz`` (#656).
+    profile. With ``host_species="Homo sapiens"`` and ``sequencing_types`` set to
+    ``CORPUS_SEQUENCING_TYPES`` it writes the canonical table the analyses use, the one
+    committed as ``study_trait_profiles_wide.tsv.gz`` (#656, #742).
     """
     if output_format not in PROFILE_FORMATS:
         raise ValueError(f"Unsupported output format: {output_format}")
@@ -280,6 +292,7 @@ def create_study_trait_profiles(
         study_dir,
         deduplicate_taxa=deduplicate_taxa,
         host_species=host_species,
+        sequencing_types=sequencing_types,
     )
     profile_counts, matched_profile_taxa, unmatched_profile_taxa = aggregate_profile_counts(
         profile_taxa,
@@ -393,6 +406,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional filter by host species (e.g. 'Homo sapiens').",
     )
     parser.add_argument(
+        "--sequencing-types",
+        nargs="+",
+        default=None,
+        metavar="TYPE",
+        help=(
+            "Optional filter by BugSigDB sequencing type (e.g. 16S WMS); experiments "
+            "with no recorded type are left out."
+        ),
+    )
+    parser.add_argument(
         "--drop-empty-traits",
         action="store_true",
         help="Leave out trait columns that are zero in every written profile.",
@@ -414,6 +437,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             include_taxa_count=args.include_taxa_count,
             host_species=args.host_species,
             drop_empty_traits=args.drop_empty_traits,
+            sequencing_types=args.sequencing_types,
         )
     except ValueError as exc:
         parser.error(str(exc))
