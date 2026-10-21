@@ -2026,10 +2026,12 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         # Carbon sources and lignin catabolism; the tag sits on the shortest label so the
         # row fits the left margin.
         ("METPO:2000006|CHEBI:25115", "[Carbon use]  Malate", "Carbon use"),
+        ("METPO:2000006|CHEBI:28260", "Galactose", "Carbon use"),
         ("METPO:2000006|CHEBI:17596", "Inosine", "Carbon use"),
         ("METPO:2000006|CHEBI:16808", "2-Dehydro-D-gluconate", "Carbon use"),
         ("METPO:2000006|CHEBI:320055", "Methyl β-D-glucopyranoside", "Carbon use"),
         ("METPO:2000103|GO:0046274", "Lignin catabolic process", "Carbon use"),
+        ("METPO:2000103|pathways:mtbe_degradation", "MTBE degradation", "Carbon use"),
         # Decreased Guilds
         (
             "METPO:2000103|GO:0030245",
@@ -2039,7 +2041,6 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         ("METPO:2000103|GO:0045493", "Xylan catabolic process", "Plant glycan ↓"),
         ("METPO:2000006|CHEBI:16634", "Raffinose", "Plant glycan ↓"),
         ("METPO:1000429", "[Anaerobic / low GC ↓]  GC low", "Anaerobic / low GC ↓"),
-        ("METPO:1000603", "Anaerobic", "Anaerobic / low GC ↓"),
         ("METPO:1000607", "Obligately anaerobic", "Anaerobic / low GC ↓"),
         ("METPO:1000845", "Acetogenesis", "Anaerobic / low GC ↓"),
     ]

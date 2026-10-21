@@ -1572,7 +1572,8 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "deck_section": "Main",
             "analysis": "tufte_plate_2",
             "selection_reason": "Tufte small-multiples forest plot expanding beyond Table 1 to all "
-            "22 study-significant traits across 4 anatomical strata.",
+            f"{len(study_bh_rows(metrics['paired_contrasts']['pooled']))} study-significant traits "
+            "across 4 anatomical strata.",
         },
         {
             "owner": "Noel / Marcin",
