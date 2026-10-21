@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.lines import Line2D
-from matplotlib.patches import Circle, PathPatch
+from matplotlib.patches import PathPatch
 from matplotlib.path import Path as MplPath
 
 from mtp.composition_denominators import (
@@ -156,13 +156,18 @@ FACULTATIVE_CONFIG = MapConfig(
     excluded_condition_labels=frozenset(
         {
             "Body fat distribution",
+            "Clinical treatment",
             "Exposure",
+            "Glucose",
+            "Health study participation",
             "Health trait",
             "Microbiome",
-            "Population",
             "Physical activity",
+            "Population",
+            "Socioeconomic status",
             "Time",
             "Timepoint",
+            "Tumor stage",
         }
     ),
 )
@@ -181,12 +186,16 @@ ANAEROBE_CONFIG = MapConfig(
             "Body fat distribution",
             "Clinical treatment",
             "Exposure",
+            "Glucose",
             "Health study participation",
             "Health trait",
             "Microbiome",
-            "Population",
             "Physical activity",
+            "Population",
+            "Socioeconomic status",
+            "Time",
             "Timepoint",
+            "Tumor stage",
         }
     ),
 )
@@ -1582,6 +1591,33 @@ def node_positions(
     return dict(zip(labels, positions, strict=True))
 
 
+def slot_midpoint_positions(
+    labels: list[str],
+    line_counts: list[int],
+    *,
+    top: float = 0.88,
+    bottom: float = 0.16,
+) -> dict[str, float]:
+    """Allocate vertical slots proportional to rendered line count and place nodes at midpoints."""
+    if not labels:
+        return {}
+    if len(labels) == 1:
+        return {labels[0]: (top + bottom) / 2.0}
+    weights = np.array(
+        [0.20 * max(1, int(lines)) + 0.24 for lines in line_counts],
+        dtype=float,
+    )
+    total = float(weights.sum())
+    span = top - bottom
+    midpoints: list[float] = []
+    cursor = top
+    for weight in weights:
+        slot = span * (float(weight) / total)
+        midpoints.append(cursor - 0.5 * slot)
+        cursor -= slot
+    return dict(zip(labels, midpoints, strict=True))
+
+
 def union_joined_counts(group: pd.DataFrame, column: str, fallback_column: str) -> int:
     """Count unique joined identifiers, falling back to the existing count column."""
     values: set[str] = set()
@@ -1706,15 +1742,14 @@ def draw_node(
     note: str = "",
 ) -> None:
     """Draw a node marker and its text label."""
-    ax.add_patch(
-        Circle(
-            (x, y),
-            0.012,
-            facecolor="white",
-            edgecolor=SLATE_700,
-            linewidth=1.0,
-            zorder=5,
-        )
+    ax.scatter(
+        [x],
+        [y],
+        s=180,
+        facecolor="white",
+        edgecolor=SLATE_700,
+        linewidth=1.1,
+        zorder=5,
     )
     text_x = x - 0.025 if align == "right" else x + 0.025
     text_lines = [
@@ -1749,15 +1784,14 @@ def draw_node_v3(
     align: str,
 ) -> None:
     """Draw a v3 node marker with enriched and background counts."""
-    ax.add_patch(
-        Circle(
-            (x, y),
-            0.012,
-            facecolor="white",
-            edgecolor=SLATE_700,
-            linewidth=1.0,
-            zorder=5,
-        )
+    ax.scatter(
+        [x],
+        [y],
+        s=180,
+        facecolor="white",
+        edgecolor=SLATE_700,
+        linewidth=1.1,
+        zorder=5,
     )
     text_x = x - 0.025 if align == "right" else x + 0.025
     label_lines = [
@@ -1826,7 +1860,6 @@ def plot_condition_body_site_map(
     *,
     title_suffix: str = "",
     selection_note: str | None = None,
-    dense_layout: bool = False,
 ) -> None:
     """Render a condition-to-body-site bipartite guild map."""
     if display_edges.empty:
@@ -1845,22 +1878,47 @@ def plot_condition_body_site_map(
         .sort_values(ascending=False)
         .index.tolist()
     )
-    node_top = 0.98 if dense_layout else 0.88
-    node_bottom = 0.05 if dense_layout else 0.16
-    header_y = 0.985 if dense_layout else 0.93
-    condition_y = node_positions(condition_order, top=node_top, bottom=node_bottom)
-    body_site_y = node_positions(body_site_order, top=node_top, bottom=node_bottom)
     condition_stats = weighted_node_stats(display_edges, "condition")
     body_site_stats = weighted_node_stats(display_edges, "body_site_group")
     condition_notes = build_condition_sampled_site_notes(display_edges, sampled_sites)
 
-    height = max(
-        8.0,
-        1.2 + 0.64 * max(len(condition_order), len(body_site_order)) + 0.12 * len(condition_notes),
+    cond_lines = [
+        wrap_label(condition).count("\n")
+        + 2
+        + (
+            len(wrap(condition_notes.get(condition, ""), width=42))
+            if condition_notes.get(condition)
+            else 0
+        )
+        for condition in condition_order
+    ]
+    site_lines = [wrap_label(site).count("\n") + 2 for site in body_site_order]
+    ax_height_in = max(
+        7.0,
+        sum(0.20 * lines + 0.24 for lines in cond_lines) + 0.90,
+        sum(0.20 * lines + 0.28 for lines in site_lines) + 0.90,
     )
+    height = ax_height_in + 2.60
+    top_frac = 1.0 - 1.35 / height
+    bottom_frac = 1.25 / height
+    header_y = 1.0 - 0.20 / ax_height_in
+    node_top = 1.0 - 0.52 / ax_height_in
+    node_bottom = 0.35 / ax_height_in
+    condition_y = slot_midpoint_positions(
+        condition_order,
+        cond_lines,
+        top=node_top,
+        bottom=node_bottom,
+    )
+    body_site_y = slot_midpoint_positions(
+        body_site_order,
+        site_lines,
+        top=node_top,
+        bottom=node_bottom,
+    )
+
     fig, ax = plt.subplots(figsize=(13.5, height))
-    if dense_layout:
-        fig.subplots_adjust(left=0.05, right=0.90, top=0.91, bottom=0.07)
+    fig.subplots_adjust(left=0.05, right=0.90, top=top_frac, bottom=bottom_frac)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
@@ -1913,7 +1971,7 @@ def plot_condition_body_site_map(
 
     fig.text(
         0.05,
-        0.965,
+        1.0 - 0.24 / height,
         f"{config.title}{title_suffix}",
         ha="left",
         va="top",
@@ -1922,7 +1980,7 @@ def plot_condition_body_site_map(
     )
     fig.text(
         0.05,
-        0.925,
+        1.0 - 0.56 / height,
         wrapped_plot_text(
             "Edges connect BugSigDB conditions to anatomical body-site groups. "
             f"Edge width = n ({config.focus_label} profile count); color = "
@@ -1978,7 +2036,7 @@ def plot_condition_body_site_map(
         handles=legend_lines,
         title=f"Edge width: {config.focus_label} profiles (n)",
         loc="lower center",
-        bbox_to_anchor=(0.50, -0.015),
+        bbox_to_anchor=(0.50, -0.55 / ax_height_in),
         ncol=len(legend_lines),
         frameon=False,
         fontsize=8,
@@ -1996,7 +2054,7 @@ def plot_condition_body_site_map(
 
     fig.text(
         0.05,
-        0.035,
+        0.24 / height,
         selection_note,
         ha="left",
         va="bottom",
@@ -2082,17 +2140,37 @@ def plot_condition_body_site_map_v3(
     )
     body_site_order = body_site_order_frame.index.tolist()
 
-    node_top = 0.90
-    node_bottom = 0.06
-    header_y = 0.965
-    condition_y = node_positions(condition_order, top=node_top, bottom=node_bottom)
-    body_site_y = node_positions(body_site_order, top=node_top, bottom=node_bottom)
     condition_stats = weighted_v3_node_stats(display_edges, "condition")
     body_site_stats = weighted_v3_node_stats(display_edges, "body_site_group")
 
-    height = max(9.0, 1.5 + 0.66 * max(len(condition_order), len(body_site_order)))
+    cond_lines = [wrap_label(condition).count("\n") + 2 for condition in condition_order]
+    site_lines = [wrap_label(site).count("\n") + 2 for site in body_site_order]
+    ax_height_in = max(
+        7.5,
+        sum(0.20 * lines + 0.24 for lines in cond_lines) + 0.90,
+        sum(0.20 * lines + 0.28 for lines in site_lines) + 0.90,
+    )
+    height = ax_height_in + 2.80
+    top_frac = 1.0 - 1.50 / height
+    bottom_frac = 1.30 / height
+    header_y = 1.0 - 0.20 / ax_height_in
+    node_top = 1.0 - 0.52 / ax_height_in
+    node_bottom = 0.35 / ax_height_in
+    condition_y = slot_midpoint_positions(
+        condition_order,
+        cond_lines,
+        top=node_top,
+        bottom=node_bottom,
+    )
+    body_site_y = slot_midpoint_positions(
+        body_site_order,
+        site_lines,
+        top=node_top,
+        bottom=node_bottom,
+    )
+
     fig, ax = plt.subplots(figsize=(15.0, height))
-    fig.subplots_adjust(left=0.05, right=0.90, top=0.90, bottom=0.08)
+    fig.subplots_adjust(left=0.05, right=0.90, top=top_frac, bottom=bottom_frac)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
@@ -2183,7 +2261,7 @@ def plot_condition_body_site_map_v3(
 
     fig.text(
         0.05,
-        0.965,
+        1.0 - 0.24 / height,
         config.title,
         ha="left",
         va="top",
@@ -2192,7 +2270,7 @@ def plot_condition_body_site_map_v3(
     )
     fig.text(
         0.05,
-        0.925,
+        1.0 - 0.56 / height,
         wrapped_plot_text(
             f"Colored edges = {config.focus_label} profiles with at least one "
             "selected guild trait above zero. Parallel grey edges = profiles in "
@@ -2275,7 +2353,7 @@ def plot_condition_body_site_map_v3(
         handles=legend_lines,
         title=f"Edge width: {config.focus_label} positive-trait profiles (n)",
         loc="lower center",
-        bbox_to_anchor=(0.50, -0.02),
+        bbox_to_anchor=(0.50, -0.60 / ax_height_in),
         ncol=min(len(legend_lines), 4),
         frameon=False,
         fontsize=8,
@@ -2285,7 +2363,7 @@ def plot_condition_body_site_map_v3(
 
     fig.text(
         0.05,
-        0.035,
+        0.24 / height,
         footer_note,
         ha="left",
         va="bottom",
@@ -2420,7 +2498,6 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
             "mean z-score. Every edge meeting those criteria is drawn, with no edge, "
             "condition, body-site, or per-body-site display cap."
         ),
-        dense_layout=True,
     )
     edge_v3_individual_output.to_csv(
         config.edge_v3_individual_tsv_path,

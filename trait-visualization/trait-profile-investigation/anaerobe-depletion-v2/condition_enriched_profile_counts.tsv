@@ -25,7 +25,6 @@ Cervical glandular intraepithelial neoplasia	inc	increased profiles	30	24	6	0.8	
 Type II diabetes mellitus	dec	decreased profiles	30	24	6	0.8	19	16	2
 Type II diabetes mellitus	inc	increased profiles	32	23	9	0.71875	19	13	2
 Metabolic toxicity	inc	increased profiles	26	23	3	0.8846153846153846	1	1	2
-Time	inc	increased profiles	21	21	0	1.0	2	2	2
 Gastric cancer	inc	increased profiles	38	20	18	0.5263157894736842	14	11	2
 Polycystic ovary syndrome	dec	decreased profiles	30	20	10	0.6666666666666666	13	10	2
 Endometriosis	inc	increased profiles	28	20	8	0.7142857142857143	12	9	2
@@ -51,7 +50,6 @@ Ethnic group	dec	decreased profiles	19	14	5	0.7368421052631579	7	5	2
 Chronic kidney disease	dec	decreased profiles	15	14	1	0.9333333333333333	10	9	2
 Dry eye syndrome	inc	increased profiles	29	13	16	0.4482758620689655	11	8	2
 Age	dec	decreased profiles	23	13	10	0.5652173913043478	11	8	2
-Socioeconomic status	inc	increased profiles	14	13	1	0.9285714285714286	11	10	2
 Human immunodeficiency virus	dec	decreased profiles	13	13	0	1.0	4	4	2
 Stroke	inc	increased profiles	28	12	16	0.42857142857142855	5	3	2
 Ulcerative colitis	inc	increased profiles	22	12	10	0.5454545454545454	11	7	2
@@ -63,7 +61,6 @@ Stroke	dec	decreased profiles	15	12	3	0.8	5	3	2
 Food allergy	dec	decreased profiles	14	12	2	0.8571428571428571	8	8	2
 Multiple sclerosis	dec	decreased profiles	14	12	2	0.8571428571428571	6	5	2
 Multiple sclerosis	inc	increased profiles	14	12	2	0.8571428571428571	6	5	2
-Socioeconomic status	dec	decreased profiles	13	12	1	0.9230769230769231	10	10	2
 Age-related macular degeneration	dec	decreased profiles	12	12	0	1.0	5	5	2
 Ovarian cancer	inc	increased profiles	27	11	16	0.4074074074074074	4	2	2
 Cervical glandular intraepithelial neoplasia	dec	decreased profiles	20	11	9	0.55	8	6	2
@@ -145,7 +142,6 @@ Unipolar depression	inc	increased profiles	7	6	1	0.8571428571428571	3	3	2
 Autism	dec	decreased profiles	6	6	0	1.0	4	4	2
 Hepatocellular carcinoma	dec	decreased profiles	6	6	0	1.0	3	3	2
 Lewy body dementia	inc	increased profiles	6	6	0	1.0	1	1	2
-Tumor stage	inc	increased profiles	6	6	0	1.0	1	1	2
 Hypertension	dec	decreased profiles	15	5	10	0.3333333333333333	3	2	2
 Glaucoma	inc	increased profiles	13	5	8	0.38461538461538464	5	3	2
 Head and neck squamous cell carcinoma	dec	decreased profiles	12	5	7	0.4166666666666667	4	2	2
@@ -167,7 +163,6 @@ Cognitive impairment	dec	decreased profiles	7	5	2	0.7142857142857143	3	3	2
 Epilepsy	dec	decreased profiles	6	5	1	0.8333333333333334	4	3	2
 Milk allergic reaction	dec	decreased profiles	6	5	1	0.8333333333333334	4	3	2
 Pregnancy	dec	decreased profiles	6	5	1	0.8333333333333334	4	3	2
-Tumor stage	dec	decreased profiles	6	5	1	0.8333333333333334	1	1	2
 Unipolar depression	dec	decreased profiles	6	5	1	0.8333333333333334	3	2	2
 Urinary tract infection	dec	decreased profiles	6	5	1	0.8333333333333334	3	3	2
 Autism spectrum disorder	inc	increased profiles	5	5	0	1.0	3	3	2
@@ -246,8 +241,6 @@ Autoimmune disease	dec	decreased profiles	4	3	1	0.75	2	2	2
 Dementia	inc	increased profiles	4	3	1	0.75	1	1	2
 Genital neoplasm, female	dec	decreased profiles	4	3	1	0.75	1	1	2
 Genital neoplasm, female	inc	increased profiles	4	3	1	0.75	1	1	2
-Glucose	dec	decreased profiles	4	3	1	0.75	1	1	2
-Glucose	inc	increased profiles	4	3	1	0.75	1	1	2
 Head and neck carcinoma	dec	decreased profiles	4	3	1	0.75	2	2	2
 Hippocampal volume	dec	decreased profiles	4	3	1	0.75	1	1	2
 Insulin	dec	decreased profiles	4	3	1	0.75	1	1	2
@@ -693,7 +686,6 @@ Survival time	dec	decreased profiles	1	1	0	1.0	1	1	2
 Systolic blood pressure	dec	decreased profiles	1	1	0	1.0	1	1	1
 Therapeutic Procedure	dec	decreased profiles	1	1	0	1.0	1	1	2
 Thyroid carcinoma	dec	decreased profiles	1	1	0	1.0	1	1	1
-Time	dec	decreased profiles	1	1	0	1.0	1	1	2
 Trichomonas vaginitis	dec	decreased profiles	1	1	0	1.0	1	1	1
 Triglyceride	inc	increased profiles	1	1	0	1.0	1	1	1
 Tumor grading	dec	decreased profiles	1	1	0	1.0	1	1	2

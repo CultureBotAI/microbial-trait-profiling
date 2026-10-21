@@ -13,6 +13,7 @@ from pathlib import Path
 
 import defusedxml.ElementTree as ET
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INVESTIGATION_DIR = REPO_ROOT / "trait-visualization" / "trait-profile-investigation"
@@ -193,8 +194,10 @@ def run_script(script_name: str, *args: str) -> None:
         # Start each at defaults and restore the caller's state even on failure.
         with mpl.rc_context():
             mpl.rcdefaults()
+            plt.close("all")
             runpy.run_path(str(script), run_name="__main__")
     finally:
+        plt.close("all")
         sys.argv = previous_argv
         os.chdir(previous_cwd)
 

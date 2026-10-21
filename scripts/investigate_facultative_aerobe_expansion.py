@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+from textwrap import fill
 from typing import Any
 
 import matplotlib.pyplot as plt
@@ -77,13 +78,18 @@ TARGET_TAXA = {
 }
 EXCLUDED_CONDITION_SUMMARY_LABELS = {
     "Body fat distribution",
+    "Clinical treatment",
     "Exposure",
+    "Glucose",
+    "Health study participation",
     "Health trait",
     "Microbiome",
-    "Population",
     "Physical activity",
+    "Population",
+    "Socioeconomic status",
     "Time",
     "Timepoint",
+    "Tumor stage",
 }
 # A paired d (and its paired t-test p) from fewer matched profile pairs is reported as NA.
 MIN_PAIRED_SMD_PROFILE_PAIRS = 5
@@ -104,16 +110,28 @@ NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE = (
     "not recomputed from the trait-enrichment score."
 )
 TARGET_TAXON_COLORS = {
-    "Escherichia coli": "#dc2626",
-    "Fusobacterium nucleatum": "#2563eb",
-    "Veillonella dispar": "#0891b2",
-    "Klebsiella pneumoniae": "#d97706",
-    "Enterocloster bolteae": "#7c3aed",
-    "Parvimonas micra": "#059669",
-    "Streptococcus anginosus": "#be123c",
+    "Escherichia coli": "#d55e00",
+    "Fusobacterium nucleatum": "#0072b2",
+    "Veillonella dispar": "#56b4e9",
+    "Klebsiella pneumoniae": "#e69f00",
+    "Enterocloster bolteae": "#cc79a7",
+    "Parvimonas micra": "#009e73",
+    "Streptococcus anginosus": "#882255",
     "Eggerthella lenta": "#64748b",
-    "Porphyromonas gingivalis": "#9333ea",
-    "Prevotella intermedia": "#65a30d",
+    "Porphyromonas gingivalis": "#332288",
+    "Prevotella intermedia": "#999933",
+}
+TARGET_TAXON_HATCHES = {
+    "Escherichia coli": "",
+    "Fusobacterium nucleatum": "//",
+    "Veillonella dispar": "..",
+    "Klebsiella pneumoniae": "\\\\",
+    "Enterocloster bolteae": "xx",
+    "Parvimonas micra": "--",
+    "Streptococcus anginosus": "++",
+    "Eggerthella lenta": "||",
+    "Porphyromonas gingivalis": "oo",
+    "Prevotella intermedia": "**",
 }
 TARGET_TAXON_LEGEND_LABELS = {
     "Escherichia coli": "E. coli",
@@ -134,7 +152,7 @@ def add_specificity_note(ax: plt.Axes, note: str) -> None:
     ax.text(
         0,
         1.02,
-        note,
+        fill(note, width=78),
         transform=ax.transAxes,
         ha="left",
         va="bottom",
@@ -433,6 +451,7 @@ def select_top_conditions(condition_summary: pd.DataFrame, limit: int) -> pd.Dat
     top_conditions = (
         condition_summary[
             (condition_summary["increased_profile_count"] >= 3)
+            & (condition_summary["decreased_profile_count"] >= 3)
             & (condition_summary["study_count"] >= 2)
             & (condition_summary["increased_minus_decreased_guild_z"] > 0)
             & (condition_summary["increased_mean_guild_z"] > 0)
@@ -1210,6 +1229,9 @@ def save_condition_target_taxa_stacked_bar_chart(
             values,
             left=left,
             color=TARGET_TAXON_COLORS.get(taxon, "#475569"),
+            edgecolor="#ffffff",
+            linewidth=0.6,
+            hatch=TARGET_TAXON_HATCHES.get(taxon, ""),
             label=TARGET_TAXON_LEGEND_LABELS.get(taxon, taxon),
         )
         left = left + values
@@ -1542,10 +1564,13 @@ def make_plots(
     )
     ax.axvline(0, color="#333333", linewidth=0.8)
     ax.set_xlabel("(increased profiles - decreased profiles) / total profiles")
-    ax.set_title("Aerobe v2 Target Taxa: Increased-Profile Tendency", pad=28)
+    ax.set_title("Aerobe v2 Target Taxa: Increased-Profile Tendency", pad=34)
     add_specificity_note(ax, NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE)
     fig.tight_layout()
-    fig.savefig(OUTPUT_DIR / "candidate_taxa_increased_profile_tendency.png")
+    fig.savefig(
+        OUTPUT_DIR / "candidate_taxa_increased_profile_tendency.png",
+        bbox_inches="tight",
+    )
     plt.close(fig)
 
     top_conditions = select_top_conditions(condition_summary, 12).sort_values(
@@ -1574,11 +1599,14 @@ def make_plots(
     ax.set_xlabel("Aerobe v2 trait enrichment: increased mean z - decreased mean z")
     ax.set_title(
         "Conditions With Aerobe v2 Trait Enrichment in Increased Profiles",
-        pad=28,
+        pad=34,
     )
     add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
     fig.tight_layout()
-    fig.savefig(OUTPUT_DIR / "condition_increased_guild_signal.png")
+    fig.savefig(
+        OUTPUT_DIR / "condition_increased_guild_signal.png",
+        bbox_inches="tight",
+    )
     plt.close(fig)
 
     plot_direction = direction_summary[
@@ -1592,10 +1620,13 @@ def make_plots(
     )
     ax.axvline(0, color="#333333", linewidth=0.8)
     ax.set_xlabel("increased profile mean z - decreased profile mean z")
-    ax.set_title("Aerobe v2 Traits Enriched in Increased Profiles", pad=28)
+    ax.set_title("Aerobe v2 Traits Enriched in Increased Profiles", pad=34)
     add_specificity_note(ax, GUILD_SPECIFIC_NOTE)
     fig.tight_layout()
-    fig.savefig(OUTPUT_DIR / "guild_trait_direction_shift.png")
+    fig.savefig(
+        OUTPUT_DIR / "guild_trait_direction_shift.png",
+        bbox_inches="tight",
+    )
     plt.close(fig)
 
     save_target_taxa_condition_charts(occurrences, excluded_occurrences, condition_summary)
@@ -1643,7 +1674,11 @@ def write_summary_report(
         "",
         "- Selected traits: "
         + ", ".join(f"{name} ({trait_id})" for trait_id, name in GUILD_TRAITS.items()),
-        "- Target taxa: " + ", ".join(TARGET_TAXA.values()),
+        "- Target taxa: "
+        + ", ".join(TARGET_TAXA.values())
+        + " (the 9 aerobe-v2 discovery taxa in `candidate_taxa_direction_summary.tsv` "
+        "plus Porphyromonas gingivalis NCBITaxon:837 included as an anaerobic "
+        "comparator in the BugSigDB occurrence breakdown charts and tables)",
         "- Formal KG-Microbe taxon universe: "
         f"{len(kg_microbe_taxon_universe):,} taxa with at least one core "
         "oxygen-tolerance annotation among " + ", ".join(KG_MICROBE_TAXON_UNIVERSE_TRAITS.values()),

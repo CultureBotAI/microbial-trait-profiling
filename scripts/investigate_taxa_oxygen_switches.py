@@ -43,29 +43,67 @@ MIN_CONDITION_STUDIES = 2
 TOP_ROWS = 15
 
 NON_DISEASE_EXACT_LABELS = {
+    *FACULTATIVE_CONFIG.excluded_condition_labels,
     "Age",
+    "Age at assessment",
+    "Age at menarche",
     "Aging",
     "Antimicrobial agent",
+    "Azithromycin",
+    "Biological sex",
+    "Body fat distribution",
+    "Body mass index",
+    "Body weight",
+    "Breast cancer stage",
     "Breastfeeding duration",
+    "Carotid artery intima media thickness",
+    "CD4-positive T-lymphocyte count",
     "Cesarean section",
     "Clinical treatment",
     "Delivery method",
     "Diet",
     "Ethnic group",
+    "Exercise",
     "Exposure",
     "Glucose",
     "Health study participation",
     "Health trait",
     "High altitude adaptation",
+    "M1 distant metastasis stage",
     "Microbiome",
     "Physical activity",
     "Population",
     "Pregnancy",
+    "Socioeconomic status",
     "Species design",
     "Time",
     "Timepoint",
     "Treatment",
+    "Tumor grading",
+    "Tumor size",
     "Tumor stage",
+}
+NON_DISEASE_DISPLAY_GROUPS = {
+    "Healthy / reference",
+    "Antibiotic / antimicrobial exposure",
+    "Medication / clinical treatment",
+    "Diet / nutrition / supplements",
+    "Smoking / alcohol / drug use",
+    "Environmental / chemical exposure",
+    "Age / development / sex",
+    "Population / social covariates",
+    "Activity / lifestyle score",
+    "Immune biomarker",
+    "Metabolite biomarker",
+    "Brain morphology measurement",
+    "Extraction / library protocol",
+    "Sample collection / handling",
+    "Sampling site / time protocol",
+    "Host species / model design",
+    "Experimental phenotype labels",
+    "Body composition / growth",
+    "Disease activity / severity",
+    "Microbiome phenotype",
 }
 NON_DISEASE_TERMS = (
     "measurement",
@@ -77,6 +115,12 @@ NON_DISEASE_TERMS = (
     "body fat distribution",
     "library preparation",
     "growth condition",
+    "distant metastasis",
+    "cancer stage",
+    "tumor grading",
+    "tumor size",
+    "lymphocyte count",
+    "intima media thickness",
 )
 
 
@@ -92,9 +136,13 @@ def join_unique(values: pd.Series) -> str:
     """Join unique values in first-seen order."""
     seen: list[str] = []
     for value in values:
-        text = clean_text(value)
-        if text != "unknown" and text not in seen:
-            seen.append(text)
+        raw = clean_text(value)
+        if raw == "unknown":
+            continue
+        for part in raw.split(";"):
+            text = clean_text(part)
+            if text != "unknown" and text not in seen:
+                seen.append(text)
     return "; ".join(seen)
 
 
@@ -106,7 +154,10 @@ def is_disease_state_condition(value: object) -> bool:
         return False
     if label in NON_DISEASE_EXACT_LABELS:
         return False
-    return not any(term in lower for term in NON_DISEASE_TERMS)
+    if any(term in lower for term in NON_DISEASE_TERMS):
+        return False
+    display_group, _ = v3_fully_grouped_condition_display_label(label)
+    return display_group not in NON_DISEASE_DISPLAY_GROUPS
 
 
 def profile_id_from_taxa_row(study_id: object, experiment_id: object, direction: object) -> str:
@@ -473,22 +524,27 @@ def top_condition_text(
     rows: pd.DataFrame,
     direction: str,
     count_column: str,
+    study_column: str | None = None,
     max_items: int = 4,
 ) -> str:
     """Describe top condition evidence for one switch side."""
+    if study_column is None:
+        study_column = (
+            "increased_study_count" if direction == "increased" else "decreased_study_count"
+        )
     subset = rows[rows["dominant_direction"] == direction].copy()
     subset = subset[
         (subset[count_column] >= MIN_SWITCH_SIDE_PROFILES)
-        & (subset["study_count"] >= MIN_SWITCH_SIDE_STUDIES)
+        & (subset[study_column] >= MIN_SWITCH_SIDE_STUDIES)
     ]
     subset = subset.sort_values(
-        [count_column, "study_count", "condition"],
+        [count_column, study_column, "condition"],
         ascending=[False, False, True],
     )
     labels = [
         (
             f"{row['condition']} ({int(row[count_column])} profiles, "
-            f"{int(row['study_count'])} studies)"
+            f"{int(row[study_column])} studies)"
         )
         for _, row in subset.head(max_items).iterrows()
     ]
@@ -505,17 +561,15 @@ def summarize_taxon_switches(taxon_condition: pd.DataFrame) -> pd.DataFrame:
         )
     ].copy()
     strong = annotated[
-        (annotated["dominant_direction"].isin({"increased", "decreased"}))
-        & (annotated["study_count"] >= MIN_SWITCH_SIDE_STUDIES)
-        & (
-            (
-                (annotated["dominant_direction"] == "increased")
-                & (annotated["increased_profile_count"] >= MIN_SWITCH_SIDE_PROFILES)
-            )
-            | (
-                (annotated["dominant_direction"] == "decreased")
-                & (annotated["decreased_profile_count"] >= MIN_SWITCH_SIDE_PROFILES)
-            )
+        (
+            (annotated["dominant_direction"] == "increased")
+            & (annotated["increased_profile_count"] >= MIN_SWITCH_SIDE_PROFILES)
+            & (annotated["increased_study_count"] >= MIN_SWITCH_SIDE_STUDIES)
+        )
+        | (
+            (annotated["dominant_direction"] == "decreased")
+            & (annotated["decreased_profile_count"] >= MIN_SWITCH_SIDE_PROFILES)
+            & (annotated["decreased_study_count"] >= MIN_SWITCH_SIDE_STUDIES)
         )
     ].copy()
 
@@ -560,11 +614,13 @@ def summarize_taxon_switches(taxon_condition: pd.DataFrame) -> pd.DataFrame:
                     group,
                     "increased",
                     "increased_profile_count",
+                    "increased_study_count",
                 ),
                 "top_decreased_conditions": top_condition_text(
                     group,
                     "decreased",
                     "decreased_profile_count",
+                    "decreased_study_count",
                 ),
                 "aerobic_traits": join_unique(group["aerobic_traits"]),
                 "anaerobic_traits": join_unique(group["anaerobic_traits"]),
@@ -651,11 +707,17 @@ def write_top_switch_plot(condition_scores: pd.DataFrame) -> None:
     ax.axvline(0, color="#334155", linewidth=0.9)
     ax.set_xlabel("Aerobic-only direction balance minus anaerobic-only direction balance")
     ax.set_ylabel("")
-    ax.set_title("Disease-State Oxygen Direction Switches")
+    ax.set_title(
+        "Disease-State Oxygen Direction Switches",
+        loc="left",
+        pad=36,
+        fontsize=13,
+        fontweight="bold",
+    )
     ax.text(
         0,
-        1.01,
-        "Positive: aerobic-only taxa skew increased while anaerobic-only taxa skew decreased. "
+        1.008,
+        "Positive: aerobic-only taxa skew increased while anaerobic-only taxa skew decreased.\n"
         "Negative: reciprocal pattern.",
         transform=ax.transAxes,
         ha="left",
@@ -666,7 +728,11 @@ def write_top_switch_plot(condition_scores: pd.DataFrame) -> None:
     ax.grid(axis="x", color="#e2e8f0", linewidth=0.8)
     ax.set_axisbelow(True)
     fig.tight_layout()
-    fig.savefig(OUTPUT_DIR / "condition_oxygen_switch_scores.png", dpi=180)
+    fig.savefig(
+        OUTPUT_DIR / "condition_oxygen_switch_scores.png",
+        dpi=180,
+        bbox_inches="tight",
+    )
     plt.close(fig)
 
 
