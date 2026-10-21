@@ -94,7 +94,7 @@ qa = [
   "pip-audit>=2.10.0",
   "pytest-cov>=6.0.0",
   "types-PyYAML>=6.0.12.20260408",
-  "uv==0.12.22",
+  "uv==0.13.4",
 ]
 
 [tool.setuptools]
