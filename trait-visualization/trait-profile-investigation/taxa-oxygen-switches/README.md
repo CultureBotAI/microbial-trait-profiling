@@ -2,8 +2,8 @@
 
 ## Scope
 
-- Human-host disease-like profile universe: 4,477 profiles, 929 studies.
-- Genus/species taxon-profile occurrences after metadata join: 29,308.
+- Human-host disease-like profile universe: 4,248 profiles, 887 studies.
+- Genus/species taxon-profile occurrences after metadata join: 28,059.
 - Oxygen classes are based on direct KG-Microbe trait columns: aerobic side = aerobic, microaerophilic, obligately aerobic, facultatively aerobic; anaerobic side = anaerobic, obligately anaerobic, strictly anaerobic.
 - Disease-like filtering excludes Healthy/reference rows, broad cohort/design labels, measurements, exposures, diet/intervention response labels, and other non-disease metadata labels.
 
@@ -11,10 +11,10 @@
 
 | oxygen_class | taxon_profile_count | taxon_count | study_count | increased_taxon_profile_count | decreased_taxon_profile_count | direction_balance |
 | --- | --- | --- | --- | --- | --- | --- |
-| anaerobic_only | 12411 | 861 | 809 | 6350 | 6061 | 0.023 |
-| mixed_oxygen_annotation | 8345 | 368 | 827 | 4561 | 3784 | 0.093 |
-| unannotated | 4373 | 1946 | 498 | 2192 | 2181 | 0.003 |
-| aerobic_only | 4179 | 1060 | 524 | 2165 | 2014 | 0.036 |
+| anaerobic_only | 11873 | 854 | 770 | 6055 | 5818 | 0.020 |
+| mixed_oxygen_annotation | 7968 | 361 | 789 | 4329 | 3639 | 0.087 |
+| unannotated | 4207 | 1914 | 483 | 2104 | 2103 | 0.000 |
+| aerobic_only | 4011 | 1045 | 502 | 2058 | 1953 | 0.026 |
 
 ## Strongest Condition-Level Oxygen Switches
 
@@ -51,7 +51,7 @@ These taxa have at least one disease condition where they are predominantly repo
 | taxon_name | taxonomic_rank | oxygen_class | switch_score | increased_dominant_condition_count | decreased_dominant_condition_count | top_increased_conditions | top_decreased_conditions |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Bacteroides | genus | mixed_oxygen_annotation | 181.86 | 10 | 12 | Obesity (15 profiles, 5 studies); Chronic constipation (12 profiles, 5 studies); Gestational diabetes (7 profiles, 3 studies); Type II diabetes mellitus (5 profiles, 2 studies) | HIV infection (18 profiles, 10 studies); Diarrhea (8 profiles, 2 studies); Parkinson's disease (6 profiles, 6 studies); Gastric cancer (5 profiles, 3 studies) |
-| Prevotella | genus | anaerobic_only | 149.37 | 13 | 10 | HIV infection (12 profiles, 10 studies); Colorectal cancer (10 profiles, 7 studies); Obesity (9 profiles, 5 studies); Rheumatoid arthritis (8 profiles, 4 studies) | Irritable bowel syndrome (10 profiles, 5 studies); COVID-19 (9 profiles, 9 studies); Ulcerative colitis (5 profiles, 4 studies); Gestational diabetes (4 profiles, 2 studies) |
+| Prevotella | genus | anaerobic_only | 126.73 | 13 | 8 | HIV infection (12 profiles, 10 studies); Colorectal cancer (10 profiles, 7 studies); Obesity (9 profiles, 5 studies); Rheumatoid arthritis (8 profiles, 4 studies) | Irritable bowel syndrome (10 profiles, 5 studies); COVID-19 (9 profiles, 9 studies); Ulcerative colitis (5 profiles, 4 studies); Gestational diabetes (4 profiles, 2 studies) |
 | Lactobacillus | genus | mixed_oxygen_annotation | 112.72 | 10 | 7 | Parkinson's disease (16 profiles, 13 studies); Gastric cancer (8 profiles, 3 studies); Endometriosis (6 profiles, 5 studies); HIV infection (6 profiles, 4 studies) | Human papilloma virus infection (8 profiles, 5 studies); Chronic constipation (7 profiles, 4 studies); Cervical glandular intraepithelial neoplasia (6 profiles, 4 studies); Human immunodeficiency virus (6 profiles, 2 studies) |
 | Bifidobacterium | genus | mixed_oxygen_annotation | 108.20 | 5 | 8 | Parkinson's disease (26 profiles, 14 studies); Gestational diabetes (6 profiles, 3 studies); Gastric cancer (3 profiles, 3 studies); Ulcerative colitis (3 profiles, 3 studies) | Irritable bowel syndrome (12 profiles, 7 studies); Eczema (8 profiles, 2 studies); HIV infection (6 profiles, 5 studies); COVID-19 (6 profiles, 3 studies) |
 | Streptococcus | genus | mixed_oxygen_annotation | 74.94 | 20 | 5 | Gastric cancer (14 profiles, 7 studies); Colorectal cancer (12 profiles, 9 studies); Parkinson's disease (10 profiles, 9 studies); Obesity (10 profiles, 4 studies) | COVID-19 (8 profiles, 7 studies); Chronic constipation (4 profiles, 3 studies); Eczema (4 profiles, 3 studies); Chlamydia trachomatis (4 profiles, 2 studies) |

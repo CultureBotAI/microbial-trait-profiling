@@ -49,6 +49,7 @@ def test_broad_covariate_labels_are_excluded_across_guild_scripts(label: str) ->
     assert aerobe.is_excluded_condition_label(label)
     assert anaerobe.is_excluded_condition_label(label)
     assert workflow_diagram.is_excluded_condition_label(label)
+    assert not oxygen_switches.is_disease_state_condition(label)
     for config in (guild_maps.FACULTATIVE_CONFIG, guild_maps.ANAEROBE_CONFIG):
         assert guild_maps.is_excluded_condition_label(label, config.excluded_condition_labels)
 

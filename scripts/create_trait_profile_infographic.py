@@ -1008,7 +1008,7 @@ def plot_top_traits(ax: plt.Axes, trait_stats: pd.DataFrame) -> None:
     colors = [INCREASED_BLUE if value >= 0 else DECREASED_RED for value in top_traits[mean_col]]
     labels = [trait_label(label, 38) for label in top_traits["trait_label"]]
     bars = ax.barh(labels, top_traits[score_col], color=colors, edgecolor="white")
-    ax.set_title("A. Top Profile-Differentiating Traits", fontsize=14, fontweight="bold", pad=8)
+    ax.set_title("A. Top Profile-Differentiating Traits", fontsize=14, fontweight="bold", pad=22)
     if score_col == "study_minus_log10_p":
         ax.set_xlabel(
             "-log10(study-level p) from paired increased-minus-decreased profile contrast"
@@ -1086,7 +1086,7 @@ def plot_condition_summary(ax: plt.Axes, condition_summary: pd.DataFrame) -> Non
         label="Traits enriched in increased profiles",
     )
     ax.set_title(
-        "B. Avg Trait-Profile Contrast per Condition", fontsize=14, fontweight="bold", pad=8
+        "B. Avg Trait-Profile Contrast per Condition", fontsize=14, fontweight="bold", pad=22
     )
     ax.set_xlabel("Mean absolute paired trait-profile contrast")
     ax.grid(axis="x", color=SLATE_200, linewidth=0.8)
@@ -1096,10 +1096,10 @@ def plot_condition_summary(ax: plt.Axes, condition_summary: pd.DataFrame) -> Non
     ax.spines[["top", "right", "left"]].set_visible(False)
     ax.spines["bottom"].set_color(SLATE_200)
     ax.legend(
-        loc="lower right",
-        bbox_to_anchor=(1.0, 1.03),
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.005),
         frameon=False,
-        fontsize=9,
+        fontsize=8.8,
         ncol=2,
     )
 
@@ -1224,13 +1224,14 @@ def plot_story_box(
     ax.set_ylim(0, 1)
     ax.axis("off")
     box = FancyBboxPatch(
-        (0.02, 0.02),
-        0.96,
-        0.90,
-        boxstyle="round,pad=0.025,rounding_size=0.025",
+        (0.03, 0.03),
+        0.94,
+        0.89,
+        boxstyle="round,pad=0.02,rounding_size=0.02",
         linewidth=1.0,
         edgecolor=SLATE_400,
         facecolor=SLATE_50,
+        clip_on=False,
     )
     ax.add_patch(box)
 

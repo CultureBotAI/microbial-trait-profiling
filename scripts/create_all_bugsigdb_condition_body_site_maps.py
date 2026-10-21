@@ -11,13 +11,14 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.lines import Line2D
-from matplotlib.patches import Circle, PathPatch
+from matplotlib.patches import PathPatch
 from matplotlib.path import Path as MplPath
 
 from create_condition_body_site_guild_maps import (
     FACULTATIVE_CONFIG as FULLY_GROUPED_BODY_SITE_CONFIG,
 )
 from create_condition_body_site_guild_maps import (
+    slot_midpoint_positions,
     v3_body_site_display_label,
     v3_fully_grouped_condition_display_label,
 )
@@ -788,15 +789,14 @@ def draw_node(
     note: str = "",
 ) -> None:
     """Draw a node marker and its text label."""
-    ax.add_patch(
-        Circle(
-            (x, y),
-            0.012,
-            facecolor="white",
-            edgecolor=SLATE_700,
-            linewidth=1.0,
-            zorder=5,
-        )
+    ax.scatter(
+        [x],
+        [y],
+        s=180,
+        facecolor="white",
+        edgecolor=SLATE_700,
+        linewidth=1.1,
+        zorder=5,
     )
     text_x = x - 0.025 if align == "right" else x + 0.025
     label_lines = [
@@ -831,15 +831,14 @@ def draw_node_v3(
     align: str,
 ) -> None:
     """Draw a v3 all-data node marker with focus and comparator counts."""
-    ax.add_patch(
-        Circle(
-            (x, y),
-            0.012,
-            facecolor="white",
-            edgecolor=SLATE_700,
-            linewidth=1.0,
-            zorder=5,
-        )
+    ax.scatter(
+        [x],
+        [y],
+        s=180,
+        facecolor="white",
+        edgecolor=SLATE_700,
+        linewidth=1.1,
+        zorder=5,
     )
     text_x = x - 0.025 if align == "right" else x + 0.025
     label_lines = [
@@ -870,7 +869,6 @@ def plot_direction_map(
     *,
     title_suffix: str = "",
     selection_note: str | None = None,
-    dense_layout: bool = False,
 ) -> None:
     """Render an all-BugSigDB direction map."""
     if display_edges.empty:
@@ -889,22 +887,47 @@ def plot_direction_map(
         .sort_values(ascending=False)
         .index.tolist()
     )
-    node_top = 0.98 if dense_layout else 0.88
-    node_bottom = 0.05 if dense_layout else 0.14
-    header_y = 0.985 if dense_layout else 0.93
-    condition_y = node_positions(condition_order, top=node_top, bottom=node_bottom)
-    body_site_y = node_positions(body_site_order, top=node_top, bottom=node_bottom)
     condition_stats = weighted_node_stats(display_edges, "condition")
     body_site_stats = weighted_node_stats(display_edges, "body_site_group")
     condition_notes = build_sampled_site_notes(display_edges, summary)
 
-    height = max(
-        9.0,
-        1.4 + 0.62 * max(len(condition_order), len(body_site_order)) + 0.10 * len(condition_notes),
+    cond_lines = [
+        wrap_label(condition).count("\n")
+        + 2
+        + (
+            len(wrap(condition_notes.get(condition, ""), width=42))
+            if condition_notes.get(condition)
+            else 0
+        )
+        for condition in condition_order
+    ]
+    site_lines = [wrap_label(site).count("\n") + 2 for site in body_site_order]
+    ax_height_in = max(
+        7.5,
+        sum(0.20 * lines + 0.24 for lines in cond_lines) + 0.90,
+        sum(0.20 * lines + 0.28 for lines in site_lines) + 0.90,
     )
+    height = ax_height_in + 2.60
+    top_frac = 1.0 - 1.35 / height
+    bottom_frac = 1.25 / height
+    header_y = 1.0 - 0.20 / ax_height_in
+    node_top = 1.0 - 0.52 / ax_height_in
+    node_bottom = 0.35 / ax_height_in
+    condition_y = slot_midpoint_positions(
+        condition_order,
+        cond_lines,
+        top=node_top,
+        bottom=node_bottom,
+    )
+    body_site_y = slot_midpoint_positions(
+        body_site_order,
+        site_lines,
+        top=node_top,
+        bottom=node_bottom,
+    )
+
     fig, ax = plt.subplots(figsize=(14.6, height))
-    if dense_layout:
-        fig.subplots_adjust(left=0.05, right=0.90, top=0.91, bottom=0.07)
+    fig.subplots_adjust(left=0.05, right=0.90, top=top_frac, bottom=bottom_frac)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
@@ -948,7 +971,7 @@ def plot_direction_map(
 
     fig.text(
         0.05,
-        0.965,
+        1.0 - 0.24 / height,
         f"{config.title}{title_suffix}",
         ha="left",
         va="top",
@@ -957,7 +980,7 @@ def plot_direction_map(
     )
     fig.text(
         0.05,
-        0.927,
+        1.0 - 0.56 / height,
         wrapped_plot_text(
             "Edges summarize all BugSigDB study/experiment/direction profiles "
             f"after label filtering. Edge width = n ({config.focus_label} profile "
@@ -1014,7 +1037,7 @@ def plot_direction_map(
         handles=legend_lines,
         title=f"Edge width: {config.focus_label} profiles (n)",
         loc="lower center",
-        bbox_to_anchor=(0.50, -0.015),
+        bbox_to_anchor=(0.50, -0.55 / ax_height_in),
         ncol=len(legend_lines),
         frameon=False,
         fontsize=8,
@@ -1033,7 +1056,7 @@ def plot_direction_map(
 
     fig.text(
         0.05,
-        0.035,
+        0.24 / height,
         selection_note,
         ha="left",
         va="bottom",
@@ -1108,17 +1131,37 @@ def plot_direction_map_v3(
     )
     body_site_order = body_site_order_frame.index.tolist()
 
-    node_top = 0.90
-    node_bottom = 0.06
-    header_y = 0.965
-    condition_y = node_positions(condition_order, top=node_top, bottom=node_bottom)
-    body_site_y = node_positions(body_site_order, top=node_top, bottom=node_bottom)
     condition_stats = weighted_node_stats_v3(display_edges, "condition")
     body_site_stats = weighted_node_stats_v3(display_edges, "body_site_group")
 
-    height = max(9.0, 1.5 + 0.66 * max(len(condition_order), len(body_site_order)))
+    cond_lines = [wrap_label(condition).count("\n") + 2 for condition in condition_order]
+    site_lines = [wrap_label(site).count("\n") + 2 for site in body_site_order]
+    ax_height_in = max(
+        7.5,
+        sum(0.20 * lines + 0.24 for lines in cond_lines) + 0.90,
+        sum(0.20 * lines + 0.28 for lines in site_lines) + 0.90,
+    )
+    height = ax_height_in + 2.80
+    top_frac = 1.0 - 1.50 / height
+    bottom_frac = 1.30 / height
+    header_y = 1.0 - 0.20 / ax_height_in
+    node_top = 1.0 - 0.52 / ax_height_in
+    node_bottom = 0.35 / ax_height_in
+    condition_y = slot_midpoint_positions(
+        condition_order,
+        cond_lines,
+        top=node_top,
+        bottom=node_bottom,
+    )
+    body_site_y = slot_midpoint_positions(
+        body_site_order,
+        site_lines,
+        top=node_top,
+        bottom=node_bottom,
+    )
+
     fig, ax = plt.subplots(figsize=(15.0, height))
-    fig.subplots_adjust(left=0.05, right=0.90, top=0.90, bottom=0.08)
+    fig.subplots_adjust(left=0.05, right=0.90, top=top_frac, bottom=bottom_frac)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
@@ -1199,7 +1242,7 @@ def plot_direction_map_v3(
 
     fig.text(
         0.05,
-        0.965,
+        1.0 - 0.24 / height,
         config.title,
         ha="left",
         va="top",
@@ -1208,7 +1251,7 @@ def plot_direction_map_v3(
     )
     fig.text(
         0.05,
-        0.927,
+        1.0 - 0.56 / height,
         wrapped_plot_text(
             f"Colored edges = {config.focus_label} BugSigDB profiles. Parallel "
             f"grey edges = {config.comparator_label} profiles in the "
@@ -1287,7 +1330,7 @@ def plot_direction_map_v3(
         handles=legend_lines,
         title=f"Edge width: {config.focus_label} profiles (n)",
         loc="lower center",
-        bbox_to_anchor=(0.50, -0.02),
+        bbox_to_anchor=(0.50, -0.60 / ax_height_in),
         ncol=min(len(legend_lines), 4),
         frameon=False,
         fontsize=8,
@@ -1297,7 +1340,7 @@ def plot_direction_map_v3(
 
     fig.text(
         0.05,
-        0.035,
+        0.24 / height,
         footer_note,
         ha="left",
         va="bottom",
@@ -1592,7 +1635,6 @@ def main() -> None:
                 "sites and broad metadata-like condition labels remain in the summary TSV "
                 "but are not drawn in the PNG."
             ),
-            dense_layout=True,
         )
         plot_direction_map_v3(
             display_edges_v3_individual,

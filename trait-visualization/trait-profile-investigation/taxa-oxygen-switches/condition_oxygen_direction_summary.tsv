@@ -1,13 +1,4 @@
 condition_display	condition	body_site_display	oxygen_class	taxon_profile_count	study_count	taxon_count	increased_taxon_profile_count	decreased_taxon_profile_count	increased_study_count	decreased_study_count	raw_body_sites	direction_balance
-Activity / lifestyle score	Exercise	Feces	anaerobic_only	9	2	7	3	6	2	2	Feces	-0.3333333333333333
-Age / development / sex	Age at assessment	Ocular / eye	aerobic_only	18	1	18	11	7	1	1	Bulbar conjunctiva	0.2222222222222222
-Age / development / sex	Age at assessment	Ocular / eye	anaerobic_only	3	1	3	3	0	1	0	Bulbar conjunctiva	1.0
-Age / development / sex	Age at menarche	Feces	anaerobic_only	2	1	2	0	2	0	1	Feces	-1.0
-Age / development / sex	Biological sex	Feces	anaerobic_only	2	1	2	2	0	1	0	Feces	1.0
-Age / development / sex	Biological sex	Ocular / eye	aerobic_only	5	2	4	4	1	2	1	Bulbar conjunctiva	0.6
-Age / development / sex	M1 distant metastasis stage	Hepatobiliary / pancreas	aerobic_only	5	1	5	4	1	1	1	Pancreas	0.6
-Antibiotic / antimicrobial exposure	Azithromycin	Lower airway / lung	aerobic_only	4	1	2	4	0	1	0	Sputum	1.0
-Antibiotic / antimicrobial exposure	Azithromycin	Lower airway / lung	anaerobic_only	1	1	1	1	0	1	0	Sputum	1.0
 Autoimmune / inflammatory disease	Autoimmune disease	Feces	aerobic_only	2	1	1	0	2	0	1	Feces	-1.0
 Autoimmune / inflammatory disease	Autoimmune disease	Feces	anaerobic_only	55	2	35	25	30	2	2	Feces	-0.09090909090909091
 Autoimmune / inflammatory disease	Behcet's syndrome	Oral cavity / dental	aerobic_only	3	1	3	1	2	1	1	Saliva	-0.3333333333333333
@@ -47,19 +38,10 @@ Autoimmune / inflammatory disease	Systemic lupus erythematosus	Oral cavity / den
 Autoimmune / inflammatory disease	Vitiligo	Feces	aerobic_only	9	2	9	0	9	0	2	Feces	-1.0
 Autoimmune / inflammatory disease	Vitiligo	Feces	anaerobic_only	46	2	46	23	23	2	2	Feces	0.0
 Blood / immune deficiency	Anemia	Feces	anaerobic_only	13	2	12	6	7	2	2	Feces	-0.07692307692307693
-Blood / immune deficiency	CD4-positive T-lymphocyte count	Oral cavity / dental	aerobic_only	2	1	1	1	1	1	1	Saliva	0.0
 Blood / immune deficiency	Common variable immunodeficiency	Feces	anaerobic_only	16	1	10	15	1	1	1	Feces	0.875
 Blood / immune deficiency	Essential thrombocythemia	Feces	anaerobic_only	6	1	3	3	3	1	1	Feces	0.0
 Blood / immune deficiency	Iron deficiency anemia	Feces	anaerobic_only	9	2	9	3	6	1	2	Feces	-0.3333333333333333
 Blood / immune deficiency	Iron deficiency anemia	Oral cavity / dental	aerobic_only	16	1	8	11	5	1	1	Dental plaque	0.375
-Body composition / growth	Body mass index	Feces	anaerobic_only	33	7	29	8	25	5	5	Feces	-0.5151515151515151
-Body composition / growth	Body mass index,Physical activity	Feces	anaerobic_only	8	1	3	1	7	1	1	Feces	-0.75
-Body composition / growth	Body weight	Vaginal / reproductive	anaerobic_only	2	1	1	0	2	0	1	Vaginal fluid	-1.0
-Body composition / growth	Hypertrophy	Oral cavity / dental	aerobic_only	5	1	5	5	0	1	0	Saliva	1.0
-Body composition / growth	Hypertrophy	Oral cavity / dental	anaerobic_only	23	1	22	20	3	1	1	Saliva	0.7391304347826086
-Body composition / growth	Overweight body mass index status	Feces	anaerobic_only	5	1	5	1	4	1	1	Feces	-0.6
-Body composition / growth	Postnatal growth retardation	Feces	anaerobic_only	2	1	2	1	1	1	1	Feces	0.0
-Body composition / growth	Short stature	Feces	anaerobic_only	6	1	2	6	0	1	0	Feces	1.0
 Cancer / neoplasia	Acute lymphoblastic leukemia	Feces	aerobic_only	8	3	8	5	3	2	1	Feces	0.25
 Cancer / neoplasia	Acute lymphoblastic leukemia	Feces	anaerobic_only	13	3	11	8	5	1	3	Feces	0.23076923076923078
 Cancer / neoplasia	Acute myeloid leukemia	Feces	aerobic_only	1	1	1	1	0	1	0	Feces	1.0
@@ -70,7 +52,6 @@ Cancer / neoplasia	Breast cancer	Breast / milk	aerobic_only	30	1	19	15	15	1	1	Br
 Cancer / neoplasia	Breast cancer	Breast / milk	anaerobic_only	8	1	7	5	3	1	1	Breast	0.25
 Cancer / neoplasia	Breast cancer	Feces	aerobic_only	16	3	16	10	6	1	3	Feces; Feces,Saliva	0.25
 Cancer / neoplasia	Breast cancer	Feces	anaerobic_only	119	7	103	56	63	6	7	Feces; Feces,Saliva	-0.058823529411764705
-Cancer / neoplasia	Breast cancer stage	Feces	anaerobic_only	3	1	3	1	2	1	1	Feces	-0.3333333333333333
 Cancer / neoplasia	Breast carcinoma	Breast / milk	aerobic_only	6	1	6	4	2	1	1	Breast	0.3333333333333333
 Cancer / neoplasia	Breast carcinoma	Feces	aerobic_only	3	1	2	2	1	1	1	Feces	0.3333333333333333
 Cancer / neoplasia	Breast carcinoma	Feces	anaerobic_only	31	1	23	6	25	1	1	Feces	-0.6129032258064516
@@ -175,15 +156,10 @@ Cancer / neoplasia	Thyroid carcinoma	Feces	aerobic_only	1	1	1	1	0	1	0	Feces	1.0
 Cancer / neoplasia	Thyroid carcinoma	Feces	anaerobic_only	12	1	12	6	6	1	1	Feces	0.0
 Cancer / neoplasia	Tongue neoplasm	Oral cavity / dental	aerobic_only	3	1	3	2	1	1	1	Saliva	0.3333333333333333
 Cancer / neoplasia	Tongue neoplasm	Oral cavity / dental	anaerobic_only	3	1	3	2	1	1	1	Saliva	0.3333333333333333
-Cancer / neoplasia	Tumor grading	Feces	anaerobic_only	23	1	23	10	13	1	1	Feces	-0.13043478260869565
-Cancer / neoplasia	Tumor size	Feces	aerobic_only	2	1	2	2	0	1	0	Feces	1.0
-Cancer / neoplasia	Tumor size	Feces	anaerobic_only	49	1	45	33	16	1	1	Feces	0.3469387755102041
 Cardiovascular disease	Atrial fibrillation	Feces	aerobic_only	1	1	1	1	0	1	0	Feces	1.0
 Cardiovascular disease	Atrial fibrillation	Feces	anaerobic_only	10	1	9	5	5	1	1	Feces	0.0
 Cardiovascular disease	Cardiovascular disease	Feces	aerobic_only	2	1	1	2	0	1	0	Feces	1.0
 Cardiovascular disease	Cardiovascular disease	Feces	anaerobic_only	34	1	20	11	23	1	1	Feces	-0.35294117647058826
-Cardiovascular disease	Carotid artery intima media thickness	Oral cavity / dental	aerobic_only	2	1	2	0	2	0	1	Saliva	-1.0
-Cardiovascular disease	Carotid artery intima media thickness	Oral cavity / dental	anaerobic_only	5	1	5	3	2	1	1	Saliva	0.2
 Cardiovascular disease	Coronary artery disease	Feces	anaerobic_only	12	1	12	7	5	1	1	Feces	0.16666666666666666
 Cardiovascular disease	Hypertension	Feces	anaerobic_only	1	1	1	0	1	0	1	Feces	-1.0
 Cardiovascular disease	Hypertension	Oral cavity / dental	aerobic_only	4	1	2	0	4	0	1	Saliva	-1.0
@@ -215,26 +191,6 @@ Colorectal neoplasia	Metastatic colorectal cancer	Feces	aerobic_only	6	1	6	6	0	1
 Colorectal neoplasia	Metastatic colorectal cancer	Feces	anaerobic_only	21	2	17	21	0	2	0	Feces	1.0
 Colorectal neoplasia	Metastatic colorectal cancer	Lower GI tract	aerobic_only	2	1	2	1	1	1	1	Colorectum	0.0
 Dental / periodontal measurement	Root caries	Oral cavity / dental	anaerobic_only	6	1	6	6	0	1	0	Dentine	1.0
-Diet / nutrition / supplements	Environmental factor	Feces	aerobic_only	1	1	1	1	0	1	0	Feces	1.0
-Diet / nutrition / supplements	Environmental factor	Feces	anaerobic_only	1	1	1	1	0	1	0	Feces	1.0
-Diet / nutrition / supplements	Equol	Feces	anaerobic_only	2	1	2	2	0	1	0	Feces	1.0
-Diet / nutrition / supplements	Fasting	Feces	aerobic_only	2	1	2	1	1	1	1	Feces	0.0
-Diet / nutrition / supplements	Fasting	Feces	anaerobic_only	11	1	10	5	6	1	1	Feces	-0.09090909090909091
-Diet / nutrition / supplements	High fat diet	Birth-associated samples	aerobic_only	1	1	1	0	1	0	1	Meconium	-1.0
-Diet / nutrition / supplements	High fat diet	Birth-associated samples	anaerobic_only	1	1	1	0	1	0	1	Meconium	-1.0
-Diet / nutrition / supplements	Lactobacillus rhamnosus GG	Feces	anaerobic_only	4	2	4	4	0	2	0	Feces	1.0
-Diet / nutrition / supplements	Nutraceutical	Lower GI tract	aerobic_only	4	1	3	3	1	1	1	Intestinal mucosa	0.5
-Diet / nutrition / supplements	Nutraceutical	Lower GI tract	anaerobic_only	9	1	3	3	6	1	1	Intestinal mucosa	-0.3333333333333333
-Diet / nutrition / supplements	Vitamin A deficiency	Feces	anaerobic_only	4	1	4	2	2	1	1	Feces	0.0
-Disease activity / severity	Illness severity status	Oral cavity / dental	anaerobic_only	2	1	2	2	0	1	0	Oral cavity	1.0
-Disease activity / severity	Remission	Feces	aerobic_only	3	1	3	1	2	1	1	Feces	-0.3333333333333333
-Disease activity / severity	Remission	Feces	anaerobic_only	25	1	18	19	6	1	1	Feces	0.52
-Disease activity / severity	Risk factor	Feces	anaerobic_only	20	2	13	12	8	1	2	Feces	0.2
-Disease activity / severity	Risk factor	Oral cavity / dental	aerobic_only	2	1	1	1	1	1	1	Saliva	0.0
-Disease activity / severity	Risk factor	Oral cavity / dental	anaerobic_only	3	1	3	2	1	1	1	Saliva	0.3333333333333333
-Disease activity / severity	Risk factor	Vaginal / reproductive	aerobic_only	1	1	1	0	1	0	1	Uterine cervix	-1.0
-Disease activity / severity	Risk factor	Vaginal / reproductive	anaerobic_only	5	1	5	3	2	1	1	Uterine cervix	0.2
-Disease activity / severity	Survival time	Feces	anaerobic_only	2	1	2	2	0	1	0	Feces	1.0
 ENT / oral mucosal disease	Chronic otitis media	Oral cavity / dental	anaerobic_only	2	1	1	2	0	1	0	Saliva	1.0
 ENT / oral mucosal disease	Halitosis	Oral cavity / dental	aerobic_only	3	1	3	1	2	1	1	Superior surface of tongue	-0.3333333333333333
 ENT / oral mucosal disease	Halitosis	Oral cavity / dental	anaerobic_only	8	1	6	4	4	1	1	Superior surface of tongue	0.0
@@ -242,16 +198,6 @@ ENT / oral mucosal disease	Mucositis	Oral cavity / dental	aerobic_only	12	1	10	0
 ENT / oral mucosal disease	Mucositis	Oral cavity / dental	anaerobic_only	67	1	38	67	0	1	0	Subgingival dental plaque	1.0
 ENT / oral mucosal disease	Sensory perception of bitter taste	Oral cavity / dental	aerobic_only	2	1	2	0	2	0	1	Internal cheek pouch	-1.0
 ENT / oral mucosal disease	Sensory perception of bitter taste	Oral cavity / dental	anaerobic_only	10	1	10	7	3	1	1	Internal cheek pouch	0.4
-Environmental / chemical exposure	Air pollution	Oral cavity / dental	aerobic_only	1	1	1	0	1	0	1	Buccal mucosa	-1.0
-Environmental / chemical exposure	Air pollution	Upper airway / nasal	aerobic_only	6	1	3	2	4	1	1	Throat	-0.3333333333333333
-Environmental / chemical exposure	Air pollution	Upper airway / nasal	anaerobic_only	12	2	5	1	11	1	2	Cavity of pharynx; Throat	-0.8333333333333334
-Environmental / chemical exposure	Multiple chemical sensitivity	Feces	aerobic_only	3	1	3	3	0	1	0	Feces	1.0
-Environmental / chemical exposure	Multiple chemical sensitivity	Feces	anaerobic_only	20	1	20	12	8	1	1	Feces	0.2
-Experimental phenotype labels	Phenotype	Feces	anaerobic_only	4	1	4	0	4	0	1	Feces	-1.0
-Experimental phenotype labels	Vesicle membrane	Ear	aerobic_only	6	1	6	6	0	1	0	Amniotic fluid	1.0
-Experimental phenotype labels	Vesicle membrane	Ear	anaerobic_only	4	1	4	4	0	1	0	Amniotic fluid	1.0
-Experimental phenotype labels	Vesicle membrane	Feces	aerobic_only	8	1	8	8	0	1	0	Amniotic fluid,Feces; Feces	1.0
-Experimental phenotype labels	Vesicle membrane	Feces	anaerobic_only	12	1	11	10	2	1	1	Amniotic fluid,Feces; Feces	0.6666666666666666
 GI / digestive disease	Abnormal stool composition	Feces	anaerobic_only	8	1	5	0	8	0	1	Feces	-1.0
 GI / digestive disease	Abnormality of the gastrointestinal tract	Lower GI tract	anaerobic_only	12	1	12	7	5	1	1	Ileum,Right colon,Rectum	0.16666666666666666
 GI / digestive disease	Abnormality of the gastrointestinal tract	Stomach / esophagus	anaerobic_only	6	1	6	0	6	0	1	Duodenum,Mucosa of pyloric antrum,Esophagus	-1.0
@@ -292,8 +238,6 @@ GI / digestive disease	Peptic esophagitis	Oral cavity / dental	anaerobic_only	13
 GI / digestive disease	Small intestine enteropathy	Intestinal / GI mucosa	aerobic_only	12	1	12	4	8	1	1	Duodenal mucosa	-0.3333333333333333
 GI / digestive disease	Small intestine enteropathy	Lower GI tract	aerobic_only	6	1	6	1	5	1	1	Mucosa of rectum	-0.6666666666666666
 GI / digestive disease	Small intestine enteropathy	Lower GI tract	anaerobic_only	6	1	6	1	5	1	1	Mucosa of rectum	-0.6666666666666666
-Immune biomarker	Antibody	Thyroid tissue	aerobic_only	3	1	3	3	0	1	0	Thyroid gland	1.0
-Immune biomarker	Antibody	Thyroid tissue	anaerobic_only	2	1	2	0	2	0	1	Thyroid gland	-1.0
 Infectious disease	Age,Human papilloma virus infection	Oral cavity / dental	aerobic_only	5	1	5	2	3	1	1	Mouth	-0.2
 Infectious disease	Age,Human papilloma virus infection	Oral cavity / dental	anaerobic_only	4	1	4	3	1	1	1	Mouth	0.5
 Infectious disease	Antimicrobial agent,Urinary tract infection	Feces	anaerobic_only	5	1	4	5	0	1	0	Feces	1.0
@@ -433,9 +377,6 @@ Inflammatory bowel disease	Ulcerative colitis	Lower GI tract	aerobic_only	2	1	1	
 Inflammatory bowel disease	Ulcerative colitis	Lower GI tract	anaerobic_only	36	2	19	14	22	1	2	Cecum mucosa,Colonic mucosa,Mucosa of rectum,Ileal mucosa; Rectum; Ileum,Right colon,Rectum; Right colon; Ileum	-0.2222222222222222
 Liver / biliary biomarker	Cholestasis	Feces	aerobic_only	2	1	2	0	2	0	1	Feces	-1.0
 Liver / biliary biomarker	Cholestasis	Feces	anaerobic_only	3	1	3	1	2	1	1	Feces	-0.3333333333333333
-Medication / clinical treatment	Antipsychotic drug	Feces	aerobic_only	1	1	1	1	0	1	0	Feces	1.0
-Medication / clinical treatment	Drug resistance	Feces	aerobic_only	1	1	1	1	0	1	0	Feces	1.0
-Medication / clinical treatment	Drug resistance	Feces	anaerobic_only	3	1	3	1	2	1	1	Feces	-0.3333333333333333
 Metabolic / endocrine	Autoimmune type 1 diabetes	Feces	aerobic_only	19	1	19	3	16	1	1	Feces	-0.6842105263157895
 Metabolic / endocrine	Autoimmune type 1 diabetes	Feces	anaerobic_only	36	2	35	28	8	2	1	Feces	0.5555555555555556
 Metabolic / endocrine	Cholesterol	Feces	anaerobic_only	1	1	1	0	1	0	1	Feces	-1.0
@@ -650,12 +591,6 @@ Other specific clinical labels	Upper digestive tract disease	Feces	anaerobic_onl
 Other specific clinical labels	Uric acid	Feces	aerobic_only	1	1	1	1	0	1	0	Feces	1.0
 Other specific clinical labels	Vaginitis	Vaginal / reproductive	aerobic_only	1	1	1	1	0	1	0	Posterior fornix of vagina	1.0
 Other specific clinical labels	Vaginitis	Vaginal / reproductive	anaerobic_only	3	1	3	3	0	1	0	Posterior fornix of vagina	1.0
-Population / social covariates	Ethnic group,Socioeconomic status	Feces	anaerobic_only	2	1	2	1	1	1	1	Feces	0.0
-Population / social covariates	Restricted to specific location	Feces	anaerobic_only	13	1	12	4	9	1	1	Feces	-0.38461538461538464
-Population / social covariates	Socioeconomic status	Feces	aerobic_only	9	3	6	5	4	3	1	Feces	0.1111111111111111
-Population / social covariates	Socioeconomic status	Feces	anaerobic_only	107	9	70	56	51	8	8	Feces	0.04672897196261682
-Population / social covariates	Socioeconomic status	Oral cavity / dental	aerobic_only	36	1	23	13	23	1	1	Saliva	-0.2777777777777778
-Population / social covariates	Socioeconomic status	Oral cavity / dental	anaerobic_only	5	1	5	1	4	1	1	Saliva	-0.6
 Pregnancy / neonatal	Gestational age	Vaginal / reproductive	aerobic_only	2	1	1	2	0	1	0	Vagina	1.0
 Pregnancy / neonatal	Neonatal jaundice	Birth-associated samples	aerobic_only	2	1	2	1	1	1	1	Meconium	0.0
 Pregnancy / neonatal	Neonatal jaundice	Birth-associated samples	anaerobic_only	2	1	2	1	1	1	1	Meconium	0.0
@@ -791,13 +726,6 @@ Respiratory / airway disease	Lung cancer	Lower airway / lung	aerobic_only	5	1	3	
 Respiratory / airway disease	Lung cancer	Lower airway / lung	anaerobic_only	1	1	1	0	1	0	1	Lung	-1.0
 Respiratory / airway disease	Lung cancer	Oral cavity / dental	aerobic_only	6	2	6	4	2	2	1	Saliva	0.3333333333333333
 Respiratory / airway disease	Lung cancer	Oral cavity / dental	anaerobic_only	2	1	2	0	2	0	1	Saliva	-1.0
-Sampling site / time protocol	Increased intestinal transit time	Feces	anaerobic_only	20	1	7	17	3	1	1	Feces	0.7
-Sampling site / time protocol	Sampling site	Lower GI tract	aerobic_only	2	1	2	0	2	0	1	Sigmoid colon	-1.0
-Sampling site / time protocol	Sampling site	Lower GI tract	anaerobic_only	3	1	3	1	2	1	1	Sigmoid colon	-0.3333333333333333
-Sampling site / time protocol	Sampling site	Lower airway / lung	anaerobic_only	1	1	1	1	0	1	0	Lung	1.0
-Sampling site / time protocol	Sampling site	Vaginal / reproductive	aerobic_only	2	1	2	1	1	1	1	Vagina	0.0
-Sampling site / time protocol	Sampling time	Feces	aerobic_only	3	2	3	2	1	1	1	Feces	0.3333333333333333
-Sampling site / time protocol	Sampling time	Feces	anaerobic_only	14	2	14	5	9	2	2	Feces	-0.2857142857142857
 Skin / hair disease	Acne	Feces	aerobic_only	3	1	3	0	3	0	1	Feces	-1.0
 Skin / hair disease	Acne	Feces	anaerobic_only	10	2	10	0	10	0	2	Feces	-1.0
 Skin / hair disease	Acne	Oral cavity / dental	aerobic_only	3	1	3	1	2	1	1	Cheek,Forehead	-0.3333333333333333
@@ -819,16 +747,6 @@ Skin / hair disease	Hidradenitis suppurativa	Skin	aerobic_only	13	1	13	1	12	1	1	
 Skin / hair disease	Hidradenitis suppurativa	Skin	anaerobic_only	7	1	7	7	0	1	0	Axilla skin	1.0
 Skin / hair disease	Rosacea	Skin	aerobic_only	5	1	3	0	5	0	1	Skin of cheek,Nose	-1.0
 Skin / hair disease	Rosacea	Skin	anaerobic_only	5	1	5	2	3	1	1	Skin of cheek,Nose	-0.2
-Smoking / alcohol / drug use	Alcohol drinking	Feces	anaerobic_only	4	2	4	2	2	2	1	Feces	0.0
-Smoking / alcohol / drug use	Alcohol drinking	Oral cavity / dental	aerobic_only	8	1	5	8	0	1	0	Mouth	1.0
-Smoking / alcohol / drug use	Alcohol drinking	Oral cavity / dental	anaerobic_only	14	1	8	5	9	1	1	Mouth	-0.2857142857142857
-Smoking / alcohol / drug use	Cannabis use	Oral cavity / dental	aerobic_only	15	1	10	13	2	1	1	Saliva	0.7333333333333333
-Smoking / alcohol / drug use	Cannabis use	Oral cavity / dental	anaerobic_only	4	1	4	2	2	1	1	Saliva	0.0
-Smoking / alcohol / drug use	Cannabis use	Upper airway / nasal	aerobic_only	3	1	2	0	3	0	1	Pharynx	-1.0
-Smoking / alcohol / drug use	Cannabis use	Upper airway / nasal	anaerobic_only	5	1	3	5	0	1	0	Pharynx	1.0
-Smoking / alcohol / drug use	Chewing tobacco behavior	Oral cavity / dental	anaerobic_only	2	1	2	2	0	1	0	Buccal mucosa	1.0
-Smoking / alcohol / drug use	Methamphetamine dependence	Lower GI tract	aerobic_only	4	1	2	3	1	1	1	Rectum	0.5
-Smoking / alcohol / drug use	Methamphetamine dependence	Lower GI tract	anaerobic_only	22	1	15	15	7	1	1	Rectum	0.36363636363636365
 Stroke	Ischemic stroke	Feces	aerobic_only	1	1	1	1	0	1	0	Feces	1.0
 Stroke	Ischemic stroke	Feces	anaerobic_only	15	2	15	7	8	1	2	Feces	-0.06666666666666667
 Stroke	Ischemic stroke	Oral cavity / dental	aerobic_only	3	1	3	1	2	1	1	Saliva	-0.3333333333333333
