@@ -149,10 +149,10 @@ def test_load_taxa_occurrences_audits_nonhuman_and_missing_human_profiles() -> N
     )
     experiment_metadata = pd.DataFrame(
         [
-            ("s1", "s1-1", "Autism", "Homo sapiens"),
-            ("s2", "s2-1", "Autism", "Mus musculus"),
+            ("s1", "s1-1", "Autism", "Homo sapiens", "16S"),
+            ("s2", "s2-1", "Autism", "Mus musculus", "16S"),
         ],
-        columns=["study_id", "experiment_id", "condition", "host_species"],
+        columns=["study_id", "experiment_id", "condition", "host_species", "sequencing_type"],
     )
 
     joined, excluded = followup.load_taxa_occurrences(
@@ -167,7 +167,17 @@ def test_load_taxa_occurrences_audits_nonhuman_and_missing_human_profiles() -> N
     assert excluded["host_species"].tolist() == ["Mus musculus"]
     assert excluded["condition_group"].tolist() == ["Autism"]
 
+    # A human ITS experiment lies outside the corpus by its sequencing type (#742)
     experiment_metadata.loc[1, "host_species"] = "Homo sapiens"
+    experiment_metadata.loc[1, "sequencing_type"] = "ITS / ITS2"
+    _, excluded = followup.load_taxa_occurrences(
+        profiles,
+        taxa=taxa,
+        experiment_metadata=experiment_metadata,
+    )
+    assert excluded["exclusion_reason"].tolist() == ["sequencing_type"]
+
+    experiment_metadata.loc[1, "sequencing_type"] = "16S"
     with pytest.raises(ValueError, match="human-host profile"):
         followup.load_taxa_occurrences(
             profiles,

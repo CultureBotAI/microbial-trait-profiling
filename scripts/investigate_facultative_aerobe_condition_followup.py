@@ -23,7 +23,11 @@ from investigate_facultative_aerobe_expansion import (
 from investigate_facultative_aerobe_expansion import (
     OUTPUT_DIR as FACULTATIVE_OUTPUT_DIR,
 )
-from mtp.human_host_corpus import excluded_host_summary, join_human_host_profiles
+from mtp.human_host_corpus import (
+    CORPUS_DESCRIPTION,
+    excluded_host_summary,
+    join_human_host_profiles,
+)
 
 OUTPUT_DIR = FACULTATIVE_OUTPUT_DIR
 CONDITION_GROUPS = {
@@ -156,7 +160,7 @@ def load_taxa_occurrences(
 
     lookup = condition_group_lookup()
     followup_experiments = experiment_metadata[experiment_metadata["condition"].isin(lookup)][
-        ["study_id", "experiment_id", "condition", "host_species"]
+        ["study_id", "experiment_id", "condition", "host_species", "sequencing_type"]
     ].copy()
     taxa = taxa.merge(
         followup_experiments[["study_id", "experiment_id"]],
@@ -178,7 +182,7 @@ def load_taxa_occurrences(
     occurrences, excluded = join_human_host_profiles(
         taxa,
         indexed_profiles[available_columns],
-        followup_experiments[["study_id", "experiment_id", "host_species"]],
+        followup_experiments[["study_id", "experiment_id", "host_species", "sequencing_type"]],
     )
     excluded = excluded.merge(
         followup_experiments[["study_id", "experiment_id", "condition"]],
@@ -935,7 +939,7 @@ def write_readme(
             "",
             "The tables below count unique taxon/profile occurrences after deduplicating "
             "the same taxon within the same study/experiment/direction profile. "
-            f"Human-host profiles only; {excluded_host_summary(excluded_occurrences)} "
+            f"{CORPUS_DESCRIPTION}; {excluded_host_summary(excluded_occurrences)} "
             + autism_label_contrast_sentence(profile_summary),
             "",
         ]
