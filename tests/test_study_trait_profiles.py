@@ -9,8 +9,8 @@ from bsdbng.study_trait_profiles import (
     main,
 )
 from bsdbng.taxa_trait_matrix import create_taxa_trait_matrix
-from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from bsdbng.trait_guilds import retained_trait_columns
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 
 
 def _write_study_yaml(study_dir: Path) -> None:

@@ -11,7 +11,8 @@ both G and A, so these are overlapping annotations rather than four organisms.
 Other profiles cover a culture-medium-only annotation, a present-in-KG taxon
 with no retained annotations, a taxon absent from the KG, an incomplete
 increased/decreased pair, a family-level report, and a mouse-host experiment.
-The raw core retains MediaDive columns and incomplete pairs. Count profiles
+Study bsdb:3 is shotgun (`WMS`) and the others 16S, the two sequencing types the
+profiles keep (#742). The raw core retains MediaDive columns and incomplete pairs. Count profiles
 include all hosts by default; ORA profiles include humans by default.
 
 The matrix builder emits all reported taxa as rows. Consequently, the KG-absent

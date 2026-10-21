@@ -2,7 +2,8 @@ id: bugsigdb-core-subset
 version: '1'
 description: Verified contrast-population selection and disease orientation before canonical exports and
   profiles. Original ingested studies and exports remain preserved. The trait matrix, vocabulary and ORA
-  background use the full source population.
+  background use the full source population. Selected populations and profiles keep 16S and shotgun
+  (WMS) experiments only (#742).
 parameters:
   - name: source_mode
     default: unknown
@@ -155,7 +156,7 @@ products:
     cohort: all
     cohort_parameter: count_host_species
     feature_policy: include_mediadive
-    coverage_policy: count_input_v1
+    coverage_policy: count_input_16s_wms_v1
   - id: count_coverage
     kind: profile_coverage
     schema_ref: schema/core_products.yaml#ProfileCoverageRecord
@@ -166,7 +167,7 @@ products:
     cohort: all
     cohort_parameter: count_host_species
     feature_policy: include_mediadive
-    coverage_policy: count_input_v1
+    coverage_policy: count_input_16s_wms_v1
   - id: ora_profiles
     kind: ora_profiles
     schema_ref: schema/core_products.yaml#ORAProfileRow
@@ -177,7 +178,7 @@ products:
     cohort: Homo sapiens
     cohort_parameter: ora_host_species
     feature_policy: include_mediadive
-    coverage_policy: count_input_v1
+    coverage_policy: count_input_16s_wms_v1
   - id: ora_coverage
     kind: profile_coverage
     schema_ref: schema/core_products.yaml#ProfileCoverageRecord
@@ -188,7 +189,7 @@ products:
     cohort: Homo sapiens
     cohort_parameter: ora_host_species
     feature_policy: include_mediadive
-    coverage_policy: count_input_v1
+    coverage_policy: count_input_16s_wms_v1
   - id: source_studies
     kind: study_collection
     schema_ref: schema/mtp.yaml#Study

@@ -131,9 +131,9 @@ def collect_profile_taxa(
                 if host != host_species.strip():
                     continue
 
-            if kept_types is not None:
-                if _as_text(experiment.get("sequencing_type")).strip() not in kept_types:
-                    continue
+            sequencing_type = _as_text(experiment.get("sequencing_type")).strip()
+            if kept_types is not None and sequencing_type not in kept_types:
+                continue
 
             experiment_id = _as_text(experiment.get("id")).strip()
             signatures_obj = experiment.get("signatures")

@@ -19,6 +19,7 @@ import yaml
 
 from mtp import contrast_orientation as orientation
 from mtp.datamodel import Study
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.paths import file_sha256
 from mtp.trait_guilds import HUMAN_HOST_SPECIES, Profile
 
@@ -87,6 +88,7 @@ def _counts(records: Mapping[str, dict[str, Any]]) -> dict[str, int]:
 def _reason(
     population: str,
     human: bool,
+    sequenced: bool,
     paired: bool,
     found: orientation.Classification | None,
 ) -> str:
@@ -94,6 +96,10 @@ def _reason(
         return "identity"
     if not human:
         return "non_human"
+    # The profiles keep 16S and shotgun experiments only, so a selected population
+    # must too (#742)
+    if not sequenced:
+        return "sequencing_type"
     if not paired:
         return "unpaired"
     if found is None:
@@ -168,13 +174,16 @@ def _plan(
             directions = {str(signature["direction"]) for signature in experiment["signatures"]}
             paired = directions == {"increased", "decreased"}
             human = str(experiment.get("host_species") or "").strip() == HUMAN_HOST_SPECIES
-            reason = _reason(population, human, paired, found)
+            sequencing_type = str(experiment.get("sequencing_type") or "").strip()
+            sequenced = sequencing_type in CORPUS_SEQUENCING_TYPES
+            reason = _reason(population, human, sequenced, paired, found)
             keep = reason in {"identity", "selected"}
             decisions.append(
                 {
                     "study_id": key[0],
                     "experiment_id": key[1],
                     "host_species": experiment.get("host_species"),
+                    "sequencing_type": experiment.get("sequencing_type"),
                     "paired": paired,
                     "source_directions": sorted(directions),
                     "contrast_class": found.contrast_class if found else None,
@@ -224,6 +233,9 @@ def _plan(
         "reversed_experiments": _ids(reversed_keys),
         "policy": {
             "human_only": population != ALL_PAIRED,
+            "sequencing_types": (
+                None if population == ALL_PAIRED else list(CORPUS_SEQUENCING_TYPES)
+            ),
             "paired_only": population != ALL_PAIRED,
             "trait_total_filter": "none",
             "strong_evidence_only": False,

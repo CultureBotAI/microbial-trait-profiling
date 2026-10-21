@@ -84,10 +84,17 @@ def _sources(tmp_path: Path) -> dict[str, Path]:
     )
     experiments = _write(
         tmp_path / "experiments.tsv",
-        ["study_id", "experiment_id", "host_species", "signature_count", "taxon_count"],
         [
-            ["bsdb:1", "bsdb:1-1", "Homo sapiens", 2, 6],
-            ["bsdb:1", "bsdb:1-2", "Mus musculus", 1, 1],
+            "study_id",
+            "experiment_id",
+            "host_species",
+            "sequencing_type",
+            "signature_count",
+            "taxon_count",
+        ],
+        [
+            ["bsdb:1", "bsdb:1-1", "Homo sapiens", "16S", 2, 6],
+            ["bsdb:1", "bsdb:1-2", "Mus musculus", "WMS", 1, 1],
         ],
     )
     signatures = _write(
@@ -171,6 +178,23 @@ def test_profile_cohort_membership_is_checked_not_inferred_from_rows(tmp_path: P
     )
     with pytest.raises(ValueError, match="membership differs"):
         validate_product(path, "ora_profiles", context=context)
+
+
+def test_profile_cohort_keeps_16s_and_shotgun_experiments_only(tmp_path: Path) -> None:
+    """A count profile of a PCR experiment is outside the cohort, whatever the host (#742)."""
+    context = _sources(tmp_path)
+    experiments = context["experiments"]
+    text = experiments.read_text(encoding="utf-8")
+    experiments.write_text(text.replace("\tWMS\t", "\tPCR\t"), encoding="utf-8")
+    rows: list[list[str | int]] = [[*KEY, 4, 1], ["bsdb:1", "bsdb:1-1", "dec", 0, 0]]
+    header = ["study_id", "experiment_id", "inc_dec", TRAIT, MEDIUM]
+    with_pcr = _write(
+        tmp_path / "with_pcr.tsv", header, [*rows, ["bsdb:1", "bsdb:1-2", "inc", 1, 0]]
+    )
+    with pytest.raises(ValueError, match="outside declared cohort"):
+        validate_product(with_pcr, "count_profiles", context=context)
+    without_pcr = _write(tmp_path / "without_pcr.tsv", header, rows)
+    assert validate_product(without_pcr, "count_profiles", context=context)["rows"] == 2
 
 
 def test_coverage_keeps_lookup_zero_and_media_only_distinct(tmp_path: Path) -> None:

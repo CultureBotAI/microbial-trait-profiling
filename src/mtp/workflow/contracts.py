@@ -36,6 +36,7 @@ from mtp.datamodel.core_products_pydantic import (
     StudyTableRow,
     TaxonOccurrenceRow,
 )
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.study_trait_profiles import ProfileKey, direction_to_inc_dec, read_taxa_trait_matrix
 from mtp.workflow.coverage import (
     FEATURE_CATALOG_COLUMNS,
@@ -303,20 +304,20 @@ def _profile_taxa(context: Mapping[str, object], cohort: str) -> dict[ProfileKey
     if taxa is None:
         return None
     experiments = _records(context, "experiments")
-    allowed: set[tuple[str, str]] | None = None
-    if cohort != "all":
-        if experiments is None:
-            raise ValueError("Host-filter validation requires the experiments product")
-        allowed = {
-            (r["study_id"], r["experiment_id"])
-            for r in experiments
-            if r["host_species"].strip() == cohort
-        }
+    if experiments is None:
+        raise ValueError("Cohort validation requires the experiments product")
+    # Profiles keep 16S and shotgun experiments only, whatever the host cohort (#742)
+    allowed = {
+        (r["study_id"], r["experiment_id"])
+        for r in experiments
+        if r["sequencing_type"].strip() in CORPUS_SEQUENCING_TYPES
+        and (cohort == "all" or r["host_species"].strip() == cohort)
+    }
     result: dict[ProfileKey, list[str]] = {}
     # Signature records preserve valid profiles with zero reported taxa.
     for row in _records(context, "signatures") or taxa:
         direction = direction_to_inc_dec(row["direction"])
-        if direction and (allowed is None or (row["study_id"], row["experiment_id"]) in allowed):
+        if direction and (row["study_id"], row["experiment_id"]) in allowed:
             result.setdefault((row["study_id"], row["experiment_id"], direction), [])
     for row in taxa:
         direction = direction_to_inc_dec(row["direction"])

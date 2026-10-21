@@ -350,3 +350,29 @@ def test_unknown_malformed_raw_kg_record_fails_explicitly(tmp_path: Path) -> Non
     path.write_text("id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:101\tMETPO:2000103\n")
     with pytest.raises(ValueError, match="unknown malformed KG edge"):
         audit_kg_edges(path)
+
+
+def test_only_16s_and_shotgun_experiments_enter_the_profiles(
+    completed_core: WorkflowRun, tmp_path: Path
+) -> None:
+    """An ITS experiment stays in the exported tables but not in either profile product,
+    and the profile and coverage contracts rebuild the same cohort (#742)."""
+    raw = tmp_path / "full_dump.csv"
+    text = INPUTS["raw_dump"].read_text(encoding="utf-8")
+    assert text.count(",WMS\n") == 2
+    raw.write_text(text.replace(",WMS\n", ",ITS / ITS2\n"), encoding="utf-8")
+    run = execute_workflow(
+        SPEC,
+        {**INPUTS, "raw_dump": raw},
+        tmp_path / "runs",
+        OPERATIONS,
+        validator=validate_core_product,
+        repository_root=ROOT,
+    )
+    experiments = {r["experiment_id"]: r for r in _rows(artifact_path(run, "experiments"))}
+    assert experiments["bsdb:3-1"]["sequencing_type"] == "ITS / ITS2"
+    for product in ("count_profiles", "ora_profiles", "count_coverage", "ora_coverage"):
+        before = _rows(artifact_path(completed_core, product))
+        after = _rows(artifact_path(run, product))
+        assert any(row["study_id"] == "bsdb:3" for row in before)
+        assert after == [row for row in before if row["study_id"] != "bsdb:3"]

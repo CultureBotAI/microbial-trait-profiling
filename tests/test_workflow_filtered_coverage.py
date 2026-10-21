@@ -24,6 +24,7 @@ def bundle(tmp_path: Path) -> CoreBundle:
             {
                 "id": "bsdb:1-1",
                 "host_species": "Homo sapiens",
+                "sequencing_type": "16S",
                 "signatures": [
                     {
                         "id": "bsdb:1-1-1",
@@ -40,6 +41,7 @@ def bundle(tmp_path: Path) -> CoreBundle:
             {
                 "id": "bsdb:1-2",
                 "host_species": "Mus musculus",
+                "sequencing_type": "WMS",
                 "signatures": [
                     {"id": "bsdb:1-2-1", "direction": "increased", "taxa": [{"id": "NCBITaxon:3"}]},
                 ],

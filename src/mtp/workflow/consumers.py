@@ -22,6 +22,7 @@ from mtp.datamodel.workflow_pydantic import (
     LegacyImportRecord,
     WorkflowRun,
 )
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.paths import file_sha256
 from mtp.workflow.locations import LocationResolver, locate
 from mtp.workflow.runtime import artifact_path
@@ -389,7 +390,9 @@ def _consumer_coverage(
     if not cohort or cohort == "unknown":
         raise ValueError("Consumer annotation coverage requires an explicit input cohort")
     profiles, _ = collect_profile_taxa(
-        bundle.path("studies"), host_species=None if cohort == "all" else cohort
+        bundle.path("studies"),
+        host_species=None if cohort == "all" else cohort,
+        sequencing_types=CORPUS_SEQUENCING_TYPES,
     )
     return build_profile_coverage(profiles, matrix, feature_columns=columns), columns
 
