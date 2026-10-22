@@ -121,8 +121,9 @@ An earlier version wrote the uncorrected p into `q_value` as well, which made it
 look like a one-member FDR family (#294).
 
 The cell rows are the oxygen guild figure's own inventory, one per cell of its
-condition-by-body-site grid: 52 conditions by 21 body-site blocks (the top 20
-sites and Other), each block four guild-by-direction columns wide, of which
+condition-by-body-site grid: 52 condition rows (51 conditions and the pooled
+Other) by 21 body-site blocks (20 sites and the pooled Other), each block four
+guild-by-direction columns wide, of which
 **344 are drawn, 24 drawn as sampled-without-signal, 308 masked for too little
 support and 3,692 never sampled**. The figure's own builder,
 `guild_maps.build_figure_matrix`, makes them at the figure's parameters and over

@@ -13,8 +13,10 @@ import pytest
 
 from mtp import guild_maps
 from mtp.guild_maps import (
+    CELL_BELOW_MIN_STUDIES,
     CELL_NO_SIGNAL,
     CELL_VALUE,
+    OTHER_LABEL,
     GuildMatrix,
     build_matrix,
     cell_status_rows,
@@ -502,8 +504,8 @@ def test_the_four_cell_support_states_come_from_the_real_matrix() -> None:
     Nothing used to set ``drawn`` or ``masked_below_min_studies``, and
     ``not_sampled`` was never emitted at all, so three of the enum's states named
     something the table could not produce. These rows come from the same
-    ``cell_status`` classification the figure writer uses, over the matrix the
-    McNemar row is computed on.
+    ``cell_status`` classification the figure writer uses, over the figure's own
+    matrix.
     """
     profiles = _support_profiles()
     matrix = build_guild_matrix(profiles)
@@ -1299,7 +1301,9 @@ def test_main_writes_every_artifact_and_its_provenance(tmp_path: Path) -> None:
 #: exclusion changes, which the figure never applies (#770). Crohn in Feces has
 #: two annotated studies and one with a zero total, so the figure draws it from
 #: three studies; IBS in Saliva has only zero-total studies, so the figure shades
-#: it as sampled without signal.
+#: it as sampled without signal. IBS in Vagina has two studies, below the
+#: figure's three, so a looser threshold in the table would draw what the figure
+#: masks (#798).
 FIGURE_SITES = (
     "Feces",
     "Lung",
@@ -1318,39 +1322,52 @@ FIGURE_BLOCKS: tuple[tuple[int, str, str, str, str, tuple[str, ...]], ...] = (
     (1, "Crohn", "Feces", "Homo sapiens", "zero_total", ("inc", "dec")),
     (3, "IBS", "Saliva", "Homo sapiens", "zero_total", ("inc", "dec")),
     (3, "IBS", "Feces", "Homo sapiens", "signal", ("inc", "dec")),
+    (2, "IBS", "Vagina", "Homo sapiens", "signal", ("inc", "dec")),
 )
 
+#: One cell as both artifacts can state it: (condition, column), then its status
+#: in the figure's vocabulary and the number of studies behind it.
+CellRow = tuple[tuple[str, str], tuple[str, int]]
 
-def _figure_cells(directory: Path) -> dict[tuple[str, str], tuple[str, int]]:
-    """The figure's cell-status and study-count tables, keyed by (condition, column)."""
-    tables: list[dict[tuple[str, str], str]] = []
+
+def _figure_cells(directory: Path) -> list[CellRow]:
+    """The figure's cell-status and study-count tables, cell by cell in their order."""
+    tables: list[list[tuple[tuple[str, str], str]]] = []
     for name in ("cell_status", "study_counts"):
         path = directory / f"guild_condition_body_site_{name}.tsv"
         with path.open(encoding="utf-8") as handle:
             header, *rows = list(csv.reader(handle, delimiter="\t"))
         tables.append(
-            {
-                (row[0], column): value
+            [
+                ((row[0], column), value)
                 for row in rows
                 for column, value in zip(header[1:], row[1:], strict=True)
-            }
+            ]
         )
     statuses, counts = tables
-    return {key: (status, int(counts[key])) for key, status in statuses.items()}
+    assert [key for key, _ in statuses] == [key for key, _ in counts]
+    return [
+        (key, (status, int(count)))
+        for (key, status), (_, count) in zip(statuses, counts, strict=True)
+    ]
 
 
-def _inventory_cells(path: Path) -> dict[tuple[str, str], tuple[str, int]]:
-    """The table's cell rows, in the figure's own status vocabulary."""
+def _inventory_cells(path: Path) -> list[CellRow]:
+    """The table's cell rows in their own order, in the figure's status vocabulary.
+
+    A list rather than a mapping, so a cell written twice is a difference and not
+    a silently merged key (#798).
+    """
     status_of = {(display, test): status for status, (test, display) in CELL_STATES.items()}
     with path.open(encoding="utf-8") as handle:
         rows = [row for row in csv.DictReader(handle, delimiter="\t") if row["support_threshold"]]
-    return {
-        (row["condition"], f"{row['body_site']}|{row['trait']}_{row['direction']}"): (
-            status_of[(row["display_status"], row["test_status"])],
-            int(row["unique_studies"]),
+    return [
+        (
+            (row["condition"], f"{row['body_site']}|{row['trait']}_{row['direction']}"),
+            (status_of[(row["display_status"], row["test_status"])], int(row["unique_studies"])),
         )
         for row in rows
-    }
+    ]
 
 
 def test_the_cell_inventory_is_the_figures_cell_status_table(
@@ -1406,34 +1423,90 @@ def test_the_cell_inventory_is_the_figures_cell_status_table(
     figure = _figure_cells(figure_dir)
     inventory = _inventory_cells(evidence_dir / "integrated_evidence.tsv")
     # The same cells in the figure's own order, each with the figure's state and
-    # the number of studies behind it.
-    assert list(inventory.items()) == list(figure.items())
+    # the number of studies behind it, and each exactly once.
+    assert inventory == figure
 
-    # The corpus reaches both ways the two grids came apart, so this cannot pass
+    # The corpus reaches every way the two grids came apart, so this cannot pass
     # on a fixture where they happen to coincide.
-    assert len({column.split("|", 1)[0] for _, column in figure}) == len(FIGURE_SITES) > 8
-    assert figure[("Crohn", "Feces|aerobe_inc")] == (CELL_VALUE, 3)
-    assert figure[("IBS", "Saliva|aerobe_inc")] == (CELL_NO_SIGNAL, 3)
+    cells = dict(figure)
+    assert len(cells) == len(figure)
+    assert len({column.split("|", 1)[0] for _, column in cells}) == len(FIGURE_SITES) > 8
+    assert cells[("Crohn", "Feces|aerobe_inc")] == (CELL_VALUE, 3)
+    assert cells[("IBS", "Saliva|aerobe_inc")] == (CELL_NO_SIGNAL, 3)
+    assert cells[("IBS", "Vagina|aerobe_inc")] == (CELL_BELOW_MIN_STUDIES, 2)
 
     # The view names the grid it counts, so it can be set against the figure's.
     view = " ".join((evidence_dir / "integrated_evidence.md").read_text(encoding="utf-8").split())
-    conditions = {condition for condition, _ in figure}
+    conditions = {condition for condition, _ in cells}
     assert (
-        f"{len(conditions)} conditions by {len(FIGURE_SITES)} body sites by 4 guild-direction"
-        in view
+        f"{len(conditions)} condition rows by {len(FIGURE_SITES)} body-site blocks, "
+        "each block 4 guild-direction columns wide" in view
     )
 
     # The tests in the table keep the shared comparison basis: following the
-    # figure moves the inventory, not the population a test runs on.
+    # figure moves the inventory, not the population a test runs on, and the
+    # provenance record says which rows the exclusion governs.
     provenance = json.loads(
         (evidence_dir / "integrated_evidence_provenance.json").read_text(encoding="utf-8")
     )
     exclusion = provenance["pair_exclusion"]
     assert exclusion["zero_total_experiments"] == 4
+    assert exclusion["applies_to"] == [
+        "directional_consistency_fraction_sign_test",
+        "directional_consistency_log_ratio_sign_test",
+        "oxygen_guild_mcnemar",
+    ]
+    assert exclusion["not_applied_to"] == ["oxygen_guild_cell_support"]
     with (evidence_dir / "integrated_evidence.tsv").open(encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle, delimiter="\t"))
     mcnemar = next(row for row in rows if row["method"] == "oxygen_guild_mcnemar")
     assert int(mcnemar["unique_studies"]) == exclusion["studies_after"]
+
+
+def test_the_view_names_the_pooled_other_row_and_block(tmp_path: Path) -> None:
+    """A surviving pooled Other is named, not counted as one more label (#798).
+
+    Twenty-one sites leave one outside the figure's top-20 cut, and sixty-three
+    conditions leave three outside its top 60. Each pooled bucket carries three
+    studies, so the Other row and the Other block are both drawn.
+    """
+    profiles: list[Profile] = []
+
+    def add(study: str, condition: str, site: str) -> None:
+        for direction in ("inc", "dec"):
+            aerobe_high = direction == "inc"
+            counts = {"aerobe": 30 if aerobe_high else 5, "anaerobe": 5 if aerobe_high else 30}
+            profiles.append(
+                Profile(
+                    study_id=study,
+                    experiment_id=f"{study}-1",
+                    inc_dec=direction,
+                    condition=condition,
+                    body_site=site,
+                    guild_counts=counts,
+                    total=sum(counts.values()) + 20,
+                )
+            )
+
+    sites = [f"Site {index:02d}" for index in range(1, 22)]
+    for site in sites:
+        for index in range(3):
+            add(f"colitis-{site}-{index}", "Colitis", site)
+    # One study each: the 59 kept are masked and left out, the 3 pooled are drawn.
+    for index in range(1, 63):
+        add(f"rare-{index:02d}", f"Rare {index:02d}", sites[0])
+
+    matrix = build_guild_matrix(profiles)
+    records = cell_support_records(matrix, source="x", columns={}, min_studies=GUILD_MIN_STUDIES)
+    view = write_view(records, summarize(records), tmp_path / "view.md")
+    text = " ".join(view.read_text(encoding="utf-8").split())
+
+    assert matrix.conditions.count(OTHER_LABEL) == 1
+    assert matrix.body_sites.count(OTHER_LABEL) == 1
+    assert (
+        "2 condition rows (1 condition and the pooled Other) by 21 body-site blocks "
+        "(20 sites and the pooled Other)" in text
+    )
 
 
 def test_the_inventory_is_cut_at_the_figures_own_parameters() -> None:
