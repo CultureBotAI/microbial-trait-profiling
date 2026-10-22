@@ -18,8 +18,15 @@ all-tied count, which is the collapse the basis forbids. On the committed corpus
 and takes the study count from **932 to 922**. It changes the tie counts rather
 than the directions: facultatively aerobic 32 to 24, arsenate reduction 324 to
 316, moderately halophilic 101 to 93. All six fraction traits remain significant
-at q <= 0.05. The figure-cell inventory keeps those pairs, because it describes
-the oxygen guild figure and the figure draws them (#770).
+at q <= 0.05. Since #783 the oxygen guild figure, and with it the figure-cell
+inventory, leaves those pairs out too. Every test and figure cell computed here
+shares one population, chosen by the repository owner on 2026-10-22 for the
+reasons given in [`three_arm_statistics.md`](three_arm_statistics.md). The rows
+say so: their `population` reads "human, paired experiments; pairs with a zero
+retained-annotation total excluded". The imported native rows keep their
+sources' populations, and the provenance record lists both sets. Before, the
+fraction and McNemar rows read "human, paired experiments" while running on the
+excluded set.
 
 ## What problem it solves
 
@@ -103,7 +110,7 @@ read as a negative result.
 
 On the committed corpus, **4,200 rows: 40 method results and 4,160 figure
 cells**. That is the run that wrote `data/derived/integrated_evidence/`, at code
-commit `4011ef14512ac44d56eb92380d01226e1636a401`. Its profiles are sha256
+commit `58927fe8fde3735b3d505f09105a2941875485b3`. Its profiles are sha256
 `519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c` (the committed
 `study_trait_profiles_wide.tsv.gz`), its experiments
 `16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06`, and its
@@ -124,7 +131,9 @@ provenance record carries every other input's hash.
 The guild McNemar is a single uncorrected test. It carries p = 3.6e-06 over 922
 studies and leaves q blank, so it has no threshold decision in either column: a
 decision in this table is a decision on a corrected value and there is no
-corrected value here.
+corrected value here. Since #783 the figure's own McNemar is the same test on the
+same population: 410 and 287 discordant studies, p = 3.6e-06. Before, the figure
+kept zero-total pairs and reported p = 2.0e-06 over 932 studies.
 An earlier version wrote the uncorrected p into `q_value` as well, which made it
 look like a one-member FDR family (#294).
 
@@ -132,13 +141,15 @@ The cell rows are the oxygen guild figure's own inventory, one per cell of its
 condition-by-body-site grid: 52 condition rows (51 conditions and the pooled
 Other) by 20 body-site blocks (19 sites and the pooled Other), each block four
 guild-by-direction columns wide, of which
-**340 are drawn, 20 drawn as sampled-without-signal, 296 masked for too little
-support and 3,504 never sampled**. The figure's own builder,
+**340 are drawn, 10 drawn as sampled-without-signal, 302 masked for too little
+support and 3,508 never sampled**. The figure's own builder,
 `guild_maps.build_figure_matrix`, makes them at the figure's parameters and over
-its population, every paired human profile, so unlike the tests above they
-include the 55 zero-total pairs. An earlier version rebuilt the grid here, at an
-8-site cut the figure had left for 20 and after that exclusion, so its 1,872
-cells described a grid the figure never drew (#770). They report support and
+its population. Since #783 that population is the tests' shared basis, so the 55
+zero-total pairs are left out of the cells as they are of the tests. With those
+pairs kept, the same grid counted 20 sampled-without-signal, 296 masked and
+3,504 never sampled. An earlier version rebuilt the grid here, at an 8-site cut
+the figure had left for 20, so its 1,872 cells described a grid the figure never
+drew (#770). They report support and
 display, never a test, which is why they are
 counted in the generated view rather than listed row by row. Before they
 existed, nothing in the table set `drawn` or `masked_below_min_studies` and
@@ -268,8 +279,10 @@ hashes, the corpus cascade, the assessment statuses and the per-method summary.
 `tests/test_integrated_evidence.py` covers the states the contract exists to
 preserve: an all-tied trait, a pair with no eligible experiment, a method that was
 not supplied, two methods keeping separate families and units, the four figure-cell
-support states taken from the real matrix, the cell inventory equal to the
-figure's own cell-status table on one corpus, a masked cell leaving a tested result
+support states taken from the real matrix, the cell inventory and the McNemar
+equal to the figure's own cell-status table and McNemar on one corpus, no
+zero-total pair reaching the figure's matrix or either McNemar whatever the caller
+passes, a masked cell leaving a tested result
 alone, each assessment reaching only the procedure it assessed, ten malformed
 status files, both thresholds deciding independently, the ratio populations and
 effect summaries reconciling with their source run, the McNemar keeping its p with
