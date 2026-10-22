@@ -139,7 +139,9 @@ just check
 
 This runs everything: ruff (lint + format), mypy (types), pytest (tests),
 linkml lint/validate (schema), bandit (security), deptry (dependencies),
-and pip-audit (vulnerabilities).
+and pip-audit (`just security`, which exports `--all-extras --group dev --group qa`
+to audit the full synced environment including `dev` and `qa` dependency groups,
+matching the `pip-audit` pre-commit hook that gates CI).
 
 **All checks must pass.** If something fails, fix it. If you think the
 check is wrong, open an issue — don't skip the check.
