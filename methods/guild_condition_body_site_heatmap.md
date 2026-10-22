@@ -53,6 +53,17 @@ MediaDive, leaving 317 traits, 2,257 experiments, 4,514 profiles, and 932
 studies. Every experiment in the profile matrix resolved against the experiment
 metadata table, so no rows were lost to a failed join.
 
+The figure, its cell-status table and its McNemar then leave out every
+experiment pair whose retained-annotation total is zero on a side (#783). That
+leaves 55 fewer pairs: 2,202 experiments, 4,404 profiles and 922 studies. This is
+the shared comparison basis of [`three_arm_statistics.md`](three_arm_statistics.md),
+which the integrated evidence table's tests and the calibration already used.
+The repository owner chose it for the figure on 2026-10-22. Such a pair's guild
+share is undefined, not zero. Scored as 0, it lowered cell means and shaded
+cells dark grey as if annotated profiles lacked the guild. It also gave this
+figure's McNemar a different population from the integrated table's, so the two
+reported different results for one run.
+
 An earlier revision of this note said the v1.3.1 wide matrix is already human-only
 upstream and that the host filter drops 0 rows. That is not true of the matrix
 identified below, where the host filter drops 1,482 rows (#222).
@@ -80,9 +91,9 @@ of contributing studies rather than experiments.
 Conditions and body sites were reduced to the most frequent 60 and 20 labels
 respectively, with the remainder pooled into an Other bucket. That bucket is
 large and its size is reported on every run rather than left implicit: the corpus
-holds 451 distinct condition labels and 152 distinct body-site labels, so keeping
-the top 60 conditions still pools 391 labels and 41.1 per cent of profiles, and
-keeping the top 20 body sites pools 132 labels and 14.1 per cent. The condition
+holds 429 distinct condition labels and 147 distinct body-site labels, so keeping
+the top 60 conditions still pools 369 labels and 40.4 per cent of profiles, and
+keeping the top 20 body sites pools 127 labels and 13.4 per cent. The condition
 tail is long and shallow, with several hundred labels attached to two profiles
 each, so no practical cut makes Other small; the figure should be read with that
 in mind. Note also that BugSigDB records study variables such as Diet, Age, and
@@ -117,11 +128,12 @@ which are separated in the figure by blank rows; no dendrogram is drawn. Masked
 cells are treated as zero for the distance calculation only, so the clustering
 responds to which body sites a condition was sampled in as well as to the guild
 fractions themselves. Average linkage was tried first and rejected: it chained,
-leaving one dominant group and a few near-singletons. On the pinned v1.3.1 run
-the cut groups the salivary conditions together (Rheumatoid arthritis, Oral
-squamous cell carcinoma, and Smoking behavior form one cluster) and puts the two
-cervicovaginal conditions (Human papilloma virus infection and Cervical
-glandular intraepithelial neoplasia) in their own, so the grouping is driven by
+leaving one dominant group and a few near-singletons. On the run described here
+the cut groups the oral and salivary conditions together (Periodontitis,
+Rheumatoid arthritis, Oral squamous cell carcinoma and Smoking behavior form one
+cluster with Cesarean section). It puts the two cervicovaginal conditions (Human
+papilloma virus infection and Cervical glandular intraepithelial neoplasia) in a
+cluster of their own, so the grouping is driven by
 sampling site as much as by guild fraction — which is the intended behaviour,
 but means the clusters must not be read as guild-biology groupings on their own.
 (An earlier draft narrated a Periodontitis/Alzheimer separation from a
@@ -136,27 +148,32 @@ non-zero guild signal. A cell is filled dark grey when the body site was sampled
 for that condition but no taxon in those profiles carried any trait of that
 guild; previously such a cell was drawn as a fraction of zero and was
 indistinguishable from a genuinely small fraction, which understated how often a
-guild is simply absent. A cell is left blank when the site was sampled by fewer
+guild is simply absent. Since #783 every profile behind a dark-grey cell carries
+some retained annotation. Before, a profile with none at all scored share 0 and
+shaded cells too: 8 of this corpus's 20 dark-grey cells were backed only by
+such profiles. A cell is left blank when the site was sampled by fewer
 studies than the threshold, and blank when the site was never sampled for that
 condition at all. On the run described here the grid is 52 condition rows (51
 conditions and the pooled Other) by 80 columns, which are 20 body-site blocks: 19
 sites and the pooled Other. Tongue is inside the top-20 cut, but nothing in its
-block is drawn, so the block is left out. Of 4,160 cells, 340 carry a value, 296
-fall below the study threshold, 20 are sampled with no guild signal, and 3,504
+block is drawn, so the block is left out. Of 4,160 cells, 340 carry a value, 302
+fall below the study threshold, 10 are sampled with no guild signal, and 3,508
 were never sampled.
 
 ## Statistics
 
 The association between guild and direction was tested on studies scored once
 per guild by the sign of the mean increased fraction minus the mean decreased
-fraction. Over 932 studies, aerobes shifted toward the increased side in 525
-studies and toward the decreased side in 390, while anaerobes shifted toward the
-increased side in 405 and toward the decreased side in 520. Because the **same
+fraction. Over 922 studies, aerobes shifted toward the increased side in 520
+studies and toward the decreased side in 392, while anaerobes shifted toward the
+increased side in 402 and toward the decreased side in 519. Because the **same
 studies provide both signs**, the two guilds form matched pairs, not independent
 samples, so the test is an **exact McNemar** — a two-sided binomial on the
-discordant studies. Of the 915 studies with both signs (694 discordant), 410 shift aerobe up
-while anaerobe shifts down and 284 the reverse, giving a paired odds ratio of
-1.444 with p = 2.0e-06. (An earlier draft applied Fisher's exact test to the
+discordant studies. Of the 912 studies with both signs (697 discordant), 410 shift aerobe up
+while anaerobe shifts down and 287 the reverse, giving a paired odds ratio of
+1.429 with p = 3.6e-06. That is the same test on the same population as the
+integrated evidence table's McNemar row. Before the zero-total exclusion (#783)
+this figure reported 410 and 284, p = 2.0e-06, over 932 studies. (An earlier draft applied Fisher's exact test to the
 marginal two-by-two; that assumes independent rows, and on this data it was
 anticonservative by roughly three orders of magnitude and inflated the odds
 ratio by a fifth.) Counting studies with any non-zero guild signal instead of
@@ -168,7 +185,7 @@ escape compositionality: both signs derive from shares of the same profile
 denominator. An increase in one guild's counts can lower the other guild's share
 without a change in the latter's counts. This does not force every pair of
 components to correlate negatively. On this corpus 76 per cent of the scored
-studies (694 of 915) carry opposite signs for the two guilds; that observation
+studies (697 of 912) carry opposite signs for the two guilds; that observation
 alone does not quantify the structural contribution. The odds ratio reads as
 "the discordance runs more
 often in the aerobe-up direction than the reverse", not as independent
@@ -183,14 +200,15 @@ each study's mean guild fraction per direction and its paired contrast (the mean
 increased minus mean decreased fraction). An earlier version correlated the 86
 condition-by-body-site cells that survived masking; one study reaches many cells,
 so that counted dependent cells as independent observations, and it is replaced
-here by the per-study template the matched-corpus Table 1-trait analog figure already uses (#165). Five of
-the 932 studies carry no oxygen annotation on either side. Their zero is
-missingness rather than a measured share, so they are excluded from the rank
-correlations, which leaves 927 (#289). The McNemar already dropped them as ties,
-so both statistics now describe the same population. Over those 927 studies, aerobe and anaerobe fractions
-correlate negatively within the same direction, rho = -0.714 on the increased side
-and -0.708 on the decreased side, and the two guilds' per-study contrasts
-correlate at rho = -0.724. These are
+here by the per-study template the matched-corpus Table 1-trait analog figure already uses (#165). A study
+that carries no oxygen annotation on either side has a missing share, not a
+measured one, so it is excluded from the rank correlations (#289). The McNemar
+drops such a study as a tie, so both statistics describe the same population.
+On this corpus the five such studies were all zero-total pairs, which the
+exclusion above already removes, so all 922 studies are ranked. Over those 922
+studies, aerobe and anaerobe fractions correlate negatively within the same
+direction, rho = -0.719 on the increased side and -0.740 on the decreased side,
+and the two guilds' per-study contrasts correlate at rho = -0.737. These are
 largely the structural artefact described above - two shares of one denominator -
 and are not to be read as support. Studies are still not fully independent where
 they share cohorts, which this computation does not model.
@@ -205,10 +223,11 @@ All statistics use scipy (binomtest, spearmanr) rather than hand-rolled
 implementations. The figure was produced by `src/bsdbng/guild_maps.py`, driven
 deterministically by `just guild-maps`, alongside the value matrix, the
 study-count matrix, the cell-status table, the row-cluster table, and the
-statistics table as tab-separated files. The integrated evidence table
-inventories the same cells from the same builder, `build_figure_matrix`, and a
-test runs both command lines on one corpus and requires the two cell tables to
-agree (#770). The BugSigDB export timestamp is read
+statistics table as tab-separated files. The statistics table's first row and a
+subtitle line state how many zero-total pairs were excluded (#783). The
+integrated evidence table inventories the same cells from the same builder,
+`build_figure_matrix`. A test runs both command lines on one corpus and requires
+the two cell tables (#770) and the two McNemars (#783) to agree. The BugSigDB export timestamp is read
 from the dump's leading comment line and is recorded in every output. PNG export
 runs through kaleido 1.x, which drives a headless Chrome. For a reproducible
 figure run, run `just get-chrome` once first: it downloads (~170 MB) a

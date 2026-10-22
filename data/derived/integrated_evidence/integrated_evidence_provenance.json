@@ -1,10 +1,10 @@
 {
   "version": "integrated-evidence-v2",
   "bugsigdb_vintage": "2026-04-24_00:41_UTC",
-  "code_commit": "4011ef14512ac44d56eb92380d01226e1636a401",
+  "code_commit": "58927fe8fde3735b3d505f09105a2941875485b3",
   "profile_sha256": "519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c",
   "experiments_sha256": "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06",
-  "analysis_source_sha256": "3b940c2d7a3cdb01ea4211542b062783166f4229e3a748021f719abef808b4f7",
+  "analysis_source_sha256": "2e6e284b42be046fe7d3d1414716cd95720b32a1a46e5df01650f34d3c424c0d",
   "core_run_id": null,
   "core_manifest_sha256": null,
   "ora_eligibility_source": null,
@@ -51,10 +51,13 @@
     "applies_to": [
       "directional_consistency_fraction_sign_test",
       "directional_consistency_log_ratio_sign_test",
+      "oxygen_guild_cell_support",
       "oxygen_guild_mcnemar"
     ],
     "not_applied_to": [
-      "oxygen_guild_cell_support"
+      "aggregated_profile_support",
+      "composition_arm_native_transformed_contrast",
+      "enrichment_arm_profile_hypergeometric"
     ]
   },
   "thresholds": {

@@ -7,14 +7,14 @@ import json
 import sys
 from dataclasses import fields, replace
 from pathlib import Path
-from typing import TypedDict
+from typing import NamedTuple, TypedDict
 
 import pytest
 
 from mtp import guild_maps
 from mtp.guild_maps import (
     CELL_BELOW_MIN_STUDIES,
-    CELL_NO_SIGNAL,
+    CELL_NOT_SAMPLED,
     CELL_VALUE,
     OTHER_LABEL,
     GuildMatrix,
@@ -37,6 +37,7 @@ from mtp.integrated_evidence import (
     NOT_DRAWN,
     NOT_SAMPLED,
     NOT_SIGNIFICANT,
+    SHARED_BASIS_POPULATION,
     SIGNIFICANT,
     SOURCE_MISSING,
     TESTED,
@@ -885,6 +886,67 @@ def test_a_zero_total_pair_is_excluded_rather_than_counted_as_a_tie() -> None:
     with_blank = fraction_sign_records(scored + blank, source="x", columns={}, **THRESHOLDS)
     assert {r.trait: r.ties for r in with_blank} == {r.trait: r.ties for r in without}
 
+    # Each row names the population it ran on. These rows read "human, paired
+    # experiments" while running on the excluded set, as if the pairs were in (#783).
+    assert {r.population for r in without} == {SHARED_BASIS_POPULATION}
+    assert all("is excluded" in r.zero_annotation_state for r in without)
+    assert {r.population for r in with_historical} == {"human, paired experiments"}
+    assert {r.zero_annotation_state for r in with_historical} == {
+        "profiles with no retained annotation score share 0"
+    }
+
+
+def test_no_zero_total_pair_reaches_the_figure_or_either_mcnemar() -> None:
+    """The figure's builder and the table's McNemar drop a zero-total pair whatever
+    the caller passes (#783).
+
+    Study ``mixed`` has one annotated experiment that is discordant with the aerobe
+    up, and one whose increased side carries no retained annotation. Scored as a
+    share of 0, that side pulls both of the study's guild means down, and the study
+    stops being discordant, so letting the pair in would change the test.
+    """
+
+    def side(study: str, experiment: str, direction: str, aerobe: int, total: int) -> Profile:
+        anaerobe = total - aerobe if total else 0
+        return Profile(
+            study_id=study,
+            experiment_id=experiment,
+            inc_dec=direction,
+            condition="Colitis",
+            body_site="Feces",
+            guild_counts={"aerobe": aerobe, "anaerobe": anaerobe},
+            total=total,
+        )
+
+    profiles = [
+        profile
+        for index in range(4)
+        for profile in (
+            side(f"s{index}", f"s{index}-1", "inc", 30, 35),
+            side(f"s{index}", f"s{index}-1", "dec", 5, 35),
+        )
+    ]
+    profiles += [
+        side("mixed", "mixed-1", "inc", 30, 35),
+        side("mixed", "mixed-1", "dec", 5, 35),
+        side("mixed", "mixed-2", "inc", 0, 0),
+        side("mixed", "mixed-2", "dec", 35, 35),
+    ]
+    excluded = drop_zero_total_pairs(profiles).profiles
+    assert len(excluded) == len(profiles) - 2
+
+    # Letting the pair in would change the McNemar, so dropping it is not a no-op.
+    expected = compute_correlation(excluded)
+    assert compute_correlation(profiles).discordant != expected.discordant
+
+    (row,) = guild_records(
+        profiles, matrix=build_guild_matrix(profiles), source="x", columns={}, **THRESHOLDS
+    )
+    assert row.p_value == expected.mcnemar_p
+    assert row.testable_units == sum(expected.discordant)
+    assert row.paired_experiments == len({(p.study_id, p.experiment_id) for p in excluded})
+    assert build_guild_matrix(profiles) == build_guild_matrix(excluded)
+
 
 def test_each_row_is_decided_at_both_thresholds_with_their_sources() -> None:
     """One cutoff cannot speak for three families, so both are reported (#294)."""
@@ -1297,13 +1359,13 @@ def test_main_writes_every_artifact_and_its_provenance(tmp_path: Path) -> None:
 
 
 #: Ten body sites, more than the 8 the table's own copy of the figure's cut kept
-#: after the figure moved to 20, and two cells whose state the zero-total pair
-#: exclusion changes, which the figure never applies (#770). Crohn in Feces has
-#: two annotated studies and one with a zero total, so the figure draws it from
-#: three studies; IBS in Saliva has only zero-total studies, so the figure shades
-#: it as sampled without signal. IBS in Vagina has two studies, below the
-#: figure's three, so a looser threshold in the table would draw what the figure
-#: masks (#798).
+#: after the figure moved to 20 (#770), and two cells that a zero-total pair would
+#: reach if it were not excluded (#783). Crohn in Feces has three annotated
+#: studies and one with a zero total, so the figure draws it from three studies,
+#: not four. IBS in Saliva has only zero-total studies, so nothing was sampled
+#: there once they are excluded; before #783 the figure shaded it as sampled
+#: without signal. IBS in Vagina has two studies, below the figure's three, so a
+#: looser threshold in the table would draw what the figure masks (#798).
 FIGURE_SITES = (
     "Feces",
     "Lung",
@@ -1318,7 +1380,7 @@ FIGURE_SITES = (
 )
 FIGURE_BLOCKS: tuple[tuple[int, str, str, str, str, tuple[str, ...]], ...] = (
     *((3, "Colitis", site, "Homo sapiens", "signal", ("inc", "dec")) for site in FIGURE_SITES),
-    (2, "Crohn", "Feces", "Homo sapiens", "signal", ("inc", "dec")),
+    (3, "Crohn", "Feces", "Homo sapiens", "signal", ("inc", "dec")),
     (1, "Crohn", "Feces", "Homo sapiens", "zero_total", ("inc", "dec")),
     (3, "IBS", "Saliva", "Homo sapiens", "zero_total", ("inc", "dec")),
     (3, "IBS", "Feces", "Homo sapiens", "signal", ("inc", "dec")),
@@ -1370,15 +1432,41 @@ def _inventory_cells(path: Path) -> list[CellRow]:
     ]
 
 
+class _FigureMcNemar(NamedTuple):
+    """The figure's McNemar as its statistics table records it."""
+
+    studies: int
+    discordant: int
+    p_value: float
+    excluded_pairs: int
+
+
+def _figure_mcnemar(directory: Path) -> _FigureMcNemar:
+    """The figure's McNemar and the pairs it excluded, from its statistics table."""
+    path = directory / "guild_aerobe_anaerobe_correlation.tsv"
+    with path.open(encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    (test,) = [row for row in rows if row["statistic"] == "mcnemar_odds_ratio"]
+    (excluded,) = [row for row in rows if row["statistic"] == "excluded_experiment_pairs"]
+    (studies,) = {row["n"] for row in rows if row["statistic"] == "studies_shifted"}
+    return _FigureMcNemar(
+        studies=int(studies),
+        discordant=int(test["n"]),
+        p_value=float(test["p_value"]),
+        excluded_pairs=int(excluded["value"]),
+    )
+
+
 def test_the_cell_inventory_is_the_figures_cell_status_table(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Both command lines on one corpus list the same cells, states and studies (#770).
 
     The table rebuilt the figure's grid itself, at an 8-site cut the figure had
-    left for 20 and after the zero-total pair exclusion the figure never
-    applies. On the Tier 1+2 subset that inventoried 1,148 cells against the
-    figure's 2,016, while claiming to classify the figure's own cells.
+    left for 20 and on a different population. On the Tier 1+2 subset that
+    inventoried 1,148 cells against the figure's 2,016, while claiming to classify
+    the figure's own cells. Both now run on the shared comparison basis, and so
+    does each artifact's McNemar, which must therefore agree too (#783).
     """
     profile_path, experiments_path = _corpus(tmp_path, FIGURE_BLOCKS)
     inputs = [
@@ -1389,8 +1477,12 @@ def test_the_cell_inventory_is_the_figures_cell_status_table(
         "--full-dump-input",
         str(tmp_path / "no_such_full_dump.csv"),
     ]
+    notes: list[str | None] = []
 
-    def render_stub(_matrix: GuildMatrix, path: Path, _vintage: str | None) -> Path:
+    def render_stub(
+        _matrix: GuildMatrix, path: Path, _vintage: str | None, *, note: str | None = None
+    ) -> Path:
+        notes.append(note)
         path.write_text("renderer excluded from the cell inventory test\n", encoding="utf-8")
         return path
 
@@ -1427,40 +1519,75 @@ def test_the_cell_inventory_is_the_figures_cell_status_table(
     assert inventory == figure
 
     # The corpus reaches every way the two grids came apart, so this cannot pass
-    # on a fixture where they happen to coincide.
+    # on a fixture where they happen to coincide. No zero-total pair reaches a
+    # cell: Crohn in Feces is drawn from its three annotated studies, and IBS in
+    # Saliva, sampled only by zero-total pairs, has nothing sampled (#783).
     cells = dict(figure)
     assert len(cells) == len(figure)
     assert len({column.split("|", 1)[0] for _, column in cells}) == len(FIGURE_SITES) > 8
     assert cells[("Crohn", "Feces|aerobe_inc")] == (CELL_VALUE, 3)
-    assert cells[("IBS", "Saliva|aerobe_inc")] == (CELL_NO_SIGNAL, 3)
+    assert cells[("IBS", "Saliva|aerobe_inc")] == (CELL_NOT_SAMPLED, 0)
     assert cells[("IBS", "Vagina|aerobe_inc")] == (CELL_BELOW_MIN_STUDIES, 2)
 
-    # The view names the grid it counts, so it can be set against the figure's.
+    # The view names the grid it counts and its population, so it can be set
+    # against the figure's.
     view = " ".join((evidence_dir / "integrated_evidence.md").read_text(encoding="utf-8").split())
     conditions = {condition for condition, _ in cells}
     assert (
         f"{len(conditions)} condition rows by {len(FIGURE_SITES)} body-site blocks, "
         "each block 4 guild-direction columns wide" in view
     )
+    assert "Like the tests in this table, the figure leaves out every experiment pair" in view
 
-    # The tests in the table keep the shared comparison basis: following the
-    # figure moves the inventory, not the population a test runs on, and the
-    # provenance record says which rows the exclusion governs.
+    # Every test and figure cell computed here shares the exclusion, the rows say
+    # so, and the provenance record names them. The imported placeholder rows are
+    # named as the rows it is not applied to, rather than left out.
     provenance = json.loads(
         (evidence_dir / "integrated_evidence_provenance.json").read_text(encoding="utf-8")
     )
     exclusion = provenance["pair_exclusion"]
     assert exclusion["zero_total_experiments"] == 4
-    assert exclusion["applies_to"] == [
-        "directional_consistency_fraction_sign_test",
-        "directional_consistency_log_ratio_sign_test",
-        "oxygen_guild_mcnemar",
-    ]
-    assert exclusion["not_applied_to"] == ["oxygen_guild_cell_support"]
     with (evidence_dir / "integrated_evidence.tsv").open(encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle, delimiter="\t"))
+    on_basis = [
+        "directional_consistency_fraction_sign_test",
+        "directional_consistency_log_ratio_sign_test",
+        "oxygen_guild_cell_support",
+        "oxygen_guild_mcnemar",
+    ]
+    assert exclusion["applies_to"] == on_basis
+    assert exclusion["not_applied_to"] == sorted({row["method"] for row in rows} - set(on_basis))
+    assert exclusion["not_applied_to"]
+    # The log-ratio rows already named their own, stricter population.
+    relabelled = [
+        row
+        for row in rows
+        if row["method"]
+        in {
+            "directional_consistency_fraction_sign_test",
+            "oxygen_guild_cell_support",
+            "oxygen_guild_mcnemar",
+        }
+    ]
+    assert {row["population"] for row in relabelled} == {SHARED_BASIS_POPULATION}
+    assert all(
+        "is excluded" in row["zero_annotation_state"]
+        for row in relabelled
+        if row["test_status"] != ZERO_ANNOTATION
+    )
+
+    # The figure's own McNemar and the table's are one test on one population:
+    # the same studies, the same discordant studies and the same p (#783).
+    figure_test = _figure_mcnemar(figure_dir)
     mcnemar = next(row for row in rows if row["method"] == "oxygen_guild_mcnemar")
-    assert int(mcnemar["unique_studies"]) == exclusion["studies_after"]
+    assert int(mcnemar["unique_studies"]) == exclusion["studies_after"] == figure_test.studies
+    assert int(mcnemar["testable_units"]) == figure_test.discordant
+    assert float(mcnemar["p_value"]) == pytest.approx(figure_test.p_value, rel=1e-5)
+    assert figure_test.excluded_pairs == exclusion["zero_total_experiments"]
+    # The figure states its population in its subtitle.
+    (note,) = notes
+    assert note is not None
+    assert "4 experiment pairs with a zero retained-annotation" in note
 
 
 def test_the_view_names_the_pooled_other_row_and_block(tmp_path: Path) -> None:

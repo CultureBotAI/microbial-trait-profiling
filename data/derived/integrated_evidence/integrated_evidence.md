@@ -19,7 +19,7 @@ rate for a set defined as significant under any method.
 | `denominator / background` | what the effect is relative to; empty when none applies |
 | `unique_studies / paired_experiments / profiles / testable_units / ties` | distinct counts, never interchangeable |
 | `studies_total / studies_excluded / studies_partially_observed` | the conditional population: studies the method could have used, studies its eligibility rule removed, and studies contributing only some experiments. Blank where the method defines no such rule |
-| `experiments_eligible / experiments_excluded_zero_count` | experiments the method's own rule kept and removed for a zero count; the zero-total pair exclusion the tests share is in the provenance record, with the methods it applies to, and the figure-cell rows do not apply it |
+| `experiments_eligible / experiments_excluded_zero_count` | experiments the method's own rule kept and removed for a zero count; the zero-total pair exclusion is in the provenance record, with the methods it applies to: every test and figure cell computed here, but not the imported native rows, which keep their sources' populations |
 | `effect_value / effect_units` | the estimate and what it measures; units differ by method |
 | `study_effect_mean / study_effect_median / study_effect_units` | the distribution of per-study values the test ran over, which describes the input rather than the tested estimate, so it survives on an untested row |
 | `interval_low / interval_high / interval_type` | the interval and what it is an interval for; 'unavailable' where none was computed |
@@ -62,15 +62,15 @@ The grid is the oxygen guild figure's own: 52 condition rows (51 conditions and 
 4 guild-direction columns wide. It comes from the figure's builder at its
 cut: the top 60 conditions and top 20 body sites, the rest pooled into Other,
 cells backed by fewer than 3 studies masked, and rows and blocks with nothing drawn left out.
-The figure draws every paired human profile, so unlike the tests in this table its
-cells include the experiment pairs with a zero retained-annotation total.
+Like the tests in this table, the figure leaves out every experiment pair whose
+retained-annotation total is zero on a side.
 
 | Display | Test state | Cells |
 | --- | --- | --- |
 | drawn | untested | 340 |
-| drawn | zero_annotation_signal | 20 |
-| masked_below_min_studies | insufficient_support | 296 |
-| not_drawn | not_sampled | 3504 |
+| drawn | zero_annotation_signal | 10 |
+| masked_below_min_studies | insufficient_support | 302 |
+| not_drawn | not_sampled | 3508 |
 
 Native ORA rows summarize tested profiles (`tested_profiles_summarized`).
 Their hit counts and best/median profile q-values do not define an aggregate

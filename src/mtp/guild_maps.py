@@ -32,7 +32,10 @@ from mtp.trait_guilds import (
     DEFAULT_PROFILE_PATH,
     DIRECTIONS,
     OXYGEN_GUILDS,
+    PairExclusion,
     Profile,
+    drop_zero_total_pairs,
+    format_pair_exclusion,
     load_profiles,
     read_bugsigdb_vintage,
     write_stats_report,
@@ -380,12 +383,14 @@ def build_figure_matrix(
 
     ``main`` draws the figure and writes its cell-status table from this call, and
     the integrated evidence table builds its cell inventory from it too, so the two
-    cannot describe different grids (#770). ``profiles`` are the figure's
-    population: the paired profiles ``load_profiles`` keeps, with no zero-total
-    pair exclusion.
+    cannot describe different grids (#770). The figure's population is the shared
+    comparison basis: an experiment pair whose retained-annotation total is zero
+    on a side is excluded here, whatever the caller passes. Its share is
+    undefined, not zero, and would otherwise be averaged into a cell as a measured
+    0 or shade one as sampled without signal (#783).
     """
     return build_matrix(
-        list(profiles),
+        drop_zero_total_pairs(profiles).profiles,
         max_conditions=max_conditions,
         max_body_sites=max_body_sites,
         min_studies=min_studies,
@@ -590,8 +595,11 @@ def compute_correlation(
     # either side. That zero is missingness, not a measured share, so it is
     # dropped rather than ranked (#289). The McNemar above already drops these as
     # ties; excluding them here makes both statistics describe one population.
-    # They are 5 of 932 on the pinned corpus, and keeping them as identical
-    # (0, 0) points attenuates the within-side correlations.
+    # Keeping them as identical (0, 0) points attenuates the within-side
+    # correlations. On the committed corpus all 5 of 932 were zero-total pairs,
+    # which the figure, the integrated table and calibration now exclude before
+    # calling this (#783, #730). The rule still covers a study annotated without
+    # any oxygen term.
     direction_keys = [f"{guild}_{d}" for guild in GUILD_ORDER for d in DIRECTIONS]
     per_study: dict[str, dict[str, float]] = {}
     excluded_no_annotation = 0
@@ -685,14 +693,31 @@ def write_outputs(
     correlation: CorrelationResult,
     output_dir: Path,
     vintage: str | None,
+    exclusion: PairExclusion | None = None,
 ) -> list[Path]:
-    """Write the value matrix, the study-count matrix, and the statistics table."""
+    """Write the value matrix, the study-count matrix, and the statistics table.
+
+    ``exclusion`` is the zero-total pair exclusion the statistics ran after. It is
+    written as the table's first row, so the table states its own population
+    (#783).
+    """
     written = write_matrix_outputs(matrix, output_dir)
     stats_path = output_dir / "guild_aerobe_anaerobe_correlation.tsv"
 
     with stats_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
         writer.writerow(["statistic", "comparison", "value", "p_value", "n", "bugsigdb_vintage"])
+        if exclusion is not None:
+            writer.writerow(
+                [
+                    "excluded_experiment_pairs",
+                    "zero_retained_annotation_total_on_a_side",
+                    exclusion.zero_total_experiments,
+                    "",
+                    exclusion.studies_after,
+                    vintage or "",
+                ]
+            )
         for key, count in sorted(correlation.table.items()):
             writer.writerow(["studies_shifted", key, count, "", correlation.studies, vintage or ""])
         up_down, down_up = correlation.discordant
@@ -764,6 +789,10 @@ MIN_PANEL_ROWS = 8
 ROW_HEIGHT = 26
 NO_SIGNAL_COLOR = "#4d4d4d"
 CLUSTER_GAP_ROWS = 1
+# The combined figure's title line with the gaps around it, and one subtitle line,
+# in pixels at plotly's default fonts. The top margin is sized from them.
+TITLE_BLOCK_HEIGHT = 80
+SUBTITLE_LINE_HEIGHT = 22
 
 
 def _guild_of_column(column: str) -> str:
@@ -904,8 +933,12 @@ def write_figure(
     range_quantile: float = 1.0,
     separate_body_sites: bool = False,
     mark_no_signal: bool = True,
+    note: str | None = None,
 ) -> Path:
     """Render the heatmap with one colour scale per trait group.
+
+    ``note`` is one more subtitle line, which the oxygen guild figure uses to state
+    its population (#783).
 
     Each group is drawn as its own overlaid trace so it keeps its own hue. With
     ``shared_range`` the traces share the range 0 to the largest observed value,
@@ -1060,28 +1093,35 @@ def write_figure(
         )
     # Broken into explicit lines: as one run the subtitle overflows the plotting
     # area and is clipped by the right-hand colour bars.
-    subtitle = "<br>".join(
-        [
-            f"Mean {value_phrase}, averaged within study then across studies, shown as a "
-            "percentage of the profile's summed trait-assertion counts (taxonomic "
-            "rollups can count one reported taxon many times), not of its taxa.",
-            range_note,
-            cluster_note,
-            *_coverage_note(matrix),
-            f"BugSigDB {vintage or 'vintage unknown'}.",
-        ]
-    )
+    lines = [
+        f"Mean {value_phrase}, averaged within study then across studies, shown as a "
+        "percentage of the profile's summed trait-assertion counts (taxonomic "
+        "rollups can count one reported taxon many times), not of its taxa.",
+        range_note,
+        cluster_note,
+        *_coverage_note(matrix),
+        *([note] if note else []),
+        f"BugSigDB {vintage or 'vintage unknown'}.",
+    ]
+    title_layout: dict[str, object] = {"text": f"{title}<br><sub>{'<br>'.join(lines)}</sub>"}
+    # With site headers above the plotting area, the subtitle block plus a two-line
+    # header need a fixed 420 pixels. Otherwise the title block hangs from the top
+    # of the figure and the plotting area starts below its last line: a fixed
+    # 220-pixel margin with the title centred in it let the last subtitle lines run
+    # over the top rows (#783).
+    top = 420 if separate_body_sites else TITLE_BLOCK_HEIGHT + SUBTITLE_LINE_HEIGHT * len(lines)
+    height = ROW_HEIGHT * len(row_labels) + 300 + top
+    if not separate_body_sites:
+        title_layout.update({"yref": "container", "yanchor": "top", "y": 1 - 20 / height})
     figure.update_layout(
-        title={"text": f"{title}<br><sub>{subtitle}</sub>"},
+        title=title_layout,
         xaxis={"title": f"body site | {group_noun} _ direction", "tickangle": -60},
         yaxis={"title": "condition", "autorange": "reversed"},
         shapes=shapes,
         annotations=annotations,
         width=max(900, 26 * len(matrix.columns)),
-        height=ROW_HEIGHT * len(row_labels) + 300 + (420 if separate_body_sites else 220),
-        # The site headers sit above the plotting area, so they need their own room.
-        # The subtitle block plus a two-line site header need the room.
-        margin={"l": 300, "b": 300, "t": 420 if separate_body_sites else 220},
+        height=height,
+        margin={"l": 300, "b": 300, "t": top},
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.write_image(str(output_path), scale=2)
@@ -1464,6 +1504,12 @@ def main() -> int:
     )
     print("\n".join(summary_lines(identity)))
 
+    # One population for the figure, its cell table and its McNemar: the shared
+    # comparison basis, which the integrated evidence table's tests use too (#783).
+    exclusion = drop_zero_total_pairs(profiles)
+    print(format_pair_exclusion(exclusion))
+    profiles = exclusion.profiles
+
     matrix = build_figure_matrix(
         profiles,
         max_conditions=args.max_conditions,
@@ -1487,9 +1533,19 @@ def main() -> int:
             f"({', '.join(sorted(matrix.dropped_site_conditions))})"
         )
     correlation = compute_correlation(profiles)
-    written = write_outputs(matrix, correlation, args.output_dir, vintage)
+    written = write_outputs(matrix, correlation, args.output_dir, vintage, exclusion=exclusion)
     written.append(
-        write_figure(matrix, args.output_dir / "guild_condition_body_site_heatmap.png", vintage)
+        write_figure(
+            matrix,
+            args.output_dir / "guild_condition_body_site_heatmap.png",
+            vintage,
+            note=(
+                f"{exclusion.zero_total_experiments} experiment pairs with a zero "
+                "retained-annotation total on a side are excluded (studies "
+                f"{exclusion.studies_before} to {exclusion.studies_after}): their share is "
+                "undefined, not zero."
+            ),
+        )
     )
 
     up_down, down_up = correlation.discordant
