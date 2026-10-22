@@ -18,6 +18,22 @@ here was reported decreased in at least one study, not consistently lost
 The trait and the three conditions were chosen as an exploratory lead from this
 same corpus, so every p-value here is nominal. Section 4 adds adjusted values.
 
+## What changed on 2026-10-21 (#769)
+
+`condition_definition_overlap.tsv` built the sets, U3 and U6 of every condition
+definition from all contrasts. The four case-control definitions (cases named as
+treated set aside, Tier 1–2 controls only, paired-tissue or comorbidity contrasts
+counted) choose among disease-versus-healthy contrasts, so over all contrasts they
+select nothing. Their four rows repeated the primary row and did not test the
+overlap under those definitions.
+
+- Each row now names its `contrast_population`.
+- The four case-control definitions are built on disease-versus-healthy contrasts
+  only.
+- The exact-label, synonym and rectal-mucosa definitions have a row on each
+  population, so a case-control row can be read against the exact-label row on
+  the same population.
+
 ## What changed on 2026-10-19 (#580, #672)
 
 The analysis now reads contrast classifier v5 and is re-pinned on it.
@@ -201,10 +217,11 @@ The nulls show three things:
 
 So most of the shared taxa are ones that many feces studies report decreased,
 whatever the condition. The data give no evidence of a condition-specific
-convergence beyond that. With synonym labels counted, the sets are 38 / 27 / 37 and
-the core is 20 of 50, and U6 still gives p = 0.15 for the mean distance and 0.54
-for the core. Without the rectal-mucosa study the U6 p-values are 0.26 and 0.79
-([`condition_definition_overlap.tsv`](condition_definition_overlap.tsv)).
+convergence beyond that. Over all contrasts (the `all_contrasts` rows of
+[`condition_definition_overlap.tsv`](condition_definition_overlap.tsv)), counting
+the synonym labels gives sets of 38 / 27 / 37 and a core of 20 of 50, and U6 still
+gives p = 0.14 for the mean distance and 0.54 for the core. Without the
+rectal-mucosa study, the U6 p-values over all contrasts are 0.25 and 0.79.
 
 ## 3. The 17 taxa in all three sets
 
@@ -492,7 +509,7 @@ an annotated taxon: `n_studies_a` in
 | [`sensitivity_definitions_jaccard.tsv`](sensitivity_definitions_jaccard.tsv) | Overlap under eleven set definitions |
 | [`compartment_jaccard_and_direction_stats.tsv`](compartment_jaccard_and_direction_stats.tsv) | Direction tests by contrast population, compartment and condition, at experiment and study level (mean and majority vote), with power notes |
 | [`compartment_direction_interaction.tsv`](compartment_direction_interaction.tsv) | Fisher tests of direction by compartment, crude and stratified by condition |
-| [`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv), [`condition_definition_overlap.tsv`](condition_definition_overlap.tsv), [`condition_definition_interaction.tsv`](condition_definition_interaction.tsv) | Feces direction, cross-condition overlap (with U6) and the Feces-vs-GI test, under each condition definition: synonym labels, cases named as treated set aside, Tier 1–2 controls only, paired-tissue or comorbidity contrasts counted, and without the rectal-mucosa study |
+| [`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv), [`condition_definition_overlap.tsv`](condition_definition_overlap.tsv), [`condition_definition_interaction.tsv`](condition_definition_interaction.tsv) | Feces direction, cross-condition overlap (with U6) and the Feces-vs-GI test, under each condition definition: synonym labels, cases named as treated set aside, Tier 1–2 controls only, paired-tissue or comorbidity contrasts counted, and without the rectal-mucosa study. The overlap under the four case-control definitions is on disease-vs-healthy contrasts only, where those rules apply (#769) |
 | [`condition_label_inventory.tsv`](condition_label_inventory.tsv) | Every human condition label naming PD, HIV or CRC, with its status |
 | [`cellulose_decreased_taxa_catalog.tsv`](cellulose_decreased_taxa_catalog.tsv) | The 47 taxa with study and profile counts and flags, including `has_direct_trait_edge` |
 | [`profile_and_study_pair_jaccard.tsv`](profile_and_study_pair_jaccard.tsv) | Overlap between individual profiles and studies across conditions |

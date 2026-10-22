@@ -38,20 +38,6 @@ def clean_value(value: object) -> str:
     return text
 
 
-def study_id_from_bsdb_id(bsdb_id: str) -> str:
-    """Convert a full BugSigDB signature ID into the derived study ID format."""
-    compact_id = bsdb_id.strip().removeprefix("bsdb:").split("/", 1)[0]
-    return f"bsdb:{compact_id}"
-
-
-def experiment_id_from_bsdb_id(bsdb_id: str) -> str:
-    """Convert a full BugSigDB signature ID into the derived experiment ID format."""
-    parts = bsdb_id.strip().removeprefix("bsdb:").split("/")
-    if len(parts) >= 2:
-        return f"bsdb:{parts[0]}-{parts[1]}"
-    return bsdb_id
-
-
 def signature_id_from_bsdb_id(bsdb_id: str) -> str:
     """Convert a full BugSigDB signature ID into the derived signature ID format."""
     return bsdb_id.strip().replace("/", "-")
@@ -116,53 +102,63 @@ def parse_taxa_from_raw_row(row: dict[str, str]) -> list[dict[str, str]]:
     return taxa
 
 
-def load_bugsigdb_taxa_records(
-    bugsigdb_taxa_path: Path,
-    full_dump_path: Path | None,
-) -> pd.DataFrame:
-    """Load BugSigDB taxa, preferring raw full-dump names/ranks when available.
+def load_corpus_taxon_names(full_dump_path: Path) -> dict[str, dict[str, tuple[str, str]]]:
+    """Map each corpus signature in full_dump.csv to its taxa's raw names and ranks.
 
-    From the full dump only Homo sapiens 16S and WMS experiments are kept, the
-    analysis corpus's rule; a blank sequencing type is left out (#742).
+    Only Homo sapiens 16S and WMS experiments are kept, the analysis corpus's rule; a
+    blank sequencing type is left out (#742).
     """
-    if full_dump_path is not None and full_dump_path.exists():
-        records: list[dict[str, str]] = []
-        with full_dump_path.open(encoding="utf-8", newline="") as handle:
-            rows = (line for line in handle if not line.startswith("#"))
-            reader = csv.DictReader(rows)
-            for row in reader:
-                bsdb_id = clean_value(row.get("BSDB ID"))
-                direction = clean_value(row.get("Abundance in Group 1")).lower()
-                host_species = clean_value(row.get("Host species"))
-                sequencing_type = clean_value(row.get("Sequencing type"))
-                if (
-                    not bsdb_id
-                    or direction not in {"increased", "decreased"}
-                    or host_species != HUMAN_HOST_SPECIES
-                    or sequencing_type not in CORPUS_SEQUENCING_TYPES
-                ):
-                    continue
+    if not full_dump_path.exists():
+        # Without the dump no corpus rule applies; never fall back to every host (#747)
+        msg = (
+            f"{full_dump_path} is missing; it decides which signatures belong to "
+            f"{HUMAN_HOST_SPECIES} 16S or WMS experiments"
+        )
+        raise FileNotFoundError(msg)
 
-                for taxon in parse_taxa_from_raw_row(row):
-                    records.append(
-                        {
-                            "study_id": study_id_from_bsdb_id(bsdb_id),
-                            "experiment_id": experiment_id_from_bsdb_id(bsdb_id),
-                            "signature_id": signature_id_from_bsdb_id(bsdb_id),
-                            "direction": direction,
-                            **taxon,
-                        }
-                    )
-        if records:
-            return pd.DataFrame.from_records(records)
+    corpus_taxa: dict[str, dict[str, tuple[str, str]]] = {}
+    with full_dump_path.open(encoding="utf-8", newline="") as handle:
+        rows = (line for line in handle if not line.startswith("#"))
+        reader = csv.DictReader(rows)
+        for row in reader:
+            bsdb_id = clean_value(row.get("BSDB ID"))
+            host_species = clean_value(row.get("Host species"))
+            sequencing_type = clean_value(row.get("Sequencing type"))
+            if (
+                not bsdb_id
+                or host_species != HUMAN_HOST_SPECIES
+                or sequencing_type not in CORPUS_SEQUENCING_TYPES
+            ):
+                continue
+            corpus_taxa.setdefault(signature_id_from_bsdb_id(bsdb_id), {}).update(
+                {
+                    taxon["taxon_id"]: (taxon["taxon_name"], taxon["taxonomic_rank"])
+                    for taxon in parse_taxa_from_raw_row(row)
+                }
+            )
+    if not corpus_taxa:
         # An export that yields no corpus row must not silently drop both filters (#753)
         msg = (
             f"{full_dump_path} has no {HUMAN_HOST_SPECIES} 16S or WMS taxon rows; check its "
             "Host species and Sequencing type columns"
         )
         raise ValueError(msg)
+    return corpus_taxa
 
-    return pd.read_csv(
+
+def load_bugsigdb_taxa_records(
+    bugsigdb_taxa_path: Path,
+    full_dump_path: Path,
+) -> pd.DataFrame:
+    """Load the run's own increased and decreased taxon rows inside the analysis corpus.
+
+    The rows and their directions come from the run's taxa table, so a contrast
+    population summarizes only its own signatures, on its own direction basis (#768).
+    The full dump keeps the table's corpus signatures and supplies the raw names and
+    ranks, joined on signature and taxon ID.
+    """
+    corpus_taxa = load_corpus_taxon_names(full_dump_path)
+    taxa = pd.read_csv(
         bugsigdb_taxa_path,
         sep="\t",
         usecols=[
@@ -176,6 +172,30 @@ def load_bugsigdb_taxa_records(
         ],
         dtype=str,
     )
+    taxa = taxa[
+        taxa["signature_id"].isin(corpus_taxa.keys())
+        & taxa["direction"].isin(["increased", "decreased"])
+    ].reset_index(drop=True)
+    if taxa.empty:
+        msg = (
+            f"{bugsigdb_taxa_path} has no increased or decreased taxon rows in the "
+            f"{HUMAN_HOST_SPECIES} 16S or WMS signatures of {full_dump_path}"
+        )
+        raise ValueError(msg)
+
+    raw_names = [
+        corpus_taxa[signature_id].get(taxon_id, (taxon_name, taxonomic_rank))
+        for signature_id, taxon_id, taxon_name, taxonomic_rank in zip(
+            taxa["signature_id"],
+            taxa["taxon_id"],
+            taxa["taxon_name"],
+            taxa["taxonomic_rank"],
+            strict=True,
+        )
+    ]
+    taxa["taxon_name"] = [taxon_name for taxon_name, _ in raw_names]
+    taxa["taxonomic_rank"] = [taxonomic_rank for _, taxonomic_rank in raw_names]
+    return taxa
 
 
 def choose_taxonomic_rank(
@@ -201,7 +221,7 @@ def load_bugsigdb_taxa_summary(
     bugsigdb_taxa_path: Path,
     rank: str,
     fallback_ranks: list[str],
-    full_dump_path: Path | None,
+    full_dump_path: Path,
 ) -> tuple[pd.DataFrame, str, int, int]:
     """Summarize BugSigDB occurrence and direction counts by taxon."""
     taxa = load_bugsigdb_taxa_records(bugsigdb_taxa_path, full_dump_path)
@@ -567,7 +587,10 @@ def main() -> None:
         "--bugsigdb-taxa-input",
         type=Path,
         default=REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
-        help="Input BugSigDB taxa TSV path.",
+        help=(
+            "Input BugSigDB taxa TSV path: the run's own taxon rows and directions, so a "
+            "contrast-population subset plots only its own signatures."
+        ),
     )
     parser.add_argument(
         "--taxa-trait-matrix-input",
@@ -586,8 +609,9 @@ def main() -> None:
         type=Path,
         default=REPO_ROOT / "data/raw/full_dump.csv",
         help=(
-            "Input BugSigDB full_dump.csv path. When present, taxon names/ranks are parsed "
-            "from this raw export instead of the derived taxa TSV metadata."
+            "Input BugSigDB full_dump.csv path (required). It keeps the taxa TSV's Homo "
+            "sapiens 16S and WMS signatures, and its parsed taxon names/ranks replace the "
+            "taxa TSV's."
         ),
     )
     parser.add_argument(

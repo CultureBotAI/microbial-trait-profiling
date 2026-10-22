@@ -1,10 +1,10 @@
 {
   "version": "integrated-evidence-v2",
   "bugsigdb_vintage": "2026-04-24_00:41_UTC",
-  "code_commit": "8b280a399d71a36d2f8eec639800f282503eeb93",
+  "code_commit": "4011ef14512ac44d56eb92380d01226e1636a401",
   "profile_sha256": "519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c",
   "experiments_sha256": "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06",
-  "analysis_source_sha256": "79a655e893d186e7e94fc90580de64c4b54eb5aafb01fef0517c85b745b77ece",
+  "analysis_source_sha256": "3b940c2d7a3cdb01ea4211542b062783166f4229e3a748021f719abef808b4f7",
   "core_run_id": null,
   "core_manifest_sha256": null,
   "ora_eligibility_source": null,
@@ -47,7 +47,15 @@
     "studies_after": 922,
     "studies_lost": 10,
     "experiments_kept": 2202,
-    "rule": "a whole experiment pair is dropped when its retained-annotation total is zero on either side; the share is undefined, not zero, and scoring it as zero would count the pair as a tie"
+    "rule": "a whole experiment pair is dropped when its retained-annotation total is zero on either side; the share is undefined, not zero, and scoring it as zero would count the pair as a tie",
+    "applies_to": [
+      "directional_consistency_fraction_sign_test",
+      "directional_consistency_log_ratio_sign_test",
+      "oxygen_guild_mcnemar"
+    ],
+    "not_applied_to": [
+      "oxygen_guild_cell_support"
+    ]
   },
   "thresholds": {
     "q_threshold": 0.05,
@@ -229,14 +237,14 @@
     },
     {
       "method": "oxygen_guild_cell_support",
-      "records": 1872,
+      "records": 4160,
       "families": "",
       "tested": 0,
       "profile_test_summaries": 0,
-      "untested_or_unsupplied": 1872,
+      "untested_or_unsupplied": 4160,
       "significant": 0,
       "not_significant": 0,
-      "undecided": 1872,
+      "undecided": 4160,
       "effect_units": "",
       "combined_guarantee": "none; each family is corrected on its own"
     },
