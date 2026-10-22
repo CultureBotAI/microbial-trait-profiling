@@ -536,6 +536,13 @@ html-to-pdf HTML PDF:
 taxa-trait-matrix: download-kg study-tsvs
 	uv run python scripts/create_taxa_trait_matrix.py
 
+# Compare trait coverage with and without the opt-in BacDive strain rollup (#774), from
+# explicit inputs: --reported-taxa, --edges, --nodes, --output-dir, and optionally a
+# contrast-selected --study-dir for the signature taxa that gain a trait label.
+[positional-arguments]
+audit-strain-rollup *ARGS:
+	uv run python scripts/adhoc/issue774_strain_rollup_coverage.py "$@"
+
 # The analyses read human hosts only, without the trait columns that are zero in every
 # human profile, as committed in data/derived/study_trait_profiles_wide.tsv.gz (#656).
 # They also read 16S and shotgun (WMS) experiments only, the values of
