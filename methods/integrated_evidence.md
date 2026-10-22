@@ -9,15 +9,17 @@ dictionary (`integrated_evidence.md`) and a provenance record. It implements
 the shared comparison basis in [`three_arm_statistics.md`](three_arm_statistics.md).
 
 That basis requires excluding a whole experiment pair whose retained-annotation
-total is zero on either side, and this table now does (#294). `Profile.fraction`
+total is zero on either side, and this table's own tests now do (#294). `Profile.fraction`
 returns 0.0 for a zero total, so such a pair would otherwise enter the contrast
 as a measured share of nothing, produce a contrast of exactly zero, and be
 counted by the sign test as a tie - merging zero-annotation studies into the
-all-tied count, which is the collapse the basis forbids. On the pinned corpus
-this removes **94 of 2,335 experiments** and takes the study count from **959 to
-939**. It changes the tie counts rather than the directions: facultatively
-aerobic 42 to 24, arsenate reduction 343 to 325, moderately halophilic 114 to 96.
-All six fraction traits remain significant at q <= 0.05.
+all-tied count, which is the collapse the basis forbids. On the committed corpus
+(identified under "What is in it now") this removes **55 of 2,257 experiments**
+and takes the study count from **932 to 922**. It changes the tie counts rather
+than the directions: facultatively aerobic 32 to 24, arsenate reduction 324 to
+316, moderately halophilic 101 to 93. All six fraction traits remain significant
+at q <= 0.05. The figure-cell inventory keeps those pairs, because it describes
+the oxygen guild figure and the figure draws them (#770).
 
 ## What problem it solves
 
@@ -99,29 +101,45 @@ read as a negative result.
 
 ## What is in it now
 
-On the pinned v1.3.1 corpus, **1,912 rows: 40 method results and 1,872 figure
-cells**.
+On the committed corpus, **4,200 rows: 40 method results and 4,160 figure
+cells**. That is the run that wrote `data/derived/integrated_evidence/`, at code
+commit `4011ef14512ac44d56eb92380d01226e1636a401`. Its profiles are sha256
+`519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c` (the committed
+`study_trait_profiles_wide.tsv.gz`), its experiments
+`16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06`, and its
+BugSigDB export `2026-04-24_00:41_UTC` (full dump
+`af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788`). The
+provenance record carries every other input's hash.
 
 | Method | Records | Family | Tested | q <= 0.05 | q <= 0.001 |
 | --- | --- | --- | --- | --- | --- |
 | directional consistency, fraction sign test | 6 | BH over six traits | 6 | 6 | **3** |
 | directional consistency, log-ratio sign test | 15 | BY over 15 pairs | 15 | 3 | **0** |
 | oxygen guild McNemar | 1 | single uncorrected test | 1 | no q | no q |
-| composition arm, native transformed contrast | 6 | - | 0 | not supplied | not supplied |
-| enrichment arm, profile hypergeometric | 6 | - | 0 | not supplied | not supplied |
-| aggregated profile support | 6 | - | 0 | not supplied | not supplied |
-| oxygen guild cell support | 1,872 | - | 0 | not a test | not a test |
+| composition arm, native transformed contrast | 6 | the arm's BH over 313 support/variance-eligible traits | 6 | 6 | **4** |
+| enrichment arm, profile hypergeometric | 6 | global BH over 1,430,938 profile tests | 0 (6 profile summaries) | no trait-level q | no trait-level q |
+| aggregated profile support | 6 | - | 0 | not a test | not a test |
+| oxygen guild cell support | 4,160 | - | 0 | not a test | not a test |
 
-The guild McNemar is a single uncorrected test. It carries p = 2.2e-06 and leaves
-q blank, so it has no threshold decision in either column: a decision in this
-table is a decision on a corrected value and there is no corrected value here.
+The guild McNemar is a single uncorrected test. It carries p = 3.6e-06 over 922
+studies and leaves q blank, so it has no threshold decision in either column: a
+decision in this table is a decision on a corrected value and there is no
+corrected value here.
 An earlier version wrote the uncorrected p into `q_value` as well, which made it
 look like a one-member FDR family (#294).
 
-The cell rows are the oxygen guild figure's own inventory, one per cell of the
-condition-by-body-site grid at the figure's parameters: **316 drawn, 7 drawn as
-sampled-without-signal, 209 masked for too little support and 1,340 never
-sampled**. They report support and display, never a test, which is why they are
+The cell rows are the oxygen guild figure's own inventory, one per cell of its
+condition-by-body-site grid: 52 condition rows (51 conditions and the pooled
+Other) by 20 body-site blocks (19 sites and the pooled Other), each block four
+guild-by-direction columns wide, of which
+**340 are drawn, 20 drawn as sampled-without-signal, 296 masked for too little
+support and 3,504 never sampled**. The figure's own builder,
+`guild_maps.build_figure_matrix`, makes them at the figure's parameters and over
+its population, every paired human profile, so unlike the tests above they
+include the 55 zero-total pairs. An earlier version rebuilt the grid here, at an
+8-site cut the figure had left for 20 and after that exclusion, so its 1,872
+cells described a grid the figure never drew (#770). They report support and
+display, never a test, which is why they are
 counted in the generated view rather than listed row by row. Before they
 existed, nothing in the table set `drawn` or `masked_below_min_studies` and
 `not_sampled` was never emitted at all, so three of the four display states named
@@ -135,27 +153,29 @@ at each, and each threshold names its source: q <= 0.05 is chosen by this
 integration for display, matching the overlay of PR #173, while q <= 0.001 is the
 manuscript's rule as the enrichment arm's committed run applies it. The
 composition arm publishes q with no cutoff at all, so neither is that arm's own
-rule. At the stricter threshold coccus shaped (q = 0.0073), sphere shaped
-(0.0029) and arsenate reduction (0.0038) drop out of the fraction family, and the
+rule. At the stricter threshold coccus shaped (q = 0.0083), sphere shaped
+(0.0021) and arsenate reduction (0.0027) drop out of the fraction family, and the
 whole ratio family does.
 
-The three unsupplied methods are the point of the design rather than a gap in it. The
-composition arm's native output moves under #174/#197, the enrichment arm's rests on
-the urn of #131, and the aggregated support rule lives on the #173 branch. Each is
-recorded as not supplied with the reason.
+The composition and enrichment arms are read from their own exports (#551).
+`--arm1-pooled-stats` takes the composition arm's native study-level t-tests,
+which keep their own BH family over the arm's support/variance-eligible traits
+(313 here). This table exports six of them (`source_subset`), and the pair-level
+tests stay secondary fields. `--arm2-enrichment-results` and
+`--arm2-depletion-results` take the enrichment arm's complete profile-level
+exports, summarized per trait (`tested_profiles_summarized`). They come from a
+global BH family over every profile test, and no trait-level q or decision is
+defined from them. The aggregated profile support rows are descriptive and stay
+untested; the support rule itself lives on the #173 branch. A method whose
+export is not supplied still gets `source_not_supplied` rows. An earlier
+version of this note said none of the three could be supplied.
 
-**There is no way to supply them yet.** The command line takes the profile
-matrix, the experiments table, the full dump, the two thresholds and the five
-assessment status files, and nothing else; there is no `--composition-stats`,
-`--ora` or `--support` input. Importing an arm means adding its reader and
-deciding how its effect, family and eligibility map onto these columns, which is
-the work those issues describe - not pointing an existing recipe at a file. An
-earlier version of this note said otherwise (#294).
-
-The placeholder rows also cover the six Table 1 traits only. That is their
-declared scope, not an inventory of what each method would report: the enrichment
-arm covers every retained trait in the matrix, and the corpus-wide directional
-screen of #276 is not integrated here at all.
+These rows cover the six Table 1 traits only. That is their declared scope, not
+an inventory of what each arm reports: the composition arm's family covers 313
+traits, and the enrichment arm covers every retained trait in the matrix. The
+corpus-wide directional screen (#255, PR #276) is attached to the six
+fraction rows only, as their `full_screen_*` columns from its own 317-trait
+family, with BY as its primary correction.
 
 At q <= 0.05, six of the six fraction results and three of the fifteen ratio
 results are significant in their own families; at q <= 0.001 it is three and
@@ -248,7 +268,8 @@ hashes, the corpus cascade, the assessment statuses and the per-method summary.
 `tests/test_integrated_evidence.py` covers the states the contract exists to
 preserve: an all-tied trait, a pair with no eligible experiment, a method that was
 not supplied, two methods keeping separate families and units, the four figure-cell
-support states taken from the real matrix, a masked cell leaving a tested result
+support states taken from the real matrix, the cell inventory equal to the
+figure's own cell-status table on one corpus, a masked cell leaving a tested result
 alone, each assessment reaching only the procedure it assessed, ten malformed
 status files, both thresholds deciding independently, the ratio populations and
 effect summaries reconciling with their source run, the McNemar keeping its p with

@@ -19,7 +19,7 @@ rate for a set defined as significant under any method.
 | `denominator / background` | what the effect is relative to; empty when none applies |
 | `unique_studies / paired_experiments / profiles / testable_units / ties` | distinct counts, never interchangeable |
 | `studies_total / studies_excluded / studies_partially_observed` | the conditional population: studies the method could have used, studies its eligibility rule removed, and studies contributing only some experiments. Blank where the method defines no such rule |
-| `experiments_eligible / experiments_excluded_zero_count` | experiments the method's own rule kept and removed for a zero count; the corpus-wide zero-total pair exclusion is in the provenance record, not here |
+| `experiments_eligible / experiments_excluded_zero_count` | experiments the method's own rule kept and removed for a zero count; the zero-total pair exclusion the tests share is in the provenance record, with the methods it applies to, and the figure-cell rows do not apply it |
 | `effect_value / effect_units` | the estimate and what it measures; units differ by method |
 | `study_effect_mean / study_effect_median / study_effect_units` | the distribution of per-study values the test ran over, which describes the input rather than the tested estimate, so it survives on an untested row |
 | `interval_low / interval_high / interval_type` | the interval and what it is an interval for; 'unavailable' where none was computed |
@@ -50,7 +50,7 @@ rate for a set defined as significant under any method.
 | directional_consistency_fraction_sign_test | 6 | table1_six_fractions | 6 | 0 | 0 | 6 | 0 | 0 |
 | directional_consistency_log_ratio_sign_test | 15 | table1_fifteen_ratios | 15 | 0 | 0 | 3 | 12 | 0 |
 | enrichment_arm_profile_hypergeometric | 6 | native_profile_ORA_enrichment_global | 0 | 6 | 0 | 0 | 0 | 6 |
-| oxygen_guild_cell_support | 1872 |  | 0 | 0 | 1872 | 0 | 0 | 1872 |
+| oxygen_guild_cell_support | 4160 |  | 0 | 0 | 4160 | 0 | 0 | 4160 |
 | oxygen_guild_mcnemar | 1 | guild_mcnemar | 1 | 0 | 0 | 0 | 0 | 1 |
 
 ## Figure cells, by what the figure does with them
@@ -58,12 +58,19 @@ rate for a set defined as significant under any method.
 Cell rows report support and display, never a test. They are listed here as
 counts rather than one row each; the whole inventory is in the TSV.
 
+The grid is the oxygen guild figure's own: 52 condition rows (51 conditions and the pooled Other) by 20 body-site blocks (19 sites and the pooled Other), each block
+4 guild-direction columns wide. It comes from the figure's builder at its
+cut: the top 60 conditions and top 20 body sites, the rest pooled into Other,
+cells backed by fewer than 3 studies masked, and rows and blocks with nothing drawn left out.
+The figure draws every paired human profile, so unlike the tests in this table its
+cells include the experiment pairs with a zero retained-annotation total.
+
 | Display | Test state | Cells |
 | --- | --- | --- |
-| drawn | untested | 316 |
-| drawn | zero_annotation_signal | 7 |
-| masked_below_min_studies | insufficient_support | 209 |
-| not_drawn | not_sampled | 1340 |
+| drawn | untested | 340 |
+| drawn | zero_annotation_signal | 20 |
+| masked_below_min_studies | insufficient_support | 296 |
+| not_drawn | not_sampled | 3504 |
 
 Native ORA rows summarize tested profiles (`tested_profiles_summarized`).
 Their hit counts and best/median profile q-values do not define an aggregate

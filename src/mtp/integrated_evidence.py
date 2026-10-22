@@ -42,8 +42,12 @@ from mtp.guild_maps import (
     CELL_NO_SIGNAL,
     CELL_NOT_SAMPLED,
     CELL_VALUE,
+    FIGURE_MAX_BODY_SITES,
+    FIGURE_MAX_CONDITIONS,
+    FIGURE_MIN_STUDIES,
+    OTHER_LABEL,
     GuildMatrix,
-    build_matrix,
+    build_figure_matrix,
     cell_status_rows,
     compute_correlation,
 )
@@ -135,12 +139,13 @@ OVERLAY_Q_SOURCE = (
 MANUSCRIPT_Q_SOURCE = (
     "the manuscript's q <= 0.001 rule, as the enrichment arm's committed run applies it"
 )
-#: The oxygen guild figure's aggregation parameters. The McNemar row and the cell
-#: support inventory share one matrix, so both describe the same figure and the
-#: masking threshold a cell row reports is the one that masked it.
-GUILD_MAX_CONDITIONS = 60
-GUILD_MAX_BODY_SITES = 8
-GUILD_MIN_STUDIES = 3
+#: The oxygen guild figure's aggregation parameters, read from the figure's own
+#: module, so the masking threshold a cell row reports is the one that masked it.
+#: A copy kept here stayed at 8 body sites after the figure moved to 20, and the
+#: cell rows described a grid the figure never drew (#770).
+GUILD_MAX_CONDITIONS = FIGURE_MAX_CONDITIONS
+GUILD_MAX_BODY_SITES = FIGURE_MAX_BODY_SITES
+GUILD_MIN_STUDIES = FIGURE_MIN_STUDIES
 
 #: This module's method names against the procedure names the assessments use.
 #: A row takes the verdict for its own procedure; a method an assessment is
@@ -511,13 +516,13 @@ def log_ratio_records(
 
 
 def build_guild_matrix(profiles: Sequence[Profile]) -> GuildMatrix:
-    """The oxygen guild figure's aggregation, at the figure's own parameters."""
-    return build_matrix(
-        list(profiles),
-        max_conditions=GUILD_MAX_CONDITIONS,
-        max_body_sites=GUILD_MAX_BODY_SITES,
-        min_studies=GUILD_MIN_STUDIES,
-    )
+    """The oxygen guild figure's matrix, from the figure's own builder.
+
+    Pass the figure's population, the profiles as loaded. The figure does not
+    apply the zero-total pair exclusion the tests here run on, so a matrix built
+    after it inventories cells the figure never drew (#770).
+    """
+    return build_figure_matrix(profiles)
 
 
 def guild_records(
@@ -631,9 +636,12 @@ def cell_support_records(
 
     The classification is ``guild_maps.cell_status``, the same function the
     figure writer uses, so a cell cannot be reported as drawn by one artifact
-    and masked by the other. The inventory is complete, every cell of the
-    matrix including the unsampled ones, because a partial inventory would put
-    a reader back to guessing what an absent row meant.
+    and masked by the other - provided ``matrix`` is the figure's own, from
+    ``build_guild_matrix`` over the profiles the figure draws. The same function
+    over another grid reported 1,148 cells for a figure of 2,016 (#770). The
+    inventory is complete, every cell of the matrix including the unsampled
+    ones, because a partial inventory would put a reader back to guessing what
+    an absent row meant.
     """
     statuses = cell_status_rows(matrix)
     records: list[Record] = []
@@ -659,7 +667,7 @@ def cell_support_records(
                     condition=condition,
                     body_site=site,
                     direction=direction,
-                    population="human, paired experiments",
+                    population="human, paired experiments, zero-total pairs included",
                     denominator="summed non-MediaDive trait counts of the profile",
                     background="",
                     eligibility_rule=(
@@ -2022,7 +2030,8 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
     (
         "experiments_eligible / experiments_excluded_zero_count",
         "experiments the method's own rule kept and removed for a zero count; the "
-        "corpus-wide zero-total pair exclusion is in the provenance record, not here",
+        "zero-total pair exclusion the tests share is in the provenance record, with "
+        "the methods it applies to, and the figure-cell rows do not apply it",
     ),
     ("effect_value / effect_units", "the estimate and what it measures; units differ by method"),
     (
@@ -2118,6 +2127,22 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
 )
 
 
+def _counted(count: int, singular: str, plural: str) -> str:
+    return f"{count} {singular if count == 1 else plural}"
+
+
+def _grid_axis(labels: set[str], unit: tuple[str, str], member: tuple[str, str]) -> str:
+    """Count one axis of the figure's grid, naming a surviving pooled Other.
+
+    The pooled Other mixes every label outside the cut, so counting it as one more
+    condition or body site overstates how many the figure draws (#798).
+    """
+    text = _counted(len(labels), *unit)
+    if OTHER_LABEL in labels:
+        text += f" ({_counted(len(labels) - 1, *member)} and the pooled {OTHER_LABEL})"
+    return text
+
+
 def write_view(
     records: Sequence[Record], summary: Sequence[Mapping[str, object]], path: Path
 ) -> Path:
@@ -2153,12 +2178,32 @@ def write_view(
         )
     cells = [record for record in records if is_cell_row(record)]
     if cells:
+        rows = _grid_axis(
+            {record.condition for record in cells},
+            ("condition row", "condition rows"),
+            ("condition", "conditions"),
+        )
+        blocks = _grid_axis(
+            {record.body_site for record in cells},
+            ("body-site block", "body-site blocks"),
+            ("site", "sites"),
+        )
+        columns = len({(record.trait, record.direction) for record in cells})
         lines += [
             "",
             "## Figure cells, by what the figure does with them",
             "",
             "Cell rows report support and display, never a test. They are listed here as",
             "counts rather than one row each; the whole inventory is in the TSV.",
+            "",
+            f"The grid is the oxygen guild figure's own: {rows} by {blocks}, each block",
+            f"{columns} guild-direction columns wide. It comes from the figure's builder at its",
+            f"cut: the top {GUILD_MAX_CONDITIONS} conditions and top {GUILD_MAX_BODY_SITES} "
+            "body sites, the rest pooled into Other,",
+            f"cells backed by fewer than {GUILD_MIN_STUDIES} studies masked, and rows and blocks "
+            "with nothing drawn left out.",
+            "The figure draws every paired human profile, so unlike the tests in this table its",
+            "cells include the experiment pairs with a zero retained-annotation total.",
             "",
             "| Display | Test state | Cells |",
             "| --- | --- | --- |",
@@ -2417,11 +2462,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     records: list[Record] = []
     records += fraction_sign_records(profiles, source=source, columns=columns, **thresholds)
     records += log_ratio_records(profiles, source=source, columns=columns, **thresholds)
-    matrix = build_guild_matrix(profiles)
+    # The figure draws every loaded profile. The exclusion above is the tests'
+    # comparison basis, not the figure's, so the cell inventory is built from the
+    # profiles before it (#770). The McNemar reads the profiles, never the matrix.
+    matrix = build_guild_matrix(historical_profiles)
     records += guild_records(profiles, matrix=matrix, source=source, columns=columns, **thresholds)
-    records += cell_support_records(
+    # Every row so far ran on the shared comparison basis and the cell rows do not,
+    # so the provenance record names both sets rather than calling it corpus-wide.
+    shared_basis_methods = sorted({record.method for record in records})
+    cell_records = cell_support_records(
         matrix, source=source, columns=columns, min_studies=GUILD_MIN_STUDIES
     )
+    records += cell_records
     records += native_composition_records(
         arm1_path,
         columns=columns,
@@ -2573,6 +2625,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "is zero on either side; the share is undefined, not zero, and scoring "
                 "it as zero would count the pair as a tie"
             ),
+            # The tests this table runs share the exclusion. The figure-cell rows
+            # follow the oxygen guild figure, which draws those pairs (#770).
+            "applies_to": shared_basis_methods,
+            "not_applied_to": sorted({record.method for record in cell_records}),
         },
         "thresholds": {
             "q_threshold": args.q_threshold,
