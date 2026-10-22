@@ -1669,14 +1669,38 @@ def read_status(
         return _unreadable(issue, f"the file holds a JSON {type(content).__name__}, not an object")
     if key in {"calibration_status", "orientation_status"}:
         return _bound_assessment(path, content, key, issue, expected_input_sha256)
+    source_meta: dict[str, object] = {
+        "path": str(path.resolve()),
+        "sha256": _sha256(path),
+        "expected_input_sha256": (
+            dict(expected_input_sha256) if expected_input_sha256 is not None else None
+        ),
+        "binding": "not_checked" if expected_input_sha256 is None else "matched",
+    }
+    claimed_inputs = content.get("inputs")
+    if expected_input_sha256 is not None and isinstance(claimed_inputs, Mapping):
+        for name, required in expected_input_sha256.items():
+            if name in claimed_inputs and required:
+                actual = claimed_inputs.get(name)
+                if not isinstance(actual, str) or actual != required:
+                    source_meta["binding"] = "mismatch_or_missing_identity"
+                    return replace(
+                        _unreadable(issue, f"assessment {name} missing or mismatched"),
+                        source=source_meta,
+                    )
+    elif expected_input_sha256 is not None:
+        source_meta["binding"] = "inputs_not_declared"
     if key == "sensitivity_status":
-        return _sensitivity_status(content, issue)
+        return replace(_sensitivity_status(content, issue), source=source_meta)
     value = content.get(key)
     if value is None:
-        return AssessmentStatus(issue, {}, f"pending {issue}")
+        return AssessmentStatus(issue, {}, f"pending {issue}", source=source_meta)
     if not isinstance(value, str):
-        return _unreadable(issue, f"{key} is a {type(value).__name__}, not a string")
-    return AssessmentStatus(issue, {}, value, (("note", key, "status", value),))
+        return replace(
+            _unreadable(issue, f"{key} is a {type(value).__name__}, not a string"),
+            source=source_meta,
+        )
+    return AssessmentStatus(issue, {}, value, (("note", key, "status", value),), source=source_meta)
 
 
 def _bound_assessment(
@@ -2398,6 +2422,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--full-screen", type=Path, help="Compatible full-trait directional screen")
     parser.add_argument("--full-screen-provenance", type=Path)
+    parser.add_argument(
+        "--require-complete-sources",
+        action="store_true",
+        help="Reject missing native source tables or source_not_supplied placeholder rows (#776)",
+    )
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
 
@@ -2536,6 +2565,35 @@ def main(argv: Sequence[str] | None = None) -> int:
         profile_sha256=_sha256(args.profile_input),
         experiments_sha256=_sha256(args.experiments_input),
     )
+    if args.require_complete_sources:
+        missing_files = [
+            name
+            for name, candidate in (
+                ("arm1_pooled_stats", arm1_path),
+                ("arm2_enrichment", enrichment_path),
+                ("arm2_depletion", depletion_path),
+                ("full_screen", screen_path),
+                ("full_screen_provenance", screen_provenance_path),
+            )
+            if not candidate.is_file()
+        ]
+        if missing_files:
+            raise ValueError(
+                "--require-complete-sources rejected missing source files: "
+                + ", ".join(missing_files)
+            )
+        missing_rows = sorted(
+            {
+                f"{record.method}:{record.feature}"
+                for record in records
+                if record.test_status == SOURCE_MISSING
+            }
+        )
+        if missing_rows:
+            raise ValueError(
+                "--require-complete-sources rejected source_not_supplied placeholder rows: "
+                + ", ".join(missing_rows)
+            )
 
     assessment_inputs = {
         "profile_sha256": _sha256(args.profile_input),
@@ -2551,8 +2609,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             "#182",
             expected_input_sha256=assessment_inputs,
         ),
-        "sensitivity_status": read_status(args.sensitivity_status, "sensitivity_status", "#183"),
-        "coverage_status": read_status(args.coverage_status, "coverage_status", "#184"),
+        "sensitivity_status": read_status(
+            args.sensitivity_status,
+            "sensitivity_status",
+            "#183",
+            expected_input_sha256=assessment_inputs,
+        ),
+        "coverage_status": read_status(
+            args.coverage_status,
+            "coverage_status",
+            "#184",
+            expected_input_sha256=assessment_inputs,
+        ),
         "orientation_status": read_status(
             args.orientation_provenance,
             "orientation_status",
@@ -2688,6 +2756,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             "each family is corrected on its own; a union of decisions has no false discovery rate"
         ),
         "selection_note": SELECTION_NOTE,
+        "downstream_contracts": {
+            "analysis_specs": {
+                spec_id: spec.model_dump(mode="json")
+                for spec_id, spec in sorted(
+                    __import__(
+                        "mtp.workflow.downstream_contracts",
+                        fromlist=["STANDARD_ANALYSIS_SPECS"],
+                    ).STANDARD_ANALYSIS_SPECS.items()
+                )
+            },
+            "require_complete_sources": bool(args.require_complete_sources),
+        },
     }
     provenance_path = output / "integrated_evidence_provenance.json"
     provenance_path.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
