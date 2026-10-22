@@ -89,7 +89,8 @@ def write_subset_run(tmp_path: Path) -> tuple[Path, Path]:
     The subset keeps the Parkinson's disease experiments of study1 and study2, with
     study1 reversed onto the disease-vs-comparison basis, and the multiple sclerosis
     experiment of study7. Study3's Parkinson's disease experiment and all four obesity
-    studies stay outside it; obesity has the most studies in the dump.
+    studies stay outside it; obesity has the most studies in the dump. One study7
+    signature is neither increased nor decreased.
     """
     human = "Homo sapiens"
     dump = write_full_dump(
@@ -107,6 +108,7 @@ def write_subset_run(tmp_path: Path) -> tuple[Path, Path]:
             ),
             dump_row("bsdb:study7/1/1", "increased", SCLEROSIS, human, "16S", "841"),
             dump_row("bsdb:study7/1/2", "decreased", SCLEROSIS, human, "16S", "817"),
+            dump_row("bsdb:study7/1/3", "unchanged", SCLEROSIS, human, "16S", "562"),
         ],
     )
     taxa = write_taxa_table(
@@ -119,9 +121,38 @@ def write_subset_run(tmp_path: Path) -> tuple[Path, Path]:
             ("study2", "1", "2", "decreased", "572511", "Blautia", "genus"),
             ("study7", "1", "1", "increased", "841", "Roseburia", "genus"),
             ("study7", "1", "2", "decreased", "817", "Bacteroides fragilis", "species"),
+            ("study7", "1", "3", "unchanged", "562", "Escherichia coli", "species"),
         ],
     )
     return dump, taxa
+
+
+def write_tied_run(tmp_path: Path) -> tuple[Path, Path]:
+    """Write a run whose condition and genus cuts both fall inside a tie.
+
+    Conditions 01-04 have three studies each and conditions 05-20 two. Every study
+    reports Genus 00, and each study of conditions 01-04 reports two genera of its own,
+    Genus 01-24, so those genera tie at one study. numpy's unstable quicksort sorts
+    arrays of up to 16 values by insertion, which keeps ties in order; the 20
+    conditions and 25 genera are past that.
+    """
+    human = "Homo sapiens"
+    own_genera = iter(range(1, 25))
+    dump_rows: list[tuple[str, ...]] = []
+    taxa_rows: list[tuple[str, str, str, str, str, str, str]] = []
+    study = 0
+    for condition in range(1, 21):
+        for _ in range(3 if condition <= 4 else 2):
+            study += 1
+            label = f"Condition {condition:02d}"
+            dump_rows.append(dump_row(f"bsdb:study{study}/1/1", "increased", label, human, "16S"))
+            genera = [0, *(next(own_genera) for _ in range(2 if condition <= 4 else 0))]
+            taxa_rows.extend(
+                (f"study{study}", "1", "1", "increased", f"{9000 + n}", f"Genus {n:02d}", "genus")
+                for n in genera
+            )
+    dump = write_full_dump(tmp_path / "full_dump.csv", dump_rows)
+    return dump, write_taxa_table(tmp_path / "bugsigdb_taxa.tsv", taxa_rows)
 
 
 def write_all_host_run(tmp_path: Path) -> tuple[Path, Path]:
@@ -171,7 +202,8 @@ def test_taxa_guild_counts_only_the_subset_profiles_in_their_own_direction(
     """A subset run summarizes its own signatures, in its own direction basis (#768).
 
     Study3 and the obesity studies are in the dump but not in the subset; any of their
-    profiles would raise a study, profile or direction count below.
+    profiles would raise a study, profile or direction count below, and so would
+    study7's unchanged signature.
     """
     module = load_script_module("create_taxa_guild_heatmap.py")
     full_dump_path, taxa_path = write_subset_run(tmp_path)
@@ -197,6 +229,56 @@ def test_taxa_guild_fails_without_the_full_dump(tmp_path: Path) -> None:
 
     with pytest.raises(FileNotFoundError, match="is missing; it decides which signatures"):
         module.load_bugsigdb_taxa_records(taxa_path, tmp_path / "missing_full_dump.csv")
+
+
+def test_taxa_guild_fails_when_no_table_row_is_a_corpus_signature(tmp_path: Path) -> None:
+    """A taxa table with no row in the dump's corpus signatures fails, not plots nothing."""
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    full_dump_path, _ = write_all_host_run(tmp_path)
+    mouse_only = write_taxa_table(
+        tmp_path / "mouse_taxa.tsv",
+        [("study2", "1", "1", "increased", "573", "Klebsiella pneumoniae", "species")],
+    )
+
+    with pytest.raises(ValueError, match="has no increased or decreased taxon rows in the"):
+        module.load_bugsigdb_taxa_records(mouse_only, full_dump_path)
+
+
+def test_condition_taxon_fails_when_no_table_experiment_has_a_dump_condition(
+    tmp_path: Path,
+) -> None:
+    """A taxa table whose experiments the dump does not label fails, not plots nothing."""
+    module = load_script_module("create_condition_taxon_heatmap.py")
+    full_dump_path, _ = write_subset_run(tmp_path)
+    unlabelled = write_taxa_table(
+        tmp_path / "unlabelled_taxa.tsv",
+        [("study9", "1", "1", "increased", "841", "Roseburia", "genus")],
+    )
+
+    with pytest.raises(ValueError, match="condition labels for the experiments in"):
+        module.build_condition_genus_matrix(unlabelled, full_dump_path, 2, 10)
+
+
+def test_condition_taxon_cuts_break_ties_by_name(tmp_path: Path) -> None:
+    """Both top-N cuts rank by study count, then by name, so a tie lands the same way (#794).
+
+    Sixteen conditions tie at two studies across the condition cut, and 24 genera tie at
+    one study across the genus cut.
+    """
+    module = load_script_module("create_condition_taxon_heatmap.py")
+    full_dump_path, taxa_path = write_tied_run(tmp_path)
+
+    matrix, study_counts = module.build_condition_genus_matrix(
+        taxa_path, full_dump_path, top_conditions=6, top_taxa=6
+    )
+
+    assert study_counts.to_dict() == {
+        **{f"Condition {n:02d}": 3 for n in range(1, 5)},
+        "Condition 05": 2,
+        "Condition 06": 2,
+    }
+    assert list(matrix.index) == [f"Condition {n:02d}" for n in range(1, 7)]
+    assert sorted(matrix.columns) == [f"Genus {n:02d}" for n in range(6)]
 
 
 def test_condition_taxon_conditions_and_denominators_come_from_the_subset(
@@ -324,6 +406,13 @@ def test_an_export_without_sequencing_types_fails_instead_of_dropping_the_filter
         clustered.build_binary_matrix(
             taxa_path, top_taxa=10, max_profiles=10, full_dump_path=full_dump_path
         )
+    guild_taxa_path = write_taxa_table(
+        tmp_path / "bugsigdb_taxa.tsv",
+        [
+            ("study1", "1", "1", "increased", "562", "Escherichia coli", "species"),
+            ("study1", "2", "1", "increased", "573", "Klebsiella pneumoniae", "species"),
+        ],
+    )
     guild = load_script_module("create_taxa_guild_heatmap.py")
     with pytest.raises(ValueError, match="no Homo sapiens 16S or WMS taxon rows"):
-        guild.load_bugsigdb_taxa_records(tmp_path / "unused.tsv", full_dump_path)
+        guild.load_bugsigdb_taxa_records(guild_taxa_path, full_dump_path)

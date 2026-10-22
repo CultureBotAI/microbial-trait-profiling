@@ -273,7 +273,9 @@ experiments from `data/raw/full_dump.csv`, keeps only the experiments present in
 from that table. In a contrast-population run the conditions and their studies are
 therefore the subset's own (#768). It keeps the 40 most common condition labels by
 unique study count. Within those conditions, it keeps the 100 genera with the highest
-unique-study support.
+unique-study support. Both cuts rank by unique study count and then by name in
+ascending order, so a cut that falls inside a tie keeps the same conditions or genera
+on every run (#794).
 
 For each condition/genus pair, the cell value is the number of studies in that
 condition containing the genus divided by the number of studies in the taxa table
