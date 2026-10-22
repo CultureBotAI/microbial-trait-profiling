@@ -1,10 +1,10 @@
 {
   "version": "integrated-evidence-v2",
   "bugsigdb_vintage": "2026-04-24_00:41_UTC",
-  "code_commit": "58927fe8fde3735b3d505f09105a2941875485b3",
+  "code_commit": "35887477b0351a9c9e89f90c0b65f40d18e20f03",
   "profile_sha256": "519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c",
   "experiments_sha256": "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06",
-  "analysis_source_sha256": "2e6e284b42be046fe7d3d1414716cd95720b32a1a46e5df01650f34d3c424c0d",
+  "analysis_source_sha256": "1ba88ccf6715ef466d185b574eb7428891a9683553240a832c2f8fe5b2a3526a",
   "core_run_id": null,
   "core_manifest_sha256": null,
   "ora_eligibility_source": null,
