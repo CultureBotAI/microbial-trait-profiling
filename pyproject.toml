@@ -68,7 +68,7 @@ viz = [
   "seaborn>=0.13.0",
 ]
 mongo = [
-  "linkml-store[llm,mongodb]>=0.3.0",
+  "linkml-store[llm,mongodb]>=0.3.2",
   "pymongo>=4.17.0",
   "python-dotenv>=1.2.2",
 ]

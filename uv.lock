@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -1984,7 +1984,7 @@ wheels = [
 
 [[package]]
 name = "linkml-store"
-version = "0.3.0"
+version = "0.3.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -2006,9 +2006,9 @@ dependencies = [
     { name = "tabulate" },
     { name = "xmltodict" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/00/fc/f171028d87b0bfc843266a372d5ea8f3c977148989eca441a16fa2d5d811/linkml_store-0.3.0.tar.gz", hash = "sha256:f07fe31dee923bbee68c4e3807d121bc2313d093adab8fdfc065949b6dbf7a4b", size = 6661666, upload-time = "2026-01-23T22:23:48.321Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f6/fa/3d379f0091e3c1ffa5936dbaf6bde6286c35aebb8980724210cbb63b1414/linkml_store-0.3.2.tar.gz", hash = "sha256:59a7ab0de5ac567d3030db4a025601e5c677e2140bb1ee424040b8bcccc7f791", size = 6671239, upload-time = "2026-04-28T21:10:28.078Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/02/0e57ec7a7f8ef7005eda907e2ab00ec2b3c91a5704da8e58d192c5304fa4/linkml_store-0.3.0-py3-none-any.whl", hash = "sha256:2bc38b89cf076484b48320df425283e0b62eac87d114498c9d2440183cdb4300", size = 203751, upload-time = "2026-01-23T22:23:46.16Z" },
+    { url = "https://files.pythonhosted.org/packages/01/6b/466bf033746cd79b16e2197ae5d5e2557e3c7492deec81dbcb13d58653ce/linkml_store-0.3.2-py3-none-any.whl", hash = "sha256:11423cbbd12e248db0fbde5fbc118f783827b5137b7b08e7f06106e220880c33", size = 204393, upload-time = "2026-04-28T21:10:25.819Z" },
 ]
 
 [package.optional-dependencies]
@@ -2380,7 +2380,7 @@ requires-dist = [
     { name = "kaleido", marker = "extra == 'viz'", specifier = ">=1.0" },
     { name = "linkml", specifier = ">=1.11.0" },
     { name = "linkml-runtime", specifier = ">=1.8.3" },
-    { name = "linkml-store", extras = ["llm", "mongodb"], marker = "extra == 'mongo'", specifier = ">=0.3.0" },
+    { name = "linkml-store", extras = ["llm", "mongodb"], marker = "extra == 'mongo'", specifier = ">=0.3.2" },
     { name = "matplotlib", marker = "extra == 'viz'", specifier = ">=3.10.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.15.0" },
     { name = "numpy", specifier = ">=2.0" },
