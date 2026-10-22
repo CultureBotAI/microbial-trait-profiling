@@ -1,73 +1,83 @@
-study_id	experiment_id	signature_id	direction	taxon_id	taxon_name	taxonomic_rank	profile_id	target_taxon_name	host_species
-bsdb:31391545	bsdb:31391545-1	bsdb:31391545-1-2	decreased	NCBITaxon:84112	Eggerthella lenta	species	bsdb:31391545|bsdb:31391545-1|dec	Eggerthella lenta	Mus musculus
-bsdb:39461337	bsdb:39461337-19	bsdb:39461337-19-1	increased	NCBITaxon:84112	Eggerthella lenta	species	bsdb:39461337|bsdb:39461337-19|inc	Eggerthella lenta	Mus musculus
-bsdb:39461337	bsdb:39461337-22	bsdb:39461337-22-1	increased	NCBITaxon:84112	Eggerthella lenta	species	bsdb:39461337|bsdb:39461337-22|inc	Eggerthella lenta	Mus musculus
-bsdb:39461337	bsdb:39461337-2	bsdb:39461337-2-2	decreased	NCBITaxon:84112	Eggerthella lenta	species	bsdb:39461337|bsdb:39461337-2|dec	Eggerthella lenta	Mus musculus
-bsdb:39461337	bsdb:39461337-3	bsdb:39461337-3-1	increased	NCBITaxon:84112	Eggerthella lenta	species	bsdb:39461337|bsdb:39461337-3|inc	Eggerthella lenta	Mus musculus
-bsdb:39461337	bsdb:39461337-5	bsdb:39461337-5-2	decreased	NCBITaxon:84112	Eggerthella lenta	species	bsdb:39461337|bsdb:39461337-5|dec	Eggerthella lenta	Mus musculus
-bsdb:31391545	bsdb:31391545-1	bsdb:31391545-1-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:31391545|bsdb:31391545-1|dec	Enterocloster bolteae	Mus musculus
-bsdb:35017199	bsdb:35017199-1	bsdb:35017199-1-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:35017199|bsdb:35017199-1|dec	Enterocloster bolteae	Mus musculus
-bsdb:36253847	bsdb:36253847-14	bsdb:36253847-14-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:36253847|bsdb:36253847-14|dec	Enterocloster bolteae	Mus musculus
-bsdb:36253847	bsdb:36253847-15	bsdb:36253847-15-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:36253847|bsdb:36253847-15|dec	Enterocloster bolteae	Mus musculus
-bsdb:36253847	bsdb:36253847-3	bsdb:36253847-3-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:36253847|bsdb:36253847-3|dec	Enterocloster bolteae	Mus musculus
-bsdb:39277616	bsdb:39277616-2	bsdb:39277616-2-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39277616|bsdb:39277616-2|dec	Enterocloster bolteae	Mus musculus
-bsdb:39277616	bsdb:39277616-4	bsdb:39277616-4-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39277616|bsdb:39277616-4|dec	Enterocloster bolteae	Mus musculus
-bsdb:39461337	bsdb:39461337-19	bsdb:39461337-19-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-19|inc	Enterocloster bolteae	Mus musculus
-bsdb:39461337	bsdb:39461337-1	bsdb:39461337-1-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-1|dec	Enterocloster bolteae	Mus musculus
-bsdb:39461337	bsdb:39461337-20	bsdb:39461337-20-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-20|inc	Enterocloster bolteae	Mus musculus
-bsdb:39461337	bsdb:39461337-21	bsdb:39461337-21-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-21|inc	Enterocloster bolteae	Mus musculus
-bsdb:39461337	bsdb:39461337-22	bsdb:39461337-22-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-22|inc	Enterocloster bolteae	Mus musculus
-bsdb:39461337	bsdb:39461337-23	bsdb:39461337-23-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-23|inc	Enterocloster bolteae	Mus musculus
-bsdb:39461337	bsdb:39461337-24	bsdb:39461337-24-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-24|inc	Enterocloster bolteae	Mus musculus
-bsdb:39461337	bsdb:39461337-2	bsdb:39461337-2-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-2|dec	Enterocloster bolteae	Mus musculus
-bsdb:39461337	bsdb:39461337-3	bsdb:39461337-3-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-3|inc	Enterocloster bolteae	Mus musculus
-bsdb:39461337	bsdb:39461337-5	bsdb:39461337-5-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-5|dec	Enterocloster bolteae	Mus musculus
-bsdb:31391545	bsdb:31391545-1	bsdb:31391545-1-2	decreased	NCBITaxon:562	Escherichia coli	species	bsdb:31391545|bsdb:31391545-1|dec	Escherichia coli	Mus musculus
-bsdb:32711581	bsdb:32711581-1	bsdb:32711581-1-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:32711581|bsdb:32711581-1|inc	Escherichia coli	Mus musculus
-bsdb:32957565	bsdb:32957565-3	bsdb:32957565-3-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:32957565|bsdb:32957565-3|inc	Escherichia coli	Mus musculus
-bsdb:34401412	bsdb:34401412-5	bsdb:34401412-5-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:34401412|bsdb:34401412-5|inc	Escherichia coli	Mus musculus
-bsdb:34401412	bsdb:34401412-7	bsdb:34401412-7-2	decreased	NCBITaxon:562	Escherichia coli	species	bsdb:34401412|bsdb:34401412-7|dec	Escherichia coli	Mus musculus
-bsdb:34568329	bsdb:34568329-1	bsdb:34568329-1-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:34568329|bsdb:34568329-1|inc	Escherichia coli	Mus musculus
-bsdb:36171758	bsdb:36171758-9	bsdb:36171758-9-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:36171758|bsdb:36171758-9|inc	Escherichia coli	Bos taurus
-bsdb:36362360	bsdb:36362360-6	bsdb:36362360-6-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:36362360|bsdb:36362360-6|inc	Escherichia coli	Rattus norvegicus
-bsdb:36532422	bsdb:36532422-1	bsdb:36532422-1-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:36532422|bsdb:36532422-1|inc	Escherichia coli	Rattus norvegicus
-bsdb:37180435	bsdb:37180435-2	bsdb:37180435-2-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:37180435|bsdb:37180435-2|inc	Escherichia coli	Rattus norvegicus
-bsdb:37180435	bsdb:37180435-3	bsdb:37180435-3-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:37180435|bsdb:37180435-3|inc	Escherichia coli	Rattus norvegicus
-bsdb:37180435	bsdb:37180435-4	bsdb:37180435-4-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:37180435|bsdb:37180435-4|inc	Escherichia coli	Rattus norvegicus
-bsdb:37180435	bsdb:37180435-5	bsdb:37180435-5-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:37180435|bsdb:37180435-5|inc	Escherichia coli	Rattus norvegicus
-bsdb:37180435	bsdb:37180435-6	bsdb:37180435-6-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:37180435|bsdb:37180435-6|inc	Escherichia coli	Rattus norvegicus
-bsdb:37848699	bsdb:37848699-3	bsdb:37848699-3-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:37848699|bsdb:37848699-3|inc	Escherichia coli	Elephas maximus
-bsdb:38406269	bsdb:38406269-1	bsdb:38406269-1-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:38406269|bsdb:38406269-1|inc	Escherichia coli	Mus musculus
-bsdb:38406269	bsdb:38406269-2	bsdb:38406269-2-2	decreased	NCBITaxon:562	Escherichia coli	species	bsdb:38406269|bsdb:38406269-2|dec	Escherichia coli	Mus musculus
-bsdb:38406269	bsdb:38406269-3	bsdb:38406269-3-2	decreased	NCBITaxon:562	Escherichia coli	species	bsdb:38406269|bsdb:38406269-3|dec	Escherichia coli	Mus musculus
-bsdb:38627869	bsdb:38627869-11	bsdb:38627869-11-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:38627869|bsdb:38627869-11|inc	Escherichia coli	Sus scrofa domesticus
-bsdb:38627869	bsdb:38627869-16	bsdb:38627869-16-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:38627869|bsdb:38627869-16|inc	Escherichia coli	Sus scrofa domesticus
-bsdb:38627869	bsdb:38627869-2	bsdb:38627869-2-2	decreased	NCBITaxon:562	Escherichia coli	species	bsdb:38627869|bsdb:38627869-2|dec	Escherichia coli	Sus scrofa domesticus
-bsdb:39277616	bsdb:39277616-3	bsdb:39277616-3-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39277616|bsdb:39277616-3|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-10	bsdb:39461337-10-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-10|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-11	bsdb:39461337-11-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-11|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-12	bsdb:39461337-12-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-12|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-13	bsdb:39461337-13-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-13|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-14	bsdb:39461337-14-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-14|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-15	bsdb:39461337-15-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-15|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-16	bsdb:39461337-16-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-16|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-17	bsdb:39461337-17-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-17|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-25	bsdb:39461337-25-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-25|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-26	bsdb:39461337-26-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-26|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-27	bsdb:39461337-27-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-27|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-29	bsdb:39461337-29-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-29|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-31	bsdb:39461337-31-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-31|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-4	bsdb:39461337-4-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-4|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-5	bsdb:39461337-5-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-5|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-6	bsdb:39461337-6-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-6|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-7	bsdb:39461337-7-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-7|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-8	bsdb:39461337-8-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-8|inc	Escherichia coli	Mus musculus
-bsdb:39461337	bsdb:39461337-9	bsdb:39461337-9-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-9|inc	Escherichia coli	Mus musculus
-bsdb:40444008	bsdb:40444008-4	bsdb:40444008-4-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:40444008|bsdb:40444008-4|inc	Escherichia coli	Canis lupus familiaris
-bsdb:40444008	bsdb:40444008-5	bsdb:40444008-5-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:40444008|bsdb:40444008-5|inc	Escherichia coli	Canis lupus familiaris
-bsdb:29302014	bsdb:29302014-3	bsdb:29302014-3-1	increased	NCBITaxon:573	Klebsiella pneumoniae	species	bsdb:29302014|bsdb:29302014-3|inc	Klebsiella pneumoniae	Mus musculus
-bsdb:31391545	bsdb:31391545-1	bsdb:31391545-1-1	increased	NCBITaxon:573	Klebsiella pneumoniae	species	bsdb:31391545|bsdb:31391545-1|inc	Klebsiella pneumoniae	Mus musculus
-bsdb:36171758	bsdb:36171758-1	bsdb:36171758-1-1	increased	NCBITaxon:573	Klebsiella pneumoniae	species	bsdb:36171758|bsdb:36171758-1|inc	Klebsiella pneumoniae	Bos taurus
-bsdb:39461337	bsdb:39461337-4	bsdb:39461337-4-1	increased	NCBITaxon:573	Klebsiella pneumoniae	species	bsdb:39461337|bsdb:39461337-4|inc	Klebsiella pneumoniae	Mus musculus
-bsdb:38115159	bsdb:38115159-1	bsdb:38115159-1-1	increased	NCBITaxon:28131	Prevotella intermedia	species	bsdb:38115159|bsdb:38115159-1|inc	Prevotella intermedia	Sus scrofa domesticus
-bsdb:39461337	bsdb:39461337-5	bsdb:39461337-5-1	increased	NCBITaxon:39778	Veillonella dispar	species	bsdb:39461337|bsdb:39461337-5|inc	Veillonella dispar	Mus musculus
+study_id	experiment_id	signature_id	direction	taxon_id	taxon_name	taxonomic_rank	profile_id	target_taxon_name	host_species	sequencing_type	exclusion_reason
+bsdb:31391545	bsdb:31391545-1	bsdb:31391545-1-2	decreased	NCBITaxon:84112	Eggerthella lenta	species	bsdb:31391545|bsdb:31391545-1|dec	Eggerthella lenta	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-19	bsdb:39461337-19-1	increased	NCBITaxon:84112	Eggerthella lenta	species	bsdb:39461337|bsdb:39461337-19|inc	Eggerthella lenta	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-22	bsdb:39461337-22-1	increased	NCBITaxon:84112	Eggerthella lenta	species	bsdb:39461337|bsdb:39461337-22|inc	Eggerthella lenta	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-2	bsdb:39461337-2-2	decreased	NCBITaxon:84112	Eggerthella lenta	species	bsdb:39461337|bsdb:39461337-2|dec	Eggerthella lenta	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-3	bsdb:39461337-3-1	increased	NCBITaxon:84112	Eggerthella lenta	species	bsdb:39461337|bsdb:39461337-3|inc	Eggerthella lenta	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-5	bsdb:39461337-5-2	decreased	NCBITaxon:84112	Eggerthella lenta	species	bsdb:39461337|bsdb:39461337-5|dec	Eggerthella lenta	Mus musculus	WMS	host
+bsdb:31391545	bsdb:31391545-1	bsdb:31391545-1-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:31391545|bsdb:31391545-1|dec	Enterocloster bolteae	Mus musculus	WMS	host
+bsdb:35017199	bsdb:35017199-1	bsdb:35017199-1-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:35017199|bsdb:35017199-1|dec	Enterocloster bolteae	Mus musculus	16S	host
+bsdb:36026526	bsdb:36026526-1	bsdb:36026526-1-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:36026526|bsdb:36026526-1|inc	Enterocloster bolteae	Homo sapiens	not recorded	sequencing_type
+bsdb:36026526	bsdb:36026526-2	bsdb:36026526-2-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:36026526|bsdb:36026526-2|inc	Enterocloster bolteae	Homo sapiens	not recorded	sequencing_type
+bsdb:36026526	bsdb:36026526-3	bsdb:36026526-3-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:36026526|bsdb:36026526-3|inc	Enterocloster bolteae	Homo sapiens	not recorded	sequencing_type
+bsdb:36253847	bsdb:36253847-14	bsdb:36253847-14-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:36253847|bsdb:36253847-14|dec	Enterocloster bolteae	Mus musculus	16S	host
+bsdb:36253847	bsdb:36253847-15	bsdb:36253847-15-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:36253847|bsdb:36253847-15|dec	Enterocloster bolteae	Mus musculus	16S	host
+bsdb:36253847	bsdb:36253847-3	bsdb:36253847-3-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:36253847|bsdb:36253847-3|dec	Enterocloster bolteae	Mus musculus	16S	host
+bsdb:39277616	bsdb:39277616-2	bsdb:39277616-2-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39277616|bsdb:39277616-2|dec	Enterocloster bolteae	Mus musculus	WMS	host
+bsdb:39277616	bsdb:39277616-4	bsdb:39277616-4-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39277616|bsdb:39277616-4|dec	Enterocloster bolteae	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-19	bsdb:39461337-19-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-19|inc	Enterocloster bolteae	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-1	bsdb:39461337-1-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-1|dec	Enterocloster bolteae	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-20	bsdb:39461337-20-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-20|inc	Enterocloster bolteae	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-21	bsdb:39461337-21-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-21|inc	Enterocloster bolteae	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-22	bsdb:39461337-22-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-22|inc	Enterocloster bolteae	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-23	bsdb:39461337-23-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-23|inc	Enterocloster bolteae	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-24	bsdb:39461337-24-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-24|inc	Enterocloster bolteae	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-2	bsdb:39461337-2-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-2|dec	Enterocloster bolteae	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-3	bsdb:39461337-3-1	increased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-3|inc	Enterocloster bolteae	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-5	bsdb:39461337-5-2	decreased	NCBITaxon:208479	Enterocloster bolteae	species	bsdb:39461337|bsdb:39461337-5|dec	Enterocloster bolteae	Mus musculus	WMS	host
+bsdb:31391545	bsdb:31391545-1	bsdb:31391545-1-2	decreased	NCBITaxon:562	Escherichia coli	species	bsdb:31391545|bsdb:31391545-1|dec	Escherichia coli	Mus musculus	WMS	host
+bsdb:32711581	bsdb:32711581-1	bsdb:32711581-1-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:32711581|bsdb:32711581-1|inc	Escherichia coli	Mus musculus	16S	host
+bsdb:32957565	bsdb:32957565-3	bsdb:32957565-3-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:32957565|bsdb:32957565-3|inc	Escherichia coli	Mus musculus	16S	host
+bsdb:34401412	bsdb:34401412-5	bsdb:34401412-5-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:34401412|bsdb:34401412-5|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:34401412	bsdb:34401412-7	bsdb:34401412-7-2	decreased	NCBITaxon:562	Escherichia coli	species	bsdb:34401412|bsdb:34401412-7|dec	Escherichia coli	Mus musculus	WMS	host
+bsdb:34568329	bsdb:34568329-1	bsdb:34568329-1-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:34568329|bsdb:34568329-1|inc	Escherichia coli	Mus musculus	16S	host
+bsdb:35888992	bsdb:35888992-4	bsdb:35888992-4-2	increased	NCBITaxon:562	Escherichia coli	species	bsdb:35888992|bsdb:35888992-4|inc	Escherichia coli	Homo sapiens	PCR	sequencing_type
+bsdb:36026526	bsdb:36026526-1	bsdb:36026526-1-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:36026526|bsdb:36026526-1|inc	Escherichia coli	Homo sapiens	not recorded	sequencing_type
+bsdb:36026526	bsdb:36026526-2	bsdb:36026526-2-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:36026526|bsdb:36026526-2|inc	Escherichia coli	Homo sapiens	not recorded	sequencing_type
+bsdb:36026526	bsdb:36026526-3	bsdb:36026526-3-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:36026526|bsdb:36026526-3|inc	Escherichia coli	Homo sapiens	not recorded	sequencing_type
+bsdb:36171758	bsdb:36171758-9	bsdb:36171758-9-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:36171758|bsdb:36171758-9|inc	Escherichia coli	Bos taurus	WMS	host
+bsdb:36362360	bsdb:36362360-6	bsdb:36362360-6-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:36362360|bsdb:36362360-6|inc	Escherichia coli	Rattus norvegicus	16S	host
+bsdb:36532422	bsdb:36532422-1	bsdb:36532422-1-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:36532422|bsdb:36532422-1|inc	Escherichia coli	Rattus norvegicus	WMS	host
+bsdb:37180435	bsdb:37180435-2	bsdb:37180435-2-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:37180435|bsdb:37180435-2|inc	Escherichia coli	Rattus norvegicus	16S	host
+bsdb:37180435	bsdb:37180435-3	bsdb:37180435-3-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:37180435|bsdb:37180435-3|inc	Escherichia coli	Rattus norvegicus	16S	host
+bsdb:37180435	bsdb:37180435-4	bsdb:37180435-4-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:37180435|bsdb:37180435-4|inc	Escherichia coli	Rattus norvegicus	16S	host
+bsdb:37180435	bsdb:37180435-5	bsdb:37180435-5-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:37180435|bsdb:37180435-5|inc	Escherichia coli	Rattus norvegicus	16S	host
+bsdb:37180435	bsdb:37180435-6	bsdb:37180435-6-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:37180435|bsdb:37180435-6|inc	Escherichia coli	Rattus norvegicus	16S	host
+bsdb:37848699	bsdb:37848699-3	bsdb:37848699-3-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:37848699|bsdb:37848699-3|inc	Escherichia coli	Elephas maximus	16S	host
+bsdb:38406269	bsdb:38406269-1	bsdb:38406269-1-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:38406269|bsdb:38406269-1|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:38406269	bsdb:38406269-2	bsdb:38406269-2-2	decreased	NCBITaxon:562	Escherichia coli	species	bsdb:38406269|bsdb:38406269-2|dec	Escherichia coli	Mus musculus	WMS	host
+bsdb:38406269	bsdb:38406269-3	bsdb:38406269-3-2	decreased	NCBITaxon:562	Escherichia coli	species	bsdb:38406269|bsdb:38406269-3|dec	Escherichia coli	Mus musculus	WMS	host
+bsdb:38627869	bsdb:38627869-11	bsdb:38627869-11-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:38627869|bsdb:38627869-11|inc	Escherichia coli	Sus scrofa domesticus	WMS	host
+bsdb:38627869	bsdb:38627869-16	bsdb:38627869-16-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:38627869|bsdb:38627869-16|inc	Escherichia coli	Sus scrofa domesticus	WMS	host
+bsdb:38627869	bsdb:38627869-2	bsdb:38627869-2-2	decreased	NCBITaxon:562	Escherichia coli	species	bsdb:38627869|bsdb:38627869-2|dec	Escherichia coli	Sus scrofa domesticus	WMS	host
+bsdb:39277616	bsdb:39277616-3	bsdb:39277616-3-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39277616|bsdb:39277616-3|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39387592	bsdb:39387592-5	bsdb:39387592-5-2	decreased	NCBITaxon:562	Escherichia coli	species	bsdb:39387592|bsdb:39387592-5|dec	Escherichia coli	Homo sapiens	not recorded	sequencing_type
+bsdb:39461337	bsdb:39461337-10	bsdb:39461337-10-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-10|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-11	bsdb:39461337-11-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-11|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-12	bsdb:39461337-12-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-12|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-13	bsdb:39461337-13-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-13|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-14	bsdb:39461337-14-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-14|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-15	bsdb:39461337-15-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-15|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-16	bsdb:39461337-16-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-16|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-17	bsdb:39461337-17-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-17|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-25	bsdb:39461337-25-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-25|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-26	bsdb:39461337-26-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-26|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-27	bsdb:39461337-27-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-27|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-29	bsdb:39461337-29-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-29|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-31	bsdb:39461337-31-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-31|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-4	bsdb:39461337-4-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-4|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-5	bsdb:39461337-5-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-5|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-6	bsdb:39461337-6-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-6|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-7	bsdb:39461337-7-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-7|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-8	bsdb:39461337-8-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-8|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:39461337	bsdb:39461337-9	bsdb:39461337-9-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:39461337|bsdb:39461337-9|inc	Escherichia coli	Mus musculus	WMS	host
+bsdb:40444008	bsdb:40444008-4	bsdb:40444008-4-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:40444008|bsdb:40444008-4|inc	Escherichia coli	Canis lupus familiaris	16S	host
+bsdb:40444008	bsdb:40444008-5	bsdb:40444008-5-1	increased	NCBITaxon:562	Escherichia coli	species	bsdb:40444008|bsdb:40444008-5|inc	Escherichia coli	Canis lupus familiaris	16S	host
+bsdb:36975828	bsdb:36975828-1	bsdb:36975828-1-1	increased	NCBITaxon:851	Fusobacterium nucleatum	species	bsdb:36975828|bsdb:36975828-1|inc	Fusobacterium nucleatum	Homo sapiens	PCR	sequencing_type
+bsdb:29302014	bsdb:29302014-3	bsdb:29302014-3-1	increased	NCBITaxon:573	Klebsiella pneumoniae	species	bsdb:29302014|bsdb:29302014-3|inc	Klebsiella pneumoniae	Mus musculus	16S	host
+bsdb:31391545	bsdb:31391545-1	bsdb:31391545-1-1	increased	NCBITaxon:573	Klebsiella pneumoniae	species	bsdb:31391545|bsdb:31391545-1|inc	Klebsiella pneumoniae	Mus musculus	WMS	host
+bsdb:36171758	bsdb:36171758-1	bsdb:36171758-1-1	increased	NCBITaxon:573	Klebsiella pneumoniae	species	bsdb:36171758|bsdb:36171758-1|inc	Klebsiella pneumoniae	Bos taurus	WMS	host
+bsdb:39461337	bsdb:39461337-4	bsdb:39461337-4-1	increased	NCBITaxon:573	Klebsiella pneumoniae	species	bsdb:39461337|bsdb:39461337-4|inc	Klebsiella pneumoniae	Mus musculus	WMS	host
+bsdb:38115159	bsdb:38115159-1	bsdb:38115159-1-1	increased	NCBITaxon:28131	Prevotella intermedia	species	bsdb:38115159|bsdb:38115159-1|inc	Prevotella intermedia	Sus scrofa domesticus	WMS	host
+bsdb:24273047	bsdb:24273047-1	bsdb:24273047-1-1	increased	NCBITaxon:1328	Streptococcus anginosus	species	bsdb:24273047|bsdb:24273047-1|inc	Streptococcus anginosus	Homo sapiens	PCR	sequencing_type
+bsdb:39461337	bsdb:39461337-5	bsdb:39461337-5-1	increased	NCBITaxon:39778	Veillonella dispar	species	bsdb:39461337|bsdb:39461337-5|inc	Veillonella dispar	Mus musculus	WMS	host

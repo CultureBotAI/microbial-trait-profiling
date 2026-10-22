@@ -9,31 +9,31 @@
   "completed_replicates": 10,
   "failed_replicates": 0,
   "invalid_replicates": 0,
-  "n_null_pvalues": 14803900,
+  "n_null_pvalues": 14309380,
   "complete_null_type_i": {
     "alpha": 0.05,
-    "empirical_rate": 0.015269962644978688,
-    "monte_carlo_se": 0.00015682025177174983,
+    "empirical_rate": 0.015528555395132423,
+    "monte_carlo_se": 0.00023682715503354508,
     "replicates": 10,
     "is_conservative": true,
-    "n_tests": 14803900
+    "n_tests": 14309380
   },
   "study_flip_null_type_i": null,
   "mixed_signal_fdr": {
     "target_q": 0.05,
-    "empirical_fdr": 0.22285714285714286,
-    "fdp_std": 0.37351064788253713,
+    "empirical_fdr": 0.3051282051282051,
+    "fdp_std": 0.29738800085915984,
     "replicates": 10,
-    "mean_discoveries": 2.8,
-    "mean_false_discoveries": 1.8
+    "mean_discoveries": 9.5,
+    "mean_false_discoveries": 6.1
   },
   "mixed_signal_tpr": {
-    "empirical_tpr": 0.0004282655246252676,
-    "tpr_std": 5.714247181928225e-20,
+    "empirical_tpr": 0.0015064244572441294,
+    "tpr_std": 0.00042804243822742397,
     "replicates": 10,
     "replicates_without_signal": 0,
-    "mean_true_signals": 2335.0,
-    "mean_true_discoveries": 1.0
+    "mean_true_signals": 2257.0,
+    "mean_true_discoveries": 3.4
   },
   "discovery_thresholds": [
     {
@@ -51,19 +51,19 @@
       },
       "mixed_signal_fdr": {
         "target_q": 0.05,
-        "empirical_fdr": 0.22285714285714286,
-        "fdp_std": 0.37351064788253713,
+        "empirical_fdr": 0.3051282051282051,
+        "fdp_std": 0.29738800085915984,
         "replicates": 10,
-        "mean_discoveries": 2.8,
-        "mean_false_discoveries": 1.8
+        "mean_discoveries": 9.5,
+        "mean_false_discoveries": 6.1
       },
       "mixed_signal_tpr": {
-        "empirical_tpr": 0.0004282655246252676,
-        "tpr_std": 5.714247181928225e-20,
+        "empirical_tpr": 0.0015064244572441294,
+        "tpr_std": 0.00042804243822742397,
         "replicates": 10,
         "replicates_without_signal": 0,
-        "mean_true_signals": 2335.0,
-        "mean_true_discoveries": 1.0
+        "mean_true_signals": 2257.0,
+        "mean_true_discoveries": 3.4
       }
     },
     {
@@ -81,18 +81,18 @@
       },
       "mixed_signal_fdr": {
         "target_q": 0.001,
-        "empirical_fdr": 0.075,
-        "fdp_std": 0.23717082451262847,
+        "empirical_fdr": 0.1,
+        "fdp_std": 0.21081851067789198,
         "replicates": 10,
-        "mean_discoveries": 1.3,
-        "mean_false_discoveries": 0.3
+        "mean_discoveries": 1.2,
+        "mean_false_discoveries": 0.2
       },
       "mixed_signal_tpr": {
-        "empirical_tpr": 0.0004282655246252676,
-        "tpr_std": 5.714247181928225e-20,
+        "empirical_tpr": 0.00044306601683650863,
+        "tpr_std": 0.0,
         "replicates": 10,
         "replicates_without_signal": 0,
-        "mean_true_signals": 2335.0,
+        "mean_true_signals": 2257.0,
         "mean_true_discoveries": 1.0
       }
     }
@@ -109,15 +109,15 @@
     "n_excluded_mediadive_columns": 2333,
     "correction_method": "BH",
     "correction_family": "all_testable_paired_profile_trait_pairs",
-    "n_profiles": 4670,
+    "n_profiles": 4514,
     "n_testable_traits": 317,
-    "n_tests": 1480390,
+    "n_tests": 1430938,
     "n_input_shared_traits": 2650
   },
   "provenance": {
-    "started_utc": "2026-10-20T02:27:40.490557+00:00",
-    "finished_utc": "2026-10-20T02:28:58.536153+00:00",
-    "elapsed_seconds": 78.045,
+    "started_utc": "2026-10-21T04:55:06.033983+00:00",
+    "finished_utc": "2026-10-21T04:56:12.670880+00:00",
+    "elapsed_seconds": 66.636,
     "command_args": {
       "profiles": "data/derived/study_trait_profiles_ora_wide.tsv",
       "taxa_matrix": "data/derived/taxa_trait_matrix.tsv",
@@ -147,8 +147,8 @@
     "inputs": {
       "profiles": {
         "path": "data/derived/study_trait_profiles_ora_wide.tsv",
-        "sha256": "8ff8b1637039d7d548bd5a3fb956d562ed29e61b2067ca507f7779903799152a",
-        "rows_used": 5829
+        "sha256": "37e7b032473e756388028b0b56f39e3ef3a839808b1dbbe25e39c4bf417333c1",
+        "rows_used": 5629
       },
       "taxa_matrix": {
         "path": "data/derived/taxa_trait_matrix.tsv",

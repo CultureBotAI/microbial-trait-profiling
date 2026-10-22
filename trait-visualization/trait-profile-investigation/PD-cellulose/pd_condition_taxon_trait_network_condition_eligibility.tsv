@@ -1,5 +1,5 @@
 condition	paired_study_count	passes_min_paired_studies	fdr_selected_taxon_count	fdr_selected_trait_count	displayed_in_network	exclusion_reason
-Parkinson's disease	47	True	0	0	False	no association passes global BH q<=0.05
+Parkinson's disease	45	True	0	0	False	no association passes global BH q<=0.05
 Obesity	33	True	0	0	False	no association passes global BH q<=0.05
 Colorectal cancer	28	True	0	0	False	no association passes global BH q<=0.05
 HIV infection	18	True	0	0	False	no association passes global BH q<=0.05
@@ -7,31 +7,30 @@ Antimicrobial agent	16	True	0	0	False	no association passes global BH q<=0.05
 Diet	16	True	0	0	False	no association passes global BH q<=0.05
 Chronic constipation	14	True	0	0	False	no association passes global BH q<=0.05
 Schizophrenia	14	True	0	0	False	no association passes global BH q<=0.05
-COVID-19	13	True	0	0	False	no association passes global BH q<=0.05
 Irritable bowel syndrome	13	True	0	0	False	no association passes global BH q<=0.05
-Polycystic ovary syndrome	12	True	0	0	False	no association passes global BH q<=0.05
+COVID-19	12	True	0	0	False	no association passes global BH q<=0.05
+Polycystic ovary syndrome	11	True	0	0	False	no association passes global BH q<=0.05
 Type II diabetes mellitus	11	True	0	0	False	no association passes global BH q<=0.05
 Chronic kidney disease	9	True	0	0	False	no association passes global BH q<=0.05
 Response to immunochemotherapy	9	True	0	0	False	no association passes global BH q<=0.05
 Socioeconomic status	9	True	0	0	False	no association passes global BH q<=0.05
 Age	8	True	0	0	False	no association passes global BH q<=0.05
-Ulcerative colitis	8	True	0	0	False	no association passes global BH q<=0.05
 Breast cancer	7	True	0	0	False	no association passes global BH q<=0.05
 Constipation	7	True	0	0	False	no association passes global BH q<=0.05
 Crohn's disease	7	True	0	0	False	no association passes global BH q<=0.05
 Gestational diabetes	7	True	0	0	False	no association passes global BH q<=0.05
-Alzheimer's disease	6	True	0	0	False	no association passes global BH q<=0.05
+Ulcerative colitis	7	True	0	0	False	no association passes global BH q<=0.05
 Diet measurement	6	True	0	0	False	no association passes global BH q<=0.05
-Food allergy	6	True	0	0	False	no association passes global BH q<=0.05
 Multiple sclerosis	6	True	0	0	False	no association passes global BH q<=0.05
-Non-alcoholic fatty liver disease	6	True	0	0	False	no association passes global BH q<=0.05
 Response to diet	6	True	0	0	False	no association passes global BH q<=0.05
 Type I diabetes mellitus	6	True	0	0	False	no association passes global BH q<=0.05
+Alzheimer's disease	5	True	0	0	False	no association passes global BH q<=0.05
 Depressive disorder	5	True	0	0	False	no association passes global BH q<=0.05
 Endometriosis	5	True	0	0	False	no association passes global BH q<=0.05
 Ethnic group	5	True	0	0	False	no association passes global BH q<=0.05
+Food allergy	5	True	0	0	False	no association passes global BH q<=0.05
+Non-alcoholic fatty liver disease	5	True	0	0	False	no association passes global BH q<=0.05
 Psoriasis	5	True	0	0	False	no association passes global BH q<=0.05
-Response to transplant	5	True	0	0	False	no association passes global BH q<=0.05
 Acute lymphoblastic leukemia	4	True	0	0	False	no association passes global BH q<=0.05
 Asthma	4	True	0	0	False	no association passes global BH q<=0.05
 Atopic eczema	4	True	0	0	False	no association passes global BH q<=0.05
@@ -41,10 +40,10 @@ Clinical treatment	4	True	0	0	False	no association passes global BH q<=0.05
 Colorectal adenoma	4	True	0	0	False	no association passes global BH q<=0.05
 Epilepsy	4	True	0	0	False	no association passes global BH q<=0.05
 Gastric cancer	4	True	0	0	False	no association passes global BH q<=0.05
-Lifestyle measurement	4	True	0	0	False	no association passes global BH q<=0.05
 Lung cancer	4	True	0	0	False	no association passes global BH q<=0.05
 Major depressive disorder	4	True	0	0	False	no association passes global BH q<=0.05
 Milk allergic reaction	4	True	0	0	False	no association passes global BH q<=0.05
+Response to transplant	4	True	0	0	False	no association passes global BH q<=0.05
 Rheumatoid arthritis	4	True	0	0	False	no association passes global BH q<=0.05
 Stroke	4	True	0	0	False	no association passes global BH q<=0.05
 Age-related macular degeneration	3	True	0	0	False	no association passes global BH q<=0.05
@@ -58,14 +57,13 @@ Diarrhea	3	True	0	0	False	no association passes global BH q<=0.05
 Eczema	3	True	0	0	False	no association passes global BH q<=0.05
 Fasting blood glucose measurement	3	True	0	0	False	no association passes global BH q<=0.05
 Graft versus host disease	3	True	0	0	False	no association passes global BH q<=0.05
-Health study participation	3	True	0	0	False	no association passes global BH q<=0.05
 Health-related quality of life measurement	3	True	0	0	False	no association passes global BH q<=0.05
 Hepatocellular carcinoma	3	True	0	0	False	no association passes global BH q<=0.05
 Hypertension	3	True	0	0	False	no association passes global BH q<=0.05
+Lifestyle measurement	3	True	0	0	False	no association passes global BH q<=0.05
 Pancreatic carcinoma	3	True	0	0	False	no association passes global BH q<=0.05
 Response to allogeneic hematopoietic stem cell transplant	3	True	0	0	False	no association passes global BH q<=0.05
 Response to antiviral drug	3	True	0	0	False	no association passes global BH q<=0.05
-Treatment	3	True	0	0	False	no association passes global BH q<=0.05
 Unipolar depression	3	True	0	0	False	no association passes global BH q<=0.05
 Alcohol drinking	2	False	0	0	False	fewer than 3 paired human fecal studies
 Allergic rhinitis	2	False	0	0	False	fewer than 3 paired human fecal studies
@@ -80,13 +78,11 @@ Bipolar disorder	2	False	0	0	False	fewer than 3 paired human fecal studies
 Cervical cancer	2	False	0	0	False	fewer than 3 paired human fecal studies
 Cesarean section	2	False	0	0	False	fewer than 3 paired human fecal studies
 Colorectal carcinoma	2	False	0	0	False	fewer than 3 paired human fecal studies
-Diabetic neuropathy	2	False	0	0	False	fewer than 3 paired human fecal studies
-Diabetic retinopathy	2	False	0	0	False	fewer than 3 paired human fecal studies
 Environmental exposure measurement	2	False	0	0	False	fewer than 3 paired human fecal studies
 Exercise	2	False	0	0	False	fewer than 3 paired human fecal studies
 Gastric adenocarcinoma	2	False	0	0	False	fewer than 3 paired human fecal studies
+Health study participation	2	False	0	0	False	fewer than 3 paired human fecal studies
 Human immunodeficiency virus	2	False	0	0	False	fewer than 3 paired human fecal studies
-Inflammatory bowel disease	2	False	0	0	False	fewer than 3 paired human fecal studies
 Ischemic stroke	2	False	0	0	False	fewer than 3 paired human fecal studies
 Leukemia	2	False	0	0	False	fewer than 3 paired human fecal studies
 Low density lipoprotein cholesterol measurement	2	False	0	0	False	fewer than 3 paired human fecal studies
@@ -99,6 +95,7 @@ Response to antibiotic	2	False	0	0	False	fewer than 3 paired human fecal studies
 Response to ketogenic diet	2	False	0	0	False	fewer than 3 paired human fecal studies
 Risk factor	2	False	0	0	False	fewer than 3 paired human fecal studies
 Sampling time	2	False	0	0	False	fewer than 3 paired human fecal studies
+Treatment	2	False	0	0	False	fewer than 3 paired human fecal studies
 Vitiligo	2	False	0	0	False	fewer than 3 paired human fecal studies
 Abnormal stool composition	1	False	0	0	False	fewer than 3 paired human fecal studies
 Acne	1	False	0	0	False	fewer than 3 paired human fecal studies
@@ -155,9 +152,8 @@ Coronary artery disease	1	False	0	0	False	fewer than 3 paired human fecal studie
 Crohn's colitis	1	False	0	0	False	fewer than 3 paired human fecal studies
 Dementia	1	False	0	0	False	fewer than 3 paired human fecal studies
 Dermatomyositis	1	False	0	0	False	fewer than 3 paired human fecal studies
-Diabetic foot	1	False	0	0	False	fewer than 3 paired human fecal studies
-Diabetic ketoacidosis	1	False	0	0	False	fewer than 3 paired human fecal studies
-Diabetic nephropathy	1	False	0	0	False	fewer than 3 paired human fecal studies
+Diabetic neuropathy	1	False	0	0	False	fewer than 3 paired human fecal studies
+Diabetic retinopathy	1	False	0	0	False	fewer than 3 paired human fecal studies
 Disease progression measurement	1	False	0	0	False	fewer than 3 paired human fecal studies
 Distal colitis,Pancolitis	1	False	0	0	False	fewer than 3 paired human fecal studies
 Drug resistance	1	False	0	0	False	fewer than 3 paired human fecal studies
@@ -178,7 +174,6 @@ Fat intake measurement	1	False	0	0	False	fewer than 3 paired human fecal studies
 Fibromyalgia	1	False	0	0	False	fewer than 3 paired human fecal studies
 Food allergy,Dermatitis	1	False	0	0	False	fewer than 3 paired human fecal studies
 Glioma	1	False	0	0	False	fewer than 3 paired human fecal studies
-Glucose	1	False	0	0	False	fewer than 3 paired human fecal studies
 Glucose metabolism measurement	1	False	0	0	False	fewer than 3 paired human fecal studies
 Glucose tolerance test	1	False	0	0	False	fewer than 3 paired human fecal studies
 Graves disease	1	False	0	0	False	fewer than 3 paired human fecal studies
@@ -205,11 +200,10 @@ Hyperglycemia	1	False	0	0	False	fewer than 3 paired human fecal studies
 Hyperpituitarism	1	False	0	0	False	fewer than 3 paired human fecal studies
 Hyperplastic Polyp	1	False	0	0	False	fewer than 3 paired human fecal studies
 Hypertriglyceridemia	1	False	0	0	False	fewer than 3 paired human fecal studies
-Hypoglycemia	1	False	0	0	False	fewer than 3 paired human fecal studies
 Ileocolitis	1	False	0	0	False	fewer than 3 paired human fecal studies
 Increased intestinal transit time	1	False	0	0	False	fewer than 3 paired human fecal studies
 Inflammation	1	False	0	0	False	fewer than 3 paired human fecal studies
-Insulin	1	False	0	0	False	fewer than 3 paired human fecal studies
+Inflammatory bowel disease	1	False	0	0	False	fewer than 3 paired human fecal studies
 Insulin measurement	1	False	0	0	False	fewer than 3 paired human fecal studies
 Interleukin 4 measurement	1	False	0	0	False	fewer than 3 paired human fecal studies
 Intestinal helminthiasis	1	False	0	0	False	fewer than 3 paired human fecal studies
@@ -228,7 +222,6 @@ Mammographic density measurement	1	False	0	0	False	fewer than 3 paired human fec
 Maternal milk	1	False	0	0	False	fewer than 3 paired human fecal studies
 Melanoma	1	False	0	0	False	fewer than 3 paired human fecal studies
 Menopause	1	False	0	0	False	fewer than 3 paired human fecal studies
-Metabolic process	1	False	0	0	False	fewer than 3 paired human fecal studies
 Metabolic toxicity	1	False	0	0	False	fewer than 3 paired human fecal studies
 Metastatic colorectal cancer	1	False	0	0	False	fewer than 3 paired human fecal studies
 Metformin	1	False	0	0	False	fewer than 3 paired human fecal studies
@@ -251,7 +244,6 @@ Oxidative Stress	1	False	0	0	False	fewer than 3 paired human fecal studies
 Parasitic infection	1	False	0	0	False	fewer than 3 paired human fecal studies
 Pemphigus vulgaris	1	False	0	0	False	fewer than 3 paired human fecal studies
 Peutz-Jeghers Polyp	1	False	0	0	False	fewer than 3 paired human fecal studies
-Phenotype	1	False	0	0	False	fewer than 3 paired human fecal studies
 Physical activity measurement	1	False	0	0	False	fewer than 3 paired human fecal studies
 Place of residence measurement,Ethnic group	1	False	0	0	False	fewer than 3 paired human fecal studies
 Platelet-derived growth factor BB measurement	1	False	0	0	False	fewer than 3 paired human fecal studies

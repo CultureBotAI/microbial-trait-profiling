@@ -55,7 +55,7 @@ CELLULOSE_DIR = Path("data/analysis/cellulose_decr")
 TRAIT_COLUMNS = Path("data/derived/taxa_trait_matrix_columns.tsv")
 # The rerun the plates' tables come from. The deck stamps and links the plate slides at the
 # same revision and refuses inputs that differ from it (#637); the two move together (#579).
-RERUN_COMMIT = "622e5c71d8c8e4190981a98c4220823b5e6060df"
+RERUN_COMMIT = "edeb7bef2f0db052bb84aa638d3e74fc6c53ca6f"
 RERUN_SOURCE = f"Source: Rerun on main ({RERUN_COMMIT[:7]})"
 
 # Tufte palette: muted, high-contrast, colorblind-safe ink on warm paper/clean white
@@ -134,7 +134,7 @@ def stratum_size(rows: Mapping[str, Mapping[str, str]]) -> tuple[int, int]:
 
 
 def stratum_text(rows: Mapping[str, Mapping[str, str]]) -> str:
-    """'959 studies · 2,335 pairs', from the stratum's table (#579)."""
+    """'932 studies · 2,257 pairs', from the stratum's table (#579)."""
     studies, pairs = stratum_size(rows)
     return f"{studies:,} studies · {pairs:,} pairs"
 
@@ -542,11 +542,17 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     ]
     cond_count = len({r["condition"] for r in ind_cells})
     site_count = len({r["body_site_group"] for r in ind_cells})
+    retained_studies = len(
+        {
+            r["study_id"]
+            for r in read_tsv(repo / "trait-visualization/study_trait_profile_study_metadata.tsv")
+        }
+    )
 
     funnel_steps = [
         (
             74.0,
-            "1,039 Curated Studies",
+            f"{retained_studies:,} Curated Studies",
             "Published human microbiome case\N{EN DASH}control studies",
             "#eef5fb",
             DEC_COLOR,
@@ -570,9 +576,9 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
         ),
         (
             18.0,
-            "48,370 Taxon Occurrences",
-            "6,356 unique NCBI TaxIDs across all ranks\nMedian signature size: 7 taxa (IQR "
-            "4\N{EN DASH}13)",
+            "41,279 Taxon Occurrences",
+            "4,569 unique NCBI TaxIDs across all ranks\nMedian signature size: 5 taxa (IQR "
+            "2\N{EN DASH}11)",
             "#f5d7d4",
             INC_COLOR,
         ),
@@ -1121,18 +1127,19 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
         DEC_COLOR,
     )
 
+    pooled_studies, pooled_pairs = stratum_size(paired["pooled"])
     a1_blocks = [
         (
             68.5,
-            "1. Dual Normalization (4,670 \N{MULTIPLICATION SIGN} 317)",
+            f"1. Dual Normalization ({2 * pooled_pairs:,} \N{MULTIPLICATION SIGN} 317)",
             "log1p(assertion count) → profile row z-score\n→ trait column z-score across corpus",
             "#eef5fb",
         ),
         (
             53.5,
             "2. Within-Study Paired Shift (Δz)",
-            "Δz = z_increased \N{MINUS SIGN} z_decreased per experiment\nAggregated across N = 959 "
-            "unique studies",
+            "Δz = z_increased \N{MINUS SIGN} z_decreased per experiment\n"
+            f"Aggregated across N = {pooled_studies:,} unique studies",
             "#e1effa",
         ),
         (
@@ -2019,10 +2026,12 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         # Carbon sources and lignin catabolism; the tag sits on the shortest label so the
         # row fits the left margin.
         ("METPO:2000006|CHEBI:25115", "[Carbon use]  Malate", "Carbon use"),
+        ("METPO:2000006|CHEBI:28260", "Galactose", "Carbon use"),
         ("METPO:2000006|CHEBI:17596", "Inosine", "Carbon use"),
         ("METPO:2000006|CHEBI:16808", "2-Dehydro-D-gluconate", "Carbon use"),
         ("METPO:2000006|CHEBI:320055", "Methyl β-D-glucopyranoside", "Carbon use"),
         ("METPO:2000103|GO:0046274", "Lignin catabolic process", "Carbon use"),
+        ("METPO:2000103|pathways:mtbe_degradation", "MTBE degradation", "Carbon use"),
         # Decreased Guilds
         (
             "METPO:2000103|GO:0030245",
@@ -2032,7 +2041,6 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         ("METPO:2000103|GO:0045493", "Xylan catabolic process", "Plant glycan ↓"),
         ("METPO:2000006|CHEBI:16634", "Raffinose", "Plant glycan ↓"),
         ("METPO:1000429", "[Anaerobic / low GC ↓]  GC low", "Anaerobic / low GC ↓"),
-        ("METPO:1000603", "Anaerobic", "Anaerobic / low GC ↓"),
         ("METPO:1000607", "Obligately anaerobic", "Anaerobic / low GC ↓"),
         ("METPO:1000845", "Acetogenesis", "Anaerobic / low GC ↓"),
     ]
@@ -2441,7 +2449,7 @@ def build_plate3(repo: Path, out_dir: Path) -> Path:
     )
     despine(ax_mat, top=True, right=True, left=True, bottom=True)
 
-    # --- Panel B: Spacious Forest Plot of Share of Studies with Ratio > 0 (All 959 vs Oriented 569)
+    # --- Panel B: Spacious Forest Plot of Share of Studies with Ratio > 0 (All 932 vs Oriented 574)
     # ---
     ax_for = fig.add_subplot(gs[0, 1])
     cel_pairs = [

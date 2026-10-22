@@ -3,7 +3,7 @@
   "traits": 6,
   "species": 5,
   "cells": 30,
-  "displayed_cells": 8,
+  "displayed_cells": 9,
   "audited_cells_for_displayed_species": 30,
   "direct_annotation_cells": 8,
   "denominator_only_cells": 22,
@@ -41,14 +41,14 @@
   },
   "input_sha256_chunks": {
     "data/derived/study_trait_profiles_wide.tsv": [
-      "c07d589f",
-      "6cc88724",
-      "e43c683e",
-      "bd132bcd",
-      "5c7f316f",
-      "36b95df3",
-      "ff9acad2",
-      "4ebbf62f"
+      "519a095b",
+      "09e179dc",
+      "92fb51f9",
+      "d892984a",
+      "52dd100d",
+      "ece4dadf",
+      "6c94b036",
+      "a5323e6c"
     ],
     "data/derived/taxa_trait_matrix.tsv": [
       "f6de0576",
@@ -71,14 +71,14 @@
       "db271c59"
     ],
     "trait-visualization/trait-profile-investigation/PD-cellulose/pd_six_trait_taxon_profile_evidence.tsv": [
-      "3bae40c3",
-      "2d21db49",
-      "90b5b088",
-      "0b83fe2b",
-      "7e08978f",
-      "32212f78",
-      "7cf6bf49",
-      "c0e2fc54"
+      "8793b9a0",
+      "e9209db3",
+      "49b3faab",
+      "512f4ccf",
+      "08c4522f",
+      "ec7b5662",
+      "0c442967",
+      "91d91000"
     ]
   },
   "sha256_chunk_encoding": "concatenate each path's eight chunks in order"
